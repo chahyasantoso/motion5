@@ -31,7 +31,6 @@ import { unreachable } from "./lang/exhaustive";
 import { defineOwnValue } from "./lang/own-property";
 import { collect, report } from "./domain/completion";
 import { PluginCatalog } from "./domain/plugin-catalog";
-import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { boundSources, type BoundSource } from "./graph/dependency-edges";
 import type { ComposeResolver } from "./runtime/graph-runtime";
@@ -79,8 +78,6 @@ export interface ProjectHandle {
   /** Last published patch, none if never published. `LivePatch`, not `Patch`: terminal patches reach `subscribeNode` once, unreadable after eviction; `destroyed` impossible. */
   get(nodeId: string): LivePatch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
-  /** Render metadata for a node, `undefined` if the project holds no track for it. Read from the compiled Track, not a second map; reaches no plugin or graph. */
-  renderMetadata(nodeId: string): RenderMetadata | undefined;
   dispose(): void;
 }
 interface Composition {
@@ -105,10 +102,7 @@ type CompositionState =
     }
   | { readonly kind: "disposed"; readonly cleanupOwner: "none" };
 type RuntimeLike = ProjectRuntime;
-function createHandle(
-  runtime: RuntimeLike,
-  renderMetadata: (nodeId: string) => RenderMetadata | undefined,
-): ProjectHandle {
+function createHandle(runtime: RuntimeLike): ProjectHandle {
   const handle: ProjectHandle = {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
@@ -131,7 +125,6 @@ function createHandle(
     dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
-    renderMetadata,
     dispose: () => runtime.dispose(),
   };
   Object.defineProperty(handle, "_runtime", {
@@ -714,7 +707,7 @@ export class Engine {
         });
         adoptMotion(motionDefinition, entries);
       }
-      return createHandle(created, (nodeId) => tracks.get(nodeId)?.plugins);
+      return createHandle(created);
     } catch (error) {
       throw afterCleanup(error, "cleanup", () => {
         // State names sole cleanup owner; constructor failure may already have run the composition hook.

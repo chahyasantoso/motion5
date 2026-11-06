@@ -2,7 +2,6 @@ import type { Patch } from "../contract/v5";
 import { patchRender } from "../contract/patch-render";
 import { selectRecord } from "../contract/output-select";
 import { unreachable } from "../lang/exhaustive";
-import type { RenderMetadata } from "../ports/render-metadata";
 import { isPlainRecord } from "../lang/plain-record";
 
 export interface StageLike {
@@ -114,19 +113,13 @@ function createTransformWriter(
   };
 }
 // Internal keys are filtered upstream; only renderer artifacts (`_`, `offset`) are dropped here, no second denylist.
-function renderableValues(
-  values: Readonly<Record<string, unknown>>,
-  metadata?: RenderMetadata,
-): Record<string, unknown> {
+function renderableValues(values: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  const outputSerializers = metadata?.outputSerializers ?? {};
   for (const [key, value] of Object.entries(values)) {
     if (key.startsWith("_") || key === "offset") continue;
-    const serializer = outputSerializers[key];
-    const rendered = serializer ? serializer(value) : value;
-    // Composites are read by other nodes, not written: skipped after serialization, so a serializer that flattens one still renders.
-    if (isPlainRecord(rendered)) continue;
-    result[key] = rendered;
+    // Composites are read by other nodes, not written.
+    if (isPlainRecord(value)) continue;
+    result[key] = value;
   }
   return result;
 }
@@ -135,7 +128,6 @@ export function createDomPatchAdapter(
   perspective?: number,
   resolveTarget: DomTargetResolver = () => stage,
   write?: DomPatchWriter,
-  metadata?: RenderMetadata,
 ): DomPatchAdapter {
   if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
     stage.style.perspective = `${perspective}px`;
@@ -146,7 +138,7 @@ export function createDomPatchAdapter(
   const writeTarget = write ?? createTransformWriter(transformState);
   // One filter, one dirty cache, one write for both entries, so a derived record and a published one cannot drift.
   function writeValues(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
-    const next = renderableValues(values, metadata);
+    const next = renderableValues(values);
     const previous = lastApplied.get(target) ?? {};
     const dirty: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(next))

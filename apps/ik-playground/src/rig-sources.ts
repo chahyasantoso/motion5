@@ -1,10 +1,7 @@
 import type { ProjectHandle } from "@motion5/core";
-import { rowPatchSource, type PatchSource, type RenderMetadataSource } from "@motion5/react";
+import { rowPatchSource, type PatchSource } from "@motion5/react";
 import { TENTACLE, nodeId } from "./ik-playground-project";
 import { IK3D, IK3D_NODE_ID } from "./ik3d-playground-project";
-
-/** A consumer source that also answers render metadata, as the DOM binding requires. */
-export type RigSource = PatchSource & RenderMetadataSource;
 
 /**
  * Consumer aliases over the two rigs' published pose and goal tables.
@@ -15,7 +12,7 @@ export type RigSource = PatchSource & RenderMetadataSource;
  * itself — reaches the runtime unchanged. Nothing here creates an engine node or a subscription
  * until a consumer subscribes.
  */
-function composite(handle: ProjectHandle, aliases: ReadonlyMap<string, PatchSource>): RigSource {
+function composite(handle: ProjectHandle, aliases: ReadonlyMap<string, PatchSource>): PatchSource {
   return {
     get(nodeId) {
       const alias = aliases.get(nodeId);
@@ -27,7 +24,6 @@ function composite(handle: ProjectHandle, aliases: ReadonlyMap<string, PatchSour
         ? handle.subscribeNode(nodeId, listener)
         : alias.subscribeNode(nodeId, listener);
     },
-    renderMetadata: (nodeId) => handle.renderMetadata(nodeId),
   };
 }
 
@@ -49,7 +45,7 @@ function memberAliases(
 }
 
 /** The 2D rig's member and goal aliases over its pose and goals rows. */
-export function planarRowSource(handle: ProjectHandle): RigSource {
+export function planarRowSource(handle: ProjectHandle): PatchSource {
   const aliases = memberAliases(handle, nodeId(TENTACLE.poseTrack), TENTACLE.memberTracks, nodeId);
   const goal = nodeId(TENTACLE.goalTrack);
   aliases.set(
@@ -65,7 +61,7 @@ export function planarRowSource(handle: ProjectHandle): RigSource {
 }
 
 /** The 3D rig's member and goal aliases over its pose and goals rows. */
-export function spatialRowSource(handle: ProjectHandle): RigSource {
+export function spatialRowSource(handle: ProjectHandle): PatchSource {
   const aliases = memberAliases(
     handle,
     IK3D_NODE_ID(IK3D.poseTrack),

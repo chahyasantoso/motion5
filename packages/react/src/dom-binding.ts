@@ -4,7 +4,6 @@ import {
   type DomPatchAdapter,
   type DomTarget,
 } from "@motion5/core/adapters";
-import type { RenderMetadata } from "@motion5/core/internal";
 
 // A single-element binding has no stage. `perspective` is a project-level property a composition
 // root applies once, and the injected resolver answers every write, so this object is never written
@@ -36,13 +35,12 @@ export interface DomBinding<T extends Element> {
  * is the subscription, which is the half the two hooks genuinely differ in. See ADR-075.
  */
 export function useDomBinding<T extends Element>(
-  metadata: RenderMetadata | undefined,
   pose: (adapter: DomPatchAdapter) => void,
 ): DomBinding<T> {
   const target = useRef<DomTarget | undefined>(undefined);
   const adapter = useMemo(
-    () => createDomPatchAdapter(NO_STAGE, undefined, () => target.current, undefined, metadata),
-    [metadata],
+    () => createDomPatchAdapter(NO_STAGE, undefined, () => target.current),
+    [],
   );
   // Detach through `null` rather than a returned cleanup: this package supports React 18, where a
   // ref callback that returns a function is warned about and never called back.

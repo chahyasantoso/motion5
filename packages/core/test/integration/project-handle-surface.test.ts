@@ -46,7 +46,6 @@ describe("public project handle surface (P1-9)", () => {
       "motionIds",
       "mount",
       "mountedNodeIds",
-      "renderMetadata",
       "seek",
       "signal",
       "subscribeNode",

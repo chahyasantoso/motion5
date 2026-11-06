@@ -202,7 +202,7 @@ describe("boundary scan predicates", () => {
   it("keeps the shared contract compiler, new sink, aliases, and longer names clean", () => {
     for (const source of [
       'import { compiler } from "../../contract/keyframe-compiler";',
-      'import type { RenderMetadata } from "../../ports/render-metadata";',
+      'import type { Clock } from "../../ports/clock";',
       'import { exhaustive } from "../lang/exhaustive";',
       'import { helpers } from "../domain-helpers/exhaustive";',
       'import { sink } from "@motion5/core/domain/exhaustive";',

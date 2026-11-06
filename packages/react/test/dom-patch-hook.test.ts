@@ -3,31 +3,21 @@ import type { RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { liveOrAbsent, useDomPatch } from "@motion5/react";
-import type {
-  LivePatch,
-  Patch,
-  PatchListener,
-  PatchSource,
-  RenderMetadata,
-  RenderMetadataSource,
-} from "@motion5/react";
+import type { LivePatch, Patch, PatchListener, PatchSource } from "@motion5/react";
 
 const NODE_ID = "hero/arm";
 
-interface FakeSource extends PatchSource, RenderMetadataSource {
+interface FakeSource extends PatchSource {
   listenerCount(): number;
   publish(patch: Patch): void;
 }
 
-// The hook's contract is satisfiable from the published entry alone, metadata included: a source
-// that cannot answer `renderMetadata` does not typecheck, which is the whole point of requiring it.
-//
 // One slot, holding the live union, so the collapse is the whole of what `publish` does with a
 // terminal patch: `get` answers what a reader may still ask for, and a delivered `destroyed` leaves
 // nothing to ask about. `liveOrAbsent` comes from the entry for the same reason every other name
 // here does, which is that an implementor of `PatchSource` must be able to satisfy it without
 // reaching past the published surface.
-function createFakeSource(initial?: LivePatch, metadata?: RenderMetadata): FakeSource {
+function createFakeSource(initial?: LivePatch): FakeSource {
   const listeners = new Set<PatchListener>();
   let latest: LivePatch | undefined = initial;
   return {
@@ -39,7 +29,6 @@ function createFakeSource(initial?: LivePatch, metadata?: RenderMetadata): FakeS
         listeners.delete(listener);
       };
     },
-    renderMetadata: () => metadata,
     listenerCount: () => listeners.size,
     publish(next) {
       latest = liveOrAbsent(next);
@@ -82,7 +71,6 @@ interface FakeStyle extends Record<string, unknown> {
 interface FakeSvgTarget {
   style: FakeStyle;
   ownerSVGElement: null;
-  pose?: unknown;
 }
 
 function createSvgTarget(): FakeSvgTarget {
@@ -136,19 +124,11 @@ describe("useDomPatch", () => {
     expect(source.listenerCount()).toBe(0);
   });
 
-  it("serializes plugin output, pins the SVG reference box, and holds the last pose when not ready", () => {
-    const metadata: RenderMetadata = {
-      outputSerializers: {
-        pose: (value) => `${String(value)}px`,
-      },
-    };
-    const source = createFakeSource(patch(1, { x: 1, y: 2, pose: 3 }), metadata);
+  it("pins the SVG reference box and holds the last pose when not ready", () => {
+    const source = createFakeSource(patch(1, { x: 1, y: 2 }));
     const target = createSvgTarget();
     const renderer = mount(source, target);
 
-    // Without the metadata channel this scalar reaches the element unserialized, which is the
-    // divergence a React-only DOM configuration used to ship.
-    expect(target.pose).toBe("3px");
     expect(target.style.transformBox).toBe("view-box");
     expect(target.style.transformOrigin).toBe("0px 0px");
 

@@ -11,8 +11,6 @@ export type {
   PatchRender,
   PatchListener,
   PatchSource,
-  RenderMetadata,
-  RenderMetadataSource,
 } from "@motion5/core/internal";
 /** Collapse a terminal patch to absence, as `PatchSource.get` requires. */
 export { liveOrAbsent } from "@motion5/core/internal";

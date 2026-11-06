@@ -1,12 +1,10 @@
 import type { LivePatch, PatchListener } from "./runtime/patch-registry";
-import type { RenderMetadata } from "./ports/render-metadata";
 
 export type { LivePatch, Patch, PatchListener } from "./runtime/patch-registry";
 export { patchRender } from "./contract/patch-render";
 export type { PatchRender } from "./contract/patch-render";
 export { isFlatRecord, selectRecord, selectRow, selectSingleRow } from "./contract/output-select";
 export type { RecordSelection, RowSelection } from "./contract/output-select";
-export type { RenderMetadata } from "./ports/render-metadata";
 /**
  * Collapse the terminal patch to absence for `PatchSource`, beside the eviction order in
  * `runtime/patch-registry.ts`; the export, not each implementor, owns that partition. */
@@ -19,12 +17,6 @@ export { unreachable } from "./lang/exhaustive";
 export { explain } from "./graph/explain";
 export type { ExplainNode, ExplainReport, ExplainSlot } from "./graph/explain";
 
-/**
- * Metadata half of a renderer-facing source: how a node's plugin output serializes.
- * Outside `PatchSource`, required only by the binding that renders, never by value readers. */
-export interface RenderMetadataSource {
-  renderMetadata(nodeId: string): RenderMetadata | undefined;
-}
 export interface PatchSource {
   /**
    * Last published patch, `LivePatch | undefined` like `PatchRegistry.get`; terminal must

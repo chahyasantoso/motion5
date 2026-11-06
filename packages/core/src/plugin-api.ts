@@ -243,7 +243,6 @@ export type {
   ImmutableValue,
 } from "./domain/values";
 export { isImmutableLeaf } from "./domain/values";
-export type { OutputSerializer } from "./ports/render-metadata";
 export { unreachable } from "./lang/exhaustive";
 export { patchRender, type PatchRender } from "./contract/patch-render";
 export { isFlatRecord, selectRecord, selectRow, selectSingleRow } from "./contract/output-select";

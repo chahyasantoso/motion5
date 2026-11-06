@@ -77,7 +77,7 @@ as superseded is still the record to read for why.
 - ADR-070 — one rung for a callback's reentrancy, and a publication is not reachable while a commit is in flight — Accepted, 2026-09-05. [Issue #310](https://github.com/chahyasantoso/motion5/issues/310). — [ADR-070-one-reentrancy-rung.md](./ADR-070-one-reentrancy-rung.md)
 - ADR-071 — Attempt the accepted phase completely and preserve every post-commit failure — Proposed in [PR #323](https://github.com/chahyasantoso/motion5/pull/323), 2026-09-06. [Issue #306](https://github.com/chahyasantoso/motion5/issues/306). Shipment is recorded only in SESSION-STATUS.md. — [ADR-071-settlement-error-boundary.md](./ADR-071-settlement-error-boundary.md)
 - ADR-072 — GSAP source snapshots and producer lifetime — status not recorded — [ADR-072-scroll-source-lifecycle.md](./ADR-072-scroll-source-lifecycle.md)
-- ADR-073 — one React binding from a patch to a DOM target — status not recorded — [ADR-073-react-dom-patch-binding.md](./ADR-073-react-dom-patch-binding.md)
+- ADR-073 — one React binding from a patch to a DOM target — status not recorded — superseded in part — [ADR-073-react-dom-patch-binding.md](./ADR-073-react-dom-patch-binding.md)
 - ADR-074 — a DOM adapter writes only from state it owns, at the newest revision it accepted — status not recorded — [ADR-074-adapter-owned-write-state.md](./ADR-074-adapter-owned-write-state.md)
 - ADR-075 — one React binding from several patches to one derived target — status not recorded — [ADR-075-derived-dom-binding.md](./ADR-075-derived-dom-binding.md)
 - ADR-076 — One mechanism per question on the runtime surface — Accepted, 2026-09-13 — [ADR-076-one-mechanism-per-question.md](./ADR-076-one-mechanism-per-question.md)
@@ -150,3 +150,4 @@ as superseded is still the record to read for why.
 - ADR-143 — Identified plugins cut over at their existing public paths — Accepted, 2026-10-25 — [ADR-143-identified-plugin-public-cutover.md](./ADR-143-identified-plugin-public-cutover.md)
 - ADR-144 — Identified tables, table-or-record values, and explicit plugins — Accepted, 2026-10-29 — [ADR-144-identified-tables-records-and-explicit-plugins.md](./ADR-144-identified-tables-records-and-explicit-plugins.md)
 - ADR-145 — One track kind and nominal models (v5.2) — Accepted, 2026-11-05 — [ADR-145-one-track-kind-and-models.md](./ADR-145-one-track-kind-and-models.md)
+- ADR-146 — The render metadata channel is removed — Accepted, 2026-11-06 — [ADR-146-render-metadata-is-removed.md](./ADR-146-render-metadata-is-removed.md)

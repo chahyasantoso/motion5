@@ -1,7 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { selectRecord } from "@motion5/core/plugin-api";
-import { patchRender, useDomPatch } from "@motion5/react";
-import type { RigSource } from "../rig-sources";
+import { patchRender, useDomPatch, type PatchSource } from "@motion5/react";
 import { IK3D, IK3D_FRAME, IK3D_NODE_ID, IK3D_VIEW } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
 import { unprojectPoint, type Point2, type Point3 } from "../projection";
@@ -9,7 +8,7 @@ import { goalNudge, useGoalDrag } from "./goal-drag";
 import { FRAME_COLOR } from "./ik3d-palette";
 
 /** The goal the runtime last published, which is where a drag or a nudge starts from. */
-function publishedGoal(source: RigSource): Point3 | undefined {
+function publishedGoal(source: PatchSource): Point3 | undefined {
   const decision = patchRender(source.get(IK3D_NODE_ID(IK3D.goalTrack)));
   if (decision.kind !== "render") return undefined;
   const picked = selectRecord(decision.patch.outputs.values);
@@ -104,7 +103,7 @@ export const Ik3dWorld: React.FC<{
  * keyboard behave the same in both tabs.
  */
 export const GoalHandle: React.FC<{
-  readonly source: RigSource;
+  readonly source: PatchSource;
   readonly goals: GoalControl;
   readonly scale: number;
   readonly toBox: ToBox;

@@ -1,14 +1,14 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { useDomPatch } from "@motion5/react";
+import { useDomPatch, type PatchSource } from "@motion5/react";
 import { IK3D, IK3D_NODE_ID } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
-import { spatialRowSource, type RigSource } from "../rig-sources";
+import { spatialRowSource } from "../rig-sources";
 import { GoalHandle, Ik3dFrame, Ik3dWorld } from "./Ik3dFrame";
 import { BONE_COLOR, FRAME_COLOR, type FrameKind } from "./ik3d-palette";
 
 const Bone: React.FC<{
-  readonly source: RigSource;
+  readonly source: PatchSource;
   readonly id: (typeof IK3D.memberTracks)[number];
   readonly length: number;
 }> = ({ source, id, length }) => {
@@ -29,7 +29,7 @@ const Bone: React.FC<{
 
 /** A root or pole frame: posed by the runtime, never grabbed. */
 const FrameMarker: React.FC<{
-  readonly source: RigSource;
+  readonly source: PatchSource;
   readonly id: string;
   readonly kind: Exclude<FrameKind, "goal">;
 }> = ({ source, id, kind }) => {

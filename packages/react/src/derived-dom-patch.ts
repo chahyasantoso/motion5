@@ -55,7 +55,7 @@ export function useDerivedDomPatch<T extends Element>(
     },
     [derive, ids, key, source],
   );
-  const binding = useDomBinding<T>(undefined, pose);
+  const binding = useDomBinding<T>(pose);
 
   // Subscribe before first write: a publication in between would otherwise be lost.
   useEffect(() => {

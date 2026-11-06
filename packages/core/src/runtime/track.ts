@@ -64,10 +64,6 @@ export class Track {
     return this.#localInput.progress;
   }
 
-  get plugins(): undefined {
-    return undefined;
-  }
-
   structureAtCommit(): Structure<unknown> | undefined {
     return this.#processor.structureAtCommit();
   }
