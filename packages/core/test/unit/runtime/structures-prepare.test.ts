@@ -941,9 +941,10 @@ describe("structures and prepare hook", () => {
     const goals = commitModelStructure(Goals2d, [
       { id: "goal", cells: { memberId: "root", x: 1, y: 2 } },
     ]);
+    const catalog = new PluginCatalog({ models: testModels, plugins: [ikPlugin] });
     const processor = new ComputedProcessor({
       nodeId: "node",
-      plugin: ikPlugin,
+      plugin: catalog.get("ik")!,
       values: undefined,
       interpolator: createFakeInterpolator(),
     });

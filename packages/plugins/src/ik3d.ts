@@ -1,12 +1,8 @@
 import {
+  definePlugin,
   ok,
   prepareRefused,
-  type Outputs,
-  type PluginDefinition,
-  type Prepared,
-  type Scalar,
-  type SourceStructures,
-  type Table,
+  type TableOf,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
 import { EXTERNAL_BASE, type BodyStructure } from "./body/domain";
@@ -22,9 +18,8 @@ import { constrains, readJointLimit3d } from "./ik3d-constraint";
 import { readOrient } from "./ik3d-orient";
 import type { ChainMember3d } from "./ik3d-chain";
 import { solveChain3d } from "./ik3d-solve";
-import { Body3d, Goals3d, Point3d, Solved3d } from "./models";
+import { Body3d, Goals3d, Point3d, Solved3d, type Body3dCells, type Goals3dCells } from "./models";
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
-import { requireStructure, structureOf } from "./slot-structure";
 import { rowAt, sameRowCount } from "./table-lookup";
 
 const FRAME: ValueSpec = {
@@ -49,44 +44,10 @@ const INSPECT: ValueSpec = {
   },
 };
 
-const SLOT = { chain: "chain", goals: "goals", base: "base" } as const;
-
-type FlatRecord = Readonly<Record<string, number | string | boolean>>;
-
-type Ik3dInput = {
-  readonly values: FlatRecord;
-  readonly param: FlatRecord;
-  readonly requires: {
-    readonly chain: Table;
-    readonly goals: Table;
-    readonly base: Readonly<Record<string, Scalar>>;
-    readonly pole?: Outputs;
-  };
-  readonly structures?: SourceStructures;
-};
-
-function flatRecord(value: unknown, path: string): FlatRecord {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    throw new TypeError(`IK3d requires a record at ${path}.`);
-  return value as FlatRecord;
-}
-
-function recordOutput(outputs: Outputs, path: string): FlatRecord {
-  const values = outputs.values;
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    values === null ||
-    typeof values !== "object"
-  )
-    throw new TypeError(`IK3d requires a record output at ${path}.`);
-  return flatRecord(values, `${path}.values`);
-}
-
 function solveMembers3d(
-  chainRows: Table,
+  chainRows: TableOf<Body3dCells>,
   chain: BodyStructure,
-  goalRows: Table,
+  goalRows: TableOf<Goals3dCells>,
   goals: GoalsStructure,
 ): readonly ChainMember3d[] {
   sameRowCount(chainRows, chain.ids.length, "Body");
@@ -135,7 +96,7 @@ function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly C
   });
 }
 
-export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
+export const ik3dPlugin = definePlugin({
   id: "ik3d",
   inputs: {
     param: {
@@ -152,26 +113,18 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
     },
   },
   outputs: { values: Solved3d, inspect: { ...INSPECT, optional: true } },
-  prepare({ structures }) {
-    const chain = structureOf<BodyStructure>(structures, SLOT.chain);
-    const goals = structureOf<GoalsStructure>(structures, SLOT.goals);
-    if (chain === undefined || goals === undefined) return ok(undefined);
+  prepare({ structures: { chain, goals } }) {
     const refused = nonEmptyDiagnostics(goalDiagnostics(chain, goals));
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
-  transform({ param, requires, structures }) {
-    const local = flatRecord(param ?? {}, "input.param");
-    const chain = requireStructure<BodyStructure>(structures, SLOT.chain, "IK3d");
-    const goals = requireStructure<GoalsStructure>(structures, SLOT.goals, "IK3d");
+  transform({ param, requires, structures: { chain, goals } }) {
     const members = solveMembers3d(requires.chain, chain, requires.goals, goals);
-    const pole = readPole3d(
-      requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),
-    );
+    const pole = readPole3d(requires.pole?.values);
     const result = solveChain3d(readFrame3d(requires.base), members, pole);
     const inspection = inspectSolve(result);
     return {
       values: outputRows(result, members),
-      ...(local.inspect === true
+      ...(param?.inspect === true
         ? {
             inspect: {
               kind: inspection.kind,
@@ -183,4 +136,4 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
         : {}),
     };
   },
-};
+});

@@ -1,15 +1,4 @@
-import {
-  diagnostic,
-  ok,
-  optional,
-  prepareRefused,
-  type PluginDefinition,
-  type Prepared,
-  type Scalar,
-  type SourceStructures,
-  type Table,
-} from "@motion5/core/plugin-api";
-import { type BodyStructure } from "./body/domain";
+import { definePlugin, diagnostic, ok, optional, prepareRefused } from "@motion5/core/plugin-api";
 import {
   blendOrientation3d,
   composeWorld3d,
@@ -21,23 +10,10 @@ import {
   type WorldFrame3d,
 } from "./frame3d";
 import { clamp, readNumber, segmentExtent } from "./frame";
-import { type SolvedRow, type SolvedStructure } from "./solved/domain";
+import { type SolvedRow } from "./solved/domain";
 import { Body3d, Point3d, Points3d, Solved3d } from "./models";
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
-import { requireStructure, structureOf } from "./slot-structure";
 import { rowAt, rowAtIndex, sameRowCount } from "./table-lookup";
-
-const SLOT = { chain: "chain", solved: "solved", base: "base" } as const;
-
-type Fk3dInput = {
-  readonly values: Readonly<Record<string, never>>;
-  readonly requires: {
-    readonly chain: Table;
-    readonly solved?: Table;
-    readonly base: Readonly<Record<string, Scalar>>;
-  };
-  readonly structures?: SourceStructures;
-};
 
 function solvedOrientation(row: SolvedRow): Euler3d {
   const rotation = row.cells.rotation;
@@ -55,7 +31,7 @@ function solvedOrientation(row: SolvedRow): Euler3d {
   return { rotation, rotationX, rotationY };
 }
 
-export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
+export const fk3dPlugin = definePlugin({
   id: "fk3d",
   inputs: {
     values: { kind: "record", fields: {} },
@@ -66,10 +42,8 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
     },
   },
   outputs: { values: Points3d },
-  prepare({ structures }) {
-    const chain = structureOf<BodyStructure>(structures, SLOT.chain);
-    const solved = structureOf<SolvedStructure>(structures, SLOT.solved);
-    if (chain === undefined || solved === undefined) return ok(undefined);
+  prepare({ structures: { chain, solved } }) {
+    if (solved === undefined) return ok(undefined);
     const solvedIds = new Set(solved.ids);
     const refused = nonEmptyDiagnostics(
       chain.ids
@@ -84,12 +58,7 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
     );
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
-  transform({ requires, structures }) {
-    const chain = requireStructure<BodyStructure>(structures, SLOT.chain, "FK3d");
-    const solved =
-      requires.solved === undefined
-        ? undefined
-        : requireStructure<SolvedStructure>(structures, SLOT.solved, "FK3d");
+  transform({ requires, structures: { chain, solved } }) {
     sameRowCount(requires.chain, chain.ids.length, "Body");
     if (requires.solved !== undefined && solved !== undefined)
       sameRowCount(requires.solved, solved.ids.length, "Solved");
@@ -130,4 +99,4 @@ export const fk3dPlugin: PluginDefinition<Fk3dInput> = {
     });
     return { values: rows };
   },
-};
+});

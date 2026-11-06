@@ -399,7 +399,7 @@ export class PluginCatalog implements PluginCapabilities {
   }
 
   /** Admit one definition atomically. */
-  register<Input extends ResolvedInput>(plugin: PluginDefinition<Input>): void;
+  register<Input extends ResolvedInput<Value, unknown>>(plugin: PluginDefinition<Input>): void;
   register(model: Model<unknown, unknown>): void;
   register(candidate: unknown): void;
   register(candidate: unknown): void {

@@ -1,7 +1,14 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import type { Model, TableOf } from "@motion5/core/plugin-api";
+import { definePlugin, ok, optional, type Model, type TableOf } from "@motion5/core/plugin-api";
 import {
   Body2d,
+  Body3d,
+  Goals2d,
+  Goals3d,
+  Point2d,
+  Point3d,
+  Solved2d,
+  Solved3d,
   type Body2dCells,
   type Body3dCells,
   type Goals2dCells,
@@ -13,6 +20,13 @@ import {
   type Solved2dCells,
   type Solved3dCells,
 } from "../../src/models";
+import type { BodyStructure } from "../../src/body/domain";
+import type { GoalsStructure } from "../../src/goals/domain";
+import type { SolvedStructure } from "../../src/solved/domain";
+import { fkPlugin } from "../../src/fk";
+import { fk3dPlugin } from "../../src/fk3d";
+import { ikPlugin } from "../../src/ik";
+import { ik3dPlugin } from "../../src/ik3d";
 import { BODY_2D_FIELDS, GOALS_2D_FIELDS, ROOT_2D_FIELDS } from "../../src/body/fields";
 import { BODY_3D_FIELDS } from "../../src/body3d/fields";
 import { GOALS_3D_FIELDS } from "../../src/goals3d/fields";
@@ -22,6 +36,9 @@ import { SOLVED_3D_FIELDS } from "../../src/solved3d/fields";
 
 type RowsOf<M> = M extends Model<infer Cells, infer _Structure> ? TableOf<Cells> : never;
 type KeysOf<T extends object> = keyof T;
+type TransformInput<P> = P extends { transform(input: infer I, ...rest: never[]): unknown }
+  ? I
+  : never;
 
 describe("model cell types", () => {
   it("carries a model's cell type through to its row type", () => {
@@ -47,5 +64,66 @@ describe("model cell types", () => {
     expectTypeOf<KeysOf<Points3dCells>>().toEqualTypeOf<keyof typeof ROOT_3D_FIELDS>();
     expectTypeOf<KeysOf<Solved2dCells>>().toEqualTypeOf<keyof typeof SOLVED_2D_FIELDS>();
     expectTypeOf<KeysOf<Solved3dCells>>().toEqualTypeOf<keyof typeof SOLVED_3D_FIELDS>();
+  });
+
+  it("derives requires, structures and state in definePlugin without hand-written input types", () => {
+    const plugin = definePlugin({
+      id: "motion5/test-derived",
+      inputs: {
+        requires: {
+          chain: Body2d,
+          base: Point2d,
+          solved: optional(Solved2d),
+        },
+      },
+      outputs: { solved: Solved2d },
+      prepare({ structures }) {
+        expectTypeOf(structures.chain).toEqualTypeOf<BodyStructure>();
+        expectTypeOf(structures.solved).toEqualTypeOf<SolvedStructure | undefined>();
+        return ok({ count: structures.chain.ids.length });
+      },
+      transform({ requires, structures, state }) {
+        expectTypeOf(requires.chain).toEqualTypeOf<TableOf<Body2dCells>>();
+        expectTypeOf(requires.base).toEqualTypeOf<Point2dCells>();
+        expectTypeOf(requires.solved).toEqualTypeOf<TableOf<Solved2dCells> | undefined>();
+        expectTypeOf(structures.chain).toEqualTypeOf<BodyStructure>();
+        expectTypeOf(structures.solved).toEqualTypeOf<SolvedStructure | undefined>();
+        expectTypeOf(state).toEqualTypeOf<{ count: number }>();
+        // @ts-expect-error unknown slot name in requires fails typecheck
+        const unknownSlot: unknown = requires.unknownSlot;
+        void unknownSlot;
+        return { solved: [] };
+      },
+    });
+
+    expect(plugin.id).toBe("motion5/test-derived");
+    expectTypeOf<TransformInput<typeof fkPlugin>["requires"]>().toEqualTypeOf<{
+      readonly chain: TableOf<Body2dCells>;
+      readonly base: Point2dCells;
+      readonly solved?: TableOf<Solved2dCells> | undefined;
+    }>();
+    expectTypeOf<TransformInput<typeof fk3dPlugin>["requires"]>().toEqualTypeOf<{
+      readonly chain: TableOf<Body3dCells>;
+      readonly base: Point3dCells;
+      readonly solved?: TableOf<Solved3dCells> | undefined;
+    }>();
+    expectTypeOf<TransformInput<typeof ikPlugin>["requires"]>().toEqualTypeOf<{
+      readonly chain: TableOf<Body2dCells>;
+      readonly base: Point2dCells;
+      readonly goals: TableOf<Goals2dCells>;
+    }>();
+    expectTypeOf<TransformInput<typeof ik3dPlugin>["structures"]>().toEqualTypeOf<{
+      readonly chain: BodyStructure;
+      readonly goals: GoalsStructure;
+    }>();
+    expect(typeof fkPlugin.transform).toBe("function");
+    expect(typeof fk3dPlugin.transform).toBe("function");
+    expect(typeof ikPlugin.transform).toBe("function");
+    expect(typeof ik3dPlugin.transform).toBe("function");
+    void Body3d;
+    void Goals2d;
+    void Goals3d;
+    void Point3d;
+    void Solved3d;
   });
 });

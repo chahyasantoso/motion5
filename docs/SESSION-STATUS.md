@@ -15,13 +15,14 @@ byte ceiling.
   registered beside plugins, and an engine requires a catalog and gives every track a static guard
   and parses a source at commit. A computed track that publishes a model fixes its output static
   cells at first compose. Cheap writes and live writes refuse static-cell changes; `type`, top-level
-  `plugin` and `input.schema` are refused by name. S1 to S6 are green; the `DataType`/typed-slot
-  system, the Pose specs and the `legacyTypeId` bridge are gone.
+  `plugin` and `input.schema` are refused by name. S1 to S7 are green; `definePlugin` derives slot,
+  structure and state types from model declarations, and the `DataType`/typed-slot system, Pose
+  specs, `legacyTypeId` bridge and hand-written kinematics input types are gone.
 
 ## Next in line
 
-- **S7 waits for the owner's go-ahead:** derive plugin slot, structure and state types from model
-  declarations, and delete the hand-written kinematics input types and casts.
+- **S8 waits for the owner's go-ahead:** add the `Anchors2d`, `CubicPath2d` and `LocalAnchors2d`
+  models and the `path`, `local-path` and `path-sample` plugins.
 
 ## Open, and not scheduled
 

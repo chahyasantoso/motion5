@@ -29,7 +29,7 @@ export interface PointsStructure {
 }
 
 /** Cells of a 2D body row. */
-export interface Body2dCells {
+export type Body2dCells = {
   readonly parentId?: string;
   readonly length: number;
   readonly rotation: number;
@@ -38,10 +38,10 @@ export interface Body2dCells {
   readonly y?: number;
   readonly minRotation?: number;
   readonly maxRotation?: number;
-}
+};
 
 /** Cells of a 3D body row. */
-export interface Body3dCells {
+export type Body3dCells = {
   readonly parentId?: string;
   readonly length: number;
   readonly rotation?: number;
@@ -61,18 +61,18 @@ export interface Body3dCells {
   readonly minTwist?: number;
   readonly maxTwist?: number;
   readonly maxSwing?: number;
-}
+};
 
 /** Cells of a 2D goal row. */
-export interface Goals2dCells {
+export type Goals2dCells = {
   readonly memberId: string;
   readonly x: number;
   readonly y: number;
   readonly influence?: number;
-}
+};
 
 /** Cells of a 3D goal row. */
-export interface Goals3dCells {
+export type Goals3dCells = {
   readonly memberId: string;
   readonly x: number;
   readonly y: number;
@@ -81,40 +81,40 @@ export interface Goals3dCells {
   readonly rotationX?: number;
   readonly rotationY?: number;
   readonly influence?: number;
-}
+};
 
 /** Cells of a 2D point record. */
-export interface Point2dCells {
+export type Point2dCells = {
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
-}
+};
 
 /** Cells of a 3D point record. */
-export interface Point3dCells {
+export type Point3dCells = {
   readonly x: number;
   readonly y: number;
   readonly z: number;
   readonly rotation: number;
   readonly rotationX: number;
   readonly rotationY: number;
-}
+};
 
 /** Cells of a 2D solved row. */
-export interface Solved2dCells {
+export type Solved2dCells = {
   readonly rotation: number;
   readonly residual?: number;
   readonly atBound?: boolean;
-}
+};
 
 /** Cells of a 3D solved row. */
-export interface Solved3dCells {
+export type Solved3dCells = {
   readonly rotation: number;
   readonly rotationX: number;
   readonly rotationY: number;
   readonly residual?: number;
   readonly atBound?: boolean;
-}
+};
 
 export type Points2dCells = Point2dCells;
 export type Points3dCells = Point3dCells;

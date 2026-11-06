@@ -331,11 +331,11 @@ export interface EvaluationContext {
 /** Resolved slot values: output sets for shape slots, values for model slots. */
 export type ResolvedRequires = Readonly<Record<string, unknown>>;
 /** Plugin input: local values plus bound slots. */
-export interface ResolvedInput<Values extends Value = Value> {
+export interface ResolvedInput<Values = Value, Structures = Readonly<Record<string, unknown>>> {
   readonly values: Values;
   readonly requires: ResolvedRequires;
   readonly param?: unknown;
-  readonly structures?: SourceStructures;
+  readonly structures?: Structures;
   readonly state?: unknown;
 }
 /** Record-kind value specification. */
@@ -350,11 +350,12 @@ export interface PluginPrepareContext<TRequires = SourceStructures> {
 
 /** Admitted plugin; `Input` is its evaluated input shape. */
 export interface PluginDefinition<
-  Input extends ResolvedInput = ResolvedInput,
+  Input extends ResolvedInput<unknown, unknown> = ResolvedInput,
   OutputsDecl extends Readonly<Record<string, ValueSpec | Model<unknown, unknown>>> = Readonly<
     Record<string, ValueSpec | Model<unknown, unknown>>
   >,
   TState = unknown,
+  TStructures = [Input] extends [never] ? never : SourceStructures,
 > {
   readonly id: string;
   readonly inputs: {
@@ -365,7 +366,7 @@ export interface PluginDefinition<
     >;
   };
   readonly outputs: OutputsDecl;
-  prepare?(ctx: PluginPrepareContext): Prepared<TState>;
+  prepare?(ctx: PluginPrepareContext<TStructures>): Prepared<TState>;
   transform(input: Input, context: EvaluationContext): Outputs;
 }
 /** Payload by status; only ready owns outputs. */
