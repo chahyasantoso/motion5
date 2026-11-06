@@ -1,21 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { AUTHORED, LIVE, buildOwed } from "../../../src/runtime/value-state";
+import {
+  AUTHORED,
+  LIVE_BOTH,
+  LIVE_PARAM,
+  LIVE_VALUES,
+  buildOwed,
+  liveOn,
+  withLiveChannel,
+  withoutLiveChannel,
+} from "../../../src/runtime/value-state";
 
-/**
- * Issue #443, phase A step 4: the state one live write leaves, as a closed union.
- *
- * The legacy mask/animated pair retired with the whole-value overlay. What survives is the question every
- * commit derivation asks: does a replacement owe a build even when its compiled inputs compare
- * equal? An authored Track does not; a whole-value live overlay does, because nothing else clears
- * it.
- */
 describe("the value state one live write leaves is a union rather than a field", () => {
-  it("answers the build question from the two reachable states and freezes both", () => {
+  it("answers the build question from every overlay state and freezes all of them", () => {
     expect(AUTHORED.kind).toBe("authored");
-    expect(LIVE.kind).toBe("written");
+    for (const state of [LIVE_VALUES, LIVE_PARAM, LIVE_BOTH]) {
+      expect(state.kind).toBe("written");
+      expect(buildOwed(state)).toBe(true);
+      expect(Object.isFrozen(state)).toBe(true);
+    }
     expect(buildOwed(AUTHORED)).toBe(false);
-    expect(buildOwed(LIVE)).toBe(true);
     expect(Object.isFrozen(AUTHORED)).toBe(true);
-    expect(Object.isFrozen(LIVE)).toBe(true);
+  });
+
+  it("composes and drops one channel without moving the other", () => {
+    expect(liveOn(AUTHORED, "values")).toBe(false);
+    expect(withLiveChannel(AUTHORED, "values")).toBe(LIVE_VALUES);
+    expect(withLiveChannel(LIVE_VALUES, "param")).toBe(LIVE_BOTH);
+    expect(withLiveChannel(LIVE_PARAM, "values")).toBe(LIVE_BOTH);
+    expect(withoutLiveChannel(LIVE_BOTH, "values")).toBe(LIVE_PARAM);
+    expect(withoutLiveChannel(LIVE_BOTH, "param")).toBe(LIVE_VALUES);
+    expect(withoutLiveChannel(LIVE_VALUES, "values")).toBe(AUTHORED);
+    expect(withoutLiveChannel(AUTHORED, "param")).toBe(AUTHORED);
+    expect(liveOn(LIVE_PARAM, "values")).toBe(false);
+    expect(liveOn(LIVE_PARAM, "param")).toBe(true);
   });
 });

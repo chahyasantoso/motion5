@@ -4,7 +4,6 @@ import { Anchors2d, CubicPath2d, type CubicPath2dCells } from "./models";
 export const anchorsToCubicPlugin = definePlugin({
   id: "anchorsToCubic",
   inputs: {
-    values: { kind: "record", fields: {} },
     requires: {
       anchors: Anchors2d,
     },

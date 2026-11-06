@@ -39,6 +39,23 @@ const NO_PARAM: PluginDefinition = {
   },
 };
 
+const MIXED: PluginDefinition = {
+  id: "mixed",
+  inputs: {
+    values: { kind: "record", fields: { dx: { kind: "number" } } },
+    param: { kind: "record", fields: { flip: { kind: "boolean", optional: true } } },
+  },
+  outputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+  transform({ values, param }) {
+    const dx = values !== null && typeof values === "object" ? Reflect.get(values, "dx") : 0;
+    const flip =
+      param !== null && typeof param === "object" && !Array.isArray(param)
+        ? Reflect.get(param, "flip")
+        : undefined;
+    return { values: { n: Number(dx) + (flip === true ? 1 : 0) } };
+  },
+};
+
 function project(track: ProjectDefinition["motions"][number]["tracks"][number]): ProjectDefinition {
   return {
     schemaVersion: 5,
@@ -70,8 +87,8 @@ function loaded() {
   return handle;
 }
 
-function publishedN(handle: ReturnType<typeof loaded>): unknown {
-  const patch = handle.get("demo/flags");
+function publishedN(handle: ReturnType<typeof loaded>, nodeId = "demo/flags"): unknown {
+  const patch = handle.get(nodeId);
   if (patch?.status !== "ready") throw new Error("Expected a ready flags patch.");
   const values = patch.outputs.values;
   if (values === undefined || Array.isArray(values)) return undefined;
@@ -158,6 +175,9 @@ describe("input.param", () => {
       expect(() => source.track("demo/source").input.param.set({ flip: true })).toThrow(
         /param-not-allowed/,
       );
+      expect(() => source.track("demo/source").writeParam({ flip: true })).toThrow(
+        /param-not-allowed/,
+      );
     } finally {
       source.dispose();
     }
@@ -169,17 +189,141 @@ describe("input.param", () => {
       expect(() => computed.track("demo/flags").input.param.set({ flip: true })).toThrow(
         /param-not-allowed/,
       );
+      expect(() => computed.track("demo/flags").writeParam({ flip: true })).toThrow(
+        /param-not-allowed/,
+      );
     } finally {
       computed.dispose();
     }
   });
 
-  it("does not address params through input.values", () => {
+  it("refuses values on a plugin that declares none", () => {
     const handle = loaded();
     try {
       expect(() => handle.track("demo/flags").input.values.set({ flip: true })).toThrow(
-        /values-shape-invalid|cell-form-invalid/,
+        /values-not-allowed/,
       );
+      expect(() => handle.track("demo/flags").writeValues({ flip: true })).toThrow(
+        /values-not-allowed/,
+      );
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("writes and releases a live param overlay without moving authored param", () => {
+    const handle = engine(FLAGS).load(
+      project({
+        id: "flags",
+        output: { plugin: "flags" },
+        input: { param: { flip: false } },
+      }),
+    );
+    try {
+      handle.mount("demo/flags");
+      handle.seek("demo/flags", 0);
+      const track = handle.track("demo/flags");
+      expect(publishedN(handle)).toBe(0);
+
+      track.writeParam({ flip: true });
+      expect(publishedN(handle)).toBe(1);
+      expect(track.definition.input?.param).toEqual({ flip: false });
+
+      const released = track.releaseParam();
+      expect(publishedN(handle)).toBe(0);
+      expect(released.patches.some((patch) => patch.nodeId === "demo/flags")).toBe(true);
+      expect(track.releaseParam().patches).toEqual([]);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("refuses a live param write that changes a static param", () => {
+    const handle = loaded();
+    try {
+      expect(() => handle.track("demo/flags").writeParam({ flip: false, inspect: true })).toThrow(
+        /live-values-invalid.*track\.input\.replace/,
+      );
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("keeps the previous live param overlay when a write is refused", () => {
+    const handle = loaded();
+    try {
+      const track = handle.track("demo/flags");
+      track.writeParam({ flip: true, inspect: false });
+      expect(publishedN(handle)).toBe(1);
+      expect(() => track.writeParam({ flip: "far", inspect: false })).toThrow(
+        /live-values-invalid/,
+      );
+      expect(publishedN(handle)).toBe(1);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("clears a live param overlay on a structural replacement", () => {
+    const handle = loaded();
+    try {
+      const track = handle.track("demo/flags");
+      track.writeParam({ flip: true, inspect: false });
+      expect(publishedN(handle)).toBe(1);
+      track.replace({
+        id: "flags",
+        output: { plugin: "flags" },
+        input: { param: { flip: false } },
+      });
+      expect(publishedN(handle)).toBe(0);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("projects live param writes and releases through a value batch", () => {
+    const handle = loaded();
+    try {
+      const written = handle.values((transaction) => {
+        transaction.writeParam("demo/flags", { flip: true, inspect: false });
+      });
+      expect(written.patches.some((patch) => patch.nodeId === "demo/flags")).toBe(true);
+      expect(publishedN(handle)).toBe(1);
+
+      const released = handle.values((transaction) => {
+        transaction.releaseParam("demo/flags");
+      });
+      expect(released.patches.some((patch) => patch.nodeId === "demo/flags")).toBe(true);
+      expect(publishedN(handle)).toBe(0);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  it("releases each live channel without moving the other", () => {
+    const handle = engine(MIXED).load(
+      project({
+        id: "mixed",
+        output: { plugin: "mixed" },
+        input: { values: { dx: 0 } },
+      }),
+    );
+    try {
+      handle.mount("demo/mixed");
+      handle.seek("demo/mixed", 0);
+      const track = handle.track("demo/mixed");
+      expect(publishedN(handle, "demo/mixed")).toBe(0);
+
+      track.writeValues({ dx: 5 });
+      expect(publishedN(handle, "demo/mixed")).toBe(5);
+      track.writeParam({ flip: true });
+      expect(publishedN(handle, "demo/mixed")).toBe(6);
+
+      track.releaseValues();
+      expect(publishedN(handle, "demo/mixed")).toBe(1);
+      track.releaseParam();
+      expect(publishedN(handle, "demo/mixed")).toBe(0);
+      expect(track.definition.input).toEqual({ values: { dx: 0 } });
     } finally {
       handle.dispose();
     }

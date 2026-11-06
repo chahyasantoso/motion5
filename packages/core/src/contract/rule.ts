@@ -119,6 +119,7 @@ const BASE_RULES = {
   "type-field-retired": ERROR_NO_IDS,
   "upstream-missing": ERROR_WITH_IDS,
   "value-batch-deferred": WARNING_WITH_IDS,
+  "values-not-allowed": ERROR_NO_IDS,
   "values-shape-invalid": ERROR_NO_IDS,
 } as const satisfies Record<BaseRuleId, RuleFacts>;
 

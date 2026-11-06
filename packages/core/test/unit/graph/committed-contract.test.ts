@@ -215,4 +215,19 @@ describe("committed contract", () => {
     );
     expect(contract).toBeUndefined();
   });
+
+  it("marks a plugin input unproven when the plugin declares no values", () => {
+    const requiresOnly: PluginDefinition = {
+      id: "requires-only",
+      inputs: { requires: { data: shape({ outputs: { values: POINT } }) } },
+      outputs: { values: POINT },
+      transform: () => ({ values: [] }),
+    };
+    const contract = deriveCommittedContract(
+      track({ id: "node", plugin: "requires-only", requires: { data: "points" } }),
+      "demo/node",
+      catalog(requiresOnly),
+    );
+    expect(contract?.input.proven).toBe(false);
+  });
 });

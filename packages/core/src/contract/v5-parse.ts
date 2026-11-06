@@ -124,10 +124,6 @@ const EMPTY_DIAGNOSTICS: readonly Diagnostic[] = Object.freeze([]);
 const EMPTY_REQUIRES: Readonly<Record<string, SourceBinding>> = Object.freeze({});
 const EMPTY_STATIC_FIELDS: ReadonlySet<string> = new Set<string>();
 const EMPTY_INPUT: ParsedInput = Object.freeze({ requires: EMPTY_REQUIRES });
-const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({
-  kind: "record",
-  fields: Object.freeze({}),
-});
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -909,7 +905,7 @@ function readValues(
 function pluginValuesSpec(definition: PluginDefinition | undefined): ValueSpec | undefined {
   if (definition === undefined) return undefined;
   const raw = definition.inputs.values;
-  return isModel(raw) ? raw.spec : (raw ?? EMPTY_RECORD_SPEC);
+  return isModel(raw) ? raw.spec : raw;
 }
 
 function readInput(
@@ -972,6 +968,21 @@ function readInput(
         "param-not-allowed",
         `${path}.param`,
         `Plugin '${output.plugin}' declares no params.`,
+      ),
+    );
+  }
+  if (
+    output !== undefined &&
+    "plugin" in output &&
+    value.values !== undefined &&
+    plugin !== undefined &&
+    plugin.inputs.values === undefined
+  ) {
+    diagnostics.push(
+      diagnostic(
+        "values-not-allowed",
+        `${path}.values`,
+        `Plugin '${output.plugin}' declares no local values.`,
       ),
     );
   }

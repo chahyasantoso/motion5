@@ -60,7 +60,6 @@ const bone: TrackDefinition = {
   id: "thigh",
   output: { plugin: "fk" },
   input: {
-    values: {},
     requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
   },
 };
@@ -184,7 +183,6 @@ describe("plugin-owned requirements end to end", () => {
       id: "thigh",
       output: { plugin: "fk" },
       input: {
-        values: {},
         requires: { chain: "walk/body", solved: "walk/solved", base: "walk/missing" },
       },
     };
@@ -237,7 +235,6 @@ describe("plugin-owned requirements end to end", () => {
               id: "thigh",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
               },
             },
@@ -265,7 +262,6 @@ describe("plugin-owned requirements end to end", () => {
       id: "thigh",
       output: { plugin: "fk" },
       input: {
-        values: {},
         requires: {
           chain: "walk/body",
           solved: "walk/solved",

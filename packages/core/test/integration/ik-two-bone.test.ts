@@ -46,7 +46,6 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
           id: "arm-solve",
           output: { plugin: "ik" },
           input: {
-            values: {},
             requires: { chain: "body", goals: "goals", base: "shoulder" },
           },
         },
@@ -54,7 +53,6 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
           id: "pose",
           output: { plugin: "fk" },
           input: {
-            values: {},
             requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
           },
         },
@@ -167,7 +165,6 @@ describe("Two-bone IK Integration (Slice C3)", () => {
               id: "arm-solve",
               output: { plugin: "ik" },
               input: {
-                values: {},
                 requires: { chain: "body", goals: "goals", base: "shoulder" },
               },
             },
@@ -175,7 +172,6 @@ describe("Two-bone IK Integration (Slice C3)", () => {
               id: "pose",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
               },
             },

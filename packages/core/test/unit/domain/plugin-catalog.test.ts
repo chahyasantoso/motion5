@@ -54,6 +54,25 @@ describe("plugin admission is keyed by id and atomic", () => {
     expect(catalog.isPluginAdmitted("scale")).toBe(true);
   });
 
+  it("admits a plugin declaring only requires without values or param", () => {
+    const catalog = new PluginCatalog({ models: testModels });
+    const converter: PluginDefinition = {
+      id: "converter",
+      inputs: {
+        requires: { source: shape({ outputs: { values: { kind: "record", fields: {} } } }) },
+      },
+      outputs: { values: { kind: "record", fields: {} } },
+      transform() {
+        return { values: {} };
+      },
+    };
+
+    catalog.register(converter);
+    expect(catalog.has("converter")).toBe(true);
+    expect(catalog.get("converter")?.inputs.values).toBeUndefined();
+    expect(catalog.get("converter")?.inputs.param).toBeUndefined();
+  });
+
   it("refuses a duplicate id without changing the admitted definition", () => {
     const catalog = new PluginCatalog({ models: testModels });
     catalog.register(SCALE);

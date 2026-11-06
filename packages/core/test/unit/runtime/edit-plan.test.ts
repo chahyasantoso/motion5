@@ -17,7 +17,7 @@ import {
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
 import { clearsOverlay, publicVerbOf, tierOf, type Edit } from "../../../src/runtime/edit-types";
-import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
+import { AUTHORED, LIVE_VALUES } from "../../../src/runtime/value-state";
 import { code } from "../../helpers/source-region";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
@@ -150,7 +150,7 @@ describe("the edit union answers its tier and its overlay verdict", () => {
     ]);
   });
 
-  it("determines valueState for each structural edit kind from a LIVE initial state", () => {
+  it("determines valueState for each structural edit kind from a LIVE_VALUES initial state", () => {
     const OPTIONAL_TRANSLATE: PluginDefinition = {
       id: "optional-translate",
       inputs: {
@@ -176,9 +176,9 @@ describe("the edit union answers its tier and its overlay verdict", () => {
 
     const plugins = [OPTIONAL_TRANSLATE];
     const base = state(POINTS, OPT_SHIFTED, UNBOUND);
-    const livePoints = { ...base.tracks.get("demo/points")!, valueState: LIVE };
-    const liveOptShifted = { ...base.tracks.get("demo/opt-shifted")!, valueState: LIVE };
-    const liveUnbound = { ...base.tracks.get("demo/unbound")!, valueState: LIVE };
+    const livePoints = { ...base.tracks.get("demo/points")!, valueState: LIVE_VALUES };
+    const liveOptShifted = { ...base.tracks.get("demo/opt-shifted")!, valueState: LIVE_VALUES };
+    const liveUnbound = { ...base.tracks.get("demo/unbound")!, valueState: LIVE_VALUES };
     const liveState: PlanState = {
       tracks: new Map([
         ["demo/points", livePoints],
@@ -217,7 +217,7 @@ describe("the edit union answers its tier and its overlay verdict", () => {
     );
     expect(removed.state.tracks.has("demo/unbound")).toBe(false);
 
-    // 4. unbind does not clear overlay -> LIVE
+    // 4. unbind does not clear overlay -> LIVE_VALUES
     const unbound = accepted(
       plan(
         liveState,
@@ -225,9 +225,9 @@ describe("the edit union answers its tier and its overlay verdict", () => {
         environment(plugins),
       ),
     );
-    expect(unbound.state.tracks.get("demo/opt-shifted")?.valueState).toBe(LIVE);
+    expect(unbound.state.tracks.get("demo/opt-shifted")?.valueState).toBe(LIVE_VALUES);
 
-    // 5. bind does not clear overlay -> LIVE
+    // 5. bind does not clear overlay -> LIVE_VALUES
     const bound = accepted(
       plan(
         liveState,
@@ -235,7 +235,7 @@ describe("the edit union answers its tier and its overlay verdict", () => {
         environment(plugins),
       ),
     );
-    expect(bound.state.tracks.get("demo/unbound")?.valueState).toBe(LIVE);
+    expect(bound.state.tracks.get("demo/unbound")?.valueState).toBe(LIVE_VALUES);
   });
 });
 

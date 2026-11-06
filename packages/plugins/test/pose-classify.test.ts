@@ -264,12 +264,12 @@ describe("pose classifier graph integration", () => {
             {
               id: "pose",
               output: { plugin: "fk3d" },
-              input: { values: {}, requires: { chain: "body", solved: "solved", base: "root" } },
+              input: { requires: { chain: "body", solved: "solved", base: "root" } },
             },
             {
               id: "classifier",
               output: { plugin: "pose-classify" },
-              input: { values: {}, requires: { pose: "pose" } },
+              input: { requires: { pose: "pose" } },
             },
           ],
         },

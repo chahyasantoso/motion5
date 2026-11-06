@@ -1,5 +1,6 @@
 import type { MotionDefinition, TrackDefinition, TriggerSignal, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
+import type { ReaderCheck } from "./commit-plan";
 
 /** Every seam a loaded project reaches: four records, no optional member, grouped by owner —
  * Track, Motion, value, host. `NO_PORTS` states each absence once. */
@@ -11,20 +12,30 @@ export interface StagedTrack {
   rollback(): void;
 }
 
-/** Three seams a value edit reaches, none touching graph: rewrite evaluator values, overlay one
- * value or drop it, move playhead. */
+/** Five seams a value edit reaches, none touching graph: rewrite evaluator values or params,
+ * overlay one channel or drop it, move playhead. */
 export interface ValuePort {
+  /** Replaces authored values one compiled Track evaluates, no rebuild — cheap tier's only host
+   * seam. No Track: nothing; later mount compiles them. */
   readonly rewrite: (nodeId: string, values: ParsedValues) => void;
+  /** Replaces authored params one compiled Track evaluates, no rebuild. */
   readonly rewriteParam: (nodeId: string, values: ParsedValues) => void;
+  /** Overlays one evaluated value on the compiled Track; `undefined` drops it. */
   readonly overlay: (nodeId: string, value: Value | undefined) => void;
+  /** Overlays one evaluated param on the compiled Track; `undefined` drops it. */
+  readonly overlayParam: (nodeId: string, value: Value | undefined) => void;
   readonly seek: (nodeId: string, progress: number) => void;
 }
 
-/** What a node's compiled Track costs: build, replace, release. */
+/** What a node's compiled Track costs: build, replace, release, prepare. */
 export interface TrackPort {
   readonly compile: (track: TrackDefinition, nodeId?: string) => void;
   readonly dispose: (nodeId: string) => void;
   readonly stage: (track: TrackDefinition, nodeId: string) => StagedTrack | undefined;
+  readonly prepareReaders: (
+    readers: readonly ReaderCheck[],
+    staleSources: ReadonlySet<string>,
+  ) => void;
 }
 
 /** Everything a Motion owns that no node carries. `replaceTrigger` and `setStagger` answer an
@@ -43,16 +54,6 @@ export interface MotionPort {
   readonly signal: (motionId: string, signal: TriggerSignal) => void;
 }
 
-/** Seams a value edit reaches: rewrite, overlay, seek. */
-export interface ValuePort {
-  /** Replaces authored values one compiled Track evaluates, no rebuild — cheap tier's only host
-   * seam. No Track: nothing; later mount compiles them. */
-  readonly rewrite: (nodeId: string, values: ParsedValues) => void;
-  /** Overlays one evaluated value on the compiled Track; `undefined` drops it. */
-  readonly overlay: (nodeId: string, value: Value | undefined) => void;
-  readonly seek: (nodeId: string, progress: number) => void;
-}
-
 /** Seam owned by the host, not a node or Motion. */
 export interface HostPort {
   readonly disposeComposition: () => void;
@@ -66,12 +67,17 @@ export interface ProjectPorts {
   readonly host: HostPort;
 }
 
-/** What an uninstalled seam does, once for all sixteen: a `void` port ignores it, a completion
+/** What an uninstalled seam does, once for all eighteen: a `void` port ignores it, a completion
  * or stage reads it absent. Frozen at both levels. */
 const NOTHING = (): undefined => undefined;
 
 export const NO_PORTS: ProjectPorts = Object.freeze({
-  track: Object.freeze<TrackPort>({ compile: NOTHING, dispose: NOTHING, stage: NOTHING }),
+  track: Object.freeze<TrackPort>({
+    compile: NOTHING,
+    dispose: NOTHING,
+    stage: NOTHING,
+    prepareReaders: NOTHING,
+  }),
   motion: Object.freeze<MotionPort>({
     create: NOTHING,
     destroy: NOTHING,
@@ -86,6 +92,7 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     rewrite: NOTHING,
     rewriteParam: NOTHING,
     overlay: NOTHING,
+    overlayParam: NOTHING,
     seek: NOTHING,
   }),
   host: Object.freeze<HostPort>({ disposeComposition: NOTHING }),

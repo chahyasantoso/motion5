@@ -45,8 +45,12 @@ export interface TrackHandle extends Handle<TrackDefinition> {
   replace(next: TrackDefinition): void;
   /** Replaces node's evaluated local value until `releaseValues` or structural edit. Must match committed contract, else `live-values-invalid` and prior overlay stands. */
   writeValues(value: Value): PatchBatch;
-  /** Drops live overlay, resumes authored evaluation at current progress. No overlay: no-op, empty batch, no publication. Clean release clears an `"error"` node. */
+  /** Replaces node's evaluated param until `releaseParam` or structural edit. Must match committed contract, else `live-values-invalid` and prior overlay stands. */
+  writeParam(param: Value): PatchBatch;
+  /** Drops the live values overlay, resumes authored evaluation at current progress. No overlay: no-op, empty batch, no publication. Clean release clears an `"error"` node. */
   releaseValues(): PatchBatch;
+  /** Drops the live param overlay, leaving the values overlay standing. No overlay: no-op, empty batch, no publication. */
+  releaseParam(): PatchBatch;
 }
 
 /** Authored input of one track, reached through `TrackHandle.input`. Every verb plans one `Edit`; `replace` swaps whole input, never merges. */

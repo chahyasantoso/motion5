@@ -128,12 +128,12 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
             {
               id: "solve",
               output: { plugin: "ik" },
-              input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
+              input: { requires: { chain: "body", goals: "goals", base: "root" } },
             },
             {
               id: "pose",
               output: { plugin: "fk" },
-              input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+              input: { requires: { chain: "body", solved: "solve", base: "root" } },
             },
           ],
         },

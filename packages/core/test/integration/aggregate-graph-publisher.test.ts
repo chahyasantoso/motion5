@@ -99,7 +99,6 @@ function createAggregateProject(overrides?: {
       id: "pose",
       output: { plugin: "fk" },
       input: {
-        values: {},
         requires: { chain: "body", solved: "solve", base: "root" },
       },
     },
@@ -469,7 +468,6 @@ describe("Explicit Aggregate Graph and Publisher (AM-1..10)", () => {
               id: "pose",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: { chain: "body", solved: "solve", base: "root" },
               },
             },

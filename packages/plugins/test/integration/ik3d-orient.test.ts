@@ -193,7 +193,6 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
             id: "solve",
             output: { plugin: "ik3d" },
             input: {
-              values: {},
               requires: { chain: "body", goals: "goals", base: "root" },
             },
           },
@@ -201,7 +200,6 @@ function armProject(orient: boolean | number, zeroHand = false): ProjectDefiniti
             id: "pose",
             output: { plugin: "fk3d" },
             input: {
-              values: {},
               requires: { chain: "body", solved: "solve", base: "root" },
             },
           },
@@ -288,7 +286,6 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
             id: "solve",
             output: { plugin: "ik3d" },
             input: {
-              values: {},
               requires: { chain: "body", goals: "goals", base: "root" },
             },
           },
@@ -296,7 +293,6 @@ function branchProject(influences?: readonly [number, number]): ProjectDefinitio
             id: "pose",
             output: { plugin: "fk3d" },
             input: {
-              values: {},
               requires: { chain: "body", solved: "solve", base: "root" },
             },
           },

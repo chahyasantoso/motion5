@@ -68,7 +68,6 @@ const dependentTrack: TrackDefinition = {
   id: "elbow",
   output: { plugin: "fk" },
   input: {
-    values: {},
     requires: { chain: "~/body", solved: "~/solved", base: "~/root" },
   },
 };

@@ -188,7 +188,6 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
     id: "pose",
     output: { plugin: "fk" },
     input: {
-      values: {},
       requires: {
         chain: "walk/body",
         base: "walk/pelvis",
@@ -298,7 +297,6 @@ export const armTracks: readonly TrackDefinition[] = [
     id: "arms-pose",
     output: { plugin: "fk" },
     input: {
-      values: {},
       requires: {
         chain: "walk/arms-body",
         base: "walk/pelvis",

@@ -124,7 +124,6 @@ function rigTracks(rig: RigGeometry): readonly TrackDefinition[] {
       id: rig.poseTrack,
       output: { plugin: "fk" },
       input: {
-        values: {},
         requires: {
           chain: rig.bodyTrack,
           solved: rig.solverTrack,

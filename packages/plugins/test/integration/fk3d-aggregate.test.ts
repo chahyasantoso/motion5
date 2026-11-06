@@ -120,7 +120,6 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
             id: ids.pose,
             output: { plugin: "fk3d" },
             input: {
-              values: {},
               requires: { chain: ids.body, solved: ids.solve, base: ids.root },
             },
           },

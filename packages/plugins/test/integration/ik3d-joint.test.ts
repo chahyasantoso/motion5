@@ -114,7 +114,6 @@ const PROJECT: ProjectDefinition = {
           id: "pose",
           output: { plugin: "fk3d" },
           input: {
-            values: {},
             requires: { chain: "body", solved: "solve", base: "root" },
           },
         },

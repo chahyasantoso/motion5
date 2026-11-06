@@ -136,4 +136,3 @@ export const LocalAnchors2d: Model<LocalAnchor2dCells, LocalAnchorsStructure> = 
     return ok({ ids: value.map((r) => r.id) });
   },
 });
-

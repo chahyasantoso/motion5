@@ -745,6 +745,69 @@ describe("path models and plugins (S8)", () => {
     handle.dispose();
   });
 
+  it("Commit prepare: a live anchor edit naming an unknown bone is refused before compose", () => {
+    const catalog = new PluginCatalog({
+      models: [...builtinModels],
+      plugins: [fkPlugin, skinAnchorsPlugin],
+    });
+    const handle = loadAndMount(createTestEngine(catalog), {
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "m",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "pin",
+              output: { model: "Point2d" },
+              input: { values: { x: 0, y: 0, rotation: 0 } },
+            },
+            {
+              id: "rope",
+              output: { model: "Body2d" },
+              input: {
+                values: [
+                  { id: "a", cells: { length: 0, rotation: 0 } },
+                  { id: "b", cells: { parentId: "a", length: 10, rotation: 0 } },
+                ],
+              },
+            },
+            {
+              id: "frames",
+              output: { plugin: "fk" },
+              input: { requires: { chain: "rope", base: "pin" } },
+            },
+            {
+              id: "letter",
+              output: { plugin: "skinAnchors" },
+              input: {
+                values: [
+                  { id: "a", cells: { x: 0, y: 0 } },
+                  { id: "b", cells: { x: 0, y: 0 } },
+                ],
+                requires: { frames: "frames" },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    try {
+      handle.seek("m/letter", 0);
+      const before = readyPatch(handle, "m/letter");
+      expect(() =>
+        handle.track("m/letter").input.replace({
+          values: [{ id: "missing", cells: { x: 0, y: 0 } }],
+          requires: { frames: "frames" },
+        }),
+      ).toThrow(/Anchor 'missing' names no bone in frames/);
+      const after = readyPatch(handle, "m/letter");
+      expect(after.outputs.values).toEqual(before.outputs.values);
+    } finally {
+      handle.dispose();
+    }
+  });
+
   it("Host drawing example: renders CubicPath2d segments into valid SVG path d string", () => {
     const segments = [
       {

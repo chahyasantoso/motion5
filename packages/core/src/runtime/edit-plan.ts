@@ -354,7 +354,9 @@ export function plan(state: PlanState, edit: Edit, environment: PlanEnvironment)
     case "set-param":
     case "set-param-field":
     case "write-live":
+    case "write-live-param":
     case "release-live":
+    case "release-live-param":
       return planValueAsState(state, edit, environment);
     default:
       return unreachable(edit);

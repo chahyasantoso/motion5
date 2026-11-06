@@ -11,8 +11,12 @@ export interface ValueTransaction {
   seek(nodeId: string, progress: number): PatchBatch;
   /** Node-addressed live write; publication deferred to batch close. */
   writeValues(nodeId: string, value: Value): PatchBatch;
-  /** Node-addressed release; publication deferred to batch close. */
+  /** Node-addressed live param write; publication deferred to batch close. */
+  writeParam(nodeId: string, value: Value): PatchBatch;
+  /** Node-addressed value release; publication deferred to batch close. */
   releaseValues(nodeId: string): PatchBatch;
+  /** Node-addressed param release; publication deferred to batch close. */
+  releaseParam(nodeId: string): PatchBatch;
   /**
    * Resolves one track by qualified node id, refusing an id this project lacks; the ordinary
    * `TrackHandle`, so its authored `input.values` verbs join this batch too. */

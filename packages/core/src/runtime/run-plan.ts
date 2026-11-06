@@ -1,7 +1,13 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 import { rejectAfterRollback, runSteps } from "./report";
-import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-plan";
+import {
+  invert,
+  type CommitPlan,
+  type Effect,
+  type ReaderCheck,
+  type Settlement,
+} from "./commit-plan";
 import type { StagedTrack } from "./project-ports";
 /** Sole impure walk over a derived commit. Liveness re-asked after each recorded effect, so mid-flight disposal rolls it back; inverses in apply order; settlement attempts all, collects failures. */
 
@@ -19,6 +25,10 @@ export interface PlanPorts {
   readonly mountNode: (nodeId: string) => void;
   readonly addMotionTrack: (motionId: string, nodeId: string, duration?: number) => void;
   readonly removeMotionTrack: (motionId: string, nodeId: string) => void;
+  readonly prepareReaders: (
+    readers: readonly ReaderCheck[],
+    staleSources: ReadonlySet<string>,
+  ) => void;
   readonly assertLive: () => void;
   readonly accept: () => void;
   readonly adopt: () => void;
@@ -91,9 +101,8 @@ function inversesOf(
   return steps;
 }
 
-/** Runs one plan: apply, accept, adopt, settle.
- * Failure before adopt restores applied effects; after, every settlement attempts and collects.
- * adopt cannot throw: outside the collector. */
+/** Runs one plan: apply, prepare, accept, adopt, settle. Failure before adopt restores applied
+ * effects; after, every settlement attempts and collects. adopt cannot throw. */
 export function runPlan(plan: CommitPlan, ports: PlanPorts): void {
   const staged: StagedByNode = new Map();
   const applied: Effect[] = [];
@@ -101,6 +110,10 @@ export function runPlan(plan: CommitPlan, ports: PlanPorts): void {
     for (const effect of plan.effects) {
       perform(effect, ports, staged);
       applied.push(effect);
+      ports.assertLive();
+    }
+    if (plan.prepareReaders.length > 0) {
+      ports.prepareReaders(plan.prepareReaders, plan.staleSources);
       ports.assertLive();
     }
     ports.accept();

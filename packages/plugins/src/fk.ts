@@ -24,7 +24,6 @@ function solveRotation(row: SolvedRow): number {
 export const fkPlugin = definePlugin({
   id: "fk",
   inputs: {
-    values: { kind: "record", fields: {} },
     requires: {
       chain: Body2d,
       solved: optional(Solved2d),

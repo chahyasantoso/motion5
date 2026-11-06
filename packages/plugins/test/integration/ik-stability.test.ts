@@ -546,7 +546,6 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
               id: "pose",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: { chain: "body", solved: "solve", base: "root" },
               },
             },

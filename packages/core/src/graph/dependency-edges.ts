@@ -15,6 +15,42 @@ import type { EdgeRequirement, GraphEdge } from "./ir";
 
 export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
 
+/** One authored binding flattened to its slot, optional map member and qualified source. */
+export interface BoundSource {
+  readonly slot: string;
+  readonly memberKey?: string;
+  readonly source: string;
+  readonly sourceId: string;
+}
+
+const NO_BOUND_SOURCES: readonly BoundSource[] = Object.freeze([]);
+
+/** Flattens a validated track's bindings; malformed shapes belong to `collectDependencyEdges`. */
+export function boundSources(track: TrackDefinition, ownerId: string): readonly BoundSource[] {
+  const requires = track.input?.requires;
+  if (requires === undefined) return NO_BOUND_SOURCES;
+  const entries: BoundSource[] = [];
+  for (const [slot, binding] of Object.entries(requires)) {
+    if (typeof binding === "string") {
+      entries.push(
+        Object.freeze({ slot, source: binding, sourceId: qualifySource(binding, ownerId) }),
+      );
+      continue;
+    }
+    for (const [memberKey, source] of Object.entries(binding)) {
+      entries.push(
+        Object.freeze({
+          slot,
+          memberKey,
+          source,
+          sourceId: qualifySource(source, ownerId),
+        }),
+      );
+    }
+  }
+  return Object.freeze(entries);
+}
+
 // The one spelling of source qualification: ir.ts calls it for solver goals rather than copying it.
 export function qualifySource(source: string, motionId: string): string {
   if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;

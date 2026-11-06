@@ -5,7 +5,7 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-05, Asia/Jakarta.
+- **Captured:** 2026-11-06, Asia/Jakarta.
 - **Read against:** `feat/v5.2-models-and-plugin-tracks` after the full check gate.
 
 ## Now
@@ -14,10 +14,13 @@ byte ceiling.
   `output: { plugin }`, `input.param` carries plugin parameters through `input.param.set` and
   `setField`, models are registered beside plugins, and an engine requires a catalog and gives every
   track a static guard and parses a source at commit. A computed track that publishes a model fixes
-  its output static cells at first compose. Cheap writes and live writes refuse static-cell changes;
-  `type`, top-level `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin`
-  derives slot, structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`,
-  `LocalAnchors2d` models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are landed.
+  its output static cells at first compose. Plugins declare only the input channels they use, and an
+  authored channel the plugin does not declare is refused by name. Cheap writes and live writes refuse
+  static-cell changes, live overlays cover both `input.values` and `input.param` independently, and a
+  structural commit re-runs an affected reader's `prepare` before accepting. `type`, top-level
+  `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin` derives slot,
+  structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`, `LocalAnchors2d`
+  models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are landed.
 
 ## Next in line
 

@@ -64,7 +64,6 @@ function imageLimbTracks(limb: LimbId): readonly TrackDefinition[] {
       id: ids.pose,
       output: { plugin: "fk" },
       input: {
-        values: {},
         requires: {
           chain: ids.body,
           solved: ids.solve,
@@ -163,7 +162,6 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
       id: ids.solve,
       output: { plugin: "ik3d" },
       input: {
-        values: {},
         requires: {
           chain: ids.body,
           goals: ids.goal,
@@ -176,7 +174,6 @@ function worldLimbTracks(limb: LimbId): readonly TrackDefinition[] {
       id: ids.pose,
       output: { plugin: "fk3d" },
       input: {
-        values: {},
         requires: {
           chain: ids.body,
           solved: ids.solve,

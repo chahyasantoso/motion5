@@ -53,13 +53,12 @@ function pluginContract(
   for (const [slot, spec] of Object.entries(definition.inputs.requires ?? {})) {
     slots[slot] = slotDeclaration(spec);
   }
+  const values = definition.inputs.values;
   return freeze({
     plugin,
     input: freeze({
-      spec: isModel(definition.inputs.values)
-        ? definition.inputs.values.spec
-        : (definition.inputs.values ?? EMPTY_RECORD_SPEC),
-      proven: true,
+      spec: isModel(values) ? values.spec : (values ?? EMPTY_RECORD_SPEC),
+      proven: values !== undefined,
     }),
     outputs: freeze(outputs),
     requires: freeze({ ...track.input?.requires }),

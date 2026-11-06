@@ -84,13 +84,28 @@ interface WriteLiveShape {
   readonly value: Value;
 }
 
+interface WriteParamLiveShape {
+  readonly kind: "write-live-param";
+  readonly nodeId: string;
+  readonly value: Value;
+}
+
 interface ReleaseLiveShape {
   readonly kind: "release-live";
   readonly nodeId: string;
 }
 
-/** The two live edits: an evaluated value stands over the authored one, or is dropped. */
-export type LiveEdit = WriteLiveShape | ReleaseLiveShape;
+interface ReleaseParamLiveShape {
+  readonly kind: "release-live-param";
+  readonly nodeId: string;
+}
+
+/** The four live edits: an evaluated channel stands over the authored one, or is dropped. */
+export type LiveEdit =
+  | WriteLiveShape
+  | WriteParamLiveShape
+  | ReleaseLiveShape
+  | ReleaseParamLiveShape;
 
 /** Every edit the runtime applies through one plan. */
 export type Edit = StructuralEdit | CheapEdit | LiveEdit;
@@ -112,7 +127,9 @@ export function isStructuralEdit(edit: Edit): edit is StructuralEdit {
     case "set-param":
     case "set-param-field":
     case "write-live":
+    case "write-live-param":
     case "release-live":
+    case "release-live-param":
       return false;
     default:
       return unreachable(edit);
@@ -129,7 +146,7 @@ export function tierOf(edit: Edit): EditTier {
   return isStructuralEdit(edit) ? "structural" : "cheap";
 }
 
-/** Whether one edit clears the live overlay as a side effect: replace/remove compile a fresh Track; bind/unbind leave the timeline standing. */
+/** Whether one edit clears the live overlays as a side effect: replace/remove compile a fresh Track; bind/unbind leave the timeline standing. */
 export function clearsOverlay(edit: Edit): boolean {
   switch (edit.kind) {
     case "replace-track":
@@ -143,7 +160,9 @@ export function clearsOverlay(edit: Edit): boolean {
     case "set-param":
     case "set-param-field":
     case "write-live":
+    case "write-live-param":
     case "release-live":
+    case "release-live-param":
       return false;
     default:
       return unreachable(edit);
@@ -157,7 +176,9 @@ export type PublicValueVerb =
   | "input.param.set"
   | "input.param.setField"
   | "writeValues"
-  | "releaseValues";
+  | "writeParam"
+  | "releaseValues"
+  | "releaseParam";
 
 const PUBLIC_VERB: Readonly<Record<(CheapEdit | LiveEdit)["kind"], PublicValueVerb>> = {
   "set-values": "input.values.set",
@@ -165,7 +186,9 @@ const PUBLIC_VERB: Readonly<Record<(CheapEdit | LiveEdit)["kind"], PublicValueVe
   "set-param": "input.param.set",
   "set-param-field": "input.param.setField",
   "write-live": "writeValues",
+  "write-live-param": "writeParam",
   "release-live": "releaseValues",
+  "release-live-param": "releaseParam",
 };
 
 /** Public API verb for a cheap or live edit kind. */

@@ -42,7 +42,6 @@ const THIGH: TrackDefinition = {
   id: "thigh",
   output: { plugin: "fk" },
   input: {
-    values: {},
     requires: { chain: "walk/body", solved: "walk/solved", base: "walk/pelvis" },
   },
 };

@@ -300,6 +300,8 @@ export function outputModelId(output: OutputDefinition): string | undefined {
 export function outputPluginId(output: OutputDefinition): string | undefined {
   return "plugin" in output ? output.plugin : undefined;
 }
+/** One authored input channel a value edit can address. */
+export type ValueChannel = "values" | "param";
 /** What a track authors: values, params, slots. */
 export interface TrackInput {
   readonly values?: AuthoredValues;

@@ -589,7 +589,6 @@ describe("structures and prepare hook", () => {
               id: "fkNode",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: {
                   chain: "chain",
                   base: "base",
@@ -837,7 +836,6 @@ describe("structures and prepare hook", () => {
               id: "fkNode",
               output: { plugin: "fk" },
               input: {
-                values: {},
                 requires: { chain: "chain", solved: "solved", base: "base" },
               },
             },
@@ -912,12 +910,12 @@ describe("structures and prepare hook", () => {
             {
               id: "ikA",
               output: { plugin: "ik" },
-              input: { values: {}, requires: { chain: "bodyA", goals: "goals", base: "base" } },
+              input: { requires: { chain: "bodyA", goals: "goals", base: "base" } },
             },
             {
               id: "ikB",
               output: { plugin: "ik" },
-              input: { values: {}, requires: { chain: "bodyB", goals: "goals", base: "base" } },
+              input: { requires: { chain: "bodyB", goals: "goals", base: "base" } },
             },
           ],
         },

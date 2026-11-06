@@ -31,7 +31,7 @@ import { collect, report } from "./domain/completion";
 import { PluginCatalog } from "./domain/plugin-catalog";
 import type { RenderMetadata } from "./ports/render-metadata";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
-import { qualifySource } from "./graph/dependency-edges";
+import { boundSources, type BoundSource } from "./graph/dependency-edges";
 import type { ComposeResolver } from "./runtime/graph-runtime";
 import { Track } from "./runtime/track";
 import { PassthroughProcessor } from "./runtime/processors/passthrough";
@@ -60,6 +60,8 @@ export interface EngineOptions {
   readonly plugins: PluginCatalog;
   readonly triggerFactory?: TriggerFactory;
 }
+const NO_STALE_SOURCES: ReadonlySet<string> = new Set<string>();
+
 export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
@@ -499,76 +501,100 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      const checkCommittedSources = (): void => {
-        const checkTrack = (
-          track: TrackDefinition,
-          consumerId: string,
-          sourceId: (source: string) => string,
-        ): void => {
-          const pluginId = outputPluginId(track.output);
-          if (pluginId === undefined) return;
-          const plugin = this.#capabilities.pluginDefinition(pluginId);
-          if (plugin === undefined) return;
-          const consumer = tracks.get(consumerId);
-          if (consumer?.processorKind !== "computed") return;
-          const requires = track.input?.requires;
-          const declared = plugin.inputs.requires ?? {};
-          const structures: Record<string, SourceStructure> = {};
-          let ready = true;
-          for (const [slotName, declaredSlot] of Object.entries(declared)) {
-            const slot = slotDeclaration(declaredSlot);
-            const binding = requires?.[slotName];
-            if (binding === undefined) {
-              if (!isOptionalSlot(slot)) ready = false;
-              continue;
-            }
-            if (isShapeSlot(slot)) continue;
-            const requiredStructure = needsSlotStructure(slot);
-            if (typeof binding === "string") {
-              const structure = tracks.get(sourceId(binding))?.structureAtCommit();
-              if (structure === undefined) {
-                if (requiredStructure) ready = false;
-                continue;
-              }
-              defineOwnValue(structures, slotName, structure);
-              continue;
-            }
-            const members: Record<string, Structure<unknown>> = {};
-            let complete = true;
-            for (const [key, memberSource] of Object.entries(binding)) {
-              const structure = tracks.get(sourceId(memberSource))?.structureAtCommit();
-              if (structure === undefined) {
-                complete = false;
-                break;
-              }
-              defineOwnValue(members, key, structure);
-            }
-            if (!complete) {
-              if (requiredStructure) ready = false;
-              continue;
-            }
-            defineOwnValue(structures, slotName, Object.freeze(members));
-          }
-          if (!ready) return;
-          if (plugin.prepare !== undefined) {
-            consumer.prepareCommit(Object.freeze(structures));
-          }
-        };
-        for (const motion of acceptedProject.motions)
-          for (const track of motion.tracks) {
-            const consumerId = qualifyMotionTrack(motion.id, track.id).value;
-            checkTrack(track, consumerId, (source) => qualifySource(source, motion.id));
-          }
-        for (const track of acceptedProject.freeTracks ?? []) {
-          const consumerId = qualifyFreeTrack(track.id).value;
-          checkTrack(track, consumerId, (source) => qualifySource(source, "~"));
-        }
-      };
-      checkCommittedSources();
       const structureOf = (sourceId: string): Structure<unknown> | undefined => {
         const track = tracks.get(sourceId);
         return track?.structureAtCommit() ?? track?.outputStructure("values");
       };
+      const prepareTrackReader = (
+        track: TrackDefinition,
+        consumerId: string,
+        ownerId: string,
+        staleSources: ReadonlySet<string>,
+      ): void => {
+        const pluginId = outputPluginId(track.output);
+        if (pluginId === undefined) return;
+        const plugin = this.#capabilities.pluginDefinition(pluginId);
+        if (plugin === undefined) return;
+        const consumer = tracks.get(consumerId);
+        if (consumer?.processorKind !== "computed") return;
+        const prepareStructure = (sourceId: string): Structure<unknown> | undefined => {
+          const source = tracks.get(sourceId);
+          if (source === undefined) return undefined;
+          const committed = source.structureAtCommit();
+          if (committed !== undefined) return committed;
+          return staleSources.has(sourceId) ? undefined : source.outputStructure("values");
+        };
+        const grouped = new Map<string, BoundSource[]>();
+        for (const bound of boundSources(track, ownerId)) {
+          const list = grouped.get(bound.slot);
+          if (list === undefined) grouped.set(bound.slot, [bound]);
+          else list.push(bound);
+        }
+        const declared = plugin.inputs.requires ?? {};
+        const structures: Record<string, SourceStructure> = {};
+        let ready = true;
+        for (const [slotName, declaredSlot] of Object.entries(declared)) {
+          const slot = slotDeclaration(declaredSlot);
+          const entries = grouped.get(slotName);
+          if (entries === undefined) {
+            if (!isOptionalSlot(slot)) ready = false;
+            continue;
+          }
+          if (isShapeSlot(slot)) continue;
+          const requiredStructure = needsSlotStructure(slot);
+          const first = entries[0];
+          if (first === undefined) {
+            if (!isOptionalSlot(slot)) ready = false;
+            continue;
+          }
+          if (first.memberKey === undefined) {
+            const structure = prepareStructure(first.sourceId);
+            if (structure === undefined) {
+              if (requiredStructure) ready = false;
+              continue;
+            }
+            defineOwnValue(structures, slotName, structure);
+            continue;
+          }
+          const members: Record<string, Structure<unknown>> = {};
+          let complete = true;
+          for (const entry of entries) {
+            const memberKey = entry.memberKey;
+            if (memberKey === undefined) {
+              complete = false;
+              break;
+            }
+            const structure = prepareStructure(entry.sourceId);
+            if (structure === undefined) {
+              complete = false;
+              break;
+            }
+            defineOwnValue(members, memberKey, structure);
+          }
+          if (!complete) {
+            if (requiredStructure) ready = false;
+            continue;
+          }
+          defineOwnValue(structures, slotName, Object.freeze(members));
+        }
+        if (!ready) return;
+        if (plugin.prepare !== undefined) {
+          consumer.prepareCommit(Object.freeze(structures));
+        }
+      };
+      const checkCommittedSources = (): void => {
+        for (const motion of acceptedProject.motions)
+          for (const track of motion.tracks)
+            prepareTrackReader(
+              track,
+              qualifyMotionTrack(motion.id, track.id).value,
+              motion.id,
+              NO_STALE_SOURCES,
+            );
+        for (const track of acceptedProject.freeTracks ?? [])
+          prepareTrackReader(track, qualifyFreeTrack(track.id).value, "~", NO_STALE_SOURCES);
+      };
+      checkCommittedSources();
       const compose: ComposeResolver = (node) => {
         const track = tracks.get(node.id);
         if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
@@ -586,9 +612,14 @@ export class Engine {
         rewriteValues: (nodeId, values) => tracks.get(nodeId)?.replaceValues(values),
         rewriteParamValues: (nodeId, param) => tracks.get(nodeId)?.replaceParam(param),
         overlayValues: (nodeId, value) => tracks.get(nodeId)?.replaceOverlay(value),
+        overlayParam: (nodeId, value) => tracks.get(nodeId)?.replaceParamOverlay(value),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,
+        prepareReaders: (readers, staleSources) => {
+          for (const reader of readers)
+            prepareTrackReader(reader.track, reader.nodeId, reader.ownerId, staleSources);
+        },
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);

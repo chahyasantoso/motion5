@@ -212,6 +212,10 @@ export class ComputedProcessor implements Processor {
     );
   }
 
+  replaceParamOverlay(value: Value | undefined): void {
+    this.#paramInput?.replaceOverlay(value);
+  }
+
   compose(slots: BoundSlots = {}, localInput: LocalInput): PublisherComposition {
     localInput.assertActive();
     const rawValues = this.plugin.inputs.values;

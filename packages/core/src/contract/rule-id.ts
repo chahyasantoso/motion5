@@ -98,6 +98,7 @@ export const BASE_RULE_IDS = [
   "type-field-retired",
   "upstream-missing",
   "value-batch-deferred",
+  "values-not-allowed",
   "values-shape-invalid",
 ] as const;
 

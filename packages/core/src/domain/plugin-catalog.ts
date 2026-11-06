@@ -34,7 +34,6 @@ const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
 const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*$/;
 const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
-const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
 type TransformHook = PluginDefinition["transform"];
 type PrepareHook = NonNullable<PluginDefinition["prepare"]>;
@@ -227,8 +226,6 @@ function readInputs(
         `${path}.values.optional`,
         "optional is not valid on inputs.values.",
       );
-  } else if (param === undefined) {
-    refuse("plugin-shape", `${path}.values`, "Plugin inputs must declare values.");
   }
   let requires: Readonly<Record<string, SlotSpec>> | undefined;
   if (source.requires !== undefined) {
@@ -254,7 +251,7 @@ function readInputs(
   }
   return Object.freeze({
     ...(param === undefined ? {} : { param }),
-    values: values ?? Object.freeze({ kind: "record", fields: Object.freeze({}) }),
+    ...(values === undefined ? {} : { values }),
     ...(requires === undefined ? {} : { requires }),
   });
 }
@@ -345,7 +342,8 @@ export type DescribedSlot =
 /** A plugin's declared input and output contracts. */
 export interface PluginDescription {
   readonly id: string;
-  readonly values: ValueSpec;
+  readonly values?: ValueSpec;
+  readonly param?: RecordSpec;
   readonly requires: Readonly<Record<string, DescribedSlot>>;
   readonly outputs: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
 }
@@ -521,11 +519,13 @@ export class PluginCatalog implements PluginCapabilities {
     for (const [name, output] of Object.entries(definition.outputs)) {
       outputs[name] = isModel(output) ? output.spec : output;
     }
+    const rawValues = definition.inputs.values;
+    const values =
+      rawValues === undefined ? undefined : isModel(rawValues) ? rawValues.spec : rawValues;
     return Object.freeze({
       id: definition.id,
-      values: isModel(definition.inputs.values)
-        ? definition.inputs.values.spec
-        : (definition.inputs.values ?? EMPTY_RECORD_SPEC),
+      ...(values === undefined ? {} : { values }),
+      ...(definition.inputs.param === undefined ? {} : { param: definition.inputs.param }),
       requires: Object.freeze(requires),
       outputs: Object.freeze(outputs),
     });

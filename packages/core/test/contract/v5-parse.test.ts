@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseTrackDefinition, type ParsedTrack } from "../../src/contract/v5-parse";
-import type { Diagnostic } from "../../src/contract/v5";
+import type { Diagnostic, PluginDefinition } from "../../src/contract/v5";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -685,6 +685,31 @@ describe("parseTrackDefinition owns the output member", () => {
       },
       "param-not-allowed",
     );
+  });
+
+  it("refuses values on a plugin that declares none and accepts an empty input", () => {
+    const plugin: PluginDefinition = {
+      id: "converter",
+      inputs: {},
+      outputs: { values: { kind: "record", fields: {} } },
+      transform: () => ({ values: {} }),
+    };
+    const context = { isPluginRegistered: () => true, pluginDefinition: () => plugin };
+    const refused = parseTrackDefinition(
+      { id: "converted", output: { plugin: "converter" }, input: { values: { n: 1 } } },
+      PATH,
+      context,
+    );
+    expect(refused.kind).toBe("refused");
+    if (refused.kind === "refused")
+      expect(refused.diagnostics.map(({ ruleId }) => ruleId)).toContain("values-not-allowed");
+
+    const accepted = parseTrackDefinition(
+      { id: "converted", output: { plugin: "converter" } },
+      PATH,
+      context,
+    );
+    expect(accepted.kind).toBe("accepted");
   });
 
   it("names the registered models and plugins in unknown-name refusals", () => {

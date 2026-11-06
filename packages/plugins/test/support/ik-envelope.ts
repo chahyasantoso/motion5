@@ -270,7 +270,6 @@ export function independentRigsProject(count: number): ProjectDefinition {
             id: "solve",
             output: { plugin: "ik" },
             input: {
-              values: {},
               requires: { chain: "body", goals: "goal", base: "root" },
             },
           },
@@ -278,7 +277,6 @@ export function independentRigsProject(count: number): ProjectDefinition {
             id: "pose",
             output: { plugin: "fk" },
             input: {
-              values: {},
               requires: { chain: "body", solved: "solve", base: "root" },
             },
           },

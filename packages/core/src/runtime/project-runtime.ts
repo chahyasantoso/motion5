@@ -58,7 +58,7 @@ import {
 import { collect, report } from "../domain/completion";
 import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import { afterCleanup, batchFor, runSteps } from "./report";
-import { planCommit } from "./commit-plan";
+import { planCommit, type ReaderCheck } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
 import { expectLive, expectValid, isLive, resolveToken, stale, type Resolved } from "./results";
@@ -184,9 +184,16 @@ export interface ProjectRuntimeOptions {
   readonly rewriteParamValues?: (nodeId: string, values: ParsedValues) => void;
   /** Stands one whole evaluated value over a compiled Track, or `undefined` drops it; validated by the runtime; no compiled Track = no-op; the authored definition never moves. */
   readonly overlayValues?: (nodeId: string, value: Value | undefined) => void;
+  /** Stands one whole evaluated param over a compiled Track, or `undefined` drops it. */
+  readonly overlayParam?: (nodeId: string, value: Value | undefined) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
+  /** Re-runs `prepare` on listed readers against the staged sources before acceptance. */
+  readonly prepareReaders?: (
+    readers: readonly ReaderCheck[],
+    staleSources: ReadonlySet<string>,
+  ) => void;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
@@ -255,6 +262,7 @@ export class ProjectRuntime {
         compile: installed(this, options.compileTrack, NO_PORTS.track.compile),
         dispose: installed(this, options.disposeTrack, NO_PORTS.track.dispose),
         stage: installed(this, options.stageTrack, NO_PORTS.track.stage),
+        prepareReaders: installed(this, options.prepareReaders, NO_PORTS.track.prepareReaders),
       }),
       motion: Object.freeze({
         create: installed(this, options.createMotion, NO_PORTS.motion.create),
@@ -270,6 +278,7 @@ export class ProjectRuntime {
         rewrite: installed(this, options.rewriteValues, NO_PORTS.value.rewrite),
         rewriteParam: installed(this, options.rewriteParamValues, NO_PORTS.value.rewriteParam),
         overlay: installed(this, options.overlayValues, NO_PORTS.value.overlay),
+        overlayParam: installed(this, options.overlayParam, NO_PORTS.value.overlayParam),
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
@@ -777,8 +786,16 @@ export class ProjectRuntime {
       case "authored-values":
         // Compile the candidate before adopting its definition: a domain refusal must leave both
         // the authored entry and the compiled track untouched.
-        if (change.channel === "param") this.#ports.value.rewriteParam(id, change.values);
-        else this.#ports.value.rewrite(id, change.values);
+        switch (change.channel) {
+          case "values":
+            this.#ports.value.rewrite(id, change.values);
+            break;
+          case "param":
+            this.#ports.value.rewriteParam(id, change.values);
+            break;
+          default:
+            return unreachable(change.channel);
+        }
         this.#tracks.set(id, {
           ...entry,
           track: change.track.track,
@@ -788,7 +805,16 @@ export class ProjectRuntime {
         return;
       case "live-values":
         this.#tracks.set(id, { ...entry, valueState: change.track.valueState });
-        this.#ports.value.overlay(id, change.overlay);
+        switch (change.channel) {
+          case "values":
+            this.#ports.value.overlay(id, change.overlay);
+            break;
+          case "param":
+            this.#ports.value.overlayParam(id, change.overlay);
+            break;
+          default:
+            return unreachable(change.channel);
+        }
         return;
       default:
         return unreachable(change);
@@ -898,6 +924,8 @@ export class ProjectRuntime {
         addMotionTrack: (motionId, nodeId, duration) =>
           this.#ports.motion.addTrack(motionId, nodeId, duration),
         removeMotionTrack: (motionId, nodeId) => this.#ports.motion.removeTrack(motionId, nodeId),
+        prepareReaders: (readers, staleSources) =>
+          this.#ports.track.prepareReaders(readers, staleSources),
         assertLive: () => this.#assertLive(),
         accept: () => {
           this.#graph.replaceGraph(this.#snapshot(tracks, motions), this.#carriedContracts(tracks));
@@ -1040,9 +1068,19 @@ export class ProjectRuntime {
     return this.#applyLiveById(nodeId, { kind: "write-live", nodeId, value });
   }
 
+  /** Writes one node's whole evaluated param by id, without a handle. */
+  writeParam(nodeId: string, value: Value): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "write-live-param", nodeId, value });
+  }
+
   /** The node-addressed spelling of `TrackHandle.releaseValues`. */
   releaseValues(nodeId: string): PatchBatch {
     return this.#applyLiveById(nodeId, { kind: "release-live", nodeId });
+  }
+
+  /** The node-addressed spelling of `TrackHandle.releaseParam`. */
+  releaseParam(nodeId: string): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "release-live-param", nodeId });
   }
 
   /** Runs `recipe` as one value batch: verbs write immediately, answer deferred batches; one publication at close; nothing staged = empty batch; disposed = `ProjectRuntime is disposed.` */
@@ -1065,7 +1103,9 @@ export class ProjectRuntime {
     return Object.freeze({
       seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
       writeValues: (nodeId: string, value: Value) => runtime.writeValues(nodeId, value),
+      writeParam: (nodeId: string, value: Value) => runtime.writeParam(nodeId, value),
       releaseValues: (nodeId: string) => runtime.releaseValues(nodeId),
+      releaseParam: (nodeId: string) => runtime.releaseParam(nodeId),
       track: (nodeId: string) => runtime.track(nodeId),
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });

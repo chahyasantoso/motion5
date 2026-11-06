@@ -1,19 +1,10 @@
+import type { ValueChannel } from "../contract/v5";
 import { unreachable } from "../lang/exhaustive";
 
-/**
- * What a compiled Track carries beyond the definition it was built from, as a closed union.
- *
- * Two states: the compiled Track is exactly its definition, or a whole-value live overlay stands on
- * it. The legacy mask/timeline split and its animated variant retired with the mask seam; an
- * identified-table write replaces the evaluated table or record wholesale, so there is no second
- * half to distinguish and a fresh compilation is the one thing that clears it.
- *
- * The overlay's value is deliberately not carried. The compiled Track owns it, and both readers here
- * ask only whether one is standing. Issue #443, phase A step 4. See ADR-059, ADR-060 and ADR-066.
- */
+/** What a compiled Track carries: exactly its definition, or live overlays on input channels. */
 declare const VALUE_STATE_BRAND: unique symbol;
 
-/** The mint mark, so a shape assembled somewhere else is not a state. See issue #387. */
+/** The mint mark, so a shape assembled somewhere else is not a state. */
 interface ValueStateBrand {
   readonly [VALUE_STATE_BRAND]: true;
 }
@@ -30,6 +21,8 @@ interface AuthoredShape {
 
 interface WrittenShape {
   readonly kind: "written";
+  readonly values: boolean;
+  readonly param: boolean;
 }
 
 /** Whether a live write stands on one node's compiled Track. */
@@ -38,27 +31,96 @@ export type ValueState = Minted<AuthoredShape> | Minted<WrittenShape>;
 /** The compiled Track is exactly its definition: freshly built, or never written to since. */
 export const AUTHORED: ValueState = mint<AuthoredShape>({ kind: "authored" });
 
-/**
- * A whole-value live overlay stands on an identified-table Track.
- *
- * The two facts its readers need, in one state: a live write stands, and a fresh compilation is
- * what clears it.
- */
-export const LIVE: ValueState = mint<WrittenShape>({ kind: "written" });
+/** A whole-value live overlay stands on `input.values`. */
+export const LIVE_VALUES: ValueState = mint<WrittenShape>({
+  kind: "written",
+  values: true,
+  param: false,
+});
 
-/**
- * Whether a replacement owes a timeline build even when its compiled inputs compare equal.
- *
- * The live overlay has no inverse, so only a successful fresh compilation removes it. Asked second
- * in the derivation's predicate and never first: the candidate resolve beside it is a validator,
- * and a short-circuit deletes a validator rather than a cost. See ADR-066 and `RA-105`.
- */
+/** A whole-param live overlay stands on `input.param`. */
+export const LIVE_PARAM: ValueState = mint<WrittenShape>({
+  kind: "written",
+  values: false,
+  param: true,
+});
+
+/** Live overlays stand on both input channels. */
+export const LIVE_BOTH: ValueState = mint<WrittenShape>({
+  kind: "written",
+  values: true,
+  param: true,
+});
+
+function liveState(values: boolean, param: boolean): ValueState {
+  if (values) return param ? LIVE_BOTH : LIVE_VALUES;
+  return param ? LIVE_PARAM : AUTHORED;
+}
+
+interface ChannelFlags {
+  readonly values: boolean;
+  readonly param: boolean;
+}
+
+const VALUES_FLAGS: ChannelFlags = Object.freeze({ values: true, param: false });
+const PARAM_FLAGS: ChannelFlags = Object.freeze({ values: false, param: true });
+
+function channelFlags(channel: ValueChannel): ChannelFlags {
+  switch (channel) {
+    case "values":
+      return VALUES_FLAGS;
+    case "param":
+      return PARAM_FLAGS;
+    default:
+      return unreachable(channel);
+  }
+}
+
+/** Whether a live overlay stands on the named channel. */
+export function liveOn(state: ValueState, channel: ValueChannel): boolean {
+  switch (state.kind) {
+    case "authored":
+      return false;
+    case "written":
+      return state[channel];
+    default:
+      return unreachable(state);
+  }
+}
+
+/** The state after one channel's overlay stands, keeping the other channel's overlay. */
+export function withLiveChannel(state: ValueState, channel: ValueChannel): ValueState {
+  const flags = channelFlags(channel);
+  switch (state.kind) {
+    case "authored":
+      return liveState(flags.values, flags.param);
+    case "written":
+      return liveState(state.values || flags.values, state.param || flags.param);
+    default:
+      return unreachable(state);
+  }
+}
+
+/** The state after one channel's overlay is dropped, keeping the other channel's overlay. */
+export function withoutLiveChannel(state: ValueState, channel: ValueChannel): ValueState {
+  const flags = channelFlags(channel);
+  switch (state.kind) {
+    case "authored":
+      return AUTHORED;
+    case "written":
+      return liveState(state.values && !flags.values, state.param && !flags.param);
+    default:
+      return unreachable(state);
+  }
+}
+
+/** Whether a replacement owes a timeline build even when its compiled inputs compare equal. */
 export function buildOwed(state: ValueState): boolean {
   switch (state.kind) {
     case "authored":
       return false;
     case "written":
-      return true;
+      return state.values || state.param;
     default:
       return unreachable(state);
   }

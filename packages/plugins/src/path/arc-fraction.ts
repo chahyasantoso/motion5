@@ -73,10 +73,7 @@ function evaluateSegment(c: CubicPath2dCells, u: number): Point2dCells {
   return { x, y, rotation };
 }
 
-/**
- * Pure arc-length parameterization for a cubic Bézier path.
- * Evaluates the world position and tangent angle at arc-length fraction s in [0, 1].
- */
+/** Evaluates world position and tangent angle at arc-length fraction s in [0, 1]. */
 export function pointAtArcFraction(
   segments: readonly { readonly cells: CubicPath2dCells }[],
   s: number,

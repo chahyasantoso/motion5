@@ -105,7 +105,6 @@ function project(ids: Ids = IDS, motion = "demo"): ProjectDefinition {
             id: ids.pose,
             output: { plugin: "fk" },
             input: {
-              values: {},
               requires: { chain: ids.body, solved: ids.solve, base: ids.root },
             },
           },
@@ -481,21 +480,35 @@ describe("aggregate 2D FK", () => {
     expect(poses(renamed, "other/pose")).toEqual(poses(open(project())));
   });
 
-  it("AK-12a refuses computed row-set changes and recovers when the chain is replaced", () => {
+  it("AK-12a refuses a source row-set change that strands the reader, and recovers when the chain is replaced", () => {
     const handle = open(project());
-    handle.track("demo/body").input.replace({
-      values: [
-        { id: "trunk", cells: { length: 20, rotation: 0 } },
-        { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
-        { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
-        { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
-      ],
-    });
-    handle.track("demo/goals").input.replace({
-      values: [
-        { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } },
-        { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
-      ],
+    expect(() =>
+      handle.track("demo/body").input.replace({
+        values: [
+          { id: "trunk", cells: { length: 20, rotation: 0 } },
+          { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
+          { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
+          { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
+        ],
+      }),
+    ).toThrow(/ik-leaf-without-goal/);
+    expect(poses(handle).map((row) => row.id)).toEqual(["trunk", "left-upper", "left-lower"]);
+
+    handle.edit((transaction) => {
+      transaction.track("demo/body").input.replace({
+        values: [
+          { id: "trunk", cells: { length: 20, rotation: 0 } },
+          { id: "left-upper", cells: { parentId: "trunk", length: 10, rotation: 0 } },
+          { id: "left-lower", cells: { parentId: "left-upper", length: 10, rotation: 0 } },
+          { id: "left-lower-2", cells: { parentId: "left-upper", length: 8, rotation: 0 } },
+        ],
+      });
+      transaction.track("demo/goals").input.replace({
+        values: [
+          { id: "left-hand", cells: { memberId: "left-lower", x: 12, y: 8 } },
+          { id: "left-hand-2", cells: { memberId: "left-lower-2", x: 4, y: 12 } },
+        ],
+      });
     });
     expect(handle.get("demo/pose")?.status).toBe("blocked");
     expect(handle.get("demo/solve")?.diagnostics.map((d) => d.ruleId)).toContain(
@@ -513,7 +526,7 @@ describe("aggregate 2D FK", () => {
     handle.track("demo/pose").replace({
       id: "pose",
       output: { plugin: "fk" },
-      input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+      input: { requires: { chain: "body", solved: "solve", base: "root" } },
     });
     expect(handle.get("demo/pose")?.status).toBe("ready");
     expect(poses(handle).map((row) => row.id)).toEqual([

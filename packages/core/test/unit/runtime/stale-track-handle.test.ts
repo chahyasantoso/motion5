@@ -66,7 +66,9 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   remove: [],
   replace: [{ id: "arm", output: { model: "TestTable" } } satisfies TrackDefinition],
   writeValues: [[]],
+  writeParam: [{}],
   releaseValues: [],
+  releaseParam: [],
 };
 /** The members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live", "input"] as const;
@@ -84,7 +86,14 @@ const NON_REFUSING = ["id", "live", "input"] as const;
  * gone; a read reported as staleness is true, and it is the family that record asked callers to
  * catch.
  */
-const WRITERS = ["remove", "replace", "writeValues", "releaseValues"] as const;
+const WRITERS = [
+  "remove",
+  "replace",
+  "writeValues",
+  "writeParam",
+  "releaseValues",
+  "releaseParam",
+] as const;
 /** The two members that refuse on a stale handle and keep refusing on a disposed one. */
 const READERS = ["definition", "requires"] as const;
 

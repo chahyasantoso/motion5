@@ -59,6 +59,10 @@ export class Track {
     this.#processor.replaceParam?.(param);
   }
 
+  replaceParamOverlay(value: Value | undefined): void {
+    this.#processor.replaceParamOverlay?.(value);
+  }
+
   replaceOverlay(value: Value | undefined): void {
     this.#localInput.replaceOverlay(value);
   }

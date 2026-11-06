@@ -143,7 +143,6 @@ export const ik3dPlaygroundTracks: readonly TrackDefinition[] = [
     id: IK3D.poseTrack,
     output: { plugin: "fk3d" },
     input: {
-      values: {},
       requires: {
         chain: IK3D.bodyTrack,
         solved: IK3D.solverTrack,

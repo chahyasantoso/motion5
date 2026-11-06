@@ -95,7 +95,8 @@ refused. `yoyo` requires a repeat that actually repeats.
   `{ plugin: "<camelCase>" }` for a computed track. A track without `output`, or with both or
   neither key, is refused.
 - `input.values` is optional and is the track's local authored value. A source track publishes the
-  evaluated value; a computed track passes it to the plugin as `values`.
+  evaluated value; a computed track passes it to the plugin as `values`. It is refused on a computed
+  track whose plugin declares no `inputs.values`.
 - `input.param` is optional and carries the plugin's parameters. It is refused on a model output
   and on a plugin that declares no `inputs.param`.
 - `input.requires` is optional, computed tracks only, and binds declared plugin slots to source node
@@ -196,9 +197,10 @@ rather than loading partially.
 Track shape refusals are `output-missing` when no output is named, `output-invalid` when the output
 is malformed or names both keys, `model-unknown` and `plugin-unknown` for unregistered names,
 `type-field-retired` and `input-schema-retired` for the retired authored members, `param-not-allowed`
-for a param on a model output or a plugin without `inputs.param`, and `requires-not-allowed` for
-bindings on a model output. An unregistered plugin id is refused by the parser; a plugin without a
-`transform` is refused at admission as `plugin-transform-missing`.
+for a param on a model output or a plugin without `inputs.param`, `values-not-allowed` for values on a
+plugin without `inputs.values`, and `requires-not-allowed` for bindings on a model output. An
+unregistered plugin id is refused by the parser; a plugin without a `transform` is refused at
+admission as `plugin-transform-missing`.
 
 There is no migration entry point. An authored v4 document or an authored grouped document must be
 rewritten to this contract before it is loaded; retaining `migrateV4ToV5` was rejected because its

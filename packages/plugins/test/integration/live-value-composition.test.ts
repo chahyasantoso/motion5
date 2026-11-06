@@ -48,13 +48,12 @@ const PROJECT: ProjectDefinition = {
         {
           id: "arm-solve",
           output: { plugin: "ik" },
-          input: { values: {}, requires: { chain: "body", goals: "goals", base: "shoulder" } },
+          input: { requires: { chain: "body", goals: "goals", base: "shoulder" } },
         },
         {
           id: "pose",
           output: { plugin: "fk" },
           input: {
-            values: {},
             requires: { chain: "body", solved: "arm-solve", base: "shoulder" },
           },
         },

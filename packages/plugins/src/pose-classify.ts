@@ -196,7 +196,6 @@ export function createPoseClassifyPlugin(options: PoseClassifyOptions): PluginDe
   return {
     id: name,
     inputs: {
-      values: { kind: "record", fields: {} },
       requires: {
         pose: shape({ outputs: { values: POSE } }),
       },

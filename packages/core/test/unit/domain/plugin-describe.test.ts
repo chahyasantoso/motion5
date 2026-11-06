@@ -35,6 +35,18 @@ const PLUGIN: PluginDefinition = {
   },
 };
 
+const PARAM_ONLY: PluginDefinition = {
+  id: "param-only",
+  inputs: {
+    param: { kind: "record", fields: { flip: { kind: "boolean" } } },
+    requires: { body: PointModel },
+  },
+  outputs: { values: POINT },
+  transform() {
+    return { values: [] };
+  },
+};
+
 describe("catalog describe", () => {
   it("reports declared model and shape slots without exposing the definition", () => {
     const catalog = new PluginCatalog({ models: testModels });
@@ -42,6 +54,8 @@ describe("catalog describe", () => {
 
     const description = catalog.describe("probe");
     expect(description?.id).toBe("probe");
+    expect(description?.values).toEqual({ kind: "record", fields: {} });
+    expect(description?.param).toBeUndefined();
     expect(description?.outputs).toEqual({ values: POINT });
     expect(description?.requires.body).toEqual({
       kind: "model",
@@ -55,5 +69,14 @@ describe("catalog describe", () => {
       binding: "single",
     });
     expect(catalog.describe("missing")).toBeUndefined();
+  });
+
+  it("omits values a plugin does not declare and reports its param", () => {
+    const catalog = new PluginCatalog({ models: testModels });
+    catalog.register(PARAM_ONLY);
+
+    const description = catalog.describe("param-only");
+    expect(description?.values).toBeUndefined();
+    expect(description?.param).toEqual({ kind: "record", fields: { flip: { kind: "boolean" } } });
   });
 });

@@ -1,4 +1,6 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
+import { outputPluginId } from "../contract/v5";
+import { boundSources } from "../graph/dependency-edges";
 import { unreachable } from "../lang/exhaustive";
 import { buildOwed, type ValueState } from "./value-state";
 /** Effects precede acceptance, owe inverse; settlements follow, owe none; no step is both. `planCommit` pure; `run-plan.ts` owns impure walk. */
@@ -215,11 +217,89 @@ export interface CommitPreflight {
   readonly noBuild: ReadonlySet<string>;
 }
 
-/** What one commit does, what it settles after, and the nodes its publication seeds. */
+/** One computed track whose `prepare` runs again against the candidate sources before acceptance. */
+export interface ReaderCheck {
+  readonly nodeId: string;
+  readonly track: TrackDefinition;
+  readonly ownerId: string;
+}
+
+/** What one commit does, what it settles after, which readers owe a fresh `prepare`, and the nodes its publication seeds. */
 export interface CommitPlan {
   readonly effects: readonly Effect[];
   readonly settle: readonly Settlement[];
   readonly touched: readonly string[];
+  readonly prepareReaders: readonly ReaderCheck[];
+  readonly staleSources: ReadonlySet<string>;
+}
+
+/** Track ids whose definition differs between the retained and candidate documents. */
+function changedNodes(retained: CommitDocument, candidate: CommitDocument): ReadonlySet<string> {
+  const changed = new Set<string>();
+  for (const [nodeId, entry] of candidate.tracks) {
+    const previous = retained.tracks.get(nodeId);
+    if (previous === undefined || previous.track !== entry.track) changed.add(nodeId);
+  }
+  for (const nodeId of retained.tracks.keys())
+    if (!candidate.tracks.has(nodeId)) changed.add(nodeId);
+  return changed;
+}
+
+/** Computed tracks reachable from a changed node, whose cached output structure must not be reused. */
+function staleComputedSources(
+  candidate: CommitDocument,
+  changed: ReadonlySet<string>,
+): ReadonlySet<string> {
+  if (changed.size === 0) return changed;
+  const dependents = new Map<string, string[]>();
+  for (const [nodeId, entry] of candidate.tracks) {
+    if (outputPluginId(entry.track.output) === undefined) continue;
+    const ownerId = plannedMotionId(entry) ?? "~";
+    for (const bound of boundSources(entry.track, ownerId)) {
+      const list = dependents.get(bound.sourceId);
+      if (list === undefined) dependents.set(bound.sourceId, [nodeId]);
+      else list.push(nodeId);
+    }
+  }
+  const stale = new Set<string>();
+  const queued = new Set(changed);
+  const queue = [...changed];
+  while (queue.length > 0) {
+    const sourceId = queue.pop()!;
+    const entry = candidate.tracks.get(sourceId);
+    if (entry !== undefined && outputPluginId(entry.track.output) !== undefined)
+      stale.add(sourceId);
+    for (const dependent of dependents.get(sourceId) ?? []) {
+      if (queued.has(dependent)) continue;
+      queued.add(dependent);
+      queue.push(dependent);
+    }
+  }
+  return stale;
+}
+
+/** Computed tracks whose own definition moved, or whose bound source moved, owe a fresh `prepare`. */
+function prepareChecks(
+  candidate: CommitDocument,
+  changed: ReadonlySet<string>,
+): readonly ReaderCheck[] {
+  if (changed.size === 0) return Object.freeze([]);
+  const checks: ReaderCheck[] = [];
+  for (const [nodeId, entry] of candidate.tracks) {
+    if (outputPluginId(entry.track.output) === undefined) continue;
+    const ownerId = plannedMotionId(entry) ?? "~";
+    let affected = changed.has(nodeId);
+    if (!affected) {
+      for (const bound of boundSources(entry.track, ownerId)) {
+        if (changed.has(bound.sourceId)) {
+          affected = true;
+          break;
+        }
+      }
+    }
+    if (affected) checks.push(Object.freeze({ nodeId, track: entry.track, ownerId }));
+  }
+  return Object.freeze(checks);
 }
 
 /** The plan that moves `retained` to `candidate`, derived whole from the final pair, never a log. Pure; step order below is the contract, not loop accident. */
@@ -300,10 +380,13 @@ export function planCommit(
   settle.push(
     mintSettlement<PublishShape>({ kind: "publish", seeds: Object.freeze([...touched]) }),
   );
+  const changed = changedNodes(retained, candidate);
   return Object.freeze({
     effects: Object.freeze(effects),
     settle: Object.freeze(settle),
     touched: Object.freeze(touched),
+    prepareReaders: prepareChecks(candidate, changed),
+    staleSources: staleComputedSources(candidate, changed),
   });
 }
 

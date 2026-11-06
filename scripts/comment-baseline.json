@@ -320,10 +320,6 @@
     "count": 2
   },
   {
-    "path": "packages/core/src/runtime/value-state.ts",
-    "count": 11
-  },
-  {
     "path": "packages/core/src/runtime/value-validation.ts",
     "count": 2
   },

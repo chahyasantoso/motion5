@@ -107,9 +107,24 @@ export class RuntimeTrackHandle implements TrackHandle {
     });
   }
 
+  writeParam(param: Value): PatchBatch {
+    return this.#host.applyLive(this.#id, this.#token, {
+      kind: "write-live-param",
+      nodeId: this.#id,
+      value: param,
+    });
+  }
+
   releaseValues(): PatchBatch {
     return this.#host.applyLive(this.#id, this.#token, {
       kind: "release-live",
+      nodeId: this.#id,
+    });
+  }
+
+  releaseParam(): PatchBatch {
+    return this.#host.applyLive(this.#id, this.#token, {
+      kind: "release-live-param",
       nodeId: this.#id,
     });
   }

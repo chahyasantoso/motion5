@@ -107,7 +107,6 @@ export function skeletonTracks(
       id: poseId,
       output: { plugin: "fk3d" },
       input: {
-        values: {},
         requires: {
           chain: bodyId,
           solved: solvedId,

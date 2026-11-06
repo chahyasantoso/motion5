@@ -85,7 +85,6 @@ const PROJECT: ProjectDefinition = {
           id: "chain-solve",
           output: { plugin: "ik3d" },
           input: {
-            values: {},
             requires: { chain: "chain-body", goals: "chain-goals", base: "root" },
           },
         },
@@ -93,7 +92,6 @@ const PROJECT: ProjectDefinition = {
           id: "chain-pose",
           output: { plugin: "fk3d" },
           input: {
-            values: {},
             requires: { chain: "chain-body", solved: "chain-solve", base: "root" },
           },
         },
@@ -167,7 +165,6 @@ const PROJECT: ProjectDefinition = {
           id: "tree-pose",
           output: { plugin: "fk3d" },
           input: {
-            values: {},
             requires: { chain: "tree-body", solved: "tree-solve", base: "root" },
           },
         },

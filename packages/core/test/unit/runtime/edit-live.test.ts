@@ -21,7 +21,7 @@ import {
   type PlannedTrack,
 } from "../../../src/runtime/edit-plan";
 import { isValue } from "../../../src/runtime/value-validation";
-import { AUTHORED, LIVE } from "../../../src/runtime/value-state";
+import { AUTHORED, LIVE_VALUES } from "../../../src/runtime/value-state";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModel, testModels } from "../../support/test-models";
 
@@ -204,7 +204,7 @@ describe("write-live validates the whole evaluated value and moves nothing autho
     );
     expect(after?.track).toBe(before?.track);
     expect(after?.contract).toBe(before?.contract);
-    expect(after?.valueState).toBe(LIVE);
+    expect(after?.valueState).toBe(LIVE_VALUES);
   });
 
   it("refuses a row-count change because row ids are static", () => {
@@ -307,7 +307,7 @@ describe("write-live validates the whole evaluated value and moves nothing autho
         environment(plugins),
       ),
     );
-    expect(acceptedValue.state.tracks.get("demo/shifted")?.valueState).toBe(LIVE);
+    expect(acceptedValue.state.tracks.get("demo/shifted")?.valueState).toBe(LIVE_VALUES);
   });
 
   it("validates extra fields for open and closed record and table specs", () => {
@@ -456,7 +456,7 @@ describe("release-live drops the overlay and is a no-op when none stands", () =>
     const entry = committed.tracks.get("demo/record");
     if (entry === undefined) throw new Error("Fixture has no record.");
     const liveState: PlanState = {
-      tracks: new Map([["demo/record", { ...entry, valueState: LIVE }]]),
+      tracks: new Map([["demo/record", { ...entry, valueState: LIVE_VALUES }]]),
     };
     const outcome = accepted(
       plan(liveState, { kind: "release-live", nodeId: "demo/record" }, environment()),
@@ -473,7 +473,7 @@ describe("release-live drops the overlay and is a no-op when none stands", () =>
     const entry = committed.tracks.get("demo/record");
     if (entry === undefined) throw new Error("Fixture has no record.");
     const liveState: PlanState = {
-      tracks: new Map([["demo/record", { ...entry, valueState: LIVE }]]),
+      tracks: new Map([["demo/record", { ...entry, valueState: LIVE_VALUES }]]),
     };
     const outcome = accepted(
       plan(
@@ -483,7 +483,7 @@ describe("release-live drops the overlay and is a no-op when none stands", () =>
       ),
     );
 
-    expect(outcome.state.tracks.get("demo/record")?.valueState).toBe(LIVE);
+    expect(outcome.state.tracks.get("demo/record")?.valueState).toBe(LIVE_VALUES);
     expect(outcome.state.tracks.get("demo/record")?.track.input?.values).toEqual({
       a: 5,
       b: 2,

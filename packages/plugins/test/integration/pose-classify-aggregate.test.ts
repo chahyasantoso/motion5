@@ -206,17 +206,17 @@ describe("aggregate pose-classify binding (AP)", () => {
             {
               id: "solve",
               output: { plugin: "ik" },
-              input: { values: {}, requires: { chain: "body", goals: "goals", base: "root" } },
+              input: { requires: { chain: "body", goals: "goals", base: "root" } },
             },
             {
               id: "pose",
               output: { plugin: "fk" },
-              input: { values: {}, requires: { chain: "body", solved: "solve", base: "root" } },
+              input: { requires: { chain: "body", solved: "solve", base: "root" } },
             },
             {
               id: "classifier",
               output: { plugin: "pose-classify" },
-              input: { values: {}, requires: { pose: "pose" } },
+              input: { requires: { pose: "pose" } },
             },
           ],
         },

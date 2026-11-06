@@ -139,9 +139,7 @@ function derivedInputDiagnostics(
     const definition = context.pluginDefinition?.(parsed.output.plugin);
     if (definition === undefined) return [];
     const rawValues = definition.inputs.values;
-    const valuesSpec = isModel(rawValues)
-      ? rawValues.spec
-      : (rawValues ?? { kind: "record" as const, fields: {} });
+    const valuesSpec = isModel(rawValues) ? rawValues.spec : rawValues;
     const diagnostics = [
       ...deriveSourceContract(parsed.input.values, valuesSpec, `${path}.input.values`, "plugin")
         .diagnostics,

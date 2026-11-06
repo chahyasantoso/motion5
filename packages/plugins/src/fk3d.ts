@@ -34,7 +34,6 @@ function solvedOrientation(row: SolvedRow): Euler3d {
 export const fk3dPlugin = definePlugin({
   id: "fk3d",
   inputs: {
-    values: { kind: "record", fields: {} },
     requires: {
       chain: Body3d,
       solved: optional(Solved3d),
