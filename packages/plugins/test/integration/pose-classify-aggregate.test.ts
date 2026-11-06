@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { fkPlugin } from "../../src/fk";
-import { fk3dPlugin } from "../../src/fk3d";
-import { ikPlugin } from "../../src/ik";
-import { ik3dPlugin } from "../../src/ik3d";
-import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose-classify";
+import { fkPlugin } from "../../src/fk/fk";
+import { fk3dPlugin } from "../../src/fk/fk3d";
+import { ikPlugin } from "../../src/ik/ik";
+import { ik3dPlugin } from "../../src/ik/ik3d";
+import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose/pose-classify";
 import { testModels } from "../../../core/test/support/test-models";
 import { Spec } from "@motion5/core/plugin-api";
 

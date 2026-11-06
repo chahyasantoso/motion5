@@ -1,4 +1,4 @@
-import { Goals2d, Point2d } from "../../src/models";
+import { Goals2d, Point2d } from "../../src/models/index";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "@motion5/core";
 import { PluginCatalog } from "@motion5/core";
@@ -8,21 +8,21 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
-import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
-import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
-import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";
-import type { JointRange } from "../../src/ik-constraint";
-import { solveLength, solveOffset, type SolveMember } from "../../src/ik-member";
-import type { SolveResult } from "../../src/ik-result";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/ik/fabrik/fabrik";
+import { fabrikAlternatives, outranks } from "../../src/ik/fabrik/select";
+import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame/frame";
+import type { JointRange } from "../../src/ik/shared/constraint";
+import { solveLength, solveOffset, type SolveMember } from "../../src/ik/shared/member";
+import type { SolveResult } from "../../src/ik/shared/result";
 import {
   SOLVE_MAGNITUDE_CEILING,
   restoreResult,
   scaleRig,
   solveMagnitude,
-} from "../../src/ik-scale";
-import { chainShape, solveChain } from "../../src/ik-solve";
-import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../src/frame3d";
-import { solveTwoBone3d } from "../../src/ik3d-analytic";
+} from "../../src/ik/shared/scale";
+import { chainShape, solveChain } from "../../src/ik/solve2d/solve";
+import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../src/frame/frame3d";
+import { solveTwoBone3d } from "../../src/ik/solve3d/analytic";
 import { testModels } from "../../../core/test/support/test-models";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.

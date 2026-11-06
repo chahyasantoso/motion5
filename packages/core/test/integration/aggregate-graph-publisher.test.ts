@@ -16,9 +16,9 @@ import { buildGraphIR, deriveDependants, type GraphNode } from "../../src/graph/
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import { GraphPublisher } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { ikPlugin } from "../../../plugins/src/ik";
-import { fkPlugin } from "../../../plugins/src/fk";
-import { Points2d, Body2d, Goals2d, Point2d } from "../../../plugins/src/models";
+import { ikPlugin } from "../../../plugins/src/ik/ik";
+import { fkPlugin } from "../../../plugins/src/fk/fk";
+import { Points2d, Body2d, Goals2d, Point2d } from "../../../plugins/src/models/index";
 import { testModels } from "../support/test-models";
 import { defineModel } from "../../src/contract/v5";
 import { Spec } from "../../src/contract/spec-builder";

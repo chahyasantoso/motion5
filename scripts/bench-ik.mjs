@@ -7,7 +7,7 @@
 // of the envelope (which strategy each scenario
 // reaches, whether every answer is finite and inside the iteration cap, and whether rigs couple) is
 // asserted by `EN-` in `packages/plugins/test/integration/ik-envelope.test.ts` for 2D and by `TH-71`
-// to `TH-74` in `packages/plugins/test/unit/ik3d-envelope.test.ts` for 3D, and is not
+// to `TH-74` in `packages/plugins/test/unit/ik/solve3d/envelope.test.ts` for 3D, and is not
 // re-asserted here.
 //
 // The rigs are `packages/plugins/test/support/ik-envelope.ts` and
@@ -55,15 +55,15 @@ const src = "../packages/core/src";
 const plugins = "../packages/plugins/src";
 const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(support);
 const { envelope3dScenarios } = await import(support3d);
-const { solveChain } = await import(`${plugins}/ik-solve.ts`);
-const { solveChain3d } = await import(`${plugins}/ik3d-solve.ts`);
+const { solveChain } = await import(`${plugins}/ik/solve2d/solve.ts`);
+const { solveChain3d } = await import(`${plugins}/ik/solve3d/solve.ts`);
 const { PluginCatalog } = await import(`${src}/domain/plugin-catalog.ts`);
 const { Engine } = await import(`${src}/engine.ts`);
 const { createManualClock } = await import(`${src}/ports/clock.ts`);
 const { createFakeInterpolator, createFakeScheduler } = await import(`${src}/testing/fakes.ts`);
-const { transformPlugin } = await import(`${plugins}/transform.ts`);
-const { fkPlugin } = await import(`${plugins}/fk.ts`);
-const { ikPlugin } = await import(`${plugins}/ik.ts`);
+const { transformPlugin } = await import(`${plugins}/transform/transform.ts`);
+const { fkPlugin } = await import(`${plugins}/fk/fk.ts`);
+const { ikPlugin } = await import(`${plugins}/ik/ik.ts`);
 
 /**
  * The median of `samples` runs of `body`, each repeated until it has run for at least `floorMs`.

@@ -328,19 +328,19 @@
     "count": 9
   },
   {
-    "path": "packages/plugins/src/ik3d-result.ts",
+    "path": "packages/plugins/src/ik/solve3d/result.ts",
     "count": 6
   },
   {
-    "path": "packages/plugins/src/labels.ts",
+    "path": "packages/plugins/src/host/labels.ts",
     "count": 4
   },
   {
-    "path": "packages/plugins/src/loader.ts",
+    "path": "packages/plugins/src/host/loader.ts",
     "count": 3
   },
   {
-    "path": "packages/plugins/src/pose-classify.ts",
+    "path": "packages/plugins/src/pose/pose-classify.ts",
     "count": 3
   },
   {

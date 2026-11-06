@@ -12,48 +12,48 @@
   },
   "exports": {
     "./transform": {
-      "types": "./dist/transform.d.ts",
-      "default": "./dist/transform.js"
+      "types": "./dist/transform/transform.d.ts",
+      "default": "./dist/transform/transform.js"
     },
     "./fk": {
-      "types": "./dist/fk.d.ts",
-      "default": "./dist/fk.js"
+      "types": "./dist/fk/fk.d.ts",
+      "default": "./dist/fk/fk.js"
     },
     "./ik": {
-      "types": "./dist/ik.d.ts",
-      "default": "./dist/ik.js"
+      "types": "./dist/ik/ik.d.ts",
+      "default": "./dist/ik/ik.js"
     },
     "./transform3d": {
-      "types": "./dist/transform3d.d.ts",
-      "default": "./dist/transform3d.js"
+      "types": "./dist/transform/transform3d.d.ts",
+      "default": "./dist/transform/transform3d.js"
     },
     "./fk3d": {
-      "types": "./dist/fk3d.d.ts",
-      "default": "./dist/fk3d.js"
+      "types": "./dist/fk/fk3d.d.ts",
+      "default": "./dist/fk/fk3d.js"
     },
     "./ik3d": {
-      "types": "./dist/ik3d.d.ts",
-      "default": "./dist/ik3d.js"
+      "types": "./dist/ik/ik3d.d.ts",
+      "default": "./dist/ik/ik3d.js"
     },
     "./frame3d": {
-      "types": "./dist/frame3d.d.ts",
-      "default": "./dist/frame3d.js"
+      "types": "./dist/frame/frame3d.d.ts",
+      "default": "./dist/frame/frame3d.js"
     },
     "./loader": {
-      "types": "./dist/loader.d.ts",
-      "default": "./dist/loader.js"
+      "types": "./dist/host/loader.d.ts",
+      "default": "./dist/host/loader.js"
     },
     "./labels": {
-      "types": "./dist/labels.d.ts",
-      "default": "./dist/labels.js"
+      "types": "./dist/host/labels.d.ts",
+      "default": "./dist/host/labels.js"
     },
     "./models": {
-      "types": "./dist/models.d.ts",
-      "default": "./dist/models.js"
+      "types": "./dist/models/index.d.ts",
+      "default": "./dist/models/index.js"
     },
     "./pose-classify": {
-      "types": "./dist/pose-classify.d.ts",
-      "default": "./dist/pose-classify.js"
+      "types": "./dist/pose/pose-classify.d.ts",
+      "default": "./dist/pose/pose-classify.js"
     },
     "./path/anchors-to-cubic": {
       "types": "./dist/path/anchors-to-cubic.d.ts",
@@ -72,8 +72,8 @@
       "default": "./dist/path/draw.js"
     },
     "./runner": {
-      "types": "./dist/runner.d.ts",
-      "default": "./dist/runner.js"
+      "types": "./dist/host/runner.d.ts",
+      "default": "./dist/host/runner.js"
     }
   }
 }

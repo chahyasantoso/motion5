@@ -23,6 +23,18 @@
       "@motion5/core/*": ["packages/core/src/*"],
       "@motion5/react": ["packages/react/src/index.ts"],
       "@motion5/plugins/internal/legacy/*": ["packages/plugins/src/legacy/*"],
+      "@motion5/plugins/fk": ["packages/plugins/src/fk/fk.ts"],
+      "@motion5/plugins/fk3d": ["packages/plugins/src/fk/fk3d.ts"],
+      "@motion5/plugins/frame3d": ["packages/plugins/src/frame/frame3d.ts"],
+      "@motion5/plugins/ik": ["packages/plugins/src/ik/ik.ts"],
+      "@motion5/plugins/ik3d": ["packages/plugins/src/ik/ik3d.ts"],
+      "@motion5/plugins/labels": ["packages/plugins/src/host/labels.ts"],
+      "@motion5/plugins/loader": ["packages/plugins/src/host/loader.ts"],
+      "@motion5/plugins/models": ["packages/plugins/src/models/index.ts"],
+      "@motion5/plugins/pose-classify": ["packages/plugins/src/pose/pose-classify.ts"],
+      "@motion5/plugins/runner": ["packages/plugins/src/host/runner.ts"],
+      "@motion5/plugins/transform": ["packages/plugins/src/transform/transform.ts"],
+      "@motion5/plugins/transform3d": ["packages/plugins/src/transform/transform3d.ts"],
       "@motion5/plugins/*": ["packages/plugins/src/*"]
     },
     "jsx": "react-jsx"

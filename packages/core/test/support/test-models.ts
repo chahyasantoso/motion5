@@ -1,5 +1,5 @@
 import { defineModel, type Model } from "../../src/contract/v5";
-import { builtinModels } from "../../../plugins/src/models";
+import { builtinModels } from "../../../plugins/src/models/index";
 import { Spec } from "../../src/contract/spec-builder";
 
 /** Open record used by fixtures whose source has no narrower contract. */

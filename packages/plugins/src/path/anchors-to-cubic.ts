@@ -1,5 +1,5 @@
 import { definePlugin } from "@motion5/core/plugin-api";
-import { Anchors2d, CubicPath2d, type CubicPath2dCells } from "./models";
+import { Anchors2d, CubicPath2d, type CubicPath2dCells } from "../models/path";
 
 export const anchorsToCubicPlugin = definePlugin({
   id: "anchorsToCubic",

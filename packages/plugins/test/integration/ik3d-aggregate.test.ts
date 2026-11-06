@@ -3,9 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { Spec, defineModel } from "@motion5/core/plugin-api";
-import { ik3dPlugin } from "../../src/ik3d";
-import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models";
-import { goalDiagnostics } from "../../src/goals/check";
+import { ik3dPlugin } from "../../src/ik/ik3d";
+import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models/index";
+import { goalDiagnostics } from "../../src/ik/shared/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
@@ -16,8 +16,8 @@ const Pole3d = defineModel({
 });
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/ik3d-solve", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/ik3d-solve")>();
+vi.mock("../../src/ik/solve3d/solve", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/ik/solve3d/solve")>();
   return {
     ...original,
     solveChain3d: (...args: Parameters<typeof original.solveChain3d>) => {

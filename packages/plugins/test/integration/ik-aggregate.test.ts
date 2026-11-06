@@ -2,16 +2,16 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { ikPlugin } from "../../src/ik";
-import { Body2d, Goals2d, Point2d, Solved2d } from "../../src/models";
-import { goalDiagnostics } from "../../src/goals/check";
+import { ikPlugin } from "../../src/ik/ik";
+import { Body2d, Goals2d, Point2d, Solved2d } from "../../src/models/index";
+import { goalDiagnostics } from "../../src/ik/shared/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/ik-solve", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/ik-solve")>();
+vi.mock("../../src/ik/solve2d/solve", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/ik/solve2d/solve")>();
   return {
     ...original,
     solveChain: (...args: Parameters<typeof original.solveChain>) => {

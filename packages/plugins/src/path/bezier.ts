@@ -1,6 +1,6 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
-import { Point2d } from "../models";
-import { CubicPath2d } from "./models";
+import { Point2d } from "../models/index";
+import { CubicPath2d } from "../models/path";
 import { pointAtArcFraction } from "./arc-fraction";
 
 export const bezierPlugin = definePlugin({

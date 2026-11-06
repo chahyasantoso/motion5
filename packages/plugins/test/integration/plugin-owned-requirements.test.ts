@@ -1,11 +1,11 @@
-import { Point2d, Solved2d } from "../../src/models";
+import { Point2d, Solved2d } from "../../src/models/index";
 import { describe, expect, it } from "vitest";
 import { Spec, shape } from "@motion5/core/plugin-api";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { Engine, PluginCatalog } from "@motion5/core";
 import type { PluginDefinition } from "@motion5/core/plugin-api";
-import { fkPlugin } from "../../src/fk";
-import { transformPlugin } from "../../src/transform";
+import { fkPlugin } from "../../src/fk/fk";
+import { transformPlugin } from "../../src/transform/transform";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";

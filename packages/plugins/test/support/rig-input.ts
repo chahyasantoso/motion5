@@ -1,9 +1,9 @@
 import type { SourceStructures, Structure } from "@motion5/core/plugin-api";
 import { commitModelStructure } from "@motion5/core/testing";
-import type { BodyStructure } from "../../src/body/domain";
-import type { GoalsStructure } from "../../src/goals/domain";
-import type { SolvedStructure } from "../../src/solved/domain";
-import { Body2d, Body3d, Goals2d, Goals3d, Solved2d, Solved3d } from "../../src/models";
+import type { BodyStructure } from "../../src/models/body/domain";
+import type { GoalsStructure } from "../../src/models/goals/domain";
+import type { SolvedStructure } from "../../src/models/solved/domain";
+import { Body2d, Body3d, Goals2d, Goals3d, Solved2d, Solved3d } from "../../src/models/index";
 
 /** Test-only structures for direct transform calls, branded by the same model parse commit uses. */
 export function bodyStructure(chain: unknown, threeD = false): Structure<BodyStructure> {

@@ -201,11 +201,11 @@
     },
     {
       "id": "ik-solve",
-      "test": "packages/plugins/test/unit/ik-solve.test.ts"
+      "test": "packages/plugins/test/unit/ik/solve2d/solve.test.ts"
     },
     {
       "id": "ik-chain-shape",
-      "test": "packages/plugins/test/unit/ik-chain-shape.test.ts"
+      "test": "packages/plugins/test/unit/ik/shared/chain-shape.test.ts"
     },
     {
       "id": "ik-result",
@@ -233,15 +233,15 @@
     },
     {
       "id": "fabrik-solve",
-      "test": "packages/plugins/test/unit/fabrik-solve.test.ts"
+      "test": "packages/plugins/test/unit/ik/fabrik/solve.test.ts"
     },
     {
       "id": "fabrik-dispatch",
-      "test": "packages/plugins/test/unit/fabrik-dispatch.test.ts"
+      "test": "packages/plugins/test/unit/ik/fabrik/dispatch.test.ts"
     },
     {
       "id": "fabrik-arity-one",
-      "test": "packages/plugins/test/unit/fabrik-arity-one.test.ts"
+      "test": "packages/plugins/test/unit/ik/fabrik/arity-one.test.ts"
     },
     {
       "id": "solver-arity-lift",
@@ -257,7 +257,7 @@
     },
     {
       "id": "angle-blend",
-      "test": "packages/plugins/test/unit/angle-blend.test.ts"
+      "test": "packages/plugins/test/unit/frame/angle-blend.test.ts"
     },
     {
       "id": "fk-solved-weight",
@@ -289,11 +289,11 @@
     },
     {
       "id": "ik-constraint",
-      "test": "packages/plugins/test/unit/ik-constraint.test.ts"
+      "test": "packages/plugins/test/unit/ik/shared/constraint.test.ts"
     },
     {
       "id": "solver-constraints",
-      "test": "packages/plugins/test/unit/ik-constraint.test.ts"
+      "test": "packages/plugins/test/unit/ik/shared/constraint.test.ts"
     },
     {
       "id": "ik-inspection",

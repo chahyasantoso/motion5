@@ -1,7 +1,7 @@
 import { definePlugin, diagnostic, ok, prepareRefused } from "@motion5/core/plugin-api";
-import { Points2d, type Anchor2dCells } from "../models";
-import { Anchors2d, LocalAnchors2d } from "./models";
-import { nonEmptyDiagnostics } from "../prepare-diagnostics";
+import { Points2d, type Anchor2dCells } from "../models/index";
+import { Anchors2d, LocalAnchors2d } from "../models/path";
+import { nonEmptyDiagnostics } from "../shared/prepare-diagnostics";
 
 function turnVector(
   vx: number,

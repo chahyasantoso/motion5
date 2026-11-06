@@ -19,9 +19,9 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
 } from "../../../src/testing/fakes";
-import { Body2d, Goals2d, Point2d, Solved2d } from "../../../../plugins/src/models";
-import { fkPlugin } from "../../../../plugins/src/fk";
-import { ikPlugin } from "../../../../plugins/src/ik";
+import { Body2d, Goals2d, Point2d, Solved2d } from "../../../../plugins/src/models/index";
+import { fkPlugin } from "../../../../plugins/src/fk/fk";
+import { ikPlugin } from "../../../../plugins/src/ik/ik";
 import { testModels } from "../../support/test-models";
 import { Spec } from "../../../src/contract/spec-builder";
 

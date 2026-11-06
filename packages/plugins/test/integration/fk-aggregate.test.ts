@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { ikPlugin } from "../../src/ik";
-import { fkPlugin } from "../../src/fk";
+import { ikPlugin } from "../../src/ik/ik";
+import { fkPlugin } from "../../src/fk/fk";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
-import { Body2d, Point2d, Points2d, Solved2d, Goals2d } from "../../src/models";
+import { Body2d, Point2d, Points2d, Solved2d, Goals2d } from "../../src/models/index";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/frame", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/frame")>();
+vi.mock("../../src/frame/frame", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/frame/frame")>();
   return {
     ...original,
     composeWorld: (...args: Parameters<typeof original.composeWorld>) => {

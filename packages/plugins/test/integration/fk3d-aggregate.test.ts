@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { Spec, defineModel } from "@motion5/core/plugin-api";
-import { ik3dPlugin } from "../../src/ik3d";
-import { fk3dPlugin } from "../../src/fk3d";
+import { ik3dPlugin } from "../../src/ik/ik3d";
+import { fk3dPlugin } from "../../src/fk/fk3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
-import { Body3d, Point3d, Points3d, Solved3d, Goals3d } from "../../src/models";
+import { Body3d, Point3d, Points3d, Solved3d, Goals3d } from "../../src/models/index";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
 
@@ -15,8 +15,8 @@ const Pole3d = defineModel({
 });
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/frame3d", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/frame3d")>();
+vi.mock("../../src/frame/frame3d", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/frame/frame3d")>();
   return {
     ...original,
     composeWorld3d: (...args: Parameters<typeof original.composeWorld3d>) => {

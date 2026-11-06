@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { Engine, PluginCatalog } from "@motion5/core";
-import { fkPlugin } from "../../src/fk";
-import { transformPlugin } from "../../src/transform";
+import { fkPlugin } from "../../src/fk/fk";
+import { transformPlugin } from "../../src/transform/transform";
 import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { createManualClock } from "@motion5/core";
 import {
@@ -10,7 +10,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
 } from "@motion5/core/testing";
-import { Body2d, Solved2d, Point2d } from "../../src/models";
+import { Body2d, Solved2d, Point2d } from "../../src/models/index";
 import { testModels } from "../../../core/test/support/test-models";
 
 function hold(value: number) {

@@ -76,11 +76,15 @@ describe("public plugin subpaths", () => {
     expect(names).toEqual(PUBLIC_SUBPATHS);
     expect(manifest.exports["."]).toBeUndefined();
     for (const name of names) {
+      const target = /^\.\/dist\/(.+)\.js$/.exec(
+        String(Reflect.get(Object(manifest.exports[`./${name}`]), "default")),
+      )?.[1];
+      expect(target, name).toBeDefined();
       expect(manifest.exports[`./${name}`], name).toEqual({
-        types: `./dist/${name}.d.ts`,
-        default: `./dist/${name}.js`,
+        types: `./dist/${target}.d.ts`,
+        default: `./dist/${target}.js`,
       });
-      const module = (await import(new URL(`src/${name}.ts`, PLUGINS).href)) as Record<
+      const module = (await import(new URL(`src/${target}.ts`, PLUGINS).href)) as Record<
         string,
         unknown
       >;
@@ -125,7 +129,7 @@ describe("public plugin subpaths", () => {
   });
 
   it("L15 every approved catalog entry lazily loads its matching definition subpath", async () => {
-    const { builtinCatalog } = await import("../src/builtin-catalog");
+    const { builtinCatalog } = await import("../src/host/builtin-catalog");
     expect([...builtinCatalog.keys()].sort()).toEqual(
       [...DEFINITION_SUBPATHS, ...PATH_CATALOG_NAMES].sort(),
     );

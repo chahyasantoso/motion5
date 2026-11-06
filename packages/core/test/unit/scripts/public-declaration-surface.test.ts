@@ -170,11 +170,17 @@ describe("public declaration surface (P1-9)", () => {
     expect(plugins).toEqual(
       expect.arrayContaining(["transform3d", "fk3d", "ik3d", "pose-classify"]),
     );
+    const moduleOf = (name: string): string => {
+      const target = Reflect.get(Object(manifest.exports[`./${name}`]), "default");
+      return String(target)
+        .replace(/^\.\/dist\//, "")
+        .replace(/\.js$/, "");
+    };
     await withEmitted(
-      plugins.map((name) => `packages/plugins/src/${name}.ts`),
+      plugins.map((name) => `packages/plugins/src/${moduleOf(name)}.ts`),
       async (out, emitted) => {
         for (const name of plugins) {
-          const entry = join(out, "plugins", "src", `${name}.d.ts`);
+          const entry = join(out, "plugins", "src", `${moduleOf(name)}.d.ts`);
           expect(emitted.has(entry), name).toBe(true);
           const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
           expect(unresolved, name).toEqual([]);

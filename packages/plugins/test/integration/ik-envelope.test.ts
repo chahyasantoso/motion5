@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { PluginCatalog } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
-import { fabrikIterationCap } from "../../src/fabrik-cap";
+import { fabrikIterationCap } from "../../src/ik/fabrik/cap";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { ikPlugin } from "@motion5/plugins/ik";
-import type { SolveMember } from "../../src/ik-member";
-import type { SolveResult } from "../../src/ik-result";
-import { chainShape, solveChain } from "../../src/ik-solve";
+import type { SolveMember } from "../../src/ik/shared/member";
+import type { SolveResult } from "../../src/ik/shared/result";
+import { chainShape, solveChain } from "../../src/ik/solve2d/solve";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import {
   envelopeScenarios,

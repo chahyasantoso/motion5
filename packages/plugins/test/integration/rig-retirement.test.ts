@@ -3,9 +3,9 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { builtinCatalog } from "../../src/builtin-catalog";
-import { fkPlugin } from "../../src/fk";
-import { ikPlugin } from "../../src/ik";
+import { builtinCatalog } from "../../src/host/builtin-catalog";
+import { fkPlugin } from "../../src/fk/fk";
+import { ikPlugin } from "../../src/ik/ik";
 import { testModels } from "../../../core/test/support/test-models";
 
 const PLUGINS_PKG = resolve(import.meta.dirname, "../../package.json");

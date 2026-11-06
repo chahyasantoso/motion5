@@ -1,4 +1,4 @@
-import type { CubicPath2dCells } from "./models";
+import type { CubicPath2dCells } from "../models/path";
 
 /**
  * Converts a sequence of continuous CubicPath2d segment rows into an SVG path `d` attribute string.

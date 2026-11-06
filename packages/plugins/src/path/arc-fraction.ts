@@ -1,5 +1,5 @@
-import type { CubicPath2dCells } from "./models";
-import type { Point2dCells } from "../models";
+import type { CubicPath2dCells } from "../models/path";
+import type { Point2dCells } from "../models/index";
 
 const GL5_NODES = [
   0.046910077030668, 0.23076534494715845, 0.5, 0.7692346550528415, 0.9530899229693319,

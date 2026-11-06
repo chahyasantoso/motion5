@@ -1,7 +1,7 @@
 import { createManualClock, Engine, type LiveValues, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { record, track } from "../../../core/test/support/v5-builders";
-import { attachRunners, type Runner, type RunnerFailure } from "../../src/runner";
+import { attachRunners, type Runner, type RunnerFailure } from "../../src/host/runner";
 import { testEngine } from "../../../core/test/support/builtin-registry";
 
 /** One Engine-backed fixture for ordinary and adversarial runner contracts. */
