@@ -22,6 +22,9 @@ local data. Reader-pull structures made a plugin rebuild its inputs per frame.
   A source is a model output run through the engine's passthrough processor.
 - Plugin parameters live in `input.param` and are written through `input.param.set` and `setField`.
   `input.values` stays the model's data or the plugin's local data.
+- `prepare` refuses with a non-empty diagnostic tuple; each diagnostic carries its own rule id and
+  ids, and there is no warnings channel. A refusal without an error-severity diagnostic is a plugin
+  bug.
 - A source model's values are parsed at commit. A computed output is parsed at first compose, and its
   static cells never change after that; a difference is a node error.
 - `type`, the top-level `plugin` and `input.schema` are refused by name. There is no compatibility

@@ -1,6 +1,6 @@
 import {
   ok,
-  refused,
+  prepareRefused,
   type PluginDefinition,
   type Prepared,
   type Scalar,
@@ -19,6 +19,7 @@ import { solveChain } from "./ik-solve";
 import type { SolveMember } from "./ik-member";
 import { bindRoot } from "./root/domain";
 import { Body2d, Goals2d, Point2d, Solved2d } from "./models";
+import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
 
 const INSPECT: ValueSpec = {
@@ -108,16 +109,8 @@ export const ikPlugin: PluginDefinition<IkInput> = {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const goals = structureOf<GoalsStructure>(structures, "goals");
     if (chain === undefined || goals === undefined) return ok(undefined);
-    const diagnostics = goalDiagnostics(chain, goals);
-    if (diagnostics.length > 0) {
-      return refused(
-        diagnostics.map((d) => ({
-          path: d.path,
-          message: d.message,
-        })),
-      );
-    }
-    return ok(undefined);
+    const refused = nonEmptyDiagnostics(goalDiagnostics(chain, goals));
+    return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");

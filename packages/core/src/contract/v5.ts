@@ -156,17 +156,23 @@ export interface Issue {
 export type Parsed<Structure> =
   | { readonly ok: true; readonly value: Structure }
   | { readonly ok: false; readonly issues: readonly Issue[] };
+/** A refusal that names at least one diagnostic; a hook that refuses owes a reason. */
+export type NonEmptyDiagnostics = readonly [Diagnostic, ...Diagnostic[]];
 /** Result of preparing plugin static state. */
 export type Prepared<State = unknown> =
   | { readonly ok: true; readonly value: State }
-  | { readonly ok: false; readonly issues: readonly Issue[] };
-/** Successful parse result for a model structure. */
-export function ok<Structure>(value: Structure): Parsed<Structure> {
+  | { readonly ok: false; readonly diagnostics: NonEmptyDiagnostics };
+/** Successful parse or prepare result; the shared success arm of both unions. */
+export function ok<Structure>(value: Structure): { readonly ok: true; readonly value: Structure } {
   return { ok: true, value };
 }
 /** Refused parse result with issues. */
 export function refused(issues: readonly Issue[]): Parsed<never> {
   return { ok: false, issues };
+}
+/** Refused prepare with the diagnostics that explain it. */
+export function prepareRefused(diagnostics: NonEmptyDiagnostics): Prepared<never> {
+  return { ok: false, diagnostics };
 }
 /** Nominal model contract specifying value shape and optional structure parse. */
 export interface Model<Cells = unknown, Structure = undefined> {

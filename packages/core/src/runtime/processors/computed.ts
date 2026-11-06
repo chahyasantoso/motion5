@@ -1,6 +1,7 @@
 import type {
   Diagnostic,
   Model,
+  NonEmptyDiagnostics,
   Outputs,
   PluginDefinition,
   Prepared,
@@ -59,6 +60,17 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 function inputFailure(path: string, message: string): PluginNodeError {
   return new PluginNodeError([diagnostic("plugin-input-invalid", path, message)]);
+}
+
+function refusalDiagnostics(
+  diagnostics: NonEmptyDiagnostics,
+  pluginId: string,
+): NonEmptyDiagnostics {
+  if (!Array.isArray(diagnostics) || diagnostics.length === 0)
+    throw new TypeError(`Plugin '${pluginId}' refused prepare without diagnostics.`);
+  if (!diagnostics.some(({ severity }) => severity === "error"))
+    throw new TypeError(`Plugin '${pluginId}' refused prepare without an error diagnostic.`);
+  return diagnostics;
 }
 
 function pickOutputs(
@@ -274,18 +286,7 @@ export class ComputedProcessor implements Processor {
       );
     }
     if (!res.ok) {
-      const diagnostics = res.issues.map((issue) =>
-        diagnostic(
-          "plugin-validation-failed",
-          issue.path.length === 0
-            ? this.nodeId
-            : issue.path.startsWith(this.nodeId)
-              ? issue.path
-              : `${this.nodeId}.input.requires.${issue.path}`,
-          issue.message,
-        ),
-      );
-      throw new TypeError(describeDiagnostics(diagnostics));
+      throw new TypeError(describeDiagnostics(refusalDiagnostics(res.diagnostics, this.plugin.id)));
     }
     this.#preparedState = res.value;
     this.#isPrepared = true;
@@ -331,18 +332,7 @@ export class ComputedProcessor implements Processor {
       ]);
     }
     if (!res.ok) {
-      const diagnostics = res.issues.map((issue) =>
-        diagnostic(
-          "plugin-validation-failed",
-          issue.path.length === 0
-            ? this.nodeId
-            : issue.path.startsWith(this.nodeId)
-              ? issue.path
-              : `${this.nodeId}.input.requires.${issue.path}`,
-          issue.message,
-        ),
-      );
-      throw new PluginNodeError(diagnostics);
+      throw new PluginNodeError(refusalDiagnostics(res.diagnostics, this.plugin.id));
     }
     this.#preparedState = res.value;
     this.#isPrepared = true;

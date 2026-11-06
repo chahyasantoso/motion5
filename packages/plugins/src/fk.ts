@@ -2,7 +2,7 @@ import {
   diagnostic,
   ok,
   optional,
-  refused,
+  prepareRefused,
   type PluginDefinition,
   type Prepared,
   type Scalar,
@@ -22,6 +22,7 @@ import {
 } from "./frame";
 import { bindSolved, type SolvedRow, type SolvedStructure } from "./solved/domain";
 import { Body2d, Point2d, Points2d, Solved2d } from "./models";
+import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
 
 type FkInput = {
@@ -70,16 +71,18 @@ export const fkPlugin: PluginDefinition<FkInput> = {
     const solved = structureOf<SolvedStructure>(structures, "solved");
     if (chain === undefined || solved === undefined) return ok(undefined);
     const solvedIds = new Set(solved.ids);
-    const missing = chain.ids.filter((id) => !solvedIds.has(id));
-    if (missing.length > 0) {
-      return refused(
-        missing.map((id) => ({
-          path: "solved",
-          message: `Solver row missing for member "${id}".`,
-        })),
-      );
-    }
-    return ok(undefined);
+    const refused = nonEmptyDiagnostics(
+      chain.ids
+        .filter((id) => !solvedIds.has(id))
+        .map((id) =>
+          diagnostic(
+            "plugin-validation-failed",
+            "solved",
+            `Solver row missing for member "${id}".`,
+          ),
+        ),
+    );
+    return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ requires, structures }) {
     const chain = bindBody(

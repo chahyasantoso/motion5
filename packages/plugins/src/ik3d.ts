@@ -1,6 +1,6 @@
 import {
   ok,
-  refused,
+  prepareRefused,
   type Outputs,
   type PluginDefinition,
   type Prepared,
@@ -24,6 +24,7 @@ import type { ChainMember3d } from "./ik3d-chain";
 import { solveChain3d } from "./ik3d-solve";
 import { bindRoot } from "./root/domain";
 import { Body3d, Goals3d, Point3d, Solved3d } from "./models";
+import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
 
 const FRAME: ValueSpec = {
@@ -148,16 +149,8 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
     const chain = structureOf<BodyStructure>(structures, "chain");
     const goals = structureOf<GoalsStructure>(structures, "goals");
     if (chain === undefined || goals === undefined) return ok(undefined);
-    const diagnostics = goalDiagnostics(chain, goals);
-    if (diagnostics.length > 0) {
-      return refused(
-        diagnostics.map((d) => ({
-          path: d.path,
-          message: d.message,
-        })),
-      );
-    }
-    return ok(undefined);
+    const refused = nonEmptyDiagnostics(goalDiagnostics(chain, goals));
+    return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");

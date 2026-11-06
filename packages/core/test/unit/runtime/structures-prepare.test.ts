@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { defineModel, ok, refused } from "../../../src/contract/v5";
+import { defineModel, ok, prepareRefused, refused } from "../../../src/contract/v5";
+import { diagnostic } from "../../../src/contract/diagnostics";
 import type {
   Model,
   PluginDefinition,
@@ -10,7 +11,16 @@ import type {
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { createManualClock } from "../../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
+import { LocalInput } from "../../../src/runtime/local-input";
+import { ComputedProcessor } from "../../../src/runtime/processors/computed";
+import { PluginNodeError } from "../../../src/runtime/plugin-output";
+import type { BoundSlots } from "../../../src/runtime/bound-slot";
+import {
+  commitModelStructure,
+  createFakeInterpolator,
+  createFakeScheduler,
+} from "../../../src/testing/fakes";
 import { Body2d, Point2d } from "../../../../plugins/src/models";
 import { fkPlugin } from "../../../../plugins/src/fk";
 import { testModels } from "../../support/test-models";
@@ -59,6 +69,81 @@ function createEngine(catalog: PluginCatalog): Engine {
 }
 
 describe("structures and prepare hook", () => {
+  it("prepare refusal keeps its rule id and carried ids", () => {
+    const plugin: PluginDefinition = {
+      id: "refusing-prepare",
+      inputs: {
+        values: { kind: "record", fields: {} },
+        requires: { chain: Body2d },
+      },
+      outputs: { values: { kind: "record", fields: {} } },
+      prepare() {
+        return prepareRefused([
+          diagnostic("ik-goal-not-leaf", "goals", "not a leaf", ["row", "member"]),
+        ]);
+      },
+      transform() {
+        return { values: {} };
+      },
+    };
+    const values = [{ id: "root", cells: { length: 10, rotation: 0 } }];
+    const structure = commitModelStructure(Body2d, values);
+    const slots: BoundSlots = {
+      chain: Object.freeze({
+        kind: "single",
+        bound: Object.freeze({ sourceId: "src", values: { values }, structure }),
+      }),
+    };
+    const localInput = new LocalInput(
+      createValueEvaluator(undefined, createFakeInterpolator(), {
+        kind: "record",
+        fields: {},
+      }),
+    );
+    const processor = new ComputedProcessor({
+      nodeId: "node",
+      plugin,
+      values: undefined,
+      interpolator: createFakeInterpolator(),
+    });
+
+    try {
+      processor.compose(slots, localInput);
+      throw new Error("Expected prepare to refuse.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(PluginNodeError);
+      if (error instanceof PluginNodeError) {
+        expect(error.diagnostics).toMatchObject([
+          { ruleId: "ik-goal-not-leaf", ids: ["row", "member"] },
+        ]);
+      }
+    }
+  });
+
+  it("prepare refuses a warning-only refusal as a plugin bug", () => {
+    const plugin: PluginDefinition = {
+      id: "warning-prepare",
+      inputs: { values: { kind: "record", fields: {} } },
+      outputs: { values: { kind: "record", fields: {} } },
+      prepare() {
+        return prepareRefused([diagnostic("value-batch-deferred", "x", "deferred", ["id"])]);
+      },
+      transform() {
+        return { values: {} };
+      },
+    };
+    const processor = new ComputedProcessor({
+      nodeId: "node",
+      plugin,
+      values: undefined,
+      interpolator: createFakeInterpolator(),
+    });
+
+    expect(() => processor.prepareCommit({})).toThrow(
+      /Plugin 'warning-prepare' refused prepare without an error diagnostic/,
+    );
+  });
+
   it("prepare runs at load when a required model has no parse", () => {
     let observed: SourceStructures | undefined;
     const reader: PluginDefinition = {
@@ -135,10 +220,14 @@ describe("structures and prepare hook", () => {
         observedParam = ctx.param;
         if (typeof ctx.param === "object" && ctx.param !== null && "inspect" in ctx.param) {
           if (ctx.param.inspect !== true) {
-            return refused([{ path: "inspect", message: "inspect must be true" }]);
+            return prepareRefused([
+              diagnostic("plugin-validation-failed", "inspect", "inspect must be true"),
+            ]);
           }
         } else {
-          return refused([{ path: "inspect", message: "inspect must be present" }]);
+          return prepareRefused([
+            diagnostic("plugin-validation-failed", "inspect", "inspect must be present"),
+          ]);
         }
         return ok(undefined);
       },
