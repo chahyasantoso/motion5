@@ -4,7 +4,6 @@ import type {
   PatchBatch,
   PatchListener,
   ProjectDefinition,
-  ResolvedRequires,
   SlotSpec,
   Structure,
   SourceStructure,
@@ -47,9 +46,6 @@ import { acceptsExternalSignal } from "./ports/trigger-factory";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { afterCleanup } from "./runtime/report";
 import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
-import type { BoundSlot, BoundSlotEntry, BoundSlots } from "./runtime/bound-slot";
-import { isRecord } from "./runtime/publisher-outcome";
-import { compareEdges, type GraphNode } from "./graph/ir";
 import {
   isOptionalSlot,
   isShapeSlot,
@@ -567,71 +563,14 @@ export class Engine {
         }
       };
       checkCommittedSources();
-      const boundSlots = (node: GraphNode, requires: ResolvedRequires): BoundSlots => {
-        type MutableEntry =
-          | { readonly kind: "single"; readonly bound: BoundSlot }
-          | { readonly kind: "map"; readonly members: Record<string, BoundSlot> };
-        const entries: Record<string, MutableEntry> = {};
-        for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
-          if (isRecord(binding)) defineOwnValue(entries, slot, { kind: "map", members: {} });
-        for (const edge of [...node.edges].sort(compareEdges)) {
-          const requirement = edge.requirement;
-          const sourceTrack = tracks.get(edge.sourceId);
-          const structure =
-            sourceTrack?.structureAtCommit() ?? sourceTrack?.outputStructure("values");
-          const slotValues = requires[requirement.slot];
-          let values: unknown;
-          if (requirement.memberKey === undefined) values = slotValues;
-          else values = isRecord(slotValues) ? slotValues[requirement.memberKey] : undefined;
-          const bound: BoundSlot = Object.freeze({
-            sourceId: edge.sourceId,
-            values,
-            ...(structure === undefined ? {} : { structure }),
-          });
-          if (requirement.memberKey === undefined) {
-            defineOwnValue(entries, requirement.slot, { kind: "single", bound });
-            continue;
-          }
-          const existing = entries[requirement.slot];
-          if (existing === undefined) {
-            const members: Record<string, BoundSlot> = {};
-            defineOwnValue(members, requirement.memberKey, bound);
-            defineOwnValue(entries, requirement.slot, { kind: "map", members });
-            continue;
-          }
-          switch (existing.kind) {
-            case "map":
-              defineOwnValue(existing.members, requirement.memberKey, bound);
-              break;
-            case "single":
-              throw new TypeError(`Slot '${requirement.slot}' mixes single and member bindings.`);
-            default:
-              return unreachable(existing);
-          }
-        }
-        const slots: Record<string, BoundSlotEntry> = {};
-        for (const [slot, entry] of Object.entries(entries)) {
-          switch (entry.kind) {
-            case "single":
-              defineOwnValue(slots, slot, Object.freeze({ kind: "single", bound: entry.bound }));
-              break;
-            case "map":
-              defineOwnValue(
-                slots,
-                slot,
-                Object.freeze({ kind: "map", members: Object.freeze(entry.members) }),
-              );
-              break;
-            default:
-              return unreachable(entry);
-          }
-        }
-        return Object.freeze(slots);
+      const structureOf = (sourceId: string): Structure<unknown> | undefined => {
+        const track = tracks.get(sourceId);
+        return track?.structureAtCommit() ?? track?.outputStructure("values");
       };
       const compose: ComposeResolver = (node) => {
         const track = tracks.get(node.id);
         if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
-        return (requires) => track.compose(boundSlots(node, requires));
+        return (slots) => track.compose(slots);
       };
       const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
@@ -640,6 +579,7 @@ export class Engine {
         isPluginRegistered: (pluginId) => this.#capabilities.isPluginAdmitted(pluginId),
         capabilities: this.#capabilities,
         graphBuilder: new IncrementalGraphBuilder(this.#capabilities),
+        structureOf,
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         rewriteValues: (nodeId, values) => tracks.get(nodeId)?.replaceValues(values),
         rewriteParamValues: (nodeId, param) => tracks.get(nodeId)?.replaceParam(param),

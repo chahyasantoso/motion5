@@ -7,9 +7,15 @@ import {
   type PublisherSnapshot,
 } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
+import type { BoundSlots } from "../../src/runtime/bound-slot";
 import { Track } from "../support/track";
 import type { Interpolator } from "../../src/ports/interpolator";
 import { recordValues } from "../support/v5-builders";
+
+const upstreamOf = (requires: BoundSlots, slot: string): Outputs | undefined => {
+  const entry = requires[slot];
+  return entry?.kind === "single" ? (entry.bound.values as Outputs) : undefined;
+};
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
@@ -87,7 +93,7 @@ describe("P2 runtime smell hardening", () => {
       sourceRevisions: {},
     }));
     const consumer = node("consumer", [requires("consumer", "source", "s")], (requires) => {
-      const upstream = requires.s as Outputs | undefined;
+      const upstream = upstreamOf(requires, "s");
       const values = upstream?.values ?? {};
       return {
         outputs: { values },
@@ -106,7 +112,7 @@ describe("P2 runtime smell hardening", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const consumer = node("consumer", [requires("consumer", "missing", "s")], (requires) => {
-      const upstream = requires.s as Outputs | undefined;
+      const upstream = upstreamOf(requires, "s");
       const values = upstream?.values ?? {};
       return {
         outputs: { values },

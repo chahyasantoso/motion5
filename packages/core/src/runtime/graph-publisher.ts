@@ -1,5 +1,6 @@
 import { diagnostic } from "../contract/diagnostics";
-import type { Diagnostic, Outputs, ResolvedRequires } from "../contract/v5";
+import type { Diagnostic, Outputs, Structure } from "../contract/v5";
+import type { BoundSlot, BoundSlotEntry, BoundSlots } from "./bound-slot";
 import { isImmutableLeaf } from "../domain/values";
 import { compareEdges, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
@@ -28,6 +29,7 @@ import {
 } from "./publisher-outcome";
 import { closeUpstream, reachable } from "./publisher-reach";
 import { defineOwnValue } from "../lang/own-property";
+import { unreachable } from "../lang/exhaustive";
 
 /**
  * Node state before any plugin runs, as the node reports it. No `base`: topology, owned by
@@ -40,13 +42,13 @@ export interface PublisherComposition {
   readonly diagnostics?: readonly Diagnostic[];
 }
 
-interface IdentifiedInputs {
-  readonly requires: ResolvedRequires;
+interface BoundInputs {
+  readonly slots: BoundSlots;
   readonly sourceRevisions: Record<string, number>;
 }
 
 export interface PublisherNode extends GraphNode {
-  readonly compose: (requires: ResolvedRequires) => PublisherComposition;
+  readonly compose: (slots: BoundSlots) => PublisherComposition;
 }
 /**
  * Graph a flush runs over, one composer per node. `nodeById` narrowed so the publisher stops
@@ -90,9 +92,14 @@ function validateComposition(outputs: unknown): asserts outputs is Outputs {
 
 export class GraphPublisher {
   readonly #registry: PatchRegistry;
+  readonly #structureOf: (sourceId: string) => Structure<unknown> | undefined;
 
-  constructor(registry: PatchRegistry) {
+  constructor(
+    registry: PatchRegistry,
+    options: { readonly structureOf?: (sourceId: string) => Structure<unknown> | undefined } = {},
+  ) {
     this.#registry = registry;
+    this.#structureOf = options.structureOf ?? (() => undefined);
   }
 
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
@@ -169,8 +176,8 @@ export class GraphPublisher {
       return pendingOutcome(pendingMatch.diagnostic);
     }
     try {
-      const collected = this.#collectIdentifiedInputs(node, outputsFor);
-      const composed = node.compose(collected.requires);
+      const collected = this.#bindSlots(node, outputsFor);
+      const composed = node.compose(collected.slots);
       validateComposition(composed.outputs);
       const merged = {
         ...composed,
@@ -199,19 +206,17 @@ export class GraphPublisher {
     }
   }
 
-  // Named outputs for identified node, by slot and member key. Empty authored map -> empty member
-  // record ({} is a binding the plugin decides); PluginTrack narrows it.
-  #collectIdentifiedInputs(
+  // One resolved slot map: source id, published outputs and the source's committed structure.
+  #bindSlots(
     node: PublisherNode,
     outputsFor: (sourceId: string) => Outputs | undefined,
-  ): IdentifiedInputs {
-    interface SlotBinding {
-      single?: Outputs;
-      members?: Record<string, Outputs>;
-    }
-    const slots = new Map<string, SlotBinding>();
+  ): BoundInputs {
+    type MutableEntry =
+      | { readonly kind: "single"; readonly bound: BoundSlot }
+      | { readonly kind: "map"; readonly members: Record<string, BoundSlot> };
+    const entries: Record<string, MutableEntry> = {};
     for (const [slot, binding] of Object.entries(node.track.input?.requires ?? {}))
-      if (isRecord(binding)) slots.set(slot, { members: {} });
+      if (isRecord(binding)) defineOwnValue(entries, slot, { kind: "map", members: {} });
     const sourceRevisions: Record<string, number> = {};
     for (const edge of [...node.edges].sort(compareEdges)) {
       const requirement = edge.requirement;
@@ -220,16 +225,50 @@ export class GraphPublisher {
         failPublication({ kind: "missing-upstream", sourceId: edge.sourceId });
       const sourcePatch = this.#registry.get(edge.sourceId);
       if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
-      const entry = slots.get(requirement.slot) ?? {};
-      if (requirement.memberKey === undefined) entry.single = outputs;
-      else defineOwnValue((entry.members ??= {}), requirement.memberKey, outputs);
-      slots.set(requirement.slot, entry);
+      const structure = this.#structureOf(edge.sourceId);
+      const bound: BoundSlot = Object.freeze({
+        sourceId: edge.sourceId,
+        values: outputs,
+        ...(structure === undefined ? {} : { structure }),
+      });
+      if (requirement.memberKey === undefined) {
+        defineOwnValue(entries, requirement.slot, { kind: "single", bound });
+        continue;
+      }
+      const existing = entries[requirement.slot];
+      if (existing === undefined) {
+        const members: Record<string, BoundSlot> = {};
+        defineOwnValue(members, requirement.memberKey, bound);
+        defineOwnValue(entries, requirement.slot, { kind: "map", members });
+        continue;
+      }
+      switch (existing.kind) {
+        case "map":
+          defineOwnValue(existing.members, requirement.memberKey, bound);
+          break;
+        case "single":
+          throw new TypeError(`Slot '${requirement.slot}' mixes single and member bindings.`);
+        default:
+          return unreachable(existing);
+      }
     }
-    const requires: Record<string, Outputs | Record<string, Outputs>> = {};
-    for (const [slot, entry] of slots) {
-      if (entry.single !== undefined) requires[slot] = entry.single;
-      else if (entry.members !== undefined) requires[slot] = Object.freeze(entry.members);
+    const slots: Record<string, BoundSlotEntry> = {};
+    for (const [slot, entry] of Object.entries(entries)) {
+      switch (entry.kind) {
+        case "single":
+          defineOwnValue(slots, slot, Object.freeze({ kind: "single", bound: entry.bound }));
+          break;
+        case "map":
+          defineOwnValue(
+            slots,
+            slot,
+            Object.freeze({ kind: "map", members: Object.freeze(entry.members) }),
+          );
+          break;
+        default:
+          return unreachable(entry);
+      }
     }
-    return { requires: Object.freeze(requires), sourceRevisions };
+    return { slots: Object.freeze(slots), sourceRevisions };
   }
 }

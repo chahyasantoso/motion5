@@ -64,8 +64,12 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
         },
       ],
       (requires) => {
-        const leftOutputs = requires.left as Outputs | undefined;
-        const rightOutputs = requires.right as Outputs | undefined;
+        const leftEntry = requires.left;
+        const rightEntry = requires.right;
+        const leftOutputs =
+          leftEntry?.kind === "single" ? (leftEntry.bound.values as Outputs) : undefined;
+        const rightOutputs =
+          rightEntry?.kind === "single" ? (rightEntry.bound.values as Outputs) : undefined;
         const leftValues = leftOutputs?.values as Record<string, unknown> | undefined;
         const rightValues = rightOutputs?.values as Record<string, unknown> | undefined;
         const left = Number(leftValues?.a ?? 0);

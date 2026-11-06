@@ -1,4 +1,4 @@
-import type { Diagnostic, ProjectDefinition } from "../contract/v5";
+import type { Diagnostic, ProjectDefinition, Structure } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
 import type { GraphNode, GraphIR } from "../graph/ir";
@@ -64,6 +64,7 @@ export interface GraphRuntimeOptions {
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly graphBuilder: GraphBuilder;
+  readonly structureOf?: (sourceId: string) => Structure<unknown> | undefined;
 }
 export class GraphRuntime {
   readonly #binding: GraphBinding;
@@ -99,7 +100,9 @@ export class GraphRuntime {
       builder: options.graphBuilder,
     });
     this.#registry = new PatchRegistry();
-    this.#publisher = new GraphPublisher(this.#registry);
+    this.#publisher = new GraphPublisher(this.#registry, {
+      ...(options.structureOf === undefined ? {} : { structureOf: options.structureOf }),
+    });
     this.#clock = clock;
     this.#compose = compose;
 

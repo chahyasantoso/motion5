@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, ResolvedRequires } from "../../src/contract/v5";
+import type { ProjectDefinition } from "../../src/contract/v5";
+import type { BoundSlots } from "../../src/runtime/bound-slot";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import { record, track } from "../support/v5-builders";
@@ -36,12 +37,12 @@ const project: ProjectDefinition = {
   ],
 };
 
-const compose = (node: { id: string }) => (requires: ResolvedRequires) =>
+const compose = (node: { id: string }) => (slots: BoundSlots) =>
   node.id === "arm/child"
     ? {
         outputs: {
           values: Object.freeze({
-            parent: requires.parent === undefined ? "none" : "bound",
+            parent: slots.parent === undefined ? "none" : "bound",
             self: node.id,
           }),
         },

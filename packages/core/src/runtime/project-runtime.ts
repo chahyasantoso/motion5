@@ -4,6 +4,7 @@ import type {
   TrackDefinition,
   MotionDefinition,
   TriggerSignal,
+  Structure,
   Value,
 } from "../contract/v5";
 import type { MotionHandle } from "../contract/motion-handle";
@@ -205,6 +206,8 @@ export interface ProjectRuntimeOptions {
   readonly graphBuilder?: GraphBuilder;
   /** What a structural plan may ask about plugins, as data. */
   readonly capabilities: PluginCapabilities;
+  /** A source's committed structure, handed to the publisher for its slot map. */
+  readonly structureOf?: (sourceId: string) => Structure<unknown> | undefined;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
@@ -309,6 +312,7 @@ export class ProjectRuntime {
         ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
         ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
         graphBuilder: options.graphBuilder ?? new IncrementalGraphBuilder(this.#capabilities),
+        ...(options.structureOf === undefined ? {} : { structureOf: options.structureOf }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
