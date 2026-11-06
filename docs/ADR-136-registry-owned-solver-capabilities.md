@@ -4,6 +4,8 @@
 
 **Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
 
+**Further superseded, 2026-11-06:** the port is five required members; the unjudged fallback and the `capabilityOf`/`dedicatedMembers` vocabulary are removed.
+
 ## Context
 
 Core held three first-party name tables: chain shape, pole slots, joint vocabulary. Graph rules could disagree with admitted third-party definition. ADR-044 deliberately keeps graph independent of registry; importing definitions into graph undoes that boundary, does not solve duplication. ADR-114 and ADR-123 stated old tables.

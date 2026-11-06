@@ -300,10 +300,6 @@
     "count": 3
   },
   {
-    "path": "packages/core/src/ports/plugin-capabilities.ts",
-    "count": 3
-  },
-  {
     "path": "packages/core/src/ports/trigger-factory.ts",
     "count": 2
   },

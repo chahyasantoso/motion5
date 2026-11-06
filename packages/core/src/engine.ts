@@ -212,14 +212,14 @@ export class Engine {
       );
       const pluginId = outputPluginId(parsed.output);
       if (pluginId !== undefined) {
-        const plugin = this.#capabilities.pluginDefinition?.(pluginId);
+        const plugin = this.#capabilities.pluginDefinition(pluginId);
         // Admitted id, no definition -> refuse before any Track: no slots, never publishes.
         if (plugin === undefined)
           throw new TypeError(
             `plugin-unknown at ${nodeId}.output.plugin: ${unknownNameMessage(
               "plugin",
               pluginId,
-              this.#capabilities.pluginIds?.(),
+              this.#capabilities.pluginIds(),
             )}`,
           );
         const valuesSpec = isModel(plugin.inputs.values)
@@ -509,7 +509,7 @@ export class Engine {
         ): void => {
           const pluginId = outputPluginId(track.output);
           if (pluginId === undefined) return;
-          const plugin = this.#capabilities.pluginDefinition?.(pluginId);
+          const plugin = this.#capabilities.pluginDefinition(pluginId);
           if (plugin === undefined) return;
           const consumer = tracks.get(consumerId);
           if (consumer?.processorKind !== "computed") return;

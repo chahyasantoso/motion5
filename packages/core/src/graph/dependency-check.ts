@@ -28,7 +28,7 @@ function checkNode(
   const authored = contract?.requires ?? node.track.input?.requires;
   const path = `${node.id}.input.requires`;
   if (pluginId === undefined) return;
-  const declared = contract?.slots ?? capabilities.pluginDefinition?.(pluginId)?.inputs.requires;
+  const declared = contract?.slots ?? capabilities.pluginDefinition(pluginId)?.inputs.requires;
   if (declared === undefined) {
     // A registry that answers the identified-table question but does not know this id is the
     // authoritative unknown. A registry with no answer at all is the grouped one, and the parser

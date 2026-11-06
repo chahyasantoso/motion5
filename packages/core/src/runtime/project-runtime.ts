@@ -492,20 +492,10 @@ export class ProjectRuntime {
       ...(this.#isPluginRegistered === undefined
         ? {}
         : { isPluginRegistered: this.#isPluginRegistered }),
-      ...(this.#capabilities.pluginDefinition === undefined
-        ? {}
-        : {
-            pluginDefinition: (pluginId: string) => this.#capabilities.pluginDefinition?.(pluginId),
-          }),
-      ...(this.#capabilities.model === undefined
-        ? {}
-        : { model: (modelId: string) => this.#capabilities.model?.(modelId) }),
-      ...(this.#capabilities.modelIds === undefined
-        ? {}
-        : { modelIds: () => this.#capabilities.modelIds?.() }),
-      ...(this.#capabilities.pluginIds === undefined
-        ? {}
-        : { pluginIds: () => this.#capabilities.pluginIds?.() }),
+      pluginDefinition: (pluginId: string) => this.#capabilities.pluginDefinition(pluginId),
+      model: (modelId: string) => this.#capabilities.model(modelId),
+      modelIds: () => this.#capabilities.modelIds(),
+      pluginIds: () => this.#capabilities.pluginIds(),
     };
     return expectValid(validateTrackDefinition(track, path, context));
   }

@@ -56,7 +56,7 @@ export { isFlatRecord, selectRecord, selectRow, selectSingleRow } from "./contra
 export type { RecordSelection, RowSelection } from "./contract/output-select";
 export { POLE_SLOT } from "./contract/solver-shape";
 export type { SolverChainShape } from "./contract/solver-shape";
-export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
+export type { PluginCapabilities } from "./ports/plugin-capabilities";
 export type {
   AxisKey,
   Bend,

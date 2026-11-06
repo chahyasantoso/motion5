@@ -52,9 +52,6 @@ describe("plugin admission is keyed by id and atomic", () => {
     expect(catalog.has("scale")).toBe(true);
     expect(catalog.get("scale")?.id).toBe("scale");
     expect(catalog.isPluginAdmitted("scale")).toBe(true);
-    // A catalog owns no grouped solver capability.
-    expect(catalog.capabilityOf("scale")).toBeUndefined();
-    expect(catalog.dedicatedMembers()).toEqual([]);
   });
 
   it("refuses a duplicate id without changing the admitted definition", () => {

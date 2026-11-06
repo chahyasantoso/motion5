@@ -77,7 +77,6 @@ const allowedPublicExports = new Set([
   "ResolvedInput",
   "ValueSpec",
   "SolverChainShape",
-  "PluginCapability",
   "PluginCapabilities",
   "assertClock",
   "createManualClock",

@@ -125,7 +125,7 @@ function committedInputSpec(
 ): CommittedInputSpec {
   const pluginId = outputPluginId(track.output);
   if (pluginId !== undefined) {
-    const definition = environment.capabilities.pluginDefinition?.(pluginId);
+    const definition = environment.capabilities.pluginDefinition(pluginId);
     const raw = channel === "values" ? definition?.inputs.values : definition?.inputs.param;
     const spec =
       (isModel(raw) ? raw.spec : raw) ?? (channel === "values" ? contract?.input.spec : undefined);
@@ -137,7 +137,7 @@ function committedInputSpec(
     throw new TypeError(`Track "${track.id}" has a model output and no params.`);
   const modelId = outputModelId(track.output);
   const modelSpec =
-    modelId === undefined ? undefined : environment.capabilities.model?.(modelId)?.spec;
+    modelId === undefined ? undefined : environment.capabilities.model(modelId)?.spec;
   const spec = modelSpec ?? contract?.input.spec;
   if (spec === undefined) throw new TypeError(`Track "${track.id}" has no committed input spec.`);
   return { spec, origin: "model" };
@@ -210,21 +210,10 @@ function validateAuthoredValues(
   // would read absence as "nothing is registered".
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
-    ...(environment.capabilities.pluginDefinition === undefined
-      ? {}
-      : {
-          pluginDefinition: (pluginId: string) =>
-            environment.capabilities.pluginDefinition?.(pluginId),
-        }),
-    ...(environment.capabilities.model === undefined
-      ? {}
-      : { model: (modelId: string) => environment.capabilities.model?.(modelId) }),
-    ...(environment.capabilities.modelIds === undefined
-      ? {}
-      : { modelIds: () => environment.capabilities.modelIds?.() }),
-    ...(environment.capabilities.pluginIds === undefined
-      ? {}
-      : { pluginIds: () => environment.capabilities.pluginIds?.() }),
+    pluginDefinition: (pluginId: string) => environment.capabilities.pluginDefinition(pluginId),
+    model: (modelId: string) => environment.capabilities.model(modelId),
+    modelIds: () => environment.capabilities.modelIds(),
+    pluginIds: () => environment.capabilities.pluginIds(),
   };
   const parsed = parseTrackDefinition(track, path, context);
   if (parsed.kind === "refused") {
@@ -246,7 +235,7 @@ function validateAuthoredValues(
     const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.${channel}`);
     if (staticStops.length > 0)
       return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
-  } else if (environment.capabilities.model !== undefined) {
+  } else {
     const modelId = outputModelId(track.output);
     if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
     const model = environment.capabilities.model(modelId);
@@ -255,7 +244,7 @@ function validateAuthoredValues(
         diagnostic(
           "model-unknown",
           `${nodeId}.output.model`,
-          unknownNameMessage("model", modelId, environment.capabilities.modelIds?.()),
+          unknownNameMessage("model", modelId, environment.capabilities.modelIds()),
         ),
       ]);
     const structure = parseModel(
@@ -509,7 +498,7 @@ function paramRefusal(
         "A model output has no processor and takes no params.",
       ),
     ]);
-  const definition = environment.capabilities.pluginDefinition?.(pluginId);
+  const definition = environment.capabilities.pluginDefinition(pluginId);
   if (definition !== undefined && definition.inputs.param === undefined)
     return refused([
       diagnostic(

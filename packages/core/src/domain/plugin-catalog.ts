@@ -19,7 +19,7 @@ import { isModel, isOptionalModel } from "../contract/v5";
 import { slotDeclaration } from "../contract/slot-declaration";
 import type { RuleId } from "../contract/rule-id";
 import { readValueSpec } from "../contract/v5-parse";
-import type { PluginCapabilities, PluginCapability } from "../ports/plugin-capabilities";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 
 /**
  * Identified-table plugin registry keyed by authored `id`: admits whole definitions, all-or-none per batch.
@@ -33,7 +33,6 @@ const MODEL_FIELDS = new Set(["id", "spec", "parse"]);
 const RESERVED_NAMES = new Set(["__proto__", "constructor", "prototype"]);
 const BINDING_MODES = new Set(["single", "map"]);
 const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*$/;
-const EMPTY_MEMBERS: readonly string[] = Object.freeze([]);
 const EMPTY_MODELS: readonly Model<unknown, unknown>[] = Object.freeze([]);
 const EMPTY_RECORD_SPEC: ValueSpec = Object.freeze({ kind: "record", fields: Object.freeze({}) });
 
@@ -500,15 +499,6 @@ export class PluginCatalog implements PluginCapabilities {
 
   get size(): number {
     return this.#plugins.size;
-  }
-
-  /** Answers no grouped solver capability; always undefined. */
-  capabilityOf(_plugin: string): PluginCapability | undefined {
-    return undefined;
-  }
-
-  dedicatedMembers(): readonly string[] {
-    return EMPTY_MEMBERS;
   }
 
   isPluginAdmitted(id: string): boolean {

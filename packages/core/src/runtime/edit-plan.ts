@@ -110,21 +110,10 @@ function validateTrack(
   // Absent predicate refuses every plugin; the graph admitted these already, so admit all.
   const context = {
     isPluginRegistered: environment.isPluginRegistered ?? (() => true),
-    ...(environment.capabilities.pluginDefinition === undefined
-      ? {}
-      : {
-          pluginDefinition: (pluginId: string) =>
-            environment.capabilities.pluginDefinition?.(pluginId),
-        }),
-    ...(environment.capabilities.model === undefined
-      ? {}
-      : { model: (typeId: string) => environment.capabilities.model?.(typeId) }),
-    ...(environment.capabilities.modelIds === undefined
-      ? {}
-      : { modelIds: () => environment.capabilities.modelIds?.() }),
-    ...(environment.capabilities.pluginIds === undefined
-      ? {}
-      : { pluginIds: () => environment.capabilities.pluginIds?.() }),
+    pluginDefinition: (pluginId: string) => environment.capabilities.pluginDefinition(pluginId),
+    model: (modelId: string) => environment.capabilities.model(modelId),
+    modelIds: () => environment.capabilities.modelIds(),
+    pluginIds: () => environment.capabilities.pluginIds(),
   };
   const validated = validateTrackDefinition(track, path, context);
   switch (validated.kind) {

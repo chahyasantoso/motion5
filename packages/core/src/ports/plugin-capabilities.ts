@@ -1,40 +1,10 @@
 import type { Model, PluginDefinition } from "../contract/v5";
-import type { SolverChainShape } from "../contract/solver-shape";
 
-export type PluginCapability = Readonly<{
-  chain: SolverChainShape;
-  pole: boolean;
-  joint: boolean;
-}>;
-
-/**
- * The graph's narrow view of plugin declarations (ADR-136).
- *
- * `capabilityOf` answers for the grouped solver family and stays `undefined` for a registry that
- * only admits identified-table plugins. The two optional members are the identified-table
- * extension: a catalog answers whether an id is admitted and, when it is, hands the graph the
- * definition whose slots and outputs it needs. Keeping them optional is what lets the retired
- * grouped registry keep implementing this port without pretending to know the new contract.
- */
+/** The graph's view of plugin declarations: admission, definition, model and two id lists. */
 export interface PluginCapabilities {
-  capabilityOf(plugin: string): PluginCapability | undefined;
-  /** Sorted, frozen, rebuilt only when a new tree member is admitted. */
-  dedicatedMembers(): readonly string[];
-  /** Whether an id names an admitted identified-table plugin. */
-  isPluginAdmitted?(plugin: string): boolean;
-  /** The admitted definition, or `undefined` when no identified-table plugin owns the id. */
-  pluginDefinition?(plugin: string): PluginDefinition | undefined;
-  /** An admitted model, or `undefined` when not admitted. */
-  model?(id: string): Model<unknown, unknown> | undefined;
-  /** Sorted admitted plugin ids, for diagnostics. */
-  pluginIds?(): readonly string[];
-  /** Sorted admitted model ids, for diagnostics. */
-  modelIds?(): readonly string[];
-}
-
-/** The one answer to whether a plugin is admitted, so load and live recompile cannot disagree. */
-export function admitsPlugin(capabilities: PluginCapabilities, pluginId: string): boolean {
-  return (
-    capabilities.isPluginAdmitted?.(pluginId) ?? capabilities.capabilityOf(pluginId) !== undefined
-  );
+  isPluginAdmitted(plugin: string): boolean;
+  pluginDefinition(plugin: string): PluginDefinition | undefined;
+  model(id: string): Model<unknown, unknown> | undefined;
+  pluginIds(): readonly string[];
+  modelIds(): readonly string[];
 }

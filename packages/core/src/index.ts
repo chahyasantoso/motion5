@@ -27,7 +27,7 @@ export type {
   Value,
 } from "./contract/v5";
 export type { SolverChainShape } from "./contract/solver-shape";
-export type { PluginCapability, PluginCapabilities } from "./ports/plugin-capabilities";
+export type { PluginCapabilities } from "./ports/plugin-capabilities";
 export {
   resolveTriggerDefinition,
   validateTrackDefinition,

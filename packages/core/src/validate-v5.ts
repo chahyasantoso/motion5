@@ -4,7 +4,7 @@ import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
-import { admitsPlugin, type PluginCapabilities } from "./ports/plugin-capabilities";
+import type { PluginCapabilities } from "./ports/plugin-capabilities";
 import type { ParseContext } from "./contract/v5-parse";
 
 export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
@@ -12,11 +12,11 @@ export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 /** Validates a project with the caller's catalog; schema and graph diagnostics keep their order. */
 export function validateV5(input: unknown, capabilities: PluginCapabilities): ValidationResult {
   const context: ParseContext = {
-    isPluginRegistered: (pluginId) => admitsPlugin(capabilities, pluginId),
-    pluginDefinition: (pluginId) => capabilities.pluginDefinition?.(pluginId),
-    model: (modelId: string) => capabilities.model?.(modelId),
-    modelIds: () => capabilities.modelIds?.(),
-    pluginIds: () => capabilities.pluginIds?.(),
+    isPluginRegistered: (pluginId) => capabilities.isPluginAdmitted(pluginId),
+    pluginDefinition: (pluginId) => capabilities.pluginDefinition(pluginId),
+    model: (modelId: string) => capabilities.model(modelId),
+    modelIds: () => capabilities.modelIds(),
+    pluginIds: () => capabilities.pluginIds(),
   };
   const schema = validateSchemaV5(input, context);
   switch (schema.kind) {
