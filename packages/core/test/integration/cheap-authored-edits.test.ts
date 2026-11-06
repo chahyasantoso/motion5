@@ -16,11 +16,9 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 type TranslateValues = Readonly<Record<"dx", number>>;
 type TranslateInput = ResolvedInput<TranslateValues> & {
@@ -29,7 +27,7 @@ type TranslateInput = ResolvedInput<TranslateValues> & {
 const TRANSLATE: PluginDefinition<TranslateInput> = {
   id: "translate",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
+    values: Spec.record({ dx: Spec.number() }),
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT_MODEL },
@@ -56,14 +54,11 @@ function catalog<Input extends ResolvedInput>(
 
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
 });
 const ABRecord = defineModel({
   id: "ABRecord",
-  spec: { kind: "record", fields: { a: { kind: "number" }, b: { kind: "number" } } },
+  spec: Spec.record({ a: Spec.number(), b: Spec.number() }),
 });
 
 const POINTS = track({

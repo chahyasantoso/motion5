@@ -14,8 +14,9 @@ import {
 import { IK3D, IK3D_NODE_ID } from "../../../../apps/ik-playground/src/ik3d-playground-project";
 import { testModels } from "../support/test-models";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
-const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: Spec.record({}) });
 
 const PLANAR_GOALS = [
   { id: "main", cells: { memberId: TENTACLE.tipTrack, x: 180, y: 290, influence: 0.75 } },
@@ -30,13 +31,10 @@ const SPATIAL_GOALS = [
 const SOLVER = (id: string): PluginDefinition => ({
   id,
   inputs: {
-    param: {
-      kind: "record",
-      fields: {
-        flip: { kind: "boolean", optional: true },
-        inspect: { kind: "boolean", optional: true, static: true },
-      },
-    },
+    param: Spec.record({
+      flip: Spec.boolean({ optional: true }),
+      inspect: Spec.boolean({ optional: true, static: true }),
+    }),
   },
   outputs: { values: FIXTURE_OUT_1 },
   transform() {

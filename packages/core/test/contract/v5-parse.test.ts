@@ -3,8 +3,9 @@ import { parseTrackDefinition, type ParsedTrack } from "../../src/contract/v5-pa
 import type { Diagnostic, PluginDefinition } from "../../src/contract/v5";
 import { admitDeclaration } from "../../src/domain/plugin-catalog";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
-const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: Spec.record({}) });
 
 const PATH = "motions[0].tracks[0]";
 
@@ -192,10 +193,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
     });
     expect(
       accepted({ id: "b", input: { values: {} }, output: { model: "TestRecord" } }).input.values,
-    ).toEqual({
-      kind: "record",
-      fields: {},
-    });
+    ).toEqual(Spec.record({}));
     expect(
       accepted({
         id: "c",
@@ -223,7 +221,7 @@ describe("parseTrackDefinition accepts the target shape", () => {
     const found = expectRule(
       {
         id: "points",
-        input: { values: [], schema: { kind: "table", schema: { row: { fields: {} } } } },
+        input: { values: [], schema: Spec.table({}) },
         output: { model: "TestTable" },
       },
       "input-schema-retired",
@@ -767,7 +765,7 @@ describe("parseTrackDefinition selects plugins", () => {
         output: { plugin: "translate" },
         input: {
           values: { dx: 10 },
-          schema: { kind: "record", fields: { dx: { kind: "number" } } },
+          schema: Spec.record({ dx: Spec.number() }),
         },
       },
       "input-schema-retired",

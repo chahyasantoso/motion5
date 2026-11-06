@@ -16,23 +16,14 @@ import { PassthroughProcessor } from "../../../src/runtime/processors/passthroug
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT_SPEC: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        owner: { kind: "string", static: true },
-        x: { kind: "number" },
-        y: { kind: "number" },
-      },
-    },
-  },
-};
-const OUTPUT_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT_SPEC: ValueSpec = Spec.table({
+  owner: Spec.string({ static: true }),
+  x: Spec.number(),
+  y: Spec.number(),
+});
+const OUTPUT_SPEC: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const OUTPUT_SPEC_MODEL = defineModel({ id: "OutputSpecOut", spec: OUTPUT_SPEC });
 
 interface PointStructure {
@@ -59,7 +50,7 @@ const PointSource = defineModel<unknown, PointStructure>({
 const CONSUME: PluginDefinition<ConsumeInput> = {
   id: "consume",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: { data: PointSource },
   },
   outputs: { values: OUTPUT_SPEC_MODEL },
@@ -163,7 +154,7 @@ describe("self-validating model tracks", () => {
   it("keys a dotted model slot's structure by the full slot name", () => {
     const producer: PluginDefinition = {
       id: "producer",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: PointSource },
       transform() {
         return { values: [{ id: "bad", cells: { owner: "acme", x: 1, y: 2 } }] };
@@ -172,7 +163,7 @@ describe("self-validating model tracks", () => {
     const guard: PluginDefinition = {
       id: "guard",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { "data.points": PointSource },
       },
       outputs: { values: OUTPUT_SPEC_MODEL },

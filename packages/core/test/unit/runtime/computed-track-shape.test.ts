@@ -7,8 +7,9 @@ import { PluginNodeError } from "../../../src/runtime/plugin-output";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: Spec.record({}) });
 
 const PATH = "motions[0].tracks[0]";
 
@@ -62,7 +63,7 @@ describe("computed track local shape", () => {
   it("refuses a table where the plugin declares a record as values-shape-invalid", () => {
     const track = createComputedTrack({
       nodeId: "points",
-      plugin: pluginDeclaring({ kind: "record", fields: { dx: { kind: "number" } } }),
+      plugin: pluginDeclaring(Spec.record({ dx: Spec.number() })),
       values: valuesOf([{ id: "point-a", cells: { dx: 10 } }]),
     });
     expect(refusalOf(track)).toBe("values-shape-invalid");
@@ -72,10 +73,7 @@ describe("computed track local shape", () => {
   it("refuses a record where the plugin declares a table as values-shape-invalid", () => {
     const track = createComputedTrack({
       nodeId: "points",
-      plugin: pluginDeclaring({
-        kind: "table",
-        schema: { row: { fields: { dx: { kind: "number" } } } },
-      }),
+      plugin: pluginDeclaring(Spec.table({ dx: Spec.number() })),
       values: valuesOf({ dx: 10 }),
     });
     expect(refusalOf(track)).toBe("values-shape-invalid");

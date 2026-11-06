@@ -10,6 +10,7 @@ import type { BoundSlotEntry, BoundSlots } from "../../../src/runtime/bound-slot
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestRecord } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const here = fileURLToPath(import.meta.url);
 
@@ -32,7 +33,7 @@ function isCountRecord(raw: unknown): raw is { readonly count: number } {
 
 const testModel: Model<{ readonly count: number }, { readonly count: number }> = {
   id: "test-model",
-  spec: { kind: "record", fields: { count: { kind: "number" } } },
+  spec: Spec.record({ count: Spec.number() }),
   parse(raw) {
     if (isCountRecord(raw)) {
       return { ok: true, value: { count: raw.count } };
@@ -72,7 +73,7 @@ describe("Track and Processors", () => {
       nodeId: "consumer",
       plugin: admitDeclaration({
         id: "plugin",
-        inputs: { values: { kind: "record", fields: {} } },
+        inputs: { values: Spec.record({}) },
         outputs: { values: TestRecord },
         transform: () => ({ values: {} }),
       }),
@@ -119,7 +120,7 @@ describe("Track and Processors", () => {
       nodeId: "computed-track",
       plugin: admitDeclaration({
         id: "plugin",
-        inputs: { values: { kind: "record", fields: {} } },
+        inputs: { values: Spec.record({}) },
         outputs: { values: TestRecord },
         transform: () => ({ values: {} }),
       }),
@@ -151,10 +152,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "dotted-slot",
       inputs: {
-        values: { spec: { kind: "record", fields: {} } },
+        values: { spec: Spec.record({}) },
         requires: { "chain.main": { kind: "model", model: testModel } },
       },
-      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
+      outputs: { values: { kind: "spec", spec: Spec.record({}) } },
       transform(input) {
         requires = input.requires;
         return { values: {} };
@@ -182,10 +183,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "map-slot",
       inputs: {
-        values: { spec: { kind: "record", fields: {} } },
+        values: { spec: Spec.record({}) },
         requires: { data: { kind: "model", model: testModel, binding: "map" } },
       },
-      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
+      outputs: { values: { kind: "spec", spec: Spec.record({}) } },
       transform(input) {
         requires = input.requires;
         structures = input.structures;
@@ -224,10 +225,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "optional-slot",
       inputs: {
-        values: { spec: { kind: "record", fields: {} } },
+        values: { spec: Spec.record({}) },
         requires: { maybe: { kind: "model", optional: true, model: testModel } },
       },
-      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
+      outputs: { values: { kind: "spec", spec: Spec.record({}) } },
       transform(input) {
         requires = input.requires;
         structures = input.structures;
@@ -245,10 +246,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "empty-map",
       inputs: {
-        values: { spec: { kind: "record", fields: {} } },
+        values: { spec: Spec.record({}) },
         requires: { data: { kind: "model", model: testModel, binding: "map" } },
       },
-      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
+      outputs: { values: { kind: "spec", spec: Spec.record({}) } },
       transform() {
         return { values: {} };
       },
@@ -264,10 +265,10 @@ describe("Track and Processors", () => {
     const track = computedTrack({
       id: "proto-slot",
       inputs: {
-        values: { spec: { kind: "record", fields: {} } },
+        values: { spec: Spec.record({}) },
         requires: { [slotName]: { kind: "model", model: testModel } },
       },
-      outputs: { values: { kind: "spec", spec: { kind: "record", fields: {} } } },
+      outputs: { values: { kind: "spec", spec: Spec.record({}) } },
       transform(input) {
         requires = input.requires;
         return { values: {} };

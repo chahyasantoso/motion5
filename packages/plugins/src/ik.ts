@@ -1,4 +1,5 @@
 import {
+  Spec,
   definePlugin,
   ok,
   prepareRefused,
@@ -18,15 +19,12 @@ import { Body2d, Goals2d, Point2d, Solved2d, type Body2dCells, type Goals2dCells
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { rowAt, sameRowCount } from "./table-lookup";
 
-const INSPECT: ValueSpec = {
-  kind: "record",
-  fields: {
-    kind: { kind: "string" },
-    residual: { kind: "number" },
-    iterations: { kind: "number" },
-    atBound: { kind: "boolean" },
-  },
-};
+const INSPECT: ValueSpec = Spec.record({
+  kind: Spec.string(),
+  residual: Spec.number(),
+  iterations: Spec.number(),
+  atBound: Spec.boolean(),
+});
 
 function solveMembers(
   chainRows: TableOf<Body2dCells>,
@@ -73,13 +71,10 @@ function outputRows(result: ReturnType<typeof solveChain>, members: readonly Sol
 export const ikPlugin = definePlugin({
   id: "ik",
   inputs: {
-    param: {
-      kind: "record",
-      fields: {
-        flip: { kind: "boolean", optional: true },
-        inspect: { kind: "boolean", optional: true, static: true },
-      },
-    },
+    param: Spec.record({
+      flip: Spec.boolean({ optional: true }),
+      inspect: Spec.boolean({ optional: true, static: true }),
+    }),
     requires: {
       chain: Body2d,
       goals: Goals2d,

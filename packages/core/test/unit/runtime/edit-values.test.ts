@@ -29,42 +29,27 @@ import { record, row, table, track } from "../../support/v5-builders";
 import { testModel, testModels } from "../../support/test-models";
 
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: {
-      row: {
-        fields: { x: { kind: "number" }, y: { kind: "number", optional: true } },
-      },
-    },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number({ optional: true }) }),
 });
 const ABRecord = defineModel({
   id: "ABRecord",
-  spec: {
-    kind: "record",
-    fields: { a: { kind: "number" }, b: { kind: "number" } },
-  },
+  spec: Spec.record({ a: Spec.number(), b: Spec.number() }),
 });
 const LabelCount = defineModel({
   id: "LabelCount",
-  spec: {
-    kind: "record",
-    fields: { label: { kind: "string" }, count: { kind: "number" } },
-  },
+  spec: Spec.record({ label: Spec.string(), count: Spec.number() }),
 });
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
+    values: Spec.record({ dx: Spec.number() }),
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT_MODEL },

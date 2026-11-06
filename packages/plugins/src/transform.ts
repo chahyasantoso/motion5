@@ -1,14 +1,11 @@
-import { definePlugin, isFlatRecord } from "@motion5/core/plugin-api";
+import { Spec, definePlugin, isFlatRecord } from "@motion5/core/plugin-api";
 import { Points2d } from "./models";
 
 /** Shifts each point row by `dx` and `dy`; row ids and rotation pass through. */
 export const transformPlugin = definePlugin({
   id: "transform",
   inputs: {
-    values: {
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-    },
+    values: Spec.record({ dx: Spec.number(), dy: Spec.number() }),
     requires: { data: Points2d },
   },
   outputs: { values: Points2d },

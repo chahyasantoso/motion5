@@ -12,17 +12,14 @@ import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { testModels } from "./test-models";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "table", schema: { row: { fields: {} } } },
+  spec: Spec.table({}),
 });
 
-const OPEN_RECORD: ValueSpec = {
-  kind: "record",
-  fields: {},
-  additionalProperties: true,
-};
+const OPEN_RECORD: ValueSpec = Spec.record({}, { additionalProperties: true });
 const OPEN_RECORD_MODEL = defineModel({ id: "OpenRecordOut", spec: OPEN_RECORD });
 
 /** A permissive computed observer for runtime tests that are not about a solver contract. */
@@ -79,11 +76,11 @@ export function testEngine(
 export const GRAPH_EDGE_PLUGIN: PluginDefinition = {
   id: "graph-edge",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: {
       chain: shape({
         optional: true,
-        outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+        outputs: { values: Spec.table({}) },
       }),
     },
   },

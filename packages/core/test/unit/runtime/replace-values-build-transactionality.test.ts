@@ -9,6 +9,7 @@ import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestTable } from "../../support/test-models";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -26,18 +27,12 @@ function valuesOf(values: unknown): ParsedValues {
 const TEST_PLUGIN: PluginDefinition = {
   id: "test-plugin",
   inputs: {
-    values: {
-      kind: "table",
-      schema: { row: { fields: { x: { kind: "number" } } } },
-    },
+    values: Spec.table({ x: Spec.number() }),
   },
   outputs: {
     values: defineModel({
       id: "XTableOut",
-      spec: {
-        kind: "table",
-        schema: { row: { fields: { x: { kind: "number" } } } },
-      },
+      spec: Spec.table({ x: Spec.number() }),
     }),
   },
   transform(input) {

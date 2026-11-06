@@ -25,16 +25,14 @@ import { Track } from "../../src/runtime/track";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { outputOf, project, record, row, table, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 type TranslateInput = ResolvedInput<TranslateValues> & {
   readonly requires: { readonly data: { readonly values: Table } };
 };
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointTable = defineModel({
@@ -51,7 +49,7 @@ const HardeningSource = defineModel({
 const TRANSLATE: PluginDefinition<TranslateInput> = {
   id: "translate",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
+    values: Spec.record({ dx: Spec.number(), dy: Spec.number() }),
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT_MODEL },
@@ -216,7 +214,7 @@ describe("identified plugin runtime", () => {
     const optional: PluginDefinition = {
       id: "optional",
       inputs: {
-        values: { kind: "record", fields: { n: { kind: "number" } } },
+        values: Spec.record({ n: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
       outputs: { values: POINT_MODEL },
@@ -237,7 +235,7 @@ describe("identified plugin runtime", () => {
     const optional: PluginDefinition = {
       id: "optional",
       inputs: {
-        values: { kind: "record", fields: { n: { kind: "number" } } },
+        values: Spec.record({ n: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
       outputs: { values: POINT_MODEL },
@@ -270,7 +268,7 @@ describe("identified plugin runtime", () => {
     const emptyOk: PluginDefinition = {
       id: "empty-ok",
       inputs: {
-        values: { kind: "record", fields: { n: { kind: "number" } } },
+        values: Spec.record({ n: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT } }) },
       },
       outputs: { values: POINT_MODEL },
@@ -304,7 +302,7 @@ describe("identified plugin runtime", () => {
     const map: PluginDefinition<MapInput> = {
       id: "concat",
       inputs: {
-        values: { kind: "record", fields: { n: { kind: "number" } } },
+        values: Spec.record({ n: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT }, binding: "map" }) },
       },
       outputs: { values: POINT_MODEL },
@@ -343,7 +341,7 @@ describe("identified plugin runtime", () => {
     const emptyMap: PluginDefinition = {
       id: "empty-map",
       inputs: {
-        values: { kind: "record", fields: { n: { kind: "number" } } },
+        values: Spec.record({ n: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT }, binding: "map" }) },
       },
       outputs: { values: POINT_MODEL },
@@ -370,7 +368,7 @@ describe("identified plugin runtime", () => {
   it("refuses a malformed first output set", () => {
     const bad: PluginDefinition = {
       id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      inputs: { values: Spec.record({ n: Spec.number() }) },
       outputs: { values: POINT_MODEL },
       transform() {
         return { other: [] };
@@ -386,10 +384,10 @@ describe("identified plugin runtime", () => {
   it("publishes a table output and a record output in one node", () => {
     const both: PluginDefinition = {
       id: "both",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      inputs: { values: Spec.record({ n: Spec.number() }) },
       outputs: {
         values: POINT_MODEL,
-        inspect: { kind: "record", fields: { n: { kind: "number" } } },
+        inspect: Spec.record({ n: Spec.number() }),
       },
       transform() {
         return {
@@ -411,7 +409,7 @@ describe("identified plugin runtime", () => {
   it("turns a thrown transform into a node error", () => {
     const bad: PluginDefinition = {
       id: "bad",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      inputs: { values: Spec.record({ n: Spec.number() }) },
       outputs: { values: POINT_MODEL },
       transform() {
         throw new Error("transform failed");
@@ -441,7 +439,7 @@ describe("identified plugin runtime", () => {
       const consumerPlugin: PluginDefinition = {
         id: "consumer",
         inputs: {
-          values: { kind: "record", fields: { n: { kind: "number" } } },
+          values: Spec.record({ n: Spec.number() }),
           requires: { data: hardeningSlot },
         },
         outputs: { values: POINT_MODEL },
@@ -538,7 +536,7 @@ describe("identified plugin runtime", () => {
     const testPlugin: PluginDefinition = {
       id: "test-plugin-proto",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { data: hardeningSlot },
       },
       outputs: { values: POINT_MODEL },

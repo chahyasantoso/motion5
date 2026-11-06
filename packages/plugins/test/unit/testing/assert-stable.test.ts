@@ -1,25 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { Outputs, PluginDefinition } from "@motion5/core/plugin-api";
 import { assertStable } from "../../../src/testing/assert-stable";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 
 const STABLE: PluginDefinition = {
   id: "stable",
-  inputs: { values: { kind: "record", fields: {} } },
+  inputs: { values: Spec.record({}) },
   outputs: {
     values: defineModel({
       id: "StableOut",
-      spec: {
-        kind: "table",
-        schema: {
-          row: {
-            fields: {
-              owner: { kind: "string" },
-              x: { kind: "number" },
-            },
-          },
-        },
-      },
+      spec: Spec.table({ owner: Spec.string(), x: Spec.number() }),
     }),
   },
   transform(_input, context) {
@@ -55,17 +45,7 @@ describe("assertStable", () => {
       ...STABLE,
       id: "numeric",
       outputs: {
-        values: {
-          kind: "table",
-          schema: {
-            row: {
-              fields: {
-                limit: { kind: "number" },
-                x: { kind: "number" },
-              },
-            },
-          },
-        },
+        values: Spec.table({ limit: Spec.number(), x: Spec.number() }),
       },
       transform: (_input: never, context: { readonly progress: number }) => ({
         values: [{ id: "bone", cells: { limit: context.progress, x: context.progress } }],

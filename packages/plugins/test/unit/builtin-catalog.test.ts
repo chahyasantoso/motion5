@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PluginCatalog, type PluginDefinition } from "@motion5/core/plugin-api";
+import { Spec, PluginCatalog, type PluginDefinition } from "@motion5/core/plugin-api";
 import { builtinCatalog } from "../../src/builtin-catalog";
 import { createPluginLoader } from "../../src/loader";
 import { builtinModels } from "../../src/models";
@@ -8,13 +8,13 @@ import { defineModel } from "@motion5/core/plugin-api";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { value: { kind: "number" } } },
+  spec: Spec.record({ value: Spec.number() }),
 });
 
 const MINIMAL_PLUGIN: PluginDefinition = {
   id: "slice-a-test",
   inputs: {
-    values: { kind: "record", fields: { value: { kind: "number" } } },
+    values: Spec.record({ value: Spec.number() }),
   },
   outputs: {
     values: FIXTURE_OUT_1,

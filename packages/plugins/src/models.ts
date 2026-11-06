@@ -1,4 +1,4 @@
-import { defineModel, ok, refused } from "@motion5/core/plugin-api";
+import { Spec, defineModel, ok, refused } from "@motion5/core/plugin-api";
 import type { Model, Parsed, ValueSpec } from "@motion5/core/plugin-api";
 import { parseBody, type BodyStructure } from "./body/domain";
 import { BODY_2D_FIELDS, BODY_2D_SPEC, GOALS_2D_SPEC } from "./body/fields";
@@ -50,15 +50,9 @@ function parsePoints(value: unknown): Parsed<PointsStructure> {
   });
 }
 
-const POINTS_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: ROOT_2D_FIELDS } },
-};
+const POINTS_2D_SPEC: ValueSpec = Spec.table(ROOT_2D_FIELDS);
 
-const POINTS_3D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: ROOT_3D_FIELDS } },
-};
+const POINTS_3D_SPEC: ValueSpec = Spec.table(ROOT_3D_FIELDS);
 
 export interface PointsStructure {
   readonly ids: readonly string[];
@@ -245,10 +239,7 @@ export type PoseLabelCells = {
 /** The template a pose matched and how close the match is, in 2D or 3D. */
 export const PoseLabel: Model<PoseLabelCells> = defineModel({
   id: "PoseLabel",
-  spec: {
-    kind: "record",
-    fields: { label: { kind: "string" }, confidence: { kind: "number" } },
-  },
+  spec: Spec.record({ label: Spec.string(), confidence: Spec.number() }),
 });
 
 /** Every first-party model a host registers so authored sources can name it. */

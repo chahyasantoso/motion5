@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik3d";
 import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models";
 import { goalDiagnostics } from "../../src/goals/check";
@@ -14,10 +14,7 @@ import { testModels } from "../../../core/test/support/test-models";
 
 const Pole3d = defineModel({
   id: "Pole3d",
-  spec: {
-    kind: "record",
-    fields: { x: { kind: "number" }, y: { kind: "number" }, z: { kind: "number" } },
-  },
+  spec: Spec.record({ x: Spec.number(), y: Spec.number(), z: Spec.number() }),
 });
 
 const solver = vi.hoisted(() => ({ calls: 0 }));

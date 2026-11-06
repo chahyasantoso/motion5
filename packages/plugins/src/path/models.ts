@@ -1,4 +1,4 @@
-import { defineModel, ok, refused } from "@motion5/core/plugin-api";
+import { Spec, defineModel, ok, refused } from "@motion5/core/plugin-api";
 import type { Model, Parsed, ValueSpec } from "@motion5/core/plugin-api";
 
 function parseIds(
@@ -15,55 +15,34 @@ function parseIds(
   return ok({ ids: value.map((r) => r.id) });
 }
 
-const ANCHORS_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        inX: { kind: "number", optional: true },
-        inY: { kind: "number", optional: true },
-        outX: { kind: "number", optional: true },
-        outY: { kind: "number", optional: true },
-      },
-    },
-  },
-};
+const ANCHORS_2D_SPEC: ValueSpec = Spec.table({
+  x: Spec.number(),
+  y: Spec.number(),
+  inX: Spec.number({ optional: true }),
+  inY: Spec.number({ optional: true }),
+  outX: Spec.number({ optional: true }),
+  outY: Spec.number({ optional: true }),
+});
 
-const CUBIC_PATH_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x0: { kind: "number" },
-        y0: { kind: "number" },
-        x1: { kind: "number" },
-        y1: { kind: "number" },
-        x2: { kind: "number" },
-        y2: { kind: "number" },
-        x3: { kind: "number" },
-        y3: { kind: "number" },
-      },
-    },
-  },
-};
+const CUBIC_PATH_2D_SPEC: ValueSpec = Spec.table({
+  x0: Spec.number(),
+  y0: Spec.number(),
+  x1: Spec.number(),
+  y1: Spec.number(),
+  x2: Spec.number(),
+  y2: Spec.number(),
+  x3: Spec.number(),
+  y3: Spec.number(),
+});
 
-const LOCAL_ANCHORS_2D_SPEC: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number", optional: true },
-        y: { kind: "number", optional: true },
-        inX: { kind: "number", optional: true },
-        inY: { kind: "number", optional: true },
-        outX: { kind: "number", optional: true },
-        outY: { kind: "number", optional: true },
-      },
-    },
-  },
-};
+const LOCAL_ANCHORS_2D_SPEC: ValueSpec = Spec.table({
+  x: Spec.number({ optional: true }),
+  y: Spec.number({ optional: true }),
+  inX: Spec.number({ optional: true }),
+  inY: Spec.number({ optional: true }),
+  outX: Spec.number({ optional: true }),
+  outY: Spec.number({ optional: true }),
+});
 
 export type Anchor2dCells = {
   readonly x: number;

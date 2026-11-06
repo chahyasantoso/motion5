@@ -5,11 +5,9 @@ import type { PluginDefinition, ProjectDefinition, ValueSpec } from "../../../sr
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { explain } from "../../../src/graph/explain";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const SPEC_A: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const SPEC_A: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const SPEC_A_MODEL = defineModel({ id: "SpecAOut", spec: SPEC_A });
 
 const Body2d = defineModel({
@@ -31,14 +29,14 @@ describe("slot model fit", () => {
   it("accepts a producer implementing the required model", () => {
     const producer: PluginDefinition = {
       id: "producer-body",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Body2d },
       transform: () => ({ values: [] }),
     };
     const consumer: PluginDefinition = {
       id: "consumer-body",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d },
       },
       outputs: { values: SPEC_A_MODEL },
@@ -73,14 +71,14 @@ describe("slot model fit", () => {
   it("refuses a track whose plugin implements a different model with an identical shape", () => {
     const producer: PluginDefinition = {
       id: "producer-mocap",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Mocap2d },
       transform: () => ({ values: [] }),
     };
     const consumer: PluginDefinition = {
       id: "consumer-body",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d },
       },
       outputs: { values: SPEC_A_MODEL },
@@ -116,20 +114,20 @@ describe("slot model fit", () => {
   it("handles bare model slot and optional model", () => {
     const producerSolved: PluginDefinition = {
       id: "producer-solved",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Solved2d },
       transform: () => ({ values: [] }),
     };
     const producerBody: PluginDefinition = {
       id: "producer-body",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Body2d },
       transform: () => ({ values: [] }),
     };
     const consumerOptional: PluginDefinition = {
       id: "consumer-optional",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { solved: optional(Solved2d) },
       },
       outputs: { values: SPEC_A_MODEL },
@@ -195,14 +193,14 @@ describe("slot model fit", () => {
   it("still compares shape slots by spec", () => {
     const producerShape: PluginDefinition = {
       id: "producer-shape",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: SPEC_A_MODEL },
       transform: () => ({ values: [] }),
     };
     const consumerShape: PluginDefinition = {
       id: "consumer-shape",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { data: shape({ outputs: { values: SPEC_A } }) },
       },
       outputs: { values: SPEC_A_MODEL },
@@ -238,7 +236,7 @@ describe("slot model fit", () => {
     const consumer: PluginDefinition = {
       id: "consumer-bridge",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d },
       },
       outputs: { values: SPEC_A_MODEL },
@@ -299,7 +297,7 @@ describe("slot model fit", () => {
     const consumer: PluginDefinition = {
       id: "consumer-describe",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d },
       },
       outputs: { values: Body2d },

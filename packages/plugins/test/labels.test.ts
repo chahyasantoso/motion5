@@ -12,11 +12,11 @@ import {
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { onLabelChange, readLabel } from "../src/labels";
 import { testModels } from "../../core/test/support/test-models";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { mode: { kind: "string" } } },
+  spec: Spec.record({ mode: Spec.string() }),
 });
 
 function ready(value: unknown): LivePatch {
@@ -61,7 +61,7 @@ function tagProject() {
     plugins: [
       {
         id: "tag",
-        inputs: { values: { kind: "record", fields: { mode: { kind: "string" } } } },
+        inputs: { values: Spec.record({ mode: Spec.string() }) },
         outputs: { values: FIXTURE_OUT_1 },
         transform: ({ values }: { readonly values: Value }) => ({ values }),
       },

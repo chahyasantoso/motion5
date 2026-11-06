@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shape } from "@motion5/core/plugin-api";
+import { Spec, shape } from "@motion5/core/plugin-api";
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 import { Engine, PluginCatalog } from "@motion5/core";
 import type { PluginDefinition } from "@motion5/core/plugin-api";
@@ -15,11 +15,11 @@ import { defineModel } from "@motion5/core/plugin-api";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { span: { kind: "number" } } },
+  spec: Spec.record({ span: Spec.number() }),
 });
 const FIXTURE_OUT_2 = defineModel({
   id: "FixtureOut2",
-  spec: { kind: "record", fields: { x: { kind: "number" }, y: { kind: "number" } } },
+  spec: Spec.record({ x: Spec.number(), y: Spec.number() }),
 });
 
 function hold(value: number) {
@@ -48,7 +48,7 @@ function readX(value: unknown): number {
 const reachPlugin: PluginDefinition = {
   id: "reach",
   inputs: {
-    values: { kind: "record", fields: { weight: { kind: "number" } } },
+    values: Spec.record({ weight: Spec.number() }),
     requires: {
       base: shape({ outputs: { values: ROOT_2D_SPEC } }),
       destination: shape({ outputs: { values: ROOT_2D_SPEC } }),
@@ -154,7 +154,7 @@ describe("plugin-owned requirements end to end", () => {
     const optionalPlugin: PluginDefinition = {
       id: "opt-reach",
       inputs: {
-        values: { kind: "record", fields: { length: { kind: "number" } } },
+        values: Spec.record({ length: Spec.number() }),
         requires: {
           base: shape({ outputs: { values: ROOT_2D_SPEC }, optional: true }),
         },

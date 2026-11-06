@@ -15,6 +15,7 @@ import {
   EXTERNAL_BASE,
 } from "../support/aggregate-topology";
 import { Points2d, Points3d } from "../../src/models";
+import { Spec } from "@motion5/core/plugin-api";
 
 function body(...rows: readonly { readonly id: string; readonly parentId?: string }[]) {
   return rows.map(({ id, parentId }) => ({
@@ -47,48 +48,42 @@ describe("aggregate kinematics contracts", () => {
     ])
       expect(spec.kind).toBe("table");
 
-    expect(ROOT_2D_SPEC).toEqual({
-      kind: "record",
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        rotation: { kind: "number" },
-      },
-    });
-    expect(ROOT_3D_SPEC).toEqual({
-      kind: "record",
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        z: { kind: "number" },
-        rotation: { kind: "number" },
-        rotationX: { kind: "number" },
-        rotationY: { kind: "number" },
-      },
-    });
+    expect(ROOT_2D_SPEC).toEqual(
+      Spec.record({ x: Spec.number(), y: Spec.number(), rotation: Spec.number() }),
+    );
+    expect(ROOT_3D_SPEC).toEqual(
+      Spec.record({
+        x: Spec.number(),
+        y: Spec.number(),
+        z: Spec.number(),
+        rotation: Spec.number(),
+        rotationX: Spec.number(),
+        rotationY: Spec.number(),
+      }),
+    );
     expect(BODY_2D_SPEC).toMatchObject({
-      schema: { row: { fields: { parentId: { static: true }, length: { kind: "number" } } } },
+      schema: { row: { fields: { parentId: { static: true }, length: Spec.number() } } },
     });
     expect(BODY_3D_SPEC).toMatchObject({
-      schema: { row: { fields: { z: { kind: "number" }, joint: { static: true } } } },
+      schema: { row: { fields: { z: Spec.number(), joint: { static: true } } } },
     });
     expect(GOALS_2D_SPEC).toMatchObject({
-      schema: { row: { fields: { memberId: { static: true }, x: { kind: "number" } } } },
+      schema: { row: { fields: { memberId: { static: true }, x: Spec.number() } } },
     });
     expect(GOALS_3D_SPEC).toMatchObject({
-      schema: { row: { fields: { z: { kind: "number" }, rotationY: { kind: "number" } } } },
+      schema: { row: { fields: { z: Spec.number(), rotationY: Spec.number() } } },
     });
     expect(SOLVED_2D_SPEC).toMatchObject({
-      schema: { row: { fields: { rotation: { kind: "number" }, atBound: { kind: "boolean" } } } },
+      schema: { row: { fields: { rotation: Spec.number(), atBound: Spec.boolean() } } },
     });
     expect(SOLVED_3D_SPEC).toMatchObject({
-      schema: { row: { fields: { rotationX: { kind: "number" } } } },
+      schema: { row: { fields: { rotationX: Spec.number() } } },
     });
     expect(Points2d.spec).toMatchObject({
-      schema: { row: { fields: { x: { kind: "number" }, rotation: { kind: "number" } } } },
+      schema: { row: { fields: { x: Spec.number(), rotation: Spec.number() } } },
     });
     expect(Points3d.spec).toMatchObject({
-      schema: { row: { fields: { z: { kind: "number" }, rotationY: { kind: "number" } } } },
+      schema: { row: { fields: { z: Spec.number(), rotationY: Spec.number() } } },
     });
   });
 

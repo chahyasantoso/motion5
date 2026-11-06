@@ -14,10 +14,11 @@ import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { record, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { opacity: { kind: "number" } } },
+  spec: Spec.record({ opacity: Spec.number() }),
 });
 
 const node = (
@@ -44,7 +45,7 @@ const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
 
 const BAD_OUTPUT: PluginDefinition = {
   id: "bad-output",
-  inputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
+  inputs: { values: Spec.record({ opacity: Spec.number() }) },
   outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return ["not", "a", "record"] as never;

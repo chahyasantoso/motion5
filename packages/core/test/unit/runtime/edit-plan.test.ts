@@ -22,16 +22,14 @@ import { code } from "../../helpers/source-region";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 const TRANSLATE: PluginDefinition = {
   id: "translate",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
+    values: Spec.record({ dx: Spec.number() }),
     requires: { data: shape({ outputs: { values: POINT } }) },
   },
   outputs: { values: POINT_MODEL },
@@ -41,10 +39,7 @@ const TRANSLATE: PluginDefinition = {
 };
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
 });
 const POINTS = track({
   id: "points",
@@ -155,7 +150,7 @@ describe("the edit union answers its tier and its overlay verdict", () => {
     const OPTIONAL_TRANSLATE: PluginDefinition = {
       id: "optional-translate",
       inputs: {
-        values: { kind: "record", fields: { dx: { kind: "number" } } },
+        values: Spec.record({ dx: Spec.number() }),
         requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
       },
       outputs: { values: POINT_MODEL },

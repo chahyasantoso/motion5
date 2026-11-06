@@ -12,10 +12,11 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { record, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "table", schema: { row: { fields: {} } } },
+  spec: Spec.table({}),
 });
 
 const MOTION_ID = "hero";
@@ -26,10 +27,10 @@ const CURSOR_ID = "~/cursor";
 const DEMO: PluginDefinition = {
   id: "demo",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: {
       chain: shape({
-        outputs: { values: { kind: "table", schema: { row: { fields: {} } } } },
+        outputs: { values: Spec.table({}) },
         optional: true,
       }),
     },

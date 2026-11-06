@@ -5,6 +5,7 @@ import type { InterpolationTimeline, Interpolator } from "../../../src/ports/int
 import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { createRealGsapSeam } from "../../support/real-gsap";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -253,10 +254,9 @@ describe("value evaluation", () => {
         { p: 1, v: 200 },
       ],
     });
-    const spec: import("../../../src/contract/v5").ValueSpec = {
-      kind: "record",
-      fields: { x: { kind: "number", min: 0, max: 100 } },
-    };
+    const spec: import("../../../src/contract/v5").ValueSpec = Spec.record({
+      x: Spec.number({ min: 0, max: 100 }),
+    });
     const interpolator: Interpolator = {
       create: () =>
         ({

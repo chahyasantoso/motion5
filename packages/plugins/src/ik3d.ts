@@ -1,4 +1,5 @@
 import {
+  Spec,
   definePlugin,
   ok,
   prepareRefused,
@@ -22,27 +23,21 @@ import { Body3d, Goals3d, Point3d, Solved3d, type Body3dCells, type Goals3dCells
 import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { rowAt, sameRowCount } from "./table-lookup";
 
-const FRAME: ValueSpec = {
-  kind: "record",
-  fields: {
-    x: { kind: "number" },
-    y: { kind: "number" },
-    z: { kind: "number" },
-    rotation: { kind: "number", optional: true },
-    rotationX: { kind: "number", optional: true },
-    rotationY: { kind: "number", optional: true },
-  },
-};
+const FRAME: ValueSpec = Spec.record({
+  x: Spec.number(),
+  y: Spec.number(),
+  z: Spec.number(),
+  rotation: Spec.number({ optional: true }),
+  rotationX: Spec.number({ optional: true }),
+  rotationY: Spec.number({ optional: true }),
+});
 
-const INSPECT: ValueSpec = {
-  kind: "record",
-  fields: {
-    kind: { kind: "string" },
-    residual: { kind: "number" },
-    iterations: { kind: "number" },
-    atBound: { kind: "boolean" },
-  },
-};
+const INSPECT: ValueSpec = Spec.record({
+  kind: Spec.string(),
+  residual: Spec.number(),
+  iterations: Spec.number(),
+  atBound: Spec.boolean(),
+});
 
 function solveMembers3d(
   chainRows: TableOf<Body3dCells>,
@@ -99,12 +94,7 @@ function outputRows(result: ReturnType<typeof solveChain3d>, members: readonly C
 export const ik3dPlugin = definePlugin({
   id: "ik3d",
   inputs: {
-    param: {
-      kind: "record",
-      fields: {
-        inspect: { kind: "boolean", optional: true, static: true },
-      },
-    },
+    param: Spec.record({ inspect: Spec.boolean({ optional: true, static: true }) }),
     requires: {
       chain: Body3d,
       goals: Goals3d,

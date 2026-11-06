@@ -1,4 +1,5 @@
 import {
+  Spec,
   shape,
   unreachable,
   type PluginDefinition,
@@ -15,21 +16,14 @@ import {
 } from "./frame3d";
 import { PoseLabel } from "./models";
 
-const POSE: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        z: { kind: "number", optional: true },
-        rotation: { kind: "number" },
-        rotationX: { kind: "number", optional: true },
-        rotationY: { kind: "number", optional: true },
-      },
-    },
-  },
-};
+const POSE: ValueSpec = Spec.table({
+  x: Spec.number(),
+  y: Spec.number(),
+  z: Spec.number({ optional: true }),
+  rotation: Spec.number(),
+  rotationX: Spec.number({ optional: true }),
+  rotationY: Spec.number({ optional: true }),
+});
 
 export interface PoseTemplate {
   readonly label: string;

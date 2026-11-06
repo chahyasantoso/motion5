@@ -12,6 +12,7 @@ import type { Interpolator } from "../../../src/ports/interpolator";
 import { Track } from "../../../src/runtime/track";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { TestRecord } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const PATH = "motions[0].tracks[0]";
 
@@ -48,10 +49,7 @@ function valuesOf(values: unknown): ParsedValues {
   return parsed;
 }
 
-const RECORD_SPEC: ValueSpec = {
-  kind: "record",
-  fields: { x: { kind: "number" } },
-};
+const RECORD_SPEC: ValueSpec = Spec.record({ x: Spec.number() });
 
 function pluginWithValues(spec: ValueSpec = RECORD_SPEC): PluginDefinition {
   return {

@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { PluginCatalog, type ProjectDefinition } from "@motion5/core";
 import type { PluginDefinition } from "@motion5/core/plugin-api";
 import { createPluginLoader } from "../../src/loader";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 
-const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: Spec.record({}) });
 
 const PLUGIN: PluginDefinition<never> = {
   id: "demo",
-  inputs: { values: { kind: "record", fields: {} } },
+  inputs: { values: Spec.record({}) },
   outputs: { values: FIXTURE_OUT_1 },
   transform() {
     return { values: {} };

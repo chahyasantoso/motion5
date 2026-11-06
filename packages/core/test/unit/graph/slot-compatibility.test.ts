@@ -13,31 +13,23 @@ import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
-const RECORD: ValueSpec = {
-  kind: "record",
-  fields: { x: { kind: "number" }, y: { kind: "number" } },
-};
-const VALUES: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" } } } },
-};
+const RECORD: ValueSpec = Spec.record({ x: Spec.number(), y: Spec.number() });
+const VALUES: ValueSpec = Spec.table({ x: Spec.number() });
 const PointTable = defineModel({
   id: "PointTable",
   spec: POINT,
 });
 const OtherTable = defineModel({
   id: "OtherTable",
-  spec: { kind: "table", schema: { row: { fields: { z: { kind: "number" } } } } },
+  spec: Spec.table({ z: Spec.number() }),
 });
 
 const specModels = new Map<ValueSpec, Model>();
-const FILLER: ValueSpec = { kind: "record", fields: {} };
+const FILLER: ValueSpec = Spec.record({});
 
 function modelOf(spec: ValueSpec): Model {
   const known = specModels.get(spec);
@@ -54,7 +46,7 @@ function mainModelOutputs(outputs: Readonly<Record<string, ValueSpec>>): PluginO
 function producer(id: string, outputs: Readonly<Record<string, ValueSpec>>): PluginDefinition {
   return {
     id,
-    inputs: { values: { kind: "record", fields: {} } },
+    inputs: { values: Spec.record({}) },
     outputs: mainModelOutputs(outputs),
     transform: () => ({ values: [] }),
   };
@@ -68,7 +60,7 @@ function plugin(
   return {
     id,
     inputs: {
-      values: { kind: "record", fields: { dx: { kind: "number" } } },
+      values: Spec.record({ dx: Spec.number() }),
       requires: { data: shape({ outputs, binding }) },
     },
     outputs: { values: POINT_MODEL },
@@ -135,7 +127,7 @@ describe("load-time slot compatibility", () => {
       catalog(
         plugin("translate", {
           values: VALUES,
-          inspect: { kind: "record", fields: {}, optional: true },
+          inspect: Spec.record({}, { optional: true }),
         }),
       ),
     );
@@ -176,7 +168,7 @@ describe("load-time slot compatibility", () => {
       {
         ...plugin("optional-source", { values: VALUES }),
         outputs: { values: modelOf({ ...VALUES, optional: true }) },
-        inputs: { values: { kind: "record", fields: { dx: { kind: "number" } } } },
+        inputs: { values: Spec.record({ dx: Spec.number() }) },
       },
       plugin("translate", { values: VALUES }),
     );
@@ -203,7 +195,7 @@ describe("load-time slot compatibility", () => {
       ),
       catalog(
         producer("producer", {
-          values: { kind: "table", schema: { row: { fields: { x: { kind: "string" } } } } },
+          values: Spec.table({ x: Spec.string() }),
         }),
         plugin("translate", { values: VALUES }),
       ),
@@ -221,10 +213,7 @@ describe("load-time slot compatibility", () => {
       ),
       catalog(
         producer("producer", {
-          values: {
-            kind: "table",
-            schema: { row: { fields: { x: { kind: "number", optional: true } } } },
-          },
+          values: Spec.table({ x: Spec.number({ optional: true }) }),
         }),
         plugin("translate", { values: VALUES }),
       ),
@@ -256,12 +245,12 @@ describe("load-time slot compatibility", () => {
       catalog(
         producer("good", { values: VALUES }),
         producer("bad", {
-          values: { kind: "table", schema: { row: { fields: { x: { kind: "string" } } } } },
+          values: Spec.table({ x: Spec.string() }),
         }),
         {
           ...plugin("translate", { values: VALUES }),
           inputs: {
-            values: { kind: "record", fields: { dx: { kind: "number" } } },
+            values: Spec.record({ dx: Spec.number() }),
             requires: { data: shape({ outputs: { values: VALUES }, binding: "map" }) },
           },
         },

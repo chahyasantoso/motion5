@@ -18,11 +18,9 @@ import { isValue } from "../../src/runtime/value-validation";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, row, table, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 type TranslateValues = Readonly<Record<"dx", number>>;
 type TranslateInput = ResolvedInput<TranslateValues> & {
@@ -31,7 +29,7 @@ type TranslateInput = ResolvedInput<TranslateValues> & {
 const TRANSLATE: PluginDefinition<TranslateInput> = {
   id: "translate",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
+    values: Spec.record({ dx: Spec.number() }),
     requires: { data: shape({ outputs: { values: POINT }, optional: true }) },
   },
   outputs: { values: POINT_MODEL },

@@ -24,17 +24,15 @@ import { Points2d } from "../../../plugins/src/models";
 import { ROOT_2D_SPEC } from "../../../plugins/src/root/fields";
 import { testModels } from "../support/test-models";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
-const CONSUMER_SPEC: ValueSpec = {
-  kind: "record",
-  fields: { ok: { kind: "boolean" } },
-};
+const CONSUMER_SPEC: ValueSpec = Spec.record({ ok: Spec.boolean() });
 const CONSUMER_SPEC_MODEL = defineModel({ id: "ConsumerSpecOut", spec: CONSUMER_SPEC });
 
 const consumerPlugin: PluginDefinition = {
   id: "consumer-plugin",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: { source: shape({ outputs: { values: Points2d.spec } }) },
   },
   outputs: { values: CONSUMER_SPEC_MODEL },

@@ -6,6 +6,7 @@ import {
   type ParsedValues,
 } from "../../src/contract/v5-parse";
 import type { Diagnostic, ValueSpec } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
 const PATH = "motions[0].tracks[0]";
 const VALUES_PATH = `${PATH}.input.values`;
@@ -87,19 +88,16 @@ describe("deriveSourceContract infers from the complete authored source", () => 
     const inferred = contract(values, undefined);
 
     expect(inferred.proven).toBe(true);
-    expect(inferred.spec).toEqual({
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            x: { kind: "number" },
-            y: { kind: "number", optional: true },
-            z: { kind: "string", optional: true },
-          },
-          additionalProperties: false,
+    expect(inferred.spec).toEqual(
+      Spec.table(
+        {
+          x: Spec.number(),
+          y: Spec.number({ optional: true }),
+          z: Spec.string({ optional: true }),
         },
-      },
-    });
+        { additionalProperties: false },
+      ),
+    );
   });
 
   it("infers every record field as required", () => {
@@ -120,14 +118,9 @@ describe("deriveSourceContract infers from the complete authored source", () => 
     const inferred = contract(values, undefined);
 
     expect(inferred.proven).toBe(true);
-    expect(inferred.spec).toEqual({
-      kind: "record",
-      fields: {
-        dx: { kind: "number" },
-        dy: { kind: "number" },
-      },
-      additionalProperties: false,
-    });
+    expect(inferred.spec).toEqual(
+      Spec.record({ dx: Spec.number(), dy: Spec.number() }, { additionalProperties: false }),
+    );
   });
 
   it("never infers static, ranges, enums or a row-count promise", () => {
@@ -139,29 +132,17 @@ describe("deriveSourceContract infers from the complete authored source", () => 
 
     const inferred = contract(values, undefined);
 
-    expect(inferred.spec).toEqual({
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            x: { kind: "number" },
-            label: { kind: "string" },
-          },
-          additionalProperties: false,
-        },
-      },
-    });
+    expect(inferred.spec).toEqual(
+      Spec.table({ x: Spec.number(), label: Spec.string() }, { additionalProperties: false }),
+    );
     expect(JSON.stringify(inferred.spec)).not.toContain("static");
     expect(JSON.stringify(inferred.spec)).not.toContain("minRows");
     expect(JSON.stringify(inferred.spec)).not.toContain("enum");
   });
 
   it("treats an empty inferred table, record and omitted values as unproven", () => {
-    const emptyTable = {
-      kind: "table",
-      schema: { row: { fields: {}, additionalProperties: false } },
-    } as const;
-    const emptyRecord = { kind: "record", fields: {}, additionalProperties: false } as const;
+    const emptyTable = Spec.table({}, { additionalProperties: false });
+    const emptyRecord = Spec.record({}, { additionalProperties: false });
     const cases = [
       [valuesOf({ id: "a", input: { values: [] }, output: { model: "TestTable" } }), emptyTable],
       [valuesOf({ id: "b", input: { values: {} }, output: { model: "TestRecord" } }), emptyRecord],
@@ -187,15 +168,9 @@ describe("deriveSourceContract infers from the complete authored source", () => 
       output: { model: "TestTable" },
     });
 
-    expect(contract(values, undefined).spec).toEqual({
-      kind: "table",
-      schema: {
-        row: {
-          fields: { x: { kind: "number", optional: true } },
-          additionalProperties: false,
-        },
-      },
-    });
+    expect(contract(values, undefined).spec).toEqual(
+      Spec.table({ x: Spec.number({ optional: true }) }, { additionalProperties: false }),
+    );
   });
 
   it("refuses a later conflicting stop with both paths", () => {
@@ -235,14 +210,11 @@ describe("deriveSourceContract infers from the complete authored source", () => 
 
 describe("deriveSourceContract validates a declared schema without merging", () => {
   it("validates a record declaration and strips static from its contract", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: {
-        mode: { kind: "string", enum: ["idle", "busy"] },
-        speed: { kind: "number", optional: true, min: 0, max: 10 },
-        locked: { kind: "boolean", static: true },
-      },
-    };
+    const schema: ValueSpec = Spec.record({
+      mode: Spec.string({ enum: ["idle", "busy"] }),
+      speed: Spec.number({ optional: true, min: 0, max: 10 }),
+      locked: Spec.boolean({ static: true }),
+    });
     const values = valuesOf({
       id: "parameters",
       input: { values: { mode: "idle", speed: 5, locked: true } },
@@ -252,74 +224,49 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     const declared = contract(values, schema);
 
     expect(declared.proven).toBe(true);
-    expect(declared.spec).toEqual({
-      kind: "record",
-      fields: {
-        mode: { kind: "string", enum: ["idle", "busy"] },
-        speed: { kind: "number", optional: true, min: 0, max: 10 },
-        locked: { kind: "boolean" },
-      },
-    });
+    expect(declared.spec).toEqual(
+      Spec.record({
+        mode: Spec.string({ enum: ["idle", "busy"] }),
+        speed: Spec.number({ optional: true, min: 0, max: 10 }),
+        locked: Spec.boolean(),
+      }),
+    );
   });
 
   it("validates a table declaration and keeps its row-count bounds", () => {
-    const schema: ValueSpec = {
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            x: { kind: "number", static: true },
-            y: { kind: "number", optional: true },
-          },
-          additionalProperties: false,
-        },
-        minRows: 1,
-        maxRows: 3,
-      },
-    };
+    const schema: ValueSpec = Spec.table(
+      { x: Spec.number({ static: true }), y: Spec.number({ optional: true }) },
+      { minRows: 1, maxRows: 3, additionalProperties: false },
+    );
     const values = valuesOf({
       id: "points",
       input: { values: [{ id: "a", cells: { x: 1, y: 2 } }] },
       output: { model: "TestTable" },
     });
 
-    expect(contract(values, schema).spec).toEqual({
-      kind: "table",
-      schema: {
-        row: {
-          fields: {
-            x: { kind: "number" },
-            y: { kind: "number", optional: true },
-          },
-          additionalProperties: false,
-        },
-        minRows: 1,
-        maxRows: 3,
-      },
-    });
+    expect(contract(values, schema).spec).toEqual(
+      Spec.table(
+        { x: Spec.number(), y: Spec.number({ optional: true }) },
+        { minRows: 1, maxRows: 3, additionalProperties: false },
+      ),
+    );
   });
 
   it("keeps only the declared fields and never merges inferred ones", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { dx: { kind: "number" } },
-      additionalProperties: true,
-    };
+    const schema: ValueSpec = Spec.record({ dx: Spec.number() }, { additionalProperties: true });
     const values = valuesOf({
       id: "parameters",
       input: { values: { dx: 10, dy: 5 } },
       output: { model: "TestRecord" },
     });
 
-    expect(contract(values, schema).spec).toEqual({
-      kind: "record",
-      fields: { dx: { kind: "number" } },
-      additionalProperties: true,
-    });
+    expect(contract(values, schema).spec).toEqual(
+      Spec.record({ dx: Spec.number() }, { additionalProperties: true }),
+    );
   });
 
   it("refuses a cell whose kind contradicts its declared field as cell-kind-conflict", () => {
-    const schema: ValueSpec = { kind: "record", fields: { x: { kind: "number" } } };
+    const schema: ValueSpec = Spec.record({ x: Spec.number() });
     const values = valuesOf({
       id: "parameters",
       input: { values: { x: "one" } },
@@ -331,10 +278,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses a missing required field as cell-form-invalid", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-    };
+    const schema: ValueSpec = Spec.record({ dx: Spec.number(), dy: Spec.number() });
     const recordValues = valuesOf({
       id: "parameters",
       input: { values: { dx: 10 } },
@@ -342,10 +286,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     });
     expect(expectRule(recordValues, schema, "cell-form-invalid").path).toBe(`${VALUES_PATH}.dy`);
 
-    const tableSchema: ValueSpec = {
-      kind: "table",
-      schema: { row: { fields: { x: { kind: "number" } } } },
-    };
+    const tableSchema: ValueSpec = Spec.table({ x: Spec.number() });
     const tableValues = valuesOf({
       id: "points",
       input: {
@@ -362,28 +303,23 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("accepts a missing optional field", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number", optional: true } },
-    };
+    const schema: ValueSpec = Spec.record({
+      dx: Spec.number(),
+      dy: Spec.number({ optional: true }),
+    });
     const values = valuesOf({
       id: "parameters",
       input: { values: { dx: 10 } },
       output: { model: "TestRecord" },
     });
 
-    expect(contract(values, schema).spec).toEqual({
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number", optional: true } },
-    });
+    expect(contract(values, schema).spec).toEqual(
+      Spec.record({ dx: Spec.number(), dy: Spec.number({ optional: true }) }),
+    );
   });
 
   it("refuses an undeclared field when the schema is closed and accepts it when open", () => {
-    const closed: ValueSpec = {
-      kind: "record",
-      fields: { dx: { kind: "number" } },
-      additionalProperties: false,
-    };
+    const closed: ValueSpec = Spec.record({ dx: Spec.number() }, { additionalProperties: false });
     const closedValues = valuesOf({
       id: "parameters",
       input: { values: { dx: 10, dy: 5 } },
@@ -391,11 +327,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     });
     expect(expectRule(closedValues, closed, "cell-form-invalid").path).toBe(`${VALUES_PATH}.dy`);
 
-    const open: ValueSpec = {
-      kind: "record",
-      fields: { dx: { kind: "number" } },
-      additionalProperties: true,
-    };
+    const open: ValueSpec = Spec.record({ dx: Spec.number() }, { additionalProperties: true });
     const openValues = valuesOf({
       id: "parameters",
       input: { values: { dx: 10, dy: 5 } },
@@ -405,10 +337,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses a static value outside its enum as cell-form-invalid", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { mode: { kind: "string", enum: ["idle", "busy"] } },
-    };
+    const schema: ValueSpec = Spec.record({ mode: Spec.string({ enum: ["idle", "busy"] }) });
     const values = valuesOf({
       id: "parameters",
       input: { values: { mode: "running" } },
@@ -419,10 +348,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses an animated value outside its enum at the offending stop", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { mode: { kind: "string", enum: ["idle", "busy"] } },
-    };
+    const schema: ValueSpec = Spec.record({ mode: Spec.string({ enum: ["idle", "busy"] }) });
     const values = valuesOf({
       id: "parameters",
       input: {
@@ -440,10 +366,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses a static value outside its range as cell-form-invalid", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { speed: { kind: "number", min: 0, max: 3 } },
-    };
+    const schema: ValueSpec = Spec.record({ speed: Spec.number({ min: 0, max: 3 }) });
     const values = valuesOf({
       id: "parameters",
       input: { values: { speed: 5 } },
@@ -454,10 +377,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses an animated value outside its range at the offending stop", () => {
-    const schema: ValueSpec = {
-      kind: "record",
-      fields: { speed: { kind: "number", max: 3 } },
-    };
+    const schema: ValueSpec = Spec.record({ speed: Spec.number({ max: 3 }) });
     const values = valuesOf({
       id: "parameters",
       input: {
@@ -475,10 +395,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("refuses authored rows outside the declared row-count bounds", () => {
-    const schema: ValueSpec = {
-      kind: "table",
-      schema: { row: { fields: {} }, minRows: 2 },
-    };
+    const schema: ValueSpec = Spec.table({}, { minRows: 2 });
     const values = valuesOf({
       id: "points",
       input: { values: [{ id: "a", cells: {} }] },
@@ -490,10 +407,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
   });
 
   it("establishes the declared contract for an empty or omitted source", () => {
-    const schema: ValueSpec = {
-      kind: "table",
-      schema: { row: { fields: { x: { kind: "number", static: true } } } },
-    };
+    const schema: ValueSpec = Spec.table({ x: Spec.number({ static: true }) });
 
     for (const values of [
       valuesOf({ id: "points", input: { values: [] }, output: { model: "TestTable" } }),
@@ -501,10 +415,7 @@ describe("deriveSourceContract validates a declared schema without merging", () 
     ]) {
       const declared = contract(values, schema);
       expect(declared.proven).toBe(true);
-      expect(declared.spec).toEqual({
-        kind: "table",
-        schema: { row: { fields: { x: { kind: "number" } } } },
-      });
+      expect(declared.spec).toEqual(Spec.table({ x: Spec.number() }));
     }
   });
 });

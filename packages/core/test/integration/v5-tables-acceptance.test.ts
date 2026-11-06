@@ -29,6 +29,7 @@ import {
   type BuilderProject,
 } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
 /**
  * Phase 1 acceptance suite for the identified-table contract.
@@ -47,19 +48,11 @@ const translatePlugin: PluginDefinition<
 > = {
   id: "translate",
   inputs: {
-    values: {
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-    },
+    values: Spec.record({ dx: Spec.number(), dy: Spec.number() }),
     requires: {
       data: shape({
         outputs: {
-          values: {
-            kind: "table",
-            schema: {
-              row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
-            },
-          },
+          values: Spec.table({ x: Spec.number(), y: Spec.number() }),
         },
       }),
     },
@@ -67,12 +60,7 @@ const translatePlugin: PluginDefinition<
   outputs: {
     values: defineModel({
       id: "TranslateOut",
-      spec: {
-        kind: "table",
-        schema: {
-          row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
-        },
-      },
+      spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
     }),
   },
   transform(input) {
@@ -93,10 +81,7 @@ const translatePlugin: PluginDefinition<
 
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
 });
 
 function defaultCatalog(): PluginCatalog {
@@ -326,7 +311,7 @@ describe("v5 authored refusals", () => {
           id: "parameters",
           input: {
             values: { dx: 10 },
-            schema: { type: "record", fields: { dx: { kind: "number" } } },
+            schema: { type: "record", fields: { dx: Spec.number() } },
           },
           output: { model: "TestRecord" },
         }),
@@ -398,7 +383,7 @@ describe("v5 authored refusals", () => {
           output: { plugin: "translate" },
           input: {
             values: record({ dx: 10 }),
-            schema: { kind: "record", fields: { dx: { kind: "number" } } },
+            schema: Spec.record({ dx: Spec.number() }),
           },
         }),
       ),
@@ -482,10 +467,7 @@ describe("v5 authored refusals", () => {
 });
 
 describe("v5 registration-dependent refusals", () => {
-  const POINT: ValueSpec = {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-  };
+  const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 
   function plainPlugin(
     id: string,
@@ -494,7 +476,7 @@ describe("v5 registration-dependent refusals", () => {
   ): PluginDefinition {
     return {
       id,
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      inputs: { values: Spec.record({ n: Spec.number() }) },
       outputs,
       transform,
     };

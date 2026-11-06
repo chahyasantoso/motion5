@@ -14,15 +14,16 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { project, record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { ok: { kind: "boolean" } } },
+  spec: Spec.record({ ok: Spec.boolean() }),
 });
 
 const Tagged = defineModel({
   id: "Tagged",
-  spec: { kind: "record", fields: { tag: { kind: "string" } } },
+  spec: Spec.record({ tag: Spec.string() }),
   parse(value) {
     const tag =
       value !== null && typeof value === "object" && !Array.isArray(value)

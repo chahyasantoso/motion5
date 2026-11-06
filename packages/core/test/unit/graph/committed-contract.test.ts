@@ -11,21 +11,13 @@ import { buildGraphIR } from "../../../src/graph/ir";
 import { project, record, row, table, track } from "../../support/v5-builders";
 import { TestTable } from "../../support/test-models";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
-const LAST_POINT: ValueSpec = {
-  kind: "record",
-  fields: { x: { kind: "number" }, y: { kind: "number" } },
-};
-const VALUES: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" } } } },
-};
-const PLUGIN_VALUES: ValueSpec = { kind: "record", fields: { dx: { kind: "number" } } };
+const LAST_POINT: ValueSpec = Spec.record({ x: Spec.number(), y: Spec.number() });
+const VALUES: ValueSpec = Spec.table({ x: Spec.number() });
+const PLUGIN_VALUES: ValueSpec = Spec.record({ dx: Spec.number() });
 
 const specModels = new Map<ValueSpec, Model>();
 
@@ -60,15 +52,7 @@ function consumerPlugin(
 
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: {
-      row: {
-        fields: { x: { kind: "number" }, y: { kind: "number" } },
-        additionalProperties: false,
-      },
-    },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }, { additionalProperties: false }),
 });
 
 function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
@@ -115,15 +99,7 @@ describe("committed contract", () => {
     const contract = built.graph?.nodeById["~/points"]?.contract;
     expect(contract?.input).toEqual({
       modelId: "PointTable",
-      spec: {
-        kind: "table",
-        schema: {
-          row: {
-            fields: { x: { kind: "number" }, y: { kind: "number" } },
-            additionalProperties: false,
-          },
-        },
-      },
+      spec: Spec.table({ x: Spec.number(), y: Spec.number() }, { additionalProperties: false }),
       proven: true,
     });
     expect(contract?.outputs.values).toBe(contract?.input);

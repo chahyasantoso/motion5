@@ -3,11 +3,9 @@ import { shape } from "../../../src/contract/slot-spec";
 import { defineModel, type PluginDefinition, type ValueSpec } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointModel = defineModel<unknown, { readonly ids: readonly string[] }>({
@@ -24,7 +22,7 @@ const PointModel = defineModel<unknown, { readonly ids: readonly string[] }>({
 const PLUGIN: PluginDefinition = {
   id: "probe",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: {
       body: PointModel,
       extra: shape({ outputs: { values: POINT }, optional: true }),
@@ -39,7 +37,7 @@ const PLUGIN: PluginDefinition = {
 const PARAM_ONLY: PluginDefinition = {
   id: "param-only",
   inputs: {
-    param: { kind: "record", fields: { flip: { kind: "boolean" } } },
+    param: Spec.record({ flip: Spec.boolean() }),
     requires: { body: PointModel },
   },
   outputs: { values: POINT_MODEL },
@@ -55,7 +53,7 @@ describe("catalog describe", () => {
 
     const description = catalog.describe("probe");
     expect(description?.id).toBe("probe");
-    expect(description?.values).toEqual({ kind: "record", fields: {} });
+    expect(description?.values).toEqual(Spec.record({}));
     expect(description?.param).toBeUndefined();
     expect(description?.outputs).toEqual({ values: POINT });
     expect(description?.requires.body).toEqual({
@@ -78,6 +76,6 @@ describe("catalog describe", () => {
 
     const description = catalog.describe("param-only");
     expect(description?.values).toBeUndefined();
-    expect(description?.param).toEqual({ kind: "record", fields: { flip: { kind: "boolean" } } });
+    expect(description?.param).toEqual(Spec.record({ flip: Spec.boolean() }));
   });
 });

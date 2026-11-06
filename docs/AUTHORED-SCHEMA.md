@@ -163,7 +163,8 @@ first-party models are exported as `builtinModels` from `@motion5/plugins/models
 (PascalCase, equal to its exported name), `spec`, and optional `parse`. Tables use
 `{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`. Records use
 `{ kind: "record", fields, additionalProperties? }`. A field declares `kind`, optional `optional`,
-`enum`, `min`, `max`, or source-only `static`.
+`enum`, `min`, `max`, or source-only `static`. In code, `Spec` from `@motion5/core/plugin-api` builds the
+same objects: `Spec.record({ x: Spec.number({ optional: true }) })`, `Spec.table(fields, { minRows: 2 })`.
 
 ## Plugins
 

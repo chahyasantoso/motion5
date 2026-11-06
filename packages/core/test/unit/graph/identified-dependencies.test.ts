@@ -11,26 +11,21 @@ import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { buildGraphIR, compareEdges, edgeKey, type GraphEdge } from "../../../src/graph/ir";
 import { record, row, table, track } from "../../support/v5-builders";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const PointTable = defineModel({
   id: "PointTable",
-  spec: {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-  },
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
 });
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" }, y: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 function plugin(id: string, requires?: Readonly<Record<string, SlotSpec>>): PluginDefinition {
   return {
     id,
     inputs: {
-      values: { kind: "record", fields: { dx: { kind: "number" }, dy: { kind: "number" } } },
+      values: Spec.record({ dx: Spec.number(), dy: Spec.number() }),
       ...(requires === undefined ? {} : { requires }),
     },
     outputs: { values: POINT_MODEL },

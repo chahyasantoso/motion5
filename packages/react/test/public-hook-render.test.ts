@@ -10,31 +10,24 @@ import { createManualClock } from "../../core/src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../core/src/testing/fakes";
 import { project, record, track } from "../../core/test/support/v5-builders";
 import { testModels } from "../../core/test/support/test-models";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 
 const NODE = "demo/rig";
 const ALIAS = "marker/upper";
 
-const POSE_TABLE: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        x: { kind: "number" },
-        y: { kind: "number" },
-        rotation: { kind: "number", optional: true },
-      },
-    },
-  },
-};
+const POSE_TABLE: ValueSpec = Spec.table({
+  x: Spec.number(),
+  y: Spec.number(),
+  rotation: Spec.number({ optional: true }),
+});
 const POSE_TABLE_MODEL = defineModel({ id: "PoseTableOut", spec: POSE_TABLE });
-const INSPECT: ValueSpec = { kind: "record", fields: { residual: { kind: "number" } } };
+const INSPECT: ValueSpec = Spec.record({ residual: Spec.number() });
 
 type PoseInput = ResolvedInput<{ readonly phase: number }>;
 
 const POSE: PluginDefinition<PoseInput> = {
   id: "pose",
-  inputs: { values: { kind: "record", fields: { phase: { kind: "number" } } } },
+  inputs: { values: Spec.record({ phase: Spec.number() }) },
   outputs: { values: POSE_TABLE_MODEL, inspect: INSPECT },
   transform(input) {
     const phase = input.values.phase;

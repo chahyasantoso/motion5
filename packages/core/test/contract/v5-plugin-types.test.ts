@@ -11,6 +11,7 @@ import type {
   ValueSpec,
 } from "../../src/contract/v5";
 import { defineModel, isModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
 type TranslateValues = Readonly<Record<"dx" | "dy", number>>;
 
@@ -24,19 +25,11 @@ type TranslateInput = {
 const translate: PluginDefinition<TranslateInput> = {
   id: "translate",
   inputs: {
-    values: {
-      kind: "record",
-      fields: { dx: { kind: "number" }, dy: { kind: "number" } },
-    },
+    values: Spec.record({ dx: Spec.number(), dy: Spec.number() }),
     requires: {
       data: shape({
         outputs: {
-          values: {
-            kind: "table",
-            schema: {
-              row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
-            },
-          },
+          values: Spec.table({ x: Spec.number(), y: Spec.number() }),
         },
       }),
     },
@@ -44,12 +37,7 @@ const translate: PluginDefinition<TranslateInput> = {
   outputs: {
     values: defineModel({
       id: "PluginTypesOut",
-      spec: {
-        kind: "table",
-        schema: {
-          row: { fields: { x: { kind: "number" }, y: { kind: "number" } } },
-        },
-      },
+      spec: Spec.table({ x: Spec.number(), y: Spec.number() }),
     }),
   },
   transform(input) {
@@ -107,7 +95,7 @@ describe("v5 plugin types", () => {
   });
 
   it("allows optional in a spec, refused only at admission", () => {
-    const spec: ValueSpec = { kind: "record", fields: {}, optional: true };
+    const spec: ValueSpec = Spec.record({}, { optional: true });
     // `inputs.values` is a `ValueSpec`, so this flag is type-legal. Admission refuses it in Phase 3
     // rather than silently accepting an optional local input contract.
     expect(spec.optional).toBe(true);

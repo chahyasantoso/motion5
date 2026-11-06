@@ -9,12 +9,13 @@ import {
 import { validateV5 } from "../../../src/validate-v5";
 import { testModels } from "../../support/test-models";
 import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { value: { kind: "number" } } },
+  spec: Spec.record({ value: Spec.number() }),
 });
-const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: Spec.record({}) });
 
 const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
@@ -23,7 +24,7 @@ type ScaleInput = { readonly values: ScaleValues; readonly requires: {} };
 
 const SCALE: PluginDefinition<ScaleInput> = {
   id: "scale",
-  inputs: { values: { kind: "record", fields: { factor: { kind: "number" } } } },
+  inputs: { values: Spec.record({ factor: Spec.number() }) },
   outputs: { values: FIXTURE_OUT_1 },
   transform(input) {
     return { values: { value: input.values.factor } };
@@ -72,7 +73,7 @@ describe("plugin admission is keyed by id and atomic", () => {
     const converter: PluginDefinition = {
       id: "converter",
       inputs: {
-        requires: { source: shape({ outputs: { values: { kind: "record", fields: {} } } }) },
+        requires: { source: shape({ outputs: { values: Spec.record({}) } }) },
       },
       outputs: { values: FIXTURE_OUT_2 },
       transform() {
@@ -102,7 +103,7 @@ describe("plugin admission is keyed by id and atomic", () => {
     const catalog = new PluginCatalog({ models: testModels });
     const invalid = malformed({
       id: "broken",
-      inputs: { values: { kind: "record", fields: {} }, extra: 1 },
+      inputs: { values: Spec.record({}), extra: 1 },
     });
 
     expect(reason(() => catalog.register({ plugins: [SCALE, invalid] }))).toMatch(
@@ -135,10 +136,7 @@ describe("plugin admission is keyed by id and atomic", () => {
 });
 
 describe("admission refuses a malformed definition by rule", () => {
-  const table: ValueSpec = {
-    kind: "table",
-    schema: { row: { fields: { x: { kind: "number" } } } },
-  };
+  const table: ValueSpec = Spec.table({ x: Spec.number() });
   const dependency: SlotSpec = shape({ outputs: { values: table } });
 
   it("refuses the retired type alias in a ValueSpec", () => {
@@ -178,7 +176,7 @@ describe("admission refuses a malformed definition by rule", () => {
   it("refuses optional on inputs.values", () => {
     const plugin = malformed({
       inputs: {
-        values: { kind: "record", fields: { factor: { kind: "number" } }, optional: true },
+        values: Spec.record({ factor: Spec.number() }, { optional: true }),
       },
     });
     expect(
@@ -189,10 +187,7 @@ describe("admission refuses a malformed definition by rule", () => {
   it("refuses static on a plugin output", () => {
     const plugin = malformed({
       outputs: {
-        values: {
-          kind: "record",
-          fields: { value: { kind: "number", static: true } },
-        },
+        values: Spec.record({ value: Spec.number({ static: true }) }),
       },
     });
     expect(
@@ -222,7 +217,7 @@ describe("admission refuses a malformed definition by rule", () => {
   it("refuses an invalid dependency binding mode", () => {
     const plugin = malformed({
       inputs: {
-        values: { kind: "record", fields: { factor: { kind: "number" } } },
+        values: Spec.record({ factor: Spec.number() }),
         requires: { data: { ...dependency, binding: "many" } },
       },
     });

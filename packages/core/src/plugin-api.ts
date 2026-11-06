@@ -17,6 +17,7 @@ export {
 } from "./contract/v5";
 export { diagnostic } from "./contract/diagnostics";
 export { optional, shape } from "./contract/slot-spec";
+export { Spec } from "./contract/spec-builder";
 import type {
   EvaluationContext,
   FlatRecord,

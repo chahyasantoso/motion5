@@ -1,15 +1,12 @@
 import type { MotionDefinition, TrackDefinition } from "@motion5/core";
-import { defineModel } from "@motion5/core/plugin-api";
+import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { SCROLL_SOURCE } from "./ik-playground-project";
 import { frameAround } from "./projection";
 
 /** A 3D pole hint: one point, no rotation. */
 export const Pole3d = defineModel({
   id: "Pole3d",
-  spec: {
-    kind: "record",
-    fields: { x: { kind: "number" }, y: { kind: "number" }, z: { kind: "number" } },
-  },
+  spec: Spec.record({ x: Spec.number(), y: Spec.number(), z: Spec.number() }),
 });
 
 /**

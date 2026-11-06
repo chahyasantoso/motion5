@@ -4,11 +4,9 @@ import { defineModel } from "../../../src/contract/v5";
 import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { explain } from "../../../src/graph/explain";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const POINT: ValueSpec = {
-  kind: "table",
-  schema: { row: { fields: { x: { kind: "number" } } } },
-};
+const POINT: ValueSpec = Spec.table({ x: Spec.number() });
 const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
 
 const PointSource = defineModel<unknown, { readonly ids: readonly string[] }>({
@@ -25,7 +23,7 @@ const PointSource = defineModel<unknown, { readonly ids: readonly string[] }>({
 const CONSUMER: PluginDefinition = {
   id: "consume",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: { data: PointSource },
   },
   outputs: { values: POINT_MODEL },
@@ -99,7 +97,7 @@ describe("explain", () => {
     const modelConsumer: PluginDefinition = {
       id: "consume-model",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { body: bodyModel },
       },
       outputs: { values: POINT_MODEL },

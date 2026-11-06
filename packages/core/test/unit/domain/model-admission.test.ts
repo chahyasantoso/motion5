@@ -8,10 +8,11 @@ import {
   type PluginDefinition,
 } from "../../../src/plugin-api";
 import type { PluginCatalogOptions } from "../../../src/domain/plugin-catalog";
+import { Spec } from "../../../src/contract/spec-builder";
 
 describe("model admission", () => {
   it("refuses a main output that is a plain spec or absent, and admits a plain secondary", () => {
-    const spec = { kind: "record", fields: { x: { kind: "number" } } } as const;
+    const spec = Spec.record({ x: Spec.number() });
     const main = defineModel({ id: "MainOutput", spec });
     const transform = () => ({});
     const refusal = (outputs: unknown): string | undefined => {
@@ -31,11 +32,11 @@ describe("model admission", () => {
   it("refuses two distinct model objects under one id atomically", () => {
     const modelA = defineModel({
       id: "Body2d",
-      spec: { kind: "record", fields: { x: { kind: "number" } } },
+      spec: Spec.record({ x: Spec.number() }),
     });
     const modelB = defineModel({
       id: "Body2d",
-      spec: { kind: "record", fields: { y: { kind: "number" } } },
+      spec: Spec.record({ y: Spec.number() }),
     });
     const catalog = new PluginCatalog();
     expect(() => catalog.register({ models: [modelA, modelB] })).toThrow(PluginAdmissionError);
@@ -46,12 +47,12 @@ describe("model admission", () => {
   it("refuses a plugin implementing one model on two outputs", () => {
     const solved = defineModel({
       id: "Solved2d",
-      spec: { kind: "record", fields: { x: { kind: "number" } } },
+      spec: Spec.record({ x: Spec.number() }),
     });
     const plugin: PluginDefinition = {
       id: "ik",
       inputs: {
-        values: { kind: "record", fields: { flip: { kind: "boolean" } } },
+        values: Spec.record({ flip: Spec.boolean() }),
       },
       outputs: {
         values: solved,
@@ -74,7 +75,7 @@ describe("model admission", () => {
 
     const protoModel: Model<unknown, unknown> = {
       id: "__proto__",
-      spec: { kind: "record", fields: { x: { kind: "number" } } },
+      spec: Spec.record({ x: Spec.number() }),
     };
     try {
       catalog.register({ models: [protoModel] });
@@ -90,12 +91,12 @@ describe("model admission", () => {
   it("admits models with and without parse", () => {
     const withParse = defineModel({
       id: "Body2d",
-      spec: { kind: "record", fields: { count: { kind: "number" } } },
+      spec: Spec.record({ count: Spec.number() }),
       parse: (value) => ok(value),
     });
     const withoutParse = defineModel({
       id: "Point2d",
-      spec: { kind: "record", fields: { x: { kind: "number" } } },
+      spec: Spec.record({ x: Spec.number() }),
     });
     const catalog = new PluginCatalog({ models: [withParse, withoutParse] });
     expect(catalog.model("Body2d")).toBe(withParse);
@@ -107,7 +108,7 @@ describe("model admission", () => {
   it("admits a model named by no plugin from the explicit models list", () => {
     const camera = defineModel({
       id: "Camera",
-      spec: { kind: "record", fields: { zoom: { kind: "number" } } },
+      spec: Spec.record({ zoom: Spec.number() }),
     });
     const catalog = new PluginCatalog({ models: [camera] });
     expect(catalog.model("Camera")).toBe(camera);
@@ -121,7 +122,7 @@ describe("model admission", () => {
       const catalog = new PluginCatalog();
       const model: Model<unknown, unknown> = {
         id,
-        spec: { kind: "record", fields: { x: { kind: "number" } } },
+        spec: Spec.record({ x: Spec.number() }),
       };
       try {
         catalog.register({ models: [model] });
@@ -138,7 +139,7 @@ describe("model admission", () => {
   it("resolves lowercase model lookups to undefined", () => {
     const body = defineModel({
       id: "Body2d",
-      spec: { kind: "record", fields: { x: { kind: "number" } } },
+      spec: Spec.record({ x: Spec.number() }),
     });
     const catalog = new PluginCatalog({ models: [body] });
     expect(catalog.model("body2d")).toBeUndefined();

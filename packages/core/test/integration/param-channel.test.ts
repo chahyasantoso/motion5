@@ -10,12 +10,13 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { testModels } from "../support/test-models";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { n: { kind: "number" } } },
+  spec: Spec.record({ n: Spec.number() }),
 });
-const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_2 = defineModel({ id: "FixtureOut2", spec: Spec.record({}) });
 
 const untyped = (batch: unknown) => batch as PluginCatalogOptions;
 
@@ -24,13 +25,10 @@ const prepare = vi.fn(() => ({ ok: true as const, value: undefined }));
 const FLAGS: PluginDefinition = {
   id: "flags",
   inputs: {
-    param: {
-      kind: "record",
-      fields: {
-        flip: { kind: "boolean", optional: true },
-        inspect: { kind: "boolean", optional: true, static: true },
-      },
-    },
+    param: Spec.record({
+      flip: Spec.boolean({ optional: true }),
+      inspect: Spec.boolean({ optional: true, static: true }),
+    }),
   },
   outputs: { values: FIXTURE_OUT_1 },
   prepare,
@@ -45,7 +43,7 @@ const FLAGS: PluginDefinition = {
 
 const NO_PARAM: PluginDefinition = {
   id: "no-param",
-  inputs: { values: { kind: "record", fields: {} } },
+  inputs: { values: Spec.record({}) },
   outputs: { values: FIXTURE_OUT_2 },
   transform() {
     return { values: {} };
@@ -55,8 +53,8 @@ const NO_PARAM: PluginDefinition = {
 const MIXED: PluginDefinition = {
   id: "mixed",
   inputs: {
-    values: { kind: "record", fields: { dx: { kind: "number" } } },
-    param: { kind: "record", fields: { flip: { kind: "boolean", optional: true } } },
+    values: Spec.record({ dx: Spec.number() }),
+    param: Spec.record({ flip: Spec.boolean({ optional: true }) }),
   },
   outputs: { values: FIXTURE_OUT_1 },
   transform({ values, param }) {
@@ -351,7 +349,7 @@ describe("input.param", () => {
           plugins: [
             {
               id: "no-transform",
-              inputs: { values: { kind: "record", fields: {} } },
+              inputs: { values: Spec.record({}) },
               outputs: { values: FIXTURE_OUT_2 },
             },
           ],

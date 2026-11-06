@@ -1,18 +1,11 @@
-import { definePlugin, isFlatRecord } from "@motion5/core/plugin-api";
+import { Spec, definePlugin, isFlatRecord } from "@motion5/core/plugin-api";
 import { Points3d } from "./models";
 
 /** Shifts each 3D point row by `dx`, `dy` and `dz`; row ids and rotations pass through. */
 export const transform3dPlugin = definePlugin({
   id: "transform3d",
   inputs: {
-    values: {
-      kind: "record",
-      fields: {
-        dx: { kind: "number" },
-        dy: { kind: "number" },
-        dz: { kind: "number" },
-      },
-    },
+    values: Spec.record({ dx: Spec.number(), dy: Spec.number(), dz: Spec.number() }),
     requires: { data: Points3d },
   },
   outputs: { values: Points3d },

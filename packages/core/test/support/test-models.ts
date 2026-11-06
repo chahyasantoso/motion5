@@ -1,46 +1,35 @@
 import { defineModel, type Model } from "../../src/contract/v5";
 import { builtinModels } from "../../../plugins/src/models";
+import { Spec } from "../../src/contract/spec-builder";
 
 /** Open record used by fixtures whose source has no narrower contract. */
 export const TestRecord: Model = defineModel({
   id: "TestRecord",
-  spec: { kind: "record", fields: {}, additionalProperties: true },
+  spec: Spec.record({}, { additionalProperties: true }),
 });
 
 /** Open table used by fixtures whose source has no narrower contract. */
 export const TestTable: Model = defineModel({
   id: "TestTable",
-  spec: {
-    kind: "table",
-    schema: { row: { fields: {}, additionalProperties: true } },
-  },
+  spec: Spec.table({}, { additionalProperties: true }),
 });
 
 /** Record with one static field, for static-cell refusal fixtures. */
 export const StaticRecord: Model = defineModel({
   id: "StaticRecord",
-  spec: {
-    kind: "record",
-    fields: { dx: { kind: "number", static: true } },
-  },
+  spec: Spec.record({ dx: Spec.number({ static: true }) }),
 });
 
 /** Two-field record with a static flag, for param and values static guards. */
 export const StaticFlags: Model = defineModel({
   id: "StaticFlags",
-  spec: {
-    kind: "record",
-    fields: { flip: { kind: "boolean", static: true }, n: { kind: "number" } },
-  },
+  spec: Spec.record({ flip: Spec.boolean({ static: true }), n: Spec.number() }),
 });
 
 /** Live-write record: x required, y optional, so partial writes stay explicit about x. */
 export const LiveRecord: Model = defineModel({
   id: "LiveRecord",
-  spec: {
-    kind: "record",
-    fields: { x: { kind: "number" }, y: { kind: "number", optional: true } },
-  },
+  spec: Spec.record({ x: Spec.number(), y: Spec.number({ optional: true }) }),
 });
 
 export const testModels: readonly Model<unknown, unknown>[] = Object.freeze([

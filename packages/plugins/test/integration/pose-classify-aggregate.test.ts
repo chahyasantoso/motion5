@@ -7,6 +7,7 @@ import { ikPlugin } from "../../src/ik";
 import { ik3dPlugin } from "../../src/ik3d";
 import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose-classify";
 import { testModels } from "../../../core/test/support/test-models";
+import { Spec } from "@motion5/core/plugin-api";
 
 const ZERO_EULER = { rotation: 0, rotationX: 0, rotationY: 0 };
 const T_POSE: PoseTemplate = {
@@ -28,13 +29,9 @@ describe("aggregate pose-classify binding (AP)", () => {
 
   it("AP-2 poseClassifyPlugin.outputs.values is a flat record with label and confidence", () => {
     const plugin = createPoseClassifyPlugin({ templates: [T_POSE], maxDistance: 10 });
-    expect(plugin.outputs.values.spec).toEqual({
-      kind: "record",
-      fields: {
-        label: { kind: "string" },
-        confidence: { kind: "number" },
-      },
-    });
+    expect(plugin.outputs.values.spec).toEqual(
+      Spec.record({ label: Spec.string(), confidence: Spec.number() }),
+    );
   });
 
   it("AP-3 classifies t-pose when arms are horizontal", () => {

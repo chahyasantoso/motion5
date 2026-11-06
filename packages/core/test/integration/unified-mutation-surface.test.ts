@@ -9,10 +9,11 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { record } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { x: { kind: "number" } } },
+  spec: Spec.record({ x: Spec.number() }),
 });
 
 function ramp(from: number, to: number) {
@@ -23,16 +24,16 @@ function ramp(from: number, to: number) {
 }
 const XRecord = defineModel({
   id: "XRecord",
-  spec: { kind: "record", fields: { x: { kind: "number" } } },
+  spec: Spec.record({ x: Spec.number() }),
 });
 
 const LINK: PluginDefinition = {
   id: "link",
   inputs: {
-    values: { kind: "record", fields: {} },
+    values: Spec.record({}),
     requires: {
       parent: shape({
-        outputs: { values: { kind: "record", fields: { x: { kind: "number" } } } },
+        outputs: { values: Spec.record({ x: Spec.number() }) },
       }),
     },
   },

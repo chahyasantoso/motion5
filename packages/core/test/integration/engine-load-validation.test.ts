@@ -8,10 +8,11 @@ import { record, track } from "../support/v5-builders";
 import { testModels } from "../support/test-models";
 import { testEngine } from "../support/builtin-registry";
 import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { opacity: { kind: "number" } } },
+  spec: Spec.record({ opacity: Spec.number() }),
 });
 
 const options = () => ({
@@ -39,7 +40,7 @@ const projectWith = (values: unknown) => ({
 
 const OPACITY: PluginDefinition = {
   id: "opacity",
-  inputs: { values: { kind: "record", fields: { opacity: { kind: "number" } } } },
+  inputs: { values: Spec.record({ opacity: Spec.number() }) },
   outputs: { values: FIXTURE_OUT_1 },
   transform(input) {
     return { values: input.values };

@@ -13,14 +13,15 @@ import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { Spec } from "../../src/contract/spec-builder";
 
 const FIXTURE_OUT_1 = defineModel({
   id: "FixtureOut1",
-  spec: { kind: "record", fields: { rows: { kind: "number" } } },
+  spec: Spec.record({ rows: Spec.number() }),
 });
 const FIXTURE_OUT_2 = defineModel({
   id: "FixtureOut2",
-  spec: { kind: "record", fields: { n: { kind: "number" } } },
+  spec: Spec.record({ n: Spec.number() }),
 });
 
 function rowIds(value: Value): readonly string[] {
@@ -29,13 +30,13 @@ function rowIds(value: Value): readonly string[] {
 
 const Rows = defineModel<unknown, { readonly ids: readonly string[] }>({
   id: "Rows",
-  spec: { kind: "table", schema: { row: { fields: { n: { kind: "number" } } } } },
+  spec: Spec.table({ n: Spec.number() }),
   parse: (value) => ok({ ids: rowIds(value) }),
 });
 
 const Copied = defineModel<unknown, { readonly ids: readonly string[] }>({
   id: "Copied",
-  spec: { kind: "table", schema: { row: { fields: { n: { kind: "number" } } } } },
+  spec: Spec.table({ n: Spec.number() }),
   parse: (value) => ok({ ids: rowIds(value) }),
 });
 
@@ -181,7 +182,7 @@ describe("a cheap edit that keeps static cells runs no parse and no prepare", ()
     });
     const local: PluginDefinition = {
       id: "local",
-      inputs: { values: { kind: "record", fields: { n: { kind: "number" } } } },
+      inputs: { values: Spec.record({ n: Spec.number() }) },
       outputs: { values: Out },
       transform: () => ({ values: rows("a") }),
     };
@@ -208,7 +209,7 @@ describe("a plugin's local model parses at commit", () => {
   });
   const pairOut = defineModel({
     id: "PairOut",
-    spec: { kind: "record", fields: { n: { kind: "number" } } },
+    spec: Spec.record({ n: Spec.number() }),
   });
   const usesPair: PluginDefinition = {
     id: "usesPair",
@@ -242,7 +243,7 @@ describe("a later frame cannot break the output contract", () => {
     const plugin: PluginDefinition = {
       id: "frames",
       inputs: {},
-      outputs: { values: Copied, extra: { kind: "record", fields: {}, optional: true } },
+      outputs: { values: Copied, extra: Spec.record({}, { optional: true }) },
       transform: () => outputs[frame++] as Readonly<Record<string, Value>>,
     };
     const handle = open([plugin], [Copied], [{ id: "t", output: { plugin: "frames" } }]);

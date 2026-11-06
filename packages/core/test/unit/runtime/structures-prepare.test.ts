@@ -23,25 +23,19 @@ import { Body2d, Goals2d, Point2d, Solved2d } from "../../../../plugins/src/mode
 import { fkPlugin } from "../../../../plugins/src/fk";
 import { ikPlugin } from "../../../../plugins/src/ik";
 import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
 
-const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: { kind: "record", fields: {} } });
+const FIXTURE_OUT_1 = defineModel({ id: "FixtureOut1", spec: Spec.record({}) });
 const FIXTURE_OUT_2 = defineModel({
   id: "FixtureOut2",
-  spec: { kind: "record", fields: { x: { kind: "number" } } },
+  spec: Spec.record({ x: Spec.number() }),
 });
 
-const BONE_SPEC: ValueSpec = {
-  kind: "table",
-  schema: {
-    row: {
-      fields: {
-        parentId: { kind: "string", optional: true, static: true },
-        length: { kind: "number" },
-        rotation: { kind: "number" },
-      },
-    },
-  },
-};
+const BONE_SPEC: ValueSpec = Spec.table({
+  parentId: Spec.string({ optional: true, static: true }),
+  length: Spec.number(),
+  rotation: Spec.number(),
+});
 
 interface BoneStructure {
   readonly ids: readonly string[];
@@ -78,7 +72,7 @@ describe("structures and prepare hook", () => {
     const plugin: PluginDefinition = {
       id: "refusing-prepare",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d },
       },
       outputs: { values: FIXTURE_OUT_1 },
@@ -122,7 +116,7 @@ describe("structures and prepare hook", () => {
   it("prepare refuses a warning-only refusal as a plugin bug", () => {
     const plugin: PluginDefinition = {
       id: "warning-prepare",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: FIXTURE_OUT_1 },
       prepare() {
         return prepareRefused([diagnostic("value-batch-deferred", "x", "deferred", ["id"])]);
@@ -148,7 +142,7 @@ describe("structures and prepare hook", () => {
     const reader: PluginDefinition = {
       id: "base-reader",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { chain: Body2d, base: Point2d },
       },
       outputs: { values: FIXTURE_OUT_1 },
@@ -205,14 +199,8 @@ describe("structures and prepare hook", () => {
     const testPlugin: PluginDefinition = {
       id: "param-test-plugin",
       inputs: {
-        param: {
-          kind: "record",
-          fields: {
-            inspect: { kind: "boolean", static: true },
-            gain: { kind: "number" },
-          },
-        },
-        values: { kind: "record", fields: {} },
+        param: Spec.record({ inspect: Spec.boolean({ static: true }), gain: Spec.number() }),
+        values: Spec.record({}),
       },
       outputs: { values: FIXTURE_OUT_1 },
       prepare(ctx) {
@@ -297,7 +285,7 @@ describe("structures and prepare hook", () => {
     const computedPlugin: PluginDefinition = {
       id: "computed-producer",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { src: LocalSourceModel },
       },
       outputs: { values: ComputedOutputModel },
@@ -370,10 +358,7 @@ describe("structures and prepare hook", () => {
     const producerPlugin: PluginDefinition = {
       id: "animated-producer",
       inputs: {
-        values: {
-          kind: "record",
-          fields: { rot: { kind: "number" } },
-        },
+        values: Spec.record({ rot: Spec.number() }),
       },
       outputs: { values: TestedModel },
       transform(ctx) {
@@ -394,7 +379,7 @@ describe("structures and prepare hook", () => {
     const consumerPlugin: PluginDefinition = {
       id: "animated-consumer",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { bone: TestedModel },
       },
       outputs: { values: FIXTURE_OUT_1 },
@@ -471,7 +456,7 @@ describe("structures and prepare hook", () => {
     const readerPlugin: PluginDefinition = {
       id: "structure-reader",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
         requires: { bones: DynamicBoneModel },
       },
       outputs: { values: FIXTURE_OUT_1 },
@@ -610,7 +595,7 @@ describe("structures and prepare hook", () => {
     const StateTestingPlugin: PluginDefinition = {
       id: "state-test-plugin",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
       },
       outputs: { values: FIXTURE_OUT_1 },
       prepare() {
@@ -686,7 +671,7 @@ describe("structures and prepare hook", () => {
     const MutatingOutputPlugin: PluginDefinition = {
       id: "mutating-plugin",
       inputs: {
-        values: { kind: "record", fields: {} },
+        values: Spec.record({}),
       },
       outputs: { values: BoneModel },
       transform() {
@@ -735,7 +720,7 @@ describe("structures and prepare hook", () => {
       let frame = 0;
       const plugin: PluginDefinition = {
         id: "bad-output",
-        inputs: { values: { kind: "record", fields: {} } },
+        inputs: { values: Spec.record({}) },
         outputs: { values: FIXTURE_OUT_2 },
         transform() {
           return { values: { x: frame === 0 ? 1 : bad } };
@@ -769,10 +754,10 @@ describe("structures and prepare hook", () => {
     let frame = 0;
     const plugin: PluginDefinition = {
       id: "bad-inspect",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: {
         values: FIXTURE_OUT_1,
-        inspect: { kind: "record", fields: { n: { kind: "number" } } },
+        inspect: Spec.record({ n: Spec.number() }),
       },
       transform() {
         return { values: {}, inspect: { n: frame === 0 ? 1 : Number.NaN } };
@@ -803,7 +788,7 @@ describe("structures and prepare hook", () => {
     let frame = 0;
     const producer: PluginDefinition = {
       id: "bad-solved",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Solved2d },
       transform() {
         return { values: [{ id: "root", cells: { rotation: frame === 0 ? 0 : Number.NaN } }] };
@@ -863,7 +848,7 @@ describe("structures and prepare hook", () => {
   it("G0: a computed Body2d producer feeds ik unchanged", () => {
     const producer: PluginDefinition = {
       id: "computed-body",
-      inputs: { values: { kind: "record", fields: {} } },
+      inputs: { values: Spec.record({}) },
       outputs: { values: Body2d },
       transform() {
         return {
