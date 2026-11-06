@@ -31,6 +31,7 @@ describe("check gate runner (S2)", () => {
     expect(lines).toEqual([
       "PASS scan:raw-templates",
       "PASS scan:comments",
+      "PASS scan:cycles",
       "FAIL format:check",
       "Checking formatting...\ndrift.ts",
     ]);
@@ -42,6 +43,7 @@ describe("check gate runner (S2)", () => {
     expect(lines).toEqual([
       "PASS scan:raw-templates",
       "PASS scan:comments",
+      "PASS scan:cycles",
       "PASS format:check",
       "FAIL typecheck",
     ]);

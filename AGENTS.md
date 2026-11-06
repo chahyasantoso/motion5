@@ -32,6 +32,7 @@ is one line, and a rule this file does not carry is not a rule.
   every assertion diff.
 - `npm run test:verbose -- <file>` — the human reporter, with per-file and per-test lines.
 - `npm run test:related -- <file>` — every test that reaches the given source.
+- `npm run scan:cycles` — refuses a new import cycle; `scripts/cycle-baseline.json` may only shrink.
 - `npm run metrics` — the four costs of working in this repository, on one line.
 
 ## Rules
