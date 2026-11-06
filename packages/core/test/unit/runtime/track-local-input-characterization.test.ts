@@ -80,21 +80,6 @@ function pluginWithValues(spec: ValueSpec = RECORD_SPEC): PluginDefinition {
   };
 }
 
-const FAILING_MODEL: Model<unknown, { readonly valid: true }> = defineModel({
-  id: "FailingModel",
-  spec: RECORD_SPEC,
-  parse(value) {
-    if (
-      typeof value === "object" &&
-      value !== null &&
-      (value as Record<string, unknown>).x === 999
-    ) {
-      return { ok: false, issues: [{ path: "x", message: "forbidden value 999" }] };
-    }
-    return { ok: true, value: { valid: true } };
-  },
-});
-
 describe("Passthrough and computed track local-input characterization", () => {
   describe("Passthrough recompose rules", () => {
     it("returns true on first move, false on same progress, false on later seek when time-invariant", () => {
@@ -221,15 +206,32 @@ describe("Passthrough and computed track local-input characterization", () => {
 
   describe("Both processors throwing replaceValues keeps previous evaluator active", () => {
     it("Passthrough: throwing replaceValues keeps previous evaluator active", () => {
+      let failRebuild = false;
+      const baseInterpolator = createFakeInterpolator();
       const track = createPassthroughTrack({
         nodeId: "demo/track",
         values: valuesOf({ x: 10 }),
-        interpolator: createFakeInterpolator(),
-        model: FAILING_MODEL,
+        interpolator: {
+          create(config) {
+            if (failRebuild) throw new Error("rebuild failure");
+            return baseInterpolator.create(config);
+          },
+        },
       });
 
       expect(track.outputs()).toEqual({ values: { x: 10 } });
-      expect(() => track.replaceValues(valuesOf({ x: 999 }))).toThrow();
+      failRebuild = true;
+      expect(() =>
+        track.replaceValues(
+          valuesOf({
+            x: [
+              { p: 0, v: 20 },
+              { p: 1, v: 30 },
+            ],
+          }),
+        ),
+      ).toThrow("rebuild failure");
+      failRebuild = false;
       expect(track.outputs()).toEqual({ values: { x: 10 } });
     });
 

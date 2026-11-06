@@ -214,6 +214,7 @@ export interface ProjectRuntimeOptions {
   /** What a structural plan may ask about plugins, as data. */
   readonly capabilities: PluginCapabilities;
   /** A source's committed structure, handed to the publisher for its slot map. */
+  readonly invalidateOutputs?: (nodeIds: ReadonlySet<string>) => void;
   readonly structureOf?: (sourceId: string) => Structure<unknown> | undefined;
 }
 export class ProjectRuntime {
@@ -263,6 +264,11 @@ export class ProjectRuntime {
         dispose: installed(this, options.disposeTrack, NO_PORTS.track.dispose),
         stage: installed(this, options.stageTrack, NO_PORTS.track.stage),
         prepareReaders: installed(this, options.prepareReaders, NO_PORTS.track.prepareReaders),
+        invalidateOutputs: installed(
+          this,
+          options.invalidateOutputs,
+          NO_PORTS.track.invalidateOutputs,
+        ),
       }),
       motion: Object.freeze({
         create: installed(this, options.createMotion, NO_PORTS.motion.create),
@@ -940,6 +946,7 @@ export class ProjectRuntime {
         adopt: () => {
           this.#tracks = tracks;
           this.#motions = motions;
+          this.#ports.track.invalidateOutputs(commit.staleSources);
         },
         publish: (ids) => this.#flush(ids),
       });

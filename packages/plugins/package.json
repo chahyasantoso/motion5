@@ -55,6 +55,22 @@
       "types": "./dist/pose-classify.d.ts",
       "default": "./dist/pose-classify.js"
     },
+    "./path/anchors-to-cubic": {
+      "types": "./dist/path/anchors-to-cubic.d.ts",
+      "default": "./dist/path/anchors-to-cubic.js"
+    },
+    "./path/bezier": {
+      "types": "./dist/path/bezier.d.ts",
+      "default": "./dist/path/bezier.js"
+    },
+    "./path/skin-anchors": {
+      "types": "./dist/path/skin-anchors.d.ts",
+      "default": "./dist/path/skin-anchors.js"
+    },
+    "./path/draw": {
+      "types": "./dist/path/draw.d.ts",
+      "default": "./dist/path/draw.js"
+    },
     "./runner": {
       "types": "./dist/runner.d.ts",
       "default": "./dist/runner.js"

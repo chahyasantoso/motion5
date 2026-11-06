@@ -328,10 +328,6 @@
     "count": 9
   },
   {
-    "path": "packages/plugins/src/builtin-catalog.ts",
-    "count": 2
-  },
-  {
     "path": "packages/plugins/src/ik3d-result.ts",
     "count": 6
   },

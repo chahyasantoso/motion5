@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PluginCatalog, type PluginDefinition } from "@motion5/core/plugin-api";
 import { builtinCatalog } from "../../src/builtin-catalog";
+import { createPluginLoader } from "../../src/loader";
+import { builtinModels } from "../../src/models";
 import { testModels } from "../../../core/test/support/test-models";
 
 const MINIMAL_PLUGIN: PluginDefinition = {
@@ -25,6 +27,9 @@ describe("identified plugin boundary", () => {
       "ik3d",
       "fk",
       "fk3d",
+      "anchorsToCubic",
+      "bezier",
+      "skinAnchors",
     ]);
     const descriptor = builtinCatalog.get("transform");
     expect(descriptor).toBeDefined();
@@ -40,5 +45,37 @@ describe("identified plugin boundary", () => {
 
     expect(catalog.size).toBe(1);
     expect(catalog.get("slice-a-test")?.id).toBe("slice-a-test");
+  });
+
+  it("loads the path plugins a project names through the builtin catalog", async () => {
+    const registry = new PluginCatalog({ models: [...builtinModels] });
+    const result = await createPluginLoader(builtinCatalog).ensure(registry, {
+      kind: "project",
+      project: {
+        schemaVersion: 5,
+        motions: [
+          {
+            id: "m",
+            trigger: { type: "manual" },
+            tracks: [
+              { id: "outline", output: { model: "Anchors2d" } },
+              {
+                id: "path",
+                output: { plugin: "anchorsToCubic" },
+                input: { requires: { anchors: "outline" } },
+              },
+              {
+                id: "card",
+                output: { plugin: "bezier" },
+                input: { requires: { path: "path" } },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(result).toEqual({ kind: "ensured", added: ["anchorsToCubic", "bezier"] });
+    expect(registry.isPluginAdmitted("anchorsToCubic")).toBe(true);
+    expect(registry.isPluginAdmitted("bezier")).toBe(true);
   });
 });

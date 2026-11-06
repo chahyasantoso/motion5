@@ -73,7 +73,7 @@ export interface TrackParamHandle {
 
 /** Authored values half of one track's input: `set` swaps whole, `setField` writes one cell. Both validate against committed contract, cause one publication; no shape moves. */
 export interface TrackValuesHandle {
-  /** Replaces `input.values` whole; any row count within committed contract. */
+  /** Replaces `input.values` whole; static cells and row ids must stay, else use `replace`. */
   set(values: InputValues): PatchBatch;
   /** Writes one authored cell or field; `address.row` selects table cell, absent for record. Form mismatch: `values-shape-invalid`; unknown address: `cell-address-unknown`. */
   setField(address: CellAddress, cell: AuthoredCell): PatchBatch;

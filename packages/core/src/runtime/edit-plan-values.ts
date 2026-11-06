@@ -17,13 +17,10 @@ import { isModel, outputModelId, outputPluginId } from "../contract/v5";
 import { diagnostic, hintDiagnostic, hintDiagnostics } from "../contract/diagnostics";
 import { deriveSourceContract, type SpecOrigin } from "../contract/v5-infer";
 import { parseTrackDefinition, type ParsedInput, type ParsedValues } from "../contract/v5-parse";
-import { unknownNameMessage } from "../contract/registry-message";
 import type { CommittedContract } from "../graph/committed-contract";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { unreachable } from "../lang/exhaustive";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
-import { authoringValue } from "./authoring-value";
-import { parseModel } from "./model-parse";
 import { validateRuntimeValue } from "./value-validation";
 import { authoredStaticView, runtimeStaticView, sameStaticView } from "./static-view";
 import { liveOn, withLiveChannel, withoutLiveChannel, type ValueState } from "./value-state";
@@ -289,25 +286,6 @@ function validateAuthoredValues(
     const staticStops = staticStopDiagnostics(values, committed.spec, `${nodeId}.input.${channel}`);
     if (staticStops.length > 0)
       return refusedOutcomeFrom(hintDiagnostics(staticStops, REPLACE_HINT));
-  } else {
-    const modelId = outputModelId(track.output);
-    if (modelId === undefined) throw new TypeError(`Track "${nodeId}" names no model output.`);
-    const model = environment.capabilities.model(modelId);
-    if (model === undefined)
-      return refusedOutcomeFrom([
-        diagnostic(
-          "model-unknown",
-          `${nodeId}.output.model`,
-          unknownNameMessage("model", modelId, environment.capabilities.modelIds()),
-        ),
-      ]);
-    const structure = parseModel(
-      model,
-      authoringValue(values, model.spec),
-      `${nodeId}.input.${channel}`,
-    );
-    if (structure.kind === "refused")
-      return refusedOutcomeFrom([...parsed.diagnostics, ...structure.diagnostics]);
   }
   return acceptedOutcome({ track, values }, parsed.diagnostics);
 }

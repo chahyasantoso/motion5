@@ -144,14 +144,14 @@ describe("self-validating model tracks", () => {
     ).toThrow(/live-values-invalid/);
   });
 
-  it("refuses a domain-invalid authored edit before adopting it", () => {
+  it("refuses a static change on a cheap edit before adopting it", () => {
     const handle = open(project());
     const before = handle.track("demo/points").definition;
     expect(() =>
       handle
         .track("demo/points")
-        .input.values.set([{ id: "a", cells: { owner: "acme", x: 0, y: 20 } }]),
-    ).toThrow(/model-value-invalid/);
+        .input.values.set([{ id: "a", cells: { owner: "other", x: 0, y: 2 } }]),
+    ).toThrow(/live-values-invalid/);
     expect(handle.track("demo/points").definition).toBe(before);
   });
 

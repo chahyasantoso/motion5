@@ -45,6 +45,10 @@ export class Track {
     this.#processor.prepareCommit?.(structures);
   }
 
+  invalidateOutputs(): void {
+    this.#processor.invalidateOutputs();
+  }
+
   setProgress(value: number): boolean {
     return this.#processor.setProgress(value, this.#localInput);
   }

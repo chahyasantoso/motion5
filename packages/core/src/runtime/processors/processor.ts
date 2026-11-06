@@ -9,6 +9,7 @@ export interface Processor {
   structureAtCommit(): Structure<unknown> | undefined;
   outputStructure(outputName: string): Structure<unknown> | undefined;
   prepareCommit?(structures: SourceStructures): void;
+  invalidateOutputs(): void;
   setProgress(value: number, localInput: LocalInput): boolean;
   replaceValues?(values: ParsedValues | undefined, localInput: LocalInput): void;
   replaceParam?(param: ParsedValues | undefined): void;

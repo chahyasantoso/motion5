@@ -91,6 +91,7 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["disposeTrack", "NO_PORTS.track.dispose"],
   ["stageTrack", "NO_PORTS.track.stage"],
   ["prepareReaders", "NO_PORTS.track.prepareReaders"],
+  ["invalidateOutputs", "NO_PORTS.track.invalidateOutputs"],
   ["createMotion", "NO_PORTS.motion.create"],
   ["destroyMotion", "NO_PORTS.motion.destroy"],
   ["addMotionTrack", "NO_PORTS.motion.addTrack"],
@@ -176,8 +177,8 @@ describe("the project ports", () => {
   it("states every uninstalled seam once, as a call that answers nothing", () => {
     const ports = leaves();
 
-    // Eighteen, which is the count the constructor resolves and the count the class used to declare.
-    expect(ports).toHaveLength(18);
+    // Nineteen, which is the count the constructor resolves.
+    expect(ports).toHaveLength(19);
     expect(ports.every((port) => typeof port === "function")).toBe(true);
     expect(ports.every((port) => (port as () => unknown)() === undefined)).toBe(true);
   });
@@ -261,7 +262,7 @@ describe("the project ports", () => {
     // set that still holds. Sorted, because the order the constructor resolves them in is its own.
     expect([...wired].sort()).toEqual([...declared].sort());
     expect(new Set(wired).size).toBe(wired.length);
-    // Sixteen resolved defaults and two normalized completions are the eighteen seams, once each.
+    // Seventeen resolved defaults and two normalized completions are the nineteen seams, once each.
     expect(callSites(source, "completing")).toHaveLength(2);
   });
 

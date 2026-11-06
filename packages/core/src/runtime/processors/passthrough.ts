@@ -59,15 +59,8 @@ export class PassthroughProcessor implements Processor {
   }
 
   replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
-    let nextStructure: Structure<unknown> | undefined;
-    localInput.replaceEvaluator(
-      () => {
-        nextStructure = this.#parseStructure(values);
-        return createValueEvaluator(values, this.#interpolator, this.#model.spec);
-      },
-      () => {
-        this.#structure = nextStructure;
-      },
+    localInput.replaceEvaluator(() =>
+      createValueEvaluator(values, this.#interpolator, this.#model.spec),
     );
   }
 
@@ -78,6 +71,8 @@ export class PassthroughProcessor implements Processor {
       sourceRevisions: {},
     };
   }
+
+  invalidateOutputs(): void {}
 
   dispose(): void {}
 }

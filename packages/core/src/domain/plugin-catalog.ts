@@ -211,16 +211,19 @@ function readInputs(
     }
     param = spec;
   }
-  let values: ValueSpec | undefined;
+  let values: ValueSpec | Model<unknown, unknown> | undefined;
   if (source.values !== undefined) {
+    let valuesSpec: ValueSpec;
     if (isModel(source.values)) {
       const model = admitModel(source.values, `${path}.values`);
       referencedModels.push(model);
-      values = model.spec;
+      values = model;
+      valuesSpec = model.spec;
     } else {
-      values = readSpec(source.values, `${path}.values`, true);
+      valuesSpec = readSpec(source.values, `${path}.values`, true);
+      values = valuesSpec;
     }
-    if (values.optional === true)
+    if (valuesSpec.optional === true)
       refuse(
         "plugin-input-invalid",
         `${path}.values.optional`,

@@ -32,13 +32,17 @@ function outputIssue(issue: ValueIssue): Diagnostic {
   return diagnostic(ruleId, issue.path, issue.message);
 }
 
-/** Validates and freezes the first output set a plugin publishes; later frames trust it. */
-export function validatePluginOutputs(
-  raw: unknown,
-  declared: Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>,
+type DeclaredOutputs = Readonly<Record<string, ValueSpec | Model<unknown, unknown>>>;
+
+function specOf(declared: ValueSpec | Model<unknown, unknown>): ValueSpec {
+  return isModel(declared) ? declared.spec : declared;
+}
+
+function outputNameDiagnostics(
+  raw: Readonly<Record<string, unknown>>,
+  declared: DeclaredOutputs,
   nodeId: string,
-): Outputs {
-  if (!isPlainRecord(raw)) throw invalidOutput(nodeId, "Plugin transform must return an object.");
+): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   for (const name of Object.keys(raw)) {
     if (RESERVED_NAMES.has(name)) {
@@ -56,20 +60,30 @@ export function validatePluginOutputs(
         ),
       );
   }
+  for (const [name, declaredOutput] of Object.entries(declared))
+    if (!Object.hasOwn(raw, name) && specOf(declaredOutput).optional !== true)
+      diagnostics.push(
+        diagnostic(
+          "output-missing",
+          `${nodeId}.outputs.${name}`,
+          `required output '${name}' is absent.`,
+        ),
+      );
+  return diagnostics;
+}
+
+/** Validates and freezes the first output set a plugin publishes. */
+export function validatePluginOutputs(
+  raw: unknown,
+  declared: DeclaredOutputs,
+  nodeId: string,
+): Outputs {
+  if (!isPlainRecord(raw)) throw invalidOutput(nodeId, "Plugin transform must return an object.");
+  const diagnostics = outputNameDiagnostics(raw, declared, nodeId);
   const validated: Record<string, Outputs[string]> = {};
   for (const [name, declaredOutput] of Object.entries(declared)) {
-    const spec = isModel(declaredOutput) ? declaredOutput.spec : declaredOutput;
-    if (!Object.hasOwn(raw, name)) {
-      if (spec.optional !== true)
-        diagnostics.push(
-          diagnostic(
-            "output-missing",
-            `${nodeId}.outputs.${name}`,
-            `required output '${name}' is absent.`,
-          ),
-        );
-      continue;
-    }
+    const spec = specOf(declaredOutput);
+    if (!Object.hasOwn(raw, name)) continue;
     const value = raw[name];
     const issues = validateRuntimeValue(value, spec, `${nodeId}.outputs.${name}`, {
       extraFields: "reject",
@@ -86,6 +100,30 @@ export function validatePluginOutputs(
   } catch (error) {
     throw invalidOutput(nodeId, error instanceof Error ? error.message : String(error));
   }
+}
+
+/** Checks a later frame's output names and table or record shape; its cells stay trusted. */
+export function checkLaterOutputs(
+  raw: Outputs,
+  declared: DeclaredOutputs,
+  nodeId: string,
+): Outputs {
+  if (!isPlainRecord(raw)) throw invalidOutput(nodeId, "Plugin transform must return an object.");
+  const diagnostics = outputNameDiagnostics(raw, declared, nodeId);
+  for (const [name, declaredOutput] of Object.entries(declared)) {
+    if (!Object.hasOwn(raw, name)) continue;
+    const isTable = specOf(declaredOutput).kind === "table";
+    if (Array.isArray(raw[name]) !== isTable)
+      diagnostics.push(
+        diagnostic(
+          "output-invalid",
+          `${nodeId}.outputs.${name}`,
+          `output '${name}' must stay a ${isTable ? "table" : "record"}.`,
+        ),
+      );
+  }
+  if (diagnostics.length > 0) throw new PluginNodeError(diagnostics);
+  return raw;
 }
 
 function invalidOutput(nodeId: string, message: string): PluginNodeError {

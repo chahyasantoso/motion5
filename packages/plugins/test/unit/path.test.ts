@@ -91,6 +91,22 @@ describe("path models and plugins (S8)", () => {
     expect(sampleQuarter.rotation).toBeCloseTo(135, 1);
   });
 
+  it("Tangent at s = 1 matches the limit from s = 0.999 when the end handle is absent or short", () => {
+    const handleFree = [
+      { id: "h", cells: { x0: 0, y0: 0, x1: 0, y1: 0, x2: 100, y2: 0, x3: 100, y3: 0 } },
+    ];
+    const end = pointAtArcFraction(handleFree, 1);
+    expect(end.rotation).toBeCloseTo(pointAtArcFraction(handleFree, 0.999).rotation, 0);
+    expect(end.rotation).toBeCloseTo(0, 5);
+
+    const zeroEndTangent = [
+      { id: "z", cells: { x0: 0, y0: 0, x1: 60, y1: 0, x2: 200, y2: 80, x3: 200, y3: 80 } },
+    ];
+    const last = pointAtArcFraction(zeroEndTangent, 1);
+    expect(last.rotation).toBeCloseTo(pointAtArcFraction(zeroEndTangent, 0.999).rotation, 0);
+    expect(last.rotation).toBeCloseTo(29.74, 1);
+  });
+
   it("Arc length: equal steps of s give nearly equal distances along a two-segment path with one short and one long segment", () => {
     // Segment 1: length 10; Segment 2: length 90. Total 100.
     const twoSegments = [
@@ -797,7 +813,10 @@ describe("path models and plugins (S8)", () => {
       const before = readyPatch(handle, "m/letter");
       expect(() =>
         handle.track("m/letter").input.replace({
-          values: [{ id: "missing", cells: { x: 0, y: 0 } }],
+          values: [
+            { id: "a", cells: { x: 0, y: 0 } },
+            { id: "missing", cells: { x: 0, y: 0 } },
+          ],
           requires: { frames: "frames" },
         }),
       ).toThrow(/Anchor 'missing' names no bone in frames/);

@@ -10,17 +10,22 @@ const GL5_WEIGHTS = [
   0.11846344252809454,
 ];
 
-function segmentSpeed(c: CubicPath2dCells, u: number): number {
+function segmentDerivative(c: CubicPath2dCells, u: number): { dx: number; dy: number } {
   const ax = 3 * (c.x1 - c.x0);
   const ay = 3 * (c.y1 - c.y0);
   const bx = 3 * (c.x2 - c.x1);
   const by = 3 * (c.y2 - c.y1);
   const cx = 3 * (c.x3 - c.x2);
   const cy = 3 * (c.y3 - c.y2);
-
   const oneMinusU = 1 - u;
-  const dx = oneMinusU * oneMinusU * ax + 2 * oneMinusU * u * bx + u * u * cx;
-  const dy = oneMinusU * oneMinusU * ay + 2 * oneMinusU * u * by + u * u * cy;
+  return {
+    dx: oneMinusU * oneMinusU * ax + 2 * oneMinusU * u * bx + u * u * cx,
+    dy: oneMinusU * oneMinusU * ay + 2 * oneMinusU * u * by + u * u * cy,
+  };
+}
+
+function segmentSpeed(c: CubicPath2dCells, u: number): number {
+  const { dx, dy } = segmentDerivative(c, u);
   return Math.hypot(dx, dy);
 }
 
@@ -45,22 +50,13 @@ function evaluateSegment(c: CubicPath2dCells, u: number): Point2dCells {
   const x = oneMinusU3 * c.x0 + 3 * oneMinusU2 * u * c.x1 + 3 * oneMinusU * u2 * c.x2 + u3 * c.x3;
   const y = oneMinusU3 * c.y0 + 3 * oneMinusU2 * u * c.y1 + 3 * oneMinusU * u2 * c.y2 + u3 * c.y3;
 
-  const ax = 3 * (c.x1 - c.x0);
-  const ay = 3 * (c.y1 - c.y0);
-  const bx = 3 * (c.x2 - c.x1);
-  const by = 3 * (c.y2 - c.y1);
-  const cx = 3 * (c.x3 - c.x2);
-  const cy = 3 * (c.y3 - c.y2);
-
-  let dx = oneMinusU2 * ax + 2 * oneMinusU * u * bx + u2 * cx;
-  let dy = oneMinusU2 * ay + 2 * oneMinusU * u * by + u2 * cy;
+  let { dx, dy } = segmentDerivative(c, u);
 
   if (Math.hypot(dx, dy) < 1e-7) {
-    // Tangent approaches zero at cusp; inspect second derivative
-    const d2x = 6 * oneMinusU * (c.x2 - 2 * c.x1 + c.x0) + 6 * u * (c.x3 - 2 * c.x2 + c.x1);
-    const d2y = 6 * oneMinusU * (c.y2 - 2 * c.y1 + c.y0) + 6 * u * (c.y3 - 2 * c.y2 + c.y1);
-    dx = d2x;
-    dy = d2y;
+    // A vanishing tangent takes the second derivative direction, negated past the midpoint.
+    const sign = u > 0.5 ? -1 : 1;
+    dx = sign * (6 * oneMinusU * (c.x2 - 2 * c.x1 + c.x0) + 6 * u * (c.x3 - 2 * c.x2 + c.x1));
+    dy = sign * (6 * oneMinusU * (c.y2 - 2 * c.y1 + c.y0) + 6 * u * (c.y3 - 2 * c.y2 + c.y1));
   }
 
   if (Math.hypot(dx, dy) < 1e-7) {

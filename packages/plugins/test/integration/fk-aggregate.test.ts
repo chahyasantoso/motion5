@@ -510,24 +510,6 @@ describe("aggregate 2D FK", () => {
         ],
       });
     });
-    expect(handle.get("demo/pose")?.status).toBe("blocked");
-    expect(handle.get("demo/solve")?.diagnostics.map((d) => d.ruleId)).toContain(
-      "output-static-changed",
-    );
-
-    handle.track("demo/solve").replace({
-      id: "solve",
-      output: { plugin: "ik" },
-      input: {
-        param: { flip: false },
-        requires: { chain: "body", goals: "goals", base: "root" },
-      },
-    });
-    handle.track("demo/pose").replace({
-      id: "pose",
-      output: { plugin: "fk" },
-      input: { requires: { chain: "body", solved: "solve", base: "root" } },
-    });
     expect(handle.get("demo/pose")?.status).toBe("ready");
     expect(poses(handle).map((row) => row.id)).toEqual([
       "trunk",

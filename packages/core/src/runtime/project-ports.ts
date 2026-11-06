@@ -36,6 +36,8 @@ export interface TrackPort {
     readers: readonly ReaderCheck[],
     staleSources: ReadonlySet<string>,
   ) => void;
+  /** The named computed tracks read a structure that moved: their next compose starts afresh. */
+  readonly invalidateOutputs: (nodeIds: ReadonlySet<string>) => void;
 }
 
 /** Everything a Motion owns that no node carries. `replaceTrigger` and `setStagger` answer an
@@ -77,6 +79,7 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
     dispose: NOTHING,
     stage: NOTHING,
     prepareReaders: NOTHING,
+    invalidateOutputs: NOTHING,
   }),
   motion: Object.freeze<MotionPort>({
     create: NOTHING,

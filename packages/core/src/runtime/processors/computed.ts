@@ -22,7 +22,7 @@ import { defineOwnValue } from "../../lang/own-property";
 import type { Interpolator } from "../../ports/interpolator";
 import { createValueEvaluator } from "../evaluate-values";
 import { parseModel } from "../model-parse";
-import { PluginNodeError, validatePluginOutputs } from "../plugin-output";
+import { checkLaterOutputs, PluginNodeError, validatePluginOutputs } from "../plugin-output";
 import type { BoundSlot, BoundSlots } from "../bound-slot";
 import { isOptionalSlot, slotDeclaration } from "../../contract/slot-declaration";
 import { isValue, findNonFinite } from "../value-validation";
@@ -157,20 +157,31 @@ export class ComputedProcessor implements Processor {
     this.#interpolator = options.interpolator;
     this.#parsedValues = options.values;
     this.#parsedParam = options.param;
+    this.#parseLocalModel(options.values);
     if (this.plugin.inputs.param !== undefined) {
       const paramSpec = this.plugin.inputs.param;
       this.#paramInput = new LocalInput(
-        createValueEvaluator(
-          options.param ?? (paramSpec.kind === "record" ? EMPTY_RECORD : undefined),
-          options.interpolator,
-          paramSpec,
-        ),
+        createValueEvaluator(options.param ?? EMPTY_RECORD, options.interpolator, paramSpec),
       );
     }
   }
 
+  #parseLocalModel(values: ParsedValues | undefined): void {
+    const local = this.plugin.inputs.values;
+    if (!isModel(local)) return;
+    const path = `${this.nodeId}.input.values`;
+    const parsed = parseModel(local, authoringValue(values, local.spec), path);
+    if (parsed.kind === "refused") throw new TypeError(describeDiagnostics(parsed.diagnostics));
+  }
+
   structureAtCommit(): Structure<unknown> | undefined {
     return undefined;
+  }
+
+  /** The next compose validates, parses and snapshots afresh; the last structure serves until then. */
+  invalidateOutputs(): void {
+    this.#outputsChecked = false;
+    this.#outputStaticSnapshots.clear();
   }
 
   outputStructure(outputName: string): Structure<unknown> | undefined {
@@ -186,29 +197,27 @@ export class ComputedProcessor implements Processor {
   replaceValues(values: ParsedValues | undefined, localInput: LocalInput): void {
     const rawSpec = this.plugin.inputs.values;
     const valuesSpec = isModel(rawSpec) ? rawSpec.spec : (rawSpec ?? EMPTY_RECORD_SPEC);
-    this.#parsedValues = values;
-    localInput.replaceEvaluator(() =>
-      createValueEvaluator(
-        defaultPluginValues(values, this.plugin),
-        this.#interpolator,
-        valuesSpec,
-      ),
+    localInput.replaceEvaluator(
+      () =>
+        createValueEvaluator(
+          defaultPluginValues(values, this.plugin),
+          this.#interpolator,
+          valuesSpec,
+        ),
+      () => {
+        this.#parsedValues = values;
+      },
     );
-    this.#isPrepared = false;
-    this.#outputStaticSnapshots.clear();
-    this.#outputStructures.clear();
   }
 
   replaceParam(param: ParsedValues | undefined): void {
     const spec = this.plugin.inputs.param;
     if (spec === undefined) return;
-    this.#parsedParam = param;
-    this.#paramInput?.replaceEvaluator(() =>
-      createValueEvaluator(
-        param ?? (spec.kind === "record" ? EMPTY_RECORD : undefined),
-        this.#interpolator,
-        spec,
-      ),
+    this.#paramInput?.replaceEvaluator(
+      () => createValueEvaluator(param ?? EMPTY_RECORD, this.#interpolator, spec),
+      () => {
+        this.#parsedParam = param;
+      },
     );
   }
 
@@ -242,7 +251,7 @@ export class ComputedProcessor implements Processor {
     const context = Object.freeze({ nodeId: this.nodeId, progress: localInput.progress });
     const raw = this.plugin.transform(input, context);
     const outputs = this.#outputsChecked
-      ? raw
+      ? checkLaterOutputs(raw, this.plugin.outputs, this.nodeId)
       : validatePluginOutputs(raw, this.plugin.outputs, this.nodeId);
     this.#outputsChecked = true;
     this.#checkOutputs(raw);

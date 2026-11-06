@@ -620,6 +620,9 @@ export class Engine {
           for (const reader of readers)
             prepareTrackReader(reader.track, reader.nodeId, reader.ownerId, staleSources);
         },
+        invalidateOutputs: (nodeIds) => {
+          for (const nodeId of nodeIds) tracks.get(nodeId)?.invalidateOutputs();
+        },
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);

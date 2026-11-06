@@ -40,6 +40,9 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
+/** Path plugins and the drawing helper publish under `path/`; the catalog names them in camelCase. */
+const PATH_SUBPATHS = ["path/anchors-to-cubic", "path/bezier", "path/skin-anchors", "path/draw"];
+const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors"];
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -107,8 +110,11 @@ describe("public plugin subpaths", () => {
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
     const aliases = workspaceSourceAliases("plugins");
-    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length);
-    for (const name of PUBLIC_SUBPATHS) {
+    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length + PATH_SUBPATHS.length);
+    expect(Object.keys(manifest.exports).filter((key) => key.startsWith("./path/"))).toEqual(
+      PATH_SUBPATHS.map((name) => `./${name}`),
+    );
+    for (const name of [...PUBLIC_SUBPATHS, ...PATH_SUBPATHS]) {
       const specifier = `@motion5/plugins/${name}`;
       expect(aliases.filter(({ find }) => find.test(specifier))).toHaveLength(1);
       expect(aliases.some(({ find }) => find.test(`${specifier}/private`))).toBe(false);
@@ -119,7 +125,9 @@ describe("public plugin subpaths", () => {
 
   it("L15 every approved catalog entry lazily loads its matching definition subpath", async () => {
     const { builtinCatalog } = await import("../src/builtin-catalog");
-    expect([...builtinCatalog.keys()].sort()).toEqual([...DEFINITION_SUBPATHS].sort());
+    expect([...builtinCatalog.keys()].sort()).toEqual(
+      [...DEFINITION_SUBPATHS, ...PATH_CATALOG_NAMES].sort(),
+    );
     for (const [name, descriptor] of builtinCatalog) {
       const definition = await descriptor.load();
       expect(definition.id).toBe(name);

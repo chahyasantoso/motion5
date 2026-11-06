@@ -5,10 +5,7 @@ export interface PluginDescriptor {
   readonly load: () => Promise<PluginDefinition<never>>;
 }
 
-/**
- * The v5 catalog starts empty and is filled one public plugin at a time by the Phase 5 slices.
- * Grouped definitions stay in the legacy catalog until their individual public cutover.
- */
+/** The zero-config plugins a loader resolves by name; each entry imports its module on first use. */
 export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
   string,
   PluginDescriptor
@@ -47,6 +44,24 @@ export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
     "fk3d",
     {
       load: async () => (await import("./fk3d")).fk3dPlugin,
+    },
+  ],
+  [
+    "anchorsToCubic",
+    {
+      load: async () => (await import("./path/anchors-to-cubic")).anchorsToCubicPlugin,
+    },
+  ],
+  [
+    "bezier",
+    {
+      load: async () => (await import("./path/bezier")).bezierPlugin,
+    },
+  ],
+  [
+    "skinAnchors",
+    {
+      load: async () => (await import("./path/skin-anchors")).skinAnchorsPlugin,
     },
   ],
 ]);
