@@ -28,8 +28,99 @@ export interface PointsStructure {
   readonly ids: readonly string[];
 }
 
+/** Cells of a 2D body row. */
+export interface Body2dCells {
+  readonly parentId?: string;
+  readonly length: number;
+  readonly rotation: number;
+  readonly weight?: number;
+  readonly x?: number;
+  readonly y?: number;
+  readonly minRotation?: number;
+  readonly maxRotation?: number;
+}
+
+/** Cells of a 3D body row. */
+export interface Body3dCells {
+  readonly parentId?: string;
+  readonly length: number;
+  readonly rotation?: number;
+  readonly rotationX?: number;
+  readonly rotationY?: number;
+  readonly weight?: number;
+  readonly x?: number;
+  readonly y?: number;
+  readonly z?: number;
+  readonly orient?: number;
+  readonly joint?: "free" | "hinge" | "cone" | "swing-twist";
+  readonly axisX?: number;
+  readonly axisY?: number;
+  readonly axisZ?: number;
+  readonly minRotation?: number;
+  readonly maxRotation?: number;
+  readonly minTwist?: number;
+  readonly maxTwist?: number;
+  readonly maxSwing?: number;
+}
+
+/** Cells of a 2D goal row. */
+export interface Goals2dCells {
+  readonly memberId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly influence?: number;
+}
+
+/** Cells of a 3D goal row. */
+export interface Goals3dCells {
+  readonly memberId: string;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly rotation?: number;
+  readonly rotationX?: number;
+  readonly rotationY?: number;
+  readonly influence?: number;
+}
+
+/** Cells of a 2D point record. */
+export interface Point2dCells {
+  readonly x: number;
+  readonly y: number;
+  readonly rotation: number;
+}
+
+/** Cells of a 3D point record. */
+export interface Point3dCells {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly rotation: number;
+  readonly rotationX: number;
+  readonly rotationY: number;
+}
+
+/** Cells of a 2D solved row. */
+export interface Solved2dCells {
+  readonly rotation: number;
+  readonly residual?: number;
+  readonly atBound?: boolean;
+}
+
+/** Cells of a 3D solved row. */
+export interface Solved3dCells {
+  readonly rotation: number;
+  readonly rotationX: number;
+  readonly rotationY: number;
+  readonly residual?: number;
+  readonly atBound?: boolean;
+}
+
+export type Points2dCells = Point2dCells;
+export type Points3dCells = Point3dCells;
+
 /** 2D body kinematics skeleton model with hierarchical joints and limits. */
-export const Body2d: Model<unknown, BodyStructure> = defineModel({
+export const Body2d: Model<Body2dCells, BodyStructure> = defineModel({
   id: "Body2d",
   spec: BODY_2D_SPEC,
   parse(value) {
@@ -46,7 +137,7 @@ export const Body2d: Model<unknown, BodyStructure> = defineModel({
 });
 
 /** 3D body kinematics skeleton model with 3D joint limits and orientation. */
-export const Body3d: Model<unknown, BodyStructure> = defineModel({
+export const Body3d: Model<Body3dCells, BodyStructure> = defineModel({
   id: "Body3d",
   spec: BODY_3D_SPEC,
   parse(value) {
@@ -63,7 +154,7 @@ export const Body3d: Model<unknown, BodyStructure> = defineModel({
 });
 
 /** 2D solver goals specifying target positions and influences for members. */
-export const Goals2d: Model<unknown, GoalsStructure> = defineModel({
+export const Goals2d: Model<Goals2dCells, GoalsStructure> = defineModel({
   id: "Goals2d",
   spec: GOALS_2D_SPEC,
   parse(value) {
@@ -80,7 +171,7 @@ export const Goals2d: Model<unknown, GoalsStructure> = defineModel({
 });
 
 /** 3D solver goals specifying spatial targets and rotational orientations. */
-export const Goals3d: Model<unknown, GoalsStructure> = defineModel({
+export const Goals3d: Model<Goals3dCells, GoalsStructure> = defineModel({
   id: "Goals3d",
   spec: GOALS_3D_SPEC,
   parse(value) {
@@ -97,19 +188,19 @@ export const Goals3d: Model<unknown, GoalsStructure> = defineModel({
 });
 
 /** 2D point record specifying spatial coordinate and planar rotation. */
-export const Point2d: Model = defineModel({
+export const Point2d: Model<Point2dCells> = defineModel({
   id: "Point2d",
   spec: ROOT_2D_SPEC,
 });
 
 /** 3D point record specifying spatial coordinates and orientation angles. */
-export const Point3d: Model = defineModel({
+export const Point3d: Model<Point3dCells> = defineModel({
   id: "Point3d",
   spec: ROOT_3D_SPEC,
 });
 
 /** 2D solved pose angles and convergence residuals. */
-export const Solved2d: Model<unknown, SolvedStructure> = defineModel({
+export const Solved2d: Model<Solved2dCells, SolvedStructure> = defineModel({
   id: "Solved2d",
   spec: SOLVED_2D_SPEC,
   parse(value) {
@@ -126,7 +217,7 @@ export const Solved2d: Model<unknown, SolvedStructure> = defineModel({
 });
 
 /** 3D solved joint rotations and convergence residuals. */
-export const Solved3d: Model<unknown, SolvedStructure> = defineModel({
+export const Solved3d: Model<Solved3dCells, SolvedStructure> = defineModel({
   id: "Solved3d",
   spec: SOLVED_3D_SPEC,
   parse(value) {
@@ -143,7 +234,7 @@ export const Solved3d: Model<unknown, SolvedStructure> = defineModel({
 });
 
 /** Table model of 2D points indexing frame rows by identifier. */
-export const Points2d: Model<unknown, PointsStructure> = defineModel({
+export const Points2d: Model<Points2dCells, PointsStructure> = defineModel({
   id: "Points2d",
   spec: POINTS_2D_SPEC,
   parse(value) {
@@ -155,7 +246,7 @@ export const Points2d: Model<unknown, PointsStructure> = defineModel({
 });
 
 /** Table model of 3D points indexing frame rows by identifier. */
-export const Points3d: Model<unknown, PointsStructure> = defineModel({
+export const Points3d: Model<Points3dCells, PointsStructure> = defineModel({
   id: "Points3d",
   spec: POINTS_3D_SPEC,
   parse(value) {

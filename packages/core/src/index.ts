@@ -25,6 +25,7 @@ export type {
   PatchBatch,
   PatchListener,
   Value,
+  TableOf,
 } from "./contract/v5";
 export type { PluginCapabilities } from "./ports/plugin-capabilities";
 export {

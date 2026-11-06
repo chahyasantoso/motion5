@@ -49,6 +49,8 @@ const INSPECT: ValueSpec = {
   },
 };
 
+const SLOT = { chain: "chain", goals: "goals", base: "base" } as const;
+
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
 type Ik3dInput = {
@@ -151,16 +153,16 @@ export const ik3dPlugin: PluginDefinition<Ik3dInput> = {
   },
   outputs: { values: Solved3d, inspect: { ...INSPECT, optional: true } },
   prepare({ structures }) {
-    const chain = structureOf<BodyStructure>(structures, "chain");
-    const goals = structureOf<GoalsStructure>(structures, "goals");
+    const chain = structureOf<BodyStructure>(structures, SLOT.chain);
+    const goals = structureOf<GoalsStructure>(structures, SLOT.goals);
     if (chain === undefined || goals === undefined) return ok(undefined);
     const refused = nonEmptyDiagnostics(goalDiagnostics(chain, goals));
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const chain = requireStructure<BodyStructure>(structures, "chain", "IK3d");
-    const goals = requireStructure<GoalsStructure>(structures, "goals", "IK3d");
+    const chain = requireStructure<BodyStructure>(structures, SLOT.chain, "IK3d");
+    const goals = requireStructure<GoalsStructure>(structures, SLOT.goals, "IK3d");
     const members = solveMembers3d(requires.chain, chain, requires.goals, goals);
     const pole = readPole3d(
       requires.pole === undefined ? undefined : recordOutput(requires.pole, "pole"),

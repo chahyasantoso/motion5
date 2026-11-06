@@ -41,6 +41,7 @@ const allowedPublicExports = new Set([
   "PatchRender",
   "patchRender",
   "Value",
+  "TableOf",
   "MigrationResult",
   "resolveTriggerDefinition",
   "validateV5",

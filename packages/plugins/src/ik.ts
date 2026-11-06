@@ -32,6 +32,8 @@ const INSPECT: ValueSpec = {
   },
 };
 
+const SLOT = { chain: "chain", goals: "goals", base: "base" } as const;
+
 type FlatRecord = Readonly<Record<string, number | string | boolean>>;
 
 type IkInput = {
@@ -111,16 +113,16 @@ export const ikPlugin: PluginDefinition<IkInput> = {
   },
   outputs: { values: Solved2d, inspect: { ...INSPECT, optional: true } },
   prepare({ structures }) {
-    const chain = structureOf<BodyStructure>(structures, "chain");
-    const goals = structureOf<GoalsStructure>(structures, "goals");
+    const chain = structureOf<BodyStructure>(structures, SLOT.chain);
+    const goals = structureOf<GoalsStructure>(structures, SLOT.goals);
     if (chain === undefined || goals === undefined) return ok(undefined);
     const refused = nonEmptyDiagnostics(goalDiagnostics(chain, goals));
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ param, requires, structures }) {
     const local = flatRecord(param ?? {}, "input.param");
-    const chain = requireStructure<BodyStructure>(structures, "chain", "IK");
-    const goals = requireStructure<GoalsStructure>(structures, "goals", "IK");
+    const chain = requireStructure<BodyStructure>(structures, SLOT.chain, "IK");
+    const goals = requireStructure<GoalsStructure>(structures, SLOT.goals, "IK");
     const members = solveMembers(requires.chain, chain, requires.goals, goals);
     const result = solveChain(readFrame(requires.base), members, local.flip === true);
     const inspection = inspectSolve(result);

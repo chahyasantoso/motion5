@@ -38,6 +38,7 @@ export type {
   SourceStructures,
   Structure,
   Table,
+  TableOf,
   TypeIssue,
   Value,
   ValueSpec,

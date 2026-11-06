@@ -26,6 +26,8 @@ import { nonEmptyDiagnostics } from "./prepare-diagnostics";
 import { requireStructure, structureOf } from "./slot-structure";
 import { rowAt, rowAtIndex, sameRowCount } from "./table-lookup";
 
+const SLOT = { chain: "chain", solved: "solved", base: "base" } as const;
+
 type FkInput = {
   readonly values: Readonly<Record<string, never>>;
   readonly requires: {
@@ -56,8 +58,8 @@ export const fkPlugin: PluginDefinition<FkInput> = {
   },
   outputs: { values: Points2d },
   prepare({ structures }) {
-    const chain = structureOf<BodyStructure>(structures, "chain");
-    const solved = structureOf<SolvedStructure>(structures, "solved");
+    const chain = structureOf<BodyStructure>(structures, SLOT.chain);
+    const solved = structureOf<SolvedStructure>(structures, SLOT.solved);
     if (chain === undefined || solved === undefined) return ok(undefined);
     const solvedIds = new Set(solved.ids);
     const refused = nonEmptyDiagnostics(
@@ -74,11 +76,11 @@ export const fkPlugin: PluginDefinition<FkInput> = {
     return refused === undefined ? ok(undefined) : prepareRefused(refused);
   },
   transform({ requires, structures }) {
-    const chain = requireStructure<BodyStructure>(structures, "chain", "FK");
+    const chain = requireStructure<BodyStructure>(structures, SLOT.chain, "FK");
     const solved =
       requires.solved === undefined
         ? undefined
-        : requireStructure<SolvedStructure>(structures, "solved", "FK");
+        : requireStructure<SolvedStructure>(structures, SLOT.solved, "FK");
     sameRowCount(requires.chain, chain.ids.length, "Body");
     if (requires.solved !== undefined && solved !== undefined)
       sameRowCount(requires.solved, solved.ids.length, "Solved");

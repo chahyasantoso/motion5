@@ -174,11 +174,15 @@ export function refused(issues: readonly Issue[]): Parsed<never> {
 export function prepareRefused(diagnostics: NonEmptyDiagnostics): Prepared<never> {
   return { ok: false, diagnostics };
 }
+/** A table value's cell shape, derived from a model's cell type. */
+export type TableOf<Cells> = readonly { readonly id: string; readonly cells: Cells }[];
+declare const CELLS: unique symbol;
 /** Nominal model contract specifying value shape and optional structure parse. */
 export interface Model<Cells = unknown, Structure = undefined> {
   readonly id: string;
   readonly spec: ValueSpec;
   readonly parse?: (value: Value) => Parsed<Structure>;
+  readonly [CELLS]?: Cells;
 }
 /** Defines an immutable model contract. */
 export function defineModel<Cells = unknown, Structure = undefined>(decl: {
@@ -361,11 +365,7 @@ export interface PluginDefinition<
     >;
   };
   readonly outputs: OutputsDecl;
-  prepare?(ctx: {
-    readonly values: unknown;
-    readonly param?: unknown;
-    readonly structures: SourceStructures;
-  }): Prepared<TState>;
+  prepare?(ctx: PluginPrepareContext): Prepared<TState>;
   transform(input: Input, context: EvaluationContext): Outputs;
 }
 /** Payload by status; only ready owns outputs. */
