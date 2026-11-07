@@ -11,7 +11,18 @@ import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } fro
 import { describeDiagnostics, diagnostic } from "./diagnostics";
 import { defineOwnValue } from "../lang/own-property";
 import { deriveSourceContract } from "./v5-infer";
-import { parseTrackDefinition, type ParseContext, type ParsedTrack } from "./v5-parse";
+import {
+  parseTrackDefinition,
+  type ParseContext,
+  type ParsedRecord,
+  type ParsedTrack,
+} from "./v5-parse";
+
+/** Reads an absent param as an empty record, so each required field is refused by name. */
+const NO_AUTHORED_PARAM: ParsedRecord = Object.freeze({
+  kind: "record",
+  fields: Object.freeze({}),
+});
 
 const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
@@ -151,7 +162,7 @@ function derivedInputDiagnostics(
       if (definition.inputs.param !== undefined)
         diagnostics.push(
           ...deriveSourceContract(
-            parsed.input.param,
+            parsed.input.param ?? NO_AUTHORED_PARAM,
             definition.inputs.param,
             `${path}.input.param`,
             "plugin",
