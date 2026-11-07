@@ -5,7 +5,7 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-06, Asia/Jakarta.
+- **Captured:** 2026-11-07, Asia/Jakarta.
 - **Read against:** `feat/v5.2-models-and-plugin-tracks` after the full check gate.
 
 ## Now

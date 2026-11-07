@@ -59,7 +59,7 @@ npm test
 
 ## Documentation map
 
-Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), and [Decision records](docs/README.md#decisions).
+Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), and [Decision records](docs/README.md#decisions).
 
 ## Contributing rule of thumb
 

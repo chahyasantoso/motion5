@@ -1,6 +1,6 @@
 # motion5 technical requirements document
 
-**Status:** Normative. This document says what the system must do to be correct. It does not say when the work happens; sequencing lives in [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md), and what actually exists today lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
+**Status:** Normative. This document says what the system must do to be correct. It does not say when the work happens, and what actually exists today lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
 **Authored contract:** schema v5.
 **Relationship to other documents:** [PRD.md](./PRD.md) states the product intent and functional requirements. [ARCHITECTURE.md](./ARCHITECTURE.md) states ownership and invariants. This document turns both into testable technical requirements. The numbered `ADR-*.md` records in this directory record why alternatives were rejected, and [the documentation map](./README.md#decisions) states how they are named.
 
@@ -238,13 +238,30 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - ADR-016 diagnostics stay inline: TR-E-09, TR-E-06, TR-E-07, TR-R-08.
 - ADR-017 React ships in v1: TR-S-07, TR-A-06, TR-A-07.
 
-### Delivery slices
-
-The slice that satisfies each requirement is named in [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md). Every requirement in this document must appear in at least one slice; a requirement with no slice means the plan is incomplete, and a slice with no requirement means the work has no acceptance criteria.
-
 ## 17. Acceptance for v1
 
-v1 is releasable only when every requirement in sections 4 through 15 has a green verification, the invariant matrix is complete, the packed consumer test passes, benchmarks run as a required job against committed budgets, and documentation matches implementation. The binary checklist lives at the end of [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) and is mirrored by CI jobs.
+v1 is releasable only when every requirement in sections 4 through 15 has a green verification, the invariant matrix is complete, the packed consumer test passes, benchmarks run as a required job against committed budgets, and documentation matches implementation. The binary checklist below is mirrored by CI jobs.
+
+Every line is binary. No line is satisfied by prose.
+
+- Schema v5 loads and v4 is rejected at the runtime boundary.
+- Authored ids stay local and no public API accepts a qualified id as authored identity.
+- Migration is pure, idempotent, and deterministic, with fresh fixtures.
+- Every architecture invariant maps to a named executable test that fails when the invariant is broken.
+- Rollback leaves every observable surface byte-identical.
+- One project owns one graph runtime, publisher, registry, and clock subscription.
+- Composition failure blocks the downstream closure without aborting the pass.
+- Published patches are deeply frozen, revisioned, deduplicated, and batched.
+- Runtime diagnostics appear inline on affected patches and in batch summaries, with no second channel.
+- Load, mount, unmount, and dispose cycles show flat retention.
+- Core imports no animation engine, DOM API, or React.
+- The GSAP adapter passes the interpolator contract suite unchanged.
+- `@motion5/react` builds, passes its lifecycle and concurrency tests, and passes its own packed consumer test.
+- The documented public API passes a packed-tarball consumer test.
+- Benchmarks run against committed budgets as a required job.
+- Documentation matches implementation and no transitional code remains.
+- No capability flags, compatibility facades, or copied predecessor files shipped.
+- No phase required a second revert.
 
 ## 18. Resolved and open technical questions
 

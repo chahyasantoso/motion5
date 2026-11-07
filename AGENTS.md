@@ -49,3 +49,4 @@ is one line, and a rule this file does not carry is not a rule.
   against a baseline that may only shrink.
 - Prettier formats code, not markdown: run `npm run format` before committing.
 - Never mix a formatting pass with a behavior change.
+- A plan holds current decisions only; git holds its revisions.

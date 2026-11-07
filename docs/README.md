@@ -40,7 +40,6 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [MAP.md](./MAP.md): generated one-line owner per source folder, with each package's public entries.
 - [API-CAPABILITIES.md](./API-CAPABILITIES.md): concise API-only command and owner navigation, human-dispatch routes, and explicit activation gates.
 
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS.
 - [PHASE5-DETAILED-PLAN.md](./PHASE5-DETAILED-PLAN.md): the detailed contract for the current phase.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [BENCH-IK.md](./BENCH-IK.md): the measured 2D and 3D IK envelopes, conditions, reproduction command, and non-gating timing policy.
@@ -55,7 +54,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. AGENTS.md says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. The numbered ADRs say what not to re-litigate. The guide says how to use the result.
+PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. SESSION-STATUS says what is actually true today, and only today. AGENTS.md says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. The numbered ADRs say what not to re-litigate. The guide says how to use the result.
 
 ## Locked scope decisions
 

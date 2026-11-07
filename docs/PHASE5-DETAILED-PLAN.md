@@ -1,8 +1,8 @@
 # Phase 5 detailed implementation plan (restart)
 
 **Status:** Replaces the in-flight attempt on PR [#98](https://github.com/chahyasantoso/motion5/pull/98), which was closed without merge. See "Why the previous attempt was closed" below before writing any code.
-**Scope:** All four Phase 5 slices from [`docs/IMPLEMENTATION-PLAN.md`](./IMPLEMENTATION-PLAN.md) section 9: P5-01 cross-motion references, P5-02 adopted free tracks, P5-03 unified inline diagnostics, P5-04 unmount/remount recovery.
-**Audience:** An implementor (human or AI) picking up Phase 5 fresh. This document is more prescriptive than `IMPLEMENTATION-PLAN.md`; where the two disagree on file ownership or process, this document wins for Phase 5 only.
+**Scope:** All four Phase 5 slices from section 9 of the former implementation plan, kept in git: P5-01 cross-motion references, P5-02 adopted free tracks, P5-03 unified inline diagnostics, P5-04 unmount/remount recovery.
+**Audience:** An implementor (human or AI) picking up Phase 5 fresh. This document is more prescriptive than the former implementation plan; where the two disagree on file ownership or process, this document wins for Phase 5 only.
 **Base branch:** `phase5/membership-base`. One PR per slice, in order. Do not start P5-02 until P5-01 is merged, and so on.
 
 ## Why the previous attempt was closed
@@ -144,6 +144,6 @@ Follow these on every PR in Phase 5, no exceptions:
 
 ---
 
-## Phase 5 exit gate (unchanged from `IMPLEMENTATION-PLAN.md`)
+## Phase 5 exit gate (unchanged from the former implementation plan)
 
 Authored, cross-motion, and adopted nodes share one graph path without flags. Ownership and detach-versus-destroy behavior are tested. Churn leaks nothing. Re-run the full exact-head CI matrix before opening Phase 6.
