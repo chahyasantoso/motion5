@@ -24,6 +24,7 @@ const RECORD_LINK = /\]\((\.\/ADR-[^)]*)\)/g;
 const MARKDOWN = /\.md$/;
 const RELATIVE = "./";
 const INDEX = "ADR-INDEX.md";
+const ROW_NUMBER_END = "- ADR-nnn".length;
 
 /** The top-level files of `docs/`, which is where a record lives and the only place one may. */
 async function docNames(): Promise<readonly string[]> {
@@ -73,9 +74,10 @@ describe("a decision record is one file, and a link to one resolves", () => {
     // One row per record, and a row whose file the directory does not hold is the drift the
     // generator would have rewritten rather than reported.
     expect(rows).toHaveLength(names.filter((name) => RECORD.test(name)).length);
-    const unresolved = [...index.matchAll(RECORD_LINK)]
-      .map((match) => (match[1] ?? "").slice(RELATIVE.length))
-      .filter((target) => !names.includes(target));
+    const unresolved = rows.filter(
+      (row) => !names.some((name) => name.startsWith(`${row.slice(2, ROW_NUMBER_END)}-`)),
+    );
     expect(unresolved).toEqual([]);
+    expect(rows.filter((row) => row.includes(`(./${row.slice(2, ROW_NUMBER_END)}-`))).toEqual([]);
   });
 });

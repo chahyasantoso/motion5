@@ -1,0 +1,6 @@
+docs/ADR-*.md
+!docs/ADR-INDEX.md
+docs/SYNTHETIC-HUMAN.md
+plan/
+package-lock.json
+**/test/fixtures/*.json

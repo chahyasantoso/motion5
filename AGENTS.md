@@ -18,8 +18,8 @@ is one line, and a rule this file does not carry is not a rule.
 - Which gate runs what, and the formatter's pinned settings: [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md).
 - The authoring schema: [docs/AUTHORED-SCHEMA.md](docs/AUTHORED-SCHEMA.md).
 - Public API navigation: [docs/API-CAPABILITIES.md](docs/API-CAPABILITIES.md).
-- Why a decision went one way: `docs/ADR-nnn-title.md`. Search them before proposing a flag, alias,
-  facade, second owner, compatibility path or new public export.
+- Why a decision went one way: grep `docs/ADR-INDEX.md`, then open `docs/ADR-nnn-*.md`. Do it before
+  proposing a flag, alias, facade, second owner, compatibility path or new public export.
 - How to use the runtime: [the user guide](docs/guide/README.md).
 - A human contributor: [README.md](README.md) and [the documentation map](docs/README.md).
 
