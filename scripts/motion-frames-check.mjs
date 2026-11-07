@@ -8,6 +8,7 @@ import { registerSourceLoader } from "./source-loader.mjs";
 registerSourceLoader();
 const { captureFrames, captureOnion } = await import("./motion-tools/frames.ts");
 const { probeElements } = await import("./motion-tools/probe.ts");
+const { DEFAULT_LIMITS, checkMotion } = await import("./motion-tools/check.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
@@ -80,4 +81,26 @@ assert.ok(
   "one dot per step",
 );
 assert.ok(readFileSync(onion.path).length > 1000, "onion image written");
+// The dot passes behind each letter for a few frames: counted when nothing is tolerated, clean by default.
+const watch = {
+  page: "timing.html",
+  width: 1280,
+  height: 720,
+  watch: [".beat-dot", ".beat-glyph"],
+  to: 3000,
+};
+const strict = await checkMotion({ ...watch, limits: { ...DEFAULT_LIMITS, overlap: 0 } });
+const crossing = strict.findings.find(
+  (finding) =>
+    finding.kind === "overlap" && finding.a.startsWith(".beat-dot") && finding.b.includes('"M"'),
+);
+assert.ok(
+  crossing &&
+    crossing.kind === "overlap" &&
+    crossing.frames > 0 &&
+    crossing.frames <= DEFAULT_LIMITS.overlap,
+  JSON.stringify(crossing),
+);
+const relaxed = await checkMotion({ ...watch, limits: DEFAULT_LIMITS });
+assert.deepEqual(relaxed.findings, []);
 console.log("motion:frames ok");

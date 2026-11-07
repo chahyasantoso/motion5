@@ -8,7 +8,7 @@ You write a project as data. The repo evaluates it and reports back, in numbers 
 2. Write the project as JSON.
 3. `npm run motion:sample` validates it and reports values at named times.
 4. `npm run motion:new` writes a page; bind your nodes to its DOM.
-5. `npm run motion:timeline`, `motion:probe` and `motion:frames` show it as bars, measurements and pictures.
+5. `npm run motion:timeline`, `motion:probe`, `motion:frames` and `motion:check` show it as bars, measurements, pictures and findings.
 6. Adjust values, then repeat from step 3.
 
 Look at frames before you call anything finished. Values can be right while the picture is wrong: a wrong pivot, a color that merges, a letter colliding with its neighbor. None of those raises an error.
@@ -61,6 +61,12 @@ npm run motion:frames -- timing.html --onion .beat-dot --from 880 --to 1880 --ev
 ```
 
 Draws the element at each step onto one faded frame, with its centre path, so its arc and spacing show without playback. Even gaps mean even speed; bunched gaps mean easing. A ghost is a capture of the element's box, so it can include whatever lies behind it, and nothing is drawn while the element is off the stage. It prints each step's box as well.
+
+```bash
+npm run motion:check -- timing.html --watch .beat-dot,.beat-glyph --to 3000
+```
+
+Samples every 16 ms up to `--to` and reports, each with its duration: two watched elements overlapping for more than `--overlap` frames (default 12), a centre moving more than `--jump` px in one frame (default 150), a final hold shorter than `--hold` ms (default 500), and an element still moving on the last frame. It exits `1` when it finds anything. An overlap compares boxes, so it ignores `z-index` and the empty space around a glyph: a dot passing behind a letter still counts. On the worked example a dot crossing a letter lasts 7 to 9 frames, which is why the default tolerates 12.
 
 ## Sequencing
 
