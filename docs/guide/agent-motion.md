@@ -7,7 +7,7 @@ You write a project as data. The repo evaluates it and reports back, in numbers 
 1. `npm run motion:catalog` lists every plugin and model as JSON. Read it once per task.
 2. Write the project as JSON.
 3. `npm run motion:sample` validates it and reports values at named times.
-4. Write a page that binds nodes to DOM.
+4. `npm run motion:new` writes a page; bind your nodes to its DOM.
 5. `npm run motion:frames` shows that page at named times.
 6. Adjust values, then repeat from step 3.
 
@@ -60,7 +60,7 @@ A move ends at its rest pose, which is the element's layout position. Lay the pa
 
 ## The page
 
-Copy `apps/react-demo/timing.html`, `src/timing-main.tsx` and `src/TimingBeat.tsx`, then change the markup. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
+Run `npm run motion:new -- <name>` with a lowercase, dash-joined name. It writes `apps/react-demo/<name>.html`, its entry, a component and a starter project that already samples and renders, and refuses a name whose files exist. Edit the markup and the project from there. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
 
 Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. See [Rendering patches](./rendering-patches.md).
 

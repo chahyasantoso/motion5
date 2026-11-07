@@ -1,0 +1,42 @@
+import React from "react";
+import { gsap } from "gsap";
+import { PluginCatalog, type ProjectHandle } from "@motion5/core";
+import { createGsapInterpolator } from "@motion5/core/adapters";
+import { unreachable } from "@motion5/core/plugin-api";
+import { builtinModels } from "@motion5/plugins/models";
+import { dropPlugin } from "@motion5/plugins/motion/drop";
+import { useDomPatch, useMotionProject } from "@motion5/react";
+import project from "./__NAME__.json";
+
+const plugins = new PluginCatalog({ models: builtinModels, plugins: [dropPlugin] });
+const interpolator = createGsapInterpolator(gsap);
+
+const Stage: React.FC<{ handle: ProjectHandle }> = ({ handle }) => {
+  const title = useDomPatch<HTMLDivElement>(handle, "intro/title");
+  return (
+    <div className="stage">
+      <div ref={title} className="title">
+        __NAME__
+      </div>
+    </div>
+  );
+};
+
+/** Binds nodes to DOM; all motion lives in `__NAME__.json`. Click replays. */
+export const __COMPONENT__: React.FC = () => {
+  const state = useMotionProject(project, plugins, interpolator);
+  switch (state.kind) {
+    case "loading":
+      return null;
+    case "refused":
+      return <pre>{state.diagnostics.map(({ message }) => message).join("\n")}</pre>;
+    case "ready":
+      return (
+        <div onClick={state.replay}>
+          <Stage handle={state.handle} />
+        </div>
+      );
+    default:
+      return unreachable(state);
+  }
+};
