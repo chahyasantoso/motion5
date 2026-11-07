@@ -1,49 +1,20 @@
-import React, { useLayoutEffect, useState } from "react";
+import React from "react";
 import { gsap } from "gsap";
-import {
-  Engine,
-  PluginCatalog,
-  createMicrotaskScheduler,
-  validateV5,
-  type ProjectHandle,
-} from "@motion5/core";
+import { PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
-import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { unreachable } from "@motion5/core/plugin-api";
 import { builtinModels } from "@motion5/plugins/models";
 import { dropPlugin } from "@motion5/plugins/motion/drop";
 import { hopPlugin } from "@motion5/plugins/motion/hop";
 import { wipePlugin } from "@motion5/plugins/motion/wipe";
-import { Word, useDomPatch } from "@motion5/react";
+import { Word, useDomPatch, useMotionProject } from "@motion5/react";
 import timingBeat from "./timing-beat.json";
 
-function loadBeat(): { readonly handle: ProjectHandle; dispose(): void } {
-  const plugins = new PluginCatalog({
-    models: builtinModels,
-    plugins: [dropPlugin, hopPlugin, wipePlugin],
-  });
-  const validated = validateV5(timingBeat, plugins);
-  if (validated.kind === "refused")
-    throw new TypeError(validated.diagnostics.map(({ message }) => message).join(" "));
-  const clock = createBrowserClock({
-    requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
-    cancelFrame: (frame: number) => cancelAnimationFrame(frame),
-  });
-  const handle = new Engine({
-    clock,
-    interpolator: createGsapInterpolator(gsap),
-    scheduler: createMicrotaskScheduler(),
-    plugins,
-  }).load(validated.value);
-  for (const motionId of handle.motionIds())
-    for (const node of handle.motion(motionId).trackIds) handle.mount(node);
-  return {
-    handle,
-    dispose() {
-      handle.dispose();
-      clock.dispose();
-    },
-  };
-}
+const plugins = new PluginCatalog({
+  models: builtinModels,
+  plugins: [dropPlugin, hopPlugin, wipePlugin],
+});
+const interpolator = createGsapInterpolator(gsap);
 
 const Stage: React.FC<{ handle: ProjectHandle }> = ({ handle }) => {
   const dot = useDomPatch<HTMLSpanElement>(handle, "period/dot");
@@ -66,19 +37,19 @@ const Stage: React.FC<{ handle: ProjectHandle }> = ({ handle }) => {
 
 /** Binds the beat's nodes to DOM; all of its motion lives in `timing-beat.json`. Click replays. */
 export const TimingBeat: React.FC = () => {
-  const [run, setRun] = useState(0);
-  const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
-  useLayoutEffect(() => {
-    const beat = loadBeat();
-    setHandle(beat.handle);
-    return () => {
-      setHandle(undefined);
-      beat.dispose();
-    };
-  }, [run]);
-  return (
-    <div onClick={() => setRun((current) => current + 1)}>
-      {handle === undefined ? null : <Stage key={run} handle={handle} />}
-    </div>
-  );
+  const state = useMotionProject(timingBeat, plugins, interpolator);
+  switch (state.kind) {
+    case "loading":
+      return null;
+    case "refused":
+      return <pre>{state.diagnostics.map(({ message }) => message).join("\n")}</pre>;
+    case "ready":
+      return (
+        <div onClick={state.replay}>
+          <Stage handle={state.handle} />
+        </div>
+      );
+    default:
+      return unreachable(state);
+  }
 };

@@ -60,7 +60,7 @@ A move ends at its rest pose, which is the element's layout position. Lay the pa
 
 ## The page
 
-Copy `apps/react-demo/timing.html`, `src/timing-main.tsx` and `src/TimingBeat.tsx`, then change the markup. Register every plugin your project names in the component's `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
+Copy `apps/react-demo/timing.html`, `src/timing-main.tsx` and `src/TimingBeat.tsx`, then change the markup. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
 
 Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. See [Rendering patches](./rendering-patches.md).
 
