@@ -245,6 +245,39 @@ export const PoseLabel: Model<PoseLabelCells> = defineModel({
   spec: Spec.record({ label: Spec.string(), confidence: Spec.number() }),
 });
 
+/** Cells of a sprite the DOM adapter renders: every field reaches `transform` or a style. */
+export type Sprite2dCells = {
+  readonly x?: number;
+  readonly y?: number;
+  readonly rotation?: number;
+  readonly scale?: number;
+  readonly scaleX?: number;
+  readonly scaleY?: number;
+  readonly opacity?: number;
+};
+
+const OPTIONAL_NUMBER = Spec.number({ optional: true });
+
+/** A renderable 2D pose; a motion move publishes this. */
+export const Sprite2d: Model<Sprite2dCells> = defineModel({
+  id: "Sprite2d",
+  spec: Spec.record({
+    x: OPTIONAL_NUMBER,
+    y: OPTIONAL_NUMBER,
+    rotation: OPTIONAL_NUMBER,
+    scale: OPTIONAL_NUMBER,
+    scaleX: OPTIONAL_NUMBER,
+    scaleY: OPTIONAL_NUMBER,
+    opacity: OPTIONAL_NUMBER,
+  }),
+});
+
+/** A CSS clip path the DOM adapter writes to the target's style. */
+export const Clip2d: Model<{ readonly clipPath: string }> = defineModel({
+  id: "Clip2d",
+  spec: Spec.record({ clipPath: Spec.string() }),
+});
+
 /** Every first-party model a host registers so authored sources can name it. */
 export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Body2d,
@@ -261,4 +294,6 @@ export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Anchors2d,
   CubicPath2d,
   LocalAnchors2d,
+  Sprite2d,
+  Clip2d,
 ]);

@@ -71,6 +71,18 @@
       "types": "./dist/path/draw.d.ts",
       "default": "./dist/path/draw.js"
     },
+    "./motion/drop": {
+      "types": "./dist/motion/drop.d.ts",
+      "default": "./dist/motion/drop.js"
+    },
+    "./motion/hop": {
+      "types": "./dist/motion/hop.d.ts",
+      "default": "./dist/motion/hop.js"
+    },
+    "./motion/wipe": {
+      "types": "./dist/motion/wipe.d.ts",
+      "default": "./dist/motion/wipe.js"
+    },
     "./runner": {
       "types": "./dist/host/runner.d.ts",
       "default": "./dist/host/runner.js"

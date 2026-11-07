@@ -36,6 +36,9 @@ describe("identified plugin boundary", () => {
       "anchorsToCubic",
       "bezier",
       "skinAnchors",
+      "drop",
+      "hop",
+      "wipe",
     ]);
     const descriptor = builtinCatalog.get("transform");
     expect(descriptor).toBeDefined();

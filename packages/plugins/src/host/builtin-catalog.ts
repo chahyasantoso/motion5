@@ -59,4 +59,22 @@ export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
       load: async () => (await import("../path/skin-anchors")).skinAnchorsPlugin,
     },
   ],
+  [
+    "drop",
+    {
+      load: async () => (await import("../motion/drop")).dropPlugin,
+    },
+  ],
+  [
+    "hop",
+    {
+      load: async () => (await import("../motion/hop")).hopPlugin,
+    },
+  ],
+  [
+    "wipe",
+    {
+      load: async () => (await import("../motion/wipe")).wipePlugin,
+    },
+  ],
 ]);

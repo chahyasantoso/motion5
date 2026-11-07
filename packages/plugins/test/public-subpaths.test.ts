@@ -24,6 +24,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "Anchors2d",
     "Body2d",
     "Body3d",
+    "Clip2d",
     "CubicPath2d",
     "Goals2d",
     "Goals3d",
@@ -35,6 +36,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "PoseLabel",
     "Solved2d",
     "Solved3d",
+    "Sprite2d",
     "builtinModels",
   ],
   "pose-classify": ["createPoseClassifyPlugin"],
@@ -44,6 +46,9 @@ export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 /** Path plugins and the drawing helper publish under `path/`; the catalog names them in camelCase. */
 const PATH_SUBPATHS = ["path/anchors-to-cubic", "path/bezier", "path/skin-anchors", "path/draw"];
 const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors"];
+/** Motion moves publish under `motion/`, one plugin per path. */
+const MOTION_CATALOG_NAMES = ["drop", "hop", "wipe"];
+const MOTION_SUBPATHS = MOTION_CATALOG_NAMES.map((name) => `motion/${name}`);
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -115,11 +120,16 @@ describe("public plugin subpaths", () => {
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
     const aliases = workspaceSourceAliases("plugins");
-    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length + PATH_SUBPATHS.length);
+    expect(aliases).toHaveLength(
+      PUBLIC_SUBPATHS.length + PATH_SUBPATHS.length + MOTION_SUBPATHS.length,
+    );
+    expect(Object.keys(manifest.exports).filter((key) => key.startsWith("./motion/"))).toEqual(
+      MOTION_SUBPATHS.map((name) => `./${name}`),
+    );
     expect(Object.keys(manifest.exports).filter((key) => key.startsWith("./path/"))).toEqual(
       PATH_SUBPATHS.map((name) => `./${name}`),
     );
-    for (const name of [...PUBLIC_SUBPATHS, ...PATH_SUBPATHS]) {
+    for (const name of [...PUBLIC_SUBPATHS, ...PATH_SUBPATHS, ...MOTION_SUBPATHS]) {
       const specifier = `@motion5/plugins/${name}`;
       expect(aliases.filter(({ find }) => find.test(specifier))).toHaveLength(1);
       expect(aliases.some(({ find }) => find.test(`${specifier}/private`))).toBe(false);
@@ -131,7 +141,7 @@ describe("public plugin subpaths", () => {
   it("L15 every approved catalog entry lazily loads its matching definition subpath", async () => {
     const { builtinCatalog } = await import("../src/host/builtin-catalog");
     expect([...builtinCatalog.keys()].sort()).toEqual(
-      [...DEFINITION_SUBPATHS, ...PATH_CATALOG_NAMES].sort(),
+      [...DEFINITION_SUBPATHS, ...PATH_CATALOG_NAMES, ...MOTION_CATALOG_NAMES].sort(),
     );
     for (const [name, descriptor] of builtinCatalog) {
       const definition = await descriptor.load();

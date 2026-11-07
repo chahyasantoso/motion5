@@ -26,12 +26,13 @@ byte ceiling.
   models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are exported and in `builtinCatalog`.
   `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser.
   An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
-  `Motion.stagger` finishes every track.
+  `Motion.stagger` finishes every track. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
+  publishing the new `Sprite2d` and `Clip2d` models.
 
 ## Next in line
 
-- **Add the first moves:** a public renderable model, then `drop`, `hop` and `wipe` as pure plugins, proven
-  by building one beat with no hand-written motion arithmetic.
+- **Prove the moves in a real beat:** build the "TIMING." beat in `apps/react-demo` from a project with no
+  hand-written motion arithmetic, then see frames from the real DOM render.
 
 ## Open, and not scheduled
 
