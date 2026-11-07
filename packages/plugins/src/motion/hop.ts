@@ -1,6 +1,6 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
 import { Sprite2d } from "../models/index";
-import { moveProgress, numberParam } from "./param";
+import { moveProgress, numberParam, squashPose } from "./param";
 
 const CONTACT_WIDTH = 0.2;
 const SETTLE_SHARE = 0.5;
@@ -70,8 +70,7 @@ export const hopPlugin = definePlugin({
       values: {
         x: 0 - dx * (1 - Math.min(1, time / airtime)),
         y,
-        scaleX: 1 + 0.9 * squash * weight,
-        scaleY: 1 - squash * weight,
+        ...squashPose(squash, weight),
       },
       contact: { hits, justHit: weight },
     };

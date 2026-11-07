@@ -35,10 +35,9 @@ function reader(param: Record<string, number>, plugin: "hop" | "drop" | "wipe") 
 function cells(value: unknown): Readonly<Record<string, number>> {
   if (value === null || typeof value !== "object") throw new Error("Expected a record.");
   return Object.fromEntries(
-    Object.entries(value).map(([key, cell]) => {
-      if (typeof cell !== "number") throw new Error(`${key} is not a number.`);
-      return [key, cell];
-    }),
+    Object.entries(value).filter(
+      (entry): entry is [string, number] => typeof entry[1] === "number",
+    ),
   );
 }
 
@@ -171,9 +170,36 @@ describe("wipe", () => {
   });
 });
 
+describe("a move's pivot", () => {
+  it("is the floor, published by every move that squashes", () => {
+    expect(reader({ height: 10, bounces: 0 }, "hop")(0.5).values).toMatchObject({
+      transformOrigin: "50% 100%",
+    });
+    expect(reader({ distance: 10 }, "drop")(0.5).values).toMatchObject({
+      transformOrigin: "50% 100%",
+    });
+  });
+
+  it("reaches an HTML target's style", () => {
+    const style: Record<string, unknown> = { transformOrigin: "" };
+    createDomPatchAdapter({ style }).applyValues("n", { y: 1, transformOrigin: "50% 100%" });
+    expect(style.transformOrigin).toBe("50% 100%");
+  });
+
+  it("yields to the adapter's pin on an SVG target, on every patch", () => {
+    const style: Record<string, unknown> = { transformOrigin: "", transformBox: "" };
+    const target = { style, ownerSVGElement: {} };
+    const adapter = createDomPatchAdapter(target);
+    adapter.applyValues("n", { y: 1, transformOrigin: "50% 100%" });
+    expect(style.transformOrigin).toBe("0px 0px");
+    adapter.applyValues("n", { y: 2, transformOrigin: "50% 100%" });
+    expect(style.transformOrigin).toBe("0px 0px");
+  });
+});
+
 describe("Sprite2d through the DOM adapter", () => {
   it("writes every field to transform or style, and none as an attribute", () => {
-    const style: Record<string, unknown> = { opacity: "" };
+    const style: Record<string, unknown> = { opacity: "", transformOrigin: "" };
     const attributes: string[] = [];
     const target = { style, setAttribute: (key: string) => void attributes.push(key) };
     const adapter = createDomPatchAdapter(target);
@@ -185,11 +211,13 @@ describe("Sprite2d through the DOM adapter", () => {
       scaleX: 5,
       scaleY: 6,
       opacity: 0.5,
+      transformOrigin: "50% 100%",
     });
     expect(style.transform).toBe(
       "translate3d(1px, 2px, 0px) rotate(3deg) scale(4) scaleX(5) scaleY(6)",
     );
     expect(style.opacity).toBe(0.5);
+    expect(style.transformOrigin).toBe("50% 100%");
     expect(attributes).toEqual([]);
   });
 });

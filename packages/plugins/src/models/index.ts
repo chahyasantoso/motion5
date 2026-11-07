@@ -254,6 +254,7 @@ export type Sprite2dCells = {
   readonly scaleX?: number;
   readonly scaleY?: number;
   readonly opacity?: number;
+  readonly transformOrigin?: string;
 };
 
 const OPTIONAL_NUMBER = Spec.number({ optional: true });
@@ -269,6 +270,7 @@ export const Sprite2d: Model<Sprite2dCells> = defineModel({
     scaleX: OPTIONAL_NUMBER,
     scaleY: OPTIONAL_NUMBER,
     opacity: OPTIONAL_NUMBER,
+    transformOrigin: Spec.string({ optional: true }),
   }),
 });
 

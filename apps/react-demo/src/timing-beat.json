@@ -10,32 +10,32 @@
         {
           "id": "t",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         },
         {
           "id": "i",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         },
         {
           "id": "m",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         },
         {
           "id": "i2",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         },
         {
           "id": "n",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         },
         {
           "id": "g",
           "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.28 } }
+          "input": { "param": { "distance": 700, "squash": 0.18 } }
         }
       ]
     },
@@ -65,7 +65,7 @@
         {
           "id": "wipe",
           "output": { "plugin": "wipe" },
-          "input": { "param": { "radius": 1500, "x": 967, "y": 413 } }
+          "input": { "param": { "radius": 1500, "x": 974, "y": 415 } }
         }
       ]
     }

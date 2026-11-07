@@ -30,7 +30,8 @@
       }
       .beat-glyph {
         display: inline-block;
-        transform-origin: 50% 100%;
+        position: relative;
+        z-index: 1;
       }
       .beat-dot {
         display: inline-block;
@@ -39,12 +40,11 @@
         margin-left: 12px;
         border-radius: 50%;
         background: #f4eddf;
-        transform-origin: 50% 100%;
       }
       .beat-cover {
         position: absolute;
         inset: 0;
-        background: #0e0e12;
+        background: #f4eddf;
         clip-path: circle(0px);
       }
     </style>

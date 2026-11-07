@@ -10,6 +10,7 @@ const { captureFrames } = await import("./motion-tools/frames.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
+const CREAM = [244, 237, 223];
 const request = { page: "timing.html", at: [0, 500, 3000], width: 1280, height: 720 };
 
 const first = await captureFrames(request);
@@ -46,6 +47,6 @@ const [atStart, atMiddle, atEnd] = first.frames;
 const stem = [352, 340];
 assert.deepEqual(await pixel(atStart.path, ...stem), ORANGE, "the letter waits above the stage");
 assert.deepEqual(await pixel(atMiddle.path, ...stem), DARK, "the letter has landed by 500 ms");
-assert.deepEqual(await pixel(atEnd.path, 40, 40), DARK, "the wipe has covered the stage");
+assert.deepEqual(await pixel(atEnd.path, 40, 40), CREAM, "the wipe has covered the stage");
 await browser.close();
 console.log("motion:frames ok");

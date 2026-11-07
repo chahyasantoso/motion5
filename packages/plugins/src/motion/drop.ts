@@ -1,6 +1,6 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
 import { Sprite2d } from "../models/index";
-import { moveProgress, numberParam } from "./param";
+import { moveProgress, numberParam, squashPose } from "./param";
 
 const FALL_SHARE = 0.75;
 
@@ -26,8 +26,7 @@ export const dropPlugin = definePlugin({
     return {
       values: {
         y: 0 - distance * (1 - fall * fall),
-        scaleX: 1 + 0.9 * squash * weight,
-        scaleY: 1 - squash * weight,
+        ...squashPose(squash, weight),
       },
     };
   },

@@ -13,6 +13,15 @@ export function windowed(progress: number, from: number, to: number): number {
   return Math.max(0, Math.min(1, (progress - from) / (to - from)));
 }
 
+/** The scale and pivot of a move `weight` of the way into its `squash`; the floor stays where it is. */
+export function squashPose(squash: number, weight: number) {
+  return {
+    scaleX: 1 + 0.9 * squash * weight,
+    scaleY: 1 - squash * weight,
+    transformOrigin: "50% 100%",
+  };
+}
+
 /** Reads a move's optional `from` and `to`, and answers its local progress. */
 export function moveProgress(param: Value | undefined, progress: number): number {
   return windowed(progress, numberParam(param, "from", 0), numberParam(param, "to", 1));

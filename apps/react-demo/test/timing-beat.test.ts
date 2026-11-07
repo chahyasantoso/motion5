@@ -41,7 +41,7 @@ describe("timing beat", () => {
     for (const letter of ["t", "i", "m", "i2", "n", "g"])
       expect(values(nodes[`letters/${letter}`])).toMatchObject({ y: -700 });
     expect(values(nodes["period/dot"])).toMatchObject({ x: -1300, y: 0 });
-    expect(values(nodes["cover/wipe"])).toEqual({ clipPath: "circle(0px at 967px 413px)" });
+    expect(values(nodes["cover/wipe"])).toEqual({ clipPath: "circle(0px at 974px 415px)" });
   });
 
   it("drops the letters in order", async () => {
@@ -60,13 +60,13 @@ describe("timing beat", () => {
   it("lands the word and the period at their rest poses before the wipe", async () => {
     const nodes = await sampleAt(2300);
     for (const letter of ["t", "i", "m", "i2", "n", "g"])
-      expect(values(nodes[`letters/${letter}`])).toEqual({ y: 0, scaleX: 1, scaleY: 1 });
-    expect(values(nodes["period/dot"])).toEqual({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
+      expect(values(nodes[`letters/${letter}`])).toMatchObject({ y: 0, scaleX: 1, scaleY: 1 });
+    expect(values(nodes["period/dot"])).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
   });
 
   it("covers the stage by the end", async () => {
     expect(values((await sampleAt(3000))["cover/wipe"])).toEqual({
-      clipPath: "circle(1500px at 967px 413px)",
+      clipPath: "circle(1500px at 974px 415px)",
     });
   });
 
