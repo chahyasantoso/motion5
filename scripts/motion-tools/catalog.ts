@@ -1,5 +1,6 @@
 import { PluginCatalog } from "@motion5/core";
 import type { PluginDescription, ValueSpec } from "@motion5/core";
+import { builtinModels } from "@motion5/plugins/models";
 import { builtinCatalog } from "../../packages/plugins/src/host/builtin-catalog";
 
 export interface CatalogListing {
@@ -23,7 +24,7 @@ export function listCatalog(catalog: PluginCatalog): CatalogListing {
 
 export async function loadBuiltinCatalog(): Promise<PluginCatalog> {
   const plugins = await Promise.all([...builtinCatalog.values()].map((entry) => entry.load()));
-  const catalog = new PluginCatalog();
+  const catalog = new PluginCatalog({ models: builtinModels });
   catalog.register({ plugins });
   return catalog;
 }

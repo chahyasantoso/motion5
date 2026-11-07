@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { PluginCatalog, type PluginDescription } from "@motion5/core";
 import { Spec, defineModel, definePlugin } from "@motion5/core/plugin-api";
+import { builtinModels } from "@motion5/plugins/models";
 import { builtinCatalog } from "../../../../plugins/src/host/builtin-catalog";
 import { listCatalog, loadBuiltinCatalog } from "../../../../../scripts/motion-tools/catalog";
 
@@ -60,6 +61,11 @@ describe("motion catalog listing", () => {
     const listing = listCatalog(await loadBuiltinCatalog());
     const listed = new Set(listing.plugins.map((plugin) => plugin.id));
     for (const key of builtinCatalog.keys()) expect(listed.has(key)).toBe(true);
+  });
+
+  it("lists every builtin model, including one no plugin names", async () => {
+    const listed = new Set(listCatalog(await loadBuiltinCatalog()).models.map(({ id }) => id));
+    for (const model of builtinModels) expect(listed.has(model.id)).toBe(true);
   });
 
   it("runs under real node and prints JSON naming bezier", () => {
