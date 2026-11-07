@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseTrackDefinition } from "../../../src/contract/v5-parse";
 import type { ParsedValues } from "../../../src/contract/v5-parse";
 import type { InterpolationTimeline, Interpolator } from "../../../src/ports/interpolator";
-import { createValueEvaluator } from "../../../src/runtime/evaluate-values";
+import { createValueEvaluator as evaluatorAt } from "../../../src/runtime/evaluate-values";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 import { createRealGsapSeam } from "../../support/real-gsap";
 import { Spec } from "../../../src/contract/spec-builder";
@@ -26,6 +26,14 @@ function tableOf(rows: unknown): ParsedValues {
 
 function recordOf(fields: Record<string, unknown>): ParsedValues {
   return valuesOf(fields);
+}
+
+function createValueEvaluator(
+  values: Parameters<typeof evaluatorAt>[0],
+  interpolator: Parameters<typeof evaluatorAt>[1],
+  spec?: Parameters<typeof evaluatorAt>[2],
+) {
+  return evaluatorAt(values, interpolator, spec, "t.input.values");
 }
 
 describe("value evaluation", () => {

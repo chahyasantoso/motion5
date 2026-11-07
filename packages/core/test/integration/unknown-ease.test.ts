@@ -3,12 +3,25 @@ import { describe, expect, it } from "vitest";
 import { createGsapInterpolator, createGsapOneTweenInterpolator } from "../../src/adapters";
 import { defineModel, type ProjectDefinition, type TrackDefinition } from "../../src/contract/v5";
 import { Spec } from "../../src/contract/spec-builder";
+import { definePlugin } from "../../src/plugin-api";
 import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/testing/fakes";
 
 const Out = defineModel({ id: "UnknownEaseOut", spec: Spec.record({ x: Spec.number() }) });
+
+const Rows = defineModel({
+  id: "UnknownEaseRows",
+  spec: Spec.table({ x: Spec.number() }),
+});
+
+const withParam = definePlugin({
+  id: "unknown-ease-param",
+  inputs: { param: Spec.record({ x: Spec.number() }) },
+  outputs: { values: Out },
+  transform: () => ({ values: { x: 0 } }),
+});
 
 function track(ease: string, id = "t"): TrackDefinition {
   return {
@@ -37,12 +50,46 @@ const engine = (interpolator = createGsapInterpolator(gsap)) =>
     clock: createManualClock(),
     interpolator,
     scheduler: createFakeScheduler(),
-    plugins: new PluginCatalog({ models: [Out] }),
+    plugins: new PluginCatalog({ models: [Out, Rows], plugins: [withParam] }),
   });
 
 describe("an unknown ease", () => {
   it("is refused by load, naming the rule and the ease", () => {
     expect(() => engine().load(project("nonsense.out"))).toThrow(/ease-unknown.*nonsense\.out/);
+  });
+
+  it("names the authored record cell in its path", () => {
+    expect(() => engine().load(project("nonsense.out"))).toThrow(
+      "ease-unknown at m/t.input.values.x[1].ease:",
+    );
+  });
+
+  it("names the authored table cell in its path", () => {
+    const tabled: TrackDefinition = {
+      id: "t",
+      output: { model: "UnknownEaseRows" },
+      input: { values: [{ id: "a", cells: { x: stops("nonsense.out") } }] },
+    };
+    expect(() =>
+      engine().load({
+        schemaVersion: 5,
+        motions: [{ id: "m", trigger: { type: "manual" }, tracks: [tabled] }],
+      }),
+    ).toThrow("ease-unknown at m/t.input.values[0].cells.x[1].ease:");
+  });
+
+  it("names a plugin param cell in its path", () => {
+    const tracked: TrackDefinition = {
+      id: "t",
+      output: { plugin: "unknown-ease-param" },
+      input: { param: { x: stops("nonsense.out") } },
+    };
+    expect(() =>
+      engine().load({
+        schemaVersion: 5,
+        motions: [{ id: "m", trigger: { type: "manual" }, tracks: [tracked] }],
+      }),
+    ).toThrow("ease-unknown at m/t.input.param.x[1].ease:");
   });
 
   it("is refused by addTrack", () => {

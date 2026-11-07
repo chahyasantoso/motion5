@@ -48,7 +48,7 @@ Warnings load and stay readable: a blocked source publishes `source-pending`, an
 - `trigger-time-autoplay-unsupported`, for a playback field that would otherwise validate and then be ignored.
 - `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`, for the loop fields: a `repeat` that is not an integer of `-1` or above, a `yoyo` that is not a boolean, and a `yoyo` with no repeat to reverse.
 - `trigger-scroll-source`, for a `source` that is present but not a non-empty string.
-- `ease-unknown`, for a stop ease GSAP cannot parse. The interpolator owns ease names, so this is raised by `load`, `addTrack` and authored value writes, not by `validateV5`. Its path names the compiled slot, and its message names the ease.
+- `ease-unknown`, for a stop ease GSAP cannot parse. The interpolator owns ease names, so this is raised by `load`, `addTrack` and authored value writes, not by `validateV5`. Its path names the authored cell, such as `m/t.input.values.x[1].ease`.
 - `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
 - `track-legacy-field`, for `keyframes` or `observes` on a track. Both retired members are refused
   by name so an old document fails to load rather than loading with the member ignored.

@@ -156,7 +156,12 @@ export class ComputedProcessor implements Processor {
     if (this.plugin.inputs.param !== undefined) {
       const paramSpec = this.plugin.inputs.param;
       this.#paramInput = new LocalInput(
-        createValueEvaluator(options.param ?? EMPTY_RECORD, options.interpolator, paramSpec),
+        createValueEvaluator(
+          options.param ?? EMPTY_RECORD,
+          options.interpolator,
+          paramSpec,
+          `${options.nodeId}.input.param`,
+        ),
       );
     }
   }
@@ -201,6 +206,7 @@ export class ComputedProcessor implements Processor {
           defaultPluginValues(values, this.plugin),
           this.#interpolator,
           valuesSpec,
+          `${this.nodeId}.input.values`,
         ),
       () => {
         this.#parsedValues = values;
@@ -212,7 +218,13 @@ export class ComputedProcessor implements Processor {
     const spec = this.plugin.inputs.param;
     if (spec === undefined) return;
     this.#paramInput?.replaceEvaluator(
-      () => createValueEvaluator(param ?? EMPTY_RECORD, this.#interpolator, spec),
+      () =>
+        createValueEvaluator(
+          param ?? EMPTY_RECORD,
+          this.#interpolator,
+          spec,
+          `${this.nodeId}.input.param`,
+        ),
       () => {
         this.#parsedParam = param;
       },

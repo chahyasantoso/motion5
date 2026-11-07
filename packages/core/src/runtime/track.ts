@@ -38,7 +38,12 @@ export class Track {
 
   static source(options: SourceTrackOptions): Track {
     const localInput = new LocalInput(
-      createValueEvaluator(options.values, options.interpolator, options.model.spec),
+      createValueEvaluator(
+        options.values,
+        options.interpolator,
+        options.model.spec,
+        `${options.nodeId}.input.values`,
+      ),
     );
     const processor = new PassthroughProcessor({ ...options, localInput });
     return new Track(options.nodeId, localInput, processor);
@@ -50,6 +55,7 @@ export class Track {
         defaultPluginValues(options.values, options.plugin),
         options.interpolator,
         options.plugin.inputs.values?.spec,
+        `${options.nodeId}.input.values`,
       ),
     );
     const processor = new ComputedProcessor({ ...options, localInput });

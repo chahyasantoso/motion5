@@ -50,6 +50,8 @@ interface FieldBounds {
 interface Skeleton {
   readonly plan: Plan;
   readonly keyframes: Readonly<Record<string, readonly ParsedStop[]>>;
+  /** Each slot's authored path, so an interpolator's refusal names the cell rather than the slot. */
+  readonly paths: Readonly<Record<string, string>>;
   readonly bounds: ReadonlyMap<string, FieldBounds>;
   readonly timeInvariant: boolean;
 }
@@ -65,6 +67,7 @@ export interface ValueEvaluator {
 const EMPTY_TABLE: Plan = Object.freeze({ kind: "table", rows: Object.freeze([]) });
 const EMPTY_RECORD: Plan = Object.freeze({ kind: "record", entries: Object.freeze([]) });
 const NO_KEYFRAMES: Readonly<Record<string, readonly ParsedStop[]>> = Object.freeze({});
+const NO_PATHS: Readonly<Record<string, string>> = Object.freeze({});
 const NO_BOUNDS: ReadonlyMap<string, FieldBounds> = new Map();
 
 /**
@@ -90,19 +93,29 @@ function discreteAt(stops: readonly ParsedStop[], progress: number): Scalar {
   return (stops[reached] ?? first).v;
 }
 
-function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefined): Skeleton {
+function planValues(
+  values: ParsedValues | undefined,
+  spec: ValueSpec | undefined,
+  path: string,
+): Skeleton {
   if (values === undefined)
     return {
       plan: spec?.kind === "record" ? EMPTY_RECORD : EMPTY_TABLE,
       keyframes: NO_KEYFRAMES,
+      paths: NO_PATHS,
       bounds: NO_BOUNDS,
       timeInvariant: true,
     };
 
   let animated = false;
   const numericStops: (readonly ParsedStop[])[] = [];
+  const numericPaths: string[] = [];
   const numericBounds: (FieldBounds | undefined)[] = [];
-  const planCell = (cell: ParsedCell, field: FieldSpec | undefined): PlannedCell => {
+  const planCell = (
+    cell: ParsedCell,
+    field: FieldSpec | undefined,
+    cellPath: string,
+  ): PlannedCell => {
     switch (cell.kind) {
       case "static":
         return { kind: "static", value: cell.value };
@@ -112,6 +125,7 @@ function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefine
           case "number": {
             const slot = `s${numericStops.length}`;
             numericStops.push(cell.stops);
+            numericPaths.push(cellPath);
             numericBounds.push(
               field?.min === undefined && field?.max === undefined
                 ? undefined
@@ -135,18 +149,23 @@ function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefine
   const planEntries = (
     cells: Readonly<Record<string, ParsedCell>>,
     fields: Readonly<Record<string, FieldSpec>> | undefined,
+    cellsPath: string,
   ): readonly PlannedEntry[] =>
     Object.entries(cells).map(([name, cell]) => ({
       name,
-      cell: planCell(cell, fields?.[name]),
+      cell: planCell(cell, fields?.[name], `${cellsPath}.${name}`),
     }));
+  const slotPaths = (): Readonly<Record<string, string>> =>
+    Object.freeze(
+      Object.fromEntries(numericPaths.map((cellPath, index) => [`s${index}`, cellPath] as const)),
+    );
 
   switch (values.kind) {
     case "table": {
       const fields = spec?.kind === "table" ? spec.schema.row.fields : undefined;
-      const rows = values.rows.map((row) => ({
+      const rows = values.rows.map((row, index) => ({
         id: row.id,
-        entries: planEntries(row.cells, fields),
+        entries: planEntries(row.cells, fields, `${path}[${index}].cells`),
       }));
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
@@ -154,19 +173,21 @@ function planValues(values: ParsedValues | undefined, spec: ValueSpec | undefine
       return {
         plan: { kind: "table", rows },
         keyframes: Object.freeze(keyframes),
+        paths: slotPaths(),
         bounds: boundsOf(numericBounds),
         timeInvariant: !animated,
       };
     }
     case "record": {
       const fields = spec?.kind === "record" ? spec.fields : undefined;
-      const entries = planEntries(values.fields, fields);
+      const entries = planEntries(values.fields, fields, path);
       const keyframes = Object.fromEntries(
         numericStops.map((stops, index) => [`s${index}`, stops] as const),
       );
       return {
         plan: { kind: "record", entries },
         keyframes: Object.freeze(keyframes),
+        paths: slotPaths(),
         bounds: boundsOf(numericBounds),
         timeInvariant: !animated,
       };
@@ -187,14 +208,15 @@ function boundsOf(entries: readonly (FieldBounds | undefined)[]): ReadonlyMap<st
 export function createValueEvaluator(
   values: ParsedValues | undefined,
   interpolator: Interpolator,
-  spec?: ValueSpec,
+  spec: ValueSpec | undefined,
+  path: string,
 ): ValueEvaluator {
-  const { plan, keyframes, bounds, timeInvariant } = planValues(values, spec);
+  const { plan, keyframes, paths, bounds, timeInvariant } = planValues(values, spec, path);
   const hasNumeric = Object.keys(keyframes).length > 0;
   // Duration 1 makes progress the normalized position the authored stops already use. The flag is
   // the one thing a backend must honor for per-cell stops: eases at one position stay independent.
   const timeline = hasNumeric
-    ? interpolator.create(Object.freeze({ duration: 1, keyframes, perKeyEase: true }))
+    ? interpolator.create(Object.freeze({ duration: 1, keyframes, paths, perKeyEase: true }))
     : undefined;
   let disposed = false;
 

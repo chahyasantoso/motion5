@@ -63,7 +63,12 @@ export class PassthroughProcessor implements Processor {
 
   replaceValues(values: ParsedValues | undefined): void {
     this.#localInput.replaceEvaluator(() =>
-      createValueEvaluator(values, this.#interpolator, this.#model.spec),
+      createValueEvaluator(
+        values,
+        this.#interpolator,
+        this.#model.spec,
+        `${this.nodeId}.input.values`,
+      ),
     );
   }
 

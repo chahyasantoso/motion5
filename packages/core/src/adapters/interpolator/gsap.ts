@@ -94,10 +94,15 @@ function sameKeys(left: CompiledKeyframes, right: CompiledKeyframes): boolean {
 function stopsOf(compiled: CompiledKeyframes, key: string): readonly AuthoredStop[] {
   return compiled.properties.find((property) => property.key === key)?.stops ?? NO_STOPS;
 }
+/** Each keyframe key's authored path, when the caller flattened authored cells into opaque keys. */
+function readPaths(config: unknown): Readonly<Record<string, unknown>> {
+  return isObjectRecord(config) && isObjectRecord(config.paths) ? config.paths : {};
+}
 /** Compiles keyframes and refuses each ease name the host cannot parse, since gsap would ignore it. */
 function compileKnownEases(
   gsap: GsapLike,
   keyframes: unknown,
+  paths: Readonly<Record<string, unknown>>,
   options?: KeyframeCompileOptions,
 ): CompiledKeyframes {
   const compiled = compilePercentKeyframes(keyframes, "keyframes", options);
@@ -108,7 +113,7 @@ function compileKnownEases(
         unknown.push(
           diagnostic(
             "ease-unknown",
-            `keyframes.${key}[${index}].ease`,
+            `${String(paths[key] ?? `keyframes.${key}`)}[${index}].ease`,
             `Ease '${ease}' is not known to GSAP.`,
           ),
         );
@@ -138,7 +143,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       // base), so a rebase is one assignment.
       const compileOptions = readCompileOptions(config);
       let base = readKeyframes(config);
-      let compiled = compileKnownEases(gsap, base, compileOptions);
+      const paths = readPaths(config);
+      let compiled = compileKnownEases(gsap, base, paths, compileOptions);
       if (hasError(compiled.diagnostics)) throw new KeyframeCompilationError(compiled.diagnostics);
 
       const proxy: Record<string, unknown> = { ...compiled.initial };
@@ -182,7 +188,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       }
       function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false) {
         const effective = { ...base, ...overlay };
-        const next = compileKnownEases(gsap, effective, compileOptions);
+        const next = compileKnownEases(gsap, effective, paths, compileOptions);
         // Declined, not refused: the caller recompiles, and that compile raises the diagnostic
         // exactly as a fresh `create()` would, from its one owner.
         if (hasError(next.diagnostics)) return RECOMPILE;
@@ -231,7 +237,7 @@ export function createGsapOneTweenInterpolator(gsap: GsapLike): Interpolator {
   }
   return {
     create(config): InterpolationTimeline {
-      const compiled = compileKnownEases(gsap, readKeyframes(config));
+      const compiled = compileKnownEases(gsap, readKeyframes(config), readPaths(config));
       if (compiled.diagnostics.some(({ severity }) => severity === "error"))
         throw new KeyframeCompilationError(compiled.diagnostics);
 
