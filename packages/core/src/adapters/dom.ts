@@ -25,9 +25,10 @@ export interface DomPatchAdapter {
   clear(target?: DomTarget): void;
 }
 
-const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
+const composedKeys = ["rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY"];
+const transformKeys = new Set(["x", "y", "z", ...composedKeys]);
 function transformValue(key: string, value: unknown): string {
-  if (key === "scale") return `scale(${String(value)})`;
+  if (key === "scale" || key === "scaleX" || key === "scaleY") return `${key}(${String(value)})`;
   if (key === "rotation") return `rotate(${String(value)}deg)`;
   if (key === "rotationX") return `rotateX(${String(value)}deg)`;
   if (key === "rotationY") return `rotateY(${String(value)}deg)`;
@@ -41,8 +42,7 @@ function composeTransform(values: Readonly<Record<string, unknown>>): string {
     const z = values.z ?? 0;
     parts.push(`translate3d(${String(x)}px, ${String(y)}px, ${String(z)}px)`);
   }
-  for (const key of ["rotation", "rotationX", "rotationY", "scale"])
-    if (key in values) parts.push(transformValue(key, values[key]));
+  for (const key of composedKeys) if (key in values) parts.push(transformValue(key, values[key]));
   return parts.join(" ");
 }
 function removeStyleProperty(target: DomTarget, key: string): void {

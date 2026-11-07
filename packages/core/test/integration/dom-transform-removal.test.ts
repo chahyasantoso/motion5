@@ -28,6 +28,28 @@ describe("DOM transform and removal contract (P0-4)", () => {
     expect(target).not.toHaveProperty("rotation");
   });
 
+  it("composes scaleX and scaleY after scale, and writes no attribute for them", () => {
+    const style: Record<string, unknown> = {};
+    const attributes: string[] = [];
+    const target = { style, setAttribute: (key: string) => void attributes.push(key) };
+    const adapter = createDomPatchAdapter(target);
+
+    adapter.apply(patch(1, { y: 5, scale: 2, scaleX: 1.2, scaleY: 0.8 }));
+
+    expect(style.transform).toBe("translate3d(0px, 5px, 0px) scale(2) scaleX(1.2) scaleY(0.8)");
+    expect(attributes).toEqual([]);
+  });
+
+  it("drops scaleX from the transform when a later patch omits it", () => {
+    const style: Record<string, unknown> = {};
+    const adapter = createDomPatchAdapter({ style });
+
+    adapter.apply(patch(1, { scaleX: 1.2, scaleY: 0.8 }));
+    adapter.apply(patch(2, { scaleY: 0.8 }));
+
+    expect(style.transform).toBe("scaleY(0.8)");
+  });
+
   it("removes omitted CSS properties instead of assigning undefined", () => {
     const removed: string[] = [];
     const style: Record<string, unknown> & { removeProperty: (key: string) => void } = {
