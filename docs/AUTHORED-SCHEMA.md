@@ -63,7 +63,9 @@ const project = {
 
 A Motion carries `id`, `trigger`, `tracks`, and an optional `stagger`. A stagger is a finite,
 non-negative number: each track starts that many track lengths after the one before it, so `1` runs
-them one after another. Every track reaches `1` at the end of the Motion, whatever the stagger.
+them one after another. Every track reaches `1` at the end of the Motion, whatever the stagger, so a
+`time` trigger's `duration` is the whole Motion. For a chosen track length, set `duration` to
+`length * (1 + (tracks - 1) * stagger)`: three tracks of 300 ms at `0.25` need `450`.
 
 A trigger is one of these closed shapes:
 
