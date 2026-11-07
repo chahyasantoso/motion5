@@ -35,6 +35,7 @@
     "benchmark": "node performance/graph-benchmark.mjs",
     "bench:ik": "node scripts/bench-ik.mjs",
     "motion:catalog": "node scripts/motion-catalog.mjs",
+    "motion:sample": "node scripts/motion-sample.mjs",
     "bench:values": "node scripts/bench-values.mjs",
     "bench:edit-cost": "node scripts/bench-edit-cost.mjs",
     "test:watch": "vitest",
