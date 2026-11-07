@@ -83,6 +83,10 @@
       "types": "./dist/motion/hop.d.ts",
       "default": "./dist/motion/hop.js"
     },
+    "./motion/layer": {
+      "types": "./dist/motion/layer.d.ts",
+      "default": "./dist/motion/layer.js"
+    },
     "./motion/rope": {
       "types": "./dist/motion/rope.d.ts",
       "default": "./dist/motion/rope.js"

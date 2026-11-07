@@ -72,6 +72,12 @@ export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
     },
   ],
   [
+    "layer",
+    {
+      load: async () => (await import("../motion/layer")).layerPlugin,
+    },
+  ],
+  [
     "rope",
     {
       load: async () => (await import("../motion/rope")).ropePlugin,

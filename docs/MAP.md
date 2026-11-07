@@ -43,7 +43,7 @@ Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./adapters/browser-clo
 
 ## packages/plugins
 
-Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./frame3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/draw`, `./path/svg-path`, `./motion/drop`, `./motion/hop`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
+Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./frame3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/draw`, `./path/svg-path`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
 
 - `src/fk/`: FK plugins, 2D and 3D
 - `src/frame/`: world frame readers, 2D and 3D
@@ -57,7 +57,7 @@ Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./f
 - `src/models/body/`: body Model rules
 - `src/models/goals/`: goals Model rules
 - `src/models/solved/`: solved Model rules
-- `src/motion/`: motion moves: drop, hop, rope, trace, wipe
+- `src/motion/`: motion moves: drop, hop, layer, rope, trace, wipe
 - `src/path/`: Bezier, anchors, skinning, draw, SVG path
 - `src/pose/`: pose classifier plugin
 - `src/shared/`: table lookup, prepare diagnostics

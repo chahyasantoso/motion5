@@ -38,6 +38,7 @@ describe("identified plugin boundary", () => {
       "skinAnchors",
       "drop",
       "hop",
+      "layer",
       "rope",
       "svgPath",
       "trace",

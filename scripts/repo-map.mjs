@@ -54,7 +54,7 @@ export const OWNERS = {
   "packages/plugins/src/models/body": "body Model rules",
   "packages/plugins/src/models/goals": "goals Model rules",
   "packages/plugins/src/models/solved": "solved Model rules",
-  "packages/plugins/src/motion": "motion moves: drop, hop, rope, trace, wipe",
+  "packages/plugins/src/motion": "motion moves: drop, hop, layer, rope, trace, wipe",
   "packages/plugins/src/path": "Bezier, anchors, skinning, draw, SVG path",
   "packages/plugins/src/pose": "pose classifier plugin",
   "packages/plugins/src/shared": "table lookup, prepare diagnostics",

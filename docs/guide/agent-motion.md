@@ -98,13 +98,17 @@ Each plugin a project names must be in the page's `PluginCatalog`, imported from
 
 | Plugin | Import |
 | ------ | ------ |
-| `drop`, `hop`, `rope`, `trace`, `wipe` | `@motion5/plugins/motion/<id>`, as `dropPlugin`, `hopPlugin` and so on |
+| `drop`, `hop`, `layer`, `rope`, `trace`, `wipe` | `@motion5/plugins/motion/<id>`, as `dropPlugin`, `hopPlugin` and so on |
 | `anchorsToCubic` | `@motion5/plugins/path/anchors-to-cubic` |
 | `bezier` | `@motion5/plugins/path/bezier` |
 | `svgPath` | `@motion5/plugins/path/svg-path` |
 | Every built-in model | `builtinModels` from `@motion5/plugins/models` | See [Rendering patches](./rendering-patches.md).
 
 [`timing-beat.json`](../../apps/react-demo/src/timing-beat.json) is the worked example, and `apps/react-demo/test/timing-beat.test.ts` shows how to pin a project's poses with `sampleProject`.
+
+## Combining moves
+
+One target takes one node, so combine moves before binding: give each move its own track, then bind a `layer` track to the element. `layer` takes the moves as a map, `"requires": { "moves": { "fall": "drop1", "wobble": "hop1" } }`; offsets and rotations add, scales and opacity multiply, and the first member's pivot is kept.
 
 ## Paths
 

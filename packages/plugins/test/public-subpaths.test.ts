@@ -55,7 +55,7 @@ const PATH_SUBPATHS = [
 ];
 const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors", "svgPath"];
 /** Motion moves publish under `motion/`, one plugin per path. */
-const MOTION_CATALOG_NAMES = ["drop", "hop", "rope", "trace", "wipe"];
+const MOTION_CATALOG_NAMES = ["drop", "hop", "layer", "rope", "trace", "wipe"];
 const MOTION_SUBPATHS = MOTION_CATALOG_NAMES.map((name) => `motion/${name}`);
 
 interface Manifest {
