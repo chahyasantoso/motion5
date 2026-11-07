@@ -19,10 +19,8 @@ export type MotionProjectState =
 
 const LOADING: MotionProjectState = Object.freeze({ kind: "loading" });
 
-/**
- * Validates, loads and mounts `project` on the browser clock, and disposes it on unmount or replay.
- * `plugins` and `interpolator` are read at each load, so their identity never reloads the project.
- */
+// Loads and mounts `project` on the browser clock; disposes it on unmount or replay.
+// `plugins` and `interpolator` are read per load, so a new identity never reloads.
 export function useMotionProject(
   project: unknown,
   plugins: PluginCatalog,
