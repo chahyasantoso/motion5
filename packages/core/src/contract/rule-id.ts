@@ -93,6 +93,7 @@ export const BASE_RULE_IDS = [
   "trigger-scroll-source",
   "trigger-shape",
   "trigger-time-autoplay-unsupported",
+  "trigger-time-delay",
   "trigger-time-duration",
   "trigger-time-repeat-shape",
   "trigger-time-yoyo-requires-repeat",

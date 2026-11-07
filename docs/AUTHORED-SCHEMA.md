@@ -72,10 +72,11 @@ A trigger is one of these closed shapes:
 ```js
 { type: "manual" }
 { type: "scroll", source?: "scroll-key" }
-{ type: "time", duration: 1000, autoplay?: true, repeat?: -1, yoyo?: true }
+{ type: "time", duration: 1000, delay?: 250, autoplay?: true, repeat?: -1, yoyo?: true }
 ```
 
-`duration` is milliseconds and must be finite and greater than zero. `repeat` counts passes after the
+`duration` is milliseconds and must be finite and greater than zero. `delay` is milliseconds before the
+first pass, finite and not negative: progress holds at `0` and it does not repeat. `repeat` counts passes after the
 initial one: `0` is one pass, `-1` is infinite, and any other negative or non-integer value is
 refused. `yoyo` requires a repeat that actually repeats.
 

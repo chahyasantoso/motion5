@@ -45,6 +45,7 @@ Warnings load and stay readable: a blocked source publishes `source-pending`, an
 
 - `trigger-shape`, for a non-object trigger or a type outside `scroll`, `time`, and `manual`.
 - `trigger-time-duration`, for a `time` duration that is absent, non-numeric, non-finite, or not greater than zero.
+- `trigger-time-delay`, for a `time` delay that is negative, non-numeric, or non-finite.
 - `trigger-time-autoplay-unsupported`, for a playback field that would otherwise validate and then be ignored.
 - `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`, for the loop fields: a `repeat` that is not an integer of `-1` or above, a `yoyo` that is not a boolean, and a `yoyo` with no repeat to reverse.
 - `trigger-scroll-source`, for a `source` that is present but not a non-empty string.

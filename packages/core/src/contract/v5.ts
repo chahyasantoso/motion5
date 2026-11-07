@@ -14,6 +14,8 @@ export interface ManualTriggerDefinition {
 export interface TimeTriggerDefinition {
   readonly type: "time";
   readonly duration: number;
+  /** Clock units before the first pass; progress holds at 0 and the delay never repeats. */
+  readonly delay?: number;
   readonly autoplay?: true;
   /** Extra passes after first; integer, `-1` forever, `0`+ counts. */
   readonly repeat?: number;

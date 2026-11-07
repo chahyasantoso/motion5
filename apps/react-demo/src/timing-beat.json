@@ -41,7 +41,7 @@
     },
     {
       "id": "period",
-      "trigger": { "type": "time", "duration": 2200 },
+      "trigger": { "type": "time", "duration": 990, "delay": 880 },
       "tracks": [
         {
           "id": "dot",
@@ -52,9 +52,7 @@
               "bounces": 2,
               "decay": 0.35,
               "squash": 0.45,
-              "dx": 1300,
-              "from": 0.4,
-              "to": 0.85
+              "dx": 1300
             }
           }
         }
@@ -62,12 +60,12 @@
     },
     {
       "id": "cover",
-      "trigger": { "type": "time", "duration": 3000 },
+      "trigger": { "type": "time", "duration": 600, "delay": 2400 },
       "tracks": [
         {
           "id": "wipe",
           "output": { "plugin": "wipe" },
-          "input": { "param": { "radius": 1500, "x": 967, "y": 413, "from": 0.8, "to": 1 } }
+          "input": { "param": { "radius": 1500, "x": 967, "y": 413 } }
         }
       ]
     }

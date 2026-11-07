@@ -114,6 +114,7 @@ const BASE_RULES = {
   "trigger-scroll-source": ERROR_NO_IDS,
   "trigger-shape": ERROR_NO_IDS,
   "trigger-time-autoplay-unsupported": ERROR_NO_IDS,
+  "trigger-time-delay": ERROR_NO_IDS,
   "trigger-time-duration": ERROR_NO_IDS,
   "trigger-time-repeat-shape": ERROR_NO_IDS,
   "trigger-time-yoyo-requires-repeat": ERROR_NO_IDS,

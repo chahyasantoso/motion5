@@ -37,6 +37,7 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
       // what the driver does with time belongs to the driver and its loop cycle. See ADR-040.
       if (trigger.type === "time")
         return createTimeDriver(trigger.duration, {
+          ...(trigger.delay === undefined ? {} : { delay: trigger.delay }),
           ...(trigger.repeat === undefined ? {} : { repeat: trigger.repeat }),
           ...(trigger.yoyo === undefined ? {} : { yoyo: trigger.yoyo }),
         });

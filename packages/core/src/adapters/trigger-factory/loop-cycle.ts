@@ -3,6 +3,8 @@ import { unreachable } from "../../lang/exhaustive";
 /** Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver. */
 export interface LoopCycleOptions {
   readonly duration: number;
+  /** Clock units spent at progress 0 before the first pass. Defaults to `0`. */
+  readonly delay?: number;
   /** Passes after the initial one. `-1` is infinite. Defaults to `0`, a single pass. */
   readonly repeat?: number;
   /** Reverse every odd cycle. Defaults to `false`. */
@@ -47,6 +49,7 @@ export function createLoopCycle(options: LoopCycleOptions): LoopCycle {
   // Yoyo repeats every two cycles; the reduction must keep both or direction is lost.
   const period = (yoyo ? 2 : 1) * duration;
   let state: LoopCycleState = { kind: "running", elapsed: 0 };
+  let delayLeft = options.delay ?? 0;
   // Half-open at start, closed at end: a boundary tick ends the cycle it completed.
   // Direction derives from cycle index; a flip flag desyncs when one tick crosses two cycles.
   function progressAt(value: number): number {
@@ -65,7 +68,9 @@ export function createLoopCycle(options: LoopCycleOptions): LoopCycle {
         case "finished":
           return { progress: progressAt(state.elapsed) };
         case "running": {
-          let elapsed = state.elapsed + delta;
+          const spent = Math.min(delayLeft, delta);
+          delayLeft -= spent;
+          let elapsed = state.elapsed + delta - spent;
           if (elapsed >= totalDuration) {
             elapsed = totalDuration;
             state = { kind: "finished", elapsed };

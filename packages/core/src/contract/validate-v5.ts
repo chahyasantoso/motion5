@@ -104,6 +104,17 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger autoplay must be true when present; paused behavior is not supported.",
         ),
       );
+    if (
+      trigger.delay !== undefined &&
+      (typeof trigger.delay !== "number" || !Number.isFinite(trigger.delay) || trigger.delay < 0)
+    )
+      diagnostics.push(
+        diagnostic(
+          "trigger-time-delay",
+          `${path}.delay`,
+          "Time trigger delay must be a finite number of zero or more when present.",
+        ),
+      );
     // `repeat` counts passes after the initial one: 0 is a single pass, -1 infinite.
     const repeatValue = typeof trigger.repeat === "number" ? trigger.repeat : undefined;
     const repeatValid =
