@@ -26,5 +26,7 @@ export function usePatch(source: PatchSource, nodeId: string): LivePatch | undef
 export { rowPatchSource } from "./row-patch-source";
 export type { RowPatchOptions } from "./row-patch-source";
 export { useDomPatch } from "./dom-patch";
+export { Word } from "./word";
+export type { WordProps } from "./word";
 export { useDerivedDomPatch } from "./derived-dom-patch";
 export type { PatchDerivation, PatchValues } from "./derived-dom-patch";

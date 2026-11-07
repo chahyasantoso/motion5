@@ -81,6 +81,8 @@ function Title({ handle }: { handle: ProjectHandle }) {
 
 A non-ready patch is a no-op, so a blocked, errored, or destroyed node leaves its target at the last applied pose rather than disappearing. That is the binding's contract, and it is deliberately not `useLivePatch`'s rule: when absence has to be rendered, gate the component on `usePatch` instead.
 
+`Word` binds text one glyph per node, for a Motion whose tracks are its letters. `nodes` lists one node per glyph in reading order, usually `handle.motion(id).trackIds`, and a space takes none. Each glyph is an `inline-block` a transform can reach, the word carries an `aria-label`, and a count that does not match throws by name.
+
 `useDerivedDomPatch(source, nodeIds, derive)` is the same write path for a target whose values are a function of several nodes, or of one node's values rather than its pose:
 
 ```tsx

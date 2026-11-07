@@ -27,14 +27,14 @@ byte ceiling.
   `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser, and
   `motion:frames` returns PNGs of a real page at named times.
   An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
-  `Motion.stagger` finishes every track. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
-  publishing the new `Sprite2d` and `Clip2d` models, and `/timing.html` in `apps/react-demo` runs a beat
+  `Motion.stagger` finishes every track. A `time` trigger takes a `delay`, and `Word` binds text to tracks. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
+  publishing the new `Sprite2d` and `Clip2d` models with their own pivot, and `/timing.html` in `apps/react-demo` runs a beat
   built from them.
 
 ## Next in line
 
-- **Shrink what an agent must hand-supply:** a `delay` on the `time` trigger, moves that own their pivot, and a
-  word binding with one owner for its letters.
+- **Write the agent guide, then run the benchmark:** the working loop and commands in one guide, then a fresh
+  agent on a fixed brief, with and without the repo.
 
 ## Open, and not scheduled
 
