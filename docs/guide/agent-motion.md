@@ -42,7 +42,7 @@ Each sampled node has a `status`. `ready` carries `progress` and `outputs`. `blo
 npm run motion:frames -- timing.html --at 0,500,1300
 ```
 
-The page is a path inside `apps/react-demo`, with no leading `/`. The command serves that app, opens the page in an installed Chrome or Edge under a paused fake clock, and prints paths as JSON: one PNG per time, and a labelled `sheet.png`. Read `sheet.png` rather than each frame. Frames repeat byte for byte, and land on animation frames, so use `motion:sample` when you need an exact number. A non-empty `pageErrors` exits `1`.
+The page is a path inside the site, with no leading `/`. By default the site is `apps/react-demo`; `--root <dir>` serves any other folder, and `--url <address>` uses a server you already run, so these tools work on any web page, not only motion5 ones. Paths given to `--root` and `--out` are read from the folder you ran the command in. The command serves the site, opens the page in an installed Chrome or Edge under a paused fake clock, and prints paths as JSON: one PNG per time, and a labelled `sheet.png`. Read `sheet.png` rather than each frame. Frames repeat byte for byte, and land on animation frames, so use `motion:sample` when you need an exact number. A non-empty `pageErrors` exits `1`.
 
 ```bash
 npm run motion:timeline -- apps/react-demo/src/timing-beat.json
@@ -84,7 +84,7 @@ A move ends at its rest pose, which is the element's layout position. Lay the pa
 
 ## The page
 
-Run `npm run motion:new -- <name>` with a lowercase, dash-joined name. It writes `apps/react-demo/<name>.html`, its entry, a component and a starter project that already samples and renders, and refuses a name whose files exist. Edit the markup and the project from there. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
+Run `npm run motion:new -- <name>` with a lowercase, dash-joined name; add `--root <dir>` to write into another Vite and React project that depends on motion5. It writes `<name>.html`, its entry, a component and a starter project that already samples and renders, and refuses a name whose files exist. Edit the markup and the project from there. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
 
 Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. See [Rendering patches](./rendering-patches.md).
 

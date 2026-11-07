@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateV5, type ProjectDefinition } from "@motion5/core";
 import { loadBuiltinCatalog } from "../../../../../scripts/motion-tools/catalog";
+import { DEFAULT_SOURCE } from "../../../../../scripts/motion-tools/page";
 import { parseProbeArgs } from "../../../../../scripts/motion-tools/probe";
 import { sampleProject } from "../../../../../scripts/motion-tools/sample";
 import { renderTimeline, timelineOf } from "../../../../../scripts/motion-tools/timeline";
@@ -79,6 +80,7 @@ describe("motion:probe arguments", () => {
       height: 720,
       at: [0, 100],
       select: ".beat-dot",
+      source: DEFAULT_SOURCE,
     });
   });
 

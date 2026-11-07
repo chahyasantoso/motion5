@@ -5,6 +5,7 @@ import {
   parseCheckArgs,
   type Frame,
 } from "../../../../../scripts/motion-tools/check";
+import { DEFAULT_SOURCE } from "../../../../../scripts/motion-tools/page";
 
 const STEP = 16;
 type Spot = { readonly x: number; readonly y: number };
@@ -85,6 +86,7 @@ describe("motion:check arguments", () => {
       watch: [".dot", ".glyph"],
       to: 3000,
       limits: { ...DEFAULT_LIMITS, hold: 300 },
+      source: DEFAULT_SOURCE,
     });
   });
 

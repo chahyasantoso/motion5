@@ -1,9 +1,27 @@
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Browser, Page } from "playwright-core";
+import { unreachable } from "@motion5/core/plugin-api";
+
+/** Where a page comes from: a folder this tool serves, or a server already running. */
+export type PageSource =
+  | { readonly kind: "serve"; readonly root: string }
+  | { readonly kind: "url"; readonly base: string };
 
 export interface PageTarget {
   readonly page: string;
   readonly width: number;
   readonly height: number;
+  readonly source: PageSource;
+}
+
+/** The demo app, served when no `--root` or `--url` is given. */
+export const DEFAULT_ROOT = fileURLToPath(new URL("../../apps/react-demo/", import.meta.url));
+export const DEFAULT_SOURCE: PageSource = Object.freeze({ kind: "serve", root: DEFAULT_ROOT });
+
+/** A path as the caller typed it, read from the folder they ran `npm run` in, not the repo root. */
+export function fromCaller(path: string): string {
+  return resolve(process.env.INIT_CWD ?? process.cwd(), path);
 }
 
 export interface PageSession {
@@ -24,7 +42,7 @@ export type ReadArgs =
 const CHANNELS = ["chrome", "msedge", undefined] as const;
 const FIRST_FRAME_MS = 17;
 
-/** Reads `<page> [--size WxH]` plus the named flags, each taking one value. */
+/** Reads `<page> [--size WxH] [--root dir | --url address]` plus the named flags, each taking one value. */
 export function readPageArgs(argv: readonly string[], allowed: readonly string[]): ReadArgs {
   const usage = (message: string): ReadArgs => ({ kind: "usage", message });
   const positional: string[] = [];
@@ -35,38 +53,45 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
       positional.push(arg);
       continue;
     }
-    if (arg !== "--size" && !allowed.includes(arg)) return usage(`Unknown flag ${arg}.`);
+    if (arg !== "--size" && arg !== "--root" && arg !== "--url" && !allowed.includes(arg))
+      return usage(`Unknown flag ${arg}.`);
     flags.set(arg, argv[i + 1]);
     i += 1;
   }
   const page = positional[0];
   if (page === undefined || positional.length !== 1) return usage("Expected one page path.");
-  if (!/^[\w./-]+\.html$/.test(page) || page.startsWith("/") || page.includes(".."))
-    return usage(`Page ${page} must be an .html path inside the app, like timing.html.`);
+  if (!/^[\w./-]+$/.test(page) || page.startsWith("/") || page.includes(".."))
+    return usage(`Page ${page} must be a path inside the site, like timing.html.`);
   const size = /^(\d+)x(\d+)$/.exec(flags.get("--size") ?? "1280x720");
   if (size === null) return usage("--size needs WIDTHxHEIGHT.");
+  const root = flags.get("--root");
+  const url = flags.get("--url");
+  if (flags.has("--root") && flags.has("--url")) return usage("Pass --root or --url, not both.");
+  if (flags.has("--root") && (root === undefined || root === ""))
+    return usage("--root needs a folder.");
+  if (flags.has("--url") && (url === undefined || !/^https?:\/\/[^\s]+$/.test(url)))
+    return usage("--url needs an http or https address.");
+  const source: PageSource =
+    url !== undefined
+      ? { kind: "url", base: url.endsWith("/") ? url : `${url}/` }
+      : root !== undefined
+        ? { kind: "serve", root: fromCaller(root) }
+        : DEFAULT_SOURCE;
   return {
     kind: "ok",
-    target: { page, width: Number(size[1]), height: Number(size[2]) },
+    target: { page, width: Number(size[1]), height: Number(size[2]), source },
     flags,
   };
 }
 
-/** Serves `apps/react-demo`, opens the page under a paused fake clock, and hands it to `visit`. */
+/** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
 export async function withPage<T>(
   target: PageTarget,
   visit: (session: PageSession) => Promise<T>,
 ): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
   const { chromium } = await import("playwright-core");
-  const { createServer } = await import("vite");
-  const root = new URL("../../apps/react-demo/", import.meta.url).pathname.replace(
-    /^\/(\w:)/,
-    "$1",
-  );
-  const server = await createServer({ root, logLevel: "silent", server: { port: 5280 } });
-  await server.listen();
-  const base = server.resolvedUrls?.local[0];
-  if (base === undefined) throw new Error("The page server reported no local address.");
+  const site = await openSite(target.source);
+  const base = site.base;
 
   const failures: string[] = [];
   let browser: Browser | undefined;
@@ -79,7 +104,7 @@ export async function withPage<T>(
     }
   }
   if (browser === undefined) {
-    await server.close();
+    await site.close();
     throw new Error(
       `No browser found. Install Chrome or Edge, or run npx playwright-core install chromium. ${failures.join(" ")}`,
     );
@@ -110,6 +135,33 @@ export async function withPage<T>(
     return { value, pageErrors };
   } finally {
     await browser.close();
-    await server.close();
+    await site.close();
+  }
+}
+
+/** A base address for the source, and how to release whatever was started for it. */
+async function openSite(
+  source: PageSource,
+): Promise<{ readonly base: string; close(): Promise<void> }> {
+  switch (source.kind) {
+    case "url":
+      return { base: source.base, close: async () => undefined };
+    case "serve": {
+      const { createServer } = await import("vite");
+      const server = await createServer({
+        root: source.root,
+        logLevel: "silent",
+        server: { port: 5280 },
+      });
+      await server.listen();
+      const base = server.resolvedUrls?.local[0];
+      if (base === undefined) {
+        await server.close();
+        throw new Error("The page server reported no local address.");
+      }
+      return { base, close: () => server.close() };
+    }
+    default:
+      return unreachable(source);
   }
 }

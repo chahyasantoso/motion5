@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { readPageArgs, withPage, type PageTarget } from "./page";
+import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./sample";
 
 export interface FramesRequest extends PageTarget {
@@ -65,7 +65,8 @@ export function parseFramesArgs(argv: readonly string[]): FramesArgs {
   const read = readPageArgs(argv, FLAGS);
   if (read.kind === "usage") return usage(read.message);
   const { target, flags } = read;
-  const out = flags.get("--out");
+  const outFlag = flags.get("--out");
+  const out = outFlag === undefined ? undefined : fromCaller(outFlag);
   const outField = out === undefined ? {} : { out };
   if (flags.has("--onion") === flags.has("--at"))
     return usage("Pass exactly one of --at and --onion.");

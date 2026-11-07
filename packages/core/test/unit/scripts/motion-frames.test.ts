@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseFramesArgs } from "../../../../../scripts/motion-tools/frames";
+import { DEFAULT_SOURCE, fromCaller } from "../../../../../scripts/motion-tools/page";
 
 describe("parseFramesArgs", () => {
   it("reads an onion request", () => {
@@ -24,6 +25,7 @@ describe("parseFramesArgs", () => {
       from: 100,
       to: 300,
       every: 50,
+      source: DEFAULT_SOURCE,
     });
   });
 
@@ -34,13 +36,26 @@ describe("parseFramesArgs", () => {
       at: [0, 500],
       width: 1280,
       height: 720,
+      source: DEFAULT_SOURCE,
     });
+  });
+
+  it("serves another folder, read from where the command was run", () => {
+    expect(parseFramesArgs(["index.html", "--at", "0", "--root", "site"])).toMatchObject({
+      source: { kind: "serve", root: fromCaller("site") },
+    });
+  });
+
+  it("reaches a running server and allows a page path with no extension", () => {
+    expect(parseFramesArgs(["about", "--at", "0", "--url", "http://localhost:3000"])).toMatchObject(
+      { page: "about", source: { kind: "url", base: "http://localhost:3000/" } },
+    );
   });
 
   it("reads a size and an output folder", () => {
     expect(
       parseFramesArgs(["a/b.html", "--at", "1", "--size", "640x360", "--out", "dir"]),
-    ).toMatchObject({ page: "a/b.html", width: 640, height: 360, out: "dir" });
+    ).toMatchObject({ page: "a/b.html", width: 640, height: 360, out: fromCaller("dir") });
   });
 
   it.each([
@@ -48,7 +63,9 @@ describe("parseFramesArgs", () => {
     ["two pages", ["a.html", "b.html", "--at", "1"]],
     ["a page outside the app", ["../a.html", "--at", "1"]],
     ["an absolute page", ["/a.html", "--at", "1"]],
-    ["a page that is not html", ["a.png", "--at", "1"]],
+    ["a page with a space", ["a b.html", "--at", "1"]],
+    ["both a root and a url", ["a.html", "--at", "1", "--root", "x", "--url", "http://x"]],
+    ["a url that is not http", ["a.html", "--at", "1", "--url", "file:///x"]],
     ["no times", ["a.html"]],
     ["descending times", ["a.html", "--at", "5,1"]],
     ["a bad size", ["a.html", "--at", "1", "--size", "big"]],
