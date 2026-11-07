@@ -330,14 +330,16 @@ export class Motion {
     entry: MotionTrackEntry,
     entries: readonly MotionTrackEntry[],
   ): number {
-    const duration = this.#totalDuration(entries);
-    const staggerDelay = index * this.#stagger;
-    return staggerDelay > 0 && duration > 0
-      ? Math.max(
-          0,
-          Math.min(1, (this.#position * duration - staggerDelay) / (entry.duration ?? duration)),
-        )
-      : this.#position;
+    if (this.#stagger === 0) return this.#position;
+    const length = this.#totalDuration(entries);
+    // The Motion spans the last finish, so every track reaches 1 at position 1 whatever the stagger.
+    const span = entries.reduce(
+      (latest, candidate, at) =>
+        Math.max(latest, at * this.#stagger + (candidate.duration ?? length)),
+      0,
+    );
+    const elapsed = this.#position * span - index * this.#stagger;
+    return Math.max(0, Math.min(1, elapsed / (entry.duration ?? length)));
   }
   #totalDuration(entries: readonly MotionTrackEntry[]): number {
     return entries.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);

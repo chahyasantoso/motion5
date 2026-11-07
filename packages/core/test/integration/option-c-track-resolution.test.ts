@@ -79,7 +79,7 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const tracks = [track("first", 0, 100), track("second", 0, 100), track("third", 0, 100)];
     const { clock, scheduler, handle } = load(baseProject(tracks, 100));
     for (const id of ["scene/first", "scene/second", "scene/third"]) handle.mount(id);
-    handle.signal("scene", { type: "manual", progress: 1 });
+    handle.signal("scene", { type: "manual", progress: 0.25 });
     scheduler.flush();
     handle.track("scene/first").replace(track("first", 0, 200));
     clock.tick(0);

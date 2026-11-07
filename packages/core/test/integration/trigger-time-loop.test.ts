@@ -158,17 +158,17 @@ describe("time loop semantics", () => {
     handle.mount("loop/trail");
     const pair = () => [values("loop/lead"), values("loop/trail")];
     advance(25);
-    expect(pair()).toEqual([{ x: 25 }, { x: 0 }]);
+    expect(pair()).toEqual([{ x: 37.5 }, { x: 0 }]);
     advance(50);
-    expect(pair()).toEqual([{ x: 75 }, { x: 25 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 62.5 }]);
     advance(25);
-    expect(pair()).toEqual([{ x: 100 }, { x: 50 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 100 }]);
     // The second cycle reproduces the first exactly. Stagger is a phase offset inside a pass, so
     // no cycle hands anything to the next one.
     advance(25);
-    expect(pair()).toEqual([{ x: 25 }, { x: 0 }]);
+    expect(pair()).toEqual([{ x: 37.5 }, { x: 0 }]);
     advance(50);
-    expect(pair()).toEqual([{ x: 75 }, { x: 25 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 62.5 }]);
     handle.dispose();
   });
 

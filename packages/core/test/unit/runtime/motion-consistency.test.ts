@@ -358,11 +358,11 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     const heroArmPatch6 = test.handle.get("hero/arm");
     if (heroArmPatch6?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch6?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch6.sourceProgress).toBeCloseTo(0.75);
+    expect(heroArmPatch6.sourceProgress).toBeCloseTo(0.9375);
     const heroLegPatch2 = test.handle.get("hero/leg");
     if (heroLegPatch2?.status !== "ready")
       throw new Error(`hero/leg is ${heroLegPatch2?.status ?? "absent"}, not ready.`);
-    expect(heroLegPatch2.sourceProgress).toBeCloseTo(0.5);
+    expect(heroLegPatch2.sourceProgress).toBeCloseTo(0.6875);
     expect(seen).toEqual([250]);
     expect(String(reentrant[0])).toContain("schema-commit-reentrant");
     motion.setStagger();

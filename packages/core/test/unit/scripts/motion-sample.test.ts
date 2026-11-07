@@ -222,7 +222,7 @@ describe("sampleProject", () => {
       sampleProject(project, catalog(), { kind: "progress", progress: [0.25, 0.75] }),
     );
     expect(result.samples[0]?.nodes["m/b"]).toEqual({ status: "absent" });
-    expect(ready(result.samples[1]?.nodes["m/b"]).progress).toBe(0.25);
+    expect(ready(result.samples[1]?.nodes["m/b"]).progress).toBe(0.625);
   });
 });
 

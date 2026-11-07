@@ -62,7 +62,8 @@ const project = {
 ## Motion and triggers
 
 A Motion carries `id`, `trigger`, `tracks`, and an optional `stagger`. A stagger is a finite,
-non-negative number and applies to the Motion's tracks in order.
+non-negative number: each track starts that many track lengths after the one before it, so `1` runs
+them one after another. Every track reaches `1` at the end of the Motion, whatever the stagger.
 
 A trigger is one of these closed shapes:
 

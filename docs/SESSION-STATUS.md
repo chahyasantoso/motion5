@@ -25,11 +25,13 @@ byte ceiling.
   structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`, `LocalAnchors2d`
   models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are exported and in `builtinCatalog`.
   `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser.
+  An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
+  `Motion.stagger` finishes every track.
 
 ## Next in line
 
-- **Close the silent authoring gaps:** refuse an absent required param and an unknown ease, render
-  `scaleX` and `scaleY`, and let `Motion.stagger` finish every track.
+- **Add the first moves:** a public renderable model, then `drop`, `hop` and `wipe` as pure plugins, proven
+  by building one beat with no hand-written motion arithmetic.
 
 ## Open, and not scheduled
 

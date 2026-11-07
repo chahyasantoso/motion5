@@ -81,7 +81,7 @@ describe("issue 114: Motion-owned Track replacement", () => {
     );
     const { clock, scheduler, handle } = load(project);
     for (const id of ["scene/first", "scene/second", "scene/third"]) handle.mount(id);
-    handle.signal("scene", { type: "manual", progress: 1 });
+    handle.signal("scene", { type: "manual", progress: 0.25 });
     scheduler.flush();
     handle.track("scene/first").replace(track("first", 0, 200));
     flushReplacement(clock, scheduler);

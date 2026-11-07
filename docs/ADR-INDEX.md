@@ -151,3 +151,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-144 — Identified tables, table-or-record values, and explicit plugins — Accepted, 2026-10-29
 - ADR-145 — One track kind and nominal models (v5.2) — Accepted, 2026-11-05
 - ADR-146 — The render metadata channel is removed — Accepted, 2026-11-06
+- ADR-147 — Stagger finishes every track — Accepted, 2026-11-07

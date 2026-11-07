@@ -132,8 +132,7 @@ describe("Motion single-track mutation atomicity", () => {
   it("M-6 seeds the same progress it always did, staggered and with per-entry durations", () => {
     // The trap in the fix rather than in the bug, and the reason this case exists at all.
     // #effectiveProgress reduces over the entry list for #totalDuration, so seeding against the
-    // pre-mutation list changes the number a staggered Motion writes: 0 instead of 0.25 below,
-    // and 0.125 instead of 0.375. Exact equality, because a drift here is a behavior change
+    // pre-mutation list changes the number a staggered Motion writes below. Exact equality, because a drift here is a behavior change
     // smuggled in under a bug fix.
     const { motion, register } = fixture([{ id: "a", duration: 200 }], 100);
     const a = register("a");
@@ -143,15 +142,15 @@ describe("Motion single-track mutation atomicity", () => {
     const b = register("b");
     motion.addTrack({ id: "b", duration: 400 });
 
-    // (0.5 * 400 - 100) / 400, so the prospective total duration of 400 is load bearing.
-    expect(b.progress).toBe(0.25);
+    // (0.5 * 500 - 100) / 400: the span is b's finish, 100 + 400, on the prospective list.
+    expect(b.progress).toBe(0.375);
     // Only the new entry is seeded. addTrack never swept its siblings and still must not.
     expect(a.progress).toBe(0.5);
 
     motion.replaceTrack({ id: "b", duration: 800 });
 
-    // (0.5 * 800 - 100) / 800, again against the list the mutation is about to commit.
-    expect(b.progress).toBe(0.375);
+    // (0.5 * 900 - 100) / 800, again against the list the mutation is about to commit.
+    expect(b.progress).toBe(0.4375);
     expect(a.progress).toBe(0.5);
     expect(motion.tracks.map(({ id }) => id)).toEqual(["a", "b"]);
     expect(motion.tracks[1]?.duration).toBe(800);

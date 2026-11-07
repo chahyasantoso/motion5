@@ -14,7 +14,7 @@ const trigger = { type: "time", duration: 1000 };
 const looping = { type: "time", duration: 1000, repeat: -1, yoyo: true };
 ```
 
-`repeat` counts passes after the first: absent or `0` is one pass, `-1` is forever, and any other negative or non-integer value is refused as `trigger-time-repeat-shape`. `yoyo` reverses every odd cycle. It must be a boolean (`trigger-time-yoyo-shape`) and needs a `repeat` that actually repeats (`trigger-time-yoyo-requires-repeat`). A Motion's `stagger` applies inside each cycle, and no cycle carries anything into the next.
+`repeat` counts passes after the first: absent or `0` is one pass, `-1` is forever, and any other negative or non-integer value is refused as `trigger-time-repeat-shape`. `yoyo` reverses every odd cycle. It must be a boolean (`trigger-time-yoyo-shape`) and needs a `repeat` that actually repeats (`trigger-time-yoyo-requires-repeat`). A Motion's `stagger` applies inside each cycle: each track starts that many track lengths after the one before it, every track finishes by the end of the cycle, and no cycle carries anything into the next.
 
 ## scroll
 

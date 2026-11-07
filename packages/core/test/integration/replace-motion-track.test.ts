@@ -73,7 +73,7 @@ describe("motion-owned Track replacement", () => {
     handle.mount("scene/first");
     handle.mount("scene/second");
     handle.mount("scene/third");
-    handle.signal("scene", { type: "manual", progress: 1 });
+    handle.signal("scene", { type: "manual", progress: 0.25 });
     scheduler.flush();
 
     handle.track("scene/first").replace(track("first", 0, 200));
