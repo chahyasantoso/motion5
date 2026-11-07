@@ -1,18 +1,25 @@
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./sample";
 
-export interface FramesRequest {
-  readonly page: string;
+export interface FramesRequest extends PageTarget {
   readonly at: readonly number[];
-  readonly width: number;
-  readonly height: number;
+  readonly out?: string;
+}
+
+export interface OnionRequest extends PageTarget {
+  readonly select: string;
+  readonly from: number;
+  readonly to: number;
+  readonly every: number;
   readonly out?: string;
 }
 
 export type FramesArgs =
-  | ({ readonly kind: "ok" } & FramesRequest)
+  | ({ readonly kind: "frames" } & FramesRequest)
+  | ({ readonly kind: "onion" } & OnionRequest)
   | { readonly kind: "usage"; readonly message: string };
 
 export interface FramesResult {
@@ -22,54 +29,79 @@ export interface FramesResult {
   readonly pageErrors: readonly string[];
 }
 
-const USAGE = "usage: motion:frames <page> --at ms,ms [--size 1280x720] [--out dir]";
-const CHANNELS = ["chrome", "msedge", undefined] as const;
-const FIRST_FRAME_MS = 17;
+export interface Box {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface OnionResult {
+  readonly kind: "onion";
+  readonly path: string;
+  readonly steps: readonly { readonly at: number; readonly boxes: readonly Box[] }[];
+  readonly pageErrors: readonly string[];
+}
+
+const USAGE =
+  "usage: motion:frames <page> (--at ms,ms | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]";
+const FLAGS = ["--at", "--out", "--onion", "--from", "--to", "--every"];
 const SHEET_COLUMNS = 4;
 const SHEET_CELL_WIDTH = 480;
+const ONION_STEP_LIMIT = 120;
+
+function nonNegative(text: string | undefined): number | undefined {
+  const value = Number(text);
+  return text !== undefined && text !== "" && Number.isFinite(value) && value >= 0
+    ? value
+    : undefined;
+}
 
 export function parseFramesArgs(argv: readonly string[]): FramesArgs {
   const usage = (message: string): FramesArgs => ({
     kind: "usage",
     message: `${message} ${USAGE}`,
   });
-  const positional: string[] = [];
-  const flags = new Map<string, string | undefined>();
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i]!;
-    if (!arg.startsWith("--")) {
-      positional.push(arg);
-      continue;
-    }
-    if (arg !== "--at" && arg !== "--size" && arg !== "--out") return usage(`Unknown flag ${arg}.`);
-    flags.set(arg, argv[i + 1]);
-    i += 1;
-  }
-  const page = positional[0];
-  if (page === undefined || positional.length !== 1) return usage("Expected one page path.");
-  if (!/^[\w./-]+\.html$/.test(page) || page.startsWith("/") || page.includes(".."))
-    return usage(`Page ${page} must be an .html path inside the app, like timing.html.`);
-  const at = parseNumbers(flags.get("--at"));
-  if (at === undefined) return usage("--at needs ascending non-negative numbers.");
-  const size = /^(\d+)x(\d+)$/.exec(flags.get("--size") ?? "1280x720");
-  if (size === null) return usage("--size needs WIDTHxHEIGHT.");
+  const read = readPageArgs(argv, FLAGS);
+  if (read.kind === "usage") return usage(read.message);
+  const { target, flags } = read;
   const out = flags.get("--out");
-  return {
-    kind: "ok",
-    page,
-    at,
-    width: Number(size[1]),
-    height: Number(size[2]),
-    ...(out === undefined ? {} : { out }),
-  };
+  const outField = out === undefined ? {} : { out };
+  if (flags.has("--onion") === flags.has("--at"))
+    return usage("Pass exactly one of --at and --onion.");
+  if (flags.has("--at")) {
+    const at = parseNumbers(flags.get("--at"));
+    if (at === undefined) return usage("--at needs ascending non-negative numbers.");
+    return { kind: "frames", ...target, at, ...outField };
+  }
+  const select = flags.get("--onion");
+  const from = nonNegative(flags.get("--from"));
+  const to = nonNegative(flags.get("--to"));
+  const every = nonNegative(flags.get("--every"));
+  if (select === undefined || select === "") return usage("--onion needs a CSS selector.");
+  if (from === undefined || to === undefined || every === undefined || every === 0 || to < from)
+    return usage("--onion needs --from <= --to and a positive --every, in ms.");
+  if ((to - from) / every + 1 > ONION_STEP_LIMIT)
+    return usage(`--onion takes at most ${ONION_STEP_LIMIT} steps.`);
+  return { kind: "onion", ...target, select, from, to, every, ...outField };
+}
+
+function outDir(out: string | undefined): string {
+  const dir = out ?? mkdtempSync(join(tmpdir(), "motion-frames-"));
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function dataUrl(path: string): string {
+  return `data:image/png;base64,${readFileSync(path).toString("base64")}`;
 }
 
 /** Lays captured frames into one labelled image, so a reader looks once instead of per frame. */
 function sheetHtml(frames: readonly { readonly at: number; readonly path: string }[]): string {
-  const cells = frames.map(({ at, path }) => {
-    const data = readFileSync(path).toString("base64");
-    return `<figure><img src="data:image/png;base64,${data}"><figcaption>${at} ms</figcaption></figure>`;
-  });
+  const cells = frames.map(
+    ({ at, path }) =>
+      `<figure><img src="${dataUrl(path)}"><figcaption>${at} ms</figcaption></figure>`,
+  );
   return `<style>
     body { margin: 0; display: grid; grid-template-columns: repeat(${SHEET_COLUMNS}, ${SHEET_CELL_WIDTH}px); gap: 4px; background: #fff; }
     figure { margin: 0; } img { width: 100%; display: block; }
@@ -77,69 +109,111 @@ function sheetHtml(frames: readonly { readonly at: number; readonly path: string
   </style>${cells.join("")}`;
 }
 
-/** Serves `apps/react-demo`, opens `page` under a paused fake clock, and captures it at each named time. */
+/** Captures the page at each named time, plus one labelled sheet of every frame. */
 export async function captureFrames(request: FramesRequest): Promise<FramesResult> {
-  const { chromium } = await import("playwright-core");
-  const { createServer } = await import("vite");
-  const root = new URL("../../apps/react-demo/", import.meta.url).pathname.replace(
-    /^\/(\w:)/,
-    "$1",
-  );
-  const server = await createServer({ root, logLevel: "silent", server: { port: 5280 } });
-  await server.listen();
-  const base = server.resolvedUrls?.local[0];
-  if (base === undefined) throw new Error("The frames server reported no local address.");
-
-  const launch = async () => {
-    const failures: string[] = [];
-    for (const channel of CHANNELS) {
-      try {
-        return await chromium.launch(channel === undefined ? {} : { channel });
-      } catch (error) {
-        failures.push(`${channel ?? "playwright"}: ${String(error).split("\n")[0]}`);
-      }
-    }
-    throw new Error(
-      `No browser found. Install Chrome or Edge, or run npx playwright-core install chromium. ${failures.join(" ")}`,
-    );
-  };
-
-  const browser = await launch();
-  try {
-    const page = await browser.newPage({
-      viewport: { width: request.width, height: request.height },
-    });
-    const pageErrors: string[] = [];
-    page.on("pageerror", (error) => pageErrors.push(error.message));
-    await page.clock.install({ time: 0 });
-    await page.clock.pauseAt(1);
-    await page.goto(new URL(request.page, base).href, { waitUntil: "load" });
-    await page.evaluate(() => document.fonts.ready.then(() => undefined));
-
-    // Runs the first frame, whose elapsed time is zero, so `at` counts from the first published pose.
-    await page.clock.runFor(FIRST_FRAME_MS);
-
-    const out = request.out ?? mkdtempSync(join(tmpdir(), "motion-frames-"));
-    mkdirSync(out, { recursive: true });
+  const out = outDir(request.out);
+  const { value, pageErrors } = await withPage(request, async ({ page, browser, advanceTo }) => {
     const frames: { at: number; path: string }[] = [];
-    let previous = 0;
     for (const at of request.at) {
-      await page.clock.runFor(at - previous);
-      previous = at;
+      await advanceTo(at);
       const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
       await page.screenshot({ path });
       frames.push({ at, path });
     }
-
     const sheetPage = await browser.newPage({
       viewport: { width: SHEET_COLUMNS * (SHEET_CELL_WIDTH + 4), height: 100 },
     });
     await sheetPage.setContent(sheetHtml(frames), { waitUntil: "load" });
     const sheet = join(out, "sheet.png");
     writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
-    return { kind: "captured", frames, sheet, pageErrors };
-  } finally {
-    await browser.close();
-    await server.close();
-  }
+    return { frames, sheet };
+  });
+  return { kind: "captured", ...value, pageErrors };
+}
+
+/**
+ * Draws every match of `select` at each step onto the last frame, faded, with its centre path,
+ * so spacing and arc read from one image.
+ */
+export async function captureOnion(request: OnionRequest): Promise<OnionResult> {
+  const out = outDir(request.out);
+  const { value, pageErrors } = await withPage(request, async ({ page, browser, advanceTo }) => {
+    const steps: {
+      at: number;
+      boxes: Box[];
+      clips: { readonly src: string; readonly x: number; readonly y: number }[];
+    }[] = [];
+    for (let at = request.from; at <= request.to; at += request.every) {
+      await advanceTo(at);
+      const boxes = await page.$$eval(request.select, (elements) =>
+        elements.map((element) => {
+          const rect = element.getBoundingClientRect();
+          return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        }),
+      );
+      const clips: { readonly src: string; readonly x: number; readonly y: number }[] = [];
+      for (const box of boxes) {
+        // Only the part on the stage can be captured; an element wholly off it leaves no ghost.
+        const x = Math.max(0, box.x);
+        const y = Math.max(0, box.y);
+        const width = Math.min(request.width, box.x + box.width) - x;
+        const height = Math.min(request.height, box.y + box.height) - y;
+        if (width < 1 || height < 1) continue;
+        const clip = await page.screenshot({ clip: { x, y, width, height } });
+        clips.push({ src: `data:image/png;base64,${clip.toString("base64")}`, x, y });
+      }
+      steps.push({ at, boxes, clips });
+    }
+    const base = await page.screenshot();
+    const canvasPage = await browser.newPage({
+      viewport: { width: request.width, height: request.height },
+    });
+    await canvasPage.setContent(
+      `<canvas id="c" width="${request.width}" height="${request.height}">`,
+    );
+    const png = await canvasPage.evaluate(
+      async ({ base, steps }) => {
+        const load = async (src: string) => {
+          const image = new Image();
+          image.src = src;
+          await image.decode();
+          return image;
+        };
+        const canvas = document.getElementById("c");
+        if (!(canvas instanceof HTMLCanvasElement)) throw new Error("The onion canvas is missing.");
+        const context = canvas.getContext("2d");
+        if (context === null) throw new Error("The onion canvas has no 2D context.");
+        context.globalAlpha = 0.35;
+        context.drawImage(await load(base), 0, 0);
+        context.globalAlpha = 0.55;
+        for (const step of steps)
+          for (const clip of step.clips) context.drawImage(await load(clip.src), clip.x, clip.y);
+        context.globalAlpha = 1;
+        context.strokeStyle = "#00e5ff";
+        context.fillStyle = "#00e5ff";
+        context.lineWidth = 2;
+        context.beginPath();
+        steps.forEach((step, index) => {
+          const box = step.boxes[0];
+          if (box === undefined) return;
+          const x = box.x + box.width / 2;
+          const y = box.y + box.height / 2;
+          if (index === 0) context.moveTo(x, y);
+          else context.lineTo(x, y);
+        });
+        context.stroke();
+        for (const step of steps) {
+          const box = step.boxes[0];
+          if (box === undefined) continue;
+          context.fillRect(box.x + box.width / 2 - 2, box.y + box.height / 2 - 2, 4, 4);
+        }
+        return canvas.toDataURL("image/png");
+      },
+      { base: `data:image/png;base64,${base.toString("base64")}`, steps },
+    );
+    const path = join(out, "onion.png");
+    writeFileSync(path, Buffer.from(png.split(",")[1] ?? "", "base64"));
+    return { path, steps: steps.map(({ at, boxes }) => ({ at, boxes })) };
+  });
+  return { kind: "onion", ...value, pageErrors };
 }

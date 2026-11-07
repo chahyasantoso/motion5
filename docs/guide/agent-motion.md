@@ -8,7 +8,7 @@ You write a project as data. The repo evaluates it and reports back, in numbers 
 2. Write the project as JSON.
 3. `npm run motion:sample` validates it and reports values at named times.
 4. `npm run motion:new` writes a page; bind your nodes to its DOM.
-5. `npm run motion:frames` shows that page at named times.
+5. `npm run motion:timeline`, `motion:probe` and `motion:frames` show it as bars, measurements and pictures.
 6. Adjust values, then repeat from step 3.
 
 Look at frames before you call anything finished. Values can be right while the picture is wrong: a wrong pivot, a color that merges, a letter colliding with its neighbor. None of those raises an error.
@@ -43,6 +43,24 @@ npm run motion:frames -- timing.html --at 0,500,1300
 ```
 
 The page is a path inside `apps/react-demo`, with no leading `/`. The command serves that app, opens the page in an installed Chrome or Edge under a paused fake clock, and prints paths as JSON: one PNG per time, and a labelled `sheet.png`. Read `sheet.png` rather than each frame. Frames repeat byte for byte, and land on animation frames, so use `motion:sample` when you need an exact number. A non-empty `pageErrors` exits `1`.
+
+```bash
+npm run motion:timeline -- apps/react-demo/src/timing-beat.json
+```
+
+One text bar per track, from its first change to its rest, sampled every 16 ms. Read it to check order, overlaps and how long the last pose holds, before looking at any frame. It needs `time` motions that do not repeat forever.
+
+```bash
+npm run motion:probe -- timing.html --at 2300 --select .beat-dot
+```
+
+Measures each match of a CSS selector at each time: box, centre, computed transform, colours, opacity and `z-index`. Use it for pixel values such as a `wipe` origin, instead of reading them off a frame.
+
+```bash
+npm run motion:frames -- timing.html --onion .beat-dot --from 880 --to 1880 --every 40
+```
+
+Draws the element at each step onto one faded frame, with its centre path, so its arc and spacing show without playback. Even gaps mean even speed; bunched gaps mean easing. A ghost is a capture of the element's box, so it can include whatever lies behind it, and nothing is drawn while the element is off the stage. It prints each step's box as well.
 
 ## Sequencing
 

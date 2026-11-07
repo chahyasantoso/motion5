@@ -6,7 +6,8 @@ import { chromium } from "playwright-core";
 import { registerSourceLoader } from "./source-loader.mjs";
 
 registerSourceLoader();
-const { captureFrames } = await import("./motion-tools/frames.ts");
+const { captureFrames, captureOnion } = await import("./motion-tools/frames.ts");
+const { probeElements } = await import("./motion-tools/probe.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
@@ -49,4 +50,34 @@ assert.deepEqual(await pixel(atStart.path, ...stem), ORANGE, "the letter waits a
 assert.deepEqual(await pixel(atMiddle.path, ...stem), DARK, "the letter has landed by 500 ms");
 assert.deepEqual(await pixel(atEnd.path, 40, 40), CREAM, "the wipe has covered the stage");
 await browser.close();
+
+// The dot's measured rest centre, taken by hand from the live page.
+const probe = await probeElements({
+  page: "timing.html",
+  width: 1280,
+  height: 720,
+  at: [2300],
+  select: ".beat-dot",
+});
+const centre = probe.samples[0]?.elements[0]?.centre;
+assert.ok(
+  centre && Math.abs(centre.x - 974) <= 1 && Math.abs(centre.y - 415) <= 1,
+  `dot centre ${JSON.stringify(centre)}`,
+);
+
+const onion = await captureOnion({
+  page: "timing.html",
+  width: 1280,
+  height: 720,
+  select: ".beat-dot",
+  from: 900,
+  to: 1860,
+  every: 80,
+});
+assert.equal(onion.steps.length, 13);
+assert.ok(
+  onion.steps.every(({ boxes }) => boxes.length === 1),
+  "one dot per step",
+);
+assert.ok(readFileSync(onion.path).length > 1000, "onion image written");
 console.log("motion:frames ok");
