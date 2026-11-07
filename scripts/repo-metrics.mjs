@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -11,6 +11,8 @@ const UNDER_AN_SRC = /(^|\/)src\/.*\.tsx?$/;
 const CACHE_PATH = "scripts/repo-metrics.test-output.json";
 const TEST_COMMAND = "npm test";
 const NEWLINE_BYTES = 1;
+const MAX_LISTING = 64 * 1024 * 1024;
+const CHECK_IGNORE_NONE_MATCHED = 1;
 
 /** Bytes one file costs a reader, and zero when the tree does not hold it. */
 export function bytesOf(path) {
@@ -69,6 +71,37 @@ function sumBytes(paths, repoRoot, sizeOf) {
   return paths.reduce((total, path) => total + sizeOf(join(repoRoot, path)), 0);
 }
 
+function git(args, repoRoot, input) {
+  return spawnSync("git", args, { cwd: repoRoot, encoding: "utf8", input, maxBuffer: MAX_LISTING });
+}
+
+/** Paths a default ripgrep search opens: no dot paths, and nothing `.gitignore` or `.ignore` hides. */
+export function searchablePaths(repoRoot = root) {
+  const listed = git(["ls-files", "-z", "-c", "-o", "--exclude-standard"], repoRoot);
+  if (listed.status !== 0) return [];
+  const paths = [...new Set(listed.stdout.split("\0"))].filter(
+    (path) => path.length > 0 && !path.split("/").some((part) => part.startsWith(".")),
+  );
+  const ignoreFile = join(repoRoot, ".ignore").replaceAll("\\", "/");
+  const checked = git(
+    ["-c", `core.excludesFile=${ignoreFile}`, "check-ignore", "-z", "--no-index", "--stdin"],
+    repoRoot,
+    paths.join("\0"),
+  );
+  if (checked.status !== 0 && checked.status !== CHECK_IGNORE_NONE_MATCHED) return [];
+  const ignored = new Set(checked.stdout.split("\0"));
+  return paths.filter((path) => !ignored.has(path));
+}
+
+/** Bytes a default search reads; a file holding a NUL counts as binary and costs nothing. */
+export function searchBytes(repoRoot = root) {
+  return sumBytes(searchablePaths(repoRoot), repoRoot, (path) => {
+    if (!existsSync(path) || !lstatSync(path).isFile()) return 0;
+    const contents = readFileSync(path);
+    return contents.includes(0) ? 0 : contents.length;
+  });
+}
+
 export function readCachedTestOutput(repoRoot = root) {
   const cache = join(repoRoot, CACHE_PATH);
   if (!existsSync(cache)) return undefined;
@@ -76,7 +109,7 @@ export function readCachedTestOutput(repoRoot = root) {
 }
 
 /**
- * The four numbers, and why the fourth is read rather than run.
+ * The five numbers, and why the test output is read rather than run.
  *
  * `npm test` costs tens of seconds, so a command worth running before and after every slice keeps
  * that one measurement in a committed cache and re-runs the suite only when asked with `--test`.
@@ -98,6 +131,7 @@ export function measure(repoRoot = root) {
       bytesOf,
     ),
     testOutputBytes: readCachedTestOutput(repoRoot),
+    searchBytes: searchBytes(repoRoot),
   };
 }
 
@@ -111,13 +145,15 @@ export function missingAlwaysRead(repoRoot = root) {
     .map((path) => `${path}: named by AGENTS.md and not in the tree`);
 }
 
-export function formatLine({ alwaysReadBytes, srcCommentBytes, markdownBytes, testOutputBytes }) {
+export function formatLine(metrics) {
+  const { alwaysReadBytes, srcCommentBytes, markdownBytes, testOutputBytes } = metrics;
   const test = testOutputBytes === undefined ? "unmeasured" : testOutputBytes;
   const pairs = [
     ["always-read", alwaysReadBytes],
     ["src-comments", srcCommentBytes],
     ["markdown", markdownBytes],
     ["test-output", test],
+    ["search-bytes", metrics.searchBytes],
   ];
   return pairs.map(([label, value]) => `${label} ${value}`).join("  ");
 }
@@ -146,6 +182,7 @@ export function scan(repoRoot = root) {
   if (metrics.srcCommentBytes === 0)
     violations.push("src-comments: no tracked source under any src");
   if (metrics.markdownBytes === 0) violations.push("markdown: no tracked markdown in the tree");
+  if (metrics.searchBytes === 0) violations.push("search-bytes: git listed nothing to search");
   if (metrics.testOutputBytes === undefined)
     violations.push(
       `test-output: no cache, run node ${CACHE_PATH.replace(".json", ".mjs")} --test`,

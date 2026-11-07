@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,9 +7,12 @@ import { describe, expect, it } from "vitest";
 import {
   alwaysReadPaths,
   commentBytes,
+  formatLine,
   measure,
   missingAlwaysRead,
   scan,
+  searchablePaths,
+  searchBytes,
 } from "../../../../../scripts/repo-metrics.mjs";
 
 const REPO = fileURLToPath(new URL("../../../../../", import.meta.url));
@@ -90,11 +94,53 @@ describe("repo metrics (S0)", () => {
     }
   });
 
+  it("lists what a default search opens, tracked or not, and honors both ignore files", async () => {
+    const root = await fixture({
+      ".gitignore": "dist/\n",
+      ".ignore": "docs/ADR-*.md\n",
+      ".github/ci.yml": "hidden\n",
+      "dist/out.js": "built\n",
+      "docs/ADR-001-x.md": "tracked yet ignored\n",
+      "docs/GUIDE.md": "kept\n",
+      "notes.md": "untracked\n",
+      "src/a.ts": "tracked\n",
+    });
+    try {
+      spawnSync("git", ["init", "-q"], { cwd: root });
+      spawnSync("git", ["add", "-f", ".github", "docs", "src"], { cwd: root });
+      expect(searchablePaths(root).sort()).toEqual(["docs/GUIDE.md", "notes.md", "src/a.ts"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("counts searchable text and skips a binary file", async () => {
+    const root = await fixture({ "a.txt": "12345", "b.bin": "12\u00003" });
+    try {
+      spawnSync("git", ["init", "-q"], { cwd: root });
+      expect(searchBytes(root)).toBe(5);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("prints search bytes as its own cost", () => {
+    const line = formatLine({
+      alwaysReadBytes: 1,
+      srcCommentBytes: 2,
+      markdownBytes: 3,
+      testOutputBytes: 4,
+      searchBytes: 5,
+    });
+    expect(line).toBe("always-read 1  src-comments 2  markdown 3  test-output 4  search-bytes 5");
+  });
+
   it("measures the real repository without a violation", () => {
     expect(scan(REPO)).toEqual([]);
     const metrics = measure(REPO);
     expect(metrics.markdownBytes).toBeGreaterThan(0);
     expect(metrics.srcCommentBytes).toBeGreaterThan(0);
     expect(metrics.testOutputBytes).toBeGreaterThan(0);
+    expect(metrics.searchBytes).toBeGreaterThan(0);
   });
 });
