@@ -18,6 +18,7 @@
     "scan:comments": "node scripts/comment-scan.mjs",
     "scan:cycles": "node scripts/cycle-scan.mjs",
     "adr-index": "node scripts/adr-index.mjs",
+    "map": "node scripts/repo-map.mjs",
     "adr-index:write": "node scripts/adr-index.mjs --write",
     "format": "prettier . --write --log-level warn",
     "format:check": "prettier . --check --log-level warn",

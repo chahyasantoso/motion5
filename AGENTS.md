@@ -11,6 +11,7 @@ is one line, and a rule this file does not carry is not a rule.
 
 ## Read on demand
 
+- Where code lives: [docs/MAP.md](docs/MAP.md).
 - Who owns what: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - What a caller may do to a loaded project and what each edit pays:
   [docs/LIVE-EDIT-COST.md](docs/LIVE-EDIT-COST.md).

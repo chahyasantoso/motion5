@@ -214,40 +214,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
 
 ## 12. Module layout
 
-```text
-packages/
-  core/
-    src/
-      lang/        dependency-free shared helpers: the exhaustive sink, the outcome algebra
-      contract/    authored schema constants, public types, diagnostics shape
-      domain/      Track, Motion, plugins, immutable value snapshots
-      graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding
-      runtime/     ProjectRuntime, GraphRuntime, GraphPublisher, PatchRegistry
-      ports/       Clock, Interpolator, Scheduler and their fakes
-      adapters/    GSAP, DOM, browser clock
-      errors/
-      index.ts     allow-listed public surface
-      internal.ts  unadvertised entrypoint, repository use only
-      plugin-api.ts declared plugin-authoring protocol, re-exports only
-    test/
-      unit/
-      integration/
-      contract/    port contract suites run against fake and real
-      fixtures/
-  plugins/
-    src/           first-party implementations and frame utilities; core contract imports only
-    test/          declared subpath surface; implementation tests remain in core for now
-  react/
-    src/           patch and lifecycle hooks only
-  three/
-    src/           optional Three.js Object3D patch adapter; reads plugins/frame3d
-performance/
-  budgets.json
-  graph-benchmark.mjs
-scripts/
-  boundary-scan.mjs
-  api-surface-check.mjs
-```
+[MAP.md](./MAP.md) lists every source folder and its public entries.
 
 TypeScript is required for public contracts and runtime boundaries. Language is consistent within a package. There is no declaration-file seam over untyped JavaScript.
 

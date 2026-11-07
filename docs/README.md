@@ -37,6 +37,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 ## Delivery and evidence
 
+- [MAP.md](./MAP.md): generated one-line owner per source folder, with each package's public entries.
 - [API-CAPABILITIES.md](./API-CAPABILITIES.md): concise API-only command and owner navigation, human-dispatch routes, and explicit activation gates.
 
 - [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS.
