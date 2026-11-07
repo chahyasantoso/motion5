@@ -38,6 +38,9 @@ describe("identified plugin boundary", () => {
       "skinAnchors",
       "drop",
       "hop",
+      "rope",
+      "svgPath",
+      "trace",
       "wipe",
     ]);
     const descriptor = builtinCatalog.get("transform");

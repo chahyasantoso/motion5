@@ -90,10 +90,15 @@ Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks
 
 [`timing-beat.json`](../../apps/react-demo/src/timing-beat.json) is the worked example, and `apps/react-demo/test/timing-beat.test.ts` shows how to pin a project's poses with `sampleProject`.
 
+## Paths
+
+A path is a chain of tracks. `rope` takes the points of a shape as its `values` table and publishes anchors for a chain that never stretches: straight along `angle` at the start, bending into the shape by the end. `anchorsToCubic` turns any anchors into a cubic path. `svgPath` publishes that path as `d`, for an SVG `<path>`, and `trace` publishes a stroke dash that draws the same path on from its start. Two hooks may bind one element, so one `<path>` can take `d` from one node and its dash from another.
+
 ## Traps
 
 - `validateV5` cannot know ease names, because the interpolator owns them. `motion:sample` loads the project, so it refuses an unknown ease as `ease-unknown`.
 - A `wipe` takes pixel coordinates. Measure the element it should grow from, and remember the numbers go stale if the layout or font changes.
+- `svgPath` writes `d` as a CSS `path()` value, which Chromium and Firefox render and Safari does not.
 - `transformOrigin` from a move applies to HTML targets. On SVG the adapter's own pin wins, so a move pivots at the element's origin.
 - A letter's squash widens it, and it can touch its neighbor. Check the landing frames.
 - A dot drawn after a word passes in front of it. Use `z-index` to send it behind.

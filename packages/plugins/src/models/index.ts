@@ -280,6 +280,21 @@ export const Clip2d: Model<{ readonly clipPath: string }> = defineModel({
   spec: Spec.record({ clipPath: Spec.string() }),
 });
 
+/** A stroke dash the DOM adapter writes to an SVG target's style. */
+export const Stroke2d: Model<{
+  readonly strokeDasharray: string;
+  readonly strokeDashoffset: number;
+}> = defineModel({
+  id: "Stroke2d",
+  spec: Spec.record({ strokeDasharray: Spec.string(), strokeDashoffset: Spec.number() }),
+});
+
+/** SVG path geometry as a CSS `path()` value for an SVG `<path>` target's `d` style. */
+export const PathData2d: Model<{ readonly d: string }> = defineModel({
+  id: "PathData2d",
+  spec: Spec.record({ d: Spec.string() }),
+});
+
 /** Every first-party model a host registers so authored sources can name it. */
 export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   Body2d,
@@ -298,4 +313,6 @@ export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   LocalAnchors2d,
   Sprite2d,
   Clip2d,
+  Stroke2d,
+  PathData2d,
 ]);

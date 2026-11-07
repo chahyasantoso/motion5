@@ -72,6 +72,24 @@ export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
     },
   ],
   [
+    "rope",
+    {
+      load: async () => (await import("../motion/rope")).ropePlugin,
+    },
+  ],
+  [
+    "svgPath",
+    {
+      load: async () => (await import("../path/svg-path")).svgPathPlugin,
+    },
+  ],
+  [
+    "trace",
+    {
+      load: async () => (await import("../motion/trace")).tracePlugin,
+    },
+  ],
+  [
     "wipe",
     {
       load: async () => (await import("../motion/wipe")).wipePlugin,

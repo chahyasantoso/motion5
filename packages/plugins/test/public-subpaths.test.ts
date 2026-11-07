@@ -29,6 +29,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "Goals2d",
     "Goals3d",
     "LocalAnchors2d",
+    "PathData2d",
     "Point2d",
     "Point3d",
     "Points2d",
@@ -37,6 +38,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "Solved2d",
     "Solved3d",
     "Sprite2d",
+    "Stroke2d",
     "builtinModels",
   ],
   "pose-classify": ["createPoseClassifyPlugin"],
@@ -44,10 +46,16 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
 /** Path plugins and the drawing helper publish under `path/`; the catalog names them in camelCase. */
-const PATH_SUBPATHS = ["path/anchors-to-cubic", "path/bezier", "path/skin-anchors", "path/draw"];
-const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors"];
+const PATH_SUBPATHS = [
+  "path/anchors-to-cubic",
+  "path/bezier",
+  "path/skin-anchors",
+  "path/draw",
+  "path/svg-path",
+];
+const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors", "svgPath"];
 /** Motion moves publish under `motion/`, one plugin per path. */
-const MOTION_CATALOG_NAMES = ["drop", "hop", "wipe"];
+const MOTION_CATALOG_NAMES = ["drop", "hop", "rope", "trace", "wipe"];
 const MOTION_SUBPATHS = MOTION_CATALOG_NAMES.map((name) => `motion/${name}`);
 
 interface Manifest {

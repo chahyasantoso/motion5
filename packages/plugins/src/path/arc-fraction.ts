@@ -70,6 +70,11 @@ function evaluateSegment(c: CubicPath2dCells, u: number): Point2dCells {
 }
 
 /** Evaluates world position and tangent angle at arc-length fraction s in [0, 1]. */
+/** Total arc length of a cubic path. */
+export function pathArcLength(segments: readonly { readonly cells: CubicPath2dCells }[]): number {
+  return segments.reduce((total, segment) => total + segmentArcLength(segment.cells, 0, 1), 0);
+}
+
 export function pointAtArcFraction(
   segments: readonly { readonly cells: CubicPath2dCells }[],
   s: number,

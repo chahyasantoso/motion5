@@ -38,6 +38,9 @@ describe("Phase 5 closeout and rig retirement (AQ)", () => {
       "skinAnchors",
       "drop",
       "hop",
+      "rope",
+      "svgPath",
+      "trace",
       "wipe",
     ]);
   });

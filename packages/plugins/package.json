@@ -71,6 +71,10 @@
       "types": "./dist/path/draw.d.ts",
       "default": "./dist/path/draw.js"
     },
+    "./path/svg-path": {
+      "types": "./dist/path/svg-path.d.ts",
+      "default": "./dist/path/svg-path.js"
+    },
     "./motion/drop": {
       "types": "./dist/motion/drop.d.ts",
       "default": "./dist/motion/drop.js"
@@ -78,6 +82,14 @@
     "./motion/hop": {
       "types": "./dist/motion/hop.d.ts",
       "default": "./dist/motion/hop.js"
+    },
+    "./motion/rope": {
+      "types": "./dist/motion/rope.d.ts",
+      "default": "./dist/motion/rope.js"
+    },
+    "./motion/trace": {
+      "types": "./dist/motion/trace.d.ts",
+      "default": "./dist/motion/trace.js"
     },
     "./motion/wipe": {
       "types": "./dist/motion/wipe.d.ts",
