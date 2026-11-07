@@ -33,8 +33,7 @@ motion5 treats those dependencies as a first-class graph. A project is loaded, v
 
 ## What remains
 
-- Phase 5 cross-motion membership and adoption;
-- Phase 6 packaging: an API report, a packed-package consumer check, a required performance budget, and deletion of the transitional owner-based adoption wrappers;
+- Phase 6 packaging: an API report, a packed-package consumer check, and a required performance budget;
 - publishing. Both packages are `private` at `0.0.0`, so consumers build from the workspace today.
 
 ## Authored schema
