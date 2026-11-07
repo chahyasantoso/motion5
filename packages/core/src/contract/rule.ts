@@ -38,6 +38,7 @@ const BASE_RULES = {
   "composition-output-shape": ERROR_WITH_IDS,
   "diagnostic-sink-failure": ERROR_WITH_IDS,
   "ease-collision": ERROR_WITH_IDS,
+  "ease-unknown": ERROR_NO_IDS,
   "edge-duplicate": ERROR_WITH_IDS,
   "edge-self-reference": ERROR_WITH_IDS,
   "edge-unknown-source": ERROR_WITH_IDS,

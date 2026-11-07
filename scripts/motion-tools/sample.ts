@@ -5,11 +5,13 @@ import type {
   Outputs,
   PluginCatalog,
   ProjectDefinition,
+  ProjectHandle,
 } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { createFakeScheduler } from "@motion5/core/testing";
 import { gsap } from "gsap";
+import { KeyframeCompilationError } from "../../packages/core/src/adapters/interpolator/gsap";
 
 export type SampleRequest =
   | { readonly kind: "time"; readonly ms: readonly number[] }
@@ -106,12 +108,20 @@ export function sampleProject(
 
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const engine = new Engine({
     clock,
     interpolator: createGsapInterpolator(gsap),
     scheduler,
     plugins: catalog,
-  }).load(project);
+  });
+  let handle: ProjectHandle;
+  try {
+    handle = engine.load(project);
+  } catch (error) {
+    if (error instanceof KeyframeCompilationError)
+      return { kind: "refused", diagnostics: error.diagnostics };
+    throw error;
+  }
   try {
     const all = [
       ...project.motions.flatMap((motion) =>

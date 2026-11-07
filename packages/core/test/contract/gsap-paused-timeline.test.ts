@@ -34,6 +34,7 @@ describe("GSAP interpolator clock ownership (P0-2)", () => {
       kill() {},
     };
     const interpolator = createGsapInterpolator({
+      parseEase: () => undefined,
       timeline(vars) {
         receivedVars = vars;
         return timeline;

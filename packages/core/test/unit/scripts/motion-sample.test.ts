@@ -184,6 +184,13 @@ describe("sampleProject", () => {
     expect(result.samples[0]?.nodes).toEqual({ "m/nope": { status: "absent" } });
   });
 
+  it("refuses an unknown ease, which only the loaded engine can check", () => {
+    const project = timeProject({ tracks: [track("a", 100, "nonsense.out")] });
+    const result = sampleProject(project, catalog(), { kind: "time", ms: [0] });
+    if (result.kind !== "refused") throw new Error(`Expected refused, got ${result.kind}.`);
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["ease-unknown"]);
+  });
+
   it("advances a time motion that names no autoplay", () => {
     const project: ProjectDefinition = {
       schemaVersion: 5,

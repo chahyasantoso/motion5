@@ -17,6 +17,7 @@ export const BASE_RULE_IDS = [
   "composition-output-shape",
   "diagnostic-sink-failure",
   "ease-collision",
+  "ease-unknown",
   "edge-duplicate",
   "edge-self-reference",
   "edge-unknown-source",

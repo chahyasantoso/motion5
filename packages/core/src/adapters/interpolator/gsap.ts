@@ -1,5 +1,5 @@
 import type { AuthoredStop, Diagnostic } from "../../contract/v5";
-import { describeDiagnostics } from "../../contract/diagnostics";
+import { describeDiagnostics, diagnostic } from "../../contract/diagnostics";
 import {
   compilePercentKeyframes,
   type CompiledKeyframes,
@@ -37,6 +37,8 @@ export interface GsapTimelineLike {
 export interface GsapLike {
   timeline?(vars?: Record<string, unknown>): GsapTimelineLike;
   to?(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
+  /** Answers `undefined` for an ease name this host does not know. */
+  parseEase(ease: string): unknown;
 }
 /** One frozen value; a key with nothing compiled allocates nothing. */
 const NO_STOPS: readonly AuthoredStop[] = Object.freeze([]);
@@ -92,6 +94,30 @@ function sameKeys(left: CompiledKeyframes, right: CompiledKeyframes): boolean {
 function stopsOf(compiled: CompiledKeyframes, key: string): readonly AuthoredStop[] {
   return compiled.properties.find((property) => property.key === key)?.stops ?? NO_STOPS;
 }
+/** Compiles keyframes and refuses each ease name the host cannot parse, since gsap would ignore it. */
+function compileKnownEases(
+  gsap: GsapLike,
+  keyframes: unknown,
+  options?: KeyframeCompileOptions,
+): CompiledKeyframes {
+  const compiled = compilePercentKeyframes(keyframes, "keyframes", options);
+  const unknown: Diagnostic[] = [];
+  for (const { key, stops } of compiled.properties)
+    for (const [index, { ease }] of stops.entries())
+      if (typeof ease === "string" && gsap.parseEase(ease) === undefined)
+        unknown.push(
+          diagnostic(
+            "ease-unknown",
+            `keyframes.${key}[${index}].ease`,
+            `Ease '${ease}' is not known to GSAP.`,
+          ),
+        );
+  if (unknown.length === 0) return compiled;
+  return Object.freeze({
+    ...compiled,
+    diagnostics: Object.freeze([...compiled.diagnostics, ...unknown]),
+  });
+}
 export class KeyframeCompilationError extends TypeError {
   readonly diagnostics: readonly Diagnostic[];
   constructor(diagnostics: readonly Diagnostic[]) {
@@ -112,7 +138,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       // base), so a rebase is one assignment.
       const compileOptions = readCompileOptions(config);
       let base = readKeyframes(config);
-      let compiled = compilePercentKeyframes(base, "keyframes", compileOptions);
+      let compiled = compileKnownEases(gsap, base, compileOptions);
       if (hasError(compiled.diagnostics)) throw new KeyframeCompilationError(compiled.diagnostics);
 
       const proxy: Record<string, unknown> = { ...compiled.initial };
@@ -156,7 +182,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       }
       function patchKeys(overlay: Readonly<Record<string, unknown>>, rebase = false) {
         const effective = { ...base, ...overlay };
-        const next = compilePercentKeyframes(effective, "keyframes", compileOptions);
+        const next = compileKnownEases(gsap, effective, compileOptions);
         // Declined, not refused: the caller recompiles, and that compile raises the diagnostic
         // exactly as a fresh `create()` would, from its one owner.
         if (hasError(next.diagnostics)) return RECOMPILE;
@@ -205,7 +231,7 @@ export function createGsapOneTweenInterpolator(gsap: GsapLike): Interpolator {
   }
   return {
     create(config): InterpolationTimeline {
-      const compiled = compilePercentKeyframes(readKeyframes(config));
+      const compiled = compileKnownEases(gsap, readKeyframes(config));
       if (compiled.diagnostics.some(({ severity }) => severity === "error"))
         throw new KeyframeCompilationError(compiled.diagnostics);
 

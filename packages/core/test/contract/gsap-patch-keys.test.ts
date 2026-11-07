@@ -46,6 +46,7 @@ function createSeam(): Seam {
   const timelines: RealTimeline[] = [];
   let created = 0;
   const interpolator = createGsapInterpolator({
+    parseEase: gsap.parseEase,
     timeline(vars): GsapTimelineLike {
       created += 1;
       const real = gsap.timeline(vars as Parameters<typeof gsap.timeline>[0]);
