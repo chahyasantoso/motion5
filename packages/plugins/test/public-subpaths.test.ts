@@ -38,6 +38,7 @@ const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
     "Solved2d",
     "Solved3d",
     "Sprite2d",
+    "Sprites2d",
     "Stroke2d",
     "builtinModels",
   ],
@@ -55,7 +56,7 @@ const PATH_SUBPATHS = [
 ];
 const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors", "svgPath"];
 /** Motion moves publish under `motion/`, one plugin per path. */
-const MOTION_CATALOG_NAMES = ["drop", "hop", "layer", "rope", "trace", "wipe"];
+const MOTION_CATALOG_NAMES = ["cascade", "drop", "hop", "layer", "rope", "trace", "wipe"];
 const MOTION_SUBPATHS = MOTION_CATALOG_NAMES.map((name) => `motion/${name}`);
 
 interface Manifest {

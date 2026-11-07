@@ -31,6 +31,6 @@ export { mergeRefs, useAnchor } from "./anchor";
 export type { AnchorFields, AnchorRefs, LayoutBox } from "./anchor";
 export { useMotionProject } from "./motion-project";
 export type { MotionProjectState } from "./motion-project";
-export type { WordProps } from "./word";
+export type { WordByNodes, WordByRows, WordProps } from "./word";
 export { useDerivedDomPatch } from "./derived-dom-patch";
 export type { PatchDerivation, PatchValues } from "./derived-dom-patch";

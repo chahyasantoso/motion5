@@ -92,6 +92,46 @@ describe("Word", () => {
     expect([...targets.keys()]).toEqual(["😀"]);
   });
 
+  it("binds each glyph to a row of one table node, the first glyph to row 0", () => {
+    const listeners = new Set<PatchListener>();
+    const source: PatchSource = {
+      get: () => undefined,
+      subscribeNode(nodeId, listener) {
+        if (nodeId === "m/word") listeners.add(listener);
+        return () => void listeners.delete(listener);
+      },
+    };
+    const targets = new Map<string, { style: Record<string, unknown> }>();
+    act(() => {
+      create(createElement(Word, { source, rows: "m/word", text: "A B", glyphClassName: "g" }), {
+        createNodeMock(element) {
+          const target = { style: {} };
+          targets.set(String(Reflect.get(Object(element.props), "children")), target);
+          return target;
+        },
+      });
+    });
+    const table: LivePatch = {
+      nodeId: "m/word",
+      revision: 1,
+      outputs: {
+        values: [
+          { id: "0", cells: { y: 4 } },
+          { id: "1", cells: { y: 8 } },
+        ],
+      },
+      sourceProgress: 0,
+      sourceRevisions: {},
+      status: "ready",
+      diagnostics: [],
+    };
+    act(() => {
+      for (const listener of listeners) listener(table);
+    });
+    expect(targets.get("A")?.style.transform).toBe("translate3d(0px, 4px, 0px)");
+    expect(targets.get("B")?.style.transform).toBe("translate3d(0px, 8px, 0px)");
+  });
+
   it.each([
     ["too few nodes", "ABC", ["m/a", "m/b"]],
     ["too many nodes", "A", ["m/a", "m/b"]],

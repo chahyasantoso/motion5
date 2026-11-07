@@ -98,13 +98,17 @@ Each plugin a project names must be in the page's `PluginCatalog`, imported from
 
 | Plugin | Import |
 | ------ | ------ |
-| `drop`, `hop`, `layer`, `rope`, `trace`, `wipe` | `@motion5/plugins/motion/<id>`, as `dropPlugin`, `hopPlugin` and so on |
+| `cascade`, `drop`, `hop`, `layer`, `rope`, `trace`, `wipe` | `@motion5/plugins/motion/<id>`, as `dropPlugin`, `hopPlugin` and so on |
 | `anchorsToCubic` | `@motion5/plugins/path/anchors-to-cubic` |
 | `bezier` | `@motion5/plugins/path/bezier` |
 | `svgPath` | `@motion5/plugins/path/svg-path` |
 | Every built-in model | `builtinModels` from `@motion5/plugins/models` | See [Rendering patches](./rendering-patches.md).
 
 [`timing-beat.json`](../../apps/react-demo/src/timing-beat.json) is the worked example, and `apps/react-demo/test/timing-beat.test.ts` shows how to pin a project's poses with `sampleProject`.
+
+## One track per word
+
+`cascade` runs one move per row on a single track: `{ "move": "drop", "count": 6, "stagger": 0.25, "distance": 700 }` publishes rows `0` to `5`, each starting a quarter of a row's length after the last and all at rest by the end, with the move's own params beside them. Bind it with `<Word source={handle} rows="motionId/trackId" text="TIMING" />`, which gives the first glyph row `0`. Make `count` the number of glyphs, not counting spaces: a missing row leaves its glyph at its layout position.
 
 ## Combining moves
 

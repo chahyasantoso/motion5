@@ -40,6 +40,7 @@ export type {
   DependencySpec,
   Diagnostic,
   EvaluationContext,
+  FieldSpec,
   FlatRecord,
   Issue,
   Model,

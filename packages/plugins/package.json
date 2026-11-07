@@ -75,6 +75,10 @@
       "types": "./dist/path/svg-path.d.ts",
       "default": "./dist/path/svg-path.js"
     },
+    "./motion/cascade": {
+      "types": "./dist/motion/cascade.d.ts",
+      "default": "./dist/motion/cascade.js"
+    },
     "./motion/drop": {
       "types": "./dist/motion/drop.d.ts",
       "default": "./dist/motion/drop.js"

@@ -36,6 +36,7 @@ describe("identified plugin boundary", () => {
       "anchorsToCubic",
       "bezier",
       "skinAnchors",
+      "cascade",
       "drop",
       "hop",
       "layer",

@@ -27,13 +27,15 @@ byte ceiling.
   `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser, and
   `motion:frames` returns PNGs of a real page at named times.
   An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
-  `Motion.stagger` finishes every track. A `time` trigger takes a `delay`, and `Word` binds text to tracks. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
+  `Motion.stagger` finishes every track. A `time` trigger takes a `delay`, and `Word` binds text to tracks or to the rows of one `cascade`
+  track. `rope`, `trace`, `svgPath` and `layer` bend, draw on and combine moves, `useAnchor` measures a
+  param from the page, and the page tools take `--root` or `--url` for any site. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
   publishing the new `Sprite2d` and `Clip2d` models with their own pivot, and `/timing.html` in `apps/react-demo` runs a beat
   built from them.
 
 ## Next in line
 
-- **Run the benchmark:** a fresh agent on a fixed brief, with and without the repo, to decide what comes next.
+- **Evaluate the follow-ups:** the owner decides what to measure next; page tools now work on any site.
 
 ## Open, and not scheduled
 

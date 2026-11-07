@@ -60,6 +60,12 @@ export const builtinCatalog: ReadonlyMap<string, PluginDescriptor> = new Map<
     },
   ],
   [
+    "cascade",
+    {
+      load: async () => (await import("../motion/cascade")).cascadePlugin,
+    },
+  ],
+  [
     "drop",
     {
       load: async () => (await import("../motion/drop")).dropPlugin,

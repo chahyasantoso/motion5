@@ -258,20 +258,27 @@ export type Sprite2dCells = {
 };
 
 const OPTIONAL_NUMBER = Spec.number({ optional: true });
+const SPRITE_2D_FIELDS = {
+  x: OPTIONAL_NUMBER,
+  y: OPTIONAL_NUMBER,
+  rotation: OPTIONAL_NUMBER,
+  scale: OPTIONAL_NUMBER,
+  scaleX: OPTIONAL_NUMBER,
+  scaleY: OPTIONAL_NUMBER,
+  opacity: OPTIONAL_NUMBER,
+  transformOrigin: Spec.string({ optional: true }),
+};
 
 /** A renderable 2D pose; a motion move publishes this. */
 export const Sprite2d: Model<Sprite2dCells> = defineModel({
   id: "Sprite2d",
-  spec: Spec.record({
-    x: OPTIONAL_NUMBER,
-    y: OPTIONAL_NUMBER,
-    rotation: OPTIONAL_NUMBER,
-    scale: OPTIONAL_NUMBER,
-    scaleX: OPTIONAL_NUMBER,
-    scaleY: OPTIONAL_NUMBER,
-    opacity: OPTIONAL_NUMBER,
-    transformOrigin: Spec.string({ optional: true }),
-  }),
+  spec: Spec.record(SPRITE_2D_FIELDS),
+});
+
+/** One renderable 2D pose per row, such as one per letter of a word. */
+export const Sprites2d: Model<unknown> = defineModel({
+  id: "Sprites2d",
+  spec: Spec.table(SPRITE_2D_FIELDS),
 });
 
 /** A CSS clip path the DOM adapter writes to the target's style. */
@@ -312,6 +319,7 @@ export const builtinModels: readonly Model<unknown, unknown>[] = Object.freeze([
   CubicPath2d,
   LocalAnchors2d,
   Sprite2d,
+  Sprites2d,
   Clip2d,
   Stroke2d,
   PathData2d,
