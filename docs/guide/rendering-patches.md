@@ -10,7 +10,7 @@ type Patch =
       readonly status: "ready";
       readonly nodeId: string;
       readonly revision: number;
-      readonly values: Readonly<Record<string, unknown>>;
+      readonly outputs: Outputs;
       readonly sourceProgress: number;
       readonly sourceRevisions: Readonly<Record<string, number>>;
       readonly diagnostics: readonly Diagnostic[];
@@ -36,9 +36,9 @@ type Patch =
 
 `revision` increments per published patch for that node. A patch is only published when something actually changed, so an unchanged flush is silent and you can trust `revision` as a change signal.
 
-Status is the part worth reading carefully, because it decides what the patch carries rather than labelling something it would carry anyway. `ready` is the only variant that owns a pose: `values`, `sourceProgress` and `sourceRevisions` are three measurements of one successful composition, so a status that did not compose declares none of them. `blocked` and `error` describe a node that still exists and may publish again, and each carries its refusal and nothing else; they are two variants rather than one with a flag, because they are two conditions. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
+Status is the part worth reading carefully, because it decides what the patch carries rather than labelling something it would carry anyway. `ready` is the only variant that owns a pose: `outputs`, `sourceProgress` and `sourceRevisions` are three measurements of one successful composition, so a status that did not compose declares none of them. `blocked` and `error` describe a node that still exists and may publish again, and each carries its refusal and nothing else; they are two variants rather than one with a flag, because they are two conditions. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
 
-A non-ready patch used to carry the previous patch's `values`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.values` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `values` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
+A non-ready patch used to carry the previous patch's `outputs`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.outputs` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `outputs` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
 
 The variants have names in the source and are deliberately not on the package entry, so narrow on `status` rather than importing one. `Patch`, `LivePatch`, `PatchStatus`, `PatchBatch` and `PatchListener` are the names `@motion5/core` exports, and `PatchStatus` is read off the union rather than spelled beside it, so it cannot name a status that no variant declares. `@motion5/react` re-exports `Patch`, `LivePatch` and `PatchListener` and not the other two, because a component types the wire it observes rather than the flush that produced it. `LivePatch` is the union minus `destroyed`, and it is on the entry because the members that answer current state name it: `get` on a project handle or on any `PatchSource` answers `LivePatch | undefined`, since eviction drops a node's entry before its terminal patch is delivered, so that patch reaches a subscriber exactly once and is never readable back out. Subscribe when you want the terminal event; ask `get` when you want the current state.
 
@@ -116,7 +116,7 @@ const unsubscribe = handle.subscribeNode("hero/title", (patch) => {
     return;
   }
   if (patch.status !== "ready") return;
-  sprites.get(patch.nodeId)?.set(patch.values);
+  sprites.get(patch.nodeId)?.set(patch.outputs.values);
 });
 ```
 
