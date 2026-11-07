@@ -15,6 +15,7 @@ The guide documents the surface the package declares in its `exports` map and no
 7. [Inverse kinematics in 3D](./inverse-kinematics-3d.md): 3D `fk3d` and `ik3d` conventions,
    constraints, and renderers.
 8. [API reference](./api-reference.md): every public export, grouped by the entrypoint that ships it.
+9. [Making motion as an agent](./agent-motion.md): the catalog, sample and frames loop, working from a checkout.
 
 ## What this guide is not
 

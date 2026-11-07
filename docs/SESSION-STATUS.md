@@ -33,8 +33,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Write the agent guide, then run the benchmark:** the working loop and commands in one guide, then a fresh
-  agent on a fixed brief, with and without the repo.
+- **Run the benchmark:** a fresh agent on a fixed brief, with and without the repo, to decide what comes next.
 
 ## Open, and not scheduled
 
