@@ -216,6 +216,8 @@ export interface FieldSpec {
   readonly max?: number;
   /** Local input only: no stop sequence, even one stop. */
   readonly static?: true;
+  /** One line on what the field means, shown to authors; validation ignores it. */
+  readonly description?: string;
 }
 /** Row half of table spec; columns describe `row.cells`, not envelope. */
 export interface TableSchema {

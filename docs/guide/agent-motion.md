@@ -19,13 +19,13 @@ Look at frames before you call anything finished. Values can be right while the 
 npm run motion:catalog
 ```
 
-The catalog gives each plugin's `param`, `requires` and `outputs`, with `min` and `max` where declared. It gives no meanings, so read the move's source for those: each file in `packages/plugins/src/motion/` is short and opens with what the move does.
+The catalog gives each plugin's `param`, `requires` and `outputs`, with `min`, `max` and a one-line `description` where declared. Pass `--plugins hop,drop` for only those plugins and the models they require. Each file in `packages/plugins/src/motion/` is short and opens with what the move does.
 
 ```bash
 npm run motion:sample -- project.json --at 0,250,500 --nodes m/dot
 ```
 
-Use `--at` for milliseconds on `time` motions, and `--progress 0,0.5,1` for `manual` motions. A project mixing the two, or using `scroll`, answers `unsupported`, naming each motion that request cannot drive. Omit `--nodes` for every track.
+Use `--at` for milliseconds on `time` motions, and `--progress 0,0.5,1` for `manual` motions. A project mixing the two, or using `scroll`, answers `unsupported`, naming each motion that request cannot drive. Omit `--nodes` for every track. `--fields y,scaleY` keeps only those fields of each output, and empty `diagnostics` are left out.
 
 The result has a `kind`. The exit code is `0` only for `accepted`.
 

@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { registerSourceLoader } from "./source-loader.mjs";
 
 registerSourceLoader();
-const { parseSampleArgs, sampleProject } = await import("./motion-tools/sample.ts");
+const { parseSampleArgs, printableSample, sampleProject } = await import(
+  "./motion-tools/sample.ts"
+);
 const { loadBuiltinCatalog } = await import("./motion-tools/catalog.ts");
 
 function print(result) {
@@ -21,5 +23,10 @@ if (args.kind === "usage") {
     print({ kind: "usage", message: `Cannot read ${args.file}: ${error.message}` });
   }
   if (project !== undefined)
-    print(sampleProject(project, await loadBuiltinCatalog(), args.request, args.nodes));
+    print(
+      printableSample(
+        sampleProject(project, await loadBuiltinCatalog(), args.request, args.nodes),
+        args.fields,
+      ),
+    );
 }

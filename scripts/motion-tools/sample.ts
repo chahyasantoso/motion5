@@ -167,10 +167,12 @@ export type SampleArgs =
       readonly file: string;
       readonly request: SampleRequest;
       readonly nodes?: readonly string[];
+      readonly fields?: readonly string[];
     }
   | { readonly kind: "usage"; readonly message: string };
 
-const USAGE = "usage: motion:sample <project.json> (--at ms,ms | --progress p,p) [--nodes id,id]";
+const USAGE =
+  "usage: motion:sample <project.json> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b]";
 
 export function parseNumbers(text: string | undefined): number[] | undefined {
   if (text === undefined || text === "") return undefined;
@@ -190,7 +192,7 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
       files.push(arg);
       continue;
     }
-    if (arg !== "--at" && arg !== "--progress" && arg !== "--nodes")
+    if (arg !== "--at" && arg !== "--progress" && arg !== "--nodes" && arg !== "--fields")
       return usage(`Unknown flag ${arg}. ${USAGE}`);
     if (flags.has(arg)) return usage(`Repeated flag ${arg}. ${USAGE}`);
     flags.set(arg, argv[i + 1]);
@@ -214,8 +216,79 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
       return usage(`--progress needs ascending numbers from 0 to 1, comma-separated. ${USAGE}`);
     request = { kind: "progress", progress };
   }
-  if (!flags.has("--nodes")) return { kind: "ok", file, request };
-  const text = flags.get("--nodes");
-  if (text === undefined || text === "") return usage(`--nodes needs ids. ${USAGE}`);
-  return { kind: "ok", file, request, nodes: text.split(",") };
+  const list = (flag: string): readonly string[] | "missing" | undefined => {
+    if (!flags.has(flag)) return undefined;
+    const text = flags.get(flag);
+    return text === undefined || text === "" ? "missing" : text.split(",");
+  };
+  const nodes = list("--nodes");
+  if (nodes === "missing") return usage(`--nodes needs ids. ${USAGE}`);
+  const fields = list("--fields");
+  if (fields === "missing") return usage(`--fields needs names. ${USAGE}`);
+  return {
+    kind: "ok",
+    file,
+    request,
+    ...(nodes === undefined ? {} : { nodes }),
+    ...(fields === undefined ? {} : { fields }),
+  };
+}
+
+function pick(value: unknown, fields: ReadonlySet<string>): unknown {
+  if (Array.isArray(value))
+    return value.map((row: unknown) =>
+      row !== null && typeof row === "object" && "cells" in row
+        ? { ...row, cells: pick(row.cells, fields) }
+        : row,
+    );
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => fields.has(key)));
+}
+
+function printableNode(node: NodeSample, fields: ReadonlySet<string> | undefined): unknown {
+  switch (node.status) {
+    case "ready": {
+      const outputs =
+        fields === undefined
+          ? node.outputs
+          : Object.fromEntries(
+              Object.entries(node.outputs).map(([name, value]) => [name, pick(value, fields)]),
+            );
+      return {
+        status: node.status,
+        progress: node.progress,
+        outputs,
+        ...(node.diagnostics.length === 0 ? {} : { diagnostics: node.diagnostics }),
+      };
+    }
+    case "blocked":
+    case "error":
+    case "absent":
+      return node;
+    default:
+      return unreachable(node);
+  }
+}
+
+/** The result as printed: only `fields` of each output when given, and no empty diagnostics. */
+export function printableSample(result: SampleResult, fields?: readonly string[]): unknown {
+  const kept = fields === undefined ? undefined : new Set(fields);
+  switch (result.kind) {
+    case "accepted":
+      return {
+        kind: result.kind,
+        samples: result.samples.map(({ at, nodes }) => ({
+          at,
+          nodes: Object.fromEntries(
+            Object.entries(nodes).map(([id, node]) => [id, printableNode(node, kept)]),
+          ),
+        })),
+        ...(result.diagnostics.length === 0 ? {} : { diagnostics: result.diagnostics }),
+      };
+    case "refused":
+    case "unsupported":
+      return result;
+    default:
+      return unreachable(result);
+  }
 }

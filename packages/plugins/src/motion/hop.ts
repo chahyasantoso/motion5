@@ -1,6 +1,6 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
 import { Sprite2d } from "../models/index";
-import { moveProgress, numberParam, squashPose } from "./param";
+import { FROM, TO, moveProgress, numberParam, squashPose } from "./param";
 
 const CONTACT_WIDTH = 0.2;
 const SETTLE_SHARE = 0.5;
@@ -16,13 +16,30 @@ export const hopPlugin = definePlugin({
   id: "hop",
   inputs: {
     param: Spec.record({
-      height: Spec.number({ min: 0 }),
-      bounces: Spec.number({ min: 0, max: 16 }),
-      decay: Spec.number({ optional: true, min: 0.01, max: 1 }),
-      squash: Spec.number({ optional: true, min: 0, max: 1 }),
-      dx: Spec.number({ optional: true }),
-      from: Spec.number({ optional: true, min: 0, max: 1 }),
-      to: Spec.number({ optional: true, min: 0, max: 1 }),
+      height: Spec.number({ min: 0, description: "Peak of the first flight above rest, in px." }),
+      bounces: Spec.number({
+        min: 0,
+        max: 16,
+        description: "Landings after the first; 0 lands once.",
+      }),
+      decay: Spec.number({
+        optional: true,
+        min: 0.01,
+        max: 1,
+        description: "Each flight's height as a share of the last; default 0.5.",
+      }),
+      squash: Spec.number({
+        optional: true,
+        min: 0,
+        max: 1,
+        description: "Height lost at the hardest landing, as a share; default 0.",
+      }),
+      dx: Spec.number({
+        optional: true,
+        description: "Start this far left of rest, in px, arriving by the last landing.",
+      }),
+      from: Spec.number({ optional: true, min: 0, max: 1, description: FROM }),
+      to: Spec.number({ optional: true, min: 0, max: 1, description: TO }),
     }),
   },
   outputs: {

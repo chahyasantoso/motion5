@@ -1,5 +1,8 @@
 import { isFlatRecord, type Value } from "@motion5/core/plugin-api";
 
+export const FROM = "Motion progress where this move starts; default 0.";
+export const TO = "Motion progress where this move ends at rest; default 1.";
+
 /** Reads a numeric param, or `fallback` when the track did not author it. */
 export function numberParam(param: Value | undefined, key: string, fallback: number): number {
   if (param === undefined || !isFlatRecord(param)) return fallback;

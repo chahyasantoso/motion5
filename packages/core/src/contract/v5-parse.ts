@@ -118,7 +118,9 @@ const FIELD_SPEC_FIELDS: ReadonlySet<string> = new Set([
   "min",
   "max",
   "static",
+  "description",
 ]);
+const DESCRIPTION_LIMIT = 120;
 
 const EMPTY_DIAGNOSTICS: readonly Diagnostic[] = Object.freeze([]);
 const EMPTY_REQUIRES: Readonly<Record<string, SourceBinding>> = Object.freeze({});
@@ -442,10 +444,24 @@ function readFieldSpec(
       diagnostics.push(specFieldUnknown(`${path}.enum`, "enum must be an array of strings."));
     else enumValues = Object.freeze([...authored]);
   }
+  const description = value.description;
+  const describedOk =
+    description === undefined ||
+    (typeof description === "string" &&
+      description.trim() !== "" &&
+      description.length <= DESCRIPTION_LIMIT);
+  if (!describedOk)
+    diagnostics.push(
+      specFieldUnknown(
+        `${path}.description`,
+        `description must be one non-empty line of at most ${DESCRIPTION_LIMIT} characters.`,
+      ),
+    );
   return Object.freeze({
     kind,
     ...(optional === undefined ? {} : { optional }),
     ...(enumValues === undefined ? {} : { enum: enumValues }),
+    ...(describedOk && typeof description === "string" ? { description } : {}),
     ...(min === undefined ? {} : { min }),
     ...(max === undefined ? {} : { max }),
     ...(staticField === undefined ? {} : { static: staticField }),

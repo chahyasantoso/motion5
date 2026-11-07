@@ -1,6 +1,6 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
 import { Sprite2d } from "../models/index";
-import { moveProgress, numberParam, squashPose } from "./param";
+import { FROM, TO, moveProgress, numberParam, squashPose } from "./param";
 
 const FALL_SHARE = 0.75;
 
@@ -9,10 +9,15 @@ export const dropPlugin = definePlugin({
   id: "drop",
   inputs: {
     param: Spec.record({
-      distance: Spec.number({ min: 0 }),
-      squash: Spec.number({ optional: true, min: 0, max: 1 }),
-      from: Spec.number({ optional: true, min: 0, max: 1 }),
-      to: Spec.number({ optional: true, min: 0, max: 1 }),
+      distance: Spec.number({ min: 0, description: "Start this far above rest, in px." }),
+      squash: Spec.number({
+        optional: true,
+        min: 0,
+        max: 1,
+        description: "Height lost on landing, as a share; default 0.",
+      }),
+      from: Spec.number({ optional: true, min: 0, max: 1, description: FROM }),
+      to: Spec.number({ optional: true, min: 0, max: 1, description: TO }),
     }),
   },
   outputs: { values: Sprite2d },
