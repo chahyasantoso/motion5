@@ -53,6 +53,7 @@ function fingerprint(sample: NodeSample | undefined): string {
     case "blocked":
     case "error":
     case "absent":
+    case "unknown":
       return sample.status;
     default:
       return unreachable(sample);

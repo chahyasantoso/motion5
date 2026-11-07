@@ -25,7 +25,8 @@ export type NodeSample =
       readonly diagnostics: readonly Diagnostic[];
     }
   | { readonly status: "blocked" | "error"; readonly diagnostics: readonly Diagnostic[] }
-  | { readonly status: "absent" };
+  | { readonly status: "absent" }
+  | { readonly status: "unknown" };
 
 export type SampleResult =
   | {
@@ -130,6 +131,7 @@ export function sampleProject(
       ...handle.freeTrackIds(),
     ];
     for (const id of all) handle.mount(id);
+    const known = new Set(all);
     const ids = nodes ?? all;
 
     const drive = (at: number, previous: number): void => {
@@ -152,7 +154,8 @@ export function sampleProject(
       drive(at, previous);
       previous = at;
       const sampled: Record<string, NodeSample> = {};
-      for (const id of ids) sampled[id] = readNode(handle.get(id));
+      for (const id of ids)
+        sampled[id] = known.has(id) ? readNode(handle.get(id)) : { status: "unknown" };
       return { at, nodes: sampled };
     });
     return { kind: "accepted", samples, diagnostics: validation.diagnostics };
@@ -264,6 +267,7 @@ function printableNode(node: NodeSample, fields: ReadonlySet<string> | undefined
     case "blocked":
     case "error":
     case "absent":
+    case "unknown":
       return node;
     default:
       return unreachable(node);

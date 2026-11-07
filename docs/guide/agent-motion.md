@@ -36,7 +36,7 @@ The result has a `kind`. The exit code is `0` only for `accepted`.
 | `unsupported` | `reasons` names the motions this request cannot drive |
 | `usage` | The command line or the file could not be read |
 
-Each sampled node has a `status`. `ready` carries `progress` and `outputs`. `blocked` and `error` carry `diagnostics`. `absent` means nothing has been published for that id: it is unknown, or it is a `manual` motion's track that has not moved yet.
+Each sampled node has a `status`. `ready` carries `progress` and `outputs`. `blocked` and `error` carry `diagnostics`. `absent` means a track that has published nothing yet, such as a `manual` motion's track that has not moved. `unknown` means the project holds no such id.
 
 ```bash
 npm run motion:frames -- timing.html --at 0,500,1300
@@ -82,17 +82,44 @@ Samples every 16 ms up to `--to` and reports, each with its duration: two watche
 
 A move ends at its rest pose, which is the element's layout position. Lay the page out as the final frame, then let moves bring things there: `drop` waits `distance` above rest, and `hop` arrives from `dx` to the left. Make `distance` and `dx` large enough to start off the stage, and clip the stage with `overflow: hidden`.
 
+## Node ids
+
+A track's node id is `motionId/trackId`, such as `letters/t`; a free track's is `~/trackId`. Hooks, `--nodes`
+and `motion:sample` output all use node ids. Inside `requires`, a bare track id names a track in the same Motion,
+and `motionId/trackId` names one in another Motion.
+
 ## The page
 
 Run `npm run motion:new -- <name>` with a lowercase, dash-joined name; add `--root <dir>` to write into another Vite and React project that depends on motion5. It writes `<name>.html`, its entry, a component and a starter project that already samples and renders, and refuses a name whose files exist. Edit the markup and the project from there. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
 
-Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. See [Rendering patches](./rendering-patches.md).
+Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. To bind two nodes to one element, call both refs from one callback: `ref={(element) => { first(element); second(element); }}`.
+
+Each plugin a project names must be in the page's `PluginCatalog`, imported from its own path:
+
+| Plugin | Import |
+| ------ | ------ |
+| `drop`, `hop`, `rope`, `trace`, `wipe` | `@motion5/plugins/motion/<id>`, as `dropPlugin`, `hopPlugin` and so on |
+| `anchorsToCubic` | `@motion5/plugins/path/anchors-to-cubic` |
+| `bezier` | `@motion5/plugins/path/bezier` |
+| `svgPath` | `@motion5/plugins/path/svg-path` |
+| Every built-in model | `builtinModels` from `@motion5/plugins/models` | See [Rendering patches](./rendering-patches.md).
 
 [`timing-beat.json`](../../apps/react-demo/src/timing-beat.json) is the worked example, and `apps/react-demo/test/timing-beat.test.ts` shows how to pin a project's poses with `sampleProject`.
 
 ## Paths
 
-A path is a chain of tracks. `rope` takes the points of a shape as its `values` table and publishes anchors for a chain that never stretches: straight along `angle` at the start, bending into the shape by the end. `anchorsToCubic` turns any anchors into a cubic path. `svgPath` publishes that path as `d`, for an SVG `<path>`, and `trace` publishes a stroke dash that draws the same path on from its start. Two hooks may bind one element, so one `<path>` can take `d` from one node and its dash from another.
+A path is a chain of tracks. `rope` takes the points of a shape as its `values` table and publishes anchors for a chain that never stretches: straight along `angle` at the start, bending into the shape by the end. `anchorsToCubic` turns any anchors into a cubic path. `svgPath` publishes that path as `d`, for an SVG `<path>`, and `trace` publishes a stroke dash that draws the same path on from its start. Two hooks may bind one element, so one `<path>` can take `d` from one node and its dash from another. The chain, as tracks in one Motion:
+
+```json
+[
+  { "id": "shape", "output": { "plugin": "rope" }, "input": { "values": [], "param": { "ripple": 0.5 } } },
+  { "id": "path", "output": { "plugin": "anchorsToCubic" }, "input": { "requires": { "anchors": "shape" } } },
+  { "id": "d", "output": { "plugin": "svgPath" }, "input": { "requires": { "path": "path" } } },
+  { "id": "ink", "output": { "plugin": "trace" }, "input": { "requires": { "path": "path" } } }
+]
+```
+
+`values` holds the shape's points as rows, `{ "id": "p0", "cells": { "x": 260, "y": 437 } }`.
 
 ## Traps
 

@@ -24,6 +24,17 @@ describe("agent guide", () => {
       expect(existsSync(new URL(`apps/react-demo/${page}`, ROOT)), page).toBe(true);
   });
 
+  it("names only plugin import paths the plugins package exports", () => {
+    const exported: { readonly exports: Readonly<Record<string, unknown>> } = JSON.parse(
+      readFileSync(new URL("packages/plugins/package.json", ROOT), "utf8"),
+    );
+    const named = [...guide.matchAll(/`@motion5\/plugins\/([\w/-]+)`/g)].map((match) => match[1]);
+    expect(named.length).toBeGreaterThan(0);
+    for (const path of named)
+      if (path !== undefined && !path.endsWith("/"))
+        expect(Object.keys(exported.exports), path).toContain(`./${path}`);
+  });
+
   it("stays reachable from the guide index and the agent rules", () => {
     expect(readFileSync(new URL("docs/guide/README.md", ROOT), "utf8")).toContain(
       "./agent-motion.md",

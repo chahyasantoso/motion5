@@ -177,11 +177,11 @@ describe("sampleProject", () => {
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-unknown");
   });
 
-  it("reports an unknown node as absent", () => {
+  it("names a node id the project does not hold as unknown, not absent", () => {
     const result = accepted(
       sampleProject(timeProject(), catalog(), { kind: "time", ms: [0] }, ["m/nope"]),
     );
-    expect(result.samples[0]?.nodes).toEqual({ "m/nope": { status: "absent" } });
+    expect(result.samples[0]?.nodes).toEqual({ "m/nope": { status: "unknown" } });
   });
 
   it("refuses an unknown ease, which only the loaded engine can check", () => {
