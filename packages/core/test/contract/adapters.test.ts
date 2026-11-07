@@ -78,6 +78,20 @@ describe("adapter ports", () => {
     expect(cancelled).toBe(1);
   });
 
+  it("reports no elapsed time on its first frame, however long the page has been open", () => {
+    const frames: ((time: number) => void)[] = [];
+    const clock = createBrowserClock({
+      requestFrame: (listener) => frames.push(listener),
+      cancelFrame: () => undefined,
+    });
+    const deltas: number[] = [];
+    clock.subscribe((event) => deltas.push(event.delta));
+    frames.shift()?.(5000);
+    frames.shift()?.(5016);
+    expect(deltas).toEqual([0, 16]);
+    clock.dispose();
+  });
+
   it("applies perspective once and never applies blocked patches", () => {
     const stage: { style: { perspective?: string }; opacity?: number } = { style: {} };
     const adapter = createDomPatchAdapter(stage, 1200);

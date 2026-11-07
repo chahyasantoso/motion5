@@ -9,11 +9,11 @@ export function createBrowserClock(source: FrameSource): Clock & { dispose(): vo
   const listeners = new Set<(event: ClockTick) => void>();
   let handle: number | undefined;
   let tick = 0;
-  let previous = 0;
+  let previous: number | undefined;
   let disposed = false;
   const frame = (time: number): void => {
     if (disposed) return;
-    const delta = Math.max(0, time - previous);
+    const delta = previous === undefined ? 0 : Math.max(0, time - previous);
     previous = time;
     tick += 1;
     const event = Object.freeze({ tick, time, delta });
