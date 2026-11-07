@@ -27,6 +27,8 @@ export { rowPatchSource } from "./row-patch-source";
 export type { RowPatchOptions } from "./row-patch-source";
 export { useDomPatch } from "./dom-patch";
 export { Word } from "./word";
+export { mergeRefs, useAnchor } from "./anchor";
+export type { AnchorFields, AnchorRefs, LayoutBox } from "./anchor";
 export { useMotionProject } from "./motion-project";
 export type { MotionProjectState } from "./motion-project";
 export type { WordProps } from "./word";

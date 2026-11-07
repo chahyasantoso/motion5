@@ -41,7 +41,8 @@ describe("timing beat", () => {
     for (const letter of ["t", "i", "m", "i2", "n", "g"])
       expect(values(nodes[`letters/${letter}`])).toMatchObject({ y: -700 });
     expect(values(nodes["period/dot"])).toMatchObject({ x: -1300, y: 0 });
-    expect(values(nodes["cover/wipe"])).toEqual({ clipPath: "circle(0px at 974px 415px)" });
+    // The page measures the origin from the dot, so the project holds a placeholder.
+    expect(values(nodes["cover/wipe"])).toEqual({ clipPath: "circle(0px at 0px 0px)" });
   });
 
   it("drops the letters in order", async () => {
@@ -66,7 +67,7 @@ describe("timing beat", () => {
 
   it("covers the stage by the end", async () => {
     expect(values((await sampleAt(3000))["cover/wipe"])).toEqual({
-      clipPath: "circle(1500px at 974px 415px)",
+      clipPath: "circle(1500px at 0px 0px)",
     });
   });
 

@@ -11,7 +11,7 @@ registerSourceLoader();
 const { captureFrames, captureOnion } = await import("./motion-tools/frames.ts");
 const { probeElements } = await import("./motion-tools/probe.ts");
 const { DEFAULT_LIMITS, checkMotion } = await import("./motion-tools/check.ts");
-const { DEFAULT_SOURCE } = await import("./motion-tools/page.ts");
+const { DEFAULT_SOURCE, withPage } = await import("./motion-tools/page.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
@@ -104,6 +104,16 @@ assert.ok(
 );
 const relaxed = await checkMotion({ ...watch, limits: DEFAULT_LIMITS });
 assert.deepEqual(relaxed.findings, []);
+// The page anchors the wipe on the dot's measured centre, not on a number in the project.
+const { value: clip } = await withPage(
+  { page: "timing.html", ...stage },
+  async ({ page, advanceTo }) => {
+    await advanceTo(2500);
+    return page.$eval(".beat-cover", (element) => getComputedStyle(element).clipPath);
+  },
+);
+assert.match(clip, /at 974(.d+)?px 415(.d+)?px/, clip);
+
 // Any page works: a plain one outside the repo, moving a box 0.2 px per ms on its own frame loop.
 const site = mkdtempSync(join(tmpdir(), "motion-site-"));
 writeFileSync(

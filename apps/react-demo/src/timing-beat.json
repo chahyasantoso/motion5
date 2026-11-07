@@ -65,7 +65,7 @@
         {
           "id": "wipe",
           "output": { "plugin": "wipe" },
-          "input": { "param": { "radius": 1500, "x": 974, "y": 415 } }
+          "input": { "param": { "radius": 1500, "x": 0, "y": 0 } }
         }
       ]
     }

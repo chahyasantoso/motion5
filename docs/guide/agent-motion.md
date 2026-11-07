@@ -92,7 +92,7 @@ and `motionId/trackId` names one in another Motion.
 
 Run `npm run motion:new -- <name>` with a lowercase, dash-joined name; add `--root <dir>` to write into another Vite and React project that depends on motion5. It writes `<name>.html`, its entry, a component and a starter project that already samples and renders, and refuses a name whose files exist. Edit the markup and the project from there. `useMotionProject(project, plugins, interpolator)` loads and mounts the project and answers `loading`, `ready` with a `handle` and `replay`, or `refused` with `diagnostics`; switch over all three. Register every plugin your project names in that `PluginCatalog`. Keep motion out of the component: no arithmetic, easing or timing belongs there.
 
-Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. To bind two nodes to one element, call both refs from one callback: `ref={(element) => { first(element); second(element); }}`.
+Bind one node to one element with `useDomPatch`, and a word to a Motion's tracks with `Word`. To bind two nodes to one element, combine their refs: `ref={mergeRefs(first, second)}`.
 
 Each plugin a project names must be in the page's `PluginCatalog`, imported from its own path:
 
@@ -136,7 +136,7 @@ Tuning `rope`, as starting points rather than rules:
 ## Traps
 
 - `validateV5` cannot know ease names, because the interpolator owns them. `motion:sample` loads the project, so it refuses an unknown ease as `ease-unknown`.
-- A `wipe` takes pixel coordinates. Measure the element it should grow from, and remember the numbers go stale if the layout or font changes.
+- A `wipe` takes pixel coordinates. Rather than typing them, let the page measure them: `useAnchor(handle, node, { x: "x", y: "y" })` returns `from` and `to` refs, and writes the layout centre of the `from` element, measured from the `to` element's corner, into those param fields. Combine its refs with others through `mergeRefs`. Keep placeholder numbers in the project, because the param is required.
 - `svgPath` writes `d` as a CSS `path()` value, which Chromium and Firefox render and Safari does not.
 - `transformOrigin` from a move applies to HTML targets. On SVG the adapter's own pin wins, so a move pivots at the element's origin.
 - A letter's squash widens it, and it can touch its neighbor. Check the landing frames.
