@@ -121,6 +121,18 @@ A path is a chain of tracks. `rope` takes the points of a shape as its `values` 
 
 `values` holds the shape's points as rows, `{ "id": "p0", "cells": { "x": 260, "y": 437 } }`.
 
+`npm run motion:points -- shape.json --spacing 12` turns a JSON array of `{ x, y }` points into those rows, resampled
+to fixed spacing, so every link of the rope is the same length.
+
+Tuning `rope`, as starting points rather than rules:
+
+- `release` `pin` (the default) forms the shape in drawing order from the pinned end, which reads as writing;
+  `free` whips the far end in first.
+- `ripple` near `0.6` passes the bend along visibly; lower bends everything at once.
+- `overshoot` between `0.3` and `0.6` reads as a relaxing rope; `0` lands without one.
+- `pin` `end` keeps the last point still instead, with the straight rope running from it along `angle`.
+- The straight rope is as long as the shape's path, so a long word starts mostly off the stage.
+
 ## Traps
 
 - `validateV5` cannot know ease names, because the interpolator owns them. `motion:sample` loads the project, so it refuses an unknown ease as `ease-unknown`.

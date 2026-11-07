@@ -39,6 +39,7 @@
     "motion:frames": "node scripts/motion-frames.mjs",
     "motion:new": "node scripts/motion-new.mjs",
     "motion:check": "node scripts/motion-check.mjs",
+    "motion:points": "node scripts/motion-points.mjs",
     "motion:probe": "node scripts/motion-probe.mjs",
     "motion:timeline": "node scripts/motion-timeline.mjs",
     "test:frames": "node scripts/motion-frames-check.mjs",

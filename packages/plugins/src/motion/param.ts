@@ -29,3 +29,10 @@ export function squashPose(squash: number, weight: number) {
 export function moveProgress(param: Value | undefined, progress: number): number {
   return windowed(progress, numberParam(param, "from", 0), numberParam(param, "to", 1));
 }
+
+/** Reads a string param, or `fallback` when the track did not author it. */
+export function stringParam(param: Value | undefined, key: string, fallback: string): string {
+  if (param === undefined || !isFlatRecord(param)) return fallback;
+  const value = param[key];
+  return typeof value === "string" ? value : fallback;
+}

@@ -15,7 +15,7 @@ const SHAPE = [
   { x: 340, y: 300 },
 ];
 
-function load(param: Record<string, number> = {}) {
+function load(param: Record<string, number | string> = {}) {
   const handle = new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -115,12 +115,36 @@ describe("rope", () => {
     expect(distance(bouncy)).toBeGreaterThan(distance(plain));
   });
 
-  it("releases the end first when it ripples", () => {
-    const read = load({ ripple: 0.8, overshoot: 0 });
-    const early = points(read("rope", 0.15));
-    // The joint nearest the start has not turned yet, so the first segment still points along the line.
+  it("bends the pinned end first by default, leaving the far links along the line", () => {
+    const early = points(load({ ripple: 0.8, overshoot: 0 })("rope", 0.15));
+    const tail = early.slice(-2);
+    // The last link has not turned yet, so it still points along the straight heading.
+    expect(tail[1]!.y).toBeCloseTo(tail[0]!.y, 9);
+    expect(early[1]!.y).not.toBeCloseTo(300, 3);
+  });
+
+  it("bends the free end first when released from it", () => {
+    const early = points(load({ ripple: 0.8, overshoot: 0, release: "free" })("rope", 0.15));
     expect(early[1]!.y).toBeCloseTo(300, 9);
-    expect(early.at(-1)!.y).not.toBeCloseTo(300 + 0, 3);
+    expect(early.at(-1)!.y).not.toBeCloseTo(early.at(-2)!.y, 3);
+  });
+
+  it("keeps the last point fixed when pinned at the end, starting straight from it", () => {
+    const read = load({ pin: "end", angle: 180 });
+    for (const progress of [0, 0.3, 0.7, 1]) {
+      const tip = points(read("rope", progress)).at(-1)!;
+      expect(tip.x).toBeCloseTo(340, 9);
+      expect(tip.y).toBeCloseTo(300, 9);
+    }
+    const start = points(read("rope", 0));
+    for (const row of start) expect(row.y).toBeCloseTo(300, 9);
+    expect(start[0]!.x).toBeLessThan(340);
+  });
+
+  it("does not swing the settled word: the first link reaches its heading without overshoot past it", () => {
+    const read = load({ overshoot: 0, ripple: 0 });
+    const half = points(read("rope", 0.5));
+    lengths(half).forEach((length, index) => expect(length).toBeCloseTo(target[index]!, 9));
   });
 
   it("smooths through each point with handles that line up", () => {
