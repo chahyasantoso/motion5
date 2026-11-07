@@ -63,7 +63,12 @@ export function useMotionProject(
       clock.dispose();
       throw error;
     }
-    setState({ kind: "ready", handle, replay: () => setRun((current) => current + 1) });
+    const replay = () => {
+      // Hide the old project before it is disposed, so no render can bind to it again.
+      setState(LOADING);
+      setRun((current) => current + 1);
+    };
+    setState({ kind: "ready", handle, replay });
     return () => {
       setState(LOADING);
       handle.dispose();

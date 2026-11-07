@@ -114,6 +114,19 @@ const { value: clip } = await withPage(
 );
 assert.match(clip, /at 974(.d+)?px 415(.d+)?px/, clip);
 
+// A click replays the beat from its start rather than breaking the page.
+const { value: replayed, pageErrors: replayErrors } = await withPage(
+  { page: "timing.html", ...stage },
+  async ({ page, advanceTo }) => {
+    await advanceTo(3200);
+    await page.mouse.click(640, 360);
+    await advanceTo(3300);
+    return page.$eval(".beat-glyph", (element) => element.getBoundingClientRect().top);
+  },
+);
+assert.deepEqual(replayErrors, []);
+assert.ok(replayed < 0, `the first letter waits above the stage again, at ${replayed}`);
+
 // Any page works: a plain one outside the repo, moving a box 0.2 px per ms on its own frame loop.
 const site = mkdtempSync(join(tmpdir(), "motion-site-"));
 writeFileSync(

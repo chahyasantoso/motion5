@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, useLayoutEffect } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PluginCatalog, type ProjectDefinition } from "@motion5/core";
@@ -65,6 +65,27 @@ describe("useMotionProject", () => {
     const { handle } = ready(states.at(-1));
     unmount();
     expect(() => handle.mount("m/t")).toThrow(/disposed/);
+  });
+
+  it("never hands a disposed project to a render that replays", () => {
+    const used: string[] = [];
+    let latest: MotionProjectState | undefined;
+    const Page = () => {
+      const state = useMotionProject(valid, catalog, interpolator);
+      latest = state;
+      // A child's ref or effect reads the handle after commit, as a page binding does.
+      useLayoutEffect(() => {
+        if (state.kind === "ready") used.push(state.handle.motionIds().join(","));
+      });
+      return null;
+    };
+    act(() => {
+      create(createElement(Page));
+    });
+    const first = ready(latest);
+    expect(() => act(() => first.replay())).not.toThrow();
+    expect(ready(latest).handle).not.toBe(first.handle);
+    expect(used.at(-1)).toBe("m");
   });
 
   it("replays with a new handle and disposes the old one", () => {
