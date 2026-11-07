@@ -129,7 +129,7 @@ A path is a chain of tracks. `rope` takes the points of a shape as its `values` 
 
 `values` holds the shape's points as rows, `{ "id": "p0", "cells": { "x": 260, "y": 437 } }`.
 
-`npm run motion:points -- shape.json --spacing 12` turns a JSON array of `{ x, y }` points into those rows, resampled
+`apps/react-demo/src/rope-word.json` is the worked example, served at `rope-word.html`. `npm run motion:points -- shape.json --spacing 12` turns a JSON array of `{ x, y }` points into those rows, resampled
 to fixed spacing, so every link of the rope is the same length.
 
 Tuning `rope`, as starting points rather than rules:

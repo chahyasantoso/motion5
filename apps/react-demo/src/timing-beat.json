@@ -4,48 +4,41 @@
   "motions": [
     {
       "id": "letters",
-      "trigger": { "type": "time", "duration": 1000 },
-      "stagger": 0.25,
+      "trigger": {
+        "type": "time",
+        "duration": 1000
+      },
       "tracks": [
         {
-          "id": "t",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
-        },
-        {
-          "id": "i",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
-        },
-        {
-          "id": "m",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
-        },
-        {
-          "id": "i2",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
-        },
-        {
-          "id": "n",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
-        },
-        {
-          "id": "g",
-          "output": { "plugin": "drop" },
-          "input": { "param": { "distance": 700, "squash": 0.18 } }
+          "id": "word",
+          "output": {
+            "plugin": "cascade"
+          },
+          "input": {
+            "param": {
+              "move": "drop",
+              "count": 6,
+              "stagger": 0.25,
+              "distance": 700,
+              "squash": 0.18
+            }
+          }
         }
       ]
     },
     {
       "id": "period",
-      "trigger": { "type": "time", "duration": 990, "delay": 880 },
+      "trigger": {
+        "type": "time",
+        "duration": 990,
+        "delay": 880
+      },
       "tracks": [
         {
           "id": "dot",
-          "output": { "plugin": "hop" },
+          "output": {
+            "plugin": "hop"
+          },
           "input": {
             "param": {
               "height": 260,
@@ -60,12 +53,24 @@
     },
     {
       "id": "cover",
-      "trigger": { "type": "time", "duration": 600, "delay": 2400 },
+      "trigger": {
+        "type": "time",
+        "duration": 600,
+        "delay": 2400
+      },
       "tracks": [
         {
           "id": "wipe",
-          "output": { "plugin": "wipe" },
-          "input": { "param": { "radius": 1500, "x": 0, "y": 0 } }
+          "output": {
+            "plugin": "wipe"
+          },
+          "input": {
+            "param": {
+              "radius": 1500,
+              "x": 0,
+              "y": 0
+            }
+          }
         }
       ]
     }

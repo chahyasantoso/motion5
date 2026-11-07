@@ -4,7 +4,7 @@ import { PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { unreachable } from "@motion5/core/plugin-api";
 import { builtinModels } from "@motion5/plugins/models";
-import { dropPlugin } from "@motion5/plugins/motion/drop";
+import { cascadePlugin } from "@motion5/plugins/motion/cascade";
 import { hopPlugin } from "@motion5/plugins/motion/hop";
 import { wipePlugin } from "@motion5/plugins/motion/wipe";
 import { Word, mergeRefs, useAnchor, useDomPatch, useMotionProject } from "@motion5/react";
@@ -12,7 +12,7 @@ import timingBeat from "./timing-beat.json";
 
 const plugins = new PluginCatalog({
   models: builtinModels,
-  plugins: [dropPlugin, hopPlugin, wipePlugin],
+  plugins: [cascadePlugin, hopPlugin, wipePlugin],
 });
 const interpolator = createGsapInterpolator(gsap);
 
@@ -23,12 +23,7 @@ const Stage: React.FC<{ handle: ProjectHandle }> = ({ handle }) => {
   return (
     <div className="beat-stage">
       <div className="beat-word">
-        <Word
-          source={handle}
-          nodes={handle.motion("letters").trackIds}
-          text="TIMING"
-          glyphClassName="beat-glyph"
-        />
+        <Word source={handle} rows="letters/word" text="TIMING" glyphClassName="beat-glyph" />
         <span ref={mergeRefs(dot, anchor.from)} className="beat-dot" />
       </div>
       <div ref={mergeRefs(cover, anchor.to)} className="beat-cover" />

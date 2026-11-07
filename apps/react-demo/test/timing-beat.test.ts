@@ -31,6 +31,13 @@ function values(sample: NodeSample | undefined) {
   return sample.outputs.values;
 }
 
+/** The word's six letters, one row each of the single cascade track. */
+function letterHeights(sample: NodeSample | undefined): number[] {
+  const rows = values(sample);
+  if (!Array.isArray(rows)) throw new Error("The word publishes no rows.");
+  return rows.map(({ cells }) => Number(Reflect.get(Object(cells), "y")));
+}
+
 describe("timing beat", () => {
   it("is plain data that validates against the built-in catalog", async () => {
     expect((await project()).motions).toHaveLength(3);
@@ -38,8 +45,7 @@ describe("timing beat", () => {
 
   it("holds every letter above the stage at the first frame, and the dot off it", async () => {
     const nodes = await sampleAt(0);
-    for (const letter of ["t", "i", "m", "i2", "n", "g"])
-      expect(values(nodes[`letters/${letter}`])).toMatchObject({ y: -700 });
+    expect(letterHeights(nodes["letters/word"])).toEqual([-700, -700, -700, -700, -700, -700]);
     expect(values(nodes["period/dot"])).toMatchObject({ x: -1300, y: 0 });
     // The page measures the origin from the dot, so the project holds a placeholder.
     expect(values(nodes["cover/wipe"])).toEqual({ clipPath: "circle(0px at 0px 0px)" });
@@ -47,11 +53,7 @@ describe("timing beat", () => {
 
   it("drops the letters in order", async () => {
     const nodes = await sampleAt(500);
-    const heights = ["t", "i", "m", "i2", "n", "g"].map((letter) => {
-      const cell = values(nodes[`letters/${letter}`]);
-      if (cell === undefined || Array.isArray(cell)) throw new Error(`${letter} has no record.`);
-      return Number(Reflect.get(cell, "y"));
-    });
+    const heights = letterHeights(nodes["letters/word"]);
     for (let index = 1; index < heights.length; index += 1)
       expect(heights[index]).toBeLessThanOrEqual(heights[index - 1] ?? 0);
     expect(heights[0]).toBe(0);
@@ -60,8 +62,7 @@ describe("timing beat", () => {
 
   it("lands the word and the period at their rest poses before the wipe", async () => {
     const nodes = await sampleAt(2300);
-    for (const letter of ["t", "i", "m", "i2", "n", "g"])
-      expect(values(nodes[`letters/${letter}`])).toMatchObject({ y: 0, scaleX: 1, scaleY: 1 });
+    expect(letterHeights(nodes["letters/word"])).toEqual([0, 0, 0, 0, 0, 0]);
     expect(values(nodes["period/dot"])).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
   });
 
