@@ -172,7 +172,7 @@ export type SampleArgs =
 
 const USAGE = "usage: motion:sample <project.json> (--at ms,ms | --progress p,p) [--nodes id,id]";
 
-function parseNumbers(text: string | undefined): number[] | undefined {
+export function parseNumbers(text: string | undefined): number[] | undefined {
   if (text === undefined || text === "") return undefined;
   const values = text.split(",").map((part) => (part.trim() === "" ? NaN : Number(part)));
   if (!values.every((value) => Number.isFinite(value) && value >= 0)) return undefined;

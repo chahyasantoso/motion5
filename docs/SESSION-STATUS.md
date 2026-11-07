@@ -24,7 +24,8 @@ byte ceiling.
   `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin` derives slot,
   structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`, `LocalAnchors2d`
   models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are exported and in `builtinCatalog`.
-  `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser.
+  `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser, and
+  `motion:frames` returns PNGs of a real page at named times.
   An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
   `Motion.stagger` finishes every track. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
   publishing the new `Sprite2d` and `Clip2d` models, and `/timing.html` in `apps/react-demo` runs a beat
@@ -32,8 +33,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Give an agent frames:** `motion:frames` returns PNGs of the real DOM render at named times, so `/timing.html`
-  and any later project can be checked by eye.
+- **Shrink what an agent must hand-supply:** a `delay` on the `time` trigger, moves that own their pivot, and a
+  word binding with one owner for its letters.
 
 ## Open, and not scheduled
 
