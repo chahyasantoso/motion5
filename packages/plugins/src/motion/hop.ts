@@ -11,7 +11,7 @@ function contactWeight(distance: number): number {
 }
 
 /**
- * A ballistic hop that lands `bounces + 1` times and settles.
+ * A ballistic hop that lands `bounces + 1` times and settles at its rest pose, arriving from `dx` to the left.
  * Each flight is `decay` times as high as the last, so it lasts `sqrt(decay)` as long and hits softer.
  */
 export const hopPlugin = definePlugin({
@@ -70,7 +70,7 @@ export const hopPlugin = definePlugin({
 
     return {
       values: {
-        x: dx * Math.min(1, time / airtime),
+        x: 0 - dx * (1 - Math.min(1, time / airtime)),
         y,
         scaleX: 1 + 0.9 * squash * weight,
         scaleY: 1 - squash * weight,

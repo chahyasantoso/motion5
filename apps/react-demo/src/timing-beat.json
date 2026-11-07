@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 5,
+  "projectId": "timing-beat",
+  "motions": [
+    {
+      "id": "letters",
+      "trigger": { "type": "time", "duration": 1000 },
+      "stagger": 0.25,
+      "tracks": [
+        {
+          "id": "t",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        },
+        {
+          "id": "i",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        },
+        {
+          "id": "m",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        },
+        {
+          "id": "i2",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        },
+        {
+          "id": "n",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        },
+        {
+          "id": "g",
+          "output": { "plugin": "drop" },
+          "input": { "param": { "distance": 700, "squash": 0.28 } }
+        }
+      ]
+    },
+    {
+      "id": "period",
+      "trigger": { "type": "time", "duration": 2200 },
+      "tracks": [
+        {
+          "id": "dot",
+          "output": { "plugin": "hop" },
+          "input": {
+            "param": {
+              "height": 260,
+              "bounces": 2,
+              "decay": 0.35,
+              "squash": 0.45,
+              "dx": 1300,
+              "from": 0.4,
+              "to": 0.85
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "cover",
+      "trigger": { "type": "time", "duration": 3000 },
+      "tracks": [
+        {
+          "id": "wipe",
+          "output": { "plugin": "wipe" },
+          "input": { "param": { "radius": 1500, "x": 967, "y": 413, "from": 0.8, "to": 1 } }
+        }
+      ]
+    }
+  ]
+}

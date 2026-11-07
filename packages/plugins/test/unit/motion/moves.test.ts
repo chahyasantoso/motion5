@@ -90,10 +90,11 @@ describe("hop", () => {
     expect(cells(flight.contact).justHit).toBe(0);
   });
 
-  it("ends at the rest pose, having travelled dx", () => {
+  it("arrives from dx away and ends at the rest pose", () => {
     const read = reader({ ...param, dx: 120 }, "hop");
-    expect(cells(read(1).values)).toEqual({ x: 120, y: 0, scaleX: 1, scaleY: 1 });
-    expect(cells(read(contacts[1] ?? 0).values).x).toBeCloseTo(120, 6);
+    expect(cells(read(0).values).x).toBeCloseTo(-120, 6);
+    expect(cells(read(contacts[1] ?? 0).values).x).toBeCloseTo(0, 6);
+    expect(cells(read(1).values)).toEqual({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
   });
 
   it("is a pure function of progress, in any seek order", () => {
