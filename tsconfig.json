@@ -38,5 +38,5 @@
     },
     "jsx": "react-jsx"
   },
-  "include": ["packages/**/*.ts", "demo/**/*", "apps/**/*"]
+  "include": ["packages/**/*.ts", "demo/**/*", "apps/**/*", "scripts/motion-tools/**/*.ts"]
 }
