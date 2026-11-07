@@ -23,6 +23,7 @@ const catalog = () =>
     plugins: [
       plugin("needs", Spec.record({ height: Spec.number() })),
       plugin("relaxed", Spec.record({ height: Spec.number({ optional: true }) })),
+      plugin("optional-channel", Spec.record({ height: Spec.number() }, { optional: true })),
     ],
   });
 
@@ -75,6 +76,10 @@ describe("a plugin's required param", () => {
 
   it("accepts an authored param", () => {
     expect(validateV5(project("needs", { height: 1 }), catalog()).kind).toBe("accepted");
+  });
+
+  it("accepts an absent param when the whole channel is optional", () => {
+    expect(validateV5(project("optional-channel"), catalog()).kind).toBe("accepted");
   });
 
   it("accepts an absent param when every field is optional", () => {

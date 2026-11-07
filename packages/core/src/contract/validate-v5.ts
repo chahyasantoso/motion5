@@ -4,6 +4,7 @@ import {
   type ProjectDefinition,
   type TrackDefinition,
   type TriggerDefinition,
+  type ValueSpec,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES, outputRef } from "./v5";
 import { unreachable } from "../lang/exhaustive";
@@ -15,14 +16,26 @@ import {
   parseTrackDefinition,
   type ParseContext,
   type ParsedRecord,
+  type ParsedTable,
+  type ParsedValues,
   type ParsedTrack,
 } from "./v5-parse";
 
-/** Reads an absent param as an empty record, so each required field is refused by name. */
-const NO_AUTHORED_PARAM: ParsedRecord = Object.freeze({
-  kind: "record",
-  fields: Object.freeze({}),
-});
+const NO_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
+const NO_TABLE: ParsedTable = Object.freeze({ kind: "table", rows: Object.freeze([]) });
+
+/** Reads an absent plugin input as empty, so each required field and row minimum is refused by name. */
+function absentInput(spec: ValueSpec | undefined): ParsedValues | undefined {
+  if (spec === undefined || spec.optional === true) return undefined;
+  switch (spec.kind) {
+    case "record":
+      return NO_RECORD;
+    case "table":
+      return NO_TABLE;
+    default:
+      return unreachable(spec);
+  }
+}
 
 const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
@@ -153,7 +166,7 @@ function derivedInputDiagnostics(
       if (definition === undefined) return [];
       const diagnostics = [
         ...deriveSourceContract(
-          parsed.input.values,
+          parsed.input.values ?? absentInput(definition.inputs.values?.spec),
           definition.inputs.values?.spec,
           `${path}.input.values`,
           "plugin",
@@ -162,7 +175,7 @@ function derivedInputDiagnostics(
       if (definition.inputs.param !== undefined)
         diagnostics.push(
           ...deriveSourceContract(
-            parsed.input.param ?? NO_AUTHORED_PARAM,
+            parsed.input.param ?? absentInput(definition.inputs.param),
             definition.inputs.param,
             `${path}.input.param`,
             "plugin",
