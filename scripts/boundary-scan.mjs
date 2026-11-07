@@ -561,7 +561,7 @@ function checkPluginSource(source, file, specifiers, violations) {
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
 /**
- * ADR-135: the built-in catalog reaches definitions only through native `import("./x")`. Its one
+ * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
  * static edge is the type-only `import type { ... } from "./loader"`, which emits nothing; a value
  * import of the loader, a re-export, or a side-effect import of any relative module is eager.
  * Reads the same comment- and string-masked code as `importSpecifiers`.
@@ -588,7 +588,10 @@ export async function scan(scanRoot = root) {
       const specifiers = [...importSpecifiers(source)];
       if (workspace === "packages/plugins") {
         checkPluginSource(source, file, specifiers, violations);
-        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticRelativeImport(source))
+        if (
+          file === "packages/plugins/src/host/builtin-catalog.ts" &&
+          catalogHasStaticRelativeImport(source)
+        )
           violations.push(`${file}: plugin definitions must be reached through lazy imports`);
       }
       if (importsCoreInternals(source, specifiers))

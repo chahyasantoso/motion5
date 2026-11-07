@@ -582,7 +582,7 @@ describe("boundary scan: the public 3D surface", () => {
   it("allows native lazy imports in the built-in plugin catalog", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts":
+        "packages/plugins/src/host/builtin-catalog.ts":
           'import type { PluginCatalog } from "./loader"; export const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }]]);',
       },
       (tree) => scan(tree),
@@ -593,12 +593,13 @@ describe("boundary scan: the public 3D surface", () => {
   it("refuses eager sibling imports in the built-in plugin catalog", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts": 'import { fkPlugin } from "./fk"; export { fkPlugin };',
+        "packages/plugins/src/host/builtin-catalog.ts":
+          'import { fkPlugin } from "./fk"; export { fkPlugin };',
       },
       (tree) => scan(tree),
     );
     expect(violations).toEqual([
-      "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+      "packages/plugins/src/host/builtin-catalog.ts: plugin definitions must be reached through lazy imports",
     ]);
   });
 
@@ -610,11 +611,12 @@ describe("boundary scan: the public 3D surface", () => {
       'import type { PluginCatalog } from "./loader"; import * as fk from "../src/fk"; export { fk };',
     ];
     for (const source of eager) {
-      const violations = await withTree({ "packages/plugins/src/catalog.ts": source }, (tree) =>
-        scan(tree),
+      const violations = await withTree(
+        { "packages/plugins/src/host/builtin-catalog.ts": source },
+        (tree) => scan(tree),
       );
       expect(violations, source).toEqual([
-        "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+        "packages/plugins/src/host/builtin-catalog.ts: plugin definitions must be reached through lazy imports",
       ]);
     }
   });
@@ -622,7 +624,7 @@ describe("boundary scan: the public 3D surface", () => {
   it("reads catalog imports through comments and strings as code, not prose", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts":
+        "packages/plugins/src/host/builtin-catalog.ts":
           '// import { fkPlugin } from "./fk";\nimport type { PluginCatalog } from "./loader";\nconst note = \'from "./fk"\';\nexport const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((m) => m.fkPlugin) }]]);\nvoid note;',
       },
       (tree) => scan(tree),
