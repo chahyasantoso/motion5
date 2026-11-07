@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateV5, type ProjectDefinition } from "@motion5/core";
+import { code } from "../../../packages/core/test/helpers/source-region";
 import { loadBuiltinCatalog } from "../../../scripts/motion-tools/catalog";
 import { sampleProject, type NodeSample } from "../../../scripts/motion-tools/sample";
 
@@ -70,7 +71,7 @@ describe("timing beat", () => {
   });
 
   it("keeps all motion out of the component: no arithmetic, easing or timing there", () => {
-    const source = readFileSync(COMPONENT_URL, "utf8");
+    const source = code(COMPONENT_URL);
     expect(source).not.toMatch(/Math\.|ease|duration|stagger|progress/i);
   });
 });
