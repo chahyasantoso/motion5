@@ -6,7 +6,7 @@ states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` e
 byte ceiling.
 
 - **Captured:** 2026-11-07, Asia/Jakarta.
-- **Read against:** `feat/v5.2-models-and-plugin-tracks` after the full check gate.
+- **Read against:** `feat/agent-motion` after the full check gate.
 
 ## Now
 
@@ -24,16 +24,17 @@ byte ceiling.
   `plugin` and `input.schema` are refused by name. S1 to S8 are green; `definePlugin` derives slot,
   structure and state types from model declarations, and `Anchors2d`, `CubicPath2d`, `LocalAnchors2d`
   models and `anchorsToCubic`, `bezier`, `skinAnchors` plugins are exported and in `builtinCatalog`.
+  `motion:catalog` and `motion:sample` report plugins and published values as JSON with no browser.
 
 ## Next in line
 
-- **Measure follower cost and evaluate caches:** record per-frame cost for N followers over a path
-  of M segments, then decide whether to add a shared arc-length track or segment cache.
+- **Close the silent authoring gaps:** refuse an absent required param and an unknown ease, render
+  `scaleX` and `scaleY`, and let `Motion.stagger` finish every track.
 
 ## Open, and not scheduled
 
-- Cache and measurement work remains deferred by the owner; no threshold, cache hook or Phase 8
-  measurement is active.
+- No follower cache: [BENCH-FOLLOWER.md](./BENCH-FOLLOWER.md) records the numbers and when to measure
+  again.
 - Retargeting remains a proposed design only.
 
 ## Where the rest of it lives

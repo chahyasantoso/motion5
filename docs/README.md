@@ -43,6 +43,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 - [PHASE5-DETAILED-PLAN.md](./PHASE5-DETAILED-PLAN.md): the detailed contract for the current phase.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [BENCH-IK.md](./BENCH-IK.md): the measured 2D and 3D IK envelopes, conditions, reproduction command, and non-gating timing policy.
+- [BENCH-FOLLOWER.md](./BENCH-FOLLOWER.md): per-frame cost of path followers, and the decision on caching.
 - [POSE-GAP-FILLER-COMPARISON.md](./POSE-GAP-FILLER-COMPARISON.md): the #530 pose gap filler comparison, every metric for `raw`, `hold` and `chain-kalman` in both spaces, its caveats, and the INN call.
 - [SYNTHETIC-HUMAN.md](./SYNTHETIC-HUMAN.md): the #540 synthetic human rig, its scope, baseline, contracts and decisions.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
