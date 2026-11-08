@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LIMITS, analyse, parseCheckArgs, type Frame } from "../src/page/check";
+import { DEFAULT_LIMITS, analyse, auditText, parseCheckArgs, type Frame } from "../src/page/check";
+import { blend, contrastNeeded, contrastRatio, parseColour } from "../src/page/contrast";
 import { DEFAULT_SOURCE } from "../src/page/page";
 
 const STEP = 16;
@@ -91,5 +92,61 @@ describe("motion:check arguments", () => {
     ["a bad limit", ["a.html", "--watch", ".a", "--to", "100", "--jump", "far"]],
   ])("refuses %s", (_name, argv) => {
     expect(parseCheckArgs(argv).kind).toBe("usage");
+  });
+});
+
+describe("motion:check contacts the page marks as meant", () => {
+  it("skips an overlap between elements one marks as touching the other", () => {
+    const touching = (touches?: readonly string[]): Frame[] =>
+      Array.from({ length: 40 }, (_, index) => ({
+        at: index * STEP,
+        elements: [
+          {
+            name: "foot",
+            box: { x: 0, y: 0, width: 10, height: 10 },
+            ...(touches ? { touches } : {}),
+          },
+          { name: "ball", box: { x: 5, y: 0, width: 10, height: 10 } },
+        ],
+      }));
+    expect(analyse(touching(), STAGE, DEFAULT_LIMITS)).toHaveLength(1);
+    expect(analyse(touching(["ball"]), STAGE, DEFAULT_LIMITS)).toEqual([]);
+  });
+});
+
+describe("motion:check text on the last frame", () => {
+  const BLACK = { r: 0, g: 0, b: 0, a: 1 };
+  const text = {
+    name: "p",
+    box: { x: 0, y: 0, width: 10, height: 10 },
+    shown: 1,
+    opacity: 1,
+    fontSize: 40,
+    fontWeight: 700,
+  };
+
+  it("measures contrast as WCAG does", () => {
+    expect(contrastRatio({ r: 255, g: 255, b: 255, a: 1 }, BLACK)).toBeCloseTo(21, 6);
+    expect(
+      contrastRatio(parseColour("rgb(119, 119, 119)") ?? BLACK, { r: 255, g: 255, b: 255, a: 1 }),
+    ).toBeCloseTo(4.48, 2);
+    expect(parseColour("rgba(255, 0, 0, 0.5)")).toEqual({ r: 255, g: 0, b: 0, a: 0.5 });
+    expect(blend({ r: 255, g: 255, b: 255, a: 1 }, BLACK, 0.5).r).toBe(127.5);
+    expect([contrastNeeded(40, 400), contrastNeeded(16, 400), contrastNeeded(19, 700)]).toEqual([
+      3, 4.5, 3,
+    ]);
+  });
+
+  it("reports faint text, text faded by opacity, and text off the page's edge", () => {
+    expect(auditText([{ ...text, colour: "rgb(255, 255, 255)" }], [BLACK])).toEqual([]);
+    expect(auditText([{ ...text, colour: "rgb(34, 34, 34)" }], [BLACK])).toEqual([
+      { kind: "low-contrast", element: "p", ratio: 1.3, needs: 3 },
+    ]);
+    expect(
+      auditText([{ ...text, colour: "rgb(255, 255, 255)", opacity: 0.1 }], [BLACK])[0]?.kind,
+    ).toBe("low-contrast");
+    expect(auditText([{ ...text, colour: "rgb(255, 255, 255)", shown: 0.5 }], [BLACK])).toEqual([
+      { kind: "cut-off", element: "p", shown: 0.5 },
+    ]);
   });
 });

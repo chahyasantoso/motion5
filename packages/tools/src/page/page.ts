@@ -84,6 +84,17 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   };
 }
 
+/** Replaces `Math.random` with a fixed-seed generator, so a page that scatters things scatters them alike every run. */
+function seedRandom(): void {
+  let state = 0x9e3779b9;
+  Math.random = () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let mixed = Math.imul(state ^ (state >>> 15), 1 | state);
+    mixed = (mixed + Math.imul(mixed ^ (mixed >>> 7), 61 | mixed)) ^ mixed;
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 /** Sets every CSS and Web Animations animation, which the fake clock skips, to the clock's time from when first seen. */
 function holdAnimations(ms: number): void {
   const seen: unknown = Reflect.get(window, "__motionBorn");
@@ -129,6 +140,7 @@ export async function withPage<T>(
     });
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
+    await page.addInitScript(seedRandom);
     await page.clock.install({ time: 0 });
     await page.clock.pauseAt(1);
     await page.goto(new URL(target.page, base).href, { waitUntil: "load" });

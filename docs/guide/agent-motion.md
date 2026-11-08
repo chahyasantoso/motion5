@@ -261,8 +261,13 @@ Samples every 16 ms up to `--to` and reports, each with its duration: two watche
 `--overlap` frames (default 12), a centre moving more than `--jump` px in one frame (default 150), a final hold
 shorter than `--hold` ms (default 500), and an element still moving on the last frame. It exits `1` when it finds
 anything. An overlap compares the parts of boxes a viewer can see: a box hidden, at zero opacity or clipped out by
-an ancestor's overflow is left out, but a dot passing behind a letter still counts. Leave out of `--watch` an
-element meant to touch another, such as a foot on a ball.
+an ancestor's overflow is left out, but a dot passing behind a letter still counts. Mark an element meant to touch
+another with `data-motion-touch="<selector>"`, such as `data-motion-touch=".ball"` on a foot, and their overlap is not
+reported; an empty value lets it touch anything watched.
+
+On the last frame it also reads every piece of text on the page, watched or not: text whose contrast against what is
+behind it is under WCAG's 3:1 for large text or 4.5:1 for the rest, after its opacity, and text running off the
+page's edge. The page tools seed `Math.random`, so a page that scatters things scatters them alike on every run.
 
 ```bash
 npm run motion:points -- shape.json --spacing 12

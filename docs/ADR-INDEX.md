@@ -163,3 +163,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-156 — Core is frozen — Accepted, 2026-11-08
 - ADR-157 — What an agent needs from moves and rig — Accepted, 2026-11-08
 - ADR-158 — motion:read, and CSS animations held to the paused clock — Accepted, 2026-11-08
+- ADR-159 — motion:check reads text and contacts the page marks — Accepted, 2026-11-08

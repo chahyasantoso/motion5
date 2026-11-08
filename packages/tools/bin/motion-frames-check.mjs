@@ -169,6 +169,46 @@ try {
   });
   assert.deepEqual(hidden.findings, [], JSON.stringify(hidden.findings));
 
+  // Planted faults, each named: faint text, a word off the page's edge, and an unmarked contact.
+  const small = { width: 640, height: 360, source: { kind: "serve", root: site } };
+  writeFileSync(
+    join(site, "faults.html"),
+    `<body style="margin:0;background:#000;font:700 40px sans-serif">
+<p style="position:absolute;left:20px;top:0;margin:0;color:#222">FAINT</p>
+<p style="position:absolute;left:20px;top:80px;margin:0;color:#fff">CLEAR</p>
+<p style="position:absolute;left:560px;top:160px;margin:0;color:#fff">EDGE</p>
+${box("foot", "top:260px")}${box("ball", "top:260px;left:20px")}
+${box("hand", "top:300px;left:200px")}<div data-motion-touch="#hand" id="cup" style="position:absolute;top:300px;left:220px;width:40px;height:40px"></div></body>`,
+  );
+  const faults = await checkMotion({
+    page: "faults.html",
+    ...small,
+    watch: ["#foot", "#ball", "#hand", "#cup"],
+    to: 400,
+    limits: DEFAULT_LIMITS,
+  });
+  assert.deepEqual(
+    faults.findings.map((finding) =>
+      finding.kind === "overlap"
+        ? `overlap ${finding.a} ${finding.b}`
+        : `${finding.kind} ${finding.element}`,
+    ),
+    ["overlap #foot[0] #ball[0]", 'low-contrast p "FAINT"', 'cut-off p "EDGE"'],
+  );
+
+  // Math.random is seeded, so a page that scatters things puts them in the same place every run.
+  writeFileSync(
+    join(site, "random.html"),
+    `<div id="dot" style="position:absolute;width:10px;height:10px"></div>
+<script>document.getElementById("dot").style.left = Math.round(Math.random() * 500) + "px";</script>`,
+  );
+  const scatter = () =>
+    probeElements({ page: "random.html", ...small, at: [0], select: "#dot" }).then(
+      (result) => result.samples[0]?.elements[0]?.box.x,
+    );
+  const [once, twice] = [await scatter(), await scatter()];
+  assert.equal(once, twice, "Math.random gives the same numbers every run");
+
   // A CSS animation follows the paused clock, and motion:read gives back its delay, length and ease.
   writeFileSync(
     join(site, "css.html"),
