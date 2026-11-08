@@ -8,6 +8,7 @@ export const trace = defineMove({
   inputs: {},
   output: "drawn",
   extras: {},
+  moments: () => ({}),
   run(_options, { progress }) {
     return { drawn: progress };
   },

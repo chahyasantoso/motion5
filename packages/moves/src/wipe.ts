@@ -16,6 +16,7 @@ export const wipe = defineMove({
   inputs: {},
   output: "reveal",
   extras: {},
+  moments: () => ({}),
   run({ radius, x, y }, { progress }) {
     return { x, y, radius: radius * progress * progress * (3 - 2 * progress) };
   },

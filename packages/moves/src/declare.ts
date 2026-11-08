@@ -52,6 +52,9 @@ export type Inputs<Is extends InputFields> = {
 /** The trailing arguments a caller passes: none for a move without inputs. */
 export type InputArgs<Is extends InputFields> = keyof Is extends never ? [] : [inputs: Inputs<Is>];
 
+/** Named times a move reaches, as shares of its progress, such as a hop's landings. */
+export type Moments = Readonly<Record<string, number | readonly number[]>>;
+
 /** Named secondary outputs: each a record of numbers, such as a hop's `contact`. */
 export type ExtraFields = Readonly<Record<string, Readonly<Record<string, "number">>>>;
 
@@ -90,6 +93,7 @@ export interface MoveDeclaration<
   Is extends InputFields,
   O extends OutputKind,
   E extends ExtraFields,
+  M extends Moments = Moments,
 > {
   readonly id: string;
   readonly description: string;
@@ -98,6 +102,8 @@ export interface MoveDeclaration<
   readonly output: O;
   readonly extras: E;
   run(options: Options<Fs>, time: Time, inputs: Inputs<Is>): MoveOutput<O, E>;
+  /** Where in its progress the move reaches each named moment, for these options. */
+  moments(options: Options<Fs>): M;
 }
 
 /** A move: callable with a caller's options, and carrying the declaration it came from. */
@@ -106,8 +112,11 @@ export interface Move<
   Is extends InputFields,
   O extends OutputKind,
   E extends ExtraFields,
-> extends MoveDeclaration<Fs, Is, O, E> {
+  M extends Moments = Moments,
+> extends Omit<MoveDeclaration<Fs, Is, O, E, M>, "moments"> {
   (options: OptionsIn<Fs>, time: Time, ...inputs: InputArgs<Is>): MoveOutput<O, E>;
+  /** Where in its progress the move reaches each named moment, as shares from 0 to 1. */
+  moments(options: OptionsIn<Fs>): M;
   /** Validates a record against the options and fills defaults; keys it does not declare are ignored. */
   read(value: unknown): Options<Fs>;
   /** Validates a record against the inputs. */
@@ -216,7 +225,8 @@ export function defineMove<
   const Is extends InputFields,
   const O extends OutputKind,
   const E extends ExtraFields,
->(declaration: MoveDeclaration<Fs, Is, O, E>): Move<Fs, Is, O, E> {
+  const M extends Moments,
+>(declaration: MoveDeclaration<Fs, Is, O, E, M>): Move<Fs, Is, O, E, M> {
   const read = (value: unknown) => readOptions(declaration.id, declaration.options, value);
   const readGiven = (value: unknown) => readInputs(declaration.id, declaration.inputs, value);
   const call = (options: OptionsIn<Fs>, time: Time, ...rest: readonly unknown[]) =>
@@ -231,5 +241,6 @@ export function defineMove<
     run: declaration.run,
     read,
     readInputs: readGiven,
+    moments: (options: OptionsIn<Fs>) => declaration.moments(read(options)),
   });
 }

@@ -65,6 +65,7 @@ export const rope = defineMove({
   },
   output: "anchors2d",
   extras: {},
+  moments: () => ({}),
   run({ angle, pin, release, overshoot, ripple }, { progress }, { points }) {
     const pinEnd = pin === "end";
     const shape = pinEnd ? [...points].reverse() : points;

@@ -1,4 +1,15 @@
-export { UNTIMED, atProgress, window, windowed, type Clock, type Time } from "./time";
+export {
+  UNTIMED,
+  atProgress,
+  span,
+  window,
+  windowed,
+  type Clock,
+  type Span,
+  type Time,
+} from "./time";
+export { ease, type Ease } from "./ease";
+export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { lane, laneTime, lanes, type Lanes } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
@@ -15,6 +26,7 @@ export {
   type InputTypes,
   type Move,
   type MoveDeclaration,
+  type Moments,
   type MoveOutput,
   type OptionField,
   type OptionFields,

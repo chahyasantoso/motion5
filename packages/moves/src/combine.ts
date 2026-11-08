@@ -1,7 +1,4 @@
-import type { Pose2d } from "./pose";
-
-const ADDED = ["x", "y", "rotation"] as const;
-const MULTIPLIED = ["scale", "scaleX", "scaleY", "opacity"] as const;
+import { ADDED_FIELDS as ADDED, MULTIPLIED_FIELDS as MULTIPLIED, type Pose2d } from "./pose";
 
 /** Poses on one target as one: offsets and turns add, scales and opacity multiply, the first anchor stays. */
 export function combine(poses: readonly Pose2d[]): Pose2d {

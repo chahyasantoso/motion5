@@ -29,6 +29,27 @@ describe("hop", () => {
   });
 });
 
+describe("a move's moments", () => {
+  it("put each hop landing where the hop touches the floor and counts a hit", () => {
+    const options = { height: 330, bounces: 2, decay: 0.35, dx: 1000 };
+    const { landings, lastLanding } = hop.moments(options);
+    expect(landings).toHaveLength(3);
+    expect(lastLanding).toBeCloseTo(0.9173, 4);
+    expect(landings.at(-1)).toBe(lastLanding);
+    landings.forEach((share, flight) => {
+      expect(hop(options, atProgress(share - 1e-9)).y).toBeCloseTo(0, 4);
+      expect(hop(options, atProgress(share + 1e-9)).contact.hits).toBe(flight + 1);
+    });
+    expect(hop(options, atProgress(lastLanding)).x).toBeCloseTo(0, 9);
+  });
+
+  it("put the drop's landing where it reaches rest", () => {
+    const { landing } = drop.moments({ distance: 500 });
+    expect(drop({ distance: 500 }, atProgress(landing)).y).toBeCloseTo(0, 9);
+    expect(drop({ distance: 500 }, atProgress(landing - 0.05)).y).toBeLessThan(0);
+  });
+});
+
 describe("drop", () => {
   it("starts above rest and lands at rest", () => {
     expect(drop({ distance: 300 }, atProgress(0)).y).toBe(-300);

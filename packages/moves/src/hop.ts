@@ -11,6 +11,23 @@ function contactWeight(distance: number): number {
 
 // Lands `bounces + 1` times and settles at rest, arriving from `dx` to the left.
 // Each flight is `decay` times as high, so it lasts `sqrt(decay)` as long and hits softer.
+/** Each flight's length, in flights of the first, and the whole run with its settle. */
+function schedule(bounces: number, decay: number) {
+  const flights = Math.floor(bounces) + 1;
+  const shrink = Math.sqrt(decay);
+  const lastFlight = shrink ** (flights - 1);
+  const lengths = Array.from({ length: flights }, (_, flight) => shrink ** flight);
+  const airtime = lengths.reduce((sum, length) => sum + length, 0);
+  return {
+    flights,
+    shrink,
+    lastFlight,
+    lengths,
+    airtime,
+    total: airtime + lastFlight * SETTLE_SHARE,
+  };
+}
+
 export const hop = defineMove({
   id: "hop",
   description: "Lands bounces + 1 times, each flight lower, and settles at rest.",
@@ -46,12 +63,7 @@ export const hop = defineMove({
   output: "pose2d",
   extras: { contact: { hits: "number", justHit: "number" } },
   run({ height, bounces, decay, squash, dx }, { progress }) {
-    const flights = Math.floor(bounces) + 1;
-    const shrink = Math.sqrt(decay);
-    const lastFlight = shrink ** (flights - 1);
-    let airtime = 0;
-    for (let flight = 0; flight < flights; flight += 1) airtime += shrink ** flight;
-    const total = airtime + lastFlight * SETTLE_SHARE;
+    const { flights, shrink, lastFlight, airtime, total } = schedule(bounces, decay);
     const time = progress * total;
 
     let start = 0;
@@ -82,5 +94,11 @@ export const hop = defineMove({
       ...squashed(squash, weight),
       contact: { hits, justHit: weight },
     };
+  },
+  moments({ bounces, decay }) {
+    const { lengths, airtime, total } = schedule(bounces, decay);
+    let start = 0;
+    const landings = lengths.map((length) => (start += length) / total);
+    return { landings, lastLanding: airtime / total };
   },
 });

@@ -1,3 +1,5 @@
+import type { Ease } from "./ease";
+
 /** A track's clock: milliseconds when a timed trigger drives it, none under scroll or manual control. */
 export type Clock =
   | { readonly kind: "timed"; readonly elapsed: number; readonly length: number }
@@ -37,6 +39,33 @@ export function window(time: Time, from: number, to: number): Time {
     default:
       return unreachable(clock);
   }
+}
+
+/** A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on. */
+export interface Span {
+  readonly from: number;
+  readonly to: number;
+  /** `time` inside this span, its progress run through `ease` when one is given. */
+  of(time: Time, ease?: Ease): Time;
+  /** The scene ms `share` of the way through this span, such as a move's moment. */
+  at(share: number): number;
+}
+
+/** The stretch from `fromMs` to `toMs` of a scene `durationMs` long. */
+export function span(fromMs: number, toMs: number, durationMs: number): Span {
+  if (!(durationMs > 0))
+    throw new RangeError(`span: durationMs must be above 0, not ${durationMs}.`);
+  const from = fromMs / durationMs;
+  const to = toMs / durationMs;
+  return Object.freeze({
+    from: fromMs,
+    to: toMs,
+    of(time: Time, curve?: Ease): Time {
+      const inner = window(time, from, to);
+      return curve === undefined ? inner : { ...inner, progress: curve(inner.progress) };
+    },
+    at: (share: number) => fromMs + (toMs - fromMs) * share,
+  });
 }
 
 /** The sink of an exhaustive switch: a value TypeScript proves cannot arrive. */

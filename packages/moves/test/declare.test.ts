@@ -17,6 +17,7 @@ const slide = defineMove({
   inputs: {},
   output: "pose2d",
   extras: {},
+  moments: ({ side }) => ({ crossing: side === "left" ? 0.25 : 0.75 }),
   run(options, time: Time) {
     const sign = options.side === "left" ? -1 : 1;
     return {
@@ -33,6 +34,12 @@ describe("a move's declaration", () => {
 
   it("runs on the options it read", () => {
     expect(slide({ distance: 100, side: "right" }, atProgress(0.25))).toEqual({ x: 75 });
+  });
+
+  it("states its moments for the options it read, defaults filled", () => {
+    expect(slide.moments({ distance: 1 })).toEqual({ crossing: 0.25 });
+    expect(slide.moments({ distance: 1, side: "right" }).crossing).toBe(0.75);
+    expect(() => slide.moments({ distance: -1 })).toThrow(/slide: option "distance"/);
   });
 
   it("refuses a missing required option by name", () => {

@@ -26,4 +26,5 @@ export const drop = defineMove({
     const weight = progress < FALL_SHARE ? 0 : (1 - settled) ** 2;
     return { y: 0 - distance * (1 - fall * fall), ...squashed(squash, weight) };
   },
+  moments: () => ({ landing: FALL_SHARE }),
 });
