@@ -23,6 +23,7 @@ is one line, and a rule this file does not carry is not a rule.
   proposing a flag, alias, facade, second owner, compatibility path or new public export.
 - How to use the runtime: [the user guide](docs/guide/README.md).
 - How to make motion as an agent: [the agent guide](docs/guide/agent-motion.md).
+- Every function, type and command a scene uses: [the agent reference](docs/guide/agent-reference.md).
 - A human contributor: [README.md](README.md) and [the documentation map](docs/README.md).
 
 ## Commands

@@ -2,7 +2,8 @@
 
 You write motion as code: a **scene** is a function from time to values, one value per target. The repo gives you
 the moves, the rig, a player, renderers, and tools that report back in numbers and pictures, so you can correct your
-own work without watching it play. This guide assumes a checkout of this repository.
+own work without watching it play. This guide assumes a checkout of this repository. Every function, type and command, with a
+short example each, is in [the agent reference](./agent-reference.md): look things up there, not in package source.
 
 ## The loop
 
