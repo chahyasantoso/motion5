@@ -90,3 +90,12 @@ describe("page actions with a point", () => {
     ]);
   });
 });
+
+describe("motion:read turns", () => {
+  it("reads a turn across ±180 degrees as the small turn it is", async () => {
+    const { unwrapTurns } = await import("../src/page/read");
+    expect(unwrapTurns([179, -179, -175, 178])).toEqual([179, 181, 185, 178]);
+    const still = unwrapTurns([179.95, -179.98, 179.99, -179.97]);
+    expect(segmentsOf("rotation", times(still.length), still)).toEqual([]);
+  });
+});

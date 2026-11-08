@@ -114,6 +114,16 @@ function segment(
   return { channel, from, to, start, end, ease: fitCurve(points) };
 }
 
+/** Angles read from a matrix wrap at ±180; this keeps each the short way from the last, so a wrap is no move. */
+export function unwrapTurns(degrees: readonly number[]): readonly number[] {
+  const out: number[] = [];
+  for (const angle of degrees) {
+    const last = out.at(-1);
+    out.push(last === undefined ? angle : last + ((((angle - last) % 360) + 540) % 360) - 180);
+  }
+  return out;
+}
+
 /** One channel's samples as moves: each from where it starts to where it settles or turns back. */
 export function segmentsOf(
   channel: Channel,
@@ -205,7 +215,9 @@ export async function readMotion(request: ReadMotionRequest): Promise<ReadMotion
         segmentsOf(
           channel,
           times,
-          rows.map((row) => row[column] ?? 0),
+          channel === "rotation"
+            ? unwrapTurns(rows.map((row) => row[column] ?? 0))
+            : rows.map((row) => row[column] ?? 0),
         ),
       ).sort((a, b) => a.start - b.start),
     }));
