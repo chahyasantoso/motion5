@@ -25,6 +25,8 @@
       "@motion5/dom/engine": ["packages/dom/src/engine/index.ts"],
       "@motion5/moves": ["packages/moves/src/index.ts"],
       "@motion5/player": ["packages/player/src/index.ts"],
+      "@motion5/physics": ["packages/physics/src/index.ts"],
+      "@motion5/rapier": ["packages/rapier/src/index.ts"],
       "@motion5/tools/engine": ["packages/tools/src/engine/index.ts"],
       "@motion5/tools/page": ["packages/tools/src/page/index.ts"],
       "@motion5/tools/scene": ["packages/tools/src/scene/index.ts"],

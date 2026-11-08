@@ -8,6 +8,8 @@ const SOURCES = [
   "packages/moves/src",
   "packages/rig/src",
   "packages/player/src",
+  "packages/physics/src",
+  "packages/rapier/src",
   "packages/dom/src",
   "packages/plugins/src",
   "packages/react/src",
