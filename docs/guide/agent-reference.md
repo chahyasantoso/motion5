@@ -363,21 +363,34 @@ player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
 
 ## Commands
 
-Run from the repository root; each page tool takes `--size WxH`, `--root dir` or `--url address`, and `--action`.
+Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/react-demo`
+unless `--root <dir>` serves another folder or `--url <address>` names a running server, and `--root` and `--out` are
+read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
+and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` and
+`--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
+`(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
-- **`motion:new <name>`**: writes a page, entry, component and scene module in `apps/react-demo`.
-- **`motion:review <page> --watch sel --to ms`**: check, read and a frame sheet in one call.
-- **`motion:check <page> --watch sel --to ms`**: overlaps, jumps, short holds, still moving, faint or cut-off text.
-- **`motion:read <page> --select sel --to ms`**: each element's moves with named eases.
-- **`motion:frames <page> --at ms,ms`**: PNGs and a sheet; `--onion sel --from ms --to ms --every ms` for a path.
-- **`motion:probe <page> --at ms --select sel`**: boxes, transforms, colours.
-- **`motion:render <page> --to ms --out file`**: an MP4, or a GIF with `--format gif`.
-- **`motion:sample <scene.ts> --at ms,ms`**: exact values with no browser; `--events` plays events.
-- **`motion:timeline <scene.ts>`**: when each target moves, as text bars; `--events` plays events.
-- **`motion:points <points.json> --spacing px`**: points resampled to an even spacing.
+- **`motion:new <name>`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in `apps/react-demo`.
+- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
+  `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+- **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
+  frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
+  moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
+  edge. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
+  `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
+- **`motion:read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
+  `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
+  and a fitted `cubic-bezier`. A move splits where it turns back.
+- **`motion:frames <page> --at ms,ms [--out dir]`**: a PNG per time and a labelled `sheet.png`; read the sheet.
+  `--onion sel --from ms --to ms --every ms` draws an element at each step on one frame, with its path.
+- **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
+- **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
+  run, or a 640 px GIF at 25; needs `ffmpeg`.
+- **`motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events list]`**: exact
+  values with no browser; reads the module's `cues`.
+- **`motion:timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
+- **`motion:points <points.json> --spacing px`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
 - **`motion:catalog`**: lists the engine's plugins; engine only.
-- **`--action`**: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms(x,y)`, `press:sel@ms`, `release:sel@ms`,
-  `scroll:px@ms`.
 
 ## Engine only
 

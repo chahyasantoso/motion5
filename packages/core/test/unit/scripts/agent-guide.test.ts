@@ -2,7 +2,13 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const ROOT = new URL("../../../../../", import.meta.url);
-const guide = ["docs/guide/agent-motion.md", "docs/guide/agent-motion-engine.md"]
+const guide = [
+  "docs/guide/agent-motion.md",
+  "docs/guide/agent-events.md",
+  "docs/guide/agent-physics.md",
+  "docs/guide/agent-rigs.md",
+  "docs/guide/agent-motion-engine.md",
+]
   .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
   .join("\n");
 const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.parse(
@@ -49,9 +55,12 @@ describe("agent guide", () => {
   });
 
   it("stays reachable from the guide index and the agent rules", () => {
-    expect(readFileSync(new URL("docs/guide/README.md", ROOT), "utf8")).toContain(
-      "./agent-motion.md",
-    );
+    const index = readFileSync(new URL("docs/guide/README.md", ROOT), "utf8");
+    const core = readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8");
+    for (const part of ["agent-motion", "agent-events", "agent-physics", "agent-rigs"])
+      expect(index, part).toContain(`./${part}.md`);
+    for (const part of ["agent-events", "agent-physics", "agent-rigs"])
+      expect(core, part).toContain(`./${part}.md`);
     expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(
       "docs/guide/agent-motion.md",
     );

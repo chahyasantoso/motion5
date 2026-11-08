@@ -5,12 +5,12 @@ description: Make, change or polish an animation or motion piece for a web page 
 
 # Make motion
 
-[`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) is the one source for how to make motion here.
-Read it in full first, then follow its loop. This skill adds only how to work:
-
-- Learn the library from the guide, [the agent reference](../../../docs/guide/agent-reference.md) and the worked
-  examples, not from package source. If you must open a source file, say which one and why in your report: that is
-  a gap in the reference.
-- Choose a look for this brief yourself. Copy the examples' patterns, never their colours or type.
-- Look at frames before you call the piece finished, and say in your report what you did not see at full speed.
-- Change only your piece's files, and commit nothing unless asked.
+1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short.
+2. Read a part it lists (events, physics, rigs) only when the brief needs it.
+3. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
+   do not read the reference whole, and do not read package source. If you must open source, say which file and why
+   in your report: that is a gap in the reference.
+4. Review with `motion:review`; dig with the other tools only into what a review showed.
+5. Choose a look for this brief yourself; copy the examples' patterns, never their colours or type.
+6. Read the sheet before calling the piece finished, and say in your report what you did not see at full speed.
+7. Change only your piece's files, and commit nothing unless asked.
