@@ -19,7 +19,7 @@ export interface Surface {
   readonly friction?: number;
 }
 
-/** A body to add: where its centre starts in stage px, how fast it goes in px a second, and how air slows it. */
+/** A body to add: where its centre starts in stage px, its turn in degrees, and how fast both change. */
 export interface BodySpec extends Surface {
   readonly id: string;
   readonly shape: Shape;
@@ -27,18 +27,26 @@ export interface BodySpec extends Surface {
   readonly y: number;
   readonly vx?: number;
   readonly vy?: number;
+  /** Degrees, clockwise on screen; default 0. */
+  readonly angle?: number;
+  /** Degrees a second, clockwise on screen; default 0. */
+  readonly spin?: number;
+  /** A body that never turns, however it is hit; default false. */
+  readonly fixedRotation?: boolean;
   /** Share of speed lost to air each second; default 0. */
   readonly drag?: number;
   /** Default: the shape's area, so bigger bodies push harder. */
   readonly mass?: number;
 }
 
-/** Where a body's centre is in stage px, and how fast it goes in px a second. */
+/** Where a body's centre is in stage px and how it is turned in degrees, and how fast each changes a second. */
 export interface BodyState {
   readonly x: number;
   readonly y: number;
+  readonly rotation: number;
   readonly vx: number;
   readonly vy: number;
+  readonly spin: number;
 }
 
 /** Two things that started touching during a step: body ids, or a body id and a collider id. */
@@ -47,7 +55,7 @@ export interface Contact {
   readonly b: string;
 }
 
-/** What every physics engine gives a scene, in stage px and seconds with y down; bodies do not turn. */
+/** What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise. */
 export interface PhysicsWorld {
   addBody(body: BodySpec): void;
   addCollider(id: string, collider: Collider, surface?: Surface): void;

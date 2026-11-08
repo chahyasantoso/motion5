@@ -13,6 +13,7 @@ const SCALE = 100;
 /** Half the thickness of a floor or wall, and half its length, in metres. */
 const THICK = 10;
 const LONG = 10_000;
+const RADIANS = Math.PI / 180;
 
 function unreachable(value: never): never {
   throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
@@ -67,9 +68,12 @@ function rapierWorld(): RapierWorld {
     addBody(spec: BodySpec) {
       const desc = RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(spec.x / SCALE, spec.y / SCALE)
+        .setRotation((spec.angle ?? 0) * RADIANS)
         .setLinvel((spec.vx ?? 0) / SCALE, (spec.vy ?? 0) / SCALE)
+        .setAngvel((spec.spin ?? 0) * RADIANS)
         .setLinearDamping(spec.drag ?? 0)
-        .lockRotations();
+        .setAngularDamping(spec.drag ?? 0);
+      if (spec.fixedRotation === true) desc.lockRotations();
       const body = world.createRigidBody(desc);
       bodies.set(spec.id, body.handle);
       const shape =
@@ -118,7 +122,14 @@ function rapierWorld(): RapierWorld {
       const body = world.getRigidBody(handleOf(id));
       const at = body.translation();
       const speed = body.linvel();
-      return { x: at.x * SCALE, y: at.y * SCALE, vx: speed.x * SCALE, vy: speed.y * SCALE };
+      return {
+        x: at.x * SCALE,
+        y: at.y * SCALE,
+        rotation: body.rotation() / RADIANS,
+        vx: speed.x * SCALE,
+        vy: speed.y * SCALE,
+        spin: body.angvel() / RADIANS,
+      };
     },
     drainContacts() {
       const started: Contact[] = [];

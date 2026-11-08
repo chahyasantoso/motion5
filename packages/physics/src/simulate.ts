@@ -16,8 +16,11 @@ export interface SimulateOptions {
 export interface Simulation {
   /** Every body's centre and speed at `time`. */
   at(time: Time): Readonly<Record<string, BodyState>>;
-  /** How far a body has moved from where it started: the pose for an element laid out at its start. */
-  pose(id: string, time: Time): { readonly x: number; readonly y: number };
+  /** How far a body has moved from where it started, and its turn: the pose for an element laid out at its start. */
+  pose(
+    id: string,
+    time: Time,
+  ): { readonly x: number; readonly y: number; readonly rotation: number };
   /** A `contact` event per body for every contact that started up to `time`, oldest first. */
   events(time: Time): Events;
 }
@@ -102,7 +105,7 @@ export function simulate(
       const now = at(time)[id];
       if (start === undefined || now === undefined)
         throw new RangeError(`simulate: no body "${id}".`);
-      return { x: now.x - start.x, y: now.y - start.y };
+      return { x: now.x - start.x, y: now.y - start.y, rotation: now.rotation };
     },
     events(time) {
       seek(stepOf(time));

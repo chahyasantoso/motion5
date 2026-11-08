@@ -94,5 +94,122 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
       for (const ms of times) expect(jumping.at(liveAt(ms))).toEqual(straight.at(liveAt(ms)));
       expect(jumping.events(liveAt(1700))).toEqual(straight.events(liveAt(1700)));
     });
+
+    it("slows a sliding box with friction, and never lifts it off the floor", () => {
+      const sim = simulate(create(), (world) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR }, { friction: 0.8 });
+        world.addBody({
+          id: "box",
+          shape: { kind: "box", width: 40, height: 40 },
+          x: 200,
+          y: FLOOR - 20,
+          vx: 600,
+          friction: 0.8,
+        });
+      });
+      const path = Array.from(
+        { length: 241 },
+        (_, step) => sim.at(liveAt((step * 1000) / 120)).box,
+      );
+      for (const box of path) expect(box?.y ?? 0).toBeGreaterThan(FLOOR - 20 - 2);
+      const end = path.at(-1);
+      expect(Math.abs(end?.vx ?? 1)).toBeLessThan(2);
+      expect(end?.x ?? 0).toBeLessThan(200 + (600 * 600) / (2 * 0.8 * G) + 20);
+      expect(Math.abs(end?.rotation ?? 99)).toBeLessThan(5);
+    });
+
+    it("settles a heap of sticky bodies with nothing thrown above where it started", () => {
+      const sim = simulate(create(), (world) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR }, { friction: 0.9 });
+        world.addCollider("left", { kind: "wall", x: 500, side: "left" });
+        world.addCollider("right", { kind: "wall", x: 780, side: "right" });
+        for (let i = 0; i < 40; i += 1)
+          world.addBody({
+            id: `bit${i}`,
+            shape:
+              i % 3 === 0 ? { kind: "circle", radius: 10 } : { kind: "box", width: 28, height: 12 },
+            x: 520 + ((i * 37) % 240),
+            y: 100 + i * 9,
+            angle: (i * 47) % 180,
+            friction: 0.9,
+            restitution: 0.2,
+          });
+      });
+      for (let ms = 0; ms <= 6000; ms += 50)
+        for (const [id, body] of Object.entries(sim.at(liveAt(ms)))) {
+          const start = 100 + Number(id.slice(3)) * 9;
+          expect(body.y, `${id} at ${ms} ms`).toBeGreaterThan(start - 40);
+        }
+      for (const body of Object.values(sim.at(liveAt(6000)))) {
+        expect(Math.hypot(body.vx, body.vy)).toBeLessThan(5);
+        expect(body.y).toBeLessThan(FLOOR);
+      }
+    });
+
+    it("tips a box that lands on its corner flat onto a face, and lets it rest", () => {
+      const sim = simulate(create(), (world) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR });
+        world.addBody({
+          id: "box",
+          shape: { kind: "box", width: 60, height: 60 },
+          x: 640,
+          y: 450,
+          angle: 30,
+        });
+      });
+      const end = sim.at(liveAt(3000)).box;
+      const off = (((end?.rotation ?? 45) % 90) + 90) % 90;
+      expect(Math.min(off, 90 - off)).toBeLessThan(2);
+      expect(Math.abs((end?.y ?? 0) - (FLOOR - 30))).toBeLessThan(1.5);
+    });
+
+    it("rolls a ball along the floor, turning clockwise as it goes right", () => {
+      const sim = simulate(create(), (world) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR });
+        world.addBody({
+          id: "ball",
+          shape: { kind: "circle", radius: 20 },
+          x: 200,
+          y: FLOOR - 20,
+          vx: 400,
+        });
+      });
+      const ball = sim.at(liveAt(500)).ball;
+      expect(ball?.spin ?? 0).toBeGreaterThan(0);
+      const rolling = ((ball?.spin ?? 0) * Math.PI * 20) / 180;
+      expect(Math.abs(rolling - (ball?.vx ?? 0))).toBeLessThan(0.15 * Math.abs(ball?.vx ?? 1));
+    });
+
+    it("keeps a stack of three boxes standing, and never turns a fixed body", () => {
+      const sim = simulate(create(), (world) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR });
+        for (let i = 0; i < 3; i += 1)
+          world.addBody({
+            id: `stack${i}`,
+            shape: { kind: "box", width: 50, height: 50 },
+            x: 400,
+            y: FLOOR - 25 - i * 50,
+          });
+        world.addBody({
+          id: "fixed",
+          shape: { kind: "box", width: 60, height: 60 },
+          x: 900,
+          y: 450,
+          angle: 30,
+          fixedRotation: true,
+        });
+      });
+      const end = sim.at(liveAt(3000));
+      for (let i = 0; i < 3; i += 1) {
+        expect(Math.abs((end[`stack${i}`]?.x ?? 0) - 400)).toBeLessThan(3);
+        expect(Math.abs(end[`stack${i}`]?.rotation ?? 99)).toBeLessThan(3);
+      }
+      expect(end.fixed?.rotation).toBeCloseTo(30, 3);
+    });
   });
 }
