@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateV5, type ProjectDefinition } from "@motion5/core";
 import { code } from "../../../packages/core/test/helpers/source-region";
-import { loadBuiltinCatalog } from "../../../scripts/motion-tools/catalog";
-import { sampleProject, type NodeSample } from "../../../scripts/motion-tools/sample";
+import { loadBuiltinCatalog } from "../../../packages/tools/src/engine/catalog";
+import { sampleProject, type NodeSample } from "../../../packages/tools/src/engine/sample";
 
 const PROJECT_URL = new URL("../src/timing-beat.json", import.meta.url);
 const COMPONENT_URL = new URL("../src/TimingBeat.tsx", import.meta.url);

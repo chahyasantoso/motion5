@@ -3,8 +3,8 @@ import { validateV5 } from "@motion5/core";
 import { cssClip } from "@motion5/dom";
 import type { Pose2d } from "@motion5/moves";
 import { manualDriver, play } from "@motion5/player";
-import { loadBuiltinCatalog } from "../../../scripts/motion-tools/catalog";
-import { sampleProject, type NodeSample } from "../../../scripts/motion-tools/sample";
+import { loadBuiltinCatalog } from "../../../packages/tools/src/engine/catalog";
+import { sampleProject, type NodeSample } from "../../../packages/tools/src/engine/sample";
 import timingBeat from "../src/timing-beat.json";
 import { BEAT_MS, timingScene } from "../src/timing-scene";
 

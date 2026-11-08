@@ -188,7 +188,7 @@ export type SampleArgs =
   | { readonly kind: "usage"; readonly message: string };
 
 const USAGE =
-  "usage: motion:sample <project.json> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b]";
+  "usage: motion:sample <project.json | scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b]";
 
 export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const usage = (message: string): SampleArgs => ({ kind: "usage", message });

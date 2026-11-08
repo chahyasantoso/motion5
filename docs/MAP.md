@@ -103,8 +103,10 @@ Public: `.`, `./skeleton`
 
 ## packages/tools
 
-Public: `./page`, `./engine`
+Public: `./page`, `./scene`, `./engine`
 
 - `src/engine/`: sample, timeline, catalog, new
 - `src/engine/templates/`: motion:new templates
 - `src/page/`: frames, probe, check, points
+- `src/scene/`: scene sample, timeline
+- `src/timeline/`: timeline bars

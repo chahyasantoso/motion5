@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { validateV5, type ProjectDefinition } from "@motion5/core";
 import { code } from "../../../packages/core/test/helpers/source-region";
-import { loadBuiltinCatalog } from "../../../scripts/motion-tools/catalog";
-import { sampleProject } from "../../../scripts/motion-tools/sample";
+import { loadBuiltinCatalog } from "../../../packages/tools/src/engine/catalog";
+import { sampleProject } from "../../../packages/tools/src/engine/sample";
 
 const COMPONENT = join(process.cwd(), "apps/react-demo/src/rope-word.tsx");
 

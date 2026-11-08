@@ -586,6 +586,16 @@ function checkPluginSource(source, file, specifiers, violations, pure) {
     violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
+/** Page tools work on any page, so they import node, a browser driver and a dev server, never motion5. */
+function checkPageTools(file, specifiers, violations) {
+  const allowed = specifiers.every((specifier) =>
+    specifier.startsWith(".")
+      ? posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(PAGE_TOOLS)
+      : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
+  );
+  if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
+}
+const PAGE_TOOLS = "packages/tools/src/page/";
 /** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
 function checkPureSource(workspace, file, specifiers, violations, pure) {
   const inside = specifiers.every((specifier) =>
@@ -622,6 +632,7 @@ export async function scan(scanRoot = root) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
+      if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
       if (pure.folders.has(workspace))
         checkPureSource(workspace, file, specifiers, violations, pure);
       if (workspace === "packages/plugins") {

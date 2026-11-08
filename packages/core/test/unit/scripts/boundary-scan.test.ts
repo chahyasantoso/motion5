@@ -632,6 +632,27 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("keeps page tools to node, playwright-core and vite", async () => {
+    const violations = await withTree(
+      {
+        "packages/tools/package.json": JSON.stringify({ name: "@motion5/tools", exports: {} }),
+        "packages/tools/src/page/frames.ts":
+          'import { join } from "node:path";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, chromium, a];',
+        "packages/tools/src/page/page.ts":
+          'import { createServer } from "vite";\nexport const a = createServer;',
+        "packages/tools/src/page/sample.ts":
+          'import { Engine } from "@motion5/core";\nexport const e = Engine;',
+        "packages/tools/src/page/reach.ts":
+          'import { s } from "../engine/sample";\nexport const r = s;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/tools/src/page/reach.ts: page tool import outside node, playwright-core and vite",
+      "packages/tools/src/page/sample.ts: page tool import outside node, playwright-core and vite",
+    ]);
+  });
+
   it("TH-203a refuses a core import from a plugin domain layer", async () => {
     const violations = await withTree(
       {

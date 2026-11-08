@@ -1,22 +1,10 @@
 import type { PluginCatalog, ProjectDefinition } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 import { sampleProject, type NodeSample } from "./sample";
+import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
-export type TimelineRow =
-  | { readonly kind: "moves"; readonly node: string; readonly start: number; readonly rest: number }
-  | { readonly kind: "still"; readonly node: string };
+export { renderTimeline, type TimelineResult, type TimelineRow } from "../timeline/timeline";
 
-export type TimelineResult =
-  | {
-      readonly kind: "timeline";
-      readonly step: number;
-      readonly end: number;
-      readonly rows: readonly TimelineRow[];
-    }
-  | { readonly kind: "not-timed"; readonly reasons: readonly string[] };
-
-const STEP_MS = 16;
-const BAR_WIDTH = 60;
 const END_LIMIT_MS = 60_000;
 
 /** The time each time-triggered Motion stops changing, or why the project has none. */
@@ -77,50 +65,13 @@ export function timelineOf(project: ProjectDefinition, catalog: PluginCatalog): 
     default:
       return unreachable(result);
   }
-  const nodes = Object.keys(result.samples[0]?.nodes ?? {});
-  const rows = nodes.map((node): TimelineRow => {
-    let start: number | undefined;
-    let rest = 0;
-    for (let index = 1; index < result.samples.length; index += 1) {
-      const before = fingerprint(result.samples[index - 1]?.nodes[node]);
-      const after = fingerprint(result.samples[index]?.nodes[node]);
-      if (before === after) continue;
-      const at = result.samples[index - 1]?.at ?? 0;
-      start ??= at;
-      rest = result.samples[index]?.at ?? at;
-    }
-    return start === undefined ? { kind: "still", node } : { kind: "moves", node, start, rest };
-  });
+  const rows = changeRows(
+    result.samples.map(({ at, nodes }) => ({
+      at,
+      fingerprints: Object.fromEntries(
+        Object.entries(nodes).map(([node, sample]) => [node, fingerprint(sample)]),
+      ),
+    })),
+  );
   return { kind: "timeline", step: STEP_MS, end, rows };
-}
-
-/** One text bar per node: `#` while it changes, `.` while it holds. */
-export function renderTimeline(timeline: TimelineResult): string {
-  switch (timeline.kind) {
-    case "not-timed":
-      return timeline.reasons.join("\n");
-    case "timeline": {
-      const width = Math.max(...timeline.rows.map(({ node }) => node.length), 4);
-      const column = (at: number) => Math.round((at / timeline.end) * (BAR_WIDTH - 1));
-      const lines = timeline.rows.map((row) => {
-        switch (row.kind) {
-          case "still":
-            return `${row.node.padEnd(width)} ${".".repeat(BAR_WIDTH)}  still`;
-          case "moves": {
-            const from = column(row.start);
-            const to = Math.max(from, column(Math.min(row.rest, timeline.end)));
-            const bar =
-              ".".repeat(from) + "#".repeat(to - from + 1) + ".".repeat(BAR_WIDTH - to - 1);
-            return `${row.node.padEnd(width)} ${bar}  ${row.start}-${row.rest} ms`;
-          }
-          default:
-            return unreachable(row);
-        }
-      });
-      const scale = `${"".padEnd(width)} 0 ms${`${timeline.end} ms`.padStart(BAR_WIDTH - 4)}`;
-      return [scale, ...lines].join("\n");
-    }
-    default:
-      return unreachable(timeline);
-  }
 }

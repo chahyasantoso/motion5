@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@motion5/core": "0.0.0",
+    "@motion5/moves": "0.0.0",
     "@motion5/player": "0.0.0",
     "@motion5/plugins": "0.0.0"
   },
@@ -16,6 +17,10 @@
     "./page": {
       "types": "./src/page/index.ts",
       "default": "./src/page/index.ts"
+    },
+    "./scene": {
+      "types": "./src/scene/index.ts",
+      "default": "./src/scene/index.ts"
     },
     "./engine": {
       "types": "./src/engine/index.ts",
