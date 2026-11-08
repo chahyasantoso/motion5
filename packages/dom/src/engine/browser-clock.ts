@@ -1,4 +1,4 @@
-import type { Clock, ClockTick } from "../ports/clock";
+import type { Clock, ClockTick } from "@motion5/core";
 
 export interface FrameSource {
   requestFrame(listener: (time: number) => void): number;

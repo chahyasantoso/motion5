@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useRef, type RefCallback } from "react";
-import {
-  createDomPatchAdapter,
-  type DomPatchAdapter,
-  type DomTarget,
-} from "@motion5/core/adapters";
+import { createDomPatchAdapter, type DomPatchAdapter, type DomTarget } from "@motion5/dom/engine";
 
 // A single-element binding has no stage. `perspective` is a project-level property a composition
 // root applies once, and the injected resolver answers every write, so this object is never written

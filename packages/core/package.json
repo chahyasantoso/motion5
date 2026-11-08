@@ -24,10 +24,6 @@
       "types": "./dist/adapters/index.d.ts",
       "default": "./dist/adapters/index.js"
     },
-    "./adapters/browser-clock": {
-      "types": "./dist/adapters/browser-clock.d.ts",
-      "default": "./dist/adapters/browser-clock.js"
-    },
     "./testing": {
       "types": "./dist/testing/fakes.d.ts",
       "default": "./dist/testing/fakes.js"

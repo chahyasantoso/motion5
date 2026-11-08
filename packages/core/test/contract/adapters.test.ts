@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createBrowserClock } from "../../src/adapters/browser-clock";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
+import { createBrowserClock } from "@motion5/dom/engine";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import {
   createGsapInterpolator,
   type GsapTimelineLike,

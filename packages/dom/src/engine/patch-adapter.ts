@@ -1,8 +1,6 @@
-import type { Patch } from "../contract/v5";
-import { patchRender } from "../contract/patch-render";
-import { selectRecord } from "../contract/output-select";
-import { unreachable } from "../lang/exhaustive";
-import { isPlainRecord } from "../lang/plain-record";
+import type { Patch } from "@motion5/core";
+import { isFlatRecord, patchRender, selectRecord, unreachable } from "@motion5/core/plugin-api";
+import { TRANSFORM_KEYS, cssTransform } from "../render";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
@@ -25,26 +23,7 @@ export interface DomPatchAdapter {
   clear(target?: DomTarget): void;
 }
 
-const composedKeys = ["rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY"];
-const transformKeys = new Set(["x", "y", "z", ...composedKeys]);
-function transformValue(key: string, value: unknown): string {
-  if (key === "scale" || key === "scaleX" || key === "scaleY") return `${key}(${String(value)})`;
-  if (key === "rotation") return `rotate(${String(value)}deg)`;
-  if (key === "rotationX") return `rotateX(${String(value)}deg)`;
-  if (key === "rotationY") return `rotateY(${String(value)}deg)`;
-  return `${key}(${String(value)}px)`;
-}
-function composeTransform(values: Readonly<Record<string, unknown>>): string {
-  const parts: string[] = [];
-  if ("x" in values || "y" in values || "z" in values) {
-    const x = values.x ?? 0;
-    const y = values.y ?? 0;
-    const z = values.z ?? 0;
-    parts.push(`translate3d(${String(x)}px, ${String(y)}px, ${String(z)}px)`);
-  }
-  for (const key of composedKeys) if (key in values) parts.push(transformValue(key, values[key]));
-  return parts.join(" ");
-}
+const transformKeys = new Set(TRANSFORM_KEYS);
 function removeStyleProperty(target: DomTarget, key: string): void {
   if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
   else target.style[key] = undefined;
@@ -107,7 +86,7 @@ function createTransformWriter(
     }
     if (Object.keys(state).length > 0) {
       pinTransformReference(target);
-      target.style.transform = composeTransform(state);
+      target.style.transform = cssTransform(state);
     } else if (hadTransform) removeStyleProperty(target, "transform");
     transformState.set(target, state);
   };
@@ -118,7 +97,7 @@ function renderableValues(values: Readonly<Record<string, unknown>>): Record<str
   for (const [key, value] of Object.entries(values)) {
     if (key.startsWith("_") || key === "offset") continue;
     // Composites are read by other nodes, not written.
-    if (isPlainRecord(value)) continue;
+    if (isFlatRecord(value)) continue;
     result[key] = value;
   }
   return result;

@@ -18,7 +18,7 @@ npx tsc -p packages/core/tsconfig.build.json
 `Engine` takes a clock, an interpolator, and a scheduler, and validates all three at construction:
 
 - **Clock** advances time. `createManualClock()` for tests and deterministic examples,
-  `createBrowserClock(frameSource)` for a real page.
+  `createBrowserClock(frameSource)` from `@motion5/dom/engine` for a real page.
 - **Interpolator** turns authored cells into values. `createGsapInterpolator(gsap)` is the supported
   v1 implementation.
 - **Scheduler** decides when a pending progress change is applied. `createMicrotaskScheduler()` is

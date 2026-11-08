@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import type { FlatRecord } from "../../src/contract/v5";
 import type { Patch } from "../../src/runtime/patch-registry";
 

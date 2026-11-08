@@ -23,7 +23,7 @@ function declaredSpecifiers(directory: string): readonly string[] {
 }
 
 describe("workspace source aliases", () => {
-  const packages = ["core", "plugins", "react", "three"];
+  const packages = ["core", "plugins", "react", "three", "dom"];
   const aliases = workspaceSourceAliases(...packages);
 
   it("resolves every declared subpath through exactly one alias to an existing source file", () => {
@@ -34,10 +34,10 @@ describe("workspace source aliases", () => {
     }
   });
 
-  it("resolves a nested core subpath to its own module, not its parent's", () => {
-    const [clock] = aliases.filter(({ find }) => find.test("@motion5/core/adapters/browser-clock"));
-    expect(clock!.replacement).toBe(
-      fileURLToPath(new URL("packages/core/src/adapters/browser-clock.ts", root)),
+  it("resolves a nested subpath to its own module, not its parent's", () => {
+    const [engine] = aliases.filter(({ find }) => find.test("@motion5/dom/engine"));
+    expect(engine!.replacement).toBe(
+      fileURLToPath(new URL("packages/dom/src/engine/index.ts", root)),
     );
   });
 

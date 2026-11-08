@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/testing/fakes";

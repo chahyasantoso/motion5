@@ -8,7 +8,7 @@ import {
   type ProjectHandle,
   type TrackHandle,
 } from "@motion5/core";
-import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { createBrowserClock } from "@motion5/dom/engine";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { builtinModels } from "@motion5/plugins/models";

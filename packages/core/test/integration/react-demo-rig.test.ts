@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { recordValues } from "../support/v5-builders";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
-import type { DomTarget } from "../../src/adapters/dom";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
+import type { DomTarget } from "@motion5/dom/engine";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import type { ProjectHandle } from "../../src/engine";

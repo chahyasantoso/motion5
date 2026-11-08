@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Engine, PluginCatalog, createManualClock, type TrackDefinition } from "@motion5/core";
-import { createDomPatchAdapter } from "@motion5/core/adapters";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { builtinModels } from "@motion5/plugins/models";
 import { dropPlugin } from "@motion5/plugins/motion/drop";

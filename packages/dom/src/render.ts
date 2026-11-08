@@ -10,6 +10,9 @@ export interface RenderTarget {
 
 const TURNS_AND_SCALES = ["rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY"];
 
+/** The value keys a CSS transform carries; every other key writes as its own property. */
+export const TRANSFORM_KEYS: readonly string[] = ["x", "y", "z", ...TURNS_AND_SCALES];
+
 function turnOrScale(key: string, value: unknown): string {
   switch (key) {
     case "rotation":

@@ -8,7 +8,7 @@ import {
   type PluginCatalog,
   type ProjectHandle,
 } from "@motion5/core";
-import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { createBrowserClock } from "@motion5/dom/engine";
 import { unreachable } from "@motion5/core/internal";
 
 /** What a page renders from: nothing yet, a live project, or the reasons it was refused. */

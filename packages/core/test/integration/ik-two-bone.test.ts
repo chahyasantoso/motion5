@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createDomPatchAdapter, type DomTarget, type StageLike } from "../../src/adapters/dom";
+import { createDomPatchAdapter, type DomTarget, type StageLike } from "@motion5/dom/engine";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";

@@ -45,7 +45,7 @@ The variants have names in the source and are deliberately not on the package en
 ## The DOM adapter
 
 ```ts
-import { createDomPatchAdapter } from "@motion5/core/adapters";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 
 const adapter = createDomPatchAdapter(document.querySelector("#stage")!, 1200, (nodeId) =>
   targets.get(nodeId),

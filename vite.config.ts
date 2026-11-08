@@ -16,7 +16,8 @@ export default defineConfig({
       "@motion5/react",
       "@motion5/plugins",
       "@motion5/moves",
-      "@motion5/rig", "@motion5/dom",
+      "@motion5/rig",
+      "@motion5/dom",
     ],
   },
   test: {

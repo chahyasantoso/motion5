@@ -8,5 +8,6 @@ export {
   cssOrigin,
   cssTransform,
   pathData,
+  TRANSFORM_KEYS,
   type RenderTarget,
 } from "./render";

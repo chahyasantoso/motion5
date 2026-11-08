@@ -1,5 +1,5 @@
 import { useCallback, useEffect, type RefCallback } from "react";
-import type { DomPatchAdapter } from "@motion5/core/adapters";
+import type { DomPatchAdapter } from "@motion5/dom/engine";
 import type { PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
 

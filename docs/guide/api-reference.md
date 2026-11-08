@@ -10,8 +10,10 @@ list: no package under `packages/*` except core, and no app under `apps/*`, may 
 ADR-036 and ADR-048.
 
 - `@motion5/core` — public; production consumers may import it.
-- `@motion5/core/adapters` and `/adapters/browser-clock` — public adapters; production consumers may
-  import them.
+- `@motion5/core/adapters` — public adapters with no environment code; production consumers may import
+  them.
+- `@motion5/dom` renders poses, reveals, drawn strokes and paths on DOM and SVG elements, and
+  `@motion5/dom/engine` holds the engine's DOM patch adapter and the browser clock.
 - `@motion5/plugins/fk`, `/transform`, and `/ik` — public plugins; production
   consumers may import them.
 - `@motion5/plugins/transform3d`, `/fk3d`, and `/ik3d` — public plugins;
@@ -125,13 +127,13 @@ because the capability is not part of what makes something an `Interpolator`. Se
 
 Optional implementations for the composition root.
 
-- `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?)`, plus DOM adapter types. `apply(patch)` writes a published patch and `applyValues(nodeId, values)` writes a record the caller derived, both through one filter, one composer and one dirty diff; the derived entry has no status to gate and no revision to compare. A key is written to `style`, to an attribute when it names no writable property on a target answering `setAttribute`, or to a property, decided by the target: SVG geometry such as `x1` or `points` therefore renders, while `cx` and `r` stay style writes and want a pose instead. A composed transform on an SVG target pins `transform-box: view-box` with `transform-origin: 0px 0px`, so `rotation` and `scale` pivot at the element's own origin. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?)` lives in `@motion5/dom/engine` with
+  `createBrowserClock(frameSource)`, plus DOM adapter types. `apply(patch)` writes a published patch and `applyValues(nodeId, values)` writes a record the caller derived, both through one filter, one composer and one dirty diff; the derived entry has no status to gate and no revision to compare. A key is written to `style`, to an attribute when it names no writable property on a target answering `setAttribute`, or to a property, decided by the target: SVG geometry such as `x1` or `points` therefore renders, while `cx` and `r` stay style writes and want a pose instead. A composed transform on an SVG target pins `transform-box: view-box` with `transform-origin: 0px 0px`, so `rotation` and `scale` pivot at the element's own origin. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
-- `FrameSource`, and the default graph builder.
+- The default graph builder.
 
 ## @motion5/plugins/transform, /fk, and /ik
 

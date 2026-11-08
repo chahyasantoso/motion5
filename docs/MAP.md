@@ -25,10 +25,10 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 ## packages/core
 
-Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./adapters/browser-clock`, `./testing`
+Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./testing`
 
 - `src/`: Engine, entry surfaces, schema validation
-- `src/adapters/`: DOM, browser clock, scheduler, scroll
+- `src/adapters/`: scheduler, scroll, gsap
 - `src/adapters/interpolator/`: GSAP interpolator
 - `src/adapters/trigger-factory/`: triggers
 - `src/contract/`: authored schema, public types, rules
@@ -43,9 +43,10 @@ Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./adapters/browser-clo
 
 ## packages/dom
 
-Public: `.`
+Public: `.`, `./engine`
 
 - `src/`: DOM and SVG renderer
+- `src/engine/`: engine patch adapter, clock
 
 ## packages/moves
 
