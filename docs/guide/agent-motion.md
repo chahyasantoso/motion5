@@ -60,6 +60,7 @@ before reading `elapsed`.
 | -------------------------------------- | ------------------------------------------------------------------- |
 | A move inside part of the scene | `const s = span(fromMs, toMs, durationMs)` once, then `s.of(time)` |
 | That move eased | `s.of(time, ease.cubicInOut)` |
+| A share to blend with, eased | `s.of(time, ease.cubicInOut).progress`: `of` gives a time, not a number |
 | The ms a move reaches a moment | `s.at(hop.moments(options).lastLanding)` |
 | Several targets one after another | `lanes(lengths, stagger)` once, then `lane(time, index, lanes)` |
 | A start delay, repeats, or a yoyo | `clockDriver({ duration, delay, repeat, yoyo })` |
@@ -95,7 +96,8 @@ Each move is a function `move(options, time)`, typed from its declaration, so a 
 `move.moments(options)` gives where in its progress the move reaches each moment, as shares from 0 to 1: pass it
 to a span's `at` for the ms. `contact` says whether a hop is landing now; moments say when it will.
 
-A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, each optional; `anchor` is `"center"`,
+A pose, the type `Pose2d` from `@motion5/moves`, is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`,
+each optional; `anchor` is `"center"`,
 `"bottom"`, `"top"`, `"left"` or `"right"`, the point that stays still while the target turns or scales, and an
 absent anchor is the centre. `combine(poses)` puts several poses on one target: offsets and turns add, scales and
 opacity multiply, and the first anchor stays. `toCubics(anchors)` turns a rope's anchors into path segments.
@@ -117,7 +119,7 @@ lacks.
 ## Rest poses
 
 A move ends at its rest pose, which is the element's layout position. Lay the page out as the final frame, then let
-moves bring things there: `drop` waits `distance` above rest, and `hop` arrives from `dx` to the left. Make
+moves bring things there: `drop` waits `distance` above rest, and `hop` arrives from `dx` to the left, or from the right when `dx` is negative. Make
 `distance` and `dx` large enough to start off the stage, and clip the stage with `overflow: hidden`.
 
 ## Rendering
@@ -183,11 +185,11 @@ export const scene = (time: Time) => {
   and solve every frame.
 - **Elbow side.** By default the elbow bends clockwise of the line from base to goal: below it when reaching right.
   `flip: true` bends it the other way. `minRotation` and `maxRotation` limit a bone against its parent.
-- **Out of reach.** A goal past the chain's length points the chain straight at it, and `quality.kind` is
-  `"too-far"`.
+- **Out of reach.** A goal past the chain's length points the chain straight at it, and the `quality.kind` that `ik`
+  returns beside `rotations` is `"too-far"`.
 - **Elements.** Lay every rig element out at the base. A bone element points right from the base, its left end
-  vertically centred on it; a joint or hand element is centred on it. `chainPoses` gives `bones`, poses turning on
-  the left end, and `tips`, offsets from the base.
+  vertically centred on it; a joint or hand element is centred on it. `chainPoses` gives `bones`, poses with `anchor:
+  "left"` so they turn on the left end, and `tips`, offsets from the base. Size a bone element's width to its length.
 
 To make something ride a hand, add the hand's movement since the catch to its own pose, as `catch-scene.ts` does.
 
