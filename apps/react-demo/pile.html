@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>motion5 pile</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      .pile-stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: #1d3b33;
+      }
+      .pile-floor {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 600px;
+        bottom: 0;
+        background: #142a24;
+      }
+      .pile-letter {
+        position: absolute;
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        background: #f2c14e;
+        color: #1d3b33;
+        font:
+          800 110px/1 "Arial Black",
+          system-ui,
+          sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/pile-main.tsx"></script>
+  </body>
+</html>

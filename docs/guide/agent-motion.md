@@ -43,7 +43,7 @@ export const clock = () => clockDriver({ duration: durationMs });
 ```
 
 A scene module exports `scene` and `durationMs`; the tools read those two. Keep every number of motion in the scene
-and none in the component. Four worked examples, each held by a test:
+and none in the component. Five worked examples, each held by a test:
 
 | Example | Shows | Served at |
 | ------- | ----- | --------- |
@@ -51,6 +51,7 @@ and none in the component. Four worked examples, each held by a test:
 | `apps/react-demo/src/catch-scene.ts` | an IK arm, one target timed to another's moment, eases, a carry | `catch.html`, by `Catch.tsx` |
 | `apps/react-demo/src/splash-scene.ts` | lists of targets, keyframes, rings and droplets timed off one impact, letters rising out of clipped water | `splash.html`, by `splash.tsx` |
 | `apps/react-demo/src/card-scene.ts` | events from the page: a card that drops in, lifts on hover, sinks when pressed | `card.html`, by `HoverCard.tsx` |
+| `apps/react-demo/src/pile-scene.ts` | physics: letters dropped as boxes that bounce and settle, squashing on each contact | `pile.html`, by `Pile.tsx` |
 
 Read the one closest to your brief before writing, and copy its patterns, not its colours or type.
 
@@ -169,6 +170,45 @@ const give = react({ on: ["catch"], kind: "wobble", amplitude: 26, decay: 7, fre
   6 a second and `frequency` to 4 swings a second.
 - **`player.on(name, listener)`** calls back each time forward play reaches an event of that name, a cue or the
   page's, for a sound or a class; a seek back calls nothing. The tools read a scene module's `cues` export.
+
+## Physics
+
+Use a move when the motion is designed: a squash on the beat, an overshoot of a set size. Use physics when it should
+follow forces: many bodies, collisions, a pile settling.
+
+```ts
+import { builtinWorld, simulate } from "@motion5/physics";
+
+const sim = simulate(builtinWorld(), (world) => {
+  world.setGravity(0, 2600);
+  world.addCollider("floor", { kind: "floor", y: 600 }, { restitution: 0.35 });
+  world.addBody({ id: "ball", shape: { kind: "circle", radius: 20 }, x: 640, y: -40, restitution: 0.5 });
+});
+
+export const scene = (time: Time, events: Events) => ({
+  ball: sim.pose("ball", time),
+  contacts: mergeEvents(events, sim.events(time)),
+});
+```
+
+- **Units.** Stage px and seconds, y down, gravity in px a second squared. A body's `x` and `y` are its centre.
+  Bodies do not turn.
+- **The port.** A world adds bodies (`circle` or `box`) and fixed colliders: `floor { y }`, `wall { x, side:
+  "left" | "right" }`, and `segment { from, to }` for a ramp. A body takes `vx`, `vy`, `restitution` (bounce kept, 0
+  to 1), `friction`, `drag` (speed lost a second) and `mass` (default its area). Two touching surfaces average
+  their restitution and friction.
+- **`simulate(world, build)`** builds once and steps at a fixed 1/120 s, keeping snapshots, so `sim.at(time)`,
+  `sim.pose(id, time)` and `sim.events(time)` give the same answer at a time however the player got there.
+  `sim.pose` is the move from the body's start: lay each element out where its body starts, centred on it.
+- **Contacts are events.** `sim.events(time)` holds a `contact` event per body, with the body's id as `target`, for
+  every contact that started. Merge it with the page's events and answer with `react`: rigid bodies never squash,
+  so a squash on landing is a `recoil` on `contact`.
+- **Engines.** `builtinWorld()` is pure TypeScript with no dependency. Rapier does all of that and more: `const
+  rapier = await rapierEngine()` from `@motion5/rapier` once at the top of the module, then pass `rapier()` instead
+  of `builtinWorld()`. Its world's `native` and `rigidBody(id)` reach joints, turning bodies and the rest of
+  Rapier; a scene that uses them needs Rapier. It loads about 2.4 MB of WebAssembly and is about twice as slow.
+- **Randomness.** Scatter with `seeded(seed)` from `@motion5/moves`, never `Math.random()`, so the scene is the same
+  on every run and in every tool.
 
 ## Rest poses
 

@@ -54,6 +54,12 @@ Public: `.`
 
 - `src/`: moves, time, pose
 
+## packages/physics
+
+Public: `.`
+
+- `src/`: physics
+
 ## packages/player
 
 Public: `.`
@@ -78,11 +84,17 @@ Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./l
 - `src/testing/`: plugin stability assertion
 - `src/transform/`: transform plugins
 
+## packages/rapier
+
+Public: `.`
+
+- `src/`: Rapier
+
 ## packages/react
 
 Public: `.`
 
-- `src/`: React patch and DOM binding hooks
+- `src/`: React hooks
 
 ## packages/rig
 
@@ -99,14 +111,14 @@ Public: `.`, `./internal`
 
 Public: `.`, `./skeleton`
 
-- `src/`: Three.js skeleton patch adapter
+- `src/`: Three.js adapter
 
 ## packages/tools
 
 Public: `./page`, `./scene`, `./engine`
 
-- `src/engine/`: sample, timeline, catalog, new
-- `src/page/`: frames, probe, check, read, render, points
+- `src/engine/`: engine sample, timeline, catalog
+- `src/page/`: page tools
 - `src/scene/`: scene sample, timeline
 - `src/scene/templates/`: motion:new templates
 - `src/timeline/`: timeline bars
