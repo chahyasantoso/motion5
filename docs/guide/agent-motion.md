@@ -129,7 +129,8 @@ lacks.
 ## Events
 
 A scene can answer the page: a hover, a press, a click, scrolling into view. It gets a second argument, the events
-so far, oldest first, each `{ name, at, target }` with `at` in ms:
+so far, oldest first, each `{ name, at, target }` with `at` in ms, and a pointer event's `x` and `y` in px from the
+watched element's top left corner, so a burst can start where the click landed:
 
 ```ts
 import { eventDriver } from "@motion5/dom";
@@ -152,8 +153,11 @@ export const clock = () => eventDriver({ introMs: 900 });
   pose on a child, or a card that lifts away from the pointer gets a `leave` it did not earn. The driver's
   `watchView(target, element)` logs `in-view` and `out-of-view`, and its `emit(name, target)` logs anything else.
 - **Tools.** Every page tool takes `--action hover:.card-hit@1000,leave:.card-hit@1120,click:.button@2000`, with
-  `hover`, `leave`, `click`, `press`, `release` and `scroll:<px>`, done with the real mouse at those exact ms.
-  `motion:sample` and `motion:timeline` take `--events enter:card@1000,leave:card@1120` instead, with no browser.
+  `hover`, `leave`, `click`, `press`, `release` and `scroll:<px>`, done with the real mouse at those exact ms, in the
+  element's middle or at a point after the time: `click:.stage@300(200,150)`. `motion:sample` and `motion:timeline`
+  take `--events enter:card@1000,click:stage@1200(640,360)` instead, with no browser.
+- **Keep it in the scene.** Read where and when things happened from `events`, never from variables a click handler
+  sets: the tools replay events, and they cannot see a variable.
 
 A scene has events of its own too: a landing, a catch, an impact. Export them as `cues`, made from moments, and pass
 them to the player; the scene gets them merged with the page's:
@@ -230,7 +234,10 @@ return <div ref={title} onClick={() => playing?.driver.replay()} />;
 for anything else, such as `useTarget(player, "cover", applyReveal)` or a function that picks one pose out of a list,
 as `Glyph` in `Catch.tsx` does for each letter.
 `useValue(player, target, select)` re-renders only when `select`'s answer changes; use it for rare values such as
-a count. Define `scene` and `clock` outside the component, because `usePlayer` restarts when either changes.
+a count. Define `scene` and `clock` outside the component, because `usePlayer` restarts when either changes. To hand
+the player to a child component, type the prop `Player<ReturnType<typeof scene>> | undefined` from
+`@motion5/player`, or the whole `Playing<ReturnType<typeof scene>, EventDriver>` from `@motion5/react` when the child
+also needs the driver.
 
 On a plain page:
 
@@ -330,7 +337,8 @@ Reads each match's own motion as moves, one line each, such as
 `scaleY`, `opacity`), from and to, start and end, and the ease named as `@motion5/moves` names it. A move that no named
 ease fits gets the nearest name and a fitted `cubic-bezier`. A move splits where it turns back, so a hop reads as
 rising and falling halves. Read it to check timing and eases in numbers before looking at frames. It reads any page,
-including CSS and Web Animations, which the tools hold to the same paused clock.
+including CSS and Web Animations, which the tools hold to the same paused clock. The page tools see elements, not
+pixels a `<canvas>` draws: draw moving things as elements when you want `read` and `check` to judge them.
 
 ```bash
 npm run motion:frames -- timing.html --onion .beat-dot --from 880 --to 1880 --every 40

@@ -5,6 +5,9 @@ export interface MotionEvent {
   readonly name: string;
   readonly at: number;
   readonly target?: string;
+  /** Where a pointer event happened, in px from the watched element's top left corner. */
+  readonly x?: number;
+  readonly y?: number;
 }
 
 /** Every event so far, oldest first; a scene reads it beside its time. */

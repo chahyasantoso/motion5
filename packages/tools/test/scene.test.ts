@@ -85,3 +85,12 @@ describe("scene tools and events", () => {
     );
   });
 });
+
+describe("events with a point", () => {
+  it("parse a point after the time, and keep commas inside it", () => {
+    expect(parseEvents("click:stage@300(640,360),go@500")).toEqual([
+      { name: "click", at: 300, target: "stage", x: 640, y: 360 },
+      { name: "go", at: 500 },
+    ]);
+  });
+});

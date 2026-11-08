@@ -80,3 +80,13 @@ describe("motion:read arguments", () => {
     });
   });
 });
+
+describe("page actions with a point", () => {
+  it("click at a point on the element, given after the time", async () => {
+    const { parseActions } = await import("../src/page/actions");
+    expect(parseActions("click:.stage@300(200,150),hover:.card@400")).toEqual([
+      { kind: "click", selector: ".stage", at: 300, point: { x: 200, y: 150 } },
+      { kind: "hover", selector: ".card", at: 400 },
+    ]);
+  });
+});

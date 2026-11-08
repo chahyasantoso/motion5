@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventDriver, type EventSource, type FrameSource } from "@motion5/dom";
+import { eventDriver, type EventSource, type FrameSource, type PointerLike } from "@motion5/dom";
 
 function frames(): FrameSource & { run(): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();
@@ -23,8 +23,11 @@ function frames(): FrameSource & { run(): void; readonly waiting: number } {
   };
 }
 
-function element(): EventSource & { fire(type: string): void; readonly listening: number } {
-  const listeners = new Map<string, Set<() => void>>();
+function element(box?: {
+  readonly left: number;
+  readonly top: number;
+}): EventSource & { fire(type: string, event?: PointerLike): void; readonly listening: number } {
+  const listeners = new Map<string, Set<(event: PointerLike) => void>>();
   return {
     addEventListener(type, listener) {
       listeners.set(type, (listeners.get(type) ?? new Set()).add(listener));
@@ -32,9 +35,10 @@ function element(): EventSource & { fire(type: string): void; readonly listening
     removeEventListener(type, listener) {
       listeners.get(type)?.delete(listener);
     },
-    fire(type) {
-      for (const listener of listeners.get(type) ?? []) listener();
+    fire(type, event = {}) {
+      for (const listener of listeners.get(type) ?? []) listener(event);
     },
+    ...(box === undefined ? {} : { getBoundingClientRect: () => box }),
     get listening() {
       return [...listeners.values()].reduce((total, set) => total + set.size, 0);
     },
@@ -89,5 +93,13 @@ describe("eventDriver", () => {
     driver.dispose();
     expect(card.listening).toBe(0);
     expect(source.waiting).toBe(0);
+  });
+
+  it("logs where on the watched element a pointer event happened", () => {
+    const driver = eventDriver({ frames: frames(), clock: () => 0 });
+    const stage = element({ left: 100, top: 40 });
+    driver.watch("stage", stage);
+    stage.fire("click", { clientX: 740, clientY: 400 });
+    expect(driver.events?.()).toEqual([{ name: "click", at: 0, target: "stage", x: 640, y: 360 }]);
   });
 });

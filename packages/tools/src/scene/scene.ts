@@ -12,29 +12,43 @@ export interface SceneModule {
 
 function isEvent(value: unknown): value is MotionEvent {
   if (typeof value !== "object" || value === null) return false;
-  const target: unknown = Reflect.get(value, "target");
+  const optional = (key: string, kind: "string" | "number") => {
+    const field: unknown = Reflect.get(value, key);
+    return field === undefined || typeof field === kind;
+  };
   return (
     typeof Reflect.get(value, "name") === "string" &&
     typeof Reflect.get(value, "at") === "number" &&
-    (target === undefined || typeof target === "string")
+    optional("target", "string") &&
+    optional("x", "number") &&
+    optional("y", "number")
   );
 }
 
-/** `land:ball@2234,enter:card@1000` or `go@500` in time order, or why it is not one. */
+/** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
 export function parseEvents(text: string): Events | { readonly reason: string } {
   const events: MotionEvent[] = [];
-  for (const part of text.split(",").map((piece) => piece.trim())) {
-    const match = /^([\w-]+)(?::([\w-]+))?@(\d+(?:\.\d+)?)$/.exec(part);
+  for (const part of text.split(/,(?![^(]*\))/).map((piece) => piece.trim())) {
+    const match = /^([\w-]+)(?::([\w-]+))?@(\d+(?:\.\d+)?)(?:\((-?[\d.]+),(-?[\d.]+)\))?$/.exec(
+      part,
+    );
     if (match === null || match[1] === undefined)
-      return { reason: `Event "${part}" needs name@ms or name:target@ms, like land:ball@2234.` };
+      return {
+        reason: `Event "${part}" needs name@ms or name:target@ms, with (x,y) after it for a point, like click:stage@300(640,360).`,
+      };
     const at = Number(match[3]);
     if (events.length > 0 && at < (events.at(-1)?.at ?? 0))
       return {
         reason: `Event "${part}" comes before the one ahead of it; list events in time order.`,
       };
-    events.push(
-      match[2] === undefined ? { name: match[1], at } : { name: match[1], at, target: match[2] },
-    );
+    events.push({
+      name: match[1],
+      at,
+      ...(match[2] === undefined ? {} : { target: match[2] }),
+      ...(match[4] === undefined || match[5] === undefined
+        ? {}
+        : { x: Number(match[4]), y: Number(match[5]) }),
+    });
   }
   return events;
 }

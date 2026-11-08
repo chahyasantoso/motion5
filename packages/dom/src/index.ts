@@ -26,4 +26,5 @@ export {
   type EventDriver,
   type EventDriverOptions,
   type EventSource,
+  type PointerLike,
 } from "./events";

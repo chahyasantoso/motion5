@@ -2,10 +2,17 @@ import { liveAt, type Events, type MotionEvent, type Time } from "@motion5/moves
 import type { Driver } from "@motion5/player";
 import { pageFrames, type FrameSource } from "./drivers";
 
+/** What a pointer event says about where it happened. */
+export interface PointerLike {
+  readonly clientX?: number;
+  readonly clientY?: number;
+}
+
 /** Something that sends DOM events: an element, or a stand-in in a test. */
 export interface EventSource {
-  addEventListener(type: string, listener: () => void): void;
-  removeEventListener(type: string, listener: () => void): void;
+  addEventListener(type: string, listener: (event: PointerLike) => void): void;
+  removeEventListener(type: string, listener: (event: PointerLike) => void): void;
+  getBoundingClientRect?(): { readonly left: number; readonly top: number };
 }
 
 /** The page events a watched element turns into motion events, and the name each gets. */
@@ -35,8 +42,8 @@ export interface EventDriver extends Driver {
   watch(target: string, element: EventSource): () => void;
   /** Logs `in-view` and `out-of-view` for `target` as `element` crosses `threshold` of itself in view. */
   watchView(target: string, element: Element, threshold?: number): () => void;
-  /** Logs an event by hand, such as a key press the page handles itself. */
-  emit(name: string, target?: string): void;
+  /** Logs an event by hand, such as a key press the page handles itself, at a point when it has one. */
+  emit(name: string, target?: string, point?: { readonly x: number; readonly y: number }): void;
   dispose(): void;
 }
 
@@ -62,9 +69,13 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const run = (): void => {
     if (handle === undefined && elapsed() < until) handle = frames.requestFrame(frame);
   };
-  const emit = (name: string, target?: string): void => {
+  const emit = (
+    name: string,
+    target?: string,
+    point?: { readonly x: number; readonly y: number },
+  ): void => {
     const at = elapsed();
-    log.push(target === undefined ? { name, at } : { name, at, target });
+    log.push({ name, at, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
     until = Math.max(until, at + settleMs);
     notify();
     run();
@@ -80,7 +91,14 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
     },
     watch(target, element) {
       const removers = Object.entries(WATCHED).map(([type, name]) => {
-        const listener = () => emit(name, target);
+        const listener = (event: PointerLike) => {
+          const box = element.getBoundingClientRect?.();
+          const point =
+            box === undefined || event.clientX === undefined || event.clientY === undefined
+              ? undefined
+              : { x: event.clientX - box.left, y: event.clientY - box.top };
+          emit(name, target, point);
+        };
         element.addEventListener(type, listener);
         return () => element.removeEventListener(type, listener);
       });
