@@ -19,7 +19,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-012 — Perspective is metadata, not runtime state — Accepted, 2026-08-10
 - ADR-013 — Free tracks are first-class graph nodes — Accepted, 2026-08-10
 - ADR-014 — Qualified ids stay internal; there is no schema v6 for authorable ids — Accepted, 2026-08-10
-- ADR-015 — GSAP remains the v1 interpolator — Accepted, 2026-08-10
+- ADR-015 — GSAP remains the v1 interpolator — Accepted, 2026-08-10 — superseded in part
 - ADR-016 — Runtime diagnostics stay inline on patches — Accepted, 2026-08-10
 - ADR-017 — React ships in the v1 package set — Accepted, 2026-08-10
 - ADR-018 — Deep freezing is unconditional in v1 — Accepted, 2026-08-10
@@ -27,7 +27,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-020 — Runtime adoption is an internal recovery capability — Superseded by [ADR-076](./ADR-076-one-mechanism-per-question.md), 2026-09-13. — superseded
 - ADR-021 — Separate composite Motion signals from leaf node seeking — Accepted, 2026-08-15
 - ADR-022 — Export TriggerSignal from core package entry — Accepted, 2026-08-15
-- ADR-023 — Motion owns stagger playhead delay calculations — Accepted, 2026-08-15
+- ADR-023 — Motion owns stagger playhead delay calculations — Accepted, 2026-08-15 — superseded in part
 - ADR-024 — GraphRuntime reentrancy uses queued deferred drains — Accepted, 2026-08-15
 - ADR-025 — Editor mutation uses one removable track store — Accepted, 2026-08-17
 - ADR-026 — Track mutation uses capability handles and non-destructive replacement — Accepted, 2026-08-17. Superseded in part by [ADR-056](./ADR-056-uniform-stale-track-handle.md), 2026-08-29. — superseded in part
@@ -137,7 +137,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-130 — Staged legal-range retries and a legal serial hinge recovery for 3D FABRIK — Accepted, 2026-09-29, for [#527](https://github.com/chahyasantoso/motion5/issues/527) — superseded in part
 - ADR-131 — A constrained FABRIK miss starts legally, then near misses explore bounded offsets — Accepted, 2026-09-29, for [#524](https://github.com/chahyasantoso/motion5/issues/524), on `main` at `1b04ac7`. — superseded in part
 - ADR-132 — A legal descent start finishes constrained FABRIK misses — Accepted, 2026-09-29, for [#524](https://github.com/chahyasantoso/motion5/issues/524)
-- ADR-133 — `plugin-api` is the plugin package contract — Accepted, 2026-10-04
+- ADR-133 — `plugin-api` is the plugin package contract — Accepted, 2026-10-04 — superseded in part
 - ADR-134 — Plugin batches are admitted entirely or not at all — Accepted, 2026-10-04
 - ADR-135 — approved plugin catalog and lazy loader — status not recorded
 - ADR-136 — Solver declarations are registry-owned capabilities — Accepted for the prepared implementation, 2026-10-05; not a merge or CI claim. — superseded
@@ -151,4 +151,12 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-144 — Identified tables, table-or-record values, and explicit plugins — Accepted, 2026-10-29
 - ADR-145 — One track kind and nominal models (v5.2) — Accepted, 2026-11-05
 - ADR-146 — The render metadata channel is removed — Accepted, 2026-11-06
-- ADR-147 — Stagger finishes every track — Accepted, 2026-11-07
+- ADR-147 — Stagger finishes every track — Accepted, 2026-11-07 — superseded in part
+- ADR-148 — Motion is plain code and the engine is optional — Accepted, 2026-11-08
+- ADR-149 — The move contract — Accepted, 2026-11-08
+- ADR-150 — Time and the time module — Accepted, 2026-11-08
+- ADR-151 — Neutral pose and path outputs — Accepted, 2026-11-08
+- ADR-152 — `@motion5/rig` owns solvers and their vocabulary — Accepted, 2026-11-08
+- ADR-153 — Renderer and environment packages — Accepted, 2026-11-08
+- ADR-154 — The player — Accepted, 2026-11-08
+- ADR-155 — The motion tools package — Accepted, 2026-11-08

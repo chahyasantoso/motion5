@@ -5,8 +5,8 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-07, Asia/Jakarta.
-- **Read against:** `feat/agent-motion` after the full check gate.
+- **Captured:** 2026-11-08, Asia/Jakarta.
+- **Read against:** `feat/pure-motion` after the full check gate.
 
 ## Now
 
@@ -35,7 +35,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Evaluate the follow-ups:** the owner decides what to measure next; page tools now work on any site.
+- **The `@motion5/moves` pilot:** ADR-148 to ADR-155 record moves as plain code with an optional engine;
+  `drop` and `hop` move first, with `Time` and `movePlugin`, pinned by parity tests.
 
 ## Open, and not scheduled
 

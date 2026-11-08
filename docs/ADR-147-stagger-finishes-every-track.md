@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-11-07
 
+**Superseded in part by [ADR-150](./ADR-150-time-and-the-time-module.md), 2026-11-08.** The arithmetic stands; the time module owns it.
+
 **Keeps:** [ADR-023](./ADR-023-motion-owns-stagger-playhead-delay.md). Motion still owns the calculation.
 
 ## Context

@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-10-04
 
+**Superseded in part by [ADR-152](./ADR-152-rig-owns-solvers-and-their-vocabulary.md), 2026-11-08.** Solver vocabulary leaves `plugin-api` for `@motion5/rig`.
+
 ## Context
 
 Plugin implementations currently live under `packages/core/src/plugins` and import core's domain,
