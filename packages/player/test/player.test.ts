@@ -74,3 +74,15 @@ describe("play", () => {
     expect(player.time.progress).toBe(0.25);
   });
 });
+
+describe("a scene of events", () => {
+  it("gets the driver's events beside its time, and none from a driver that keeps no log", () => {
+    const log = [{ name: "enter", at: 10, target: "card" }];
+    const watching = { ...manualDriver(), events: () => log };
+    const seen = play((_time, events) => ({ count: events.length }), watching);
+    expect(seen.values.count).toBe(1);
+    expect(play((_time, events) => ({ count: events.length }), manualDriver()).values.count).toBe(
+      0,
+    );
+  });
+});

@@ -34,5 +34,5 @@ export type { MotionProjectState } from "./motion-project";
 export type { WordByNodes, WordByRows, WordProps } from "./word";
 export { useDerivedDomPatch } from "./derived-dom-patch";
 export type { PatchDerivation, PatchValues } from "./derived-dom-patch";
-export { usePlayer, useTarget, useValue } from "./player";
+export { usePlayer, useTarget, useValue, useWatch } from "./player";
 export type { OwnedDriver, Playing } from "./player";

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore, type RefCallback } from "react";
-import { applyPose, type RenderTarget } from "@motion5/dom";
-import type { Pose2d, Time } from "@motion5/moves";
-import { play, type Driver, type Player } from "@motion5/player";
+import { applyPose, type EventDriver, type RenderTarget } from "@motion5/dom";
+import type { Pose2d } from "@motion5/moves";
+import { play, type Driver, type Player, type Scene } from "@motion5/player";
 
 /** A driver a component owns, released when the component leaves. */
 export type OwnedDriver = Driver & { dispose?(): void };
@@ -13,7 +13,7 @@ export interface Playing<T extends object, D extends OwnedDriver> {
 
 /** Plays `scene` on a driver while the component stays; keep both arguments stable across renders. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
-  scene: (time: Time) => T,
+  scene: Scene<T>,
   createDriver: () => D,
 ): Playing<T, D> | undefined {
   const [playing, setPlaying] = useState<Playing<T, D>>();
@@ -83,4 +83,14 @@ export function useValue<T extends object, K extends keyof T, V>(
     snapshot,
     snapshot,
   );
+}
+
+/** Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still. */
+export function useWatch(driver: EventDriver | undefined, target: string): RefCallback<Element> {
+  const [element, setElement] = useState<Element | null>(null);
+  useEffect(() => {
+    if (driver === undefined || element === null) return undefined;
+    return driver.watch(target, element);
+  }, [driver, element, target]);
+  return useCallback((next: Element | null) => setElement(next), []);
 }

@@ -7,7 +7,7 @@ export interface FrameSource {
   cancelFrame(handle: number): void;
 }
 
-function pageFrames(): FrameSource {
+export function pageFrames(): FrameSource {
   return {
     requestFrame: (listener) => globalThis.requestAnimationFrame(listener),
     cancelFrame: (handle) => globalThis.cancelAnimationFrame(handle),

@@ -1,10 +1,14 @@
-import { atProgress, type Time } from "@motion5/moves";
+import { NO_EVENTS, atProgress, type Events, type Time } from "@motion5/moves";
 
-/** What drives a scene: the time now, and a signal each time it moves. */
+/** What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves. */
 export interface Driver {
   now(): Time;
+  events?(): Events;
   subscribe(listener: () => void): () => void;
 }
+
+/** A scene: every target's value from the time and the events so far. */
+export type Scene<T extends object> = (time: Time, events: Events) => T;
 
 /** A scene's values by target, rerun whole on each step of its driver. */
 export interface Player<T extends object> {
@@ -18,13 +22,14 @@ export interface Player<T extends object> {
 }
 
 /** Runs `scene` against `driver`, telling each target's subscribers its value on every step. */
-export function play<T extends object>(scene: (time: Time) => T, driver: Driver): Player<T> {
+export function play<T extends object>(scene: Scene<T>, driver: Driver): Player<T> {
+  const events = (): Events => driver.events?.() ?? NO_EVENTS;
   let time = driver.now();
-  let values = scene(time);
+  let values = scene(time, events());
   const listeners = new Set<() => void>();
   const step = (): void => {
     time = driver.now();
-    values = scene(time);
+    values = scene(time, events());
     for (const notify of [...listeners]) notify();
   };
   const leave = driver.subscribe(step);

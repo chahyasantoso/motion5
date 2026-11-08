@@ -1,8 +1,9 @@
 import type { Ease } from "./ease";
 
-/** A track's clock: milliseconds when a timed trigger drives it, none under scroll or manual control. */
+/** A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control. */
 export type Clock =
   | { readonly kind: "timed"; readonly elapsed: number; readonly length: number }
+  | { readonly kind: "live"; readonly elapsed: number }
   | { readonly kind: "untimed" };
 
 /** Where a move is: `progress` from 0 to 1, and the clock behind it. */
@@ -12,6 +13,24 @@ export interface Time {
 }
 
 export const UNTIMED: Clock = Object.freeze({ kind: "untimed" });
+
+/** A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0. */
+export function liveAt(elapsed: number): Time {
+  return { progress: 0, clock: { kind: "live", elapsed } };
+}
+
+/** The ms a clock has run, or `undefined` for a clock that has none. */
+export function elapsedOf(clock: Clock): number | undefined {
+  switch (clock.kind) {
+    case "timed":
+    case "live":
+      return clock.elapsed;
+    case "untimed":
+      return undefined;
+    default:
+      return unreachable(clock);
+  }
+}
 
 /** A `Time` at `progress` with no clock, for code that drives a move by hand. */
 export function atProgress(progress: number): Time {
@@ -30,6 +49,7 @@ export function window(time: Time, from: number, to: number): Time {
   const clock = time.clock;
   switch (clock.kind) {
     case "untimed":
+    case "live":
       return { progress, clock };
     case "timed": {
       const length = Math.max(0, to - from) * clock.length;
@@ -61,7 +81,17 @@ export function span(fromMs: number, toMs: number, durationMs: number): Span {
     from: fromMs,
     to: toMs,
     of(time: Time, curve?: Ease): Time {
-      const inner = window(time, from, to);
+      const inner =
+        time.clock.kind === "live"
+          ? {
+              progress: windowed(time.clock.elapsed, fromMs, toMs),
+              clock: {
+                kind: "timed" as const,
+                elapsed: Math.max(0, Math.min(toMs - fromMs, time.clock.elapsed - fromMs)),
+                length: Math.max(0, toMs - fromMs),
+              },
+            }
+          : window(time, from, to);
       return curve === undefined ? inner : { ...inner, progress: curve(inner.progress) };
     },
     at: (share: number) => fromMs + (toMs - fromMs) * share,

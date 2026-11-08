@@ -20,3 +20,10 @@ export {
   type FrameSource,
   type ScrollTarget,
 } from "./drivers";
+export {
+  eventDriver,
+  WATCHED,
+  type EventDriver,
+  type EventDriverOptions,
+  type EventSource,
+} from "./events";

@@ -35,6 +35,7 @@ export function lane(time: Time, index: number, of: Lanes): Time {
     case "timed":
       return laneTime(time.progress, index, of, clock.length);
     case "untimed":
+    case "live":
       return laneTime(time.progress, index, of);
     default:
       return unreachable(clock);

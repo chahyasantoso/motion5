@@ -87,3 +87,28 @@ describe("player hooks", () => {
     expect(player).toBeDefined();
   });
 });
+
+describe("useWatch", () => {
+  it("logs the events of the element its ref lands on, and stops when the component leaves", async () => {
+    const { eventDriver } = await import("@motion5/dom");
+    const { useWatch } = await import("@motion5/react");
+    const driver = eventDriver({
+      clock: () => 0,
+      frames: { requestFrame: () => 1, cancelFrame: () => undefined },
+    });
+    const listeners = new Map<string, () => void>();
+    const node = {
+      addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
+      removeEventListener: (type: string) => listeners.delete(type),
+    };
+    const Card: FC = () => createElement("div", { ref: useWatch(driver, "card") });
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Card), { createNodeMock: () => node });
+    });
+    listeners.get("pointerenter")?.();
+    expect(driver.events?.()).toEqual([{ name: "enter", at: 0, target: "card" }]);
+    await act(() => renderer?.unmount());
+    expect(listeners.size).toBe(0);
+  });
+});
