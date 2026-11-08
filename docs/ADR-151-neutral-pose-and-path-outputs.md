@@ -14,13 +14,15 @@ parsing CSS.
 `"bottom"`, `"top"`, `"left"` and `"right"`. Path moves output geometry: a cubic path, a `reveal` circle
 `{ x, y, radius }`, and a `drawn` share from 0 to 1.
 
-Each renderer owns its format. DOM writes `transform-origin`, `clip-path`, stroke dash from the path's own length
-and SVG `d`. Three.js offsets position by bounding box for `anchor`, masks for `reveal` and sets a draw range for
-`drawn`.
+Each renderer owns its format. `@motion5/dom` writes `transform-origin`, `clip-path`, a stroke dash from the
+path's own length and SVG `d`; an absent anchor is the centre, measured on an SVG element's own box as on HTML.
+`@motion5/three` keeps the anchor's point on the geometry box still; `reveal` and `drawn` wait for a brief that
+needs them there.
 
-`Sprite2d`, `Sprites2d`, `Clip2d`, `Stroke2d` and `PathData2d` are deleted with no aliases; the packages are
-private `0.0.0` and every reader is in this repository. The `svgPath` plugin is removed; its formatting moves to
-`@motion5/dom`.
+In the engine, `Sprite2d`, `Sprites2d`, `Clip2d`, `Stroke2d` and `PathData2d` stay until the engine decision:
+deleting them needs the DOM adapter to know which model each patch carries. Until then `movePlugin` and the path
+plugins translate neutral outputs to them through `@motion5/dom`'s format functions, the one owner of each CSS
+and SVG string.
 
 ## Consequences
 
@@ -30,4 +32,5 @@ TIMING and rope beats after the change.
 ## Rejected
 
 - A numeric pivot now: no brief has asked for one; it is added when one does.
-- Keeping DOM fields beside neutral ones: two answers for one output.
+- Keeping DOM fields beside neutral ones in moves: two answers for one output.
+- Putting the model id on every patch now: a change to core's patch contract that pays only if the engine stays.

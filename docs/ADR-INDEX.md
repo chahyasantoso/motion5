@@ -19,7 +19,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-012 — Perspective is metadata, not runtime state — Accepted, 2026-08-10
 - ADR-013 — Free tracks are first-class graph nodes — Accepted, 2026-08-10
 - ADR-014 — Qualified ids stay internal; there is no schema v6 for authorable ids — Accepted, 2026-08-10
-- ADR-015 — GSAP remains the v1 interpolator — Accepted, 2026-08-10 — superseded in part
+- ADR-015 — GSAP remains the v1 interpolator — Accepted, 2026-08-10
 - ADR-016 — Runtime diagnostics stay inline on patches — Accepted, 2026-08-10
 - ADR-017 — React ships in the v1 package set — Accepted, 2026-08-10
 - ADR-018 — Deep freezing is unconditional in v1 — Accepted, 2026-08-10

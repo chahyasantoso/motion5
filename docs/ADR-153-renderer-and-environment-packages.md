@@ -2,9 +2,6 @@
 
 **Status:** Accepted, 2026-11-08
 
-**Supersedes in part:** [ADR-015](./ADR-015-gsap-remains-the-v1-interpolator.md). GSAP stays an interpolator
-behind the port, in its own package instead of core.
-
 ## Context
 
 ADR-015 says core stays renderer-neutral, yet `packages/core/src/adapters/` holds the DOM adapter, the browser
@@ -13,14 +10,15 @@ reaches the DOM through `@motion5/core/adapters`.
 
 ## Decision
 
-- `@motion5/dom` owns `applyPose` for HTML and SVG, path formatting, the DOM adapter, the browser clock and the
-  scroll driver.
+- `@motion5/dom` owns `applyPose`, `applyReveal`, `applyDrawn`, `applyPath` and the CSS and SVG formats for HTML
+  and SVG; `@motion5/dom/engine` holds the engine's DOM patch adapter and the browser clock.
 - `@motion5/three` owns `applyPose2d(object, pose)`.
-- `@motion5/gsap` owns the GSAP interpolator and scroll source.
 - `@motion5/react` depends on `@motion5/dom`.
 
-Core keeps no renderer or environment code; its microtask scheduler stays, since its host is injected. Core drops
-the `./adapters` and `./adapters/browser-clock` subpaths, and every reader moves in the same change.
+Core keeps no DOM code, and drops its `./adapters/browser-clock` subpath. `./adapters` keeps the microtask
+scheduler, the scroll trigger port, the trigger factory and the GSAP adapters: none touches an environment, and
+core never imports GSAP, which callers inject. A `@motion5/gsap` package waits for the engine decision, since
+moving the GSAP interpolator needs core's keyframe compiler public.
 
 ## Consequences
 
@@ -31,3 +29,5 @@ environment import from core.
 
 - Keeping adapters in core under a subpath: core then ships environment code to every reader.
 - One `@motion5/web` package for DOM and GSAP: GSAP is optional and most pages do not need it.
+- A `@motion5/gsap` package now: it would make core's keyframe compiler public for an adapter that touches no
+  environment.

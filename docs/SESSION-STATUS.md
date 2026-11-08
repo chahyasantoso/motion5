@@ -34,12 +34,14 @@ byte ceiling.
   `rope` with no dependencies; `movePlugin` turns a move into its plugin, pinned by parity tests, and a
   `time` trigger's duration reaches plugins as each track's clock. `/timing.html` runs a beat of moves.
   `@motion5/rig` holds frames, the IK solvers, body topology and the joint vocabulary with no
-  dependencies, and code rigs a 2D chain with `buildChain`, `fk` and `ik`.
+  dependencies, and code rigs a 2D chain with `buildChain`, `fk` and `ik`. `@motion5/dom` renders poses,
+  reveals, strokes and paths and owns every CSS string, its `/engine` holds the DOM patch adapter and
+  browser clock, and `@motion5/three` renders a pose with `applyPose2d`.
 
 ## Next in line
 
-- **Neutral pose and renderers:** `Pose2d` replaces the DOM models, and `@motion5/dom`, `@motion5/gsap`
-  and `@motion5/three` take the adapters out of core (ADR-151, ADR-153).
+- **The player:** `play(scene, driver)` runs a code scene with no engine, and React's `useTarget` and
+  `useValue` read it (ADR-154).
 
 ## Open, and not scheduled
 
