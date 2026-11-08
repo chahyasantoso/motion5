@@ -160,3 +160,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-153 — Renderer and environment packages — Accepted, 2026-11-08
 - ADR-154 — The player — Accepted, 2026-11-08
 - ADR-155 — The motion tools package — Accepted, 2026-11-08
+- ADR-156 — Core is frozen — Accepted, 2026-11-08
