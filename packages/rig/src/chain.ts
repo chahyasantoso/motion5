@@ -28,11 +28,23 @@ export type Bone2d = {
   readonly maxRotation?: number;
 };
 
-/** A checked bone tree, parent first, built once and reused every frame. */
-export interface Chain2d {
+/** A checked bone tree, built once and reused every frame; `order` lists its bone ids parent first. */
+export interface Chain2d<Id extends string = string> {
   readonly structure: BodyStructure;
   readonly bones: ReadonlyMap<string, Bone2d>;
+  readonly order: readonly Id[];
 }
+
+/** A bone's pose for an element laid out from the chain's base pointing right, turning on its left end. */
+export type BonePose = {
+  readonly x: number;
+  readonly y: number;
+  readonly rotation: number;
+  readonly anchor: "left";
+};
+
+/** An offset from the chain's base, for an element centred on the base, such as a hand on a tip. */
+export type TipPose = { readonly x: number; readonly y: number };
 
 /** Where a bone's tip should go, with an optional weight against other goals. */
 export type Goal2d = {
@@ -73,14 +85,35 @@ function describe(error: BodyError): string {
   }
 }
 
-/** Checks a bone list and orders it parent first. */
-export function buildChain(bones: readonly Bone2d[]): Chain2d {
+function covers<Id extends string, V>(
+  ids: readonly Id[],
+  record: Readonly<Record<string, V>>,
+): record is Readonly<Record<Id, V>> {
+  return ids.every((id) => Object.hasOwn(record, id));
+}
+
+function byId<Id extends string, V>(
+  ids: readonly Id[],
+  record: Readonly<Record<string, V>>,
+): Readonly<Record<Id, V>> {
+  if (!covers(ids, record)) throw new TypeError("Chain result misses a bone.");
+  return record;
+}
+
+/** Checks a bone list and orders it parent first; the ids it was given type every later answer. */
+export function buildChain<const B extends readonly Bone2d[]>(bones: B): Chain2d<B[number]["id"]> {
   const parsed = parseBody(
     bones.map(({ id, ...cells }) => ({ id, cells })),
     {},
   );
   if (!parsed.ok) throw new TypeError(`buildChain: ${parsed.errors.map(describe).join("; ")}.`);
-  return { structure: parsed.value, bones: new Map(bones.map((bone) => [bone.id, bone])) };
+  const given = new Set<string>(bones.map((bone) => bone.id));
+  const isId = (id: string): id is B[number]["id"] => given.has(id);
+  return {
+    structure: parsed.value,
+    bones: new Map(bones.map((bone) => [bone.id, bone])),
+    order: parsed.value.ids.filter(isId),
+  };
 }
 
 /** The world frame at each bone's tip, parent first, from each bone's link. */
@@ -106,14 +139,17 @@ function boneOf(chain: Chain2d, id: string): Bone2d {
   return bone;
 }
 
+/** How a chain is posed: each bone's rotation against its parent, in degrees, and where its root sits. */
+export type ChainPose = {
+  readonly rotations?: Readonly<Record<string, number>>;
+  readonly base?: WorldFrame;
+};
+
 /** Each bone's tip in world space; `rotations` replace rest rotations by bone id. */
-export function fk(
-  chain: Chain2d,
-  options: {
-    readonly rotations?: Readonly<Record<string, number>>;
-    readonly base?: WorldFrame;
-  } = {},
-): Readonly<Record<string, WorldFrame>> {
+export function fk<Id extends string>(
+  chain: Chain2d<Id>,
+  options: ChainPose = {},
+): Readonly<Record<Id, WorldFrame>> {
   const frames = composeChain(chain.structure, options.base ?? ORIGIN, (id) => {
     const bone = boneOf(chain, id);
     return {
@@ -122,7 +158,34 @@ export function fk(
       pivot: readPivotOffset(bone),
     };
   });
-  return Object.fromEntries(frames);
+  return byId(chain.order, Object.fromEntries(frames));
+}
+
+/** Poses for elements laid out at the base: each bone from its start joint, and each tip as an offset. */
+export function chainPoses<Id extends string>(
+  chain: Chain2d<Id>,
+  options: ChainPose = {},
+): {
+  readonly bones: Readonly<Record<Id, BonePose>>;
+  readonly tips: Readonly<Record<Id, TipPose>>;
+} {
+  const base = options.base ?? ORIGIN;
+  const tips = fk(chain, options);
+  const bones: Record<string, BonePose> = {};
+  const offsets: Record<string, TipPose> = {};
+  for (const id of chain.order) {
+    const tip = tips[id];
+    const extent = segmentExtent(boneOf(chain, id).length);
+    const turn = (tip.rotation * Math.PI) / 180;
+    bones[id] = {
+      x: tip.x - extent * Math.cos(turn) - base.x,
+      y: tip.y - extent * Math.sin(turn) - base.y,
+      rotation: tip.rotation,
+      anchor: "left",
+    };
+    offsets[id] = { x: tip.x - base.x, y: tip.y - base.y };
+  }
+  return { bones: byId(chain.order, bones), tips: byId(chain.order, offsets) };
 }
 
 /** One solve member from a bone's cells and, when it has one, its goal's cells. */
@@ -146,13 +209,14 @@ export function solveMember(
 }
 
 /** The rotations that bring each goal's bone tip to its goal, within the bones' limits. */
-export function ik(
-  chain: Chain2d,
-  goals: Readonly<Record<string, Goal2d>>,
+export function ik<Id extends string>(
+  chain: Chain2d<Id>,
+  goals: Readonly<Partial<Record<Id, Goal2d>>>,
   options: { readonly base?: WorldFrame; readonly flip?: boolean } = {},
-): SolveResult {
-  const members = chain.structure.ids.map((id) =>
+): SolveResult & { readonly rotations: Readonly<Record<Id, number>> } {
+  const members = chain.order.map((id) =>
     solveMember(id, chain.structure.parentById.get(id), boneOf(chain, id), goals[id]),
   );
-  return solveChain(options.base ?? ORIGIN, members, options.flip === true);
+  const solved = solveChain(options.base ?? ORIGIN, members, options.flip === true);
+  return { ...solved, rotations: byId(chain.order, solved.rotations) };
 }
