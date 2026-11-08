@@ -199,15 +199,30 @@ export async function checkMotion(request: CheckRequest): Promise<CheckResult> {
           name: string;
           box: { x: number; y: number; width: number; height: number };
         }[] = [];
+        // The part of an element a viewer can see: none when hidden or transparent, else its box cut by clipping ancestors.
+        const visible = (element: Element) => {
+          if (getComputedStyle(element).visibility !== "visible") return undefined;
+          const rect = element.getBoundingClientRect();
+          let { left, top, right, bottom } = rect;
+          for (let node: Element | null = element; node !== null; node = node.parentElement) {
+            const style = getComputedStyle(node);
+            if (Number(style.opacity) === 0) return undefined;
+            if (node === element) continue;
+            const clip = node.getBoundingClientRect();
+            if (style.overflowX !== "visible")
+              [left, right] = [Math.max(left, clip.left), Math.min(right, clip.right)];
+            if (style.overflowY !== "visible")
+              [top, bottom] = [Math.max(top, clip.top), Math.min(bottom, clip.bottom)];
+          }
+          if (right <= left || bottom <= top) return undefined;
+          return { x: left, y: top, width: right - left, height: bottom - top };
+        };
         for (const selector of selectors)
           document.querySelectorAll(selector).forEach((element, index) => {
-            const rect = element.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
+            const box = visible(element);
+            if (box === undefined) return;
             const text = (element.textContent ?? "").trim().slice(0, 12);
-            found.push({
-              name: `${selector}[${index}]${text === "" ? "" : ` "${text}"`}`,
-              box: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
-            });
+            found.push({ name: `${selector}[${index}]${text === "" ? "" : ` "${text}"`}`, box });
           });
         return found;
       }, request.watch);

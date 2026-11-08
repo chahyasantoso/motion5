@@ -93,7 +93,9 @@ const watch = {
 const strict = await checkMotion({ ...watch, limits: { ...DEFAULT_LIMITS, overlap: 0 } });
 const crossing = strict.findings.find(
   (finding) =>
-    finding.kind === "overlap" && finding.a.startsWith(".beat-dot") && finding.b.includes('"M"'),
+    finding.kind === "overlap" &&
+    [finding.a, finding.b].some((name) => name.startsWith(".beat-dot")) &&
+    [finding.a, finding.b].some((name) => name.includes('"M"')),
 );
 assert.ok(
   crossing &&
@@ -146,6 +148,25 @@ try {
   });
   const x = plain.samples[0]?.elements[0]?.box.x ?? -1;
   assert.ok(Math.abs(x - 200) <= 8, `plain page box at ${x}`);
+
+  // Only what a viewer sees overlaps: a box clipped out by its parent or fully transparent is left out.
+  const box = (id, style) =>
+    `<div id="${id}" style="position:absolute;left:0;top:0;width:40px;height:40px;${style}"></div>`;
+  writeFileSync(
+    join(site, "hidden.html"),
+    `<body style="margin:0">${box("seen", "")}${box("faded", "opacity:0")}
+<div style="position:absolute;left:0;top:60px;width:40px;height:40px;overflow:hidden">${box("sunk", "top:-60px")}</div></body>`,
+  );
+  const hidden = await checkMotion({
+    page: "hidden.html",
+    width: 640,
+    height: 360,
+    source: { kind: "serve", root: site },
+    watch: ["#seen", "#faded", "#sunk"],
+    to: 400,
+    limits: DEFAULT_LIMITS,
+  });
+  assert.deepEqual(hidden.findings, [], JSON.stringify(hidden.findings));
 } finally {
   rmSync(site, { recursive: true, force: true });
 }

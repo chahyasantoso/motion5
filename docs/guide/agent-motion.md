@@ -96,6 +96,9 @@ Each move is a function `move(options, time)`, typed from its declaration, so a 
 | `trace` | a drawn share `{ drawn }` | none | none |
 | `rope` | anchors, from `{ points }` as its third argument | `angle`, `pin`, `release`, `overshoot`, `ripple` | none |
 
+`hop` with `bounces: 0` is one arc: up `height` and down again, landing at rest, so a droplet thrown up and falling
+back is a hop with `dx: 0`.
+
 `move.moments(options)` gives where in its progress the move reaches each moment, as shares from 0 to 1: pass it
 to a span's `at` for the ms. `contact` says whether a hop is landing now; moments say when it will.
 
@@ -245,7 +248,8 @@ npm run motion:check -- timing.html --watch .beat-dot,.beat-glyph --to 3000
 Samples every 16 ms up to `--to` and reports, each with its duration: two watched elements overlapping for more than
 `--overlap` frames (default 12), a centre moving more than `--jump` px in one frame (default 150), a final hold
 shorter than `--hold` ms (default 500), and an element still moving on the last frame. It exits `1` when it finds
-anything. An overlap compares boxes, so a dot passing behind a letter still counts. Leave out of `--watch` an
+anything. An overlap compares the parts of boxes a viewer can see: a box hidden, at zero opacity or clipped out by
+an ancestor's overflow is left out, but a dot passing behind a letter still counts. Leave out of `--watch` an
 element meant to touch another, such as a foot on a ball.
 
 ```bash
