@@ -10,8 +10,8 @@ import { testModels } from "../../../core/test/support/test-models";
 import { UNTIMED } from "@motion5/moves";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("@motion5/rig", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@motion5/rig")>();
+vi.mock("../../../rig/src/frame/frame", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../../rig/src/frame/frame")>();
   return {
     ...original,
     composeWorld: (...args: Parameters<typeof original.composeWorld>) => {

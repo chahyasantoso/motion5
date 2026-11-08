@@ -12,7 +12,7 @@ import type { ValueSpec } from "@motion5/core/plugin-api";
 
 export const BODY_2D_SPEC = Body2d.spec;
 export const BODY_3D_SPEC = Body3d.spec;
-export { EXTERNAL_BASE } from "../../src/models/body/domain";
+export { EXTERNAL_BASE } from "@motion5/rig";
 export const GOALS_2D_SPEC = Goals2d.spec;
 export const GOALS_3D_SPEC = Goals3d.spec;
 export const ROOT_2D_SPEC = Point2d.spec;

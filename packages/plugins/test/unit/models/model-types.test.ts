@@ -30,7 +30,7 @@ import {
   type Solved2dCells,
   type Solved3dCells,
 } from "../../../src/models/index";
-import type { BodyStructure } from "../../../src/models/body/domain";
+import type { BodyStructure } from "@motion5/rig";
 import type { GoalsStructure } from "../../../src/models/goals/domain";
 import type { SolvedStructure } from "../../../src/models/solved/domain";
 import { fkPlugin } from "../../../src/fk/fk";

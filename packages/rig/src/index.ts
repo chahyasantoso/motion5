@@ -1,3 +1,4 @@
+export * from "./chain";
 export * from "./frame/frame";
 export * from "./frame/frame3d";
 export * from "./ik/shared/constraint";
@@ -10,3 +11,4 @@ export * from "./ik/solve3d/chain";
 export * from "./ik/solve3d/constraint";
 export * from "./ik/solve3d/solve";
 export * from "./vocabulary";
+export * from "./body";

@@ -6,7 +6,7 @@ import {
   type TableOf,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, type BodyStructure } from "../models/body/domain";
+import { EXTERNAL_BASE, type BodyStructure } from "@motion5/rig";
 import { readNumber } from "@motion5/rig";
 import { readEuler3d, readFrame3d, readPivotOffset3d } from "@motion5/rig";
 import type { Euler3d } from "@motion5/rig";

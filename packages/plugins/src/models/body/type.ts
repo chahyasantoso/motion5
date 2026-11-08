@@ -1,6 +1,6 @@
 import type { TypeIssue } from "@motion5/core/plugin-api";
 import { unreachable } from "@motion5/core/plugin-api";
-import type { BodyError } from "./domain";
+import type { BodyError } from "@motion5/rig";
 
 export function bodyIssue(error: BodyError): TypeIssue {
   switch (error.kind) {

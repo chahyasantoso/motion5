@@ -33,11 +33,13 @@ byte ceiling.
   `Time`, lanes, `Pose2d`, `defineMove`, `combine` and the moves `drop`, `hop`, `wipe`, `trace` and
   `rope` with no dependencies; `movePlugin` turns a move into its plugin, pinned by parity tests, and a
   `time` trigger's duration reaches plugins as each track's clock. `/timing.html` runs a beat of moves.
+  `@motion5/rig` holds frames, the IK solvers, body topology and the joint vocabulary with no
+  dependencies, and code rigs a 2D chain with `buildChain`, `fk` and `ik`.
 
 ## Next in line
 
-- **`@motion5/rig`:** frames, FK, IK and solver vocabulary leave core and plugins for a package with no
-  dependencies, with `buildChain` as the setup code and plugins call (ADR-152).
+- **Neutral pose and renderers:** `Pose2d` replaces the DOM models, and `@motion5/dom`, `@motion5/gsap`
+  and `@motion5/three` take the adapters out of core (ADR-151, ADR-153).
 
 ## Open, and not scheduled
 

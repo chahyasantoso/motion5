@@ -1,5 +1,5 @@
 import { diagnostic, type Diagnostic } from "@motion5/core/plugin-api";
-import type { BodyStructure } from "../models/body/domain";
+import type { BodyStructure } from "@motion5/rig";
 import type { GoalsStructure } from "../models/goals/domain";
 
 /** Cross-source goal checks shared by 2D and 3D solvers. */

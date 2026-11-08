@@ -1,6 +1,6 @@
 import { Spec, defineModel, ok, refused } from "@motion5/core/plugin-api";
 import type { Model, Parsed, ValueSpec } from "@motion5/core/plugin-api";
-import { parseBody, type BodyStructure } from "./body/domain";
+import { parseBody, type BodyStructure } from "@motion5/rig";
 import { bodyIssue } from "./body/type";
 import { parseGoals, type GoalsStructure } from "./goals/domain";
 import { goalsIssue } from "./goals/type";

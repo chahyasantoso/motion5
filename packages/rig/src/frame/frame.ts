@@ -25,7 +25,7 @@ export interface EffectiveLink {
   readonly twist: number;
 }
 
-const ORIGIN: WorldFrame = Object.freeze({ x: 0, y: 0, rotation: 0 });
+export const ORIGIN: WorldFrame = Object.freeze({ x: 0, y: 0, rotation: 0 });
 
 /** Offset when no pivot is authored; shared, not allocated. */
 export const ZERO_PIVOT_OFFSET: PivotOffset = Object.freeze({ x: 0, y: 0 });

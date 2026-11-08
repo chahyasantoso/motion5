@@ -6,15 +6,16 @@ import {
   type TableOf,
   type ValueSpec,
 } from "@motion5/core/plugin-api";
-import { EXTERNAL_BASE, type BodyStructure } from "../models/body/domain";
-import { readFrame, readNumber, readPivotOffset } from "@motion5/rig";
+import {
+  inspectSolve,
+  readFrame,
+  solveChain,
+  solveMember,
+  type BodyStructure,
+  type SolveMember,
+} from "@motion5/rig";
 import { goalDiagnostics } from "./goal-check";
 import type { GoalsStructure } from "../models/goals/domain";
-import { readJointLimit } from "@motion5/rig";
-import { readInfluence } from "@motion5/rig";
-import { inspectSolve } from "@motion5/rig";
-import { solveChain } from "@motion5/rig";
-import type { SolveMember } from "@motion5/rig";
 import {
   Body2d,
   Goals2d,
@@ -47,17 +48,7 @@ function solveMembers(
     const goalRow = goalIndex === undefined ? undefined : goalRows[goalIndex];
     if (goalRow !== undefined && goalRow.cells.memberId !== id)
       throw new TypeError(`Goal row for member '${id}' moved after commit.`);
-    const limit = readJointLimit(row.cells);
-    const influence = goalRow === undefined ? undefined : readInfluence(goalRow.cells);
-    return {
-      id,
-      base: chain.parentById.get(id) ?? EXTERNAL_BASE,
-      length: readNumber(row.cells.length),
-      pivot: readPivotOffset(row.cells),
-      ...(goalRow === undefined ? {} : { goal: readFrame(goalRow.cells) }),
-      ...(limit.kind === "range" ? { limit } : {}),
-      ...(influence === undefined ? {} : { influence }),
-    };
+    return solveMember(id, chain.parentById.get(id), row.cells, goalRow?.cells);
   });
 }
 

@@ -1,6 +1,6 @@
 import { BODY_2D_FIELDS, BODY_3D_FIELDS } from "../../../../src/models/specs";
 import { describe, expect, it } from "vitest";
-import { parseBody } from "../../../../src/models/body/domain";
+import { parseBody } from "@motion5/rig";
 import { rowAt } from "../../../../src/shared/table-lookup";
 
 const parse = (value: unknown) => parseBody(value, BODY_2D_FIELDS);

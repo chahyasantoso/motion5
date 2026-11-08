@@ -1,3 +1,5 @@
+export * from "./chain";
+export * from "./body";
 export * from "./frame/frame";
 export * from "./frame/frame3d";
 export * from "./ik/fabrik/cap";

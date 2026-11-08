@@ -1,13 +1,11 @@
 import { definePlugin, diagnostic, ok, optional, prepareRefused } from "@motion5/core/plugin-api";
 import {
   clamp,
-  composeWorld,
+  composeChain,
   lerpAngle,
   readFrame,
   readNumber,
   readPivotOffset,
-  segmentExtent,
-  type WorldFrame,
 } from "@motion5/rig";
 import { type SolvedRow } from "../models/solved/domain";
 import { Body2d, Point2d, Points2d, Solved2d } from "../models/index";
@@ -51,9 +49,7 @@ export const fkPlugin = definePlugin({
     sameRowCount(requires.chain, chain.ids.length, "Body");
     if (requires.solved !== undefined && solved !== undefined)
       sameRowCount(requires.solved, solved.ids.length, "Solved");
-    const baseFrame = readFrame(requires.base);
-    const worldFrames = new Map<string, WorldFrame>();
-    const rows = chain.ids.map((id, position) => {
+    const frames = composeChain(chain, readFrame(requires.base), (id, position) => {
       const row = rowAt(requires.chain, chain.tableIndex, position, id);
       const solvedIndex = solved?.indexById.get(id);
       if (solved !== undefined && requires.solved !== undefined && solvedIndex === undefined)
@@ -71,20 +67,17 @@ export const fkPlugin = definePlugin({
               solveRotation(solvedRow),
               clamp(readNumber(row.cells.weight, 1), 0, 1),
             );
-      const parent = chain.parentById.get(id);
-      const parentFrame = parent === undefined ? baseFrame : worldFrames.get(parent)!;
-      const pivot = composeWorld(parentFrame, {
-        ...readPivotOffset(row.cells),
+      return {
+        length: readNumber(row.cells.length),
         rotation,
-      });
-      const world = composeWorld(pivot, {
-        x: segmentExtent(readNumber(row.cells.length)),
-        y: 0,
-        rotation: 0,
-      });
-      worldFrames.set(id, world);
-      return { id, cells: world };
+        pivot: readPivotOffset(row.cells),
+      };
     });
-    return { values: rows };
+    return {
+      values: chain.ids.map((id) => {
+        const { x, y, rotation } = frames.get(id)!;
+        return { id, cells: { x, y, rotation } };
+      }),
+    };
   },
 });
