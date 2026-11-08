@@ -1,51 +1,74 @@
-import React from "react";
-import { gsap } from "gsap";
-import { PluginCatalog, type ProjectHandle } from "@motion5/core";
-import { createGsapInterpolator } from "@motion5/core/adapters";
-import { unreachable } from "@motion5/core/plugin-api";
-import { builtinModels } from "@motion5/plugins/models";
-import { cascadePlugin } from "@motion5/plugins/motion/cascade";
-import { hopPlugin } from "@motion5/plugins/motion/hop";
-import { wipePlugin } from "@motion5/plugins/motion/wipe";
-import { Word, mergeRefs, useAnchor, useDomPatch, useMotionProject } from "@motion5/react";
-import timingBeat from "./timing-beat.json";
+import React, { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { applyPose, applyReveal } from "@motion5/dom";
+import type { Player } from "@motion5/player";
+import { centreIn, useTarget, usePlayer } from "@motion5/react";
+import { WORD, beatClock, timingScene } from "./timing-scene";
 
-const plugins = new PluginCatalog({
-  models: builtinModels,
-  plugins: [cascadePlugin, hopPlugin, wipePlugin],
-});
-const interpolator = createGsapInterpolator(gsap);
+type Beat = ReturnType<ReturnType<typeof timingScene>>;
 
-const Stage: React.FC<{ handle: ProjectHandle }> = ({ handle }) => {
-  const dot = useDomPatch<HTMLSpanElement>(handle, "period/dot");
-  const cover = useDomPatch<HTMLDivElement>(handle, "cover/wipe");
-  const anchor = useAnchor(handle, "cover/wipe", { x: "x", y: "y" });
+const GLYPH_STYLE = { display: "inline-block" } as const;
+
+const Glyph: React.FC<{ player: Player<Beat> | undefined; index: number; glyph: string }> = ({
+  player,
+  index,
+  glyph,
+}) => {
+  const render = useCallback(
+    (element: Parameters<typeof applyPose>[0], letters: Beat["letters"]) => {
+      const pose = letters[index];
+      if (pose !== undefined) applyPose(element, pose);
+    },
+    [index],
+  );
+  const ref = useTarget(player, "letters", render);
   return (
-    <div className="beat-stage">
-      <div className="beat-word">
-        <Word source={handle} rows="letters/word" text="TIMING" glyphClassName="beat-glyph" />
-        <span ref={mergeRefs(dot, anchor.from)} className="beat-dot" />
-      </div>
-      <div ref={mergeRefs(cover, anchor.to)} className="beat-cover" />
-    </div>
+    <span ref={ref} aria-hidden style={GLYPH_STYLE} className="beat-glyph">
+      {glyph}
+    </span>
   );
 };
 
-/** Binds the beat's nodes to DOM; all of its motion lives in `timing-beat.json`. Click replays. */
+/** The timing beat as plain code: one scene of moves on one clock. Click replays. */
 export const TimingBeat: React.FC = () => {
-  const state = useMotionProject(timingBeat, plugins, interpolator);
-  switch (state.kind) {
-    case "loading":
-      return null;
-    case "refused":
-      return <pre>{state.diagnostics.map(({ message }) => message).join("\n")}</pre>;
-    case "ready":
-      return (
-        <div onClick={state.replay}>
-          <Stage handle={state.handle} />
+  const centre = useRef({ x: 0, y: 0 }).current;
+  const scene = useMemo(() => timingScene(centre), [centre]);
+  const playing = usePlayer(scene, beatClock);
+  const dotRef = useRef<HTMLSpanElement | null>(null);
+  const coverRef = useRef<HTMLDivElement | null>(null);
+  const dot = useTarget(playing?.player, "dot");
+  const cover = useTarget(playing?.player, "cover", applyReveal);
+
+  useLayoutEffect(() => {
+    if (dotRef.current === null || coverRef.current === null) return;
+    Object.assign(centre, centreIn(dotRef.current, coverRef.current));
+    playing?.player.refresh();
+  }, [centre, playing]);
+
+  return (
+    <div onClick={() => playing?.driver.replay()}>
+      <div className="beat-stage">
+        <div className="beat-word">
+          <span aria-label={WORD}>
+            {[...WORD].map((glyph, index) => (
+              <Glyph key={index} player={playing?.player} index={index} glyph={glyph} />
+            ))}
+          </span>
+          <span
+            ref={(element) => {
+              dotRef.current = element;
+              dot(element);
+            }}
+            className="beat-dot"
+          />
         </div>
-      );
-    default:
-      return unreachable(state);
-  }
+        <div
+          ref={(element) => {
+            coverRef.current = element;
+            cover(element);
+          }}
+          className="beat-cover"
+        />
+      </div>
+    </div>
+  );
 };
