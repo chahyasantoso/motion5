@@ -1,3 +1,4 @@
+import type { Clock as TrackClock } from "@motion5/moves";
 import { unreachable } from "../lang/exhaustive";
 import type { RuleId } from "./rule-id";
 
@@ -340,10 +341,11 @@ export interface MotionDefinition {
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }
-/** Node id and progress passed to a plugin. */
+/** Node id, progress and the track's clock, passed to a plugin. */
 export interface EvaluationContext {
   readonly nodeId: string;
   readonly progress: number;
+  readonly clock: TrackClock;
 }
 /** Resolved slot values: output sets for shape slots, values for model slots. */
 export type ResolvedRequires = Readonly<Record<string, unknown>>;

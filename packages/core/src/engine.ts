@@ -11,6 +11,7 @@ import type {
   SourceStructure,
   TrackDefinition,
   TriggerSignal,
+  TriggerDefinition,
 } from "./contract/v5";
 import { outputPluginId, outputRef } from "./contract/v5";
 import { unknownNameMessage } from "./contract/registry-message";
@@ -155,6 +156,19 @@ type MotionBuild =
 function runAllAndReportOnce(steps: readonly (() => void)[], context: string): void {
   report(collect(steps), context);
 }
+/** A timed trigger's length in ms, which each track's clock divides; other triggers have none. */
+function triggerDuration(trigger: TriggerDefinition): { readonly durationMs?: number } {
+  switch (trigger.type) {
+    case "time":
+      return { durationMs: trigger.duration };
+    case "manual":
+    case "scroll":
+      return {};
+    default:
+      return unreachable(trigger);
+  }
+}
+
 export class Engine {
   readonly #options: EngineOptions;
   readonly #capabilities: PluginCatalog;
@@ -434,6 +448,7 @@ export class Engine {
             }
           },
           ...(definition.stagger === undefined ? {} : { stagger: definition.stagger }),
+          ...triggerDuration(trigger),
         });
         built = { kind: "motion-created", trigger: built.trigger, motion };
         motion.play();

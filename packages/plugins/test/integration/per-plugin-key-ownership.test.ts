@@ -12,6 +12,7 @@ import {
 } from "@motion5/core/testing";
 import { Body2d, Solved2d, Point2d } from "../../src/models/index";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 function hold(value: number) {
   return value;
@@ -114,7 +115,7 @@ describe("per-plugin keyframe key ownership", () => {
           solved: commitModelStructure(Solved2d, solved),
         },
       },
-      { nodeId: "walk/thigh", progress: 0 },
+      { nodeId: "walk/thigh", progress: 0, clock: UNTIMED },
     );
     const row = (composed.values as any)[0];
     expect(row.cells.x).toBeCloseTo(35.355, 3);

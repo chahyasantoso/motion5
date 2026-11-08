@@ -8,6 +8,7 @@ import { ik3dPlugin } from "../../src/ik/ik3d";
 import { createPoseClassifyPlugin, type PoseTemplate } from "../../src/pose/pose-classify";
 import { testModels } from "../../../core/test/support/test-models";
 import { Spec } from "@motion5/core/plugin-api";
+import { UNTIMED } from "@motion5/moves";
 
 const ZERO_EULER = { rotation: 0, rotationX: 0, rotationY: 0 };
 const T_POSE: PoseTemplate = {
@@ -47,7 +48,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "t-pose", confidence: 1 });
   });
@@ -65,7 +66,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "arms-up", confidence: 1 });
   });
@@ -87,7 +88,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "arms-down", confidence: 1 });
   });
@@ -105,7 +106,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "unknown", confidence: 0 });
   });
@@ -121,7 +122,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "unknown", confidence: 0 });
   });
@@ -132,11 +133,11 @@ describe("aggregate pose-classify binding (AP)", () => {
     const row2 = { id: "wrist", cells: { x: 0, y: 0, rotation: 0 } };
     const res1 = plugin.transform(
       { values: {}, requires: { pose: { values: [row1, row2] } } },
-      { nodeId: "c", progress: 0 },
+      { nodeId: "c", progress: 0, clock: UNTIMED },
     );
     const res2 = plugin.transform(
       { values: {}, requires: { pose: { values: [row2, row1] } } },
-      { nodeId: "c", progress: 0 },
+      { nodeId: "c", progress: 0, clock: UNTIMED },
     );
     expect(res1).toEqual(res2);
   });
@@ -156,7 +157,7 @@ describe("aggregate pose-classify binding (AP)", () => {
           },
         },
       },
-      { nodeId: "classifier", progress: 0 },
+      { nodeId: "classifier", progress: 0, clock: UNTIMED },
     );
     expect(result.values).toEqual({ label: "custom", confidence: 1 });
   });

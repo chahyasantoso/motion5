@@ -83,6 +83,7 @@ async function withEmitted<T>(
           paths: {
             "@motion5/core": ["packages/core/src/index.ts"],
             "@motion5/core/*": ["packages/core/src/*"],
+            "@motion5/moves": ["packages/moves/src/index.ts"],
           },
         },
         files: sources.map((source) => join(root, source)),
@@ -121,9 +122,11 @@ async function closureOf(
           ? [join(out, "core", "src", "plugin-api.d.ts")]
           : specifier === "@motion5/core"
             ? [join(out, "core", "src", "index.d.ts")]
-            : specifier.startsWith(".")
-              ? declarationCandidates(current, specifier)
-              : [];
+            : specifier === "@motion5/moves"
+              ? [join(out, "moves", "src", "index.d.ts")]
+              : specifier.startsWith(".")
+                ? declarationCandidates(current, specifier)
+                : [];
       if (candidates.length === 0) {
         unresolved.push(`${shown} -> ${specifier}`);
         continue;
@@ -142,7 +145,9 @@ async function closureOf(
 describe("public declaration surface (P1-9)", () => {
   it("scans the emitted entry declaration closure, not just source strings", async () => {
     await withEmitted(["packages/core/src/index.ts"], async (out, emitted) => {
-      const entries = [...emitted].filter((path) => path.endsWith("index.d.ts"));
+      const entries = [...emitted].filter((path) =>
+        path.endsWith(join("core", "src", "index.d.ts")),
+      );
       expect(entries).toHaveLength(1);
       const entry = entries[0];
       expect(entry).toBeDefined();

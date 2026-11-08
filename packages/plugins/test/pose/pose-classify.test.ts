@@ -13,6 +13,7 @@ import {
 import { fk3dPlugin } from "../../src/fk/fk3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 const ZERO: Euler3d = { rotation: 0, rotationX: 0, rotationY: 0 };
 const template = (label = "idle", angles: Euler3d = ZERO): PoseTemplate => ({
@@ -42,7 +43,7 @@ function classify(
   return (
     (createPoseClassifyPlugin({ templates, maxDistance }).transform(
       { values: {}, requires: { pose: { values: pose } } },
-      { nodeId: "scene/classifier", progress: 0 },
+      { nodeId: "scene/classifier", progress: 0, clock: UNTIMED },
     ).values as Readonly<Record<string, unknown>>) ?? {}
   );
 }
@@ -147,13 +148,13 @@ describe("pose classifier geodesic distance", () => {
           values: {},
           requires: { pose: { values: [{ id: "wrist", cells: { ...ZERO, x: 0, y: 0, z: 0 } }] } },
         },
-        { nodeId: "tag", progress: 0 },
+        { nodeId: "tag", progress: 0, clock: UNTIMED },
       ).values,
     ).toEqual({ label: "idle", confidence: 1 });
     expect(
       plugin.transform(
         { values: {}, requires: { pose: { values: [] } } },
-        { nodeId: "tag", progress: 0 },
+        { nodeId: "tag", progress: 0, clock: UNTIMED },
       ).values,
     ).toEqual({
       label: "other",

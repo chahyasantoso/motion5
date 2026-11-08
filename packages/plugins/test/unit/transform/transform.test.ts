@@ -3,6 +3,7 @@ import { PluginCatalog } from "@motion5/core/plugin-api";
 import { transformPlugin } from "../../../src/transform/transform";
 import { Points2d } from "../../../src/models/index";
 import { testModels } from "../../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 describe("identified 2D transform plugin", () => {
   it("declares one dependency and preserves source row identity", () => {
@@ -33,7 +34,7 @@ describe("identified 2D transform plugin", () => {
         },
         state: undefined,
       },
-      { nodeId: "demo/shifted-points", progress: 0.5 },
+      { nodeId: "demo/shifted-points", progress: 0.5, clock: UNTIMED },
     );
 
     expect(output).toEqual({

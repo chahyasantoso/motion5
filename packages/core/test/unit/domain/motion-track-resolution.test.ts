@@ -77,7 +77,7 @@ describe("Motion resolves Tracks by id", () => {
     // The structural port is the guard: a Motion advances the two members it needs, and the
     // source names no compiled track type at all.
     expect(MOTION_SOURCE).toMatch(/export interface MotionTrack \{/);
-    expect(MOTION_SOURCE).toMatch(/setProgress\(value: number\): boolean;/);
+    expect(MOTION_SOURCE).toMatch(/setProgress\(value: number, clock\?: TrackClock\): boolean;/);
     expect(MOTION_SOURCE).toMatch(/dispose\(\): void;/);
     expect(MOTION_SOURCE).not.toMatch(/from "\.\/track"/);
   });

@@ -9,6 +9,7 @@ import { goalDiagnostics } from "../../src/ik/shared/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 const Pole3d = defineModel({
   id: "Pole3d",
@@ -44,7 +45,7 @@ const GOALS = [
 ];
 const ROOT = { x: 0, y: 0, z: 0, rotation: 0, rotationX: 0, rotationY: 0 };
 const POLE = { x: 0, y: 0, z: 100, rotation: 0, rotationX: 0, rotationY: 0 };
-const CTX = { nodeId: "rig/solve", progress: 0 };
+const CTX = { nodeId: "rig/solve", progress: 0, clock: UNTIMED };
 const GOLDENS = JSON.parse(
   readFileSync(new URL("../fixtures/ik-aggregate-goldens.json", import.meta.url), "utf8"),
 ).ik3d as Record<string, { input: any; expected: unknown }>;

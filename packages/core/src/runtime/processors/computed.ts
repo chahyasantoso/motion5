@@ -1,3 +1,4 @@
+import { UNTIMED, type Clock as TrackClock } from "@motion5/moves";
 import type {
   Diagnostic,
   NonEmptyDiagnostics,
@@ -136,6 +137,7 @@ export class ComputedProcessor implements Processor {
   readonly #localInput: LocalInput;
   #paramInput: LocalInput | undefined;
   #outputsChecked = false;
+  #clock: TrackClock = UNTIMED;
   #checkedStructures: SourceStructures | undefined;
   #preparedState: unknown;
   #isPrepared = false;
@@ -192,7 +194,8 @@ export class ComputedProcessor implements Processor {
     return this.#outputStructures.get(outputName);
   }
 
-  setProgress(value: number): boolean {
+  setProgress(value: number, clock: TrackClock = UNTIMED): boolean {
+    this.#clock = clock;
     const p1 = this.#localInput.setProgress(value);
     const p2 = this.#paramInput?.setProgress(value) ?? false;
     return p1 || p2;
@@ -258,7 +261,11 @@ export class ComputedProcessor implements Processor {
       structures,
       state: this.#preparedState,
     });
-    const context = Object.freeze({ nodeId: this.nodeId, progress: localInput.progress });
+    const context = Object.freeze({
+      nodeId: this.nodeId,
+      progress: localInput.progress,
+      clock: this.#clock,
+    });
     const raw = this.plugin.transform(input, context);
     const outputs = this.#outputsChecked
       ? checkLaterOutputs(raw, this.plugin.outputs, this.nodeId)

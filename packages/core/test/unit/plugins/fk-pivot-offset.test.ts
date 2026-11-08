@@ -4,6 +4,7 @@ import { commitModelStructure } from "../../../src/testing/fakes";
 import { composeWorld } from "../../../../plugins/src/frame/frame";
 import { Body2d, Solved2d } from "../../../../plugins/src/models/index";
 import { fkPlugin } from "@motion5/plugins/fk";
+import { UNTIMED } from "@motion5/moves";
 
 // Slice A of issue #195. A bone's pivot is not always exactly at its parent's tip, so `fk` claims
 // an authored `x` and `y` beside `length` and `rotation`. Both default to zero, so a bone authored
@@ -61,7 +62,11 @@ function bone(values: Readonly<Record<string, number>>, base: Frame = ORIGIN): F
       solved: commitModelStructure(Solved2d, solved),
     },
   };
-  const outputs = fkPlugin.transform(input as never, { nodeId: "~/bone", progress: 1 }) as Outputs;
+  const outputs = fkPlugin.transform(input as never, {
+    nodeId: "~/bone",
+    progress: 1,
+    clock: UNTIMED,
+  }) as Outputs;
   const table = outputs.values;
   if (!Array.isArray(table) || table[0] === undefined)
     throw new Error("fk did not publish its pose row.");

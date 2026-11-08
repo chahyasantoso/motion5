@@ -8,6 +8,7 @@ import { goalDiagnostics } from "../../src/ik/shared/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/ik/solve2d/solve", async (importOriginal) => {
@@ -30,7 +31,7 @@ const GOALS = [
   { id: "goal-left", cells: { memberId: "left", x: 60, y: 20 } },
   { id: "goal-right", cells: { memberId: "right", x: 20, y: 45 } },
 ];
-const CTX = { nodeId: "rig/solve", progress: 0 };
+const CTX = { nodeId: "rig/solve", progress: 0, clock: UNTIMED };
 const GOLDENS = JSON.parse(
   readFileSync(new URL("../fixtures/ik-aggregate-goldens.json", import.meta.url), "utf8"),
 ).ik as Record<string, { input: any; expected: unknown }>;

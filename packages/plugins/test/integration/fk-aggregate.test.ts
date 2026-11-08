@@ -7,6 +7,7 @@ import { BODY_2D_SPEC } from "../support/aggregate-topology";
 import { Body2d, Point2d, Points2d, Solved2d, Goals2d } from "../../src/models/index";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
 vi.mock("../../src/frame/frame", async (importOriginal) => {
@@ -20,7 +21,7 @@ vi.mock("../../src/frame/frame", async (importOriginal) => {
   };
 });
 
-const CTX = { nodeId: "rig/pose", progress: 0 };
+const CTX = { nodeId: "rig/pose", progress: 0, clock: UNTIMED };
 
 type RawFkInput = {
   readonly values: unknown;

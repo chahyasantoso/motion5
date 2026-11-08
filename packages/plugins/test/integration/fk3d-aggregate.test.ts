@@ -8,6 +8,7 @@ import { BODY_3D_SPEC } from "../support/aggregate-topology";
 import { Body3d, Point3d, Points3d, Solved3d, Goals3d } from "../../src/models/index";
 import { bodyStructure, solvedStructure } from "../support/rig-input";
 import { testModels } from "../../../core/test/support/test-models";
+import { UNTIMED } from "@motion5/moves";
 
 const Pole3d = defineModel({
   id: "Pole3d",
@@ -26,7 +27,7 @@ vi.mock("../../src/frame/frame3d", async (importOriginal) => {
   };
 });
 
-const CTX = { nodeId: "rig/pose", progress: 0 };
+const CTX = { nodeId: "rig/pose", progress: 0, clock: UNTIMED };
 
 type RawFk3dInput = {
   readonly values: unknown;

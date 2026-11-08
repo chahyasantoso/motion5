@@ -12,6 +12,7 @@ import {
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 import { code, member } from "../../helpers/source-region";
 import { testEngine } from "../../support/builtin-registry";
+import { UNTIMED } from "@motion5/moves";
 
 describe("Motion compiled Track disposal ownership", () => {
   it("C-14 does not dispose resolver-owned Tracks when Motion is disposed", () => {
@@ -67,7 +68,7 @@ describe("Motion compiled Track disposal ownership", () => {
     second.seek(0.75);
 
     expect(track.dispose).not.toHaveBeenCalled();
-    expect(track.setProgress).toHaveBeenCalledWith(0.75);
+    expect(track.setProgress).toHaveBeenCalledWith(0.75, UNTIMED);
   });
 });
 

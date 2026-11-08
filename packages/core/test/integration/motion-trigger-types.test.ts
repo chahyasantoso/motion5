@@ -14,6 +14,7 @@ import {
 import { createManualTriggerPort } from "../../src/ports/trigger";
 import { record } from "../support/v5-builders";
 import { testEngine } from "../support/builtin-registry";
+import { UNTIMED } from "@motion5/moves";
 
 const DRIVER_BACKED =
   "Motion has a configured trigger driver and does not accept external signals.";
@@ -164,7 +165,7 @@ describe("Motion trigger types and clock ownership", () => {
     clock.tick(250);
     scheduler.flush();
     expect(motion.position).toBeCloseTo(0.25, 12);
-    expect(current.setProgress).toHaveBeenLastCalledWith(0.25);
+    expect(current.setProgress).toHaveBeenLastCalledWith(0.25, UNTIMED);
 
     motion.dispose();
     expect(() => motion.signal({ type: "manual", progress: 0.5 })).toThrow("destroyed");
@@ -195,7 +196,7 @@ describe("Motion trigger types and clock ownership", () => {
     motion.signal({ type: "manual", progress: 0.8 });
     scheduler.flush();
     expect(current.setProgress).toHaveBeenCalledTimes(1);
-    expect(current.setProgress).toHaveBeenLastCalledWith(0.8);
+    expect(current.setProgress).toHaveBeenLastCalledWith(0.8, UNTIMED);
     motion.dispose();
   });
 });

@@ -134,7 +134,7 @@ function asSpecifierList(source, specifiers) {
 }
 export function importsBoundary(source, specifiers) {
   return asSpecifierList(source, specifiers).some((specifier) =>
-    /^(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
+    /^(?!@motion5\/moves$)(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
       specifier,
     ),
   );

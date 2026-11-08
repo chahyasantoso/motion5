@@ -1,3 +1,4 @@
+import type { Clock as TrackClock } from "@motion5/moves";
 import type { AdmittedPlugin, Model, SourceStructures, Structure, Value } from "../contract/v5";
 import type { ParsedValues } from "../contract/v5-parse";
 import type { Interpolator } from "../ports/interpolator";
@@ -86,8 +87,8 @@ export class Track {
     this.#processor.invalidateOutputs();
   }
 
-  setProgress(value: number): boolean {
-    return this.#processor.setProgress(value);
+  setProgress(value: number, clock?: TrackClock): boolean {
+    return this.#processor.setProgress(value, clock);
   }
 
   replaceValues(values: ParsedValues | undefined): void {

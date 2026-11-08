@@ -1,3 +1,4 @@
+import type { Clock as TrackClock } from "@motion5/moves";
 import type { SourceStructures, Structure, Value } from "../../contract/v5";
 import type { ParsedValues } from "../../contract/v5-parse";
 import type { PublisherComposition } from "../publisher-outcome";
@@ -9,7 +10,7 @@ export interface Processor {
   outputStructure(outputName: string): Structure<unknown> | undefined;
   prepareCommit(structures: SourceStructures): void;
   invalidateOutputs(): void;
-  setProgress(value: number): boolean;
+  setProgress(value: number, clock?: TrackClock): boolean;
   replaceValues(values: ParsedValues | undefined): void;
   replaceParam(param: ParsedValues | undefined): void;
   replaceParamOverlay(value: Value | undefined): void;

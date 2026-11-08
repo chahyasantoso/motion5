@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@motion5/moves": "0.0.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

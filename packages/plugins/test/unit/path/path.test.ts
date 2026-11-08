@@ -21,6 +21,7 @@ import { skinAnchorsPlugin } from "../../../src/path/skin-anchors";
 import { pointAtArcFraction } from "../../../src/path/arc-fraction";
 import { cubicPathToSvg } from "../../../src/path/draw";
 import { fkPlugin } from "../../../src/fk/fk";
+import { UNTIMED } from "@motion5/moves";
 
 function createTestEngine(catalog: PluginCatalog) {
   return new Engine({
@@ -508,6 +509,7 @@ describe("path models and plugins (S8)", () => {
       {
         nodeId: "n",
         progress: 0,
+        clock: UNTIMED,
       },
     );
     const segments = cubic.values as readonly {

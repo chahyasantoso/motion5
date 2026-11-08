@@ -173,6 +173,12 @@ describe("boundary scan predicates", () => {
     expect(bannedSymbol(cleanFixture)).toBe(false);
   });
 
+  it("lets core import the moves package and no other workspace package", () => {
+    expect(importsBoundary('import { lanes } from "@motion5/moves";')).toBe(false);
+    expect(importsBoundary('import { hop } from "@motion5/moves/hop";')).toBe(true);
+    expect(importsBoundary('import { hopPlugin } from "@motion5/plugins/motion/hop";')).toBe(true);
+  });
+
   it("fails on renderer and animation-engine imports", () => {
     expect(importsBoundary(rendererViolationFixture)).toBe(true);
     expect(importsRenderer(rendererViolationFixture)).toBe(true);

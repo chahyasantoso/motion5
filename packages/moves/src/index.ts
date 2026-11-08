@@ -1,4 +1,5 @@
 export { UNTIMED, atProgress, window, windowed, type Clock, type Time } from "./time";
+export { laneTime, lanes, type Lanes } from "./lanes";
 export { squashed, type Anchor, type Pose2d } from "./pose";
 export {
   defineMove,

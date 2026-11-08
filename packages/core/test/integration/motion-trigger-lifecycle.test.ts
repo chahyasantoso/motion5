@@ -8,6 +8,7 @@ import {
   createFakeTrackRegistry,
 } from "../../src/testing/fakes";
 import { createManualTriggerPort } from "../../src/ports/trigger";
+import { UNTIMED } from "@motion5/moves";
 
 /**
  * Mechanical replacement for the `as never` track double this suite passed to `resolveTrack`.
@@ -49,7 +50,7 @@ describe("Motion and trigger lifecycle", () => {
     trigger.emit(0.5);
     scheduler.flush();
 
-    expect(track.setProgress).toHaveBeenCalledWith(0.5);
+    expect(track.setProgress).toHaveBeenCalledWith(0.5, UNTIMED);
     expect(invalidate).toHaveBeenCalledWith(0.5, ["arm"]);
     expect(motion.position).toBe(0.5);
 
@@ -62,7 +63,7 @@ describe("Motion and trigger lifecycle", () => {
     motion.play();
     trigger.emit(1);
     scheduler.flush();
-    expect(track.setProgress).toHaveBeenLastCalledWith(1);
+    expect(track.setProgress).toHaveBeenLastCalledWith(1, UNTIMED);
     expect(invalidate).toHaveBeenLastCalledWith(1, ["arm"]);
 
     motion.dispose();

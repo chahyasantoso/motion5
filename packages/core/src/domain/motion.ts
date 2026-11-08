@@ -1,3 +1,4 @@
+import { laneTime, lanes, type Clock as TrackClock, type Lanes, type Time } from "@motion5/moves";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
@@ -7,7 +8,7 @@ import { collect, report } from "./completion";
 
 /** The compiled track a Motion drives: set its progress, then dispose it. */
 export interface MotionTrack {
-  setProgress(value: number): boolean;
+  setProgress(value: number, clock?: TrackClock): boolean;
   dispose(): void;
 }
 
@@ -30,6 +31,8 @@ export interface MotionOptions {
   /** Runs once per sweep with the ids whose progress changed and can still change output. */
   readonly invalidate?: (progress: number, changedIds: readonly string[]) => void;
   readonly stagger?: number;
+  /** A timed trigger's whole length in ms; each track's clock is its share of it. */
+  readonly durationMs?: number;
   /** Set when the resolver's owner delegates Track lifetime here. */
   readonly disposeTracks?: boolean;
   readonly listenToClock?: boolean;
@@ -55,6 +58,7 @@ export class Motion {
   #trigger: TriggerPort | undefined;
   readonly #invalidate: (progress: number, changedIds: readonly string[]) => void;
   #stagger: number;
+  readonly #durationMs: number | undefined;
   readonly #disposeTracks: boolean;
   readonly #listenToClock: boolean;
   #acceptsExternalSignal: boolean;
@@ -83,6 +87,7 @@ export class Motion {
     this.#trigger = options.trigger;
     this.#invalidate = options.invalidate ?? (() => undefined);
     this.#stagger = stagger;
+    this.#durationMs = options.durationMs;
     this.#disposeTracks = options.disposeTracks ?? false;
     this.#listenToClock = options.listenToClock ?? true;
     this.#acceptsExternalSignal = options.acceptsExternalSignal ?? true;
@@ -116,7 +121,8 @@ export class Motion {
     const track = this.#track(entry.id);
     // Seed against prospective entries → value matches commit-first order.
     const entries = [...this.#tracks, entry];
-    track.setProgress(this.#effectiveProgress(entries.length - 1, entry, entries));
+    const time = this.#laneTime(entries.length - 1, this.#lanes(entries));
+    track.setProgress(time.progress, time.clock);
     this.#tracks.push(entry);
     this.#trackMap.set(entry.id, entry);
   }
@@ -129,7 +135,8 @@ export class Motion {
     const track = this.#track(entry.id);
     const entries = [...this.#tracks];
     entries[index] = entry;
-    track.setProgress(this.#effectiveProgress(index, entry, entries));
+    const time = this.#laneTime(index, this.#lanes(entries));
+    track.setProgress(time.progress, time.clock);
     this.#tracks[index] = entry;
     this.#trackMap.set(entry.id, entry);
   }
@@ -310,6 +317,7 @@ export class Motion {
     this.#position = progress;
     const unresolved: string[] = [];
     const changedIds: string[] = [];
+    const of = this.#lanes(this.#tracks);
     for (let index = 0; index < this.#tracks.length; index += 1) {
       const entry = this.#tracks[index]!;
       const track = this.#resolveTrack(entry.id);
@@ -318,28 +326,22 @@ export class Motion {
         unresolved.push(entry.id);
         continue;
       }
-      if (track.setProgress(this.#effectiveProgress(index, entry, this.#tracks)))
-        changedIds.push(entry.id);
+      const time = this.#laneTime(index, of);
+      if (track.setProgress(time.progress, time.clock)) changedIds.push(entry.id);
     }
     invalidate(progress, Object.freeze(changedIds));
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }
-  #effectiveProgress(
-    index: number,
-    entry: MotionTrackEntry,
-    entries: readonly MotionTrackEntry[],
-  ): number {
-    if (this.#stagger === 0) return this.#position;
+  #lanes(entries: readonly MotionTrackEntry[]): Lanes {
     const length = this.#totalDuration(entries);
-    // The Motion spans the last finish, so every track reaches 1 at position 1 whatever the stagger.
-    const span = entries.reduce(
-      (latest, candidate, at) =>
-        Math.max(latest, at * this.#stagger + (candidate.duration ?? length)),
-      0,
+    return lanes(
+      entries.map((entry) => entry.duration ?? length),
+      this.#stagger,
     );
-    const elapsed = this.#position * span - index * this.#stagger;
-    return Math.max(0, Math.min(1, elapsed / (entry.duration ?? length)));
+  }
+  #laneTime(index: number, of: Lanes): Time {
+    return laneTime(this.#position, index, of, this.#durationMs);
   }
   #totalDuration(entries: readonly MotionTrackEntry[]): number {
     return entries.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);
