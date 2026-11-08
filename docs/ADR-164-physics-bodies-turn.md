@@ -17,8 +17,9 @@ upward, and the conformance suite had no case that slid.
   up to two points, circles and half planes give one, and ten passes of accumulated impulses at each point move and
   turn both bodies, with friction bounded by the push and opposing the slide. Overlap is corrected through the
   velocity, and restitution applies only above a resting speed.
-- A body whose speed, and the speed of its edge from turning, stay under 4 px a second for half a second sleeps; a
-  sleeping body counts as fixed until an awake body faster than 30 px a second touches it.
+- A body that stays within 1 px of where it was, turning its edge less than 1 px, for half a second sleeps, so one
+  jittering in place sleeps too; a sleeping body counts as fixed until an awake body faster than 30 px a second
+  touches it. A body touching anything loses spin at 3 a second, so a thin piece rocking on a corner settles.
 - The Rapier adapter stops locking rotation, except for `fixedRotation`.
 - The conformance suite adds a sliding box that friction stops without lifting, a heap of forty sticky bodies that
   settles with none thrown up, a box that tips flat from its corner, a ball that rolls without slipping, a stack of

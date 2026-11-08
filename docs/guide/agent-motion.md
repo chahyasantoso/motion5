@@ -212,7 +212,8 @@ export const scene = (time: Time, events: Events) => ({
 - **`simulate(world, build)`** builds once and steps at a fixed 1/120 s, keeping snapshots, so `sim.at(time)`,
   `sim.pose(id, time)` and `sim.events(time)` give the same answer at a time however the player got there.
   `sim.pose` is the move from the body's start: lay each element out where its body starts, centred on it and
-  upright. Bodies still for half a second sleep until something fast hits them, so a heap comes to rest.
+  upright. A body that stays within 1 px for half a second sleeps until something fast hits it, and touching
+  bodies lose spin, so a heap of thin pieces comes to rest instead of rocking.
 - **Bodies from events.** `simulate(world, build, { spawn })` calls `spawn(event, world)` for each event as play
   reaches it, and `spawn` may add bodies with `world.addBody`, ids new and the same for the same event, such as
   `` `bit${event.at}-${i}` ``; every click's bodies land in one world and pile on the last ones. Pass the scene's
