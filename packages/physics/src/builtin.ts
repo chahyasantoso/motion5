@@ -22,6 +22,10 @@ interface Body {
   spin: number;
   asleep: boolean;
   still: number;
+  /** Where the body was when its current still spell began. */
+  restX: number;
+  restY: number;
+  restAngle: number;
 }
 
 interface Fixed {
@@ -64,7 +68,8 @@ interface Point {
 const ITERATIONS = 10;
 const SLOP = 0.5;
 const BIAS = 0.2;
-const SLEEP_SPEED = 4;
+const SLEEP_DRIFT = 1;
+const CONTACT_SPIN_DRAG = 3;
 const SLEEP_AFTER = 0.5;
 const WAKE_SPEED = 30;
 
@@ -460,6 +465,9 @@ export function builtinWorld(): PhysicsWorld {
         spin: ((spec.spin ?? 0) * Math.PI) / 180,
         asleep: false,
         still: 0,
+        restX: spec.x,
+        restY: spec.y,
+        restAngle: ((spec.angle ?? 0) * Math.PI) / 180,
       };
       bodies.push(body);
       byId.set(spec.id, body);
@@ -497,15 +505,28 @@ export function builtinWorld(): PhysicsWorld {
       }
       const points = found.flatMap((manifold) => prepare(manifold, seconds));
       for (let i = 0; i < ITERATIONS; i += 1) for (const point of points) solve(point);
+      // A body touching something loses some spin each second, so a piece rocking on a corner settles.
+      const keep = Math.max(0, 1 - CONTACT_SPIN_DRAG * seconds);
+      for (const { a, b } of found) {
+        a.spin *= keep;
+        if (isBody(b)) b.spin *= keep;
+      }
       for (const body of bodies) {
         if (body.asleep) continue;
         body.x += body.vx * seconds;
         body.y += body.vy * seconds;
         body.angle += body.spin * seconds;
-        const calm =
-          Math.hypot(body.vx, body.vy) < SLEEP_SPEED &&
-          Math.abs(body.spin) * body.reach < SLEEP_SPEED;
-        body.still = calm ? body.still + seconds : 0;
+        // Still means it stayed put, so a body that jitters in place sleeps as one at rest does.
+        const stayed =
+          Math.hypot(body.x - body.restX, body.y - body.restY) < SLEEP_DRIFT &&
+          Math.abs(body.angle - body.restAngle) * body.reach < SLEEP_DRIFT;
+        if (stayed) body.still += seconds;
+        else {
+          body.still = 0;
+          body.restX = body.x;
+          body.restY = body.y;
+          body.restAngle = body.angle;
+        }
         if (body.still >= SLEEP_AFTER) {
           body.asleep = true;
           body.vx = 0;
@@ -548,6 +569,9 @@ export function builtinWorld(): PhysicsWorld {
           b.spin,
           b.asleep ? 1 : 0,
           b.still,
+          b.restX,
+          b.restY,
+          b.restAngle,
         ]),
         touching: [...touching],
       };
@@ -575,6 +599,9 @@ export function builtinWorld(): PhysicsWorld {
         body.spin = Number(row[6]);
         body.asleep = Number(row[7]) === 1;
         body.still = Number(row[8]);
+        body.restX = Number(row[9]);
+        body.restY = Number(row[10]);
+        body.restAngle = Number(row[11]);
         bodies.push(body);
       }
       touching = new Set(keys.map(String));
