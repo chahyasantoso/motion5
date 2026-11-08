@@ -1,8 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const ROOT = new URL("../../../../../", import.meta.url);
-const guide = readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8");
+const guide = ["docs/guide/agent-motion.md", "docs/guide/agent-motion-engine.md"]
+  .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
+  .join("\n");
 const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.parse(
   readFileSync(new URL("package.json", ROOT), "utf8"),
 );
@@ -24,15 +26,26 @@ describe("agent guide", () => {
       expect(existsSync(new URL(`apps/react-demo/${page}`, ROOT)), page).toBe(true);
   });
 
-  it("names only plugin import paths the plugins package exports", () => {
-    const exported: { readonly exports: Readonly<Record<string, unknown>> } = JSON.parse(
-      readFileSync(new URL("packages/plugins/package.json", ROOT), "utf8"),
+  it("names only package import paths a workspace package exports", () => {
+    const declared = new Set(
+      readdirSync(new URL("packages/", ROOT)).flatMap((dir) => {
+        const path = new URL(`packages/${dir}/package.json`, ROOT);
+        if (!existsSync(path)) return [];
+        const manifest: {
+          readonly name: string;
+          readonly exports?: Readonly<Record<string, unknown>>;
+        } = JSON.parse(readFileSync(path, "utf8"));
+        return Object.keys(manifest.exports ?? {}).map((subpath) =>
+          subpath === "." ? manifest.name : `${manifest.name}/${subpath.slice(2)}`,
+        );
+      }),
     );
-    const named = [...guide.matchAll(/`@motion5\/plugins\/([\w/-]+)`/g)].map((match) => match[1]);
-    expect(named.length).toBeGreaterThan(0);
+    const named = [...guide.matchAll(/["`](@motion5\/[\w/-]+)["`]/g)].map(
+      (match) => match[1] ?? "",
+    );
+    expect(named.length).toBeGreaterThan(5);
     for (const path of named)
-      if (path !== undefined && !path.endsWith("/"))
-        expect(Object.keys(exported.exports), path).toContain(`./${path}`);
+      if (!path.endsWith("/") && !path.includes("<")) expect(declared, path).toContain(path);
   });
 
   it("stays reachable from the guide index and the agent rules", () => {
