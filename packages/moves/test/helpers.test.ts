@@ -4,6 +4,7 @@ import {
   ease,
   hop,
   keyframes,
+  seeded,
   mix,
   mixAngle,
   mixPoint,
@@ -119,5 +120,14 @@ describe("keyframes", () => {
         mix,
       ),
     ).toThrow(/keyframes: key at 1000 ms comes before 2000 ms/);
+  });
+});
+
+describe("seeded", () => {
+  it("repeats for a seed, differs between seeds, and stays from 0 up to 1", () => {
+    const draw = (seed: number) => Array.from({ length: 50 }, seeded(seed));
+    expect(draw(7)).toEqual(draw(7));
+    expect(draw(7)).not.toEqual(draw(8));
+    for (const value of draw(3)) expect(value >= 0 && value < 1).toBe(true);
   });
 });

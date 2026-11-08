@@ -13,6 +13,7 @@ export {
 export { ease, type Ease } from "./ease";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
+export { seeded } from "./random";
 export {
   NO_EVENTS,
   follow,
