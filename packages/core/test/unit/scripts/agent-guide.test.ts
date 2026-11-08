@@ -56,4 +56,12 @@ describe("agent guide", () => {
       "docs/guide/agent-motion.md",
     );
   });
+
+  it("is what the make-motion skill sends an agent to, by a link that resolves", () => {
+    const skill = new URL(".claude/skills/make-motion/SKILL.md", ROOT);
+    const text = readFileSync(skill, "utf8");
+    expect(text).toMatch(/^---\r?\nname: make-motion\r?\ndescription: .+\r?\n---\r?\n/);
+    const link = /\]\((\.\.\/[^)]+agent-motion\.md)\)/.exec(text)?.[1] ?? "";
+    expect(existsSync(new URL(link, skill)), link).toBe(true);
+  });
 });
