@@ -3,9 +3,9 @@ import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.m
 
 export default defineConfig({
   resolve: {
-    alias: [...workspaceSourceAliases("plugins", "core", "three")],
+    alias: [...workspaceSourceAliases("moves", "plugins", "core", "three")],
   },
   optimizeDeps: {
-    exclude: ["@motion5/plugins", "@motion5/core", "@motion5/three"],
+    exclude: ["@motion5/moves", "@motion5/plugins", "@motion5/core", "@motion5/three"],
   },
 });

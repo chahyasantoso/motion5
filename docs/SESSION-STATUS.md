@@ -29,14 +29,15 @@ byte ceiling.
   An absent required param and an unknown ease are refused, `scaleX` and `scaleY` render, and
   `Motion.stagger` finishes every track. A `time` trigger takes a `delay`, and `Word` binds text to tracks or to the rows of one `cascade`
   track. `rope`, `trace`, `svgPath` and `layer` bend, draw on and combine moves, `useAnchor` measures a
-  param from the page, and the page tools take `--root` or `--url` for any site. `drop`, `hop` and `wipe` are pure moves in `builtinCatalog`,
-  publishing the new `Sprite2d` and `Clip2d` models with their own pivot, and `/timing.html` in `apps/react-demo` runs a beat
-  built from them.
+  param from the page, and the page tools take `--root` or `--url` for any site. `@motion5/moves` holds
+  `Time`, `Pose2d`, `defineMove`, `drop` and `hop` with no dependencies; `movePlugin` turns a move into
+  its plugin, pinned by parity tests. `wipe` publishes `Clip2d`, and `/timing.html` runs a beat built
+  from the three.
 
 ## Next in line
 
-- **The `@motion5/moves` pilot:** ADR-148 to ADR-155 record moves as plain code with an optional engine;
-  `drop` and `hop` move first, with `Time` and `movePlugin`, pinned by parity tests.
+- **The remaining moves:** `wipe`, `trace`, `rope`, `cascade` and `layer` move to `@motion5/moves`,
+  with inputs and one time module owning stagger and each track's clock (ADR-149, ADR-150).
 
 ## Open, and not scheduled
 

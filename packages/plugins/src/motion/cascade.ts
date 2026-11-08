@@ -1,7 +1,7 @@
 import { Spec, definePlugin, type FieldSpec, type Value } from "@motion5/core/plugin-api";
 import { Sprites2d } from "../models/index";
-import { DROP_FIELDS, dropPose } from "./drop";
-import { HOP_FIELDS, hopPose } from "./hop";
+import { atProgress, drop, hop } from "@motion5/moves";
+import { paramFields, spriteCells } from "./move-plugin";
 import { FROM, TO, moveProgress, numberParam, stringParam } from "./param";
 
 function optionalFields(
@@ -18,9 +18,9 @@ function optionalFields(
 function pose(move: string, param: Value | undefined, local: number) {
   switch (move) {
     case "hop":
-      return hopPose(param, local).values;
+      return spriteCells(hop.run(hop.read(param ?? {}), atProgress(local)));
     case "drop":
-      return dropPose(param, local);
+      return spriteCells(drop.run(drop.read(param ?? {}), atProgress(local)));
     default:
       throw new TypeError(`cascade has no move "${move}".`);
   }
@@ -43,8 +43,8 @@ export const cascadePlugin = definePlugin({
         min: 0,
         description: "Delay between row starts, in row lengths; default 0.25.",
       }),
-      ...optionalFields(DROP_FIELDS),
-      ...optionalFields(HOP_FIELDS),
+      ...optionalFields(paramFields(drop.options)),
+      ...optionalFields(paramFields(hop.options)),
       from: Spec.number({ optional: true, min: 0, max: 1, description: FROM }),
       to: Spec.number({ optional: true, min: 0, max: 1, description: TO }),
     }),

@@ -548,6 +548,45 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("allows a plugin to import the moves package", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/plugins/src/motion/step.ts":
+          'import { hop } from "@motion5/moves";\nexport const move = hop;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("refuses any import that leaves the moves package", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/moves/src/inside.ts": 'import { a } from "./sibling";\nexport const b = a;',
+        "packages/moves/src/sibling.ts": "export const a = 1;",
+        "packages/moves/src/core.ts":
+          'import { Spec } from "@motion5/core/plugin-api";\nexport const s = Spec;',
+        "packages/moves/src/outside.ts":
+          'import { x } from "../../plugins/src/x";\nexport const y = x;',
+        "packages/moves/src/lib.ts": 'import gsap from "gsap";\nexport const g = gsap;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/moves/src/core.ts: moves import outside the moves package",
+      "packages/moves/src/lib.ts: moves import outside the moves package",
+      "packages/moves/src/outside.ts: moves import outside the moves package",
+    ]);
+  });
+
   it("TH-203a refuses a core import from a plugin domain layer", async () => {
     const violations = await withTree(
       {

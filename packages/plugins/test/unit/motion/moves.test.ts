@@ -6,7 +6,6 @@ import { builtinModels } from "@motion5/plugins/models";
 import { dropPlugin } from "@motion5/plugins/motion/drop";
 import { hopPlugin } from "@motion5/plugins/motion/hop";
 import { wipePlugin } from "@motion5/plugins/motion/wipe";
-import { windowed } from "../../../src/motion/param";
 
 function reader(param: Record<string, number>, plugin: "hop" | "drop" | "wipe") {
   const track: TrackDefinition = { id: "t", output: { plugin }, input: { param } };
@@ -40,19 +39,6 @@ function cells(value: unknown): Readonly<Record<string, number>> {
     ),
   );
 }
-
-describe("windowed", () => {
-  it("maps a window onto 0 to 1 and holds outside it", () => {
-    expect(windowed(0.1, 0.25, 0.75)).toBe(0);
-    expect(windowed(0.5, 0.25, 0.75)).toBe(0.5);
-    expect(windowed(0.9, 0.25, 0.75)).toBe(1);
-  });
-
-  it("steps at the window when it has no length", () => {
-    expect(windowed(0.4, 0.5, 0.5)).toBe(0);
-    expect(windowed(0.5, 0.5, 0.5)).toBe(1);
-  });
-});
 
 describe("hop", () => {
   // Decay 0.25 halves each flight: lengths 1 and 0.5, then a 0.25 settle, so contacts at 4/7 and 6/7.

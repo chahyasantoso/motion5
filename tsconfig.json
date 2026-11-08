@@ -21,6 +21,7 @@
       "@motion5/core/adapters": ["packages/core/src/adapters/index.ts"],
       "@motion5/core/testing": ["packages/core/src/testing/fakes.ts"],
       "@motion5/core/*": ["packages/core/src/*"],
+      "@motion5/moves": ["packages/moves/src/index.ts"],
       "@motion5/react": ["packages/react/src/index.ts"],
       "@motion5/plugins/fk": ["packages/plugins/src/fk/fk.ts"],
       "@motion5/plugins/fk3d": ["packages/plugins/src/fk/fk3d.ts"],

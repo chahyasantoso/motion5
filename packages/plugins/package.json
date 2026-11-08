@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
+  "dependencies": {
+    "@motion5/moves": "0.0.0"
+  },
   "peerDependencies": {
     "@motion5/core": "0.0.0"
   },

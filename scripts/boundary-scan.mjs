@@ -546,6 +546,7 @@ async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
 function checkPluginSource(source, file, specifiers, violations) {
   const allowed = specifiers.every((specifier) => {
     if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
+    if (specifier === "@motion5/moves") return true;
     if (!specifier.startsWith(".")) return false;
     const target = posix.normalize(posix.join(posix.dirname(file), specifier));
     return target.startsWith("packages/plugins/src/");
@@ -559,6 +560,15 @@ function checkPluginSource(source, file, specifiers, violations) {
   )
     violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+}
+/** Moves import nothing but their own package, so code can call them with no engine loaded. */
+function checkMovesSource(file, specifiers, violations) {
+  const inside = specifiers.every(
+    (specifier) =>
+      specifier.startsWith(".") &&
+      posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith("packages/moves/src/"),
+  );
+  if (!inside) violations.push(`${file}: moves import outside the moves package`);
 }
 /**
  * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
@@ -586,6 +596,7 @@ export async function scan(scanRoot = root) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
+      if (workspace === "packages/moves") checkMovesSource(file, specifiers, violations);
       if (workspace === "packages/plugins") {
         checkPluginSource(source, file, specifiers, violations);
         if (

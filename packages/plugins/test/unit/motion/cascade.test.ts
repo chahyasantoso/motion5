@@ -3,8 +3,13 @@ import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { builtinModels } from "@motion5/plugins/models";
 import { cascadePlugin } from "@motion5/plugins/motion/cascade";
-import { dropPose } from "../../../src/motion/drop";
-import { hopPose } from "../../../src/motion/hop";
+import { atProgress, drop, hop } from "@motion5/moves";
+import { spriteCells } from "../../../src/motion/move-plugin";
+
+const dropPose = (param: Readonly<Record<string, unknown>>, local: number) =>
+  spriteCells(drop.run(drop.read(param), atProgress(local)));
+const hopPose = (param: Readonly<Record<string, unknown>>, local: number) =>
+  spriteCells(hop.run(hop.read(param), atProgress(local)));
 
 function load(param: Record<string, number | string>) {
   const handle = new Engine({
@@ -57,7 +62,7 @@ describe("cascade", () => {
   it("runs hops when asked", () => {
     const param = { move: "hop", count: 2, stagger: 0, height: 50, bounces: 1 };
     const row = load(param)(0.3);
-    expect(Array.isArray(row) && row[0]?.cells).toEqual(hopPose(param, 0.3).values);
+    expect(Array.isArray(row) && row[0]?.cells).toEqual(hopPose(param, 0.3));
   });
 
   it("is refused without a count or with a move it does not know", () => {
