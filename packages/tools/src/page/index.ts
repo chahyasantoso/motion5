@@ -5,4 +5,5 @@ export * from "./page";
 export * from "./points";
 export * from "./probe";
 export * from "./read";
+export * from "./render";
 export * from "./curves";

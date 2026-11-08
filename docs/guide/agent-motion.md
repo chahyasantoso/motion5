@@ -270,6 +270,15 @@ behind it is under WCAG's 3:1 for large text or 4.5:1 for the rest, after its op
 page's edge. The page tools seed `Math.random`, so a page that scatters things scatters them alike on every run.
 
 ```bash
+npm run motion:render -- splash.html --to 4800 --out splash.mp4
+```
+
+Plays the page on the paused clock and writes a video, one frame per 16 ms at 62.5 frames a second, the same bytes on
+every run. `--format gif` writes a 640 px GIF at 25 frames a second instead. Without `--out` it prints where it wrote
+the file. It needs `ffmpeg` on the `PATH` and says so when it is missing. A person watches it at full speed; an agent
+reads `motion:read` and frame sheets instead.
+
+```bash
 npm run motion:points -- shape.json --spacing 12
 ```
 

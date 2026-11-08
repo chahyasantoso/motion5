@@ -42,6 +42,7 @@
     "motion:points": "node packages/tools/bin/motion-points.mjs",
     "motion:probe": "node packages/tools/bin/motion-probe.mjs",
     "motion:read": "node packages/tools/bin/motion-read.mjs",
+    "motion:render": "node packages/tools/bin/motion-render.mjs",
     "motion:timeline": "node packages/tools/bin/motion-timeline.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "bench:follower": "node scripts/bench-follower.mjs",

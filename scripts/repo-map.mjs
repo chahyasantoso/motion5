@@ -69,7 +69,7 @@ export const OWNERS = {
   "packages/three/src": "Three.js skeleton patch adapter",
   "packages/tools/src/engine": "sample, timeline, catalog, new",
   "packages/tools/src/scene/templates": "motion:new templates",
-  "packages/tools/src/page": "frames, probe, check, read, points",
+  "packages/tools/src/page": "frames, probe, check, read, render, points",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",
 };

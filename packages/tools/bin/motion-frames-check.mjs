@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
@@ -12,6 +13,7 @@ const { captureFrames, captureOnion } = await import("../src/page/frames.ts");
 const { probeElements } = await import("../src/page/probe.ts");
 const { DEFAULT_LIMITS, checkMotion } = await import("../src/page/check.ts");
 const { readMotion } = await import("../src/page/read.ts");
+const { renderPage } = await import("../src/page/render.ts");
 const { DEFAULT_SOURCE, withPage } = await import("../src/page/page.ts");
 
 const ORANGE = [255, 85, 51];
@@ -55,6 +57,48 @@ const stem = [352, 340];
 assert.deepEqual(await pixel(atStart.path, ...stem), ORANGE, "the letter waits above the stage");
 assert.deepEqual(await pixel(atMiddle.path, ...stem), DARK, "the letter has landed by 500 ms");
 assert.deepEqual(await pixel(atEnd.path, 40, 40), CREAM, "the wipe has covered the stage");
+
+// A render is the same bytes every run, one frame per 16 ms, and its frames show the page at their times.
+const renders = mkdtempSync(join(tmpdir(), "motion-render-check-"));
+try {
+  const render = (name) =>
+    renderPage({
+      page: "timing.html",
+      ...stage,
+      to: 1000,
+      format: "mp4",
+      out: join(renders, name),
+    });
+  const [one, two] = [await render("one.mp4"), await render("two.mp4")];
+  assert.equal(one.kind, "rendered");
+  assert.equal(one.frames, 63);
+  assert.ok(readFileSync(join(renders, "one.mp4")).equals(readFileSync(join(renders, "two.mp4"))));
+  const still = (index, name) => {
+    const path = join(renders, name);
+    const run = spawnSync("ffmpeg", [
+      "-v",
+      "error",
+      "-y",
+      "-i",
+      join(renders, "one.mp4"),
+      "-vf",
+      `select='eq(n,${index})'`,
+      "-frames:v",
+      "1",
+      path,
+    ]);
+    assert.equal(run.status, 0, String(run.stderr));
+    return path;
+  };
+  const near = (actual, expected) =>
+    actual.every((value, i) => Math.abs(value - (expected[i] ?? 0)) <= 16);
+  const waiting = await pixel(still(0, "at-0.png"), ...stem);
+  const landed = await pixel(still(31, "at-496.png"), ...stem);
+  assert.ok(near(waiting, ORANGE), `rendered frame 0 at the stem: ${waiting}`);
+  assert.ok(near(landed, DARK), `rendered frame at 496 ms at the stem: ${landed}`);
+} finally {
+  rmSync(renders, { recursive: true, force: true });
+}
 await browser.close();
 
 // The dot's measured rest centre, taken by hand from the live page.
