@@ -43,13 +43,14 @@ export const clock = () => clockDriver({ duration: durationMs });
 ```
 
 A scene module exports `scene` and `durationMs`; the tools read those two. Keep every number of motion in the scene
-and none in the component. Three worked examples, each held by a test:
+and none in the component. Four worked examples, each held by a test:
 
 | Example | Shows | Served at |
 | ------- | ----- | --------- |
 | `apps/react-demo/src/timing-scene.ts` | moves, lanes, a wipe measured from the page | `timing.html`, by `TimingBeat.tsx` |
 | `apps/react-demo/src/catch-scene.ts` | an IK arm, one target timed to another's moment, eases, a carry | `catch.html`, by `Catch.tsx` |
 | `apps/react-demo/src/splash-scene.ts` | lists of targets, keyframes, rings and droplets timed off one impact, letters rising out of clipped water | `splash.html`, by `splash.tsx` |
+| `apps/react-demo/src/card-scene.ts` | events from the page: a card that drops in, lifts on hover, sinks when pressed | `card.html`, by `HoverCard.tsx` |
 
 Read the one closest to your brief before writing, and copy its patterns, not its colours or type.
 
@@ -123,6 +124,35 @@ opacity multiply, and the first anchor stays. `toCubics(anchors)` turns a rope's
 
 Look through the exports of `@motion5/moves` before writing a helper, and write your own only for a curve this table
 lacks.
+
+## Events
+
+A scene can answer the page: a hover, a press, a click, scrolling into view. It gets a second argument, the events
+so far, oldest first, each `{ name, at, target }` with `at` in ms:
+
+```ts
+import { eventDriver } from "@motion5/dom";
+import { follow, type Events, type Time } from "@motion5/moves";
+
+const lift = follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" });
+
+export const scene = (time: Time, events: Events) => ({ card: { y: lift(time, events) } });
+export const clock = () => eventDriver({ introMs: 900 });
+```
+
+- **`follow({ start, on, target, stiffness, damping })`** is a spring: each event named in `on` sends it towards that
+  value, from wherever it is and as fast as it is going, so a leave half way through a hover turns back with no jump.
+  `stiffness` defaults to 170 and `damping` to 26; lower damping overshoots more. Use one `follow` per number.
+- **`eventDriver({ introMs, settleMs })`** is a live clock: `time.clock` is `{ kind: "live", elapsed }` in ms since
+  the page started, and `time.progress` stays 0. Place an intro with `span`, which reads a live clock's ms. Frames
+  run through `introMs`, then for `settleMs` (default 2000) after each event, then stop.
+- **Watching.** In React, `useWatch(playing?.driver, "card")` gives a ref; the element it lands on logs `enter`,
+  `leave`, `down`, `up`, `click`, `focus` and `blur` as events for `card`. Put it on a still wrapper and the moving
+  pose on a child, or a card that lifts away from the pointer gets a `leave` it did not earn. The driver's
+  `watchView(target, element)` logs `in-view` and `out-of-view`, and its `emit(name, target)` logs anything else.
+- **Tools.** Every page tool takes `--action hover:.card-hit@1000,leave:.card-hit@1120,click:.button@2000`, with
+  `hover`, `leave`, `click`, `press`, `release` and `scroll:<px>`, done with the real mouse at those exact ms.
+  `motion:sample` and `motion:timeline` play a scene with no events.
 
 ## Rest poses
 
@@ -294,6 +324,8 @@ Resamples a JSON array of `{ x, y }` points to fixed spacing, so every link of a
 - Never cast with `as` or assert with `!`. Give a pose literal its type, `const carry: Pose2d = { x: 1 }`, and read
   a field a pose may lack as `pose.x ?? 0`.
 - A span is not a time: pass `span.of(time)` to a move or `lane`, never the span itself.
+- A move under a live clock needs a span: `drop(options, time)` with a live `time` sits at its start, because a
+  live clock has no progress.
 
 ## Starting values
 
