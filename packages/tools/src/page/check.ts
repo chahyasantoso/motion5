@@ -90,15 +90,10 @@ function centre(box: Box): { readonly x: number; readonly y: number } {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+/** Two frames show an element alike: the same box, or gone from both, removed or faded out. */
 function sameBox(a: Box | undefined, b: Box | undefined): boolean {
-  return (
-    a !== undefined &&
-    b !== undefined &&
-    a.x === b.x &&
-    a.y === b.y &&
-    a.width === b.width &&
-    a.height === b.height
-  );
+  if (a === undefined || b === undefined) return a === b;
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 /** Findings over frames sampled at a fixed step: long overlaps, jumps, a short final hold, no rest. */

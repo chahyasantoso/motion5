@@ -150,3 +150,21 @@ describe("motion:check text on the last frame", () => {
     ]);
   });
 });
+
+describe("motion:check on elements that leave", () => {
+  it("does not call an element removed or faded out before the end still moving", () => {
+    const run = frames(60, (i) => ({
+      stay: { x: 0, y: 0 },
+      ...(i < 20 ? { dot: { x: 100 + i * 4, y: 50 } } : {}),
+    }));
+    expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([]);
+  });
+
+  it("still calls an element that vanishes on the last frame a change", () => {
+    const run = frames(60, (i) => ({
+      stay: { x: 0, y: 0 },
+      ...(i < 59 ? { dot: { x: 100, y: 50 } } : {}),
+    }));
+    expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([{ kind: "still-moving", element: "dot" }]);
+  });
+});
