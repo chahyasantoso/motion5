@@ -571,7 +571,7 @@ function packageOf(specifier) {
 function checkPluginSource(source, file, specifiers, violations, pure) {
   const allowed = specifiers.every((specifier) => {
     if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
-    if (pure.names.has(packageOf(specifier))) return true;
+    if (pure.names.has(packageOf(specifier)) || specifier === "@motion5/dom") return true;
     if (!specifier.startsWith(".")) return false;
     const target = posix.normalize(posix.join(posix.dirname(file), specifier));
     return target.startsWith("packages/plugins/src/");

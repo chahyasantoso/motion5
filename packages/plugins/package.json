@@ -5,6 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "dependencies": {
+    "@motion5/dom": "0.0.0",
     "@motion5/moves": "0.0.0",
     "@motion5/rig": "0.0.0"
   },
@@ -66,10 +67,6 @@
     "./path/skin-anchors": {
       "types": "./dist/path/skin-anchors.d.ts",
       "default": "./dist/path/skin-anchors.js"
-    },
-    "./path/draw": {
-      "types": "./dist/path/draw.d.ts",
-      "default": "./dist/path/draw.js"
     },
     "./path/svg-path": {
       "types": "./dist/path/svg-path.d.ts",

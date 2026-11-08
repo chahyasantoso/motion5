@@ -11,7 +11,6 @@ import {
 } from "@motion5/core/plugin-api";
 import {
   window,
-  type Anchor,
   type Anchor2d,
   type ExtraFields,
   type InputField,
@@ -24,28 +23,12 @@ import {
   type Pose2d,
   type Reveal,
 } from "@motion5/moves";
+import { cssClip, cssOrigin } from "@motion5/dom";
 import { Clip2d, Sprite2d } from "../models/index";
 import { Anchors2d } from "../models/path";
 import { FROM, TO, numberParam } from "./param";
 
 const POSE_NUMBERS = ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity"] as const;
-
-function transformOrigin(anchor: Anchor): string {
-  switch (anchor) {
-    case "center":
-      return "50% 50%";
-    case "bottom":
-      return "50% 100%";
-    case "top":
-      return "50% 0%";
-    case "left":
-      return "0% 50%";
-    case "right":
-      return "100% 50%";
-    default:
-      return unreachable(anchor);
-  }
-}
 
 /** A pose as `Sprite2d` cells: its numbers, and its anchor as a CSS transform origin. */
 export function spriteCells(pose: Pose2d): Readonly<Record<string, PrimitiveScalar>> {
@@ -54,7 +37,7 @@ export function spriteCells(pose: Pose2d): Readonly<Record<string, PrimitiveScal
     const value = pose[name];
     if (value !== undefined) cells[name] = value;
   }
-  if (pose.anchor !== undefined) cells.transformOrigin = transformOrigin(pose.anchor);
+  if (pose.anchor !== undefined) cells.transformOrigin = cssOrigin(pose.anchor);
   return cells;
 }
 
@@ -139,7 +122,7 @@ function mainCells(id: string, kind: OutputKind, output: unknown): Outputs[strin
       return spriteCells(output);
     case "reveal":
       if (!isReveal(output)) throw refuse();
-      return { clipPath: `circle(${output.radius}px at ${output.x}px ${output.y}px)` };
+      return { clipPath: cssClip(output) };
     case "anchors2d":
       if (!isAnchors(output)) throw refuse();
       return output.map(({ id: rowId, x, y, inX, inY, outX, outY }) => ({

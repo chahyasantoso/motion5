@@ -30,16 +30,22 @@ Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./adapters/browser-clo
 - `src/`: Engine, entry surfaces, schema validation
 - `src/adapters/`: DOM, browser clock, scheduler, scroll
 - `src/adapters/interpolator/`: GSAP interpolator
-- `src/adapters/trigger-factory/`: default triggers, time driver
+- `src/adapters/trigger-factory/`: triggers
 - `src/contract/`: authored schema, public types, rules
 - `src/domain/`: Motion, lifecycle, plugin catalog, values
 - `src/graph/`: ids, IR, observation state, binding, order
-- `src/graph/builders/`: default and incremental graph builds
+- `src/graph/builders/`: graph builds
 - `src/lang/`: exhaustive sink, outcome, record helpers
-- `src/ports/`: Clock, Scheduler, Interpolator, trigger seams
-- `src/runtime/`: ProjectRuntime, publisher, Track, edit plans
-- `src/runtime/processors/`: passthrough and computed processors
+- `src/ports/`: engine ports
+- `src/runtime/`: runtime, publisher, edits
+- `src/runtime/processors/`: node processors
 - `src/testing/`: test fakes
+
+## packages/dom
+
+Public: `.`
+
+- `src/`: DOM and SVG renderer
 
 ## packages/moves
 
@@ -49,7 +55,7 @@ Public: `.`
 
 ## packages/plugins
 
-Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/draw`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
+Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
 
 - `src/fk/`: FK plugins, 2D and 3D
 - `src/host/`: catalog, loader, labels, runner
@@ -59,7 +65,7 @@ Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./l
 - `src/models/goals/`: goals Model rules
 - `src/models/solved/`: solved Model rules
 - `src/motion/`: move plugins
-- `src/path/`: Bezier, anchors, skinning, draw, SVG path
+- `src/path/`: path plugins
 - `src/pose/`: pose classifier plugin
 - `src/shared/`: table lookup, prepare diagnostics
 - `src/testing/`: plugin stability assertion

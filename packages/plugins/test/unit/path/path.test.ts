@@ -19,7 +19,7 @@ import { anchorsToCubicPlugin } from "../../../src/path/anchors-to-cubic";
 import { bezierPlugin } from "../../../src/path/bezier";
 import { skinAnchorsPlugin } from "../../../src/path/skin-anchors";
 import { pointAtArcFraction } from "../../../src/path/arc-fraction";
-import { cubicPathToSvg } from "../../../src/path/draw";
+import { pathData } from "@motion5/dom";
 import { fkPlugin } from "../../../src/fk/fk";
 import { UNTIMED } from "@motion5/moves";
 
@@ -840,7 +840,7 @@ describe("path models and plugins (S8)", () => {
         cells: { x0: 30, y0: 20, x1: 40, y1: 25, x2: 50, y2: 35, x3: 60, y3: 40 },
       },
     ];
-    const d = cubicPathToSvg(segments);
+    const d = pathData(segments.map(({ id, cells }) => ({ id, ...cells })));
     expect(d).toBe("M 0 0 C 10 5, 20 15, 30 20 C 40 25, 50 35, 60 40");
   });
 });

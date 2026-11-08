@@ -4,7 +4,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { builtinModels, type CubicPath2dCells } from "@motion5/plugins/models";
 import { anchorsToCubicPlugin } from "@motion5/plugins/path/anchors-to-cubic";
 import { bezierPlugin } from "@motion5/plugins/path/bezier";
-import { cubicPathToSvg } from "@motion5/plugins/path/draw";
+import { pathData } from "@motion5/dom";
 import { pathFollowerProject } from "../src/path-follower-project";
 
 function load() {
@@ -70,7 +70,9 @@ describe("react-demo path follower", () => {
     try {
       handle.seek("follow/path", 0);
       const segments = segmentsOf(publishedValues(handle, "follow/path"));
-      expect(cubicPathToSvg(segments)).toBe("M 0 0 C 10 0, 90 0, 100 0");
+      expect(pathData(segments.map(({ cells }, index) => ({ id: String(index), ...cells })))).toBe(
+        "M 0 0 C 10 0, 90 0, 100 0",
+      );
     } finally {
       handle.dispose();
     }

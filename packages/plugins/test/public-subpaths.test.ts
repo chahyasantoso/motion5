@@ -51,7 +51,6 @@ const PATH_SUBPATHS = [
   "path/anchors-to-cubic",
   "path/bezier",
   "path/skin-anchors",
-  "path/draw",
   "path/svg-path",
 ];
 const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors", "svgPath"];

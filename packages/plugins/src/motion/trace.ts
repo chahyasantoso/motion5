@@ -1,4 +1,5 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
+import { cssDash } from "@motion5/dom";
 import { trace, window } from "@motion5/moves";
 import { Stroke2d } from "../models/index";
 import { CubicPath2d } from "../models/path";
@@ -25,10 +26,6 @@ export const tracePlugin = definePlugin({
       numberParam(param, "from", 0),
       numberParam(param, "to", 1),
     );
-    const { drawn } = trace.run({}, time, {});
-    const length = pathArcLength(path);
-    return {
-      values: { strokeDasharray: `${length} ${length}`, strokeDashoffset: length * (1 - drawn) },
-    };
+    return { values: cssDash(trace.run({}, time, {}), pathArcLength(path)) };
   },
 });

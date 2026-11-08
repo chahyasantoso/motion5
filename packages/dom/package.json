@@ -1,0 +1,17 @@
+{
+  "name": "@motion5/dom",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@motion5/moves": "0.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}

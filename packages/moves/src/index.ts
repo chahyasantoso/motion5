@@ -1,7 +1,8 @@
 export { UNTIMED, atProgress, window, windowed, type Clock, type Time } from "./time";
 export { lane, laneTime, lanes, type Lanes } from "./lanes";
 export { squashed, type Anchor, type Pose2d } from "./pose";
-export type { Anchor2d, Drawn, Point2d, Reveal } from "./shapes";
+export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";
+export { toCubics } from "./path";
 export { combine } from "./combine";
 export {
   defineMove,
