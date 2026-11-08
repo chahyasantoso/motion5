@@ -6,7 +6,9 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@motion5/core": "0.0.0",
-    "@motion5/dom": "0.0.0"
+    "@motion5/dom": "0.0.0",
+    "@motion5/moves": "0.0.0",
+    "@motion5/player": "0.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

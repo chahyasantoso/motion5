@@ -32,7 +32,7 @@ function isLayoutBox(value: unknown): value is LayoutBox {
   );
 }
 
-interface Offset {
+export interface Offset {
   readonly x: number;
   readonly y: number;
 }
@@ -46,6 +46,16 @@ function pageOffset(element: LayoutBox): Offset {
     y += node.offsetTop;
   }
   return { x, y };
+}
+
+/** `from`'s layout centre measured from `to`'s top-left corner; layout ignores transforms, so this is the rest pose. */
+export function centreIn(from: LayoutBox, to: LayoutBox): Offset {
+  const origin = pageOffset(to);
+  const target = pageOffset(from);
+  return {
+    x: target.x - origin.x + from.offsetWidth / 2,
+    y: target.y - origin.y + from.offsetHeight / 2,
+  };
 }
 
 /** Combines ref callbacks so one element can be bound by several hooks. */
@@ -67,11 +77,10 @@ export function useAnchor(
 
   const measure = useCallback(() => {
     if (handle === undefined || from.current === null || to.current === null) return;
-    const origin = pageOffset(to.current);
-    const target = pageOffset(from.current);
+    const centre = centreIn(from.current, to.current);
     const param = handle.track(node).input.param;
-    param.setField({ field: fields.x }, target.x - origin.x + from.current.offsetWidth / 2);
-    param.setField({ field: fields.y }, target.y - origin.y + from.current.offsetHeight / 2);
+    param.setField({ field: fields.x }, centre.x);
+    param.setField({ field: fields.y }, centre.y);
   }, [handle, node, fields.x, fields.y]);
 
   useEffect(() => {
