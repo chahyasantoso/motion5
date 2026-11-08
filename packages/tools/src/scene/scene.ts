@@ -1,13 +1,46 @@
-import type { Time } from "@motion5/moves";
+import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@motion5/moves";
 import { manualDriver, play } from "@motion5/player";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
-/** What a scene module exports for the tools: its scene and how long it runs, in ms. */
+/** What a scene module exports for the tools: its scene, how long it runs in ms, and its own cues. */
 export interface SceneModule {
-  readonly scene: (time: Time) => object;
+  readonly scene: (time: Time, events: Events) => object;
   readonly durationMs: number;
+  readonly cues: Events;
 }
+
+function isEvent(value: unknown): value is MotionEvent {
+  if (typeof value !== "object" || value === null) return false;
+  const target: unknown = Reflect.get(value, "target");
+  return (
+    typeof Reflect.get(value, "name") === "string" &&
+    typeof Reflect.get(value, "at") === "number" &&
+    (target === undefined || typeof target === "string")
+  );
+}
+
+/** `land:ball@2234,enter:card@1000` or `go@500` in time order, or why it is not one. */
+export function parseEvents(text: string): Events | { readonly reason: string } {
+  const events: MotionEvent[] = [];
+  for (const part of text.split(",").map((piece) => piece.trim())) {
+    const match = /^([\w-]+)(?::([\w-]+))?@(\d+(?:\.\d+)?)$/.exec(part);
+    if (match === null || match[1] === undefined)
+      return { reason: `Event "${part}" needs name@ms or name:target@ms, like land:ball@2234.` };
+    const at = Number(match[3]);
+    if (events.length > 0 && at < (events.at(-1)?.at ?? 0))
+      return {
+        reason: `Event "${part}" comes before the one ahead of it; list events in time order.`,
+      };
+    events.push(
+      match[2] === undefined ? { name: match[1], at } : { name: match[1], at, target: match[2] },
+    );
+  }
+  return events;
+}
+
+/** How long a timeline runs past the last event, for its answer to settle. */
+const SETTLE_MS = 2000;
 
 /** When to sample: times in ms, or progress from 0 to 1. */
 export type SceneRequest =
@@ -27,9 +60,13 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
     return { reason: "The module exports no `scene`, a function from time to targets." };
   if (typeof durationMs !== "number" || !Number.isFinite(durationMs) || durationMs <= 0)
     return { reason: "The module exports no `durationMs`, a positive number." };
+  const cues: unknown = Reflect.get(Object(value), "cues");
+  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isEvent)))
+    return { reason: "The module's `cues` must be a list of { name, at, target } events." };
   return {
-    scene: (time) => {
-      const values: unknown = Reflect.apply(scene, undefined, [time]);
+    cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
+    scene: (time, events) => {
+      const values: unknown = Reflect.apply(scene, undefined, [time, events]);
       if (typeof values !== "object" || values === null)
         throw new TypeError("The scene returned no targets.");
       return values;
@@ -52,9 +89,10 @@ export function sampleScene(
   request: SceneRequest,
   targets?: readonly string[],
   fields?: readonly string[],
+  events: Events = NO_EVENTS,
 ): readonly SceneSample[] {
   const driver = manualDriver({ durationMs: module.durationMs });
-  const player = play(module.scene, driver);
+  const player = play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
   const points = (): readonly { readonly at: number; readonly progress: number }[] => {
     switch (request.kind) {
       case "time":
@@ -66,7 +104,8 @@ export function sampleScene(
     }
   };
   return points().map(({ at, progress }) => {
-    driver.seek(progress);
+    if (request.kind === "time") driver.seekMs(at);
+    else driver.seek(progress);
     const values = Object.entries(player.values).filter(
       ([target]) => targets === undefined || targets.includes(target),
     );
@@ -78,16 +117,20 @@ export function sampleScene(
 }
 
 /** Each target's first and last change over the scene's run, sampled every 16 ms. */
-export function sceneTimeline(module: SceneModule): TimelineResult {
+export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): TimelineResult {
   const ms: number[] = [];
-  for (let at = 0; at <= module.durationMs + 2 * STEP_MS; at += STEP_MS) ms.push(at);
+  const lastEvent = Math.max(0, ...[...module.cues, ...events].map(({ at }) => at));
+  const end = Math.max(module.durationMs, lastEvent > 0 ? lastEvent + SETTLE_MS : 0);
+  for (let at = 0; at <= end + 2 * STEP_MS; at += STEP_MS) ms.push(at);
   const rows = changeRows(
-    sampleScene(module, { kind: "time", ms }).map(({ at, targets }) => ({
-      at,
-      fingerprints: Object.fromEntries(
-        Object.entries(targets).map(([target, value]) => [target, JSON.stringify(value)]),
-      ),
-    })),
+    sampleScene(module, { kind: "time", ms }, undefined, undefined, events).map(
+      ({ at, targets }) => ({
+        at,
+        fingerprints: Object.fromEntries(
+          Object.entries(targets).map(([target, value]) => [target, JSON.stringify(value)]),
+        ),
+      }),
+    ),
   );
-  return { kind: "timeline", step: STEP_MS, end: module.durationMs, rows };
+  return { kind: "timeline", step: STEP_MS, end, rows };
 }

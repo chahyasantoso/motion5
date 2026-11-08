@@ -22,7 +22,7 @@ if (args.kind === "usage") {
   else
     print({
       kind: "accepted",
-      samples: sampleScene(module, args.request, args.nodes, args.fields),
+      samples: sampleScene(module, args.request, args.nodes, args.fields, args.events),
     });
 } else {
   let project;

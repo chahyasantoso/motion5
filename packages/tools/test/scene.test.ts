@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateV5 } from "@motion5/core";
 import { atProgress } from "@motion5/moves";
 import {
+  parseEvents,
   readSceneModule,
   sampleScene,
   sceneTimeline,
@@ -47,5 +48,40 @@ describe("scene tools", () => {
       rows.map((row) => (row.kind === "moves" ? [row.start, row.rest] : "still"));
     expect(spans(code.rows)).toEqual(spans(engine.rows));
     expect(code.rows.map(({ node }) => node)).toEqual(["letters", "dot", "cover"]);
+  });
+});
+
+describe("scene tools and events", () => {
+  it("read a module's own cues and refuse ones that are not events", async () => {
+    const catcher = moduleOf(await import("../../../apps/react-demo/src/catch-scene"));
+    expect(catcher.cues.map(({ name }) => name)).toEqual(["catch"]);
+    expect(readSceneModule({ scene: () => ({}), durationMs: 10, cues: [{ at: 1 }] })).toEqual({
+      reason: "The module's `cues` must be a list of { name, at, target } events.",
+    });
+  });
+
+  it("parse an event list, and refuse one out of order or malformed", () => {
+    expect(parseEvents("enter:card@1000,leave:card@1120,go@1500")).toEqual([
+      { name: "enter", at: 1000, target: "card" },
+      { name: "leave", at: 1120, target: "card" },
+      { name: "go", at: 1500 },
+    ]);
+    expect(parseEvents("leave:card@1120,enter:card@1000")).toHaveProperty("reason");
+    expect(parseEvents("enter card")).toHaveProperty("reason");
+  });
+
+  it("play the events given beside the scene's own", async () => {
+    const card = moduleOf(await import("../../../apps/react-demo/src/card-scene"));
+    const lifted = sampleScene(
+      card,
+      { kind: "time", ms: [1400] },
+      ["card"],
+      ["y"],
+      [{ name: "enter", at: 1000, target: "card" }],
+    );
+    expect(lifted[0]?.targets.card).toSatisfy(
+      (card: unknown) =>
+        typeof card === "object" && card !== null && Number(Reflect.get(card, "y")) < -10,
+    );
   });
 });

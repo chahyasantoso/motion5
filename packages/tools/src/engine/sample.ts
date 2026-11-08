@@ -11,7 +11,9 @@ import { unreachable } from "@motion5/core/plugin-api";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { gsap } from "gsap";
 import { KeyframeCompilationError } from "@motion5/core/adapters";
+import type { Events } from "@motion5/moves";
 import { parseNumbers } from "../page/args";
+import { parseEvents } from "../scene/scene";
 
 export type SampleRequest =
   | { readonly kind: "time"; readonly ms: readonly number[] }
@@ -184,11 +186,13 @@ export type SampleArgs =
       readonly request: SampleRequest;
       readonly nodes?: readonly string[];
       readonly fields?: readonly string[];
+      /** Events a scene module plays beside its own cues; a project ignores them. */
+      readonly events?: Events;
     }
   | { readonly kind: "usage"; readonly message: string };
 
 const USAGE =
-  "usage: motion:sample <project.json | scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b]";
+  "usage: motion:sample <project.json | scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events name:target@ms,...]";
 
 export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const usage = (message: string): SampleArgs => ({ kind: "usage", message });
@@ -200,7 +204,7 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
       files.push(arg);
       continue;
     }
-    if (arg !== "--at" && arg !== "--progress" && arg !== "--nodes" && arg !== "--fields")
+    if (!["--at", "--progress", "--nodes", "--fields", "--events"].includes(arg))
       return usage(`Unknown flag ${arg}. ${USAGE}`);
     if (flags.has(arg)) return usage(`Repeated flag ${arg}. ${USAGE}`);
     flags.set(arg, argv[i + 1]);
@@ -233,10 +237,17 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   if (nodes === "missing") return usage(`--nodes needs ids. ${USAGE}`);
   const fields = list("--fields");
   if (fields === "missing") return usage(`--fields needs names. ${USAGE}`);
+  const eventText = flags.get("--events");
+  const events = eventText === undefined ? undefined : parseEvents(eventText);
+  if (flags.has("--events") && (events === undefined || "reason" in events))
+    return usage(
+      `${events !== undefined && "reason" in events ? events.reason : "--events needs a list."} ${USAGE}`,
+    );
   return {
     kind: "ok",
     file,
     request,
+    ...(events === undefined || "reason" in events ? {} : { events }),
     ...(nodes === undefined ? {} : { nodes }),
     ...(fields === undefined ? {} : { fields }),
   };
