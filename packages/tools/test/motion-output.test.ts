@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { PluginAdmissionError, PluginCatalog } from "@motion5/core";
 import { Spec, defineModel, definePlugin } from "@motion5/core/plugin-api";
-import {
-  listCatalog,
-  loadBuiltinCatalog,
-  parseCatalogArgs,
-} from "../../../../../scripts/motion-tools/catalog";
-import {
-  parseSampleArgs,
-  printableSample,
-  type SampleResult,
-} from "../../../../../scripts/motion-tools/sample";
+import { listCatalog, loadBuiltinCatalog, parseCatalogArgs } from "../src/engine/catalog";
+import { parseSampleArgs, printableSample, type SampleResult } from "../src/engine/sample";
 
 const Out = defineModel({ id: "OutputFixture", spec: Spec.record({ n: Spec.number() }) });
 

@@ -5,13 +5,13 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { captureFrames, captureOnion } = await import("./motion-tools/frames.ts");
-const { probeElements } = await import("./motion-tools/probe.ts");
-const { DEFAULT_LIMITS, checkMotion } = await import("./motion-tools/check.ts");
-const { DEFAULT_SOURCE, withPage } = await import("./motion-tools/page.ts");
+const { captureFrames, captureOnion } = await import("../src/page/frames.ts");
+const { probeElements } = await import("../src/page/probe.ts");
+const { DEFAULT_LIMITS, checkMotion } = await import("../src/page/check.ts");
+const { DEFAULT_SOURCE, withPage } = await import("../src/page/page.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];

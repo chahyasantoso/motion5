@@ -1,8 +1,8 @@
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
 const { listCatalog, loadBuiltinCatalog, parseCatalogArgs } = await import(
-  "./motion-tools/catalog.ts"
+  "../src/engine/catalog.ts"
 );
 
 const args = parseCatalogArgs(process.argv.slice(2));

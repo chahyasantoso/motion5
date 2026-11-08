@@ -1,5 +1,5 @@
 import { readPageArgs, withPage, type PageTarget } from "./page";
-import { parseNumbers } from "./sample";
+import { parseNumbers } from "./args";
 
 export interface ProbeRequest extends PageTarget {
   readonly at: readonly number[];

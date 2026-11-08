@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { validateV5 } from "@motion5/core";
-import { loadBuiltinCatalog } from "../../../../../scripts/motion-tools/catalog";
-import { scaffold } from "../../../../../scripts/motion-tools/new";
-import { sampleProject } from "../../../../../scripts/motion-tools/sample";
+import { loadBuiltinCatalog } from "../src/engine/catalog";
+import { scaffold } from "../src/engine/new";
+import { sampleProject } from "../src/engine/sample";
 
 const roots: string[] = [];
 function root(): string {

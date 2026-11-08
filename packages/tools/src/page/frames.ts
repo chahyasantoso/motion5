@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
-import { parseNumbers } from "./sample";
+import { parseNumbers } from "./args";
 
 export interface FramesRequest extends PageTarget {
   readonly at: readonly number[];
@@ -132,10 +132,7 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
   return { kind: "captured", ...value, pageErrors };
 }
 
-/**
- * Draws every match of `select` at each step onto the last frame, faded, with its centre path,
- * so spacing and arc read from one image.
- */
+/** Draws each match of `select` at every step onto the last frame, faded, with its centre path. */
 export async function captureOnion(request: OnionRequest): Promise<OnionResult> {
   const out = outDir(request.out);
   const { value, pageErrors } = await withPage(request, async ({ page, browser, advanceTo }) => {

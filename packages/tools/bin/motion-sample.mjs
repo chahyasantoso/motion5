@@ -1,11 +1,9 @@
 import { readFileSync } from "node:fs";
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { parseSampleArgs, printableSample, sampleProject } = await import(
-  "./motion-tools/sample.ts"
-);
-const { loadBuiltinCatalog } = await import("./motion-tools/catalog.ts");
+const { parseSampleArgs, printableSample, sampleProject } = await import("../src/engine/sample.ts");
+const { loadBuiltinCatalog } = await import("../src/engine/catalog.ts");
 
 function print(result) {
   console.log(JSON.stringify(result));

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { PluginCatalog, type PluginDescription } from "@motion5/core";
 import { Spec, defineModel, definePlugin } from "@motion5/core/plugin-api";
 import { builtinModels } from "@motion5/plugins/models";
-import { builtinCatalog } from "../../../../plugins/src/host/builtin-catalog";
-import { listCatalog, loadBuiltinCatalog } from "../../../../../scripts/motion-tools/catalog";
+import { builtinCatalog } from "../../plugins/src/host/builtin-catalog";
+import { listCatalog, loadBuiltinCatalog } from "../src/engine/catalog";
 
 const Primary = defineModel({
   id: "CatalogFixturePrimary",
@@ -69,7 +69,7 @@ describe("motion catalog listing", () => {
   });
 
   it("runs under real node and prints JSON naming bezier", () => {
-    const out = execFileSync(process.execPath, ["scripts/motion-catalog.mjs"], {
+    const out = execFileSync(process.execPath, ["packages/tools/bin/motion-catalog.mjs"], {
       cwd: process.cwd(),
       encoding: "utf8",
     });

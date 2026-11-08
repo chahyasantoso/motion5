@@ -1,7 +1,7 @@
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { captureFrames, captureOnion, parseFramesArgs } = await import("./motion-tools/frames.ts");
+const { captureFrames, captureOnion, parseFramesArgs } = await import("../src/page/frames.ts");
 
 const args = parseFramesArgs(process.argv.slice(2));
 if (args.kind === "usage") {

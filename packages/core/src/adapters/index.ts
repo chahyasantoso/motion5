@@ -17,5 +17,9 @@ export type {
   TriggerFactoryOptions,
 } from "./trigger-factory/default";
 
-export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
+export {
+  KeyframeCompilationError,
+  createGsapInterpolator,
+  createGsapOneTweenInterpolator,
+} from "./interpolator/gsap";
 export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";

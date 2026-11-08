@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePointsArgs, resample, toRows } from "../../../../../scripts/motion-tools/points";
+import { parsePointsArgs, resample, toRows } from "../src/page/points";
 
 describe("motion:points", () => {
   it("places points every spacing along the polyline, across corners, keeping both ends", () => {

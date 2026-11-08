@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  DEFAULT_LIMITS,
-  analyse,
-  parseCheckArgs,
-  type Frame,
-} from "../../../../../scripts/motion-tools/check";
-import { DEFAULT_SOURCE } from "../../../../../scripts/motion-tools/page";
+import { DEFAULT_LIMITS, analyse, parseCheckArgs, type Frame } from "../src/page/check";
+import { DEFAULT_SOURCE } from "../src/page/page";
 
 const STEP = 16;
 type Spot = { readonly x: number; readonly y: number };

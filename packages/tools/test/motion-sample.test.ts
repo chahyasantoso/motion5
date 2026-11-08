@@ -13,7 +13,7 @@ import {
   sampleProject,
   type NodeSample,
   type SampleResult,
-} from "../../../../../scripts/motion-tools/sample";
+} from "../src/engine/sample";
 
 const Value = defineModel({ id: "SampleFixtureValue", spec: Spec.record({ x: Spec.number() }) });
 
@@ -265,10 +265,14 @@ describe("motion:sample entry", () => {
   function run(project: unknown) {
     const file = join(dir, `p-${Math.random().toString(36).slice(2)}.json`);
     writeFileSync(file, JSON.stringify(project));
-    return spawnSync(process.execPath, ["scripts/motion-sample.mjs", file, "--at", "500"], {
-      cwd: process.cwd(),
-      encoding: "utf8",
-    });
+    return spawnSync(
+      process.execPath,
+      ["packages/tools/bin/motion-sample.mjs", file, "--at", "500"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      },
+    );
   }
 
   it("prints an accepted result and exits 0", () => {

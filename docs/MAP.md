@@ -6,36 +6,36 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 ## apps/ik-playground
 
 - `src/`: IK demo app and its projects
-- `src/components/`: stages, solver panel, goal drag
+- `src/components/`: stages, panels
 
 ## apps/pose-gap-filler
 
-- `src/body/`: body state, skeleton, attachments
-- `src/filler/`: gap detection and Kalman filling
-- `src/live/`: live capture session and overlay
-- `src/replay/`: record, replay, compare, metrics
-- `src/rig/`: rig, solver, tracks, bend policy
-- `src/synthetic/`: simulated actor, camera, occlusion
-- `src/view/`: avatar, scene and panel views
+- `src/body/`: body state
+- `src/filler/`: gap filling
+- `src/live/`: live capture
+- `src/replay/`: record, replay
+- `src/rig/`: rig and solver
+- `src/synthetic/`: simulated actor
+- `src/view/`: views
 
 ## apps/react-demo
 
 - `src/`: React demo app and its projects
-- `src/components/`: inspector panel, skeleton rig
+- `src/components/`: inspector, rig
 
 ## packages/core
 
 Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./testing`
 
-- `src/`: Engine, entry surfaces, schema validation
+- `src/`: Engine and entries
 - `src/adapters/`: scheduler, scroll, gsap
 - `src/adapters/interpolator/`: GSAP interpolator
 - `src/adapters/trigger-factory/`: triggers
-- `src/contract/`: authored schema, public types, rules
-- `src/domain/`: Motion, lifecycle, plugin catalog, values
-- `src/graph/`: ids, IR, observation state, binding, order
+- `src/contract/`: schema, types, rules
+- `src/domain/`: Motion, catalog
+- `src/graph/`: graph IR and order
 - `src/graph/builders/`: graph builds
-- `src/lang/`: exhaustive sink, outcome, record helpers
+- `src/lang/`: language helpers
 - `src/ports/`: engine ports
 - `src/runtime/`: runtime, publisher, edits
 - `src/runtime/processors/`: node processors
@@ -74,9 +74,9 @@ Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./l
 - `src/motion/`: move plugins
 - `src/path/`: path plugins
 - `src/pose/`: pose classifier plugin
-- `src/shared/`: table lookup, prepare diagnostics
+- `src/shared/`: plugin helpers
 - `src/testing/`: plugin stability assertion
-- `src/transform/`: transform plugins, 2D and 3D
+- `src/transform/`: transform plugins
 
 ## packages/react
 
@@ -100,3 +100,11 @@ Public: `.`, `./internal`
 Public: `.`, `./skeleton`
 
 - `src/`: Three.js skeleton patch adapter
+
+## packages/tools
+
+Public: `./page`, `./engine`
+
+- `src/engine/`: sample, timeline, catalog, new
+- `src/engine/templates/`: motion:new templates
+- `src/page/`: frames, probe, check, points

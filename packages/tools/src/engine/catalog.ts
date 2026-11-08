@@ -2,7 +2,7 @@ import { PluginCatalog } from "@motion5/core";
 import type { DescribedSlot, PluginDescription, ValueSpec } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 import { builtinModels } from "@motion5/plugins/models";
-import { builtinCatalog } from "../../packages/plugins/src/host/builtin-catalog";
+import { builtinCatalog } from "../../../plugins/src/host/builtin-catalog";
 
 export interface CatalogListing {
   readonly plugins: readonly PluginDescription[];

@@ -1,4 +1,4 @@
-import { Engine, createManualClock, validateV5 } from "@motion5/core";
+import { createManualClock, createMicrotaskScheduler, Engine, validateV5 } from "@motion5/core";
 import type {
   Diagnostic,
   LivePatch,
@@ -9,9 +9,9 @@ import type {
 } from "@motion5/core";
 import { unreachable } from "@motion5/core/plugin-api";
 import { createGsapInterpolator } from "@motion5/core/adapters";
-import { createFakeScheduler } from "@motion5/core/testing";
 import { gsap } from "gsap";
-import { KeyframeCompilationError } from "../../packages/core/src/adapters/interpolator/gsap";
+import { KeyframeCompilationError } from "@motion5/core/adapters";
+import { parseNumbers } from "../page/args";
 
 export type SampleRequest =
   | { readonly kind: "time"; readonly ms: readonly number[] }
@@ -95,6 +95,19 @@ function readNode(patch: LivePatch | undefined): NodeSample {
 }
 
 /** Samples what each node publishes at each requested time or progress, driven by a manual clock. */
+/** A scheduler whose queued passes run only when `flush` is called, so each sample settles before it is read. */
+function steppedScheduler() {
+  let drains: (() => void)[] = [];
+  return {
+    ...createMicrotaskScheduler({ host: { enqueue: (drain) => void drains.push(drain) } }),
+    flush() {
+      const due = drains;
+      drains = [];
+      for (const drain of due) drain();
+    },
+  };
+}
+
 export function sampleProject(
   project: ProjectDefinition,
   catalog: PluginCatalog,
@@ -108,7 +121,7 @@ export function sampleProject(
   if (reasons.length > 0) return { kind: "unsupported", reasons };
 
   const clock = createManualClock();
-  const scheduler = createFakeScheduler();
+  const scheduler = steppedScheduler();
   const engine = new Engine({
     clock,
     interpolator: createGsapInterpolator(gsap),
@@ -176,14 +189,6 @@ export type SampleArgs =
 
 const USAGE =
   "usage: motion:sample <project.json> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b]";
-
-export function parseNumbers(text: string | undefined): number[] | undefined {
-  if (text === undefined || text === "") return undefined;
-  const values = text.split(",").map((part) => (part.trim() === "" ? NaN : Number(part)));
-  if (!values.every((value) => Number.isFinite(value) && value >= 0)) return undefined;
-  for (let i = 1; i < values.length; i += 1) if (values[i]! < values[i - 1]!) return undefined;
-  return values;
-}
 
 export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const usage = (message: string): SampleArgs => ({ kind: "usage", message });

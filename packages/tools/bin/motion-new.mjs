@@ -1,8 +1,8 @@
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { scaffold } = await import("./motion-tools/new.ts");
-const { DEFAULT_ROOT, fromCaller } = await import("./motion-tools/page.ts");
+const { scaffold } = await import("../src/engine/new.ts");
+const { DEFAULT_ROOT, fromCaller } = await import("../src/page/page.ts");
 
 const args = process.argv.slice(2);
 const name = args[0];

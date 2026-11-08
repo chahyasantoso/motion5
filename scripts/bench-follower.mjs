@@ -8,7 +8,7 @@ import { registerSourceLoader } from "./source-loader.mjs";
 registerSourceLoader();
 const { Engine, createManualClock } = await import("@motion5/core");
 const { createFakeInterpolator, createFakeScheduler } = await import("@motion5/core/testing");
-const { loadBuiltinCatalog } = await import("./motion-tools/catalog.ts");
+const { loadBuiltinCatalog } = await import("../packages/tools/src/engine/catalog.ts");
 
 const FRAMES = 60;
 const SAMPLES = 7;

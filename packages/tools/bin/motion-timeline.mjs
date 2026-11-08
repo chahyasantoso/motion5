@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { registerSourceLoader } from "./source-loader.mjs";
+import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { loadBuiltinCatalog } = await import("./motion-tools/catalog.ts");
-const { renderTimeline, timelineOf } = await import("./motion-tools/timeline.ts");
+const { loadBuiltinCatalog } = await import("../src/engine/catalog.ts");
+const { renderTimeline, timelineOf } = await import("../src/engine/timeline.ts");
 
 const [file, ...rest] = process.argv.slice(2);
 if (file === undefined || rest.length > 0) {

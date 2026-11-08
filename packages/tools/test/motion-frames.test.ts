@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseFramesArgs } from "../../../../../scripts/motion-tools/frames";
-import { DEFAULT_SOURCE, fromCaller } from "../../../../../scripts/motion-tools/page";
+import { parseFramesArgs } from "../src/page/frames";
+import { DEFAULT_SOURCE, fromCaller } from "../src/page/page";
 
 describe("parseFramesArgs", () => {
   it("reads an onion request", () => {
