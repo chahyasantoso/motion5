@@ -51,6 +51,7 @@ byte ceiling.
 - No follower cache: [BENCH-FOLLOWER.md](./BENCH-FOLLOWER.md) records the numbers and when to measure
   again.
 - Retargeting remains a proposed design only.
+- Physics bodies do not turn: the built-in engine has no rotation, and the Rapier adapter locks it on port bodies.
 
 ## Where the rest of it lives
 
