@@ -1,6 +1,6 @@
 # ADR-163: Injectable physics
 
-**Status:** Accepted, 2026-11-08
+**Status:** Accepted, 2026-11-08; superseded in part by ADR-164 (bodies turn)
 
 ## Context
 

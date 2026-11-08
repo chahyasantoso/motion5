@@ -195,22 +195,30 @@ export const scene = (time: Time, events: Events) => ({
 });
 ```
 
-- **Units.** Stage px and seconds, y down, gravity in px a second squared. A body's `x` and `y` are its centre.
-  Bodies do not turn.
+- **Units.** Stage px, degrees and seconds, y down and turns clockwise, gravity in px a second squared. A body's `x`
+  and `y` are its centre.
+- **Turning.** Bodies turn when hit off centre: boxes tip and stack, balls roll. A body takes `angle` and `spin` (in
+  degrees a second) to start with, and `fixedRotation: true` to never turn. `sim.pose` gives `rotation` too, turning
+  around the body's centre, so leave the element's anchor at its centre and put a squash on a child element, as
+  `Pile.tsx` does.
 - **The port.** A world adds bodies (`circle` or `box`) and fixed colliders: `floor { y }`, `wall { x, side:
   "left" | "right" }`, and `segment { from, to }` for a ramp. A body takes `vx`, `vy`, `restitution` (bounce kept, 0
   to 1), `friction`, `drag` (speed lost a second) and `mass` (default its area). Two touching surfaces average
   their restitution and friction.
 - **`simulate(world, build)`** builds once and steps at a fixed 1/120 s, keeping snapshots, so `sim.at(time)`,
   `sim.pose(id, time)` and `sim.events(time)` give the same answer at a time however the player got there.
-  `sim.pose` is the move from the body's start: lay each element out where its body starts, centred on it.
+  `sim.pose` is the move from the body's start: lay each element out where its body starts, centred on it and
+  upright. Bodies still for half a second sleep until something fast hits them, so a heap comes to rest.
 - **Contacts are events.** `sim.events(time)` holds a `contact` event per body, with the body's id as `target`, for
   every contact that started. Merge it with the page's events and answer with `react`: rigid bodies never squash,
   so a squash on landing is a `recoil` on `contact`.
-- **Engines.** `builtinWorld()` is pure TypeScript with no dependency. Rapier does all of that and more: `const
+- **Engines.** `builtinWorld()` is pure TypeScript with no dependency, and steps a few hundred turning bodies in
+  about half a millisecond. Rapier does the same and more, and is the one for a thousand bodies or more: `const
   rapier = await rapierEngine()` from `@motion5/rapier` once at the top of the module, then pass `rapier()` instead
-  of `builtinWorld()`. Its world's `native` and `rigidBody(id)` reach joints, turning bodies and the rest of
-  Rapier; a scene that uses them needs Rapier. It loads about 2.4 MB of WebAssembly and is about twice as slow.
+  of `builtinWorld()`. Its world's `native` and `rigidBody(id)` reach joints and the rest of Rapier; a scene that
+  uses them needs Rapier. It loads about 2.4 MB of WebAssembly.
+- **Heaps.** Bodies resting on each other overlap as boxes; mark them `data-motion-touch` with their own selector so
+  `motion:check` reads the heap as meant.
 - **Randomness.** Scatter with `seeded(seed)` from `@motion5/moves`, never `Math.random()`, so the scene is the same
   on every run and in every tool.
 

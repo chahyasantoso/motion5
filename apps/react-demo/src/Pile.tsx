@@ -1,24 +1,27 @@
 import React, { useCallback } from "react";
 import { applyPose, type RenderTarget } from "@motion5/dom";
+import type { Pose2d } from "@motion5/moves";
 import type { Player } from "@motion5/player";
 import { usePlayer, useTarget } from "@motion5/react";
 import { SIZE, STARTS, WORD, clock, scene } from "./pile-scene";
 
 type Frame = ReturnType<typeof scene>;
 
-/** One letter, laid out where its box starts, moved by its pose. */
+/** A render for entry `index` of a list of poses. */
+function pick(index: number) {
+  return (element: RenderTarget, poses: readonly Pose2d[]) => {
+    const pose = poses[index];
+    if (pose !== undefined) applyPose(element, pose);
+  };
+}
+
+/** One letter: its box laid out upright where its body starts, the glyph inside squashing on contact. */
 const Letter: React.FC<{ player: Player<Frame> | undefined; index: number }> = ({
   player,
   index,
 }) => {
-  const render = useCallback(
-    (element: RenderTarget, letters: Frame["letters"]) => {
-      const pose = letters[index];
-      if (pose !== undefined) applyPose(element, pose);
-    },
-    [index],
-  );
-  const ref = useTarget(player, "letters", render);
+  const box = useTarget(player, "letters", useCallback(pick(index), [index]));
+  const glyph = useTarget(player, "glyphs", useCallback(pick(index), [index]));
   const start = STARTS[index];
   if (start === undefined) return null;
   const style = {
@@ -28,8 +31,10 @@ const Letter: React.FC<{ player: Player<Frame> | undefined; index: number }> = (
     height: SIZE.height,
   };
   return (
-    <div ref={ref} className="pile-letter" style={style}>
-      {WORD[index]}
+    <div ref={box} className="pile-letter" style={style} data-motion-touch=".pile-letter">
+      <span ref={glyph} className="pile-glyph">
+        {WORD[index]}
+      </span>
     </div>
   );
 };

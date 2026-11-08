@@ -3,19 +3,22 @@ import { liveAt } from "@motion5/moves";
 import { FLOOR, SIZE, STARTS, durationMs, scene } from "../src/pile-scene";
 
 describe("the tumble scene", () => {
-  it("brings every letter to rest standing on the floor", () => {
+  it("brings every letter to rest above the floor, some of them turned", () => {
     const end = scene(liveAt(durationMs), []);
+    const before = scene(liveAt(durationMs - 200), []);
+    expect(end).toEqual(before);
     STARTS.forEach((start, index) => {
       const y = start.y + (end.letters[index]?.y ?? 0);
-      expect(Math.abs(y + SIZE.height / 2 - FLOOR)).toBeLessThan(1);
-      expect(end.letters[index]?.scaleY ?? 1).toBeCloseTo(1, 3);
+      expect(y).toBeLessThan(FLOOR - SIZE.width / 2 + 2);
     });
+    const turned = end.letters.filter((pose) => Math.abs(pose.rotation ?? 0) % 180 > 45);
+    expect(turned.length).toBeGreaterThan(0);
   });
 
-  it("squashes a letter on the frame its contact starts", () => {
+  it("squashes a glyph on the frame its letter's contact starts", () => {
     const squashed = Array.from(
-      { length: 300 },
-      (_, step) => scene(liveAt(step * 8), []).letters[0]?.scaleY ?? 1,
+      { length: 400 },
+      (_, step) => scene(liveAt(step * 8), []).glyphs[0]?.scaleY ?? 1,
     );
     expect(Math.min(...squashed)).toBeLessThan(0.9);
   });
