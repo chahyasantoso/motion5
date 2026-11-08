@@ -38,12 +38,13 @@ byte ceiling.
   reveals, strokes and paths and owns every CSS string, its `/engine` holds the DOM patch adapter and
   browser clock, and `@motion5/three` renders a pose with `applyPose2d`. `@motion5/player` plays a code
   scene on a manual, clock or scroll driver, React reads it with `usePlayer`, `useTarget` and
-  `useValue`, and `/timing.html` is now a code scene held equal to `timing-beat.json`.
+  `useValue`, and `/timing.html` is now a code scene held equal to `timing-beat.json`. The motion tools
+  live in `@motion5/tools`, and `motion:sample` and `motion:timeline` read a `.ts` scene with no browser.
 
 ## Next in line
 
-- **`@motion5/tools`:** the page tools become a package, and `motion:sample` and `motion:timeline` read a
-  `.ts` scene module with no browser (ADR-155).
+- **Code-first guide and benchmark:** rewrite `docs/guide/agent-motion.md` around moves, rig, player
+  and tools, then run a cold benchmark of the code path against no repository.
 
 ## Open, and not scheduled
 
