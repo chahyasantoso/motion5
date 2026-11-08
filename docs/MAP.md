@@ -106,7 +106,7 @@ Public: `.`, `./skeleton`
 Public: `./page`, `./scene`, `./engine`
 
 - `src/engine/`: sample, timeline, catalog, new
-- `src/engine/templates/`: motion:new templates
 - `src/page/`: frames, probe, check, points
 - `src/scene/`: scene sample, timeline
+- `src/scene/templates/`: motion:new templates
 - `src/timeline/`: timeline bars

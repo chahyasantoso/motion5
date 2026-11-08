@@ -68,7 +68,7 @@ export const OWNERS = {
   "packages/react/src": "React patch and DOM binding hooks",
   "packages/three/src": "Three.js skeleton patch adapter",
   "packages/tools/src/engine": "sample, timeline, catalog, new",
-  "packages/tools/src/engine/templates": "motion:new templates",
+  "packages/tools/src/scene/templates": "motion:new templates",
   "packages/tools/src/page": "frames, probe, check, points",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",
