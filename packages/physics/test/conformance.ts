@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { liveAt } from "@motion5/moves";
-import { simulate, type PhysicsWorld } from "@motion5/physics";
+import { liveAt, type Events, type MotionEvent } from "@motion5/moves";
+import { simulate, type PhysicsWorld, type Spawner } from "@motion5/physics";
 
 const G = 2000;
 const FLOOR = 600;
@@ -146,6 +146,11 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         expect(Math.hypot(body.vx, body.vy)).toBeLessThan(5);
         expect(body.y).toBeLessThan(FLOOR);
       }
+      const later = sim.at(liveAt(6500));
+      for (const [id, body] of Object.entries(sim.at(liveAt(6000)))) {
+        expect(Math.abs((later[id]?.x ?? 0) - body.x), `${id} creeps`).toBeLessThan(0.5);
+        expect(Math.abs((later[id]?.y ?? 0) - body.y), `${id} creeps`).toBeLessThan(0.5);
+      }
     });
 
     it("tips a box that lands on its corner flat onto a face, and lets it rest", () => {
@@ -210,6 +215,48 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         expect(Math.abs(end[`stack${i}`]?.rotation ?? 99)).toBeLessThan(3);
       }
       expect(end.fixed?.rotation).toBeCloseTo(30, 3);
+    });
+
+    it("spawns bodies on events, the same however time and events arrive", () => {
+      const options = {
+        spawn: (event: MotionEvent, world: Spawner) => {
+          if (event.name === "drop")
+            world.addBody({
+              id: `ball@${event.at}`,
+              shape: { kind: "circle", radius: 15 },
+              x: event.x ?? 0,
+              y: event.y ?? 0,
+              restitution: 0.3,
+            });
+        },
+      };
+      const build = (world: PhysicsWorld) => {
+        world.setGravity(0, G);
+        world.addCollider("floor", { kind: "floor", y: FLOOR });
+      };
+      const drops: Events = [
+        { name: "drop", at: 500, x: 300, y: 100 },
+        { name: "drop", at: 900, x: 700, y: 100 },
+      ];
+      const sim = simulate(create(), build, options);
+      expect(sim.bodies(liveAt(400), drops)).toEqual([]);
+      expect(sim.place("ball@500", liveAt(400), drops).opacity).toBe(0);
+      expect(sim.bodies(liveAt(600), drops)).toEqual(["ball@500"]);
+      const settled = sim.at(liveAt(2500), drops);
+      expect(Object.keys(settled)).toEqual(["ball@500", "ball@900"]);
+      for (const ball of Object.values(settled))
+        expect(Math.abs(ball.y - (FLOOR - 15))).toBeLessThan(1);
+      expect(sim.place("ball@900", liveAt(2500), drops)).toMatchObject({ x: 700, opacity: 1 });
+      expect([...new Set(sim.events(liveAt(2500), drops).map(({ target }) => target))]).toEqual([
+        "ball@500",
+        "ball@900",
+      ]);
+      sim.at(liveAt(700), drops);
+      expect(sim.at(liveAt(2500), drops)).toEqual(settled);
+      const earlier: Events = [{ name: "drop", at: 300, x: 500, y: 100 }, ...drops];
+      const fresh = simulate(create(), build, options);
+      expect(sim.at(liveAt(2500), earlier)).toEqual(fresh.at(liveAt(2500), earlier));
+      expect(sim.events(liveAt(2500), earlier)).toEqual(fresh.events(liveAt(2500), earlier));
     });
   });
 }

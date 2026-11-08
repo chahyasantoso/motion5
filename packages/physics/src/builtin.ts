@@ -440,6 +440,9 @@ export function builtinWorld(): PhysicsWorld {
         spec.shape.kind === "circle"
           ? spec.shape.radius
           : Math.hypot(spec.shape.width, spec.shape.height) / 2;
+      const existing = byId.get(spec.id);
+      if (existing !== undefined && bodies.includes(existing))
+        throw new RangeError(`builtinWorld: body "${spec.id}" is added twice.`);
       const body: Body = {
         id: spec.id,
         shape: spec.shape,
@@ -536,6 +539,7 @@ export function builtinWorld(): PhysicsWorld {
       const state = {
         gravity: [gx, gy],
         bodies: bodies.map((b) => [
+          b.id,
           b.x,
           b.y,
           b.angle,
@@ -554,28 +558,25 @@ export function builtinWorld(): PhysicsWorld {
       const gravity: unknown = Reflect.get(Object(state), "gravity");
       const rows: unknown = Reflect.get(Object(state), "bodies");
       const keys: unknown = Reflect.get(Object(state), "touching");
-      if (
-        !Array.isArray(gravity) ||
-        !Array.isArray(rows) ||
-        !Array.isArray(keys) ||
-        rows.length !== bodies.length
-      )
+      if (!Array.isArray(gravity) || !Array.isArray(rows) || !Array.isArray(keys))
         throw new TypeError("builtinWorld: the snapshot is not from this world.");
       gx = Number(gravity[0]);
       gy = Number(gravity[1]);
-      rows.forEach((row: unknown, index) => {
-        const body = bodies[index];
+      bodies.length = 0;
+      for (const row of rows) {
+        const body = Array.isArray(row) ? byId.get(String(row[0])) : undefined;
         if (body === undefined || !Array.isArray(row))
-          throw new TypeError("builtinWorld: bad snapshot row.");
-        body.x = Number(row[0]);
-        body.y = Number(row[1]);
-        body.angle = Number(row[2]);
-        body.vx = Number(row[3]);
-        body.vy = Number(row[4]);
-        body.spin = Number(row[5]);
-        body.asleep = Number(row[6]) === 1;
-        body.still = Number(row[7]);
-      });
+          throw new TypeError("builtinWorld: the snapshot names a body this world never had.");
+        body.x = Number(row[1]);
+        body.y = Number(row[2]);
+        body.angle = Number(row[3]);
+        body.vx = Number(row[4]);
+        body.vy = Number(row[5]);
+        body.spin = Number(row[6]);
+        body.asleep = Number(row[7]) === 1;
+        body.still = Number(row[8]);
+        bodies.push(body);
+      }
       touching = new Set(keys.map(String));
       started = [];
     },

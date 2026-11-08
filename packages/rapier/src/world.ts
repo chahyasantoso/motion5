@@ -66,6 +66,8 @@ function rapierWorld(): RapierWorld {
     },
     rigidBody: (id) => world.getRigidBody(handleOf(id)),
     addBody(spec: BodySpec) {
+      if (bodies.has(spec.id))
+        throw new RangeError(`rapierWorld: body "${spec.id}" is added twice.`);
       const desc = RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(spec.x / SCALE, spec.y / SCALE)
         .setRotation((spec.angle ?? 0) * RADIANS)
@@ -140,12 +142,34 @@ function rapierWorld(): RapierWorld {
       });
       return started;
     },
-    snapshot: () => world.takeSnapshot(),
+    snapshot() {
+      const names = new TextEncoder().encode(
+        JSON.stringify({ bodies: [...bodies], owners: [...owners] }),
+      );
+      const native = world.takeSnapshot();
+      const bytes = new Uint8Array(4 + names.length + native.length);
+      new DataView(bytes.buffer).setUint32(0, names.length);
+      bytes.set(names, 4);
+      bytes.set(native, 4 + names.length);
+      return bytes;
+    },
     restore(snapshot) {
-      const restored = RAPIER.World.restoreSnapshot(snapshot);
+      const length = new DataView(snapshot.buffer, snapshot.byteOffset).getUint32(0);
+      const names: unknown = JSON.parse(new TextDecoder().decode(snapshot.subarray(4, 4 + length)));
+      const listed: unknown = Reflect.get(Object(names), "bodies");
+      const owned: unknown = Reflect.get(Object(names), "owners");
+      if (!Array.isArray(listed) || !Array.isArray(owned))
+        throw new TypeError("rapierWorld: the snapshot is not from this adapter.");
+      const restored = RAPIER.World.restoreSnapshot(snapshot.subarray(4 + length));
       if (restored === null) throw new TypeError("rapierWorld: the snapshot did not restore.");
       world.free();
       world = restored;
+      bodies.clear();
+      for (const pair of listed)
+        if (Array.isArray(pair)) bodies.set(String(pair[0]), Number(pair[1]));
+      owners.clear();
+      for (const pair of owned)
+        if (Array.isArray(pair)) owners.set(Number(pair[0]), String(pair[1]));
       queue.drainCollisionEvents(() => undefined);
     },
   };
