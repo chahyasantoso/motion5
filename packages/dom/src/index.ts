@@ -9,5 +9,14 @@ export {
   cssTransform,
   pathData,
   TRANSFORM_KEYS,
+  type RenderStyle,
   type RenderTarget,
 } from "./render";
+export {
+  clockDriver,
+  scrollDriver,
+  type ClockDriver,
+  type ClockOptions,
+  type FrameSource,
+  type ScrollTarget,
+} from "./drivers";

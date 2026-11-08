@@ -1,7 +1,7 @@
 import type { CreatedTrigger } from "../../ports/trigger-factory";
 import { createManualTriggerPort } from "../../ports/trigger";
 import type { ClockTick } from "../../ports/clock";
-import { createLoopCycle, type LoopCycleOptions } from "./loop-cycle";
+import { createLoopCycle, type LoopCycleOptions } from "@motion5/moves";
 import { unreachable } from "../../lang/exhaustive";
 
 interface ActiveDriverState {

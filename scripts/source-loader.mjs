@@ -5,9 +5,10 @@ import { workspaceSourceAliases } from "./workspace-source-aliases.mjs";
 // Registers a resolve hook so bare Node runs workspace sources: package specifiers map to their
 // source files and an extensionless relative specifier retries with `.ts`.
 export function registerSourceLoader() {
-  const aliases = workspaceSourceAliases("core", "moves", "rig", "dom", "plugins").map(
-    ({ find, replacement }) => [find.source, pathToFileURL(replacement).href],
-  );
+  const aliases = workspaceSourceAliases().map(({ find, replacement }) => [
+    find.source,
+    pathToFileURL(replacement).href,
+  ]);
   const hook = `const aliases = ${JSON.stringify(aliases)}.map(([source, target]) => [new RegExp(source), target]);
 export async function resolve(specifier, context, next) {
   for (const [pattern, target] of aliases) {

@@ -1,8 +1,19 @@
 import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@motion5/moves";
 
+/** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
+export interface RenderStyle {
+  transform?: string;
+  transformOrigin?: string;
+  transformBox?: string;
+  opacity?: string;
+  clipPath?: string;
+  strokeDasharray?: string;
+  strokeDashoffset?: string;
+}
+
 /** An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has. */
 export interface RenderTarget {
-  readonly style: { [key: string]: unknown };
+  readonly style: RenderStyle;
   setAttribute?(name: string, value: string): void;
   getTotalLength?(): number;
   readonly ownerSVGElement?: unknown;

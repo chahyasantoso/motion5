@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const packagesRoot = new URL("../packages/", import.meta.url);
@@ -13,7 +13,8 @@ const packagesRoot = new URL("../packages/", import.meta.url);
  * source-exporting package (`./src/...`) maps to its target as written.
  */
 export function workspaceSourceAliases(...packageDirectories) {
-  return packageDirectories.flatMap((directory) => {
+  const directories = packageDirectories.length > 0 ? packageDirectories : allPackages();
+  return directories.flatMap((directory) => {
     const packageRoot = new URL(`${directory}/`, packagesRoot);
     const manifest = JSON.parse(readFileSync(new URL("package.json", packageRoot), "utf8"));
     return Object.entries(manifest.exports).map(([subpath, target]) => {
@@ -24,6 +25,17 @@ export function workspaceSourceAliases(...packageDirectories) {
       };
     });
   });
+}
+
+/** Every workspace package with a manifest, so a new package needs no config edit. */
+function allPackages() {
+  return readdirSync(packagesRoot, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() && existsSync(new URL(`${entry.name}/package.json`, packagesRoot)),
+    )
+    .map((entry) => entry.name)
+    .sort();
 }
 
 function sourceOf(name, subpath, target) {

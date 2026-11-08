@@ -1,4 +1,5 @@
-export { createBrowserClock, type FrameSource } from "./browser-clock";
+export { createBrowserClock } from "./browser-clock";
+export type { FrameSource } from "../drivers";
 export {
   createDomPatchAdapter,
   type DomPatchAdapter,

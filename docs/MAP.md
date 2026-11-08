@@ -54,6 +54,12 @@ Public: `.`
 
 - `src/`: moves, time, pose
 
+## packages/player
+
+Public: `.`
+
+- `src/`: scene player, manual driver
+
 ## packages/plugins
 
 Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`

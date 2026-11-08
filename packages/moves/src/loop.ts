@@ -1,4 +1,4 @@
-import { unreachable } from "../../lang/exhaustive";
+import { unreachable } from "./time";
 
 /** Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver. */
 export interface LoopCycleOptions {

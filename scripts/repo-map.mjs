@@ -58,6 +58,7 @@ export const OWNERS = {
   "packages/dom/src": "DOM and SVG renderer",
   "packages/dom/src/engine": "engine patch adapter, clock",
   "packages/moves/src": "moves, time, pose",
+  "packages/player/src": "scene player, manual driver",
   "packages/plugins/src/motion": "move plugins",
   "packages/plugins/src/path": "path plugins",
   "packages/plugins/src/pose": "pose classifier plugin",

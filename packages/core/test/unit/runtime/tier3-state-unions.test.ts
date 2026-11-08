@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { unreachable } from "../../../src/lang/exhaustive";
-import { createLoopCycle } from "../../../src/adapters/trigger-factory/loop-cycle";
+import { createLoopCycle } from "@motion5/moves";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
 import { AUTHORED, type ValueState } from "../../../src/runtime/value-state";
 import type { TrackDefinition } from "../../../src/contract/v5";

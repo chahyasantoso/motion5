@@ -8,7 +8,7 @@ if (!process.stdout.isTTY) process.env.NO_COLOR ??= "1";
 
 export default defineConfig({
   resolve: {
-    alias: [...workspaceSourceAliases("moves", "rig", "dom", "plugins", "core", "react")],
+    alias: [...workspaceSourceAliases()],
   },
   optimizeDeps: {
     exclude: [
@@ -18,6 +18,7 @@ export default defineConfig({
       "@motion5/moves",
       "@motion5/rig",
       "@motion5/dom",
+      "@motion5/player",
     ],
   },
   test: {

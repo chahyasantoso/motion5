@@ -1,9 +1,6 @@
 import type { Clock, ClockTick } from "@motion5/core";
 
-export interface FrameSource {
-  requestFrame(listener: (time: number) => void): number;
-  cancelFrame(handle: number): void;
-}
+import type { FrameSource } from "../drivers";
 
 export function createBrowserClock(source: FrameSource): Clock & { dispose(): void } {
   const listeners = new Set<(event: ClockTick) => void>();
