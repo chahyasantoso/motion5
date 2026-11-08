@@ -236,6 +236,17 @@ Measures each match of a CSS selector at each time: box, centre, computed transf
 `z-index`.
 
 ```bash
+npm run motion:read -- timing.html --select .beat-dot,.beat-glyph --to 3000
+```
+
+Reads each match's own motion as moves, one line each, such as
+`.beat-glyph[0] "T" y -700 → 0, 0-336 ms (336 ms), quadIn`: the channel (`x`, `y`, `rotation`, `scaleX`,
+`scaleY`, `opacity`), from and to, start and end, and the ease named as `@motion5/moves` names it. A move that no named
+ease fits gets the nearest name and a fitted `cubic-bezier`. A move splits where it turns back, so a hop reads as
+rising and falling halves. Read it to check timing and eases in numbers before looking at frames. It reads any page,
+including CSS and Web Animations, which the tools hold to the same paused clock.
+
+```bash
 npm run motion:frames -- timing.html --onion .beat-dot --from 880 --to 1880 --every 40
 ```
 

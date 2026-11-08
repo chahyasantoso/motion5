@@ -11,6 +11,7 @@ registerSourceLoader();
 const { captureFrames, captureOnion } = await import("../src/page/frames.ts");
 const { probeElements } = await import("../src/page/probe.ts");
 const { DEFAULT_LIMITS, checkMotion } = await import("../src/page/check.ts");
+const { readMotion } = await import("../src/page/read.ts");
 const { DEFAULT_SOURCE, withPage } = await import("../src/page/page.ts");
 
 const ORANGE = [255, 85, 51];
@@ -167,6 +168,33 @@ try {
     limits: DEFAULT_LIMITS,
   });
   assert.deepEqual(hidden.findings, [], JSON.stringify(hidden.findings));
+
+  // A CSS animation follows the paused clock, and motion:read gives back its delay, length and ease.
+  writeFileSync(
+    join(site, "css.html"),
+    `<style>#slide{position:absolute;width:40px;height:40px;background:red;
+animation:slide 640ms cubic-bezier(0.33,1,0.68,1) 160ms both}
+@keyframes slide{to{transform:translateX(400px)}}</style><div id="slide"></div>`,
+  );
+  const css = await readMotion({
+    page: "css.html",
+    width: 640,
+    height: 360,
+    source: { kind: "serve", root: site },
+    select: ["#slide"],
+    to: 1200,
+  });
+  assert.deepEqual(
+    css.elements[0]?.segments.map(({ channel, from, to, start, end, ease }) => ({
+      channel,
+      from: Math.round(from),
+      to: Math.round(to),
+      start,
+      end,
+      ease: ease.name,
+    })),
+    [{ channel: "x", from: 0, to: 400, start: 160, end: 800, ease: "cubicOut" }],
+  );
 } finally {
   rmSync(site, { recursive: true, force: true });
 }

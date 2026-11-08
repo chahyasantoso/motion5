@@ -84,6 +84,20 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   };
 }
 
+/** Sets every CSS and Web Animations animation, which the fake clock skips, to the clock's time from when first seen. */
+function holdAnimations(ms: number): void {
+  const seen: unknown = Reflect.get(window, "__motionBorn");
+  const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
+  Reflect.set(window, "__motionBorn", born);
+  for (const animation of document.getAnimations()) {
+    const start: unknown = born.get(animation);
+    const from = typeof start === "number" ? start : ms;
+    if (typeof start !== "number") born.set(animation, from);
+    animation.pause();
+    animation.currentTime = ms - from;
+  }
+}
+
 /** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
 export async function withPage<T>(
   target: PageTarget,
@@ -121,6 +135,7 @@ export async function withPage<T>(
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
     await page.clock.runFor(FIRST_FRAME_MS);
+    await page.evaluate(holdAnimations, 0);
     let now = 0;
     const session: PageSession = {
       page,
@@ -128,6 +143,7 @@ export async function withPage<T>(
       async advanceTo(ms) {
         if (ms < now) throw new Error(`Time ${ms} is before ${now}; times must ascend.`);
         await page.clock.runFor(ms - now);
+        await page.evaluate(holdAnimations, ms);
         now = ms;
       },
     };
