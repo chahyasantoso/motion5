@@ -1,6 +1,6 @@
 # motion5 architecture
 
-**Status:** Target design. Phase 0 has no implementation. Where this document uses the present tense, it describes what the code must satisfy once it exists, not what exists today. Reality lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
+**Status:** Structural ownership guide. Where the present tense is used it describes what the code must satisfy. Current implementation state lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
 
 ## 1. The one invariant
 
