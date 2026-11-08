@@ -39,12 +39,12 @@ byte ceiling.
   browser clock, and `@motion5/three` renders a pose with `applyPose2d`. `@motion5/player` plays a code
   scene on a manual, clock or scroll driver, React reads it with `usePlayer`, `useTarget` and
   `useValue`, and `/timing.html` is now a code scene held equal to `timing-beat.json`. The motion tools
-  live in `@motion5/tools`, and `motion:sample` and `motion:timeline` read a `.ts` scene with no browser. The agent guide is code-first and `motion:new` scaffolds a code scene. Core and plugins are frozen: fixes only. Moves state their moments, `span` and the eases live in moves, `buildChain` types its bone ids, and `/catch.html` is a second worked example. `keyframes` is in moves, the scaffold sets layout only, and the `make-motion` skill sends an agent to the agent guide. A fresh session showed it triggers on a motion brief, and `/splash.html` is a third worked example.
+  live in `@motion5/tools`, and `motion:sample` and `motion:timeline` read a `.ts` scene with no browser. The agent guide is code-first and `motion:new` scaffolds a code scene. Core and plugins are frozen: fixes only. Moves state their moments, `span` and the eases live in moves, `buildChain` types its bone ids, and `/catch.html` is a second worked example. `keyframes` is in moves, the scaffold sets layout only, and the `make-motion` skill sends an agent to the agent guide. A fresh session showed it triggers on a motion brief, and `/splash.html` is a third worked example. `motion:read` reads any page's motion as moves with named eases, CSS animations follow the tools' paused clock, and `motion:check` reports faint or cut-off text and honours `data-motion-touch`.
 
 ## Next in line
 
-- **Proof tools:** `motion:read` describes a page's motion as segments with fitted eases, and `motion:check`
-  adds text contrast, clipped text and contacts the page marks as meant.
+- **Watch at full speed:** `motion:render` writes an MP4 or GIF of a page from the paused clock, identical on
+  every run.
 
 ## Open, and not scheduled
 
