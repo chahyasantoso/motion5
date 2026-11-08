@@ -7,12 +7,14 @@ own work without watching it play. This guide assumes a checkout of this reposit
 ## The loop
 
 1. `npm run motion:new -- <name>` writes a page, its entry, a component and a scene module in `apps/react-demo`.
-2. Lay the page out as the final frame, then write the scene so each target arrives at that layout.
-3. `npm run motion:timeline -- apps/react-demo/src/<name>-scene.ts` shows when each target moves, as text bars.
-4. `npm run motion:sample -- apps/react-demo/src/<name>-scene.ts --at 0,500` prints exact values, with no browser.
-5. `npm run motion:frames`, `motion:probe` and `motion:check` show the real page as pictures, measurements and
+2. Choose the look the brief calls for: background, palette, type and shapes. The scaffold sets none, and the
+   examples' looks are theirs, not a house style.
+3. Lay the page out as the final frame, then write the scene so each target arrives at that layout.
+4. `npm run motion:timeline -- apps/react-demo/src/<name>-scene.ts` shows when each target moves, as text bars.
+5. `npm run motion:sample -- apps/react-demo/src/<name>-scene.ts --at 0,500` prints exact values, with no browser.
+6. `npm run motion:frames`, `motion:probe` and `motion:check` show the real page as pictures, measurements and
    findings.
-6. Adjust, then repeat from step 3.
+7. Adjust, then repeat from step 4.
 
 Look at frames before you call anything finished. Values can be right while the picture is wrong: a wrong pivot, a
 color that merges, a letter colliding with its neighbor. None of those raises an error.
@@ -48,7 +50,7 @@ and none in the component. Two worked examples, each held by a test:
 | `apps/react-demo/src/timing-scene.ts` | moves, lanes, a wipe measured from the page | `timing.html`, by `TimingBeat.tsx` |
 | `apps/react-demo/src/catch-scene.ts` | an IK arm, one target timed to another's moment, eases, a carry | `catch.html`, by `Catch.tsx` |
 
-Read the one closest to your brief before writing, and copy its patterns.
+Read the one closest to your brief before writing, and copy its patterns, not its colours or type.
 
 ## Time
 
@@ -59,6 +61,7 @@ before reading `elapsed`.
 | You want | Use |
 | -------------------------------------- | ------------------------------------------------------------------- |
 | A move inside part of the scene | `const s = span(fromMs, toMs, durationMs)` once, then `s.of(time)` |
+| A value through several keyed times | `keyframes(durationMs, start, [{ at, to, ease }], mix)` once, then call it with `time` |
 | That move eased | `s.of(time, ease.cubicInOut)` |
 | A share to blend with, eased | `s.of(time, ease.cubicInOut).progress`: `of` gives a time, not a number |
 | The ms a move reaches a moment | `s.at(hop.moments(options).lastLanding)` |
@@ -112,6 +115,7 @@ opacity multiply, and the first anchor stays. `toCubics(anchors)` turns a rope's
 | A number, point or angle between two | `mix(a, b, share)`, `mixPoint(a, b, share)`, `mixAngle(a, b, share)` the short way round |
 | A pose between two | `mixPose(a, b, share)`, a missing field at its rest |
 | Several poses on one target | `combine([a, b])` |
+| A value through keyframes | `keyframes(durationMs, start, keys, blend)`: from `start` at 0 ms to each key's `to` by its `at`, eased by its `ease`, linear without one, then holding; repeat a value to hold it |
 
 Look through the exports of `@motion5/moves` before writing a helper, and write your own only for a curve this table
 lacks.
@@ -119,7 +123,7 @@ lacks.
 ## Rest poses
 
 A move ends at its rest pose, which is the element's layout position. Lay the page out as the final frame, then let
-moves bring things there: `drop` waits `distance` above rest, and `hop` arrives from `dx` to the left, or from the right when `dx` is negative. Make
+moves bring things there: `drop` waits `distance` above rest, and `hop` arrives from `dx` to the left, or from the right when `dx` is negative; at progress 0 it sits on its rest line `dx` from rest. Make
 `distance` and `dx` large enough to start off the stage, and clip the stage with `overflow: hidden`.
 
 ## Rendering
@@ -177,6 +181,7 @@ export const scene = (time: Time) => {
 ```
 
 - **Units.** Stage px with y down, angles in degrees, and a positive angle turns clockwise on screen, as in CSS.
+  A bone at rotation 0 points right, so a base with `rotation: -90` points the chain up.
 - **Ids.** `buildChain` keeps the ids it was given, so `rotations.upper`, `tips.lower` and `bones.upper` are always
   there, with no `?? 0`. It refuses an unknown parent or a cycle by name.
 - **Rotations.** `ik` gives, and `fk` takes, each bone's rotation against its parent. `fk` gives each bone's tip in
@@ -216,7 +221,8 @@ The page is a path inside the site, with no leading `/`. By default the site is 
 serves any other folder, and `--url <address>` uses a server you already run, so these tools work on any web page.
 Paths given to `--root` and `--out` are read from the folder you ran the command in. The command opens the page in
 an installed Chrome or Edge under a paused fake clock, and prints paths as JSON: one PNG per time, and a labelled
-`sheet.png`. Read `sheet.png` rather than each frame. A non-empty `pageErrors` exits `1`.
+`sheet.png`. Read `sheet.png` rather than each frame. A non-empty `pageErrors` exits `1`. The page shows the last
+frame it drew, and frames fall every 16 ms, so ask for multiples of 16 to compare a page with `motion:sample` exactly.
 
 ```bash
 npm run motion:probe -- timing.html --at 2300 --select .beat-dot
@@ -239,7 +245,8 @@ npm run motion:check -- timing.html --watch .beat-dot,.beat-glyph --to 3000
 Samples every 16 ms up to `--to` and reports, each with its duration: two watched elements overlapping for more than
 `--overlap` frames (default 12), a centre moving more than `--jump` px in one frame (default 150), a final hold
 shorter than `--hold` ms (default 500), and an element still moving on the last frame. It exits `1` when it finds
-anything. An overlap compares boxes, so a dot passing behind a letter still counts.
+anything. An overlap compares boxes, so a dot passing behind a letter still counts. Leave out of `--watch` an
+element meant to touch another, such as a foot on a ball.
 
 ```bash
 npm run motion:points -- shape.json --spacing 12

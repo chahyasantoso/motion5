@@ -3,6 +3,7 @@ import {
   atProgress,
   ease,
   hop,
+  keyframes,
   mix,
   mixAngle,
   mixPoint,
@@ -75,5 +76,48 @@ describe("span", () => {
 
   it("refuses a scene with no length", () => {
     expect(() => span(0, 100, 0)).toThrow(/span: durationMs must be above 0/);
+  });
+});
+
+describe("keyframes", () => {
+  const lean = keyframes(
+    4000,
+    0,
+    [
+      { at: 1000, to: 0 },
+      { at: 2000, to: 10, ease: ease.quadIn },
+      { at: 3000, to: -10 },
+    ],
+    mix,
+  );
+
+  it("holds through a repeated key, then eases into the next", () => {
+    expect(lean(timed(500))).toBe(0);
+    expect(lean(timed(1500))).toBeCloseTo(2.5, 9);
+    expect(lean(timed(2000))).toBeCloseTo(10, 9);
+  });
+
+  it("moves linearly with no ease and holds the last value after the last key", () => {
+    expect(lean(timed(2500))).toBeCloseTo(0, 9);
+    expect(lean(timed(3999))).toBeCloseTo(-10, 9);
+  });
+
+  it("blends points or poses with the matching mix", () => {
+    const hand = keyframes(4000, { x: 0, y: 0 }, [{ at: 2000, to: { x: 100, y: 50 } }], mixPoint);
+    expect(hand(timed(1000))).toEqual({ x: 50, y: 25 });
+  });
+
+  it("refuses keys out of order", () => {
+    expect(() =>
+      keyframes(
+        4000,
+        0,
+        [
+          { at: 2000, to: 1 },
+          { at: 1000, to: 2 },
+        ],
+        mix,
+      ),
+    ).toThrow(/keyframes: key at 1000 ms comes before 2000 ms/);
   });
 });

@@ -10,6 +10,7 @@ export {
 } from "./time";
 export { ease, type Ease } from "./ease";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
+export { keyframes, type Key } from "./keyframes";
 export { lane, laneTime, lanes, type Lanes } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
