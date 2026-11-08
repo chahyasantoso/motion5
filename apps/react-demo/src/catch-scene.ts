@@ -7,7 +7,9 @@ import {
   lane,
   lanes,
   mixPoint,
+  react,
   span,
+  type Events,
   type Pose2d,
   type Time,
 } from "@motion5/moves";
@@ -25,6 +27,11 @@ const BOUNCE = { height: 330, bounces: 2, decay: 0.35, squash: 0.35, dx: -1100 }
 const flight = span(400, 2400, durationMs);
 /** The scene ms of the ball's last landing, where the hand meets it. */
 export const LAND_MS = flight.at(hop.moments(BOUNCE).lastLanding);
+
+/** The scene's own events: the catch, at the ball's last landing. */
+export const cues: Events = [{ name: "catch", at: LAND_MS, target: "ball" }];
+/** The hand gives under the ball's weight and springs back, starting from rest. */
+const give = react({ on: ["catch"], kind: "wobble", amplitude: 26, decay: 7, frequency: 2.2 });
 
 const raise = span(200, 1100, durationMs);
 const lunge = span(1450, LAND_MS, durationMs);
@@ -47,14 +54,15 @@ const READY = { x: 500, y: 260 };
 export const CATCH = { x: BALL.x - BALL.radius - 4, y: BALL.y - BALL.radius + 2 };
 const CRADLE = { x: CATCH.x, y: CATCH.y - 70 };
 
-function handGoal(time: Time) {
+function handGoal(time: Time, events: Events) {
   const raised = mixPoint(REST, READY, raise.of(time, ease.backOut).progress);
   const out = mixPoint(raised, CATCH, lunge.of(time, ease.cubicInOut).progress);
-  return mixPoint(out, CRADLE, cradle.of(time, ease.sineInOut).progress);
+  const held = mixPoint(out, CRADLE, cradle.of(time, ease.sineInOut).progress);
+  return { x: held.x, y: held.y + give(time, events) };
 }
 
-export const scene = (time: Time) => {
-  const { rotations } = ik(arm, { lower: handGoal(time) }, { base, flip: true });
+export const scene = (time: Time, events: Events) => {
+  const { rotations } = ik(arm, { lower: handGoal(time, events) }, { base, flip: true });
   const { bones, tips } = chainPoses(arm, { rotations, base });
   const held = cradle.of(time).progress > 0;
   const carry: Pose2d = held

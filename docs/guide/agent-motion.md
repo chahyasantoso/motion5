@@ -152,7 +152,23 @@ export const clock = () => eventDriver({ introMs: 900 });
   `watchView(target, element)` logs `in-view` and `out-of-view`, and its `emit(name, target)` logs anything else.
 - **Tools.** Every page tool takes `--action hover:.card-hit@1000,leave:.card-hit@1120,click:.button@2000`, with
   `hover`, `leave`, `click`, `press`, `release` and `scroll:<px>`, done with the real mouse at those exact ms.
-  `motion:sample` and `motion:timeline` play a scene with no events.
+  `motion:sample` and `motion:timeline` take `--events enter:card@1000,leave:card@1120` instead, with no browser.
+
+A scene has events of its own too: a landing, a catch, an impact. Export them as `cues`, made from moments, and pass
+them to the player; the scene gets them merged with the page's:
+
+```ts
+export const cues: Events = [{ name: "catch", at: flight.at(hop.moments(BOUNCE).lastLanding), target: "ball" }];
+const give = react({ on: ["catch"], kind: "wobble", amplitude: 26, decay: 7, frequency: 2.2 });
+// in the scene: hand goal y + give(time, events); in React: usePlayer(scene, clock, cues)
+```
+
+- **`react({ on, target, kind, amplitude, decay, frequency })`** adds a damped answer to every past event it names:
+  `wobble` starts at rest and swings, like a hand taking a weight; `recoil` jumps to `amplitude` and swings back;
+  `flash` jumps and fades, for a glow; `shake` jitters and dies. It is exactly 0 before the event. `decay` defaults to
+  6 a second and `frequency` to 4 swings a second.
+- **`player.on(name, listener)`** calls back each time forward play reaches an event of that name, a cue or the
+  page's, for a sound or a class; a seek back calls nothing. The tools read a scene module's `cues` export.
 
 ## Rest poses
 
@@ -324,6 +340,7 @@ Resamples a JSON array of `{ x, y }` points to fixed spacing, so every link of a
 - Never cast with `as` or assert with `!`. Give a pose literal its type, `const carry: Pose2d = { x: 1 }`, and read
   a field a pose may lack as `pose.x ?? 0`.
 - A span is not a time: pass `span.of(time)` to a move or `lane`, never the span itself.
+- A `recoil` or `flash` jumps on its event's frame; for a push that should start smoothly, use `wobble`.
 - A move under a live clock needs a span: `drop(options, time)` with a live `time` sits at its start, because a
   live clock has no progress.
 

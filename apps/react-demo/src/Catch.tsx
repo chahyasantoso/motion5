@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import { applyPose, type RenderTarget } from "@motion5/dom";
 import type { Player } from "@motion5/player";
 import { usePlayer, useTarget } from "@motion5/react";
-import { WORD, clock, scene } from "./catch-scene";
+import { WORD, clock, cues, scene } from "./catch-scene";
 
 type Frame = ReturnType<typeof scene>;
 
@@ -31,7 +31,7 @@ const Glyph: React.FC<{ player: Player<Frame> | undefined; index: number; glyph:
 
 /** Binds each target to its element; all motion lives in `catch-scene.ts`. Click replays. */
 export const Catch: React.FC = () => {
-  const playing = usePlayer(scene, clock);
+  const playing = usePlayer(scene, clock, cues);
   const player = playing?.player;
   const upper = useTarget(player, "upper");
   const lower = useTarget(player, "lower");
