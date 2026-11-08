@@ -10,14 +10,15 @@ own work without watching it play. This guide assumes a checkout of this reposit
 2. Choose the look the brief calls for: background, palette, type and shapes. The scaffold sets none, and the
    examples' looks are theirs, not a house style.
 3. Lay the page out as the final frame, then write the scene so each target arrives at that layout.
-4. `npm run motion:timeline -- apps/react-demo/src/<name>-scene.ts` shows when each target moves, as text bars.
-5. `npm run motion:sample -- apps/react-demo/src/<name>-scene.ts --at 0,500` prints exact values, with no browser.
-6. `npm run motion:frames`, `motion:probe` and `motion:check` show the real page as pictures, measurements and
-   findings.
-7. Adjust, then repeat from step 4.
+4. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for anything a person
+   does, gives in one call what `motion:check` finds, the moves `motion:read` reads, and a labelled frame `sheet`.
+5. Fix what it flags and what looks wrong on the sheet, then review again. Stop when the findings are empty and the
+   sheet looks right. Run `npm run typecheck` once at the end.
 
-Look at frames before you call anything finished. Values can be right while the picture is wrong: a wrong pivot, a
-color that merges, a letter colliding with its neighbor. None of those raises an error.
+Each call costs time and tokens: reach for `motion:sample`, `motion:timeline`, `motion:probe`, `motion:read` or
+`motion:frames` only to dig into something a review showed. Read the sheet before you call anything finished.
+Values can be right while the picture is wrong: a wrong pivot, a color that merges, a letter colliding with its
+neighbor. None of those raises an error.
 
 ## A scene
 
@@ -72,6 +73,8 @@ before reading `elapsed`.
 | A start delay, repeats, or a yoyo | `clockDriver({ duration, delay, repeat, yoyo })` |
 | Motion driven by the page's scroll | `scrollDriver({ start, end })`, in px |
 | A move at a progress, by hand | `atProgress(0.5)` |
+| A live time, for a test or by hand | `liveAt(ms)` |
+| A clock's ms, whatever kind | `elapsedOf(time.clock)`, `undefined` under scroll |
 
 Time one target to another's moment by computing the ms once, outside `scene`, then starting or ending a span
 there:
@@ -209,6 +212,13 @@ export const scene = (time: Time, events: Events) => ({
   `sim.pose(id, time)` and `sim.events(time)` give the same answer at a time however the player got there.
   `sim.pose` is the move from the body's start: lay each element out where its body starts, centred on it and
   upright. Bodies still for half a second sleep until something fast hits them, so a heap comes to rest.
+- **Bodies from events.** `simulate(world, build, { spawn })` calls `spawn(event, world)` for each event as play
+  reaches it, and `spawn` may add bodies with `world.addBody`, ids new and the same for the same event, such as
+  `` `bit${event.at}-${i}` ``; every click's bodies land in one world and pile on the last ones. Pass the scene's
+  events to every question: `sim.at(time, events)`, `sim.bodies(time, events)` for the ids there, in order. Lay a
+  spawned body's element out centred on the stage's top left corner and move it with `sim.place(id, time, events)`,
+  which gives its place on the stage and opacity 0 until it exists; render a fixed pool of elements, one per id.
+- **State.** `sim.at(time)` gives each body's `x`, `y`, `rotation`, `vx`, `vy` and `spin`, in px, degrees and seconds.
 - **Contacts are events.** `sim.events(time)` holds a `contact` event per body, with the body's id as `target`, for
   every contact that started. Merge it with the page's events and answer with `react`: rigid bodies never squash,
   so a squash on landing is a `recoil` on `contact`.
@@ -304,6 +314,15 @@ export const scene = (time: Time) => {
 To make something ride a hand, add the hand's movement since the catch to its own pose, as `catch-scene.ts` does.
 
 ## Tools
+
+```bash
+npm run motion:review -- catch.html --watch .catch-ball,.catch-hand,.catch-word --to 4800
+```
+
+The one call of the loop: `motion:check`, `motion:read` and `motion:frames` together, each in its own browser at
+once, printing `findings` (empty when clean), `motion` (the moves, the first 40), and the `sheet` path. Frames fall
+at six even times unless `--at` names them; `--action` and `--out` work as below. It exits `1` on any finding.
+The tools after it are for digging.
 
 ```bash
 npm run motion:timeline -- apps/react-demo/src/timing-scene.ts

@@ -169,3 +169,5 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-162 — Events inside the scene — Accepted, 2026-11-08
 - ADR-163 — Injectable physics — Accepted, 2026-11-08; superseded in part by ADR-164 (bodies turn)
 - ADR-164 — Physics bodies turn — Accepted, 2026-11-08
+- ADR-165 — simulate spawns bodies on events — Accepted, 2026-11-08
+- ADR-166 — motion:review and a one-call loop — Accepted, 2026-11-08
