@@ -36,12 +36,14 @@ byte ceiling.
   `@motion5/rig` holds frames, the IK solvers, body topology and the joint vocabulary with no
   dependencies, and code rigs a 2D chain with `buildChain`, `fk` and `ik`. `@motion5/dom` renders poses,
   reveals, strokes and paths and owns every CSS string, its `/engine` holds the DOM patch adapter and
-  browser clock, and `@motion5/three` renders a pose with `applyPose2d`.
+  browser clock, and `@motion5/three` renders a pose with `applyPose2d`. `@motion5/player` plays a code
+  scene on a manual, clock or scroll driver, React reads it with `usePlayer`, `useTarget` and
+  `useValue`, and `/timing.html` is now a code scene held equal to `timing-beat.json`.
 
 ## Next in line
 
-- **The player:** `play(scene, driver)` runs a code scene with no engine, and React's `useTarget` and
-  `useValue` read it (ADR-154).
+- **`@motion5/tools`:** the page tools become a package, and `motion:sample` and `motion:timeline` read a
+  `.ts` scene module with no browser (ADR-155).
 
 ## Open, and not scheduled
 
