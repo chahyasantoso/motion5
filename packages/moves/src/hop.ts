@@ -42,6 +42,7 @@ export const hop = defineMove({
       description: "Start this far left of rest, in px, arriving by the last landing.",
     },
   },
+  inputs: {},
   output: "pose2d",
   extras: { contact: { hits: "number", justHit: "number" } },
   run({ height, bounces, decay, squash, dx }, { progress }) {

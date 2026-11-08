@@ -30,14 +30,14 @@ byte ceiling.
   `Motion.stagger` finishes every track. A `time` trigger takes a `delay`, and `Word` binds text to tracks or to the rows of one `cascade`
   track. `rope`, `trace`, `svgPath` and `layer` bend, draw on and combine moves, `useAnchor` measures a
   param from the page, and the page tools take `--root` or `--url` for any site. `@motion5/moves` holds
-  `Time`, `Pose2d`, `defineMove`, `drop` and `hop` with no dependencies; `movePlugin` turns a move into
-  its plugin, pinned by parity tests. `wipe` publishes `Clip2d`, and `/timing.html` runs a beat built
-  from the three.
+  `Time`, lanes, `Pose2d`, `defineMove`, `combine` and the moves `drop`, `hop`, `wipe`, `trace` and
+  `rope` with no dependencies; `movePlugin` turns a move into its plugin, pinned by parity tests, and a
+  `time` trigger's duration reaches plugins as each track's clock. `/timing.html` runs a beat of moves.
 
 ## Next in line
 
-- **The remaining moves:** `wipe`, `trace`, `rope`, `cascade` and `layer` move to `@motion5/moves`,
-  with inputs and one time module owning stagger and each track's clock (ADR-149, ADR-150).
+- **`@motion5/rig`:** frames, FK, IK and solver vocabulary leave core and plugins for a package with no
+  dependencies, with `buildChain` as the setup code and plugins call (ADR-152).
 
 ## Open, and not scheduled
 

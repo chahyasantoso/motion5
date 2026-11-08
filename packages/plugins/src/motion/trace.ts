@@ -1,8 +1,9 @@
 import { Spec, definePlugin } from "@motion5/core/plugin-api";
+import { trace, window } from "@motion5/moves";
 import { Stroke2d } from "../models/index";
 import { CubicPath2d } from "../models/path";
 import { pathArcLength } from "../path/arc-fraction";
-import { FROM, TO, moveProgress } from "./param";
+import { FROM, TO, numberParam } from "./param";
 
 /** Draws a stroked path on from its start, through a dash as long as the path. */
 export const tracePlugin = definePlugin({
@@ -18,13 +19,16 @@ export const tracePlugin = definePlugin({
     requires: { path: CubicPath2d },
   },
   outputs: { values: Stroke2d },
-  transform({ param, requires: { path } }, { progress }) {
+  transform({ param, requires: { path } }, { progress, clock }) {
+    const time = window(
+      { progress, clock },
+      numberParam(param, "from", 0),
+      numberParam(param, "to", 1),
+    );
+    const { drawn } = trace.run({}, time, {});
     const length = pathArcLength(path);
     return {
-      values: {
-        strokeDasharray: `${length} ${length}`,
-        strokeDashoffset: length * (1 - moveProgress(param, progress)),
-      },
+      values: { strokeDasharray: `${length} ${length}`, strokeDashoffset: length * (1 - drawn) },
     };
   },
 });

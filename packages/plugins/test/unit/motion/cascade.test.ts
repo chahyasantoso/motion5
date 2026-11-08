@@ -7,9 +7,9 @@ import { atProgress, drop, hop } from "@motion5/moves";
 import { spriteCells } from "../../../src/motion/move-plugin";
 
 const dropPose = (param: Readonly<Record<string, unknown>>, local: number) =>
-  spriteCells(drop.run(drop.read(param), atProgress(local)));
+  spriteCells(drop.run(drop.read(param), atProgress(local), {}));
 const hopPose = (param: Readonly<Record<string, unknown>>, local: number) =>
-  spriteCells(hop.run(hop.read(param), atProgress(local)));
+  spriteCells(hop.run(hop.read(param), atProgress(local), {}));
 
 function load(param: Record<string, number | string>) {
   const handle = new Engine({

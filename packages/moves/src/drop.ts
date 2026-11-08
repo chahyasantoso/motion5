@@ -17,6 +17,7 @@ export const drop = defineMove({
       description: "Height lost on landing, as a share; default 0.",
     },
   },
+  inputs: {},
   output: "pose2d",
   extras: {},
   run({ distance, squash }, { progress }) {

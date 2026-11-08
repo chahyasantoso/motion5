@@ -1,4 +1,4 @@
-import { UNTIMED, type Time } from "./time";
+import { UNTIMED, unreachable, type Time } from "./time";
 
 /** Lanes started `stagger` lane-lengths apart; `span` reaches the last finish. */
 export interface Lanes {
@@ -26,4 +26,17 @@ export function laneTime(position: number, index: number, of: Lanes, durationMs?
   if (durationMs === undefined) return { progress, clock: UNTIMED };
   const lengthMs = staggered ? (durationMs * length) / of.span : durationMs;
   return { progress, clock: { kind: "timed", elapsed: progress * lengthMs, length: lengthMs } };
+}
+
+/** Lane `index` run inside `time`: its progress, and a timed clock split among the lanes. */
+export function lane(time: Time, index: number, of: Lanes): Time {
+  const clock = time.clock;
+  switch (clock.kind) {
+    case "timed":
+      return laneTime(time.progress, index, of, clock.length);
+    case "untimed":
+      return laneTime(time.progress, index, of);
+    default:
+      return unreachable(clock);
+  }
 }

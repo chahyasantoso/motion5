@@ -10,18 +10,22 @@ import {
   type ValueSpec,
 } from "@motion5/core/plugin-api";
 import {
-  UNTIMED,
   window,
   type Anchor,
+  type Anchor2d,
   type ExtraFields,
+  type InputField,
+  type InputFields,
   type Move,
   type OptionField,
   type OptionFields,
   type OutputKind,
-  type OutputTypes,
+  type Point2d,
   type Pose2d,
+  type Reveal,
 } from "@motion5/moves";
-import { Sprite2d } from "../models/index";
+import { Clip2d, Sprite2d } from "../models/index";
+import { Anchors2d } from "../models/path";
 import { FROM, TO, numberParam } from "./param";
 
 const POSE_NUMBERS = ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity"] as const;
@@ -88,15 +92,62 @@ function mainModel(kind: OutputKind): Model<unknown, unknown> {
   switch (kind) {
     case "pose2d":
       return Sprite2d;
+    case "reveal":
+      return Clip2d;
+    case "anchors2d":
+      return Anchors2d;
+    case "drawn":
+      throw new TypeError(
+        "A drawn share needs its path's length; its plugin reads the path itself.",
+      );
     default:
       return unreachable(kind);
   }
 }
 
-function mainCells(kind: OutputKind, output: OutputTypes[OutputKind]) {
+function isPose(value: unknown): value is Pose2d {
+  return isFlatRecord(value);
+}
+
+function isReveal(value: unknown): value is Reveal {
+  return (
+    isFlatRecord(value) &&
+    typeof value.x === "number" &&
+    typeof value.y === "number" &&
+    typeof value.radius === "number"
+  );
+}
+
+function isAnchor(value: unknown): value is Anchor2d {
+  return (
+    isFlatRecord(value) &&
+    typeof value.id === "string" &&
+    ["x", "y", "inX", "inY", "outX", "outY"].every((key) => typeof value[key] === "number")
+  );
+}
+
+function isAnchors(value: unknown): value is readonly Anchor2d[] {
+  return Array.isArray(value) && value.every(isAnchor);
+}
+
+/** A move's main output as the cells of its engine model. */
+function mainCells(id: string, kind: OutputKind, output: unknown): Outputs[string] {
+  const refuse = () => new TypeError(`${id}: its ${kind} output has the wrong shape.`);
   switch (kind) {
     case "pose2d":
+      if (!isPose(output)) throw refuse();
       return spriteCells(output);
+    case "reveal":
+      if (!isReveal(output)) throw refuse();
+      return { clipPath: `circle(${output.radius}px at ${output.x}px ${output.y}px)` };
+    case "anchors2d":
+      if (!isAnchors(output)) throw refuse();
+      return output.map(({ id: rowId, x, y, inX, inY, outX, outY }) => ({
+        id: rowId,
+        cells: { x, y, inX, inY, outX, outY },
+      }));
+    case "drawn":
+      throw refuse();
     default:
       return unreachable(kind);
   }
@@ -128,10 +179,52 @@ function extraCells(
   return cells;
 }
 
-/** The engine plugin for a move: its options become param, with `from` and `to` as a window. */
-export function movePlugin<Fs extends OptionFields, O extends OutputKind, E extends ExtraFields>(
-  move: Move<Fs, O, E>,
-) {
+/** The one input a move plugin reads, from the track's own values; a move has at most one. */
+function localInput(id: string, inputs: InputFields): [string, InputField] | undefined {
+  const entries = Object.entries(inputs);
+  if (entries.length > 1)
+    throw new TypeError(`${id}: a move plugin reads at most one input, from the track's values.`);
+  return entries[0];
+}
+
+function inputSpec(field: InputField): ValueSpec {
+  switch (field.kind) {
+    case "points2d":
+      return Spec.table(
+        { x: Spec.number(), y: Spec.number() },
+        field.min === undefined ? {} : { minRows: field.min },
+      );
+    default:
+      return unreachable(field.kind);
+  }
+}
+
+function inputValue(field: InputField, values: unknown): readonly Point2d[] {
+  switch (field.kind) {
+    case "points2d": {
+      const rows: readonly unknown[] = Array.isArray(values) ? values : [];
+      return rows.map((row, index) => {
+        const cells: unknown = isFlatRecord(row) ? row.cells : undefined;
+        const id = isFlatRecord(row) && typeof row.id === "string" ? row.id : `p${index}`;
+        const x = isFlatRecord(cells) && typeof cells.x === "number" ? cells.x : 0;
+        const y = isFlatRecord(cells) && typeof cells.y === "number" ? cells.y : 0;
+        return { id, x, y };
+      });
+    }
+    default:
+      return unreachable(field.kind);
+  }
+}
+
+/** The engine plugin for a move: options become param with a `from` and `to` window, its input the track's values. */
+export function movePlugin<
+  Fs extends OptionFields,
+  Is extends InputFields,
+  O extends OutputKind,
+  E extends ExtraFields,
+>(move: Move<Fs, Is, O, E>) {
+  const input = localInput(move.id, move.inputs);
+  const values = mainModel(move.output);
   return definePlugin({
     id: move.id,
     inputs: {
@@ -140,20 +233,26 @@ export function movePlugin<Fs extends OptionFields, O extends OutputKind, E exte
         from: Spec.number({ optional: true, min: 0, max: 1, description: FROM }),
         to: Spec.number({ optional: true, min: 0, max: 1, description: TO }),
       }),
+      ...(input === undefined ? {} : { values: inputSpec(input[1]) }),
     },
-    outputs: { ...extraSpecs(move.extras), values: mainModel(move.output) },
-    transform({ param }, { progress }) {
+    outputs: { ...extraSpecs(move.extras), values },
+    transform({ param, values: local }, { progress, clock }) {
       const from = numberParam(param, "from", 0);
       const to = numberParam(param, "to", 1);
-      const output = move.run(
-        move.read(param ?? {}),
-        window({ progress, clock: UNTIMED }, from, to),
-      );
-      const outputs: Record<string, Outputs[string]> = { values: mainCells(move.output, output) };
-      const published: Readonly<Record<string, unknown>> = output;
+      const time = window({ progress, clock }, from, to);
+      const inputs = input === undefined ? {} : { [input[0]]: inputValue(input[1], local) };
+      const output: unknown = move.run(move.read(param ?? {}), time, move.readInputs(inputs));
+      const outputs: Record<string, Outputs[string]> = {
+        values: mainCells(move.id, move.output, output),
+      };
       const extras: ExtraFields = move.extras;
       for (const [name, fields] of Object.entries(extras))
-        outputs[name] = extraCells(move.id, name, Object.keys(fields), published[name]);
+        outputs[name] = extraCells(
+          move.id,
+          name,
+          Object.keys(fields),
+          Reflect.get(Object(output), name),
+        );
       return outputs;
     },
   });

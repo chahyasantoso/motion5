@@ -1,8 +1,8 @@
 import { Spec, definePlugin, type FieldSpec, type Value } from "@motion5/core/plugin-api";
+import { drop, hop, lane, lanes, window, type Time } from "@motion5/moves";
 import { Sprites2d } from "../models/index";
-import { atProgress, drop, hop } from "@motion5/moves";
 import { paramFields, spriteCells } from "./move-plugin";
-import { FROM, TO, moveProgress, numberParam, stringParam } from "./param";
+import { FROM, TO, numberParam, stringParam } from "./param";
 
 function optionalFields(
   fields: Readonly<Record<string, FieldSpec>>,
@@ -15,12 +15,12 @@ function optionalFields(
   );
 }
 
-function pose(move: string, param: Value | undefined, local: number) {
+function pose(move: string, param: Value | undefined, time: Time) {
   switch (move) {
     case "hop":
-      return spriteCells(hop.run(hop.read(param ?? {}), atProgress(local)));
+      return spriteCells(hop.run(hop.read(param ?? {}), time, {}));
     case "drop":
-      return spriteCells(drop.run(drop.read(param ?? {}), atProgress(local)));
+      return spriteCells(drop.run(drop.read(param ?? {}), time, {}));
     default:
       throw new TypeError(`cascade has no move "${move}".`);
   }
@@ -50,16 +50,20 @@ export const cascadePlugin = definePlugin({
     }),
   },
   outputs: { values: Sprites2d },
-  transform({ param }, { progress }) {
+  transform({ param }, { progress, clock }) {
     const move = stringParam(param, "move", "drop");
     const count = Math.max(1, Math.floor(numberParam(param, "count", 1)));
-    const stagger = numberParam(param, "stagger", 0.25);
-    const span = 1 + (count - 1) * stagger;
-    const local = moveProgress(param, progress);
-    const rows = Array.from({ length: count }, (_, index) => ({
-      id: String(index),
-      cells: pose(move, param, Math.max(0, Math.min(1, local * span - index * stagger))),
-    }));
-    return { values: rows };
+    const rows = lanes(new Array<number>(count).fill(1), numberParam(param, "stagger", 0.25));
+    const time = window(
+      { progress, clock },
+      numberParam(param, "from", 0),
+      numberParam(param, "to", 1),
+    );
+    return {
+      values: Array.from({ length: count }, (_, index) => ({
+        id: String(index),
+        cells: pose(move, param, lane(time, index, rows)),
+      })),
+    };
   },
 });

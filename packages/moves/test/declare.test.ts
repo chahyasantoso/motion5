@@ -14,6 +14,7 @@ const slide = defineMove({
       description: "Where it starts.",
     },
   },
+  inputs: {},
   output: "pose2d",
   extras: {},
   run(options, time: Time) {
