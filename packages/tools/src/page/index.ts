@@ -6,4 +6,5 @@ export * from "./points";
 export * from "./probe";
 export * from "./read";
 export * from "./render";
+export * from "./review";
 export * from "./curves";

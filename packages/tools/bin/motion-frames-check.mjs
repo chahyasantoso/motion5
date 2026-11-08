@@ -14,6 +14,8 @@ const { probeElements } = await import("../src/page/probe.ts");
 const { DEFAULT_LIMITS, checkMotion } = await import("../src/page/check.ts");
 const { readMotion } = await import("../src/page/read.ts");
 const { renderPage } = await import("../src/page/render.ts");
+const { reviewPage } = await import("../src/page/review.ts");
+const { perform } = await import("../src/page/actions.ts");
 const { DEFAULT_SOURCE, withPage } = await import("../src/page/page.ts");
 
 const ORANGE = [255, 85, 51];
@@ -327,4 +329,27 @@ animation:slide 640ms cubic-bezier(0.33,1,0.68,1) 160ms both}
 } finally {
   rmSync(site, { recursive: true, force: true });
 }
+// One review call gives the check's findings, the moves read, and a sheet, for a clean page.
+const review = await reviewPage({
+  page: "timing.html",
+  ...stage,
+  watch: [".beat-dot", ".beat-glyph"],
+  to: 3000,
+  at: [0, 1500, 3000],
+});
+assert.deepEqual(review.findings, []);
+assert.ok(
+  review.motion.some((line) => line.startsWith(".beat-dot[0] x -1300 → 0")),
+  review.motion[0],
+);
+assert.ok(readFileSync(review.sheet).length > 1000, "review sheet written");
+
+// An action on something the page does not have fails at once, by name.
+const { value: missing } = await withPage({ page: "timing.html", ...stage }, async ({ page }) =>
+  perform(page, { kind: "click", selector: ".nothing-here", at: 0 }).then(
+    () => "clicked",
+    (error) => error.message,
+  ),
+);
+assert.match(missing, /nothing on the page matches \.nothing-here/);
 console.log("motion:frames ok");

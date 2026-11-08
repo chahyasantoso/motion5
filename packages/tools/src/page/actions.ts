@@ -56,8 +56,9 @@ async function place(
   selector: string,
   point?: { readonly x: number; readonly y: number },
 ) {
-  const box = await page.locator(selector).first().boundingBox();
-  if (box === null) throw new Error(`Action: nothing on the page matches ${selector}.`);
+  const box = await (await page.$(selector))?.boundingBox();
+  if (box === undefined || box === null)
+    throw new Error(`Action: nothing on the page matches ${selector}, or it has no box.`);
   return point === undefined
     ? { box, x: box.x + box.width / 2, y: box.y + box.height / 2 }
     : { box, x: box.x + point.x, y: box.y + point.y };
