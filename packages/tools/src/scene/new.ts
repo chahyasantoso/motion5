@@ -15,7 +15,7 @@ function plan(name: string): readonly { readonly template: string; readonly path
     { template: "page.html.template", path: `${name}.html` },
     { template: "main.tsx.template", path: `src/${name}-main.tsx` },
     { template: "component.tsx.template", path: `src/${name}.tsx` },
-    { template: "project.json.template", path: `src/${name}.json` },
+    { template: "scene.ts.template", path: `src/${name}-scene.ts` },
   ];
 }
 
@@ -26,7 +26,7 @@ function componentName(name: string): string {
     .join("");
 }
 
-/** Writes a page, entry, component and starter project for `name` under `root`, or nothing at all. */
+/** Writes a page, entry, component and starter scene for `name` under `root`, or nothing at all. */
 export function scaffold(name: string, root: string): ScaffoldResult {
   if (!NAME.test(name))
     return { kind: "refused", message: `Name "${name}" must be lowercase words joined by "-".` };

@@ -1,7 +1,7 @@
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { scaffold } = await import("../src/engine/new.ts");
+const { scaffold } = await import("../src/scene/new.ts");
 const { DEFAULT_ROOT, fromCaller } = await import("../src/page/page.ts");
 
 const args = process.argv.slice(2);

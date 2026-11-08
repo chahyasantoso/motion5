@@ -3,10 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
-import { validateV5 } from "@motion5/core";
-import { loadBuiltinCatalog } from "../src/engine/catalog";
-import { scaffold } from "../src/engine/new";
-import { sampleProject } from "../src/engine/sample";
+import { pathToFileURL } from "node:url";
+import { readSceneModule, sampleScene, scaffold } from "@motion5/tools/scene";
 
 const roots: string[] = [];
 function root(): string {
@@ -22,19 +20,22 @@ const FILES = [
   "rope-word.html",
   "src/rope-word-main.tsx",
   "src/rope-word.tsx",
-  "src/rope-word.json",
+  "src/rope-word-scene.ts",
 ];
 
 describe("motion:new", () => {
-  it("writes a page, entry, component and project that validates and samples", async () => {
+  it("writes a page, entry, component and a scene that samples", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
-    const project = JSON.parse(readFileSync(join(dir, "src/rope-word.json"), "utf8"));
-    const catalog = await loadBuiltinCatalog();
-    expect(validateV5(project, catalog).kind).toBe("accepted");
-    expect(sampleProject(project, catalog, { kind: "time", ms: [0, 1000] }).kind).toBe("accepted");
+    const module = readSceneModule(
+      await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href),
+    );
+    if ("reason" in module) throw new Error(module.reason);
+    const [start, end] = sampleScene(module, { kind: "time", ms: [0, 800] });
+    expect(start?.targets).toMatchObject({ title: { y: -500 } });
+    expect(end?.targets).toMatchObject({ title: { y: 0 } });
   });
 
   it("names the component after the page and points each file at the next", () => {
@@ -45,7 +46,7 @@ describe("motion:new", () => {
       'import { RopeWord } from "./rope-word";',
     );
     expect(readFileSync(join(dir, "src/rope-word.tsx"), "utf8")).toContain(
-      'import project from "./rope-word.json";',
+      'import { clock, scene } from "./rope-word-scene";',
     );
   });
 
