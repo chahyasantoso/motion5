@@ -3,6 +3,7 @@ node_modules
 dist
 coverage
 package-lock.json
+plan
 
 # Prettier formats code, not prose.
 *.md
