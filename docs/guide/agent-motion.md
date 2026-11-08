@@ -43,12 +43,13 @@ export const clock = () => clockDriver({ duration: durationMs });
 ```
 
 A scene module exports `scene` and `durationMs`; the tools read those two. Keep every number of motion in the scene
-and none in the component. Two worked examples, each held by a test:
+and none in the component. Three worked examples, each held by a test:
 
 | Example | Shows | Served at |
 | ------- | ----- | --------- |
 | `apps/react-demo/src/timing-scene.ts` | moves, lanes, a wipe measured from the page | `timing.html`, by `TimingBeat.tsx` |
 | `apps/react-demo/src/catch-scene.ts` | an IK arm, one target timed to another's moment, eases, a carry | `catch.html`, by `Catch.tsx` |
+| `apps/react-demo/src/splash-scene.ts` | lists of targets, keyframes, rings and droplets timed off one impact, letters rising out of clipped water | `splash.html`, by `splash.tsx` |
 
 Read the one closest to your brief before writing, and copy its patterns, not its colours or type.
 

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>splash</title>
+    <style>
+      body {
+        margin: 0;
+        background: #04141b;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: #04141b;
+      }
+      .sky {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 430px;
+        background:
+          radial-gradient(
+            ellipse 520px 170px at 640px 430px,
+            rgba(240, 178, 122, 0.3),
+            transparent
+          ),
+          linear-gradient(#0a2230, #1b5163 88%, #3b8a94);
+      }
+      .pool {
+        position: absolute;
+        left: 0;
+        top: 430px;
+        width: 1280px;
+        height: 290px;
+        background:
+          linear-gradient(rgba(215, 244, 240, 0.35) 0 1px, transparent 1px),
+          linear-gradient(#27717e, #0e3a4a 40%, #04202b);
+      }
+      .ring,
+      .ripple {
+        position: absolute;
+        opacity: 0;
+      }
+      .ring {
+        left: 60px;
+        top: 410px;
+        width: 1160px;
+        height: 300px;
+      }
+      .ripple {
+        width: 140px;
+        height: 36px;
+      }
+      .ring svg,
+      .ripple svg {
+        display: block;
+      }
+      .ring-line {
+        fill: none;
+        stroke: #e2f8f4;
+        vector-effect: non-scaling-stroke;
+      }
+      .ring-inner {
+        stroke-opacity: 0.55;
+      }
+      .above {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 560px;
+        overflow: hidden;
+      }
+      .below {
+        position: absolute;
+        left: 0;
+        top: 560px;
+        width: 1280px;
+        height: 160px;
+        overflow: hidden;
+        mask-image: linear-gradient(rgba(0, 0, 0, 0.32), transparent 90%);
+      }
+      .mirror {
+        top: -168px;
+        bottom: auto;
+        height: 210px;
+        transform: scaleY(-1);
+        transform-origin: 50% 168px;
+        filter: blur(2.5px);
+      }
+      .slot {
+        display: inline-block;
+      }
+      .word {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -42px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        font:
+          600 210px/1 "Bahnschrift",
+          "Segoe UI Semibold",
+          sans-serif;
+        color: #f2fbf8;
+        text-shadow: 0 0 36px rgba(160, 235, 230, 0.35);
+      }
+      .glyph {
+        display: inline-block;
+      }
+      .droplet {
+        position: absolute;
+        border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+        background: radial-gradient(circle at 35% 30%, #ffffff, #b9ece9 55%, #6fc3cb);
+        opacity: 0;
+      }
+      .drop {
+        position: absolute;
+        left: 619px;
+        top: 494px;
+        width: 42px;
+        height: 66px;
+        background: radial-gradient(circle at 35% 35%, #ffffff, #bdeeee 50%, #6fc3cb);
+        border-radius: 50% 50% 50% 50% / 68% 68% 32% 32%;
+        clip-path: polygon(50% 0, 62% 24%, 100% 62%, 100% 100%, 0 100%, 0 62%, 38% 24%);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/splash-main.tsx"></script>
+  </body>
+</html>
