@@ -13,7 +13,17 @@ export {
 export { ease, type Ease } from "./ease";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
-export { NO_EVENTS, follow, type Events, type FollowOptions, type MotionEvent } from "./events";
+export {
+  NO_EVENTS,
+  follow,
+  mergeEvents,
+  react,
+  type Events,
+  type FollowOptions,
+  type MotionEvent,
+  type ReactionKind,
+  type ReactOptions,
+} from "./events";
 export { lane, laneTime, lanes, type Lanes } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";

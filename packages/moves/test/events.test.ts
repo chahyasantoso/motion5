@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, follow, liveAt, span, type Events } from "@motion5/moves";
+import { UNTIMED, follow, liveAt, mergeEvents, react, span, type Events } from "@motion5/moves";
 
 const lift = follow({ start: 0, on: { enter: -8, leave: 0 }, target: "card" });
 const hover = (enter: number, leave?: number): Events => [
@@ -63,5 +63,39 @@ describe("a spring at rest", () => {
     expect(at(3000)).toBe(-8);
     expect(at(3016)).toBe(-8);
     expect(at(100)).not.toBe(-8);
+  });
+});
+
+describe("react", () => {
+  const land = (...at: number[]): Events =>
+    at.map((ms) => ({ name: "land", at: ms, target: "ball" }));
+  const at = (ms: number) => ({
+    progress: 0,
+    clock: { kind: "timed" as const, elapsed: ms, length: 5000 },
+  });
+
+  it("is exactly 0 before its event and once the response has died", () => {
+    const recoil = react({ on: ["land"], kind: "recoil", amplitude: 10 });
+    expect(recoil(at(999), land(1000))).toBe(0);
+    expect(recoil(at(1000), land(1000))).toBeCloseTo(10, 9);
+    expect(recoil(at(4000), land(1000))).toBe(0);
+  });
+
+  it("starts each kind where it should: recoil full, wobble and shake at rest, flash full and fading", () => {
+    const start = (kind: "recoil" | "wobble" | "flash" | "shake") =>
+      react({ on: ["land"], kind, amplitude: 1 })(at(1000), land(1000));
+    expect([start("recoil"), start("wobble"), start("flash")]).toEqual([1, 0, 1]);
+    expect(Math.abs(start("shake"))).toBeLessThan(1);
+    const flash = react({ on: ["land"], kind: "flash", amplitude: 1 });
+    expect(flash(at(1100), land(1000))).toBeLessThan(flash(at(1050), land(1000)));
+  });
+
+  it("adds the responses to several events, and answers only its names and target", () => {
+    const wobble = react({ on: ["land"], target: "ball", kind: "wobble", amplitude: 1 });
+    const one = wobble(at(1100), land(1000));
+    const other = wobble(at(1100), land(1050));
+    expect(wobble(at(1100), mergeEvents(land(1050), land(1000)))).toBeCloseTo(one + other, 9);
+    expect(wobble(at(1100), [{ name: "land", at: 1000, target: "cup" }])).toBe(0);
+    expect(wobble(at(1100), [{ name: "jump", at: 1000, target: "ball" }])).toBe(0);
   });
 });

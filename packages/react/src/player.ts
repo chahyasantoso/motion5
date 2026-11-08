@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useSyncExternalStore, type RefCallback } from "react";
 import { applyPose, type EventDriver, type RenderTarget } from "@motion5/dom";
-import type { Pose2d } from "@motion5/moves";
+import { NO_EVENTS, type Events, type Pose2d } from "@motion5/moves";
 import { play, type Driver, type Player, type Scene } from "@motion5/player";
 
 /** A driver a component owns, released when the component leaves. */
@@ -11,22 +11,23 @@ export interface Playing<T extends object, D extends OwnedDriver> {
   readonly driver: D;
 }
 
-/** Plays `scene` on a driver while the component stays; keep both arguments stable across renders. */
+/** Plays `scene` on a driver, with its `cues`, while the component stays; keep every argument stable across renders. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Scene<T>,
   createDriver: () => D,
+  cues: Events = NO_EVENTS,
 ): Playing<T, D> | undefined {
   const [playing, setPlaying] = useState<Playing<T, D>>();
   useEffect(() => {
     const driver = createDriver();
-    const player = play(scene, driver);
+    const player = play(scene, driver, { cues });
     setPlaying({ player, driver });
     return () => {
       player.dispose();
       driver.dispose?.();
       setPlaying(undefined);
     };
-  }, [scene, createDriver]);
+  }, [scene, createDriver, cues]);
   return playing;
 }
 

@@ -1,4 +1,4 @@
-import { elapsedOf, type Time } from "./time";
+import { elapsedOf, unreachable, type Time } from "./time";
 
 /** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where. */
 export interface MotionEvent {
@@ -102,5 +102,73 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
     return Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest
       ? goal
       : goal + moved.offset;
+  };
+}
+
+/** Several event lists as one, oldest first; a scene's own cues joined with the page's events. */
+export function mergeEvents(...lists: readonly Events[]): Events {
+  return lists.flat().sort((a, b) => a.at - b.at);
+}
+
+/** How a response to one event moves: from a full start, from rest, as a fade, or as a shake. */
+export type ReactionKind = "recoil" | "wobble" | "flash" | "shake";
+
+export interface ReactOptions {
+  /** The event names this answers. */
+  readonly on: readonly string[];
+  readonly target?: string;
+  readonly kind: ReactionKind;
+  /** The response's size at its largest. */
+  readonly amplitude: number;
+  /** How fast it dies away, per second; default 6. */
+  readonly decay?: number;
+  /** Swings a second, for `recoil`, `wobble` and `shake`; default 4. */
+  readonly frequency?: number;
+}
+
+/** One response `seconds` after its event, the `index`th it answered, before its amplitude. */
+function shape(
+  kind: ReactionKind,
+  seconds: number,
+  decay: number,
+  frequency: number,
+  index: number,
+): number {
+  const fade = Math.exp(-decay * seconds);
+  const turn = 2 * Math.PI * frequency * seconds;
+  switch (kind) {
+    case "recoil":
+      return fade * Math.cos(turn);
+    case "wobble":
+      return fade * Math.sin(turn);
+    case "flash":
+      return fade;
+    case "shake":
+      return fade * (0.6 * Math.sin(turn + index * 2.1) + 0.4 * Math.sin(2.7 * turn + index * 4.3));
+    default:
+      return unreachable(kind);
+  }
+}
+
+/** A damped answer to each past named event, added together; exactly 0 before the first and once all have died. */
+export function react(options: ReactOptions): (time: Time, events: Events) => number {
+  const decay = options.decay ?? 6;
+  const frequency = options.frequency ?? 4;
+  if (!(decay > 0)) throw new RangeError("react: decay must be above 0.");
+  const quiet = Math.log(1000) / decay;
+  return (time, events) => {
+    const now = elapsedOf(time.clock);
+    if (now === undefined) return 0;
+    let total = 0;
+    let index = 0;
+    for (const event of events) {
+      if (!options.on.includes(event.name)) continue;
+      if (options.target !== undefined && event.target !== options.target) continue;
+      const seconds = (now - event.at) / 1000;
+      if (seconds >= 0 && seconds < quiet)
+        total += options.amplitude * shape(options.kind, seconds, decay, frequency, index);
+      index += 1;
+    }
+    return total;
   };
 }

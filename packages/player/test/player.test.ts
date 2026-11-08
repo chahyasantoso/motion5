@@ -86,3 +86,51 @@ describe("a scene of events", () => {
     );
   });
 });
+
+describe("cues", () => {
+  const cues = [{ name: "land", at: 500, target: "ball" }];
+
+  it("reach the scene merged with the page's events, oldest first", () => {
+    const driver = {
+      ...manualDriver({ durationMs: 1000 }),
+      events: () => [{ name: "enter", at: 200 }],
+    };
+    const player = play((_time, events) => ({ names: events.map(({ name }) => name) }), driver, {
+      cues,
+    });
+    expect(player.values.names).toEqual(["enter", "land"]);
+  });
+
+  it("call on() once as forward play passes them, and never on a seek back", () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play(() => ({}), driver, { cues });
+    const heard: number[] = [];
+    player.on("land", (event) => heard.push(event.at));
+    driver.seek(0.4);
+    expect(heard).toEqual([]);
+    driver.seek(0.6);
+    expect(heard).toEqual([500]);
+    driver.seek(0.1);
+    driver.seek(0.3);
+    expect(heard).toEqual([500]);
+    driver.seek(0.9);
+    expect(heard).toEqual([500, 500]);
+  });
+});
+
+describe("seekMs", () => {
+  it("holds progress at 1 past the length while the clock's ms runs on", () => {
+    const driver = manualDriver({ durationMs: 400 });
+    driver.seekMs(100);
+    expect(driver.now()).toEqual({
+      progress: 0.25,
+      clock: { kind: "timed", elapsed: 100, length: 400 },
+    });
+    driver.seekMs(1000);
+    expect(driver.now()).toEqual({
+      progress: 1,
+      clock: { kind: "timed", elapsed: 1000, length: 400 },
+    });
+    expect(() => manualDriver().seekMs(10)).toThrow(/seekMs/);
+  });
+});
