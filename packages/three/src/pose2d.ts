@@ -1,0 +1,56 @@
+import type { Anchor, Pose2d } from "@motion5/moves";
+import { BufferGeometry, Vector3, type Object3D } from "three";
+
+/** The anchor's point on the object's own geometry box, in its local space, y up; the origin without geometry. */
+function pivotOf(object: Object3D, anchor: Anchor): Vector3 {
+  const geometry: unknown = Reflect.get(object, "geometry");
+  if (!(geometry instanceof BufferGeometry)) return new Vector3();
+  if (geometry.boundingBox === null) geometry.computeBoundingBox();
+  const box = geometry.boundingBox;
+  if (box === null) return new Vector3();
+  const centre = box.getCenter(new Vector3());
+  switch (anchor) {
+    case "center":
+      return centre;
+    case "bottom":
+      return new Vector3(centre.x, box.min.y, 0);
+    case "top":
+      return new Vector3(centre.x, box.max.y, 0);
+    case "left":
+      return new Vector3(box.min.x, centre.y, 0);
+    case "right":
+      return new Vector3(box.max.x, centre.y, 0);
+    default: {
+      const unknown: never = anchor;
+      throw new TypeError(`Unknown anchor: ${JSON.stringify(unknown)}`);
+    }
+  }
+}
+
+/** Writes a 2D pose on an object: page y points down, so y and rotation flip; the anchor stays still. */
+export function applyPose2d(
+  object: Object3D,
+  pose: Pose2d,
+  rest: { readonly x: number; readonly y: number } = { x: 0, y: 0 },
+): void {
+  const scaleX = (pose.scale ?? 1) * (pose.scaleX ?? 1);
+  const scaleY = (pose.scale ?? 1) * (pose.scaleY ?? 1);
+  const turn = -(((pose.rotation ?? 0) % 360) * Math.PI) / 180;
+  object.scale.set(scaleX, scaleY, object.scale.z);
+  object.rotation.z = turn;
+  const pivot = pivotOf(object, pose.anchor ?? "center");
+  const moved = pivot.clone().multiply(new Vector3(scaleX, scaleY, 1));
+  moved.applyAxisAngle(new Vector3(0, 0, 1), turn);
+  object.position.set(
+    rest.x + (pose.x ?? 0) + pivot.x - moved.x,
+    rest.y - (pose.y ?? 0) + pivot.y - moved.y,
+    object.position.z,
+  );
+  if (pose.opacity !== undefined) {
+    const material: unknown = Reflect.get(object, "material");
+    if (material !== null && typeof material === "object" && "opacity" in material) {
+      Reflect.set(material, "opacity", pose.opacity);
+      Reflect.set(material, "transparent", true);
+    }
+  }
+}

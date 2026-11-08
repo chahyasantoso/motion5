@@ -17,3 +17,19 @@ export type Pose2d = {
 export function squashed(squash: number, weight: number): Pose2d {
   return { scaleX: 1 + 0.9 * squash * weight, scaleY: 1 - squash * weight, anchor: "bottom" };
 }
+
+const FIELDS: Record<keyof Pose2d, true> = {
+  x: true,
+  y: true,
+  rotation: true,
+  scale: true,
+  scaleX: true,
+  scaleY: true,
+  opacity: true,
+  anchor: true,
+};
+
+/** Every field a pose can carry; TypeScript refuses this list when `Pose2d` gains a field it lacks. */
+export const POSE_2D_FIELDS: readonly (keyof Pose2d)[] = Object.freeze(
+  Object.keys(FIELDS).filter((key): key is keyof Pose2d => key in FIELDS),
+);

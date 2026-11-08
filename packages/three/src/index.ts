@@ -118,3 +118,4 @@ export function createObject3dPatchAdapter(
     },
   };
 }
+export { applyPose2d } from "./pose2d";
