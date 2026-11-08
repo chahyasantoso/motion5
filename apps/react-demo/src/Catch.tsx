@@ -46,7 +46,7 @@ export const Catch: React.FC = () => {
       <div className="catch-joint catch-shoulder" />
       <div ref={elbow} className="catch-joint catch-elbow" />
       <div ref={ball} className="catch-ball" />
-      <div ref={hand} className="catch-joint catch-hand" />
+      <div ref={hand} className="catch-joint catch-hand" data-motion-touch=".catch-ball" />
       <div className="catch-word" aria-label={WORD}>
         {[...WORD].map((glyph, index) => (
           <Glyph key={index} player={player} index={index} glyph={glyph} />
