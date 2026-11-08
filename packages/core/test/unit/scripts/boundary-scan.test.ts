@@ -593,6 +593,23 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("refuses any import that leaves the rig package", async () => {
+    const violations = await withTree(
+      {
+        "packages/rig/package.json": await readFile(
+          join(root, "packages", "rig", "package.json"),
+          "utf8",
+        ),
+        "packages/rig/src/frame.ts": 'import { a } from "./sibling";\nexport const b = a;',
+        "packages/rig/src/sibling.ts": "export const a = 1;",
+        "packages/rig/src/core.ts":
+          'import { unreachable } from "@motion5/core/plugin-api";\nexport const u = unreachable;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual(["packages/rig/src/core.ts: rig import outside the rig package"]);
+  });
+
   it("TH-203a refuses a core import from a plugin domain layer", async () => {
     const violations = await withTree(
       {

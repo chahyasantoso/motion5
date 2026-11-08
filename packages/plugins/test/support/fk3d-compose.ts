@@ -1,8 +1,8 @@
-import { composeWorld3d, type WorldFrame3d } from "../../src/frame/frame3d";
-import { segmentExtent } from "../../src/frame/frame";
-import { canonicalChain } from "../../src/ik/shared/topology";
-import type { ChainMember3d } from "../../src/ik/solve3d/chain";
-import type { SolveResult3d } from "../../src/ik/solve3d/result";
+import { composeWorld3d, type WorldFrame3d } from "@motion5/rig/internal";
+import { segmentExtent } from "@motion5/rig/internal";
+import { canonicalChain } from "@motion5/rig/internal";
+import type { ChainMember3d } from "@motion5/rig/internal";
+import type { SolveResult3d } from "@motion5/rig/internal";
 
 /**
  * Every member's published world frame, composed from a 3D solve's local triples by the same frame

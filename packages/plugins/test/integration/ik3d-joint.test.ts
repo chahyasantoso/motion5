@@ -6,7 +6,7 @@ import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import type { Patch } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { FABRIK_TOLERANCE } from "../../src/ik/fabrik/fabrik";
+import { FABRIK_TOLERANCE } from "@motion5/rig/internal";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { BODY_3D_SPEC } from "../support/aggregate-topology";
@@ -20,7 +20,7 @@ import {
   twistAbout3d,
   type Matrix3,
   type Vec3,
-} from "../../src/frame/frame3d";
+} from "@motion5/rig/internal";
 import { testModels } from "../../../core/test/support/test-models";
 
 type Values = Readonly<Record<string, unknown>>;

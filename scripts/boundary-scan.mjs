@@ -546,7 +546,7 @@ async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
 function checkPluginSource(source, file, specifiers, violations) {
   const allowed = specifiers.every((specifier) => {
     if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
-    if (specifier === "@motion5/moves") return true;
+    if (specifier === "@motion5/moves" || specifier === "@motion5/rig") return true;
     if (!specifier.startsWith(".")) return false;
     const target = posix.normalize(posix.join(posix.dirname(file), specifier));
     return target.startsWith("packages/plugins/src/");
@@ -561,14 +561,15 @@ function checkPluginSource(source, file, specifiers, violations) {
     violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
-/** Moves import nothing but their own package, so code can call them with no engine loaded. */
-function checkMovesSource(file, specifiers, violations) {
+/** Moves and rig import nothing but their own package, so code can call them with no engine loaded. */
+function checkSelfContained(workspace, file, specifiers, violations) {
   const inside = specifiers.every(
     (specifier) =>
       specifier.startsWith(".") &&
-      posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith("packages/moves/src/"),
+      posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(`${workspace}/src/`),
   );
-  if (!inside) violations.push(`${file}: moves import outside the moves package`);
+  const name = workspace.slice("packages/".length);
+  if (!inside) violations.push(`${file}: ${name} import outside the ${name} package`);
 }
 /**
  * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
@@ -596,7 +597,8 @@ export async function scan(scanRoot = root) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
-      if (workspace === "packages/moves") checkMovesSource(file, specifiers, violations);
+      if (workspace === "packages/moves" || workspace === "packages/rig")
+        checkSelfContained(workspace, file, specifiers, violations);
       if (workspace === "packages/plugins") {
         checkPluginSource(source, file, specifiers, violations);
         if (

@@ -8,7 +8,7 @@ import {
   readPivotOffset,
   segmentExtent,
   type WorldFrame,
-} from "../frame/frame";
+} from "@motion5/rig";
 import { type SolvedRow } from "../models/solved/domain";
 import { Body2d, Point2d, Points2d, Solved2d } from "../models/index";
 import { nonEmptyDiagnostics } from "../shared/prepare-diagnostics";

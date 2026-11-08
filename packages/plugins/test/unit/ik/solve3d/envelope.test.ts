@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { FABRIK_TOLERANCE } from "../../../../src/ik/fabrik/fabrik";
-import { fabrikIterationCap } from "../../../../src/ik/fabrik/cap";
-import { canonicalChain } from "../../../../src/ik/shared/topology";
-import { constrains } from "../../../../src/ik/solve3d/constraint";
-import { chainShape3d, solveChain3d } from "../../../../src/ik/solve3d/solve";
-import type { SolveResult3d } from "../../../../src/ik/solve3d/result";
+import { FABRIK_TOLERANCE } from "@motion5/rig/internal";
+import { fabrikIterationCap } from "@motion5/rig/internal";
+import { canonicalChain } from "@motion5/rig/internal";
+import { constrains } from "@motion5/rig/internal";
+import { chainShape3d, solveChain3d } from "@motion5/rig/internal";
+import type { SolveResult3d } from "@motion5/rig/internal";
 import { composeChain3d, frameDistance3d } from "../../../support/fk3d-compose";
 import { envelope3dScenarios, type Envelope3dScenario } from "../../../support/ik3d-envelope";
 import { iterationsOf } from "../../../support/solve-quality";

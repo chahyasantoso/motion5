@@ -49,16 +49,11 @@ Public: `.`
 
 ## packages/plugins
 
-Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./frame3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/draw`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
+Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/draw`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
 
 - `src/fk/`: FK plugins, 2D and 3D
-- `src/frame/`: world frame readers, 2D and 3D
 - `src/host/`: catalog, loader, labels, runner
 - `src/ik/`: IK plugins, 2D and 3D
-- `src/ik/fabrik/`: FABRIK solver
-- `src/ik/shared/`: chains, goals, constraints, analytic solve
-- `src/ik/solve2d/`: 2D solve
-- `src/ik/solve3d/`: 3D solve, orient, recovery
 - `src/models/`: public Models and field specs
 - `src/models/body/`: body Model rules
 - `src/models/goals/`: goals Model rules
@@ -75,6 +70,17 @@ Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./f
 Public: `.`
 
 - `src/`: React patch and DOM binding hooks
+
+## packages/rig
+
+Public: `.`, `./internal`
+
+- `src/`: joint vocabulary
+- `src/frame/`: world frames
+- `src/ik/fabrik/`: FABRIK
+- `src/ik/shared/`: chains, goals, limits
+- `src/ik/solve2d/`: 2D solve
+- `src/ik/solve3d/`: 3D solve
 
 ## packages/three
 

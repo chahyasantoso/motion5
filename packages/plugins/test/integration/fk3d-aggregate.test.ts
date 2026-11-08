@@ -16,8 +16,8 @@ const Pole3d = defineModel({
 });
 
 const composer = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/frame/frame3d", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/frame/frame3d")>();
+vi.mock("@motion5/rig", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@motion5/rig")>();
   return {
     ...original,
     composeWorld3d: (...args: Parameters<typeof original.composeWorld3d>) => {

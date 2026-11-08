@@ -1,7 +1,7 @@
 import type { Patch } from "@motion5/core";
 // Render decision and never sink belong to core; read through the same internal channel.
 import { patchRender, selectRecord, unreachable } from "@motion5/core/internal";
-import { readFrame3d } from "@motion5/plugins/frame3d";
+import { readFrame3d } from "@motion5/rig";
 import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } from "three";
 
 /** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */

@@ -5,7 +5,8 @@
   "type": "module",
   "sideEffects": false,
   "dependencies": {
-    "@motion5/moves": "0.0.0"
+    "@motion5/moves": "0.0.0",
+    "@motion5/rig": "0.0.0"
   },
   "peerDependencies": {
     "@motion5/core": "0.0.0"
@@ -37,10 +38,6 @@
     "./ik3d": {
       "types": "./dist/ik/ik3d.d.ts",
       "default": "./dist/ik/ik3d.js"
-    },
-    "./frame3d": {
-      "types": "./dist/frame/frame3d.d.ts",
-      "default": "./dist/frame/frame3d.js"
     },
     "./loader": {
       "types": "./dist/host/loader.d.ts",

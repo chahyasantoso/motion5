@@ -13,7 +13,7 @@ import {
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
-} from "../frame/frame3d";
+} from "@motion5/rig";
 import { PoseLabel } from "../models/index";
 
 const POSE: ValueSpec = Spec.table({

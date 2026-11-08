@@ -84,6 +84,7 @@ async function withEmitted<T>(
             "@motion5/core": ["packages/core/src/index.ts"],
             "@motion5/core/*": ["packages/core/src/*"],
             "@motion5/moves": ["packages/moves/src/index.ts"],
+            "@motion5/rig": ["packages/rig/src/index.ts"],
           },
         },
         files: sources.map((source) => join(root, source)),
@@ -124,9 +125,11 @@ async function closureOf(
             ? [join(out, "core", "src", "index.d.ts")]
             : specifier === "@motion5/moves"
               ? [join(out, "moves", "src", "index.d.ts")]
-              : specifier.startsWith(".")
-                ? declarationCandidates(current, specifier)
-                : [];
+              : specifier === "@motion5/rig"
+                ? [join(out, "rig", "src", "index.d.ts")]
+                : specifier.startsWith(".")
+                  ? declarationCandidates(current, specifier)
+                  : [];
       if (candidates.length === 0) {
         unresolved.push(`${shown} -> ${specifier}`);
         continue;

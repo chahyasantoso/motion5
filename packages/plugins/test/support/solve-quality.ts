@@ -1,5 +1,5 @@
 import { unreachable } from "@motion5/core/plugin-api";
-import type { SolveQuality } from "../../src/ik/shared/result";
+import type { SolveQuality } from "@motion5/rig/internal";
 
 /**
  * The iterations a solve's quality states, or `undefined` for a closed-form kind, read by an

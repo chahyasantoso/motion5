@@ -15,8 +15,8 @@ const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
 export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
-const SUPPORT_SUBPATHS = ["frame3d", "loader", "labels", "models", "pose-classify", "runner"];
-/** R2: support modules other than `frame3d` publish exactly these runtime names. */
+const SUPPORT_SUBPATHS = ["loader", "labels", "models", "pose-classify", "runner"];
+/** R2: support modules publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
   loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
   labels: ["onLabelChange", "readLabel"],
@@ -114,9 +114,7 @@ describe("public plugin subpaths", () => {
         expect((module[exportName] as { readonly id: string }).id).toBe(name);
         continue;
       }
-      // The unchanged complete frame utility module is public, not only its frame reader.
-      expect(name).toBe("frame3d");
-      expect(typeof module.readFrame3d).toBe("function");
+      throw new Error(`${name} is neither a support module nor a definition.`);
     }
     // Read through the one source-reading owner, as source-region-anchors.test.ts requires.
     const index = code(new URL("src/index.ts", CORE));

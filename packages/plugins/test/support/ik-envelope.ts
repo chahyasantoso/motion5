@@ -1,9 +1,9 @@
 import { Body2d, Goals2d, Point2d } from "../../src/models/index";
 import type { ProjectDefinition } from "@motion5/core";
-import type { WorldFrame } from "../../src/frame/frame";
-import type { JointRange } from "../../src/ik/shared/constraint";
-import type { SolveMember } from "../../src/ik/shared/member";
-import type { ChainShape } from "../../src/ik/solve2d/solve";
+import type { WorldFrame } from "@motion5/rig/internal";
+import type { JointRange } from "@motion5/rig/internal";
+import type { SolveMember } from "@motion5/rig/internal";
+import type { ChainShape } from "@motion5/rig/internal";
 
 /**
  * The rigs the 2D IK envelope is measured on, built once for the two readers that need them.

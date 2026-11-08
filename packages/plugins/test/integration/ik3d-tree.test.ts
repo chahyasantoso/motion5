@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { Patch, ProjectDefinition } from "@motion5/core";
 import { Engine, PluginCatalog, createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { FABRIK_TOLERANCE } from "../../src/ik/fabrik/fabrik";
+import { FABRIK_TOLERANCE } from "@motion5/rig/internal";
 import { fk3dPlugin } from "@motion5/plugins/fk3d";
-import { readFrame3d } from "../../src/frame/frame3d";
+import { readFrame3d } from "@motion5/rig/internal";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { testModels } from "../../../core/test/support/test-models";
 

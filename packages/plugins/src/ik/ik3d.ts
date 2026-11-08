@@ -7,18 +7,18 @@ import {
   type ValueSpec,
 } from "@motion5/core/plugin-api";
 import { EXTERNAL_BASE, type BodyStructure } from "../models/body/domain";
-import { readNumber } from "../frame/frame";
-import { readEuler3d, readFrame3d, readPivotOffset3d } from "../frame/frame3d";
-import type { Euler3d } from "../frame/frame3d";
-import { goalDiagnostics } from "./shared/goal-check";
+import { readNumber } from "@motion5/rig";
+import { readEuler3d, readFrame3d, readPivotOffset3d } from "@motion5/rig";
+import type { Euler3d } from "@motion5/rig";
+import { goalDiagnostics } from "./goal-check";
 import type { GoalsStructure } from "../models/goals/domain";
-import { readInfluence } from "./shared/goal";
-import { inspectSolve } from "./shared/result";
-import { readPole3d } from "./solve3d/analytic";
-import { constrains, readJointLimit3d } from "./solve3d/constraint";
-import { readOrient } from "./solve3d/chain";
-import type { ChainMember3d } from "./solve3d/chain";
-import { solveChain3d } from "./solve3d/solve";
+import { readInfluence } from "@motion5/rig";
+import { inspectSolve } from "@motion5/rig";
+import { readPole3d } from "@motion5/rig";
+import { constrains, readJointLimit3d } from "@motion5/rig";
+import { readOrient } from "@motion5/rig";
+import type { ChainMember3d } from "@motion5/rig";
+import { solveChain3d } from "@motion5/rig";
 import {
   Body3d,
   Goals3d,

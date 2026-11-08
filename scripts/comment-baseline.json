@@ -328,10 +328,6 @@
     "count": 9
   },
   {
-    "path": "packages/plugins/src/ik/solve3d/result.ts",
-    "count": 6
-  },
-  {
     "path": "packages/plugins/src/host/labels.ts",
     "count": 4
   },
@@ -350,6 +346,10 @@
   {
     "path": "packages/react/src/dom-patch.ts",
     "count": 3
+  },
+  {
+    "path": "packages/rig/src/ik/solve3d/result.ts",
+    "count": 6
   },
   {
     "path": "packages/three/src/skeleton-driver.ts",

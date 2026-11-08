@@ -16,21 +16,21 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../../src/frame/frame3d";
-import { solveChain } from "../../../../src/ik/solve2d/solve";
-import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "../../../../src/ik/solve3d/analytic";
+} from "@motion5/rig/internal";
+import { solveChain } from "@motion5/rig/internal";
+import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "@motion5/rig/internal";
 import {
   legalRetryReach3d,
   legalStarts3d,
   place3d,
   solveTree3dAttempt,
-} from "../../../../src/ik/solve3d/fabrik";
-import { solveSerialRecovery3d } from "../../../../src/ik/solve3d/serial-recovery";
-import { FABRIK_TOLERANCE } from "../../../../src/ik/fabrik/fabrik";
-import { chainShape3d, solveChain3d } from "../../../../src/ik/solve3d/solve";
-import { limitLocal3d } from "../../../../src/ik/solve3d/constraint";
-import type { ChainMember3d } from "../../../../src/ik/solve3d/chain";
-import type { SolveResult3d } from "../../../../src/ik/solve3d/result";
+} from "@motion5/rig/internal";
+import { solveSerialRecovery3d } from "@motion5/rig/internal";
+import { FABRIK_TOLERANCE } from "@motion5/rig/internal";
+import { chainShape3d, solveChain3d } from "@motion5/rig/internal";
+import { limitLocal3d } from "@motion5/rig/internal";
+import type { ChainMember3d } from "@motion5/rig/internal";
+import type { SolveResult3d } from "@motion5/rig/internal";
 import { composeChain3d, frameDistance3d } from "../../../support/fk3d-compose";
 
 const ROOT = readFrame3d({ x: 0, y: 0, z: 0 });

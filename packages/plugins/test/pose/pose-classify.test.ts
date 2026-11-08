@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createManualClock, Engine, PluginCatalog, type ProjectHandle } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import type { ImmutableRecord } from "@motion5/core/plugin-api";
-import { type Euler3d } from "../../src/frame/frame3d";
+import { type Euler3d } from "@motion5/rig/internal";
 import { onLabelChange } from "../../src/host/labels";
 import {
   createPoseClassifyPlugin,

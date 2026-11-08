@@ -19,24 +19,19 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../../src/frame/frame3d";
-import {
-  FREE_JOINT,
-  atBound,
-  limitRotation,
-  readAngleRange,
-} from "../../../../src/ik/shared/constraint";
+} from "@motion5/rig/internal";
+import { FREE_JOINT, atBound, limitRotation, readAngleRange } from "@motion5/rig/internal";
 import {
   FREE_JOINT3D,
   constrains,
   readJointLimit3d,
   limitLocal3d,
   type JointLimit3d,
-} from "../../../../src/ik/solve3d/constraint";
-import { readChainMembers3d, type ChainMember3d } from "../../../../src/ik/solve3d/chain";
-import { chainShape3d, solveChain3d } from "../../../../src/ik/solve3d/solve";
-import { solveChain } from "../../../../src/ik/solve2d/solve";
-import type { SolveMember } from "../../../../src/ik/shared/member";
+} from "@motion5/rig/internal";
+import { readChainMembers3d, type ChainMember3d } from "@motion5/rig/internal";
+import { chainShape3d, solveChain3d } from "@motion5/rig/internal";
+import { solveChain } from "@motion5/rig/internal";
+import type { SolveMember } from "@motion5/rig/internal";
 import { composeChain3d, frameDistance3d } from "../../../support/fk3d-compose";
 
 const MATRIX_TOLERANCE = 1e-9;

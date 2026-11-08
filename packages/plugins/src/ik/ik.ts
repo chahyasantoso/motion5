@@ -7,14 +7,14 @@ import {
   type ValueSpec,
 } from "@motion5/core/plugin-api";
 import { EXTERNAL_BASE, type BodyStructure } from "../models/body/domain";
-import { readFrame, readNumber, readPivotOffset } from "../frame/frame";
-import { goalDiagnostics } from "./shared/goal-check";
+import { readFrame, readNumber, readPivotOffset } from "@motion5/rig";
+import { goalDiagnostics } from "./goal-check";
 import type { GoalsStructure } from "../models/goals/domain";
-import { readJointLimit } from "./shared/constraint";
-import { readInfluence } from "./shared/goal";
-import { inspectSolve } from "./shared/result";
-import { solveChain } from "./solve2d/solve";
-import type { SolveMember } from "./shared/member";
+import { readJointLimit } from "@motion5/rig";
+import { readInfluence } from "@motion5/rig";
+import { inspectSolve } from "@motion5/rig";
+import { solveChain } from "@motion5/rig";
+import type { SolveMember } from "@motion5/rig";
 import {
   Body2d,
   Goals2d,

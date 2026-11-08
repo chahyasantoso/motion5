@@ -8,10 +8,16 @@ if (!process.stdout.isTTY) process.env.NO_COLOR ??= "1";
 
 export default defineConfig({
   resolve: {
-    alias: [...workspaceSourceAliases("moves", "plugins", "core", "react")],
+    alias: [...workspaceSourceAliases("moves", "rig", "plugins", "core", "react")],
   },
   optimizeDeps: {
-    exclude: ["@motion5/core", "@motion5/react", "@motion5/plugins", "@motion5/moves"],
+    exclude: [
+      "@motion5/core",
+      "@motion5/react",
+      "@motion5/plugins",
+      "@motion5/moves",
+      "@motion5/rig",
+    ],
   },
   test: {
     // The quiet reporter: a green run states its counts, and a red one still prints every

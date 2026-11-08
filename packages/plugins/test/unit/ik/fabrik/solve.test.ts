@@ -1,23 +1,19 @@
 import { describe, expect, it } from "vitest";
-import {
-  FABRIK_TOLERANCE,
-  solveFabrik,
-  solveFabrikAttempt,
-} from "../../../../src/ik/fabrik/fabrik";
-import type { FabrikPoint } from "../../../../src/ik/fabrik/solution";
-import { arcHalfAngle, seedArc } from "../../../../src/ik/fabrik/seed";
-import type { WorldFrame } from "../../../../src/frame/frame";
-import type { IterativeQuality } from "../../../../src/ik/shared/result";
-import type { SolveMember } from "../../../../src/ik/shared/member";
-import { outranks } from "../../../../src/ik/fabrik/select";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "@motion5/rig/internal";
+import type { FabrikPoint } from "@motion5/rig/internal";
+import { arcHalfAngle, seedArc } from "@motion5/rig/internal";
+import type { WorldFrame } from "@motion5/rig/internal";
+import type { IterativeQuality } from "@motion5/rig/internal";
+import type { SolveMember } from "@motion5/rig/internal";
+import { outranks } from "@motion5/rig/internal";
 import {
   FABRIK_ITERATIONS_PER_DEPTH,
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
   fabrikIterationCap,
-} from "../../../../src/ik/fabrik/cap";
+} from "@motion5/rig/internal";
 import { envelopeScenarios, type EnvelopeRig } from "../../../support/ik-envelope";
-import { solveTwoBone } from "../../../../src/ik/shared/analytic";
+import { solveTwoBone } from "@motion5/rig/internal";
 
 // Slice D2 of issue #195: FABRIK as arithmetic, before anything wires it.
 //

@@ -1,4 +1,5 @@
-import { LIMIT_CEILING, LIMIT_FLOOR, Spec } from "@motion5/core/plugin-api";
+import { Spec } from "@motion5/core/plugin-api";
+import { LIMIT_CEILING, LIMIT_FLOOR } from "@motion5/rig";
 
 const LIMIT = Spec.number({ optional: true, static: true, min: LIMIT_FLOOR, max: LIMIT_CEILING });
 const AXIS = Spec.number({ optional: true, static: true });

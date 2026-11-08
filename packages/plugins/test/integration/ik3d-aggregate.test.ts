@@ -5,7 +5,7 @@ import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testi
 import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { ik3dPlugin } from "../../src/ik/ik3d";
 import { Body3d, Goals3d, Point3d, Solved3d } from "../../src/models/index";
-import { goalDiagnostics } from "../../src/ik/shared/goal-check";
+import { goalDiagnostics } from "../../src/ik/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
@@ -17,8 +17,8 @@ const Pole3d = defineModel({
 });
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/ik/solve3d/solve", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/ik/solve3d/solve")>();
+vi.mock("@motion5/rig", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@motion5/rig")>();
   return {
     ...original,
     solveChain3d: (...args: Parameters<typeof original.solveChain3d>) => {

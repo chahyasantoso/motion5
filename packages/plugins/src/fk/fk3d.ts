@@ -8,8 +8,8 @@ import {
   ZERO_EULER,
   type Euler3d,
   type WorldFrame3d,
-} from "../frame/frame3d";
-import { clamp, readNumber, segmentExtent } from "../frame/frame";
+} from "@motion5/rig";
+import { clamp, readNumber, segmentExtent } from "@motion5/rig";
 import { type SolvedRow } from "../models/solved/domain";
 import { Body3d, Point3d, Points3d, Solved3d } from "../models/index";
 import { nonEmptyDiagnostics } from "../shared/prepare-diagnostics";

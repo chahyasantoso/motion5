@@ -4,15 +4,15 @@ import { Engine, PluginCatalog, createManualClock, type ProjectDefinition } from
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { ikPlugin } from "../../src/ik/ik";
 import { Body2d, Goals2d, Point2d, Solved2d } from "../../src/models/index";
-import { goalDiagnostics } from "../../src/ik/shared/goal-check";
+import { goalDiagnostics } from "../../src/ik/goal-check";
 import { bodyStructure, goalsStructure, rigStructures } from "../support/rig-input";
 import { isValue } from "../../../core/src/runtime/value-validation";
 import { testModels } from "../../../core/test/support/test-models";
 import { UNTIMED } from "@motion5/moves";
 
 const solver = vi.hoisted(() => ({ calls: 0 }));
-vi.mock("../../src/ik/solve2d/solve", async (importOriginal) => {
-  const original = await importOriginal<typeof import("../../src/ik/solve2d/solve")>();
+vi.mock("@motion5/rig", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@motion5/rig")>();
   return {
     ...original,
     solveChain: (...args: Parameters<typeof original.solveChain>) => {

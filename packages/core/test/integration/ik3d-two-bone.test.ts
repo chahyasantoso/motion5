@@ -15,7 +15,7 @@ import {
   ZERO_EULER,
   type Euler3d,
   type WorldFrame3d,
-} from "@motion5/plugins/frame3d";
+} from "@motion5/rig";
 import { ik3dPlugin } from "@motion5/plugins/ik3d";
 import { transform3dPlugin } from "@motion5/plugins/transform3d";
 import type { Patch } from "../../src/runtime/patch-registry";

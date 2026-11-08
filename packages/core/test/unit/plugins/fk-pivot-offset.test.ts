@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Outputs } from "../../../src/contract/v5";
 import { commitModelStructure } from "../../../src/testing/fakes";
-import { composeWorld } from "../../../../plugins/src/frame/frame";
+import { composeWorld } from "@motion5/rig/internal";
 import { Body2d, Solved2d } from "../../../../plugins/src/models/index";
 import { fkPlugin } from "@motion5/plugins/fk";
 import { UNTIMED } from "@motion5/moves";

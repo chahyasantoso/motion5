@@ -9,12 +9,8 @@
  * head for its free rig, where the settle rule still read the constraint. TH-155 and CL-40 fail on
  * the pre-#521 solver, which published an unsettled attempt's last pass rather than its best. */
 import { describe, expect, it } from "vitest";
-import {
-  FABRIK_TOLERANCE,
-  solveFabrik,
-  solveFabrikAttempt,
-} from "../../../../src/ik/fabrik/fabrik";
-import type { FabrikSolution } from "../../../../src/ik/fabrik/solution";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "@motion5/rig/internal";
+import type { FabrikSolution } from "@motion5/rig/internal";
 import {
   FABRIK_LIMITED_CAP_FACTOR,
   FABRIK_MIN_ITERATIONS,
@@ -29,14 +25,14 @@ import {
   fabrikRoundingBound,
   projectsConvergence,
   type FabrikPassBudget,
-} from "../../../../src/ik/fabrik/cap";
+} from "@motion5/rig/internal";
 import {
   CENTRE_THEN_DESCENT,
   fabrikAlternatives,
   selectFabrik,
   type FabrikAttempt,
   type LegalStarts,
-} from "../../../../src/ik/fabrik/select";
+} from "@motion5/rig/internal";
 import {
   axisX3,
   multiplyMatrix3,
@@ -47,8 +43,8 @@ import {
   type Matrix3,
   type Vec3,
   type WorldFrame3d,
-} from "../../../../src/frame/frame3d";
-import type { WorldFrame } from "../../../../src/frame/frame";
+} from "@motion5/rig/internal";
+import type { WorldFrame } from "@motion5/rig/internal";
 import {
   atBound,
   boundBaseDirection,
@@ -57,19 +53,15 @@ import {
   limitRotation,
   type JointLimit,
   type JointRange,
-} from "../../../../src/ik/shared/constraint";
-import type { SolveMember } from "../../../../src/ik/shared/member";
-import type { IterativeQuality } from "../../../../src/ik/shared/result";
-import { solveChain } from "../../../../src/ik/solve2d/solve";
-import { readPole3d, UNBOUND_POLE3D, type Pole3d } from "../../../../src/ik/solve3d/analytic";
-import type { ChainMember3d } from "../../../../src/ik/solve3d/chain";
-import {
-  boundBaseFrame3d,
-  FREE_JOINT3D,
-  type JointLimit3d,
-} from "../../../../src/ik/solve3d/constraint";
-import { solveTree3dAttempt } from "../../../../src/ik/solve3d/fabrik";
-import { solveChain3d } from "../../../../src/ik/solve3d/solve";
+} from "@motion5/rig/internal";
+import type { SolveMember } from "@motion5/rig/internal";
+import type { IterativeQuality } from "@motion5/rig/internal";
+import { solveChain } from "@motion5/rig/internal";
+import { readPole3d, UNBOUND_POLE3D, type Pole3d } from "@motion5/rig/internal";
+import type { ChainMember3d } from "@motion5/rig/internal";
+import { boundBaseFrame3d, FREE_JOINT3D, type JointLimit3d } from "@motion5/rig/internal";
+import { solveTree3dAttempt } from "@motion5/rig/internal";
+import { solveChain3d } from "@motion5/rig/internal";
 import { iterationsOf } from "../../../support/solve-quality";
 
 const ROOT: WorldFrame = { x: 0, y: 0, rotation: 0 };

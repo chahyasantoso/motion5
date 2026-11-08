@@ -24,8 +24,8 @@ ADR-036 and ADR-048.
   the boundary scan.
 - `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
 - `@motion5/core/internal` — unadvertised; it carries no stability promise.
-- `@motion5/plugins/frame3d` exposes the complete unchanged frame utility module, including
-  `readFrame3d` and its nameable types. There is no bare `@motion5/plugins` entrypoint.
+- `@motion5/rig` holds world frames, the IK solvers and the joint vocabulary, including `readFrame3d`
+  and its nameable types; it imports nothing. There is no bare `@motion5/plugins` entrypoint.
 
 ## @motion5/core
 
