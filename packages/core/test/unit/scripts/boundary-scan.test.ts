@@ -569,45 +569,67 @@ describe("boundary scan: the public 3D surface", () => {
     expect(violations).toEqual([]);
   });
 
-  it("refuses any import that leaves the moves package", async () => {
+  it("lets a pure package import its own files and any other pure package", async () => {
     const violations = await withTree(
       {
         "packages/moves/package.json": await readFile(
           join(root, "packages", "moves", "package.json"),
           "utf8",
         ),
-        "packages/moves/src/inside.ts": 'import { a } from "./sibling";\nexport const b = a;',
-        "packages/moves/src/sibling.ts": "export const a = 1;",
-        "packages/moves/src/core.ts":
-          'import { Spec } from "@motion5/core/plugin-api";\nexport const s = Spec;',
-        "packages/moves/src/outside.ts":
-          'import { x } from "../../plugins/src/x";\nexport const y = x;',
-        "packages/moves/src/lib.ts": 'import gsap from "gsap";\nexport const g = gsap;',
-      },
-      (tree) => scan(tree),
-    );
-    expect(violations).toEqual([
-      "packages/moves/src/core.ts: moves import outside the moves package",
-      "packages/moves/src/lib.ts: moves import outside the moves package",
-      "packages/moves/src/outside.ts: moves import outside the moves package",
-    ]);
-  });
-
-  it("refuses any import that leaves the rig package", async () => {
-    const violations = await withTree(
-      {
         "packages/rig/package.json": await readFile(
           join(root, "packages", "rig", "package.json"),
           "utf8",
         ),
-        "packages/rig/src/frame.ts": 'import { a } from "./sibling";\nexport const b = a;',
-        "packages/rig/src/sibling.ts": "export const a = 1;",
-        "packages/rig/src/core.ts":
+        "packages/moves/src/inside.ts":
+          'import { a } from "./sibling";\nimport { fk } from "@motion5/rig";\nexport const b = [a, fk];',
+        "packages/moves/src/sibling.ts": "export const a = 1;",
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("refuses a pure package reaching core, a library, a non-pure package or a path outside it", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/moves/src/core.ts":
+          'import { Spec } from "@motion5/core/plugin-api";\nexport const s = Spec;',
+        "packages/moves/src/lib.ts": 'import gsap from "gsap";\nexport const g = gsap;',
+        "packages/moves/src/outside.ts":
+          'import { x } from "../../plugins/src/x";\nexport const y = x;',
+        "packages/moves/src/plugins.ts":
+          'import { Sprite2d } from "@motion5/plugins/models";\nexport const m = Sprite2d;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/moves/src/core.ts: pure package import outside the pure layer",
+      "packages/moves/src/lib.ts: pure package import outside the pure layer",
+      "packages/moves/src/outside.ts: pure package import outside the pure layer",
+      "packages/moves/src/plugins.ts: pure package import outside the pure layer",
+    ]);
+  });
+
+  it("holds any package that declares the pure layer to it, whatever its name", async () => {
+    const violations = await withTree(
+      {
+        "packages/geometry/package.json": JSON.stringify({
+          name: "@motion5/geometry",
+          motion5: { layer: "pure" },
+          exports: { ".": "./src/index.ts" },
+        }),
+        "packages/geometry/src/index.ts":
           'import { unreachable } from "@motion5/core/plugin-api";\nexport const u = unreachable;',
       },
       (tree) => scan(tree),
     );
-    expect(violations).toEqual(["packages/rig/src/core.ts: rig import outside the rig package"]);
+    expect(violations).toEqual([
+      "packages/geometry/src/index.ts: pure package import outside the pure layer",
+    ]);
   });
 
   it("TH-203a refuses a core import from a plugin domain layer", async () => {

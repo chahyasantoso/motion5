@@ -16,7 +16,7 @@ ADR-133 kept solver vocabulary in core because "graph code also reads the protoc
 `@motion5/rig` owns world frames, FK composition, the 2D and 3D IK solvers, FABRIK, the body topology parse, and
 the joint and constraint vocabulary. It has no dependencies. Code builds a chain once with `buildChain(bones)`
 and calls `fk` and `ik` on it each frame; the `Body` models parse through the same topology owner. FK composition
-has one owner, `composeChain`, and a solve member one builder, `solveMember`, which the plugins call too. Tests
+has one owner, `composeChain`, and a solve member one builder, `solveMember`, which the plugins and `rope` call too. Tests
 reach solver internals through `@motion5/rig/internal`; the package root carries only what callers use.
 
 ## Consequences
@@ -28,4 +28,3 @@ rig's import closure has no workspace imports.
 
 - Keeping the vocabulary in core: it has no reader there.
 - Copying the solvers into `@motion5/moves`: rigs are a separate vocabulary that most moves never read.
-- `rope` composing its links through the rig's FK: `@motion5/moves` would then import `@motion5/rig`.

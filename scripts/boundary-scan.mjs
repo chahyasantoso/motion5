@@ -542,11 +542,36 @@ async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
   return declared;
 }
 
+/** Workspaces whose manifest declares `"motion5": { "layer": "pure" }`, by folder and by package name. */
+async function pureLayer(scanRoot, workspaces) {
+  const folders = new Set();
+  const names = new Set();
+  for (const workspace of workspaces) {
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    if (manifest?.motion5?.layer !== "pure" || typeof manifest.name !== "string") continue;
+    folders.add(workspace);
+    names.add(manifest.name);
+  }
+  return { folders, names };
+}
+
+/** The package a bare specifier names: `@scope/name` or `name`, without its subpath. */
+function packageOf(specifier) {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
 /** Extracted implementations have one core contract and no dependency on a host or renderer. */
-function checkPluginSource(source, file, specifiers, violations) {
+function checkPluginSource(source, file, specifiers, violations, pure) {
   const allowed = specifiers.every((specifier) => {
     if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
-    if (specifier === "@motion5/moves" || specifier === "@motion5/rig") return true;
+    if (pure.names.has(packageOf(specifier))) return true;
     if (!specifier.startsWith(".")) return false;
     const target = posix.normalize(posix.join(posix.dirname(file), specifier));
     return target.startsWith("packages/plugins/src/");
@@ -561,15 +586,14 @@ function checkPluginSource(source, file, specifiers, violations) {
     violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
-/** Moves and rig import nothing but their own package, so code can call them with no engine loaded. */
-function checkSelfContained(workspace, file, specifiers, violations) {
-  const inside = specifiers.every(
-    (specifier) =>
-      specifier.startsWith(".") &&
-      posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(`${workspace}/src/`),
+/** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
+function checkPureSource(workspace, file, specifiers, violations, pure) {
+  const inside = specifiers.every((specifier) =>
+    specifier.startsWith(".")
+      ? posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(`${workspace}/src/`)
+      : pure.names.has(packageOf(specifier)),
   );
-  const name = workspace.slice("packages/".length);
-  if (!inside) violations.push(`${file}: ${name} import outside the ${name} package`);
+  if (!inside) violations.push(`${file}: pure package import outside the pure layer`);
 }
 /**
  * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
@@ -591,16 +615,17 @@ export async function scan(scanRoot = root) {
   await scanCoreEntries(scanRoot, violations);
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
+  const pure = await pureLayer(scanRoot, workspaces);
   for (const workspace of workspaces) {
     if (workspace === corePackage) continue;
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
-      if (workspace === "packages/moves" || workspace === "packages/rig")
-        checkSelfContained(workspace, file, specifiers, violations);
+      if (pure.folders.has(workspace))
+        checkPureSource(workspace, file, specifiers, violations, pure);
       if (workspace === "packages/plugins") {
-        checkPluginSource(source, file, specifiers, violations);
+        checkPluginSource(source, file, specifiers, violations, pure);
         if (
           file === "packages/plugins/src/host/builtin-catalog.ts" &&
           catalogHasStaticRelativeImport(source)

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
+  "motion5": {
+    "layer": "pure"
+  },
   "types": "./src/index.ts",
   "exports": {
     ".": {

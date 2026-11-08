@@ -5,6 +5,8 @@ import madge from "madge";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const SOURCES = [
   "packages/core/src",
+  "packages/moves/src",
+  "packages/rig/src",
   "packages/plugins/src",
   "packages/react/src",
   "packages/three/src",

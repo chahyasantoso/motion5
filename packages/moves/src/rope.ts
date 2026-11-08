@@ -1,7 +1,9 @@
+import { composeChain, type Link2d } from "@motion5/rig";
 import { defineMove } from "./declare";
 import type { Anchor2d } from "./shapes";
 
 const OVERSHOOT_SCALE = 2.5;
+const ORIGIN = { x: 0, y: 0 } as const;
 const RIPPLE_LIMIT = 0.9;
 
 function degrees(dx: number, dy: number): number {
@@ -68,9 +70,10 @@ export const rope = defineMove({
     const shape = pinEnd ? [...points].reverse() : points;
     const pinned = shape[0] ?? { x: 0, y: 0 };
     const segments = shape.length - 1;
-    const placed = [{ x: pinned.x, y: pinned.y }];
+    const links: Link2d[] = [];
     let heading = angle;
     let previous: number | undefined;
+    let turned = 0;
     for (let k = 0; k < segments; k += 1) {
       const a = shape[k]!;
       const b = shape[k + 1]!;
@@ -81,11 +84,21 @@ export const rope = defineMove({
       const order = release === "free" ? segments - 1 - k : k;
       const delay = segments > 1 ? (ripple * order) / (segments - 1) : 0;
       const u = Math.max(0, Math.min(1, (progress - delay) / (1 - ripple)));
-      const now = ((angle + (heading - angle) * backOut(u, overshoot)) * Math.PI) / 180;
-      const length = Math.hypot(b.x - a.x, b.y - a.y);
-      const last = placed[placed.length - 1]!;
-      placed.push({ x: last.x + length * Math.cos(now), y: last.y + length * Math.sin(now) });
+      const now = angle + (heading - angle) * backOut(u, overshoot);
+      links.push({
+        length: Math.hypot(b.x - a.x, b.y - a.y),
+        rotation: now - turned,
+        pivot: ORIGIN,
+      });
+      turned = now;
     }
+    const ids = links.map((_, k) => String(k));
+    const tips = composeChain(
+      { ids, parentById: new Map(ids.map((id, k) => [id, k === 0 ? undefined : ids[k - 1]])) },
+      { x: pinned.x, y: pinned.y, rotation: 0 },
+      (_, k) => links[k]!,
+    );
+    const placed = [{ x: pinned.x, y: pinned.y }, ...tips.values()];
     if (pinEnd) placed.reverse();
 
     return placed.map((point, index): Anchor2d => {
