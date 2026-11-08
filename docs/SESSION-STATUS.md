@@ -39,12 +39,12 @@ byte ceiling.
   browser clock, and `@motion5/three` renders a pose with `applyPose2d`. `@motion5/player` plays a code
   scene on a manual, clock or scroll driver, React reads it with `usePlayer`, `useTarget` and
   `useValue`, and `/timing.html` is now a code scene held equal to `timing-beat.json`. The motion tools
-  live in `@motion5/tools`, and `motion:sample` and `motion:timeline` read a `.ts` scene with no browser. The agent guide is code-first and `motion:new` scaffolds a code scene. Core and plugins are frozen: fixes only.
+  live in `@motion5/tools`, and `motion:sample` and `motion:timeline` read a `.ts` scene with no browser. The agent guide is code-first and `motion:new` scaffolds a code scene. Core and plugins are frozen: fixes only. Moves state their moments, `span` and the eases live in moves, `buildChain` types its bone ids, and `/catch.html` is a second worked example.
 
 ## Next in line
 
-- **Agent as user:** interview the agents that ran the benchmark, then close what they lacked: when a move
-  lands, eases and blends, and pose typing.
+- **Agent as user:** check the guide with a cold agent that may not read source, then run a fourth
+  benchmark on a new brief.
 
 ## Open, and not scheduled
 

@@ -21,28 +21,34 @@ color that merges, a letter colliding with its neighbor. None of those raises an
 
 ```ts
 import { clockDriver } from "@motion5/dom";
-import { drop, hop, lane, lanes, window, wipe, type Time } from "@motion5/moves";
+import { drop, hop, lane, lanes, span, wipe, type Time } from "@motion5/moves";
 
 export const durationMs = 3000;
 const LETTERS = lanes([1, 1, 1, 1, 1, 1], 0.25);
-const part = (time: Time, fromMs: number, toMs: number) =>
-  window(time, fromMs / durationMs, toMs / durationMs);
+const word = span(0, 1000, durationMs);
+const flight = span(880, 1870, durationMs);
+const cover = span(2400, 3000, durationMs);
 
-export const scene = (time: Time) => {
-  const word = part(time, 0, 1000);
-  return {
-    letters: [0, 1, 2, 3, 4, 5].map((i) => drop({ distance: 700, squash: 0.18 }, lane(word, i, LETTERS))),
-    dot: hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: 1300 }, part(time, 880, 1870)),
-    cover: wipe({ radius: 1500, x: 974, y: 415 }, part(time, 2400, 3000)),
-  };
-};
+export const scene = (time: Time) => ({
+  letters: [0, 1, 2, 3, 4, 5].map((i) =>
+    drop({ distance: 700, squash: 0.18 }, lane(word.of(time), i, LETTERS)),
+  ),
+  dot: hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: 1300 }, flight.of(time)),
+  cover: wipe({ radius: 1500, x: 974, y: 415 }, cover.of(time)),
+});
 
 export const clock = () => clockDriver({ duration: durationMs });
 ```
 
 A scene module exports `scene` and `durationMs`; the tools read those two. Keep every number of motion in the scene
-and none in the component. The worked example is [`timing-scene.ts`](../../apps/react-demo/src/timing-scene.ts),
-served at `timing.html` by [`TimingBeat.tsx`](../../apps/react-demo/src/TimingBeat.tsx).
+and none in the component. Two worked examples, each held by a test:
+
+| Example | Shows | Served at |
+| ------- | ----- | --------- |
+| `apps/react-demo/src/timing-scene.ts` | moves, lanes, a wipe measured from the page | `timing.html`, by `TimingBeat.tsx` |
+| `apps/react-demo/src/catch-scene.ts` | an IK arm, one target timed to another's moment, eases, a carry | `catch.html`, by `Catch.tsx` |
+
+Read the one closest to your brief before writing, and copy its patterns.
 
 ## Time
 
@@ -52,11 +58,23 @@ before reading `elapsed`.
 
 | You want | Use |
 | -------------------------------------- | ------------------------------------------------------------------- |
-| A move inside part of the scene | `window(time, from, to)`, as shares of the whole, or a helper in ms |
+| A move inside part of the scene | `const s = span(fromMs, toMs, durationMs)` once, then `s.of(time)` |
+| That move eased | `s.of(time, ease.cubicInOut)` |
+| The ms a move reaches a moment | `s.at(hop.moments(options).lastLanding)` |
 | Several targets one after another | `lanes(lengths, stagger)` once, then `lane(time, index, lanes)` |
 | A start delay, repeats, or a yoyo | `clockDriver({ duration, delay, repeat, yoyo })` |
 | Motion driven by the page's scroll | `scrollDriver({ start, end })`, in px |
 | A move at a progress, by hand | `atProgress(0.5)` |
+
+Time one target to another's moment by computing the ms once, outside `scene`, then starting or ending a span
+there:
+
+```ts
+const BOUNCE = { height: 330, bounces: 2, decay: 0.35, dx: -1100 };
+const flight = span(400, 2400, durationMs);
+const LAND_MS = flight.at(hop.moments(BOUNCE).lastLanding);
+const lunge = span(1450, LAND_MS, durationMs); // the hand arrives as the ball lands
+```
 
 `stagger` is in lane lengths: `0.25` starts each lane a quarter of a lane after the one before, and every lane is
 at rest when `time` reaches 1.
@@ -66,18 +84,35 @@ at rest when `time` reaches 1.
 Each move is a function `move(options, time)`, typed from its declaration, so a wrong option name fails to compile.
 `hop.options` and its siblings hold each option's range and a one-line description.
 
-| Move | Gives | Options |
-| ----- | ----- | ------- |
-| `drop` | a pose | `distance` above rest; `squash` on landing |
-| `hop` | a pose, and `contact` with `hits` and `justHit` | `height`, `bounces`; `decay`, `squash`, `dx` from the left |
-| `wipe` | a reveal circle `{ x, y, radius }` | final `radius`, centre `x` and `y` in px |
-| `trace` | a drawn share `{ drawn }` | none |
-| `rope` | anchors, from `{ points }` as its third argument | `angle`, `pin`, `release`, `overshoot`, `ripple` |
+| Move | Gives | Options | Moments |
+| ----- | ----- | ------- | ------- |
+| `drop` | a pose | `distance` above rest; `squash` on landing | `landing` |
+| `hop` | a pose, and `contact` with `hits` and `justHit` | `height`, `bounces`; `decay`, `squash`, `dx` from the left, negative from the right | `landings`, `lastLanding` |
+| `wipe` | a reveal circle `{ x, y, radius }` | final `radius`, centre `x` and `y` in px | none |
+| `trace` | a drawn share `{ drawn }` | none | none |
+| `rope` | anchors, from `{ points }` as its third argument | `angle`, `pin`, `release`, `overshoot`, `ripple` | none |
+
+`move.moments(options)` gives where in its progress the move reaches each moment, as shares from 0 to 1: pass it
+to a span's `at` for the ms. `contact` says whether a hop is landing now; moments say when it will.
 
 A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, each optional; `anchor` is `"center"`,
 `"bottom"`, `"top"`, `"left"` or `"right"`, the point that stays still while the target turns or scales, and an
 absent anchor is the centre. `combine(poses)` puts several poses on one target: offsets and turns add, scales and
 opacity multiply, and the first anchor stays. `toCubics(anchors)` turns a rope's anchors into path segments.
+
+## Eases and blends
+
+`@motion5/moves` holds what a move does not cover:
+
+| You want | Use |
+| -------- | --- |
+| An eased share | `ease.sineInOut`, `quadIn`, `cubicOut`, `quartInOut`, `expoOut`, `backOut`, `elasticOut`, `bounceOut`, and the other `In`, `Out`, `InOut` forms |
+| A number, point or angle between two | `mix(a, b, share)`, `mixPoint(a, b, share)`, `mixAngle(a, b, share)` the short way round |
+| A pose between two | `mixPose(a, b, share)`, a missing field at its rest |
+| Several poses on one target | `combine([a, b])` |
+
+Look through the exports of `@motion5/moves` before writing a helper, and write your own only for a curve this table
+lacks.
 
 ## Rest poses
 
@@ -96,7 +131,8 @@ return <div ref={title} onClick={() => playing?.driver.replay()} />;
 ```
 
 `useTarget(player, target)` writes a pose to the element on every step with no React render; pass a third argument
-for anything else, such as `useTarget(player, "cover", applyReveal)` or a function that picks one pose out of a list.
+for anything else, such as `useTarget(player, "cover", applyReveal)` or a function that picks one pose out of a list,
+as `Glyph` in `Catch.tsx` does for each letter.
 `useValue(player, target, select)` re-renders only when `select`'s answer changes; use it for rare values such as
 a count. Define `scene` and `clock` outside the component, because `usePlayer` restarts when either changes.
 
@@ -121,19 +157,39 @@ A value the page must measure, such as where a wipe starts, is measured after la
 ## Rigs
 
 ```ts
-import { buildChain, fk, ik } from "@motion5/rig";
+import { buildChain, chainPoses, ik } from "@motion5/rig";
 
+const SHOULDER = { x: 250, y: 300 };
+const base = { ...SHOULDER, rotation: 0 };
 const arm = buildChain([
-  { id: "upper", length: 100 },
-  { id: "lower", parentId: "upper", length: 80, minRotation: -150, maxRotation: 0 },
+  { id: "upper", length: 170 },
+  { id: "lower", parentId: "upper", length: 150 },
 ]);
-const { rotations } = ik(arm, { lower: { x: 60, y: 120 } }, { base: { x: 0, y: 0, rotation: 0 } });
-const tips = fk(arm, { rotations });
+
+// handGoal(time) eases the hand's goal between points, as in catch-scene.ts
+export const scene = (time: Time) => {
+  const { rotations } = ik(arm, { lower: handGoal(time) }, { base, flip: true });
+  const { bones, tips } = chainPoses(arm, { rotations, base });
+  return { upper: bones.upper, lower: bones.lower, elbow: tips.upper, hand: tips.lower };
+};
 ```
 
-`buildChain` checks the bones once and refuses an unknown parent or a cycle by name. `fk` gives each bone's tip as
-`{ x, y, rotation }`; `ik` gives the rotations that bring each goal's bone tip to its goal, within its limits, and
-`flip: true` bends the other way. Angles are degrees.
+- **Units.** Stage px with y down, angles in degrees, and a positive angle turns clockwise on screen, as in CSS.
+- **Ids.** `buildChain` keeps the ids it was given, so `rotations.upper`, `tips.lower` and `bones.upper` are always
+  there, with no `?? 0`. It refuses an unknown parent or a cycle by name.
+- **Rotations.** `ik` gives, and `fk` takes, each bone's rotation against its parent. `fk` gives each bone's tip in
+  stage px, with its rotation on the stage.
+- **Goals.** A goal is in stage px, like `base`. To move a hand smoothly, move its goal with `mixPoint` and an ease,
+  and solve every frame.
+- **Elbow side.** By default the elbow bends clockwise of the line from base to goal: below it when reaching right.
+  `flip: true` bends it the other way. `minRotation` and `maxRotation` limit a bone against its parent.
+- **Out of reach.** A goal past the chain's length points the chain straight at it, and `quality.kind` is
+  `"too-far"`.
+- **Elements.** Lay every rig element out at the base. A bone element points right from the base, its left end
+  vertically centred on it; a joint or hand element is centred on it. `chainPoses` gives `bones`, poses turning on
+  the left end, and `tips`, offsets from the base.
+
+To make something ride a hand, add the hand's movement since the catch to its own pose, as `catch-scene.ts` does.
 
 ## Tools
 
@@ -196,6 +252,9 @@ Resamples a JSON array of `{ x, y }` points to fixed spacing, so every link of a
 - An element the same color as what it crosses merges with it. Check the crossing frames.
 - A `span` needs `display: inline-block` before a transform moves it.
 - `usePlayer` restarts when `scene` or the driver factory changes identity; define both outside the component.
+- Never cast with `as` or assert with `!`. Give a pose literal its type, `const carry: Pose2d = { x: 1 }`, and read
+  a field a pose may lack as `pose.x ?? 0`.
+- A span is not a time: pass `span.of(time)` to a move or `lane`, never the span itself.
 
 ## Starting values
 
