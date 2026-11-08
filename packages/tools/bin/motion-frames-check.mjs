@@ -253,6 +253,51 @@ ${box("hand", "top:300px;left:200px")}<div data-motion-touch="#hand" id="cup" st
   const [once, twice] = [await scatter(), await scatter()];
   assert.equal(once, twice, "Math.random gives the same numbers every run");
 
+  // A scripted hover reaches the page as real pointer events: the card lifts, turns back after the leave
+  // with no jump, and a CSS hover transition on a plain page follows the same clock.
+  const pointer = {
+    page: "card.html",
+    ...stage,
+    actions: [
+      { kind: "hover", selector: ".card-hit", at: 1000 },
+      { kind: "leave", selector: ".card-hit", at: 1120 },
+    ],
+  };
+  const lifted = await readMotion({ ...pointer, select: [".card"], to: 2400 });
+  const rise = lifted.elements[0]?.segments.find(
+    ({ channel, start }) => channel === "y" && start >= 992,
+  );
+  assert.ok(rise !== undefined && rise.start <= 1008 && rise.to < -8, JSON.stringify(rise));
+  const steady = await checkMotion({
+    ...pointer,
+    watch: [".card"],
+    to: 3000,
+    limits: DEFAULT_LIMITS,
+  });
+  assert.deepEqual(steady.findings, [], JSON.stringify(steady.findings));
+  writeFileSync(
+    join(site, "hover.html"),
+    `<style>#tile{position:absolute;left:100px;top:100px;width:80px;height:80px;background:#333;
+transition:transform 400ms linear}#tile:hover{transform:translateY(-40px)}</style><div id="tile"></div>`,
+  );
+  const tile = await readMotion({
+    page: "hover.html",
+    ...small,
+    actions: [{ kind: "hover", selector: "#tile", at: 300 }],
+    select: ["#tile"],
+    to: 1000,
+  });
+  assert.deepEqual(
+    tile.elements[0]?.segments.map(({ channel, to, start, end, ease }) => [
+      channel,
+      Math.round(to),
+      start,
+      end,
+      ease.name,
+    ]),
+    [["y", -40, 304, 704, "linear"]],
+  );
+
   // A CSS animation follows the paused clock, and motion:read gives back its delay, length and ease.
   writeFileSync(
     join(site, "css.html"),

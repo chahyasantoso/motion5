@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Browser, Page } from "playwright-core";
+import { parseActions, perform, type PageAction } from "./actions";
 import { unreachable } from "./unreachable";
 
 /** Where a page comes from: a folder this tool serves, or a server already running. */
@@ -13,6 +14,8 @@ export interface PageTarget {
   readonly width: number;
   readonly height: number;
   readonly source: PageSource;
+  /** What a person does to the page, and when; done with the real mouse at those exact ms. */
+  readonly actions?: readonly PageAction[];
 }
 
 /** The demo app, served when no `--root` or `--url` is given. */
@@ -42,7 +45,10 @@ export type ReadArgs =
 const CHANNELS = ["chrome", "msedge", undefined] as const;
 const FIRST_FRAME_MS = 17;
 
-/** Reads `<page> [--size WxH] [--root dir | --url address]` plus the named flags, each taking one value. */
+/** Flags every page tool takes, beside its own. */
+const SHARED_FLAGS = ["--size", "--root", "--url", "--action"];
+
+/** Reads `<page> [--size WxH] [--root dir | --url address] [--action list]` plus the named flags, each with a value. */
 export function readPageArgs(argv: readonly string[], allowed: readonly string[]): ReadArgs {
   const usage = (message: string): ReadArgs => ({ kind: "usage", message });
   const positional: string[] = [];
@@ -53,8 +59,7 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
       positional.push(arg);
       continue;
     }
-    if (arg !== "--size" && arg !== "--root" && arg !== "--url" && !allowed.includes(arg))
-      return usage(`Unknown flag ${arg}.`);
+    if (![...SHARED_FLAGS, ...allowed].includes(arg)) return usage(`Unknown flag ${arg}.`);
     flags.set(arg, argv[i + 1]);
     i += 1;
   }
@@ -71,6 +76,10 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
     return usage("--root needs a folder.");
   if (flags.has("--url") && (url === undefined || !/^https?:\/\/[^\s]+$/.test(url)))
     return usage("--url needs an http or https address.");
+  const actionText = flags.get("--action");
+  const actions = actionText === undefined ? [] : parseActions(actionText);
+  if ("reason" in actions) return usage(actions.reason);
+  if (flags.has("--action") && actions.length === 0) return usage("--action needs kind:target@ms.");
   const source: PageSource =
     url !== undefined
       ? { kind: "url", base: url.endsWith("/") ? url : `${url}/` }
@@ -79,7 +88,13 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
         : DEFAULT_SOURCE;
   return {
     kind: "ok",
-    target: { page, width: Number(size[1]), height: Number(size[2]), source },
+    target: {
+      page,
+      width: Number(size[1]),
+      height: Number(size[2]),
+      source,
+      ...(actions.length === 0 ? {} : { actions }),
+    },
     flags,
   };
 }
@@ -149,11 +164,23 @@ export async function withPage<T>(
     await page.clock.runFor(FIRST_FRAME_MS);
     await page.evaluate(holdAnimations, 0);
     let now = 0;
+    const pending = [...(target.actions ?? [])];
     const session: PageSession = {
       page,
       browser,
       async advanceTo(ms) {
         if (ms < now) throw new Error(`Time ${ms} is before ${now}; times must ascend.`);
+        for (
+          let action = pending[0];
+          action !== undefined && action.at <= ms;
+          action = pending[0]
+        ) {
+          pending.shift();
+          await page.clock.runFor(action.at - now);
+          await page.evaluate(holdAnimations, action.at);
+          await perform(page, action);
+          now = action.at;
+        }
         await page.clock.runFor(ms - now);
         await page.evaluate(holdAnimations, ms);
         now = ms;
