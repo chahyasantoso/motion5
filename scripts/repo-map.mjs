@@ -19,6 +19,7 @@ const HEADER = [
 
 export const OWNERS = {
   "apps/react-demo/src": "React demo app",
+  "apps/react-demo/src/live": "live editor",
   "packages/rig/src": "joint vocabulary",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",

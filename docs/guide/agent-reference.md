@@ -361,7 +361,7 @@ applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
 ### Drivers
 
 **`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames, reducedMotion })`**: a timed clock on the page's
-frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`. When the person prefers reduced motion it shows the
+frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`, `.setRate(rate)`, `.setRange(fromMs?, toMs?)`. When the person prefers reduced motion it shows the
 last frame and never ticks; `reducedMotion: "play"` opts out. **`ClockDriver`** and **`ClockOptions`** are its types.
 ```ts
 export const clock = () => clockDriver({ duration: durationMs });
