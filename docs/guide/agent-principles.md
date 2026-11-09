@@ -49,7 +49,8 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
 
 ## Limits
 
-- `Pose2d` only: no skew and no 3D. `smear` on content that must not turn needs the inner element.
+- `Pose2d` here; for 3D read [3D scenes](./agent-3d.md). No skew: `smear` on content that must not turn needs the
+  inner element.
 - `trail` refuses a spring that rings past 4 s; raise damping.
 - `trail` and `velocity` take the scene's time, never `span.of(time, ease)`: they sample the signal at other ms, so
   the signal applies its own spans and eases.
