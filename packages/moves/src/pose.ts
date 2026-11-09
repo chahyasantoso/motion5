@@ -1,3 +1,5 @@
+import { unreachable } from "./time";
+
 /** The point of a box that stays put while it scales and turns. */
 export type Anchor = "center" | "bottom" | "top" | "left" | "right";
 
@@ -18,9 +20,21 @@ export const ADDED_FIELDS = Object.freeze(["x", "y", "rotation"] as const);
 /** Pose fields that scale: two poses on one target multiply them, and their rest is 1. */
 export const MULTIPLIED_FIELDS = Object.freeze(["scale", "scaleX", "scaleY", "opacity"] as const);
 
-/** The scale of a box `weight` of the way into its `squash`, with the floor staying where it is. */
-export function squashed(squash: number, weight: number): Pose2d {
-  return { scaleX: 1 + 0.9 * squash * weight, scaleY: 1 - squash * weight, anchor: "bottom" };
+/** A box `weight` of the way into its `squash` against the `anchor` side, which stays put; widens the other way. */
+export function squashed(squash: number, weight: number, anchor: Anchor = "bottom"): Pose2d {
+  const short = 1 - squash * weight;
+  const wide = 1 + 0.9 * squash * weight;
+  switch (anchor) {
+    case "bottom":
+    case "top":
+    case "center":
+      return { scaleX: wide, scaleY: short, anchor };
+    case "left":
+    case "right":
+      return { scaleX: short, scaleY: wide, anchor };
+    default:
+      return unreachable(anchor);
+  }
 }
 
 const FIELDS: Record<keyof Pose2d, true> = {
