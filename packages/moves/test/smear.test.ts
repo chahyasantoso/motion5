@@ -48,6 +48,13 @@ describe("smear", () => {
     expect(() => smear({ vx: 1, vy: 1 }, { stretch: 1, max: 0.5 })).toThrow(RangeError);
   });
 
+  it("keeps its heading when travel reverses, since a stretch has no front", () => {
+    const right = smear({ vx: 1000, vy: 0 }, { stretch: 0.2, max: 3 });
+    const left = smear({ vx: -1000, vy: 0 }, { stretch: 0.2, max: 3 });
+    expect(left).toEqual(right);
+    expect(smear({ vx: 0, vy: -900 }, { stretch: 0.2, max: 3 }).heading).toBeCloseTo(90, 9);
+  });
+
   it("with an inner counter-rotation is a pure stretch along the heading", () => {
     const { pose, heading } = smear({ vx: 1000, vy: 1000 }, { stretch: 0.5, max: 4 });
     const s = pose.scaleX ?? 1;

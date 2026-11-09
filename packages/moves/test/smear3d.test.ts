@@ -49,6 +49,12 @@ describe("smear3d", () => {
     });
   });
 
+  it("keeps its pose when travel reverses, since a stretch has no front", () => {
+    const ahead = smear3d({ vx: 300, vy: -200, vz: 900 }, { stretch: 0.3, max: 3 });
+    const back = smear3d({ vx: -300, vy: 200, vz: -900 }, { stretch: 0.3, max: 3 });
+    expect(back).toEqual(ahead);
+  });
+
   it("keeps volume", () => {
     const { pose } = smear3d({ vx: 300, vy: -400, vz: 1200 }, { stretch: 0.2, max: 3 });
     expect((pose.scaleX ?? 1) * (pose.scaleY ?? 1) * (pose.scaleZ ?? 1)).toBeCloseTo(1, 9);

@@ -1,7 +1,7 @@
 import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d, transposeMatrix3 } from "@motion5/rig";
 import type { Pose3d } from "./pose3d";
 
-/** Stretches along travel by `stretch` per 1000 units/s up to `max`, volume kept; `turn` carries inner content back. */
+/** Stretches along travel by `stretch` per 1000 units/s up to `max`, volume kept; reversing never flips it; `turn` undoes it. */
 export function smear3d(
   velocity: { readonly vx: number; readonly vy: number; readonly vz: number },
   options: { readonly stretch: number; readonly max: number },
@@ -11,7 +11,9 @@ export function smear3d(
   const speed = Math.hypot(velocity.vx, velocity.vy, velocity.vz);
   if (options.stretch === 0 || speed === 0) return { pose: {}, turn: {} };
   const s = Math.min(options.max, 1 + (options.stretch * speed) / 1000);
-  const frame = swingFrame3d(IDENTITY_MATRIX3, [velocity.vx, velocity.vy, velocity.vz]);
+  const { vx, vy, vz } = velocity;
+  const back = vx < 0 || (vx === 0 && (vy < 0 || (vy === 0 && vz < 0)));
+  const frame = swingFrame3d(IDENTITY_MATRIX3, back ? [-vx, -vy, -vz] : [vx, vy, vz]);
   const side = 1 / Math.sqrt(s);
   return {
     pose: { ...eulerFromMatrix3d(frame), scaleX: s, scaleY: side, scaleZ: side },
