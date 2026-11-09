@@ -23,6 +23,46 @@ function frames(): FrameSource & { run(at: number): void; readonly waiting: numb
   };
 }
 
+describe("clockDriver under reduced motion", () => {
+  it("shows the end and asks for no frame when the person prefers reduced motion", () => {
+    const source = frames();
+    const driver = clockDriver({
+      duration: 1000,
+      frames: source,
+      prefersReducedMotion: () => true,
+    });
+    expect(driver.now().progress).toBe(1);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1000, length: 1000 });
+    expect(source.waiting).toBe(0);
+    driver.replay();
+    expect(driver.now().progress).toBe(1);
+    expect(source.waiting).toBe(0);
+  });
+
+  it("plays as usual when the scene opts out, or when nobody asked", () => {
+    for (const driver of [
+      clockDriver({
+        duration: 1000,
+        frames: frames(),
+        prefersReducedMotion: () => true,
+        reducedMotion: "play",
+      }),
+      clockDriver({ duration: 1000, frames: frames(), prefersReducedMotion: () => false }),
+    ])
+      expect(driver.now().progress).toBe(0);
+  });
+
+  it("still seeks when the person scrubs", () => {
+    const driver = clockDriver({
+      duration: 1000,
+      frames: frames(),
+      prefersReducedMotion: () => true,
+    });
+    driver.seek(0.5);
+    expect(driver.now().progress).toBe(0.5);
+  });
+});
+
 describe("clockDriver", () => {
   it("advances by the frames' own time from the first frame, and stops at the end", () => {
     const source = frames();
