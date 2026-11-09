@@ -115,12 +115,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsc -p packages/rig/tsconfig.build.json
+      - run: npx tsc -p packages/moves/tsconfig.build.json
       - run: npx tsc -p packages/core/tsconfig.build.json
       - run: test -f packages/core/dist/index.js
       - run: test -f packages/core/dist/index.d.ts
       - run: npx tsc -p packages/plugins/tsconfig.build.json
-      - run: test -f packages/plugins/dist/fk.js
-      - run: test -f packages/plugins/dist/fk.d.ts
+      - run: test -f packages/plugins/dist/fk/fk.js
+      - run: test -f packages/plugins/dist/fk/fk.d.ts
 
   end-to-end:
     name: end-to-end (node 24.21.0)
