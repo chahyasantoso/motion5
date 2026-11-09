@@ -200,6 +200,37 @@ content that must not turn in an inner element posed `{ rotation: -heading }`.
 const { pose, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
 ```
 
+### 3D poses
+
+**`Pose3d`**: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY, scaleZ, opacity }`, all optional; y up,
+turns in degrees on the Z-X-Y Euler (`rotation` is about z). A `Pose2d` is refused where a `Pose3d` goes.
+```ts
+const lid: Pose3d = { y: 0.4, rotationX: -70 };
+```
+
+**`lift2d(pose, { unitsPerPx })`**: a 2D pose on the 3D xy plane, px scaled to units, y and the turn flipped, the
+anchor dropped; every 2D move reaches 3D through it.
+```ts
+const ball = lift2d(hop({ height: 260, bounces: 2 }, time), { unitsPerPx: 0.01 });
+```
+
+**`combine3d(poses)`**: poses on one target as one; offsets add, scales multiply, turns compose in order, and turns
+about one shared axis add exactly, so a spin keeps its winding.
+```ts
+combine3d([ball, { rotationY: spin }]);
+```
+
+**`mixPose3d(a, b, share)`**: blends two poses, turns along the short arc and past the ends for a share past 1; a
+missing field at its rest. **`mixPoint3d(a, b, share)`** blends `{ x, y, z }`.
+```ts
+const head = mixPose3d(LOOK_LEFT, LOOK_RIGHT, turn.of(time, springEase({ stiffness: 170, damping: 12 })).progress);
+```
+
+**`squashed3d(squash, weight, axis?)`**: shortens `axis` (`"y"` when absent) and widens the other two, keeping volume.
+```ts
+combine3d([squashed3d(0.3, landing), ball]);
+```
+
 ### Events
 
 **`MotionEvent`**: `{ name, at, target?, x?, y? }`; `at` in ms, `x` and `y` from the watched element's corner.

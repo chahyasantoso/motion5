@@ -30,6 +30,7 @@ export {
 export { lane, laneTime, lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
+export { combine3d, lift2d, mixPoint3d, mixPose3d, squashed3d, type Pose3d } from "./pose3d";
 export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";
 export { toCubics } from "./path";
 export { along } from "./along";
