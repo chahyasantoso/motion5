@@ -64,6 +64,18 @@ describe("useTarget3d", () => {
     expect(probe.renders).toBe(settled);
   });
 
+  it("keeps the position the object had when bound as its rest", async () => {
+    const probe = stage();
+    probe.object.position.set(0, -3, 1);
+    await probe.mount();
+    await act(() => {
+      probe.driver.seek(0.5);
+    });
+    expect(probe.object.position.x).toBeCloseTo(5, 9);
+    expect(probe.object.position.y).toBe(-1);
+    expect(probe.object.position.z).toBe(1);
+  });
+
   it("stops writing after unmount", async () => {
     const probe = stage();
     const renderer = await probe.mount();

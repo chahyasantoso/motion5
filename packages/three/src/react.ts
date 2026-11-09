@@ -10,7 +10,7 @@ function isPose(value: unknown): value is Pose3d {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Writes a 3D pose target onto the object the ref lands on, every step, with no React render. */
+/** Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest. */
 export function useTarget3d<T extends object, K extends Pose3dTargets<T>>(
   player: Player<T> | undefined,
   target: K,
@@ -20,9 +20,10 @@ export function useTarget3d<T extends object, K extends Pose3dTargets<T>>(
   const { invalidate } = options;
   useEffect(() => {
     if (player === undefined || object === null) return undefined;
+    const rest = { x: object.position.x, y: object.position.y, z: object.position.z };
     return player.subscribe(target, (value) => {
       if (!isPose(value)) return;
-      applyPose3d(object, value);
+      applyPose3d(object, value, rest);
       invalidate?.();
     });
   }, [player, object, target, invalidate]);
