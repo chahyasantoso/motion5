@@ -10,7 +10,8 @@ export {
   type Span,
   type Time,
 } from "./time";
-export { ease, type Ease } from "./ease";
+export { backEase, ease, springEase, type Ease, type EaseDirection } from "./ease";
+export { spring, type SpringOptions, type SpringState } from "./spring";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
 export { seeded } from "./random";
