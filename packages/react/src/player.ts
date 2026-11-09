@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useState, useSyncExternalStore, type RefCallback } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefCallback,
+} from "react";
 import { applyPose, type EventDriver, type RenderTarget } from "@motion5/dom";
 import { NO_EVENTS, type Events, type Pose2d } from "@motion5/moves";
 import { play, type Driver, type Player, type Scene } from "@motion5/player";
@@ -11,23 +20,83 @@ export interface Playing<T extends object, D extends OwnedDriver> {
   readonly driver: D;
 }
 
+/** What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped. */
+export interface PlayerHost {
+  /** Answers the driver to play on, given the component's own factory; the host keeps it and no component disposes it. */
+  readonly createDriver?: <D extends OwnedDriver>(own: () => D) => D;
+  /** Wraps each scene before it plays, such as to fall back to the last good one when it throws. */
+  readonly guard?: <T extends object>(scene: Scene<T>) => Scene<T>;
+}
+
+const NO_HOST: PlayerHost = {};
+
+const HostContext = createContext<PlayerHost>(NO_HOST);
+
+/** Gives every `usePlayer` below it the host's driver and guard. */
+export const PlayerHostProvider = HostContext.Provider;
+
+/** A host's driver slot: the first driver a component's factory makes stays for every component and every remount. */
+export interface DriverKeeper {
+  readonly createDriver: NonNullable<PlayerHost["createDriver"]>;
+  /** The kept driver, once a component has made it. */
+  current(): OwnedDriver | undefined;
+  /** Calls `listener` when the driver is first kept, and returns how to stop. */
+  subscribe(listener: () => void): () => void;
+}
+
+export function driverKeeper(): DriverKeeper {
+  let kept: OwnedDriver | undefined;
+  const listeners = new Set<() => void>();
+  return {
+    createDriver<D extends OwnedDriver>(own: () => D): D {
+      if (kept === undefined) {
+        const made = own();
+        kept = made;
+        for (const listener of [...listeners]) listener();
+        return made;
+      }
+      // The kept driver came from a factory of the same scene file, so it has the same type.
+      return kept as D;
+    },
+    current: () => kept,
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => {
+        listeners.delete(listener);
+      };
+    },
+  };
+}
+
 /** Plays `scene` on a driver, with its `cues`, while the component stays; keep every argument stable across renders. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Scene<T>,
   createDriver: () => D,
   cues: Events = NO_EVENTS,
 ): Playing<T, D> | undefined {
+  const host = useContext(HostContext);
+  const adopt = host.createDriver;
+  const guard = host.guard;
   const [playing, setPlaying] = useState<Playing<T, D>>();
+  const shown = useRef<Scene<T> | undefined>(undefined);
+  const sceneKey = adopt === undefined ? scene : undefined;
   useEffect(() => {
-    const driver = createDriver();
-    const player = play(scene, driver, { cues });
+    const driver = adopt === undefined ? createDriver() : adopt(createDriver);
+    const first = guard === undefined ? scene : guard(scene);
+    const player = play(first, driver, { cues });
+    shown.current = scene;
     setPlaying({ player, driver });
     return () => {
       player.dispose();
-      driver.dispose?.();
+      if (adopt === undefined) driver.dispose?.();
       setPlaying(undefined);
     };
-  }, [scene, createDriver, cues]);
+  }, [sceneKey, adopt, guard, createDriver, cues]);
+  useEffect(() => {
+    if (adopt === undefined || playing === undefined || shown.current === scene) return;
+    shown.current = scene;
+    playing.player.replace(guard === undefined ? scene : guard(scene));
+  }, [scene, playing, adopt, guard]);
   return playing;
 }
 

@@ -134,3 +134,42 @@ describe("seekMs", () => {
     expect(() => manualDriver().seekMs(10)).toThrow(/seekMs/);
   });
 });
+
+describe("replace", () => {
+  const slow = (time: Time) => ({ box: { x: time.progress * 100 } });
+  const fast = (time: Time) => ({ box: { x: time.progress * 200 } });
+
+  it("computes the new scene at the driver's current time, with no reset", () => {
+    const driver = manualDriver({ durationMs: 4000 });
+    const player = play(slow, driver);
+    driver.seekMs(2300);
+    player.replace(fast);
+    expect(player.values).toEqual(fast(driver.now()));
+    expect(player.time).toEqual(driver.now());
+    expect(player.values.box.x).toBeCloseTo((2300 / 4000) * 200);
+  });
+
+  it("tells a subscriber once, and keeps its subscription and the driver", () => {
+    const driver = manualDriver({ durationMs: 4000 });
+    const player = play(slow, driver);
+    driver.seekMs(1000);
+    const seen: number[] = [];
+    player.subscribe("box", (box) => seen.push(box.x ?? 0));
+    seen.length = 0;
+    player.replace(fast);
+    expect(seen).toEqual([50]);
+    driver.seekMs(2000);
+    expect(seen).toEqual([50, 100]);
+  });
+
+  it("calls no cue handler, since time has not moved", () => {
+    const driver = manualDriver({ durationMs: 4000 });
+    const player = play(slow, driver, { cues: [{ name: "hit", at: 500 }] });
+    const heard: string[] = [];
+    player.on("hit", (event) => heard.push(event.name));
+    driver.seekMs(1000);
+    expect(heard).toEqual(["hit"]);
+    player.replace(fast);
+    expect(heard).toEqual(["hit"]);
+  });
+});

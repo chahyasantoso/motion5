@@ -324,7 +324,7 @@ const slide = defineMove({
 **`Scene`**: `(time, events) => targets`.
 
 **`play(scene, driver, { cues })`**: runs a scene on a driver; **`Player`** has `.values`, `.time`,
-`.subscribe(target, fn)`, `.refresh()`, `.on(name, fn)` for events passed going forward, `.dispose()`.
+`.subscribe(target, fn)`, `.refresh()`, `.replace(scene)` (a new scene at the same time, keeping the driver, cues and listeners), `.on(name, fn)` for events passed going forward, `.dispose()`.
 **`PlayOptions`** holds `cues`.
 ```ts
 const player = play(scene, clock(), { cues });
@@ -391,6 +391,10 @@ export const clock = () => eventDriver({ introMs: 900 });
 const playing = usePlayer(scene, clock, cues);
 ```
 
+**`PlayerHostProvider`** gives every `usePlayer` below it a **`PlayerHost`** `{ createDriver?, guard? }`: `createDriver(own)` answers the
+driver to play on, which the host keeps and `usePlayer` never disposes; `guard(scene)` wraps each scene. Under a host a
+changed `scene` calls `player.replace` and keeps time. **`driverKeeper()`** makes a **`DriverKeeper`**: its `createDriver` keeps the
+first driver a component makes, `current()` reads it and `subscribe` tells when it appears. With no host, nothing changes.
 **`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
 list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
 its index, as `Letter` in `apps/react-demo/src/principles.tsx` does.

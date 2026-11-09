@@ -26,6 +26,8 @@ export interface Player<T extends object> {
   subscribe<K extends keyof T>(target: K, listener: (value: T[K]) => void): () => void;
   /** Reruns the scene at the current time, for inputs it reads from outside such as a measured layout. */
   refresh(): void;
+  /** Swaps the scene and reruns it at the current time; the driver, cues, listeners and handlers stay. */
+  replace(next: Scene<T>): void;
   /** Calls `listener` each time forward play reaches an event of that name, a cue or the page's; a seek back calls nothing. */
   on(name: string, listener: (event: MotionEvent) => void): () => void;
   dispose(): void;
@@ -47,8 +49,9 @@ export function play<T extends object>(
     const page = driver.events?.() ?? NO_EVENTS;
     return page.length === 0 ? cues : cues.length === 0 ? page : mergeEvents(cues, page);
   };
+  let current = scene;
   let time = driver.now();
-  let values = scene(time, events());
+  let values = current(time, events());
   let reached = elapsedOf(time.clock);
   const listeners = new Set<() => void>();
   const handlers = new Map<string, Set<(event: MotionEvent) => void>>();
@@ -64,7 +67,7 @@ export function play<T extends object>(
   const step = (): void => {
     time = driver.now();
     const all = events();
-    values = scene(time, all);
+    values = current(time, all);
     for (const notify of [...listeners]) notify();
     announce(all);
   };
@@ -85,6 +88,10 @@ export function play<T extends object>(
       };
     },
     refresh: step,
+    replace(next) {
+      current = next;
+      step();
+    },
     on(name, listener) {
       const set = handlers.get(name) ?? new Set();
       set.add(listener);

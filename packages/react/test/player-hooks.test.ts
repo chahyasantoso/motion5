@@ -4,7 +4,16 @@ import { describe, expect, it } from "vitest";
 import type { RenderTarget } from "@motion5/dom";
 import { drop, type Time } from "@motion5/moves";
 import { manualDriver, type ManualDriver } from "@motion5/player";
-import { usePlayer, useTarget, useValue, type Playing } from "@motion5/react";
+import {
+  PlayerHostProvider,
+  driverKeeper,
+  usePlayer,
+  useTarget,
+  useValue,
+  type DriverKeeper,
+  type PlayerHost,
+  type Playing,
+} from "@motion5/react";
 
 const scene = (time: Time) => ({
   box: drop({ distance: 100 }, time),
@@ -110,5 +119,81 @@ describe("useWatch", () => {
     expect(driver.events?.()).toEqual([{ name: "enter", at: 0, target: "card" }]);
     await act(() => renderer?.unmount());
     expect(listeners.size).toBe(0);
+  });
+});
+
+describe("a page host", () => {
+  const first = (time: Time) => ({ box: { x: time.progress * 100 } });
+  const second = (time: Time) => ({ box: { x: time.progress * 200 } });
+
+  function hosted(keeper: DriverKeeper, guard?: PlayerHost["guard"]) {
+    let seen: Playing<{ box: { x: number } }, ManualDriver> | undefined;
+    const driver = manualDriver({ durationMs: 1000 });
+    let disposed = 0;
+    const own = (): ManualDriver & { dispose(): void } => ({
+      ...driver,
+      dispose: () => {
+        disposed += 1;
+      },
+    });
+    const Probe: FC<{ scene: typeof first }> = ({ scene }) => {
+      seen = usePlayer(scene, own);
+      return null;
+    };
+    const host: PlayerHost = { createDriver: keeper.createDriver, ...(guard ? { guard } : {}) };
+    const tree = (scene: typeof first) =>
+      createElement(PlayerHostProvider, { value: host }, createElement(Probe, { scene }));
+    return {
+      tree,
+      driver,
+      get playing() {
+        return seen;
+      },
+      get disposed() {
+        return disposed;
+      },
+    };
+  }
+
+  it("keeps the host's driver and its time when the component leaves and returns, and never disposes it", async () => {
+    const probe = hosted(driverKeeper());
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(probe.tree(first));
+    });
+    const kept = probe.playing?.driver;
+    await act(() => probe.playing?.driver.seekMs(400));
+    await act(() => renderer?.unmount());
+    await act(() => {
+      renderer = create(probe.tree(first));
+    });
+    expect(probe.playing?.driver).toBe(kept);
+    expect(probe.playing?.player.time.progress).toBeCloseTo(0.4);
+    expect(probe.disposed).toBe(0);
+  });
+
+  it("swaps a changed scene in place, keeping the player and the time", async () => {
+    const probe = hosted(driverKeeper());
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(probe.tree(first));
+    });
+    const player = probe.playing?.player;
+    await act(() => probe.playing?.driver.seekMs(500));
+    await act(() => renderer?.update(probe.tree(second)));
+    expect(probe.playing?.player).toBe(player);
+    expect(probe.playing?.player.values.box.x).toBeCloseTo(100);
+  });
+
+  it("wraps each scene in the host's guard", async () => {
+    let wrapped = 0;
+    const probe = hosted(driverKeeper(), (scene) => {
+      wrapped += 1;
+      return scene;
+    });
+    await act(() => {
+      create(probe.tree(first));
+    });
+    expect(wrapped).toBe(1);
   });
 });
