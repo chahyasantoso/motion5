@@ -1,7 +1,7 @@
 import type { Events } from "./events";
 import { spring, springMemory } from "./spring";
 import { elapsedOf, type Time } from "./time";
-import { unreachable } from "./unreachable";
+import { timeAt } from "./time-at";
 
 export interface TrailOptions {
   /** Pull towards the signal, per second squared; default 170. */
@@ -15,24 +15,6 @@ export interface TrailOptions {
 }
 
 const LONGEST_MEMORY_MS = 4000;
-
-/** `time` moved to `ms` on its own clock. */
-function timeAt(time: Time, ms: number): Time {
-  const clock = time.clock;
-  switch (clock.kind) {
-    case "timed":
-      return {
-        progress: clock.length > 0 ? ms / clock.length : 1,
-        clock: { kind: "timed", elapsed: ms, length: clock.length },
-      };
-    case "live":
-      return { progress: time.progress, clock: { kind: "live", elapsed: ms } };
-    case "untimed":
-      return time;
-    default:
-      return unreachable(clock);
-  }
-}
 
 /** A value chasing `signal` on a spring; starts from rest one spring memory ago, so a frame's cost never grows. */
 export function trail(

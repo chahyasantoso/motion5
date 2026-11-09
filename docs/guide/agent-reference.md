@@ -182,6 +182,23 @@ anchor, a path segment, a reveal circle, a drawn share.
 
 **`toCubics(anchors)`**: a rope's anchors as path segments for `applyPath`.
 
+**`along(cubics, share, { turn })`**: the `{ x, y }` pose `share` of the way along a path by distance, relative to the
+target's rest, so a path ending at 0,0 arrives at rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
+```ts
+const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
+```
+
+**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock.
+```ts
+const { vx, vy } = velocity(ball, time, events);
+```
+
+**`smear({ vx, vy }, { stretch, max })`**: a pose stretching a body along its travel, area kept, and the `heading`; wrap
+content that must not turn in an inner element posed `{ rotation: -heading }`.
+```ts
+const { pose, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
+```
+
 ### Events
 
 **`MotionEvent`**: `{ name, at, target?, x?, y? }`; `at` in ms, `x` and `y` from the watched element's corner.

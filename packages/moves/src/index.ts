@@ -32,6 +32,9 @@ export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleS
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
 export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";
 export { toCubics } from "./path";
+export { along } from "./along";
+export { velocity } from "./velocity";
+export { smear } from "./smear";
 export { combine } from "./combine";
 export {
   defineMove,
