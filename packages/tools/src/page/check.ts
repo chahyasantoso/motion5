@@ -96,6 +96,23 @@ function sameBox(a: Box | undefined, b: Box | undefined): boolean {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
+/** Names still changing between the last two samples, else a short-hold when the final rest is under `hold` ms. */
+export function restFindings(
+  ats: readonly number[],
+  names: readonly string[],
+  same: (name: string, before: number, after: number) => boolean,
+  hold: number,
+): readonly Finding[] {
+  const lastIndex = ats.length - 1;
+  if (lastIndex < 0) return [];
+  const moving = names.filter((name) => !same(name, lastIndex - 1, lastIndex));
+  if (moving.length > 0) return moving.map((element) => ({ kind: "still-moving", element }));
+  let settled = lastIndex;
+  while (settled > 0 && names.every((name) => same(name, settled - 1, settled))) settled -= 1;
+  const rest = (ats[lastIndex] ?? 0) - (ats[settled] ?? 0);
+  return settled > 0 && rest < hold ? [{ kind: "short-hold", ms: rest }] : [];
+}
+
 /** Findings over frames sampled at a fixed step: long overlaps, jumps, a short final hold, no rest. */
 export function analyse(
   frames: readonly Frame[],
@@ -157,20 +174,14 @@ export function analyse(
         });
     }
 
-  const last = frames.at(-1);
-  const previous = frames.at(-2);
-  const moving = names.filter((name) => !sameBox(boxAt(previous, name), boxAt(last, name)));
-  for (const element of moving) findings.push({ kind: "still-moving", element });
-  if (moving.length === 0 && last !== undefined) {
-    let settled = frames.length - 1;
-    while (
-      settled > 0 &&
-      names.every((name) => sameBox(boxAt(frames[settled - 1], name), boxAt(frames[settled], name)))
-    )
-      settled -= 1;
-    const hold = last.at - (frames[settled]?.at ?? 0);
-    if (settled > 0 && hold < limits.hold) findings.push({ kind: "short-hold", ms: hold });
-  }
+  findings.push(
+    ...restFindings(
+      frames.map(({ at }) => at),
+      names,
+      (name, before, after) => sameBox(boxAt(frames[before], name), boxAt(frames[after], name)),
+      limits.hold,
+    ),
+  );
   return findings;
 }
 
