@@ -226,9 +226,46 @@ missing field at its rest. **`mixPoint3d(a, b, share)`** blends `{ x, y, z }`.
 const head = mixPose3d(LOOK_LEFT, LOOK_RIGHT, turn.of(time, springEase({ stiffness: 170, damping: 12 })).progress);
 ```
 
+**`trailTurn(signal, { stiffness, damping, stepMs, rest })`**: a turn chasing a `Pose3d` signal's turn on a spring,
+the short way round, resting exactly on it; give it the scene's time. Trail a position with three `trail` calls.
+```ts
+const head = trailTurn((t) => body(t), { damping: 12 });
+head(time, events);
+```
+
 **`squashed3d(squash, weight, axis?)`**: shortens `axis` (`"y"` when absent) and widens the other two, keeping volume.
 ```ts
 combine3d([squashed3d(0.3, landing), ball]);
+```
+
+**`Anchor3d`**, **`Cubic3d`**: the 3D path anchor and segment, `Anchor2d` and `Cubic2d` with `z`, `inZ`, `outZ`.
+**`toCubics3d(anchors)`**: 3D anchors as path segments.
+
+**`along3d(cubics, share, { face })`**: the `{ x, y, z }` `share` of the way along a 3D path by distance; `face: true`
+adds the turn of local +x onto the path, with no roll.
+```ts
+const pose = along3d(toCubics3d(anchors), flight.of(time, ease.sineInOut).progress, { face: true });
+```
+
+**`velocity3d(signal, time, events, stepMs?)`**: the `{ vx, vy, vz }` units per second a `Pose3d` signal moves at the
+scene's time, never read past the clock's ends; zero with no clock.
+
+**`smear3d({ vx, vy, vz }, { stretch, max })`**: `{ pose, turn }`: `pose` turns local +x onto the travel and stretches
+it, volume kept; an inner object takes `turn` so its content stays upright.
+```ts
+const { pose, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.2, max: 1.8 });
+```
+
+**`aim(from, to, up?)`**: the turn that points local -z, a camera's forward, from `from` at `to`, `up` +y when absent,
+no roll; `{}` when they meet.
+```ts
+const camera = { ...eye, ...aim(eye, { x: 0, y: 0.5, z: 0 }) };
+```
+
+**`orbit({ target, radius, azimuth, elevation })`**: a point `radius` from `target`, azimuth in degrees about +y from +z
+toward +x, elevation up from the ground plane; a camera move is a `span` on `azimuth`.
+```ts
+const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 6, azimuth: mix(-30, 30, pan.of(time).progress), elevation: 20 });
 ```
 
 ### Events
@@ -440,6 +477,19 @@ const sim = simulate(rapier(), build);
 **`applyPose2d(object, pose, rest?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes.
 ```ts
 player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
+```
+
+**`applyPose3d(object, pose, rest?)`**: writes a `Pose3d` on a Three.js object, y up, turns in degrees on Z-X-Y; a
+missing field writes its rest. **`EULER_ORDER_3D`** is that order.
+```ts
+player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
+```
+
+**`useTarget3d(player, target, { invalidate })`** from `@motion5/three/react`: a ref for an `Object3D` that writes the
+target's `Pose3d` every step with no render; in React Three Fiber pass `invalidate` when the canvas renders on demand.
+```tsx
+const ball = useTarget3d(playing?.player, "ball");
+return <mesh ref={ball} />;
 ```
 
 ## Commands

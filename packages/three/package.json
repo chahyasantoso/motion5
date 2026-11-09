@@ -7,14 +7,17 @@
   "dependencies": {
     "@motion5/core": "0.0.0",
     "@motion5/moves": "0.0.0",
+    "@motion5/player": "0.0.0",
     "@motion5/plugins": "0.0.0",
     "@motion5/rig": "0.0.0"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
+    "react": "19.2.8",
     "three": "^0.186.1"
   },
   "peerDependencies": {
+    "react": ">=18.0.0",
     "three": ">=0.160.0"
   },
   "exports": {
@@ -25,6 +28,10 @@
     "./skeleton": {
       "types": "./src/skeleton.ts",
       "default": "./src/skeleton.ts"
+    },
+    "./react": {
+      "types": "./src/react.ts",
+      "default": "./src/react.ts"
     },
     "./engine": {
       "types": "./src/engine.ts",
