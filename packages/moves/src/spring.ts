@@ -49,7 +49,7 @@ export function spring(
   }
   const root = natural * Math.sqrt(ratio * ratio - 1);
   const fast = -ratio * natural - root;
-  const slow = -ratio * natural + root;
+  const slow = -natural / (ratio + Math.sqrt(ratio * ratio - 1));
   const a = (speed - slow * offset) / (fast - slow);
   const b = offset - a;
   return {
@@ -63,6 +63,6 @@ export function springMemory(options: SpringOptions, rest: number): number {
   check(options);
   const natural = Math.sqrt(options.stiffness);
   const ratio = options.damping / (2 * natural);
-  const rate = ratio < 1 ? ratio * natural : natural * (ratio - Math.sqrt(ratio * ratio - 1));
+  const rate = ratio < 1 ? ratio * natural : natural / (ratio + Math.sqrt(ratio * ratio - 1));
   return rate > 0 ? Math.log(1 / rest) / (rate / 2) : Infinity;
 }

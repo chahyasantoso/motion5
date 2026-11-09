@@ -52,6 +52,15 @@ describe("springEase", () => {
       expect(values[i]).toBeGreaterThanOrEqual(values[i - 1]!);
   });
 
+  it("keeps its shape under extreme damping, where a subtraction would cancel to 0", () => {
+    const heavy = springEase({ stiffness: 1, damping: 1e9 });
+    expect(heavy(0.5)).toBeGreaterThan(0);
+    expect(heavy(1)).toBe(1);
+    const a = springEase({ stiffness: 100, damping: 1e8 })(0.5);
+    const b = springEase({ stiffness: 100, damping: 1e9 })(0.5);
+    expect(a).toBeCloseTo(b, 3);
+  });
+
   it("refuses a spring that never settles", () => {
     expect(() => springEase({ stiffness: 170, damping: 0 })).toThrow(RangeError);
   });
