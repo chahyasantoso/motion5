@@ -41,6 +41,13 @@ scene(liveAt(1200), events);
 const ms = elapsedOf(time.clock) ?? 0;
 ```
 
+**`timeAt(time, ms)`**: `time` moved to `ms` on its own clock, to read a signal a moment earlier or later, such as a
+turn rate; an untimed time stays as it is. Pass it the scene's time, not an eased one.
+```ts
+const ms = elapsedOf(time.clock) ?? 0;
+const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
+```
+
 **`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `.of(time, ease?)` is a move's time inside it, `.at(share)`
 the ms a share falls on. Reads a live clock's ms directly. **`Span`** is its type.
 ```ts
@@ -83,9 +90,11 @@ drop({ distance: 700, squash: 0.18 }, time);
 ```
 
 **`hop`**: `bounces + 1` landings, each `decay` as high, arriving from `dx` px left (negative: right); also gives
-`contact: { hits, justHit }`; moments `landings`, `lastLanding`. `bounces: 0` is one arc.
+`contact: { hits, justHit }`: `hits` counts the landings so far, and `justHit` runs 1 at a landing to 0 a fifth of a
+flight away, for what the landing touches; moments `landings`, `lastLanding`. `bounces: 0` is one arc.
 ```ts
-hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: -1100 }, time);
+const ball = hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: -1100 }, time);
+const give = ball.contact.hits === 3 ? squashed(0.1, ball.contact.justHit) : {};
 ```
 
 **`wipe`**: a reveal circle `{ x, y, radius }` growing to `radius` from `x`, `y`.
@@ -382,10 +391,15 @@ export const clock = () => eventDriver({ introMs: 900 });
 const playing = usePlayer(scene, clock, cues);
 ```
 
-**`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render.
-```ts
+**`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
+list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
+its index, as `Letter` in `apps/react-demo/src/principles.tsx` does.
+```tsx
 const ball = useTarget(playing?.player, "ball");
-const glyph = useTarget(playing?.player, "letters", (el, poses) => applyPose(el, poses[i] ?? {}));
+const Letter = ({ player, i, char }: { player: Player<Frame> | undefined; i: number; char: string }) => {
+  const render = useCallback((el: HTMLElement, poses: Frame["letters"]) => applyPose(el, poses[i] ?? {}), [i]);
+  return <span ref={useTarget(player, "letters", render)}>{char}</span>;
+};
 ```
 
 **`useValue(player, target, select)`**: re-renders when `select`'s answer changes.
