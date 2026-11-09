@@ -64,8 +64,10 @@ export const rope = defineMove({
   run(
     { angle, pin, release, overshoot, ripple },
     { progress },
-    { points }: { readonly points: readonly Point2d[] },
+    input: { readonly points: readonly Point2d[] },
   ): readonly Anchor2d[] {
+    if (input === undefined) throw new TypeError(`rope: input "points" is required.`);
+    const { points } = input;
     if (points.length < 2) throw new RangeError(`rope: input "points" needs at least 2 rows.`);
     const pinEnd = pin === "end";
     const shape = pinEnd ? [...points].reverse() : points;

@@ -23,7 +23,7 @@ byte ceiling.
   and `docs/guide/agent-reference.md` names every export and command, held complete by a test. The repository gate
   tests live in `test/repo/`. A move is declared by `defineMove` with its id, description, options (kinds, defaults,
   ranges) and moments; an input is a typed third argument of `run`. `@motion5/rig` exports the 2D chain API, frames and
-  the 3D solvers, with no readers of untyped records but the ones `buildChain` and 2D IK validate through.
+  the 3D solvers and constraints; it no longer reads engine rows or the joint vocabulary.
 
 ## Next in line
 

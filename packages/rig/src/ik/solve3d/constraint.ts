@@ -31,6 +31,7 @@ import {
 /** Sole owner of 3D joint limits: the legal local orientation, relative to the parent's solved frame, nearest the one the solve proposes. */
 export type JointLimit3d =
   | { readonly kind: "free" }
+  // A hinge axis is unit length; the solver does not normalise it.
   | { readonly kind: "hinge"; readonly axis: Vec3; readonly range: JointLimit }
   | { readonly kind: "cone"; readonly maxSwing: number }
   | {

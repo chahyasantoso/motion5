@@ -32,8 +32,7 @@ describe("shared angle numerics (issue #211)", () => {
     // producing `NaN` out of `acos`, which is the whole of what `ik`'s five call sites are for.
     const root = { x: 200, y: 300, rotation: 0 };
     const unreachable = { x: 2000, y: 300, rotation: 0 };
-    const [first, second] = [member("a", 80), member("b", 60)];
-    const solved = solveTwoBone(root, unreachable, first!, second!).rotations;
+    const solved = solveTwoBone(root, unreachable, member("a", 80), member("b", 60)).rotations;
     expect(Number.isFinite(solved.a as number)).toBe(true);
     expect(Number.isFinite(solved.b as number)).toBe(true);
   });
