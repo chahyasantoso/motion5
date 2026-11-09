@@ -14,6 +14,7 @@ export { backEase, ease, springEase, type Ease, type EaseDirection } from "./eas
 export { spring, type SpringOptions, type SpringState } from "./spring";
 export { trail, type TrailOptions } from "./trail";
 export { trailTurn } from "./trail-turn";
+export { timeAt } from "./time-at";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
 export { seeded } from "./random";

@@ -42,6 +42,10 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 - **A smear on a body that must keep its face:** an outer group takes `smear3d(...).pose` and the mesh inside takes
   `turn`. Reversing travel never flips the stretch.
+- **A bank into a turn:** a facing turn from `along3d(..., { face: true })` points local +x along the path. Bank with
+  `combine3d([facing, { rotationX: bank }])`: it turns after the facing turn, so it rolls about the nose. Writing
+  `rotationX` into the facing pose's own fields tilts about the world instead. Read the turn rate from the facing
+  turn at two times with `timeAt`, and bank in proportion to it.
 - **A camera move:** `const eye = orbit({ target, radius, azimuth: mix(a, b, pan.of(time).progress), elevation });`
   then `camera: { ...eye, ...aim(eye, target) }`. Bind the camera as a target like any mesh.
 - **Staging:** move the camera or the subject, rarely both at once. A camera that drifts while the subject leaps hides
@@ -53,6 +57,6 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - Euler turns near 90 degrees about x lose a degree of freedom when you write them by hand. Blend through `mixPose3d`,
   never field by field.
 - `trailTurn` and `velocity3d` take the scene's time, never `span.of(time, ease)`.
-- `smear3d`'s `stretch` counts per 1000 units a second, and a 3D body moves a few units a second, so useful values
-  are large: the worked example uses 75.
+- `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
+  few units a second.
 - Not yet for code scenes: 3D rigs, a skinned mesh's bones, 3D physics.

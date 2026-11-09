@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { matrixFromEuler3d } from "@motion5/rig";
-import { along3d, toCubics3d, type Anchor3d, type Cubic3d } from "@motion5/moves";
+import {
+  along3d,
+  combine3d,
+  toCubics3d,
+  type Anchor3d,
+  type Cubic3d,
+  type Pose3d,
+} from "@motion5/moves";
 
 const cubic = (id: string, p: number[]): Cubic3d => ({
   id,
@@ -83,5 +90,24 @@ describe("along3d", () => {
     expect(cubics).toHaveLength(2);
     expect(cubics[0]).toEqual(cubic("a", [0, 0, 0, 1, 2, 3, 9, -2, 7, 10, 0, 10]));
     expect(toCubics3d([anchor("a", 0)])).toEqual([]);
+  });
+});
+
+describe("a bank on a facing turn", () => {
+  const nose = (pose: Pose3d) => {
+    const m = matrixFromEuler3d({
+      rotation: pose.rotation ?? 0,
+      rotationX: pose.rotationX ?? 0,
+      rotationY: pose.rotationY ?? 0,
+    });
+    return [m[0], m[3], m[6]];
+  };
+
+  it("rolls about the nose when combined after the facing turn", () => {
+    const path = [cubic("a", [0, 0, 0, 1, 1, 0, 2, 1, 1, 3, 0, 2])];
+    const facing = along3d(path, 0.4, { face: true });
+    const banked = combine3d([facing, { rotationX: 35 }]);
+    nose(banked).forEach((value, axis) => expect(value).toBeCloseTo(nose(facing)[axis] ?? 0, 9));
+    expect(banked).not.toEqual(facing);
   });
 });
