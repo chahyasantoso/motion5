@@ -14,9 +14,6 @@ const slide = defineMove({
       description: "Where it starts.",
     },
   },
-  inputs: {},
-  output: "pose2d",
-  extras: {},
   moments: ({ side }) => ({ crossing: side === "left" ? 0.25 : 0.75 }),
   run(options, time: Time) {
     const sign = options.side === "left" ? -1 : 1;
@@ -29,7 +26,7 @@ const slide = defineMove({
 
 describe("a move's declaration", () => {
   it("fills defaults for options the caller left out", () => {
-    expect(slide.read({ distance: 10 })).toEqual({ distance: 10, fade: false, side: "left" });
+    expect(slide({ distance: 10 }, atProgress(0))).toEqual({ x: -10 });
   });
 
   it("runs on the options it read", () => {
@@ -43,37 +40,38 @@ describe("a move's declaration", () => {
   });
 
   it("refuses a missing required option by name", () => {
-    expect(() => slide.read({})).toThrow(/slide: option "distance" is required/);
+    // @ts-expect-error `distance` is required.
+    expect(() => slide({}, atProgress(0))).toThrow(/slide: option "distance" is required/);
   });
 
   it("refuses an option of the wrong kind", () => {
-    expect(() => slide.read({ distance: "far" })).toThrow(
+    // @ts-expect-error `distance` is a number.
+    expect(() => slide({ distance: "far" }, atProgress(0))).toThrow(
       /slide: option "distance" must be a number/,
     );
   });
 
   it("refuses an option outside its range", () => {
-    expect(() => slide.read({ distance: -1 })).toThrow(
+    expect(() => slide({ distance: -1 }, atProgress(0))).toThrow(
       /slide: option "distance" must be at least 0/,
     );
   });
 
   it("refuses a string outside its enum", () => {
-    expect(() => slide.read({ distance: 1, side: "up" })).toThrow(
+    // @ts-expect-error `side` is one of its enum.
+    expect(() => slide({ distance: 1, side: "up" }, atProgress(0))).toThrow(
       /slide: option "side" must be one of left, right/,
     );
   });
 
   it("ignores keys it does not declare, so a wider record can carry it", () => {
-    expect(slide.read({ distance: 1, count: 3 })).toEqual({
-      distance: 1,
-      fade: false,
-      side: "left",
-    });
+    const wider = { distance: 1, count: 3 };
+    expect(slide(wider, atProgress(0))).toEqual({ x: -1 });
   });
 
   it("refuses a record that is not one", () => {
-    expect(() => slide.read(undefined)).toThrow(/slide: options must be a record/);
+    // @ts-expect-error options are a record.
+    expect(() => slide(undefined, atProgress(0))).toThrow(/slide: options must be a record/);
   });
 
   it("types options from the declaration", () => {

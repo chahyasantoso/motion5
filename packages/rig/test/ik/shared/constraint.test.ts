@@ -4,7 +4,6 @@ import { solveFabrik } from "../../../src/ik/fabrik/fabrik";
 import {
   atBound,
   limitRotation,
-  readBend,
   readJointLimit,
   restDirection,
   wrapRotation,
@@ -39,9 +38,6 @@ describe("constrained 2D IK (phase 3)", () => {
       min: -180,
       max: 30,
     });
-    expect(readBend({ bend: "positive" })).toBe(true);
-    expect(readBend({ bend: "negative" })).toBe(false);
-    expect(readBend({ bend: "bad", flip: true })).toBe(true);
   });
 
   it("CL-2 dispatches a limited two-bone chain to FABRIK and respects its range", () => {
@@ -76,26 +72,6 @@ describe("constrained 2D IK (phase 3)", () => {
 
 // Additional phase-3 witnesses keep each design promise independently cited.
 describe("constrained 2D IK evidence details", () => {
-  it("CL-7 preserves bend and flip equivalence on analytic and FABRIK strategies", () => {
-    const analytic = members();
-    const tree: readonly SolveMember[] = [
-      { id: "a", base: "root", length: 50 },
-      { id: "b", base: "a", length: 40 },
-      { id: "c", base: "b", length: 30, goal: { x: 60, y: 40, rotation: 0 } },
-    ];
-    expect(solveChain(ROOT, analytic, readBend({ bend: "positive" }))).toEqual(
-      solveChain(ROOT, analytic, true),
-    );
-    expect(solveChain(ROOT, tree, readBend({ bend: "negative" }))).toEqual(
-      solveChain(ROOT, tree, false),
-    );
-  });
-
-  it("CL-8 gives bend precedence to the explicit bend value over flip", () => {
-    expect(readBend({ bend: "negative", flip: true })).toBe(false);
-    expect(readBend({ bend: "positive", flip: false })).toBe(true);
-  });
-
   it("CL-9 keeps every seeded limited rotation inside its authored range", () => {
     const chain: readonly SolveMember[] = [
       { id: "a", base: "root", length: 70, limit: { kind: "range", min: -35, max: 5 } },
@@ -153,8 +129,8 @@ describe("constrained 2D IK review fixes", () => {
   ];
 
   it("CL-19 names the sign of the solved elbow: positive bends toward increasing rotation", () => {
-    const positive = solveChain(WORKED_ROOT, worked, readBend({ bend: "positive" }));
-    const negative = solveChain(WORKED_ROOT, worked, readBend({ bend: "negative" }));
+    const positive = solveChain(WORKED_ROOT, worked, true);
+    const negative = solveChain(WORKED_ROOT, worked, false);
     expect(positive.rotations.fore).toBeCloseTo(51.318, 3);
     expect(negative.rotations.fore).toBeCloseTo(-51.318, 3);
     expect(negative).toEqual(solveChain(WORKED_ROOT, worked));

@@ -54,7 +54,7 @@ describe("rope", () => {
 
   it("types its inputs from the declaration", () => {
     // @ts-expect-error `points` is a declared input.
-    expect(() => rope({}, atProgress(0))).toThrow();
+    expect(() => rope({}, atProgress(0))).toThrow(/rope: input "points" is required/);
   });
 });
 

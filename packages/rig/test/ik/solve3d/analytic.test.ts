@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   composeWorld3d,
-  readFrame3d,
   ZERO_EULER,
   ZERO_PIVOT_OFFSET3D,
   type Euler3d,
@@ -10,7 +9,17 @@ import {
 import { solveTwoBone } from "../../../src/ik/shared/analytic";
 import { solveTwoBone3d } from "../../../src/ik/solve3d/analytic";
 
-const root: WorldFrame3d = readFrame3d({});
+const frame3d = (partial: Partial<WorldFrame3d> = {}): WorldFrame3d => ({
+  x: 0,
+  y: 0,
+  z: 0,
+  rotation: 0,
+  rotationX: 0,
+  rotationY: 0,
+  ...partial,
+});
+
+const root: WorldFrame3d = frame3d();
 const first = { id: "upper", length: 80, offset: ZERO_PIVOT_OFFSET3D };
 const second = { id: "fore", length: 60, offset: ZERO_PIVOT_OFFSET3D };
 
@@ -57,7 +66,7 @@ function turnDistance(a: number, b: number): number {
 
 describe("3D analytic two-bone solve", () => {
   it("TH-4 reaches a planar goal on the positive branch with no X or Y rotation", () => {
-    const result = solveTwoBone3d(root, readFrame3d({ x: 100, y: 20 }), first, second);
+    const result = solveTwoBone3d(root, frame3d({ x: 100, y: 20 }), first, second);
     const { tip } = armPose(result);
     expect(result.quality).toEqual({ kind: "reached", residual: 0 });
     expect(distance(tip, { x: 100, y: 20, z: 0 })).toBeLessThanOrEqual(1e-9);
@@ -78,7 +87,7 @@ describe("3D analytic two-bone solve", () => {
     const spatial = (x: number, y: number, l1: number, l2: number) =>
       solveTwoBone3d(
         root,
-        readFrame3d({ x, y }),
+        frame3d({ x, y }),
         { id: "a", length: l1, offset: ZERO_PIVOT_OFFSET3D },
         { id: "b", length: l2, offset: ZERO_PIVOT_OFFSET3D },
       ).quality;
@@ -98,14 +107,14 @@ describe("3D analytic two-bone solve", () => {
     // The degenerate arms publish exact identities where 2D publishes exact zero angles.
     const noSecond = solveTwoBone3d(
       root,
-      readFrame3d({ x: 0, y: 0, z: 50 }),
+      frame3d({ x: 0, y: 0, z: 50 }),
       { id: "a", length: 50, offset: ZERO_PIVOT_OFFSET3D },
       { id: "b", length: 0, offset: ZERO_PIVOT_OFFSET3D },
     );
     expect(noSecond.rotations3d.b).toEqual(ZERO_EULER);
     const noFirst = solveTwoBone3d(
       root,
-      readFrame3d({ x: 0, y: 0, z: 50 }),
+      frame3d({ x: 0, y: 0, z: 50 }),
       { id: "a", length: 0, offset: ZERO_PIVOT_OFFSET3D },
       { id: "b", length: 50, offset: ZERO_PIVOT_OFFSET3D },
     );
@@ -134,10 +143,10 @@ describe("3D analytic two-bone solve", () => {
       // Goal azimuths all the way round, goals behind the root, and all three reach-band outcomes.
       const gx = x + (next() * 2 - 1) * (l1 + l2) * 1.2;
       const gy = y + (next() * 2 - 1) * (l1 + l2) * 1.2;
-      const base = readFrame3d({ x, y, rotation });
+      const base = frame3d({ x, y, rotation });
       const spatial = solveTwoBone3d(
         base,
-        readFrame3d({ x: gx, y: gy }),
+        frame3d({ x: gx, y: gy }),
         { id: "upper", length: l1, offset: ZERO_PIVOT_OFFSET3D },
         { id: "fore", length: l2, offset: ZERO_PIVOT_OFFSET3D },
       );
@@ -175,7 +184,7 @@ describe("3D analytic two-bone solve", () => {
   });
 
   it("TH-17 is continuous across the planar boundary, where a 2D bridge jumped 720 degrees", () => {
-    const base = readFrame3d({ rotation: -323.92574921250343 });
+    const base = frame3d({ rotation: -323.92574921250343 });
     const lengths = [
       { id: "upper", length: 24.2029164123, offset: ZERO_PIVOT_OFFSET3D },
       { id: "fore", length: 43.0485040788, offset: ZERO_PIVOT_OFFSET3D },
@@ -183,7 +192,7 @@ describe("3D analytic two-bone solve", () => {
     const at = (z: number) =>
       solveTwoBone3d(
         base,
-        readFrame3d({ x: -14.4570728487, y: 20.2751132434, z }),
+        frame3d({ x: -14.4570728487, y: 20.2751132434, z }),
         lengths[0],
         lengths[1],
       ).rotations3d;
@@ -199,18 +208,18 @@ describe("3D analytic two-bone solve", () => {
   });
 
   it("TH-18 bends toward root-local +y on the one singular line, the root's local z axis", () => {
-    const onAxis = solveTwoBone3d(root, readFrame3d({ z: 100 }), first, second);
-    expect(onAxis).toEqual(solveTwoBone3d(root, readFrame3d({ z: 100 }), first, second));
+    const onAxis = solveTwoBone3d(root, frame3d({ z: 100 }), first, second);
+    expect(onAxis).toEqual(solveTwoBone3d(root, frame3d({ z: 100 }), first, second));
     const { elbow, tip } = armPose(onAxis);
     expect(elbow.y).toBeGreaterThan(0);
     expect(Math.abs(elbow.x)).toBeLessThanOrEqual(1e-9);
     expect(distance(tip, { x: 0, y: 0, z: 100 })).toBeLessThanOrEqual(1e-9);
 
     // Off the axis the pole is root-local +z itself, so a rotated root carries its bend plane.
-    const turned = readFrame3d({ x: 5, y: -3, z: 2, rotation: 30, rotationX: 40, rotationY: -20 });
+    const turned = frame3d({ x: 5, y: -3, z: 2, rotation: 30, rotationX: 40, rotationY: -20 });
     const goal = composeWorld3d(turned, { ...ZERO_EULER, x: 90, y: 10, z: 0 });
     const carried = solveTwoBone3d(turned, goal, first, second);
-    const local = armPose(solveTwoBone3d(root, readFrame3d({ x: 90, y: 10 }), first, second));
+    const local = armPose(solveTwoBone3d(root, frame3d({ x: 90, y: 10 }), first, second));
     const world = armPose(carried, turned);
     const expected = composeWorld3d(turned, { ...ZERO_EULER, ...local.elbow });
     expect(distance(world.elbow, expected)).toBeLessThanOrEqual(1e-9);
@@ -223,7 +232,7 @@ describe("3D analytic two-bone solve", () => {
     // line itself (TH-18) takes the +y fallback; a looser threshold hands these goals its elbow.
     for (const lean of [1e-4, 1e-6, 1e-8]) {
       const goal = { x: 0, y: 100 * lean, z: 100 };
-      const { elbow, tip } = armPose(solveTwoBone3d(root, readFrame3d(goal), first, second));
+      const { elbow, tip } = armPose(solveTwoBone3d(root, frame3d(goal), first, second));
       expect(elbow.x).toBeLessThan(-40);
       expect(Math.abs(elbow.y - 64 * lean)).toBeLessThanOrEqual(1e-9);
       expect(distance(tip, goal)).toBeLessThanOrEqual(1e-9);
@@ -233,7 +242,7 @@ describe("3D analytic two-bone solve", () => {
   it("TH-19 closes 600 seeded non-planar rigs, keeps both lengths, and a worked pose", () => {
     const next = seeded(0x349);
     for (let index = 0; index < 600; index += 1) {
-      const base = readFrame3d({
+      const base = frame3d({
         x: next() * 40 - 20,
         y: next() * 40 - 20,
         z: next() * 40 - 20,
@@ -270,7 +279,7 @@ describe("3D analytic two-bone solve", () => {
     // cos(alpha) = 0.8. e1 = (0.6, 0, 0.8); the pole +z less its e1 part is (-0.48, 0, 0.36), so
     // the normal is (-0.8, 0, 0.6) and e2 = normal x e1 = (0, 1, 0). The elbow is
     // 80 * (0.8 e1 + 0.6 e2) = (38.4, 48, 51.2).
-    const worked = armPose(solveTwoBone3d(root, readFrame3d({ x: 60, z: 80 }), first, second));
+    const worked = armPose(solveTwoBone3d(root, frame3d({ x: 60, z: 80 }), first, second));
     expect(distance(worked.elbow, { x: 38.4, y: 48, z: 51.2 })).toBeLessThanOrEqual(1e-9);
     expect(distance(worked.tip, { x: 60, y: 0, z: 80 })).toBeLessThanOrEqual(1e-9);
   });
@@ -283,7 +292,7 @@ describe("3D analytic two-bone solve", () => {
     // Subnormal: a reciprocal of the distance would be `Infinity`, and `0 * Infinity` is `NaN`.
     const tiny = solveTwoBone3d(
       root,
-      readFrame3d({ x: Number.MIN_VALUE }),
+      frame3d({ x: Number.MIN_VALUE }),
       { id: "a", length: Number.MIN_VALUE, offset: ZERO_PIVOT_OFFSET3D },
       { id: "b", length: Number.MIN_VALUE, offset: ZERO_PIVOT_OFFSET3D },
     );
@@ -293,8 +302,8 @@ describe("3D analytic two-bone solve", () => {
     // A finite root orientation past about 5.7e307 degrees overflowed its product with pi, and
     // `sin(Infinity)` is `NaN`; whole turns are reduced first, so it reads as the angle it names.
     const spun = solveTwoBone3d(
-      readFrame3d({ rotation: Number.MAX_VALUE, rotationX: -Number.MAX_VALUE, rotationY: 1e306 }),
-      readFrame3d({ x: 60, y: 40, z: 50 }),
+      frame3d({ rotation: Number.MAX_VALUE, rotationX: -Number.MAX_VALUE, rotationY: 1e306 }),
+      frame3d({ x: 60, y: 40, z: 50 }),
       first,
       second,
     );
@@ -305,8 +314,8 @@ describe("3D analytic two-bone solve", () => {
     // its power-of-two image, and a residual past the largest double saturates rather than
     // becoming `Infinity`, exactly as the 2D closed form's does.
     const huge = solveTwoBone3d(
-      readFrame3d({ x: 1e308 }),
-      readFrame3d({ x: -1e308, y: 1e307 }),
+      frame3d({ x: 1e308 }),
+      frame3d({ x: -1e308, y: 1e307 }),
       { id: "a", length: 1e307, offset: ZERO_PIVOT_OFFSET3D },
       { id: "b", length: 1e307, offset: ZERO_PIVOT_OFFSET3D },
     );
@@ -323,8 +332,8 @@ describe("3D analytic two-bone solve", () => {
       { id: "fore", base: "upper", length: 3e299 },
     );
     const spatial = solveTwoBone3d(
-      readFrame3d({ x: 1e300 }),
-      readFrame3d({ x: 1e300 + 3e299, y: 4e299 }),
+      frame3d({ x: 1e300 }),
+      frame3d({ x: 1e300 + 3e299, y: 4e299 }),
       { id: "upper", length: 4e299, offset: ZERO_PIVOT_OFFSET3D },
       { id: "fore", length: 3e299, offset: ZERO_PIVOT_OFFSET3D },
     );

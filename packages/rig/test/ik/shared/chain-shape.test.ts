@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { WorldFrame } from "../../../src/frame/frame";
 import { chainShape } from "../../../src/ik/solve2d/solve";
-import { readSolveMembers, type DeliveredMember } from "../../../src/ik/shared/chain";
 
 // Issue #349 phase 1: the dispatch union and the adapter that feeds it, owned by ADR-106.
 //
@@ -12,10 +11,6 @@ import { readSolveMembers, type DeliveredMember } from "../../../src/ik/shared/c
 
 const ROOT = "rig/root";
 const GOAL: WorldFrame = { x: 120, y: 80, rotation: 0 };
-
-function member(id: string, base: string, length: unknown, extra: Record<string, unknown> = {}) {
-  return { id, base, values: { length, ...extra }, progress: 0 };
-}
 
 describe("chain shape and solve-member adaptation", () => {
   it("CS-1 two members and one goal select the closed-form shape", () => {
@@ -67,25 +62,5 @@ describe("chain shape and solve-member adaptation", () => {
     expect(() => chainShape([{ id: "a", base: ROOT, length: 80 }])).toThrow(
       "ikPlugin requires at least one goal; 1 members received none.",
     );
-  });
-
-  it("CS-6 readSolveMembers joins goals and reads length and pivot values", () => {
-    const states: readonly DeliveredMember[] = [
-      member("a", ROOT, Number.NaN, { x: 1.5, y: -2.5 }),
-      member("b", "a", 60),
-    ];
-    const addressed = { x: 200, y: 100, rotation: 0 };
-    const [first, second] = readSolveMembers(states, new Map([["b", addressed]]));
-
-    expect(first).toEqual({ id: "a", base: ROOT, length: 0, pivot: { x: 1.5, y: -2.5 } });
-    expect(second).toEqual({
-      id: "b",
-      base: "a",
-      length: 60,
-      pivot: { x: 0, y: 0 },
-      goal: addressed,
-    });
-    expect(first).not.toHaveProperty("goal");
-    expect("goal" in first!).toBe(false);
   });
 });

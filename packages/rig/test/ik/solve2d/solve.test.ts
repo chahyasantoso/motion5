@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readMembers } from "../../../src/ik/shared/chain";
 import { solveTwoBone } from "../../../src/ik/shared/analytic";
 import type { WorldFrame } from "../../../src/frame/frame";
 
@@ -144,10 +143,5 @@ describe("ikPlugin and solveTwoBone (Slice C3)", () => {
     ).rotations;
     expect(Number.isFinite(zeroLength[UPPER_ARM])).toBe(true);
     expect(Number.isFinite(zeroLength[FOREARM])).toBe(true);
-  });
-
-  it("IK-5 readMembers throws when inputs.members is absent", () => {
-    expect(() => readMembers(undefined)).toThrow();
-    expect(() => readMembers({})).toThrow();
   });
 });

@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-09, Asia/Jakarta.
-- **Read against:** `chore/retire-core` after the full check gate.
+- **Read against:** `chore/trim-pure-layer` after the full check gate.
 
 ## Now
 
@@ -21,12 +21,14 @@ byte ceiling.
   scene, `motion:sample` and `motion:timeline` read a `.ts` scene with no browser, and `motion:review` checks, reads and
   photographs a page or a scene file in one call. Seven worked examples in `apps/react-demo`, each held by a test,
   and `docs/guide/agent-reference.md` names every export and command, held complete by a test. The repository gate
-  tests live in `test/repo/`.
+  tests live in `test/repo/`. A move is declared by `defineMove` with its id, description, options (kinds, defaults,
+  ranges) and moments; an input is a typed third argument of `run`. `@motion5/rig` exports the 2D chain API, frames and
+  the 3D solvers and constraints; it no longer reads engine rows or the joint vocabulary.
 
 ## Next in line
 
-- **Trim what only the engine used:** a move declaration keeps what code scenes and the live editor read, and rig's
-  engine-shaped readers go unless the 3D rigs item needs them, in a second pull request after the deletion.
+- **The live editor:** save a scene file and the stage follows on the next frame without losing its place; scrub,
+  loop, slow down, and drag a number in the code to watch the motion follow.
 
 ## Open, and not scheduled
 

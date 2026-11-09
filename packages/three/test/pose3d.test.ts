@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  BoxGeometry,
-  Mesh,
-  MeshBasicMaterial,
-  PerspectiveCamera,
-  Quaternion,
-  Vector3,
-} from "three";
+import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
 import { aim, lift2d } from "@motion5/moves";
-import { applyPose2d, applyPose3d, writeFrame3d } from "../src/index";
+import { applyPose2d, applyPose3d } from "../src/index";
 
 function box(): Mesh<BoxGeometry, MeshBasicMaterial> {
   return new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
@@ -35,14 +28,6 @@ describe("applyPose3d", () => {
     applyPose3d(mesh, {});
     expect(mesh.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0]);
     expect(mesh.scale.toArray()).toEqual([1, 1, 1]);
-  });
-
-  it("makes the quaternion writeFrame3d makes from the same angles", () => {
-    const a = box();
-    const b = box();
-    applyPose3d(a, { rotation: 30, rotationX: 40, rotationY: 50 });
-    writeFrame3d(b, { rotation: 30, rotationX: 40, rotationY: 50 });
-    expect(a.quaternion.toArray()).toEqual(b.quaternion.toArray());
   });
 
   it("turns a lifted 2D rotation as applyPose2d does", () => {

@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import { squashed } from "./pose";
+import { squashed, type Pose2d } from "./pose";
 
 const CONTACT_WIDTH = 0.2;
 const SETTLE_SHARE = 0.5;
@@ -59,10 +59,10 @@ export const hop = defineMove({
       description: "Start this far left of rest, in px, arriving by the last landing.",
     },
   },
-  inputs: {},
-  output: "pose2d",
-  extras: { contact: { hits: "number", justHit: "number" } },
-  run({ height, bounces, decay, squash, dx }, { progress }) {
+  run(
+    { height, bounces, decay, squash, dx },
+    { progress },
+  ): Pose2d & { readonly contact: { readonly hits: number; readonly justHit: number } } {
     const { flights, shrink, lastFlight, airtime, total } = schedule(bounces, decay);
     const time = progress * total;
 

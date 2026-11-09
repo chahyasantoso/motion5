@@ -55,15 +55,6 @@ export type Matrix3 = readonly [
 /** Identity orientation: what an unsolved member composes, and every exact degenerate arm. */
 export const ZERO_EULER: Euler3d = Object.freeze({ rotation: 0, rotationX: 0, rotationY: 0 });
 
-const ORIGIN: WorldFrame3d = Object.freeze({
-  x: 0,
-  y: 0,
-  z: 0,
-  rotation: 0,
-  rotationX: 0,
-  rotationY: 0,
-});
-
 // Degrees to radians; non-finite reads 0; whole turns reduce, so the product cannot overflow.
 function radiansOf(degrees: number): number {
   return Number.isFinite(degrees) ? ((degrees % 360) * Math.PI) / 180 : 0;
@@ -316,27 +307,6 @@ export function twistAbout3d(local: Matrix3, axis: Vec3): number {
 export function readPivotOffset3d(input: unknown): PivotOffset3d {
   if (!isRecord(input)) return ZERO_PIVOT_OFFSET3D;
   return { x: readNumber(input.x), y: readNumber(input.y), z: readNumber(input.z) };
-}
-
-/** Reads an Euler triple, defaulting absent and non-finite angles to zero. */
-export function readEuler3d(input: unknown): Euler3d {
-  if (!isRecord(input)) return ZERO_EULER;
-  return {
-    rotation: readNumber(input.rotation),
-    rotationX: readNumber(input.rotationX),
-    rotationY: readNumber(input.rotationY),
-  };
-}
-
-/** Reads authored 3D frame keys, defaulting absent and non-finite values to zero. */
-export function readFrame3d(input: unknown): WorldFrame3d {
-  if (!isRecord(input)) return ORIGIN;
-  return {
-    x: readNumber(input.x),
-    y: readNumber(input.y),
-    z: readNumber(input.z),
-    ...readEuler3d(input),
-  };
 }
 
 /** Composes local into parent by matrix multiplication, never Euler addition. */

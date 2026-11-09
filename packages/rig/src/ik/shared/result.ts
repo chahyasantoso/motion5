@@ -1,6 +1,3 @@
-import { INSPECT_KEY, INSPECTION_KEY } from "../../vocabulary";
-import { unreachable } from "../../unreachable";
-
 /** One IK solve answer, same shape every strategy: rotations plus quality. */
 export interface SolveResult<Q extends SolveQuality = SolveQuality> extends SolveEvidence<Q> {
   readonly rotations: Readonly<Record<string, number>>;
@@ -50,55 +47,3 @@ export type IterativeQuality = Extract<
   SolveQuality,
   { readonly kind: "converged" | "stalled" | "iteration-cap" | "conflicted" | "limited" }
 >;
-
-/** Fixed-shape inspection record, `residuals` on every kind. Alias, not interface: aliases alone
- * get the implicit index signature `ImmutableRecord` spreading requires. */
-export type SolveInspection = {
-  readonly kind: SolveQuality["kind"];
-  readonly residual: number;
-  readonly iterations: number;
-  readonly atBound: readonly string[];
-  readonly residuals: Readonly<Record<string, number>>;
-};
-
-const NO_BOUNDS: readonly string[] = Object.freeze([]);
-
-/** Project into one frozen, renderer-neutral shape; residual and bound copies never alias solver state. */
-export function inspectSolve(result: SolveEvidence): SolveInspection {
-  const { quality } = result;
-  const residuals: Readonly<Record<string, number>> = Object.freeze({ ...result.residuals });
-  switch (quality.kind) {
-    case "reached":
-    case "too-far":
-    case "too-near":
-    case "coincident":
-      return Object.freeze({
-        kind: quality.kind,
-        residual: quality.residual,
-        iterations: 0,
-        atBound: NO_BOUNDS,
-        residuals,
-      });
-    case "converged":
-    case "stalled":
-    case "iteration-cap":
-    case "conflicted":
-      return Object.freeze({
-        kind: quality.kind,
-        residual: quality.residual,
-        iterations: quality.iterations,
-        atBound: NO_BOUNDS,
-        residuals,
-      });
-    case "limited":
-      return Object.freeze({
-        kind: quality.kind,
-        residual: quality.residual,
-        iterations: quality.iterations,
-        atBound: Object.freeze([...quality.atBound]),
-        residuals,
-      });
-    default:
-      return unreachable(quality);
-  }
-}

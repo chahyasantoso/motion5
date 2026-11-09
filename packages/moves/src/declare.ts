@@ -1,5 +1,3 @@
-import type { Pose2d } from "./pose";
-import type { Anchor2d, Drawn, Point2d, Reveal } from "./shapes";
 import type { Time } from "./time";
 import { unreachable } from "./unreachable";
 
@@ -22,41 +20,8 @@ export type OptionField =
 
 export type OptionFields = Readonly<Record<string, OptionField>>;
 
-/** The main output each kind of move publishes. */
-export type OutputTypes = {
-  readonly pose2d: Pose2d;
-  readonly reveal: Reveal;
-  readonly drawn: Drawn;
-  readonly anchors2d: readonly Anchor2d[];
-};
-
-export type OutputKind = keyof OutputTypes;
-
-/** The value each kind of input carries. */
-export type InputTypes = { readonly points2d: readonly Point2d[] };
-
-/** One input of a move: a value the caller passes, or the engine binds, beside the options. */
-export type InputField = {
-  readonly kind: keyof InputTypes;
-  readonly min?: number;
-  readonly description: string;
-};
-
-export type InputFields = Readonly<Record<string, InputField>>;
-
-/** Inputs as a move runs on them. */
-export type Inputs<Is extends InputFields> = {
-  readonly [K in keyof Is]: InputTypes[Is[K]["kind"]];
-};
-
-/** The trailing arguments a caller passes: none for a move without inputs. */
-export type InputArgs<Is extends InputFields> = keyof Is extends never ? [] : [inputs: Inputs<Is>];
-
 /** Named times a move reaches, as shares of its progress, such as a hop's landings. */
 export type Moments = Readonly<Record<string, number | readonly number[]>>;
-
-/** Named secondary outputs: each a record of numbers, such as a hop's `contact`. */
-export type ExtraFields = Readonly<Record<string, Readonly<Record<string, "number">>>>;
 
 type ValueOf<F extends OptionField> = F extends { readonly kind: "number" }
   ? number
@@ -78,49 +43,27 @@ export type OptionsIn<Fs extends OptionFields> = {
   readonly [K in Exclude<keyof Fs, Defaulted<Fs>>]: ValueOf<Fs[K]>;
 } & { readonly [K in Defaulted<Fs>]?: ValueOf<Fs[K]> };
 
-type OutputOf<O extends OutputKind> = OutputTypes[O];
+/** The trailing argument a caller passes: none for a move whose `run` takes no input. */
+export type InputArgs<I> = unknown extends I ? [] : [input: I];
 
-type Extras<E extends ExtraFields> = {
-  readonly [K in keyof E]: { readonly [F in keyof E[K]]: number };
-};
-
-/** What a move returns: its main output, with any extras beside the main fields. */
-export type MoveOutput<O extends OutputKind, E extends ExtraFields> = OutputOf<O> & Extras<E>;
-
-/** A move's one declaration: the source of its types, validation, catalog entry and engine plugin. */
-export interface MoveDeclaration<
-  Fs extends OptionFields,
-  Is extends InputFields,
-  O extends OutputKind,
-  E extends ExtraFields,
-  M extends Moments = Moments,
-> {
+/** A move's one declaration: the source of its types, its option checks and its moments. */
+export interface MoveDeclaration<Fs extends OptionFields, I, R, M extends Moments = Moments> {
   readonly id: string;
   readonly description: string;
   readonly options: Fs;
-  readonly inputs: Is;
-  readonly output: O;
-  readonly extras: E;
-  run(options: Options<Fs>, time: Time, inputs: Inputs<Is>): MoveOutput<O, E>;
+  run(options: Options<Fs>, time: Time, input: I): R;
   /** Where in its progress the move reaches each named moment, for these options. */
   moments(options: Options<Fs>): M;
 }
 
-/** A move: callable with a caller's options, and carrying the declaration it came from. */
-export interface Move<
-  Fs extends OptionFields,
-  Is extends InputFields,
-  O extends OutputKind,
-  E extends ExtraFields,
-  M extends Moments = Moments,
-> extends Omit<MoveDeclaration<Fs, Is, O, E, M>, "moments"> {
-  (options: OptionsIn<Fs>, time: Time, ...inputs: InputArgs<Is>): MoveOutput<O, E>;
+/** A move: callable with a caller's options, and carrying what its declaration says of them. */
+export interface Move<Fs extends OptionFields, I, R, M extends Moments = Moments> {
+  (options: OptionsIn<Fs>, time: Time, ...input: InputArgs<I>): R;
+  readonly id: string;
+  readonly description: string;
+  readonly options: Fs;
   /** Where in its progress the move reaches each named moment, as shares from 0 to 1. */
   moments(options: OptionsIn<Fs>): M;
-  /** Validates a record against the options and fills defaults; keys it does not declare are ignored. */
-  read(value: unknown): Options<Fs>;
-  /** Validates a record against the inputs. */
-  readInputs(value: unknown): Inputs<Is>;
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -182,65 +125,20 @@ function readOptions<Fs extends OptionFields>(id: string, fields: Fs, value: unk
   return frozen;
 }
 
-function isPoint(value: unknown): boolean {
-  return (
-    isRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.x === "number" &&
-    typeof value.y === "number"
-  );
-}
-
-function holdsInput(field: InputField, value: unknown): boolean {
-  switch (field.kind) {
-    case "points2d":
-      return Array.isArray(value) && value.every(isPoint);
-    default:
-      return unreachable(field.kind);
-  }
-}
-
-function inputsConform<Is extends InputFields>(
-  fields: Is,
-  value: Readonly<Record<string, unknown>>,
-): value is Inputs<Is> {
-  return Object.entries(fields).every(([name, field]) => holdsInput(field, value[name]));
-}
-
-function readInputs<Is extends InputFields>(id: string, fields: Is, value: unknown): Inputs<Is> {
-  const given = isRecord(value) ? value : {};
-  for (const [name, field] of Object.entries(fields)) {
-    const rows = given[name];
-    if (!Array.isArray(rows)) throw new TypeError(`${id}: input "${name}" is required.`);
-    if (field.min !== undefined && rows.length < field.min)
-      throw new RangeError(`${id}: input "${name}" needs at least ${field.min} rows.`);
-  }
-  if (!inputsConform(fields, given)) throw new TypeError(`${id}: inputs do not match their kinds.`);
-  return given;
-}
-
 /** Makes a move from its declaration. */
-export function defineMove<
-  const Fs extends OptionFields,
-  const Is extends InputFields,
-  const O extends OutputKind,
-  const E extends ExtraFields,
-  const M extends Moments,
->(declaration: MoveDeclaration<Fs, Is, O, E, M>): Move<Fs, Is, O, E, M> {
+export function defineMove<const Fs extends OptionFields, I, R, const M extends Moments>(
+  declaration: MoveDeclaration<Fs, I, R, M>,
+): Move<Fs, I, R, M>;
+export function defineMove(
+  declaration: MoveDeclaration<OptionFields, unknown, unknown, Moments>,
+): Move<OptionFields, unknown, unknown, Moments> {
   const read = (value: unknown) => readOptions(declaration.id, declaration.options, value);
-  const readGiven = (value: unknown) => readInputs(declaration.id, declaration.inputs, value);
-  const call = (options: OptionsIn<Fs>, time: Time, ...rest: readonly unknown[]) =>
-    declaration.run(read(options), time, readGiven(rest[0]));
+  const call = (options: OptionsIn<OptionFields>, time: Time, ...input: readonly unknown[]) =>
+    declaration.run(read(options), time, input[0]);
   return Object.assign(call, {
     id: declaration.id,
     description: declaration.description,
     options: declaration.options,
-    inputs: declaration.inputs,
-    output: declaration.output,
-    extras: declaration.extras,
-    run: declaration.run,
-    read,
-    readInputs: readGiven,
-    moments: (options: OptionsIn<Fs>) => declaration.moments(read(options)),
+    moments: (options: OptionsIn<OptionFields>) => declaration.moments(read(options)),
   });
 }

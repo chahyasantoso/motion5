@@ -1,19 +1,4 @@
-import {
-  AXIS_X_KEY,
-  AXIS_Y_KEY,
-  AXIS_Z_KEY,
-  JOINT_KEY,
-  jointConstrains,
-  MAX_ROTATION_KEY,
-  MAX_SWING_KEY,
-  MAX_TWIST_KEY,
-  MIN_ROTATION_KEY,
-  MIN_TWIST_KEY,
-  readAxisComponent,
-  readJointKind,
-  readSwingDegree,
-  LIMIT_CEILING,
-} from "../../vocabulary";
+import { jointConstrains } from "../../vocabulary";
 import { unreachable } from "../../unreachable";
 import {
   axisX3,
@@ -26,7 +11,6 @@ import {
   multiplyMatrix3,
   multiplyVector3,
   norm3,
-  normalize3,
   rotationAboutAxis3d,
   swingTwist3d,
   transposeMatrix3,
@@ -41,13 +25,13 @@ import {
   FREE_JOINT,
   legalRotation,
   limitRotation,
-  readAngleRange,
   type JointLimit,
 } from "../shared/constraint";
 
 /** Sole owner of 3D joint limits: the legal local orientation, relative to the parent's solved frame, nearest the one the solve proposes. */
 export type JointLimit3d =
   | { readonly kind: "free" }
+  // A hinge axis is unit length; the solver does not normalise it.
   | { readonly kind: "hinge"; readonly axis: Vec3; readonly range: JointLimit }
   | { readonly kind: "cone"; readonly maxSwing: number }
   | {
@@ -57,9 +41,6 @@ export type JointLimit3d =
     };
 
 export const FREE_JOINT3D: JointLimit3d = Object.freeze({ kind: "free" });
-
-/** Hinge axis when none is authored: the parent's +z, the 2D plane's normal. */
-const DEFAULT_HINGE_AXIS: Vec3 = Object.freeze([0, 0, 1] as const);
 
 /** Share of the swept circle's size a direction may lie off a hinge axis by and still name an
  *  angle; below it the offset is rounding, not geometry. */
@@ -71,46 +52,6 @@ export function nonPlanarHinge3d(limit: JointLimit3d): boolean {
   const [x, y, z] = limit.axis;
   const largest = Math.max(Math.abs(x), Math.abs(y), Math.abs(z));
   return largest > 0 && Math.max(Math.abs(x), Math.abs(y)) > HINGE_DIRECTION_TOLERANCE * largest;
-}
-
-/** The unit hinge axis live values declare, divided by its largest magnitude first:
- *  `normalize3`'s length overflows near `Number.MAX_VALUE`, reading a legal axis as +z fallback. */
-function readHingeAxis(values: Readonly<Record<string, unknown>>): Vec3 {
-  const axis: Vec3 = [
-    readAxisComponent(values[AXIS_X_KEY]) ?? 0,
-    readAxisComponent(values[AXIS_Y_KEY]) ?? 0,
-    readAxisComponent(values[AXIS_Z_KEY]) ?? 0,
-  ];
-  const largest = Math.max(...axis.map(Math.abs));
-  if (largest === 0) return DEFAULT_HINGE_AXIS;
-  return normalize3([axis[0] / largest, axis[1] / largest, axis[2] / largest], DEFAULT_HINGE_AXIS);
-}
-
-/** Live values bypass load, so this is total: no `joint` kind -> free; a bound outside its domain -> absent -> its domain edge; a directionless axis -> +z; inverted range -> `[min, min]`. */
-export function readJointLimit3d(values: Readonly<Record<string, unknown>>): JointLimit3d {
-  const kind = readJointKind(values[JOINT_KEY]);
-  const maxSwing = (): number => readSwingDegree(values[MAX_SWING_KEY]) ?? LIMIT_CEILING;
-  switch (kind) {
-    case undefined:
-    case "free":
-      return FREE_JOINT3D;
-    case "hinge":
-      return {
-        kind,
-        axis: readHingeAxis(values),
-        range: readAngleRange(values, MIN_ROTATION_KEY, MAX_ROTATION_KEY),
-      };
-    case "cone":
-      return { kind, maxSwing: maxSwing() };
-    case "swing-twist":
-      return {
-        kind,
-        maxSwing: maxSwing(),
-        twist: readAngleRange(values, MIN_TWIST_KEY, MAX_TWIST_KEY),
-      };
-    default:
-      return unreachable(kind);
-  }
 }
 
 /** Whether `limit` bounds a solve at all; decides whether a chain goes iterative. */
