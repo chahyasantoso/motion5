@@ -5,8 +5,9 @@ import type { Scene } from "@motion5/player";
 export function guard<T extends object>(
   scene: Scene<T>,
   report: (message: string) => void,
+  fallback?: T,
 ): Scene<T> {
-  let last: T | undefined;
+  let last: T | undefined = fallback;
   const reported = new Set<string>();
   return (time: Time, events: Events): T => {
     try {

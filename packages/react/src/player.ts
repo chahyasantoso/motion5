@@ -25,7 +25,7 @@ export interface PlayerHost {
   /** Answers the driver to play on, given the component's own factory; the host owns it and no component disposes it. */
   readonly createDriver?: <D extends OwnedDriver>(own: () => D) => D;
   /** Wraps each scene before it plays, such as to fall back to the last good one when it throws. */
-  readonly guard?: <T extends object>(scene: Scene<T>) => Scene<T>;
+  readonly guard?: <T extends object>(scene: Scene<T>, fallback?: T) => Scene<T>;
 }
 
 const NO_HOST: PlayerHost = {};
@@ -142,8 +142,8 @@ export function usePlayer<T extends object, D extends OwnedDriver>(
   const hosted = adopt !== undefined;
   const [playing, setPlaying] = useState<Playing<T, D>>();
   const shown = useRef<Shown<T, D> | undefined>(undefined);
-  const start = (driver: D): void => {
-    const player = play(guard === undefined ? scene : guard(scene), driver, { cues });
+  const start = (driver: D, fallback?: T): void => {
+    const player = play(guard === undefined ? scene : guard(scene, fallback), driver, { cues });
     const next = { player, driver };
     shown.current = { playing: next, scene, createDriver, cues };
     setPlaying(next);
@@ -172,13 +172,17 @@ export function usePlayer<T extends object, D extends OwnedDriver>(
     if (last.createDriver !== createDriver) {
       const driver = adopt(createDriver);
       if (driver !== last.playing.driver) {
+        const previous = last.playing.player.values;
         last.playing.player.dispose();
-        start(driver);
+        start(driver, previous);
         return;
       }
     }
     if (last.scene !== scene || last.cues !== cues)
-      last.playing.player.replace(guard === undefined ? scene : guard(scene), cues);
+      last.playing.player.replace(
+        guard === undefined ? scene : guard(scene, last.playing.player.values),
+        cues,
+      );
     shown.current = { playing: last.playing, scene, createDriver, cues };
   }, [scene, createDriver, cues, adopt, guard]);
   return playing;

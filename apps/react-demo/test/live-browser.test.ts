@@ -107,4 +107,47 @@ describe("live editor in the browser", () => {
       writeFileSync(PILE_SCENE, original, "utf8");
     }
   }, 30000);
+
+  it("drags 700 to 760 in the code panel and updates the scene file and stage", async () => {
+    const original = readFileSync(TIMING_SCENE, "utf8");
+    try {
+      await withPage(
+        {
+          page: "live.html?scene=timing",
+          width: 1280,
+          height: 720,
+          source: DEFAULT_SOURCE,
+        },
+        async ({ page }) => {
+          const readFirstGlyph = () =>
+            page
+              .locator(".beat-glyph")
+              .first()
+              .evaluate((el) => (el instanceof HTMLElement ? el.style.transform : ""));
+          expect(await readFirstGlyph()).toContain("-700px");
+
+          const numberSpan = page.locator('[data-live-number="700"]');
+          await numberSpan.waitFor({ state: "visible", timeout: 10000 });
+          const box = await numberSpan.boundingBox();
+          if (box === null) throw new Error("Number 700 span not found");
+
+          const startX = box.x + box.width / 2;
+          const startY = box.y + box.height / 2;
+          await page.mouse.move(startX, startY);
+          await page.mouse.down();
+          await page.mouse.move(startX + 60, startY, { steps: 3 });
+          await page.mouse.up();
+
+          await expect
+            .poll(() => readFileSync(TIMING_SCENE, "utf8"), { timeout: 10000 })
+            .toContain("distance: 760");
+          await expect
+            .poll(async () => await readFirstGlyph(), { timeout: 10000 })
+            .toContain("-760px");
+        },
+      );
+    } finally {
+      writeFileSync(TIMING_SCENE, original, "utf8");
+    }
+  }, 30000);
 });

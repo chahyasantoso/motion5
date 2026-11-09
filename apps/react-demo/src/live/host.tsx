@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ClockDriver } from "@motion5/dom";
 import type { Scene } from "@motion5/player";
 import {
@@ -7,6 +7,7 @@ import {
   type OwnedDriver,
   type PlayerHost,
 } from "@motion5/react";
+import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
 import { extractMarks, scrubByWheel, Timeline } from "./timeline";
 
@@ -31,7 +32,7 @@ function isComponentName(name: string): boolean {
   return first >= "A" && first <= "Z";
 }
 
-function isComponentType(value: unknown): value is React.ComponentType {
+function isComponentType(value: unknown): value is React.FC {
   return typeof value === "function";
 }
 
@@ -56,7 +57,7 @@ function isClockDriver(driver: OwnedDriver | undefined): driver is ClockDriver {
 }
 
 /** Extracts the first exported React component function whose name starts with an uppercase letter. */
-export function extractComponent(mod: Record<string, unknown>): React.ComponentType | undefined {
+export function extractComponent(mod: Record<string, unknown>): React.FC | undefined {
   for (const [key, value] of Object.entries(mod)) {
     if (isComponentName(key) && isComponentType(value)) {
       return value;
@@ -128,7 +129,7 @@ export async function applySceneStyles(name: string): Promise<void> {
 
 export interface SceneBundle {
   readonly name: string;
-  readonly Component: React.ComponentType;
+  readonly Component: React.FC;
   readonly sceneModule?: Record<string, unknown> | undefined;
   readonly durationMs: number;
 }
@@ -162,8 +163,8 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
   const host: PlayerHost = useMemo(
     () => ({
       createDriver: keeper.createDriver,
-      guard<T extends object>(scene: Scene<T>): Scene<T> {
-        return guard(scene, (message) => setError(message));
+      guard<T extends object>(scene: Scene<T>, fallback?: T): Scene<T> {
+        return guard(scene, (message) => setError(message), fallback);
       },
     }),
     [keeper],
@@ -203,7 +204,9 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
     () => (bundle.sceneModule ? extractMarks(bundle.sceneModule, bundle.durationMs) : []),
     [bundle.sceneModule, bundle.durationMs],
   );
-  const Component = bundle.Component;
+  const componentRef = useRef<React.FC>(initial.Component);
+  componentRef.current = bundle.Component;
+  const Stage = useMemo<React.FC>(() => () => componentRef.current({}), [bundle.name]);
 
   return (
     <div className="live-editor">
@@ -218,9 +221,10 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
         onWheel={(e) => scrubByWheel(clock, bundle.durationMs, e.deltaY)}
       >
         <PlayerHostProvider value={host}>
-          <Component />
+          <Stage />
         </PlayerHostProvider>
       </div>
+      <CodePanel sceneName={bundle.name} version={bundle.sceneModule} />
       <Timeline driver={clock} durationMs={bundle.durationMs} marks={marks} />
     </div>
   );
