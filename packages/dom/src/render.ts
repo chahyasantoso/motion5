@@ -1,4 +1,5 @@
 import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@motion5/moves";
+import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
 export interface RenderStyle {
@@ -113,8 +114,4 @@ export function applyDrawn(target: RenderTarget, drawn: Drawn, length?: number):
 /** Sets a path element's `d` to the cubic segments. */
 export function applyPath(target: RenderTarget, cubics: readonly Cubic2d[]): void {
   target.setAttribute?.("d", pathData(cubics));
-}
-
-function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
 }
