@@ -1,6 +1,7 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import ts from "typescript";
 import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
@@ -15,6 +16,14 @@ function root(): string {
 afterEach(() => {
   for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
+
+function appRoot(): string {
+  const parent = join(process.cwd(), "apps/react-demo/.scaffold");
+  mkdirSync(parent, { recursive: true });
+  const dir = mkdtempSync(join(parent, "three-"));
+  roots.push(dir, parent);
+  return dir;
+}
 
 const FILES = [
   "rope-word.html",
@@ -74,4 +83,41 @@ describe("motion:new", () => {
       expect(scaffold(name, root()).kind).toBe("refused");
     },
   );
+
+  it("with --three writes a Three.js page whose scene samples and whose files typecheck", async () => {
+    const dir = appRoot();
+    const result = scaffold("rope-word", dir, { three: true });
+    if (result.kind !== "written") throw new Error(JSON.stringify(result));
+    expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
+    const component = readFileSync(join(dir, "src/rope-word.tsx"), "utf8");
+    expect(component).toContain('from "@motion5/three/react"');
+    expect(component).toContain("preserveDrawingBuffer: true");
+    const module = readSceneModule(
+      await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href),
+    );
+    if ("reason" in module) throw new Error(module.reason);
+    const [start, end] = sampleScene(module, { kind: "time", ms: [0, 800] });
+    expect(start?.targets).toMatchObject({ box: { y: 5 } });
+    expect(end?.targets.box).toMatchObject({ y: expect.closeTo(0, 9) });
+    const config = ts.readConfigFile(join(process.cwd(), "tsconfig.json"), ts.sys.readFile);
+    const options = ts.parseJsonConfigFileContent(config.config, ts.sys, process.cwd()).options;
+    const program = ts.createProgram(
+      result.files.filter((file) => file.endsWith(".ts") || file.endsWith(".tsx")),
+      options,
+    );
+    const messages = ts
+      .getPreEmitDiagnostics(program)
+      .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, " "));
+    expect(messages).toEqual([]);
+  }, 60000);
+
+  it("writes Three.js files that are already formatted", async () => {
+    const dir = appRoot();
+    scaffold("rope-word", dir, { three: true });
+    for (const file of FILES) {
+      const source = readFileSync(join(dir, file), "utf8");
+      const config = await resolveConfig(join(process.cwd(), "apps/react-demo", file));
+      expect(await format(source, { ...config, filepath: file }), file).toBe(source);
+    }
+  });
 });

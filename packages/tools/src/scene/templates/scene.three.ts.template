@@ -1,0 +1,13 @@
+import { clockDriver } from "@motion5/dom";
+import { drop, lift2d, type Time } from "@motion5/moves";
+
+/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+export const durationMs = 800;
+
+/** Every target's 3D pose at `time` (y up, turns in degrees); `motion:sample` reads it. */
+export const scene = (time: Time) => ({
+  box: lift2d(drop({ distance: 500, squash: 0.18 }, time), { unitsPerPx: 0.01 }),
+});
+
+/** The scene's clock on the page's frames. */
+export const clock = () => clockDriver({ duration: durationMs });

@@ -109,7 +109,7 @@ Public: `.`, `./internal`
 
 ## packages/three
 
-Public: `.`, `./skeleton`, `./engine`
+Public: `.`, `./skeleton`, `./react`, `./engine`
 
 - `src/`: Three.js adapter
 

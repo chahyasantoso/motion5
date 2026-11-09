@@ -200,6 +200,74 @@ content that must not turn in an inner element posed `{ rotation: -heading }`.
 const { pose, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
 ```
 
+### 3D poses
+
+**`Pose3d`**: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY, scaleZ, opacity }`, all optional; y up,
+turns in degrees on the Z-X-Y Euler (`rotation` is about z). A `Pose2d` is refused where a `Pose3d` goes.
+```ts
+const lid: Pose3d = { y: 0.4, rotationX: -70 };
+```
+
+**`lift2d(pose, { unitsPerPx })`**: a 2D pose on the 3D xy plane, px scaled to units, y and the turn flipped, the
+anchor dropped; every 2D move reaches 3D through it.
+```ts
+const ball = lift2d(hop({ height: 260, bounces: 2 }, time), { unitsPerPx: 0.01 });
+```
+
+**`combine3d(poses)`**: poses on one target as one; offsets add, scales multiply, turns compose in order, and turns
+about one shared axis add exactly, so a spin keeps its winding.
+```ts
+combine3d([ball, { rotationY: spin }]);
+```
+
+**`mixPose3d(a, b, share)`**: blends two poses, turns along the short arc and past the ends for a share past 1; a
+missing field at its rest. **`mixPoint3d(a, b, share)`** blends `{ x, y, z }`.
+```ts
+const head = mixPose3d(LOOK_LEFT, LOOK_RIGHT, turn.of(time, springEase({ stiffness: 170, damping: 12 })).progress);
+```
+
+**`trailTurn(signal, { stiffness, damping, stepMs, rest })`**: a turn chasing a `Pose3d` signal's turn on a spring,
+the short way round, resting exactly on it; give it the scene's time. Trail a position with three `trail` calls.
+```ts
+const head = trailTurn((t) => body(t), { damping: 12 });
+head(time, events);
+```
+
+**`squashed3d(squash, weight, axis?)`**: shortens `axis` (`"y"` when absent) and widens the other two, keeping volume.
+```ts
+combine3d([squashed3d(0.3, landing), ball]);
+```
+
+**`Anchor3d`**, **`Cubic3d`**: the 3D path anchor and segment, `Anchor2d` and `Cubic2d` with `z`, `inZ`, `outZ`.
+**`toCubics3d(anchors)`**: 3D anchors as path segments.
+
+**`along3d(cubics, share, { face })`**: the `{ x, y, z }` `share` of the way along a 3D path by distance; `face: true`
+adds the turn of local +x onto the path, with no roll.
+```ts
+const pose = along3d(toCubics3d(anchors), flight.of(time, ease.sineInOut).progress, { face: true });
+```
+
+**`velocity3d(signal, time, events, stepMs?)`**: the `{ vx, vy, vz }` units per second a `Pose3d` signal moves at the
+scene's time, never read past the clock's ends; zero with no clock.
+
+**`smear3d({ vx, vy, vz }, { stretch, max })`**: `{ pose, turn }`: `pose` turns local +x onto the travel and stretches
+it, volume kept; an inner object takes `turn` so its content stays upright.
+```ts
+const { pose, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.2, max: 1.8 });
+```
+
+**`aim(from, to, up?)`**: the turn that points local -z, a camera's forward, from `from` at `to`, `up` +y when absent,
+no roll; `{}` when they meet.
+```ts
+const camera = { ...eye, ...aim(eye, { x: 0, y: 0.5, z: 0 }) };
+```
+
+**`orbit({ target, radius, azimuth, elevation })`**: a point `radius` from `target`, azimuth in degrees about +y from +z
+toward +x, elevation up from the ground plane; a camera move is a `span` on `azimuth`.
+```ts
+const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 6, azimuth: mix(-30, 30, pan.of(time).progress), elevation: 20 });
+```
+
 ### Events
 
 **`MotionEvent`**: `{ name, at, target?, x?, y? }`; `at` in ms, `x` and `y` from the watched element's corner.
@@ -411,6 +479,19 @@ const sim = simulate(rapier(), build);
 player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
 ```
 
+**`applyPose3d(object, pose, rest?)`**: writes a `Pose3d` on a Three.js object, y up, turns in degrees on Z-X-Y; a
+missing field writes its rest. **`EULER_ORDER_3D`** is that order.
+```ts
+player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
+```
+
+**`useTarget3d(player, target, { invalidate })`** from `@motion5/three/react`: a ref for an `Object3D` that writes the
+target's `Pose3d` every step with no render; in React Three Fiber pass `invalidate` when the canvas renders on demand.
+```tsx
+const ball = useTarget3d(playing?.player, "ball");
+return <mesh ref={ball} />;
+```
+
 ## Commands
 
 Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/react-demo`
@@ -420,9 +501,16 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
-- **`motion:new <name>`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in `apps/react-demo`.
+- **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
+  `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
+  the scene returns `Pose3d` targets.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
   `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+  On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
+- **`motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n]`**: no page: samples
+  every field of every target each 16 ms and finds a step over its limit in one frame (positions over `--jump`, default
+  150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
+  final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's

@@ -1,8 +1,8 @@
 import { readFrame3d } from "@motion5/rig";
-import { Euler, Matrix4, Quaternion, Vector3, type EulerOrder, type Object3D } from "three";
+import { Euler, Matrix4, Quaternion, Vector3, type Object3D } from "three";
+import { EULER_ORDER_3D, setEulerDegrees } from "./pose3d";
 
-/** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */
-export const EULER_ORDER_3D: EulerOrder = "ZXY";
+export { EULER_ORDER_3D };
 
 /** writeFrame3d: published world frame onto an Object3D; absent or non-finite values read as `0`; degrees in, radians out; object must live in rig-root space. */
 const DEGREES = 180 / Math.PI;
@@ -12,12 +12,7 @@ const scratchScale = new Vector3();
 
 /** Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360. */
 function frameEuler(frame: ReturnType<typeof readFrame3d>, target: Euler): Euler {
-  return target.set(
-    ((frame.rotationX % 360) * Math.PI) / 180,
-    ((frame.rotationY % 360) * Math.PI) / 180,
-    ((frame.rotation % 360) * Math.PI) / 180,
-    EULER_ORDER_3D,
-  );
+  return setEulerDegrees(target, frame.rotation, frame.rotationX, frame.rotationY);
 }
 
 /** Frame values to a rigid matrix in the frame's own space. */
@@ -49,3 +44,4 @@ export function writeFrame3d(object: Object3D, values: Readonly<Record<string, u
 }
 
 export { applyPose2d } from "./pose2d";
+export { applyPose3d } from "./pose3d";
