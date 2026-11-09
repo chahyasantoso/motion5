@@ -10,8 +10,10 @@ is a code scene like any other; only its poses and its renderer change. Names ar
    light and one mesh per target, each bound with `useTarget3d`. It sets no look.
 2. Write the scene. It returns `Pose3d` targets: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY,
    scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
-3. `npm run motion:review -- apps/react-demo/src/<name>-scene.ts` checks the values: jumps, a short final hold, a target
-   still moving at the end. It needs no browser.
+3. `npm run motion:review -- apps/react-demo/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
+   a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
+   units, and its default of 150 is for px, so give a 3D scene its own; `--turn` (degrees) and `--ratio` (scale and
+   opacity) keep their defaults.
 4. `npm run motion:review -- <name>.html --watch canvas --to <ms>` gives the frame sheet. Read it: the page tools see
    no element inside a canvas, so the sheet is how you see framing, silhouettes and whether the motion reads.
 
@@ -23,8 +25,9 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - A pivot is the object's origin. To turn or squash about another point, put the mesh in a group and pose the group.
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y. A `Pose2d` passed
   as a `Pose3d` does not compile.
-- In React, `useTarget3d(player, "name")` gives a ref for any `Object3D`, plain Three.js or React Three Fiber. With
-  `frameloop="demand"` pass R3F's `invalidate`.
+- In React, `useTarget3d(player, "name")` gives a ref for any `Object3D`, plain Three.js or React Three Fiber. The
+  object's position when it binds is its rest, as an element's layout is in 2D; turns and scales are written whole.
+  With `frameloop="demand"` pass R3F's `invalidate`.
 
 ## The principles in 3D
 
