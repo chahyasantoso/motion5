@@ -251,9 +251,9 @@ const pose = along3d(toCubics3d(anchors), flight.of(time, ease.sineInOut).progre
 scene's time, never read past the clock's ends; zero with no clock.
 
 **`smear3d({ vx, vy, vz }, { stretch, max })`**: `{ pose, turn }`: `pose` turns local +x onto the travel and stretches
-it, volume kept; an inner object takes `turn` so its content stays upright.
+it by `stretch` per unit a second up to `max`, volume kept; an inner object takes `turn` so its content stays upright.
 ```ts
-const { pose, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.2, max: 1.8 });
+const { pose, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.08, max: 1.8 });
 ```
 
 **`aim(from, to, up?)`**: the turn that points local -z, a camera's forward, from `from` at `to`, `up` +y when absent,

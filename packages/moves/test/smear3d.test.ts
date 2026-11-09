@@ -43,26 +43,26 @@ describe("smear3d", () => {
       pose: {},
       turn: {},
     });
-    expect(smear3d({ vx: 0, vy: 0, vz: 900 }, { stretch: 0, max: 2 })).toEqual({
+    expect(smear3d({ vx: 0, vy: 0, vz: 0.9 }, { stretch: 0, max: 2 })).toEqual({
       pose: {},
       turn: {},
     });
   });
 
   it("keeps its pose when travel reverses, since a stretch has no front", () => {
-    const ahead = smear3d({ vx: 300, vy: -200, vz: 900 }, { stretch: 0.3, max: 3 });
-    const back = smear3d({ vx: -300, vy: 200, vz: -900 }, { stretch: 0.3, max: 3 });
+    const ahead = smear3d({ vx: 0.3, vy: -0.2, vz: 0.9 }, { stretch: 0.3, max: 3 });
+    const back = smear3d({ vx: -0.3, vy: 0.2, vz: -0.9 }, { stretch: 0.3, max: 3 });
     expect(back).toEqual(ahead);
   });
 
   it("keeps volume", () => {
-    const { pose } = smear3d({ vx: 300, vy: -400, vz: 1200 }, { stretch: 0.2, max: 3 });
+    const { pose } = smear3d({ vx: 0.3, vy: -0.4, vz: 1.2 }, { stretch: 0.2, max: 3 });
     expect((pose.scaleX ?? 1) * (pose.scaleY ?? 1) * (pose.scaleZ ?? 1)).toBeCloseTo(1, 9);
     expect(pose.scaleX).toBeCloseTo(1 + (0.2 * Math.hypot(300, 400, 1200)) / 1000, 9);
   });
 
   it("holds at the cap", () => {
-    expect(smear3d({ vx: 0, vy: 0, vz: 20000 }, { stretch: 0.2, max: 1.5 }).pose.scaleX).toBe(1.5);
+    expect(smear3d({ vx: 0, vy: 0, vz: 20 }, { stretch: 0.2, max: 1.5 }).pose.scaleX).toBe(1.5);
   });
 
   it("refuses a negative stretch or a max under 1", () => {
@@ -71,7 +71,7 @@ describe("smear3d", () => {
   });
 
   it("with the inner turn is a pure stretch along the travel", () => {
-    const { pose, turn } = smear3d({ vx: 1000, vy: 0, vz: 1000 }, { stretch: 0.5, max: 4 });
+    const { pose, turn } = smear3d({ vx: 1, vy: 0, vz: 1 }, { stretch: 0.5, max: 4 });
     const s = pose.scaleX ?? 1;
     const side = 1 / Math.sqrt(s);
     const outer = multiplyMatrix3(matrixFromEuler3d(eulerOf(pose)), diag(s, side, side));

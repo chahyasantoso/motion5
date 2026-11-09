@@ -53,6 +53,6 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - Euler turns near 90 degrees about x lose a degree of freedom when you write them by hand. Blend through `mixPose3d`,
   never field by field.
 - `trailTurn` and `velocity3d` take the scene's time, never `span.of(time, ease)`.
-- `smear3d`'s `stretch` counts per 1000 units a second, and a 3D body moves a few units a second, so useful values
-  are large: the worked example uses 75.
+- `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
+  few units a second.
 - Not yet for code scenes: 3D rigs, a skinned mesh's bones, 3D physics.
