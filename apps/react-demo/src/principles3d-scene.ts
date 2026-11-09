@@ -114,7 +114,7 @@ const settle = span(LAND_MS, LAND_MS + 1300, durationMs);
 const pop = springEase({ stiffness: 170, damping: 9 });
 const pan = span(0, CAMERA_END_MS, durationMs);
 const gaze = span(LAND_MS - 300, CAMERA_END_MS, durationMs);
-const STAGE_CENTER = { x: -0.5, y: 1.2, z: 0 };
+const STAGE_CENTER = { x: -0.5, y: 2, z: 0 };
 
 /** One small object's place, rising and growing in its turn. */
 export function bit(time: Time, index: number): Pose3d {
@@ -132,9 +132,9 @@ export function bit(time: Time, index: number): Pose3d {
 export function camera(time: Time): Pose3d {
   const eye = orbit({
     target: STAGE_CENTER,
-    radius: 10,
+    radius: 7.5,
     azimuth: mix(-22, 24, pan.of(time, ease.sineInOut).progress),
-    elevation: 20,
+    elevation: 16,
   });
   const lean = mix(0.35, 1, gaze.of(time, ease.sineInOut).progress);
   return { ...eye, ...aim(eye, mixPoint3d(STAGE_CENTER, subject(time), lean)) };
@@ -142,7 +142,7 @@ export function camera(time: Time): Pose3d {
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
 export const scene = (time: Time, events: Events) => {
-  const travel = smear3d(velocity3d(flight, time, events), { stretch: 75, max: 1.8 });
+  const travel = smear3d(velocity3d(flight, time, events), { stretch: 0.075, max: 1.8 });
   return {
     body: combine3d([squashed3d(0.45, crouch(time)), flight(time)]),
     stretch: travel.pose,
