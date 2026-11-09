@@ -9,6 +9,7 @@ searching it for the name, not by reading package source. Read a part below only
 | Hover, press, click, scroll into view, or one target answering another's moment | [events](./agent-events.md) |
 | Many bodies, collisions, a pile, things thrown and falling | [physics](./agent-physics.md) |
 | An arm, a leg, a figure: bones that reach | [rigs](./agent-rigs.md) |
+| Weight, life, character or polish: anticipation, arcs, follow-through, settle | [principles](./agent-principles.md) |
 
 ## The loop
 
@@ -56,7 +57,7 @@ export const clock = () => clockDriver({ duration: durationMs });
 - A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional; `anchor` is the point that
   stays still while it turns or scales, the centre when absent.
 
-Five worked examples, each held by a test. Read the one closest to the brief and copy its patterns, not its look:
+Six worked examples, each held by a test. Read the one closest to the brief and copy its patterns, not its look:
 
 | Example | Shows |
 | --- | --- |
@@ -65,6 +66,7 @@ Five worked examples, each held by a test. Read the one closest to the brief and
 | `apps/react-demo/src/splash-scene.ts` | lists of targets, keyframes, letters rising from clipped water |
 | `apps/react-demo/src/card-scene.ts` | a card that lifts on hover and sinks when pressed |
 | `apps/react-demo/src/pile-scene.ts` | physics: letters tumbling into a pile |
+| `apps/react-demo/src/principles-scene.ts` | a crouch, an arc with smear, a trailing antenna, letters from the centre, a settle |
 
 ## Layout
 

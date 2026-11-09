@@ -7,6 +7,7 @@ const guide = [
   "docs/guide/agent-events.md",
   "docs/guide/agent-physics.md",
   "docs/guide/agent-rigs.md",
+  "docs/guide/agent-principles.md",
   "docs/guide/agent-motion-engine.md",
 ]
   .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
@@ -57,9 +58,15 @@ describe("agent guide", () => {
   it("stays reachable from the guide index and the agent rules", () => {
     const index = readFileSync(new URL("docs/guide/README.md", ROOT), "utf8");
     const core = readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8");
-    for (const part of ["agent-motion", "agent-events", "agent-physics", "agent-rigs"])
+    for (const part of [
+      "agent-motion",
+      "agent-events",
+      "agent-physics",
+      "agent-rigs",
+      "agent-principles",
+    ])
       expect(index, part).toContain(`./${part}.md`);
-    for (const part of ["agent-events", "agent-physics", "agent-rigs"])
+    for (const part of ["agent-events", "agent-physics", "agent-rigs", "agent-principles"])
       expect(core, part).toContain(`./${part}.md`);
     expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(
       "docs/guide/agent-motion.md",
