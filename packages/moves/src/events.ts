@@ -1,4 +1,6 @@
-import { elapsedOf, unreachable, type Time } from "./time";
+import { spring } from "./spring";
+import { elapsedOf, type Time } from "./time";
+import { unreachable } from "./unreachable";
 
 /** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where. */
 export interface MotionEvent {
@@ -30,49 +32,6 @@ export interface FollowOptions {
   readonly rest?: number;
 }
 
-/** Where a unit-mass spring is, `seconds` after it left `offset` from its goal at `speed`, and how fast it goes. */
-function spring(
-  offset: number,
-  speed: number,
-  seconds: number,
-  stiffness: number,
-  damping: number,
-): { readonly offset: number; readonly speed: number } {
-  const natural = Math.sqrt(stiffness);
-  const ratio = damping / (2 * natural);
-  if (ratio < 1) {
-    const ringing = natural * Math.sqrt(1 - ratio * ratio);
-    const decay = Math.exp(-ratio * natural * seconds);
-    const cos = Math.cos(ringing * seconds);
-    const sin = Math.sin(ringing * seconds);
-    const b = (speed + ratio * natural * offset) / ringing;
-    return {
-      offset: decay * (offset * cos + b * sin),
-      speed:
-        decay *
-        ((b * ringing - ratio * natural * offset) * cos -
-          (offset * ringing + ratio * natural * b) * sin),
-    };
-  }
-  if (ratio === 1) {
-    const decay = Math.exp(-natural * seconds);
-    const b = speed + natural * offset;
-    return {
-      offset: (offset + b * seconds) * decay,
-      speed: (b - natural * (offset + b * seconds)) * decay,
-    };
-  }
-  const root = natural * Math.sqrt(ratio * ratio - 1);
-  const fast = -ratio * natural - root;
-  const slow = -ratio * natural + root;
-  const a = (speed - slow * offset) / (fast - slow);
-  const b = offset - a;
-  return {
-    offset: a * Math.exp(fast * seconds) + b * Math.exp(slow * seconds),
-    speed: a * fast * Math.exp(fast * seconds) + b * slow * Math.exp(slow * seconds),
-  };
-}
-
 /** A value springing to each named event's goal from where it is and how fast it goes; pure in time and events. */
 export function follow(options: FollowOptions): (time: Time, events: Events) => number {
   const stiffness = options.stiffness ?? 170;
@@ -92,7 +51,10 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
       if (options.target !== undefined && event.target !== options.target) continue;
       if (now !== undefined && event.at > now) break;
       if (since !== undefined) {
-        const moved = spring(value - goal, speed, (event.at - since) / 1000, stiffness, damping);
+        const moved = spring(value - goal, speed, (event.at - since) / 1000, {
+          stiffness,
+          damping,
+        });
         value = goal + moved.offset;
         speed = moved.speed;
       }
@@ -101,7 +63,7 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
     }
     if (since === undefined) return options.start;
     if (now === undefined) return goal;
-    const moved = spring(value - goal, speed, (now - since) / 1000, stiffness, damping);
+    const moved = spring(value - goal, speed, (now - since) / 1000, { stiffness, damping });
     return Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest
       ? goal
       : goal + moved.offset;

@@ -10,7 +10,9 @@ export {
   type Span,
   type Time,
 } from "./time";
-export { ease, type Ease } from "./ease";
+export { backEase, ease, springEase, type Ease, type EaseDirection } from "./ease";
+export { spring, type SpringOptions, type SpringState } from "./spring";
+export { trail, type TrailOptions } from "./trail";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
 export { seeded } from "./random";
@@ -25,11 +27,14 @@ export {
   type ReactionKind,
   type ReactOptions,
 } from "./events";
-export { lane, laneTime, lanes, type Lanes } from "./lanes";
+export { lane, laneTime, lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
 export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";
 export { toCubics } from "./path";
+export { along } from "./along";
+export { velocity } from "./velocity";
+export { smear } from "./smear";
 export { combine } from "./combine";
 export {
   defineMove,

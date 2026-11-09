@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>principles</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f3e9d2;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      .word {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 90px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+        font-size: 120px;
+        font-weight: 700;
+        font-style: italic;
+        color: #3b1f3a;
+      }
+      .letter {
+        display: inline-block;
+        opacity: 0;
+      }
+      .ground {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 560px;
+        bottom: 0;
+        background: #3b1f3a;
+      }
+      .pad {
+        position: absolute;
+        left: 585px;
+        top: 548px;
+        width: 230px;
+        height: 24px;
+        border-radius: 50%;
+        background: #f08a5d;
+      }
+      .body {
+        position: absolute;
+        left: 640px;
+        top: 450px;
+        width: 120px;
+        height: 110px;
+      }
+      .stretch {
+        width: 120px;
+        height: 110px;
+      }
+      .face {
+        position: relative;
+        width: 120px;
+        height: 110px;
+        border-radius: 48% 48% 40% 40%;
+        background: #e8505b;
+      }
+      .eye {
+        position: absolute;
+        top: 36px;
+        width: 14px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3b1f3a;
+      }
+      .eye.left {
+        left: 36px;
+      }
+      .eye.right {
+        left: 72px;
+      }
+      .antenna {
+        position: absolute;
+        left: 58px;
+        top: -52px;
+        width: 4px;
+        height: 56px;
+        background: #3b1f3a;
+      }
+      .antenna i {
+        position: absolute;
+        left: -7px;
+        top: -12px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #f9c74f;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/principles-main.tsx"></script>
+  </body>
+</html>

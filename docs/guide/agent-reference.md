@@ -57,10 +57,12 @@ window(time, 0.25, 0.5);
 
 ### Lanes
 
-**`lanes(lengths, stagger)`**: lanes for staggered targets; `stagger` is a share of a lane's length. **`Lanes`** is its
-type.
+**`lanes(lengths, stagger, { from, spacing })`**: lanes for staggered targets; `stagger` is a share of a lane's length.
+`from` picks which start first, a **`LaneOrigin`**: `"start"` (default), `"end"`, `"center"`, `"edges"` or `{ seed }`;
+`spacing`, an ease, bends the start times. **`Lanes`** (with each lane's `starts`) and **`LanesOptions`** are its types.
 ```ts
 const LETTERS = lanes([1, 1, 1, 1], 0.25);
+const BURST = lanes([1, 1, 1, 1, 1], 0.2, { from: "center", spacing: ease.quadOut });
 ```
 
 **`lane(time, index, lanes)`**: lane `index`'s time inside `time`.
@@ -110,6 +112,32 @@ with `In`, `Out` and `InOut`, plus `elasticOut`, `bounceOut`, `bounceIn`. **`Eas
 span(0, 600, durationMs).of(time, ease.backOut);
 ```
 
+**`backEase({ amount, direction })`**: a back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it
+as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic. **`EaseDirection`** is the direction's type.
+```ts
+const crouch = mix(0, 400, leap.of(time, backEase({ amount: 3, direction: "in" })).progress);
+```
+
+**`springEase({ stiffness, damping })`**: a spring from 0 settling on 1, fitted to the span; lower damping rings more.
+Feed it to values, not to a move's progress.
+```ts
+const scale = mix(0, 1, pop.of(time, springEase({ stiffness: 170, damping: 10 })).progress);
+```
+
+**`spring(offset, speed, seconds, { stiffness, damping })`**: where a unit-mass spring is after `seconds`, as a
+**`SpringState`** `{ offset, speed }`. **`SpringOptions`** is its options' type.
+```ts
+const { offset } = spring(-1, 0, 0.2, { stiffness: 170, damping: 12 });
+```
+
+**`trail(signal, { stiffness, damping, stepMs, rest })`**: a value chasing `signal(time, events)` on a spring, for
+follow-through and drag; the signal itself with no clock. Pass the scene's time: the signal applies its own spans
+and eases, since an eased time cannot be moved to another ms. **`TrailOptions`** is its options' type.
+```ts
+const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
+tail(time, events);
+```
+
 **`mix(a, b, share)`**, **`mixPoint(a, b, share)`**, **`mixAngle(a, b, share)`** (the short way round),
 **`mixPose(a, b, share)`** (a missing field at its rest).
 ```ts
@@ -142,7 +170,11 @@ const carry: Pose2d = { x: 10, anchor: "bottom" };
 combine([drop(options, time), { opacity: 0.5 }]);
 ```
 
-**`squashed(squash, weight)`**: a squash pose `weight` of the way in, anchored at the bottom.
+**`squashed(squash, weight, anchor?)`**: a squash pose `weight` of the way in against the `anchor` side, `"bottom"`
+when absent; `"left"` and `"right"` squash sideways.
+```ts
+combine([slide, squashed(0.3, hit, "right")]);
+```
 
 **`POSE_2D_FIELDS`**: every field name of `Pose2d`.
 
@@ -150,6 +182,23 @@ combine([drop(options, time), { opacity: 0.5 }]);
 anchor, a path segment, a reveal circle, a drawn share.
 
 **`toCubics(anchors)`**: a rope's anchors as path segments for `applyPath`.
+
+**`along(cubics, share, { turn })`**: the `{ x, y }` pose `share` of the way along a path by distance, relative to the
+target's rest, so a path ending at 0,0 arrives at rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
+```ts
+const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
+```
+
+**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock. Pass the scene's time, not an eased one.
+```ts
+const { vx, vy } = velocity(ball, time, events);
+```
+
+**`smear({ vx, vy }, { stretch, max })`**: a pose stretching a body along its travel, area kept, and the `heading`; wrap
+content that must not turn in an inner element posed `{ rotation: -heading }`.
+```ts
+const { pose, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
+```
 
 ### Events
 
@@ -234,8 +283,9 @@ applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
 
 ### Drivers
 
-**`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames })`**: a timed clock on the page's frames;
-`.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`. **`ClockDriver`** and **`ClockOptions`** are its types.
+**`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames, reducedMotion })`**: a timed clock on the page's
+frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`. When the person prefers reduced motion it shows the
+last frame and never ticks; `reducedMotion: "play"` opts out. **`ClockDriver`** and **`ClockOptions`** are its types.
 ```ts
 export const clock = () => clockDriver({ duration: durationMs });
 ```

@@ -1,5 +1,6 @@
 import { atProgress, createLoopCycle, type LoopCycle, type Time } from "@motion5/moves";
 import type { Driver } from "@motion5/player";
+import { unreachable } from "./unreachable";
 
 /** Where frames come from: `requestAnimationFrame` on a page, a fake one in a test. */
 export interface FrameSource {
@@ -21,6 +22,27 @@ export interface ClockOptions {
   readonly yoyo?: boolean;
   readonly autoplay?: boolean;
   readonly frames?: FrameSource;
+  /** Under the person's reduced-motion setting: `"end"` shows the last frame and never ticks; default `"end"`. */
+  readonly reducedMotion?: "end" | "play";
+  /** Whether the person asked for reduced motion; the page's media query when absent. */
+  readonly prefersReducedMotion?: () => boolean;
+}
+
+function pagePrefersReducedMotion(): boolean {
+  return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+
+/** Whether the clock should hold on its last frame instead of playing. */
+function holdsAtEnd(options: ClockOptions): boolean {
+  const mode = options.reducedMotion ?? "end";
+  switch (mode) {
+    case "end":
+      return (options.prefersReducedMotion ?? pagePrefersReducedMotion)();
+    case "play":
+      return false;
+    default:
+      return unreachable(mode);
+  }
 }
 
 /** A driver on the page's frames, timed in ms, with the delay, repeat and yoyo a `time` trigger has. */
@@ -42,8 +64,9 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       ...(options.repeat === undefined ? {} : { repeat: options.repeat }),
       ...(options.yoyo === undefined ? {} : { yoyo: options.yoyo }),
     });
+  const still = holdsAtEnd(options);
   let cycle = fresh(options.delay);
-  let progress = 0;
+  let progress = still ? 1 : 0;
   let handle: number | undefined;
   let previous: number | undefined;
   const notify = (): void => {
@@ -74,6 +97,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       };
     },
     play() {
+      if (still) return;
       if (handle === undefined && cycle.state.kind === "running")
         handle = frames.requestFrame(frame);
     },
@@ -88,7 +112,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     replay() {
       stop();
       cycle = fresh(options.delay);
-      progress = 0;
+      progress = still ? 1 : 0;
       notify();
       driver.play();
     },

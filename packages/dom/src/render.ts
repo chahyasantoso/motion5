@@ -1,4 +1,5 @@
 import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@motion5/moves";
+import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
 export interface RenderStyle {
@@ -92,7 +93,7 @@ export function pathData(cubics: readonly Cubic2d[]): string {
 /** Writes a pose; an absent anchor is the centre, measured on the element's own box for SVG as for HTML. */
 export function applyPose(target: RenderTarget, pose: Pose2d): void {
   const transform = cssTransform(pose);
-  if (transform !== "") target.style.transform = transform;
+  target.style.transform = transform;
   if (pose.opacity !== undefined) target.style.opacity = String(pose.opacity);
   if ("ownerSVGElement" in target) target.style.transformBox = "fill-box";
   target.style.transformOrigin = cssOrigin(pose.anchor ?? "center");
@@ -113,8 +114,4 @@ export function applyDrawn(target: RenderTarget, drawn: Drawn, length?: number):
 /** Sets a path element's `d` to the cubic segments. */
 export function applyPath(target: RenderTarget, cubics: readonly Cubic2d[]): void {
   target.setAttribute?.("d", pathData(cubics));
-}
-
-function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
 }

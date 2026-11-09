@@ -1,4 +1,5 @@
 import type { Ease } from "./ease";
+import { unreachable } from "./unreachable";
 
 /** A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control. */
 export type Clock =
@@ -96,9 +97,4 @@ export function span(fromMs: number, toMs: number, durationMs: number): Span {
     },
     at: (share: number) => fromMs + (toMs - fromMs) * share,
   });
-}
-
-/** The sink of an exhaustive switch: a value TypeScript proves cannot arrive. */
-export function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
 }
