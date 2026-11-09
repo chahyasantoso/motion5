@@ -289,7 +289,8 @@ See [ADR-138](../ADR-138-rig-aggregation-and-pose-classification.md).
 ## @motion5/three
 
 The optional `@motion5/three` workspace package adapts public patches to Three.js `Object3D`
-instances. Its consumer-facing peer dependency is `three >=0.160.0`; the adapter writes world
+instances, from its `@motion5/three/engine` entry; the main entry holds `writeFrame3d`, `applyPose2d` and the
+frame helpers and imports nothing from core. Its consumer-facing peer dependency is `three >=0.160.0`; the adapter writes world
 frames, converts core's degree angles to radians, and uses `EULER_ORDER_3D` (`"ZXY"`) so Three.js
 composes `Rz · Rx · Ry`. `writeFrame3d(object, values)` writes one frame, and
 `createObject3dPatchAdapter(resolve)` provides `apply(patch)`, `applyValues(nodeId, values)` and
@@ -300,6 +301,9 @@ nothing, exactly as the DOM adapter's `clear` does (revision state is held per o
 which cannot be enumerated). It never removes anything from the scene graph.
 
 ## @motion5/react
+
+These hooks come from `@motion5/react/engine`; the main `@motion5/react` entry holds only the code-scene hooks
+and imports nothing from core.
 
 `usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, `liveOrAbsent(patch)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `LivePatch`, `PatchListener`, and `PatchSource` types.
 

@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { liveOrAbsent, usePatch } from "@motion5/react";
-import type { LivePatch, Patch, PatchListener, PatchSource } from "@motion5/react";
+import { liveOrAbsent, usePatch } from "@motion5/react/engine";
+import type { LivePatch, Patch, PatchListener, PatchSource } from "@motion5/react/engine";
 
 const NODE_ID = "hero/arm";
 

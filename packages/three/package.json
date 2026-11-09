@@ -25,6 +25,16 @@
     "./skeleton": {
       "types": "./src/skeleton.ts",
       "default": "./src/skeleton.ts"
+    },
+    "./engine": {
+      "types": "./src/engine.ts",
+      "default": "./src/engine.ts"
     }
+  },
+  "motion5": {
+    "engine": [
+      "src/engine.ts",
+      "src/skeleton"
+    ]
   }
 }

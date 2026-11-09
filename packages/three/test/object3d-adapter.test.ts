@@ -11,7 +11,8 @@ import { Matrix4, Object3D, Quaternion, Vector3 } from "three";
 // Deterministic interpolator/scheduler fakes remain test support, as in the sibling Three tests.
 import { createFakeInterpolator, createFakeScheduler } from "../../core/src/testing/fakes";
 import { captureSkeleton, skeletonTracks, tableFrameSource } from "../src/skeleton";
-import { EULER_ORDER_3D, createObject3dPatchAdapter, writeFrame3d } from "../src/index";
+import { createObject3dPatchAdapter } from "../src/engine";
+import { EULER_ORDER_3D, writeFrame3d } from "../src/index";
 import { syntheticSkeleton } from "./support/synthetic-skeleton";
 import { testModels } from "../../core/test/support/test-models";
 

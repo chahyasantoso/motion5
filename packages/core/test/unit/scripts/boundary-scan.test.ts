@@ -632,6 +632,44 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("keeps the code path of a split package off core and off the files that reach it", async () => {
+    const manifest = JSON.stringify({
+      name: "@motion5/viewer",
+      motion5: { engine: ["src/engine.ts", "src/patches/"] },
+      exports: {},
+    });
+    const imp = (names: string, from: string, body: string) =>
+      `import { ${names} } from "${from}";$
+${body}`;
+    const violations = await withTree(
+      {
+        "packages/viewer/package.json": manifest,
+        "packages/viewer/src/index.ts": imp("Engine", "@motion5/core", "export const e = Engine;"),
+        "packages/viewer/src/clean.ts": imp("b", "react", "export const a = b;"),
+        "packages/viewer/src/plugins.ts": imp(
+          "m",
+          "@motion5/plugins/models",
+          "export const p = m;",
+        ),
+        "packages/viewer/src/reach.ts": imp("e", "./engine", "export const r = e;"),
+        "packages/viewer/src/deep.ts": imp("q", "./patches/store", "export const d = q;"),
+        "packages/viewer/src/engine.ts": imp("Engine", "@motion5/core", "export const e = Engine;"),
+        "packages/viewer/src/patches/store.ts": imp(
+          "Engine",
+          "@motion5/core",
+          "export const q = Engine;",
+        ),
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/viewer/src/deep.ts: code path import of the engine",
+      "packages/viewer/src/index.ts: code path import of the engine",
+      "packages/viewer/src/plugins.ts: code path import of the engine",
+      "packages/viewer/src/reach.ts: code path import of the engine",
+    ]);
+  });
+
   it("keeps page tools to node, playwright-core and vite", async () => {
     const violations = await withTree(
       {

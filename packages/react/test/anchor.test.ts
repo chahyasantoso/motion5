@@ -5,7 +5,8 @@ import { Engine, PluginCatalog, createManualClock, type ProjectHandle } from "@m
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
 import { builtinModels } from "@motion5/plugins/models";
 import { wipePlugin } from "@motion5/plugins/motion/wipe";
-import { mergeRefs, useAnchor, type AnchorRefs } from "@motion5/react";
+import { mergeRefs } from "@motion5/react";
+import { useAnchor, type AnchorRefs } from "@motion5/react/engine";
 
 class Box {
   constructor(

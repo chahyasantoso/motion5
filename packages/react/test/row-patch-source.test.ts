@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { liveOrAbsent, rowPatchSource } from "@motion5/react";
-import type { LivePatch, Patch, PatchListener, PatchSource } from "@motion5/react";
+import { liveOrAbsent, rowPatchSource } from "@motion5/react/engine";
+import type { LivePatch, Patch, PatchListener, PatchSource } from "@motion5/react/engine";
 import type { Outputs, ReadyPatch, Value } from "../../core/src/contract/v5";
 
 const NODE = "rig/pose";

@@ -1,5 +1,5 @@
 import type { Patch } from "@motion5/core";
-import { createObject3dPatchAdapter } from "@motion5/three";
+import { createObject3dPatchAdapter } from "@motion5/three/engine";
 import {
   BoxGeometry,
   Group,

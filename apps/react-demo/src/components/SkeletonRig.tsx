@@ -5,7 +5,7 @@ import {
   type PatchDerivation,
   type PatchSource,
   type PatchValues,
-} from "@motion5/react";
+} from "@motion5/react/engine";
 import { nodePosition, point, createWalkerRowSource } from "./marker-position";
 
 /**

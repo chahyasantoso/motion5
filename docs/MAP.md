@@ -5,7 +5,7 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 ## apps/ik-playground
 
-- `src/`: IK demo app and its projects
+- `src/`: IK demo app
 - `src/components/`: stages, panels
 
 ## apps/pose-gap-filler
@@ -20,7 +20,7 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 ## apps/react-demo
 
-- `src/`: React demo app and its projects
+- `src/`: React demo app
 - `src/components/`: inspector, rig
 
 ## packages/core
@@ -71,7 +71,7 @@ Public: `.`
 Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
 
 - `src/fk/`: FK plugins, 2D and 3D
-- `src/host/`: catalog, loader, labels, runner
+- `src/host/`: catalog, loader, runner
 - `src/ik/`: IK plugins, 2D and 3D
 - `src/models/`: public Models and field specs
 - `src/models/body/`: body Model rules
@@ -92,7 +92,7 @@ Public: `.`
 
 ## packages/react
 
-Public: `.`
+Public: `.`, `./engine`
 
 - `src/`: React hooks
 
@@ -109,7 +109,7 @@ Public: `.`, `./internal`
 
 ## packages/three
 
-Public: `.`, `./skeleton`
+Public: `.`, `./skeleton`, `./engine`
 
 - `src/`: Three.js adapter
 
@@ -117,7 +117,7 @@ Public: `.`, `./skeleton`
 
 Public: `./page`, `./scene`, `./engine`
 
-- `src/engine/`: engine sample, timeline, catalog
+- `src/engine/`: engine tools
 - `src/page/`: page tools
 - `src/scene/`: scene sample, timeline
 - `src/scene/templates/`: motion:new templates

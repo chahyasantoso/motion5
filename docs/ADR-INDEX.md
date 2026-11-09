@@ -171,3 +171,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-164 — Physics bodies turn — Accepted, 2026-11-08
 - ADR-165 — simulate spawns bodies on events — Accepted, 2026-11-08
 - ADR-166 — motion:review and a one-call loop — Accepted, 2026-11-08
+- ADR-167 — Engine entries keep core off the code path — Accepted, 2026-11-09

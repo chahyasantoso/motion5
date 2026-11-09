@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { selectRecord } from "@motion5/core/plugin-api";
-import { patchRender, useDomPatch, type PatchSource } from "@motion5/react";
+import { patchRender, useDomPatch, type PatchSource } from "@motion5/react/engine";
 import { IK3D, IK3D_FRAME, IK3D_NODE_ID, IK3D_VIEW } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
 import { unprojectPoint, type Point2, type Point3 } from "../projection";

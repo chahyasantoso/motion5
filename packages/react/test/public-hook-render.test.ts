@@ -1,8 +1,8 @@
 import { createElement, type RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import type { LivePatch, PatchSource, PatchDerivation } from "@motion5/react";
-import { rowPatchSource, useDerivedDomPatch, usePatch } from "@motion5/react";
+import type { LivePatch, PatchSource, PatchDerivation } from "@motion5/react/engine";
+import { rowPatchSource, useDerivedDomPatch, usePatch } from "@motion5/react/engine";
 import type { Patch, PluginDefinition, ResolvedInput, ValueSpec } from "../../core/src/contract/v5";
 import { PluginCatalog } from "../../core/src/domain/plugin-catalog";
 import { Engine, type ProjectHandle } from "../../core/src/engine";

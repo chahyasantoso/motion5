@@ -17,6 +17,23 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./engine": {
+      "types": "./src/engine.ts",
+      "default": "./src/engine.ts"
     }
+  },
+  "motion5": {
+    "engine": [
+      "src/engine.ts",
+      "src/use-anchor.ts",
+      "src/derived-dom-patch.ts",
+      "src/dom-binding.ts",
+      "src/dom-patch.ts",
+      "src/motion-project.ts",
+      "src/patch-store.ts",
+      "src/row-patch-source.ts",
+      "src/word.ts"
+    ]
   }
 }

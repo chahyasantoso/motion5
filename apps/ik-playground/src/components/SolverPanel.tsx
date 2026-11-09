@@ -1,7 +1,7 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { selectRecord, selectRow } from "@motion5/core/plugin-api";
-import { patchRender, usePatch } from "@motion5/react";
+import { patchRender, usePatch } from "@motion5/react/engine";
 import { TENTACLE, nodeId } from "../ik-playground-project";
 import { IK3D, IK3D_GOAL_BOUNDS, IK3D_NODE_ID } from "../ik3d-playground-project";
 import type { GoalControl } from "../goal-control";
