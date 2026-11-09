@@ -79,7 +79,7 @@ describe("motion:review on a scene file", () => {
       scene: (time: { progress: number }) => ({ a: { rotationY: time.progress < 0.5 ? 0 : 200 } }),
     });
     if ("reason" in turning) throw new Error(turning.reason);
-    expect(reviewSceneModule(turning, limits).findings[0]).toContain("a.rotationY jumps 160");
+    expect(reviewSceneModule(turning, limits).findings[0]).toContain("a turns 160");
   });
   it("reads a turn through 180 degrees as the short step it is", () => {
     const turning = [179, -179, -177].map((rotation, index) => ({
@@ -92,5 +92,27 @@ describe("motion:review on a scene file", () => {
       targets: { a: { rotation } },
     }));
     expect(reviewValues(flipped, limits).some((line) => line.includes("jumps"))).toBe(true);
+  });
+  it("reads a 3D turn as one rotation, so the same turn written two ways is no jump", () => {
+    const same = [
+      { rotation: 10, rotationX: 20, rotationY: 30 },
+      { rotation: 190, rotationX: 160, rotationY: 210 },
+    ].map((body, index) => ({ at: index * 16, targets: { body } }));
+    expect(
+      reviewValues(same, limits).filter((line) => line.includes("jump") || line.includes("turns")),
+    ).toEqual([]);
+    const real = [{ rotationY: 0 }, { rotationY: 170, rotationX: 0 }].map((body, index) => ({
+      at: index * 16,
+      targets: { body },
+    }));
+    expect(reviewValues(real, limits)).toContain("body turns 170 at 16 ms");
+  });
+
+  it("does not count a last thousandth of movement as still moving", () => {
+    const settling = [0, 1, 2, 3].map((index) => ({
+      at: index * 16,
+      targets: { flap: { rotationX: index < 3 ? 0 : 0.001 } },
+    }));
+    expect(reviewValues(settling, { ...limits, hold: 0 })).toEqual([]);
   });
 });

@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { quaternionFromEuler3d } from "@motion5/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { readSceneModule, sampleScene, type SceneModule } from "./scene";
@@ -114,6 +115,38 @@ function stepAndLimit(
   }
 }
 
+const TURN_KEYS = ["rotation", "rotationX", "rotationY"] as const;
+
+/** The pose a turn field belongs to: `body.rotationX` belongs to `body`. */
+function ownerOf(path: string): string {
+  return path.replace(/.?rotation[XY]?$/, "");
+}
+
+/** Degrees between two 3D turns, as one rotation, however their Euler numbers are written. */
+function turnBetween(
+  before: ReadonlyMap<string, number>,
+  now: ReadonlyMap<string, number>,
+  owner: string,
+): number {
+  const at = (sample: ReadonlyMap<string, number>) => {
+    const [z, x, y] = TURN_KEYS.map(
+      (key) => sample.get(owner === "" ? key : `${owner}.${key}`) ?? 0,
+    );
+    return quaternionFromEuler3d({ rotation: z ?? 0, rotationX: x ?? 0, rotationY: y ?? 0 });
+  };
+  const a = at(before);
+  const b = at(now);
+  const dot = Math.min(1, Math.abs(a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z));
+  return (2 * Math.acos(dot) * 180) / Math.PI;
+}
+
+/** A sample's values, rounded to a hundredth, so a spring's last thousandth does not count as moving. */
+function fingerprint(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    typeof item === "number" ? Math.round(item * 100) / 100 : item,
+  );
+}
+
 /** Findings over a scene's values sampled every 16 ms: jumps, a short final hold, targets still moving. */
 export function reviewValues(
   samples: readonly { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[],
@@ -128,9 +161,22 @@ export function reviewValues(
   numbers.forEach((now, index) => {
     const before = numbers[index - 1];
     if (before === undefined) return;
+    const turned3d = new Set(
+      [...now.keys(), ...before.keys()]
+        .filter((path) => /(^|.)rotation[XY]$/.test(path))
+        .map(ownerOf),
+    );
+    for (const owner of turned3d) {
+      const step = turnBetween(before, now, owner);
+      if (step > limits.turn)
+        jumps.push(
+          `${owner} turns ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
+        );
+    }
     for (const [path, value] of now) {
       const earlier = before.get(path);
       if (earlier === undefined) continue;
+      if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
       const [step, limit] = stepAndLimit(path, earlier, value, limits);
       if (step > limit)
         jumps.push(
@@ -140,9 +186,7 @@ export function reviewValues(
   });
   const names = [...new Set(samples.flatMap(({ targets }) => Object.keys(targets)))];
   const prints = samples.map(({ targets }) =>
-    Object.fromEntries(
-      Object.entries(targets).map(([name, value]) => [name, JSON.stringify(value)]),
-    ),
+    Object.fromEntries(Object.entries(targets).map(([name, value]) => [name, fingerprint(value)])),
   );
   const rest = restFindings(
     samples.map(({ at }) => at),
