@@ -14,8 +14,8 @@ function scenario(body: string) {
       import assert from "node:assert/strict";
       import {verify} from "./scripts/ci-evidence.mjs";
       const identity = {sha: "a".repeat(40), run: "42", attempt: "1"};
-      const test = {file: "packages/core/test/integration/end-to-end.test.ts", name: "suite > test"};
-      const inventory = {version: 1, identity, all: [test], integration: [test], "end-to-end": [test]};
+      const test = {file: "packages/rig/test/chain.test.ts", name: "suite > test"};
+      const inventory = {version: 1, identity, all: [test]};
       const result = {version: 1, identity, reason: "passed", errors: [], modules: [{state: "passed"}], tests: [{...test, state: "passed"}]};
       ${body}
       `,
@@ -26,10 +26,9 @@ function scenario(body: string) {
 }
 
 describe("single-suite CI evidence", () => {
-  it("accepts complete exact-run evidence for both compatibility contexts", () => {
+  it("accepts complete exact-run evidence", () => {
     scenario(`
-      for (const scope of ["all", "integration", "end-to-end"])
-        assert.equal(verify(inventory, result, identity, scope).tests, 1);
+      assert.equal(verify(inventory, result, identity, "all").tests, 1);
     `);
   });
 
@@ -40,8 +39,8 @@ describe("single-suite CI evidence", () => {
         {modules: []}, {modules: [{state: "failed"}]}, {tests: []},
         {tests: [{...test, state: "skipped"}]}, {tests: [{...test, state: "failed"}]},
         {tests: [{...test, state: "pending"}]},
-      ]) assert.throws(() => verify(inventory, {...result, ...patch}, identity, "integration"));
-      assert.throws(() => verify(inventory, undefined, identity, "integration"));
+      ]) assert.throws(() => verify(inventory, {...result, ...patch}, identity, "all"));
+      assert.throws(() => verify(inventory, undefined, identity, "all"));
     `);
   });
 
@@ -54,29 +53,24 @@ describe("single-suite CI evidence", () => {
     `);
   });
 
-  it("compares discovery multiplicity and rejects missing subset assertions", () => {
+  it("compares discovery multiplicity and rejects results that differ from discovery", () => {
     scenario(`
-      const plugin = {file: "packages/plugins/test/integration/ik3d-tree.test.ts", name: "plugin > test"};
-      const expanded = {...inventory, all: [test, plugin], integration: [test, plugin]};
-      const executed = {...result, tests: [...result.tests, {...plugin, state: "passed"}]};
-      assert.equal(verify(expanded, executed, identity, "integration").tests, 2);
-      assert.throws(() => verify({...expanded, integration: [test]}, executed, identity, "integration"));
-      assert.throws(() => verify(expanded, result, identity, "integration"));
-      assert.throws(() => verify({...inventory, integration: []}, result, identity, "all"));
-      assert.throws(() => verify({...inventory, integration: [test, test]}, result, identity, "all"));
+      const other = {file: "packages/rig/test/ik/other.test.ts", name: "other > test"};
+      const expanded = {...inventory, all: [test, other]};
+      const executed = {...result, tests: [...result.tests, {...other, state: "passed"}]};
+      assert.equal(verify(expanded, executed, identity, "all").tests, 2);
+      assert.throws(() => verify(expanded, result, identity, "all"));
+      assert.throws(() => verify({...inventory, all: [test, test]}, result, identity, "all"));
       assert.throws(() => verify(inventory, {...result, tests: [...result.tests, ...result.tests]}, identity, "all"));
       assert.throws(() => verify(inventory, result, identity, "unknown"));
     `);
   });
 
-  it("keeps one suite owner and real scans without removing existing contexts", () => {
+  it("keeps one suite owner and real scans", () => {
     const workflow = readFileSync(new URL(".github/workflows/ci.yml", `file://${root}`), "utf8");
     expect(workflow.match(/run: npm test/g)).toHaveLength(1);
-    expect(workflow).not.toContain("run: npm run test:integration");
     expect(workflow).not.toContain("run: npx vitest run");
     expect(workflow).toContain("node scripts/boundary-scan.mjs");
-    expect(workflow).toContain("node scripts/ci-evidence.mjs verify integration");
-    expect(workflow).toContain("node scripts/ci-evidence.mjs verify end-to-end");
-    expect(workflow).toContain("needs.quality.result");
+    expect(workflow).toContain("node scripts/ci-evidence.mjs verify all");
   });
 });

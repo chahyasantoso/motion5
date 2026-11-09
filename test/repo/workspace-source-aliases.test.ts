@@ -2,10 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
-import { code } from "../../packages/core/test/helpers/source-region";
+import { code } from "./helpers/source-region";
 
-// PR #558: core aliases were a hand-written prefix list, so the declared
-// `@motion5/core/adapters/browser-clock` subpath resolved through the `adapters` alias to a missing
+// PR #558: aliases were a hand-written prefix list, so the declared
+// `@motion5/three/adapters/clock` subpath resolved through the `adapters` alias to a missing
 // file and Vitest discovery failed. Every workspace manifest now owns its aliases (R1, widened).
 const root = new URL("../../", import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), "utf8");
@@ -23,7 +23,7 @@ function declaredSpecifiers(directory: string): readonly string[] {
 }
 
 describe("workspace source aliases", () => {
-  const packages = ["core", "plugins", "react", "three", "dom"];
+  const packages = ["react", "three", "dom", "tools"];
   const aliases = workspaceSourceAliases(...packages);
 
   it("resolves every declared subpath through exactly one alias to an existing source file", () => {
@@ -40,7 +40,7 @@ describe("workspace source aliases", () => {
   });
 
   it("leaves undeclared subpaths unresolved", () => {
-    for (const specifier of ["@motion5/core/domain/plugins", "@motion5/core/adapters/dom"]) {
+    for (const specifier of ["@motion5/three/internal", "@motion5/react/adapters/dom"]) {
       expect(aliases.some(({ find }) => find.test(specifier))).toBe(false);
     }
   });

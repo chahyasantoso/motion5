@@ -4,14 +4,12 @@ import madge from "madge";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const SOURCES = [
-  "packages/core/src",
   "packages/moves/src",
   "packages/rig/src",
   "packages/player/src",
   "packages/physics/src",
   "packages/rapier/src",
   "packages/dom/src",
-  "packages/plugins/src",
   "packages/react/src",
   "packages/three/src",
 ];

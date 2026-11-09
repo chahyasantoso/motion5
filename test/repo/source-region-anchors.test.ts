@@ -4,13 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import {
-  code,
-  codeOnly,
-  declaration,
-  parseSource,
-  seamResultReads,
-} from "../../packages/core/test/helpers/source-region";
+import { code, codeOnly, declaration, parseSource, seamResultReads } from "./helpers/source-region";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -29,13 +23,13 @@ import {
 // Gated rather than written down alone, on `evidence-case-ids.test.ts`'s reason: the shape this
 // refuses is invisible in review, because a window bounded by a plausible identifier reads exactly
 // like a window bounded by a claim. `docs/TESTING-STRATEGY.md` owns the rule itself, and
-// `packages/core/test/helpers/source-region.ts` is the one owner of the reading.
+// `test/repo/helpers/source-region.ts` is the one owner of the reading.
 //
 // The scan root and the walk are `evidence-case-ids.test.ts`'s, deliberately: a source-reading idiom
 // is no more one package's than a citation id is.
 const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "test/repo/source-region-anchors.test.ts";
-const HELPER = "packages/core/test/helpers/source-region.ts";
+const HELPER = "test/repo/helpers/source-region.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 const TEST_FILE = /\.test\.tsx?$/;
 /** Actual import specifier suffix; a mention in a comment or fixture is not an import. */
@@ -149,12 +143,11 @@ describe("source-region anchors", () => {
   });
 
   it("reads source through the one owner with an empty closed pending set", () => {
-    expect(readers.length).toBeGreaterThanOrEqual(13);
+    expect(readers.length).toBeGreaterThanOrEqual(2);
     expect(readers.map(({ path }) => path)).toEqual(
       expect.arrayContaining([
-        "packages/core/test/integration/authored-leaf-reader.test.ts",
-        "packages/plugins/test/public-subpaths.test.ts",
-        "packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts",
+        "apps/react-demo/test/timing-beat.test.ts",
+        "test/repo/workspace-source-aliases.test.ts",
       ]),
     );
     expect(
@@ -183,17 +176,12 @@ describe("source-region anchors", () => {
   });
 
   it("requires a real helper import rather than prose or a type-only import", () => {
-    const statement =
-      'import { code as readCode } from "../../packages/core/test/helpers/source-region";';
+    const statement = 'import { code as readCode } from "./helpers/source-region";';
     expect(importsOwner(statement)).toBe(true);
     expect(importsOwner(`// ${statement}`)).toBe(false);
     expect(importsOwner(`const example = ${JSON.stringify(statement)};`)).toBe(false);
-    expect(
-      importsOwner('import type { code } from "../../packages/core/test/helpers/source-region";'),
-    ).toBe(false);
-    expect(
-      importsOwner('import { type code } from "../../packages/core/test/helpers/source-region";'),
-    ).toBe(false);
+    expect(importsOwner('import type { code } from "./helpers/source-region";')).toBe(false);
+    expect(importsOwner('import { type code } from "./helpers/source-region";')).toBe(false);
   });
 
   it("keeps parsed declaration bounds through nested braces and semicolons", () => {

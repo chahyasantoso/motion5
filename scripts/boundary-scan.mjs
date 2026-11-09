@@ -2,114 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const coreLayers = [
-  "contract",
-  "domain",
-  "graph",
-  "runtime",
-  "ports",
-  "testing",
-  "adapters",
-  "lang",
-];
-const corePackage = "packages/core";
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
-const allowedPublicExports = new Set([
-  "AUTHORED_SCHEMA_VERSION",
-  "DIAGNOSTIC_SEVERITIES",
-  "SUPPORTED_TRIGGER_TYPES",
-  "AuthoredProperty",
-  "AuthoredStop",
-  "Diagnostic",
-  "DiagnosticSeverity",
-  "MigrationDiagnostic",
-  "MotionDefinition",
-  "ObservationDefinition",
-  "ProjectDefinition",
-  "TrackDefinition",
-  "TriggerType",
-  "TriggerSignal",
-  "TriggerDefinition",
-  "ManualTriggerDefinition",
-  "TimeTriggerDefinition",
-  "ScrollTriggerDefinition",
-  "PatchStatus",
-  "Patch",
-  "LivePatch",
-  "PatchBatch",
-  "PatchListener",
-  "PatchRender",
-  "patchRender",
-  "Value",
-  "TableOf",
-  "MigrationResult",
-  "resolveTriggerDefinition",
-  "validateV5",
-  "ValidationResult",
-  "validateTrackDefinition",
-  "TrackValidationResult",
-  "validateMotionTrigger",
-  "parseGolden",
-  "serializeGolden",
-  "GoldenFixture",
-  "GoldenValidationFixture",
-  "Engine",
-  "EngineOptions",
-  "ProjectHandle",
-  "Handle",
-  "StaleHandleError",
-  "TrackHandle",
-  "StaleTrackHandleError",
-  "RequireView",
-  "MotionHandle",
-  "StaleMotionHandleError",
-  "SchemaTransaction",
-  "ValueTransaction",
-  "LiveValues",
-  "PluginDefinition",
-  "PluginCatalog",
-  "PluginAdmissionError",
-  "PluginDescription",
-  "PluginDefinition",
-  "DescribedSlot",
-  "DependencySpec",
-  "EvaluationContext",
-  "Outputs",
-  "ResolvedInput",
-  "ValueSpec",
-  "PluginCapabilities",
-  "assertClock",
-  "createManualClock",
-  "Clock",
-  "ClockTick",
-  "assertTriggerPort",
-  "createManualTriggerPort",
-  "TriggerPort",
-  "acceptsExternalSignal",
-  "assertTriggerFactory",
-  "TriggerBinding",
-  "ClockConsumer",
-  "CreatedTrigger",
-  "TriggerFactory",
-  "TriggerFactoryContext",
-  "createDefaultTriggerFactory",
-  "createTriggerFactory",
-  "ScrollSource",
-  "ScrollSourceResolver",
-  "ScrollSourceResolverContext",
-  "TriggerFactoryOptions",
-  "assertInterpolator",
-  "InterpolationTimeline",
-  "Interpolator",
-  "PatchKeysResult",
-  "assertScheduler",
-  "Cancel",
-  "Scheduler",
-  "createMicrotaskScheduler",
-  "MicrotaskSchedulerOptions",
-  "SchedulerHost",
-  "CORE_VERSION",
-]);
 export async function walk(directory) {
   let entries;
   try {
@@ -131,30 +24,6 @@ function relative(path, scanRoot) {
 }
 function asSpecifierList(source, specifiers) {
   return specifiers ?? [...importSpecifiers(source)];
-}
-export function importsBoundary(source, specifiers) {
-  return asSpecifierList(source, specifiers).some((specifier) =>
-    /^(?!@motion5\/moves$)(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
-      specifier,
-    ),
-  );
-}
-export function importsRenderer(source, specifiers) {
-  return asSpecifierList(source, specifiers).some((specifier) =>
-    /^(?:gsap|react|react-dom|node:dom|domino)(?:\/|$)|^(?:\.\/|\.\.\/)(?:[^\/]+\/)*(?:dom|renderer|react|gsap)(?:\/|$)/i.test(
-      specifier,
-    ),
-  );
-}
-export function importsCoreInternals(source, specifiers) {
-  return asSpecifierList(source, specifiers).some((specifier) =>
-    /(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:\/|$)/.test(specifier),
-  );
-}
-export function importsTestingEntrypoint(source, specifiers) {
-  return asSpecifierList(source, specifiers).some((specifier) =>
-    /(?:^@motion5\/core\/testing|.*core\/src\/testing)(?:\/|$)/.test(specifier),
-  );
 }
 const moduleSpecifier = /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)["']([^"']+)["']/g;
 /**
@@ -310,7 +179,7 @@ export function withoutComments(source) {
  * nothing else, and widening it wants a backreferenced delimiter so one kind cannot close another,
  * plus a decision about a substituted literal, which is a computed specifier in concrete clothing.
  * That widens the set these gates refuse, so it is its own slice with its own cases. None of the
- * three appears under `packages/core/src` today, measured over this scanner's own walk.
+ * three appears under `packages/` today, measured over this scanner's own walk.
  *
  * Ordinary string literals are masked before matching, so a specifier-shaped phrase inside one is
  * not an import. A template-literal interpolation is still beyond this lexer: it is treated as one
@@ -363,36 +232,11 @@ function* importSpecifiers(source) {
   for (const match of code.matchAll(moduleSpecifier)) yield canonicalSpecifier(match[1]);
 }
 /**
- * Any relative import of the domain layer, which is what ARCHITECTURE section 2 actually forbids.
- *
- * ADR-103 moved the outcome algebra out of domain. ADR-105 moves the shared keyframe compiler to
- * contract and renderer metadata to ports, leaving contract, ports, and adapters without any
- * inward domain imports. All three layers are checked by this same predicate.
- *
- * The anchor admits an absent trailing slash, so a bare `../domain` is refused alongside
- * `../domain/track`, and it reads canonical specifiers, so `./../domain/track`, `.././domain/track`
- * and `..//domain/track` are refused as the spelling they resolve to. None of them appears in the
- * tree and none is one a formatter would produce, which is the reason they are worth refusing: a
- * gate whose anchor can be stepped around by a character nobody would notice in review is a gate
- * that reports a clean boundary it does not have. It stays anchored at the front, so
- * `../domain-helpers` and `../domainfoo` are still clean.
- */
-export function importsDomainLayer(source, specifiers) {
-  for (const specifier of asSpecifierList(source, specifiers))
-    if (/^(?:\.\/)?(?:\.\.\/)+domain(?:\/|$)/.test(specifier)) return true;
-  return false;
-}
-export function bannedSymbol(source) {
-  return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
-    source,
-  );
-}
-/**
  * Every workspace package specifier whose package manifest does not declare its subpath.
  *
  * Each workspace manifest's `exports` is the owner of what a consumer may import, so the
  * sets are read from them rather than listed here. The root `tsconfig.json` maps package subpaths
- * to source, so an undeclared subpath such as `@motion5/plugins/fabrik` typechecks here while
+ * to source, so an undeclared subpath such as `@motion5/rig/fabrik` typechecks here while
  * failing for every consumer of the built package. This reads the code the way the other specifier
  * predicates do, through `importSpecifiers`, so a path named in prose is not an import of it.
  */
@@ -404,75 +248,6 @@ export function undeclaredWorkspaceSubpaths(source, declared, specifiers) {
       undeclared.push(specifier);
   }
   return undeclared;
-}
-export function extractExportNames(source) {
-  const names = [];
-  for (const match of source.matchAll(/export\s+(?:type\s+)?\{([^}]+)\}/g))
-    for (const item of match[1].split(",")) {
-      const name = item.trim().split(/\s+as\s+/)[1] ?? item.trim().split(/\s+/)[0];
-      if (name) names.push(name);
-    }
-  for (const match of source.matchAll(
-    /export\s+(?:const|function|class|interface|type)\s+([A-Za-z_$][\w$]*)/g,
-  ))
-    names.push(match[1]);
-  return names;
-}
-function checkCoreSource(source, file, layer, violations) {
-  const specifiers = [...importSpecifiers(source)];
-  if (
-    ["graph", "contract"].includes(layer) &&
-    specifiers.some((specifier) =>
-      /^(?:\.\/)?(?:\.\.\/)+domain\/plugins(?:\/index)?(?:\.[cm]?[jt]s)?$/.test(specifier),
-    )
-  )
-    violations.push(`${file}: graph declarations must read the plugin capabilities port`);
-  if (
-    layer !== "adapters" &&
-    (importsBoundary(source, specifiers) || importsRenderer(source, specifiers))
-  )
-    violations.push(`${file}: renderer or engine import`);
-  if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-  if (["contract", "ports", "adapters"].includes(layer) && importsDomainLayer(source, specifiers))
-    violations.push(`${file}: inward domain import`);
-}
-async function scanFiles(directory, scanRoot, layer, violations) {
-  for (const path of await walk(directory)) {
-    const source = await readFile(path, "utf8");
-    const file = relative(path, scanRoot);
-    checkCoreSource(source, file, layer, violations);
-  }
-}
-/**
- * Scans the files directly under `packages/core/src` and refuses a directory no layer declares.
- *
- * The layer list is what decides which rules a directory is held to, so a directory missing from
- * it was held to none: `plugins/` sat outside the list from the first plugin until issue #500
- * phase 8, which is where every solver lives, so a `three` import there would have passed the
- * gate that claims core imports no renderer. Naming a new directory is now a decision the scan
- * forces rather than one it can miss (ADR-125).
- */
-async function scanCoreEntries(scanRoot, violations) {
-  const directory = join(scanRoot, "packages", "core", "src");
-  let entries;
-  try {
-    entries = await readdir(directory, { withFileTypes: true });
-  } catch (error) {
-    if (error?.code === "ENOENT") return;
-    throw error;
-  }
-  for (const name of entries
-    .filter((entry) => entry.isDirectory() && !coreLayers.includes(entry.name))
-    .map((entry) => entry.name)
-    .sort())
-    violations.push(`packages/core/src/${name}: undeclared core layer`);
-  for (const name of entries
-    .filter((entry) => entry.isFile() && scannedExtensions.includes(extname(entry.name)))
-    .map((entry) => entry.name)
-    .sort()) {
-    const path = join(directory, name);
-    checkCoreSource(await readFile(path, "utf8"), relative(path, scanRoot), "entry", violations);
-  }
 }
 /**
  * Workspace roots are read from the root manifest rather than named here, so a third workspace
@@ -560,56 +335,12 @@ async function pureLayer(scanRoot, workspaces) {
   }
   return { folders, names };
 }
-
-/**
- * Workspaces whose manifest declares `"motion5": { "engine": ["src/engine.ts", ...] }`: the paths, as
- * prefixes inside the package, that may reach core. Every other file of the package is the code path.
- */
-async function engineSplit(scanRoot, workspaces) {
-  const split = new Map();
-  for (const workspace of workspaces) {
-    let manifest;
-    try {
-      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
-    } catch (error) {
-      if (error?.code === "ENOENT") continue;
-      throw error;
-    }
-    const engine = manifest?.motion5?.engine;
-    if (Array.isArray(engine))
-      split.set(
-        workspace,
-        engine.map((path) => `${workspace}/${path}`),
-      );
-  }
-  return split;
-}
-
 /** The package a bare specifier names: `@scope/name` or `name`, without its subpath. */
 function packageOf(specifier) {
   const parts = specifier.split("/");
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Extracted implementations have one core contract and no dependency on a host or renderer. */
-function checkPluginSource(source, file, specifiers, violations, pure) {
-  const allowed = specifiers.every((specifier) => {
-    if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
-    if (pure.names.has(packageOf(specifier)) || specifier === "@motion5/dom") return true;
-    if (!specifier.startsWith(".")) return false;
-    const target = posix.normalize(posix.join(posix.dirname(file), specifier));
-    return target.startsWith("packages/plugins/src/");
-  });
-  if (!allowed) violations.push(`${file}: import outside plugin package contract`);
-  if (
-    /(?:^|\/)domain\.ts$/.test(file) &&
-    specifiers.some(
-      (specifier) => specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api",
-    )
-  )
-    violations.push(`${file}: domain layer must import zero core code`);
-  if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-}
 /** Page tools work on any page, so they import node, a browser driver and a dev server, never motion5. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
@@ -620,19 +351,6 @@ function checkPageTools(file, specifiers, violations) {
   if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
-/** A file of the code path imports neither core nor plugins, nor a file that does, so code runs without the engine. */
-function checkCodePath(file, specifiers, violations, engine) {
-  const reachesEngine = specifiers.some((specifier) => {
-    if (specifier.startsWith("."))
-      return engine.some((prefix) =>
-        posix
-          .normalize(posix.join(posix.dirname(file), specifier))
-          .startsWith(prefix.replace(/\.tsx?$/, "")),
-      );
-    return ["@motion5/core", "@motion5/plugins"].includes(packageOf(specifier));
-  });
-  if (reachesEngine) violations.push(`${file}: code path import of the engine`);
-}
 /** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
 function checkPureSource(workspace, file, specifiers, violations, pure) {
   const inside = specifiers.every((specifier) =>
@@ -642,30 +360,12 @@ function checkPureSource(workspace, file, specifiers, violations, pure) {
   );
   if (!inside) violations.push(`${file}: pure package import outside the pure layer`);
 }
-/**
- * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
- * static edge is the type-only `import type { ... } from "./loader"`, which emits nothing; a value
- * import of the loader, a re-export, or a side-effect import of any relative module is eager.
- * Reads the same comment- and string-masked code as `importSpecifiers`.
- */
-function catalogHasStaticRelativeImport(source) {
-  const code = retainModuleStrings(withoutComments(source)).replace(
-    /\bimport\s+type\s*\{[^}]*\}\s*from\s*["']\.\/loader["']/g,
-    "",
-  );
-  return /(?:\bfrom\s*|\bimport\s*)["']\.\.?\//.test(code);
-}
 export async function scan(scanRoot = root) {
   const violations = [];
-  for (const layer of coreLayers)
-    await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, layer, violations);
-  await scanCoreEntries(scanRoot, violations);
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
   const pure = await pureLayer(scanRoot, workspaces);
-  const split = await engineSplit(scanRoot, workspaces);
   for (const workspace of workspaces) {
-    if (workspace === corePackage) continue;
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
@@ -673,35 +373,10 @@ export async function scan(scanRoot = root) {
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
       if (pure.folders.has(workspace))
         checkPureSource(workspace, file, specifiers, violations, pure);
-      const engine = split.get(workspace);
-      if (engine !== undefined && !engine.some((prefix) => file.startsWith(prefix)))
-        checkCodePath(file, specifiers, violations, engine);
-      if (workspace === "packages/plugins") {
-        checkPluginSource(source, file, specifiers, violations, pure);
-        if (
-          file === "packages/plugins/src/host/builtin-catalog.ts" &&
-          catalogHasStaticRelativeImport(source)
-        )
-          violations.push(`${file}: plugin definitions must be reached through lazy imports`);
-      }
-      if (importsCoreInternals(source, specifiers))
-        violations.push(`${file}: core source-internal import`);
-      if (importsTestingEntrypoint(source, specifiers))
-        violations.push(`${file}: testing entrypoint import`);
       for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))
         violations.push(`${file}: undeclared workspace subpath ${specifier}`);
     }
   }
-  const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
-  let indexSource = "";
-  try {
-    indexSource = await readFile(indexPath, "utf8");
-  } catch (error) {
-    if (error?.code !== "ENOENT") throw error;
-  }
-  for (const name of extractExportNames(indexSource))
-    if (!allowedPublicExports.has(name))
-      violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
   return violations;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

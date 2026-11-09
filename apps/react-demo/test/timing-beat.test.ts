@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@motion5/player";
-import { code } from "../../../packages/core/test/helpers/source-region";
+import { code } from "../../../test/repo/helpers/source-region";
 import { BEAT_MS, timingScene } from "../src/timing-scene";
 
 const COMPONENT_URL = new URL("../src/TimingBeat.tsx", import.meta.url);

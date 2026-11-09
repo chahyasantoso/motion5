@@ -7,24 +7,6 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 - `src/`: React demo app
 
-## packages/core
-
-Public: `.`, `./plugin-api`, `./internal`, `./adapters`, `./testing`
-
-- `src/`: Engine and entries
-- `src/adapters/`: scheduler, scroll, gsap
-- `src/adapters/interpolator/`: GSAP interpolator
-- `src/adapters/trigger-factory/`: triggers
-- `src/contract/`: schema, types, rules
-- `src/domain/`: Motion, catalog
-- `src/graph/`: graph IR and order
-- `src/graph/builders/`: graph builds
-- `src/lang/`: language helpers
-- `src/ports/`: engine ports
-- `src/runtime/`: runtime, publisher, edits
-- `src/runtime/processors/`: node processors
-- `src/testing/`: test fakes
-
 ## packages/dom
 
 Public: `.`
@@ -48,24 +30,6 @@ Public: `.`
 Public: `.`
 
 - `src/`: scene player, manual driver
-
-## packages/plugins
-
-Public: `./transform`, `./fk`, `./ik`, `./transform3d`, `./fk3d`, `./ik3d`, `./loader`, `./labels`, `./models`, `./pose-classify`, `./path/anchors-to-cubic`, `./path/bezier`, `./path/skin-anchors`, `./path/svg-path`, `./motion/cascade`, `./motion/drop`, `./motion/hop`, `./motion/layer`, `./motion/rope`, `./motion/trace`, `./motion/wipe`, `./runner`
-
-- `src/fk/`: FK plugins, 2D and 3D
-- `src/host/`: catalog, loader, runner
-- `src/ik/`: IK plugins, 2D and 3D
-- `src/models/`: public Models and field specs
-- `src/models/body/`: body Model rules
-- `src/models/goals/`: goals Model rules
-- `src/models/solved/`: solved Model rules
-- `src/motion/`: move plugins
-- `src/path/`: path plugins
-- `src/pose/`: pose classifier plugin
-- `src/shared/`: plugin helpers
-- `src/testing/`: plugin stability assertion
-- `src/transform/`: transform plugins
 
 ## packages/rapier
 

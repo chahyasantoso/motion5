@@ -73,9 +73,9 @@ describe("comment scan (S5)", () => {
 
   it("scans source under a src directory and nothing else", () => {
     const files = trackedSources();
-    expect(files.length).toBeGreaterThan(200);
+    expect(files.length).toBeGreaterThan(100);
     expect(files.every((path) => /(^|\/)src\/.*\.tsx?$/.test(path))).toBe(true);
-    expect(files.some((path) => path.startsWith("packages/core/src/"))).toBe(true);
+    expect(files.some((path) => path.startsWith("packages/moves/src/"))).toBe(true);
     expect(files.some((path) => path.startsWith("apps/"))).toBe(true);
   });
 

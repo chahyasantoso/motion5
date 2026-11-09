@@ -12,9 +12,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: [
-      "@motion5/core",
       "@motion5/react",
-      "@motion5/plugins",
       "@motion5/moves",
       "@motion5/rig",
       "@motion5/dom",

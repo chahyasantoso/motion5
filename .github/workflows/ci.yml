@@ -60,31 +60,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  integration:
-    name: integration (node 24.21.0)
-    needs: quality
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      SUITE_RESULT: ${{ needs.quality.result }}
-    steps:
-      - name: Require successful suite owner, including evidence verification
-        run: test "$SUITE_RESULT" = success
-      - run: echo "CI_EVIDENCE_DIR=$RUNNER_TEMP/ci-evidence" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-evidence
-      - run: node scripts/ci-evidence.mjs verify integration
-
   boundaries:
     name: boundaries (node 24.21.0)
     runs-on: ubuntu-latest
@@ -100,54 +75,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node scripts/boundary-scan.mjs
-
-  build:
-    name: build (node 24.21.0)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npx tsc -p packages/rig/tsconfig.build.json
-      - run: npx tsc -p packages/moves/tsconfig.build.json
-      - run: npx tsc -p packages/core/tsconfig.build.json
-      - run: test -f packages/core/dist/index.js
-      - run: test -f packages/core/dist/index.d.ts
-      - run: npx tsc -p packages/plugins/tsconfig.build.json
-      - run: test -f packages/plugins/dist/fk/fk.js
-      - run: test -f packages/plugins/dist/fk/fk.d.ts
-
-  end-to-end:
-    name: end-to-end (node 24.21.0)
-    needs: quality
-    if: always()
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      SUITE_RESULT: ${{ needs.quality.result }}
-    steps:
-      - name: Require successful suite owner, including evidence verification
-        run: test "$SUITE_RESULT" = success
-      - run: echo "CI_EVIDENCE_DIR=$RUNNER_TEMP/ci-evidence" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/ci-evidence
-      - run: node scripts/ci-evidence.mjs verify end-to-end
 
   performance:
     name: performance (node 24.21.0)

@@ -59,11 +59,11 @@ describe("evidence case ids", () => {
 
   it("refuses a repeated id, which is the whole reason this gate exists", () => {
     const planted = owners({
-      "packages/core/test/a.test.ts": 'it("GF-9 one", () => {}); it("GF-10 other", () => {});',
-      "packages/core/test/b.test.ts": 'it("GF-9 two", () => {});',
+      "packages/rig/test/a.test.ts": 'it("GF-9 one", () => {}); it("GF-10 other", () => {});',
+      "packages/rig/test/b.test.ts": 'it("GF-9 two", () => {});',
     });
     expect(repeated(planted)).toEqual([
-      "GF-9 declared in packages/core/test/a.test.ts and packages/core/test/b.test.ts",
+      "GF-9 declared in packages/rig/test/a.test.ts and packages/rig/test/b.test.ts",
     ]);
   });
 
@@ -73,14 +73,14 @@ describe("evidence case ids", () => {
 
   it("scans every home the suite runs, so green is never an empty walk", () => {
     const files = walk("");
-    const homes = ["packages/core", "packages/plugins", "packages/react", "packages/three", "apps"];
+    const homes = ["packages/rig", "packages/moves", "packages/react", "packages/three", "apps"];
     for (const home of homes)
       expect(
         files.some((file) => file.startsWith(`${home}/`)),
         home,
       ).toBe(true);
     expect(files.filter((file) => file.includes("node_modules"))).toEqual([]);
-    expect(files.length).toBeGreaterThan(200);
-    expect(suiteOwners().size).toBeGreaterThan(400);
+    expect(files.length).toBeGreaterThan(50);
+    expect(suiteOwners().size).toBeGreaterThan(50);
   });
 });
