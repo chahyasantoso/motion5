@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { elapsedOf, liveAt, trailTurn, type Pose3d, type Time } from "@motion5/moves";
+import { elapsedOf, liveAt, trail, trailTurn, type Pose3d, type Time } from "@motion5/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const stepTo =
@@ -24,6 +24,15 @@ describe("trailTurn", () => {
     const tail = trailTurn(stepTo(170, -170), { damping: 20 });
     for (let at = 500; at < 2000; at += 50)
       expect(Math.abs(tail(liveAt(at), []).rotationY ?? 0)).toBeGreaterThan(165);
+  });
+
+  it("follows a stiff spring on one axis as trail does, with no wrong-way swing", () => {
+    const at = (time: Time) => (ms(time) > 100 ? 90 : 0);
+    const options = { stiffness: 2000, damping: 100, stepMs: 33 };
+    const turn = trailTurn((time) => ({ rotationY: at(time) }), options);
+    const value = trail(at, options);
+    for (const t of [120, 166, 200, 300, 500])
+      expect(Math.abs((turn(liveAt(t), []).rotationY ?? 0) - value(liveAt(t), []))).toBeLessThan(3);
   });
 
   it("gives the same value whatever order frames are asked in", () => {

@@ -66,6 +66,8 @@ export function trailTurn(
 ): (time: Time, events: Events) => Pose3d {
   const settings = trailSettings(options, "trailTurn");
   const { stiffness, damping } = settings.spring;
+  const stableMs =
+    1000 * Math.min(0.1 / Math.sqrt(stiffness), damping > 0 ? 0.2 / damping : Infinity);
   return (time, events) => {
     const now = elapsedOf(time.clock);
     if (now === undefined) return turnFields(signal(time, events));
@@ -76,14 +78,18 @@ export function trailTurn(
     while (at < now) {
       goal = signal(timeAt(time, at), events);
       const stepMs = Math.min(settings.stepMs, now - at);
-      const dt = stepMs / 1000;
-      const [ex, ey, ez] = errorOf(turn, quaternionOf(goal));
-      spin = [
-        spin[0] + (stiffness * ex - damping * spin[0]) * dt,
-        spin[1] + (stiffness * ey - damping * spin[1]) * dt,
-        spin[2] + (stiffness * ez - damping * spin[2]) * dt,
-      ];
-      turn = turned(turn, [spin[0] * dt, spin[1] * dt, spin[2] * dt]);
+      const parts = Math.ceil(stepMs / stableMs);
+      const dt = stepMs / parts / 1000;
+      const target = quaternionOf(goal);
+      for (let part = 0; part < parts; part += 1) {
+        const [ex, ey, ez] = errorOf(turn, target);
+        spin = [
+          spin[0] + (stiffness * ex - damping * spin[0]) * dt,
+          spin[1] + (stiffness * ey - damping * spin[1]) * dt,
+          spin[2] + (stiffness * ez - damping * spin[2]) * dt,
+        ];
+        turn = turned(turn, [spin[0] * dt, spin[1] * dt, spin[2] * dt]);
+      }
       at += stepMs;
     }
     const [ex, ey, ez] = errorOf(turn, quaternionOf(goal));
