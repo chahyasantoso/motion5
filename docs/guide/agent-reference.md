@@ -521,6 +521,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
+- **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and opens
+  `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
 - **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
   `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets.
