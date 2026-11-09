@@ -1,9 +1,6 @@
+import { arcLength } from "./arc-length";
 import type { Pose2d } from "./pose";
 import type { Cubic2d } from "./shapes";
-
-const SAMPLES = 32;
-
-type Sample = { readonly length: number; readonly segment: number; readonly t: number };
 
 function pointOf(c: Cubic2d, t: number): { readonly x: number; readonly y: number } {
   const u = 1 - t;
@@ -28,22 +25,6 @@ function slopeOf(c: Cubic2d, t: number): { readonly dx: number; readonly dy: num
   };
 }
 
-function tableOf(cubics: readonly Cubic2d[]): readonly Sample[] {
-  const table: Sample[] = [{ length: 0, segment: 0, t: 0 }];
-  let length = 0;
-  cubics.forEach((cubic, segment) => {
-    let last = pointOf(cubic, 0);
-    for (let i = 1; i <= SAMPLES; i += 1) {
-      const t = i / SAMPLES;
-      const next = pointOf(cubic, t);
-      length += Math.hypot(next.x - last.x, next.y - last.y);
-      table.push({ length, segment, t });
-      last = next;
-    }
-  });
-  return table;
-}
-
 /** The pose `share` of the way along a path by distance, from the target's rest; `turn` adds the heading, down 90. */
 export function along(
   cubics: readonly Cubic2d[],
@@ -51,27 +32,15 @@ export function along(
   options: { readonly turn?: boolean } = {},
 ): Pose2d {
   if (cubics.length === 0) throw new RangeError("along: the path has no segments.");
-  const table = tableOf(cubics);
-  const total = table[table.length - 1]?.length ?? 0;
-  const goal = Math.max(0, Math.min(1, share)) * total;
-  let low = 0;
-  let high = table.length - 1;
-  while (high - low > 1) {
-    const mid = (low + high) >> 1;
-    if ((table[mid]?.length ?? 0) <= goal) low = mid;
-    else high = mid;
-  }
-  const from = table[low];
-  const to = table[high];
-  if (from === undefined || to === undefined)
-    throw new RangeError("along: the path has no length.");
-  const span = to.length - from.length;
-  const fraction = span > 0 ? (goal - from.length) / span : 0;
-  const segment = to.segment;
+  const arc = arcLength(cubics.length, (index, t) => {
+    const c = cubics[index];
+    if (c === undefined) throw new RangeError("along: the path has no segments.");
+    const p = pointOf(c, t);
+    return [p.x, p.y];
+  });
+  const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
   const cubic = cubics[segment];
   if (cubic === undefined) throw new RangeError("along: the path has no segments.");
-  const fromT = from.segment === segment ? from.t : 0;
-  const t = fromT + (to.t - fromT) * fraction;
   const point = pointOf(cubic, t);
   if (options.turn !== true) return { x: point.x, y: point.y };
   const slope = slopeOf(cubic, t);
