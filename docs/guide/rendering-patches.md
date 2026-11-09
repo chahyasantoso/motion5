@@ -69,7 +69,7 @@ All three belong to the adapter you called rather than to the element. Two adapt
 ## React
 
 ```tsx
-import { useDomPatch } from "@motion5/react";
+import { useDomPatch } from "@motion5/react/engine";
 
 function Title({ handle }: { handle: ProjectHandle }) {
   const bind = useDomPatch<HTMLDivElement>(handle, "hero/title");
@@ -86,7 +86,7 @@ A non-ready patch is a no-op, so a blocked, errored, or destroyed node leaves it
 `useDerivedDomPatch(source, nodeIds, derive)` is the same write path for a target whose values are a function of several nodes, or of one node's values rather than its pose:
 
 ```tsx
-import { useDerivedDomPatch, type PatchDerivation } from "@motion5/react";
+import { useDerivedDomPatch, type PatchDerivation } from "@motion5/react/engine";
 
 const endpoints: PatchDerivation = ([parent = {}, child = {}]) => ({
   x1: Number(parent.x ?? 0),

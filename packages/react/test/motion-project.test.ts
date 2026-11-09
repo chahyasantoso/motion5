@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PluginCatalog, type ProjectDefinition } from "@motion5/core";
 import { Spec, defineModel } from "@motion5/core/plugin-api";
 import { createFakeInterpolator } from "@motion5/core/testing";
-import { useMotionProject, type MotionProjectState } from "@motion5/react";
+import { useMotionProject, type MotionProjectState } from "@motion5/react/engine";
 
 const Value = defineModel({ id: "HookValue", spec: Spec.record({ x: Spec.number() }) });
 const catalog = new PluginCatalog({ models: [Value] });

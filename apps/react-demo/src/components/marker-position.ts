@@ -1,5 +1,5 @@
-import { rowPatchSource } from "@motion5/react";
-import type { PatchDerivation, PatchSource, PatchValues } from "@motion5/react";
+import { rowPatchSource } from "@motion5/react/engine";
+import type { PatchDerivation, PatchSource, PatchValues } from "@motion5/react/engine";
 
 /** A published frame's position, with an absent key read as `0` as every frame reader does. */
 export function point(values: PatchValues): { x: number; y: number } {

@@ -19,5 +19,10 @@
       "types": "./src/engine/index.ts",
       "default": "./src/engine/index.ts"
     }
+  },
+  "motion5": {
+    "engine": [
+      "src/engine/"
+    ]
   }
 }

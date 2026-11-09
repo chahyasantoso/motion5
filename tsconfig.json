@@ -33,6 +33,7 @@
       "@motion5/rig": ["packages/rig/src/index.ts"],
       "@motion5/rig/internal": ["packages/rig/src/internal.ts"],
       "@motion5/react": ["packages/react/src/index.ts"],
+      "@motion5/react/engine": ["packages/react/src/engine.ts"],
       "@motion5/plugins/fk": ["packages/plugins/src/fk/fk.ts"],
       "@motion5/plugins/fk3d": ["packages/plugins/src/fk/fk3d.ts"],
       "@motion5/plugins/ik": ["packages/plugins/src/ik/ik.ts"],

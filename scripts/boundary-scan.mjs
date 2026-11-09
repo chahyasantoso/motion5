@@ -561,6 +561,30 @@ async function pureLayer(scanRoot, workspaces) {
   return { folders, names };
 }
 
+/**
+ * Workspaces whose manifest declares `"motion5": { "engine": ["src/engine.ts", ...] }`: the paths, as
+ * prefixes inside the package, that may reach core. Every other file of the package is the code path.
+ */
+async function engineSplit(scanRoot, workspaces) {
+  const split = new Map();
+  for (const workspace of workspaces) {
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    const engine = manifest?.motion5?.engine;
+    if (Array.isArray(engine))
+      split.set(
+        workspace,
+        engine.map((path) => `${workspace}/${path}`),
+      );
+  }
+  return split;
+}
+
 /** The package a bare specifier names: `@scope/name` or `name`, without its subpath. */
 function packageOf(specifier) {
   const parts = specifier.split("/");
@@ -596,6 +620,19 @@ function checkPageTools(file, specifiers, violations) {
   if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
+/** A file of the code path imports neither core nor plugins, nor a file that does, so code runs without the engine. */
+function checkCodePath(file, specifiers, violations, engine) {
+  const reachesEngine = specifiers.some((specifier) => {
+    if (specifier.startsWith("."))
+      return engine.some((prefix) =>
+        posix
+          .normalize(posix.join(posix.dirname(file), specifier))
+          .startsWith(prefix.replace(/\.tsx?$/, "")),
+      );
+    return ["@motion5/core", "@motion5/plugins"].includes(packageOf(specifier));
+  });
+  if (reachesEngine) violations.push(`${file}: code path import of the engine`);
+}
 /** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
 function checkPureSource(workspace, file, specifiers, violations, pure) {
   const inside = specifiers.every((specifier) =>
@@ -626,6 +663,7 @@ export async function scan(scanRoot = root) {
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
   const pure = await pureLayer(scanRoot, workspaces);
+  const split = await engineSplit(scanRoot, workspaces);
   for (const workspace of workspaces) {
     if (workspace === corePackage) continue;
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
@@ -635,6 +673,9 @@ export async function scan(scanRoot = root) {
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
       if (pure.folders.has(workspace))
         checkPureSource(workspace, file, specifiers, violations, pure);
+      const engine = split.get(workspace);
+      if (engine !== undefined && !engine.some((prefix) => file.startsWith(prefix)))
+        checkCodePath(file, specifiers, violations, engine);
       if (workspace === "packages/plugins") {
         checkPluginSource(source, file, specifiers, violations, pure);
         if (

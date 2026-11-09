@@ -8,7 +8,8 @@ import { ropePlugin } from "@motion5/plugins/motion/rope";
 import { tracePlugin } from "@motion5/plugins/motion/trace";
 import { anchorsToCubicPlugin } from "@motion5/plugins/path/anchors-to-cubic";
 import { svgPathPlugin } from "@motion5/plugins/path/svg-path";
-import { mergeRefs, useDomPatch, useMotionProject } from "@motion5/react";
+import { mergeRefs } from "@motion5/react";
+import { useDomPatch, useMotionProject } from "@motion5/react/engine";
 import project from "./rope-word.json";
 
 const plugins = new PluginCatalog({

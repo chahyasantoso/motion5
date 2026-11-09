@@ -1,5 +1,5 @@
 import type { ProjectHandle } from "@motion5/core";
-import { rowPatchSource, type PatchSource } from "@motion5/react";
+import { rowPatchSource, type PatchSource } from "@motion5/react/engine";
 import { TENTACLE, nodeId } from "./ik-playground-project";
 import { IK3D, IK3D_NODE_ID } from "./ik3d-playground-project";
 

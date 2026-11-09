@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { Word } from "@motion5/react";
-import type { LivePatch, PatchListener, PatchSource } from "@motion5/react";
+import { Word } from "@motion5/react/engine";
+import type { LivePatch, PatchListener, PatchSource } from "@motion5/react/engine";
 
 function createSource(): PatchSource & { publish(nodeId: string, y: number): void } {
   const listeners = new Map<string, PatchListener>();

@@ -4,12 +4,23 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = new URL("../../../../../", import.meta.url);
 const reference = readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8");
-const PACKAGES = ["moves", "player", "dom", "react", "rig", "physics", "rapier", "three"];
+const PACKAGES = [
+  "moves/src/index.ts",
+  "player/src/index.ts",
+  "dom/src/index.ts",
+  "react/src/index.ts",
+  "react/src/engine.ts",
+  "rig/src/index.ts",
+  "physics/src/index.ts",
+  "rapier/src/index.ts",
+  "three/src/index.ts",
+  "three/src/engine.ts",
+];
 
 /** Every name a package's entry exports, read by the compiler as a caller sees them. */
 function exportsOf(names: readonly string[]): ReadonlyMap<string, readonly string[]> {
   const files = names.map((name) =>
-    new URL(`packages/${name}/src/index.ts`, ROOT).pathname.replace(/^\/(\w:)/, "$1"),
+    new URL(`packages/${name}`, ROOT).pathname.replace(/^\/(\w:)/, "$1"),
   );
   const program = ts.createProgram(files, {
     module: ts.ModuleKind.ESNext,
@@ -38,13 +49,10 @@ describe("agent reference", () => {
   it("names every export of every package a scene can use, so no agent reads source to find one", () => {
     const missing: string[] = [];
     for (const [name, exported] of exportsOf(PACKAGES)) {
-      expect(
-        exported.length,
-        `@motion5/${name} exports nothing the compiler can see`,
-      ).toBeGreaterThan(0);
+      expect(exported.length, `${name} exports nothing the compiler can see`).toBeGreaterThan(0);
       for (const symbol of exported) {
         const pattern = new RegExp(`\`${symbol.replace(/\$/g, "\\$")}[\`(]`);
-        if (!pattern.test(reference)) missing.push(`@motion5/${name}: ${symbol}`);
+        if (!pattern.test(reference)) missing.push(`${name}: ${symbol}`);
       }
     }
     expect(missing).toEqual([]);

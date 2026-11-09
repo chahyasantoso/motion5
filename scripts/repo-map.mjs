@@ -18,7 +18,7 @@ const HEADER = [
 ];
 
 export const OWNERS = {
-  "apps/ik-playground/src": "IK demo app and its projects",
+  "apps/ik-playground/src": "IK demo app",
   "apps/ik-playground/src/components": "stages, panels",
   "apps/pose-gap-filler/src/body": "body state",
   "apps/pose-gap-filler/src/filler": "gap filling",
@@ -27,7 +27,7 @@ export const OWNERS = {
   "apps/pose-gap-filler/src/rig": "rig and solver",
   "apps/pose-gap-filler/src/synthetic": "simulated actor",
   "apps/pose-gap-filler/src/view": "views",
-  "apps/react-demo/src": "React demo app and its projects",
+  "apps/react-demo/src": "React demo app",
   "apps/react-demo/src/components": "inspector, rig",
   "packages/core/src": "Engine and entries",
   "packages/core/src/adapters": "scheduler, scroll, gsap",
@@ -43,7 +43,7 @@ export const OWNERS = {
   "packages/core/src/runtime/processors": "node processors",
   "packages/core/src/testing": "test fakes",
   "packages/plugins/src/fk": "FK plugins, 2D and 3D",
-  "packages/plugins/src/host": "catalog, loader, labels, runner",
+  "packages/plugins/src/host": "catalog, loader, runner",
   "packages/plugins/src/ik": "IK plugins, 2D and 3D",
   "packages/rig/src": "joint vocabulary",
   "packages/rig/src/frame": "world frames",
@@ -69,7 +69,7 @@ export const OWNERS = {
   "packages/plugins/src/transform": "transform plugins",
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
-  "packages/tools/src/engine": "engine sample, timeline, catalog",
+  "packages/tools/src/engine": "engine tools",
   "packages/tools/src/scene/templates": "motion:new templates",
   "packages/tools/src/page": "page tools",
   "packages/tools/src/scene": "scene sample, timeline",

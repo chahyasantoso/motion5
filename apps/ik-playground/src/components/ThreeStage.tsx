@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
-import type { PatchSource } from "@motion5/react";
-import { createObject3dPatchAdapter } from "@motion5/three";
+import type { PatchSource } from "@motion5/react/engine";
+import { createObject3dPatchAdapter } from "@motion5/three/engine";
 import * as THREE from "three";
 import {
   IK3D,

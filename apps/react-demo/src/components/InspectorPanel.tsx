@@ -1,7 +1,7 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { selectRecord, unreachable } from "@motion5/core/plugin-api";
-import { patchRender, usePatch } from "@motion5/react";
+import { patchRender, usePatch } from "@motion5/react/engine";
 import { createWalkerRowSource } from "./marker-position";
 
 interface InspectorPanelProps {

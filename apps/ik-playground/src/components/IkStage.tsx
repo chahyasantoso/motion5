@@ -7,7 +7,7 @@ import {
   type PatchDerivation,
   type PatchSource,
   type PatchValues,
-} from "@motion5/react";
+} from "@motion5/react/engine";
 import { STAGE_2D, TENTACLE, nodeId } from "../ik-playground-project";
 import type { GoalControl } from "../goal-control";
 import { planarRowSource } from "../rig-sources";

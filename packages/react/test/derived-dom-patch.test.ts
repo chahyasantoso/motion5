@@ -2,8 +2,14 @@ import { createElement } from "react";
 import type { RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { liveOrAbsent, useDerivedDomPatch } from "@motion5/react";
-import type { LivePatch, Patch, PatchDerivation, PatchListener, PatchSource } from "@motion5/react";
+import { liveOrAbsent, useDerivedDomPatch } from "@motion5/react/engine";
+import type {
+  LivePatch,
+  Patch,
+  PatchDerivation,
+  PatchListener,
+  PatchSource,
+} from "@motion5/react/engine";
 
 const PARENT = "walk/pelvis";
 const CHILD = "walk/legL_thigh";
