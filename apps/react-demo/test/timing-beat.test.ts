@@ -13,8 +13,11 @@ function at(ms: number) {
 }
 
 describe("timing beat", () => {
-  it("holds every letter above the stage at the first frame", () => {
-    expect(at(0).letters.map((letter) => letter.y)).toEqual([-700, -700, -700, -700, -700, -700]);
+  it("holds every letter above the stage at the first frame, and the dot off it", () => {
+    const first = at(0);
+    expect(first.letters.map((letter) => letter.y)).toEqual([-700, -700, -700, -700, -700, -700]);
+    expect(first.dot).toMatchObject({ x: -1300, y: 0 });
+    expect(first.cover).toMatchObject({ radius: 0, x: 0, y: 0 });
   });
 
   it("drops the letters in order", () => {
@@ -25,8 +28,10 @@ describe("timing beat", () => {
     expect(heights[5]).toBe(-700);
   });
 
-  it("lands the word before the wipe", () => {
-    expect(at(2300).letters.map((letter) => letter.y)).toEqual([0, 0, 0, 0, 0, 0]);
+  it("lands the word and the dot at their rest poses before the wipe", () => {
+    const landed = at(2300);
+    expect(landed.letters.map((letter) => letter.y)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(landed.dot).toMatchObject({ x: 0, y: 0, scaleX: 1, scaleY: 1 });
   });
 
   it("covers the stage by the end", () => {

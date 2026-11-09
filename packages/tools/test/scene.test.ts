@@ -7,6 +7,7 @@ import {
   sceneTimeline,
   type SceneModule,
 } from "@motion5/tools/scene";
+import { renderTimeline } from "../src/timeline/timeline";
 import * as timing from "../../../apps/react-demo/src/timing-scene";
 
 function moduleOf(value: unknown): SceneModule {
@@ -38,6 +39,25 @@ describe("scene tools", () => {
     const code = sceneTimeline(beat);
     if (code.kind !== "timeline") throw new Error("No timeline.");
     expect(code.rows.map(({ node }) => node)).toEqual(["letters", "dot", "cover"]);
+  });
+
+  it("find each target's start and rest within one step of what sampling gives", () => {
+    const timeline = sceneTimeline(beat);
+    if (timeline.kind !== "timeline") throw new Error("No timeline.");
+    const dot = timeline.rows.find(({ node }) => node === "dot");
+    if (dot?.kind !== "moves") throw new Error("The dot should move.");
+    expect(Math.abs(dot.start - 880)).toBeLessThanOrEqual(timeline.step);
+    expect(Math.abs(dot.rest - 1870)).toBeLessThanOrEqual(timeline.step);
+    const [atRest, later] = sampleScene(beat, { kind: "time", ms: [dot.rest, 2300] });
+    expect(atRest?.targets.dot).toEqual(later?.targets.dot);
+  });
+
+  it("draw one bar per target with its times, and a still target as still", () => {
+    const text = renderTimeline(sceneTimeline(beat));
+    const dotLine = text.split("\n").find((line) => line.startsWith("dot "));
+    expect(dotLine).toMatch(/^dot +\.+#+\.+ {2}\d+-\d+ ms$/);
+    const still = sceneTimeline(moduleOf({ scene: () => ({ p: { x: 1 } }), durationMs: 100 }));
+    expect(still).toMatchObject({ kind: "timeline", rows: [{ kind: "still", node: "p" }] });
   });
 });
 

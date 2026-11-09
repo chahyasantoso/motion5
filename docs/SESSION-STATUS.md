@@ -26,7 +26,7 @@ byte ceiling.
 ## Next in line
 
 - **Trim what only the engine used:** a move declaration keeps what code scenes and the live editor read, and rig's
-  engine-shaped readers go unless the 3D rigs item needs them; `plan/retire-core-plan.md` R7 to R9.
+  engine-shaped readers go unless the 3D rigs item needs them, in a second pull request after the deletion.
 
 ## Open, and not scheduled
 
