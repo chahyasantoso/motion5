@@ -57,10 +57,12 @@ window(time, 0.25, 0.5);
 
 ### Lanes
 
-**`lanes(lengths, stagger)`**: lanes for staggered targets; `stagger` is a share of a lane's length. **`Lanes`** is its
-type.
+**`lanes(lengths, stagger, { from, spacing })`**: lanes for staggered targets; `stagger` is a share of a lane's length.
+`from` picks which start first, a **`LaneOrigin`**: `"start"` (default), `"end"`, `"center"`, `"edges"` or `{ seed }`;
+`spacing`, an ease, bends the start times. **`Lanes`** (with each lane's `starts`) and **`LanesOptions`** are its types.
 ```ts
 const LETTERS = lanes([1, 1, 1, 1], 0.25);
+const BURST = lanes([1, 1, 1, 1, 1], 0.2, { from: "center", spacing: ease.quadOut });
 ```
 
 **`lane(time, index, lanes)`**: lane `index`'s time inside `time`.

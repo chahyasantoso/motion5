@@ -27,7 +27,7 @@ export {
   type ReactionKind,
   type ReactOptions,
 } from "./events";
-export { lane, laneTime, lanes, type Lanes } from "./lanes";
+export { lane, laneTime, lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
 export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
 export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";
