@@ -174,3 +174,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-167 — Engine entries keep core off the code path — Accepted, 2026-11-09
 - ADR-168 — Motion principles are knobs, not presets — Accepted, 2026-11-09
 - ADR-169 — A 3D pose for code scenes — Accepted, 2026-11-09
+- ADR-170 — Core and plugins are retired — Accepted, 2026-11-09

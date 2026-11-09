@@ -13,12 +13,8 @@ is one line, and a rule this file does not carry is not a rule.
 
 - Where code lives: [docs/MAP.md](docs/MAP.md).
 - Who owns what: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-- What a caller may do to a loaded project and what each edit pays:
-  [docs/LIVE-EDIT-COST.md](docs/LIVE-EDIT-COST.md).
 - What a complete change looks like: [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md).
 - Which gate runs what, and the formatter's pinned settings: [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md).
-- The authoring schema: [docs/AUTHORED-SCHEMA.md](docs/AUTHORED-SCHEMA.md).
-- Public API navigation: [docs/API-CAPABILITIES.md](docs/API-CAPABILITIES.md).
 - Why a decision went one way: grep `docs/ADR-INDEX.md`, then open `docs/ADR-nnn-*.md`. Do it before
   proposing a flag, alias, facade, second owner, compatibility path or new public export.
 - How to use the runtime: [the user guide](docs/guide/README.md).

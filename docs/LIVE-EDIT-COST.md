@@ -1,5 +1,7 @@
 # What a live edit costs
 
+Retired with core (ADR-170); kept as history.
+
 What the shipped runtime lets a caller do to a loaded project, and what each edit pays for. This is a reading of the code rather than a plan. Where a sentence here and an ADR disagree, the ADR is the record of the decision and this is what the implementation of it currently does, so a disagreement is a defect in one of them rather than a difference of scope.
 
 `docs/SESSION-STATUS.md` carried this section until [issue #284](https://github.com/chahyasantoso/motion5/issues/284) cut that file down to current state. It is still the only document allowed to claim that any of this landed at all; this document says what it costs once it has. The bullets moved verbatim and in order, so the two that point at each other by position still mean what they meant.

@@ -1,5 +1,7 @@
 # 2D and 3D IK benchmark
 
+Retired with core (ADR-170); kept as history.
+
 This record is the measured performance envelope for the 2D `ik` and `fk` plugins in phase 7 of
 [#349](https://github.com/chahyasantoso/motion5/issues/349), with the 3D solve scenarios
 added in issue #500 phase 5. It records fresh runs of the committed

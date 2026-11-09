@@ -1,5 +1,7 @@
 # Scroll browser smoke and acceptance
 
+Retired with core (ADR-170); kept as history.
+
 ## Retired opt-in automation
 
 The temporary .github/workflows/scroll-browser-353.yml and .github/workflows/ik-browser-351.yml workflows were removed from their respective PR branches after the recorded automated browser runs. They are not available as current workflows. Neither introduced a required branch-protection check, changed the trusted automation runner pin, or modified project dependencies or lockfiles. The execution model below describes the retired workflows, not an active browser gate.

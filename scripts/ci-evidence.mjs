@@ -7,13 +7,8 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const filters = {
-  all: [],
-  integration: ["packages/core/test/integration/", "packages/plugins/test/integration/"],
-  "end-to-end": ["packages/core/test/integration/end-to-end.test.ts"],
-};
-const inScope = (file, scope) =>
-  filters[scope].length === 0 || filters[scope].some((filter) => file.includes(filter));
+const filters = { all: [] };
+const inScope = () => true;
 const directory = () => process.env.CI_EVIDENCE_DIR;
 const read = (file) => {
   const bytes = readFileSync(file);
@@ -73,10 +68,6 @@ export function verify(inventory, result, expected, scope) {
     "Failed module",
   );
   const all = counts(inventory.all);
-  for (const subset of ["integration", "end-to-end"]) {
-    const selected = inventory.all.filter((test) => inScope(test.file, subset));
-    assert.deepEqual(counts(inventory[subset]), counts(selected), "Discovery parity failed");
-  }
   const passed = result.tests.filter((test) => test.state === "passed");
   assert.deepEqual(counts(passed), all, "Executed tests differ from discovery");
   const selected = result.tests.filter((test) => inScope(test.file, scope));
