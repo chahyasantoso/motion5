@@ -1,5 +1,7 @@
 # Authored schema v5
 
+Retired with core (ADR-170); kept as history.
+
 This document is the normative input contract. The runtime accepts v5 only. It does not accept v4,
 grouped `keyframes`, `observes`, or any silently migrated input.
 

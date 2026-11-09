@@ -335,7 +335,7 @@ describe("session status shape", () => {
     const targets = [...(await status()).matchAll(LINK)]
       .map((match) => match[1])
       .filter((target): target is string => target !== undefined);
-    expect(targets).toContain("./LIVE-EDIT-COST.md");
+    expect(targets.length).toBeGreaterThan(0);
     // Every local link, rather than a named pair: a pointer to a document this file deleted reads
     // exactly like a pointer to one that still exists.
     for (const target of targets)

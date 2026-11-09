@@ -1,44 +1,37 @@
 # motion5
 
-motion5 is a renderer-neutral, transactional dataflow animation runtime. It evaluates authored animation projects as one dependency graph and publishes immutable patches for DOM, React, or any other renderer.
+motion5 makes motion for web pages from code. A **scene** is a pure function from time, and the events so far, to one
+value per target. `@motion5/player` plays it on a clock, the page's scroll or by hand, and `@motion5/dom`,
+`@motion5/react` and `@motion5/three` write the values onto elements and Three.js objects.
 
 > **Using it?** Start with [the user guide](docs/guide/README.md). Everything else in `docs/` is written for implementors.
 
-> **Status:** [SESSION-STATUS.md](docs/SESSION-STATUS.md) is the only document allowed to claim what has landed; check it before trusting anything here. On `feat/adopt-motion-track` the runtime mutation model (W1-W5), the trigger drivers (T0-T5), and compiled Track ownership have all landed, along with edge identity, trigger progress range ownership, failed-build disposal, rollback error precedence, and single-track mutation atomicity. Phase 5 membership work and Phase 6 packaging work remain.
+> **Status:** [SESSION-STATUS.md](docs/SESSION-STATUS.md) is the only document allowed to claim what has landed.
 
-> **Contributing?** Read [the PR workflow](docs/PR-WORKFLOW.md) and [the CI workflow](docs/CI-WORKFLOW.md) first. Failed CI and recovery-audit runs are archived on the separate `ci-logs` branch under `logs/<run-id>/`.
+> **Contributing?** Read [the PR workflow](docs/PR-WORKFLOW.md) and [the CI workflow](docs/CI-WORKFLOW.md) first.
 
 > **An AI implementor?** [AGENTS.md](AGENTS.md) is your entry point.
 
-> **Lineage:** motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is the behavioral oracle for what these animations should do. motion5 is a different answer to how the runtime should own that behavior.
+## Why a scene is a function
 
-## Why motion5 exists
+A value that is a function of time can be sampled at any moment, sought backwards, tested without a browser, and read
+back by a tool. So every number of motion lives in the scene: moves such as `drop`, `hop`, `wipe` and `along`, eases,
+springs, rigs with FK and IK, and seekable physics. Drivers only report time and events, and renderers only write.
 
-Timeline engines are good at answering "what is this value at progress 0.42?" They are much less good at answering "what is the value of this thing when it depends on three other animated things, one of which failed, one of which was unmounted, and all of which changed during the same tick?"
+## Packages
 
-motion5 treats those dependencies as a first-class graph. A project is loaded, validated, normalized into qualified node ids, evaluated in canonical topological order, and published as one immutable batch per clock tick. Consumers render the batch. They do not traverse the graph, compose a track themselves, or inspect runtime internals.
+| Package | Holds |
+| --- | --- |
+| `@motion5/moves` | time, spans, lanes, eases, poses (2D and 3D), events and the moves |
+| `@motion5/rig` | bones, chains, FK and IK, 2D and 3D |
+| `@motion5/player` | plays a scene on a driver |
+| `@motion5/physics`, `@motion5/rapier` | a seekable physics world, built in or on Rapier |
+| `@motion5/dom` | CSS writes and the page drivers: clock, scroll, events |
+| `@motion5/react` | `usePlayer`, `useTarget`, `useValue` |
+| `@motion5/three` | writes a pose on a Three.js object |
+| `@motion5/tools` | the `motion:*` commands: scaffold, sample, review, render |
 
-## What is shipped
-
-- one project-wide graph runtime, publisher, patch registry, and clock subscription;
-- transactional graph replacement with rollback, and rollback failures attached to the rejection that caused them rather than replacing it;
-- immutable, revisioned, batched patch publication, with a terminal `destroyed` patch on eviction;
-- input and output observation publication with deterministic ordering, over a prefix-free edge identity;
-- explicit attach/detach membership gating;
-- identified table and record compilation with an explicit `PluginCatalog`, with `Engine` as the single owner of compiled tracks;
-- real trigger drivers for `time`, `scroll`, and `manual`, with no fallback and one validator for trigger progress;
-- runtime motion and track mutation through capability handles, resolved and seeded before commit;
-- target-aware DOM patch application with diffing and key removal, plus a React `usePatch` hook;
-- declared package entrypoints, a mechanical boundary scanner, and a declaration-closure scan over the public surface.
-
-## What remains
-
-- Phase 6 packaging: an API report, a packed-package consumer check, and a required performance budget;
-- publishing. Both packages are `private` at `0.0.0`, so consumers build from the workspace today.
-
-## Authored schema
-
-The current authored contract is **schema v5**. It includes motions, free tracks, perspective, observation edges with `input` and `output` roles, and diagnostics with `error` and `warning` severity. v4 is not accepted as an alias; use the explicit migration guide before loading a project.
+The worked examples live in `apps/react-demo`. None of the packages is published; consumers build from the workspace.
 
 ## Toolchain and commands
 
@@ -48,20 +41,16 @@ Node 24, ESM, TypeScript, Vitest, and Prettier.
 npm install
 npm run check
 npm run format
-npm run format:check
 npm run typecheck
 npm test
 ```
 
-`package-lock.json` is committed and CI uses `npm ci`. Workspace package manifests are included in the lockfile; regenerate it with `npm install --package-lock-only` whenever package manifests change.
+`package-lock.json` is committed and CI uses `npm ci`; run `npm install` after any manifest change.
 
-## Documentation map
+## History
 
-Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), and [Decision records](docs/README.md#decisions).
-
-## Contributing rule of thumb
-
-Write the invariant first. Name the owner. Add a test that fails without the change. Implement the smallest vertical slice. Update code, types, docs, and tests together. Formatting stays separate from behavior.
+The JSON engine that motion5 began as (`@motion5/core` and `@motion5/plugins`) was retired by ADR-170. It is kept on the
+branch `archive/core-plugins`, and the decision records under `docs/` still describe it.
 
 ## License
 
