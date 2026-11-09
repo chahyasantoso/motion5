@@ -2,15 +2,22 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -18,7 +25,7 @@ const compose = (node: { id: string }) => () => ({
 describe("GraphRuntime membership", () => {
   it("publishes the attached nodes a tick seeds, and answers a named list as named", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     expect(runtime.memberCount).toBe(0);
 
     // Where the gate is, measured rather than assumed. `GraphPublisher.flush` publishes every node
@@ -36,7 +43,7 @@ describe("GraphRuntime membership", () => {
     const heroArmPatch = runtime.registry.get("hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values).toEqual({ node: "hero/arm" });
+    expect(heroArmPatch.outputs.values).toEqual({ node: "hero/arm" });
 
     // And a stated list is the one the batch reports, unfiltered: `beginBatch` is handed the seeds
     // themselves, so membership never rewrites what a caller asked for.
@@ -48,7 +55,9 @@ describe("GraphRuntime membership", () => {
   });
 
   it("separates the seed list from the clock transition, and keeps one name per operation", () => {
-    const runtime = new GraphRuntime(project, createManualClock(), compose);
+    const runtime = new GraphRuntime(project, createManualClock(), compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     runtime.attach("hero/arm");
 
     // Issue #374. `flush(seeds, tick?)` carried two operations behind one name: publish, and

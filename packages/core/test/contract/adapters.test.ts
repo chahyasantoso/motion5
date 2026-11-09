@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createBrowserClock } from "../../src/adapters/browser-clock";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
+import { createBrowserClock } from "@motion5/dom/engine";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import {
   createGsapInterpolator,
   type GsapTimelineLike,
@@ -46,7 +46,10 @@ describe("adapter ports", () => {
         killed = true;
       },
     } as GsapTimelineLike;
-    const interpolator = createGsapInterpolator({ timeline: () => timeline });
+    const interpolator = createGsapInterpolator({
+      timeline: () => timeline,
+      parseEase: () => undefined,
+    });
     const adapted = interpolator.create({ duration: 2 });
     expect(adapted.duration).toBe(2);
     adapted.progress(0.5);
@@ -73,6 +76,20 @@ describe("adapter ports", () => {
     expect(ticks).toEqual([1]);
     clock.dispose();
     expect(cancelled).toBe(1);
+  });
+
+  it("reports no elapsed time on its first frame, however long the page has been open", () => {
+    const frames: ((time: number) => void)[] = [];
+    const clock = createBrowserClock({
+      requestFrame: (listener) => frames.push(listener),
+      cancelFrame: () => undefined,
+    });
+    const deltas: number[] = [];
+    clock.subscribe((event) => deltas.push(event.delta));
+    frames.shift()?.(5000);
+    frames.shift()?.(5016);
+    expect(deltas).toEqual([0, 16]);
+    clock.dispose();
   });
 
   it("applies perspective once and never applies blocked patches", () => {

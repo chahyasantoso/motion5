@@ -1,0 +1,402 @@
+# Agent reference
+
+Every export a scene uses, by package, with a line on what it does and a short example. Look things up here instead
+of reading source. How to put them together is in [the agent guide](./agent-motion.md). Units everywhere: stage px,
+y down, degrees clockwise, ms on clocks and events, seconds inside physics.
+
+## Index
+
+- [`@motion5/moves`](#motion5moves): [time](#time), [lanes](#lanes), [moves](#moves), [eases and blends](#eases-and-blends), [poses](#poses), [events](#events), [writing a move](#writing-a-move)
+- [`@motion5/player`](#motion5player)
+- [`@motion5/dom`](#motion5dom): [rendering](#rendering), [drivers](#drivers)
+- [`@motion5/react`](#motion5react)
+- [`@motion5/rig`](#motion5rig)
+- [`@motion5/physics`](#motion5physics) and [`@motion5/rapier`](#motion5rapier)
+- [`@motion5/three`](#motion5three)
+- [Commands](#commands)
+- [Engine only](#engine-only)
+
+## @motion5/moves
+
+### Time
+
+**`Time`**: `{ progress, clock }`, what every move and scene takes. `progress` runs 0 to 1.
+
+**`Clock`**: `{ kind: "timed", elapsed, length }`, `{ kind: "live", elapsed }` or `{ kind: "untimed" }`; ms.
+
+**`UNTIMED`**: the untimed clock.
+
+**`atProgress(progress)`**: a time at a progress with no clock, for tests.
+```ts
+drop({ distance: 300 }, atProgress(0.5));
+```
+
+**`liveAt(ms)`**: a live time `ms` after the page started; progress stays 0.
+```ts
+scene(liveAt(1200), events);
+```
+
+**`elapsedOf(clock)`**: a clock's ms, or `undefined` for an untimed one.
+```ts
+const ms = elapsedOf(time.clock) ?? 0;
+```
+
+**`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `.of(time, ease?)` is a move's time inside it, `.at(share)`
+the ms a share falls on. Reads a live clock's ms directly. **`Span`** is its type.
+```ts
+const flight = span(400, 2400, durationMs);
+hop(options, flight.of(time, ease.quadOut));
+const landMs = flight.at(hop.moments(options).lastLanding);
+```
+
+**`window(time, from, to)`**: `time` inside the shares `from` to `to`; prefer `span`. **`windowed(progress, from, to)`**
+does the same to a bare number.
+```ts
+window(time, 0.25, 0.5);
+```
+
+### Lanes
+
+**`lanes(lengths, stagger)`**: lanes for staggered targets; `stagger` is a share of a lane's length. **`Lanes`** is its
+type.
+```ts
+const LETTERS = lanes([1, 1, 1, 1], 0.25);
+```
+
+**`lane(time, index, lanes)`**: lane `index`'s time inside `time`.
+```ts
+drop(options, lane(word.of(time), i, LETTERS));
+```
+
+**`laneTime(position, index, lanes, durationMs?)`**: the same from a bare progress.
+
+### Moves
+
+Each move is `move(options, time)` and gives a pose or a shape. `move.options` lists its options with ranges;
+`move.moments(options)` gives named shares of its progress.
+
+**`drop`**: falls from `distance` px above rest and lands with `squash`; moment `landing`.
+```ts
+drop({ distance: 700, squash: 0.18 }, time);
+```
+
+**`hop`**: `bounces + 1` landings, each `decay` as high, arriving from `dx` px left (negative: right); also gives
+`contact: { hits, justHit }`; moments `landings`, `lastLanding`. `bounces: 0` is one arc.
+```ts
+hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: -1100 }, time);
+```
+
+**`wipe`**: a reveal circle `{ x, y, radius }` growing to `radius` from `x`, `y`.
+```ts
+applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
+```
+
+**`trace`**: a drawn share `{ drawn }` from 0 to 1, for a stroke.
+```ts
+applyDrawn(path, trace({}, time));
+```
+
+**`rope`**: anchors of a rope following `{ points }`, the third argument; options `angle`, `pin`, `release`, `overshoot`,
+`ripple`.
+```ts
+applyPath(path, toCubics(rope({ angle: 0, pin: "start" }, time, { points })));
+```
+
+### Eases and blends
+
+**`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`
+with `In`, `Out` and `InOut`, plus `elasticOut`, `bounceOut`, `bounceIn`. **`Ease`** is their type.
+```ts
+span(0, 600, durationMs).of(time, ease.backOut);
+```
+
+**`mix(a, b, share)`**, **`mixPoint(a, b, share)`**, **`mixAngle(a, b, share)`** (the short way round),
+**`mixPose(a, b, share)`** (a missing field at its rest).
+```ts
+const hand = mixPoint(REST, CATCH, lunge.of(time, ease.cubicInOut).progress);
+```
+
+**`keyframes(durationMs, start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
+**`Key`** is a key's type.
+```ts
+const lean = keyframes(durationMs, 0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
+lean(time);
+```
+
+**`seeded(seed)`**: repeatable random numbers from 0 up to 1; use it, never `Math.random()`.
+```ts
+const random = seeded(5);
+const x = 400 + random() * 200;
+```
+
+### Poses
+
+**`Pose2d`**: `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional. **`Anchor`**: `"center"`,
+`"bottom"`, `"top"`, `"left"`, `"right"`.
+```ts
+const carry: Pose2d = { x: 10, anchor: "bottom" };
+```
+
+**`combine(poses)`**: poses on one target as one; offsets and turns add, scales multiply, the first anchor stays.
+```ts
+combine([drop(options, time), { opacity: 0.5 }]);
+```
+
+**`squashed(squash, weight)`**: a squash pose `weight` of the way in, anchored at the bottom.
+
+**`POSE_2D_FIELDS`**: every field name of `Pose2d`.
+
+**`Point2d`**, **`Anchor2d`**, **`Cubic2d`**, **`Reveal`**, **`Drawn`**: the shapes moves give: a point with an id, a rope
+anchor, a path segment, a reveal circle, a drawn share.
+
+**`toCubics(anchors)`**: a rope's anchors as path segments for `applyPath`.
+
+### Events
+
+**`MotionEvent`**: `{ name, at, target?, x?, y? }`; `at` in ms, `x` and `y` from the watched element's corner.
+**`Events`**: a list of them, oldest first. **`NO_EVENTS`**: the empty list.
+
+**`follow({ start, on, target, stiffness, damping, rest })`**: a spring each named event sends towards its value,
+turning back with no jump. **`FollowOptions`** is its options' type.
+```ts
+const lift = follow({ start: 0, on: { enter: -12, leave: 0 }, target: "card" });
+lift(time, events);
+```
+
+**`react({ on, target, kind, amplitude, decay, frequency })`**: a damped answer to each past event: `recoil`, `wobble`,
+`flash` or `shake`; 0 before. **`ReactOptions`** and **`ReactionKind`** are its types.
+```ts
+const give = react({ on: ["catch"], kind: "wobble", amplitude: 26 });
+give(time, events);
+```
+
+**`mergeEvents(...lists)`**: lists as one, oldest first.
+```ts
+const all = mergeEvents(events, sim.events(time));
+```
+
+**`createLoopCycle({ duration, delay, repeat, yoyo })`**: the delay, repeat and yoyo arithmetic a clock driver uses;
+`.advance(ms)` gives a **`LoopCycleStep`**. **`LoopCycle`** and **`LoopCycleOptions`** are its types.
+
+### Writing a move
+
+**`defineMove({ id, description, options, inputs, output, extras, moments, run })`**: makes a move from one
+declaration, checked options and all. Its types: **`Move`**, **`MoveDeclaration`**, **`MoveOutput`**, **`Moments`**,
+**`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputField`**, **`InputFields`**,
+**`InputTypes`**, **`Inputs`**, **`InputArgs`**, **`OutputKind`**, **`OutputTypes`**, **`ExtraFields`**.
+```ts
+const slide = defineMove({
+  id: "slide", description: "Slides in.", inputs: {}, output: "pose2d", extras: {},
+  options: { distance: { kind: "number", description: "px" } },
+  moments: () => ({}),
+  run: ({ distance }, { progress }) => ({ x: -distance * (1 - progress) }),
+});
+```
+
+## @motion5/player
+
+**`Scene`**: `(time, events) => targets`.
+
+**`play(scene, driver, { cues })`**: runs a scene on a driver; **`Player`** has `.values`, `.time`,
+`.subscribe(target, fn)`, `.refresh()`, `.on(name, fn)` for events passed going forward, `.dispose()`.
+**`PlayOptions`** holds `cues`.
+```ts
+const player = play(scene, clock(), { cues });
+player.on("catch", () => sound.play());
+```
+
+**`manualDriver({ durationMs })`**: a driver moved by hand; `.seek(progress)`, `.seekMs(ms)`. **`ManualDriver`** is its
+type; **`Driver`** is what any driver gives: `now()`, `events?()`, `subscribe(fn)`.
+```ts
+const driver = manualDriver({ durationMs });
+play(scene, driver);
+driver.seekMs(1200);
+```
+
+## @motion5/dom
+
+### Rendering
+
+**`applyPose(element, pose)`**: writes a pose as a CSS transform, origin and opacity.
+```ts
+player.subscribe("title", (pose) => applyPose(title, pose));
+```
+
+**`applyReveal(element, reveal)`**: clips to a circle. **`applyDrawn(path, drawn, length?)`**: draws a stroke a share
+of the way. **`applyPath(path, cubics)`**: sets an SVG path's `d`.
+```ts
+applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
+```
+
+**`cssTransform(values)`**, **`cssOrigin(anchor)`**, **`cssClip(reveal)`**, **`cssDash(drawn, length)`**,
+**`pathData(cubics)`**: the CSS strings the above write. **`TRANSFORM_KEYS`**: the pose keys a transform reads.
+**`RenderTarget`** and **`RenderStyle`**: an element, or anything with a `style`.
+
+### Drivers
+
+**`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames })`**: a timed clock on the page's frames;
+`.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`. **`ClockDriver`** and **`ClockOptions`** are its types.
+```ts
+export const clock = () => clockDriver({ duration: durationMs });
+```
+
+**`scrollDriver({ start, end, target })`**: progress 0 to 1 as the page scrolls from `start` to `end` px; untimed.
+**`ScrollTarget`** is what it listens to.
+```ts
+const scrolled = () => scrollDriver({ start: 0, end: 1200 });
+```
+
+**`eventDriver({ introMs, settleMs })`**: a live clock that logs events: `.watch(target, element)` for `enter`,
+`leave`, `down`, `up`, `click`, `focus`, `blur` with `x` and `y`; `.watchView(target, element)` for `in-view` and
+`out-of-view`; `.emit(name, target, point)`. **`EventDriver`**, **`EventDriverOptions`**, **`EventSource`** and
+**`PointerLike`** are its types; **`WATCHED`** maps DOM event names to motion event names.
+```ts
+export const clock = () => eventDriver({ introMs: 900 });
+```
+
+**`FrameSource`**: where frames come from, for a test's fake frames.
+
+## @motion5/react
+
+**`usePlayer(scene, createDriver, cues?)`**: plays while the component stays; gives **`Playing`** `{ player, driver }` or
+`undefined`. Define all three outside the component. **`OwnedDriver`**: a driver it may dispose.
+```ts
+const playing = usePlayer(scene, clock, cues);
+```
+
+**`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render.
+```ts
+const ball = useTarget(playing?.player, "ball");
+const glyph = useTarget(playing?.player, "letters", (el, poses) => applyPose(el, poses[i] ?? {}));
+```
+
+**`useValue(player, target, select)`**: re-renders when `select`'s answer changes.
+```ts
+const landed = useValue(playing?.player, "ball", (pose) => (pose.y ?? 0) === 0);
+```
+
+**`useWatch(driver, target)`**: a ref whose element's events the driver logs as `target`'s; put it on a still element.
+```ts
+const hit = useWatch(playing?.driver, "card");
+```
+
+**`centreIn(from, to)`**: `from`'s layout centre measured from `to`'s corner, an **`Offset`**; **`LayoutBox`** is what
+it measures. **`mergeRefs(...refs)`**: one ref that sets several.
+```ts
+const centre = centreIn(dot, stage);
+```
+
+## @motion5/rig
+
+**`buildChain(bones)`**: a checked bone tree from **`Bone2d`** rows `{ id, parentId?, length, rotation?, minRotation?,
+maxRotation? }`; ids type every answer. **`Chain2d`** is its type.
+```ts
+const arm = buildChain([{ id: "upper", length: 170 }, { id: "lower", parentId: "upper", length: 150 }]);
+```
+
+**`ik(chain, goals, { base, flip })`**: rotations that bring each goal's bone tip to its **`Goal2d`** `{ x, y }`; a
+**`SolveResult`** with `rotations` and a **`SolveQuality`** `quality.kind` (`"too-far"` past reach). `flip` bends the
+elbow the other way.
+```ts
+const { rotations } = ik(arm, { lower: { x: 486, y: 412 } }, { base, flip: true });
+```
+
+**`fk(chain, { rotations, base })`**: each bone's tip as a **`WorldFrame`** `{ x, y, rotation }`. **`ChainPose`** is the
+options' type.
+```ts
+const tips = fk(arm, { rotations, base });
+```
+
+**`chainPoses(chain, { rotations, base })`**: **`BonePose`**s for bone elements laid out at the base, and **`TipPose`**
+offsets for joints.
+```ts
+const { bones, tips } = chainPoses(arm, { rotations, base });
+```
+
+**`ORIGIN`**: the world frame at 0, 0, unturned.
+
+## @motion5/physics
+
+**`builtinWorld()`**: the pure engine, a **`PhysicsWorld`**: `addBody`, `addCollider`, `setGravity`, `step`, `body`,
+`drainContacts`, `snapshot`, `restore`.
+
+**`BodySpec`**: `{ id, shape, x, y, vx?, vy?, angle?, spin?, fixedRotation?, restitution?, friction?, drag?, mass? }`;
+**`Shape`** `{ kind: "circle", radius }` or `{ kind: "box", width, height }`. **`Surface`**: `{ restitution?, friction? }`.
+**`Collider`**: `{ kind: "floor", y }`, `{ kind: "wall", x, side }`, `{ kind: "segment", from, to }`.
+**`BodyState`**: `{ x, y, rotation, vx, vy, spin }`. **`Contact`**: `{ a, b }` ids that started touching.
+```ts
+world.addBody({ id: "ball", shape: { kind: "circle", radius: 20 }, x: 640, y: 0, restitution: 0.5 });
+```
+
+**`simulate(world, build, { dt, checkpointMs, maxCheckpoints, durationMs, spawn })`**: a **`Simulation`**, seekable:
+`at(time, events)` states, `bodies(time, events)` ids, `pose(id, time, events)` the move from its start,
+`place(id, time, events)` a **`Placed`** on the stage with opacity 0 before it exists, `events(time, events)` its
+`contact` events. **`SimulateOptions`** are its options; `spawn(event, world)` adds bodies through a **`Spawner`**.
+```ts
+const sim = simulate(builtinWorld(), (world) => {
+  world.setGravity(0, 2600);
+  world.addCollider("floor", { kind: "floor", y: 600 });
+}, {
+  spawn: (event, world) => {
+    if (event.name === "click")
+      world.addBody({ id: `bit${event.at}`, shape: { kind: "box", width: 14, height: 8 }, x: event.x ?? 0, y: event.y ?? 0 });
+  },
+});
+sim.place(`bit${click.at}`, time, events);
+```
+
+## @motion5/rapier
+
+**`rapierEngine()`**: loads Rapier once and gives a factory of **`RapierWorld`**s, which are `PhysicsWorld`s with
+`native` and `rigidBody(id)` for joints and the rest of Rapier.
+```ts
+const rapier = await rapierEngine();
+const sim = simulate(rapier(), build);
+```
+
+## @motion5/three
+
+**`applyPose2d(object, pose, rest?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes.
+```ts
+player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
+```
+
+## Commands
+
+Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/react-demo`
+unless `--root <dir>` serves another folder or `--url <address>` names a running server, and `--root` and `--out` are
+read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
+and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` and
+`--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
+`(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
+
+- **`motion:new <name>`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in `apps/react-demo`.
+- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
+  `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+- **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
+  frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
+  moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
+  edge. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
+  `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
+- **`motion:read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
+  `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
+  and a fitted `cubic-bezier`. A move splits where it turns back.
+- **`motion:frames <page> --at ms,ms [--out dir]`**: a PNG per time and a labelled `sheet.png`; read the sheet.
+  `--onion sel --from ms --to ms --every ms` draws an element at each step on one frame, with its path.
+- **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
+- **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
+  run, or a 640 px GIF at 25; needs `ffmpeg`.
+- **`motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events list]`**: exact
+  values with no browser; reads the module's `cues`.
+- **`motion:timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
+- **`motion:points <points.json> --spacing px`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
+- **`motion:catalog`**: lists the engine's plugins; engine only.
+
+## Engine only
+
+These are exported for the engine, its plugins or other packages, and a scene does not use them. They are named
+so this reference stays complete; their behaviour is the engine's business.
+
+- **`@motion5/rig`**: `AXIS_KEYS`, `AXIS_X_KEY`, `AXIS_Y_KEY`, `AXIS_Z_KEY`, `AxisKey`, `BEND_KEY`, `Bend`, `BendAuthored`, `BodyError`, `BodyResult`, `BodyRow`, `BodyStructure`, `BodyStructureRow`, `BoundBase3d`, `Cells`, `ChainMember3d`, `ChainShape`, `ChainShape3d`, `ClosedFormQuality`, `Compromise`, `CompromiseGeometry`, `CompromiseRule`, `DEFAULT_INFLUENCE`, `EXTERNAL_BASE`, `EffectiveLink`, `EffectiveLink3d`, `Euler3d`, `FLIP_KEY`, `FREE_JOINT`, `FREE_JOINT3D`, `FieldShape`, `IDENTITY_MATRIX3`, `INFLUENCE_KEY`, `INSPECTION_KEY`, `INSPECT_KEY`, `IterativeQuality`, `JOINT_BOUND_KEYS`, `JOINT_BOUND_TOLERANCE`, `JOINT_KEY`, `JOINT_KINDS`, `JOINT_VOCABULARY_KEYS`, `JointBoundKey`, `JointKind`, `JointLimit`, `JointLimit3d`, `JointRange`, `JointVocabularyKey`, `LIMIT_CEILING`, `LIMIT_FLOOR`, `LIMIT_KEYS`, `LOCAL_X3`, `LimitKey`, `LimitedLocal3d`, `Link2d`, `MAX_ROTATION_KEY`, `MAX_SWING_KEY`, `MAX_TWIST_KEY`, `MIN_ROTATION_KEY`, `MIN_TWIST_KEY`, `Matrix3`, `ORIENT_KEY`, `PivotOffset`, `PivotOffset3d`, `Pole3d`, `Pull`, `Quaternion`, `ReachCircle`, `Scalar`, `SolveEvidence`, `SolveInspection`, `SolveMember`, `SolveMember3d`, `SwingTwist3d`, `TWIST_KEYS`, `TwistKey`, `UNBOUND_POLE3D`, `Vec3`, `WorldFrame3d`, `WorldPoint`, `ZERO_EULER`, `ZERO_PIVOT_OFFSET`, `ZERO_PIVOT_OFFSET3D`, `add3`, `atBound`, `axisX3`, `baseTipFromPivot`, `bendBasis3d`, `blendOrientation3d`, `boundBaseDirection`, `boundBaseFrame3d`, `branchPulls`, `canonicalDegrees`, `centreLocal3d`, `chainShape`, `chainShape3d`, `clamp`, `classifyBend`, `composeChain`, `composeWorld`, `composeWorld3d`, `compromise`, `compromiseIn`, `constrains`, `cross3`, `divide3`, `dot3`, `effectiveLink`, `effectiveLink3d`, `eulerFromMatrix3d`, `goalInfluence`, `inspectSolve`, `isRecord`, `jointConstrains`, `leavesHingeCircle`, `leavesHingePose`, `legalLocal3d`, `legalRotation`, `lerpAngle`, `limitLocal3d`, `limitRotation`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `multiplyVector3`, `nonPlanarHinge3d`, `norm3`, `normalize3`, `parseBody`, `pivotFromBase3d`, `pivotFromBaseTip`, `poleMagnitudes`, `quaternionFromEuler3d`, `rangeCentre`, `reachCircleOf`, `readAngleRange`, `readAxisComponent`, `readBend`, `readChainMembers3d`, `readEuler3d`, `readFrame`, `readFrame3d`, `readInfluence`, `readInfluenceValue`, `readJointKind`, `readJointLimit`, `readJointLimit3d`, `readLimitDegree`, `readNumber`, `readOrient`, `readOrientValue`, `readPivotOffset`, `readPivotOffset3d`, `readPole3d`, `readSwingDegree`, `relativeWeights`, `renderedLegalHinge3d`, `rereadPole3d`, `restDirection`, `rotationAboutAxis3d`, `rotationSide`, `scale3`, `scaleFrame3d`, `scaleOffset3d`, `scalePole`, `segmentExtent`, `slerpQuaternion`, `solveChain`, `solveChain3d`, `solveLength`, `solveMember`, `solveOffset`, `solveTwoBone3d`, `subtract3`, `swingFrame3d`, `swingTwist3d`, `toRadians`, `transposeMatrix3`, `turnRotation`, `twistAbout3d`, `wrapRotation`.
+- **`@motion5/react`**: `AnchorFields`, `AnchorRefs`, `LivePatch`, `MotionProjectState`, `Patch`, `PatchDerivation`, `PatchListener`, `PatchRender`, `PatchSource`, `PatchValues`, `RowPatchOptions`, `Word`, `WordByNodes`, `WordByRows`, `WordProps`, `liveOrAbsent`, `patchRender`, `rowPatchSource`, `useAnchor`, `useDerivedDomPatch`, `useDomPatch`, `useMotionProject`, `usePatch`.
+- **`@motion5/three`**: `EULER_ORDER_3D`, `Object3dPatchAdapter`, `createObject3dPatchAdapter`, `frameFromMatrix`, `frameToMatrix`, `writeFrame3d`.

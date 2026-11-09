@@ -9,6 +9,7 @@ import type {
 import type { GraphBuildResult } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #223, finding 3 of the re-review: the authoring side of a structural commit is quadratic.
@@ -38,7 +39,7 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
 const MANUAL: MotionDefinition["trigger"] = { type: "manual" };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -47,7 +48,10 @@ function evenly(count: number, tracks: number): ProjectDefinition {
   const motions: MotionDefinition[] = Array.from({ length: count }, (_motion, index) => ({
     id: `m${index}`,
     trigger: MANUAL,
-    tracks: Array.from({ length: tracks }, (_track, position) => ({ id: `t${position}` })),
+    tracks: Array.from({ length: tracks }, (_track, position) => ({
+      id: `t${position}`,
+      output: { model: "TestTable" },
+    })),
   }));
   return { schemaVersion: 5, motions };
 }
@@ -98,6 +102,7 @@ function rig(project: ProjectDefinition): Rig {
   const seen: ProjectDefinition[] = [];
   const inner = new IncrementalGraphBuilder(builtinRegistry());
   const runtime = new ProjectRuntime(project, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     graphBuilder: {
@@ -143,8 +148,16 @@ function borrowed(runtime: ProjectRuntime, document: ProjectDefinition): readonl
 
 describe("the committed pair is walked once, not once per motion", () => {
   it("RA-89 pays the same snapshot cost for 12 motions as for 2 over the same tracks", () => {
-    const wide = new ProjectRuntime(evenly(12, 2), { clock: createManualClock(), compose });
-    const deep = new ProjectRuntime(evenly(2, 12), { clock: createManualClock(), compose });
+    const wide = new ProjectRuntime(evenly(12, 2), {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
+    const deep = new ProjectRuntime(evenly(2, 12), {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
 
     // The premise of the case, stated rather than assumed: both rigs hold 24 tracks, so the motion
     // count is the only thing that differs below.
@@ -152,10 +165,10 @@ describe("the committed pair is walked once, not once per motion", () => {
     expect(deep.graph.graph.nodes).toHaveLength(24);
 
     const wideCost = mapMaterialisations(() => {
-      wide.addTrack({ id: "added" }, { motionId: "m0" });
+      wide.addTrack({ id: "added", output: { model: "TestRecord" } }, { motionId: "m0" });
     });
     const deepCost = mapMaterialisations(() => {
-      deep.addTrack({ id: "added" }, { motionId: "m0" });
+      deep.addTrack({ id: "added", output: { model: "TestRecord" } }, { motionId: "m0" });
     });
 
     // 12 against 2 for the same 24 tracks is the quadratic stated as a diff: the snapshot asked
@@ -175,7 +188,7 @@ describe("the committed pair is walked once, not once per motion", () => {
   it("RA-90 places every track under its owner, by identity, with free tracks apart", () => {
     const { runtime, committed } = rig(evenly(2, 2));
 
-    const free = runtime.addTrack({ id: "loose" });
+    const free = runtime.addTrack({ id: "loose", output: { model: "TestRecord" } });
     const document = committed();
 
     expect(free.id).toBe("~/loose");
@@ -203,10 +216,10 @@ describe("the committed pair is walked once, not once per motion", () => {
 
     // Interleaved on purpose. Map order and grouping order are different orders here, so a walk
     // that buckets has to answer in map order rather than in the order it filled the buckets.
-    runtime.addTrack({ id: "a" }, { motionId: "m1" });
-    runtime.addTrack({ id: "b" }, { motionId: "m0" });
-    runtime.addTrack({ id: "loose" });
-    runtime.addTrack({ id: "c" }, { motionId: "m1" });
+    runtime.addTrack({ id: "a", output: { model: "TestRecord" } }, { motionId: "m1" });
+    runtime.addTrack({ id: "b", output: { model: "TestRecord" } }, { motionId: "m0" });
+    runtime.addTrack({ id: "loose", output: { model: "TestRecord" } });
+    runtime.addTrack({ id: "c", output: { model: "TestRecord" } }, { motionId: "m1" });
 
     const document = committed();
 

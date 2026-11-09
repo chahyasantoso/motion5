@@ -1,18 +1,5 @@
-export { createBrowserClock } from "./browser-clock";
-export type { FrameSource } from "./browser-clock";
-
 export { createMicrotaskScheduler } from "./microtask-scheduler";
 export type { MicrotaskSchedulerOptions, SchedulerHost } from "./microtask-scheduler";
-
-export { createDomPatchAdapter } from "./dom";
-export type { RenderMetadata } from "../ports/render-metadata";
-export type {
-  DomPatchAdapter,
-  DomPatchWriter,
-  DomTarget,
-  DomTargetResolver,
-  StageLike,
-} from "./dom";
 
 export { createScrollTriggerPort } from "./scroll-trigger";
 export type { ScrollSource } from "./scroll-trigger";
@@ -30,5 +17,9 @@ export type {
   TriggerFactoryOptions,
 } from "./trigger-factory/default";
 
-export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
+export {
+  KeyframeCompilationError,
+  createGsapInterpolator,
+  createGsapOneTweenInterpolator,
+} from "./interpolator/gsap";
 export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";

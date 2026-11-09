@@ -4,6 +4,8 @@
 phase 4, squash-merged from [#485](https://github.com/chahyasantoso/motion5/pull/485) as `2d8ac606`.
 Phase 5 is [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md).
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 **Amended by [ADR-110](./ADR-110-goal-influence-and-conflict-policy.md), 2026-09-24.** The
 inspection projection now also carries frozen per-leaf `residuals`, and it may report the new
 `conflicted` quality kind. `inspectSolve` takes the whole `SolveResult` so the projection reads the

@@ -1,0 +1,13 @@
+import { clockDriver } from "@motion5/dom";
+import { drop, type Time } from "@motion5/moves";
+
+/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+export const durationMs = 800;
+
+/** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
+export const scene = (time: Time) => ({
+  title: drop({ distance: 500, squash: 0.18 }, time),
+});
+
+/** The scene's clock on the page's frames. */
+export const clock = () => clockDriver({ duration: durationMs });

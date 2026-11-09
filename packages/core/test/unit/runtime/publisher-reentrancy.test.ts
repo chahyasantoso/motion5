@@ -9,17 +9,26 @@ import {
   type PublisherSnapshot,
 } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry, type PatchBatch } from "../../../src/runtime/patch-registry";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -29,9 +38,9 @@ const soleNode = (id: string): PublisherNode =>
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze([]),
-    compose: () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }),
+    compose: () => ({ outputs: { values: { x: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
   });
 
 const soleSnapshot = (id: string): PublisherSnapshot => {
@@ -48,7 +57,7 @@ const soleSnapshot = (id: string): PublisherSnapshot => {
 describe("subscriber-triggered reentrancy (recovery A3)", () => {
   it("defers a subscriber-triggered invalidate instead of running it inside the current flush", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];
@@ -82,7 +91,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
 
   it("runs the queued follow-up exactly once on the next tick and then clears it", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];
@@ -104,7 +113,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
+    expect(captionLabelPatch.outputs.values).toEqual({ node: "caption/label" });
     expect(runtime.registry.get("caption/label")?.revision).toBe(1);
     expect(runtime.pendingSeeds).toEqual([]);
 
@@ -118,7 +127,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
 
   it("coalesces several subscriber-triggered invalidations into one follow-up", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
 
     const ticks: number[] = [];
@@ -156,7 +165,12 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     });
 
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     expect(() => registry.closeBatch()).not.toThrow();
     expect((nested as Error)?.message).toMatch(/while subscribers are being notified/);

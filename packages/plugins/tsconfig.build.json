@@ -11,7 +11,9 @@
     "baseUrl": ".",
     "paths": {
       "@motion5/core": ["../core/dist/index.d.ts"],
-      "@motion5/core/*": ["../core/dist/*"]
+      "@motion5/core/*": ["../core/dist/*"],
+      "@motion5/moves": ["../moves/dist/index.d.ts"],
+      "@motion5/rig": ["../rig/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"],

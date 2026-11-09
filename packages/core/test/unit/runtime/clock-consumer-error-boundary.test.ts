@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphNode } from "../../../src/graph/ir";
+import type { GraphNode } from "../../../src/graph/node";
 import { createManualClock, type ClockTick } from "../../../src/ports/clock";
 import { GraphRuntime, type ComposeResolver } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Clock consumer advancement and graph flushing are separate error boundaries. Issue #154.
@@ -19,8 +20,16 @@ import { GraphRuntime, type ComposeResolver } from "../../../src/runtime/graph-r
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
@@ -31,7 +40,7 @@ const project: ProjectDefinition = {
 function countingCompose(): ComposeResolver {
   let calls = 0;
   return (node: GraphNode) => () => ({
-    values: { node: node.id, call: (calls += 1) },
+    outputs: { values: { node: node.id, call: (calls += 1) } },
     sourceProgress: 0,
     sourceRevisions: {},
   });
@@ -55,6 +64,7 @@ function harness(onClockTick: (event: ClockTick) => void): Harness {
   const failures: Diagnostic[] = [];
   const batchTicks: number[] = [];
   const runtime = new GraphRuntime(project, clock, countingCompose(), {
+    graphBuilder: testGraphBuilder(),
     onFlushError: (diagnostic) => failures.push(diagnostic),
     onClockTick,
   });
@@ -177,6 +187,7 @@ describe("clock consumer and flush error boundaries", () => {
     const failures: Diagnostic[] = [];
     let consumerCalls = 0;
     const runtime = new GraphRuntime(project, clock, countingCompose(), {
+      graphBuilder: testGraphBuilder(),
       onFlushError: (diagnostic) => failures.push(diagnostic),
       onClockTick: () => {
         consumerCalls += 1;

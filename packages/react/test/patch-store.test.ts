@@ -12,7 +12,7 @@ describe("React patch consumer boundary", () => {
     registry.beginBatch(1, ["hero/arm"]);
     registry.publish({
       nodeId: "hero/arm",
-      values: { opacity: 1 },
+      outputs: { values: { opacity: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -25,7 +25,7 @@ describe("React patch consumer boundary", () => {
     registry.beginBatch(2, ["hero/arm"]);
     registry.publish({
       nodeId: "hero/arm",
-      values: { opacity: 1 },
+      outputs: { values: { opacity: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -37,7 +37,7 @@ describe("React patch consumer boundary", () => {
     registry.beginBatch(3, ["hero/arm"]);
     registry.publish({
       nodeId: "hero/arm",
-      values: { opacity: 0 },
+      outputs: { values: { opacity: 0 } },
       sourceProgress: 0,
       status: "ready",
     });

@@ -10,6 +10,7 @@ import type {
   TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog, testEngine } from "../support/builtin-registry";
 
 /**
  * Issue #133. Both mutating entry points in `ProjectRuntime` roll back by calling a hook that
@@ -32,25 +33,20 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_TRACK: TrackDefinition = {
   id: "child",
-  observes: [{ source: "~/missing" }],
-};
-
-/**
- * The unknown source `REJECTED_TRACK` carries, authored into a project instead of added to one.
- *
- * `GraphRuntime`'s constructor refuses this where `replaceGraph` refuses that, which is the only
- * difference the constructor boundary needs: one refusal arrives while the composition is still
- * the caller's to release, the other while it is already this runtime's.
- */
-const REFUSED_PROJECT: ProjectDefinition = {
-  schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [REJECTED_TRACK] }],
+  output: { plugin: "translate" },
+  input: { requires: { data: "~/missing" } },
 };
 
 /** A slashed id reaches assertAuthoredMotionId, the same graph rejection `T-6` uses. */
@@ -60,14 +56,26 @@ const REJECTED_MOTION: MotionDefinition = {
   tracks: [],
 };
 
+/**
+ * The slashed id, authored into a project instead of added to one.
+ *
+ * `GraphRuntime`'s constructor refuses this where `replaceGraph` refuses the same motion, which is
+ * the only difference the constructor boundary needs: one refusal arrives while the composition is
+ * still the caller's to release, the other while it is already this runtime's.
+ */
+const REFUSED_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  motions: [REJECTED_MOTION],
+};
+
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
 
 function load(motions: readonly MotionDefinition[], factory?: TriggerFactory): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -158,8 +166,10 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
     const failure = new Error("compiled Track dispose failed");
     let disposals = 0;
     const runtime = new ProjectRuntime(BASE_PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
+      isPluginRegistered: () => true,
       compileTrack: () => undefined,
       disposeTrack: () => {
         disposals += 1;
@@ -169,9 +179,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK));
 
-    // Red before the fix, for the same reason, at the older of the two call sites. `#addTrack` is
-    // frozen by the plan, which is why this was filed rather than folded into T4.
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
     expect(thrown).toBeInstanceOf(AggregateError);
     const errors = (thrown as AggregateError).errors as readonly unknown[];
     expect(errors[0]).toBeInstanceOf(TypeError);
@@ -183,10 +191,6 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
   });
 
   it("P-3 rethrows the rejection itself, unwrapped, when the rollback succeeds", () => {
-    // Not red, and not claimed as red. It exists so the fix cannot become "wrap every rejection":
-    // an AggregateError on the ordinary path would change the error every existing caller sees,
-    // including `T-6`'s anchored match and the two retryable-rejection cases in
-    // `mutation-transactionality.test.ts`.
     const handle = load([]);
 
     const fromMotion = thrownBy(() => handle.addMotion(REJECTED_MOTION));
@@ -198,8 +202,10 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     let disposals = 0;
     const runtime = new ProjectRuntime(BASE_PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
+      isPluginRegistered: () => true,
       compileTrack: () => undefined,
       disposeTrack: () => {
         disposals += 1;
@@ -210,8 +216,7 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
 
     expect(fromTrack).toBeInstanceOf(TypeError);
     expect(fromTrack).not.toBeInstanceOf(AggregateError);
-    expect((fromTrack as Error).message).toMatch(/^observation-unknown-source at /);
-    // The rollback still ran. Precedence is not bought by skipping it.
+    expect((fromTrack as Error).message).toMatch(/^edge-unknown-source at /);
     expect(disposals).toBe(1);
 
     runtime.dispose();
@@ -230,10 +235,9 @@ describe("a rollback failure never outranks the rejection that triggered it", ()
  *
  * Driven through the constructor rather than through `Engine.load`, which is the correction issue
  * #469's first attempt at this case earned. `Engine.load` cannot reach this boundary with any
- * refusal currently in the tree: `validateV5` refuses an unknown observation source in the first
- * statement of `load`, before the owner's `try` opens, so no composition, runtime or release exists
- * to test. A fixture whose timing has to be argued for is the wrong fixture for an invariant about
- * ordering.
+ * refusal currently in the tree: `validateV5` refuses a slashed motion id in the first statement of
+ * `load`, before the owner's `try` opens, so no composition, runtime or release exists to test. A
+ * fixture whose timing has to be argued for is the wrong fixture for an invariant about ordering.
  */
 describe("a construction failure outranks the composition release it triggers", () => {
   it("P-4 reports the construction failure first when the composition release throws", () => {
@@ -243,6 +247,7 @@ describe("a construction failure outranks the composition release it triggers", 
     const thrown = thrownBy(
       () =>
         new ProjectRuntime(REFUSED_PROJECT, {
+          capabilities: testCatalog(),
           clock: createManualClock(),
           compose,
           compileTrack: () => undefined,
@@ -255,7 +260,7 @@ describe("a construction failure outranks the composition release it triggers", 
 
     // Red before the fix, where the constructor was `disposeComposition(); throw error;` outside a
     // `try` and this message was "host composition release failed". `P-1`'s assertion shape.
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^motion-id at /);
     expect(thrown).toBeInstanceOf(AggregateError);
     const errors = (thrown as AggregateError).errors as readonly unknown[];
     expect(errors[0]).toBeInstanceOf(TypeError);
@@ -274,6 +279,7 @@ describe("a construction failure outranks the composition release it triggers", 
     const thrown = thrownBy(
       () =>
         new ProjectRuntime(REFUSED_PROJECT, {
+          capabilities: testCatalog(),
           clock: createManualClock(),
           compose,
           compileTrack: () => undefined,
@@ -285,7 +291,7 @@ describe("a construction failure outranks the composition release it triggers", 
 
     expect(thrown).toBeInstanceOf(TypeError);
     expect(thrown).not.toBeInstanceOf(AggregateError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^motion-id at /);
     // The release still ran, so the unwrapped path is not the path that skipped it.
     expect(releases).toBe(1);
   });

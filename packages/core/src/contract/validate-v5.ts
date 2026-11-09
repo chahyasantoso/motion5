@@ -1,290 +1,46 @@
-// Docs: ./validate-v5.md
 import {
   AUTHORED_SCHEMA_VERSION,
   type Diagnostic,
   type ProjectDefinition,
   type TrackDefinition,
   type TriggerDefinition,
+  type ValueSpec,
 } from "./v5";
-import { SUPPORTED_TRIGGER_TYPES } from "./v5";
-import { readAuthoredLeaf } from "./authored-leaf";
+import { SUPPORTED_TRIGGER_TYPES, outputRef } from "./v5";
 import { unreachable } from "../lang/exhaustive";
 import { acceptedOutcome, refusedOutcome, refusedOutcomeFrom, type Outcome } from "../lang/outcome";
 import { describeDiagnostics, diagnostic } from "./diagnostics";
-import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
-import {
-  readKeyframeEntry,
-  PLUGIN_GROUP_SECTIONS,
-  PLUGIN_REQUIRES_SECTION,
-  PLUGIN_VALUES_SECTION,
-  readPluginValues,
-} from "./keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 import { defineOwnValue } from "../lang/own-property";
+import { deriveSourceContract } from "./v5-infer";
+import {
+  parseTrackDefinition,
+  type ParseContext,
+  type ParsedRecord,
+  type ParsedTable,
+  type ParsedValues,
+  type ParsedTrack,
+} from "./v5-parse";
 
-export interface KeyframeValidationOptions {
-  /**
-   * Who is reading these keyframes, which is the whole of what the three options this replaced ever
-   * said together.
-   *
-   * `ruleIdPrefix`, `ruleIdAliases` and `allowGroups` were three fields the one caller that set any
-   * of them set all of them, and two of the three were open `string` data, so the rule id union was
-   * closed everywhere except at the site that mints the whole prefixed family. Which id a rule
-   * reports under is derived from this scope by `contract/rule-id`, and what a top-level entry is
-   * (a group or a property) is answered from the same scope by `ENTRY_FORM` below.
-   *
-   * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
-   * the contribution scope keeps the pre-group strictness: an object of objects contributed as a
-   * property stays a `stops-shape` error instead of being read as a group. Both section reservations
-   * are scoped to the same answer, because a contributed key is not authored. See ADR-097.
-   */
-  readonly scope?: KeyframeRuleScope;
+const NO_RECORD: ParsedRecord = Object.freeze({ kind: "record", fields: Object.freeze({}) });
+const NO_TABLE: ParsedTable = Object.freeze({ kind: "table", rows: Object.freeze([]) });
+
+/** Reads an absent plugin input as empty, so each required field and row minimum is refused by name. */
+function absentInput(spec: ValueSpec | undefined): ParsedValues | undefined {
+  if (spec === undefined || spec.optional === true) return undefined;
+  switch (spec.kind) {
+    case "record":
+      return NO_RECORD;
+    case "table":
+      return NO_TABLE;
+    default:
+      return unreachable(spec);
+  }
 }
-const STOPS_REQUIRED =
-  "An authored property must be an array of stops or a static number, string, or boolean.";
-const WRAPPER_RETIRED =
-  "The { stops: [...] } wrapper is retired; author the stops array directly as the value.";
+
 const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
-const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
-const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
-// What a top-level keyframe entry is in each scope, keyed by the scope union so a third scope has to
-// answer here rather than inheriting the answer written first. The reasoning is in validate-v5.md.
-type KeyframeEntryForm = "group" | "property";
-const ENTRY_FORM: Readonly<Record<KeyframeRuleScope, KeyframeEntryForm>> = {
-  authored: "group",
-  contribution: "property",
-};
-const UNGROUPED =
-  "must be a plugin-named group; author the property as { <plugin>: { values: { ... } } }";
-type RawObject = Record<string, unknown>;
-function isObject(value: unknown): value is RawObject {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-export function validateKeyframes(
-  keyframes: unknown,
-  path: string,
-  diagnostics: Diagnostic[],
-  options: KeyframeValidationOptions = {},
-): void {
-  const scope = options.scope ?? "authored";
-  const form = ENTRY_FORM[scope];
-  // No `severity` parameter and no default. The default here was the constructor's own bug one layer
-  // above it: a keyframe rule reported through this without an explicit severity became an error
-  // whatever `contract/rule.ts` says, and it was harmless only because both keyframe warnings passed
-  // `"warning"` by hand. A third keyframe warning would have reported as an error with nothing
-  // noticing. Every rule this forwards owns no ids, so the argument list stays empty too.
-  const add = (ruleId: KeyframeRuleId, rulePath: string, message: string) =>
-    diagnostics.push(diagnostic(scopedRuleId(scope, ruleId), rulePath, message));
-  if (keyframes === undefined) return;
-  if (!isObject(keyframes)) {
-    add("keyframes-shape", path, "Track keyframes must be an object.");
-    return;
-  }
-  // The colon is reserved rather than conventional. `Track` treats a colon key as a plugin's
-  // private namespace and never publishes it, so an authored key spelled with one would be
-  // animated and then hidden, and `{ "fk:length": ... }` would become a second spelling of the
-  // flattened `{ fk: { values: { length: ... } } }`. That is the dual namespace grouping removes.
-  const checkName = (name: string, namePath: string): void => {
-    if (!name.includes(":")) return;
-    const detail = "must not contain ':', which is reserved for internal keys";
-    add("keyframes-reserved-separator", namePath, `Keyframe name '${name}' ${detail}.`);
-  };
-  // Every authored spelling of one compiled key. A group leaf that collides with another group's
-  // leaf is rejected here, which is why `flattenAuthoredKeyframes` may resolve
-  // ties by sorted order instead of reporting the same rule a second time from the domain layer.
-  const owners = new Map<string, string>();
-  const claim = (key: string, keyPath: string): void => {
-    const owner = owners.get(key);
-    if (owner === undefined) {
-      owners.set(key, keyPath);
-      return;
-    }
-    const detail = `is already authored at '${owner}'`;
-    add("keyframes-duplicate-key", keyPath, `Keyframe key '${key}' ${detail}.`);
-  };
-  const validateStops = (stops: readonly unknown[], propertyPath: string): void => {
-    let previous: number | undefined;
-    const positions = new Set<number>();
-    for (const [index, rawStop] of stops.entries()) {
-      const stopPath = `${propertyPath}[${index}]`;
-      if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
-        add("stop-position", `${stopPath}.p`, "Stop p must be a finite number.");
-        continue;
-      }
-      const position = rawStop.p;
-      if (position < 0 || position > 1)
-        add("stop-position-range", `${stopPath}.p`, "Stop p must be between 0 and 1.");
-      if (previous !== undefined && position < previous)
-        add("stop-position-order", `${stopPath}.p`, "Stop positions must be monotonic.");
-      if (positions.has(position))
-        add("stop-position-duplicate", `${stopPath}.p`, "Stop positions must be unique.");
-      positions.add(position);
-      previous = position;
-    }
-    if (positions.size > 0 && !positions.has(0))
-      add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.");
-    if (positions.size > 0 && !positions.has(1))
-      add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.");
-  };
-  const validateProperty = (property: unknown, propertyPath: string): void => {
-    const leaf = readAuthoredLeaf(property);
-    switch (leaf.kind) {
-      case "static":
-      case "empty":
-        return;
-      case "wrapper":
-        add("property-stops-wrapper", propertyPath, WRAPPER_RETIRED);
-        return;
-      case "invalid":
-        add("stops-shape", propertyPath, STOPS_REQUIRED);
-        return;
-      case "animated":
-        validateStops(leaf.stops, propertyPath);
-        return;
-      default:
-        return unreachable(leaf);
-    }
-  };
-  const validateRequirementDict = (dict: RawObject, dictPath: string): void => {
-    const entries = Object.entries(dict);
-    if (entries.length === 0) {
-      const detail = "must declare at least one entry, or be omitted entirely";
-      add("keyframes-requires-dict-empty", dictPath, `A dict-valued slot ${detail}.`);
-      return;
-    }
-    for (const [key, source] of entries) {
-      const keyPath = `${dictPath}.${key}`;
-      const forged = key.includes("[") || key.includes("]");
-      if (key.length === 0 || key.includes(":") || forged) {
-        const detail = "must be non-empty and must not contain ':', '[' or ']'";
-        add("keyframes-requires-dict-key", keyPath, `Requirement dict key '${key}' ${detail}.`);
-      }
-      if (typeof source !== "string" || source.length === 0) {
-        const detail = "must name a non-empty source id";
-        add("keyframes-requires-dict-source", keyPath, `Dict entry '${key}' ${detail}.`);
-      }
-    }
-  };
-  const validateRequires = (requires: unknown, requiresPath: string): void => {
-    if (!isObject(requires)) {
-      const detail = "must be an object mapping requirement slots to source ids";
-      add("keyframes-requires-shape", requiresPath, `Plugin requires ${detail}.`);
-      return;
-    }
-    const slots = Object.entries(requires);
-    if (slots.length === 0) {
-      const detail = "must declare at least one binding, or be omitted entirely";
-      add("keyframes-requires-empty", requiresPath, `Plugin requires ${detail}.`);
-      return;
-    }
-    for (const [slot, source] of slots) {
-      const slotPath = `${requiresPath}.${slot}`;
-      if (slot.length === 0 || slot.includes(":")) {
-        const detail = "must be non-empty and must not contain ':'";
-        add("keyframes-requires-slot", slotPath, `Requirement slot '${slot}' ${detail}.`);
-      }
-      // The one rule still keyed on a slot name, because only the name can answer it: this slot
-      // carries a solver's goal dict, so a scalar at it is malformed rather than the ordinary scalar
-      // binding it would be anywhere else. Every rule below is about the dict rather than about
-      // which slot is allowed to hold one, which is the registry's question. See ADR-057.
-      if (slot === PLUGIN_GOALS_SLOT && !isObject(source)) {
-        const detail = "must be an object mapping member ids to source ids";
-        add("keyframes-targets-shape", slotPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
-        continue;
-      }
-      if (isObject(source)) {
-        validateRequirementDict(source, slotPath);
-        continue;
-      }
-      if (typeof source !== "string" || source.length === 0) {
-        const detail = "must name a non-empty source id";
-        add("keyframes-requires-source", slotPath, `Requirement slot '${slot}' ${detail}.`);
-      }
-    }
-  };
-  const validateValues = (values: unknown, valuesPath: string): void => {
-    if (!isObject(values)) {
-      const detail = "must be an object mapping keyframe names to authored properties";
-      add("keyframes-values-shape", valuesPath, `Plugin values ${detail}.`);
-      return;
-    }
-    const leaves = Object.entries(values);
-    if (leaves.length === 0) {
-      const detail = "must declare at least one property, or be omitted entirely";
-      add("keyframes-values-empty", valuesPath, `Plugin values ${detail}.`);
-      return;
-    }
-    for (const [leaf, leafProperty] of leaves) {
-      const leafPath = `${valuesPath}.${leaf}`;
-      checkName(leaf, leafPath);
-      claim(leaf, leafPath);
-      validateProperty(leafProperty, leafPath);
-    }
-  };
-  const validateGroup = (key: string, rawGroup: unknown, groupPath: string): void => {
-    // A top-level section name addresses no plugin, so neither a property nor a binding written
-    // there could ever have an owner. Accepting one would be a second authored spelling with no
-    // destination, which is the dual namespace the group form exists to remove.
-    if (PLUGIN_GROUP_SECTIONS.includes(key)) {
-      const detail = "is reserved for a section of a plugin-named group";
-      add("keyframes-reserved-section", groupPath, `Keyframe name '${key}' ${detail}.`);
-      return;
-    }
-    checkName(key, groupPath);
-    // Which of the three an entry is, and which refusal wins, is `readKeyframeEntry`'s answer. The
-    // pre-ADR-049 form is refused by name and never normalized. Every other entry naming no section
-    // is refused as ungrouped rather than read as a property: a flat key named no owner, so the
-    // moment two plugins claimed one name it needed a second rule to refuse the spelling this one
-    // now refuses for every name. See ADR-049 and ADR-121.
-    const entry = readKeyframeEntry(rawGroup);
-    switch (entry.kind) {
-      case "legacy-group": {
-        const detail = "must author its properties under a 'values' section";
-        add("keyframes-missing-values-section", groupPath, `Plugin group '${key}' ${detail}.`);
-        return;
-      }
-      case "ungrouped":
-        add("keyframes-ungrouped-key", groupPath, `Keyframe '${key}' ${UNGROUPED}.`);
-        return;
-      case "group":
-        break;
-      default:
-        return unreachable(entry);
-    }
-    // Two members, one level. A group holds a `values` section of properties and a `requires`
-    // section of bindings; a property holds stops, so there is no third level for an author to
-    // reach for. `requires` compiles to nothing, so it claims no key and names nothing. A group of
-    // only unknown sections is reachable and is rejected below, so it needs no rule of its own.
-    for (const [section, member] of Object.entries(entry.group)) {
-      const sectionPath = `${groupPath}.${section}`;
-      if (section === PLUGIN_VALUES_SECTION) {
-        validateValues(member, sectionPath);
-        continue;
-      }
-      if (section === PLUGIN_REQUIRES_SECTION) {
-        validateRequires(member, sectionPath);
-        continue;
-      }
-      const detail = `must be ${SECTION_NAMES}`;
-      add("keyframes-unknown-section", sectionPath, `Keyframe section '${section}' ${detail}.`);
-    }
-  };
-  for (const [key, rawEntry] of Object.entries(keyframes)) {
-    const entryPath = `${path}.${key}`;
-    switch (form) {
-      case "group":
-        validateGroup(key, rawEntry, entryPath);
-        continue;
-      case "property":
-        checkName(key, entryPath);
-        claim(key, entryPath);
-        validateProperty(rawEntry, entryPath);
-        continue;
-      default:
-        return unreachable(form);
-    }
-  }
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function validateId(
   value: unknown,
@@ -307,6 +63,7 @@ function validateId(
     );
   return diagnostics;
 }
+/** Reports shape and field diagnostics for one authored trigger. */
 export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
   if (!isObject(trigger))
     return [
@@ -347,9 +104,18 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger autoplay must be true when present; paused behavior is not supported.",
         ),
       );
-    // `repeat` counts the passes after the initial one, so 0 is a single pass and -1 is infinite.
-    // The blanket rejection this replaced existed only because loop semantics were undesigned;
-    // ADR-040 designs them, so the fields are now honored rather than refused.
+    if (
+      trigger.delay !== undefined &&
+      (typeof trigger.delay !== "number" || !Number.isFinite(trigger.delay) || trigger.delay < 0)
+    )
+      diagnostics.push(
+        diagnostic(
+          "trigger-time-delay",
+          `${path}.delay`,
+          "Time trigger delay must be a finite number of zero or more when present.",
+        ),
+      );
+    // `repeat` counts passes after the initial one: 0 is a single pass, -1 infinite.
     const repeatValue = typeof trigger.repeat === "number" ? trigger.repeat : undefined;
     const repeatValid =
       repeatValue !== undefined && Number.isInteger(repeatValue) && repeatValue >= -1;
@@ -369,9 +135,7 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger yoyo must be a boolean when present.",
         ),
       );
-    // A yoyo with nothing to reverse would be a field accepted and then ignored, which rule 6 of
-    // ADR-033 forbids. `false` is refused for the same reason `true` is: neither has any effect
-    // without a repeat, so the rule is about presence rather than value.
+    // yoyo needs repeat -1 or greater than zero; true and false are both refused otherwise.
     if (trigger.yoyo !== undefined && !(repeatValid && repeatValue !== 0))
       diagnostics.push(
         diagnostic(
@@ -395,78 +159,79 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
     );
   return diagnostics;
 }
-/**
- * The one narrowing boundary for authored triggers.
- *
- * `MotionDefinition.trigger` is deliberately structurally open (plan section 5.1) so authored
- * extension keys survive validation. The cost is that `trigger.source` and `trigger.duration` are
- * `unknown` to every consumer, which previously pushed each `TriggerFactory` into re-deriving the
- * discriminated union with its own `typeof` guards and sentinels.
- *
- * By the time any factory runs the trigger is already proven valid, so the narrowing belongs here.
- * This function holds the only cast from authored input to `TriggerDefinition`, and that cast is
- * justified by the `validateMotionTrigger` call immediately above it.
- */
+/** Validates an authored trigger, then narrows it to `TriggerDefinition`; throws a TypeError when invalid. */
 export function resolveTriggerDefinition(trigger: unknown, path: string): TriggerDefinition {
   const diagnostics = validateMotionTrigger(trigger, path);
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
-function hasThreeDPath(property: RawObject): boolean {
-  if (!Array.isArray(property.points)) return false;
-  return property.points.some(
-    (point) => isObject(point) && typeof point.z === "number" && point.z !== 0,
-  );
-}
-function isThreeDProperty(key: string, property: unknown): boolean {
-  if (THREE_D_KEYS.includes(key)) return property !== undefined && property !== null;
-  return key === "path" && isObject(property) && hasThreeDPath(property);
-}
-function usesThreeD(track: RawObject): boolean {
-  const keyframes = isObject(track.keyframes) ? track.keyframes : null;
-  if (!keyframes) return false;
-  for (const group of Object.values(keyframes)) {
-    for (const [leaf, leafProperty] of Object.entries(readPluginValues(group))) {
-      if (isThreeDProperty(leaf, leafProperty)) return true;
+function derivedInputDiagnostics(
+  parsed: ParsedTrack,
+  path: string,
+  context: ParseContext,
+): readonly Diagnostic[] {
+  const ref = outputRef(parsed.output);
+  switch (ref.kind) {
+    case "plugin": {
+      const definition = context.pluginDefinition?.(ref.id);
+      if (definition === undefined) return [];
+      const diagnostics = [
+        ...deriveSourceContract(
+          parsed.input.values ?? absentInput(definition.inputs.values?.spec),
+          definition.inputs.values?.spec,
+          `${path}.input.values`,
+          "plugin",
+        ).diagnostics,
+      ];
+      if (definition.inputs.param !== undefined)
+        diagnostics.push(
+          ...deriveSourceContract(
+            parsed.input.param ?? absentInput(definition.inputs.param),
+            definition.inputs.param,
+            `${path}.input.param`,
+            "plugin",
+          ).diagnostics,
+        );
+      return diagnostics;
     }
+    case "model":
+      return deriveSourceContract(
+        parsed.input.values,
+        context.model?.(ref.id)?.spec,
+        `${path}.input.values`,
+        "model",
+      ).diagnostics;
+    default:
+      return unreachable(ref);
   }
-  return false;
 }
-function validateTrackShape(
+
+// Duplicate ids scoped to the caller's set; source contract inferred only for model outputs.
+function readTrack(
   track: unknown,
   path: string,
+  context: ParseContext,
   seenIds: Set<string>,
   diagnostics: Diagnostic[],
-): track is TrackDefinition {
-  if (!isObject(track)) {
-    diagnostics.push(diagnostic("track-shape", path, "Track must be an object."));
-    return false;
+): void {
+  const parsed = parseTrackDefinition(track, path, context);
+  diagnostics.push(...parsed.diagnostics);
+  switch (parsed.kind) {
+    case "refused":
+      return;
+    case "accepted": {
+      diagnostics.push(...derivedInputDiagnostics(parsed.value, path, context));
+      const { id } = parsed.value;
+      if (seenIds.has(id))
+        diagnostics.push(
+          diagnostic("track-duplicate-id", `${path}.id`, `Track id '${id}' is duplicated.`, [id]),
+        );
+      seenIds.add(id);
+      return;
+    }
+    default:
+      return unreachable(parsed);
   }
-  diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
-  if ("use" in track)
-    diagnostics.push(
-      diagnostic(
-        "plugin-contribution-unsupported-entry",
-        `${path}.use`,
-        "Track use is not supported; resolve plugins from authored keyframes.",
-        [String(track.use)],
-      ),
-    );
-  validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
-  if (typeof track.id === "string" && track.id.length) {
-    if (seenIds.has(track.id))
-      diagnostics.push(
-        diagnostic("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, [
-          track.id,
-        ]),
-      );
-    seenIds.add(track.id);
-  }
-  if (track.observes !== undefined && !Array.isArray(track.observes))
-    diagnostics.push(
-      diagnostic("observes-shape", `${path}.observes`, "Track observes must be an array."),
-    );
-  return true;
 }
 function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   if (value === null || typeof value !== "object") return value;
@@ -490,16 +255,36 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
+/** Outcome of validating one track: its definition, or its diagnostics. */
 export type TrackValidationResult = Outcome<TrackDefinition, Diagnostic>;
-export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
-  const diagnostics: Diagnostic[] = [];
-  const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
-  const frozenDiagnostics = Object.freeze(diagnostics);
-  if (!validShape || diagnostics.some(({ severity }) => severity === "error"))
-    return refusedOutcomeFrom(frozenDiagnostics);
-  return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozenDiagnostics);
+/** Accepts one authored track frozen, or refuses it with diagnostics. */
+export function validateTrackDefinition(
+  track: unknown,
+  path: string,
+  context: ParseContext = {},
+): TrackValidationResult {
+  const parsed = parseTrackDefinition(track, path, context);
+  switch (parsed.kind) {
+    case "refused":
+      return refusedOutcomeFrom(parsed.diagnostics);
+    case "accepted": {
+      const diagnostics: Diagnostic[] = [
+        ...parsed.diagnostics,
+        ...derivedInputDiagnostics(parsed.value, path, context),
+      ];
+      const frozen = Object.freeze(diagnostics);
+      if (frozen.some(({ severity }) => severity === "error")) return refusedOutcomeFrom(frozen);
+      return acceptedOutcome(deepFreeze(clone(track) as TrackDefinition), frozen);
+    }
+    default:
+      return unreachable(parsed);
+  }
 }
-export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Diagnostic> {
+/** Validates an authored project document and freezes it on success; graph construction owns topology. */
+export function validateSchemaV5(
+  input: unknown,
+  context: ParseContext = {},
+): Outcome<ProjectDefinition, Diagnostic> {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
     return refusedOutcome([diagnostic("project-shape", "$", "Project must be an object.")]);
@@ -518,10 +303,7 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
     diagnostics.push(
       diagnostic("project-id", "projectId", "projectId must be a non-empty string when present."),
     );
-  // The removed field, read by the key rather than by the value at it. That is the same reading the
-  // retired track `use` field gets a few functions up, and for the same reason: authoring the key
-  // is the mistake, so `templates: undefined` is refused too rather than being a spelling that
-  // slips a removed field back in through a spread of an older document.
+  // Key presence, not value: templates: undefined still names the unsupported field.
   if ("templates" in input)
     diagnostics.push(
       diagnostic("project-templates-unsupported", "templates", TEMPLATES_UNSUPPORTED),
@@ -534,7 +316,6 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
   const freeIds = new Set<string>();
-  const allTracks: RawObject[] = [];
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
@@ -558,17 +339,11 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
       continue;
     }
     const localIds = new Set<string>();
-    for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
-      const trackPath = `${path}.tracks[${trackIndex}]`;
-      if (validateTrackShape(rawTrack, trackPath, localIds, diagnostics))
-        allTracks.push(rawTrack as unknown as RawObject);
-    }
+    for (const [trackIndex, rawTrack] of rawMotion.tracks.entries())
+      readTrack(rawTrack, `${path}.tracks[${trackIndex}]`, context, localIds, diagnostics);
   }
-  for (const [index, rawTrack] of freeTracks.entries()) {
-    const path = `freeTracks[${index}]`;
-    if (validateTrackShape(rawTrack, path, freeIds, diagnostics))
-      allTracks.push(rawTrack as unknown as RawObject);
-  }
+  for (const [index, rawTrack] of freeTracks.entries())
+    readTrack(rawTrack, `freeTracks[${index}]`, context, freeIds, diagnostics);
   const perspective = input.perspective;
   if (
     perspective !== undefined &&
@@ -581,17 +356,6 @@ export function validateSchemaV5(input: unknown): Outcome<ProjectDefinition, Dia
         "Perspective must be a finite number greater than zero.",
       ),
     );
-  if (perspective === undefined)
-    for (const track of allTracks)
-      if (usesThreeD(track))
-        diagnostics.push(
-          diagnostic(
-            "perspective-usage",
-            "perspective",
-            "3D keyframes require a project perspective.",
-            [String(track.id ?? "")],
-          ),
-        );
   if (diagnostics.some(({ severity }) => severity === "error"))
     return refusedOutcomeFrom<ProjectDefinition, Diagnostic>(Object.freeze(diagnostics));
   return acceptedOutcome(deepFreeze(clone(input) as ProjectDefinition), Object.freeze(diagnostics));

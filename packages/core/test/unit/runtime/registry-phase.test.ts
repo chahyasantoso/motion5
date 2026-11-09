@@ -56,7 +56,7 @@ function patchFor(nodeId: string): LivePatch {
   const patch: LivePatch = Object.freeze({
     nodeId,
     revision: 1,
-    values: Object.freeze({}),
+    outputs: { values: Object.freeze({}) },
     sourceProgress: 0,
     sourceRevisions: Object.freeze({}),
     status: "ready",
@@ -94,7 +94,12 @@ describe("the patch registry holds one lifecycle value", () => {
       throw second;
     });
     registry.beginBatch(1, [ARM]);
-    registry.publish({ nodeId: ARM, values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: ARM,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     // Red before this change, which threw `first` and dropped `second` on the floor.
     const failure = thrownBy(() => registry.closeBatch());
@@ -108,7 +113,12 @@ describe("the patch registry holds one lifecycle value", () => {
       throw first;
     });
     solo.beginBatch(1, [ARM]);
-    solo.publish({ nodeId: ARM, values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    solo.publish({
+      nodeId: ARM,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     expect(thrownBy(() => solo.closeBatch())).toBe(first);
     // And the batch is closed either way, so the next one opens.
     expect(() => solo.beginBatch(2, [ARM])).not.toThrow();
@@ -119,11 +129,21 @@ describe("the patch registry holds one lifecycle value", () => {
     const seen: string[] = [];
     registry.subscribeNode(HAND, (patch) => seen.push(patch.status));
     registry.beginBatch(1, [HAND]);
-    registry.publish({ nodeId: HAND, values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: HAND,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
 
     registry.beginBatch(2, [ARM]);
-    registry.publish({ nodeId: ARM, values: { x: 2 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: ARM,
+      outputs: { values: { x: 2 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     // Out of band on purpose: an eviction is a graph mutation and must not close, open or empty the
     // batch it lands inside. A `notifying` variant beside the others would have replaced it.
     registry.evict(HAND);
@@ -140,7 +160,12 @@ describe("the patch registry holds one lifecycle value", () => {
     const registry = new PatchRegistry();
     registry.subscribeBatch(() => registry.dispose());
     registry.beginBatch(1, [ARM]);
-    registry.publish({ nodeId: ARM, values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: ARM,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     expect(() => registry.closeBatch()).not.toThrow();
     expect(registry.disposed).toBe(true);
@@ -173,7 +198,12 @@ describe("the patch registry holds one lifecycle value", () => {
       publisherFacing.beginBatch(9, [ARM]);
     });
     publisherFacing.beginBatch(1, [ARM]);
-    publisherFacing.publish({ nodeId: ARM, values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    publisherFacing.publish({
+      nodeId: ARM,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     expect(thrownBy(() => publisherFacing.closeBatch())).toEqual(
       new Error(REENTRANT_BATCH_MESSAGE),
     );

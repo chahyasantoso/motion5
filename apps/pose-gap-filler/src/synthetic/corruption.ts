@@ -4,16 +4,8 @@ import type { ObservedLandmark } from "./observation";
 import type { Vec3 } from "./rotation";
 import { gaussianAt, uniformAt } from "./seeded";
 
-/**
- * How the simulated detector errs beyond what the geometry makes it miss, every rate per frame and
- * every effect a pure function of `seed` and the camera frame's index, so any frame replays alone.
- * `jitter` is correlated noise, an AR(1) process per landmark and axis with standard deviation
- * `sigmaPx` in the image and `sigmaM` in the world and lag-one correlation `rho`. `falseHighRate`
- * reports a hidden landmark confidently anyway. `swapRate` starts a left/right swap of the arms or
- * the legs lasting 2 to 8 frames. `outlierRate` throws one landmark `outlierPx` away. `dropRate`
- * loses the whole frame, which never arrives. `timingJitterMs` makes each capture late by up to
- * that, under one frame period, so arrival is irregular but still increasing.
- */
+/** Detector error rates per frame, all from `seed` and frame `k`, so any frame replays alone.
+ * `jitter` is AR(1) per landmark and axis; swaps last `MIN_SWAP_FRAMES` to `MAX_SWAP_FRAMES`. */
 export interface CorruptionSpec {
   readonly seed: number;
   readonly jitter: { readonly sigmaPx: number; readonly sigmaM: number; readonly rho: number };
@@ -36,11 +28,7 @@ export const NO_CORRUPTION: CorruptionSpec = Object.freeze({
   timingJitterMs: 0,
 });
 
-/**
- * The page's presets. `phone` is a proposal for a midrange phone's detector, not a measurement:
- * a few pixels of correlated jitter, occasional confident hidden joints, rare swaps, outliers and
- * drops, and arrival a few milliseconds irregular. `harsh` is ten times the rates, to break things.
- */
+/** Page presets: `phone` proposes a midrange detector, not a measurement; `harsh` raises every rate tenfold. */
 export const CORRUPTION_PRESETS = Object.freeze({
   none: NO_CORRUPTION,
   phone: Object.freeze({
@@ -70,13 +58,13 @@ export const CORRUPTION_PRESET_IDS = Object.keys(
   CORRUPTION_PRESETS,
 ) as readonly CorruptionPresetId[];
 
-/** The longest swap episode, frames. */
+/** Longest swap episode, frames. */
 export const MAX_SWAP_FRAMES = 8;
 const MIN_SWAP_FRAMES = 2;
-/** The visibility a false-high landmark reports: confidently wrong. */
+/** Visibility a false-high landmark reports: confidently wrong. */
 export const FALSE_HIGH_VISIBILITY = 0.9;
 
-/** Every key stream a corruption draws from, so no two effects share a random value. */
+/** One key stream per effect, so no two effects share a random value. */
 const STREAM = Object.freeze({
   jitter: 1,
   falseHigh: 2,
@@ -91,7 +79,7 @@ const STREAM = Object.freeze({
 const rate = (value: number) => Number.isFinite(value) && value >= 0 && value <= 1;
 const magnitude = (value: number) => Number.isFinite(value) && value >= 0;
 
-/** Frame-independent validation, shared by direct observation and paced simulator boundaries. */
+/** Frame-independent validation, shared by direct and paced-simulator callers. */
 export function validateCorruptionSpec(spec: CorruptionSpec): CorruptionSpec {
   const { jitter } = spec;
   if (!Number.isSafeInteger(spec.seed)) throw new Error("Corruption seed must be a safe integer.");
@@ -110,7 +98,7 @@ export function validateCorruptionSpec(spec: CorruptionSpec): CorruptionSpec {
   return spec;
 }
 
-/** `spec` if every field is in range; a frame period additionally bounds timing jitter. */
+/** `spec` if every field is in range; a frame period also bounds timing jitter. */
 export function validateCorruption(spec: CorruptionSpec, frameMs: number): CorruptionSpec {
   validateCorruptionSpec(spec);
   if (!(Number.isFinite(frameMs) && frameMs > 0))
@@ -125,14 +113,14 @@ function validateFrameIndex(k: number): void {
     throw new Error("Camera frame index must be nonnegative and safe.");
 }
 
-/** When camera frame `k` reaches the detector, a closed union: `captured` at a time, or `dropped`. */
+/** When frame `k` reaches the detector: `captured` with its time, or `dropped`. */
 export type FrameTiming =
   | { readonly kind: "captured"; readonly tMs: number }
   | { readonly kind: "dropped" };
 
 const DROPPED: FrameTiming = Object.freeze({ kind: "dropped" });
 
-/** Frame `k`'s arrival: dropped at `dropRate`, else `k` periods plus its seeded lateness. */
+/** Frame `k`'s arrival: dropped at `dropRate`, else `k` periods plus seeded lateness. */
 export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): FrameTiming {
   validateFrameIndex(k);
   validateCorruption(spec, frameMs);
@@ -143,10 +131,7 @@ export function frameTiming(spec: CorruptionSpec, k: number, frameMs: number): F
   };
 }
 
-/**
- * Stationary finite-kernel approximation of AR(1), truncated at 1% or 64 taps, whichever comes
- * first. The cap bounds frame cost for rho near 1; normalisation preserves unit variance.
- */
+/** Truncated AR(1): finite kernel cut at 1% weight or 64 taps, normalised to unit variance. */
 function ar1(
   seed: number,
   rho: number,
@@ -169,13 +154,13 @@ const sided = (names: readonly string[]) =>
   LANDMARKS.filter((landmark) => names.some((name) => landmark.name === `left-${name}`)).map(
     (landmark) => landmark.index,
   );
-/** Detector swaps take a whole limb pair at once: the arms with the hands, or the legs with the feet. */
+/** Swaps move a whole limb chain at once: shoulder to fingers, hip to foot. */
 const SWAP_GROUPS: readonly (readonly number[])[] = [
   sided(["shoulder", "elbow", "wrist", "pinky", "index", "thumb"]),
   sided(["hip", "knee", "ankle", "heel", "foot-index"]),
 ];
 
-/** Whether swap group `group` is swapped at frame `k`: an episode began within its length. */
+/** Whether swap group `group` swaps at frame `k`: an episode began within its length. */
 export function swapActive(spec: CorruptionSpec, group: number, k: number): boolean {
   validateFrameIndex(k);
   validateCorruptionSpec(spec);
@@ -192,12 +177,8 @@ export function swapActive(spec: CorruptionSpec, group: number, k: number): bool
   return false;
 }
 
-/**
- * The detector's errors at camera frame `k` over what it measured, in one order: jitter and
- * outliers move what was imaged, false-high scores contradict the geometry, then swaps exchange
- * whole limb pairs. A landmark not imaged (behind the camera, or dropped) is left as it is. The
- * geometry each landmark carries is never changed: it is the truth the errors are judged against.
- */
+/** Detector errors at frame `k`: jitter and outliers move what was imaged, false-high scores
+ * contradict geometry, swaps exchange whole limbs; unimaged points and geometry stay untouched. */
 export function corrupt(
   observed: readonly ObservedLandmark[],
   spec: CorruptionSpec,

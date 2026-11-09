@@ -14,15 +14,15 @@ import {
   type Vec3,
 } from "./rotation";
 
-/** A constrained end-effector the person can drag in pose mode: a wrist or an ankle. */
+/** Draggable constrained effector: a wrist or an ankle. */
 export type Handle = "left-hand" | "right-hand" | "left-foot" | "right-foot";
 
 interface HandleChain {
-  /** The segment whose origin is the root of the reach: the shoulder or the hip. */
+  /** Segment whose origin is the reach root: shoulder or hip. */
   readonly root: SegmentId;
-  /** The segment whose origin is the effector: the hand (wrist) or the foot (ankle). */
+  /** Segment whose origin is the effector: wrist or ankle. */
   readonly effector: SegmentId;
-  /** Orientation of the root joint, then the hinge. */
+  /** Root orientation dofs, then the hinge. */
   readonly swing: readonly [DofId, DofId];
   readonly hinge: DofId;
   readonly lengths: (body: Proportions) => readonly [number, number];
@@ -50,12 +50,8 @@ export const HANDLES: Readonly<Record<Handle, HandleChain>> = Object.freeze({
   "right-foot": leg("right"),
 });
 
-/**
- * What a handle drag did, a closed union. `reached` put the effector on the target. `clamped`
- * did not, and says why: the target is farther than the limb's length (`out-of-reach`), or the
- * joints' anatomical ranges stop it (`joint-limit`). Either way the limb keeps its lengths: a drag
- * never stretches a bone, and the pose returned is the closest legal one found.
- */
+/** Drag outcome. `reached`: effector on target. `clamped`: closest legal pose, stopped by
+ * `out-of-reach` (target past limb length) or `joint-limit` (ranges). Lengths never stretch. */
 export type HandleResult =
   | { readonly kind: "reached"; readonly pose: ActorPose; readonly errorM: number }
   | {
@@ -65,7 +61,7 @@ export type HandleResult =
       readonly errorM: number;
     };
 
-/** Within this the effector is on the target. */
+/** Metres within which the effector counts as on target. */
 export const REACHED_M = 0.002;
 const ITERATIONS = 80;
 const STEP_DEG = 0.01;
@@ -99,7 +95,7 @@ const AXES: Readonly<Record<Axis, Vec3>> = Object.freeze({
   z: [0, 0, 1],
 });
 
-/** `angle` or the same turn a whole turn away, whichever lies in `dof`'s range or nearest it. */
+/** `angle` plus whole turns, whichever sits in `dof`'s range or nearest it. */
 function inRange(dof: Dof, angle: number): number {
   const wrapped = ((((angle + 180) % 360) + 360) % 360) - 180;
   const turns = [wrapped, wrapped + 360, wrapped - 360];
@@ -107,13 +103,8 @@ function inRange(dof: Dof, angle: number): number {
   return turns.reduce((best, value) => (outside(value) < outside(best) ? value : best));
 }
 
-/**
- * The swing angles, in degrees, that turn the limb's rest vector `w` onto `d` (both in the root
- * segment's parent frame, `|w| = |d|`): `R(outer) R(inner) w = d`. The inner rotation keeps `w`'s
- * component along its own axis, so the outer one must bring `d`'s to it, `A cos a + B sin a = C`,
- * which has two branches; each fixes the inner angle as the turn from `w` onto the outer-unturned
- * `d` about the inner axis. Unclamped: the caller holds both to their ranges.
- */
+/** Swing degrees turning rest vector `w` onto `d` (equal length, root's parent frame) per
+ * `R(outer) R(inner) w = d`; two branches, inner fixed per branch. Unclamped; caller clamps. */
 function swingBranches(w: Vec3, d: Vec3, outer: Dof, inner: Dof): (readonly [number, number])[] {
   const a1 = AXES[outer.axis];
   const a2 = AXES[inner.axis];
@@ -134,15 +125,8 @@ function swingBranches(w: Vec3, d: Vec3, outer: Dof, inner: Dof): (readonly [num
   });
 }
 
-/**
- * Moves one limb so its wrist or ankle reaches `target` (scene metres), changing only that limb's
- * root swing and hinge. The hinge is set from the law of cosines for the target's distance, the
- * swing analytically for its direction (two branches, plus the pose's own swing as a third seed),
- * and damped least squares on the three angles, each held to its range after every step, settles
- * what the ranges left; the closest seed wins. It is the truth actor's own solve, independent of
- * the rig's IK, so the rig is never judged by its own algorithm. Deterministic: the same pose and
- * target give the same answer.
- */
+/** Turns one limb's swing and hinge so its wrist or ankle reaches `target` (scene metres):
+ * hinge by law of cosines, analytic swing, damping within ranges; deterministic, closest seed wins. */
 export function dragHandle(
   pose: ActorPose,
   handle: Handle,
@@ -168,8 +152,7 @@ export function dragHandle(
     ...pose.angles,
     [chain.hinge]: clampDof(DOF_BY_ID.get(chain.hinge)!, (Math.PI - interior) / DEG),
   };
-  // The limb with its swing at rest, in the parent's frame: what the swing must turn onto the
-  // target's direction, at the length the hinge gives.
+  // Limb, swing at rest, in the parent frame: what the swing turns onto target direction.
   const rest = { ...bent, [outer.id]: 0, [inner.id]: 0 };
   const w = apply(transpose(parent), sub3(effector(rest), rootPoint));
   const toward = unit(apply(transpose(parent), sub3(target, rootPoint)));
@@ -204,7 +187,7 @@ const PARENT: ReadonlyMap<SegmentId, SegmentId> = new Map(
   ),
 );
 
-/** Damped least squares from `angles` on `dofs`, each held to its range; the closest step found. */
+/** Damped least squares from `angles` over `dofs`, each clamped per step; best step kept. */
 function settle(
   angles: Record<DofId, number>,
   dofs: readonly DofId[],
@@ -236,7 +219,7 @@ function settle(
       angles[id] = clampDof(DOF_BY_ID.get(id)!, angles[id]! + step);
     });
     const now = distance(effector(angles), target);
-    // A step that gains under a micrometre is a range or the reach stopping it: settled.
+    // Gain under a micrometre: a range or the reach stopped it, so settled.
     const gained = best.error - now;
     if (now < best.error) best = { angles: { ...angles }, error: now };
     if (gained < STALL_M) break;

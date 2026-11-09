@@ -1,20 +1,22 @@
-import type { SolverChainShape } from "../contract/solver-shape";
+import type { AdmittedPlugin, Model } from "../contract/v5";
+import type { ParseContext } from "../contract/v5-parse";
 
-export type PluginCapability = Readonly<{
-  chain: SolverChainShape;
-  pole: boolean;
-  joint: boolean;
-}>;
-
-/** The graph's narrow view of declarations (ADR-136); undefined means not judged here. */
+/** The graph's view of plugin declarations: admission, definition, model and two id lists. */
 export interface PluginCapabilities {
-  capabilityOf(plugin: string): PluginCapability | undefined;
-  /** Sorted, frozen, rebuilt only when a new tree member is admitted. */
-  dedicatedMembers(): readonly string[];
+  isPluginAdmitted(plugin: string): boolean;
+  pluginDefinition(plugin: string): AdmittedPlugin | undefined;
+  model(id: string): Model<unknown, unknown> | undefined;
+  pluginIds(): readonly string[];
+  modelIds(): readonly string[];
 }
 
-const NONE: readonly string[] = Object.freeze([]);
-export const UNJUDGED_CAPABILITIES: PluginCapabilities = Object.freeze({
-  capabilityOf: () => undefined,
-  dedicatedMembers: () => NONE,
-});
+/** The parse context a graph view of plugin declarations answers, one per capabilities source. */
+export function parseContextOf(capabilities: PluginCapabilities): ParseContext {
+  return {
+    isPluginRegistered: (pluginId) => capabilities.isPluginAdmitted(pluginId),
+    pluginDefinition: (pluginId) => capabilities.pluginDefinition(pluginId),
+    model: (modelId) => capabilities.model(modelId),
+    modelIds: () => capabilities.modelIds(),
+    pluginIds: () => capabilities.pluginIds(),
+  };
+}

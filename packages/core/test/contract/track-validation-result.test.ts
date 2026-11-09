@@ -8,16 +8,15 @@ import type { TrackDefinition } from "../../src/contract/v5";
 
 const VALID_TRACK: TrackDefinition = {
   id: "arm",
-  keyframes: {
-    style: {
-      values: {
-        opacity: [
-          { p: 0, v: 0 },
-          { p: 1, v: 1 },
-        ],
-      },
+  input: {
+    values: {
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 1 },
+      ],
     },
   },
+  output: { model: "TestRecord" },
 };
 
 function read(result: TrackValidationResult): TrackDefinition {
@@ -38,7 +37,7 @@ describe("track validation uses one Outcome discriminant", () => {
     expect(read(accepted)).not.toBe(VALID_TRACK);
     expect("valid" in accepted).toBe(false);
 
-    const refused = validateTrackDefinition({ id: "" }, "track");
+    const refused = validateTrackDefinition({ id: "", output: { model: "TestRecord" } }, "track");
     expect(refused.kind).toBe("refused");
     expect(refused.diagnostics.length).toBeGreaterThan(0);
     expect("value" in refused).toBe(false);

@@ -1,0 +1,227 @@
+import { describe, expect, it } from "vitest";
+import type { AuthoredValues, Model, PluginDefinition, ValueSpec } from "../../../src/contract/v5";
+import { defineModel } from "../../../src/contract/v5";
+import { shape } from "../../../src/contract/slot-spec";
+import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import {
+  deriveCommittedContract,
+  type CommittedContract,
+} from "../../../src/graph/committed-contract";
+import { buildGraphIR } from "../../../src/graph/ir";
+import { project, record, row, table, track } from "../../support/v5-builders";
+import { TestTable } from "../../support/test-models";
+import { testModels } from "../../support/test-models";
+import { Spec } from "../../../src/contract/spec-builder";
+
+const POINT: ValueSpec = Spec.table({ x: Spec.number(), y: Spec.number() });
+const POINT_MODEL = defineModel({ id: "PointOut", spec: POINT });
+const LAST_POINT: ValueSpec = Spec.record({ x: Spec.number(), y: Spec.number() });
+const VALUES: ValueSpec = Spec.table({ x: Spec.number() });
+const PLUGIN_VALUES: ValueSpec = Spec.record({ dx: Spec.number() });
+
+const specModels = new Map<ValueSpec, Model>();
+
+function modelOf(spec: ValueSpec): Model {
+  const known = specModels.get(spec);
+  if (known !== undefined) return known;
+  const made = defineModel({ id: `Spec${specModels.size + 1}`, spec });
+  specModels.set(spec, made);
+  return made;
+}
+
+function sourcePlugin(id: string, outputs: Readonly<Record<string, ValueSpec>>): PluginDefinition {
+  return {
+    id,
+    inputs: { values: PLUGIN_VALUES },
+    outputs: { ...outputs, values: modelOf(outputs.values ?? PLUGIN_VALUES) },
+    transform: () => ({ values: [] }),
+  };
+}
+
+function consumerPlugin(
+  id: string,
+  outputs: Readonly<Record<string, ValueSpec>>,
+): PluginDefinition {
+  return {
+    id,
+    inputs: { values: PLUGIN_VALUES, requires: { data: shape({ outputs }) } },
+    outputs: { values: POINT_MODEL },
+    transform: () => ({ values: [] }),
+  };
+}
+
+const PointTable = defineModel({
+  id: "PointTable",
+  spec: Spec.table({ x: Spec.number(), y: Spec.number() }, { additionalProperties: false }),
+});
+
+function catalog(...plugins: readonly PluginDefinition[]): PluginCatalog {
+  const result = new PluginCatalog({ models: [...testModels, PointTable] });
+  result.register({ plugins: plugins });
+  return result;
+}
+
+function source(id: string, values: AuthoredValues): ReturnType<typeof track> {
+  return track({ id, values, model: Array.isArray(values) ? "PointTable" : "TestRecord" });
+}
+
+function consumer(
+  id: string,
+  pluginId: string,
+  requires: Readonly<Record<string, string>> = { data: "points" },
+): ReturnType<typeof track> {
+  return track({ id, plugin: pluginId, values: record({ dx: 1 }), requires, model: "TestRecord" });
+}
+
+function carriedOf(built: ReturnType<typeof buildGraphIR>): Map<string, CommittedContract> {
+  const carried = new Map<string, CommittedContract>();
+  for (const node of built.graph?.nodes ?? [])
+    if (node.contract !== undefined) carried.set(node.id, node.contract);
+  return carried;
+}
+
+function rules(built: ReturnType<typeof buildGraphIR>): readonly string[] {
+  return built.diagnostics.map(({ ruleId }) => ruleId);
+}
+
+describe("committed contract", () => {
+  it("stores the contract inferred from a non-empty authored snapshot", () => {
+    const built = buildGraphIR(
+      {
+        schemaVersion: 5,
+        motions: [],
+        freeTracks: [source("points", table(row("a", { x: 0, y: 1 })))],
+      },
+      catalog(),
+    );
+
+    expect(built.diagnostics).toEqual([]);
+    const contract = built.graph?.nodeById["~/points"]?.contract;
+    expect(contract?.input).toEqual({
+      modelId: "PointTable",
+      spec: Spec.table({ x: Spec.number(), y: Spec.number() }, { additionalProperties: false }),
+      proven: true,
+    });
+    expect(contract?.outputs.values).toBe(contract?.input);
+    expect(contract?.slots).toEqual({});
+  });
+
+  it("stores the output model's spec on the committed input", () => {
+    const built = buildGraphIR(
+      {
+        schemaVersion: 5,
+        motions: [],
+        freeTracks: [
+          track({
+            id: "points",
+            values: table(),
+            model: "TestTable",
+          }),
+        ],
+      },
+      catalog(),
+    );
+
+    expect(built.diagnostics).toEqual([]);
+    expect(built.graph?.nodeById["~/points"]?.contract?.input).toEqual({
+      modelId: "TestTable",
+      spec: TestTable.spec,
+      proven: true,
+    });
+  });
+
+  it("checks a typed consumer against the stored contract, not the current authored values", () => {
+    const plugins = catalog(consumerPlugin("translate", { values: VALUES }));
+    const full = project([
+      source("points", table(row("a", { x: 0, y: 0 }))),
+      consumer("shifted", "translate"),
+    ]);
+    const accepted = buildGraphIR(full, plugins);
+    expect(accepted.diagnostics).toEqual([]);
+    const carried = carriedOf(accepted);
+
+    const emptied = project([source("points", table()), consumer("shifted", "translate")]);
+
+    const rebuilt = buildGraphIR(emptied, plugins, carried);
+    expect(rebuilt.diagnostics).toEqual([]);
+    expect(rebuilt.graph?.nodeById["demo/points"]?.contract).toBe(carried.get("demo/points"));
+    expect(rebuilt.graph?.nodeById["demo/points"]?.track.input?.values).toEqual([]);
+  });
+
+  it("stores the plugin's local input, outputs and declared slots", () => {
+    const built = buildGraphIR(
+      project([track({ id: "points", plugin: "source-only", values: record({ dx: 1 }) })]),
+      catalog(sourcePlugin("source-only", { values: POINT })),
+    );
+
+    expect(built.diagnostics).toEqual([]);
+    const contract = built.graph?.nodeById["demo/points"]?.contract;
+    expect(contract?.plugin).toBe("source-only");
+    expect(contract?.input).toEqual({ spec: PLUGIN_VALUES, proven: true });
+    expect(contract?.outputs).toEqual({
+      values: { spec: POINT, proven: true, modelId: modelOf(POINT).id },
+    });
+    expect(contract?.slots).toEqual({});
+    expect(contract?.requires).toEqual({});
+  });
+
+  it("reads committed requires for dependency admission", () => {
+    const plugins = catalog(consumerPlugin("translate", { values: VALUES }));
+    const bound = buildGraphIR(
+      project([source("points", table(row("a", { x: 0 }))), consumer("shifted", "translate")]),
+      plugins,
+    );
+    expect(bound.diagnostics).toEqual([]);
+
+    const unbound = project([
+      source("points", table(row("a", { x: 0 }))),
+      consumer("shifted", "translate", {}),
+    ]);
+    expect(rules(buildGraphIR(unbound, plugins))).toContain("slot-required-missing");
+    expect(buildGraphIR(unbound, plugins, carriedOf(bound)).diagnostics).toEqual([]);
+  });
+
+  it("ignores a carried contract that names a different plugin", () => {
+    const first = buildGraphIR(
+      project([track({ id: "points", plugin: "first", values: record({ dx: 1 }) })]),
+      catalog(sourcePlugin("first", { values: POINT })),
+    );
+    const carried = carriedOf(first);
+
+    const second = buildGraphIR(
+      project([track({ id: "points", plugin: "second", values: record({ dx: 1 }) })]),
+      catalog(sourcePlugin("second", { values: LAST_POINT })),
+      carried,
+    );
+
+    expect(second.diagnostics).toEqual([]);
+    expect(second.graph?.nodeById["demo/points"]?.contract?.plugin).toBe("second");
+    expect(second.graph?.nodeById["demo/points"]?.contract?.outputs.values?.spec).toEqual(
+      LAST_POINT,
+    );
+  });
+
+  it("derives nothing for an unadmitted plugin", () => {
+    const contract = deriveCommittedContract(
+      track({ id: "points", plugin: "missing", values: record({ dx: 1 }) }),
+      "demo/points",
+      catalog(),
+    );
+    expect(contract).toBeUndefined();
+  });
+
+  it("marks a plugin input unproven when the plugin declares no values", () => {
+    const requiresOnly: PluginDefinition = {
+      id: "requires-only",
+      inputs: { requires: { data: shape({ outputs: { values: POINT } }) } },
+      outputs: { values: POINT_MODEL },
+      transform: () => ({ values: [] }),
+    };
+    const contract = deriveCommittedContract(
+      track({ id: "node", plugin: "requires-only", requires: { data: "points" } }),
+      "demo/node",
+      catalog(requiresOnly),
+    );
+    expect(contract?.input.proven).toBe(false);
+  });
+});

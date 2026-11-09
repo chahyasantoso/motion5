@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PluginRegistry } from "../../../src/domain/plugins";
+import type { PluginDefinition } from "../../../src/contract/v5";
+import { PluginCatalog } from "../../../src/domain/plugin-catalog";
 import { Engine } from "../../../src/engine";
 import { deriveDependants, type GraphIR } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
@@ -10,6 +11,15 @@ import {
   type PublisherSnapshot,
 } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
+import { record, track } from "../../support/v5-builders";
+import { testModels } from "../../support/test-models";
+import { defineModel } from "../../../src/contract/v5";
+import { Spec } from "../../../src/contract/spec-builder";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: Spec.record({ opacity: Spec.number() }),
+});
 
 const node = (
   id: string,
@@ -20,7 +30,7 @@ const node = (
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });
@@ -33,14 +43,19 @@ const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   diagnostics: Object.freeze([]),
 });
 
+const BAD_OUTPUT: PluginDefinition = {
+  id: "bad-output",
+  inputs: { values: Spec.record({ opacity: Spec.number() }) },
+  outputs: { values: FIXTURE_OUT_1 },
+  transform() {
+    return ["not", "a", "record"] as never;
+  },
+};
+
 describe("composition and output-shape diagnostics", () => {
   it("diagnoses a plugin returning a non-record composition value", () => {
-    const plugins = new PluginRegistry();
-    plugins.register({
-      name: "bad-opacity",
-      keys: ["opacity"],
-      compose: () => ["not", "a", "record"] as never,
-    });
+    const plugins = new PluginCatalog({ models: testModels });
+    plugins.register({ plugins: [BAD_OUTPUT] });
     const engine = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -54,19 +69,17 @@ describe("composition and output-shape diagnostics", () => {
           id: "hero",
           trigger: { type: "manual" },
           tracks: [
-            {
+            track({
               id: "arm",
-              keyframes: {
-                "bad-opacity": {
-                  values: {
-                    opacity: [
-                      { p: 0, v: 0 },
-                      { p: 1, v: 1 },
-                    ],
-                  },
-                },
-              },
-            },
+              plugin: BAD_OUTPUT.id,
+              values: record({
+                opacity: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 1 },
+                ],
+              }),
+              model: "TestRecord",
+            }),
           ],
         },
       ],
@@ -75,52 +88,17 @@ describe("composition and output-shape diagnostics", () => {
     runtime.mount("hero/arm");
     const batch = runtime.seek("hero/arm", 0.5);
     const heroArmPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
-    // A composition that threw is published as `error`, which is the status owning this diagnostic.
+    // A transform that returned a non-record output set is published as `error`, which is the
+    // status owning this diagnostic.
     if (heroArmPatch?.status !== "error")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not error.`);
-    expect(heroArmPatch.diagnostics[0]?.ruleId).toBe("composition-output-shape");
+    expect(heroArmPatch.diagnostics[0]?.ruleId).toBe("output-invalid");
     runtime.dispose();
-  });
-
-  it("diagnoses an output observation whose source has already published a non-record value", () => {
-    const registry = new PatchRegistry();
-    registry.beginBatch(1, ["hero/source"]);
-    registry.publish({
-      nodeId: "hero/source",
-      values: ["bad", "output"] as never,
-      sourceProgress: 0,
-      sourceRevisions: {},
-      status: "ready",
-    });
-    registry.closeBatch();
-
-    const source = node("hero/source", [], () => ({
-      values: { ignored: true },
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
-    const observer = node(
-      "hero/observer",
-      [{ observerId: "hero/observer", sourceId: "hero/source", role: "output" }],
-      () => ({ values: { local: true }, sourceProgress: 0, sourceRevisions: {} }),
-    );
-    const batch = new GraphPublisher(registry).flush(
-      snapshot([source, observer]),
-      ["hero/observer"],
-      2,
-    );
-
-    const observerPatch = batch.patches.find(({ nodeId }) => nodeId === "hero/observer");
-    // `observation-output-shape` is raised from the publisher's catch, so the node publishes
-    // `error`. See `publishFailureRule` and ADR-098.
-    if (observerPatch?.status !== "error")
-      throw new Error(`hero/observer is ${observerPatch?.status ?? "absent"}, not error.`);
-    expect(observerPatch.diagnostics[0]?.ruleId).toBe("observation-output-shape");
   });
 
   it("does not publish malformed composition values as ready patches", () => {
     const malformed = node("hero/bad", [], () => ({
-      values: { nested: () => undefined } as never,
+      outputs: { values: { nested: () => undefined } as never },
       sourceProgress: 0,
       sourceRevisions: {},
     }));

@@ -19,6 +19,7 @@ export interface RealGsapSeam {
 export function createRealGsapSeam(): RealGsapSeam {
   const created: CreatedTimeline[] = [];
   const interpolator = createGsapInterpolator({
+    parseEase: gsap.parseEase,
     timeline(vars): GsapTimelineLike {
       const real = gsap.timeline(vars as Parameters<typeof gsap.timeline>[0]);
       created.push({

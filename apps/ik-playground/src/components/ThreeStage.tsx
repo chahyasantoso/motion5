@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
+import type { PatchSource } from "@motion5/react";
 import { createObject3dPatchAdapter } from "@motion5/three";
 import * as THREE from "three";
 import {
@@ -7,11 +8,11 @@ import {
   IK3D_FRAME,
   IK3D_GOAL_BOUNDS,
   IK3D_NODE_ID,
-  IK3D_NODE_IDS,
   IK3D_VIEW,
 } from "../ik3d-playground-project";
 import { threeCamera } from "../projection";
 import type { GoalControl } from "../goal-control";
+import { spatialRowSource } from "../rig-sources";
 import { GoalHandle, Ik3dFrame, Ik3dWorld } from "./Ik3dFrame";
 import { BONE_COLOR, FRAME_COLOR, type FrameKind } from "./ik3d-palette";
 
@@ -106,12 +107,6 @@ function makeScene(): ThreeScene {
     rig.add(bone);
     nodeMap.set(IK3D_NODE_ID(id), bone);
   });
-  // The solver publishes inspection metadata rather than a frame; this hidden binding keeps the
-  // adapter contract one node-to-object map without making the panel's readout a renderer concern.
-  const solver = new THREE.Object3D();
-  rig.add(solver);
-  nodeMap.set(IK3D_NODE_ID(IK3D.solverTrack), solver);
-
   const ambient = new THREE.HemisphereLight("#dbeafe", "#111827", 1.5);
   scene.add(ambient);
   const directional = new THREE.DirectionalLight("#ffffff", 2.2);
@@ -186,17 +181,28 @@ function makeScene(): ThreeScene {
   };
 }
 
-/** Mounts the WebGL scene in `host` and keeps it posed from the runtime until the returned stop. */
-function mountScene(host: HTMLElement, handle: ProjectHandle): () => void {
+/**
+ * Mounts the WebGL scene in `host` and keeps it posed from the runtime until the returned stop.
+ *
+ * Every marker id the scene draws is subscribed through the consumer source: member and goal ids
+ * resolve to pose and goals rows, while the root and pole pass through as the nodes they are.
+ */
+function mountScene(host: HTMLElement, source: PatchSource): () => void {
   const scene = makeScene();
   scene.canvas.className = "three-stage-canvas";
   scene.canvas.setAttribute("aria-hidden", "true");
   host.append(scene.canvas);
 
-  const subscriptions = IK3D_NODE_IDS.map((nodeId) => {
-    const initial = handle.get(nodeId);
+  const drawn = [
+    IK3D_NODE_ID(IK3D.rootTrack),
+    IK3D_NODE_ID(IK3D.poleTrack),
+    IK3D_NODE_ID(IK3D.goalTrack),
+    ...IK3D.memberTracks.map((id) => IK3D_NODE_ID(id)),
+  ];
+  const subscriptions = drawn.map((nodeId) => {
+    const initial = source.get(nodeId);
     if (initial !== undefined) scene.adapter.apply(initial);
-    return handle.subscribeNode(nodeId, (patch) => {
+    return source.subscribeNode(nodeId, (patch) => {
       scene.adapter.apply(patch);
       scene.render();
     });
@@ -215,12 +221,12 @@ function mountScene(host: HTMLElement, handle: ProjectHandle): () => void {
 }
 
 /** The WebGL canvas host; mounted inside the fitted frame, so it exists once it has a size. */
-const ThreeCanvas: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) => {
+const ThreeCanvas: React.FC<{ readonly source: PatchSource }> = ({ source }) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const host = hostRef.current;
-    return host === null ? undefined : mountScene(host, handle);
-  }, [handle]);
+    return host === null ? undefined : mountScene(host, source);
+  }, [source]);
   return <div ref={hostRef} className="three-stage-host" />;
 };
 
@@ -231,21 +237,24 @@ const ThreeCanvas: React.FC<{ readonly handle: ProjectHandle }> = ({ handle }) =
 export const ThreeStage: React.FC<{
   readonly handle: ProjectHandle;
   readonly goals: GoalControl;
-}> = ({ handle, goals }) => (
-  <section className="stage-card three-stage" aria-label="FABRIK 3D chain rendered with three.js">
-    <div className="stage-card-heading">
-      <strong>{IK3D.label}</strong>
-      <span>four members · one goal · pole · three.js</span>
-    </div>
-    <Ik3dFrame className="ik3d-three">
-      {(scale, toBox) => (
-        <>
-          <ThreeCanvas handle={handle} />
-          <Ik3dWorld scale={scale}>
-            <GoalHandle handle={handle} goals={goals} scale={scale} toBox={toBox} />
-          </Ik3dWorld>
-        </>
-      )}
-    </Ik3dFrame>
-  </section>
-);
+}> = ({ handle, goals }) => {
+  const source = React.useMemo(() => spatialRowSource(handle), [handle]);
+  return (
+    <section className="stage-card three-stage" aria-label="FABRIK 3D chain rendered with three.js">
+      <div className="stage-card-heading">
+        <strong>{IK3D.label}</strong>
+        <span>four members · one goal · pole · three.js</span>
+      </div>
+      <Ik3dFrame className="ik3d-three">
+        {(scale, toBox) => (
+          <>
+            <ThreeCanvas source={source} />
+            <Ik3dWorld scale={scale}>
+              <GoalHandle source={source} goals={goals} scale={scale} toBox={toBox} />
+            </Ik3dWorld>
+          </>
+        )}
+      </Ik3dFrame>
+    </section>
+  );
+};

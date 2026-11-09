@@ -1,8 +1,9 @@
+import { Body2d, Goals2d, Point2d } from "../../src/models/index";
 import type { ProjectDefinition } from "@motion5/core";
-import type { WorldFrame } from "../../src/frame";
-import type { JointRange } from "../../src/ik-constraint";
-import type { SolveMember } from "../../src/ik-member";
-import type { ChainShape } from "../../src/ik-solve";
+import type { WorldFrame } from "@motion5/rig/internal";
+import type { JointRange } from "@motion5/rig/internal";
+import type { SolveMember } from "@motion5/rig/internal";
+import type { ChainShape } from "@motion5/rig/internal";
 
 /**
  * The rigs the 2D IK envelope is measured on, built once for the two readers that need them.
@@ -236,30 +237,45 @@ export function independentRigsProject(count: number): ProjectDefinition {
         id: `rig-${index}`,
         trigger: { type: "manual" as const },
         tracks: [
-          { id: "root", keyframes: { transform: { values: { x, y, rotation: 0 } } } },
+          { id: "root", output: { model: "Point2d" }, input: { values: { x, y, rotation: 0 } } },
+          {
+            id: "body",
+            output: { model: "Body2d" },
+            input: {
+              values: [
+                { id: "upper", cells: { length: 60, rotation: 0 } },
+                { id: "fore", cells: { parentId: "upper", length: 50, rotation: 0 } },
+              ],
+            },
+          },
           {
             id: "goal",
-            keyframes: {
-              transform: {
-                values: {
-                  x: [stop(0, x + 70), stop(1, x - 50)],
-                  y: [stop(0, y + 60), stop(1, y + 40)],
-                  rotation: 0,
+            output: { model: "Goals2d" },
+            input: {
+              values: [
+                {
+                  id: "g",
+                  cells: {
+                    memberId: "fore",
+                    x: [stop(0, x + 70), stop(1, x - 50)],
+                    y: [stop(0, y + 60), stop(1, y + 40)],
+                  },
                 },
-              },
-            },
-          },
-          { id: "solve", keyframes: { ik: { requires: { root: "root", target: "goal" } } } },
-          {
-            id: "upper",
-            keyframes: {
-              fk: { values: { length: 60 }, requires: { base: "root", solver: "solve" } },
+              ],
             },
           },
           {
-            id: "fore",
-            keyframes: {
-              fk: { values: { length: 50 }, requires: { base: "upper", solver: "solve" } },
+            id: "solve",
+            output: { plugin: "ik" },
+            input: {
+              requires: { chain: "body", goals: "goal", base: "root" },
+            },
+          },
+          {
+            id: "pose",
+            output: { plugin: "fk" },
+            input: {
+              requires: { chain: "body", solved: "solve", base: "root" },
             },
           },
         ],
@@ -270,5 +286,5 @@ export function independentRigsProject(count: number): ProjectDefinition {
 
 /** The track ids of rig `index` in `independentRigsProject`, in mount order. */
 export function rigTrackIds(index: number): readonly string[] {
-  return ["root", "goal", "solve", "upper", "fore"].map((track) => `rig-${index}/${track}`);
+  return ["root", "body", "goal", "solve", "pose"].map((track) => `rig-${index}/${track}`);
 }

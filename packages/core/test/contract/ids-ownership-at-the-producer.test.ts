@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
-import { scopedRuleId } from "../../src/contract/rule-id";
 import { reportDiagnostic } from "../../src/runtime/report";
 import type { RetainTrace } from "../../src/runtime/report";
 import { code } from "../helpers/source-region";
@@ -38,7 +37,7 @@ import { code } from "../helpers/source-region";
  * The accepting direction is asserted in the same file, because a producer that refused every payload
  * would be green against the refusal alone. Those last two cases are green on both sides of this
  * change on purpose: nothing a diagnostic carries at run time moved, and saying so is the report
- * `docs/GUARDRAILS.md` asks for rather than a red count engineered by asserting less.
+ * a case green on both sides owes rather than a red count engineered by asserting less.
  */
 
 const source = (relative: string): string =>
@@ -128,13 +127,6 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
   reportDiagnostic(undefined, retain, "id-shape", "x", 0, ["unexpected"]);
   // @ts-expect-error `flush-failure` always names ids, so omitting them is unrepresentable.
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0);
-  // Every rule the scoped validator path can report owns no ids, authored or contributed, so a
-  // payload is unrepresentable through it. `scopedRuleId` answered `RuleId` until this case existed,
-  // which fell through to the open branch of `OwnedIds`, and the line below compiled. Nothing was
-  // red for it, because that branch makes no claim: the refusal is asked of the compiler here
-  // rather than recorded as landed in a comment. See issue #449.
-  // @ts-expect-error the scoped path owns no ids, so a payload is unrepresentable.
-  diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x", ["unexpected"]);
 }
 
 /**
@@ -145,6 +137,4 @@ export function acceptedByTheCompiler(retain: RetainTrace): void {
   diagnostic("id-shape", "$", "x");
   diagnostic("track-duplicate-id", "$", "x", ["hero"]);
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);
-  diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x");
-  diagnostic(scopedRuleId("authored", "stop-missing-start"), "$", "x");
 }

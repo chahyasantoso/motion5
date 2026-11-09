@@ -1,27 +1,20 @@
-// Docs: ./project-runtime.md
 import type {
-  AuthoredProperty,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
   MotionDefinition,
   TriggerSignal,
+  Structure,
+  Value,
 } from "../contract/v5";
-import { readPluginValues } from "../contract/keyframe-shape";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
+import type { TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
+import type { ParsedValues } from "../contract/v5-parse";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import { trackConfigView, type ResolvedPlugins } from "../domain/plugins";
-import {
-  removeKeyframe as removeAuthoredKeyframe,
-  setKeyframe as setAuthoredKeyframe,
-  type AuthoredKeyframes,
-} from "../domain/authoring/keyframes";
-import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { describeError } from "./schema-refusals";
 import {
@@ -52,8 +45,6 @@ import {
   NO_PORTS,
   completing,
   installed,
-  type KeyframeResolver,
-  type LiveValueWriter,
   type ProjectPorts,
   type StagedTrack,
 } from "./project-ports";
@@ -67,35 +58,32 @@ import {
 import { collect, report } from "../domain/completion";
 import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import { afterCleanup, batchFor, runSteps } from "./report";
-import { planCommit } from "./commit-plan";
+import { planCommit, type ReaderCheck } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
+import { expectLive, expectValid, isLive, resolveToken, stale, type Resolved } from "./results";
+import { AUTHORED, type ValueState } from "./value-state";
+import { applyEdits, applyValueEdits } from "./edit-apply";
+import { classifyBatch } from "./edit-batch";
+import type { TrackLookup, ValueChange } from "./edit-plan-values";
+import type { PlanEnvironment, PlanState, PlannedChange, PlannedTrack } from "./edit-plan";
 import {
-  expectLive,
-  expectValid,
-  isLive,
-  liveWrite,
-  resolveToken,
-  stale,
-  writtenProgress,
-  type Resolved,
-} from "./results";
-import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
-import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
-import {
-  NO_OVERLAY,
-  authoredValues,
-  sameTrigger,
-  splitAuthoredValues,
-  withAuthoredValues,
-  withKeyframes,
-  withStagger,
-} from "./authored-values";
+  isValueEdit,
+  publicVerbOf,
+  type CheapEdit,
+  type Edit,
+  type LiveEdit,
+  type StructuralEdit,
+} from "./edit-types";
+import { sameTrigger, withStagger } from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
-import type { GraphNode } from "../graph/ir";
-import type { MemberState } from "./graph-publisher";
+import type { GraphNode } from "../graph/node";
+import type { CommittedContract } from "../graph/committed-contract";
+
 import type { GraphBuilder } from "../ports/graph-builder";
+import { IncrementalGraphBuilder } from "../graph/builders/incremental";
+import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import { unreachable } from "../lang/exhaustive";
 
 interface FreeTrackEntry {
@@ -103,6 +91,9 @@ interface FreeTrackEntry {
   readonly track: TrackDefinition;
   readonly token: number;
   readonly valueState: ValueState;
+  // Contract at last structural commit. `undefined` until a graph build, then again after
+  // `replace-track`/`replace-input` (only movers); other edits keep it so rebuilds carry, never re-infer.
+  readonly contract: CommittedContract | undefined;
 }
 
 interface OwnedTrackEntry {
@@ -111,6 +102,7 @@ interface OwnedTrackEntry {
   readonly motionId: string;
   readonly token: number;
   readonly valueState: ValueState;
+  readonly contract: CommittedContract | undefined;
 }
 
 type TrackEntry = FreeTrackEntry | OwnedTrackEntry;
@@ -133,7 +125,15 @@ type MotionEntry = {
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
+  // Nodes whose final track must not be diffed for a timeline build: binding edits move
+  // compiled-compare input the timeline never consumes. `fullBuild` clears the mark.
+  readonly noBuild: Set<string>;
+  /** Nodes a full replacement or removal touched, which a later binding may not mark `noBuild`. */
+  readonly fullBuild: Set<string>;
 }
+
+// The empty answer a commit outside a recipe reads, so the skip set is total rather than optional.
+const NO_BUILD: ReadonlySet<string> = Object.freeze(new Set<string>());
 
 interface TracksStaged {
   readonly kind: "tracks";
@@ -170,58 +170,40 @@ function resolveStagedPair(
   }
 }
 
-export type { KeyframeResolver, LiveValueWriter, StagedTrack };
+export type { StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
-  /**
-   * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
-   *
-   * Total, for the reason the option it forwards to gives. The function it returns resolves the
-   * compiled Track per call.
-   */
-  readonly interpolated?: (node: GraphNode) => () => MemberState;
+  /** Whether an authored plugin id (`output.plugin`) names an admitted plugin; the structural tier needs it to validate computed tracks. Absent keeps no-plugin paths. */
+  readonly isPluginRegistered?: (pluginId: string) => boolean;
+
   readonly setProgress?: (nodeId: string, progress: number) => void;
-  readonly writeValues?: LiveValueWriter;
+  /** Replaces the authored values a compiled Track evaluates, cheap tier; values arrive parsed and validated, a node with no compiled Track is a no-op. */
+  readonly rewriteValues?: (nodeId: string, values: ParsedValues) => void;
+  readonly rewriteParamValues?: (nodeId: string, values: ParsedValues) => void;
+  /** Stands one whole evaluated value over a compiled Track, or `undefined` drops it; validated by the runtime; no compiled Track = no-op; the authored definition never moves. */
+  readonly overlayValues?: (nodeId: string, value: Value | undefined) => void;
+  /** Stands one whole evaluated param over a compiled Track, or `undefined` drops it. */
+  readonly overlayParam?: (nodeId: string, value: Value | undefined) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
-  /**
-   * The registry's own answer about one authored record, as data rather than as a refusal.
-   *
-   * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
-   * present. With no seam every replacement builds, which keeps every prior registry-free rig
-   * byte-identical. The second parameter is a diagnostics path rather than a node id, spelled exactly
-   * as `compileTrack` spells it, which is the signature ADR-062 named. See ADR-062.
-   */
-  readonly resolveKeyframes?: KeyframeResolver;
+  /** Re-runs `prepare` on listed readers against the staged sources before acceptance. */
+  readonly prepareReaders?: (
+    readers: readonly ReaderCheck[],
+    staleSources: ReadonlySet<string>,
+  ) => void;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
-  /**
-   * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
-   *
-   * Two hooks rather than one, because which one an edit asks is half of what the edit claims, and
-   * why is ADR-061's amendment. Named beside the `addMotionTrack` family, and named for what they do:
-   * a trigger carries a disposable resource behind it, a stagger is a bare field. See ADR-061.
-   *
-   * Returning means acceptance; an optional completion runs only after definition adoption.
-   * Throwing before return means refusal and the supplier owns cleanup. Post-acceptance cleanup
-   * or re-seeding failures are reported without restoring a stale definition. Issues #340/#341.
-   */
+  /** Trigger swap seam: return accepts, completion runs post-adoption; a throw before return refuses, supplier owns cleanup; post-accept failures report without restoring the stale definition. */
   readonly replaceMotionTrigger?: (
     motionId: string,
     definition: MotionDefinition,
   ) => void | (() => void);
   readonly setMotionStagger?: (motionId: string, stagger?: number) => void | (() => void);
-  /**
-   * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.
-   *
-   * A hook here rather than a closure over the engine's Motion map, so the one owner of the recipe
-   * refusal can be asked before a signal reaches a live port. An unknown motion id is still refused
-   * by the layer that owns the Motion. See ADR-064's amendment.
-   */
+  /** The signal a live Motion's trigger takes; the recipe refusal is asked here before a signal reaches a live port, unknown ids stay refused by the Motion's owner. */
   readonly signalMotion?: (motionId: string, signal: TriggerSignal) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
   readonly destroyMotion?: (motionId: string) => void;
@@ -229,6 +211,11 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
+  /** What a structural plan may ask about plugins, as data. */
+  readonly capabilities: PluginCapabilities;
+  /** A source's committed structure, handed to the publisher for its slot map. */
+  readonly invalidateOutputs?: (nodeIds: ReadonlySet<string>) => void;
+  readonly structureOf?: (sourceId: string) => Structure<unknown> | undefined;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
@@ -243,8 +230,12 @@ export class ProjectRuntime {
   readonly #diagnostics: Diagnostics;
   readonly #ports: ProjectPorts;
   readonly #handleHost: HandleHost;
+  readonly #isPluginRegistered: ((pluginId: string) => boolean) | undefined;
+  readonly #capabilities: PluginCapabilities;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
+    this.#isPluginRegistered = options.isPluginRegistered;
+    this.#capabilities = options.capabilities;
     for (const motion of project.motions) {
       this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
@@ -254,6 +245,7 @@ export class ProjectRuntime {
           motionId: motion.id,
           token: this.#nextToken++,
           valueState: AUTHORED,
+          contract: undefined,
         });
     }
     for (const track of project.freeTracks ?? [])
@@ -262,16 +254,21 @@ export class ProjectRuntime {
         track,
         token: this.#nextToken++,
         valueState: AUTHORED,
+        contract: undefined,
       });
-    // The one place optionality is answered, and the one place an installed seam's receiver is.
-    // Every seam a host did not install reads its own no-op out of NO_PORTS, and every seam a host
-    // did install is applied to this runtime, which is the receiver it saw while each of these was
-    // a field. No member below is optional and no reader after this line asks either question.
+    // The one place seam optionality and receiver are answered: uninstalled seams read their
+    // NO_PORTS no-op, installed ones bind to this runtime. Nothing below is optional.
     this.#ports = Object.freeze({
       track: Object.freeze({
         compile: installed(this, options.compileTrack, NO_PORTS.track.compile),
         dispose: installed(this, options.disposeTrack, NO_PORTS.track.dispose),
         stage: installed(this, options.stageTrack, NO_PORTS.track.stage),
+        prepareReaders: installed(this, options.prepareReaders, NO_PORTS.track.prepareReaders),
+        invalidateOutputs: installed(
+          this,
+          options.invalidateOutputs,
+          NO_PORTS.track.invalidateOutputs,
+        ),
       }),
       motion: Object.freeze({
         create: installed(this, options.createMotion, NO_PORTS.motion.create),
@@ -284,11 +281,13 @@ export class ProjectRuntime {
         signal: installed(this, options.signalMotion, NO_PORTS.motion.signal),
       }),
       value: Object.freeze({
-        write: installed(this, options.writeValues, NO_PORTS.value.write),
+        rewrite: installed(this, options.rewriteValues, NO_PORTS.value.rewrite),
+        rewriteParam: installed(this, options.rewriteParamValues, NO_PORTS.value.rewriteParam),
+        overlay: installed(this, options.overlayValues, NO_PORTS.value.overlay),
+        overlayParam: installed(this, options.overlayParam, NO_PORTS.value.overlayParam),
         seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
-        resolveKeyframes: installed(this, options.resolveKeyframes, NO_PORTS.host.resolveKeyframes),
         disposeComposition: installed(
           this,
           options.disposeComposition,
@@ -296,22 +295,15 @@ export class ProjectRuntime {
         ),
       }),
     });
-    // What a handle this runtime issues may ask back of it, resolved once for the reason the ports
-    // above are: a handle is a class now, so it cannot reach a private member, and what one may ask
-    // is the same for every handle and every call that mints one. Each member below is one rung this
-    // class already owned, so which liveness order a verb gets is still decided here.
+    // What a handle may ask back, resolved once: a handle is a class, it cannot reach a
+    // private member. Which liveness order each verb gets is still decided here.
     this.#handleHost = Object.freeze<HandleHost>({
       track: Object.freeze<TrackHost>({
         live: (id, token) => isLive(this.#entryIfLive(id, token)),
         definition: (id, token) => this.#liveEntry(id, token).track,
-        remove: (id, token) => this.#removeTrack(id, token),
-        replace: (id, token, next) => this.#replaceTrack(id, token, next),
-        author: (id, token, edit) => this.#authorEdit(id, token, edit),
-        setKeyframe: (id, token, plugin, key, value) =>
-          this.#setKeyframe(id, token, plugin, key, value),
-        removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
-        write: (id, token, values, rebase) =>
-          this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
+        applyStructural: (id, token, edit) => this.#applyStructural(id, token, edit),
+        applyCheap: (id, token, edit) => this.#applyCheap(id, token, edit),
+        applyLive: (id, token, edit) => this.#applyLive(id, token, edit),
       }),
       motion: Object.freeze<MotionHost>({
         live: (id, token) => isLive(this.#motionIfLive(id, token)),
@@ -334,15 +326,20 @@ export class ProjectRuntime {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
         ...(options.scheduler === undefined ? {} : { scheduler: options.scheduler }),
         ...(options.onClockTick === undefined ? {} : { onClockTick: options.onClockTick }),
-        ...(options.graphBuilder === undefined ? {} : { graphBuilder: options.graphBuilder }),
-        ...(options.interpolated === undefined ? {} : { interpolated: options.interpolated }),
+        graphBuilder: options.graphBuilder ?? new IncrementalGraphBuilder(this.#capabilities),
+        ...(options.structureOf === undefined ? {} : { structureOf: options.structureOf }),
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
-      // The construction failure is the diagnosis and the host's release is a subordinate fact, so
-      // both leave together rather than the second replacing the first. `report.ts` owns that
-      // precedence for every caller of it, and `afterCleanup` is where the rule is written down.
+      // The construction failure is the diagnosis; the host's release is subordinate, so both
+      // leave together. `afterCleanup` owns that precedence.
       throw afterCleanup(error, "cleanup", () => this.#ports.host.disposeComposition());
+    }
+    // The load's own graph is the first structural commit, so its contracts are what every later
+    // rebuild carries. Reading them back rather than deriving again keeps one owner of derivation.
+    for (const [id, entry] of this.#tracks) {
+      const contract = this.#graph.graph.nodeById[id]?.contract;
+      if (contract !== undefined) this.#tracks.set(id, { ...entry, contract });
     }
   }
   get project(): ProjectDefinition {
@@ -396,21 +393,15 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
-  /**
-   * Runs `recipe` as one transaction and commits what it staged exactly once.
-   *
-   * What one costs, why an abort needs no compensation path, and why a recipe that staged nothing
-   * commits nothing are ADR-064's. That the copy is taken after an entry point's last refusal
-   * rather than before it is `#stageTracks`'s own. See `RA-66`, `RA-95` and ADR-064.
-   *
-   * A recipe that disposed the runtime is answered with its own value and commits nothing. The
-   * liveness this member asserts on entry is stale by the time it decides to apply, because the
-   * recipe is allowed to invalidate it and ADR-064's amendment says so deliberately. See `RA-109`,
-   * `RA-110` and ADR-064's amendment of 2026-09-04.
-   */
+  /** Runs `recipe` as one transaction and commits what it staged exactly once; a recipe that disposed the runtime still gets its value and commits nothing. */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#admit(OPEN_RECIPE);
-    const open: OpenTransaction = { tracks: this.#tracks, motions: this.#motions };
+    const open: OpenTransaction = {
+      tracks: this.#tracks,
+      motions: this.#motions,
+      noBuild: new Set<string>(),
+      fullBuild: new Set<string>(),
+    };
     this.#phase = opening(this.#phase, open);
     let answer: T;
     try {
@@ -420,7 +411,7 @@ export class ProjectRuntime {
     }
     if (isRetiring(this.#phase)) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
-      this.#commit({ kind: "both", tracks: open.tracks, motions: open.motions });
+      this.#commit({ kind: "both", tracks: open.tracks, motions: open.motions }, open.noBuild);
     return answer;
   }
 
@@ -459,20 +450,12 @@ export class ProjectRuntime {
     if (!this.#readMotions().has(motionId)) refuse({ kind: "unknown-motion", motionId });
     this.#removeMotion(motionId);
   }
-  /**
-   * Hands one signal to the layer that owns this Motion's trigger.
-   *
-   * Tier 0's twin, refused inside a recipe on the rule every immediate verb shares, and the hook
-   * keeps its own refusal for an unknown motion id. See ADR-064's amendment.
-   */
+  /** Hands one signal to the layer owning this Motion's trigger; refused inside a recipe, and the hook keeps its own unknown-id refusal. */
   signal(motionId: string, signal: TriggerSignal): void {
     this.#admit(immediateVerb("signal", "asserted"));
     this.#ports.motion.signal(motionId, signal);
   }
-  /**
-   * The resolver for one Motion, refusing an id this project never had. Separate from `tryMotion`
-   * for the reason `#entryOf` is separate from `#entryIfLive`: this one refuses and that one answers.
-   */
+  /** The resolver for one Motion, refusing an id this project never had; `tryMotion` answers instead of refusing. */
   motion(motionId: string): MotionHandle {
     this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
@@ -497,57 +480,45 @@ export class ProjectRuntime {
     const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
   }
-  /**
-   * Every node that reads this one, for an editor's preflight rather than for enforcement.
-   *
-   * Enforcement stays where ADR-050 put it, in the candidate graph. What this member owns is the
-   * public contract: the live gate, and an id this project never had answered rather than refused,
-   * because a preflight that refused an unknown id would make an editor ask twice. A projection of
-   * `#readersOf`, which owns the question. See ADR-050 and ADR-051.
-   */
+  /** Every node reading this one, for editor preflight not enforcement; enforcement stays in the candidate graph, and an unknown id answers empty rather than refusing. */
   dependantsOf(nodeId: string): readonly string[] {
     this.#admit(READ);
     return this.#readersOf(nodeId);
   }
 
+  // Readers come from the graph's own dependants, never recomputed from the track maps beside it.
   #readersOf(nodeId: string): readonly string[] {
     const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
-  /**
-   * Every Motion id this project holds, in committed order.
-   *
-   * The first of three enumeration readers, and one contract covers all three. Total, frozen, and
-   * in the order the committed maps carry, answered through the same accessors every structural
-   * read uses: inside an open recipe a reader sees what that recipe staged, and inside a commit's
-   * own hook it sees the retained pair the rest of that hook sees. Live-gated exactly as
-   * `dependantsOf` is and refused on nothing else, because a read publishes nothing and mounts
-   * nothing, so it cannot be placed in front of an owning operation's publication.
-   *
-   * They exist so no consumer keeps a second copy of the document's ids beside it. Widening
-   * `SchemaTransaction` with them was declined: a recipe closes over this project already, so a
-   * second spelling of one read would be two owners for it. See ADR-064 and issue #362.
-   */
+  /** Every Motion id, in committed order; frozen, live-gated only, and inside a recipe it reads what that recipe staged. */
   motionIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze([...this.#readMotions().keys()]);
   }
-  /**
-   * Every track node id no Motion owns, which is the unowned half of the one ownership filter
-   * `MotionHandle.trackIds` already reads, so the two cannot disagree about committed order.
-   */
+  /** Track node ids no Motion owns; the unowned half of the same ownership filter `MotionHandle.trackIds` reads, so the two cannot disagree on order. */
   freeTrackIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze(this.#ownedBy(this.#readTracks(), undefined).map(([node]) => node));
   }
-  /**
-   * Every node mounted right now, which no staged pair carries: `mount`, `unmount` and a commit's
-   * own settlement are what move it.
-   */
+  /** Every node mounted right now; no staged pair carries it, only `mount`, `unmount` and commit settlement move it. */
   mountedNodeIds(): readonly string[] {
     this.#admit(READ);
     return Object.freeze([...this.#instances.keys()]);
   }
+  #acceptTrack(track: TrackDefinition, path: string): TrackDefinition {
+    const context = {
+      ...(this.#isPluginRegistered === undefined
+        ? {}
+        : { isPluginRegistered: this.#isPluginRegistered }),
+      pluginDefinition: (pluginId: string) => this.#capabilities.pluginDefinition(pluginId),
+      model: (modelId: string) => this.#capabilities.model(modelId),
+      modelIds: () => this.#capabilities.modelIds(),
+      pluginIds: () => this.#capabilities.pluginIds(),
+    };
+    return expectValid(validateTrackDefinition(track, path, context));
+  }
+
   #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
@@ -558,14 +529,21 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const accepted = expectValid(validateTrackDefinition(track, `addTrack(${track.id})`));
+    const accepted = this.#acceptTrack(track, `addTrack(${track.id})`);
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(
       id,
       motionId === undefined
-        ? { kind: "free", track: accepted, token, valueState: AUTHORED }
-        : { kind: "owned", track: accepted, motionId, token, valueState: AUTHORED },
+        ? { kind: "free", track: accepted, token, valueState: AUTHORED, contract: undefined }
+        : {
+            kind: "owned",
+            track: accepted,
+            motionId,
+            token,
+            valueState: AUTHORED,
+            contract: undefined,
+          },
     );
     this.#commit({ kind: "tracks", tracks });
     return this.#handle(id, token);
@@ -630,6 +608,7 @@ export class ProjectRuntime {
     return this.#writableMotion(motionId, token).definition.id;
   }
 
+  // Children come from #ownedBy, because the entry's own definition can carry an empty child list.
   #motionDefinition(entry: MotionEntry): MotionDefinition {
     const id = entry.definition.id;
     return Object.freeze({
@@ -701,55 +680,219 @@ export class ProjectRuntime {
     return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
-  #removeTrack(id: string, token: number): void {
-    this.#writableEntry(id, token);
-    const tracks = this.#stageTracks();
-    tracks.delete(id);
-    this.#commit({ kind: "tracks", tracks });
+  // The committed or staged view a structural plan reads, as plain data. `authoredIndex` is
+  // recomputed from insertion order: removals and replacements move the positions after them.
+  #planState(tracks: ReadonlyMap<string, TrackEntry>): PlanState {
+    const nextIndex = new Map<string, number>();
+    const planned = new Map<string, PlannedTrack>();
+    for (const [nodeId, entry] of tracks) {
+      const ownerId = trackMotionId(entry) ?? "~";
+      const authoredIndex = nextIndex.get(ownerId) ?? 0;
+      nextIndex.set(ownerId, authoredIndex + 1);
+      planned.set(
+        nodeId,
+        Object.freeze({
+          nodeId,
+          track: entry.track,
+          owner: entry.kind === "free" ? "free" : "motion",
+          ownerId,
+          authoredIndex,
+          valueState: entry.valueState,
+          contract: entry.contract,
+        }),
+      );
+    }
+    return { tracks: planned };
   }
 
-  #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
-    return this.#ports.host.resolveKeyframes(
-      track.keyframes ?? {},
-      `${nodeId}.keyframes`,
-      trackConfigView(nodeId, track.duration),
-    );
-  }
-
-  #needsTimelineBuild(
-    nodeId: string,
-    current: TrackDefinition,
-    candidate: TrackDefinition,
-  ): boolean {
-    const resolved = this.#resolve(nodeId, candidate);
-    if (resolved === undefined) return true;
-    if (resolved.diagnostics.some(({ severity }) => severity === "error"))
-      refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
-    return !sameCompiledTrackInput(
-      { definition: current, resolved: this.#resolve(nodeId, current) },
-      { definition: candidate, resolved },
-    );
-  }
-
-  #replaceTrack(id: string, token: number, next: TrackDefinition): void {
-    const entry = this.#writableEntry(id, token);
-    const owner = trackMotionId(entry);
-    const expected =
-      owner !== undefined
-        ? qualifyMotionTrack(owner, next.id).value
-        : qualifyFreeTrack(next.id).value;
-    if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const accepted = expectValid(validateTrackDefinition(next, `replaceTrack(${id})`));
-    const tracks = this.#stageTracks();
-    tracks.set(id, {
-      ...entry,
-      track: accepted,
-      valueState: AUTHORED,
+  #planEnvironment(): PlanEnvironment {
+    return Object.freeze({
+      capabilities: this.#capabilities,
+      ...(this.#isPluginRegistered === undefined
+        ? {}
+        : { isPluginRegistered: this.#isPluginRegistered }),
     });
-    this.#commit({ kind: "tracks", tracks });
   }
 
-  #commit(plan: StagedPair): void {
+  // Sole internal entry for an edit list: classify once, take that path. Refusal throws
+  // before adoption, publication or commit. Admission is the caller's.
+  #apply(edits: readonly Edit[]): PatchBatch {
+    const batch = classifyBatch(edits);
+    switch (batch.kind) {
+      case "empty":
+        return batchFor(this.#graph.sequence, { kind: "empty" });
+      case "values":
+        return this.#applyValues(batch.edits);
+      case "structural":
+        return this.#applyStructuralList(batch.edits);
+      case "mixed":
+        throw new TypeError("An edit list cannot mix structural and value edits.");
+      default:
+        return unreachable(batch);
+    }
+  }
+
+  /** Applies an edit list as one atomic batch and answers its one publication; no handle or package entry point reaches it. */
+  apply(edits: readonly Edit[]): PatchBatch {
+    this.#assertLive();
+    for (const edit of edits) {
+      if (isValueEdit(edit)) this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
+    }
+    return this.#apply(edits);
+  }
+
+  // Plans on the staged view and stages changes; only the plan builds a candidate graph or
+  // contract. A no-op answers before `#stageTracks` copies -> changed nothing = commits nothing.
+  #applyStructuralList(edits: readonly StructuralEdit[]): PatchBatch {
+    const planned = applyEdits(this.#planState(this.#readTracks()), edits, this.#planEnvironment());
+    if (planned.changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
+    const tracks = this.#stageTracks();
+    const open = stagedIn(this.#phase);
+    const noBuild = open?.noBuild ?? new Set<string>();
+    const fullBuild = open?.fullBuild ?? new Set<string>();
+    for (const change of planned.changes) this.#stageChange(change, tracks, noBuild, fullBuild);
+    this.#commit({ kind: "tracks", tracks }, noBuild);
+    // A structural commit publishes inside the commit and its batch is not carried out of it, so
+    // the list answers the empty batch. The structural verbs discard the answer.
+    return batchFor(this.#graph.sequence, { kind: "empty" });
+  }
+
+  #applyStructural(id: string, token: number, edit: StructuralEdit): void {
+    this.#writableEntry(id, token);
+    this.#apply([edit]);
+  }
+
+  // One node's retained view, built on demand. It reads the entry the id names and nothing else, so
+  // planning a value edit costs the same in a project of ten tracks and of ten thousand.
+  #valueLookup(): TrackLookup {
+    return {
+      get: (nodeId) => {
+        const entry = this.#readTracks().get(nodeId);
+        return entry === undefined
+          ? undefined
+          : { nodeId, track: entry.track, valueState: entry.valueState, contract: entry.contract };
+      },
+    };
+  }
+
+  // Applies only planned deltas to named entries. In-place is safe: value edits are refused
+  // during a commit and inside a recipe, so no staged copy is open; keys keep insertion order.
+  #applyValues(edits: readonly (CheapEdit | LiveEdit)[]): PatchBatch {
+    const changes = applyValueEdits(this.#valueLookup(), edits, this.#planEnvironment());
+    if (changes.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
+    for (const change of changes) this.#adoptValueChange(change);
+    return this.#publishValues(changes.map((change) => change.track.nodeId));
+  }
+
+  #adoptValueChange(change: ValueChange): void {
+    const id = change.track.nodeId;
+    const entry = this.#tracks.get(id);
+    if (entry === undefined) throw new TypeError(`Unknown graph node "${id}".`);
+    switch (change.kind) {
+      case "authored-values":
+        // Compile the candidate before adopting its definition: a domain refusal must leave both
+        // the authored entry and the compiled track untouched.
+        switch (change.channel) {
+          case "values":
+            this.#ports.value.rewrite(id, change.values);
+            break;
+          case "param":
+            this.#ports.value.rewriteParam(id, change.values);
+            break;
+          default:
+            return unreachable(change.channel);
+        }
+        this.#tracks.set(id, {
+          ...entry,
+          track: change.track.track,
+          valueState: change.track.valueState,
+          contract: change.track.contract,
+        });
+        return;
+      case "live-values":
+        this.#tracks.set(id, { ...entry, valueState: change.track.valueState });
+        switch (change.channel) {
+          case "values":
+            this.#ports.value.overlay(id, change.overlay);
+            break;
+          case "param":
+            this.#ports.value.overlayParam(id, change.overlay);
+            break;
+          default:
+            return unreachable(change.channel);
+        }
+        return;
+      default:
+        return unreachable(change);
+    }
+  }
+
+  // Plans one cheap edit; value-tier admission runs first, so a commit or edit recipe refuses it
+  // like the value verbs, while a value batch still collects its seed.
+  #applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
+    this.#writableEntry(id, token);
+    return this.#apply([edit]);
+  }
+
+  // Plans one live edit: legal on an errored node and in a value batch, refused by a commit
+  // or recipe. Authored definition never moves; only value state and the compiled overlay.
+  #applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
+    this.#writableEntry(id, token);
+    return this.#apply([edit]);
+  }
+
+  // By-id half: admission runs before entry resolution, so a write aimed at a node a commit is
+  // still compiling answers the in-flight refusal, not an absence the caller cannot act on.
+  #applyLiveById(id: string, edit: LiveEdit): PatchBatch {
+    this.#assertLive();
+    this.#admit(valueVerb(publicVerbOf(edit.kind), "resolved"));
+    this.#entryOf(id);
+    return this.#apply([edit]);
+  }
+
+  // Carries one planned change into the staged map and records what its commit owes.
+  #stageChange(
+    change: PlannedChange,
+    tracks: Map<string, TrackEntry>,
+    noBuild: Set<string>,
+    fullBuild: Set<string>,
+  ): void {
+    switch (change.kind) {
+      case "update-track": {
+        const nodeId = change.track.nodeId;
+        const entry = tracks.get(nodeId);
+        if (entry === undefined) throw new TypeError(`Unknown graph node "${nodeId}".`);
+        tracks.set(nodeId, {
+          ...entry,
+          track: change.track.track,
+          valueState: change.track.valueState,
+          contract: change.track.contract,
+        });
+        if (!change.bindingOnly) {
+          fullBuild.add(nodeId);
+          noBuild.delete(nodeId);
+        } else if (!fullBuild.has(nodeId)) {
+          noBuild.add(nodeId);
+        }
+        return;
+      }
+      case "remove-track":
+        tracks.delete(change.nodeId);
+        noBuild.delete(change.nodeId);
+        fullBuild.add(change.nodeId);
+        return;
+      case "authored-values":
+        throw new TypeError("Structural edit planned an authored value change.");
+      case "live-values":
+        throw new TypeError("Structural edit planned a live value change.");
+      default:
+        return unreachable(change);
+    }
+  }
+
+  #commit(plan: StagedPair, noBuild: ReadonlySet<string> = NO_BUILD): void {
     if (this.#admit(COMMIT) === "join") return;
     const { tracks, motions } = resolveStagedPair(plan, this.#tracks, this.#motions);
     this.#boundary(() => {
@@ -761,17 +904,12 @@ export class ProjectRuntime {
         if (!tracks.has(id)) readers.set(id, this.#readersOf(id));
       for (const [id, entry] of tracks) {
         const old = this.#tracks.get(id);
-        if (
-          old !== undefined &&
-          old.track !== entry.track &&
-          this.#needsTimelineBuild(id, old.track, entry.track)
-        )
-          needsBuild.add(id);
+        if (old !== undefined && old.track !== entry.track && !noBuild.has(id)) needsBuild.add(id);
       }
       const commit = planCommit(
         { tracks: this.#tracks, motions: this.#motions },
         { tracks, motions },
-        { needsBuild, readers },
+        { needsBuild, readers, noBuild },
       );
       this.#assertLive();
       runPlan(commit, {
@@ -792,11 +930,23 @@ export class ProjectRuntime {
         addMotionTrack: (motionId, nodeId, duration) =>
           this.#ports.motion.addTrack(motionId, nodeId, duration),
         removeMotionTrack: (motionId, nodeId) => this.#ports.motion.removeTrack(motionId, nodeId),
+        prepareReaders: (readers, staleSources) =>
+          this.#ports.track.prepareReaders(readers, staleSources),
         assertLive: () => this.#assertLive(),
-        accept: () => this.#graph.replaceGraph(this.#snapshot(tracks, motions)),
+        accept: () => {
+          this.#graph.replaceGraph(this.#snapshot(tracks, motions), this.#carriedContracts(tracks));
+          // The accepted graph is the structural commit, so its contracts become the ones every
+          // later rebuild carries. Read back rather than derived a second time here.
+          for (const [id, entry] of tracks) {
+            const contract = this.#graph.graph.nodeById[id]?.contract;
+            if (contract !== undefined && contract !== entry.contract)
+              tracks.set(id, { ...entry, contract });
+          }
+        },
         adopt: () => {
           this.#tracks = tracks;
           this.#motions = motions;
+          this.#ports.track.invalidateOutputs(commit.staleSources);
         },
         publish: (ids) => this.#flush(ids),
       });
@@ -844,73 +994,6 @@ export class ProjectRuntime {
     }
   }
 
-  #writeValues(
-    nodeId: string,
-    resolveEntry: () => TrackEntry,
-    values: AuthoredValues,
-    rebase: boolean,
-  ) {
-    this.#admit(valueVerb(rebase ? "setValues" : "overrideValues", "resolved"));
-    return this.#boundary(() => {
-      const entry = resolveEntry();
-      const { statics, animated } = splitAuthoredValues(values);
-      const writing = liveWritten(animated);
-      const involved = isOverlaid(writing) || isOverlaid(entry.valueState);
-      const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
-      // Validated and then discarded: this write stages no definition, so the refusal is the
-      // whole of what validating the candidate is for here.
-      if (involved) expectValid(validateTrackDefinition(rewritten, `writeValues(${nodeId})`));
-      const mask = { ...authoredValues(entry.track), ...statics };
-      const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
-      // The seam has taken the write and carries no inverse, so the state it left is recorded on
-      // the way out, whichever of the fallible reads below is the last one reached. Decoding the
-      // answer is one of them, and it is inside the try for exactly that reason: the write has
-      // already landed by the time the record describing it can refuse to be read. The definition
-      // is adopted inside the try too, because a replacement that never staged is one this entry
-      // may not claim.
-      let adopted: TrackEntry = { ...entry, valueState: writing };
-      let staged: StagedTrack | undefined;
-      let progress: number | undefined;
-      try {
-        const written = liveWrite(answer);
-        switch (written.kind) {
-          case "no-hook":
-          case "patched":
-            break;
-          case "needs-rebuild":
-            progress = writtenProgress(written);
-            staged = this.#ports.track.stage(rewritten, nodeId);
-            break;
-          default:
-            return unreachable(written);
-        }
-        if (rebase) adopted = { ...adopted, track: rewritten };
-      } finally {
-        this.#tracks.set(nodeId, adopted);
-      }
-      return this.#completeWrite(nodeId, staged, progress);
-    });
-  }
-
-  #completeWrite(
-    nodeId: string,
-    staged: StagedTrack | undefined,
-    progress: number | undefined,
-  ): PatchBatch {
-    if (staged === undefined && progress === undefined) return this.#publishValue(nodeId);
-    let batch!: PatchBatch;
-    runSteps("settle", [
-      () => staged?.commit(),
-      () => {
-        if (progress !== undefined) this.#ports.value.seek(nodeId, progress);
-      },
-      () => {
-        batch = this.#publishValue(nodeId);
-      },
-    ]);
-    return batch;
-  }
-
   #invalidateOne(nodeId: string) {
     this.#assertLive();
     return this.#invalidateSeeds([nodeId]);
@@ -924,70 +1007,37 @@ export class ProjectRuntime {
     return batchFor(this.#graph.sequence, { kind: "deferred-in-batch", seeds: [nodeId] });
   }
 
-  #recompileKeyframes(
-    nodeId: string,
-    entry: TrackEntry,
-    keyframes: AuthoredKeyframes,
-    verb: string,
-  ) {
-    return this.#boundary(() => {
-      const next = withKeyframes(entry.track, keyframes);
-      const accepted = expectValid(validateTrackDefinition(next, `${verb}(${nodeId})`));
-      const resolved = this.#resolve(nodeId, accepted);
-      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
-      const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
-      const answer = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
-      // The recording the mask path makes, for the same reason and on the same way out. A stage
-      // that survives is what earns the accepted definition and the state saying the build removed
-      // every live write standing on this node. This path asks the decoded answer for the playhead
-      // alone: it rebuilds either way, so whether the seam patched what was already compiled
-      // decides nothing here.
-      let adopted: TrackEntry = { ...entry, valueState: liveWritten(clear) };
-      let staged: StagedTrack | undefined;
-      let progress: number | undefined;
-      try {
-        progress = writtenProgress(liveWrite(answer));
-        staged = this.#ports.track.stage(accepted, nodeId);
-        adopted = { ...entry, track: accepted, valueState: AUTHORED };
-      } finally {
-        this.#tracks.set(nodeId, adopted);
+  // One publication for the nodes a value list changed; one node delegates to #publishValue.
+  // A longer list collects seeds into an open batch, else invalidates them together.
+  #publishValues(nodeIds: readonly string[]): PatchBatch {
+    const seeds = [...new Set(nodeIds)];
+    const [only, ...others] = seeds;
+    if (only === undefined) throw new TypeError("A value publication needs at least one node.");
+    if (others.length === 0) return this.#publishValue(only);
+    let phase = this.#phase;
+    for (const nodeId of seeds) {
+      const seeded = seeding(phase, nodeId);
+      if (seeded === undefined) {
+        this.#assertLive();
+        return this.#invalidateSeeds(seeds);
       }
-      return this.#completeWrite(nodeId, staged, progress);
+      phase = seeded;
+    }
+    this.#assertLive();
+    this.#phase = phase;
+    return batchFor(this.#graph.sequence, {
+      kind: "deferred-in-batch",
+      seeds: [only, ...others],
     });
   }
 
-  #setKeyframe(
-    nodeId: string,
-    token: number,
-    plugin: string,
-    key: string,
-    value: AuthoredProperty,
-  ) {
-    this.#admit(valueVerb("setKeyframe", "resolved"));
-    const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
-    if (Object.hasOwn(readPluginValues(bound.group), key))
-      return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
-    const edited = setAuthoredKeyframe(keyframes, bound, key, value);
-    return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
-  }
-  #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#admit(valueVerb("removeKeyframe", "resolved"));
-    const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
-    const edited = removeAuthoredKeyframe(keyframes, bound, key);
-    if (edited === keyframes) return this.#publishValue(nodeId);
-    return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
-  }
-  #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
-    const entry = this.#writableEntry(id, token);
-    const next = applyEdit(
-      { nodeId: id, motionId: trackMotionId(entry), track: entry.track },
-      edit,
-    );
-    if (next === entry.track) return;
-    this.#replaceTrack(id, token, next);
+  #carriedContracts(
+    tracks: ReadonlyMap<string, TrackEntry>,
+  ): ReadonlyMap<string, CommittedContract> {
+    const carried = new Map<string, CommittedContract>();
+    for (const [id, entry] of tracks)
+      if (entry.contract !== undefined) carried.set(id, entry.contract);
+    return carried;
   }
 
   #snapshot(
@@ -1020,44 +1070,27 @@ export class ProjectRuntime {
     this.#ports.value.seek(nodeId, progress);
     return this.#publishValue(nodeId);
   }
-  /**
-   * Writes `nodeId`'s values, leaving the authored definition exactly as it was.
-   *
-   * The revertible half of the pair: a static key is masked at read time, an animated key has its
-   * tweens replaced against a retained base, and both are sticky until the next live write or a real
-   * `replace()`. See ADR-059 and ADR-060.
-   */
-  overrideValues(nodeId: string, values: AuthoredValues) {
-    this.#assertLive();
-    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, false);
+  /** Writes one node's whole evaluated local value by id, without a handle. */
+  writeValues(nodeId: string, value: Value): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "write-live", nodeId, value });
   }
-  /**
-   * Rewrites `nodeId`'s authored values, topology untouched.
-   *
-   * The authored half: the retained `TrackDefinition` moves with the live values, so
-   * `handle.definition` and the composition cannot disagree, and it still costs one invalidate
-   * rather than a staged Track and a graph rebuild. See ADR-059 and ADR-060.
-   */
-  setValues(nodeId: string, values: AuthoredValues) {
-    this.#assertLive();
-    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, true);
+
+  /** Writes one node's whole evaluated param by id, without a handle. */
+  writeParam(nodeId: string, value: Value): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "write-live-param", nodeId, value });
   }
-  /**
-   * Runs `recipe` as one value batch and publishes what it staged exactly once.
-   *
-   * The second tier, and what `edit(recipe)` is for the structural one. Every verb reached inside
-   * still applies its own write immediately and still refuses on its own terms; what the batch owns
-   * is the publication. So `n` writes across `n` nodes cost one invalidate, one notification per
-   * affected node and one sequence move, where the same sequence spelled one write at a time costs
-   * `n` of each, and the answer is the batch that one publication produced. What a staged verb
-   * answers in the meantime is a deferred batch naming its own node.
-   *
-   * A recipe that staged nothing publishes nothing and answers an empty batch, because an empty seed
-   * list still opens a batch, notifies every batch subscriber and moves the sequence. A recipe that
-   * disposed the project is reported rather than answered, with `ProjectRuntime is disposed.` in
-   * place of the batch, because the batch is the answer to this call and there is no batch: that
-   * keeps the value tier's one failure contract. See ADR-078, ADR-064 and issue #288.
-   */
+
+  /** The node-addressed spelling of `TrackHandle.releaseValues`. */
+  releaseValues(nodeId: string): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "release-live", nodeId });
+  }
+
+  /** The node-addressed spelling of `TrackHandle.releaseParam`. */
+  releaseParam(nodeId: string): PatchBatch {
+    return this.#applyLiveById(nodeId, { kind: "release-live-param", nodeId });
+  }
+
+  /** Runs `recipe` as one value batch: verbs write immediately, answer deferred batches; one publication at close; nothing staged = empty batch; disposed = `ProjectRuntime is disposed.` */
   values(recipe: (transaction: ValueTransaction) => void): PatchBatch {
     this.#admit(immediateVerb("values", "asserted"));
     this.#phase = batchOpening(this.#phase);
@@ -1076,35 +1109,20 @@ export class ProjectRuntime {
     const runtime = this;
     return Object.freeze({
       seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
-      setValues: (nodeId: string, values: AuthoredValues) => runtime.setValues(nodeId, values),
-      overrideValues: (nodeId: string, values: AuthoredValues) =>
-        runtime.overrideValues(nodeId, values),
+      writeValues: (nodeId: string, value: Value) => runtime.writeValues(nodeId, value),
+      writeParam: (nodeId: string, value: Value) => runtime.writeParam(nodeId, value),
+      releaseValues: (nodeId: string) => runtime.releaseValues(nodeId),
+      releaseParam: (nodeId: string) => runtime.releaseParam(nodeId),
       track: (nodeId: string) => runtime.track(nodeId),
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });
   }
-  /**
-   * Publishes for `nodeIds` and answers the batch that publication produced.
-   *
-   * A list that names nothing is answered rather than published, through the one owner of what an
-   * empty seed list means, which is the member `values(recipe)` publishes through too. An empty
-   * list still opens a batch, notifies every batch subscriber and moves the sequence, and a caller
-   * that asked for nothing to be invalidated is owed none of that. What a caller can read is
-   * unchanged: this verb always answers a real `PatchBatch`, and for an empty list that batch
-   * carries the sequence the graph is already on. See ADR-080 and issue #371.
-   */
+  /** Publishes for `nodeIds` and answers that batch; an empty list answers a current-sequence batch rather than opening one, since invalidating nothing owes no notification. */
   invalidate(nodeIds: readonly string[]) {
     this.#admit(immediateVerb("invalidate", "asserted"));
     return this.#publishSeeds(nodeIds);
   }
-  /**
-   * Tears this project down, once, and refuses everything from the moment it is called.
-   *
-   * Reachable from caller code that this runtime is in the middle of calling, which is why the
-   * refusal and the release are two things rather than one. See ADR-067.
-   * Every release step is attempted. Direct release reports collected failures; a deferred release
-   * records diagnostics without replacing the outcome of the operation it follows.
-   */
+  /** Tears down once, refuses everything from the call; reachable mid-call, so refusal and release are separate. Every release step runs; direct = report failures, deferred = diagnostics. */
   dispose(): void {
     if (isRetiring(this.#phase)) return;
     this.#phase = retiring(this.#phase);

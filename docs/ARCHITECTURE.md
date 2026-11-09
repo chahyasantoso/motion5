@@ -1,6 +1,6 @@
 # motion5 architecture
 
-**Status:** Target design. Phase 0 has no implementation. Where this document uses the present tense, it describes what the code must satisfy once it exists, not what exists today. Reality lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
+**Status:** Structural ownership guide. Where the present tense is used it describes what the code must satisfy. Current implementation state lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
 
 ## 1. The one invariant
 
@@ -36,7 +36,7 @@ Every other rule in this document is a consequence of that one. When a change ma
            ObservationState
 
   Motion  owns topology, scheduling, triggers, playback, children
-  Track   owns playhead, interpolation, local plugin composition
+  Track   owns playhead, interpolation and identified plugin composition
 ```
 
 Dependencies point inward only, with the dependency-free `lang/` module as the shared sink every
@@ -63,7 +63,7 @@ One owner per responsibility. If two things can perform an operation, one of the
 - **GraphPublisher** owns traversal and publication of a validated snapshot. It cannot add or remove graph entities. It has no mutation methods at all.
 - **PatchRegistry** owns patch identity, revisions, immutability, batching, and subscriber notification.
 - **Motion** owns child membership and hierarchy, stagger, layout, reflow, timeline construction, playback, trigger delegates, and child teardown. Motion is the only composite.
-- **Track** owns playhead and progress state, interpolation inputs, resolved local plugin composition, local lifecycle, and renderer-neutral snapshots. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
+- **Track** owns playhead and progress state, interpolation inputs, identified local plugin composition, local lifecycle, and renderer-neutral named outputs. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
 
 Some authored data has no runtime owner at all, and that is deliberate. `perspective` is validated at load and handed to the renderer untouched. Nothing in the core reads it. See [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
 
@@ -214,40 +214,7 @@ At runtime, diagnostics accumulate on the project in a bounded ring buffer and s
 
 ## 12. Module layout
 
-```text
-packages/
-  core/
-    src/
-      lang/        dependency-free shared helpers: the exhaustive sink, the outcome algebra
-      contract/    authored schema constants, public types, diagnostics shape
-      domain/      Track, Motion, plugins, immutable value snapshots
-      graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding
-      runtime/     ProjectRuntime, GraphRuntime, GraphPublisher, PatchRegistry
-      ports/       Clock, Interpolator, Scheduler and their fakes
-      adapters/    GSAP, DOM, browser clock
-      errors/
-      index.ts     allow-listed public surface
-      internal.ts  unadvertised entrypoint, repository use only
-      plugin-api.ts declared plugin-authoring protocol, re-exports only
-    test/
-      unit/
-      integration/
-      contract/    port contract suites run against fake and real
-      fixtures/
-  plugins/
-    src/           first-party implementations and frame utilities; core contract imports only
-    test/          declared subpath surface; implementation tests remain in core for now
-  react/
-    src/           patch and lifecycle hooks only
-  three/
-    src/           optional Three.js Object3D patch adapter; reads plugins/frame3d
-performance/
-  budgets.json
-  graph-benchmark.mjs
-scripts/
-  boundary-scan.mjs
-  api-surface-check.mjs
-```
+[MAP.md](./MAP.md) lists every source folder and its public entries.
 
 TypeScript is required for public contracts and runtime boundaries. Language is consistent within a package. There is no declaration-file seam over untyped JavaScript.
 

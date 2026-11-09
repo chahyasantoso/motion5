@@ -13,7 +13,7 @@ docs(architecture): define blocked publication
 chore: apply prettier
 ```
 
-Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit. [FORMATTING.md](./FORMATTING.md) owns that distinction.
+Touched-file normalization may accompany its requested change. Unrelated formatting stays in a separate mechanical commit, and [../AGENTS.md](../AGENTS.md) owns that rule in one line.
 
 ## Pull request body
 
@@ -31,13 +31,11 @@ Semantic files are distinct paths in the PR diff, excluding lockfiles, generated
 
 Squash merge into protected `main` only after required checks are green. Never weaken a test or bypass branch protection. Revert quickly when ownership or evidence breaks; after a second revert, redesign the slice. An implementation request is not authorization for an autonomous merge.
 
-## API-only contributions and privileged work
+## Plain git contributions and privileged work
 
-[API-CAPABILITIES.md](./API-CAPABILITIES.md) distinguishes repository API operations, human-dispatch-only routes, and capabilities that require activation. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) owns request schema, immutable inputs, bounded edits, isolated preparation, and publication recovery.
+[API-CAPABILITIES.md](./API-CAPABILITIES.md) distinguishes repository API operations and human-dispatch-only routes. Standard contributions use plain git branches and pull requests targeting `main`.
 
-Use one request-only commit with refreshed head and original blob preconditions. Do not advance the branch while publication is pending. Read the durable receipt, then inspect all required CI on the exact published commit. A preview consumes only its request and reports the proposed transformation separately. Targeted validation cannot authorize merging.
-
-Do not create temporary privileged workflows to work around a missing dispatch method. A PAT is not permission to execute candidate-owned scripts with write credentials. Workflow changes must be authored directly for review because request operations prohibit `.github/workflows/`. Reviewed runner changes need a reviewed immutable pin and live activation evidence; never point the pin at unreviewed code to bootstrap a demonstration.
+Do not create temporary privileged workflows to work around a missing dispatch method. A PAT is not permission to execute candidate-owned scripts with write credentials.
 
 **Format manually** remains the deliberate human-dispatch escape hatch for mechanical repair, not a behavior-change runner. Keep historical maintenance workflows until usage review and a validated replacement justify a separately confirmed retirement.
 
@@ -49,7 +47,7 @@ Cite the original Actions run as primary evidence and the readable retained diag
 
 ## Evidence case ids
 
-A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` enforces uniqueness and refuses unregistered series-shaped titles. Plain descriptive test names need no new series.
+A cited case id names exactly one test in the suite. Use a flat series per plan, never restart it per file. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` discovers the series itself from the test titles the tree declares and enforces uniqueness across them. Plain descriptive test names need no new series.
 
 A plan slice prefix containing a digit, such as `T4-3`, and architecture invariant `I-n` are not evidence-id series. An invariant may be cited by multiple tests. See issue #289.
 
@@ -57,7 +55,7 @@ A plan slice prefix containing a digit, such as `T4-3`, and architecture invaria
 
 [SESSION-STATUS.md](./SESSION-STATUS.md) is the sole project-status owner. Rewrite the entry your slice makes stale rather than appending a parallel history. Its four sections remain **Now**, **Next in line**, **Open, and not scheduled**, and **Where the rest of it lives**; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and byte ceiling.
 
-A standing rule belongs in [GUARDRAILS.md](./GUARDRAILS.md), caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
+A standing rule belongs in [AGENTS.md](../AGENTS.md) as one line, caller cost in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md), and slice narrative and run ids in the PR or ADR. Do not create another completion matrix or handoff status database.
 
 ## Superseding a decision
 

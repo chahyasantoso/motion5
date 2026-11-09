@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { selectRecord } from "@motion5/core/plugin-api";
 import { Group, Vector3 } from "three";
 import { createAvatarScene, extremityOrientation, requireUniformScale } from "../src/view/avatar";
 import { createGapPipeline } from "../src/filler/pipeline";
@@ -148,7 +149,7 @@ describe("flat reconstructed avatar", () => {
       const after = f.update(501, new Set(["left-wrist"]));
       // First gap sample is already past observation age, so the writer skips the lost goal.
       expect(after.solved.has("left-arm")).toBe(false);
-      expect(f.solver.readPatch!(id)?.status).toBe("ready");
+      expect(f.solver.readPatch!(poseNodeId(limbTracks("left-arm").pose))?.status).toBe("ready");
       expect(f.avatar.objects.get(id)!.visible).toBe(true);
       expect(f.avatar.objects.get(id)!.userData.freshness.kind).toBe("stale");
       expect(after.residuals.get("left-arm")!.middleMm).toBeUndefined();
@@ -240,8 +241,10 @@ describe("flat reconstructed avatar", () => {
       const ids = limbTracks("left-arm"),
         readPole = () => {
           const patch = loaded.get(poseNodeId(ids.pole))!;
-          return patch.status === "ready"
-            ? ["x", "y", "z"].map((key) => patch.values[key] as number)
+          if (patch.status !== "ready") return [];
+          const picked = selectRecord(patch.outputs.values);
+          return picked.kind === "record"
+            ? ["x", "y", "z"].map((key) => Number(picked.values[key]))
             : [];
         };
       const held = sub(readPole(), points["left-shoulder"]);

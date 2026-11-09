@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../../src/engine";
-import { PluginRegistry } from "../../../src/domain/plugins";
-import { transformPlugin } from "../../../../plugins/src/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { record } from "../../support/v5-builders";
+import { testCatalog, testEngine } from "../../support/builtin-registry";
 
 /**
  * Issue #223, part 6 of the re-review: the deferral with no owner, decided as a refusal.
@@ -49,33 +49,35 @@ const OTHER = "~/b";
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [],
-  freeTracks: [{ id: "a" }],
+  freeTracks: [{ id: "a", output: { model: "TestRecord" } }],
 };
-const ADDED: TrackDefinition = { id: "b" };
+const ADDED: TrackDefinition = { id: "b", output: { model: "TestRecord" } };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
 
 function runtime(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 
 const HIP = "rig/hip";
 const HIP_TRACK: TrackDefinition = {
   id: "hip",
-  keyframes: { transform: { values: { x: 100, y: 200, rotation: 0 } } },
+  input: { values: record({ x: 100, y: 200, rotation: 0 }) },
+  output: { model: "TestRecord" },
 };
 /** A real load, because what the refusal is about is the node a document brought with it. */
 function load(): ProjectHandle {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
-    plugins,
   }).load({
     schemaVersion: 5,
     motions: [{ id: "rig", trigger: { type: "manual" }, tracks: [HIP_TRACK] }],
@@ -125,11 +127,11 @@ describe("what a load and a mount deliberately do not publish", () => {
     expect(published?.status).toBe("ready");
     if (published?.status !== "ready")
       throw new Error(`published is ${published?.status ?? "absent"}, not ready.`);
-    expect(published.values).toMatchObject({ x: 100, y: 200 });
+    expect(published.outputs.values).toMatchObject({ x: 100, y: 200 });
     const hIPPatch = handle.get(HIP);
     if (hIPPatch?.status !== "ready")
       throw new Error(`hIPPatch is ${hIPPatch?.status ?? "absent"}, not ready.`);
-    expect(hIPPatch.values).toEqual(published.values);
+    expect(hIPPatch.outputs.values).toEqual(published.outputs.values);
 
     handle.dispose();
   });

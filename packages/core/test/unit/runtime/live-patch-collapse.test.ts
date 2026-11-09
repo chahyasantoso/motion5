@@ -8,7 +8,7 @@ function live(status: LivePatch["status"]): LivePatch {
   return {
     nodeId: NODE_ID,
     revision: 1,
-    values: { opacity: 1 },
+    outputs: { values: { opacity: 1 } },
     sourceProgress: 0,
     sourceRevisions: {},
     status,
@@ -49,7 +49,7 @@ describe("the live-or-absent partition of a published patch", () => {
     registry.beginBatch(1, [NODE_ID]);
     registry.publish({
       nodeId: NODE_ID,
-      values: { opacity: 1 },
+      outputs: { values: { opacity: 1 } },
       sourceProgress: 0,
       status: "ready",
     });

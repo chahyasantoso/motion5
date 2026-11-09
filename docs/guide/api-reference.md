@@ -10,32 +10,33 @@ list: no package under `packages/*` except core, and no app under `apps/*`, may 
 ADR-036 and ADR-048.
 
 - `@motion5/core` — public; production consumers may import it.
-- `@motion5/core/adapters` and `/adapters/browser-clock` — public adapters; production consumers may
-  import them.
+- `@motion5/core/adapters` — public adapters with no environment code; production consumers may import
+  them.
+- `@motion5/dom` renders poses, reveals, drawn strokes and paths on DOM and SVG elements, and
+  `@motion5/dom/engine` holds the engine's DOM patch adapter and the browser clock.
 - `@motion5/plugins/fk`, `/transform`, and `/ik` — public plugins; production
   consumers may import them.
 - `@motion5/plugins/transform3d`, `/fk3d`, and `/ik3d` — public plugins;
   production consumers may import them.
 - `@motion5/plugins/catalog` and `/loader` — public asynchronous composition-root helpers;
   production consumers may import them. Engine loading and live edits stay synchronous.
-- `@motion5/plugins/rig` and `/pose-classify` are public data plugins and readers;
+- `@motion5/plugins/pose-classify` is a public data plugin;
   `/labels` provides label readers and change listeners.
 - `@motion5/core/testing` — test support; production consumers may not import it, as enforced by
   the boundary scan.
 - `@motion5/core/plugin-api` — the plugin-authoring contract; plugin implementations may import this entrypoint and sibling implementation modules only.
 - `@motion5/core/internal` — unadvertised; it carries no stability promise.
-- `@motion5/plugins/frame3d` exposes the complete unchanged frame utility module, including
-  `readFrame3d` and its nameable types. There is no bare `@motion5/plugins` entrypoint.
+- `@motion5/rig` holds world frames, the IK solvers and the joint vocabulary, including `readFrame3d`
+  and its nameable types; it imports nothing. There is no bare `@motion5/plugins` entrypoint.
 
 ## @motion5/core
 
-**Engine and handles.** `Engine`, `StaleTrackHandleError`, and `LiveValueKeyError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, `AuthoredValues`, and `LiveValues`.
+**Engine and handles.** `Engine`, `StaleTrackHandleError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, and `LiveValues`.
 
-`new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
+`new Engine({ clock, interpolator, scheduler, plugins, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
 - `mount(nodeId, instance?)` and `unmount(nodeId)` control membership.
 - `get(nodeId)` returns the retained `LivePatch` or `undefined`. It cannot answer `destroyed`: eviction drops the node's entry before its terminal patch is delivered, so a subscriber hears that publication exactly once and a reader of current state is never handed it.
-- `renderMetadata(nodeId)` returns the node's `RenderMetadata`, the output serializers a renderer needs, or `undefined` for a node with no compiled track.
 - `subscribeNode(nodeId, listener)` returns an unsubscribe function, and is the one mechanism for it. The `subscribe` alias that used to sit beside it is deleted rather than discouraged. See ADR-076.
 - `seek(nodeId, progress)` scrubs one leaf and returns a `PatchBatch`.
 - `signal(motionId, signal)` controls a `manual` motion.
@@ -49,69 +50,58 @@ ADR-036 and ADR-048.
 - `motionIds()`, `freeTrackIds()` and `mountedNodeIds()` enumerate a loaded project: every Motion id, every track node no Motion owns, and every node currently mounted. All three answer a frozen, total array in committed order, they resolve against a recipe's staged pair while one is open, and they refuse on a disposed project exactly as `dependantsOf` does. A Motion's own children stay `MotionHandle.trackIds`, so mounting a whole document is a loop over these rather than over a copy of its ids kept beside the definition.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `live`, `definition`, `requires`, `remove()`, `replace(next)`, `addObserve(observation)`, `removeObserve(observation)`, `setRequire(plugin, slot, source, memberKey?)`, `removeRequire(plugin, slot, memberKey?)`, `setKeyframeGroup(plugin, group)`, `removeKeyframeGroup(plugin)`, `setGoal(plugin, memberId, source)`, `removeGoal(plugin, memberId)`, `setKeyframe(plugin, key, value)`, `removeKeyframe(plugin, key)`, `overrideValues(next)`, and `setValues(next)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
+A `TrackHandle` carries `id`, `live`, `definition`, `input`, `requires`, `writeValues(value)`, `writeParam(param)`, `releaseValues()`, `releaseParam()`, `remove()`, and `replace(next)`. `input` is the authored input view: `input.replace(next)` replaces the whole input, `input.requires.set(slot, source, memberKey?)` and `input.requires.remove(slot, memberKey?)` edit one dependency binding, `input.values.set(values)` and `input.values.setField(address, cell)` edit authored values, and `input.param.set(param)` and `input.param.setField(address, cell)` edit a plugin's parameters. A dependency that feeds a track's own composition is authored under `input.requires`, which is the only way a value enters composition.
 
-The six authoring members above are the structural tier, and each returns `void` because the return type carries the tier: a structural edit replaced the graph, and the cheap pair returns the `PatchBatch` of its one invalidation. `setRequire` and `removeRequire` edit one binding of a plugin group this node already authors, with `memberKey` addressing one entry of a dict-valued slot. `setKeyframeGroup` writes a whole plugin binding, values and `requires` together, whether or not one was there, and `removeKeyframeGroup` drops the group and every edge its `requires` derived. `setGoal` and `removeGoal` edit one entry of a solver's goals slot by the member id it is authored under, and the binding pair refuses that slot by name. The refusals are `keyframe-group-unbound`, `keyframe-require-shape`, `keyframe-goal-slot-reserved`, and `keyframe-group-shape`, every one of them a `TypeError` thrown before anything is written. Nothing else about a candidate is asked here: the plugin registry answers for keys and slots and graph validation answers for edges, both at the commit, and a refused candidate is rolled back with the handle unchanged. See ADR-062 and ADR-063.
+`remove`, `replace`, `input.replace` and the `input.requires` pair are the structural tier, and each returns `void` because the return type carries the tier: a structural edit replaced the graph. Bindings preserve the rest of the input, redirect rather than append, and support `memberKey` for map-valued slots. A refused candidate is rolled back with the handle unchanged; the dependency rules are `edge-unknown-source`, `input-source-shape` and the plugin's declared-slot refusals, all thrown or reported before anything is committed.
 
-`overrideValues` and `setValues` are the cheap pair, and they take an `AuthoredValues`: one authored leaf per key, static or animated, which is `LiveValues` widened per key to `AuthoredProperty`. Both return the `PatchBatch` of the single invalidation they cause, exactly as `seek()` does. Neither stages a Track or rebuilds the graph, which is what separates them from `replace(next)`. The difference between the two is the retained definition: `setValues` rewrites it, so `handle.definition` and the live composition cannot disagree, and `overrideValues` deliberately leaves it alone, because it is a write you expect to take back. A write is replaced wholesale rather than accumulated, so an empty record is the clear, and a real `replace()` drops it by construction. A static key is masked over the interpolated state and an animated one has its tweens replaced on the live timeline, so a caller reads one API for both. `LiveValueKeyError` is the refusal, with `ruleId` of `live-value-key`, and its `reason` is `unknown`, `kind`, or `prepared`. See ADR-059 and ADR-060.
+`writeValues(value)`, `writeParam(param)`, `releaseValues()` and `releaseParam()` are the live tier. A write replaces the whole evaluated channel with a table or record that matches the track's committed contract; a release drops that channel's overlay and resumes authored evaluation, leaving the other channel's overlay standing. Each returns the `PatchBatch` of one publication, stages no Track and rebuilds no graph. An overlay survives authored value edits, binding edits and seeks, and is cleared only by a structural replacement or removal, its own release, and destroy. `input.values.set(values)` is the sticky authored equivalent: it rewrites `input.values`, so `definition` and the live composition cannot disagree, and validates against the committed contract without re-inferring. A write is replaced wholesale rather than accumulated. See ADR-059, ADR-060 and ADR-078.
 
-`setKeyframe(plugin, key, value)` and `removeKeyframe(plugin, key)` are the same tier narrowed to one property of a plugin group this node already authors. Both answer with the `PatchBatch` of one invalidation and neither replaces the graph, on any path, because a leaf carries no edge and a bound group's plugin is in the chain already. Which of two paths a call takes is decided by the record rather than by the name: a key the group already authors is `setValues` with the group named, and a key it does not author yet is validated, resolved and compiled in place at the same progress, because a mask cannot express a key nothing compiled. The refusals are `keyframe-group-unbound` for a plugin this node authors no group for, which is `setKeyframeGroup`'s job, `LiveValueKeyError` with the `kind` reason for a leaf-kind crossing, which stays refused even though this verb rewrites the authored record, and whatever the plugin registry answers about a leaf the named group claims nothing about. There is no refusal for an animated key. Removing a group's last leaf removes the section, and a group left naming no section loses its entry. See ADR-065.
+`input.values.setField(address, cell)` is the same authored tier narrowed to one cell or field. `address.row` selects a table cell and must be absent for a record field; a mismatch between the address form and the track's shape is `values-shape-invalid`, and an address that does not exist is `cell-address-unknown`. A static cell cannot move through a cheap edit; the refusal is `live-values-invalid` with the replace hint. It returns the `PatchBatch` of one publication and stages no Track. `input.param.set` and `input.param.setField` are the same verbs for a plugin's `inputs.param`.
 
 `edit(recipe)` on `ProjectHandle` runs `n` authored ops across `m` tracks as one transaction: one candidate build, one graph replacement, one `ObservationState` commit and one flush. The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else, so `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside the recipe resolve against what it has staged, so a two-step edit sees its own first step, and a throw commits nothing: no hook is reached and a handle issued inside the recipe never becomes live. A recipe inside a recipe is `schema-transaction-nested`, and a verb that applies immediately rather than committing is `schema-transaction-immediate`, named at the verb. See ADR-064.
 
-`values(recipe)` is the same idea for the cheap tier, and it defers the publication rather than the write. The recipe is handed a `ValueTransaction`, which carries `seek`, `setValues` and `overrideValues` addressed by node id, plus `track` and `tryTrack` answering the ordinary `TrackHandle` so that its `setKeyframe` and `removeKeyframe` join the batch too. Every verb still validates on entry, still applies its write when you call it, and still refuses exactly what it refused before; what changes is that `n` writes cost one `invalidate` and one sequence move instead of `n`. The call answers the `PatchBatch` of that one publication, and a verb reached inside answers a deferred batch naming its own node with no patches and one `value-batch-deferred` warning, because a `TrackHandle` is one interface across batched and unbatched use and a member with two return contracts is not. A recipe that staged nothing publishes nothing and answers an empty batch. Everything that publishes or mounts refuses inside one as `value-batch-immediate`, including `invalidate` and a nested `values`, and every structural verb refuses as `value-batch-structural`; a value verb inside `edit(recipe)` stays `schema-transaction-immediate`, because the two tiers do not nest in either direction. A recipe that disposes the project is answered with `ProjectRuntime is disposed.` rather than with a batch nobody can read. See ADR-078.
+`values(recipe)` is the same idea for the cheap tier, and it defers the publication rather than the write. The recipe is handed a `ValueTransaction`, which carries `seek`, `writeValues`, `writeParam`, `releaseValues` and `releaseParam` addressed by node id, plus `track` and `tryTrack` answering the ordinary `TrackHandle` so that its authored value verbs join the batch too. Every verb still validates on entry, still applies its write when you call it, and still refuses exactly what it refused before; what changes is that `n` writes cost one `invalidate` and one sequence move instead of `n`. The call answers the `PatchBatch` of that one publication, and a verb reached inside answers a deferred batch naming its own node with no patches and one `value-batch-deferred` warning, because a `TrackHandle` is one interface across batched and unbatched use and a member with two return contracts is not. A recipe that staged nothing publishes nothing and answers an empty batch. A recipe is not a transaction: each cheap edit applies immediately, so edits before a refused one stay applied and nothing publishes. Everything that publishes or mounts refuses inside one as `value-batch-immediate`, including `invalidate` and a nested `values`, and every structural verb refuses as `value-batch-structural`; a value verb inside `edit(recipe)` stays `schema-transaction-immediate`, because the two tiers do not nest in either direction. A recipe that disposes the project is answered with `ProjectRuntime is disposed.` rather than with a batch nobody can read. See ADR-078.
 
-`LiveValues` stays declared beside `AuthoredValues` as the narrower type: one static authored value per key, which is the type of the mask itself. Name it when your call site only ever writes static values; the mask is structurally unable to carry stops, which is what keeps an animated key from being frozen at a value you passed.
+`LiveValues` is the narrow live-write type: one static authored value per key. Name it when your call site only ever writes static values; the overlay is structurally unable to carry stops, which keeps an animated authored key from being frozen at a value you passed.
 
-`live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. `LiveValueKeyError` is public on that same rule, and it is declared in the domain layer that owns the refusal while `Track` itself stays private. See ADR-056 and ADR-059.
+`live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. See ADR-056.
 
-**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
+**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `parseGolden`, and `serializeGolden`.
 
 `validateV5` returns a discriminated `ValidationResult`: `kind: "accepted"` carries the frozen
 `ProjectDefinition`, while `kind: "refused"` carries at least one `Diagnostic` and no value. Graph
 reference and cycle diagnostics are owned by graph construction and are run by the engine load
 use-case after schema validation.
 
-`validateV5(input, capabilities?)` accepts `PluginCapabilities`, which `PluginRegistry` implements.
+`validateV5(input, capabilities)` accepts `PluginCapabilities`, which `PluginCatalog` implements.
 Without the port it does not judge plugin-dependent chain, pole, joint, limit, goal-weight or
-dead-orientation rules. Pass the registry to obtain those checks; Engine does so automatically.
-General schema, references, duplicate edges, cycles and solver topology are always validated.
+dead-orientation rules. Pass the catalog to obtain those checks; Engine does so automatically.
 
-`migrateV4ToV5` returns the same shape with `MigrationDiagnostic`; narrow on `kind` before reading
-the migrated value.
+There is no migration entry point. A v4 or grouped document must be rewritten to this contract; a
+retained grouped member is refused by name as `track-legacy-field`.
 
-**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
+**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `AuthoredProperty`,
+`AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`,
+`LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`,
+`ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`. Value
+types are named through `@motion5/core/plugin-api`.
 
-An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
+**Plugins.** `PluginCatalog`, `PluginAdmissionError`, and the types `PluginDefinition`,
+`DependencySpec`, `EvaluationContext`, `Outputs`, `ResolvedInput` and `ValueSpec` from
+`@motion5/core/plugin-api`.
 
-**Plugins.** `PluginRegistry`, and the types `PluginDefinition`, `PluginStage` and `ResolvedPlugins`.
-
-`PluginRegistry.registerAll(definitions)` admits an array atomically in its authored order: a
-refusal stores none of the batch and preserves existing plugins. `register(definition)` uses the
-same admission path for one member. An empty array is a no-op; non-arrays throw
-`TypeError("Plugin definitions must be an array.")`. Definitions are validated and stored from one
-own-property snapshot, so an inherited-only `compose` is refused. Registration from a getter during
-admission is refused as `TypeError("Plugin registration is already in progress.")`.
-No imports or asynchronous work happen in either method. See
+`PluginCatalog.register({ plugins, models })` admits every definition or none: a refusal stores nothing
+and preserves existing plugins.
+Definitions are validated from one own-property snapshot and frozen before storage; a duplicate id,
+unknown member, reserved name or malformed value spec refuses under its named rule.
+`EngineOptions.plugins` accepts this catalog only. See
 [ADR-134](../ADR-134-atomic-plugin-registration.md).
 
-`PluginDefinition.solverChain?: SolverChainShape` declares `{ kind: "any" }` or
-`{ kind: "tree", memberPlugin }`; omission means `any` for an admitted plugin. A tree member name
-must be non-empty, contain no colon and differ from the solver name. Admission snapshots and
-freezes the shape, derives `pole` from `requirements.pole` and `joint` from the `"joint"` key claim.
-If the explicit keys do not claim it, `claimsKey("joint")` is asked once at admission. Compose and
-contribution hooks never run then.
-
-`PluginRegistry.capabilityOf(name)` returns a frozen `PluginCapability` or `undefined` for an
-unknown name. `dedicatedMembers()` returns a sorted frozen array derived from every admitted tree,
-even when that solver is unused in a project. These members cannot appear under an `any` solver.
-The Engine and its graph builders retain the registry by reference, so awaited loader additions
-are visible on the next compile. The three types are nameable from core and plugin-api. See
-[ADR-136](../ADR-136-registry-owned-solver-capabilities.md).
-
-A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
-
-`PluginDefinition.stage` is optional and closed to `PluginStage`, which is `"prepare"` or `"compose"`. An omitted stage composes, and a plugin that declares `contribute` must name `"prepare"`. It is a union rather than a `string` so that a third stage fails `typecheck` at every reader that owes it a decision instead of silently taking the compose rank; registration still refuses an unknown stage at run time, because a caller arriving from JavaScript or from a separately built module is not held to the declaration. That refusal is by identity, so a value that merely coerces to a member, an array or a boxed string, is refused as well rather than admitted and read later. See ADR-092.
+A `PluginDefinition` declares `id`, `inputs.values`, optional `inputs.requires`, named `outputs`, an
+optional `validate` and one `transform`. A dependency slot's `DependencySpec` declares the output
+specs it consumes, whether the slot is optional, and whether it binds one source or a map of member
+keys. A plugin's `transform` receives the resolved input and an `EvaluationContext` carrying the node
+id and progress, and returns named outputs.
 
 **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`,
 `createDefaultTriggerFactory`, `createTriggerFactory`, and the helper `acceptsExternalSignal`,
@@ -137,51 +127,52 @@ because the capability is not part of what makes something an `Interpolator`. Se
 
 Optional implementations for the composition root.
 
-- `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. `apply(patch)` writes a published patch and `applyValues(nodeId, values)` writes a record the caller derived, both through one filter, one composer and one dirty diff; the derived entry has no status to gate and no revision to compare. A key is written to `style`, to an attribute when it names no writable property on a target answering `setAttribute`, or to a property, decided by the target: SVG geometry such as `x1` or `points` therefore renders, while `cx` and `r` stay style writes and want a pose instead. A composed transform on an SVG target pins `transform-box: view-box` with `transform-origin: 0px 0px`, so `rotation` and `scale` pivot at the element's own origin. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?)` lives in `@motion5/dom/engine` with
+  `createBrowserClock(frameSource)`, plus DOM adapter types. `apply(patch)` writes a published patch and `applyValues(nodeId, values)` writes a record the caller derived, both through one filter, one composer and one dirty diff; the derived entry has no status to gate and no revision to compare. A key is written to `style`, to an attribute when it names no writable property on a target answering `setAttribute`, or to a property, decided by the target: SVG geometry such as `x1` or `points` therefore renders, while `cx` and `r` stay style writes and want a pose instead. A composed transform on an SVG target pins `transform-box: view-box` with `transform-origin: 0px 0px`, so `rotation` and `scale` pivot at the element's own origin. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
-- `FrameSource`, and the default graph builder.
+- The default graph builder.
 
 ## @motion5/plugins/transform, /fk, and /ik
 
-`transformPlugin` claims `x`, `y`, and `rotation` and passes them through.
+Each public subpath exports exactly one identified definition named for the path.
 
-`fkPlugin` is a compose-stage forward-kinematics plugin. It claims `x`, `y`, `length`, `rotation`, `weight`, `minRotation`, `maxRotation`, and `influence`, declares the `base` and optional `solver` requirements, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. `length` and `rotation` are the core geometry keys; the other claimed keys are the pivot, blend, constraint, and goal-influence vocabulary consumed by the rig. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
+`transformPlugin` takes a record `{ dx, dy }` and a `data` slot requiring `Points2d`, and publishes the same rows as `Points2d`, shifted, with rotation carried through.
 
-Registering both is the rig case: both claim `rotation`, so the author names the owner explicitly in
-the group. Author a bone as `fk: { values: { length, rotation }, requires: { base: "walk/pelvis" } }`
-and a root as `transform: { values: { x, y, rotation } }`. An ungrouped `rotation` is refused as
-`keyframes-ungrouped-key`; the parent's natural `x`, `y`, and `rotation` values arrive inside
-`inputs.base`, no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection
-primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
+`fkPlugin` takes no local values and binds three required slots: a `chain` body table, a
+`solved` table and a `base` record. It publishes `values` as a pose table, one row per body member,
+with each row's world frame. Body rows carry `parentId?`, `length`, `rotation`, `weight?`, `x?`, `y?`
+and optional joint-limit static fields.
 
-`ikPlugin` is the compose-stage inverse-kinematics plugin. It claims `flip`, `bend`, and `inspect`, declares `root`, scalar `target`, and dict `targets` requirements, and produces `rotations` plus opt-in `inspection`. Register it from `@motion5/plugins/ik`; the package declares this subpath alongside `/fk` and `/transform`. `rotations` contains local member angles, while `inspection` appears only when the solver authors `inspect: true`. See the [inverse kinematics guide](./inverse-kinematics.md) for the DOM-compatible coordinate convention, scale policy, lifecycle, and executable examples.
+`ikPlugin` takes a `param` record with optional `flip` and `inspect`, and binds `chain`, `goals` and
+`base`. It publishes `values` as one solved row per member (`rotation`, optional `residual` and
+`atBound`) and, when `inspect` is authored, an `inspect` record.
 
-## @motion5/plugins/transform3d, /fk3d, and /ik3d
+Author a 2D chain as one body table and one goals table:
 
-The 3D plugins use world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY`.
-Angles are in degrees and use the CSS `Rz · Rx · Ry` convention. Author 3D keyframes inside the
-named plugin groups; the [3D inverse-kinematics guide](./inverse-kinematics-3d.md) has executable
-projects and the coordinate, lifecycle, and renderer details.
+```js
+{ id: "body", output: { model: "Body2d" }, input: { values: [
+  { id: "upper", cells: { length: 40, rotation: 90, weight: 1 } },
+  { id: "fore", cells: { parentId: "upper", length: 36, rotation: 0 } },
+] } }
+{ id: "goals", output: { model: "Goals2d" }, input: { values: [
+  { id: "goal", cells: { memberId: "fore", x: 60, y: 20 } },
+] } }
+{ id: "root", output: { model: "Point2d" }, input: { values: { x: 0, y: 0, rotation: 0 } } }
+{ id: "solve", output: { plugin: "ik" }, input: {
+  param: { inspect: true },
+  requires: { chain: "body", goals: "goals", base: "root" },
+} }
+{ id: "pose", output: { plugin: "fk" }, input: {
+  requires: { chain: "body", solved: "solve", base: "root" },
+} }
+```
 
-`transform3dPlugin` claims and passes through `x`, `y`, `z`, `rotation`, `rotationX`, and
-`rotationY`. It declares no requirements and no additional outputs, and is the root/goal/pole
-frame plugin.
-
-`fk3dPlugin` claims `length`, `rotation`, `rotationX`, `rotationY`, `weight`, `x`, `y`, `z`,
-`joint`, `axisX`, `axisY`, `axisZ`, `minRotation`, `maxRotation`, `maxSwing`, `minTwist`,
-`maxTwist`, `influence`, and `orient`. It declares `base` and `solver` requirements and outputs the
-world-frame keys `x`, `y`, `z`, `rotation`, `rotationX`, and `rotationY` at each member's tip.
-`rotation`, `rotationX`, and `rotationY` are local rest orientation when authored and world
-orientation when composed; `weight` blends a solved orientation toward that rest orientation.
-
-`ik3dPlugin` claims the static `inspect` key. It declares `root`, scalar `target`, dict-valued
-`targets`, and optional `pole` requirements, and outputs `rotations3d` plus opt-in `inspection`.
-It solves chains and trees of `fk3d` members; `root` and goals provide world frames, while `pole`
-selects the bend side when one is bound.
+`fk3dPlugin` and `ik3dPlugin` use the same aggregate shape in three dimensions: body rows carry
+`rotation`, `rotationX`, `rotationY`, and goals rows address a leaf by `memberId` with `x`, `y`, `z`.
+`transform3dPlugin` does the same over `Points3d` with `{ dx, dy, dz }`.
 
 ## @motion5/core/testing
 
@@ -191,22 +182,20 @@ These are the implementations the core suite runs the port contract suite agains
 
 ## @motion5/core/internal
 
-A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types, plus the `liveOrAbsent` function. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
+A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, and `PatchSource` types, plus the `liveOrAbsent` function. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
 
-## @motion5/plugins/catalog and /loader
+## @motion5/plugins/loader
 
-`builtinCatalog` is an approved `PluginCatalog`: a `ReadonlyMap<string, PluginDescriptor>` of
-zero-configuration built-ins in historical registration order. Each descriptor declares
-`load(): Promise<PluginDefinition>` and optional `dependencies`. The catalog imports definitions
-only dynamically. Third-party definitions are approved explicitly with
-`new Map([...builtinCatalog, [name, descriptor]])`; authored strings never become import paths.
+`createPluginLoader(catalog)` takes a `ReadonlyMap<string, PluginDescriptor>` of approved
+descriptors and returns a `PluginLoader` with
+`ensure(registry, demand): Promise<EnsuredDemand>`. Each descriptor declares
+`load(): Promise<PluginDefinition>` and optional `dependencies`. A `PluginDemand` is either
+`{ kind: "project", project }` or `{ kind: "tracks", tracks }`; the loader reads the plugin ids those
+tracks name.
 
-`createPluginLoader(catalog)` snapshots that allowlist and returns a `PluginLoader` with
-`ensure(registry, demand): Promise<EnsuredDemand>`. A `PluginDemand` is either
-`{ kind: "project", project }` or `{ kind: "tracks", tracks }`. Ensure validates demand and plans
-its dependency closure before importing, then registers only missing definitions in catalog
-order with one synchronous atomic `registerAll`. The Engine retains that same registry by
-reference, so ensure also works after loading a project.
+Ensure validates demand and plans its dependency closure before importing, then registers only the
+missing definitions in one atomic `register` on the caller's `PluginCatalog`. The Engine retains
+that same catalog by reference, so ensure also works after loading a project.
 
 `EnsuredDemand` is `{ kind: "ensured", added }` or `{ kind: "refused", failure }`.
 `PluginLoadFailure` has six variants: `invalid-demand` carries diagnostics, `unknown-plugin`
@@ -214,78 +203,52 @@ carries name and authored path, `dependency-cycle` carries its cycle, `import-fa
 name and cause, `identity-mismatch` carries name and received identity, and `registration-refused`
 carries cause. `describeLoadFailure(failure)` owns their wording;
 `ensuredOrThrow(result)` returns added names or throws an Error preserving the available cause.
-These types, `PluginDescriptor` and `PluginCatalog` are exported from `/loader`.
 See [ADR-135](../ADR-135-approved-plugin-loader.md).
 
-Imports are cached across registries by a loader, but admission always targets the caller's
-registry. Failed imports are evicted for retry; JavaScript's own failed-module cache is not bypassed.
-Ensure rechecks registered names after its final await, so overlapping calls are idempotent.
-An already-registered authored root needs no catalog entry, while declared catalog dependencies
-must still be approved. Native imports are not abortable: a departed caller ignores the result
-and disposes any runtime it receives late.
+Imports are cached across catalogs by a loader, but admission always targets the caller's catalog.
+Failed imports are evicted for retry. Ensure rechecks registered names after its final await, so
+overlapping calls are idempotent. A plugin already registered needs no catalog entry, while declared
+catalog dependencies must still be approved.
 
 ### Ensure before a synchronous live edit
 
-Keep one registry per Engine. Await ensure outside the transaction, then call the synchronous
-edit. Neither `addTrack` nor `edit` imports plugins; an unseen group is still refused without
-changing the graph. A refused ensure registers nothing and is not permission to apply the edit.
+Keep one catalog per Engine. Await ensure outside the transaction, then call the synchronous edit.
+Neither `addTrack` nor `edit` imports plugins; an unseen id is refused without changing the graph.
 
 ```ts
-import { Engine, PluginRegistry, type TrackDefinition } from "@motion5/core";
-import { builtinCatalog } from "@motion5/plugins/catalog";
+import { Engine, PluginCatalog, type TrackDefinition } from "@motion5/core";
+import { fkPlugin } from "@motion5/plugins/fk";
 import { createPluginLoader, ensuredOrThrow } from "@motion5/plugins/loader";
 
-const plugins = new PluginRegistry();
-const loader = createPluginLoader(builtinCatalog);
-ensuredOrThrow(await loader.ensure(plugins, { kind: "project", project: definition }));
+const approved = new Map([["fk", { load: async () => fkPlugin }]]);
+const plugins = new PluginCatalog();
+ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "project", project }));
 const project = new Engine({ clock, interpolator, scheduler, plugins }).load(definition);
 
 const tracks: readonly TrackDefinition[] = [
   {
     id: "bone",
-    keyframes: {
-      fk: { values: { length: 20, rotation: 0 }, requires: { base: "~/root" } },
+    output: { plugin: "fk" },
+    input: {
+      requires: { chain: "body", solved: "solve", base: "~/root" },
     },
   },
 ];
-// The loaded definition already supplies the free transform track "~/root".
-ensuredOrThrow(await loader.ensure(plugins, { kind: "tracks", tracks }));
+ensuredOrThrow(await createPluginLoader(approved).ensure(plugins, { kind: "tracks", tracks }));
 project.edit((edit) => {
   for (const track of tracks) edit.addTrack(track);
 });
 ```
 
-For a single track the same preflight precedes `project.addTrack(track)`. A recipe is never async:
-it stages and commits synchronously. The IK playground uses this lazy composition-root policy;
-`loadPlayground` resolves only after load and mount. `startPlaygroundSession` is its one lifecycle
-owner, a `loading | active | ended` union: stop is idempotent and releases weight subscription,
-project, then clock; a runtime arriving after stop is disposed without publishing; a failure while
-current releases once and becomes the App's `failed` view (`TH-215` to `TH-224`). React demo stays synchronous so GSAP
-measures committed DOM in `useLayoutEffect`; pose gap filler's synchronous rig loaders also remain
-first-class.
-
-## @motion5/plugins/rig
-
-`rigPlugin` aggregates dict-valued `requires.bones` world frames and `requires.controls` positions.
-It claims no authored keys, solves nothing, declares no limits and provides no renderer serializer.
-Its `pose` and `controls` outputs are nested records. Always decode through `readRigValues(values)`,
-which returns `RigValues` with nameable `RigPose` and `RigControls` types. Absent dictionaries are
-empty records; present bones with absent frame fields use `readFrame3d`'s zero defaults. Keys are
-sorted, and controls retain only `x`, `y` and `z`.
-
-An unbound data track has no rig group and publishes no `pose` key. Empty groups, values and
-requirement dictionaries are schema refusals, not a spelling for an unbound rig. Downstream
-consumers bind `requires: { rig: "rig-track-id" }` in their own plugin group. Rig is the last
-zero-configuration entry in `builtinCatalog`.
-
 ## @motion5/plugins/pose-classify
 
-`createPoseClassifyPlugin(options)` returns a pure definition requiring a rig and publishing
-`label` and `confidence`. `PoseClassifyOptions` names `templates`, positive finite `maxDistance`
-in degrees, optional `name` (default `pose-classify`) and `unknownLabel` (default `unknown`).
-Each `PoseTemplate` contains a distinct non-empty label and a non-empty bone record of finite
-`rotation`, `rotationX` and `rotationY` angles. A template label cannot equal the unknown label.
-Invalid configuration throws TypeError eagerly; template copies are deeply frozen.
+`createPoseClassifyPlugin(options)` returns a pure plugin definition binding directly to an FK pose
+table track (`requires: { pose: "..." }`) and publishing `{ label, confidence }` records.
+`PoseClassifyOptions` names `templates`, positive finite `maxDistance` in degrees, optional `name`
+(default `pose-classify`) and `unknownLabel` (default `unknown`). Each `PoseTemplate` contains a
+distinct non-empty label and a non-empty bone record of finite `rotation`, `rotationX` and
+`rotationY` angles. A template label cannot equal the unknown label. Invalid configuration throws
+TypeError eagerly; template copies are deeply frozen.
 
 Distance is the mean per-bone geodesic rotation angle, not a per-axis Euler difference. Position is
 ignored. A missing bone scores Infinity, a present zero-default bone remains a candidate, ties keep
@@ -338,9 +301,9 @@ which cannot be enumerated). It never removes anything from the scene graph.
 
 ## @motion5/react
 
-`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, `liveOrAbsent(patch)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
+`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, `liveOrAbsent(patch)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `LivePatch`, `PatchListener`, and `PatchSource` types.
 
-`useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and requires a `PatchSource & RenderMetadataSource`. `useDerivedDomPatch` returns one for a target whose values are a `PatchDerivation` over the nodes it names: it takes a plain `PatchSource`, runs the derivation only while every named node is ready, and hides the target while one is not or while the derivation returns `undefined`. Diagnostics and markup that must render absence rather than hide it stay on `usePatch`. See ADR-073 and ADR-075.
+`useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and takes a `PatchSource`. `useDerivedDomPatch` returns one for a target whose values are a `PatchDerivation` over the nodes it names: it takes a `PatchSource`, runs the derivation only while every named node is ready, and hides the target while one is not or while the derivation returns `undefined`. Diagnostics and markup that must render absence rather than hide it stay on `usePatch`. See ADR-073 and ADR-075.
 
 `usePatch` answers `LivePatch | undefined`. The store behind it collapses a node's terminal publication to absence rather than serving it, so a component renders the node's disappearance as the absence its markup already handles instead of as a fourth status it has to know to check. `liveOrAbsent(patch)` is that collapse, exported because `get` answers the live union while `subscribeNode` delivers all four variants: a consumer implementing a source over a wire that carries a terminal patch owes the conversion, and this is the one function that makes it. It answers the patch it was handed for `ready`, `blocked` and `error`, by identity rather than by copy, so snapshot stability survives it, and `undefined` for `destroyed`. A consumer that wants the terminal event itself reads it from `subscribeNode`, which is the only place it is ever delivered.
 

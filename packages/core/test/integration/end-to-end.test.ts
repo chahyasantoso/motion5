@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/testing/fakes";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createRealGsapSeam } from "../support/real-gsap";
+import { recordValues } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -16,16 +18,15 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "arm",
-          keyframes: {
-            style: {
-              values: {
-                opacity: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 1 },
-                ],
-              },
+          input: {
+            values: {
+              opacity: [
+                { p: 0, v: 0 },
+                { p: 1, v: 1 },
+              ],
             },
           },
+          output: { model: "TestRecord" },
         },
       ],
     },
@@ -40,7 +41,7 @@ describe("real end-to-end product path (E2)", () => {
       nodeId === "hero/arm" ? target : undefined,
     );
     const seam = createRealGsapSeam();
-    const runtime = new Engine({
+    const runtime = testEngine({
       clock: createManualClock(),
       interpolator: seam.interpolator,
       scheduler: createFakeScheduler(),
@@ -57,7 +58,7 @@ describe("real end-to-end product path (E2)", () => {
     expect(patch).toBeDefined();
     if (patch?.status !== "ready")
       throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
-    expect(patch.values.opacity).toBeCloseTo(0.5, 10);
+    expect(recordValues(patch).opacity).toBeCloseTo(0.5, 10);
 
     dom.apply(patch);
     expect(target.style.opacity).toBeCloseTo(0.5, 10);

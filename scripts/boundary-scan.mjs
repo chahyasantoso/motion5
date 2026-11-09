@@ -40,7 +40,8 @@ const allowedPublicExports = new Set([
   "PatchListener",
   "PatchRender",
   "patchRender",
-  "migrateV4ToV5",
+  "Value",
+  "TableOf",
   "MigrationResult",
   "resolveTriggerDefinition",
   "validateV5",
@@ -65,14 +66,18 @@ const allowedPublicExports = new Set([
   "SchemaTransaction",
   "ValueTransaction",
   "LiveValues",
-  "LiveValueKeyError",
-  "PluginRegistry",
   "PluginDefinition",
-  "SolverChainShape",
-  "PluginCapability",
+  "PluginCatalog",
+  "PluginAdmissionError",
+  "PluginDescription",
+  "PluginDefinition",
+  "DescribedSlot",
+  "DependencySpec",
+  "EvaluationContext",
+  "Outputs",
+  "ResolvedInput",
+  "ValueSpec",
   "PluginCapabilities",
-  "PluginStage",
-  "ResolvedPlugins",
   "assertClock",
   "createManualClock",
   "Clock",
@@ -129,7 +134,7 @@ function asSpecifierList(source, specifiers) {
 }
 export function importsBoundary(source, specifiers) {
   return asSpecifierList(source, specifiers).some((specifier) =>
-    /^(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
+    /^(?!@motion5\/moves$)(?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:\/|$)/.test(
       specifier,
     ),
   );
@@ -537,19 +542,71 @@ async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
   return declared;
 }
 
+/** Workspaces whose manifest declares `"motion5": { "layer": "pure" }`, by folder and by package name. */
+async function pureLayer(scanRoot, workspaces) {
+  const folders = new Set();
+  const names = new Set();
+  for (const workspace of workspaces) {
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    if (manifest?.motion5?.layer !== "pure" || typeof manifest.name !== "string") continue;
+    folders.add(workspace);
+    names.add(manifest.name);
+  }
+  return { folders, names };
+}
+
+/** The package a bare specifier names: `@scope/name` or `name`, without its subpath. */
+function packageOf(specifier) {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
 /** Extracted implementations have one core contract and no dependency on a host or renderer. */
-function checkPluginSource(source, file, specifiers, violations) {
+function checkPluginSource(source, file, specifiers, violations, pure) {
   const allowed = specifiers.every((specifier) => {
     if (specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api") return true;
+    if (pure.names.has(packageOf(specifier)) || specifier === "@motion5/dom") return true;
     if (!specifier.startsWith(".")) return false;
     const target = posix.normalize(posix.join(posix.dirname(file), specifier));
     return target.startsWith("packages/plugins/src/");
   });
   if (!allowed) violations.push(`${file}: import outside plugin package contract`);
+  if (
+    /(?:^|\/)domain\.ts$/.test(file) &&
+    specifiers.some(
+      (specifier) => specifier === "@motion5/core" || specifier === "@motion5/core/plugin-api",
+    )
+  )
+    violations.push(`${file}: domain layer must import zero core code`);
   if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
 }
+/** Page tools work on any page, so they import node, a browser driver and a dev server, never motion5. */
+function checkPageTools(file, specifiers, violations) {
+  const allowed = specifiers.every((specifier) =>
+    specifier.startsWith(".")
+      ? posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(PAGE_TOOLS)
+      : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
+  );
+  if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
+}
+const PAGE_TOOLS = "packages/tools/src/page/";
+/** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
+function checkPureSource(workspace, file, specifiers, violations, pure) {
+  const inside = specifiers.every((specifier) =>
+    specifier.startsWith(".")
+      ? posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(`${workspace}/src/`)
+      : pure.names.has(packageOf(specifier)),
+  );
+  if (!inside) violations.push(`${file}: pure package import outside the pure layer`);
+}
 /**
- * ADR-135: the built-in catalog reaches definitions only through native `import("./x")`. Its one
+ * ADR-135: the built-in catalog reaches definitions only through native `import("../x")`. Its one
  * static edge is the type-only `import type { ... } from "./loader"`, which emits nothing; a value
  * import of the loader, a re-export, or a side-effect import of any relative module is eager.
  * Reads the same comment- and string-masked code as `importSpecifiers`.
@@ -568,15 +625,22 @@ export async function scan(scanRoot = root) {
   await scanCoreEntries(scanRoot, violations);
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
+  const pure = await pureLayer(scanRoot, workspaces);
   for (const workspace of workspaces) {
     if (workspace === corePackage) continue;
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
+      if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
+      if (pure.folders.has(workspace))
+        checkPureSource(workspace, file, specifiers, violations, pure);
       if (workspace === "packages/plugins") {
-        checkPluginSource(source, file, specifiers, violations);
-        if (file === "packages/plugins/src/catalog.ts" && catalogHasStaticRelativeImport(source))
+        checkPluginSource(source, file, specifiers, violations, pure);
+        if (
+          file === "packages/plugins/src/host/builtin-catalog.ts" &&
+          catalogHasStaticRelativeImport(source)
+        )
           violations.push(`${file}: plugin definitions must be reached through lazy imports`);
       }
       if (importsCoreInternals(source, specifiers))

@@ -14,7 +14,7 @@ export const testingSourcePathViolationFixture =
 export const coreEntrypointFixture = "import { Engine } from '@motion5/core';";
 export const pluginEntrypointFixture = "import { fkPlugin } from '@motion5/plugins/fk';";
 export const adapterEntrypointFixture =
-  "import { createBrowserClock } from '@motion5/core/adapters/browser-clock';";
+  "import { createMicrotaskScheduler } from '@motion5/core/adapters';";
 export const plugin3dEntrypointFixture = "import { ik3dPlugin } from '@motion5/plugins/ik3d';";
 export const undeclaredSubpathFixture = "import { solveFabrik } from '@motion5/plugins/fabrik';";
 export const pluginRendererViolationFixture = "import { Object3D } from 'three';";

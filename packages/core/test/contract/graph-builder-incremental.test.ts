@@ -16,16 +16,20 @@ describe("IncrementalGraphBuilder Equivalence", () => {
         tracks: [
           {
             id: "t1",
-            keyframes: {
-              transform: {
-                values: {
-                  x: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 10 },
-                  ],
+            input: {
+              values: [
+                {
+                  id: "row",
+                  cells: {
+                    x: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 10 },
+                    ],
+                  },
                 },
-              },
+              ],
             },
+            output: { model: "TestTable" },
           },
         ],
       },
@@ -33,17 +37,20 @@ describe("IncrementalGraphBuilder Equivalence", () => {
     freeTracks: [
       {
         id: "f1",
-        keyframes: {
-          transform: {
-            values: {
-              y: [
-                { p: 0, v: 0 },
-                { p: 1, v: 20 },
-              ],
+        input: {
+          values: [
+            {
+              id: "row",
+              cells: {
+                y: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 20 },
+                ],
+              },
             },
-          },
+          ],
         },
-        observes: [{ source: "m1/t1" }],
+        output: { model: "TestTable" },
       },
     ],
   });
@@ -68,17 +75,20 @@ describe("IncrementalGraphBuilder Equivalence", () => {
     // Append a new track (simulating adoption)
     const newTrack: TrackDefinition = {
       id: "f2",
-      keyframes: {
-        transform3d: {
-          values: {
-            z: [
-              { p: 0, v: 0 },
-              { p: 1, v: 30 },
-            ],
+      input: {
+        values: [
+          {
+            id: "row",
+            cells: {
+              z: [
+                { p: 0, v: 0 },
+                { p: 1, v: 30 },
+              ],
+            },
           },
-        },
+        ],
       },
-      observes: [{ source: "~/f1" }],
+      output: { model: "TestTable" },
     };
 
     const nextProject: ProjectDefinition = {

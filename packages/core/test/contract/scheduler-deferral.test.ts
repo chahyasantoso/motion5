@@ -9,6 +9,8 @@ import {
 } from "../../src/ports/scheduler";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../src/runtime/patch-registry";
+import { recordValues } from "../support/v5-builders";
+import { testGraphBuilder } from "../support/builtin-registry";
 
 /**
  * Issue #377, found by the quality pass over #375.
@@ -29,13 +31,21 @@ import type { PatchBatch } from "../../src/runtime/patch-registry";
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -174,6 +184,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let attempts = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           attempts += 1;
@@ -215,7 +226,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     runtime.dispose();
   });
 
@@ -301,6 +312,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let calls = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           calls += 1;
@@ -332,7 +344,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const captionLabelPatch2 = runtime.registry.get("caption/label");
     if (captionLabelPatch2?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch2.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch2).node).toBe("caption/label");
     runtime.dispose();
   });
 
@@ -340,6 +352,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const clock = createManualClock();
     let attempts = 0;
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler: {
         schedule(job: () => void): Cancel {
           attempts += 1;
@@ -381,7 +394,7 @@ describe("a Scheduler defers, and the port is what says so", () => {
     const captionLabelPatch3 = runtime.registry.get("caption/label");
     if (captionLabelPatch3?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch3?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch3.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch3).node).toBe("caption/label");
     runtime.dispose();
   });
 });

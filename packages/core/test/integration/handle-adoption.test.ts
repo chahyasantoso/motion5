@@ -1,15 +1,23 @@
 import { describe, expect, it } from "vitest";
+import type { Patch } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 const project = {
   schemaVersion: 5 as const,
-  motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" as const },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 function makeHandle() {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -19,7 +27,7 @@ function makeHandle() {
 describe("runtime track addition through ProjectHandle (G2)", () => {
   it("adds a free track and publishes a ready patch on the commit", () => {
     const handle = makeHandle();
-    const added = handle.addTrack({ id: "cursor" });
+    const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
     expect(added.id).toBe("~/cursor");
     // On the commit, not on a following seek. A structural commit seeds its own flush, so the
     // added node is ready through the handle before anything else is asked of it, and the seek
@@ -34,7 +42,7 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
 
   it("remove() takes the node out of the graph", () => {
     const handle = makeHandle();
-    const added = handle.addTrack({ id: "cursor" });
+    const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
     added.remove();
     // Seeking a removed node should produce no patch for that node.
     const batch = handle.seek("hero/arm", 0);
@@ -46,24 +54,23 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     const handle = makeHandle();
     const bad = {
       id: "bad",
-      keyframes: {
-        transform: {
-          values: {
-            x: [
-              { p: Number.NaN, v: 0 },
-              { p: 0.5, v: 1 },
-            ],
-          },
+      input: {
+        values: {
+          x: [
+            { p: Number.NaN, v: 0 },
+            { p: 0.5, v: 1 },
+          ],
         },
       },
+      output: { model: "TestRecord" },
     };
-    expect(() => handle.addTrack(bad)).toThrow(/stop-position/);
+    expect(() => handle.addTrack(bad)).toThrow(/cell-stops-invalid/);
     handle.dispose();
   });
 
   it("adds a track into an existing motion and receives motion signals", () => {
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -71,22 +78,21 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     const added = handle.addTrack(
       {
         id: "leg",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0, v: 0 },
-                { p: 1, v: 100 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 1, v: 100 },
+            ],
           },
         },
+        output: { model: "TestRecord" },
       },
       { motionId: "hero" },
     );
     expect(added.id).toBe("hero/leg");
 
-    let latestPatch: any;
+    let latestPatch: Patch | undefined;
     handle.subscribeNode("hero/leg", (patch) => {
       latestPatch = patch;
     });
@@ -94,9 +100,11 @@ describe("runtime track addition through ProjectHandle (G2)", () => {
     handle.signal("hero", { type: "manual", progress: 0.5 });
     scheduler.flush();
 
-    expect(latestPatch).toBeDefined();
-    expect(latestPatch.nodeId).toBe("hero/leg");
-    expect(latestPatch.values).toEqual({ x: 50 });
+    expect(latestPatch?.status).toBe("ready");
+    expect(latestPatch?.nodeId).toBe("hero/leg");
+    expect(latestPatch?.status === "ready" ? latestPatch.outputs.values : undefined).toEqual({
+      x: 50,
+    });
 
     added.remove();
     const batch = handle.seek("hero/arm", 0);

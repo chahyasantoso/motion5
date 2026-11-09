@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic, PluginRequiresBinding } from "../../../src/contract/v5";
-import { collectTrack, edgeRequirement, resolveRequirementEdge } from "../../../src/graph/ir";
+import type { Diagnostic, TrackDefinition } from "../../../src/contract/v5";
+import { collectTrack } from "../../../src/graph/ir";
+import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 
-const binding = (source: string): PluginRequiresBinding =>
+type Binding = {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  readonly authoredPath: string;
+};
+const binding = (source: string): Binding =>
   Object.freeze({ plugin: "fk", slot: "base", source, authoredPath: "fk.requires.base" });
 
 describe("requirement edge construction", () => {
@@ -20,11 +27,10 @@ describe("requirement edge construction", () => {
     expect(resolved.value).toEqual({
       observerId: "walk/chest",
       sourceId: "walk/pelvis",
-      role: "input",
       requirement: { plugin: "fk", slot: "base" },
     });
     expect(Object.isFrozen(resolved.value)).toBe(true);
-    expect(Object.isFrozen(edgeRequirement(resolved.value))).toBe(true);
+    expect(Object.isFrozen(resolved.value.requirement)).toBe(true);
   });
 
   it("Z-2 reports requirement-source at the authored path and produces no edge", () => {
@@ -46,16 +52,17 @@ describe("requirement edge construction", () => {
     });
   });
 
-  it("Z-3 leaves collectTrack's edges and diagnostics unchanged for a mixed track", () => {
+  it("Z-3 leaves collectTrack's edges and diagnostics unchanged for a bound track", () => {
     const diagnostics: Diagnostic[] = [];
     const node = collectTrack(
       {
         id: "chest",
-        observes: [{ source: "pelvis" }],
-        keyframes: {
-          fk: { values: { length: [{ p: 0, v: 1 }] }, requires: { base: "pelvis" } },
+        output: { plugin: "fk" },
+        input: {
+          values: { length: [{ p: 0, v: 1 }], rotation: 0 },
+          requires: { chain: "pelvis" },
         },
-      },
+      } satisfies TrackDefinition,
       "motion",
       "walk",
       0,
@@ -64,12 +71,10 @@ describe("requirement edge construction", () => {
 
     expect(diagnostics).toEqual([]);
     expect(node?.edges).toEqual([
-      { observerId: "walk/chest", sourceId: "walk/pelvis", role: "output" },
       {
         observerId: "walk/chest",
         sourceId: "walk/pelvis",
-        role: "input",
-        requirement: { plugin: "fk", slot: "base" },
+        requirement: { plugin: "fk", slot: "chain" },
       },
     ]);
   });

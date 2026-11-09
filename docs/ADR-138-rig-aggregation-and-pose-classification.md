@@ -1,5 +1,8 @@
 # ADR-138: Rig aggregation and frame-local pose classification
 
+> [!NOTE]
+> **Superseded:** The intermediate rig aggregation plugin defined in this ADR was retired in Slice 10 (issue #500 Phase 5). Pose classification and downstream consumers bind directly to aggregate FK pose tables.
+
 **Status:** Accepted for the prepared implementation, 2026-10-05; not a merge or CI claim.
 
 ## Context

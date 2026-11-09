@@ -12,11 +12,8 @@ import {
   type Outcome,
 } from "../../../src/lang/outcome";
 
-const warning: Diagnostic = diagnostic("observation-pending-reference", "arm", "Pending.", [
-  "source",
-  "arm",
-]);
-const refusal: Diagnostic = diagnostic("observation-source-shape", "arm", "Invalid source.");
+const warning: Diagnostic = diagnostic("source-pending", "arm", "Pending.", ["source", "arm"]);
+const refusal: Diagnostic = diagnostic("requirement-source", "arm", "Invalid source.", ["source"]);
 
 const OUTCOME = code(fileURLToPath(new URL("../../../src/lang/outcome.ts", import.meta.url)));
 

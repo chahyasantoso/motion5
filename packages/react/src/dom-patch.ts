@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useMemo, type RefCallback } from "react";
-import type { DomPatchAdapter } from "@motion5/core/adapters";
-import type { PatchSource, RenderMetadata, RenderMetadataSource } from "@motion5/core/internal";
+import { useCallback, useEffect, type RefCallback } from "react";
+import type { DomPatchAdapter } from "@motion5/dom/engine";
+import type { PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
-
-const NO_SERIALIZERS: RenderMetadata["outputSerializers"] = Object.freeze({});
 
 /**
  * Binds one published node to one DOM or SVG target and returns the callback ref that attaches it.
@@ -19,19 +17,9 @@ const NO_SERIALIZERS: RenderMetadata["outputSerializers"] = Object.freeze({});
  * and for `usePatch` when absence must be rendered or a diagnostic read. See ADR-073 and ADR-075.
  */
 export function useDomPatch<T extends Element>(
-  source: PatchSource & RenderMetadataSource,
+  source: PatchSource,
   nodeId: string,
 ): RefCallback<T> {
-  // A live view rather than a snapshot: a recompiled node resolves to a new plugin chain, and a
-  // serializer record captured at construction would write the next output raw.
-  const metadata = useMemo<RenderMetadata>(
-    () => ({
-      get outputSerializers() {
-        return source.renderMetadata(nodeId)?.outputSerializers ?? NO_SERIALIZERS;
-      },
-    }),
-    [nodeId, source],
-  );
   const pose = useCallback(
     (adapter: DomPatchAdapter) => {
       const retained = source.get(nodeId);
@@ -39,7 +27,7 @@ export function useDomPatch<T extends Element>(
     },
     [nodeId, source],
   );
-  const binding = useDomBinding<T>(metadata, pose);
+  const binding = useDomBinding<T>(pose);
 
   // Subscribe, then write the retained patch, so a value published between the two is applied rather
   // than lost and an already-published node renders on mount.

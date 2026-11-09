@@ -152,8 +152,8 @@ describe("source-region anchors", () => {
     expect(readers.length).toBeGreaterThanOrEqual(13);
     expect(readers.map(({ path }) => path)).toEqual(
       expect.arrayContaining([
-        "packages/core/test/integration/bare-authored-leaf.test.ts",
-        "packages/core/test/integration/plugin-group-values-section.test.ts",
+        "packages/core/test/integration/authored-leaf-reader.test.ts",
+        "packages/plugins/test/public-subpaths.test.ts",
         "packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts",
       ]),
     );

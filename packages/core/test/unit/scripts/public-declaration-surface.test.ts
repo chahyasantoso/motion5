@@ -7,6 +7,8 @@ import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
 const root = fileURLToPath(new URL("../../../../..", import.meta.url));
+// The local compiler run by this Node binary, so the spawn carries no shell and no batch file.
+const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
 const FORBIDDEN_DIRECTORY = /\/(?:runtime|graph)\//;
 
 async function declarationFiles(directory: string): Promise<string[]> {
@@ -81,15 +83,14 @@ async function withEmitted<T>(
           paths: {
             "@motion5/core": ["packages/core/src/index.ts"],
             "@motion5/core/*": ["packages/core/src/*"],
+            "@motion5/moves": ["packages/moves/src/index.ts"],
+            "@motion5/rig": ["packages/rig/src/index.ts"],
           },
         },
         files: sources.map((source) => join(root, source)),
       }),
     );
-    await execFileAsync(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc", "-p", config], {
-      cwd: root,
-      shell: process.platform === "win32",
-    });
+    await execFileAsync(process.execPath, [tsc, "-p", config], { cwd: root });
     const emitted = join(out, "emitted");
     return await use(emitted, new Set(await declarationFiles(emitted)));
   } finally {
@@ -122,9 +123,13 @@ async function closureOf(
           ? [join(out, "core", "src", "plugin-api.d.ts")]
           : specifier === "@motion5/core"
             ? [join(out, "core", "src", "index.d.ts")]
-            : specifier.startsWith(".")
-              ? declarationCandidates(current, specifier)
-              : [];
+            : specifier === "@motion5/moves"
+              ? [join(out, "moves", "src", "index.d.ts")]
+              : specifier === "@motion5/rig"
+                ? [join(out, "rig", "src", "index.d.ts")]
+                : specifier.startsWith(".")
+                  ? declarationCandidates(current, specifier)
+                  : [];
       if (candidates.length === 0) {
         unresolved.push(`${shown} -> ${specifier}`);
         continue;
@@ -143,7 +148,9 @@ async function closureOf(
 describe("public declaration surface (P1-9)", () => {
   it("scans the emitted entry declaration closure, not just source strings", async () => {
     await withEmitted(["packages/core/src/index.ts"], async (out, emitted) => {
-      const entries = [...emitted].filter((path) => path.endsWith("index.d.ts"));
+      const entries = [...emitted].filter((path) =>
+        path.endsWith(join("core", "src", "index.d.ts")),
+      );
       expect(entries).toHaveLength(1);
       const entry = entries[0];
       expect(entry).toBeDefined();
@@ -169,13 +176,19 @@ describe("public declaration surface (P1-9)", () => {
       return name === undefined ? [] : [name];
     });
     expect(plugins).toEqual(
-      expect.arrayContaining(["transform3d", "fk3d", "ik3d", "rig", "pose-classify"]),
+      expect.arrayContaining(["transform3d", "fk3d", "ik3d", "pose-classify"]),
     );
+    const moduleOf = (name: string): string => {
+      const target = Reflect.get(Object(manifest.exports[`./${name}`]), "default");
+      return String(target)
+        .replace(/^\.\/dist\//, "")
+        .replace(/\.js$/, "");
+    };
     await withEmitted(
-      plugins.map((name) => `packages/plugins/src/${name}.ts`),
+      plugins.map((name) => `packages/plugins/src/${moduleOf(name)}.ts`),
       async (out, emitted) => {
         for (const name of plugins) {
-          const entry = join(out, "plugins", "src", `${name}.d.ts`);
+          const entry = join(out, "plugins", "src", `${moduleOf(name)}.d.ts`);
           expect(emitted.has(entry), name).toBe(true);
           const { reachable, unresolved, forbidden } = await closureOf(out, emitted, entry);
           expect(unresolved, name).toEqual([]);

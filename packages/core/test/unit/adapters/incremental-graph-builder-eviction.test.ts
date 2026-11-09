@@ -4,6 +4,7 @@ import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #225.
@@ -20,12 +21,24 @@ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v
  */
 const HERO: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
-const HERO_AND_DUST: ProjectDefinition = { ...HERO, freeTracks: [{ id: "dust" }] };
+const HERO_AND_DUST: ProjectDefinition = {
+  ...HERO,
+  freeTracks: [{ id: "dust", output: { model: "TestRecord" } }],
+};
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -36,6 +49,7 @@ function freeProject(tracks: readonly TrackDefinition[]): ProjectDefinition {
 /** Drives the real runtime path, which is what the issue reports, rather than `build` directly. */
 function runtimeOn(project: ProjectDefinition, builder: IncrementalGraphBuilder): ProjectRuntime {
   return new ProjectRuntime(project, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     graphBuilder: builder,
@@ -52,7 +66,13 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     // One motion track dropped, everything else identical. The retained entry is what leaked.
     const withoutLeg: ProjectDefinition = {
       ...HERO_AND_DUST,
-      motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+      motions: [
+        {
+          id: "hero",
+          trigger: { type: "manual" },
+          tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+        },
+      ],
     };
     expect(builder.build(withoutLeg).graph).toBeDefined();
     expect(builder.cachedNodeCount).toBe(2);
@@ -81,7 +101,10 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     const project = runtimeOn(HERO, builder);
 
     project.addMotion({ id: "cameo", trigger: { type: "manual" }, tracks: [] });
-    const pan = project.addTrack({ id: "pan" }, { motionId: "cameo" });
+    const pan = project.addTrack(
+      { id: "pan", output: { model: "TestRecord" } },
+      { motionId: "cameo" },
+    );
     expect(builder.cachedNodeCount).toBe(3);
 
     // The second teardown the issue names. `destroyMotion` owns no builder state and does not learn
@@ -110,7 +133,11 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
 
   it("EV-5 rebuilds a re-authored node rather than answering from an evicted entry", () => {
     const builder = new IncrementalGraphBuilder(builtinRegistry());
-    const original: TrackDefinition = { id: "dust", duration: 100 };
+    const original: TrackDefinition = {
+      id: "dust",
+      duration: 100,
+      output: { model: "TestRecord" },
+    };
     expect(builder.build(freeProject([original])).graph?.nodeById["~/dust"]?.track).toBe(original);
 
     expect(builder.build(freeProject([])).graph).toBeDefined();
@@ -118,7 +145,11 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
 
     // Same node id, new object. Eviction must not have opened a stale-hit path, and the freshness
     // check that makes this a miss is object identity rather than the key.
-    const reauthored: TrackDefinition = { id: "dust", duration: 250 };
+    const reauthored: TrackDefinition = {
+      id: "dust",
+      duration: 250,
+      output: { model: "TestRecord" },
+    };
     const node = builder.build(freeProject([reauthored])).graph?.nodeById["~/dust"];
     expect(node?.track).toBe(reauthored);
     expect(node?.track.duration).toBe(250);
@@ -147,7 +178,12 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
 
     // A build that completes and is rejected is a different thing from a build that throws: it
     // walked every track it was given, so it sweeps, and the entries it walked survive.
-    const duplicate = builder.build(freeProject([{ id: "dust" }, { id: "dust" }]));
+    const duplicate = builder.build(
+      freeProject([
+        { id: "dust", output: { model: "TestTable" } },
+        { id: "dust", output: { model: "TestTable" } },
+      ]),
+    );
     expect(duplicate.graph).toBeUndefined();
     expect(duplicate.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["node-duplicate"]);
     expect(builder.cachedNodeCount).toBe(1);
@@ -155,8 +191,8 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
 
   it("EV-7 makes one builder shared by two projects thrash to a permanent miss", () => {
     const builder = new IncrementalGraphBuilder(builtinRegistry());
-    const left = freeProject([{ id: "dust" }]);
-    const right = freeProject([{ id: "smoke" }]);
+    const left = freeProject([{ id: "dust", output: { model: "TestTable" } }]);
+    const right = freeProject([{ id: "smoke", output: { model: "TestTable" } }]);
 
     const before = builder.build(left).graph?.nodeById["~/dust"];
     expect(builder.build(right).graph).toBeDefined();

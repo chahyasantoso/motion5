@@ -9,8 +9,8 @@ import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runti
  * Every case below asks whether a member is present rather than what it holds, because that is the
  * one shape which typechecks on both sides of the deletion: `"values" in patch` compiles against
  * the flat interface and against the union replacing it, so these cases fail on an assertion rather
- * than on a compile. `docs/GUARDRAILS.md` names that shape and `RA-16` is its precedent, and it is
- * the reason this file declares no seam and casts nothing.
+ * than on a compile. `AGENTS.md` asks a failing-first case to take that shape, `RA-16` is its
+ * precedent, and that is the reason this file declares no seam and casts nothing.
  *
  * The accepting direction is asserted in the same rig, because a registry publishing nothing at all
  * would be green against the refusals alone. So the ready case pins every member a ready patch does
@@ -56,7 +56,12 @@ function required(patch: Patch | undefined): Patch {
 describe("a patch carries only the payload its status owns", () => {
   it("gives a blocked patch no payload, rather than the last good pose", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const blocked = required(
       publish(registry, 2, {
         nodeId: NODE,
@@ -82,7 +87,12 @@ describe("a patch carries only the payload its status owns", () => {
 
   it("gives an errored patch no payload either", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const errored = required(
       publish(registry, 2, {
         nodeId: NODE,
@@ -121,7 +131,12 @@ describe("a patch carries only the payload its status owns", () => {
 
   it("gives a destroyed patch nothing beyond its identity and its status", () => {
     const registry = open();
-    publish(registry, 1, { nodeId: NODE, values: { x: 1 }, sourceProgress: 0.5, status: "ready" });
+    publish(registry, 1, {
+      nodeId: NODE,
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0.5,
+      status: "ready",
+    });
     const seen: Patch[] = [];
     registry.subscribeNode(NODE, (patch) => seen.push(patch));
 
@@ -144,7 +159,7 @@ describe("a patch carries only the payload its status owns", () => {
     const ready = required(
       publish(registry, 1, {
         nodeId: NODE,
-        values: { x: 1 },
+        outputs: { values: { x: 1 } },
         sourceProgress: 0.5,
         sourceRevisions: { "hero/shoulder": 3 },
         status: "ready",
@@ -152,12 +167,12 @@ describe("a patch carries only the payload its status owns", () => {
     );
 
     expect(ready.status).toBe("ready");
-    expect("values" in ready).toBe(true);
+    expect("outputs" in ready).toBe(true);
     expect("sourceProgress" in ready).toBe(true);
     expect("sourceRevisions" in ready).toBe(true);
     expect("diagnostics" in ready).toBe(true);
     if (ready.status !== "ready") throw new Error(`${NODE} is ${ready.status}, not ready.`);
-    expect(ready.values).toEqual({ x: 1 });
+    expect(ready.outputs.values).toEqual({ x: 1 });
     expect(ready.sourceProgress).toBe(0.5);
     expect(ready.sourceRevisions).toEqual({ "hero/shoulder": 3 });
   });

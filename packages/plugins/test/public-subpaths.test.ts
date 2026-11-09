@@ -4,29 +4,59 @@ import { extractExportNames } from "../../../scripts/boundary-scan.mjs";
 import { workspaceSourceAliases } from "../../../scripts/workspace-source-aliases.mjs";
 import { code } from "../../core/test/helpers/source-region";
 
-// Issue #534 and ADR-133: the public plugin surface is the explicit subpaths that
-// `packages/plugins/package.json` declares, and nothing else. The manifest is the one owner of that
-// list, so this case reads it rather than restating it: each declared subpath names one source
-// module and its emitted pair, and the module's public value is the one plugin the path is named
-// for. The root entry re-exports no plugin, so promoting the 3D plugins widened no root symbol and
-// the boundary allow list is unchanged by decision rather than by omission.
+// Issue #534 and ADR-133: the public plugin surface is the explicit public subpaths that
+// `packages/plugins/package.json` declares. The manifest is the one owner of that public list, so
+// this case reads it rather than restating its targets: each public definition path names one source
+// module and its emitted pair, and the module's public value is the one plugin the path is named for.
 
 const PLUGINS = new URL("../", import.meta.url);
 const CORE = new URL("../../core/", import.meta.url);
 const PLUGIN_SUBPATH = /^\.\/([a-z0-9]+(?:-[a-z0-9]+)*)$/;
 const PUBLIC_3D = ["transform3d", "fk3d", "ik3d"];
-export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D, "rig"];
+export const DEFINITION_SUBPATHS = ["transform", "fk", "ik", ...PUBLIC_3D];
 /** Public modules that are not one zero-config definition; R3 keeps them out of the catalog. */
-const SUPPORT_SUBPATHS = ["frame3d", "catalog", "loader", "labels", "pose-classify", "runner"];
-/** R2: support modules other than `frame3d` publish exactly these runtime names. */
+const SUPPORT_SUBPATHS = ["loader", "labels", "models", "pose-classify", "runner"];
+/** R2: support modules publish exactly these runtime names. */
 const SUPPORT_EXPORTS: Readonly<Record<string, readonly string[]>> = {
-  catalog: ["builtinCatalog"],
   loader: ["createPluginLoader", "describeLoadFailure", "ensuredOrThrow"],
   labels: ["onLabelChange", "readLabel"],
+  models: [
+    "Anchors2d",
+    "Body2d",
+    "Body3d",
+    "Clip2d",
+    "CubicPath2d",
+    "Goals2d",
+    "Goals3d",
+    "LocalAnchors2d",
+    "PathData2d",
+    "Point2d",
+    "Point3d",
+    "Points2d",
+    "Points3d",
+    "PoseLabel",
+    "Solved2d",
+    "Solved3d",
+    "Sprite2d",
+    "Sprites2d",
+    "Stroke2d",
+    "builtinModels",
+  ],
   "pose-classify": ["createPoseClassifyPlugin"],
   runner: ["attachRunners", "createLatestSlot", "describeRunnerFailure"],
 };
 export const PUBLIC_SUBPATHS = [...DEFINITION_SUBPATHS, ...SUPPORT_SUBPATHS];
+/** Path plugins and the drawing helper publish under `path/`; the catalog names them in camelCase. */
+const PATH_SUBPATHS = [
+  "path/anchors-to-cubic",
+  "path/bezier",
+  "path/skin-anchors",
+  "path/svg-path",
+];
+const PATH_CATALOG_NAMES = ["anchorsToCubic", "bezier", "skinAnchors", "svgPath"];
+/** Motion moves publish under `motion/`, one plugin per path. */
+const MOTION_CATALOG_NAMES = ["cascade", "drop", "hop", "layer", "rope", "trace", "wipe"];
+const MOTION_SUBPATHS = MOTION_CATALOG_NAMES.map((name) => `motion/${name}`);
 
 interface Manifest {
   readonly exports: Readonly<Record<string, unknown>>;
@@ -43,13 +73,12 @@ function declaredPlugins(manifest: Manifest): readonly string[] {
   });
 }
 
-function isPluginDefinition(value: unknown): value is { readonly name: string } {
+function isIdentifiedPlugin(value: unknown): value is { readonly id: string } {
   return (
     value !== null &&
     typeof value === "object" &&
-    typeof (value as { name?: unknown }).name === "string" &&
-    Array.isArray((value as { keys?: unknown }).keys) &&
-    typeof (value as { compose?: unknown }).compose === "function"
+    typeof (value as { id?: unknown }).id === "string" &&
+    typeof (value as { transform?: unknown }).transform === "function"
   );
 }
 
@@ -60,11 +89,15 @@ describe("public plugin subpaths", () => {
     expect(names).toEqual(PUBLIC_SUBPATHS);
     expect(manifest.exports["."]).toBeUndefined();
     for (const name of names) {
+      const target = /^\.\/dist\/(.+)\.js$/.exec(
+        String(Reflect.get(Object(manifest.exports[`./${name}`]), "default")),
+      )?.[1];
+      expect(target, name).toBeDefined();
       expect(manifest.exports[`./${name}`], name).toEqual({
-        types: `./dist/${name}.d.ts`,
-        default: `./dist/${name}.js`,
+        types: `./dist/${target}.d.ts`,
+        default: `./dist/${target}.js`,
       });
-      const module = (await import(new URL(`src/${name}.ts`, PLUGINS).href)) as Record<
+      const module = (await import(new URL(`src/${target}.ts`, PLUGINS).href)) as Record<
         string,
         unknown
       >;
@@ -73,19 +106,14 @@ describe("public plugin subpaths", () => {
         expect(Object.keys(module).sort(), name).toEqual(supportExports);
         continue;
       }
-      const plugins = Object.entries(module).filter(([, value]) => isPluginDefinition(value));
-      if (name === "frame3d") {
-        // The unchanged complete frame utility module is public, not only its frame reader.
-        expect(typeof module.readFrame3d).toBe("function");
-        expect(plugins).toEqual([]);
+      if (DEFINITION_SUBPATHS.includes(name)) {
+        const exportName = `${name}Plugin`;
+        expect(Object.keys(module), name).toEqual([exportName]);
+        expect(isIdentifiedPlugin(module[exportName]), name).toBe(true);
+        expect((module[exportName] as { readonly id: string }).id).toBe(name);
         continue;
       }
-      expect(
-        plugins.map(([key, value]) => [key, (value as { name: string }).name]),
-        name,
-      ).toEqual([[`${name}Plugin`, name]]);
-      // A newly public module publishes its plugin and nothing a consumer could come to rely on.
-      if (PUBLIC_3D.includes(name)) expect(Object.keys(module), name).toEqual([`${name}Plugin`]);
+      throw new Error(`${name} is neither a support module nor a definition.`);
     }
     // Read through the one source-reading owner, as source-region-anchors.test.ts requires.
     const index = code(new URL("src/index.ts", CORE));
@@ -98,8 +126,16 @@ describe("public plugin subpaths", () => {
     );
     // Development aliases consume the same manifest and match declared subpaths exactly.
     const aliases = workspaceSourceAliases("plugins");
-    expect(aliases).toHaveLength(PUBLIC_SUBPATHS.length);
-    for (const name of PUBLIC_SUBPATHS) {
+    expect(aliases).toHaveLength(
+      PUBLIC_SUBPATHS.length + PATH_SUBPATHS.length + MOTION_SUBPATHS.length,
+    );
+    expect(Object.keys(manifest.exports).filter((key) => key.startsWith("./motion/"))).toEqual(
+      MOTION_SUBPATHS.map((name) => `./${name}`),
+    );
+    expect(Object.keys(manifest.exports).filter((key) => key.startsWith("./path/"))).toEqual(
+      PATH_SUBPATHS.map((name) => `./${name}`),
+    );
+    for (const name of [...PUBLIC_SUBPATHS, ...PATH_SUBPATHS, ...MOTION_SUBPATHS]) {
       const specifier = `@motion5/plugins/${name}`;
       expect(aliases.filter(({ find }) => find.test(specifier))).toHaveLength(1);
       expect(aliases.some(({ find }) => find.test(`${specifier}/private`))).toBe(false);
@@ -108,13 +144,14 @@ describe("public plugin subpaths", () => {
     expect(aliases.some(({ find }) => find.test("@motion5/plugins"))).toBe(false);
   });
 
-  it("L15 every built-in catalog entry lazily loads its matching definition subpath", async () => {
-    const { builtinCatalog } = await import("../src/catalog");
-    // The manifest pins PUBLIC_SUBPATHS (TH-111), so this one list owns both sides of R3.
-    expect([...builtinCatalog.keys()]).toEqual(DEFINITION_SUBPATHS);
+  it("L15 every approved catalog entry lazily loads its matching definition subpath", async () => {
+    const { builtinCatalog } = await import("../src/host/builtin-catalog");
+    expect([...builtinCatalog.keys()].sort()).toEqual(
+      [...DEFINITION_SUBPATHS, ...PATH_CATALOG_NAMES, ...MOTION_CATALOG_NAMES].sort(),
+    );
     for (const [name, descriptor] of builtinCatalog) {
       const definition = await descriptor.load();
-      expect(definition.name).toBe(name);
+      expect(definition.id).toBe(name);
     }
   });
 });

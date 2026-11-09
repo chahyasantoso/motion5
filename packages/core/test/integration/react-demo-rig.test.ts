@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { createDomPatchAdapter } from "../../src/adapters/dom";
-import type { DomTarget } from "../../src/adapters/dom";
+import { recordValues } from "../support/v5-builders";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
+import type { DomTarget } from "@motion5/dom/engine";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import type { ProjectHandle } from "../../src/engine";
 import { Engine } from "../../src/engine";
 import { patchRender } from "../../src/contract/patch-render";
-import { PluginRegistry } from "../../src/domain/plugins";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import type { TrackHandle } from "../../src/contract/track-handle";
-import { fkPlugin } from "../../../plugins/src/fk";
-import { transformPlugin } from "../../../plugins/src/transform";
+import { fkPlugin } from "@motion5/plugins/fk";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import {
@@ -17,7 +17,11 @@ import {
   coreWalkerTracks,
   initialWalkerProject,
 } from "../../../../apps/react-demo/src/full-body-project";
-import { nodePosition } from "../../../../apps/react-demo/src/components/marker-position";
+import {
+  nodePosition,
+  createWalkerRowSource,
+} from "../../../../apps/react-demo/src/components/marker-position";
+import { testModels } from "../support/test-models";
 
 interface FakeStyle extends Record<string, unknown> {
   removeProperty(property: string): void;
@@ -50,9 +54,8 @@ function loadRig(): {
   flush(): void;
 } {
   const scheduler = createFakeScheduler();
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
+  const plugins = new PluginCatalog({ models: testModels });
+  plugins.register({ plugins: [fkPlugin] });
   const definition: ProjectDefinition = {
     ...initialWalkerProject,
     motions: [{ id: "walk", trigger: { type: "manual" }, tracks: coreWalkerTracks }],
@@ -88,28 +91,22 @@ function removeArms(handles: readonly TrackHandle[]): void {
   for (const trackHandle of [...handles].reverse()) trackHandle.remove();
 }
 
-/**
- * Renderer-free equivalent of the real `useDerivedDomPatch` binding.
- *
- * The test runtime does not provide `react-test-renderer`, so it drives the same public source,
- * derivation and DOM adapter path that the hook composes: every publication reads the current
- * project patch, hides absent or non-renderable input, and otherwise writes `nodePosition`.
- */
 function bindMarker(handle: ProjectHandle, nodeId: string, target: FakeSvgTarget): () => void {
+  const source = createWalkerRowSource(handle);
   const adapter = createDomPatchAdapter({ style: {} }, undefined, (id): DomTarget | undefined =>
     id === nodeId ? (target as unknown as DomTarget) : undefined,
   );
   const render = () => {
-    const decision = patchRender(handle.get(nodeId));
+    const decision = patchRender(source.get(nodeId));
     if (decision.kind !== "render") {
       adapter.applyValues(nodeId, { visibility: "hidden" });
       return;
     }
-    const values = nodePosition([decision.patch.values]);
+    const values = nodePosition([recordValues(decision.patch)]);
     if (values === undefined) throw new Error("Marker position was not derivable.");
     adapter.applyValues(nodeId, values);
   };
-  const unsubscribe = handle.subscribeNode(nodeId, render);
+  const unsubscribe = source.subscribeNode(nodeId, render);
   render();
   return () => {
     unsubscribe();
@@ -125,10 +122,11 @@ describe("react demo skeleton rig", () => {
     handle.signal("walk", { type: "manual", progress: 0.6 });
     test.flush();
     const arms = addArms(handle);
-    const arm = handle.get("walk/armL_lower");
+    const source = createWalkerRowSource(handle);
+    const arm = source.get("walk/armL_lower");
     expect(arm?.status).toBe("ready");
     if (arm?.status !== "ready") throw new Error("The arm marker node did not become ready.");
-    expect(Number(arm.values.rotation)).not.toBe(0);
+    expect(Number(recordValues(arm).rotation)).not.toBe(0);
 
     const unbind = bindMarker(handle, "walk/armL_lower", target);
     expect(target.style.transform).toMatch(/^translate3d\([^)]*\)$/);
@@ -146,8 +144,9 @@ describe("react demo skeleton rig", () => {
     handle.signal("walk", { type: "manual", progress: 0.6 });
     test.flush();
     const arms = addArms(handle);
+    const source = createWalkerRowSource(handle);
     const unbind = bindMarker(handle, "walk/armL_lower", target);
-    expect(handle.get("walk/armL_lower")?.status).toBe("ready");
+    expect(source.get("walk/armL_lower")?.status).toBe("ready");
     expect(target.style.visibility).toBeUndefined();
 
     handle.edit(() => {

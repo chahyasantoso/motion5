@@ -38,6 +38,10 @@ jobs:
       # is a syntax error that stops all three from reporting a useful cause.
       - run: npm run scan:raw-templates
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run scan:comments
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+      - run: npm run scan:cycles
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run format:check
@@ -97,22 +101,6 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node scripts/boundary-scan.mjs
 
-  read-budget:
-    name: read-budget (node 24.21.0)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node scripts/read-budget-scan.mjs
-
   build:
     name: build (node 24.21.0)
     runs-on: ubuntu-latest
@@ -127,12 +115,14 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsc -p packages/rig/tsconfig.build.json
+      - run: npx tsc -p packages/moves/tsconfig.build.json
       - run: npx tsc -p packages/core/tsconfig.build.json
       - run: test -f packages/core/dist/index.js
       - run: test -f packages/core/dist/index.d.ts
       - run: npx tsc -p packages/plugins/tsconfig.build.json
-      - run: test -f packages/plugins/dist/fk.js
-      - run: test -f packages/plugins/dist/fk.d.ts
+      - run: test -f packages/plugins/dist/fk/fk.js
+      - run: test -f packages/plugins/dist/fk/fk.d.ts
 
   end-to-end:
     name: end-to-end (node 24.21.0)

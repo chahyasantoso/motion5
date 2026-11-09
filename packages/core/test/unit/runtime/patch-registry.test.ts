@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type { FlatRecord } from "../../../src/contract/v5";
 import { PatchRegistry, type Patch } from "../../../src/runtime/patch-registry";
+import { row, tableValues } from "../../support/v5-builders";
 
-function publishReady(registry: PatchRegistry, tick: number, values: Record<string, unknown>) {
+function publishReady(registry: PatchRegistry, tick: number, values: FlatRecord) {
   registry.beginBatch(tick, ["hero/arm"]);
   const patch = registry.publish({
     nodeId: "hero/arm",
-    values,
+    outputs: { values },
     sourceProgress: 0,
     status: "ready",
   });
@@ -19,7 +21,7 @@ describe("PatchRegistry", () => {
     registry.beginBatch(1, ["hero/arm"]);
     const patch = registry.publish({
       nodeId: "hero/arm",
-      values: { nested: { opacity: 1 } },
+      outputs: { values: [row("point-a", { opacity: 1 })] },
       sourceProgress: 0.5,
       status: "ready",
     });
@@ -28,8 +30,10 @@ describe("PatchRegistry", () => {
     expect(Object.isFrozen(patch)).toBe(true);
     if (patch?.status !== "ready")
       throw new Error(`patch is ${patch?.status ?? "absent"}, not ready.`);
-    expect(Object.isFrozen(patch.values)).toBe(true);
-    expect(Object.isFrozen(patch.values.nested as object)).toBe(true);
+    expect(Object.isFrozen(patch.outputs.values)).toBe(true);
+    const firstRow = tableValues(patch)[0];
+    expect(firstRow).toBeDefined();
+    expect(Object.isFrozen(firstRow)).toBe(true);
     expect(Object.isFrozen(batch)).toBe(true);
   });
 
@@ -38,7 +42,7 @@ describe("PatchRegistry", () => {
     registry.beginBatch(1, ["hero/arm"]);
     const first = registry.publish({
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -46,13 +50,13 @@ describe("PatchRegistry", () => {
     registry.beginBatch(2, ["hero/arm"]);
     const unchanged = registry.publish({
       nodeId: "hero/arm",
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
     const second = registry.publish({
       nodeId: "hero/arm",
-      values: { x: 2 },
+      outputs: { values: { x: 2 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -68,7 +72,12 @@ describe("PatchRegistry", () => {
     registry.beginBatch(1, ["hero/arm"]);
     registry.subscribeNode("hero/arm", () => events.push("node"));
     registry.subscribeBatch(() => events.push("batch"));
-    registry.publish({ nodeId: "hero/arm", values: {}, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: {} },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     expect(events).toEqual(["node", "batch"]);
   });
@@ -78,10 +87,20 @@ describe("PatchRegistry", () => {
     let count = 0;
     registry.subscribeNode("hero/arm", () => count++);
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: {}, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: {} },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     registry.beginBatch(2, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: {}, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: {} },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     expect(count).toBe(1);
   });

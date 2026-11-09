@@ -1,26 +1,11 @@
-// Docs: ./ir.md
 import { unreachable } from "../lang/exhaustive";
-import type {
-  Diagnostic,
-  ObservationDefinition,
-  PluginRequiresBinding,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../contract/v5";
+import type { Diagnostic, TrackDefinition, ProjectDefinition } from "../contract/v5";
+import { outputRef } from "../contract/v5";
 import { diagnostic } from "../contract/diagnostics";
-import {
-  acceptsChain,
-  describeChainShape,
-  describeDerivedChain,
-  poleBends,
-  POLE_SLOT,
-  readsMemberRest,
-} from "../contract/solver-shape";
-import { acceptedOutcome, readOutcome, refusedOutcome, type Outcome } from "../lang/outcome";
-import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
-import { authorsConstrainingJoint } from "../contract/solver-constraints";
+import { readOutcome } from "../lang/outcome";
+
 import { compareCodeUnits } from "./compare";
+import { edgeKey, describeEdge, type GraphEdge, type GraphNode } from "./node";
 import type { PluginCapabilities } from "../ports/plugin-capabilities";
 import {
   assertAuthoredMotionId,
@@ -28,102 +13,17 @@ import {
   qualifyFreeTrack,
   qualifyMotionTrack,
 } from "./ids";
+import { collectDependencyEdges, qualifySource } from "./dependency-edges";
+import { deriveCommittedContract, type CommittedContract } from "./committed-contract";
 import { orderGraph } from "./order";
-import {
-  recordGoalReach,
-  validateGoalWeights,
-  validateSolverConstraints,
-  type GoalReach,
-} from "./solver-constraints";
+import { checkDependencyBindings } from "./dependency-check";
+import { checkSlotFit } from "./slot-check";
+import { isObjectRecord } from "../lang/plain-record";
 
-interface ScalarEdgeRequirement {
-  readonly plugin: string;
-  readonly slot: string;
-  readonly memberKey?: never;
-}
-
-interface DictEdgeRequirement {
-  readonly plugin: string;
-  readonly slot: string;
-  /** The key this binding was authored under inside this dict-valued slot. */
-  readonly memberKey: string;
-}
-
-/**
- * The requirement shape identifies the slot's arity: scalar slots have no member key, while dict
- * slots carry one. The union changes no runtime field or diagnostic; it only prevents a scalar and
- * a dict requirement from being represented by one optional field at the type boundary.
- *
- * `memberKey` remains part of edge identity rather than a label. Two entries of one slot are two
- * dependencies, and the slot alone cannot tell them apart once the key stopped being formatted into
- * it, so an edge per entry survives only because this field is length-prefixed into
- * `requirementIdentity` alongside the plugin and the slot. See ADR-057.
- */
-export type EdgeRequirement = ScalarEdgeRequirement | DictEdgeRequirement;
-
-interface InputGraphEdge {
-  readonly observerId: string;
-  readonly sourceId: string;
-  readonly role: "input";
-  readonly requirement: EdgeRequirement;
-}
-
-interface OutputGraphEdge {
-  readonly observerId: string;
-  readonly sourceId: string;
-  readonly role: "output";
-}
-
-/**
- * One edge of the observation graph. Inputs always carry a requirement; outputs never carry one.
- *
- * `role` names the composition phase rather than an authored field: inputs are collected before
- * `node.compose`, outputs are merged after it. It is not derivable-and-redundant even though every
- * input edge now carries a `requirement`, because a conditional inside the single ordering owner is
- * worse than a field two resolvers set with one literal each. `J-5` pins the equivalence over a
- * whole built graph, so the two cannot disagree. See ADR-047.
- */
-export type GraphEdge = InputGraphEdge | OutputGraphEdge;
-export interface SolveMember {
-  readonly id: string;
-  readonly base: string;
-  /**
-   * The node whose frame this member reaches toward, present only on a chain leaf the author gave a
-   * goal.
-   *
-   * Qualified here, in the one layer that knows the member set, so the publisher joins a node id it
-   * can read straight off the registry rather than an authored key it would have to qualify a second
-   * time against an owner it does not hold. A solver that authored the bare `target` slot carries no
-   * goal on any member, which is what keeps that spelling working with no migration. See issue #195.
-   */
-  readonly goal?: string;
-}
-
-export interface GraphNode {
-  readonly id: string;
-  readonly owner: "motion" | "free";
-  readonly authoredIndex: number;
-  readonly track: TrackDefinition;
-  readonly edges: readonly GraphEdge[];
-  readonly solves?: readonly SolveMember[];
-}
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
   readonly nodeById: Readonly<Record<string, GraphNode>>;
-  /**
-   * Reverse topology: for every node id, the ids that read it.
-   *
-   * Derived here rather than by every consumer, because it is a pure function of the node set and
-   * this file already walks every edge of every node twice over. `GraphPublisher` recomputed it on
-   * every tick, over a graph that changes at most once between ticks, which made steady-state
-   * ticking O(V+E) in graph shape for a graph whose shape had not moved.
-   *
-   * Total, so a node nothing reads carries an empty list rather than no entry: a missing key and an
-   * empty one are the same answer to a consumer that spells `?? []`, and only one of them makes the
-   * map's own shape depend on the rig. Not recoverable from `edges` alone either, which is the whole
-   * reason it lives beside them: a solver reads its members through `solves` and no edge points that
-   * way, so a reverse walk built from edges would miss every member of every chain.
-   */
+  /** Reverse topology: per node id, ids reading it through edges; total, so an unread node carries `[]` rather than no key. */
   readonly dependants: Readonly<Record<string, readonly string[]>>;
   readonly order: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
@@ -133,230 +33,12 @@ export interface GraphBuildResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function field(value: string): string {
-  return `${value.length}:${value}`;
-}
-
-export function edgeRole(edge: GraphEdge): GraphEdge["role"] {
-  switch (edge.role) {
-    case "input":
-      return "input";
-    case "output":
-      return "output";
-    default:
-      return unreachable(edge);
-  }
-}
-
-export function edgeRequirement(edge: GraphEdge): EdgeRequirement | undefined {
-  switch (edge.role) {
-    case "input":
-      return edge.requirement;
-    case "output":
-      return undefined;
-    default:
-      return unreachable(edge);
-  }
-}
-
-function requirementIdentity(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  if (requirement === undefined) return "-";
-  const member = field(requirement.memberKey ?? "");
-  return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
-}
-
-function requirementOrder(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  return requirement === undefined ? "-" : `:${requirement.plugin}`;
-}
-
-/**
- * The injective identity encoding for an edge.
- *
- * Every part is length-prefixed, so no authored string can forge a field boundary. The requirement
- * plugin, slot and member key are the only authored strings left inside it, now that the canonical
- * projection is gone with the primitive it encoded.
- *
- * The member key is prefixed like the others rather than joined into the slot, and that is what
- * keeps two entries of one dict-valued slot distinct. They were distinguished by the encoded slot
- * while a goal's identity was `targets[<memberId>]`; with the slot carrying the authored name, two
- * goals reaching for one node encode identically without this field and `finalizeGraph` reports
- * `observation-duplicate` on a rig that loads clean. `DV-4` pins it. See ADR-034, ADR-046, ADR-047,
- * and ADR-057.
- */
-export function edgeKey(edge: GraphEdge): string {
-  return [
-    field(edge.observerId),
-    field(edge.sourceId),
-    field(edgeRole(edge)),
-    field(requirementIdentity(edge)),
-  ].join("");
-}
-
-export function compareEdges(a: GraphEdge, b: GraphEdge): number {
-  return (
-    compareCodeUnits(a.observerId, b.observerId) ||
-    compareCodeUnits(a.sourceId, b.sourceId) ||
-    compareCodeUnits(edgeRole(a), edgeRole(b)) ||
-    compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
-    compareCodeUnits(edgeRequirement(a)?.slot ?? "", edgeRequirement(b)?.slot ?? "") ||
-    compareCodeUnits(edgeRequirement(a)?.memberKey ?? "", edgeRequirement(b)?.memberKey ?? "")
-  );
-}
-
-export function describeEdge(edge: GraphEdge): string {
-  const requirement = edgeRequirement(edge);
-  const member = requirement?.memberKey === undefined ? "" : `.${requirement.memberKey}`;
-  const scope =
-    requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}${member}]`;
-  return `${edge.observerId} <- ${edge.sourceId} (${edgeRole(edge)})${scope}`;
-}
-
 function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
-}
-
-export function qualifySource(source: string, motionId: string): string {
-  if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
-  if (source.includes("/"))
-    return qualifyMotionTrack(
-      source.slice(0, source.indexOf("/")),
-      source.slice(source.indexOf("/") + 1),
-    ).value;
-  return qualifyMotionTrack(motionId, source).value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
-export type ResolvedEdge = Outcome<GraphEdge, Diagnostic>;
-
-const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
-const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;
-const ROLE_UNSUPPORTED = `Observation role is not supported; an observes entry declares an output edge only. ${BIND_INSTEAD}`;
-const PROJECTION_UNSUPPORTED = `Observation projection is not supported; an output edge merges the source patch whole and renames nothing. ${BIND_INSTEAD}`;
-
-// The three fields ADR-046 and ADR-047 removed, in refusal order, and the order is load-bearing:
-// target stays first so `V-2` through `V-4` still report a target for a fixture with a role too.
-// One closed set with one reader, because three copied guards are three places a fourth removed
-// field has to be remembered, and the mapper below fails `typecheck` instead of being forgotten.
-// ir.md owns why the read asks whether the key was authored rather than what sits at it. See #469.
-const REMOVED_OBSERVATION_FIELDS = ["target", "role", "projection"] as const;
-type RemovedObservationField = (typeof REMOVED_OBSERVATION_FIELDS)[number];
-function authoredRemoved(
-  observation: ObservationDefinition,
-  name: RemovedObservationField,
-): boolean {
-  return isRecord(observation) && name in observation;
-}
-function removedObservationDiagnostic(field: RemovedObservationField, path: string): Diagnostic {
-  switch (field) {
-    case "target":
-      return diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED);
-    case "role":
-      return diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED);
-    case "projection":
-      return diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED);
-    default:
-      return unreachable(field);
-  }
-}
-
-export function resolveObservationEdge(
-  observation: ObservationDefinition,
-  observerNodeId: string,
-  ownerId: string,
-  path: string,
-): ResolvedEdge {
-  if (typeof observation.source !== "string" || observation.source.length === 0) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
-    ]);
-  }
-  // One rule id each, because a diagnostic has to name what the author actually wrote rather than
-  // the removal they share, and one loop over the closed set rather than a guard per member.
-  for (const field of REMOVED_OBSERVATION_FIELDS) {
-    if (!authoredRemoved(observation, field)) continue;
-    return refusedOutcome<GraphEdge, Diagnostic>([removedObservationDiagnostic(field, path)]);
-  }
-  let sourceId: string;
-  try {
-    sourceId = qualifySource(observation.source, ownerId);
-  } catch (error) {
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic(
-        "observation-source",
-        path,
-        String(error instanceof Error ? error.message : error),
-        [observation.source],
-      ),
-    ]);
-  }
-  // One literal, in one place. `role` is not read from authored input any more, so this resolver
-  // and `resolveRequirementEdge` are the only two things that can set it, one value each.
-  const edge: GraphEdge = Object.freeze({
-    observerId: observerNodeId,
-    sourceId,
-    role: "output",
-  });
-  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
-}
-
-export function resolveRequirementEdge(
-  binding: PluginRequiresBinding,
-  observerNodeId: string,
-  ownerId: string,
-  path: string,
-): ResolvedEdge {
-  let sourceId: string;
-  try {
-    sourceId = qualifySource(binding.source, ownerId);
-  } catch (error) {
-    const message = String(error instanceof Error ? error.message : error);
-    return refusedOutcome<GraphEdge, Diagnostic>([
-      diagnostic("requirement-source", path, message, [binding.source]),
-    ]);
-  }
-  // The member key is copied when the binding carries one and omitted when it does not, rather than
-  // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
-  // same identity, but only the first says "this slot takes one source" to a reader of the IR.
-  const requirement: EdgeRequirement = Object.freeze({
-    plugin: binding.plugin,
-    slot: binding.slot,
-    ...(binding.memberKey === undefined ? {} : { memberKey: binding.memberKey }),
-  });
-  const edge: GraphEdge = Object.freeze({
-    observerId: observerNodeId,
-    sourceId,
-    role: "input",
-    requirement,
-  });
-  return acceptedOutcome<GraphEdge, Diagnostic>(edge, Object.freeze([]));
-}
-
-export function observationEdgeKey(
-  observation: ObservationDefinition,
-  observerId: string,
-  ownerId: string,
-): string {
-  const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
-  return readOutcome(
-    resolved,
-    (edge) => edgeKey(edge),
-    (diagnostics) => {
-      throw new TypeError(
-        diagnostics
-          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-          .join(" "),
-      );
-    },
-  );
 }
 
 export function collectTrack(
@@ -383,34 +65,15 @@ export function collectTrack(
       ? qualifyFreeTrack(track.id).value
       : qualifyMotionTrack(ownerId, track.id).value;
   const edges: GraphEdge[] = [];
-  for (const [index, observation] of (track.observes ?? []).entries()) {
-    const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
-    const resolved = resolveObservationEdge(observation, id, ownerId, path);
-    readOutcome(
-      resolved,
-      (edge) => edges.push(edge),
-      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
-    );
-  }
-  // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
-  // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
-  // node, is not this node, and introduces no cycle is this layer's. That split is what lets
-  // `validateSchemaV5` build the graph without holding a registry it must not have. See ADR-044.
-  for (const binding of readPluginBindings(track.keyframes)) {
-    const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
-    const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
-    readOutcome(
-      resolved,
-      (edge) => edges.push(edge),
-      (resolvedDiagnostics) => diagnostics.push(...resolvedDiagnostics),
-    );
-  }
+  // Source qualification and edge expansion belong to collectDependencyEdges; this layer owns node identity.
+  collectDependencyEdges(track, id, ownerId, edges, diagnostics);
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
 
 export function buildGraphIR(
   project: ProjectDefinition,
   capabilities: PluginCapabilities,
+  carried?: ReadonlyMap<string, CommittedContract>,
 ): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];
@@ -478,598 +141,10 @@ export function buildGraphIR(
       }
     }
   }
-  return finalizeGraph(nodes, diagnostics, capabilities);
+  return finalizeGraph(nodes, diagnostics, capabilities, carried);
 }
 
-const ORIENTATION_KEYS = ["rotation", "rotationX", "rotationY"] as const;
-
-function groupsAuthoring(keyframes: unknown, keys: readonly string[]): readonly string[] {
-  if (!isRecord(keyframes)) return [];
-  return Object.keys(keyframes)
-    .filter((group) => {
-      const values = readPluginValues(keyframes[group]);
-      return keys.some((key) => values[key] !== undefined);
-    })
-    .sort(compareCodeUnits);
-}
-
-function baseOf(node: GraphNode): string | undefined {
-  const edge = node.edges.find((candidate) => edgeRequirement(candidate)?.slot === "base");
-  return edge?.sourceId;
-}
-
-function ownerOf(node: GraphNode): string {
-  return node.id.slice(0, node.id.indexOf("/"));
-}
-
-interface MemberChain {
-  readonly node: GraphNode;
-  readonly base: string;
-  readonly depth: number;
-}
-
-function solverPluginsOf(member: GraphNode, solverId: string): readonly string[] {
-  const plugins = new Set<string>();
-  for (const edge of member.edges) {
-    const requirement = edgeRequirement(edge);
-    if (requirement?.slot === "solver" && edge.sourceId === solverId)
-      plugins.add(requirement.plugin);
-  }
-  return [...plugins].sort(compareCodeUnits);
-}
-
-interface AuthoredGoal {
-  readonly authored: string;
-  readonly sourceId: string;
-}
-
-interface GoalBindings {
-  readonly bare: boolean;
-  readonly dict: readonly AuthoredGoal[];
-}
-
-function goalBindingsOf(node: GraphNode): GoalBindings {
-  const dict: AuthoredGoal[] = [];
-  let bare = false;
-  for (const edge of node.edges) {
-    const requirement = edgeRequirement(edge);
-    if (requirement === undefined) continue;
-    const { slot, memberKey } = requirement;
-    if (slot === "target") {
-      bare = true;
-      continue;
-    }
-    if (slot === PLUGIN_GOALS_SLOT && memberKey !== undefined)
-      dict.push({ authored: memberKey, sourceId: edge.sourceId });
-  }
-  dict.sort((a, b) => compareCodeUnits(a.authored, b.authored));
-  return { bare, dict };
-}
-
-function goalReachOf(
-  memberId: string,
-  goals: GoalBindings,
-  leafIds: ReadonlySet<string>,
-  named: ReadonlyMap<string, readonly string[]>,
-  resolved: ReadonlyMap<string, string>,
-): GoalReach {
-  if (goals.bare && goals.dict.length > 0) return "undecided";
-  if (goals.bare) {
-    if (leafIds.size !== 1) return "undecided";
-    return leafIds.has(memberId) ? "addressed" : "unaddressed";
-  }
-  if (goals.dict.length === 0) return "undecided";
-  if (resolved.has(memberId)) return "addressed";
-  if (leafIds.has(memberId) || named.has(memberId)) return "undecided";
-  return "unaddressed";
-}
-
-export function resolveSolvers(
-  nodes: readonly GraphNode[],
-  diagnostics: Diagnostic[],
-  capabilities: PluginCapabilities,
-): readonly GraphNode[] {
-  validateSolverConstraints(nodes, diagnostics, capabilities);
-  // Diagnostic 3: ik-mode-ambiguous
-  // Diagnostic 4: ik-solved-rotation-dead
-  // Diagnostic 7: ik-goal-conflict
-  // Diagnostic 15: ik-weight-without-solver
-  //
-  // The dead rotation is decided here and reported after the chains are derived, because whether a
-  // binder group's orientation is dead depends on the strategy its solver answers the chain with:
-  // the 3D tree solve reads every member's rest orientation, so a binder whose solver does is
-  // struck from the candidates below (`restReadBy`). Diagnostics are sorted before they leave this
-  // module, so reporting later moves no order.
-  const deadRotationBinders = new Map<string, readonly string[]>();
-  const restReadBy = new Set<string>();
-  for (const node of nodes) {
-    let rootCount = 0;
-    // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
-    // authored rotation: the solve replaces the rotation of the plugin that asked for it, so a
-    // rotation under any other group is that plugin's own live input.
-    const solverBinders: string[] = [];
-    for (const edge of node.edges) {
-      const requirement = edgeRequirement(edge);
-      if (requirement !== undefined) {
-        const slot = requirement.slot;
-        if (slot === "root") rootCount++;
-        if (slot === "solver") solverBinders.push(requirement.plugin);
-      }
-    }
-    const keyframes = node.track.keyframes;
-    const rotationGroups = groupsAuthoring(keyframes, ORIENTATION_KEYS);
-    const weightGroups = groupsAuthoring(keyframes, ["weight"]);
-    const authoredGoals = goalBindingsOf(node);
-    const hasSolver = solverBinders.length > 0;
-    // Read through the goal classification rather than off the literal `"target"`. A member binding
-    // `solver` beside a goal dict would otherwise load clean, with one real input edge per goal, and
-    // have every one of them ignored: a field accepted and then ignored, which is what ADR-033 rule
-    // 6 forbids. See issue #195.
-    const hasGoal = authoredGoals.bare || authoredGoals.dict.length > 0;
-    if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
-      diagnostics.push(
-        diagnostic(
-          "ik-mode-ambiguous",
-          node.id,
-          `Node "${node.id}" has ambiguous IK mode configuration.`,
-          [node.id],
-        ),
-      );
-    }
-    // Both spellings on one solver are two names for one dependency. The dict is the general case
-    // and the bare slot is its degenerate one, so they are refused together rather than merged:
-    // merging would make which goal a leaf reaches for a property of the reader.
-    if (authoredGoals.bare && authoredGoals.dict.length > 0) {
-      diagnostics.push(
-        diagnostic(
-          "ik-goal-conflict",
-          node.id,
-          `Solver "${node.id}" binds both "target" and the goals dict; goals are addressed one way or the other.`,
-          [node.id],
-        ),
-      );
-    }
-    // Presence-only, two tiers. A binder group that authors an orientation key (`ORIENTATION_KEYS`:
-    // 2D `rotation`, and `fk3d`'s `rotation`, `rotationX` and `rotationY`) and no `weight` is the
-    // pre-#211 shape, and is refused with the pre-ADR-116 message byte for byte, which still says
-    // `rotation` for all three: with no weight in reach there is no runtime state in which the
-    // authored value influences the output. A `weight` beside it, in any form, passes.
-    //
-    // Not "present but provably always `1`". That reading needs leaf shape and value semantics,
-    // which have an owner one layer down, and it would refuse "fully solved for now, I will animate
-    // the weight next" while still passing a weight that arrives through an edge: a rule that
-    // catches the careful author and misses the dynamic case is inverted. See ADR-055.
-    const deadBinders = solverBinders.filter(
-      (binder) =>
-        rotationGroups.includes(binder) &&
-        !weightGroups.includes(binder) &&
-        // An undeclared solver is not judged here (ADR-136); the binder is the solver's plugin.
-        capabilities.capabilityOf(binder) !== undefined,
-    );
-    if (deadBinders.length > 0) deadRotationBinders.set(node.id, deadBinders);
-    // The symmetric footgun, and it speaks only about a node that bound a solver somewhere.
-    //
-    // The group scope is what one half of that buys: a node can bind `solver` under one plugin and
-    // author `weight` under another, and "does this node hold a solver anywhere" would pass that
-    // shape, while `fk` short-circuits to the authored rotation and never reads a weight outside the
-    // group that bound the slot, so that one is silently inert, which is what ADR-033 rule 6
-    // forbids.
-    //
-    // The `hasSolver` guard is the other half, and it is the same narrowing `RS-9` already made on
-    // the dead rotation. `weight` is claimed by `fkPlugin` and ADR-043 lets any other plugin claim
-    // it too, and this pass holds no registry, so on a node with no solver binding at all it cannot
-    // tell a blend weight from another plugin's own live input: `Q-10`'s `reach` claims `weight`,
-    // binds no solver slot, and refusing that rig would be this rule answering for a plugin it
-    // knows nothing about. An `fk` weight on a bone that bound no solver anywhere is inert too and
-    // is not refused here; that is the stated cost of holding no registry, and `WT-10` is what
-    // pins the composition making it harmless. See ADR-055.
-    const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
-    if (hasSolver && inertWeight.length > 0) {
-      diagnostics.push(
-        diagnostic(
-          "ik-weight-without-solver",
-          node.id,
-          `Node "${node.id}" authors weight under ${inertWeight.join(", ")} without binding a solver there; there is no solved rotation to blend.`,
-          [node.id],
-        ),
-      );
-    }
-    // No pivot rule sits beside the dead rotation any more. `ik-solved-pivot-unsupported` refused a
-    // non-zero authored `x` or `y` on a solved member while neither solve accounted for one, so a
-    // bone composed its pivot at that offset, extended by `length`, and missed its goal by exactly
-    // that vector with a `ready` patch and no diagnostic. Both solves account for it now: the closed
-    // form folds the two offsets into a fixed base point and a rigid link with a twist, and the
-    // iterative one carries pivots beside tips. A rule that refuses a shape the runtime solves is
-    // worse than no rule, so it is deleted rather than widened, and nothing replaces it: an offset
-    // that shortens a chain's reach past its goal is an unreachable target, which was never a
-    // diagnostic. `RS-11` and `RS-12` pin the acceptance. See ADR-053 and ADR-054.
-  }
-
-  const solvesMap = new Map<string, readonly SolveMember[]>();
-  const goalScope = new Map<string, GoalReach>();
-
-  // Every node that at least one member points its `solver` slot at.
-  //
-  // A solver is classified by its `root` edge, so a node bound as one without holding a root is not
-  // a solver at all and the derivation below skips it. Skipping it silently is the one IK
-  // misconfiguration that had no symptom: no `solves` was derived, no `rotations` were published,
-  // every member fell back to its own authored rotation, and the rig held a broken pose with no
-  // error and no diagnostic. It is also the one shape `GraphPublisher` cannot read a member scope
-  // off, so refusing it here is what keeps that throw unreachable rather than merely unreached.
-  // Collected from the members rather than from the solver, because the absent edge is on the
-  // solver and only a member can say the node was meant to be one. See ADR-051.
-  const boundSolverIds = new Set<string>();
-  for (const node of nodes) {
-    for (const edge of node.edges) {
-      if (edgeRequirement(edge)?.slot === "solver") {
-        boundSolverIds.add(edge.sourceId);
-      }
-    }
-  }
-
-  // Resolve solvers
-  for (const solver of nodes) {
-    const rootEdge = solver.edges.find((edge) => edgeRequirement(edge)?.slot === "root");
-    // Diagnostic 1: ik-solver-no-root
-    if (!rootEdge) {
-      if (boundSolverIds.has(solver.id)) {
-        diagnostics.push(
-          diagnostic(
-            "ik-solver-no-root",
-            solver.id,
-            `Solver "${solver.id}" has no bound root requirement.`,
-            [solver.id],
-          ),
-        );
-      }
-      continue;
-    }
-    const rootId = rootEdge.sourceId;
-
-    const members = nodes.filter((n) =>
-      n.edges.some(
-        (edge) => edgeRequirement(edge)?.slot === "solver" && edge.sourceId === solver.id,
-      ),
-    );
-
-    // Diagnostic 2: ik-solver-no-members
-    if (members.length === 0) {
-      diagnostics.push(
-        diagnostic(
-          "ik-solver-no-members",
-          solver.id,
-          `Solver "${solver.id}" has no member nodes bound to it.`,
-          [solver.id],
-        ),
-      );
-      continue;
-    }
-
-    // Diagnostic 14: ik-solver-no-goal
-    //
-    // A solver with a root and members and nothing to reach for, refused here rather than at
-    // composition. `solveChain` throws on an empty goal map, which was the documented contract and
-    // the wrong owner for it: `ik-leaf-without-goal` is guarded by the dict having been used at all
-    // and the bare slot is a separate read, so the one shape that bound neither loaded clean and
-    // then errored its solver and blocked every member of it on every tick, for a shape the loader
-    // can name. The throw stays as the invariant guard behind this rule, exactly as `readMembers`
-    // guards `ik-solver-no-members`. See ADR-053.
-    //
-    // Reported without a `continue`, unlike the two refusals above: the chain is still derivable
-    // here, and a broken one is worth naming in the same pass rather than one run later.
-    const authoredGoals = goalBindingsOf(solver);
-    if (!authoredGoals.bare && authoredGoals.dict.length === 0) {
-      diagnostics.push(
-        diagnostic(
-          "ik-solver-no-goal",
-          solver.id,
-          `Solver "${solver.id}" has no goal; bind "target", or address a goal per chain leaf under "targets".`,
-          [solver.id],
-        ),
-      );
-    }
-
-    // Arity is not refused here any more. `ik-solver-unsupported-arity` reported every derived
-    // member count other than two, which was honest while the closed form was the only solve a rig
-    // could reach and false the moment `solveChain` dispatches on derived shape. A rule that
-    // refuses a shape the code solves is worse than no rule, so it is deleted rather than widened.
-    // What the cap was silently guaranteeing is refused by name below instead. See issue #195.
-
-    // Diagnostic 6: ik-solver-unreachable-root
-    //
-    // One walk per member, confined to the member set. The `base` edge lookup that verified a
-    // member and the `while` loop that measured its depth were two traversals of one chain, and the
-    // second climbed through arbitrary nodes to count hops. Starting the walk at the member itself
-    // makes its own `base` edge the first step, and the only map the walk steps through holds this
-    // solver's members, so leaving that set is the break rather than something to check for after.
-    //
-    // A break is attributed to the member whose own `base` broke the chain rather than to the
-    // member the walk started from, and it is keyed by id, so a chain of descendants over one bad
-    // ancestor reports once rather than once per descendant. That is the attribution the two passes
-    // produced, which is what makes this a refactor rather than a rule change: `RS-8` pins it over
-    // the chain shapes both of them had to answer for. See ADR-051.
-    const memberById = new Map(members.map((member) => [member.id, member] as const));
-    const unreachable = new Map<string, Diagnostic>();
-    const chains: MemberChain[] = [];
-
-    for (const member of members) {
-      let base = "";
-      let depth = 0;
-      let cursor: GraphNode | undefined = member;
-      const walked = new Set<string>([member.id]);
-      while (cursor !== undefined) {
-        const next = baseOf(cursor);
-        if (next === undefined || (next !== rootId && !memberById.has(next))) {
-          unreachable.set(
-            cursor.id,
-            diagnostic(
-              "ik-solver-unreachable-root",
-              cursor.id,
-              `Member "${cursor.id}" cannot reach solver root "${rootId}".`,
-              [cursor.id, rootId],
-            ),
-          );
-          break;
-        }
-        depth += 1;
-        if (depth === 1) base = next;
-        // The root ends the walk. A member already walked ends it too, and the cycle that shape is
-        // belongs to `orderGraph`, which refuses it over these same `base` edges.
-        if (next === rootId || walked.has(next)) break;
-        walked.add(next);
-        cursor = memberById.get(next);
-      }
-      // A member holding no `base` edge of its own contributes no chain, which is what the two
-      // passes did. Every break above is an error, so no `solves` derived beside one is reachable
-      // through `finalizeGraph`.
-      if (depth > 0) chains.push({ node: member, base, depth });
-    }
-
-    for (const entry of [...unreachable.values()].sort(compareDiagnostics)) {
-      diagnostics.push(entry);
-    }
-
-    chains.sort(
-      (a, b) =>
-        a.depth - b.depth ||
-        a.node.authoredIndex - b.node.authoredIndex ||
-        compareCodeUnits(a.node.id, b.node.id),
-    );
-
-    // Diagnostic 16: ik-chain-unsupported
-    //
-    // A solver plugin may declare a narrower chain than the graph derives. The capabilities port
-    // supplies its shape and registry-wide dedication; core names no implementation (ADR-136).
-    // An unknown capability is unjudged. A known declaration is judged only over a
-    // chain every member reached, because a member that could not reach the root was named above
-    // and has no depth to judge. See ADR-114.
-    const rootPlugin = edgeRequirement(rootEdge)?.plugin ?? "";
-    const capability = capabilities.capabilityOf(rootPlugin);
-    const derived = chains.map(({ node, depth }) => {
-      const plugins = solverPluginsOf(node, solver.id);
-      return {
-        depth,
-        plugins,
-        constrained: authorsConstrainingJoint(node.track.keyframes, plugins),
-      };
-    });
-    const dedicated = capabilities.dedicatedMembers();
-    const accepted =
-      unreachable.size === 0 &&
-      (capability === undefined || acceptsChain(capability.chain, derived, dedicated));
-    if (capability !== undefined && unreachable.size === 0 && !accepted) {
-      diagnostics.push(
-        diagnostic(
-          "ik-chain-unsupported",
-          solver.id,
-          `Solver "${solver.id}" supports ${describeChainShape(capability.chain, dedicated)}, but its derived members are ${describeDerivedChain(derived)}.`,
-          [solver.id],
-        ),
-      );
-    }
-    if (accepted && capability !== undefined && readsMemberRest(capability.chain, derived)) {
-      for (const { node } of chains) {
-        for (const plugin of solverPluginsOf(node, solver.id))
-          restReadBy.add(`${node.id}\n${plugin}`);
-      }
-    }
-
-    // Diagnostic 17: ik-pole-without-bend
-    //
-    // A pole picks the plane an interior joint bends in, so over a chain whose every member hangs
-    // from the root it has nothing to pick: each member is one segment pointing at its goal. Only
-    // a pole bound under the group that bound `root` is asked, since one bound anywhere else is
-    // already `ik-pole-without-chain` or the registry's unknown requirement, and only over a chain
-    // the solver accepts, since an unsupported one is already `ik-chain-unsupported` and no solve
-    // of it reads the pole.
-    const bindsPole = solver.edges.some((edge) => {
-      const requirement = edgeRequirement(edge);
-      return requirement?.slot === POLE_SLOT && requirement.plugin === rootPlugin;
-    });
-    if (accepted && capability?.pole === true && bindsPole && !poleBends(derived)) {
-      diagnostics.push(
-        diagnostic(
-          "ik-pole-without-bend",
-          `${solver.id}.keyframes.${rootPlugin}.requires.${POLE_SLOT}`,
-          `Solver "${solver.id}" binds pole over a chain whose every member hangs from its root; no joint bends toward it.`,
-          [solver.id],
-        ),
-      );
-    }
-
-    // Diagnostics 8 through 11: ik-goal-unknown-member, ik-goal-duplicate, ik-goal-not-leaf and
-    // ik-leaf-without-goal, plus ik-target-not-single-leaf.
-    //
-    // Here because this is the only owner that can answer any of them. The authored key is a member
-    // id, so "does it name a member of this chain" and "is that member a leaf" are both questions
-    // about the `solver` edges this loop has already collected. `contract/` holds no registry and a
-    // plugin holds no graph, which is the same split ADR-044 draws for keys: the contract layer owns
-    // the spelling, the registry owns whether the slot is declared, and this owns whether it
-    // resolves. See issue #195.
-    //
-    // Skipped when a chain broke above, for the reason `finalizeGraph` bails before this whole
-    // derivation runs: over a chain that was never valid, leafhood answers about a shape the author
-    // did not author, and one cause would be reported twice.
-    const goalByMember = new Map<string, string>();
-    if (unreachable.size > 0) {
-      for (const member of members) recordGoalReach(goalScope, member.id, "undecided");
-    } else {
-      const ownerId = ownerOf(solver);
-      const based = new Set(chains.map((entry) => entry.base));
-      const leaves = chains
-        .filter((entry) => !based.has(entry.node.id))
-        .map((entry) => entry.node.id);
-      const leafIds = new Set(leaves);
-      // Diagnostic 12: ik-target-not-single-leaf
-      //
-      // The bare `target` slot names no member, so it addresses a chain leaf only while there is
-      // exactly one leaf to address. The arity cap guaranteed that for free, and lifting the cap is
-      // what makes the shape reachable, so it is refused by name here rather than left to the plugin
-      // quietly choosing one of the leaves it was handed: a binding accepted and then applied to an
-      // arbitrary member is the shape ADR-033 rule 6 forbids. The dict is the general spelling, and
-      // a branching chain addresses its goals by member id.
-      if (authoredGoals.bare && leaves.length > 1) {
-        diagnostics.push(
-          diagnostic(
-            "ik-target-not-single-leaf",
-            solver.id,
-            `Solver "${solver.id}" binds "target" over a chain with ${leaves.length} leaves; address goals by member id instead.`,
-            [solver.id, ...leaves],
-          ),
-        );
-      }
-      // One entry per member a goal resolved to, carrying every authored key that named it. The dict
-      // cannot repeat a key, so a duplicate is always two spellings of one id (`forearm` and
-      // `walker/forearm`), which is the narrow rule qualification leaves behind.
-      const authoredFor = new Map<string, string[]>();
-      const sourceFor = new Map<string, string>();
-      for (const goal of authoredGoals.dict) {
-        let memberId: string | undefined;
-        try {
-          memberId = qualifySource(goal.authored, ownerId);
-        } catch {
-          memberId = undefined;
-        }
-        if (memberId === undefined || !memberById.has(memberId)) {
-          diagnostics.push(
-            diagnostic(
-              "ik-goal-unknown-member",
-              solver.id,
-              `Goal "${goal.authored}" of solver "${solver.id}" names no member of its chain.`,
-              [solver.id, goal.authored],
-            ),
-          );
-          continue;
-        }
-        const spellings = authoredFor.get(memberId);
-        if (spellings === undefined) authoredFor.set(memberId, [goal.authored]);
-        else spellings.push(goal.authored);
-        sourceFor.set(memberId, goal.sourceId);
-      }
-      for (const memberId of [...authoredFor.keys()].sort(compareCodeUnits)) {
-        const spellings = authoredFor.get(memberId) ?? [];
-        if (spellings.length > 1) {
-          diagnostics.push(
-            diagnostic(
-              "ik-goal-duplicate",
-              solver.id,
-              `Member "${memberId}" of solver "${solver.id}" is named by more than one goal: ${spellings.join(", ")}.`,
-              [solver.id, memberId],
-            ),
-          );
-          continue;
-        }
-        if (!leafIds.has(memberId)) {
-          diagnostics.push(
-            diagnostic(
-              "ik-goal-not-leaf",
-              solver.id,
-              `Member "${memberId}" of solver "${solver.id}" carries a goal but is not a chain leaf.`,
-              [solver.id, memberId],
-            ),
-          );
-          continue;
-        }
-        const sourceId = sourceFor.get(memberId);
-        if (sourceId !== undefined) goalByMember.set(memberId, sourceId);
-      }
-      // A leaf with no goal is a refusal only once this solver addressed its goals by member id.
-      // Bare `target` is kept and is exactly the degenerate case of the dict, so a solver that
-      // authored one has no goal to be missing and no existing rig has to be re-authored. A solver
-      // that addressed no goals at all is `ik-solver-no-goal` above, so the two never report
-      // together and one absence is never two diagnostics.
-      if (authoredGoals.dict.length > 0) {
-        for (const leaf of leaves) {
-          if (authoredFor.has(leaf)) continue;
-          diagnostics.push(
-            diagnostic(
-              "ik-leaf-without-goal",
-              solver.id,
-              `Chain leaf "${leaf}" of solver "${solver.id}" has no goal.`,
-              [solver.id, leaf],
-            ),
-          );
-        }
-      }
-      // Which members this solve reads a goal influence from, answered once goals are resolved.
-      for (const entry of chains) {
-        const id = entry.node.id;
-        const reach = goalReachOf(id, authoredGoals, leafIds, authoredFor, goalByMember);
-        recordGoalReach(goalScope, id, reach);
-      }
-    }
-
-    solvesMap.set(
-      solver.id,
-      freeze(
-        chains.map((entry) => {
-          const goal = goalByMember.get(entry.node.id);
-          return freeze(
-            goal === undefined
-              ? { id: entry.node.id, base: entry.base }
-              : { id: entry.node.id, base: entry.base, goal },
-          );
-        }),
-      ),
-    );
-  }
-
-  for (const [nodeId, binders] of deadRotationBinders) {
-    if (binders.every((binder) => restReadBy.has(`${nodeId}\n${binder}`))) continue;
-    diagnostics.push(
-      diagnostic(
-        "ik-solved-rotation-dead",
-        nodeId,
-        `Member "${nodeId}" bound to solver cannot author rotation with no weight to blend it by.`,
-        [nodeId],
-      ),
-    );
-  }
-
-  validateGoalWeights(nodes, goalScope, diagnostics, capabilities);
-
-  return freeze(
-    nodes.map((node) => {
-      const solves = solvesMap.get(node.id);
-      return solves ? freeze({ ...node, solves }) : node;
-    }),
-  );
-}
-
-/**
- * Reverse topology for one node set: per node id, the ids that read it.
- *
- * Both kinds of reader, because both are real dependencies and only one of them is an edge. A node
- * reads every source it names an edge for, and a solver reads every member `resolveSolvers` derived
- * onto its `solves`, which no edge points at. A reverse walk over edges alone would therefore miss
- * every member of every chain, and a member's own value would stop marking its solver dirty.
- *
- * Nodes in the given order, each node's edges before its members, and an entry pushed only for a
- * source this node set contains: an edge naming an unknown source is `finalizeGraph`'s refusal, and
- * a direct publisher caller may hand over a partial node set. Duplicates are kept rather than
- * collapsed, because a consumer walking this guards on its own visited set, and collapsing them
- * would be a second decision inside a function whose only job is to state what the graph says.
- */
+/** Reverse topology for one node set: per node id, ids reading its edges; total over the set, outside sources skipped, duplicates kept. */
 export function deriveDependants(
   nodes: readonly GraphNode[],
 ): Readonly<Record<string, readonly string[]>> {
@@ -1077,39 +152,56 @@ export function deriveDependants(
   for (const node of nodes) collected.set(node.id, []);
   for (const node of nodes) {
     for (const edge of node.edges) collected.get(edge.sourceId)?.push(node.id);
-    if (node.solves) {
-      for (const member of node.solves) collected.get(member.id)?.push(node.id);
-    }
   }
   const dependants: Record<string, readonly string[]> = {};
   for (const [id, readers] of collected) dependants[id] = freeze(readers);
   return freeze(dependants);
 }
 
-/**
- * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
- *
- * The one owner of the graph-building tail, so `buildGraphIR` and the incremental builder cannot
- * drift about duplicate/unknown/self-reference edges, diagnostic ordering, cycle rejection, or the
- * frozen result shape. Any solver derivation (issue #195, slice C2) lands here and is therefore
- * reached by both load-time validation and the runtime through one call site.
- */
+function sameOutput(contract: CommittedContract, track: TrackDefinition): boolean {
+  const ref = outputRef(track.output);
+  switch (ref.kind) {
+    case "model":
+      return contract.modelId === ref.id && contract.plugin === undefined;
+    case "plugin":
+      return contract.plugin === ref.id && contract.modelId === undefined;
+    default:
+      return unreachable(ref);
+  }
+}
+
+function withContract(
+  node: GraphNode,
+  capabilities: PluginCapabilities,
+  carried: ReadonlyMap<string, CommittedContract> | undefined,
+): GraphNode {
+  const stored = carried?.get(node.id);
+  if (stored !== undefined && sameOutput(stored, node.track))
+    return node.contract === stored ? node : freeze({ ...node, contract: stored });
+  if (node.contract !== undefined) return node;
+  const derived = deriveCommittedContract(node.track, node.id, capabilities);
+  return derived === undefined ? node : freeze({ ...node, contract: derived });
+}
+
+/** Sole tail owner: attach contracts before checks, refuse duplicate/unknown/self edges and cycles, sort diagnostics, linearize, freeze. */
 export function finalizeGraph(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
   capabilities: PluginCapabilities,
+  carried?: ReadonlyMap<string, CommittedContract>,
 ): GraphBuildResult {
-  const known = new Set(nodes.map((node) => node.id));
+  const committed = nodes.map((node) => withContract(node, capabilities, carried));
+  const known = new Set(committed.map((node) => node.id));
   const edgeKeys = new Set<string>();
-  for (const node of nodes)
+  for (const node of committed)
     for (const edge of node.edges) {
       const key = edgeKey(edge);
       if (edgeKeys.has(key))
         diagnostics.push(
           diagnostic(
-            "observation-duplicate",
+            "edge-duplicate",
             edge.observerId,
-            `Duplicate observation edge ${describeEdge(edge)}.`,
+            `Duplicate dependency edge ${describeEdge(edge)}.`,
             [edge.observerId, edge.sourceId],
           ),
         );
@@ -1117,31 +209,29 @@ export function finalizeGraph(
       if (!known.has(edge.sourceId))
         diagnostics.push(
           diagnostic(
-            "observation-unknown-source",
+            "edge-unknown-source",
             edge.observerId,
-            `Unknown observation source "${edge.sourceId}".`,
+            `Unknown edge source "${edge.sourceId}".`,
             [edge.sourceId],
           ),
         );
       if (edge.sourceId === edge.observerId)
         diagnostics.push(
           diagnostic(
-            "observation-self-reference",
+            "edge-self-reference",
             edge.observerId,
-            "Observation cannot reference itself.",
+            "An edge cannot reference its own node.",
             [edge.observerId],
           ),
         );
     }
-  // The bail happens here rather than after the derivation. `resolveSolvers` walks `base` edges and
-  // reads the nodes they name, so over a graph whose sources may not resolve it answers about a
-  // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
-  // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
-  // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
+  // Linearize only after every reference was admitted: cycle diagnostics never mix with edge errors.
+  diagnostics.push(...checkDependencyBindings(committed, capabilities));
+  diagnostics.push(...checkSlotFit(committed));
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
-  const resolvedNodes = resolveSolvers(nodes, diagnostics, capabilities);
+  const resolvedNodes = committed;
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
@@ -1151,10 +241,6 @@ export function finalizeGraph(
     (order) => {
       const nodeById: Record<string, GraphNode> = {};
       for (const node of resolvedNodes) nodeById[node.id] = node;
-      // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer
-      // and it does not exist until then. One owner, in the file that already owns `compareEdges`
-      // and delegates to `orderGraph`, so every consumer reads reverse topology instead of walking
-      // for it.
       return {
         graph: freeze({
           nodes: freeze(resolvedNodes),

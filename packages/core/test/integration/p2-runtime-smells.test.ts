@@ -1,21 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
-import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
+import type { Outputs } from "../../src/contract/v5";
+import { deriveDependants } from "../../src/graph/ir";
+import { type GraphEdge } from "../../src/graph/node";
 import {
   GraphPublisher,
   type PublisherNode,
   type PublisherSnapshot,
 } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { Track } from "../../src/domain/track";
+import type { BoundSlots } from "../../src/runtime/bound-slot";
+import { Track } from "../support/track";
 import type { Interpolator } from "../../src/ports/interpolator";
-import { slotOf } from "../helpers/requirement-inputs";
+import { recordValues } from "../support/v5-builders";
+
+const upstreamOf = (requires: BoundSlots, slot: string): Outputs | undefined => {
+  const entry = requires[slot];
+  return entry?.kind === "single" ? (entry.bound.values as Outputs) : undefined;
+};
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });
@@ -34,7 +42,6 @@ const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
 const requires = (observerId: string, sourceId: string, slot: string): GraphEdge => ({
   observerId,
   sourceId,
-  role: "input",
   requirement: { plugin: "p", slot },
 });
 function fakeInterpolator(state: Readonly<Record<string, unknown>> = { x: 1 }) {
@@ -47,7 +54,12 @@ describe("P2 runtime smell hardening", () => {
   it("preserves the last known good values when a node publishes error", () => {
     const registry = new PatchRegistry();
     registry.beginBatch(1, ["source"]);
-    registry.publish({ nodeId: "source", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "source",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     registry.beginBatch(2, ["source"]);
     registry.publish({
@@ -71,42 +83,50 @@ describe("P2 runtime smell hardening", () => {
     if (errored?.status !== "error")
       throw new Error(`source is ${errored?.status ?? "absent"}, not error.`);
     expect("values" in errored).toBe(false);
-    expect(registry.lastReady("source")?.values).toEqual({ x: 1 });
+    expect(recordValues(registry.lastReady("source"))).toEqual({ x: 1 });
   });
   it("derives source revisions from the upstream patches consumed in the flush", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const source = node("source", [], () => ({
-      values: { x: 1 },
+      outputs: { values: { x: 1 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
-    const consumer = node("consumer", [requires("consumer", "source", "s")], (inputs) => ({
-      values: slotOf(inputs, "p", "s"),
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
+    const consumer = node("consumer", [requires("consumer", "source", "s")], (requires) => {
+      const upstream = upstreamOf(requires, "s");
+      const values = upstream?.values ?? {};
+      return {
+        outputs: { values },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      };
+    });
     publisher.flush(snapshot([source, consumer]), ["source", "consumer"], 1);
     const consumerPatch = registry.get("consumer");
     if (consumerPatch?.status !== "ready")
       throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not ready.`);
     expect(consumerPatch.sourceRevisions).toEqual({ source: 1 });
-    expect(consumerPatch.values).toEqual({ x: 1 });
+    expect(recordValues(consumerPatch)).toEqual({ x: 1 });
   });
   it("reports a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
-    const consumer = node("consumer", [requires("consumer", "missing", "s")], (inputs) => ({
-      values: slotOf(inputs, "p", "s"),
-      sourceProgress: 0,
-      sourceRevisions: {},
-    }));
+    const consumer = node("consumer", [requires("consumer", "missing", "s")], (requires) => {
+      const upstream = upstreamOf(requires, "s");
+      const values = upstream?.values ?? {};
+      return {
+        outputs: { values },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      };
+    });
     publisher.flush(snapshot([consumer]), ["consumer"], 1);
     const blocked = registry.get("consumer");
     expect(blocked?.status).toBe("blocked");
     if (blocked?.status !== "blocked")
       throw new Error(`consumer is ${blocked?.status ?? "absent"}, not blocked.`);
-    expect(blocked.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    expect(blocked.diagnostics[0]?.ruleId).toBe("source-pending");
     // The hole is still not composed with, and it is not reported as an empty pose either: a
     // blocked patch owns no values at all now, which is that refusal stated in the type.
     expect("values" in blocked).toBe(false);
@@ -123,7 +143,7 @@ describe("P2 runtime smell hardening", () => {
     const consumer = node(
       "consumer",
       [requires("consumer", "b", "right"), requires("consumer", "a", "left")],
-      () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
+      () => ({ outputs: { values: {} }, sourceProgress: 0, sourceRevisions: {} }),
     );
     publisher.flush(snapshot([failedA, failedB, consumer]), ["a", "b", "consumer"], 1);
     const consumerPatch = registry.get("consumer");
@@ -132,17 +152,12 @@ describe("P2 runtime smell hardening", () => {
       throw new Error(`consumer is ${consumerPatch?.status ?? "absent"}, not blocked.`);
     expect(consumerPatch.diagnostics[0]?.ids).toEqual(["a", "consumer"]);
   });
-  it("rejects host objects from interpolator state at the renderer edge", () => {
-    const { interpolator } = fakeInterpolator({ host: new Date(0) });
-    const track = new Track({ interpolator, nodeId: "~/smell-test" });
-    expect(() => track.compose()).toThrow(/renderer-neutral/);
-  });
   it("kills a timeline exactly once when a Track is disposed repeatedly", () => {
     const { interpolator, kill } = fakeInterpolator();
     const track = new Track({ interpolator, nodeId: "~/smell-test" });
     track.dispose();
     track.dispose();
     expect(kill).toHaveBeenCalledOnce();
-    expect(() => track.compose()).toThrow(/disposed/);
+    expect(() => track.interpolated()).toThrow(/disposed/);
   });
 });

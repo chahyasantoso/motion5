@@ -8,6 +8,8 @@ import type {
 import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract/motion-handle";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
+import { PluginCatalog } from "../../../src/domain/plugin-catalog";
+import { testModels } from "../../support/test-models";
 import {
   ProjectRuntime,
   type ProjectRuntimeOptions,
@@ -16,6 +18,7 @@ import {
 // The project's own describer rather than a copy of it in this rig. The journal records what a
 // re-entry came back with, and how a thrown value that is not an `Error` reads already has an owner.
 import { describeError } from "../../../src/runtime/schema-refusals";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #223, slice A1.
@@ -95,10 +98,20 @@ const REENTRANT =
   "schema-commit-reentrant: A structural commit is already in flight. Ask for it once this one has returned.";
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: MOTION_ID,
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" }, input: { values: { x: 0 } } }],
+    },
+  ],
 };
 /** Refused by the candidate graph rather than by authored validation, so the rollback runs. */
-const REJECTED_TRACK: TrackDefinition = { id: "hand", observes: [{ source: "~/missing" }] };
+const REJECTED_TRACK: TrackDefinition = {
+  id: "hand",
+  output: { plugin: "translate" },
+  input: { requires: { data: "~/missing" } },
+};
 /**
  * Refused by `assertAuthoredMotionId` inside the candidate build, after every entry check passed.
  *
@@ -111,7 +124,7 @@ const REJECTED_MOTION: MotionDefinition = {
   tracks: [],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -261,6 +274,7 @@ function recorder(behaviour: Behaviour = {}): Recorder {
     },
     options: {
       clock: createManualClock(),
+      capabilities: new PluginCatalog({ models: testModels }),
       compose,
       compileTrack: (_track, nodeId) => {
         record(`compile ${String(nodeId)}`);
@@ -301,13 +315,11 @@ function recorder(behaviour: Behaviour = {}): Recorder {
       // the way `stageTrack` is, and the difference is which cases the wiring can reach. `#derive`
       // calls `stageTrack` on every replacement, so `RA-1` through `RA-7` measure a rig without one
       // and wiring it always would change what they measure. These two are reached only from
-      // `#writeValues`, `#recompileKeyframes` and `#setStagger`, and no case above calls a verb that
-      // reaches any of the three, so the journal only grows when one of them is called and a case
-      // that reached one silently fails on the new line rather than staying green.
-      writeValues: (nodeId, _values, overlay, rebase) => {
-        const masked = overlay === undefined ? "no-overlay" : "overlay";
-        record(`write ${nodeId} ${String(rebase)} ${masked}`);
-        return undefined;
+      // `#applyLive` and `#setStagger`, and no case above calls a verb that reaches either, so the
+      // journal only grows when one of them is called and a case that reached one silently fails on
+      // the new line rather than staying green.
+      overlayValues: (nodeId, value) => {
+        record(`overlay ${nodeId} ${value === undefined ? "none" : "value"}`);
       },
       setMotionStagger: (motionId, stagger) => {
         record(`stagger-set ${motionId} ${String(stagger)}`);
@@ -376,7 +388,10 @@ describe("project release preserves the outcome it follows", () => {
   it("RA-140 attempts every release after detach and graph disposal failures", () => {
     const journal = recorder({ failAt: { disposeComposition: new Error("composition failed") } });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
-    const added = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const added = runtime.addTrack(
+      { id: "hand", output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
     const motion = runtime.motion(MOTION_ID);
     runtime.mount(NODE_ID);
     const release: string[] = [];
@@ -450,7 +465,11 @@ describe("project release preserves the outcome it follows", () => {
         },
       });
       host.runtime = runtime;
-      const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+      const thrown = thrownBy(() =>
+        runtime
+          .track(NODE_ID)
+          .replace({ id: "arm", duration: 500, output: { model: "TestRecord" } }),
+      );
       if (rollbackFails) {
         expect(thrown).toBeInstanceOf(AggregateError);
         expect((thrown as AggregateError).errors).toEqual([rejection, rollback]);
@@ -470,7 +489,9 @@ describe("project release preserves the outcome it follows", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
     const before = runtime.graph.sequence;
-    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
     expect(outcome.thrown).toBeUndefined();
     expect(outcome.value?.id).toBe(ADDED_ID);
     expect(outcome.value?.live).toBe(false);
@@ -490,7 +511,9 @@ describe("project release preserves the outcome it follows", () => {
     });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
-    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const thrown = thrownBy(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
     expect(thrown).toBeInstanceOf(Error);
     expect(thrown).not.toBeInstanceOf(AggregateError);
     expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
@@ -556,7 +579,11 @@ describe("project release preserves the outcome it follows", () => {
     });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
-    expect(thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }))).toBe(failure);
+    expect(
+      thrownBy(() =>
+        runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+      ),
+    ).toBe(failure);
     expect(runtime.instanceCount).toBe(0);
     expect(runtime.graph.memberCount).toBe(0);
     expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual(["release failed"]);
@@ -610,7 +637,10 @@ describe("a structural change runs one transaction, in one order", () => {
     const journal = recorder();
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
 
-    const handle = runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID });
+    const handle = runtime.addTrack(
+      { id: "hand", duration: 250, output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     // The Motion entry must be written after the compile, because Motion resolves by id against the
     // live compiled map and an earlier call would resolve nothing. See ADR-031.
@@ -618,21 +648,6 @@ describe("a structural change runs one transaction, in one order", () => {
     expect(handle.id).toBe(ADDED_ID);
     expect(handle.live).toBe(true);
     expect(runtime.instanceCount).toBe(1);
-
-    runtime.dispose();
-  });
-
-  it("RA-4 disposes the compiled Track and registers nothing when the graph refuses", () => {
-    const journal = recorder();
-    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
-
-    const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID }));
-
-    expect(thrown).toBeInstanceOf(TypeError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    expect(journal.entries).toEqual(["compile hero/hand", "dispose hero/hand"]);
-    expect(runtime.instanceCount).toBe(0);
-    expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node "hero\/hand"/);
 
     runtime.dispose();
   });
@@ -679,24 +694,49 @@ describe("a structural change runs one transaction, in one order", () => {
 
   it("RA-7 leaves the retained definitions and the committed graph agreeing", () => {
     const journal = recorder();
-    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      isPluginRegistered: () => true,
+    });
 
     expect(disagreeing(runtime)).toEqual([]);
 
-    runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
     expect(disagreeing(runtime)).toEqual([]);
 
-    runtime.track(ADDED_ID).replace({ id: "hand", duration: 250 });
+    runtime.track(ADDED_ID).replace({ id: "hand", duration: 250, output: { model: "TestRecord" } });
     expect(disagreeing(runtime)).toEqual([]);
 
-    // A refused candidate has to leave the pair agreeing too, which is the half a commit path that
-    // writes its maps before the graph accepted would get wrong.
+    // A refused replacement has to leave the pair agreeing too, which is the half a commit path
+    // that writes its maps before the candidate is accepted would get wrong.
     thrownBy(() => runtime.track(ADDED_ID).replace(REJECTED_TRACK));
     expect(disagreeing(runtime)).toEqual([]);
-    expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
+    expect(runtime.track(ADDED_ID).definition).toEqual({
+      id: "hand",
+      duration: 250,
+      output: { model: "TestRecord" },
+    });
 
     runtime.track(ADDED_ID).remove();
     expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.dispose();
+  });
+
+  it("RA-4 disposes the compiled Track and registers nothing when the graph refuses", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      isPluginRegistered: () => true,
+    });
+
+    const thrown = thrownBy(() => runtime.addTrack(REJECTED_TRACK, { motionId: MOTION_ID }));
+
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as Error).message).toMatch(/^edge-unknown-source at /);
+    expect(journal.entries).toEqual(["compile hero/hand", "dispose hero/hand"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node "hero\/hand"/);
 
     runtime.dispose();
   });
@@ -708,7 +748,10 @@ describe("a structural change runs one transaction, in one order", () => {
     host.runtime = runtime;
 
     const thrown = thrownBy(() =>
-      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+      runtime.addTrack(
+        { id: "hand", duration: 250, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      ),
     );
 
     // The owner that decided, not the layer that noticed. Every effect after this one used to run
@@ -759,7 +802,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+    const thrown = thrownBy(() =>
+      runtime.track(NODE_ID).replace({ id: "arm", duration: 500, output: { model: "TestRecord" } }),
+    );
 
     // Two things are true of this call and only one may reach the caller. The hook failed before it
     // returned, so `rejectAfterRollback` rethrows it untouched and the disposal is not allowed to
@@ -787,6 +832,7 @@ describe("a structural change runs one transaction, in one order", () => {
     let handle: MotionHandle | undefined;
     const options: ProjectRuntimeOptions = {
       clock: createManualClock(),
+      capabilities: testCatalog(),
       compose,
       compileTrack: () => {
         host?.dispose();
@@ -806,7 +852,9 @@ describe("a structural change runs one transaction, in one order", () => {
     host = runtime;
     handle = runtime.motion(MOTION_ID);
 
-    thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    thrownBy(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     // Green before this slice and green after it, for two different reasons, which is `RA-110`'s
     // shape rather than a padded red count. Before, because `dispose()` had already emptied the
@@ -828,7 +876,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     // Nothing thrown, and that is the measurement rather than the absence of one. The graph accepted
     // the candidate and the pair was adopted before this hook ran, so there is no refusal left to
@@ -866,7 +916,11 @@ describe("a structural change runs one transaction, in one order", () => {
     const journal = recorder({
       reenter: {
         from: "compileTrack",
-        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+        call: (runtime) =>
+          runtime.addTrack(
+            { id: "second", output: { model: "TestRecord" } },
+            { motionId: MOTION_ID },
+          ),
       },
       host,
     });
@@ -874,7 +928,10 @@ describe("a structural change runs one transaction, in one order", () => {
     host.runtime = runtime;
 
     const outcome = outcomeOf(() =>
-      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+      runtime.addTrack(
+        { id: "hand", duration: 250, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      ),
     );
 
     // The owner that decided, at the moment it was asked, and not the immediate-verb refusal: that
@@ -908,7 +965,11 @@ describe("a structural change runs one transaction, in one order", () => {
     const journal = recorder({
       reenter: {
         from: "compileTrack",
-        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+        call: (runtime) =>
+          runtime.addTrack(
+            { id: "second", output: { model: "TestRecord" } },
+            { motionId: MOTION_ID },
+          ),
         swallow: true,
       },
       host,
@@ -917,7 +978,10 @@ describe("a structural change runs one transaction, in one order", () => {
     host.runtime = runtime;
     const before = runtime.graph.sequence;
 
-    const handle = runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID });
+    const handle = runtime.addTrack(
+      { id: "hand", duration: 250, output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     // A hook that caught the refusal has been told no and nothing else happened to it, so the commit
     // it is part of finishes in exactly the order `RA-3` pins.
@@ -927,7 +991,11 @@ describe("a structural change runs one transaction, in one order", () => {
       "motion-add hero/hand 250",
     ]);
     expect(handle.live).toBe(true);
-    expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
+    expect(runtime.track(ADDED_ID).definition).toEqual({
+      id: "hand",
+      duration: 250,
+      output: { model: "TestRecord" },
+    });
 
     // The lost update, measured from the side that used to lose it. Before this slice the inner add
     // reaches the composition and the graph, the outer adoption overwrites it, and `hero/second` ends
@@ -955,7 +1023,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const outcome = outcomeOf(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+    const outcome = outcomeOf(() =>
+      runtime.track(NODE_ID).replace({ id: "arm", duration: 500, output: { model: "TestRecord" } }),
+    );
 
     // The version where the two commits disagree about one node rather than about a set, and the
     // refusal is the same one: the condition is that a commit is in flight, and which node either
@@ -976,7 +1046,11 @@ describe("a structural change runs one transaction, in one order", () => {
     // that still carries it: a node in the committed graph whose compiled Track the composition was
     // told to throw away.
     expect(runtime.track(NODE_ID).live).toBe(true);
-    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
+    expect(runtime.track(NODE_ID).definition).toEqual({
+      id: "arm",
+      output: { model: "TestRecord" },
+      input: { values: { x: 0 } },
+    });
     expect(disagreeing(runtime)).toEqual([]);
 
     runtime.dispose();
@@ -987,7 +1061,11 @@ describe("a structural change runs one transaction, in one order", () => {
     const journal = recorder({
       reenter: {
         from: "addMotionTrack",
-        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+        call: (runtime) =>
+          runtime.addTrack(
+            { id: "second", output: { model: "TestRecord" } },
+            { motionId: MOTION_ID },
+          ),
         swallow: true,
       },
       host,
@@ -995,7 +1073,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     // A settle step runs after `#adoptMaps`, so an inner commit here stages from a pair that does
     // carry the outer change and loses nothing. It is refused anyway, and not for symmetry: the
@@ -1041,7 +1121,10 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const first = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const first = runtime.addTrack(
+      { id: "hand", output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     expect(observed).toEqual(["arm arm", "candidate undefined", "readers 0"]);
     expect(journal.entries).toEqual([
@@ -1055,7 +1138,10 @@ describe("a structural change runs one transaction, in one order", () => {
     // reading "this runtime has committed" rather than "a commit is in flight" fails, and the case a
     // guard placed on the reading ladder fails. A refusal is only evidence beside its accepting
     // direction, and this is that direction in the same rig.
-    const second = runtime.addTrack({ id: "second" }, { motionId: MOTION_ID });
+    const second = runtime.addTrack(
+      { id: "second", output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     expect(second.live).toBe(true);
     expect(first.live).toBe(true);
@@ -1081,7 +1167,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     // Issue #310's second consequence, and the one that is not about publication. `mount` reaches the
     // pre-commit graph, so the same one condition refuses it, and the settle phase is left as the only
@@ -1136,7 +1224,10 @@ describe("a structural change runs one transaction, in one order", () => {
     runtime.mount(NODE_ID);
     const before = runtime.graph.sequence;
 
-    const handle = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const handle = runtime.addTrack(
+      { id: "hand", output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     // They answer from the retained pair, which is one commit behind, and that is a documented
     // consequence of the pair being held in a local rather than a defect: `mounted` is what the settle
@@ -1173,7 +1264,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const batches: PatchBatch[] = [];
     runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
 
-    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const thrown = thrownBy(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
 
     expect(thrown).toBe(failure);
     expect(journal.entries).toEqual(["compile hero/hand", "motion-add hero/hand undefined"]);
@@ -1205,8 +1298,8 @@ describe("a structural change runs one transaction, in one order", () => {
 
     const thrown = thrownBy(() =>
       runtime.edit((tx) => {
-        tx.track(NODE_ID).replace({ id: "arm", duration: 500 });
-        tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+        tx.track(NODE_ID).replace({ id: "arm", duration: 500, output: { model: "TestRecord" } });
+        tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       }),
     );
 
@@ -1241,7 +1334,9 @@ describe("a structural change runs one transaction, in one order", () => {
     const batches: PatchBatch[] = [];
     runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
 
-    const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+    const thrown = thrownBy(() =>
+      runtime.track(NODE_ID).replace({ id: "arm", duration: 500, output: { model: "TestRecord" } }),
+    );
 
     expect(thrown).toBe(failure);
     expect(runtime.track(NODE_ID).definition).not.toBe(retained);
@@ -1301,7 +1396,10 @@ describe("a structural change runs one transaction, in one order", () => {
     });
 
     const outcome = outcomeOf(() =>
-      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+      runtime.addTrack(
+        { id: "hand", duration: 250, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      ),
     );
 
     expect(outcome.thrown).toBeUndefined();
@@ -1331,7 +1429,9 @@ describe("a structural change runs one transaction, in one order", () => {
         throw flush;
       },
     });
-    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const thrown = thrownBy(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
     expect(thrown).toBeInstanceOf(AggregateError);
     expect((thrown as AggregateError).errors).toEqual([settle, flush]);
     expect((thrown as AggregateError).errors[0]).toBe(settle);
@@ -1355,7 +1455,7 @@ describe("a structural change runs one transaction, in one order", () => {
       let caught = false;
       let observed: unknown;
       try {
-        runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+        runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       } catch (error) {
         caught = true;
         observed = error;
@@ -1387,8 +1487,8 @@ describe("a structural change runs one transaction, in one order", () => {
     const before = runtime.graph.sequence;
     const thrown = thrownBy(() =>
       runtime.edit((tx) => {
-        tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-        tx.addTrack({ id: "second" });
+        tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
+        tx.addTrack({ id: "second", output: { model: "TestRecord" } });
       }),
     );
     expect(thrown).toBe(failure);
@@ -1419,7 +1519,9 @@ describe("a structural change runs one transaction, in one order", () => {
     });
     const batches: PatchBatch[] = [];
     runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
-    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const thrown = thrownBy(() =>
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID }),
+    );
     expect(thrown).toBe(failure);
     expect(batches).toHaveLength(1);
     expect(batches[0]?.diagnostics.length).toBeGreaterThan(0);
@@ -1434,7 +1536,7 @@ describe("a structural change runs one transaction, in one order", () => {
     let caught = false;
     let observed: unknown = new Error("not caught");
     try {
-      runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
     } catch (error) {
       caught = true;
       observed = error;
@@ -1443,7 +1545,7 @@ describe("a structural change runs one transaction, in one order", () => {
     expect(observed).toBeUndefined();
     expect(runtime.graph.registry.get(ADDED_ID)?.nodeId).toBe(ADDED_ID);
     expect(runtime.instanceCount).toBe(1);
-    const next = runtime.addTrack({ id: "second" });
+    const next = runtime.addTrack({ id: "second", output: { model: "TestRecord" } });
     expect(next.live).toBe(true);
     expect(runtime.instanceCount).toBe(2);
     expect(disagreeing(runtime)).toEqual([]);
@@ -1453,7 +1555,10 @@ describe("a structural change runs one transaction, in one order", () => {
   it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
     const host: Host = {};
     const journal = recorder({
-      reenter: { from: "compileTrack", call: (runtime) => runtime.setValues(NODE_ID, { x: 1 }) },
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => runtime.writeValues(NODE_ID, []),
+      },
       host,
     });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
@@ -1461,7 +1566,10 @@ describe("a structural change runs one transaction, in one order", () => {
     const retained = runtime.track(NODE_ID).definition;
 
     const outcome = outcomeOf(() =>
-      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+      runtime.addTrack(
+        { id: "hand", duration: 250, output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      ),
     );
 
     // Tier 2 on a node that is already loaded, which is this issue's reproduction steps 1 to 4.
@@ -1473,7 +1581,7 @@ describe("a structural change runs one transaction, in one order", () => {
     // The seam is the whole measurement, and it is why all three of this issue's consequences are
     // unreachable rather than repaired. `overlay`, `liveWrite` and the patched timeline are private
     // and none of them can move without this line, so its absence answers for all three at once.
-    expect(journal.entries.filter((entry) => entry.startsWith("write "))).toEqual([]);
+    expect(journal.entries.filter((entry) => entry.startsWith("overlay "))).toEqual([]);
 
     // The same object rather than an equal one. A rebase replaces the retained definition, so
     // identity is what tells a write that never happened from one that happened and was adopted
@@ -1502,9 +1610,8 @@ describe("a structural change runs one transaction, in one order", () => {
 
     // The same shape one map over, from a commit whose plan carries a motions half, so the adoption
     // this issue names would have landed on `#motions`. `setStagger` rather than `setTrigger`
-    // because the two are one contract on this tier -- `project-runtime.md` says so under
-    // `## #setStagger` -- and a stagger is a bare number, so the case pins the order rather than a
-    // trigger shape it would also have to keep valid.
+    // because the two are one contract on this tier, and a stagger is a bare number, so the case
+    // pins the order rather than a trigger shape it would also have to keep valid.
     expect(describeError(outcome.thrown)).toBe(REENTRANT);
     expect(journal.entries).toEqual(["motion-create villain", `reentry ${REENTRANT}`]);
     expect(journal.entries.filter((entry) => entry.startsWith("stagger-set "))).toEqual([]);
@@ -1530,14 +1637,16 @@ describe("a structural change runs one transaction, in one order", () => {
           // The node this hook is compiling. It is absent from the retained pair, so the false
           // answer is the one available first, while the composition has already compiled it.
           observed.push(
-            `adding ${describeError(thrownBy(() => runtime.setValues(ADDED_ID, { x: 1 })))}`,
+            `adding ${describeError(thrownBy(() => runtime.writeValues(ADDED_ID, [])))}`,
           );
           // A handle the removal below retired, through the two entry points that resolved before
-          // they refused: the factory nests two expressions and `#setKeyframe` resolves one line
+          // they refused: the factory nests two expressions and the cheap path resolves one line
           // early, so neither order was owned by anything.
-          observed.push(`stale ${describeError(thrownBy(() => stale?.setValues({ x: 1 })))}`);
+          observed.push(`stale ${describeError(thrownBy(() => stale?.writeValues([])))}`);
           observed.push(
-            `keyframe ${describeError(thrownBy(() => stale?.setKeyframe("fk", "x", 1)))}`,
+            `keyframe ${describeError(
+              thrownBy(() => stale?.input.values.setField({ field: "x" }, 1)),
+            )}`,
           );
         },
       },
@@ -1551,7 +1660,10 @@ describe("a structural change runs one transaction, in one order", () => {
     stale = runtime.track(NODE_ID);
     stale.remove();
 
-    const added = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const added = runtime.addTrack(
+      { id: "hand", output: { model: "TestRecord" } },
+      { motionId: MOTION_ID },
+    );
 
     // This slice's own case, and the only red one. Three writes, three resolutions that out-ranked
     // the rung, and one condition that is true of all three. Which failure the pre-slice run
@@ -1581,7 +1693,7 @@ describe("a structural change runs one transaction, in one order", () => {
       "reentry accepted",
       "motion-add hero/hand undefined",
     ]);
-    expect(journal.entries.filter((entry) => entry.startsWith("write "))).toEqual([]);
+    expect(journal.entries.filter((entry) => entry.startsWith("overlay "))).toEqual([]);
 
     // And the commit the hook was part of is whole, because the hook kept all three refusals.
     expect(added.live).toBe(true);
@@ -1609,7 +1721,10 @@ describe("a structural change runs one transaction, in one order", () => {
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
 
-    const handle = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const handle = runtime.addTrack(
+      { id: "hand", output: { model: "TestRecord" }, input: { values: { x: 0 } } },
+      { motionId: MOTION_ID },
+    );
 
     expect(observed).toEqual(["definition arm", "readers 0"]);
     expect(journal.entries).toEqual([
@@ -1622,13 +1737,13 @@ describe("a structural change runs one transaction, in one order", () => {
     // refuses a verb. Outside any commit all four paths still reach their seam: tier 2 twice, once
     // through the public verb that resolves by id and once through a live handle that resolves by id
     // and token, so both thunks are shown to resolve rather than merely to defer, and tier 0 once.
-    runtime.setValues(NODE_ID, { x: 1 });
-    handle.overrideValues({ x: 2 });
+    runtime.writeValues(NODE_ID, {});
+    handle.writeValues({});
     runtime.motion(MOTION_ID).setStagger(0.25);
 
     expect(journal.entries.slice(3)).toEqual([
-      "write hero/arm true no-overlay",
-      "write hero/hand false no-overlay",
+      "overlay hero/arm value",
+      "overlay hero/hand value",
       "stagger-set hero 0.25",
     ]);
     expect(runtime.motion(MOTION_ID).definition.stagger).toBe(0.25);

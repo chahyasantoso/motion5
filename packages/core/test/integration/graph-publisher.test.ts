@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
+import { deriveDependants } from "../../src/graph/ir";
+import { type GraphEdge } from "../../src/graph/node";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import {
   GraphPublisher,
@@ -16,13 +17,13 @@ const makeNode = (
   const edges: readonly GraphEdge[] = sources.map((sourceId) => ({
     observerId: id,
     sourceId,
-    role: "output",
+    requirement: { plugin: "test", slot: "values" },
   }));
   return Object.freeze({
     id,
     owner: "motion",
     authoredIndex,
-    track: { id: id.split("/")[1] ?? id },
+    track: { id: id.split("/")[1] ?? id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });
@@ -41,7 +42,7 @@ describe("GraphPublisher", () => {
     const calls = new Map<string, number>();
     const count = (id: string) => {
       calls.set(id, (calls.get(id) ?? 0) + 1);
-      return { values: { id }, sourceProgress: 0.5, sourceRevisions: {} };
+      return { outputs: { values: { id } }, sourceProgress: 0.5, sourceRevisions: {} };
     };
     const nodes = [
       makeNode("root", 0, [], () => count("root")),
@@ -70,9 +71,13 @@ describe("GraphPublisher", () => {
       makeNode("bad", 0, [], () => {
         throw new Error("boom");
       }),
-      makeNode("child", 1, ["bad"], () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} })),
+      makeNode("child", 1, ["bad"], () => ({
+        outputs: { values: {} },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      })),
       makeNode("sibling", 2, [], () => ({
-        values: { ok: true },
+        outputs: { values: { ok: true } },
         sourceProgress: 0,
         sourceRevisions: {},
       })),

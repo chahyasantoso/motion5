@@ -4,23 +4,16 @@ import { unreachable } from "./unreachable";
 import type { Vec } from "./vec";
 import type { BodyState } from "../body/state";
 
-/**
- * MediaPipe's presence score for one landmark: the probability it is in the scene at all, which
- * says nothing about whether it is occluded (that is `visibility`). `unreported` when the producer
- * supplied none (a v1 recording, a result without the field, the legacy synthetic subject): it is
- * never fabricated as a confident 1.
- */
+/** MediaPipe presence: probability a landmark is in scene at all; occlusion is `visibility`.
+ * `unreported` = producer supplied none; never fabricated as confident 1. */
 export type Presence =
   | { readonly kind: "reported"; readonly value: number }
   | { readonly kind: "unreported" };
 
 export const UNREPORTED: Presence = Object.freeze({ kind: "unreported" });
 
-/**
- * What the adapter read for one joint. `absent` is a landmark missing from the result or carrying
- * a non-finite coordinate: the adapter refuses it rather than passing a NaN downstream. A measured
- * joint carries visibility and presence as reported; trust reads visibility only.
- */
+/** What the adapter read for one joint. `absent` = missing landmark or non-finite coordinate,
+ * refused rather than passed as NaN; `measured` carries presence, trust reads visibility only. */
 export type JointObservation =
   | {
       readonly kind: "measured";
@@ -30,18 +23,15 @@ export type JointObservation =
     }
   | { readonly kind: "absent" };
 
-/** One adapted MediaPipe result. `tMs` is the only clock any stateful module reads. */
+/** One adapted MediaPipe result; `tMs` is the only clock stateful modules read. */
 export interface LandmarkFrame {
   readonly tMs: number;
   readonly space: LandmarkSpace;
   readonly joints: Readonly<Record<JointId, JointObservation>>;
 }
 
-/**
- * Why a joint is not trusted. `absent` is the adapter's refusal; `low-visibility` is visibility
- * under the threshold; `gate` is excessive raw speed; `innovation` is an implausible residual
- * against detector-owned history; `invalid` is malformed raw input; `forced` is a replay/hotkey mask.
- */
+/** Why a joint is not trusted: absent = adapter refusal, low-visibility = under threshold,
+ * gate = excessive speed, innovation = implausible residual, invalid = malformed, forced = replay mask. */
 export type GapReason = "absent" | "low-visibility" | "gate" | "forced" | "innovation" | "invalid";
 
 /** Raw detector decision, in this frame's native px/mm units, before either filter. */
@@ -55,10 +45,8 @@ export type RejectionDiagnostic =
       readonly candidates: number;
     };
 
-/**
- * The gap detector's answer, the one owner of "is this joint trusted". A trusted joint carries the
- * measurement it trusts, so a trusted joint without a position cannot be written down.
- */
+/** Gap detector's answer, sole owner of "is this joint trusted"; a trusted joint carries its
+ * measurement, so trusted-without-position cannot be written down. */
 export type JointTrust =
   | { readonly kind: "trusted"; readonly position: Vec; readonly visibility: number }
   | { readonly kind: "gap"; readonly reason: GapReason };
@@ -69,10 +57,8 @@ export interface TrustedFrame extends LandmarkFrame {
   readonly rejections?: Readonly<Partial<Record<JointId, RejectionDiagnostic>>>;
 }
 
-/**
- * A filler's answer for one joint. A filled joint is never presented as a measurement: `inferred`
- * carries its provenance by kind and the time its gap began, and the overlay draws it differently.
- */
+/** Filler's answer for one joint. A filled joint is never a measurement: `inferred` carries
+ * provenance by kind and `sinceMs`, and the overlay draws it differently. */
 export type FilledJoint =
   | { readonly kind: "measured"; readonly position: Vec }
   | {
@@ -84,7 +70,7 @@ export type FilledJoint =
     }
   | { readonly kind: "lost" };
 
-/** Prediction age is measured evidence age, not the time the current gap began. */
+/** Prediction age = evidence age, not time the gap began. */
 export type JointPrediction =
   | {
       readonly kind: "coast";
@@ -108,7 +94,7 @@ export interface FilledFrame {
   readonly joints: Readonly<Record<JointId, FilledJoint>>;
 }
 
-/** The position a filled joint presents, measured or inferred, or `undefined` when lost. */
+/** Position a filled joint presents: measured or inferred; `undefined` when lost. */
 export function presentedPosition(joint: FilledJoint): Vec | undefined {
   switch (joint.kind) {
     case "measured":
@@ -121,7 +107,7 @@ export function presentedPosition(joint: FilledJoint): Vec | undefined {
   }
 }
 
-/** The measured position of a trusted joint, or `undefined` for a gap. */
+/** Measured position of a trusted joint; `undefined` for a gap. */
 export function trustedPosition(trust: JointTrust): Vec | undefined {
   switch (trust.kind) {
     case "trusted":
@@ -139,11 +125,8 @@ export interface Measurement {
   readonly visibility: number;
 }
 
-/**
- * The one read of "did the adapter measure this joint": the measurement, or `undefined` for an
- * absent joint. Every consumer of an observation (trust, the raw reference, fixtures) reads it
- * through here, so a new observation variant is decided once.
- */
+/** Sole read of "did the adapter measure this joint": measurement, or `undefined` when absent.
+ * Trust, raw reference and fixtures route here, so a new variant is decided once. */
 export function measurementOf(observation: JointObservation): Measurement | undefined {
   switch (observation.kind) {
     case "measured":

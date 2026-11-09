@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { deriveDependants, type GraphEdge } from "../../src/graph/ir";
+import type { Outputs } from "../../src/contract/v5";
+import { deriveDependants } from "../../src/graph/ir";
+import { type GraphEdge } from "../../src/graph/node";
 import {
   GraphPublisher,
   type PublisherNode,
   type PublisherSnapshot,
 } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { slotOf } from "../helpers/requirement-inputs";
 
 const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
@@ -26,7 +27,7 @@ const node = (
     id,
     owner: "motion",
     authoredIndex,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
     compose,
   });
@@ -39,12 +40,12 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
     const registry = new PatchRegistry();
     let a = 2;
     const sourceA = node("source-a", 0, [], () => ({
-      values: { a },
+      outputs: { values: { a } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
     const sourceB = node("source-b", 1, [], () => ({
-      values: { b: 3 },
+      outputs: { values: { b: 3 } },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -55,20 +56,30 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
         {
           observerId: "sink",
           sourceId: "source-a",
-          role: "input",
           requirement: { plugin: "sum", slot: "left" },
         },
         {
           observerId: "sink",
           sourceId: "source-b",
-          role: "input",
           requirement: { plugin: "sum", slot: "right" },
         },
       ],
-      (requirementInputs) => {
-        const left = Number(slotOf(requirementInputs, "sum", "left").a ?? 0);
-        const right = Number(slotOf(requirementInputs, "sum", "right").b ?? 0);
-        return { values: { total: left + right }, sourceProgress: 0, sourceRevisions: {} };
+      (requires) => {
+        const leftEntry = requires.left;
+        const rightEntry = requires.right;
+        const leftOutputs =
+          leftEntry?.kind === "single" ? (leftEntry.bound.values as Outputs) : undefined;
+        const rightOutputs =
+          rightEntry?.kind === "single" ? (rightEntry.bound.values as Outputs) : undefined;
+        const leftValues = leftOutputs?.values as Record<string, unknown> | undefined;
+        const rightValues = rightOutputs?.values as Record<string, unknown> | undefined;
+        const left = Number(leftValues?.a ?? 0);
+        const right = Number(rightValues?.b ?? 0);
+        return {
+          outputs: { values: { total: left + right } },
+          sourceProgress: 0,
+          sourceRevisions: {},
+        };
       },
     );
     const graph = snapshot([sourceA, sourceB, sink]);
@@ -81,6 +92,6 @@ describe("GraphPublisher partial-seed requirement inputs", () => {
     const sinkPatch = batch.patches.find(({ nodeId }) => nodeId === "sink");
     if (sinkPatch?.status !== "ready")
       throw new Error(`sink is ${sinkPatch?.status ?? "absent"}, not ready.`);
-    expect(sinkPatch.values).toEqual({ total: 7 });
+    expect(sinkPatch.outputs.values).toEqual({ total: 7 });
   });
 });

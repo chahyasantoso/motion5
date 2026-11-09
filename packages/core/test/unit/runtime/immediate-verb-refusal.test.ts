@@ -1,4 +1,4 @@
-import { builtinRegistry } from "../../support/builtin-registry";
+import { builtinRegistry, testCatalog } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition, TriggerSignal } from "../../../src/contract/v5";
 import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
@@ -47,11 +47,20 @@ const HAND_ID = "hero/hand";
 const FOOT_ID = "hero/foot";
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION_ID,
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
-  values: { [node.id]: 1 },
+  outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -122,6 +131,7 @@ function rig(): Rig {
   });
   const options = {
     clock: createManualClock(),
+    capabilities: testCatalog(),
     compose,
     graphBuilder: {
       build: (project: ProjectDefinition) => {
@@ -172,7 +182,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let thrown: unknown;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       thrown = thrownBy(() => test.runtime.seek(ARM_ID, 0.5));
     });
 
@@ -199,7 +209,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let thrown: unknown;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       thrown = thrownBy(() => test.runtime.mount(LEG_ID));
     });
 
@@ -229,7 +239,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let thrown: unknown;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       thrown = thrownBy(() => test.runtime.unmount(ARM_ID));
     });
 
@@ -258,12 +268,12 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let thrown: unknown;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       thrown = thrownBy(() => test.runtime.invalidate([ARM_ID]));
     });
 
     // The public invalidate is the value tier's ending with none of its own bookkeeping, so it is
-    // refused for exactly the reason `setValues` is. What is not refused is the same call reached
+    // refused for exactly the reason `seek` is. What is not refused is the same call reached
     // from a hook while a commit is applying: `#open` is cleared before the settle steps run, which
     // is what keeps a Motion's own invalidate on the path it has always been on.
     expectImmediate(thrown, "invalidate");
@@ -281,7 +291,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let thrown: unknown;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       thrown = thrownBy(() => signalling(test.runtime).signal(MOTION_ID, SIGNAL));
     });
 
@@ -311,7 +321,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     const sequence = test.sequence;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       expectImmediate(
         thrownBy(() => test.runtime.seek(ARM_ID, 0.5)),
         "seek",
@@ -320,7 +330,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
         thrownBy(() => test.runtime.invalidate([ARM_ID])),
         "invalidate",
       );
-      tx.addTrack({ id: "foot" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "foot", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
     });
 
     // The guard refuses before anything it guards has run, so a recipe that catches its own refusal
@@ -341,12 +351,15 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     let heard = 0;
 
     editing(test.runtime).edit((tx) => {
-      tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
       // Structural, so they reach `#commit` and merge into the open pair exactly as the transaction's
       // own `addTrack` does. Neither the project's `addTrack` nor a handle's `remove` is on
       // `SchemaTransaction`, and that was never a guarantee that they could not be reached: it is
       // what makes the narrowing documentation rather than a fence.
-      const added = test.runtime.addTrack({ id: "foot" }, { motionId: MOTION_ID });
+      const added = test.runtime.addTrack(
+        { id: "foot", output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      );
 
       expect(added.id).toBe(FOOT_ID);
       expect(test.runtime.track(FOOT_ID).live).toBe(true);

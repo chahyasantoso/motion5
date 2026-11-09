@@ -1,27 +1,29 @@
+import { Goals2d, Point2d } from "../../src/models/index";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "@motion5/core";
-import { PluginRegistry } from "@motion5/core";
+import { PluginCatalog } from "@motion5/core";
 import { Engine } from "@motion5/core";
 import { createManualClock } from "@motion5/core";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/testing";
-import { fkPlugin } from "../../src/fk";
-import { ikPlugin } from "../../src/ik";
-import { transformPlugin } from "../../src/transform";
-import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "../../src/fabrik";
-import { fabrikAlternatives, outranks } from "../../src/fabrik-select";
-import { composeWorld, pivotFromBaseTip, type WorldFrame } from "../../src/frame";
-import type { JointRange } from "../../src/ik-constraint";
-import { solveLength, solveOffset, type SolveMember } from "../../src/ik-member";
-import type { SolveResult } from "../../src/ik-result";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { ikPlugin } from "@motion5/plugins/ik";
+import { BODY_2D_SPEC } from "../support/aggregate-topology";
+import { FABRIK_TOLERANCE, solveFabrik, solveFabrikAttempt } from "@motion5/rig/internal";
+import { fabrikAlternatives, outranks } from "@motion5/rig/internal";
+import { composeWorld, pivotFromBaseTip, type WorldFrame } from "@motion5/rig/internal";
+import type { JointRange } from "@motion5/rig/internal";
+import { solveLength, solveOffset, type SolveMember } from "@motion5/rig/internal";
+import type { SolveResult } from "@motion5/rig/internal";
 import {
   SOLVE_MAGNITUDE_CEILING,
   restoreResult,
   scaleRig,
   solveMagnitude,
-} from "../../src/ik-scale";
-import { chainShape, solveChain } from "../../src/ik-solve";
-import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "../../src/frame3d";
-import { solveTwoBone3d } from "../../src/ik3d-analytic";
+} from "@motion5/rig/internal";
+import { chainShape, solveChain } from "@motion5/rig/internal";
+import { readFrame3d, ZERO_PIVOT_OFFSET3D } from "@motion5/rig/internal";
+import { solveTwoBone3d } from "@motion5/rig/internal";
+import { testModels } from "../../../core/test/support/test-models";
 
 // Issue #349 phase 6 and ADR-111: stability and determinism of the 2D solve.
 //
@@ -496,51 +498,61 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
           tracks: [
             {
               id: "root",
-              keyframes: {
-                transform: {
-                  values: {
-                    x: [stop(0, 0), stop(1, 40)],
-                    y: [stop(0, 0), stop(1, 20)],
-                    rotation: [stop(0, 0), stop(1, 200)],
-                  },
+              output: { model: "Point2d" },
+              input: {
+                values: {
+                  x: [stop(0, 0), stop(1, 40)],
+                  y: [stop(0, 0), stop(1, 20)],
+                  rotation: [stop(0, 0), stop(1, 200)],
                 },
+              },
+            },
+            {
+              id: "body",
+              output: { model: "Body2d" },
+              input: {
+                values: [
+                  { id: "a", cells: { length: 60, rotation: 0 } },
+                  { id: "b", cells: { parentId: "a", length: 50, rotation: 0 } },
+                ],
               },
             },
             {
               id: "goal",
-              keyframes: {
-                transform: {
-                  values: {
-                    x: [stop(0, 90), stop(0.5, -60), stop(1, 120)],
-                    y: [stop(0, 10), stop(0.5, 70), stop(1, -30)],
-                    rotation: 0,
+              output: { model: "Goals2d" },
+              input: {
+                values: [
+                  {
+                    id: "g",
+                    cells: {
+                      memberId: "b",
+                      x: [stop(0, 90), stop(0.5, -60), stop(1, 120)],
+                      y: [stop(0, 10), stop(0.5, 70), stop(1, -30)],
+                    },
                   },
-                },
+                ],
               },
             },
             {
               id: "solve",
-              keyframes: {
-                ik: { values: { inspect: true }, requires: { root: "root", target: "goal" } },
+              output: { plugin: "ik" },
+              input: {
+                param: { inspect: true },
+                requires: { chain: "body", goals: "goal", base: "root" },
               },
             },
             {
-              id: "a",
-              keyframes: {
-                fk: { values: { length: 60 }, requires: { base: "root", solver: "solve" } },
-              },
-            },
-            {
-              id: "b",
-              keyframes: {
-                fk: { values: { length: 50 }, requires: { base: "a", solver: "solve" } },
+              id: "pose",
+              output: { plugin: "fk" },
+              input: {
+                requires: { chain: "body", solved: "solve", base: "root" },
               },
             },
           ],
         },
       ],
     };
-    const ids = ["rig/root", "rig/goal", "rig/solve", "rig/a", "rig/b"];
+    const ids = ["rig/root", "rig/body", "rig/goal", "rig/solve", "rig/pose"];
     // A structural snapshot rather than `JSON.stringify`, which would read `-0` as `0` and `NaN` as
     // `null`, the two distinctions this series exists to hold; compared by `identical` below.
     const snapshot = (value: unknown): unknown => {
@@ -551,10 +563,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       );
     };
     const replay = (sequence: readonly number[]): ReadonlyMap<number, unknown> => {
-      const plugins = new PluginRegistry();
-      plugins.register(transformPlugin);
-      plugins.register(fkPlugin);
-      plugins.register(ikPlugin);
+      const plugins = new PluginCatalog({ models: testModels });
+      plugins.register({ plugins: [fkPlugin, ikPlugin] });
       const runtime = new Engine({
         clock: createManualClock(),
         interpolator: createFakeInterpolator(),
@@ -564,7 +574,8 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
       for (const id of ids) runtime.mount(id);
       let latest: unknown;
       runtime.subscribeNode("rig/solve", (patch) => {
-        if (patch.status === "ready" && patch.values !== undefined) latest = snapshot(patch.values);
+        if (patch.status === "ready" && patch.outputs !== undefined)
+          latest = snapshot(patch.outputs);
       });
       const seen = new Map<number, unknown>();
       for (const progress of sequence) {
@@ -788,27 +799,36 @@ describe("IK stability and determinism (issue #349 phase 6)", () => {
     }
   });
 
-  it("SD-18 delivered Infinity goals publish finite rotations; live NaN refusal is pinned above", () => {
-    const members = [
-      { id: "a", base: "root", values: { length: 80 }, progress: 1 },
-      { id: "b", base: "a", values: { length: 60 }, progress: 1 },
-    ];
-    const inputs = (goal: { x: number; y: number; rotation: number }) => ({
-      root: { x: 0, y: 0, rotation: 0 },
-      target: goal,
-      members,
+  it("SD-18 refuses an infinite goal at source commit", () => {
+    const catalog = new PluginCatalog({ models: testModels });
+    const engine = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins: catalog,
     });
-    // `readFrame` sanitizes authored requirement records before compose. The direct solve cases above
-    // pin the live-value refusal; this seam pins that an infinite delivered goal still publishes.
-    const composed = ikPlugin.compose(
-      {},
-      1,
-      inputs({ x: Number.POSITIVE_INFINITY, y: 0, rotation: 0 }),
-      "solve",
-    );
-    expect(Object.values(composed.rotations as Record<string, number>).every(Number.isFinite)).toBe(
-      true,
-    );
+    expect(() =>
+      engine.load({
+        schemaVersion: 5,
+        motions: [
+          {
+            id: "m",
+            trigger: { type: "manual" },
+            tracks: [
+              {
+                id: "goals",
+                output: { model: "Goals2d" },
+                input: {
+                  values: [
+                    { id: "g", cells: { memberId: "b", x: Number.POSITIVE_INFINITY, y: 0 } },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow(/cell-form-invalid/);
   });
 
   it("SD-19 a finite root rotation past the product's range solves as the frame it names", () => {

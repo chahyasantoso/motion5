@@ -2,18 +2,27 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -25,7 +34,7 @@ describe("GraphRuntime", () => {
     // nothing subscribed later, which is not the invariant being claimed here.
     const subscribe = vi.spyOn(clock, "subscribe");
 
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
 
     expect(subscribe).toHaveBeenCalledTimes(1);
     expect(runtime.registry).toBe(runtime.registry);
@@ -36,7 +45,7 @@ describe("GraphRuntime", () => {
 
   it("P1-8 keeps the publisher off the public runtime surface", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
 
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     runtime.dispose();
@@ -44,7 +53,7 @@ describe("GraphRuntime", () => {
 
   it("I-13 keeps ticks monotonic across detach and reattach", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
     const batches: number[] = [];
     runtime.registry.subscribeBatch((batch) => batches.push(batch.tick));
@@ -62,7 +71,7 @@ describe("GraphRuntime", () => {
 
   it("publishes only attached seeds and stops after disposal", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
+    const runtime = new GraphRuntime(project, clock, compose, { graphBuilder: testGraphBuilder() });
     runtime.attach("hero/arm");
     runtime.attach("~/cursor");
     const seen: (readonly string[])[] = [];

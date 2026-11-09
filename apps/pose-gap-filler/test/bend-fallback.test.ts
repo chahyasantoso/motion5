@@ -178,7 +178,7 @@ describe("optional bend evidence never gates valid world geometry", () => {
     expect(writes[LIMBS[2]!.id]).toEqual({ kind: "skipped", reason: "length-unknown" });
     expect(writes[LIMBS[3]!.id]).toMatchObject({ kind: "written" });
     expect(recorded.batches.length).toBe(1);
-    expect(recorded.batches[0]!.length).toBe(5);
+    expect(recorded.batches[0]!.length).toBe(4);
     const absent = trustedOf(frameOf({}, 600, WORLD_SPACE));
     writer.write(raw.fill(absent), absent, lengths);
     expect(recorded.batches.length).toBe(1);

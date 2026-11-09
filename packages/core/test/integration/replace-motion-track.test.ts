@@ -3,6 +3,8 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 function ramp(from: number, to: number) {
   return [
@@ -14,7 +16,8 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
   return {
     id,
     ...(duration === undefined ? {} : { duration }),
-    keyframes: { transform: { values: { x: ramp(from, to) } } },
+    input: { values: record({ x: ramp(from, to) }) },
+    output: { model: "TestRecord" },
   };
 }
 
@@ -22,7 +25,7 @@ describe("motion-owned Track replacement", () => {
   it("re-registers the compiled Track without throwing on the next Motion update", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -43,7 +46,7 @@ describe("motion-owned Track replacement", () => {
     const sceneArmPatch = handle.get("scene/arm");
     if (sceneArmPatch?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch.values).toEqual({ x: 125 });
+    expect(sceneArmPatch.outputs.values).toEqual({ x: 125 });
 
     handle.dispose();
   });
@@ -62,7 +65,7 @@ describe("motion-owned Track replacement", () => {
         },
       ],
     };
-    const handle = new Engine({
+    const handle = testEngine({
       clock,
       interpolator: createFakeInterpolator(),
       scheduler,
@@ -70,7 +73,7 @@ describe("motion-owned Track replacement", () => {
     handle.mount("scene/first");
     handle.mount("scene/second");
     handle.mount("scene/third");
-    handle.signal("scene", { type: "manual", progress: 1 });
+    handle.signal("scene", { type: "manual", progress: 0.25 });
     scheduler.flush();
 
     handle.track("scene/first").replace(track("first", 0, 200));
@@ -82,44 +85,15 @@ describe("motion-owned Track replacement", () => {
     const sceneFirstPatch = handle.get("scene/first");
     if (sceneFirstPatch?.status !== "ready")
       throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    expect(sceneFirstPatch.outputs.values).toEqual({ x: 200 });
     const sceneSecondPatch = handle.get("scene/second");
     if (sceneSecondPatch?.status !== "ready")
       throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    expect(sceneSecondPatch.outputs.values).toEqual({ x: 0 });
     const sceneThirdPatch = handle.get("scene/third");
     if (sceneThirdPatch?.status !== "ready")
       throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneThirdPatch.values).toEqual({ x: 0 });
-
-    handle.dispose();
-  });
-
-  it("updates a Motion-owned Track through observation mutations", () => {
-    const clock = createManualClock();
-    const scheduler = createFakeScheduler();
-    const handle = new Engine({
-      clock,
-      interpolator: createFakeInterpolator(),
-      scheduler,
-    }).load({
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "scene",
-          trigger: { type: "manual" },
-          tracks: [track("arm", 0, 100), track("label", 0, 50)],
-        },
-      ],
-    });
-    handle.mount("scene/arm");
-    handle.mount("scene/label");
-    handle.track("scene/label").addObserve({ source: "scene/arm" });
-
-    expect(() => {
-      handle.signal("scene", { type: "manual", progress: 0.5 });
-      scheduler.flush();
-    }).not.toThrow();
+    expect(sceneThirdPatch.outputs.values).toEqual({ x: 0 });
 
     handle.dispose();
   });

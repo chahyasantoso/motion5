@@ -1,40 +1,41 @@
 import { describe, expect, it } from "vitest";
-import type { TrackDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog, testObserver } from "../support/builtin-registry";
+
+const PENDING = testObserver("pending");
 
 /**
- * Three independent consumer/source pairs. Each consumer observes a free track that is never
- * seeded, so the observation source never publishes a value and every seek of a consumer
- * produces exactly one fresh `observation-pending-reference` diagnostic (never the same
- * diagnostic twice, since the observer id differs each time). This lets a handful of
- * sequential `seek` calls exercise the ring buffer's eviction without any node ever
- * resolving.
+ * Three independent consumer/source pairs. Each consumer binds a requirement slot to a free track
+ * that is never seeded, so the source never publishes a value and every seek of a consumer
+ * produces exactly one fresh `source-pending` diagnostic (never the same diagnostic twice, since
+ * the observer id differs each time). This lets a handful of sequential `seek` calls exercise the
+ * ring buffer's eviction without any node ever resolving. The bindings use `input.requires`, the
+ * identified form, because this runtime is registry-free and that form derives an input edge
+ * without asking a plugin catalog.
  */
-function pendingProject(): {
-  readonly schemaVersion: 5;
-  readonly motions: readonly {
-    id: string;
-    trigger: { type: "manual" };
-    tracks: readonly never[];
-  }[];
-  readonly freeTracks: readonly TrackDefinition[];
-} {
+function pendingProject(): ProjectDefinition {
+  const consumer = (id: string, source: string) => ({
+    id,
+    output: { plugin: "pending" },
+    input: { values: {}, requires: { chain: source } },
+  });
   return {
-    schemaVersion: 5 as const,
-    motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
+    schemaVersion: 5,
+    motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [] }],
     freeTracks: [
-      { id: "source1" },
-      { id: "source2" },
-      { id: "source3" },
-      { id: "consumer1", observes: [{ source: "~/source1" }] },
-      { id: "consumer2", observes: [{ source: "~/source2" }] },
-      { id: "consumer3", observes: [{ source: "~/source3" }] },
+      { id: "source1", output: { model: "TestRecord" } },
+      { id: "source2", output: { model: "TestRecord" } },
+      { id: "source3", output: { model: "TestRecord" } },
+      consumer("consumer1", "~/source1"),
+      consumer("consumer2", "~/source2"),
+      consumer("consumer3", "~/source3"),
     ],
   };
 }
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -42,6 +43,7 @@ const compose = (node: { id: string }) => () => ({
 describe("P5-03 unified inline diagnostics", () => {
   it("bounds the retained diagnostic history at a fixed capacity and reports a drop count once exceeded", () => {
     const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
       clock: createManualClock(),
       compose,
       diagnosticsCapacity: 2,
@@ -57,7 +59,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("still surfaces the same diagnostic inline on the affected patch and the batch summary", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     const batch = runtime.seek("~/consumer1", 0);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "~/consumer1");
     // A pending reference is published as `blocked`, so this narrows on that rather than on
@@ -65,7 +71,7 @@ describe("P5-03 unified inline diagnostics", () => {
     if (patch?.status !== "blocked")
       throw new Error(`~/consumer1 is ${patch?.status ?? "absent"}, not blocked.`);
     expect(patch.diagnostics).toHaveLength(1);
-    expect(patch.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
+    expect(patch.diagnostics[0]?.ruleId).toBe("source-pending");
     expect(batch.diagnostics).toHaveLength(1);
     expect(runtime.diagnostics.entries).toHaveLength(1);
     expect(runtime.diagnostics.entries[0]).toEqual(patch.diagnostics[0]);
@@ -73,7 +79,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("uses the one shared Diagnostic shape for every retained entry, load-time or runtime", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     runtime.seek("~/consumer1", 0);
     const [entry] = runtime.diagnostics.entries;
     expect(entry).toBeDefined();
@@ -88,7 +98,11 @@ describe("P5-03 unified inline diagnostics", () => {
   });
 
   it("exposes diagnostics as one bounded read-only snapshot, never a second subscribe/emit surface", () => {
-    const runtime = new ProjectRuntime(pendingProject(), { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(pendingProject(), {
+      capabilities: testCatalog(PENDING),
+      clock: createManualClock(),
+      compose,
+    });
     const snapshot = runtime.diagnostics;
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.entries)).toBe(true);

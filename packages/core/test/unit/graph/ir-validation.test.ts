@@ -5,8 +5,14 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 
 const project = (overrides: Partial<ProjectDefinition> = {}): ProjectDefinition => ({
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
   ...overrides,
 });
 
@@ -22,19 +28,31 @@ describe("graph IR and candidate validation", () => {
     expect(Object.isFrozen(result.graph?.nodes)).toBe(true);
   });
 
-  it("resolves local, free, and cross-motion observation sources", () => {
+  it("resolves local, free, and cross-motion bound sources", () => {
     const result = buildGraphIR(
       project({
         motions: [
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", observes: [{ source: "~/cursor" }] }],
+            tracks: [
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/cursor" } },
+              },
+            ],
           },
           {
             id: "caption",
             trigger: { type: "manual" },
-            tracks: [{ id: "label", observes: [{ source: "hero/arm" }] }],
+            tracks: [
+              {
+                id: "label",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "hero/arm" } },
+              },
+            ],
           },
         ],
       }),
@@ -46,10 +64,7 @@ describe("graph IR and candidate validation", () => {
     ).toEqual(["~/cursor", "hero/arm"]);
   });
 
-  it("rejects unknown, duplicate, and self-referential edges before mount", () => {
-    // The removed `target`, `role`, and `projection` fields have their own owners in
-    // observation-target-removal.test.ts and single-input-channel.test.ts, so none of them is
-    // authored here: this case owns topology, and one rule belongs to one test.
+  it("rejects unknown and self-referential edges before mount", () => {
     const result = buildGraphIR(
       project({
         motions: [
@@ -59,12 +74,13 @@ describe("graph IR and candidate validation", () => {
             tracks: [
               {
                 id: "arm",
-                observes: [
-                  { source: "missing" },
-                  { source: "missing" },
-                  { source: "arm" },
-                  { source: "cursor" },
-                ],
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
+              {
+                id: "leg",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "leg" } },
               },
             ],
           },
@@ -74,11 +90,7 @@ describe("graph IR and candidate validation", () => {
     );
     expect(result.graph).toBeUndefined();
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining([
-        "observation-duplicate",
-        "observation-self-reference",
-        "observation-unknown-source",
-      ]),
+      expect.arrayContaining(["edge-self-reference", "edge-unknown-source"]),
     );
   });
 
@@ -86,8 +98,16 @@ describe("graph IR and candidate validation", () => {
     const result = buildGraphIR(
       project({
         motions: [
-          { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-          { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
+          {
+            id: "hero",
+            trigger: { type: "manual" },
+            tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+          },
+          {
+            id: "hero",
+            trigger: { type: "manual" },
+            tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+          },
         ],
       }),
       builtinRegistry(),
@@ -103,7 +123,13 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
+            tracks: [
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
+            ],
           },
         ],
       }),
@@ -115,7 +141,13 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
+            tracks: [
+              {
+                id: "arm",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "missing" } },
+              },
+            ],
           },
         ],
       }),
@@ -131,12 +163,24 @@ describe("graph IR and candidate validation", () => {
           {
             id: "a",
             trigger: { type: "manual" },
-            tracks: [{ id: "bx", observes: [{ source: "~/nope" }] }],
+            tracks: [
+              {
+                id: "bx",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/nope" } },
+              },
+            ],
           },
           {
             id: "a-b",
             trigger: { type: "manual" },
-            tracks: [{ id: "x", observes: [{ source: "~/nope" }] }],
+            tracks: [
+              {
+                id: "x",
+                output: { plugin: "graph-edge" },
+                input: { requires: { chain: "~/nope" } },
+              },
+            ],
           },
         ],
       }),

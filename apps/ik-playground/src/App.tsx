@@ -2,7 +2,7 @@ import React, { useLayoutEffect, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createMicrotaskScheduler, type ProjectHandle } from "@motion5/core";
-import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { createBrowserClock } from "@motion5/dom/engine";
 import { createGsapInterpolator, createGsapScrollSource } from "@motion5/core/adapters";
 import { Ik3dStage } from "./components/Ik3dStage";
 import { IkStage } from "./components/IkStage";
@@ -85,7 +85,7 @@ export const App: React.FC = () => {
         });
       },
       releaseHost: () => clock.dispose(),
-      weightNode: nodeId(TENTACLE.memberTracks[0]!),
+      weightNode: nodeId(TENTACLE.bodyTrack),
       onView: setView,
       onOrphanFailure: (error) => console.error("IK cleanup after cancellation failed.", error),
     });

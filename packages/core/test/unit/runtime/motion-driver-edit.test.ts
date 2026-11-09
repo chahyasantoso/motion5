@@ -4,6 +4,7 @@ import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/
 import type { MotionHandle } from "../../../src/contract/motion-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime, type ProjectRuntimeOptions } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Slice B2 of issue #223, on top of B1.
@@ -47,10 +48,19 @@ const MANUAL: MotionDefinition["trigger"] = { type: "manual" };
 const TIMED: MotionDefinition["trigger"] = { type: "time", duration: 1000 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION, trigger: MANUAL, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION,
+      trigger: MANUAL,
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -98,6 +108,7 @@ function journal(failures: JournalFailures = {}): Journal {
 }
 function runtimeWith(hooks: Journal): ProjectRuntime {
   return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     replaceMotionTrigger: hooks.replaceMotionTrigger,
@@ -143,6 +154,7 @@ function disposingRig(from: "trigger" | "stagger"): DisposingRig {
   const entries: string[] = [];
   let project: ProjectRuntime | undefined;
   const created = new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     disposeComposition: () => {
@@ -177,11 +189,12 @@ function reentrantRig(): DisposingRig {
   const entries: string[] = [];
   let project: ProjectRuntime | undefined;
   const created = new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose,
     replaceMotionTrigger: (motionId) => {
       entries.push(`trigger ${motionId}`);
-      project?.addTrack({ id: "tail" }, { motionId: MOTION });
+      project?.addTrack({ id: "tail", output: { model: "TestRecord" } }, { motionId: MOTION });
     },
     setMotionStagger: () => undefined,
   });

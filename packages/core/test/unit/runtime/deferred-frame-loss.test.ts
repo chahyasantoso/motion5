@@ -3,6 +3,8 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { recordValues } from "../../support/v5-builders";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issues #395, #411 and #417: which frame a failed publication carries, and which it does not.
@@ -44,8 +46,16 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
@@ -57,9 +67,16 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     let refusing = false;
     const compose = (node: { id: string }) => {
       if (refusing) throw failure;
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;
@@ -102,7 +119,7 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.tick).toBe(2);
 
@@ -119,9 +136,16 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     let refusing = false;
     const compose = (node: { id: string }) => {
       if (refusing) throw failure;
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;
@@ -164,7 +188,7 @@ describe("a publisher failure re-queues the seeds, and carries only a frame it n
     const captionLabelPatch2 = runtime.registry.get("caption/label");
     if (captionLabelPatch2?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch2?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch2.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch2).node).toBe("caption/label");
     expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.lastFlushError).toBeUndefined();
     runtime.dispose();

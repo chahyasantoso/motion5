@@ -21,9 +21,9 @@ import { runPlan, type PlanPorts } from "../../../src/runtime/run-plan";
  * and nothing after it is rolled back. See ADR-035, ADR-045, ADR-067 and ADR-071.
  */
 
-const ARM: TrackDefinition = { id: "arm" };
-const ARM_LONGER: TrackDefinition = { id: "arm", duration: 500 };
-const HAND: TrackDefinition = { id: "hand", duration: 250 };
+const ARM: TrackDefinition = { id: "arm", output: { model: "TestRecord" } };
+const ARM_LONGER: TrackDefinition = { id: "arm", duration: 500, output: { model: "TestRecord" } };
+const HAND: TrackDefinition = { id: "hand", duration: 250, output: { model: "TestRecord" } };
 const HERO: MotionDefinition = { id: "hero", trigger: { type: "manual" }, tracks: [] };
 const ARM_NODE = "hero/arm";
 const HAND_NODE = "hero/hand";
@@ -83,6 +83,8 @@ function rig(failing: readonly string[] = []): Rig {
     mountNode: (nodeId) => record(`mount ${nodeId}`),
     addMotionTrack: (motionId, nodeId) => record(`motion-add ${motionId} ${nodeId}`),
     removeMotionTrack: (motionId, nodeId) => record(`motion-remove ${motionId} ${nodeId}`),
+    prepareReaders: (readers) =>
+      record(`prepare-readers ${readers.map(({ nodeId }) => nodeId).join(",")}`),
     assertLive: () => record("assert-live"),
     accept: () => record("accept"),
     adopt: () => record("adopt"),
@@ -117,7 +119,7 @@ function addingPlan(): CommitPlan {
       ],
       [["hero", { definition: HERO }]],
     ),
-    { needsBuild: new Set(), readers: new Map() },
+    { needsBuild: new Set(), readers: new Map(), noBuild: new Set() },
   );
 }
 
@@ -126,7 +128,42 @@ function replacingPlan(): CommitPlan {
   return planCommit(
     doc([[ARM_NODE, entry(ARM, "hero")]], [["hero", { definition: HERO }]]),
     doc([[ARM_NODE, entry(ARM_LONGER, "hero")]], [["hero", { definition: HERO }]]),
-    { needsBuild: new Set([ARM_NODE]), readers: new Map() },
+    { needsBuild: new Set([ARM_NODE]), readers: new Map(), noBuild: new Set() },
+  );
+}
+
+const READER_NODE = "hero/reader";
+const SOURCE_NODE = "hero/source";
+const PLUGIN_SOURCE: TrackDefinition = { id: "source", output: { model: "TestRecord" } };
+const PLUGIN_SOURCE_CHANGED: TrackDefinition = {
+  id: "source",
+  duration: 100,
+  output: { model: "TestRecord" },
+};
+const PLUGIN_READER: TrackDefinition = {
+  id: "reader",
+  output: { plugin: "observer" },
+  input: { requires: { source: "source" } },
+};
+
+/** Replacing a bound source: the reader owes a fresh prepare before acceptance. */
+function readerPlan(): CommitPlan {
+  return planCommit(
+    doc(
+      [
+        [SOURCE_NODE, entry(PLUGIN_SOURCE, "hero")],
+        [READER_NODE, entry(PLUGIN_READER, "hero")],
+      ],
+      [["hero", { definition: HERO }]],
+    ),
+    doc(
+      [
+        [SOURCE_NODE, entry(PLUGIN_SOURCE_CHANGED, "hero")],
+        [READER_NODE, entry(PLUGIN_READER, "hero")],
+      ],
+      [["hero", { definition: HERO }]],
+    ),
+    { needsBuild: new Set([SOURCE_NODE]), readers: new Map(), noBuild: new Set() },
   );
 }
 
@@ -163,6 +200,30 @@ describe("the commit walk", () => {
       `rollback-staged ${ARM_NODE}`,
       `stage-rollback ${ARM_NODE}`,
     ]);
+  });
+
+  it("runs reader prepare after every effect and before acceptance", () => {
+    const test = rig();
+
+    runPlan(readerPlan(), test.ports);
+
+    const journal = test.journal;
+    expect(journal).toContain(`prepare-readers ${READER_NODE}`);
+    expect(journal.indexOf(`prepare-readers ${READER_NODE}`)).toBeLessThan(
+      journal.indexOf("accept"),
+    );
+    expect(journal.indexOf("accept")).toBeLessThan(journal.indexOf("adopt"));
+  });
+
+  it("rolls every staged effect back when a reader's prepare refuses", () => {
+    const test = rig([`prepare-readers ${READER_NODE}`]);
+
+    const thrown = thrownBy(() => runPlan(readerPlan(), test.ports));
+
+    expect((thrown as Error).message).toBe(`refused prepare-readers ${READER_NODE}`);
+    expect(test.journal).toContain(`rollback-staged ${SOURCE_NODE}`);
+    expect(test.journal).not.toContain("accept");
+    expect(test.journal).not.toContain("adopt");
   });
 
   it("leaves an effect that refused out of the rollback, since it never completed", () => {

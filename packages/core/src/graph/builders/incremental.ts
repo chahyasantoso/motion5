@@ -1,70 +1,35 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
-import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
+import { collectTrack, finalizeGraph, type GraphBuildResult } from "../ir";
+import { type GraphNode } from "../node";
+import type { CommittedContract } from "../committed-contract";
+import { deriveCommittedContract } from "../committed-contract";
 import { diagnostic } from "../../contract/diagnostics";
 import { assertAuthoredMotionId } from "../ids";
 import type { PluginCapabilities } from "../../ports/plugin-capabilities";
 
 /**
- * The caching graph builder the runtime binds, and the owner of its own cache residency rule.
- *
- * Residency rule: once a build completes, the cache holds an entry for exactly the tracks that
- * build walked, and nothing else. `build` receives the whole project, so the resident set is a pure
- * function of the last project handed in, and nothing outside this class has to know the cache
- * exists. That is why eviction is a sweep here rather than an `evict(nodeId)` method on the
- * `GraphBuilder` port: `ProjectRuntime.#removeTrack`, the `destroyMotion` hook and `dispose` would
- * each have had to call one, forever, with a key only this class can build, and three call sites
- * that must stay in step is the bug class the sweep deletes. See ADR-058.
- *
- * Ownership: one builder instance per project. Sharing one across two projects stays correct and
- * stops being fast, because each build sweeps the other project's entries and both thrash to a
- * permanent miss. `Engine.load` constructs one builder per loaded project, which is that shape.
- */
+ * Caching graph builder; resident set = exactly the tracks the last completed build walked.
+ * One builder per project; eviction is a sweep here, not a port method, keeping one owner. */
 export class IncrementalGraphBuilder {
-  constructor(private readonly capabilities: PluginCapabilities) {}
-  /**
-   * Built nodes, keyed by the inputs their id is derived from.
-   *
-   * Not keyed by the `TrackDefinition` object alone: `collectTrack` derives the node id from
-   * the owner (`~/trackId` for a free track, `motionId/trackId` for a motion track), so one
-   * definition object legitimately backs two different nodes when it is shared across motions.
-   * Object identity is still checked on every hit, so replacing a track with a new object at
-   * the same node id remains a miss and rebuilds.
-   */
+  readonly #capabilities: PluginCapabilities;
+
+  constructor(capabilities: PluginCapabilities) {
+    this.#capabilities = capabilities;
+  }
+  // Keyed by owner/ownerId/track.id: the node id embeds the owner, so one definition can back two nodes; a hit also needs the same object.
   readonly #trackCache = new Map<string, GraphNode>();
 
-  /**
-   * How many nodes the cache currently holds.
-   *
-   * The observable the residency rule is asserted through, and deliberately not on the
-   * `GraphBuilder` port, which keeps its one `build` method: a caller has no use for it, and the
-   * only other way to test eviction is GC probing, which is flaky and not worth owning.
-   */
+  /** Nodes the cache holds; the observable residency is asserted through. */
   get cachedNodeCount(): number {
     return this.#trackCache.size;
   }
 
-  /**
-   * `owner` and `ownerId` can never contain `/` -- owner is a literal, and `ownerId` is either
-   * `"~"` or a motion id already through `assertAuthoredMotionId`. The prefix up to the second
-   * separator is therefore unambiguous even though `track.id` has not been validated yet.
-   */
+  // owner is a literal and ownerId is "~" or a validated motion id, so neither holds "/"; the key prefix is unambiguous.
   #cacheKey(owner: "motion" | "free", ownerId: string, trackId: unknown): string {
     return `${owner}/${ownerId}/${String(trackId)}`;
   }
 
-  /**
-   * Collect one track, caching only results that were produced without complaint.
-   *
-   * `collectTrack` reports problems exclusively on the path that computes the node, so a cached
-   * result carries the node but not the reasons it is incomplete. Caching a failure therefore
-   * makes it permanently silent: the next build gets a hit, emits no diagnostic, and succeeds
-   * with content the author declared either missing (bad track id, node omitted) or partial
-   * (bad observation edge, that edge dropped). Recomputing a rejected track is cheap and rare.
-   *
-   * Every key this reaches is recorded in `visited`, whether it hit, missed, or was rejected, so
-   * "the build never walked this track" and "the build walked it and refused to cache it" stay two
-   * different answers with two different owners. See `#sweep`.
-   */
+  /** Cache clean results only: collectTrack reports while computing, so a cached failure would stay silent; rejected keys still enter visited. */
   #collect(
     track: TrackDefinition,
     owner: "motion" | "free",
@@ -87,28 +52,26 @@ export class IncrementalGraphBuilder {
       return node;
     }
 
-    this.#trackCache.set(key, node);
-    return node;
+    // Contract cached with the node, so a rebuild on the same track object returns the same object; deriving it outside would freeze a fresh node each build.
+    const contract = deriveCommittedContract(track, node.id, this.#capabilities);
+    const committed =
+      contract === undefined ? node : Object.freeze({ ...node, contract } satisfies GraphNode);
+
+    this.#trackCache.set(key, committed);
+    return committed;
   }
 
-  /**
-   * Drops every entry the build that just finished did not walk.
-   *
-   * Reached from the completion path only, and never from a `finally`. A build that throws leaves
-   * `visited` partial, and a partial set says nothing about residency: sweeping against it would
-   * evict live entries and cost hits with no correctness gain, so a thrown build leaves the cache
-   * exactly as it was.
-   *
-   * Not merged with the reject-path `delete` in `#collect`. That one answers "walked, but
-   * incomplete"; this one answers "not walked at all". Collapsing the two into one condition is how
-   * the leak this exists to close comes back.
-   */
+  // Completion path only, never finally: a thrown build leaves visited partial, sweeping it would evict live entries.
+  // Reject-path delete = walked but incomplete; this = not walked at all.
   #sweep(visited: ReadonlySet<string>): void {
     for (const key of [...this.#trackCache.keys()])
       if (!visited.has(key)) this.#trackCache.delete(key);
   }
 
-  build(project: ProjectDefinition): GraphBuildResult {
+  build(
+    project: ProjectDefinition,
+    carried?: ReadonlyMap<string, CommittedContract>,
+  ): GraphBuildResult {
     const diagnostics: Diagnostic[] = [];
     const nodes: GraphNode[] = [];
     const seen = new Set<string>();
@@ -181,9 +144,8 @@ export class IncrementalGraphBuilder {
       }
     }
 
-    // Both loops are done, so `visited` is the residency set for this project. Here rather than in
-    // a `finally`, and before `finalizeGraph`, which owns the result and not the cache.
+    // Both loops done: visited is this project's residency set. Swept before finalizeGraph, which owns the result, not the cache.
     this.#sweep(visited);
-    return finalizeGraph(nodes, diagnostics, this.capabilities);
+    return finalizeGraph(nodes, diagnostics, this.#capabilities, carried);
   }
 }

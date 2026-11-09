@@ -4,6 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { GraphPublisher } from "../../../src/runtime/graph-publisher";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog, testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Phase 5 of issue #362, and the phase ends in a refusal rather than in a verb. See ADR-077.
@@ -32,14 +33,19 @@ const PROJECT: ProjectDefinition = {
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "arm" }, { id: "hand" }, { id: "leg" }, { id: "foot" }],
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "hand", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+        { id: "foot", output: { model: "TestRecord" } },
+      ],
     },
   ],
-  freeTracks: [{ id: "cursor" }],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -52,7 +58,11 @@ const handed = () => flushed.mock.calls.map(([snapshot]) => snapshot);
 const derivations = () => new Set(handed()).size;
 
 function loaded(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 
 afterEach(() => {
@@ -62,7 +72,7 @@ afterEach(() => {
 describe("a mount loop is what mounting a document costs, so no batch verb is added", () => {
   it("RA-158 derives one publisher snapshot for a mount loop, against one per mount when a flush sits between them", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(PROJECT, clock, compose);
+    const runtime = new GraphRuntime(PROJECT, clock, compose, { graphBuilder: testGraphBuilder() });
 
     for (const nodeId of NODES) runtime.attach(nodeId);
 
@@ -85,7 +95,9 @@ describe("a mount loop is what mounting a document costs, so no batch verb is ad
     // against a publisher nobody called. A flush between the mounts is what `n` derivations look
     // like, and the loop above is not that shape.
     const alternatingClock = createManualClock();
-    const alternating = new GraphRuntime(PROJECT, alternatingClock, compose);
+    const alternating = new GraphRuntime(PROJECT, alternatingClock, compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     for (const nodeId of NODES) {
       alternating.attach(nodeId);
       alternatingClock.tick();

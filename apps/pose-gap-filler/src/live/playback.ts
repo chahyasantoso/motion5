@@ -2,7 +2,7 @@ import { writePoseResult } from "../filler/adapter";
 import type { PoseRecording } from "../replay/recording";
 import type { LandmarkSource } from "./source";
 
-/** The browser's frame loop and clock, injected so a paced source is tested without either. */
+/** Browser frame loop and clock; injection lets a paced source run without either. */
 export interface FramePorts {
   requestFrame(callback: () => void): number;
   cancelFrame(id: number): void;
@@ -15,28 +15,17 @@ export const BROWSER_FRAMES: FramePorts = {
   now: () => performance.now(),
 };
 
-/**
- * A stream of frames by index, what a paced source plays: `timeOf(i)` is frame `i`'s time, or
- * `undefined` past the end, and `resultOf(i)` builds its result only when it is emitted. Times must
- * strictly increase with the index.
- */
+/** Frames by index, what a paced source plays: `timeOf(i)` is frame `i`'s time or `undefined`
+ * past the end; `resultOf(i)` builds a result only on emit. Times strictly increase. */
 export interface FrameStream {
-  /** Clears generation-local selection state before the first frame of every start. */
+  /** Clears generation-local selection state before each start's first frame. */
   reset?(): void;
   timeOf(index: number): number | undefined;
   resultOf(index: number): unknown;
 }
 
-/**
- * The one pacing loop every non-camera source shares. Frame `i` is emitted on the first animation
- * frame at least `timeOf(i) - timeOf(0)` after `start`, and at most one frame per animation frame,
- * so a slow device plays slower instead of skipping, and the emitted sequence is exactly the
- * stream's. `detectMs` is 0: nothing was detected.
- *
- * Every start is a generation, as for the webcam source: `stop` ends it, and a consumer that stops
- * the source from inside `onSample` gets no further frame. A throw from `onSample` stops the source
- * and propagates, so a broken consumer is never fed again.
- */
+/** Paces every non-camera source: frame `i` emits on the first animation frame reaching
+ * `timeOf(i) - timeOf(0)` after `start`, at most one per frame; `detectMs` is 0. */
 export function createPacedSource(
   stream: FrameStream,
   ports: FramePorts = BROWSER_FRAMES,
@@ -94,17 +83,14 @@ export function createPacedSource(
 }
 
 export interface PlaybackOptions {
-  /** Starts again at the first frame after the last, the take's own period later. */
+  /** Restarts at the first frame after the last, one loop period later. */
   readonly loop: boolean;
 }
 
-/** The interval a single-frame recording repeats at: one 30 fps frame. */
 const SINGLE_FRAME_MS = 1000 / 30;
 
-/**
- * The time from a take's first frame to the first frame of its next lap: its span plus one mean
- * frame interval, so a take of `n` frames at a fixed rate loops every `n` intervals exactly.
- */
+/** Time from first frame to next lap's first: span plus one mean frame interval, so a take
+ * of `n` frames at a fixed rate loops every `n` intervals exactly. */
 export function loopPeriod(recording: PoseRecording): number {
   const { frames } = recording;
   const count = frames.length;
@@ -120,12 +106,8 @@ export function loopPeriod(recording: PoseRecording): number {
   return period;
 }
 
-/**
- * A recording played as a live source: what the live page runs for a committed synthetic take, so
- * it exercises the whole pipeline with no MediaPipe download and no camera prompt. Each sample's
- * `tMs` is the recorded time plus one `loopPeriod` per completed lap, so time only increases across
- * a loop, and the sequence is the one replay steps through.
- */
+/** A recording played as a live source, so the live page exercises the whole pipeline with no
+ * MediaPipe or camera. Sample `tMs` is recorded time plus one `loopPeriod` per lap. */
 export function createPlaybackSource(
   recording: PoseRecording,
   options: PlaybackOptions,

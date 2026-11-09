@@ -1,23 +1,19 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PatchBatch, ProjectDefinition } from "../../../src/contract/v5";
+import type { ParsedValues } from "../../../src/contract/v5-parse";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphPublisher } from "../../../src/runtime/graph-publisher";
-import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-runtime";
+import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { record } from "../../support/v5-builders";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Phase 6 of issue #362: the value tier gets the transaction the structural tier already had.
  *
- * `setValues`, `overrideValues`, `setKeyframe`, `removeKeyframe` and `seek` each end at their own
- * single-node publication, so a caller editing `n` nodes per frame publishes `n` times, notifies
- * every subscriber `n` times and moves the sequence `n` times. `values(recipe)` is the second tier:
- * the verbs reached inside it stage a seed and answer a deferred batch, and the one publication
- * happens once, when the recipe returns.
- *
- * The whole block was red the day it landed, and that is a property of the slice rather than a
- * target. This is a capability, so nothing answered before: eight of eight failed on assertions
- * rather than on a missing member, because the seam was declared locally and cast until the source
- * arrived. That declaration is deleted here and the cases read the shipped member instead, which is
- * what the first assertion in each of them is still asking about.
+ * Every value edit ends at its own single-node publication, so a caller editing `n` nodes per frame
+ * publishes `n` times, notifies every subscriber `n` times and moves the sequence `n` times.
+ * `values(recipe)` is the second tier: the verbs reached inside it stage a seed and answer a
+ * deferred batch, and the one publication happens once, when the recipe returns.
  *
  * What each case would fail without is named at the case. The one that carries the invariant is
  * `RA-162`, and it is a counter and an oracle in one rig, because a counter cannot see a stale
@@ -31,33 +27,14 @@ const PROJECT: ProjectDefinition = {
     {
       id: "rig",
       trigger: { type: "manual" },
-      tracks: [{ id: "a" }, { id: "b" }, { id: "c" }],
-    },
-  ],
-  freeTracks: [{ id: "cursor" }],
-};
-
-/**
- * The same three nodes with an authored plugin group, so `setKeyframe` has both of its paths here.
- *
- * A key the group already carries is the live-write path; one it does not is the recompile, and that
- * is the ending `RA-170` is about. Separate from `PROJECT` rather than added to it, because
- * authoring a group changes what every other case's static write masks over, and no case should pay
- * for the one that needed it.
- */
-const KEYFRAMED: ProjectDefinition = {
-  ...PROJECT,
-  motions: [
-    {
-      id: "rig",
-      trigger: { type: "manual" },
       tracks: [
-        { id: "a", keyframes: { fk: { values: { x: 200 } } } },
-        { id: "b", keyframes: { fk: { values: { x: 200 } } } },
-        { id: "c", keyframes: { fk: { values: { x: 200 } } } },
+        { id: "a", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
+        { id: "b", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
+        { id: "c", input: { values: record({ x: 0 }) }, output: { model: "TestRecord" } },
       ],
     },
   ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 
 // The prototype rather than the instance, because `GraphRuntime` owns its publisher and never hands
@@ -68,42 +45,39 @@ function publishedValues(runtime: ProjectRuntime): Record<string, unknown> {
   return Object.fromEntries(NODES.map((nodeId) => [nodeId, runtime.graph.registry.get(nodeId)]));
 }
 
-/**
- * One mounted runtime whose composition is a map the live-value hook writes into.
- *
- * The hook is what makes a written value readable at all: nothing in this rig compiles a timeline,
- * so a `compose` that answers from what the writer received is the only place the write shows up.
- * That is deliberate for the oracle, which compares what was published rather than what was called,
- * because a spy on the hook cannot tell a correct batch from one that published stale values.
- */
-function rig(options: { escalate?: boolean; project?: ProjectDefinition } = {}) {
+/** The record a parsed authored edit carries, so the rig's compose answers what was written. */
+function recordFromParsed(values: ParsedValues): Record<string, unknown> {
+  if (values.kind !== "record") return {};
+  return Object.fromEntries(
+    Object.entries(values.fields).map(([name, cell]) => [
+      name,
+      cell.kind === "static" ? cell.value : 0,
+    ]),
+  );
+}
+
+/** One mounted runtime whose composition is a map the value ports write into. */
+function rig(options: { project?: ProjectDefinition } = {}) {
   const state = new Map<string, Record<string, unknown>>();
-  const progressed: (readonly [string, number])[] = [];
-  const staged: string[] = [];
   const runtime = new ProjectRuntime(options.project ?? PROJECT, {
+    capabilities: testCatalog(),
     clock: createManualClock(),
     compose: (node) => () => ({
-      values: { ...(state.get(node.id) ?? {}) },
+      outputs: { values: { x: 0, ...(state.get(node.id) ?? {}) } },
       sourceProgress: 0,
       sourceRevisions: {},
     }),
-    writeValues: (nodeId, values) => {
-      state.set(nodeId, { ...values });
-      return options.escalate === true
-        ? { patch: { kind: "recompile" }, progress: 0.25 }
-        : undefined;
+    rewriteValues: (nodeId, values) => {
+      state.set(nodeId, recordFromParsed(values));
     },
-    setProgress: (nodeId, progress) => {
-      progressed.push([nodeId, progress]);
-    },
-    stageTrack: (_track, nodeId): StagedTrack => {
-      staged.push(nodeId);
-      return { commit: () => undefined, rollback: () => undefined };
+    overlayValues: (nodeId, value) => {
+      if (value === undefined) state.delete(nodeId);
+      else if (!Array.isArray(value)) state.set(nodeId, { ...value });
     },
   });
   for (const nodeId of NODES) runtime.mount(nodeId);
   flushed.mockClear();
-  return { runtime, progressed, staged, published: () => publishedValues(runtime) };
+  return { runtime, published: () => publishedValues(runtime) };
 }
 
 afterEach(() => {
@@ -117,9 +91,9 @@ describe("the value tier publishes once for a batch, and refuses every tier that
     try {
       const before = batched.runtime.graph.sequence;
       const batch = batched.runtime.values((edit) => {
-        edit.setValues("rig/a", { x: 1 });
-        edit.setValues("rig/b", { x: 2 });
-        edit.track("rig/c").setValues({ x: 3 });
+        edit.track("rig/a").input.values.setField({ field: "x" }, 1);
+        edit.track("rig/b").input.values.setField({ field: "x" }, 2);
+        edit.track("rig/c").input.values.setField({ field: "x" }, 3);
       });
 
       // The counter. One publication and one sequence move for three nodes, and the batch handed
@@ -135,12 +109,10 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       // published once from the wrong values would pass every assertion above.
       const singly = rig();
       try {
-        singly.runtime.setValues("rig/a", { x: 1 });
-        singly.runtime.setValues("rig/b", { x: 2 });
-        singly.runtime.track("rig/c").setValues({ x: 3 });
+        singly.runtime.track("rig/a").input.values.setField({ field: "x" }, 1);
+        singly.runtime.track("rig/b").input.values.setField({ field: "x" }, 2);
+        singly.runtime.track("rig/c").input.values.setField({ field: "x" }, 3);
 
-        // The other direction of the counter, in the same rig, so it cannot be green against a
-        // publisher nobody called: three separate writes are what `n` publications look like.
         expect(flushed).toHaveBeenCalledTimes(NODES.length);
         expect(singly.runtime.graph.sequence).toBe(NODES.length);
         expect(batched.published()).toEqual(singly.published());
@@ -159,7 +131,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       let staged: PatchBatch | undefined;
       let sequenceInside = -1;
       runtime.values((edit) => {
-        staged = edit.setValues("rig/a", { x: 1 });
+        staged = edit.track("rig/a").input.values.setField({ field: "x" }, 1);
         sequenceInside = runtime.graph.sequence;
       });
 
@@ -199,7 +171,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       // against the two refusals alone. Neither throw left a batch open behind it either.
       expect(() => runtime.edit(() => undefined)).not.toThrow();
       const batch = runtime.values((edit) => {
-        edit.setValues("rig/a", { x: 1 });
+        edit.track("rig/a").input.values.setField({ field: "x" }, 1);
       });
       expect(batch.seeds).toEqual(["rig/a"]);
     } finally {
@@ -218,9 +190,9 @@ describe("the value tier publishes once for a batch, and refuses every tier that
         expect(() => runtime.signal("rig", { type: "manual" })).toThrow("value-batch-immediate");
         // The structural family refuses at the one member all of them reach, and it names the
         // condition rather than a verb, because the caller wrote no verb list.
-        expect(() => runtime.addTrack({ id: "d" }, { motionId: "rig" })).toThrow(
-          "value-batch-structural",
-        );
+        expect(() =>
+          runtime.addTrack({ id: "d", output: { model: "TestRecord" } }, { motionId: "rig" }),
+        ).toThrow("value-batch-structural");
         expect(() => runtime.track("rig/a").remove()).toThrow("value-batch-structural");
       });
 
@@ -234,49 +206,27 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       expect(() => runtime.mount("~/cursor")).not.toThrow();
       expect(() => runtime.unmount("rig/a")).not.toThrow();
       expect(() => runtime.signal("rig", { type: "manual" })).not.toThrow();
-      expect(runtime.addTrack({ id: "d" }, { motionId: "rig" }).live).toBe(true);
+      expect(
+        runtime.addTrack({ id: "d", output: { model: "TestRecord" } }, { motionId: "rig" }).live,
+      ).toBe(true);
     } finally {
       runtime.dispose();
     }
   });
 
-  it("RA-166 joins the batch from both endings of a value write, including the escalated one that stages and re-seeks", () => {
-    const escalating = rig({ escalate: true });
-    expect(typeof escalating.runtime.values).toBe("function");
+  it("RA-166 joins the batch from an authored edit and a live write", () => {
+    const { runtime } = rig();
     try {
-      const batch = escalating.runtime.values((edit) => {
-        edit.setValues("rig/a", { x: 1 });
-        edit.overrideValues("rig/b", { x: 2 });
+      const batch = runtime.values((edit) => {
+        edit.track("rig/a").input.values.setField({ field: "x" }, 1);
+        edit.writeValues("rig/b", { x: 2 });
       });
 
-      // The ending that stages a Track and re-seeks is the one with a settle collector in front of
-      // its publication, so it is the ending that could still have published on its own.
-      expect(escalating.staged).toEqual(["rig/a", "rig/b"]);
-      expect(escalating.progressed).toEqual([
-        ["rig/a", 0.25],
-        ["rig/b", 0.25],
-      ]);
       expect(flushed).toHaveBeenCalledTimes(1);
       expect([...batch.seeds].sort()).toEqual(["rig/a", "rig/b"]);
-
-      flushed.mockClear();
-
-      // The direct ending, in the same rig shape, because a case that only ever drove the
-      // escalation would say nothing about the path every static write takes.
-      const direct = rig();
-      try {
-        const plain = direct.runtime.values((edit) => {
-          edit.setValues("rig/a", { x: 1 });
-          edit.seek("rig/b", 0.5);
-        });
-        expect(direct.staged).toEqual([]);
-        expect(flushed).toHaveBeenCalledTimes(1);
-        expect([...plain.seeds].sort()).toEqual(["rig/a", "rig/b"]);
-      } finally {
-        direct.runtime.dispose();
-      }
+      expect(batch.patches.map((patch) => patch.nodeId).sort()).toEqual(["rig/a", "rig/b"]);
     } finally {
-      escalating.runtime.dispose();
+      runtime.dispose();
     }
   });
 
@@ -314,7 +264,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       const failure = new Error("recipe failed");
       expect(() =>
         runtime.values((edit) => {
-          edit.setValues("rig/a", { x: 1 });
+          edit.track("rig/a").input.values.setField({ field: "x" }, 1);
           throw failure;
         }),
       ).toThrow(failure);
@@ -326,7 +276,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       // The field is cleared in `finally`, so the next batch is an ordinary one rather than a
       // reentrancy refusal against a batch that nothing closed.
       const batch = runtime.values((edit) => {
-        edit.setValues("rig/b", { x: 2 });
+        edit.track("rig/b").input.values.setField({ field: "x" }, 2);
       });
       expect(batch.seeds).toEqual(["rig/b"]);
       expect(flushed).toHaveBeenCalledTimes(1);
@@ -341,7 +291,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
 
     expect(() =>
       runtime.values((edit) => {
-        edit.setValues("rig/a", { x: 1 });
+        edit.track("rig/a").input.values.setField({ field: "x" }, 1);
         runtime.dispose();
       }),
     ).toThrow("ProjectRuntime is disposed.");
@@ -355,42 +305,21 @@ describe("the value tier publishes once for a batch, and refuses every tier that
     expect(() => runtime.values(() => undefined)).toThrow("ProjectRuntime is disposed.");
   });
 
-  it("RA-170 joins the batch from setKeyframe's recompile, the ending the shipped consumer takes", () => {
-    const { runtime, staged } = rig({ project: KEYFRAMED });
-    expect(typeof runtime.values).toBe("function");
+  it("RA-172 keeps earlier writes applied when a later write in a values recipe is refused", () => {
+    const { runtime } = rig();
     try {
-      let recompiled: PatchBatch | undefined;
-      let masked: PatchBatch | undefined;
-      const batch = runtime.values((edit) => {
-        // `y` is a key the authored group does not carry, so this is the recompile rather than the
-        // mask, and it is the call the IK playground's pending-intent commit made through the batch
-        // it opened (`scroll-reach.ts`, withdrawn by ADR-125 when drags became immediate writes).
-        // The review that deferred this traced the path by hand and found it correct;
-        // what it could not say is that any run had ever driven it.
-        recompiled = edit.track("rig/a").setKeyframe("fk", "y", 300);
-        // The same verb's other path, in the same batch, because the recompile is only interesting
-        // beside the ending that stages nothing.
-        masked = edit.track("rig/b").setKeyframe("fk", "x", 5);
-      });
+      // `values(recipe)` is not a transaction: each cheap edit applies immediately and only the
+      // publication is deferred, so an edit before the refused one stays applied.
+      expect(() =>
+        runtime.values((edit) => {
+          edit.track("rig/a").input.values.set({ x: 1 });
+          edit.track("rig/b").input.values.set([{ id: "r1", cells: { x: 1 } }]);
+        }),
+      ).toThrow("values-shape-invalid");
 
-      // The recompile really happened: it is the one of the two paths that stages a Track, and the
-      // authored record moved rather than an overlay.
-      expect(staged).toEqual(["rig/a"]);
-      expect(runtime.track("rig/a").definition.keyframes).toEqual({
-        fk: { values: { x: 200, y: 300 } },
-      });
-
-      // Both endings deferred instead of publishing, which is the claim this case exists for.
-      expect(recompiled?.seeds).toEqual(["rig/a"]);
-      expect(masked?.seeds).toEqual(["rig/b"]);
-      for (const deferred of [recompiled, masked]) {
-        expect(deferred?.patches).toEqual([]);
-        expect(deferred?.diagnostics.map((diagnostic) => diagnostic.ruleId)).toEqual([
-          "value-batch-deferred",
-        ]);
-      }
-      expect(flushed).toHaveBeenCalledTimes(1);
-      expect([...batch.seeds].sort()).toEqual(["rig/a", "rig/b"]);
+      expect(runtime.track("rig/a").definition.input?.values).toEqual({ x: 1 });
+      expect(runtime.track("rig/b").definition.input?.values).toEqual({ x: 0 });
+      expect(flushed).not.toHaveBeenCalled();
     } finally {
       runtime.dispose();
     }
@@ -406,8 +335,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       // Issue #371, and the same rule `RA-167` reads one tier over, read at the public verb this
       // time. A list that names nothing is answered rather than published, so nothing opens a
       // batch, notifies a subscriber or moves the sequence, and the batch carries the sequence the
-      // graph is still on. What this case fails without is the route: a verb that reaches the
-      // publication mechanics directly pays for a publication here, which is what it did before.
+      // graph is still on.
       expect(flushed).not.toHaveBeenCalled();
       expect(runtime.graph.sequence).toBe(before);
       expect(empty.tick).toBe(before);

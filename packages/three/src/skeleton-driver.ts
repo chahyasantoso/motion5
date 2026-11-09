@@ -1,6 +1,5 @@
-import { unreachable } from "@motion5/core/plugin-api";
-import { readFrame3d } from "@motion5/plugins/frame3d";
-import { readRigValues } from "@motion5/plugins/rig";
+import { selectRow, unreachable } from "@motion5/core/plugin-api";
+import { readFrame3d } from "@motion5/rig";
 import { Matrix4, Quaternion, Vector3, type Object3D } from "three";
 import { frameToMatrix } from "./index";
 import { normalizeDirection } from "./skeleton-direction";
@@ -255,8 +254,26 @@ export function createSkeletonDriver(
   };
 }
 
-/** Decode once; inherited names are never pose sources. */
-export function rigFrameSource(rigValues: unknown): FrameSource {
-  const { pose } = readRigValues(rigValues);
-  return (source) => (Object.hasOwn(pose, source) ? pose[source] : undefined);
+/**
+ * A frame reader over one immutable pose table, with selection owned by the core selector.
+ *
+ * No row index is retained: the table is the caller's and may be replaced between calls, so a map
+ * built here would answer for a table nobody asked about. Resolution is therefore one `selectRow`
+ * per request, which also means a duplicate or malformed row anywhere in the table refuses every id
+ * consistently, as the selector contract requires.
+ */
+export function tableFrameSource(poseTable: unknown): FrameSource {
+  return (source) => {
+    const picked = selectRow(poseTable, source);
+    switch (picked.kind) {
+      case "row":
+        return picked.cells;
+      case "missing-row":
+      case "missing-output":
+      case "wrong-kind":
+        return undefined;
+      default:
+        return unreachable(picked);
+    }
+  };
 }

@@ -7,7 +7,7 @@ const root = fileURLToPath(new URL("../../..", import.meta.url));
 const sources = (dir: string): string[] =>
   (readdirSync(join(root, dir), { recursive: true }) as string[])
     .filter((file) => /\.tsx?$/.test(file))
-    .map((file) => join(dir, file));
+    .map((file) => join(dir, file).replace(/\\/g, "/"));
 
 describe("lazy GLTFLoader chunk (#559 item 7)", () => {
   it("A15 three/addons is reached only through one dynamic import in gltf-avatar", () => {

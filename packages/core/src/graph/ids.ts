@@ -67,7 +67,3 @@ export function parseQualifiedId(value: string): QualifiedId {
   }
   return qualifyMotionTrack(value.slice(0, separator), value.slice(separator + 1));
 }
-
-export function qualifiedId(value: QualifiedId): string {
-  return value.value;
-}

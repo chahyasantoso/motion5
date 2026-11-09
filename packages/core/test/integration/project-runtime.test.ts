@@ -4,14 +4,21 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { buildGraphIR } from "../../src/graph/ir";
+import { testCatalog } from "../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
-  freeTracks: [{ id: "cursor" }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
+  freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -19,7 +26,11 @@ const compose = (node: { id: string }) => () => ({
 describe("ProjectRuntime", () => {
   it("TR-R-14 mounts through one project-owned GraphRuntime", () => {
     const clock = createManualClock();
-    const runtime = new ProjectRuntime(project, { clock, compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock,
+      compose,
+    });
     const first = {};
     runtime.mount("hero/arm", first);
     expect(runtime.instanceCount).toBe(1);
@@ -39,12 +50,25 @@ describe("ProjectRuntime", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
+          tracks: [
+            {
+              id: "arm",
+              output: { plugin: "graph-edge" },
+              input: { requires: { chain: "missing" } },
+            },
+          ],
         },
       ],
-      freeTracks: [{ id: "cursor" }],
+      freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
     };
-    expect(() => new ProjectRuntime(invalid, { clock, compose })).toThrow(TypeError);
+    expect(
+      () =>
+        new ProjectRuntime(invalid, {
+          capabilities: testCatalog(),
+          clock,
+          compose,
+        }),
+    ).toThrow(TypeError);
   });
 
   it("releases every mounted instance and clock subscription on repeated dispose", () => {
@@ -55,7 +79,11 @@ describe("ProjectRuntime", () => {
       subscriptions += 1;
       return subscribe(listener);
     }) as typeof clock.subscribe;
-    const runtime = new ProjectRuntime(project, { clock, compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock,
+      compose,
+    });
     runtime.mount("hero/arm");
     runtime.dispose();
     runtime.dispose();
@@ -76,6 +104,7 @@ describe("ProjectRuntime", () => {
     };
 
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock,
       compose,
       graphBuilder: customBuilder,
@@ -85,7 +114,7 @@ describe("ProjectRuntime", () => {
     expect(buildCount).toBe(1);
 
     // 1 call during the runtime add
-    runtime.addTrack({ id: "added_1" });
+    runtime.addTrack({ id: "added_1", output: { model: "TestRecord" } });
     expect(buildCount).toBe(2);
 
     runtime.dispose();

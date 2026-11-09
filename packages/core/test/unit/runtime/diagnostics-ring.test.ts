@@ -16,7 +16,7 @@ import { code } from "../../helpers/source-region";
  * green on both sides: order across two wraps, the capacity-one edge, and a snapshot no later record
  * can move. The case that fails without the change is the one counting the eviction call, because an
  * optimisation whose whole claim is that a step is gone is proved by counting that step rather than by
- * asserting the answer it did not change. `docs/GUARDRAILS.md` owns that rule.
+ * asserting the answer it did not change. `AGENTS.md` states that rule.
  */
 const DIAGNOSTICS_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/diagnostics.ts", import.meta.url),
@@ -71,7 +71,7 @@ describe("the diagnostics buffer retains in a ring", () => {
       // Read inside the guarded region and asserted outside it. `mockRestore` resets the spy's
       // own call record as well as the prototype, so an assertion placed after it reads zero calls
       // whatever the source did, which is the green case that is evidence of nothing
-      // `docs/GUARDRAILS.md` refuses, in the one case whose whole claim is that a step is gone.
+      // `AGENTS.md` refuses, in the one case whose whole claim is that a step is gone.
       // A number rather than the spy carries the reading out, so no assertion and no failure
       // formatting runs while `Array.prototype` is still patched.
       evictions = shift.mock.calls.length;

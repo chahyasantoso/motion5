@@ -10,6 +10,8 @@ import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
 const LOOPING: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1, yoyo: true };
 const TWICE: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1 };
@@ -19,16 +21,15 @@ const ONCE: MotionDefinition["trigger"] = { type: "time", duration: 100 };
 function ramp(id: string) {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+    input: {
+      values: record({
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      }),
     },
+    output: { model: "TestRecord" },
   };
 }
 
@@ -51,7 +52,7 @@ interface Loaded {
 function load(motions: readonly MotionDefinition[]): Loaded {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+  const handle = testEngine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
     schemaVersion: 5,
     motions,
   });
@@ -61,7 +62,7 @@ function load(motions: readonly MotionDefinition[]): Loaded {
     handle,
     values: (nodeId) => {
       const patch = handle.get(nodeId);
-      return patch?.status === "ready" ? patch.values : undefined;
+      return patch?.status === "ready" ? patch.outputs.values : undefined;
     },
     advance(delta) {
       clock.tick(delta);
@@ -157,17 +158,17 @@ describe("time loop semantics", () => {
     handle.mount("loop/trail");
     const pair = () => [values("loop/lead"), values("loop/trail")];
     advance(25);
-    expect(pair()).toEqual([{ x: 25 }, { x: 0 }]);
+    expect(pair()).toEqual([{ x: 37.5 }, { x: 0 }]);
     advance(50);
-    expect(pair()).toEqual([{ x: 75 }, { x: 25 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 62.5 }]);
     advance(25);
-    expect(pair()).toEqual([{ x: 100 }, { x: 50 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 100 }]);
     // The second cycle reproduces the first exactly. Stagger is a phase offset inside a pass, so
     // no cycle hands anything to the next one.
     advance(25);
-    expect(pair()).toEqual([{ x: 25 }, { x: 0 }]);
+    expect(pair()).toEqual([{ x: 37.5 }, { x: 0 }]);
     advance(50);
-    expect(pair()).toEqual([{ x: 75 }, { x: 25 }]);
+    expect(pair()).toEqual([{ x: 100 }, { x: 62.5 }]);
     handle.dispose();
   });
 
@@ -181,7 +182,11 @@ describe("time loop semantics", () => {
       },
     };
     const scheduler = createFakeScheduler();
-    const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
+    const handle = testEngine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+    }).load({
       schemaVersion: 5,
       motions: [
         { id: "a", trigger: FOREVER, tracks: [ramp("arm")] },
@@ -195,7 +200,7 @@ describe("time loop semantics", () => {
     const aArmPatch = handle.get("a/arm");
     if (aArmPatch?.status !== "ready")
       throw new Error(`a/arm is ${aArmPatch?.status ?? "absent"}, not ready.`);
-    expect(aArmPatch.values).toEqual({ x: 50 });
+    expect(aArmPatch.outputs.values).toEqual({ x: 50 });
     handle.dispose();
     base.dispose();
   });

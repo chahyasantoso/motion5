@@ -4,6 +4,8 @@ import { createManualClock } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { recordValues } from "../../support/v5-builders";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issues #392, #393, #400 and #401, found by the quality passes over #390 and #398.
@@ -45,13 +47,21 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -60,7 +70,10 @@ describe("an empty deferred publication is still a publication", () => {
   it("replays the frame a reentrant flushAtTick asked for when it stated no seeds", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     const answered: PatchBatch[] = [];
@@ -105,7 +118,10 @@ describe("an empty deferred publication is still a publication", () => {
   it("keeps a pending frame a live write cannot reach rather than consuming it", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let acted = false;
@@ -142,6 +158,7 @@ describe("an empty deferred publication is still a publication", () => {
     // No scheduler, which is the whole point: `#scheduleDrain` returns false without booking, and
     // the deferral diagnostic says the work is carried by the next flush rather than by a drain.
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       onFlushError: (diagnostic) => received.push(diagnostic),
     });
     runtime.attach("hero/arm");
@@ -185,7 +202,10 @@ describe("an empty deferred publication is still a publication", () => {
   it("books nothing for a reentrant flush that defers no seed and carries no frame", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     const answered: PatchBatch[] = [];
@@ -221,6 +241,7 @@ describe("an empty deferred publication is still a publication", () => {
       },
     };
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler,
       onFlushError: (diagnostic) => received.push(diagnostic),
     });
@@ -249,7 +270,10 @@ describe("an empty deferred publication is still a publication", () => {
   it("names the seeds and keeps the frame when one reentrant call defers both", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     const answered: PatchBatch[] = [];
@@ -300,6 +324,7 @@ describe("a host that cannot receive a diagnostic cannot reroute the runtime", (
     };
     const received: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
       scheduler,
       onFlushError: (diagnostic) => {
         received.push(diagnostic);
@@ -332,11 +357,11 @@ describe("a host that cannot receive a diagnostic cannot reroute the runtime", (
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values.node).toBe("caption/label");
+    expect(recordValues(captionLabelPatch).node).toBe("caption/label");
     const heroArmPatch = runtime.registry.get("hero/arm");
     if (heroArmPatch?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch.values.node).toBe("hero/arm");
+    expect(recordValues(heroArmPatch).node).toBe("hero/arm");
     expect(runtime.pendingSeeds).toEqual([]);
     runtime.dispose();
   });
@@ -354,9 +379,16 @@ describe("a retired runtime carries no work, and withholds rather than loses a d
         holder.runtime?.dispose();
         throw failure;
       }
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
-    const runtime = new GraphRuntime(project, clock, refusingCompose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, refusingCompose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     holder.runtime = runtime;
     runtime.attach("hero/arm");
 
@@ -397,10 +429,15 @@ describe("a retired runtime carries no work, and withholds rather than loses a d
         holder.runtime?.dispose();
         throw failure;
       }
-      return () => ({ values: { node: node.id }, sourceProgress: 0, sourceRevisions: {} });
+      return () => ({
+        outputs: { values: { node: node.id } },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      });
     };
     const received: Diagnostic[] = [];
     const runtime = new GraphRuntime(project, clock, refusingCompose, {
+      graphBuilder: testGraphBuilder(),
       scheduler,
       onFlushError: (diagnostic) => received.push(diagnostic),
     });

@@ -8,9 +8,15 @@ A motion's trigger decides where its progress comes from. The type is enforced, 
 const trigger = { type: "time", duration: 1000 };
 ```
 
-`duration` is required, finite, and greater than zero, in the same units as your clock's delta. The driver accumulates clock deltas, emits `elapsed / duration`, latches at `1`, and then emits nothing further. Playback always starts: `autoplay` may be absent or `true`, and `false` is not representable because explicit paused behavior does not exist yet.
+`duration` is required, finite, and greater than zero, in the same units as your clock's delta. The driver accumulates clock deltas and emits `elapsed / duration`. A single pass latches at `1` and then emits nothing further. Playback always starts: `autoplay` may be absent or `true`, and `false` is not representable because explicit paused behavior does not exist yet.
 
-`repeat` and `yoyo` are rejected at validation at any value, including `0`. Loop semantics are undesigned, and a field that validates has to be honored.
+```ts
+const looping = { type: "time", duration: 1000, repeat: -1, yoyo: true };
+```
+
+`delay` holds progress at `0` for that many clock units before the first pass, and never repeats. Use it to start a time Motion later, and use a move's `from` and `to` to place a move inside a Motion, which also works under scroll. A malformed `delay` is refused as `trigger-time-delay`.
+
+`repeat` counts passes after the first: absent or `0` is one pass, `-1` is forever, and any other negative or non-integer value is refused as `trigger-time-repeat-shape`. `yoyo` reverses every odd cycle. It must be a boolean (`trigger-time-yoyo-shape`) and needs a `repeat` that actually repeats (`trigger-time-yoyo-requires-repeat`). A Motion's `stagger` applies inside each cycle: each track starts that many track lengths after the one before it, every track finishes by the end of the cycle, and no cycle carries anything into the next. `duration` is the whole Motion, so for a chosen track length set it to `length * (1 + (tracks - 1) * stagger)`.
 
 ## scroll
 

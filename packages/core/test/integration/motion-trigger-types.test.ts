@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MotionDefinition, TriggerSignal } from "../../src/contract/v5";
 import { Motion } from "../../src/domain/motion";
-import { Track } from "../../src/domain/track";
+import { Track } from "../support/track";
 import { Engine } from "../../src/engine";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
@@ -12,6 +12,9 @@ import {
   createFakeTrackRegistry,
 } from "../../src/testing/fakes";
 import { createManualTriggerPort } from "../../src/ports/trigger";
+import { record } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
+import { UNTIMED } from "@motion5/moves";
 
 const DRIVER_BACKED =
   "Motion has a configured trigger driver and does not accept external signals.";
@@ -38,16 +41,15 @@ function registerTrack(id: string) {
 function ramp(id: string) {
   return {
     id,
-    keyframes: {
-      transform: {
-        values: {
-          x: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+    input: {
+      values: record({
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      }),
     },
+    output: { model: "TestRecord" },
   };
 }
 
@@ -61,7 +63,7 @@ const HERO: ScrollSource = { subscribe: () => () => undefined };
 function loadOne(motion: MotionDefinition) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler,
@@ -118,7 +120,7 @@ describe("Motion trigger types and clock ownership", () => {
       const armPatch = handle.get(`${motion.id}/arm`);
       // The fallback stays, and it now also covers a patch that owns no pose rather than only an
       // absent one: publishing nothing at all is what the scroll case expects. See ADR-098.
-      expect(armPatch?.status === "ready" ? armPatch.values : { x: 0 }).toEqual(afterTick);
+      expect(armPatch?.status === "ready" ? armPatch.outputs.values : { x: 0 }).toEqual(afterTick);
       handle.dispose();
     }
   });
@@ -134,14 +136,14 @@ describe("Motion trigger types and clock ownership", () => {
     const timedArmPatch = handle.get("timed/arm");
     if (timedArmPatch?.status !== "ready")
       throw new Error(`timed/arm is ${timedArmPatch?.status ?? "absent"}, not ready.`);
-    expect(timedArmPatch.values).toEqual({ x: 90 });
+    expect(timedArmPatch.outputs.values).toEqual({ x: 90 });
 
     clock.tick(250);
     scheduler.flush();
     const timedArmPatch2 = handle.get("timed/arm");
     if (timedArmPatch2?.status !== "ready")
       throw new Error(`timed/arm is ${timedArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(timedArmPatch2.values).toEqual({ x: 25 });
+    expect(timedArmPatch2.outputs.values).toEqual({ x: 25 });
 
     handle.dispose();
   });
@@ -163,7 +165,7 @@ describe("Motion trigger types and clock ownership", () => {
     clock.tick(250);
     scheduler.flush();
     expect(motion.position).toBeCloseTo(0.25, 12);
-    expect(current.setProgress).toHaveBeenLastCalledWith(0.25);
+    expect(current.setProgress).toHaveBeenLastCalledWith(0.25, UNTIMED);
 
     motion.dispose();
     expect(() => motion.signal({ type: "manual", progress: 0.5 })).toThrow("destroyed");
@@ -194,7 +196,7 @@ describe("Motion trigger types and clock ownership", () => {
     motion.signal({ type: "manual", progress: 0.8 });
     scheduler.flush();
     expect(current.setProgress).toHaveBeenCalledTimes(1);
-    expect(current.setProgress).toHaveBeenLastCalledWith(0.8);
+    expect(current.setProgress).toHaveBeenLastCalledWith(0.8, UNTIMED);
     motion.dispose();
   });
 });

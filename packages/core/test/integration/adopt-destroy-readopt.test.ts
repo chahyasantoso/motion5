@@ -1,31 +1,36 @@
 import { describe, expect, it } from "vitest";
+import type { Patch, TrackDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { Patch } from "../../src/runtime/patch-registry";
+import { record, track } from "../support/v5-builders";
+import { testEngine } from "../support/builtin-registry";
 
-const armTrack = {
+const armTrack: TrackDefinition = track({
   id: "arm",
-  keyframes: {
-    transform: {
-      values: {
-        x: [
-          { p: 0, v: 0 },
-          { p: 1, v: 100 },
-        ],
-      },
-    },
-  },
-};
+  values: record({
+    x: [
+      { p: 0, v: 0 },
+      { p: 1, v: 100 },
+    ],
+  }),
+  model: "TestRecord",
+});
 
 const project = {
   schemaVersion: 5 as const,
-  motions: [{ id: "walk", trigger: { type: "manual" as const }, tracks: [{ id: "pelvis" }] }],
+  motions: [
+    {
+      id: "walk",
+      trigger: { type: "manual" as const },
+      tracks: [track({ id: "pelvis", model: "TestRecord" })],
+    },
+  ],
 };
 
 function makeHandle() {
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler,
@@ -47,7 +52,7 @@ describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
     const composed = seen.at(-1);
     if (composed?.status !== "ready")
       throw new Error(`${added.id} is ${composed?.status ?? "absent"}, not ready.`);
-    expect(composed.values).toEqual({ x: 45 });
+    expect(composed.outputs.values).toEqual({ x: 45 });
 
     // Destruction must be an event, not a silent deletion. This is the exact moment the demo
     // rig used to freeze: the graph dropped the node while the renderer kept its last pose.
@@ -56,10 +61,8 @@ describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
     const terminal = seen.at(-1);
     if (terminal?.status !== "destroyed")
       throw new Error(`${added.id} is ${terminal?.status ?? "absent"}, not destroyed.`);
-    // Re-read rather than adjusted: the terminal patch carried four empty members, and asserting
-    // the pose had been emptied was how this case said the renderer must stop drawing it. A
-    // destroyed patch owns no payload at all since ADR-098, so the claim is the member's absence.
-    expect("values" in terminal).toBe(false);
+    // A destroyed patch owns no payload at all since ADR-098, so the claim is the member's absence.
+    expect("outputs" in terminal).toBe(false);
     expect(handle.get(added.id)).toBeUndefined();
 
     // Driving the motion backwards must not resurrect the destroyed node.
@@ -77,7 +80,7 @@ describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
     const recomposed = seen.at(-1);
     if (recomposed?.status !== "ready")
       throw new Error(`${added.id} is ${recomposed?.status ?? "absent"}, not ready.`);
-    expect(recomposed.values).toEqual({ x: 60 });
+    expect(recomposed.outputs.values).toEqual({ x: 60 });
 
     handle.dispose();
   });

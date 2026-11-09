@@ -10,6 +10,7 @@ import {
   statedPublications,
   type PublicationSpy,
 } from "../../helpers/publication-spy";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #381's last ask: one case proving a scheduled drain cannot be mistaken for the publication
@@ -31,13 +32,21 @@ import {
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -46,7 +55,10 @@ describe("a scheduled drain is not the publication a write asked for", () => {
   it("states no seeds, so it satisfies no assertion about a stated seed list", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
     const publication = vi.spyOn(runtime, "flush");
 
@@ -94,7 +106,10 @@ describe("an empty seed list is a reading rather than an origin", () => {
   it("counts a direct empty publication and misses a drain that carried a frame", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
     const publication = vi.spyOn(runtime, "flush");
 
@@ -125,7 +140,9 @@ describe("an empty seed list is a reading rather than an origin", () => {
   });
 
   it("is not satisfied by a spy on another member, and the type is what refuses it", () => {
-    const runtime = new GraphRuntime(project, createManualClock(), compose);
+    const runtime = new GraphRuntime(project, createManualClock(), compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     // The one-character mistake #404 names: `replaceGraph` states a project rather than a seed list,
     // and it was structurally assignable, so every answer was empty and a negative assertion passed
     // while watching the wrong member. The error is the assertion; the spy is never called.
@@ -140,7 +157,9 @@ describe("an empty seed list is a reading rather than an origin", () => {
   });
 
   it("refuses a member that states no seed list first, and accepts the verb that does", () => {
-    const runtime = new GraphRuntime(project, createManualClock(), compose);
+    const runtime = new GraphRuntime(project, createManualClock(), compose, {
+      graphBuilder: testGraphBuilder(),
+    });
     // Issue #424 asks the boundary to be pinned rather than exemplified, because the case above
     // refuses one member and the tuple refuses a whole shape. These three are the surface: the
     // widest spy there is, the same verb one tier down, and the other verb that does state a seed

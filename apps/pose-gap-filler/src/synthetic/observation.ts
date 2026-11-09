@@ -13,14 +13,8 @@ import {
 } from "./occlusion";
 import { add3, sub3, type Vec3 } from "./rotation";
 
-/**
- * What the simulated detector reports for one landmark before it is written in MediaPipe's shape:
- * where it was seen in the scene, its image position (normalised `[x, y, z]`, or `undefined` when it
- * cannot be imaged), its hip-centred world position in camera axes (metres), and its scores. A
- * dropped landmark has neither position, as MediaPipe has none for it. `geometry` is what the camera
- * could truly see of it, carried beside the scores and never changed by them, by corruption or by an
- * edit: the truth a reported confidence is judged against.
- */
+/** One landmark as the simulated detector reports it: scene, image, world positions, scores.
+ * `geometry` is what the camera could truly see, untouched by scores, corruption and edits. */
 export interface ObservedLandmark {
   readonly scene: Vec3 | undefined;
   readonly image: Vec3 | undefined;
@@ -35,10 +29,7 @@ export interface LandmarkScore {
   readonly presence: number;
 }
 
-/**
- * The simulated detector's confidence for every landmark, from the truth's geometry, behind a port
- * so the model that maps one to the other is replaceable without touching the measurement.
- */
+/** Simulated detector's confidence per landmark, from truth geometry; swappable behind this port. */
 export interface DetectorScores {
   score(geometry: readonly SyntheticVisibility[]): readonly LandmarkScore[];
 }
@@ -46,17 +37,13 @@ export interface DetectorScores {
 const score = (visibility: number, presence: number): LandmarkScore =>
   Object.freeze({ visibility, presence });
 
-/** A perfect detector: every landmark visible and present with MediaPipe's confident score. */
+/** Perfect detector: every landmark visible and present at MediaPipe's confident score. */
 export const IDEAL_SCORES: DetectorScores = Object.freeze({
   score: (geometry: readonly SyntheticVisibility[]) => geometry.map(() => score(0.99, 0.99)),
 });
 
-/**
- * The score each geometric state gets from `GEOMETRIC_SCORES`, total over the union by its type. A
- * hidden landmark in frame is still estimated by MediaPipe, present but under the gap detector's
- * default threshold of 0.5; one off the stage is barely present; one behind the camera is not
- * imaged at all. Proposals shaped like MediaPipe's reports, not measurements of it.
- */
+/** `GEOMETRIC_SCORES` per kind: hidden in frame still estimated under the 0.5 gap threshold.
+ * Out-of-frame barely present; behind camera not imaged; shaped like reports, not measurements. */
 export const SCORE_PROFILE: Readonly<Record<VisibilityKind, LandmarkScore>> = Object.freeze({
   visible: score(0.98, 0.99),
   occluded: score(0.3, 0.9),
@@ -64,20 +51,14 @@ export const SCORE_PROFILE: Readonly<Record<VisibilityKind, LandmarkScore>> = Ob
   "behind-camera": score(0, 0),
 });
 
-/** A detector whose confidence follows what the camera could see. */
+/** Detector whose confidence follows what the camera could see. */
 export const GEOMETRIC_SCORES: DetectorScores = Object.freeze({
   score: (geometry: readonly SyntheticVisibility[]) =>
     geometry.map((state) => SCORE_PROFILE[state.kind]),
 });
 
-/**
- * One hand edit of the detector's output, never of the truth: the person may make the detector
- * see something impossible (a teleport, a swap, a confident wrong score) to test the pipeline's
- * robustness, and the truth it is judged against stays where it was. A closed union applied in one
- * fixed order: `displace` moves where the landmark is seen (both spaces, through the camera),
- * `swap` exchanges it with its anatomical partner, `score` overrides its visibility and presence,
- * `drop` removes it.
- */
+/** Hand edit of detector output, never truth; variants applied in `EDIT_ORDER`.
+ * `displace` moves the seen point; `swap` trades partners; `score` overrides; `drop` removes. */
 export type ObservationEdit =
   | { readonly kind: "displace"; readonly landmark: number; readonly delta: Vec3 }
   | { readonly kind: "swap"; readonly landmark: number }
@@ -91,13 +72,10 @@ export type ObservationEdit =
 
 export type ObservationEditKind = ObservationEdit["kind"];
 
-/** The order edits apply in, whatever order they were made: geometry, identity, scores, removal. */
+/** Order edits apply in, whatever order they were made: geometry, identity, scores, removal. */
 export const EDIT_ORDER: readonly ObservationEditKind[] = ["displace", "swap", "score", "drop"];
 
-/**
- * Where each landmark is seen: the truth, displaced by any `displace` edit. Edits are the
- * person's, applied to a copy; the truth is frozen and never written.
- */
+// Copy of truth; edits rewrite the copy, never `truth`.
 function seenPoints(truth: ActorFrame, edits: readonly ObservationEdit[]): Vec3[] {
   const points = truth.landmarks.map((point) => point);
   for (const edit of edits)
@@ -105,27 +83,19 @@ function seenPoints(truth: ActorFrame, edits: readonly ObservationEdit[]): Vec3[
   return points;
 }
 
-/** What one observation is made with, beyond the truth and the camera; every field defaults. */
+/** What one observation is made with beyond the truth and camera; every field defaults. */
 export interface ObserveOptions {
   readonly scores?: DetectorScores;
-  /** Occluders beside the body: the scene's props. */
+  /** Scene props, occluding beside the body. */
   readonly props?: readonly Occluder[];
   readonly corruption?: CorruptionSpec;
-  /** The camera frame's index, which keys the corruption. */
+  /** Camera frame index, keying the corruption. */
   readonly frameIndex?: number;
   readonly edits?: readonly ObservationEdit[];
 }
 
-/**
- * The detector's view of `truth` through `camera`, in the order the measurement happens: what the
- * camera could see (`classifyVisibility`, from the truth and the props), the scores that geometry
- * gets, where each landmark is seen (the truth, moved by any `displace` edit) projected into both
- * spaces, the detector's corruption at `frameIndex`, then the other edits in `EDIT_ORDER`, which
- * override the corrupted report. Image `x` and `y` are the pinhole projection normalised by the
- * stage; image `z` is the depth from the hips scaled as `x` is at the hips' depth, an approximation
- * of MediaPipe's learned relative depth, not a reproduction of it. World is hip-centred in camera
- * axes, centred on the hips as seen, as MediaPipe centres on its own hip estimate.
- */
+/** Detector's view of `truth` through `camera`: visibility, scores, projections, corruption, edits.
+ * Image: stage-normalised pinhole, `z` from hip depth. World: origin at seen hips; camera axes. */
 export function observe(
   truth: ActorFrame,
   camera: Camera,
@@ -142,7 +112,7 @@ export function observe(
   const geometry = classifyVisibility(truth, camera, [...bodyOccluders(truth), ...props]);
   const scored = scores.score(geometry);
   const seen = seenPoints(truth, edits);
-  // The hip midpoint as seen: the observed hip landmarks, so a displaced hip moves the origin.
+  // Origin from seen hips: a displaced hip moves it.
   const hips = midpoint(seen[LEFT_HIP]!, seen[RIGHT_HIP]!);
   const hipCamera = camera.toCamera(hips);
   const measured: ObservedLandmark[] = seen.map((scene, index) => {
@@ -204,7 +174,7 @@ function midpoint(a: Vec3, b: Vec3): Vec3 {
 
 const MISSING: Vec3 = [Number.NaN, Number.NaN, Number.NaN];
 
-/** The observation in MediaPipe's raw shape, both spaces, for `writePoseResult`. */
+/** Observation in MediaPipe's raw shape, both spaces, for `writePoseResult`. */
 export function rawPoses(observed: readonly ObservedLandmark[]): {
   readonly image: RawPose;
   readonly world: RawPose;

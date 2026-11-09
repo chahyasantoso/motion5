@@ -45,8 +45,8 @@ type VerbKey =
 const VERBS: Readonly<Record<VerbKey, VerbClass>> = {
   read: READ,
   "open-recipe": OPEN_RECIPE,
-  "value-asserted": valueVerb("setValues", "asserted"),
-  "value-resolved": valueVerb("setKeyframe", "resolved"),
+  "value-asserted": valueVerb("seek", "asserted"),
+  "value-resolved": valueVerb("writeValues", "resolved"),
   "immediate-asserted": immediateVerb("mount", "asserted"),
   "immediate-resolved": immediateVerb("setTrigger", "resolved"),
   commit: COMMIT,
@@ -88,12 +88,12 @@ const guarded = (fields: Fields, verb: VerbKey): string => {
     case "open-recipe":
       if (fields.disposed) return "disposed";
       return fields.open ? "nested-recipe" : "allow";
-    // `seek`, `setValues`, `overrideValues`: `#assertLive` before the guard.
+    // `seek`: `#assertLive` before the guard.
     case "value-asserted":
       if (fields.disposed) return "disposed";
       return immediateReentrant(fields) ?? "allow";
-    // `#setKeyframe`, `#removeKeyframe`, `#writeValues` from a handle: the guard first, and
-    // liveness only when `#writableEntry` resolves the handle.
+    // `writeValues`, `releaseValues` and the authored value verbs a handle reaches: the guard
+    // first, and liveness only when `#writableEntry` resolves the handle.
     case "value-resolved":
       return immediateReentrant(fields) ?? "allow";
     // `mount`, `unmount`, `signal`, `values`, `invalidate`.
@@ -296,7 +296,7 @@ describe("admit reproduces the guards it replaces", () => {
 
   it("admits a value verb inside a batch and refuses an immediate one", () => {
     const batch = batchOpening(idle<Staged>());
-    expect(answer(batch, valueVerb("setValues", "asserted"))).toBe("allow");
+    expect(answer(batch, valueVerb("seek", "asserted"))).toBe("allow");
     expect(answer(batch, immediateVerb("mount", "asserted"))).toBe("immediate-in-batch");
     expect(answer(batch, COMMIT)).toBe("structural-in-batch");
   });
@@ -304,19 +304,19 @@ describe("admit reproduces the guards it replaces", () => {
   it("asks liveness where each verb asks it today", () => {
     const deep = retiring(entering(idle<Staged>()));
     expect(answer(deep, valueVerb("seek", "asserted"))).toBe("disposed");
-    expect(answer(deep, valueVerb("setKeyframe", "resolved"))).toBe("commit-in-flight");
+    expect(answer(deep, valueVerb("writeValues", "resolved"))).toBe("commit-in-flight");
     const recipe = retiring(opening(idle<Staged>(), STAGED));
-    expect(answer(recipe, valueVerb("setKeyframe", "resolved"))).toBe("immediate-in-recipe");
+    expect(answer(recipe, valueVerb("writeValues", "resolved"))).toBe("immediate-in-recipe");
     // Nothing is open once teardown has finished, so the handle resolution is what refuses.
-    expect(answer(retired<Staged>(), valueVerb("setKeyframe", "resolved"))).toBe("allow");
+    expect(answer(retired<Staged>(), valueVerb("writeValues", "resolved"))).toBe("allow");
     expect(answer(retired<Staged>(), valueVerb("seek", "asserted"))).toBe("disposed");
     expect(answer(retired<Staged>(), COMMIT)).toBe("allow");
   });
 
   it("carries the verb into the refusal that names one", () => {
-    expect(admit(opening(idle<Staged>(), STAGED), valueVerb("setKeyframe", "resolved"))).toEqual({
+    expect(admit(opening(idle<Staged>(), STAGED), valueVerb("writeValues", "resolved"))).toEqual({
       kind: "refuse",
-      refusal: { kind: "immediate-in-recipe", verb: "setKeyframe" },
+      refusal: { kind: "immediate-in-recipe", verb: "writeValues" },
     });
     expect(admit(batchOpening(idle<Staged>()), immediateVerb("mount", "asserted"))).toEqual({
       kind: "refuse",
@@ -340,12 +340,12 @@ describe("admit reproduces the guards it replaces", () => {
     expect(() => admitOrRefuse(deep, COMMIT)).toThrow(
       "schema-commit-reentrant: A structural commit is already in flight. Ask for it once this one has returned.",
     );
-    expect(() => admitOrRefuse(editing, valueVerb("setKeyframe", "resolved"))).toThrow(
-      'schema-transaction-immediate: "setKeyframe" applies immediately and cannot travel with a recipe. Call it outside edit().',
+    expect(() => admitOrRefuse(editing, valueVerb("writeValues", "resolved"))).toThrow(
+      'schema-transaction-immediate: "writeValues" applies immediately and cannot travel with a recipe. Call it outside edit().',
     );
     expect(() => admitOrRefuse(retiring(idle<Staged>()), READ)).toThrow(
       "ProjectRuntime is disposed.",
     );
-    expect(() => admitOrRefuse(deep, valueVerb("setValues", "asserted"))).toThrow(RefusalError);
+    expect(() => admitOrRefuse(deep, valueVerb("seek", "asserted"))).toThrow(RefusalError);
   });
 });

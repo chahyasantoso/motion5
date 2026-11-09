@@ -20,7 +20,7 @@ import { code, member } from "../../helpers/source-region";
  *
  * Its scope is therefore stated here rather than assumed. The behavioural half of the claim, that
  * one live write produces exactly one publication for the node it named and that a publication's
- * diagnostics are recorded exactly once, is asserted in `live-value-updates.test.ts` by a spy and a
+ * diagnostics are recorded exactly once, is asserted in `live-values.test.ts` by a spy and a
  * diagnostics snapshot, and that is the evidence the claim actually rests on. This is the cheap
  * mechanical backstop beside it, and a legitimate new call site is expected to move the number
  * below in the same change that adds the site. See ADR-087.
@@ -53,7 +53,7 @@ describe("the mechanical publication-ownership scan over project-runtime.ts", ()
 
   it("keeps the direct write path out of the publication owner's job", () => {
     const source = code(RUNTIME_SOURCE);
-    const write = member(source, "#writeValues(");
+    const write = member(source, "#applyLive(");
     const single = member(source, "#invalidateOne(");
 
     expect(write).not.toContain("this.#graph.flush(");

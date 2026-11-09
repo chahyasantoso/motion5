@@ -39,7 +39,7 @@ When application code solves those relationships inside frame callbacks, orderin
 6. Leak-free owner-first teardown.
 7. Small allow-listed public API.
 8. Honest CI gates that run what they claim.
-9. Explicit schema v5 migration from v4.
+9. Explicit schema v5 validation, with v4 refused at the boundary.
 10. First-class React support inside the v1 package set.
 
 ## 5. Non-goals
@@ -62,7 +62,7 @@ When application code solves those relationships inside frame callbacks, orderin
 - **FR-2:** Validate ids, triggers, tracks, perspective, observations, duplicates, and cycles before mount.
 - **FR-3:** Normalize motion tracks to `motionId/trackId` and free tracks to `~/trackId` exactly once. Authored documents keep local ids and explicit reference syntax; qualified identity stays internal.
 - **FR-4:** Preserve project-level perspective as validated metadata without adding it to patches.
-- **FR-5:** Provide an explicit pure v4-to-v5 migration outside the runtime.
+- **FR-5:** Refuse v4 and grouped v5 documents by name; there is no migration function, and a caller rewrites the document to the one v5 contract.
 
 ### Graph and state
 
@@ -116,7 +116,7 @@ When application code solves those relationships inside frame callbacks, orderin
 ## 8. Success metrics
 
 - Every architecture invariant has a named executable test.
-- v4 migration output is deterministic and v4 runtime input is rejected.
+- v4 and grouped input are rejected at the boundary with a named diagnostic.
 - Core test suite imports no animation engine.
 - The GSAP adapter passes the Interpolator contract suite unchanged, with no GSAP import in core.
 - Runtime diagnostics appear on the affected patch and in the batch summary.
@@ -127,7 +127,7 @@ When application code solves those relationships inside frame callbacks, orderin
 
 ## 9. Release criteria
 
-v1 is releasable only when schema v5 loading, migration, graph transactions, inline diagnostics, publication, lifecycle, ports, the GSAP adapter, browser and DOM adapters, React, package exports, benchmarks, and documentation all have green evidence. The complete binary checklist lives in the implementation plan and is mirrored by CI jobs.
+v1 is releasable only when schema v5 loading, graph transactions, inline diagnostics, publication, lifecycle, ports, the GSAP adapter, browser and DOM adapters, React, package exports, benchmarks, and documentation all have green evidence. The complete binary checklist lives in the implementation plan and is mirrored by CI jobs.
 
 ## 10. Resolved product decisions
 

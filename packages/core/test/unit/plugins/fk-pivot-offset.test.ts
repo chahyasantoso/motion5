@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { PluginRegistry } from "../../../src/domain/plugins";
-import type { Diagnostic } from "../../../src/contract/v5";
-import { validateKeyframes } from "../../../src/contract/validate-v5";
-import type { ImmutableRecord } from "../../../src/domain/values";
-import { composeWorld, fkPlugin } from "../../../../plugins/src/fk";
-import { transformPlugin } from "../../../../plugins/src/transform";
+import type { Outputs } from "../../../src/contract/v5";
+import { commitModelStructure } from "../../../src/testing/fakes";
+import { composeWorld } from "@motion5/rig/internal";
+import { Body2d, Solved2d } from "../../../../plugins/src/models/index";
+import { fkPlugin } from "@motion5/plugins/fk";
+import { UNTIMED } from "@motion5/moves";
 
 // Slice A of issue #195. A bone's pivot is not always exactly at its parent's tip, so `fk` claims
 // an authored `x` and `y` beside `length` and `rotation`. Both default to zero, so a bone authored
@@ -26,7 +26,8 @@ import { transformPlugin } from "../../../../plugins/src/transform";
  * requirement slot carries and what `PluginInputs` accepts. Declared as a bare interface it is not
  * assignable to `ImmutableValue` at all, which is the typecheck this file first failed on.
  */
-interface Frame extends ImmutableRecord {
+interface Frame {
+  readonly [key: string]: number;
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
@@ -49,8 +50,27 @@ function toFrame(values: Readonly<Record<string, unknown>>): Frame {
   };
 }
 
+/** One identified `fk` composition: a one-row body table, a solved row and the base record. */
 function bone(values: Readonly<Record<string, number>>, base: Frame = ORIGIN): Frame {
-  return toFrame(fkPlugin.compose(values, 1, { base }, "~/bone"));
+  const chain = [{ id: "bone", cells: { ...values, weight: 0 } }];
+  const solved = [{ id: "bone", cells: { rotation: 0 } }];
+  const input = {
+    values: {},
+    requires: { chain, solved, base },
+    structures: {
+      chain: commitModelStructure(Body2d, chain),
+      solved: commitModelStructure(Solved2d, solved),
+    },
+  };
+  const outputs = fkPlugin.transform(input as never, {
+    nodeId: "~/bone",
+    progress: 1,
+    clock: UNTIMED,
+  }) as Outputs;
+  const table = outputs.values;
+  if (!Array.isArray(table) || table[0] === undefined)
+    throw new Error("fk did not publish its pose row.");
+  return toFrame(table[0].cells);
 }
 
 /** The pivot, then the extension: the whole of `fk` stated as two calls to its own primitive. */
@@ -61,13 +81,6 @@ function pivotThenExtend(base: Frame, values: Readonly<Record<string, number>>):
     rotation: values.rotation ?? 0,
   });
   return composeWorld(pivot, { x: values.length ?? 0, y: 0, rotation: 0 });
-}
-
-function registry(): PluginRegistry {
-  const plugins = new PluginRegistry();
-  plugins.register(transformPlugin);
-  plugins.register(fkPlugin);
-  return plugins;
 }
 
 describe("fk pivot offsets", () => {
@@ -113,22 +126,5 @@ describe("fk pivot offsets", () => {
       expect(frame.y).toBeCloseTo(expected.y, 12);
       expect(frame.rotation).toBeCloseTo(expected.rotation, 12);
     }
-  });
-
-  it("FO-5 claims the offset keys, so a grouped offset resolves under fk", () => {
-    const resolved = registry().resolveForKeyframes({
-      fk: { values: { x: 4, y: -2, length: 10, rotation: 0 }, requires: { base: "walk/pelvis" } },
-    });
-    expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.plugins.map(({ name }) => name)).toEqual(["fk"]);
-  });
-
-  it("FO-6 refuses an ungrouped spelling of an offset key both plugins claim", () => {
-    // Grouping is required before plugin ownership is resolved, regardless of how many plugins
-    // claim the leaf. The validator owns this authored-shape refusal.
-    const diagnostics: Diagnostic[] = [];
-    validateKeyframes({ x: 4 }, "track.keyframes", diagnostics);
-    expect(diagnostics.map(({ ruleId }) => ruleId)).toEqual(["keyframes-ungrouped-key"]);
-    expect(diagnostics[0]?.path).toBe("track.keyframes.x");
   });
 });

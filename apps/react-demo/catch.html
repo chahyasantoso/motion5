@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>motion5 catch</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0e0e12;
+      }
+      .catch-stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 40% 35%, #23233a 0%, #0e0e12 70%);
+      }
+      .catch-floor {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 470px;
+        height: 3px;
+        background: #3a3a55;
+      }
+      /* Every arm element is laid out at the shoulder, (250, 300); the scene moves it from there. */
+      .catch-bone {
+        position: absolute;
+        left: 250px;
+        top: 285px;
+        height: 30px;
+        border-radius: 15px;
+        background: linear-gradient(#ffb454, #e8872a);
+      }
+      .catch-upper {
+        width: 170px;
+      }
+      .catch-lower {
+        width: 150px;
+        background: linear-gradient(#ffd27a, #f0a23c);
+      }
+      .catch-joint {
+        position: absolute;
+        box-sizing: border-box;
+        border-radius: 50%;
+        background: #5b5bd6;
+        border: 3px solid #8c8cf0;
+      }
+      .catch-shoulder {
+        left: 226px;
+        top: 276px;
+        width: 48px;
+        height: 48px;
+      }
+      .catch-elbow {
+        left: 234px;
+        top: 284px;
+        width: 32px;
+        height: 32px;
+      }
+      .catch-hand {
+        left: 233px;
+        top: 283px;
+        width: 34px;
+        height: 34px;
+        background: #ffe3a3;
+        border-color: #ffb454;
+      }
+      .catch-ball {
+        position: absolute;
+        left: 490px;
+        top: 410px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, #ff9db0, #e8324f 70%);
+      }
+      .catch-word {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 560px;
+        text-align: center;
+        letter-spacing: 14px;
+        color: #f4eddf;
+        font:
+          900 120px/1 "Segoe UI Black",
+          "Arial Black",
+          sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/catch-main.tsx"></script>
+  </body>
+</html>

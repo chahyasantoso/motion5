@@ -2,16 +2,16 @@ import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import {
   Engine,
-  PluginRegistry,
+  PluginCatalog,
   createMicrotaskScheduler,
   createTriggerFactory,
   type ProjectHandle,
   type TrackHandle,
 } from "@motion5/core";
-import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { createBrowserClock } from "@motion5/dom/engine";
 import { createGsapInterpolator } from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/plugins/fk";
-import { transformPlugin } from "@motion5/plugins/transform";
+import { builtinModels } from "@motion5/plugins/models";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
@@ -24,11 +24,10 @@ export const App: React.FC = () => {
   const armHandlesRef = useRef<TrackHandle[]>([]);
 
   useLayoutEffect(() => {
-    // GSAP measures committed DOM in the layout phase, not during render or after paint.
-    // Together with the initial root commit, its pin spacer exists before native scroll
-    // restoration. The source still defers its snapshot; core load/mount do not publish.
-    const plugins = new PluginRegistry();
-    plugins.registerAll([transformPlugin, fkPlugin]);
+    // Layout phase ⇒ GSAP measures committed DOM ⇒ pin spacer exists before native scroll restoration.
+    // Source defers its snapshot; load and mount publish nothing.
+    const plugins = new PluginCatalog({ models: builtinModels });
+    plugins.register({ plugins: [fkPlugin] });
 
     const clock = createBrowserClock({
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
@@ -56,13 +55,11 @@ export const App: React.FC = () => {
     try {
       const scrollSource = createWalkScrollSource();
 
-      // Core never sees the element, the selector, or GSAP. It receives a normalized progress
-      // source resolved from the serializable authored key, and nothing else.
+      // Core never sees the element, selector or GSAP: only a normalized progress source from the serializable authored key.
       const project = new Engine({
         clock,
         interpolator: createGsapInterpolator(gsap),
-        // The shipped scheduler drains on a microtask, so this app no longer flushes the queue by
-        // hand from inside the scroll subscriber below. Issue #155.
+        // Microtask scheduler drains the queue, so the scroll subscriber below never flushes it by hand.
         scheduler: createMicrotaskScheduler(),
         plugins,
         triggerFactory: createTriggerFactory({
@@ -72,21 +69,17 @@ export const App: React.FC = () => {
       }).load(initialWalkerProject);
       ownedProject = project;
 
-      // Mounted from the runtime's own answer rather than from a second copy of the document's
-      // ids. This is every node any project can hold rather than the shape this one happens to
-      // have, and a track added later is mounted by the commit that added it.
+      // Mount from the runtime's node list, not a second copy of ids: a later track is mounted by the commit adding it.
       for (const motionId of project.motionIds())
         for (const trackNode of project.motion(motionId).trackIds) project.mount(trackNode);
       for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
 
-      // The app owns the source, so tapping it for UI and threshold logic keeps core clean. There is
-      // deliberately no handle.signal() call here: the injected driver is the only thing that moves
-      // this Motion, and signalling it would now throw.
+      // App owns the source, so UI and threshold logic tap it and core stays out.
+      // No handle.signal(): the injected driver alone moves this Motion; signalling throws.
       unsubscribe = scrollSource.subscribe((p: number) => {
         setProgress(p);
 
-        // One structural transaction adds and mounts all four arms at the live Motion's progress.
-        // Retain the new handles only after the recipe commits successfully.
+        // One transaction adds and mounts all four arms at current progress; keep handles only after commit.
         if (p >= 0.5 && armHandlesRef.current.length === 0) {
           armHandlesRef.current = project.edit((tx) => {
             const walk = tx.motion("walk");
@@ -94,7 +87,7 @@ export const App: React.FC = () => {
           });
           setArmsAdopted(true);
         } else if (p < 0.45 && armHandlesRef.current.length > 0) {
-          // Remove the whole branch in one commit, with no partially removed graph published.
+          // Remove the whole branch in one commit; never publish a half-removed graph.
           project.edit(() => {
             for (const trackHandle of [...armHandlesRef.current].reverse()) {
               trackHandle.remove();
@@ -116,7 +109,7 @@ export const App: React.FC = () => {
     }
 
     return () => {
-      // Project disposal owns all remaining tracks; do not rebuild a graph being torn down.
+      // Project disposal owns remaining tracks; do not rebuild a graph being torn down.
       armHandlesRef.current = [];
       setArmsAdopted(false);
       setHandle(undefined);
@@ -124,8 +117,8 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // The badge counts what is actually mounted rather than restating 9 and 13 as literals: the
-  // recipe that adds the arms mounts them too, and the state flip above is what re-renders this.
+  // Count what the handle reports, never 9 and 13 as literals: the arms recipe mounts them, and the
+  // armsAdopted flip re-renders this.
   const mountedNodes = handle?.mountedNodeIds().length ?? 0;
 
   return (

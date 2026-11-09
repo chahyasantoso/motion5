@@ -4,6 +4,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { Interpolator } from "../../src/ports/interpolator";
+import { testEngine } from "../support/builtin-registry";
 
 function ramp(from: number, to: number) {
   return [
@@ -15,7 +16,8 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
   return {
     id,
     ...(duration === undefined ? {} : { duration }),
-    keyframes: { transform: { values: { x: ramp(from, to) } } },
+    input: { values: { x: ramp(from, to) } },
+    output: { model: "TestRecord" },
   };
 }
 const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDefinition => ({
@@ -25,7 +27,7 @@ const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDe
 function load(project: ProjectDefinition, interpolator?: Interpolator) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     interpolator: interpolator ?? createFakeInterpolator(),
     scheduler,
@@ -69,7 +71,7 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const sceneArmPatch = handle.get("scene/arm");
     if (sceneArmPatch?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch.values).toEqual({ x: 100 });
+    expect(sceneArmPatch.outputs.values).toEqual({ x: 100 });
     handle.dispose();
   });
 
@@ -77,7 +79,7 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const tracks = [track("first", 0, 100), track("second", 0, 100), track("third", 0, 100)];
     const { clock, scheduler, handle } = load(baseProject(tracks, 100));
     for (const id of ["scene/first", "scene/second", "scene/third"]) handle.mount(id);
-    handle.signal("scene", { type: "manual", progress: 1 });
+    handle.signal("scene", { type: "manual", progress: 0.25 });
     scheduler.flush();
     handle.track("scene/first").replace(track("first", 0, 200));
     clock.tick(0);
@@ -85,30 +87,15 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const sceneFirstPatch = handle.get("scene/first");
     if (sceneFirstPatch?.status !== "ready")
       throw new Error(`scene/first is ${sceneFirstPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneFirstPatch.values).toEqual({ x: 200 });
+    expect(sceneFirstPatch.outputs.values).toEqual({ x: 200 });
     const sceneSecondPatch = handle.get("scene/second");
     if (sceneSecondPatch?.status !== "ready")
       throw new Error(`scene/second is ${sceneSecondPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneSecondPatch.values).toEqual({ x: 0 });
+    expect(sceneSecondPatch.outputs.values).toEqual({ x: 0 });
     const sceneThirdPatch = handle.get("scene/third");
     if (sceneThirdPatch?.status !== "ready")
       throw new Error(`scene/third is ${sceneThirdPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneThirdPatch.values).toEqual({ x: 0 });
-    handle.dispose();
-  });
-
-  it("C-11 keeps the observation replacement path resolvable", () => {
-    const project = baseProject([track("arm", 0, 100), track("label", 0, 50)]);
-    const { scheduler, handle } = load(project);
-    handle.mount("scene/arm");
-    handle.mount("scene/label");
-    const label = handle.track("scene/label");
-    label.addObserve({ source: "scene/arm" });
-    label.removeObserve({ source: "scene/arm" });
-    expect(() => {
-      handle.signal("scene", { type: "manual", progress: 0.5 });
-      scheduler.flush();
-    }).not.toThrow();
+    expect(sceneThirdPatch.outputs.values).toEqual({ x: 0 });
     handle.dispose();
   });
 
@@ -132,7 +119,7 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const sceneExtraPatch = handle.get("scene/extra");
     if (sceneExtraPatch?.status !== "ready")
       throw new Error(`scene/extra is ${sceneExtraPatch?.status ?? "absent"}, not ready.`);
-    expect(sceneExtraPatch.values).toEqual({ x: 50 });
+    expect(sceneExtraPatch.outputs.values).toEqual({ x: 50 });
     added.remove();
     // The removed id must leave the Motion too, or the next sweep would report it unresolved.
     expect(() => {
@@ -142,7 +129,7 @@ describe("option C: compiled Track ownership through the public surface", () => 
     const sceneArmPatch2 = handle.get("scene/arm");
     if (sceneArmPatch2?.status !== "ready")
       throw new Error(`scene/arm is ${sceneArmPatch2?.status ?? "absent"}, not ready.`);
-    expect(sceneArmPatch2.values).toEqual({ x: 75 });
+    expect(sceneArmPatch2.outputs.values).toEqual({ x: 75 });
     const readded = handle.addTrack(track("extra", 0, 100), { motionId: "scene" });
     expect(readded.id).toBe("scene/extra");
     handle.dispose();

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@motion5/moves": "0.0.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -20,10 +23,6 @@
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
       "default": "./dist/adapters/index.js"
-    },
-    "./adapters/browser-clock": {
-      "types": "./dist/adapters/browser-clock.d.ts",
-      "default": "./dist/adapters/browser-clock.js"
     },
     "./testing": {
       "types": "./dist/testing/fakes.d.ts",

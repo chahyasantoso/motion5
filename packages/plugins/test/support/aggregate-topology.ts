@@ -1,0 +1,323 @@
+import {
+  Body2d,
+  Body3d,
+  Goals2d,
+  Goals3d,
+  Point2d,
+  Point3d,
+  Solved2d,
+  Solved3d,
+} from "../../src/models/index";
+import type { ValueSpec } from "@motion5/core/plugin-api";
+
+export const BODY_2D_SPEC = Body2d.spec;
+export const BODY_3D_SPEC = Body3d.spec;
+export { EXTERNAL_BASE } from "@motion5/rig";
+export const GOALS_2D_SPEC = Goals2d.spec;
+export const GOALS_3D_SPEC = Goals3d.spec;
+export const ROOT_2D_SPEC = Point2d.spec;
+export const ROOT_3D_SPEC = Point3d.spec;
+export const SOLVED_2D_SPEC = Solved2d.spec;
+export const SOLVED_3D_SPEC = Solved3d.spec;
+
+export type AggregateScalar = number | string | boolean;
+export type AggregateCells = Readonly<Record<string, AggregateScalar>>;
+
+export interface AggregateRow {
+  readonly id: string;
+  readonly cells: AggregateCells;
+}
+
+export type AggregateTopologyErrorKind =
+  | "table-shape"
+  | "row-shape"
+  | "row-id"
+  | "row-id-duplicate"
+  | "parent-shape"
+  | "parent-unknown"
+  | "parent-self"
+  | "parent-cycle"
+  | "root-shape"
+  | "row-unreachable"
+  | "goal-table-shape"
+  | "goal-row-shape"
+  | "goal-row-id"
+  | "goal-empty"
+  | "goal-member-unknown"
+  | "goal-member-not-leaf"
+  | "goal-member-duplicate"
+  | "goal-leaf-unaddressed";
+
+export class AggregateTopologyError extends TypeError {
+  readonly kind: AggregateTopologyErrorKind;
+  readonly ids: readonly string[];
+
+  constructor(kind: AggregateTopologyErrorKind, message: string, ids: readonly string[] = []) {
+    super(message);
+    this.name = "AggregateTopologyError";
+    this.kind = kind;
+    this.ids = Object.freeze([...ids]);
+  }
+}
+
+export interface AggregateTopologyOptions {
+  /** Expected external-base children; omit to infer roots from rows lacking parentId. */
+  readonly roots?: readonly string[];
+}
+
+export interface AggregateTopology {
+  /** Body rows, canonical root-first order; row objects and cell records preserved. */
+  readonly rows: readonly AggregateRow[];
+  readonly byId: ReadonlyMap<string, AggregateRow>;
+  readonly parentById: ReadonlyMap<string, string | undefined>;
+  readonly childrenById: ReadonlyMap<string, readonly string[]>;
+  /** Members with absent parentId; they attach to the external base. */
+  readonly roots: readonly string[];
+  readonly leaves: readonly string[];
+  readonly ids: readonly string[];
+}
+
+function compareCodeUnits(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isScalar(value: unknown): value is AggregateScalar {
+  return (
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && !Number.isNaN(value))
+  );
+}
+
+function readRow(value: unknown, index: number): AggregateRow {
+  if (!isRecord(value) || typeof value.id !== "string" || !isRecord(value.cells))
+    throw new AggregateTopologyError(
+      "row-shape",
+      `Body row at index ${index} must have id and cells.`,
+    );
+  if (value.id.length === 0)
+    throw new AggregateTopologyError("row-id", `Body row at index ${index} has an empty id.`);
+  const cells: Record<string, AggregateScalar> = {};
+  for (const [name, cell] of Object.entries(value.cells)) {
+    if (!isScalar(cell))
+      throw new AggregateTopologyError(
+        "row-shape",
+        `Body row '${value.id}' has a non-scalar cell '${name}'.`,
+        [value.id],
+      );
+    cells[name] = cell;
+  }
+  return { id: value.id, cells: Object.freeze(cells) };
+}
+
+function readParent(row: AggregateRow): string | undefined {
+  const parent = row.cells.parentId;
+  if (parent === undefined) return undefined;
+  if (typeof parent !== "string" || parent.length === 0)
+    throw new AggregateTopologyError(
+      "parent-shape",
+      `Body row '${row.id}' parentId must be a non-empty string when present.`,
+      [row.id],
+    );
+  return parent;
+}
+
+/** Reads one body table and derives its topology once. `roots` is a validation seam for callers
+ * owning the expected base children; else any row omitting `parentId` is a valid base child. */
+export function readAggregateTopology(
+  value: unknown,
+  options: AggregateTopologyOptions = {},
+): AggregateTopology {
+  if (!Array.isArray(value))
+    throw new AggregateTopologyError("table-shape", "Aggregate body values must be a table.");
+  const authoredRows = value.map(readRow);
+  const byId = new Map<string, AggregateRow>();
+  for (const row of authoredRows) {
+    if (byId.has(row.id))
+      throw new AggregateTopologyError(
+        "row-id-duplicate",
+        `Body row id '${row.id}' is duplicated.`,
+        [row.id],
+      );
+    byId.set(row.id, row);
+  }
+  const parentById = new Map<string, string | undefined>();
+  const children = new Map<string, string[]>(authoredRows.map((row) => [row.id, []]));
+  for (const row of authoredRows) {
+    const parent = readParent(row);
+    if (parent === row.id)
+      throw new AggregateTopologyError(
+        "parent-self",
+        `Body row '${row.id}' cannot parent itself.`,
+        [row.id],
+      );
+    if (parent !== undefined) {
+      if (!byId.has(parent))
+        throw new AggregateTopologyError(
+          "parent-unknown",
+          `Body row '${row.id}' names unknown parent '${parent}'.`,
+          [row.id, parent],
+        );
+      children.get(parent)!.push(row.id);
+    }
+    parentById.set(row.id, parent);
+  }
+
+  const inferredRoots = authoredRows
+    .filter((row) => parentById.get(row.id) === undefined)
+    .map((row) => row.id)
+    .sort(compareCodeUnits);
+  const roots = [...(options.roots ?? inferredRoots)].sort(compareCodeUnits);
+  for (const root of roots) {
+    if (!byId.has(root))
+      throw new AggregateTopologyError("root-shape", `Expected root '${root}' is not a body row.`, [
+        root,
+      ]);
+    if (parentById.get(root) !== undefined)
+      throw new AggregateTopologyError(
+        "root-shape",
+        `Expected root '${root}' must omit parentId.`,
+        [root],
+      );
+  }
+  const rootSet = new Set(roots);
+  for (const root of inferredRoots)
+    if (!rootSet.has(root))
+      throw new AggregateTopologyError(
+        "row-unreachable",
+        `Body row '${root}' is not reachable from the declared external base roots.`,
+        [root],
+      );
+
+  const explicitRoots = options.roots !== undefined;
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const depthById = new Map<string, number>();
+  const visit = (id: string, depth: number): void => {
+    if (visiting.has(id))
+      throw new AggregateTopologyError("parent-cycle", `Body topology cycles at row '${id}'.`, [
+        id,
+      ]);
+    if (visited.has(id)) return;
+    visiting.add(id);
+    depthById.set(id, depth);
+    for (const child of children.get(id)!.sort(compareCodeUnits)) visit(child, depth + 1);
+    visiting.delete(id);
+    visited.add(id);
+  };
+  for (const root of roots) visit(root, 0);
+  if (!explicitRoots && visited.size !== authoredRows.length) {
+    const disconnected = authoredRows.find((row) => !visited.has(row.id))!;
+    visit(disconnected.id, 0);
+  }
+  if (visited.size !== authoredRows.length) {
+    const unreachable = authoredRows.find((row) => !visited.has(row.id))!;
+    throw new AggregateTopologyError(
+      "row-unreachable",
+      `Body row '${unreachable.id}' is not reachable from the external base.`,
+      [unreachable.id],
+    );
+  }
+
+  const ids = authoredRows
+    .map((row) => row.id)
+    .sort(
+      (left, right) =>
+        (depthById.get(left) ?? 0) - (depthById.get(right) ?? 0) || compareCodeUnits(left, right),
+    );
+  const rows = ids.map((id) => byId.get(id)!);
+  const childrenById = new Map<string, readonly string[]>(
+    [...children].map(([id, childIds]) => [
+      id,
+      Object.freeze([...childIds].sort(compareCodeUnits)),
+    ]),
+  );
+  const leaves = ids.filter((id) => childrenById.get(id)!.length === 0);
+  return Object.freeze({
+    rows: Object.freeze(rows),
+    byId,
+    parentById,
+    childrenById,
+    roots: Object.freeze(roots),
+    leaves: Object.freeze(leaves),
+    ids: Object.freeze(ids),
+  });
+}
+
+function readGoalRow(value: unknown, index: number): AggregateRow {
+  if (!isRecord(value) || typeof value.id !== "string" || !isRecord(value.cells))
+    throw new AggregateTopologyError(
+      "goal-row-shape",
+      `Goal row at index ${index} must have id and cells.`,
+    );
+  if (value.id.length === 0)
+    throw new AggregateTopologyError("goal-row-id", `Goal row at index ${index} has an empty id.`);
+  const cells: Record<string, AggregateScalar> = {};
+  for (const [name, cell] of Object.entries(value.cells)) {
+    if (!isScalar(cell))
+      throw new AggregateTopologyError(
+        "goal-row-shape",
+        `Goal row '${value.id}' has a non-scalar cell '${name}'.`,
+        [value.id],
+      );
+    cells[name] = cell;
+  }
+  return { id: value.id, cells: Object.freeze(cells) };
+}
+
+export function readGoalTargets(
+  topology: AggregateTopology,
+  value: unknown,
+): ReadonlyMap<string, AggregateRow> {
+  if (!Array.isArray(value))
+    throw new AggregateTopologyError("goal-table-shape", "Aggregate goal values must be a table.");
+  const rows = value.map(readGoalRow);
+  if (rows.length === 0)
+    throw new AggregateTopologyError(
+      "goal-empty",
+      "Aggregate goal table has no rows; a solver with no goals is refused.",
+      topology.leaves,
+    );
+  const leafSet = new Set(topology.leaves);
+  const byMember = new Map<string, AggregateRow>();
+  for (const row of rows) {
+    const member = row.cells.memberId;
+    if (typeof member !== "string" || member.length === 0)
+      throw new AggregateTopologyError(
+        "goal-row-shape",
+        `Goal row '${row.id}' must name a non-empty memberId.`,
+        [row.id],
+      );
+    if (!topology.byId.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-unknown",
+        `Goal row '${row.id}' targets unknown member '${member}'.`,
+        [row.id, member],
+      );
+    if (!leafSet.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-not-leaf",
+        `Goal row '${row.id}' targets member '${member}', which is not a leaf.`,
+        [row.id, member],
+      );
+    if (byMember.has(member))
+      throw new AggregateTopologyError(
+        "goal-member-duplicate",
+        `Two goal rows target member '${member}'.`,
+        [member],
+      );
+    byMember.set(member, row);
+  }
+  for (const leaf of topology.leaves)
+    if (!byMember.has(leaf))
+      throw new AggregateTopologyError(
+        "goal-leaf-unaddressed",
+        `Body leaf '${leaf}' has no goal.`,
+        [leaf],
+      );
+  return byMember;
+}

@@ -2,6 +2,7 @@ import { authoredLeafPartition, readAuthoredLeaf, readCompilableStops } from "./
 import { diagnostic } from "./diagnostics";
 import type { AuthoredStop, Diagnostic } from "./v5";
 import { unreachable } from "../lang/exhaustive";
+import { isObjectRecord } from "../lang/plain-record";
 
 export interface CompiledKeyframes {
   readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
@@ -13,10 +14,18 @@ export interface CompiledProperty {
   readonly key: string;
   readonly stops: readonly AuthoredStop[];
 }
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
+/**
+ * Whether one percent's ease belongs to every property or to the one property that authored it.
+ *
+ * A plugin group authors one keyframe record in the percent-map form, where a frame has a single
+ * ease and two different eases at one percent are a real conflict. A flattened cell plan authors
+ * each cell independently, and the timeline backend applies ease per property, so the same two
+ * eases are not a conflict there. The default keeps the group reading unchanged.
+ */
+export interface KeyframeCompileOptions {
+  readonly ease?: "shared" | "per-key";
 }
+
 function toPercentKey(position: number): string {
   return `${position * 100}%`;
 }
@@ -28,8 +37,12 @@ function percentValue(percent: string): number {
  * Compile authored leaves once per interpolator call. The contract owns stop eligibility via
  * `readCompilableStops`, so the domain and every backend agree about malformed authored leaves.
  */
-export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
-  if (!isRecord(keyframes))
+export function compilePercentKeyframes(
+  keyframes: unknown,
+  path = "keyframes",
+  options: KeyframeCompileOptions = {},
+): CompiledKeyframes {
+  if (!isObjectRecord(keyframes))
     return Object.freeze({
       map: Object.freeze({}),
       initial: Object.freeze({}),
@@ -46,13 +59,15 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
   const addValue = (percent: string, key: string, value: unknown): void => {
     (map[percent] ??= {})[key] = value;
   };
+  const perKeyEase = options.ease === "per-key";
   const addEase = (percent: string, key: string, ease: unknown): void => {
+    if (perKeyEase) return;
     const owner = easeOwners.get(percent);
     if (owner && !Object.is(owner.ease, ease)) {
       const ids = [...new Set([...owner.keys, key])].sort();
       diagnostics.push(
         diagnostic(
-          "plugin-contribution-ease-collision",
+          "ease-collision",
           `${path}["${percent}"].ease`,
           `Conflicting ease values were authored at ${percent}.`,
           ids,

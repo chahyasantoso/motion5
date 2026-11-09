@@ -12,9 +12,9 @@ const soleNode = (id: string): PublisherNode =>
     id,
     owner: "motion",
     authoredIndex: 0,
-    track: { id },
+    track: { id, output: { model: "TestRecord" } },
     edges: Object.freeze([]),
-    compose: () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }),
+    compose: () => ({ outputs: { values: { x: 1 } }, sourceProgress: 0, sourceRevisions: {} }),
   });
 
 const soleSnapshot = (id: string): PublisherSnapshot => {
@@ -40,7 +40,12 @@ describe("PatchRegistry: subscriber error handling (recovery A2)", () => {
     });
 
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     expect(() => registry.closeBatch()).toThrow(/boom from first subscriber/);
     expect(secondCalled).toBe(true);
@@ -53,7 +58,12 @@ describe("PatchRegistry: subscriber error handling (recovery A2)", () => {
     });
 
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
     expect(() => registry.closeBatch()).toThrow(/boom/);
 
     // The registry must not be left thinking a batch is still open.
@@ -69,7 +79,12 @@ describe("PatchRegistry: subscriber error handling (recovery A2)", () => {
     // Mirrors GraphPublisher.flush()'s try/catch shape: attempt to close, and on failure,
     // attempt a recovery close before rethrowing.
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { x: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      outputs: { values: { x: 1 } },
+      sourceProgress: 0,
+      status: "ready",
+    });
 
     let caught: unknown;
     try {

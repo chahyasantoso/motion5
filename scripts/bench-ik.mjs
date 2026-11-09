@@ -2,11 +2,12 @@
 // it ran under.
 //
 // Issue #349 phase 7 and ADR-113. `docs/BENCH-IK.md` owns the published numbers and this script
-// is what regenerates them: run `npm run bench:ik` and paste the report's conditions beside the
-// numbers it produced. The deterministic half of the envelope (which strategy each scenario
+// is what regenerates them: run `npm run bench:ik -- --full` and paste the report's conditions
+// beside the numbers it produced. A plain run prints one line per scenario. The deterministic half
+// of the envelope (which strategy each scenario
 // reaches, whether every answer is finite and inside the iteration cap, and whether rigs couple) is
 // asserted by `EN-` in `packages/plugins/test/integration/ik-envelope.test.ts` for 2D and by `TH-71`
-// to `TH-74` in `packages/plugins/test/unit/ik3d-envelope.test.ts` for 3D, and is not
+// to `TH-74` in `packages/plugins/test/unit/ik/solve3d/envelope.test.ts` for 3D, and is not
 // re-asserted here.
 //
 // The rigs are `packages/plugins/test/support/ik-envelope.ts` and
@@ -41,7 +42,9 @@ const HOOK = `export async function resolve(specifier, context, next) {
 register(`data:text/javascript,${encodeURIComponent(HOOK)}`, import.meta.url);
 
 const { values } = await import("node:util").then(({ parseArgs }) =>
-  parseArgs({ options: { rigs: { type: "string" }, out: { type: "string" } } }),
+  parseArgs({
+    options: { rigs: { type: "string" }, out: { type: "string" }, full: { type: "boolean" } },
+  }),
 );
 const RIGS = Number(values.rigs ?? 200);
 if (!Number.isInteger(RIGS) || RIGS < 1) throw new TypeError(`--rigs must be a positive integer`);
@@ -52,15 +55,15 @@ const src = "../packages/core/src";
 const plugins = "../packages/plugins/src";
 const { envelopeScenarios, independentRigsProject, rigTrackIds } = await import(support);
 const { envelope3dScenarios } = await import(support3d);
-const { solveChain } = await import(`${plugins}/ik-solve.ts`);
-const { solveChain3d } = await import(`${plugins}/ik3d-solve.ts`);
-const { PluginRegistry } = await import(`${src}/domain/plugins.ts`);
+const { solveChain } = await import(`${plugins}/ik/solve2d/solve.ts`);
+const { solveChain3d } = await import(`${plugins}/ik/solve3d/solve.ts`);
+const { PluginCatalog } = await import(`${src}/domain/plugin-catalog.ts`);
 const { Engine } = await import(`${src}/engine.ts`);
 const { createManualClock } = await import(`${src}/ports/clock.ts`);
 const { createFakeInterpolator, createFakeScheduler } = await import(`${src}/testing/fakes.ts`);
-const { transformPlugin } = await import(`${plugins}/transform.ts`);
-const { fkPlugin } = await import(`${plugins}/fk.ts`);
-const { ikPlugin } = await import(`${plugins}/ik.ts`);
+const { transformPlugin } = await import(`${plugins}/transform/transform.ts`);
+const { fkPlugin } = await import(`${plugins}/fk/fk.ts`);
+const { ikPlugin } = await import(`${plugins}/ik/ik.ts`);
 
 /**
  * The median of `samples` runs of `body`, each repeated until it has run for at least `floorMs`.
@@ -148,8 +151,8 @@ const solves3d = envelope3dScenarios(RIGS).map((scenario) => {
 
 /** One runtime with `count` independent two-bone rigs; a frame seeks every rig's goal once. */
 function engineScenario(count) {
-  const plugins = new PluginRegistry();
-  plugins.registerAll([transformPlugin, fkPlugin, ikPlugin]);
+  const plugins = new PluginCatalog();
+  plugins.register({ plugins: [transformPlugin, fkPlugin, ikPlugin] });
   const loadStart = performance.now();
   const runtime = new Engine({
     clock: createManualClock(),
@@ -195,4 +198,23 @@ const report = {
 };
 const text = `${JSON.stringify(report, null, 2)}\n`;
 if (values.out !== undefined) await writeFile(values.out, text);
-process.stdout.write(text);
+
+/** One line per scenario: the timing a reader compares against the medians `BENCH-IK.md` keeps. */
+function solveLine(space, row) {
+  const chain = `${space} ${row.scenario} ${row.shape} x${row.rigs}`;
+  const timing = `${row.nsPerSolve}ns/solve ${row.nsPerMember}ns/member ${row.meanIterations}iters`;
+  return `${chain}: ${timing}`;
+}
+
+function engineLine(row) {
+  const count = `engine x${row.rigs}`;
+  const cost = `${row.loadAndMountMs}ms load+mount ${row.usPerFrame}us/frame ${row.usPerRig}us/rig`;
+  return `${count}: ${cost}`;
+}
+
+const summary = [
+  ...solves.map((row) => solveLine("2d", row)),
+  ...solves3d.map((row) => solveLine("3d", row)),
+  ...engine.map(engineLine),
+].join("\n");
+process.stdout.write(values.full ? text : `${summary}\n`);

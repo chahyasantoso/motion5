@@ -2,21 +2,26 @@ import { describe, expect, it } from "vitest";
 import type { TrackDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { testCatalog } from "../support/builtin-registry";
 
 const project = {
   schemaVersion: 5 as const,
   motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
 };
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
-const freeTrack: TrackDefinition = { id: "cursor" };
+const freeTrack: TrackDefinition = { id: "cursor", output: { model: "TestTable" } };
 
 describe("P5-02 runtime free tracks", () => {
   it("adds a free track under ~/id and publishes through the ordinary graph path", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     const added = runtime.addTrack(freeTrack);
     expect(added.id).toBe("~/cursor");
     expect(runtime.instanceCount).toBe(1);
@@ -24,13 +29,19 @@ describe("P5-02 runtime free tracks", () => {
     // its own flush now (issue #223, `RA-9`). The seek is a no-op by construction, because the
     // value it would publish is the one already retained, and that half is asserted rather than
     // dropped: without it, published-early and published-twice look the same from here.
-    expect(runtime.graph.registry.lastReady("~/cursor")?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.graph.registry.lastReady("~/cursor")?.outputs.values).toEqual({
+      node: "~/cursor",
+    });
     expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
 
   it("rejects duplicate ids instead of silently replacing membership", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     runtime.addTrack(freeTrack);
     expect(() => runtime.addTrack(freeTrack)).toThrow(/already exists/);
     runtime.dispose();
@@ -40,7 +51,11 @@ describe("P5-02 runtime free tracks", () => {
   // moving: what refuses a removal now is the token the handle captured, and
   // `unified-mutation-surface.test.ts` owns that refusal.
   it("lets a borrower unmount without removing the track", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     const added = runtime.addTrack(freeTrack);
     runtime.unmount(added.id);
     expect(runtime.instanceCount).toBe(0);
@@ -51,9 +66,13 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("keeps every track independently addressable across sequential add and remove calls", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    const cursor = runtime.addTrack({ id: "cursor" });
-    const drag = runtime.addTrack({ id: "drag" });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
+    const cursor = runtime.addTrack({ id: "cursor", output: { model: "TestTable" } });
+    const drag = runtime.addTrack({ id: "drag", output: { model: "TestRecord" } });
     expect(runtime.graph.state.snapshot().nodes).toEqual(
       expect.arrayContaining(["~/cursor", "~/drag"]),
     );
@@ -61,8 +80,10 @@ describe("P5-02 runtime free tracks", () => {
     // following seek, and read per id, because addressability is the claim: a commit that seeded
     // the whole member set instead of the node it touched would pass a two-node assertion here and
     // fail this one on the second add, which would republish the first.
-    expect(runtime.graph.registry.lastReady(cursor.id)?.values).toEqual({ node: "~/cursor" });
-    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(cursor.id)?.outputs.values).toEqual({
+      node: "~/cursor",
+    });
+    expect(runtime.graph.registry.lastReady(drag.id)?.outputs.values).toEqual({ node: "~/drag" });
     expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);
     cursor.remove();
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
@@ -70,58 +91,69 @@ describe("P5-02 runtime free tracks", () => {
     // Eviction drops the retained patch, so the destroyed node is addressable as absent rather
     // than as its final pose.
     expect(runtime.graph.registry.get(cursor.id)).toBeUndefined();
-    expect(runtime.graph.registry.lastReady(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.lastReady(drag.id)?.outputs.values).toEqual({ node: "~/drag" });
     runtime.dispose();
   });
 
   it("rejects tracks with non-finite stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: { transform: { values: { x: [{ p: Number.NaN, v: 0 }] } } },
+        input: { values: { x: [{ p: Number.NaN, v: 0 }] } },
+        output: { model: "TestRecord" },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
   it("rejects tracks with non-monotonic stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0.5, v: 0 },
-                { p: 0.2, v: 1 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0.5, v: 0 },
+              { p: 0.2, v: 1 },
+            ],
           },
         },
+        output: { model: "TestRecord" },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
   it("rejects tracks with duplicate stop positions", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
     expect(() =>
       runtime.addTrack({
         id: "bad",
-        keyframes: {
-          transform: {
-            values: {
-              x: [
-                { p: 0, v: 0 },
-                { p: 0, v: 1 },
-              ],
-            },
+        input: {
+          values: {
+            x: [
+              { p: 0, v: 0 },
+              { p: 0, v: 1 },
+            ],
           },
         },
+        output: { model: "TestRecord" },
       }),
-    ).toThrow(/stop-position/);
+    ).toThrow(/cell-stops-invalid/);
     runtime.dispose();
   });
 
@@ -129,6 +161,7 @@ describe("P5-02 runtime free tracks", () => {
     let addedMotion: string | undefined;
     let addedTrack: string | undefined;
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       addMotionTrack: (mId, tId) => {
@@ -136,7 +169,10 @@ describe("P5-02 runtime free tracks", () => {
         addedTrack = tId;
       },
     });
-    const added = runtime.addTrack({ id: "opacity" }, { motionId: "hero" });
+    const added = runtime.addTrack(
+      { id: "opacity", output: { model: "TestRecord" } },
+      { motionId: "hero" },
+    );
     expect(added.id).toBe("hero/opacity");
     expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
     expect(addedMotion).toBe("hero");
@@ -144,7 +180,7 @@ describe("P5-02 runtime free tracks", () => {
 
     // Published by the commit, and after the Motion entry was written: the flush is seeded once the
     // settle steps ran, so a node that publishes here is one its Motion can already resolve.
-    expect(runtime.graph.registry.lastReady("hero/opacity")?.values).toEqual({
+    expect(runtime.graph.registry.lastReady("hero/opacity")?.outputs.values).toEqual({
       node: "hero/opacity",
     });
     expect(runtime.seek("hero/opacity", 0).patches).toEqual([]);
@@ -152,10 +188,17 @@ describe("P5-02 runtime free tracks", () => {
   });
 
   it("rejects adding into a non-existent motion", () => {
-    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    expect(() => runtime.addTrack({ id: "opacity" }, { motionId: "nonexistent" })).toThrow(
-      /nonexistent/,
-    );
+    const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
+      clock: createManualClock(),
+      compose,
+    });
+    expect(() =>
+      runtime.addTrack(
+        { id: "opacity", output: { model: "TestRecord" } },
+        { motionId: "nonexistent" },
+      ),
+    ).toThrow(/nonexistent/);
     runtime.dispose();
   });
 
@@ -163,6 +206,7 @@ describe("P5-02 runtime free tracks", () => {
     let removedMotion: string | undefined;
     let removedTrack: string | undefined;
     const runtime = new ProjectRuntime(project, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       removeMotionTrack: (mId, tId) => {
@@ -170,7 +214,10 @@ describe("P5-02 runtime free tracks", () => {
         removedTrack = tId;
       },
     });
-    const added = runtime.addTrack({ id: "opacity" }, { motionId: "hero" });
+    const added = runtime.addTrack(
+      { id: "opacity", output: { model: "TestRecord" } },
+      { motionId: "hero" },
+    );
     expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
 
     added.remove();

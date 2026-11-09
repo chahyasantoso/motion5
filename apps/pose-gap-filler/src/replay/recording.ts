@@ -10,15 +10,8 @@ import { MEDIAPIPE_LANDMARK_COUNT } from "../filler/landmarks";
 import { IMAGE_SPACE, WORLD_SPACE, type LandmarkSpace } from "../filler/space";
 import { unreachable } from "../filler/unreachable";
 
-/**
- * A recorded landmark stream: landmarks only, never video, and never committed (the recordings
- * directory is ignored). A recording holds what MediaPipe returned, before the adapter, so a replay
- * runs the same adapter, detector and filler code as the live page and differs from it only in
- * where `tMs` comes from. Each space is keyed by its `LandmarkSpace` kind; an undetected pose is
- * `null`. JSON writes a non-finite component as `null`, and it reads back as `NaN` for the adapter
- * to refuse, as it would live. A landmark is `[x, y, z, visibility, presence]`; presence is `null`
- * in JSON when the producer reported none.
- */
+/** Raw landmarks only, no video, never committed; spaces keyed by `LandmarkSpace` kind, `null` when undetected.
+ * Disk landmark: `[x, y, z, visibility, presence]`; JSON `null` → `NaN`. */
 export interface RecordedFrame {
   readonly tMs: number;
   readonly image: RawPose | null;
@@ -27,20 +20,16 @@ export interface RecordedFrame {
 
 export const RECORDING_FORMAT = "motion5-pose-recording";
 
-/**
- * The version every recording is written in and every parsed recording is held in. Version 1 has
- * four-component landmarks, `[x, y, z, visibility]`; version 2 adds presence. A v1 file is still
- * read, through its own decoder, with every presence `unreported`: it was never recorded.
- */
+/** Version every recording is written in and parsed into; v1's missing presence decodes as `NaN`. */
 export const RECORDING_VERSION = 2;
 
-/** The versions `parseRecording` reads, a closed union read by one exhaustive switch. */
+/** Versions `parseRecording` accepts, read by one exhaustive switch. */
 export type RecordingVersion = 1 | typeof RECORDING_VERSION;
 
 export interface PoseRecording {
   readonly format: typeof RECORDING_FORMAT;
   readonly version: typeof RECORDING_VERSION;
-  /** The stage the image landmarks are mapped onto when replayed. */
+  /** The stage the image landmarks map onto when replayed. */
   readonly stage: StageSize;
   readonly frames: readonly RecordedFrame[];
 }
@@ -49,7 +38,6 @@ function fail(message: string): never {
   throw new Error(`Not a ${RECORDING_FORMAT} recording: ${message}.`);
 }
 
-/** How many components a landmark has in each version, and what the message calls that. */
 function landmarkShape(version: RecordingVersion): {
   readonly length: number;
   readonly name: string;
@@ -75,10 +63,6 @@ function exactKeys(value: object, expected: string, where: string): Record<strin
   return value as Record<string, unknown>;
 }
 
-/**
- * One pose in `version`'s landmark shape, held as the current shape: a v1 landmark gains a `NaN`
- * presence, which the adapter reads as `unreported`.
- */
 function readPose(value: unknown, where: string, version: RecordingVersion): RawPose | null {
   if (value === null) return null;
   if (!Array.isArray(value)) fail(`${where} is neither an array nor null`);
@@ -115,11 +99,8 @@ function readStage(value: unknown): StageSize {
   return { width, height };
 }
 
-/**
- * Reads a recording of any supported version into the current one, refusing anything that is not
- * exactly that version's shape: no missing or extra key at any level. Timestamps must be finite and strictly increasing, because replay is
- * deterministic only if its clock is. Coordinates are not judged here; that is the adapter's job.
- */
+/** Reads any supported version into the current one; shape must match exactly.
+ * `tMs` finite and strictly increasing; coordinate ranges are the adapter's to judge. */
 export function parseRecording(value: unknown): PoseRecording {
   if (typeof value !== "object" || value === null) fail("not an object");
   const record = exactKeys(value, "format,frames,stage,version", "recording");
@@ -144,7 +125,7 @@ export function parseRecording(value: unknown): PoseRecording {
   return { format: RECORDING_FORMAT, version: RECORDING_VERSION, stage, frames };
 }
 
-/** The live recorder's half: one MediaPipe result as a recorded frame, first pose only. */
+/** Live recorder's half: one MediaPipe result as a frame, first pose only. */
 export function recordResult(result: unknown, tMs: number): RecordedFrame {
   if (!Number.isFinite(tMs)) fail("live tMs is not finite");
   const pose = (space: LandmarkSpace) => {

@@ -1,29 +1,17 @@
-import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphEdge } from "../../../src/graph/ir";
-import { buildGraphIR } from "../../../src/graph/ir";
+import type { GraphEdge } from "../../../src/graph/node";
 import { ObservationState } from "../../../src/graph/observation-state";
 
-const project: ProjectDefinition = {
-  schemaVersion: 5,
-  motions: [
-    {
-      id: "hero",
-      trigger: { type: "manual" },
-      tracks: [
-        { id: "arm", observes: [{ source: "~/cursor" }] },
-        { id: "halo", observes: [{ source: "arm" }] },
-      ],
-    },
-  ],
-  freeTracks: [{ id: "cursor" }],
-};
+const NODES = ["~/cursor", "hero/arm", "hero/halo"] as const;
+const EDGES: readonly GraphEdge[] = [
+  { observerId: "hero/arm", sourceId: "~/cursor", requirement: { plugin: "test", slot: "in" } },
+  { observerId: "hero/halo", sourceId: "hero/arm", requirement: { plugin: "test", slot: "in" } },
+];
 
 const edge = (observerId: string, sourceId: string): GraphEdge => ({
   observerId,
   sourceId,
-  role: "output",
+  requirement: { plugin: "test", slot: "in" },
 });
 
 /**
@@ -31,11 +19,8 @@ const edge = (observerId: string, sourceId: string): GraphEdge => ({
  * The live state deliberately offers no way to do this for itself.
  */
 function load(state: ObservationState): void {
-  const { graph } = buildGraphIR(project, builtinRegistry());
-  if (graph === undefined) throw new Error("fixture project must build");
-  for (const id of graph.order) state.addNode(id);
-  for (const id of graph.order)
-    for (const live of graph.nodeById[id]?.edges ?? []) state.addEdge(live);
+  for (const id of NODES) state.addNode(id);
+  for (const live of EDGES) state.addEdge(live);
 }
 
 describe("stable observation state", () => {

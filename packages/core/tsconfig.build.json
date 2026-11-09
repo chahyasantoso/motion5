@@ -7,7 +7,12 @@
     "declarationMap": true,
     "emitDeclarationOnly": false,
     "noEmit": false,
-    "composite": false
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@motion5/moves": ["../moves/dist/index.d.ts"],
+      "@motion5/rig": ["../rig/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["**/*.test.ts"]

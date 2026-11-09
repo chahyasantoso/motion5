@@ -3,17 +3,26 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -22,7 +31,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("drains a subscriber invalidation with zero clock ticks", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let notifications = 0;
@@ -41,7 +53,7 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     const captionLabelPatch = runtime.registry.get("caption/label");
     if (captionLabelPatch?.status !== "ready")
       throw new Error(`caption/label is ${captionLabelPatch?.status ?? "absent"}, not ready.`);
-    expect(captionLabelPatch.values).toEqual({ node: "caption/label" });
+    expect(captionLabelPatch.outputs.values).toEqual({ node: "caption/label" });
     expect(runtime.tick).toBe(1);
     runtime.dispose();
   });
@@ -49,7 +61,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("coalesces repeated invalidations into one scheduled follow-up", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
 
     let notifications = 0;
@@ -80,7 +95,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
         return { cancel() {} };
       },
     };
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     runtime.attach("hero/arm");
     const diagnostics: string[] = [];
     runtime.registry.subscribeNode("hero/arm", () => {
@@ -102,7 +120,10 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
   it("does not expose the publisher as a second public reentrancy entry point", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
-    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    const runtime = new GraphRuntime(project, clock, compose, {
+      graphBuilder: testGraphBuilder(),
+      scheduler,
+    });
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     runtime.dispose();
   });

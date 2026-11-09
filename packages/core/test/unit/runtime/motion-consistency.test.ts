@@ -10,21 +10,21 @@ import type { Interpolator } from "../../../src/ports/interpolator";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testEngine } from "../../support/builtin-registry";
 
 // Real Engine, Motion, Track and graph; only the host ports are controlled.
 const animated = (id: string) => ({
   id,
   duration: 1000,
-  keyframes: {
-    transform: {
-      values: {
-        x: [
-          { p: 0, v: 0 },
-          { p: 1, v: 100 },
-        ],
-      },
+  input: {
+    values: {
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 100 },
+      ],
     },
   },
+  output: { model: "TestRecord" },
 });
 const project = (withTracks = true): ProjectDefinition => ({
   schemaVersion: 5,
@@ -56,7 +56,7 @@ function rig(definition = project(), triggerFactory?: TriggerFactory, onProgress
       return { ...timeline, progress, kill };
     },
   };
-  const handle = new Engine({
+  const handle = testEngine({
     clock,
     scheduler,
     interpolator,
@@ -218,63 +218,55 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     },
   );
 
-  it("retains an accepted stagger and attempts publication when re-seeding throws", () => {
-    let intercept: () => void = () => undefined;
-    const test = rig(project(), undefined, () => intercept());
+  // Two cases used to inject a failure through the interpolator's `progress` during a stagger
+  // re-seed. The identified-table evaluator stores progress and writes the timeline when it next
+  // evaluates, so a re-seed no longer calls a fallible host hook. The accepted-state guard now fails
+  // the publication that still follows acceptance, and the disposal guard fails a trigger finalizer,
+  // so settlement ordering stays pinned without the legacy Track that called `progress` on every
+  // seek until Phase 5.
+  it("retains an accepted stagger and attempts publication when publication fails", () => {
+    const test = rig();
     test.handle.mount("hero/arm");
     test.handle.mount("hero/leg");
     test.handle.signal("hero", { type: "manual", progress: 0.75 });
     test.flush();
     const motion = test.handle.motion("hero");
-    const failure = new Error("Host re-seed failed.");
-    const seen: (number | undefined)[] = [];
-    intercept = () => {
-      seen.push(motion.definition.stagger);
-      throw failure;
-    };
+    const failure = new Error("Publication failed.");
     const publication = vi.spyOn(test.runtime.graph, "flush");
-    expect(caught(() => motion.setStagger(250))).toBe(failure);
-    expect(seen).toEqual([250]);
-    expect(motion.definition.stagger).toBe(250);
-    // Caller-stated publications only, so a scheduled drain cannot supply this count. Issue #381.
-    expect(statedPublications(publication)).toHaveLength(1);
-    const heroArmPatch3 = test.handle.get("hero/arm");
-    if (heroArmPatch3?.status !== "ready")
-      throw new Error(`hero/arm is ${heroArmPatch3?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch3.sourceProgress).toBeCloseTo(0.75);
-    intercept = () => undefined;
-    motion.setStagger();
-    test.flush();
-    const heroLegPatch = test.handle.get("hero/leg");
-    if (heroLegPatch?.status !== "ready")
-      throw new Error(`hero/leg is ${heroLegPatch?.status ?? "absent"}, not ready.`);
-    expect(heroLegPatch.sourceProgress).toBeCloseTo(0.75);
-    test.handle.dispose();
-    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
-  });
-
-  it("defers disposal through failed stagger completion and preserves ordered failures", () => {
-    let intercept: () => void = () => undefined;
-    const test = rig(project(), undefined, () => intercept());
-    test.handle.mount("hero/arm");
-    // Track skips unchanged progress. Advance first so the new stagger reaches the host.
-    test.handle.signal("hero", { type: "manual", progress: 0.75 });
-    test.flush();
-    const motion = test.handle.motion("hero");
-    const failure = new Error("Disposing host re-seed failed.");
-    const disposeDuringProgress = vi.fn(() => {
-      test.handle.dispose();
+    publication.mockImplementation(() => {
       throw failure;
     });
-    intercept = disposeDuringProgress;
+
+    expect(caught(() => motion.setStagger(250))).toBe(failure);
+    expect(motion.definition.stagger).toBe(250);
+    // Caller-stated publications only, so the accepted schedule still owed one after the failure.
+    expect(statedPublications(publication)).toHaveLength(1);
+    const heroArmPatch = test.handle.get("hero/arm");
+    if (heroArmPatch?.status !== "ready")
+      throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
+    expect(heroArmPatch.sourceProgress).toBeCloseTo(0.75);
+    publication.mockRestore();
+    test.handle.dispose();
+  });
+
+  it("defers disposal through a failed trigger completion and preserves ordered failures", () => {
+    const failure = new Error("Disposing trigger finalizer failed.");
+    let dispose: (() => void) | undefined;
+    const host = drivers({ cleanup: failure, onCleanup: () => dispose?.() });
+    const test = rig(project(), host.factory);
+    dispose = () => test.handle.dispose();
+    test.handle.mount("hero/arm");
+    const motion = test.handle.motion("hero");
     const publication = vi.spyOn(test.runtime.graph, "flush");
-    const result = caught(() => motion.setStagger(250));
-    expect(disposeDuringProgress).toHaveBeenCalledTimes(1);
+
+    const result = caught(() => motion.setTrigger({ type: "time", duration: 1000 }));
     expect(result).toBeInstanceOf(AggregateError);
-    expect((result as AggregateError).errors[0]).toBe(failure);
-    expect((result as AggregateError).errors[1].message).toBe("ProjectRuntime is disposed.");
+    const errors = result instanceof AggregateError ? result.errors : [];
+    expect(errors[0]).toBe(failure);
+    expect(errors[1]).toMatchObject({ message: "ProjectRuntime is disposed." });
     expect(motion.live).toBe(false);
     expect(publication).not.toHaveBeenCalled();
+    for (const entry of host.created) expect(entry.dispose).toHaveBeenCalledTimes(1);
     for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
   });
 
@@ -366,11 +358,11 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     const heroArmPatch6 = test.handle.get("hero/arm");
     if (heroArmPatch6?.status !== "ready")
       throw new Error(`hero/arm is ${heroArmPatch6?.status ?? "absent"}, not ready.`);
-    expect(heroArmPatch6.sourceProgress).toBeCloseTo(0.75);
+    expect(heroArmPatch6.sourceProgress).toBeCloseTo(0.9375);
     const heroLegPatch2 = test.handle.get("hero/leg");
     if (heroLegPatch2?.status !== "ready")
       throw new Error(`hero/leg is ${heroLegPatch2?.status ?? "absent"}, not ready.`);
-    expect(heroLegPatch2.sourceProgress).toBeCloseTo(0.5);
+    expect(heroLegPatch2.sourceProgress).toBeCloseTo(0.6875);
     expect(seen).toEqual([250]);
     expect(String(reentrant[0])).toContain("schema-commit-reentrant");
     motion.setStagger();

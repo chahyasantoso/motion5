@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-08-30
 
+**Superseded by [ADR-144](./ADR-144-identified-tables-records-and-explicit-plugins.md), 2026-10-29.** Identified tables and records with an explicit `PluginCatalog` are the one supported contract; the grouped machinery this record describes is deleted.
+
 **Context.** ADR-052 made a solver's goals authorable as a dict keyed by member id, and reached that through two mechanisms rather than one. `contract/solver-slots.ts` held a grammar: `goalSlot(memberId)` built the string `targets[<memberId>]` and `readGoalSlot` parsed it back, so one fact had a builder in one module and a parser in another by construction. `PluginDefinition.claimsSlot` held a predicate, because a record of declared slots cannot enumerate a family whose members are named by the rig, so "is this slot declared" had two owners kept consistent by hand. `readPluginBindings` special-cased exactly `PLUGIN_GOALS_SLOT` ahead of any registry, which made the capability `ik`'s alone: a second plugin wanting a dict-valued slot was an edit to the parser, not a plugin.
 
 Six source files reached that grammar, plus its test. The framing that this is not a cardinality problem was correct: `GraphNode.edges` was already `readonly GraphEdge[]`, and a dict of N distinct sources correctly derived N edges.

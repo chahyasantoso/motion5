@@ -1,8 +1,19 @@
 import { describe, expect, it, vi } from "vitest";
-import { PluginRegistry } from "../../src/domain/plugins";
+import type { PluginDefinition } from "../../src/contract/v5";
+import { PluginCatalog } from "../../src/domain/plugin-catalog";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { record, track } from "../support/v5-builders";
+import { testModels } from "../support/test-models";
+import { testEngine } from "../support/builtin-registry";
+import { defineModel } from "../../src/contract/v5";
+import { Spec } from "../../src/contract/spec-builder";
+
+const FIXTURE_OUT_1 = defineModel({
+  id: "FixtureOut1",
+  spec: Spec.record({ opacity: Spec.number() }),
+});
 
 const options = () => ({
   clock: createManualClock(),
@@ -10,79 +21,110 @@ const options = () => ({
   scheduler: createFakeScheduler(),
 });
 
-const projectWith = (keyframes: unknown) => ({
+const projectWith = (values: unknown) => ({
   schemaVersion: 5,
   motions: [
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "arm", keyframes }],
+      tracks: [
+        track({
+          id: "arm",
+          values: values as never,
+          model: "TestRecord",
+        }),
+      ],
     },
   ],
 });
 
+const OPACITY: PluginDefinition = {
+  id: "opacity",
+  inputs: { values: Spec.record({ opacity: Spec.number() }) },
+  outputs: { values: FIXTURE_OUT_1 },
+  transform(input) {
+    return { values: input.values };
+  },
+};
+
 describe("Engine product-load validation (X-1 follow-up)", () => {
+  it("requires a plugin catalog at runtime", () => {
+    expect(() => new Engine({ ...options(), plugins: undefined as never })).toThrow(
+      /PluginCatalog/,
+    );
+  });
+
+  it("refuses a model track when the catalog does not admit its model", () => {
+    const engine = new Engine({ ...options(), plugins: new PluginCatalog() });
+    expect(() => engine.load(projectWith({ opacity: 1 }) as never)).toThrow(/model-unknown/);
+  });
+
   it("rejects malformed authored stops before constructing a runtime", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
-    const invalid = projectWith({ style: { values: { opacity: [{ p: Number.NaN, v: 1 }] } } });
+    const engine = testEngine({ ...options(), interpolator });
+    const invalid = projectWith({ opacity: [{ p: Number.NaN, v: 1 }] });
 
-    expect(() => engine.load(invalid as never)).toThrow(/stop-position/);
+    expect(() => engine.load(invalid as never)).toThrow(/cell-stops-invalid/);
     expect(create).not.toHaveBeenCalled();
   });
 
   it("rejects malformed authored stops before any timeline is created", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
+    const engine = testEngine({ ...options(), interpolator });
     const invalid = projectWith({
-      style: {
-        values: {
-          opacity: [
-            { p: 0.8, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
-        },
-      },
+      opacity: [
+        { p: 0.8, v: 0 },
+        { p: 0.2, v: 1 },
+      ],
     });
 
-    expect(() => engine.load(invalid as never)).toThrow(/stop-position-order/);
+    expect(() => engine.load(invalid as never)).toThrow(/cell-stops-invalid/);
     expect(create).not.toHaveBeenCalled();
   });
 
   it("resolves authored plugin ownership during load, not on the first seek", () => {
-    const plugins = new PluginRegistry();
-    plugins.register({
-      name: "opacity",
-      keys: ["opacity"],
-      compose: (values) => values,
-    });
+    const plugins = new PluginCatalog({ models: testModels });
+    plugins.register({ plugins: [OPACITY] });
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator, plugins });
+    const undeclared = projectWith({ other: 1 });
 
     expect(() =>
-      engine.load(projectWith({ unknown: { values: { opacity: [{ p: 0, v: 0 }] } } }) as never),
-    ).toThrow(/plugin-unknown-key/);
+      engine.load({
+        ...undeclared,
+        motions: [
+          {
+            id: "hero",
+            trigger: { type: "manual" },
+            tracks: [
+              track({
+                id: "arm",
+                plugin: OPACITY.id,
+                values: record({ other: 1 }),
+                model: "TestRecord",
+              }),
+            ],
+          },
+        ],
+      } as never),
+    ).toThrow(/cell-form-invalid/);
     expect(create).not.toHaveBeenCalled();
   });
 
   it("accepts a valid project and creates its timelines during load", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    const engine = new Engine({ ...options(), interpolator });
+    const engine = testEngine({ ...options(), interpolator });
 
     const runtime = engine.load(
       projectWith({
-        style: {
-          values: {
-            opacity: [
-              { p: 0, v: 0 },
-              { p: 1, v: 1 },
-            ],
-          },
-        },
+        opacity: [
+          { p: 0, v: 0 },
+          { p: 1, v: 1 },
+        ],
       }) as never,
     );
     expect(create).toHaveBeenCalledTimes(1);

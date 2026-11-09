@@ -10,7 +10,7 @@ type Patch =
       readonly status: "ready";
       readonly nodeId: string;
       readonly revision: number;
-      readonly values: Readonly<Record<string, unknown>>;
+      readonly outputs: Outputs;
       readonly sourceProgress: number;
       readonly sourceRevisions: Readonly<Record<string, number>>;
       readonly diagnostics: readonly Diagnostic[];
@@ -36,16 +36,16 @@ type Patch =
 
 `revision` increments per published patch for that node. A patch is only published when something actually changed, so an unchanged flush is silent and you can trust `revision` as a change signal.
 
-Status is the part worth reading carefully, because it decides what the patch carries rather than labelling something it would carry anyway. `ready` is the only variant that owns a pose: `values`, `sourceProgress` and `sourceRevisions` are three measurements of one successful composition, so a status that did not compose declares none of them. `blocked` and `error` describe a node that still exists and may publish again, and each carries its refusal and nothing else; they are two variants rather than one with a flag, because they are two conditions. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
+Status is the part worth reading carefully, because it decides what the patch carries rather than labelling something it would carry anyway. `ready` is the only variant that owns a pose: `outputs`, `sourceProgress` and `sourceRevisions` are three measurements of one successful composition, so a status that did not compose declares none of them. `blocked` and `error` describe a node that still exists and may publish again, and each carries its refusal and nothing else; they are two variants rather than one with a flag, because they are two conditions. `destroyed` is terminal: the node has been evicted and will never publish again, so drop your local state for it.
 
-A non-ready patch used to carry the previous patch's `values`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.values` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `values` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
+A non-ready patch used to carry the previous patch's `outputs`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.outputs` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `outputs` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
 
 The variants have names in the source and are deliberately not on the package entry, so narrow on `status` rather than importing one. `Patch`, `LivePatch`, `PatchStatus`, `PatchBatch` and `PatchListener` are the names `@motion5/core` exports, and `PatchStatus` is read off the union rather than spelled beside it, so it cannot name a status that no variant declares. `@motion5/react` re-exports `Patch`, `LivePatch` and `PatchListener` and not the other two, because a component types the wire it observes rather than the flush that produced it. `LivePatch` is the union minus `destroyed`, and it is on the entry because the members that answer current state name it: `get` on a project handle or on any `PatchSource` answers `LivePatch | undefined`, since eviction drops a node's entry before its terminal patch is delivered, so that patch reaches a subscriber exactly once and is never readable back out. Subscribe when you want the terminal event; ask `get` when you want the current state.
 
 ## The DOM adapter
 
 ```ts
-import { createDomPatchAdapter } from "@motion5/core/adapters";
+import { createDomPatchAdapter } from "@motion5/dom/engine";
 
 const adapter = createDomPatchAdapter(document.querySelector("#stage")!, 1200, (nodeId) =>
   targets.get(nodeId),
@@ -54,7 +54,7 @@ const adapter = createDomPatchAdapter(document.querySelector("#stage")!, 1200, (
 const unsubscribe = handle.subscribeNode("hero/title", (patch) => adapter.apply(patch));
 ```
 
-The adapter ignores anything that is not `ready`, diffs against what it last wrote so an unchanged property is not touched, and removes a property that disappears from a later patch. `x`, `y`, `z`, `rotation`, `rotationX`, `rotationY`, and `scale` are composed into one `transform` string rather than fighting each other. Keys starting with `_`, plus `offset` and any plugin-declared internal keys, are treated as internal and never written.
+The adapter ignores anything that is not `ready`, diffs against what it last wrote so an unchanged property is not touched, and removes a property that disappears from a later patch. `x`, `y`, `z`, `rotation`, `rotationX`, `rotationY`, `scale`, `scaleX`, and `scaleY` are composed into one `transform` string rather than fighting each other. A motion move publishes `transformOrigin` as well, so a squash stays on its floor; on an SVG target the adapter's own pin wins, so there it pivots at the element's origin. Keys starting with `_`, plus `offset` and any plugin-declared internal keys, are treated as internal and never written.
 
 Everything else goes through one of three channels, decided by the target rather than by a list: a CSS property is a style write, a key that names no writable property on a target answering `setAttribute` is written as an attribute, so SVG geometry such as `x1` or `points` lands where it renders, and anything else is a property assignment. A key that is both a CSS property and an SVG geometry attribute, such as `cx` or `r`, is a style write, where a unitless number is invalid CSS: derive a position as `x`/`y` and let it compose instead.
 
@@ -77,9 +77,11 @@ function Title({ handle }: { handle: ProjectHandle }) {
 }
 ```
 
-`useDomPatch` binds one node to one DOM or SVG target and routes every patch through the same DOM adapter, metadata included: it takes a `PatchSource` that also answers `renderMetadata(nodeId)`, which a project handle does. It subscribes before reading the retained patch, writes later batches straight to the target without a React render, and clears adapter state when the target is replaced or unmounted. A renderable plugin output therefore reaches the target without a component learning its key. On an SVG target the adapter pins `transform-box: view-box` with `transform-origin: 0px 0px`, so a composed `rotation` or `scale` pivots at the element's own origin, exactly as the `transform` attribute did. Inside a transformed ancestor group the pivot is the viewport origin instead; see ADR-075.
+`useDomPatch` binds one node to one DOM or SVG target and routes every patch through the same DOM adapter: it takes a `PatchSource`, which a project handle is. It subscribes before reading the retained patch, writes later batches straight to the target without a React render, and clears adapter state when the target is replaced or unmounted. A renderable plugin output therefore reaches the target without a component learning its key. On an SVG target the adapter pins `transform-box: view-box` with `transform-origin: 0px 0px`, so a composed `rotation` or `scale` pivots at the element's own origin, exactly as the `transform` attribute did. Inside a transformed ancestor group the pivot is the viewport origin instead; see ADR-075.
 
 A non-ready patch is a no-op, so a blocked, errored, or destroyed node leaves its target at the last applied pose rather than disappearing. That is the binding's contract, and it is deliberately not `useLivePatch`'s rule: when absence has to be rendered, gate the component on `usePatch` instead.
+
+`Word` binds text one glyph per node, for a Motion whose tracks are its letters. `nodes` lists one node per glyph in reading order, usually `handle.motion(id).trackIds`, and a space takes none. Each glyph is an `inline-block` a transform can reach, the word carries an `aria-label`, and a count that does not match throws by name.
 
 `useDerivedDomPatch(source, nodeIds, derive)` is the same write path for a target whose values are a function of several nodes, or of one node's values rather than its pose:
 
@@ -116,7 +118,7 @@ const unsubscribe = handle.subscribeNode("hero/title", (patch) => {
     return;
   }
   if (patch.status !== "ready") return;
-  sprites.get(patch.nodeId)?.set(patch.values);
+  sprites.get(patch.nodeId)?.set(patch.outputs.values);
 });
 ```
 

@@ -1,17 +1,21 @@
 import { builtinRegistry } from "../../support/builtin-registry";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphNode } from "../../../src/graph/ir";
+import type { GraphNode } from "../../../src/graph/node";
 import { buildGraphIR } from "../../../src/graph/ir";
 import { orderGraph } from "../../../src/graph/order";
 
 const node = (id: string, authoredIndex: number, sources: readonly string[] = []): GraphNode => {
-  const edges = sources.map((sourceId) => ({ observerId: id, sourceId, role: "output" as const }));
+  const edges = sources.map((sourceId) => ({
+    observerId: id,
+    sourceId,
+    requirement: { plugin: "test", slot: "in" },
+  }));
   const built: GraphNode = {
     id,
     owner: id.startsWith("~/") ? "free" : "motion",
     authoredIndex,
-    track: { id: id.slice(id.indexOf("/") + 1) },
+    track: { id: id.slice(id.indexOf("/") + 1), output: { model: "TestRecord" } },
     edges: Object.freeze(edges),
   };
   return Object.freeze(built);
@@ -90,10 +94,16 @@ describe("canonical order and cycle detection", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "~/cursor" }] }],
+          tracks: [
+            {
+              id: "arm",
+              output: { plugin: "graph-edge" },
+              input: { requires: { chain: "~/cursor" } },
+            },
+          ],
         },
       ],
-      freeTracks: [{ id: "cursor" }],
+      freeTracks: [{ id: "cursor", output: { model: "TestTable" } }],
     };
     const result = buildGraphIR(project, builtinRegistry());
     expect(result.diagnostics).toEqual([]);
@@ -109,8 +119,8 @@ describe("canonical order and cycle detection", () => {
           id: "rig",
           trigger: { type: "manual" },
           tracks: [
-            { id: "a", observes: [{ source: "b" }] },
-            { id: "b", observes: [{ source: "a" }] },
+            { id: "a", output: { plugin: "graph-edge" }, input: { requires: { chain: "b" } } },
+            { id: "b", output: { plugin: "graph-edge" }, input: { requires: { chain: "a" } } },
           ],
         },
       ],

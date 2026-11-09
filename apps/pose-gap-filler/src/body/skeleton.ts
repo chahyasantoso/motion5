@@ -1,14 +1,7 @@
 import type { Axis, Vec3 } from "../synthetic/rotation";
 
-/**
- * The synthetic human's articulation: one tree of rigid segments, each rotating at its own origin
- * relative to its parent by its own degrees of freedom. The scene frame is right-handed with +y up;
- * the actor stands on y = 0 facing +z at rest, so its left is +x, the side a camera in front of it
- * (at +z, looking along -z) sees on the image's right, as MediaPipe's world axes have it.
- *
- * This is the truth the simulator measures from, owned here once; MediaPipe's 33 landmarks are
- * attached to it in `attachments.ts`, and nothing here knows MediaPipe.
- */
+/** One tree of rigid segments, each rotating at its own origin relative to its parent; +y up, actor
+ * at y = 0 facing +z at rest → left is +x, on the image's right for a camera in front. */
 export const SEGMENTS = [
   "pelvis",
   "torso",
@@ -29,14 +22,11 @@ export const SEGMENTS = [
 export type SegmentId = (typeof SEGMENTS)[number];
 
 export type Side = "left" | "right";
-/** +1 for the actor's left (+x at rest), -1 for its right: mirrors every lateral quantity. */
+/** +1 actor's left (+x at rest), -1 right; flips the sign of every lateral quantity. */
 export const SIDE_SIGN: Readonly<Record<Side, 1 | -1>> = Object.freeze({ left: 1, right: -1 });
 
-/**
- * Body proportions in metres. The defaults are the legacy synthetic subject's bones
- * (`replay/synthetic.ts`), so the twelve limb joints keep the lengths the gap filler was proven on,
- * plus the segments that subject did not have.
- */
+/** Body proportions in metres. Defaults are the synthetic subject's bones plus the segments it lacked,
+ * so the twelve limb lengths stay those the gap filler was proven on. */
 export interface Proportions {
   readonly hipToShoulder: number;
   readonly shoulderWidth: number;
@@ -50,7 +40,7 @@ export interface Proportions {
   readonly footForward: number;
   readonly heelBack: number;
   readonly neckToHeadCentre: number;
-  /** The head as a sphere about its centre: where the ears sit, and what hides a turned face. */
+  /** Head as a sphere at its centre: where the ears sit, what hides a turned face. */
   readonly headRadius: number;
 }
 
@@ -70,13 +60,13 @@ export const DEFAULT_PROPORTIONS: Proportions = Object.freeze({
   headRadius: 0.085,
 });
 
-/** Where a segment's origin sits in its parent's frame, from the proportions. */
+/** A segment's origin in its parent's frame, from the proportions. */
 export interface SegmentDefinition {
   readonly id: SegmentId;
   /** `undefined` only for the pelvis, whose frame is the root's. */
   readonly parent: SegmentId | undefined;
   readonly offset: (body: Proportions) => Vec3;
-  /** The segment's length along its own axis, 0 for segments that are not a bone. */
+  /** Length along its own axis; 0 for segments that are not a bone. */
   readonly length: (body: Proportions) => number;
 }
 
@@ -122,7 +112,7 @@ function limb(side: Side): readonly SegmentDefinition[] {
   ];
 }
 
-/** Parent before child, so forward kinematics is one pass in this order. */
+/** Parent before child → forward kinematics in one pass, in this order. */
 export const SEGMENT_TREE: readonly SegmentDefinition[] = Object.freeze([
   { id: "pelvis", parent: undefined, offset: () => [0, 0, 0], length: () => 0 },
   { id: "torso", parent: "pelvis", offset: () => [0, 0, 0], length: (b) => b.hipToShoulder },
@@ -136,12 +126,8 @@ export const SEGMENT_TREE: readonly SegmentDefinition[] = Object.freeze([
   ...limb("right"),
 ]);
 
-/**
- * One rotational degree of freedom: a right-handed rotation of `sign * angle` about its segment's
- * local `axis`. A segment's rotation is the product of its degrees of freedom in listed order, so
- * the last one listed acts first (twist about the bone, then abduction, then flexion). `min` and
- * `max` are the anatomical range in degrees the pose and the handles are held to.
- */
+/** Right-handed rotation by `sign * angle` about local `axis`; rotations compose in listed order,
+ * last listed acting first, and `min`/`max` bound the anatomical range in degrees. */
 export interface Dof {
   readonly id: string;
   readonly segment: SegmentId;
@@ -164,7 +150,7 @@ function sideDofs(side: Side): readonly Dof[] {
     label: string,
   ): Dof => ({ id: `${side}-${name}`, segment, axis, sign, min, max, label: `${side} ${label}` });
   return [
-    // Flexion raises a limb forward (+z); a bone hanging along -y reaches +z under -x rotation.
+    // Flexion swings a limb forward (+z); a bone along -y reaches +z under -x rotation.
     dof("shoulder-flex", `${side}-upper-arm`, "x", -1, -60, 180, "shoulder flexion"),
     dof("shoulder-abduct", `${side}-upper-arm`, "z", s, -30, 180, "shoulder abduction"),
     dof("shoulder-twist", `${side}-upper-arm`, "y", s, -90, 90, "shoulder twist"),
@@ -173,7 +159,7 @@ function sideDofs(side: Side): readonly Dof[] {
     dof("hip-flex", `${side}-thigh`, "x", -1, -30, 120, "hip flexion"),
     dof("hip-abduct", `${side}-thigh`, "z", s, -30, 60, "hip abduction"),
     dof("hip-twist", `${side}-thigh`, "y", s, -45, 45, "hip twist"),
-    // The knee bends the shin backward (-z), the other way from the elbow.
+    // Knee bends the shin backward (-z), opposite the elbow.
     dof("knee-flex", `${side}-shin`, "x", 1, 0, 150, "knee flexion"),
     dof("ankle-flex", `${side}-foot`, "x", -1, -45, 30, "ankle flexion"),
   ];
@@ -235,7 +221,7 @@ export const DOFS: readonly Dof[] = Object.freeze([
 
 export type DofId = string;
 
-/** The degrees of freedom of each segment, in the order their rotations compose. */
+/** Degrees of freedom per segment, in the order their rotations compose. */
 export const SEGMENT_DOFS: Readonly<Record<SegmentId, readonly Dof[]>> = (() => {
   const bySegment = {} as Record<SegmentId, readonly Dof[]>;
   for (const segment of SEGMENTS)

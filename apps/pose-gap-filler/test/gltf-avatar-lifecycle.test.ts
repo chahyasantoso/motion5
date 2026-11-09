@@ -45,14 +45,28 @@ describe("GLB presentation isolation and ownership", () => {
           [upper, lower, ids.root, ids.upper],
           [lower, endpoint, ids.upper, ids.lower],
         ] as const) {
-          const a = solver.readPatch!(poseNodeId(from)),
-            b = solver.readPatch!(poseNodeId(to));
-          if (a?.status !== "ready" || b?.status !== "ready")
+          const rootPatch = solver.readPatch!(poseNodeId(ids.root));
+          const posePatch = solver.readPatch!(poseNodeId(ids.pose));
+          if (rootPatch?.status !== "ready" || posePatch?.status !== "ready")
             throw new Error("Expected source frames");
+          const resolveCells = (targetId: string) => {
+            if (targetId === ids.root) {
+              const values = rootPatch.outputs.values;
+              if (values === null || typeof values !== "object" || Array.isArray(values))
+                throw new Error("Expected record values for root");
+              return values as Record<string, unknown>;
+            }
+            const values = posePatch.outputs.values;
+            if (!Array.isArray(values)) throw new Error("Expected a frame table");
+            const row = values.find((candidate) => candidate.id === targetId);
+            if (row === undefined || row.cells === null || typeof row.cells !== "object")
+              throw new Error("Expected a frame row");
+            return row.cells as Record<string, unknown>;
+          };
           const point = (values: Readonly<Record<string, unknown>>) =>
             new Vector3(Number(values.x), Number(values.y), Number(values.z));
-          const expected = point(b.values)
-            .sub(point(a.values))
+          const expected = point(resolveCells(to))
+            .sub(point(resolveCells(from)))
             .transformDirection(avatar.parent.matrixWorld);
           const actual = child
             .getWorldPosition(new Vector3())

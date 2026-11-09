@@ -15,6 +15,10 @@ The guide documents the surface the package declares in its `exports` map and no
 7. [Inverse kinematics in 3D](./inverse-kinematics-3d.md): 3D `fk3d` and `ik3d` conventions,
    constraints, and renderers.
 8. [API reference](./api-reference.md): every public export, grouped by the entrypoint that ships it.
+9. [Making motion as an agent](./agent-motion.md): code scenes of moves on a player, and the review loop.
+10. [Events](./agent-events.md), [physics](./agent-physics.md) and [rigs](./agent-rigs.md): the parts of the agent guide a brief may need.
+11. [Agent reference](./agent-reference.md): every function, type and command a scene uses, each with a short example.
+12. [Making motion with the engine](./agent-motion-engine.md): JSON projects, the catalog, and the engine's sample loop.
 
 ## What this guide is not
 

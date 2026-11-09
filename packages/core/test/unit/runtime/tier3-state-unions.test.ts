@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { unreachable } from "../../../src/lang/exhaustive";
-import { createLoopCycle } from "../../../src/adapters/trigger-factory/loop-cycle";
+import { createLoopCycle } from "@motion5/moves";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
 import { AUTHORED, type ValueState } from "../../../src/runtime/value-state";
 import type { TrackDefinition } from "../../../src/contract/v5";
@@ -105,7 +105,7 @@ function readDriver(state: Foreign<DriverState>): boolean {
   }
 }
 
-const TRACK: TrackDefinition = { id: "arm" };
+const TRACK: TrackDefinition = { id: "arm", output: { model: "TestRecord" } };
 const FREE: TrackEntry = { kind: "free", track: TRACK, token: 1, valueState: AUTHORED };
 const OWNED: TrackEntry = {
   kind: "owned",

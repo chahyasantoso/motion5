@@ -5,6 +5,7 @@ import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { NO_PORTS, completing, installed } from "../../../src/runtime/project-ports";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #443, phase A step 7: the seams are total, and the optionality stops at construction.
@@ -21,7 +22,7 @@ const RUNTIME_SOURCE = fileURLToPath(
 );
 
 /**
- * The fifteen fields the four ports replace, spelled as the class actually read them.
+ * The fourteen fields the four ports replace, spelled as the class actually read them.
  *
  * Every entry is a read rather than a bare name, and that is not decoration. `#stageTrack` is a
  * prefix of `#stageTracks`, which survives and always did: it copies the retained track map on a
@@ -34,7 +35,6 @@ const RETIRED = [
   "this.#compileTrack?.",
   "this.#disposeTrack?.",
   "this.#stageTrack?.",
-  "this.#resolveKeyframes?.",
   "this.#addMotionTrack?.",
   "this.#replaceMotionTrack?.",
   "this.#removeMotionTrack?.",
@@ -47,7 +47,7 @@ const RETIRED = [
 ];
 
 /**
- * The same fifteen as declarations, which the reads above cannot see once nothing reads them.
+ * The same fourteen as declarations, which the reads above cannot see once nothing reads them.
  *
  * A retired field whose every call site moved is invisible to a call-site check and is still a dead
  * declaration holding a hook alive, so the two questions are asked separately rather than one being
@@ -61,7 +61,6 @@ const RETIRED_DECLARATIONS = [
   "#compileTrack:",
   "#disposeTrack:",
   "#stageTrack:",
-  "#resolveKeyframes:",
   "#addMotionTrack:",
   "#replaceMotionTrack:",
   "#removeMotionTrack:",
@@ -74,7 +73,7 @@ const RETIRED_DECLARATIONS = [
 ];
 
 /**
- * The thirteen seams that resolve an option directly, each as the pair one line has to spell.
+ * The sixteen seams that resolve an option directly, each as the pair one line has to spell.
  *
  * A set of default reads was the first correction, and it is not the whole one. It refuses a
  * missing, duplicated or extra default, which is the defect a count could not see, and it still
@@ -91,15 +90,19 @@ const SEAMS: readonly (readonly [option: string, absent: string])[] = [
   ["compileTrack", "NO_PORTS.track.compile"],
   ["disposeTrack", "NO_PORTS.track.dispose"],
   ["stageTrack", "NO_PORTS.track.stage"],
+  ["prepareReaders", "NO_PORTS.track.prepareReaders"],
+  ["invalidateOutputs", "NO_PORTS.track.invalidateOutputs"],
   ["createMotion", "NO_PORTS.motion.create"],
   ["destroyMotion", "NO_PORTS.motion.destroy"],
   ["addMotionTrack", "NO_PORTS.motion.addTrack"],
   ["replaceMotionTrack", "NO_PORTS.motion.replaceTrack"],
   ["removeMotionTrack", "NO_PORTS.motion.removeTrack"],
   ["signalMotion", "NO_PORTS.motion.signal"],
-  ["writeValues", "NO_PORTS.value.write"],
+  ["overlayValues", "NO_PORTS.value.overlay"],
+  ["overlayParam", "NO_PORTS.value.overlayParam"],
+  ["rewriteValues", "NO_PORTS.value.rewrite"],
+  ["rewriteParamValues", "NO_PORTS.value.rewriteParam"],
   ["setProgress", "NO_PORTS.value.seek"],
-  ["resolveKeyframes", "NO_PORTS.host.resolveKeyframes"],
   ["disposeComposition", "NO_PORTS.host.disposeComposition"],
 ];
 
@@ -136,11 +139,17 @@ const NOT_CALLABLE = 1 as unknown as () => void;
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -168,8 +177,8 @@ describe("the project ports", () => {
   it("states every uninstalled seam once, as a call that answers nothing", () => {
     const ports = leaves();
 
-    // Fifteen, which is the count the constructor resolves and the count the class used to declare.
-    expect(ports).toHaveLength(15);
+    // Nineteen, which is the count the constructor resolves.
+    expect(ports).toHaveLength(19);
     expect(ports.every((port) => typeof port === "function")).toBe(true);
     expect(ports.every((port) => (port as () => unknown)() === undefined)).toBe(true);
   });
@@ -238,7 +247,7 @@ describe("the project ports", () => {
 
     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]);
     expect(RETIRED_DECLARATIONS.filter((name) => source.includes(name))).toEqual([]);
-    // And holds the one field that replaced all fifteen, so none of them merely moved.
+    // And holds the one field that replaced all fourteen, so none of them merely moved.
     expect(source).toContain("readonly #ports: ProjectPorts;");
   });
 
@@ -253,13 +262,14 @@ describe("the project ports", () => {
     // set that still holds. Sorted, because the order the constructor resolves them in is its own.
     expect([...wired].sort()).toEqual([...declared].sort());
     expect(new Set(wired).size).toBe(wired.length);
-    // Thirteen resolved defaults and two normalized completions are the fifteen seams, once each.
+    // Seventeen resolved defaults and two normalized completions are the nineteen seams, once each.
     expect(callSites(source, "completing")).toHaveLength(2);
   });
 
   it("calls a host's own seam on the runtime, through a real project", () => {
     const receivers: unknown[] = [];
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       disposeComposition: recordingReceiver(receivers),
@@ -279,6 +289,7 @@ describe("the project ports", () => {
       setMotionStagger: [] as unknown[],
     };
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       compileTrack: recordingReceiver(seams.compileTrack),
@@ -292,7 +303,7 @@ describe("the project ports", () => {
     // the case above. Coverage one seam wide was the finding: a constructor edit that bypassed
     // `installed` for a different seam left every receiver case green, and the pairing above cannot
     // see a receiver at all, so the two halves are asked of four owners rather than of one.
-    project.addTrack({ id: "tail" }, { motionId: "hero" });
+    project.addTrack({ id: "tail", output: { model: "TestRecord" } }, { motionId: "hero" });
     project.seek("hero/arm", 0.5);
     project.motion("hero").setStagger(40);
 
@@ -309,6 +320,7 @@ describe("the project ports", () => {
 
   it("still fails a stagger edit whose host answered a completion it cannot call", () => {
     const project = new ProjectRuntime(PROJECT, {
+      capabilities: testCatalog(),
       clock: createManualClock(),
       compose,
       setMotionStagger: () => NOT_CALLABLE,

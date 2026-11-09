@@ -3,6 +3,7 @@ import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock, type Clock, type ClockTick } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
+import { testGraphBuilder } from "../../support/builtin-registry";
 
 /**
  * Issue #408, found by the quality pass over #405.
@@ -25,13 +26,21 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
-    { id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] },
-    { id: "caption", trigger: { type: "manual" }, tracks: [{ id: "label" }] },
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+    {
+      id: "caption",
+      trigger: { type: "manual" },
+      tracks: [{ id: "label", output: { model: "TestRecord" } }],
+    },
   ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -60,6 +69,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {
@@ -108,6 +118,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {
@@ -150,6 +161,7 @@ describe("disposal runs once, however host code re-enters it", () => {
       countingClock(base, () => (releases += 1)),
       compose,
       {
+        graphBuilder: testGraphBuilder(),
         scheduler: {
           schedule(): Cancel {
             return {

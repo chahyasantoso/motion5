@@ -8,40 +8,40 @@
 
 ## Context
 
-Writing the user guide surfaced a gap between what the repository imports and what the package declares. `packages/core/package.json` declared three entries: `.`, `./internal`, and `./adapters`. Meanwhile `apps/react-demo` imports `@motion5/core/adapters/browser-clock`, `@motion5/core/plugins/fk`, `@motion5/core/plugins/transform`, and `@motion5/core/ports/fakes`.
+User guide surfaced gap: repository imports ≠ package declaration. `packages/core/package.json` declared three entries: `.`, `./internal`, `./adapters`. `apps/react-demo` imports `@motion5/core/adapters/browser-clock`, `@motion5/core/plugins/fk`, `@motion5/core/plugins/transform`, `@motion5/core/ports/fakes`.
 
-Those imports resolve today only because both Vite configs alias `@motion5/core` to `packages/core/src`, which bypasses the `exports` map entirely. A published install would fail on all four with `ERR_PACKAGE_PATH_NOT_EXPORTED`, and the demo is supposed to consume the package the way a user does.
+Both Vite configs alias `@motion5/core` → `packages/core/src`, bypassing `exports`; published install fails all four with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Demo should consume package as user does.
 
-That left the documentation with no honest option. Documenting the paths as public would describe a resolution that only a workspace checkout provides. Documenting only the three declared entries would leave plugins unreachable, and a runtime whose plugins are unreachable cannot animate anything: every authored keyframe key must be claimed by a registered plugin, so `transformPlugin` is not a convenience, it is a requirement for an `x` track.
+Docs left no honest option: public paths describe workspace-only resolution; three declared entries leave plugins unreachable; unreachable plugins animate nothing -- every authored keyframe key needs registered plugin → `transformPlugin` required for `x` track, not convenience.
 
 ## Decision
 
-The `exports` map is the public surface, and it now declares every path the repository actually consumes. Four entries are added, each named explicitly rather than through a wildcard, so adding a file never silently adds public API:
+`exports` map is public surface, declares every consumed path. Four explicit entries, no wildcard → new file never silently public:
 
-- `./adapters/browser-clock`, already reachable through the `./adapters` barrel and now also by the direct path the demo uses;
-- `./plugins/transform` and `./plugins/fk`, because plugin registration is required for any authored track;
-- `./ports/fakes`, as supported test support for consumers and examples, not for production rendering.
+- `./adapters/browser-clock`, via `./adapters` barrel, now also direct demo path;
+- `./plugins/transform` and `./plugins/fk`, plugin registration required for any authored track;
+- `./ports/fakes`, supported test support for consumers and examples, not production rendering.
 
-Nothing is added to `packages/core/src/index.ts`, so the boundary scanner's allow-list is unchanged and the graph and runtime layers stay unreachable from the entry declaration closure.
+Nothing added to `packages/core/src/index.ts` → scanner allow-list unchanged; graph and runtime layers unreachable from entry declaration closure.
 
 ## Alternatives rejected
 
-**A wildcard such as `./adapters/*`.** One line covers every current import, and every future file in that directory becomes public without anyone deciding it should be. The allow-list in `scripts/boundary-scan.mjs` exists because this project prefers enumeration to convenience.
+**A wildcard such as `./adapters/*`.** One line covers every current import; every future directory file becomes public undecided. `scripts/boundary-scan.mjs` allow-list exists: enumeration over convenience.
 
-**Re-exporting plugins and fakes from `.`.** It needs no new entry, but it puts test doubles in the main entrypoint and grows the one allow-list that governs the primary surface.
+**Re-exporting plugins and fakes from `.`.** No new entry, but test doubles in main entrypoint; grows allow-list governing primary surface.
 
-**Changing the demo's imports instead.** `createBrowserClock` would move cleanly to the `./adapters` barrel, but the plugins and the fakes have no declared home to move to, so this fixes one of four imports and leaves the documentation with the same problem.
+**Changing the demo's imports instead.** `createBrowserClock` moves cleanly to `./adapters` barrel; plugins and fakes have no declared home. Fixes one of four imports; docs problem remains.
 
-**Documenting the source paths as public.** Rejected because it is false for any consumer who installs the package.
+**Documenting source paths as public.** False for any consumer installing package.
 
 ## Consequences
 
-The guide can name every import it shows, and the demo's imports are honest rather than accidentally working. The four new paths resolve to `./dist/...`, so they require the declaration build that `tsconfig.build.json` already emits for the whole `src` tree.
+Guide names every import it shows; demo imports honest, not accidental. Four new paths resolve to `./dist/...` → need declaration build `tsconfig.build.json` already emits for `src` tree.
 
-This is a public surface widening and it is deliberately small. Removing one of these entries later is a breaking change to whoever adopted it, which is exactly why they are enumerated and why `./ports/fakes` is documented as test support rather than as runtime API.
+Public surface widening, deliberately small. Removing one entry later breaks adopters -- why enumerated, why `./ports/fakes` documented as test support, not runtime API.
 
-Three gaps found alongside this one are recorded in the guide rather than fixed here, because each needs its own decision: no `Scheduler` implementation ships, the `Clock` and `Scheduler` port types are not exported even though their assertions are, and neither package is published.
+Three gaps found alongside, recorded in guide, not fixed here, each needs own decision: no `Scheduler` implementation ships; `Clock` and `Scheduler` port types unexported though their assertions are; neither package published.
 
 ## Evidence
 
-No behavior changes, so no behavioral test changes. `packages/core/test/unit/scripts/public-declaration-surface.test.ts` scans the declaration closure of `src/index.ts`, which this record does not touch, and `packages/core/test/unit/scripts/governance-gates.test.ts` asserts the `.` entry still points at `./dist/index.d.ts` and `./dist/index.js`. Both stay green without being edited, which is the point: the primary surface is unchanged and only additional paths are declared.
+No behavior changes → no behavioral test changes. `packages/core/test/unit/scripts/public-declaration-surface.test.ts` scans declaration closure of `src/index.ts`, untouched here; `packages/core/test/unit/scripts/governance-gates.test.ts` asserts `.` entry still points at `./dist/index.d.ts` and `./dist/index.js`. Both green unedited: primary surface unchanged; only additional paths declared.

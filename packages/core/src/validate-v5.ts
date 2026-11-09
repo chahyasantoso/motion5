@@ -1,29 +1,16 @@
-// Docs: ./validate-v5.md
-/**
- * Compose the public authored-project validation contract.
- *
- * The contract validator owns schema shape. Graph IR owns reference and topology validation. This
- * outer composition module is the one use-case path that combines them for callers of `validateV5`.
- * Keeping the composition here preserves the dependency direction: contract never imports graph.
- */
+/** The public validation path: contract shape then graph topology, from one capability source. */
 import type { Diagnostic, ProjectDefinition } from "./contract/v5";
 import { validateSchemaV5 } from "./contract/validate-v5";
 import { acceptedOutcome, refusedOutcomeFrom, type Outcome } from "./lang/outcome";
 import { unreachable } from "./lang/exhaustive";
 import { buildGraphIR } from "./graph/ir";
-import { UNJUDGED_CAPABILITIES, type PluginCapabilities } from "./ports/plugin-capabilities";
+import { parseContextOf, type PluginCapabilities } from "./ports/plugin-capabilities";
 
 export type ValidationResult = Outcome<ProjectDefinition, Diagnostic>;
 
-/**
- * Validate a complete authored project, preserving schema and graph diagnostics in their original
- * order and values. Without capabilities, declaration-dependent rules are unjudged (ADR-136).
- */
-export function validateV5(
-  input: unknown,
-  capabilities: PluginCapabilities = UNJUDGED_CAPABILITIES,
-): ValidationResult {
-  const schema = validateSchemaV5(input);
+/** Validates a project with the caller's catalog; schema and graph diagnostics keep their order. */
+export function validateV5(input: unknown, capabilities: PluginCapabilities): ValidationResult {
+  const schema = validateSchemaV5(input, parseContextOf(capabilities));
   switch (schema.kind) {
     case "refused":
       return schema;

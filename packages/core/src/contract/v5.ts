@@ -1,3 +1,5 @@
+import type { Clock as TrackClock } from "@motion5/moves";
+import { unreachable } from "../lang/exhaustive";
 import type { RuleId } from "./rule-id";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
@@ -13,18 +15,12 @@ export interface ManualTriggerDefinition {
 export interface TimeTriggerDefinition {
   readonly type: "time";
   readonly duration: number;
+  /** Clock units before the first pass; progress holds at 0 and the delay never repeats. */
+  readonly delay?: number;
   readonly autoplay?: true;
-  /**
-   * Passes after the initial one, so a finite loop runs `repeat + 1` cycles and the initial pass is
-   * never one of the repeats. `-1` is infinite; any other negative value or non-integer is
-   * rejected. See ADR-040.
-   */
+  /** Extra passes after first; integer, `-1` forever, `0`+ counts. */
   readonly repeat?: number;
-  /**
-   * Reverse every odd cycle. Requires a `repeat` that actually repeats, because a yoyo with
-   * nothing to reverse would be a field accepted and then ignored. Ping-pong is this with
-   * `repeat: -1` rather than a third field.
-   */
+  /** Reverse odd cycles; needs repeating `repeat`. */
   readonly yoyo?: boolean;
 }
 export interface ScrollTriggerDefinition {
@@ -41,163 +37,83 @@ export interface TriggerSignal {
   readonly progress?: number;
 }
 
-/**
- * One refusal, named by the rule it refuses under.
- *
- * `ruleId` is `RuleId` and not `string`, so this set is closed on both sides: nothing can mint a
- * rule the enumeration does not carry, and a reader can switch on one. Adding a rule breaks the
- * build in `contract/rule-id.ts`, at the one place the rule is named, rather than being inherited
- * silently by every consumer that pattern-matches a string. That is the acceptance criterion issue
- * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
- * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
- *
- * It is one interface rather than a union. The three variants were paid for with a public surface
- * and bought nothing on the read side: `runtime/patch-registry.ts` compares rule ids for identity and
- * `runtime/refusal.ts` renders them generically, so no production reader pattern-matches one.
- * Enforcement was never on the read side either; it is at the call site, as the argument list the
- * rule owns, which `contract/rule.ts` now derives from one record. With no union left to narrow there
- * is nothing for an assertion to narrow into. See ADR-097.
- *
- * `ids` is required, always present, always frozen, and empty for a rule that names none. It was
- * optional while three raw producers omitted the member, and those three are converted in the same
- * slice that requires it: `runtime/project-runtime.ts`'s `#teardown`, the private path-first producer
- * in `contract/migrate-v4-to-v5.ts`, and `runtime/report.ts`'s `frozenDiagnostic` all forward to the
- * one constructor now rather than hand-building an object that chooses between a payload and no
- * member at all. So a reader spelling `ids` and a reader spelling `ids ?? []` are one reader rather
- * than two, and `runtime/patch-registry.ts` comparing two payloads no longer has an absent member and
- * an empty one to tell apart for the same rule.
- *
- * Whether a rule may name ids is still not this field's claim, and requiring the member does not make
- * it one. `ids: []` is what a rule that owns none carries; what refuses a payload a rule does not own
- * is `OwnedIds` at the call site, derived from the one record in `contract/rule.ts`. This closes the
- * shape, and the ownership stays enforced one layer up, where the rule is named. See ADR-097.
- */
+/** Refusal tagged with its rule. */
 export interface Diagnostic extends DiagnosticShape {
   readonly ruleId: RuleId;
   readonly ids: readonly string[];
 }
 
-/**
- * One diagnostic pinned to one rule.
- *
- * Naming a rule at a declaration, rather than discriminating one at a read. It was the one thing the
- * three variants were still read for, and it now replaces all three: they are deleted, and
- * `MigrationDiagnostic` below is one derived alias in place of what used to be a variant plus a
- * narrowing interface.
- *
- * It is also what the one constructor in `./diagnostics` returns, which is what retired the widening
- * that used to sit beside it. A producer handed a literal rule id is answered with a diagnostic
- * pinned to that rule, so the v4 reader derives `MigrationDiagnostic` from the call rather than
- * asserting it afterwards, and no expression in this tree casts an object into this shape any more.
- */
+/** `Diagnostic` narrowed to one rule. */
 export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
   readonly ruleId: Rule;
 }
 
-/** What every diagnostic carries, whichever rule it names. */
 interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
   readonly severity: DiagnosticSeverity;
 }
 
-/**
- * `"ready"`, `"blocked"`, and `"error"` all describe a node that still exists and may publish
- * again. `"destroyed"` is terminal: the node has been evicted from the graph and will never
- * publish again.
- *
- * The terminal status exists because destruction previously had no representation on the
- * observation wire at all. Eviction dropped the retained patch silently, so the last `"ready"`
- * patch a subscriber had received stayed authoritative forever and consumers kept rendering a
- * node the graph had already destroyed.
- *
- * Read off the union rather than spelled beside it, so the four statuses have one owner: a variant
- * added to `Patch` widens this, and a status named here that no variant declares stops being
- * expressible. It was two lists for one question while the payload was flat and the status was one
- * member among seven; it is one list now that the status is the discriminant. See ADR-098.
- */
+/** `Patch` status; `"destroyed"` terminal. */
 export type PatchStatus = Patch["status"];
 
-/** What every patch carries, whichever status it names: which node published it, and when. */
+/** Publishing node and revision. */
 interface PatchIdentity {
   readonly nodeId: string;
   readonly revision: number;
 }
 
-/**
- * A node that composed, and the one variant that owns a pose.
- *
- * The three payload members are measurements of one successful composition: the values it produced,
- * the progress it was evaluated at, and the revision of every source it read. A status that did not
- * compose owns none of them, which is what the three variants below say by declaring none. See
- * ADR-098.
- */
+/** Cell or record field value; non-finite refused. */
+export type Scalar = number | string | boolean;
+
+/** Evaluated table row; `cells.id` is application data. */
+export interface Row {
+  readonly id: string;
+  readonly cells: Readonly<Record<string, Scalar>>;
+}
+
+/** Evaluated rows in authored order unless a plugin reorders. */
+export type Table = readonly Row[];
+
+/** Evaluated flat record. */
+export type FlatRecord = Readonly<Record<string, Scalar>>;
+
+/** Table as array, record as plain object. */
+export type Value = Table | FlatRecord;
+
+/** Named node outputs; main is `values`. */
+export type Outputs = Readonly<Record<string, Value>>;
+
+/** Composed node; only variant with a pose. */
 export interface ReadyPatch extends PatchIdentity {
   readonly status: "ready";
-  readonly values: Readonly<Record<string, unknown>>;
+  readonly outputs: Outputs;
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
   readonly diagnostics: readonly Diagnostic[];
 }
 
-/**
- * A node an upstream state stopped, carrying the refusal and no pose.
- *
- * It declared all three payload members until ADR-098, and `PatchRegistry.publish` filled them by
- * carrying the previous patch's forward, so a blocked patch said `blocked` while holding values no
- * blocked evaluation produced, and a subscriber reading `values` on one was reading an earlier
- * publication's answer. The pose is not lost: it is the registry's retained `ready` patch, answered
- * by `lastReady(nodeId)`, which is what slice 1 of issue #450 landed.
- */
+/** Stopped by upstream state; refusal, no pose. */
 export interface BlockedPatch extends PatchIdentity {
   readonly status: "blocked";
   readonly diagnostics: readonly Diagnostic[];
 }
 
-/**
- * A node whose own composition threw, carrying the failure and no pose.
- *
- * Written rather than inherited from `BlockedPatch`. The two are the same shape today and they are
- * two answers: a reader narrowing on `status` names the one it means, and a member either of them
- * later earns lands on the variant that earned it rather than on both.
- */
+/** Own composition threw; failure, no pose. */
 export interface ErrorPatch extends PatchIdentity {
   readonly status: "error";
   readonly diagnostics: readonly Diagnostic[];
 }
 
-/**
- * A node evicted from the graph, which will never publish again.
- *
- * Identity and status and nothing else, including no diagnostics: a node that cannot publish again
- * has nothing to refuse under, and `#notifyTerminal` built all four of those members empty, which is
- * a payload a reader spends a narrowing on to find `{}`, `0`, `{}` and `[]`.
- */
+/** Evicted from graph; never publishes again. */
 export interface DestroyedPatch extends PatchIdentity {
   readonly status: "destroyed";
 }
 
-/**
- * One patch on the observation wire, discriminated by the status that decides what it carries.
- *
- * The flat interface this replaces declared every payload member as required at every status, so the
- * type could not say that only a composition produces a pose, and every consumer either narrowed by
- * hand or read a member its status does not own. Issue #450 calls this a type refinement with every
- * existing test staying green; it is not. Deleting the three members from the non-ready variants
- * deletes the carry-forward in `PatchRegistry.publish` that filled them, and that behaviour moved to
- * `PatchRegistry.lastReady` rather than being dropped. See ADR-098.
- */
+/** Observation-wire patch, discriminated by status. */
 export type Patch = ReadyPatch | BlockedPatch | ErrorPatch | DestroyedPatch;
 
-/**
- * A patch a node that still exists published: every variant but the terminal one.
- *
- * What the registry's maps and its open batch actually hold. `evict` deletes a node's entry before
- * it delivers the terminal patch, so nothing `PatchRegistry.get` can answer is `destroyed`, and
- * `registry-phase.ts`'s `retain` is reached only from `publish`, which cannot mint one. Declared
- * once rather than re-narrowed at each of those readers, because it is one fact about who produces a
- * destroyed patch.
- */
+/** From a node that still exists: all variants but the terminal one. */
 export type LivePatch = ReadyPatch | BlockedPatch | ErrorPatch;
 export interface PatchBatch {
   readonly tick: number;
@@ -211,155 +127,211 @@ export interface AuthoredStop {
   readonly v: unknown;
   readonly ease?: unknown;
 }
-/**
- * A leaf that never changes: `length: 62`, not two identical stops pretending to be an animation.
- *
- * Closed to a finite number, string, or boolean, and that is forced rather than chosen. If an
- * object were a legal static value then `{ stops: [...] }` would be one too, and the refusal that
- * retires it would have nothing to fire on. `null` and `undefined` are excluded because omitting
- * the key already spells absence, and a non-finite number is excluded for the same reason
- * `AuthoredStop.p` requires one.
- *
- * Not re-exported from the package entry. A consumer that needs to name a leaf names
- * `AuthoredProperty`, so this adds no entry to the export map or to the boundary allow-list.
- * See ADR-050.
- */
+/** Non-animating authored leaf: finite scalar. */
 export type AuthoredStaticValue = number | string | boolean;
-/**
- * One authored leaf: the stops themselves, or a static value.
- *
- * The `{ stops: [...] }` wrapper is retired rather than kept as an accepted alias, on the precedent
- * ADR-049 set: two accepted shapes are two validation paths and two documentation paths. It is
- * refused by name as `property-stops-wrapper`.
- *
- * A static value is not sugar for a two-stop hold. It never enters the interpolator, so it produces
- * no percent-map entry, no compiled property and no tween, which is the reason the syntax change is
- * worth making at all. It also has no slot for an `ease`, so "a static value with a meaningless
- * ease" is unrepresentable by shape rather than something a validator has to catch. See ADR-050.
- */
+/** Scalar `v` at position `p`, optional ease. */
+export interface Stop {
+  readonly p: number;
+  readonly v: Scalar;
+  readonly ease?: string;
+}
+/** Scalar or stop sequence; bare array is stops. */
+export type AuthoredCell = Scalar | readonly Stop[];
+/** Table row; `cells` holds columns. */
+export interface AuthoredRow {
+  readonly id: string;
+  readonly cells: Readonly<Record<string, AuthoredCell>>;
+}
+/** Flat record of authored cells. */
+export type AuthoredRecord = Readonly<Record<string, AuthoredCell>>;
+/** Top-level shape picks table or record. */
+export type AuthoredValues = readonly AuthoredRow[] | AuthoredRecord;
+/** One relative complaint a model validation reports. */
+export interface TypeIssue {
+  readonly path: readonly string[];
+  readonly message: string;
+}
+/** A problem reported when parsing or validating a model. */
+export interface Issue {
+  readonly path: string;
+  readonly message: string;
+}
+/** Domain parse either yields a plain structure or refuses it. */
+export type Parsed<Structure> =
+  | { readonly ok: true; readonly value: Structure }
+  | { readonly ok: false; readonly issues: readonly Issue[] };
+/** A refusal that names at least one diagnostic; a hook that refuses owes a reason. */
+export type NonEmptyDiagnostics = readonly [Diagnostic, ...Diagnostic[]];
+/** Result of preparing plugin static state. */
+export type Prepared<State = unknown> =
+  | { readonly ok: true; readonly value: State }
+  | { readonly ok: false; readonly diagnostics: NonEmptyDiagnostics };
+/** Successful parse or prepare result; the shared success arm of both unions. */
+export function ok<Structure>(value: Structure): { readonly ok: true; readonly value: Structure } {
+  return { ok: true, value };
+}
+/** Refused parse result with issues. */
+export function refused(issues: readonly Issue[]): Parsed<never> {
+  return { ok: false, issues };
+}
+/** Refused prepare with the diagnostics that explain it. */
+export function prepareRefused(diagnostics: NonEmptyDiagnostics): Prepared<never> {
+  return { ok: false, diagnostics };
+}
+/** A table value's cell shape, derived from a model's cell type. */
+export type TableOf<Cells> = readonly { readonly id: string; readonly cells: Cells }[];
+declare const CELLS: unique symbol;
+/** Nominal model contract specifying value shape and optional structure parse. */
+export interface Model<Cells = unknown, Structure = undefined> {
+  readonly id: string;
+  readonly spec: ValueSpec;
+  readonly parse?: (value: Value) => Parsed<Structure>;
+  readonly [CELLS]?: Cells;
+}
+/** Defines an immutable model contract. */
+export function defineModel<Cells = unknown, Structure = undefined>(decl: {
+  readonly id: string;
+  readonly spec: ValueSpec;
+  readonly parse?: (value: Value) => Parsed<Structure>;
+}): Model<Cells, Structure> {
+  return Object.freeze({ ...decl });
+}
+declare const STRUCTURE: unique symbol;
+/** Frozen, core-branded structure a model produced at commit. */
+export type Structure<S> = S & { readonly [STRUCTURE]: true };
+/** `row` present = table cell, absent = record field. */
+export interface CellAddress {
+  readonly row?: string;
+  readonly field: string;
+}
+/** Source id, or per-member id for a map slot. */
+export type SourceBinding = string | Readonly<Record<string, string>>;
+/** How a slot receives a bound node's outputs. */
+export type BindingMode = "single" | "map";
+/** Declared contract for one scalar field. */
+export interface FieldSpec {
+  readonly kind: "number" | "string" | "boolean";
+  readonly optional?: true;
+  readonly enum?: readonly string[];
+  readonly min?: number;
+  readonly max?: number;
+  /** Local input only: no stop sequence, even one stop. */
+  readonly static?: true;
+  /** One line on what the field means, shown to authors; validation ignores it. */
+  readonly description?: string;
+}
+/** Row half of table spec; columns describe `row.cells`, not envelope. */
+export interface TableSchema {
+  readonly row: {
+    readonly fields: Readonly<Record<string, FieldSpec>>;
+    readonly additionalProperties?: boolean;
+  };
+  readonly minRows?: number;
+  readonly maxRows?: number;
+}
+/** One vocabulary for local input, slot and plugin outputs. */
+export type ValueSpec =
+  | { readonly kind: "table"; readonly schema: TableSchema; readonly optional?: boolean }
+  | {
+      readonly kind: "record";
+      readonly fields: Readonly<Record<string, FieldSpec>>;
+      readonly additionalProperties?: boolean;
+      readonly optional?: boolean;
+    };
+/** Slot reads from bound node; output shapes. */
+export interface DependencySpec {
+  readonly outputs: Readonly<Record<string, ValueSpec>>;
+  readonly optional?: boolean;
+  readonly binding?: BindingMode;
+}
+/** A slot that admits one named model. */
+export interface ModelSlotSpec {
+  readonly kind: "model";
+  readonly model: Model<unknown, unknown>;
+  readonly optional?: true;
+  readonly binding?: BindingMode;
+}
+/** Wrapper declaring an optional dependency on a model. */
+export interface OptionalModel<M extends Model<unknown, unknown> = Model<unknown, unknown>> {
+  readonly optional: true;
+  readonly model: M;
+  readonly binding?: BindingMode;
+}
+/** Declares an optional model slot requirement. */
+export function optional<M extends Model<unknown, unknown>>(
+  model: M,
+  options?: { readonly binding?: BindingMode },
+): OptionalModel<M> {
+  return Object.freeze({
+    optional: true,
+    model,
+    ...(options?.binding !== undefined ? { binding: options.binding } : {}),
+  });
+}
+/** Model predicate recognizing nominal models. */
+export function isModel(value: unknown): value is Model<unknown, unknown> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  return (
+    "id" in value && typeof value.id === "string" && "spec" in value && !("transform" in value)
+  );
+}
+/** Predicate recognizing optional model declarations. */
+export function isOptionalModel(value: unknown): value is OptionalModel<Model<unknown, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  return "optional" in value && value.optional === true && "model" in value && isModel(value.model);
+}
+/** A slot that admits named output shapes. */
+export type ShapeSlotSpec = { readonly kind: "shape" } & DependencySpec;
+/** How a plugin slot receives its bound source. */
+export type SlotSpec = ModelSlotSpec | ShapeSlotSpec;
+/** A requirement declared on a plugin slot. */
+export type PluginRequirement =
+  | SlotSpec
+  | Model<unknown, unknown>
+  | OptionalModel<Model<unknown, unknown>>;
+/** Structures delivered to a plugin's cross-source check. */
+export type SourceStructure = Structure<unknown> | Readonly<Record<string, Structure<unknown>>>;
+export type SourceStructures = Readonly<Record<string, SourceStructure>>;
+/** What a track's output is: a source model or a computed plugin. Exactly one key. */
+export type OutputDefinition = { readonly model: string } | { readonly plugin: string };
+/** An authored output read once into a tagged form; `switch` on `kind`. */
+export type OutputRef =
+  | { readonly kind: "model"; readonly id: string }
+  | { readonly kind: "plugin"; readonly id: string };
+/** The single owner of telling a model output from a plugin output. */
+export function outputRef(output: OutputDefinition): OutputRef {
+  return "model" in output
+    ? { kind: "model", id: output.model }
+    : { kind: "plugin", id: output.plugin };
+}
+/** The plugin id an output names, for a reader with no work on a model output. */
+export function outputPluginId(output: OutputDefinition): string | undefined {
+  const ref = outputRef(output);
+  switch (ref.kind) {
+    case "plugin":
+      return ref.id;
+    case "model":
+      return undefined;
+    default:
+      return unreachable(ref);
+  }
+}
+/** One authored input channel a value edit can address. */
+export type ValueChannel = "values" | "param";
+/** What a track authors: values, params, slots. */
+export interface TrackInput {
+  readonly values?: AuthoredValues;
+  readonly param?: AuthoredValues;
+  readonly requires?: Readonly<Record<string, SourceBinding>>;
+}
+/** Stops or a static value. */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
-/**
- * The authored value of a dict-valued requirement slot: one source id per key the author names.
- *
- * A solver's goals are the case that forced it. A solver reaches for one goal per chain leaf, keyed
- * by that leaf's own member id rather than by position, because an index can never be wrong: it
- * silently means whatever the rig currently makes it mean, so inserting a bone or reordering two
- * tracks would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked.
- * That is the argument that retired `reach` in favour of a named `root`, and object keys being unique
- * makes two entries for one key unrepresentable rather than merely diagnosed. See issue #195.
- *
- * Named for the shape rather than for goals, because the shape is not the goals section's own any
- * more. Any plugin may declare a slot that accepts one, through `PluginRequirement.dict`, and the
- * parser detects one by shape under any name. Keeping `AuthoredPluginGoals` would have made the one
- * plugin that reached the capability first the name of the capability. See ADR-057.
- *
- * One authored section, but one binding per entry. `readPluginBindings` expands each into its own
- * binding carrying the authored key as `memberKey`, because an entry deriving no edge would be
- * invisible to ordering and to pending classification, and because the publisher has to deliver each
- * entry separately.
- *
- * Not re-exported from the package entry, so this adds no entry to the export map or to the
- * boundary allow-list. Same finding ADR-049 recorded for `AuthoredPluginRequires`.
- */
-export type AuthoredRequirementDict = Readonly<Record<string, string>>;
-/**
- * The optional bindings section of a plugin-named group: one graph source id per requirement slot
- * the named plugin declares, or a dict of source ids for a slot that declares it accepts one.
- *
- * The slot name is the destination, so there is no author-facing projection map and no naming
- * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
- * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
- * See ADR-044.
- *
- * The index signature stays open across both value shapes rather than pinning the dict to particular
- * slot names, on the precedent `MotionDefinition.trigger` sets below: the type is deliberately
- * structurally permissive and validation is the exact owner. A dict derives one binding per key at
- * whatever slot it was authored under, and whether that slot was allowed to carry one is
- * `PluginRequirement.dict`, read by `PluginRegistry` and refused by name as
- * `plugin-requirement-dict-unsupported`. So the looseness costs no silence: nothing is accepted and
- * then ignored, which is what rule 6 of ADR-033 forbids. Pinning it in the type instead would need a
- * per-plugin slot map inside the contract layer, which is the registry this layer must not hold.
- * See issue #195 and ADR-057.
- */
-export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredRequirementDict>>;
-/**
- * A plugin-named group: the properties that plugin claims, under `values`, plus its optional
- * `requires` section.
- *
- * Two named members, not an open record of a union. Both section names are reserved in
- * `contract/keyframe-shape`, so the contract layer can tell a section from a property without a
- * plugin registry, and the type can say what a group is instead of what it might contain. An entry
- * that names neither section is not a group, and since ADR-121 it is not a property either: it is
- * refused as `keyframes-ungrouped-key`. Anything else inside one is `keyframes-unknown-section`.
- * See ADR-049 and ADR-121.
- */
-export interface AuthoredPluginGroup {
-  readonly values?: Readonly<Record<string, AuthoredProperty>>;
-  readonly requires?: AuthoredPluginRequires;
-}
-/**
- * One authored keyframe entry, which is always a plugin-named group.
- *
- * The group names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes the
- * leaf to one owner without the author inventing a disambiguated name. The group is flattened back
- * to its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever
- * receives a nested value.
- *
- * There is no ungrouped form: a top-level entry that is not a group is refused as
- * `keyframes-ungrouped-key`, so whether a document loads never depends on which plugins the host
- * registered. The group name is the one spelling that names the owner. See ADR-041, ADR-043,
- * ADR-049 and ADR-121.
- */
-export type AuthoredKeyframe = AuthoredPluginGroup;
-/** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */
-export interface PluginRequiresBinding {
-  readonly plugin: string;
-  readonly slot: string;
-  readonly source: string;
-  /**
-   * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
-   *
-   * Data rather than a formatted slot name. The slot stays exactly as the author spelled it, so the
-   * one thing that distinguishes two entries of one slot is a field, with one owner and no parser.
-   * It reaches `EdgeRequirement`, participates in edge identity and ordering, and is what a solver's
-   * goal is recovered from. See ADR-057.
-   */
-  readonly memberKey?: string;
-  /**
-   * `plugin.requires.slot`, or `plugin.requires.slot.memberKey` for a dict entry, relative to the
-   * keyframes record. Diagnostics cite this, so a refusal names the path the author actually wrote.
-   */
-  readonly authoredPath: string;
-}
+/** Dataflow node: input, named output, duration. */
 export interface TrackDefinition {
   readonly id: string;
+  readonly input?: TrackInput;
+  readonly output: OutputDefinition;
   readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
-  readonly observes?: readonly ObservationDefinition[];
-}
-/**
- * One generic `observes` entry: a graph edge the author writes by hand, declaring an output edge
- * and nothing else.
- *
- * One authored field, and deliberately only one.
- *
- * There is no `target`. It named a destination key that no consumer ever read, on either role.
- * See ADR-046.
- *
- * There is no `role`. Every edge this form derives is `role: "output"`, so writing the only legal
- * value would be a field accepted and then ignored.
- *
- * There is no `projection`. Renaming an upstream key existed to keep it from colliding inside a
- * flat input bag, and an output edge merges the source's patch whole rather than renaming anything.
- *
- * A dependency that feeds composition is bound under `keyframes.<plugin>.requires` and arrives
- * scoped to that plugin, which is now the only way a value enters composition. All three removed
- * fields are refused rather than accepted and ignored: `graph/ir.ts` reports
- * `observation-target-unsupported`, `observation-role-unsupported`, and
- * `observation-projection-unsupported`. See ADR-047.
- */
-export interface ObservationDefinition {
-  readonly source: string;
 }
 export interface MotionDefinition {
   readonly id: string;
@@ -369,15 +341,99 @@ export interface MotionDefinition {
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }
-/**
- * The authored project.
- *
- * There is no `templates`. It promised reusable keyframe bundles, nothing ever read one, and the
- * runtime's project snapshot carried it through every graph rebuild untouched, so it is removed and
- * then refused rather than left declared: `validate-v5.ts` reports `project-templates-unsupported`.
- * A documented feature that does not exist is the one documentation failure ADR-053 calls worse
- * than none.
- */
+/** Node id, progress and the track's clock, passed to a plugin. */
+export interface EvaluationContext {
+  readonly nodeId: string;
+  readonly progress: number;
+  readonly clock: TrackClock;
+}
+/** Resolved slot values: output sets for shape slots, values for model slots. */
+export type ResolvedRequires = Readonly<Record<string, unknown>>;
+/** Plugin input: local values plus bound slots. */
+export interface ResolvedInput<Values = Value, Structures = Readonly<Record<string, unknown>>> {
+  readonly values: Values;
+  readonly requires: ResolvedRequires;
+  readonly param?: unknown;
+  readonly structures?: Structures;
+  readonly state?: unknown;
+}
+/** Record-kind value specification. */
+export type RecordSpec = Extract<ValueSpec, { readonly kind: "record" }>;
+
+/** Context passed to plugin prepare hook. */
+export interface PluginPrepareContext<TRequires = SourceStructures> {
+  readonly values: unknown;
+  readonly param?: unknown;
+  readonly structures: TRequires;
+}
+
+/** A plugin's outputs: the main `values` is a model, a secondary may be a plain spec. */
+export type PluginOutputs = { readonly values: Model<unknown, unknown> } & Readonly<
+  Record<string, ValueSpec | Model<unknown, unknown>>
+>;
+
+/** A plugin as authored; `Input` is its evaluated input shape. */
+export interface PluginDefinition<
+  Input extends ResolvedInput<unknown, unknown> = ResolvedInput,
+  OutputsDecl extends PluginOutputs = PluginOutputs,
+  TState = unknown,
+  TStructures = [Input] extends [never] ? never : SourceStructures,
+> {
+  readonly id: string;
+  readonly inputs: {
+    readonly param?: RecordSpec;
+    readonly values?: ValueSpec | Model<unknown, unknown>;
+    readonly requires?: Readonly<
+      Record<string, SlotSpec | Model<unknown, unknown> | OptionalModel<Model<unknown, unknown>>>
+    >;
+  };
+  readonly outputs: OutputsDecl;
+  prepare?(ctx: PluginPrepareContext<TStructures>): Prepared<TState>;
+  transform(input: Input, context: EvaluationContext): Outputs;
+}
+/** A plugin's local values channel after admission; `model` present means it parses at commit. */
+export interface AdmittedValues {
+  readonly spec: ValueSpec;
+  readonly model?: Model<unknown, unknown>;
+}
+/** One declared output after admission: a nominal model or a plain spec. */
+export type AdmittedOutput =
+  | { readonly kind: "model"; readonly model: Model<unknown, unknown> }
+  | { readonly kind: "spec"; readonly spec: ValueSpec };
+/** The spec an admitted output publishes under. */
+export function admittedOutputSpec(output: AdmittedOutput): ValueSpec {
+  switch (output.kind) {
+    case "model":
+      return output.model.spec;
+    case "spec":
+      return output.spec;
+    default:
+      return unreachable(output);
+  }
+}
+/** A plugin after admission: every declaration form normalized, so readers never branch on form. */
+export interface AdmittedPlugin {
+  readonly id: string;
+  readonly inputs: {
+    readonly param?: RecordSpec;
+    readonly values?: AdmittedValues;
+    readonly requires?: Readonly<Record<string, SlotSpec>>;
+  };
+  readonly outputs: Readonly<Record<string, AdmittedOutput>>;
+  prepare?(ctx: PluginPrepareContext): Prepared<unknown>;
+  transform(input: ResolvedInput, context: EvaluationContext): Outputs;
+}
+/** A track output resolved against the catalog at load. */
+export type ResolvedOutput =
+  | { readonly kind: "source"; readonly model: Model<unknown, unknown> }
+  | { readonly kind: "computed"; readonly plugin: AdmittedPlugin };
+/** Payload by status; only ready owns outputs. */
+export type PatchPayload =
+  | { readonly status: "ready"; readonly outputs: Outputs }
+  | { readonly status: "blocked"; readonly diagnostics: readonly Diagnostic[] }
+  | { readonly status: "error"; readonly diagnostics: readonly Diagnostic[] }
+  | { readonly status: "destroyed" };
+/** The authored project. */
 export interface ProjectDefinition {
   readonly schemaVersion: 5;
   readonly projectId?: string;
@@ -385,16 +441,3 @@ export interface ProjectDefinition {
   readonly motions: readonly MotionDefinition[];
   readonly freeTracks?: readonly TrackDefinition[];
 }
-/**
- * A migration diagnostic, pinned to the one rule the v4 reader refuses under.
- *
- * The literal narrows `Diagnostic.ruleId` rather than sitting beside it, so `schema-v4-migration`
- * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
- * the build failure rather than a string nobody checks.
- *
- * Each of the four refusals the v4 reader can report names a path and a message and no ids, which is
- * measured rather than chosen: its constructor used to accept an `ids` that nothing passed. That fact
- * is stated once now, where the rule is defined, as `schema-v4-migration`'s own entry in
- * `contract/rule.ts`, rather than by extending a variant named after a group. See ADR-097.
- */
-export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;

@@ -10,6 +10,7 @@ import {
   type Refusal,
 } from "../../../src/runtime/refusal";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { testCatalog } from "../../support/builtin-registry";
 
 /**
  * Issue #443, phase A step 3b: the refusals `ProjectRuntime` spells are the union, not prose.
@@ -28,17 +29,27 @@ const NODE_ID = "hero/arm";
 
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", output: { model: "TestRecord" } }],
+    },
+  ],
 };
 
 const compose = (node: { id: string }) => () => ({
-  values: { node: node.id },
+  outputs: { values: { node: node.id } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
 
 function loaded(): ProjectRuntime {
-  return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+  return new ProjectRuntime(PROJECT, {
+    capabilities: testCatalog(),
+    clock: createManualClock(),
+    compose,
+  });
 }
 
 /** Returns the thrown value, because each case asserts on the class and on the payload. */
@@ -78,7 +89,11 @@ describe("the project runtime refuses through the union rather than inline", () 
 
     const read = refusalIn(thrownBy(() => project.motion("nope")));
     const destroyed = refusalIn(thrownBy(() => project.destroyMotion("nope")));
-    const added = refusalIn(thrownBy(() => project.addTrack({ id: "a" }, { motionId: "nope" })));
+    const added = refusalIn(
+      thrownBy(() =>
+        project.addTrack({ id: "a", output: { model: "TestRecord" } }, { motionId: "nope" }),
+      ),
+    );
 
     for (const refusal of [read, destroyed, added]) {
       expect(refusal.kind).toBe("unknown-motion");

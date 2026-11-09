@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { PluginRequiresBinding } from "../../../src/contract/v5";
-import type { GraphEdge } from "../../../src/graph/ir";
-import { edgeKey, resolveObservationEdge, resolveRequirementEdge } from "../../../src/graph/ir";
+import type { GraphEdge } from "../../../src/graph/node";
+import { edgeKey } from "../../../src/graph/node";
+import { resolveRequirementEdge } from "../../../src/graph/dependency-edges";
 
 // Canonical identity carried two authored string fields. Projection ordering was one, and it
 // retires with the primitive; the requirement's plugin and slot are the other, and are all that is
@@ -9,23 +9,21 @@ import { edgeKey, resolveObservationEdge, resolveRequirementEdge } from "../../.
 const OBSERVER = "hero/child";
 const SOURCE = "hero/root";
 
-const binding = (slot: string): PluginRequiresBinding =>
+type Binding = {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  readonly authoredPath: string;
+};
+const binding = (slot: string): Binding =>
   Object.freeze({ plugin: "fk", slot, source: "root", authoredPath: `fk.requires.${slot}` });
 
-describe("canonical observation edge identity", () => {
-  it("shares identity with the authored observation resolver", () => {
-    const resolved = resolveObservationEdge({ source: "root" }, OBSERVER, "hero", "test");
-    const expected: GraphEdge = { observerId: OBSERVER, sourceId: SOURCE, role: "output" };
-    expect(resolved.kind).toBe("accepted");
-    if (resolved.kind === "accepted") expect(edgeKey(resolved.value)).toBe(edgeKey(expected));
-  });
-
+describe("canonical edge identity", () => {
   it("shares identity with the authored requirement resolver", () => {
     const resolved = resolveRequirementEdge(binding("base"), OBSERVER, "hero", "test");
     const expected: GraphEdge = {
       observerId: OBSERVER,
       sourceId: SOURCE,
-      role: "input",
       requirement: { plugin: "fk", slot: "base" },
     };
     expect(resolved.kind).toBe("accepted");

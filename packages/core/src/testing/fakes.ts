@@ -8,8 +8,11 @@ import {
   readAuthoredLeaf,
   readCompilableStops,
 } from "../contract/authored-leaf";
-import type { AuthoredStaticValue, AuthoredStop } from "../contract/v5";
+import type { AuthoredStaticValue, AuthoredStop, Model, Structure } from "../contract/v5";
+import { describeDiagnostics } from "../contract/diagnostics";
 import { unreachable } from "../lang/exhaustive";
+import { parseModel } from "../runtime/model-parse";
+import { isValue } from "../runtime/value-validation";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
@@ -189,6 +192,22 @@ export function createFakeTriggerPort(): TriggerPort & {
       listeners.clear();
     },
   };
+}
+
+/** Parses, brands and returns one model structure; test-only access to the core brand. */
+export function commitModelStructure<S>(model: Model<unknown, S>, value: unknown): Structure<S> {
+  if (!isValue(value)) throw new TypeError("A model value must be a table or a record.");
+  const parsed = parseModel(model, value, "test");
+  switch (parsed.kind) {
+    case "accepted":
+      if (parsed.value === undefined)
+        throw new TypeError(`Model '${model.id}' declares no parse hook.`);
+      return parsed.value;
+    case "refused":
+      throw new TypeError(describeDiagnostics(parsed.diagnostics));
+    default:
+      return unreachable(parsed);
+  }
 }
 
 /**

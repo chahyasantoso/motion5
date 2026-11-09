@@ -34,7 +34,7 @@ export const COMPARED_FILLERS: readonly FillerSpec[] = [
   { kind: "chain-kalman", noise: DEFAULT_KALMAN_NOISE, coastMs: DEFAULT_COAST_MS },
 ];
 
-/** Same closed filler choices, explicitly tuned in their native units. */
+/** Same closed filler choices, each tuned in its native units. */
 export function comparedFillers(space: LandmarkSpace): readonly FillerSpec[] {
   switch (space.kind) {
     case "image":
@@ -50,10 +50,7 @@ export function comparedFillers(space: LandmarkSpace): readonly FillerSpec[] {
   }
 }
 
-/**
- * The default replay masks: a half-second gap every three seconds at 30 fps on each tip and middle
- * joint, staggered so no two limbs lose a joint on the same frames.
- */
+/** Half-second gap every three seconds at 30 fps on each tip and middle joint, staggered so no two limbs drop a joint on the same frames. */
 export const DEFAULT_MASKS: readonly Mask[] = [
   { kind: "periodic", joints: ["left-wrist"], every: 90, length: 15, offset: 30 },
   { kind: "periodic", joints: ["right-elbow"], every: 90, length: 15, offset: 52 },
@@ -87,12 +84,8 @@ export interface Calibration {
   /** The 99.9th percentile of frame-to-frame joint speed, in scale-bone lengths per second. */
   readonly speedP999: number;
   /**
-   * The reference's own noise in space units: the mean distance of one trusted sample from where a
-   * noiseless measurement would put it, estimated as the mean frame-to-frame step over consecutive
-   * trusted samples divided by sqrt 2. The step of two independent isotropic noise draws is sqrt 2
-   * times one draw in any dimension, so the estimate needs no truth; the still person's slow sway
-   * only adds to it, so it errs high, toward withholding a claim rather than inventing one.
-   */
+   * Reference's own noise in space units: mean frame-to-frame step of consecutive trusted samples
+   * over sqrt 2. Still sway adds to it, so the estimate overstates noise. */
   readonly referenceNoise: number;
   readonly detector: GapDetectorOptions;
 }
@@ -102,12 +95,8 @@ export const CALIBRATION_VISIBILITY_MARGIN = 0.05;
 export const CALIBRATION_GATE_FACTOR = 4;
 
 /**
- * Calibrates the detector from a recording of a still person, which fixes the noise floor and
- * nothing more: it cannot say how fast a person moves. The same still samples measure the
- * reference's own noise, the floor a filler's masked error is judged against. So calibration only
- * ever tightens the threshold above the default floor and raises the gate above their noise; it
- * never loosens the threshold or lowers the gate below `DEFAULT_DETECTOR`.
- */
+ * Calibration from a still take: noise floor, not how fast a person moves. Only tightens:
+ * threshold and gate stay at or above `DEFAULT_DETECTOR`. */
 export function calibrateDetector(
   recording: PoseRecording,
   space: LandmarkSpace = IMAGE_SPACE,
@@ -115,8 +104,7 @@ export function calibrateDetector(
   const pipeline = createGapPipeline({
     filler: { kind: "raw" },
     detector: { threshold: DEFAULT_DETECTOR.threshold, gate: Infinity },
-    // The gate measures raw speed, so its calibration must too: a denoised still take would set
-    // a gate below the noise the live detector actually sees.
+    // Gate measures raw speed -> its calibration must too; denoising would set it below live noise.
     stabilizer: NO_STABILIZER,
   });
   const visibilities = new Map<string, number[]>(JOINTS.map((joint) => [joint, []]));
@@ -173,15 +161,12 @@ export function calibrateDetector(
   };
 }
 
-/** One still take's calibration in every landmark space, keyed by the space's kind. */
+/** One still take's calibration in every landmark space, keyed by space kind. */
 export type SpaceCalibrations = { readonly [Kind in LandmarkSpace["kind"]]: Calibration };
 
 /**
- * Calibrates every landmark space from one still take. A recording keeps both forms of each
- * landmark, so one take is the noise floor of both spaces, and the mapped type is the exhaustive
- * check: a third space fails to compile here until it is calibrated. Either space failing throws
- * before anything is returned, so a caller never holds a half-calibrated pair.
- */
+ * Derives every space's settings from one still take; the mapped type fails to compile for an
+ * uncalibrated space. A throw leaves no half-calibrated pair. */
 export function calibrateSpaces(recording: PoseRecording): SpaceCalibrations {
   return {
     image: calibrateDetector(recording, IMAGE_SPACE),

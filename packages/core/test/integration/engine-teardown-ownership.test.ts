@@ -12,6 +12,7 @@ import type {
   TriggerFactory,
   TriggerFactoryContext,
 } from "../../src/ports/trigger-factory";
+import { testEngine } from "../support/builtin-registry";
 
 /**
  * Issues #143 and #145. One defect in two places: a teardown that stops at its first failing step.
@@ -44,29 +45,6 @@ const REJECTED_MOTION: MotionDefinition = {
 function manual(id: string): MotionDefinition {
   return { id, trigger: { type: "manual" }, tracks: [] };
 }
-
-/**
- * A Motion whose only Track observes a free track nobody authored.
- *
- * Refused by `validateV5` inside `assertValidProject`, the first statement of `Engine.load`, so
- * the refusal is raised before the `try` the load owner cleans up from ever opens and this load
- * compiles no Track, constructs no `ProjectRuntime` and has nothing whatever to release. An earlier
- * revision of this comment claimed the refusal landed after the Tracks compiled and before any
- * Motion existed, so that a compiled Track was the whole of what the composition still held. It
- * does not, and the case built on that premise asserted a release with nothing to release. `P-4` in
- * `rollback-error-precedence.test.ts` is where that invariant is measured instead, at the layer
- * that owns it.
- */
-const MISSING_SOURCE_PROJECT: ProjectDefinition = {
-  schemaVersion: 5,
-  motions: [
-    {
-      id: "hero",
-      trigger: { type: "manual" },
-      tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
-    },
-  ],
-};
 
 interface CountingClock extends Clock {
   tick(delta?: number): number;
@@ -199,7 +177,7 @@ function probeMotions(): MotionProbe {
 }
 
 function load(clock: Clock, factory: TriggerFactory, project: ProjectDefinition): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock,
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -389,25 +367,29 @@ describe("Engine owns the teardown of everything a failed operation created", ()
     expect(ENGINE_SOURCE).not.toContain("motions.set(definition.id, buildMotion(");
     expect(ENGINE_SOURCE).not.toContain("motions.set(motionDefinition.id, buildMotion(");
     // The state is read exhaustively, so the disposed arm is a decision this owner owes rather than
-    // a case a later reader may quietly omit. `engine.md` owns why that arm has no behavioural
-    // case, and this is what stops it being deleted as dead instead.
+    // a case a later reader may quietly omit. It has no behavioural case because a host holds no
+    // handle to dispose mid-build, and this is what stops the arm being deleted as dead instead.
     expect(ADOPT_MOTION).toContain('case "disposed":');
     expect(ADOPT_MOTION).toContain("unreachable(state)");
   });
 
-  it("D-6 reports the graph rejection unwrapped when the runtime never existed", () => {
+  it("D-6 reports the authored refusal unwrapped when the runtime never existed", () => {
     // The other branch of the failed-load teardown, and the reason it is a branch: authored
     // validation refuses this project before the load owner's `try` opens, so there is no
     // composition, no runtime and no cleanup owner to ask. Not claimed red; it pins that a load
-    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway.
+    // with nothing to undo does not bury the ordinary diagnosis in an AggregateError anyway. A
+    // slashed id is the same early refusal a dependency fixture reaches, written with
+    // `id-qualified-separator` rather than `edge-unknown-source`.
     const clock = countingClock();
     const triggers = triggerProbe();
 
-    const thrown = thrownBy(() => load(clock, triggers.factory, MISSING_SOURCE_PROJECT));
+    const thrown = thrownBy(() =>
+      load(clock, triggers.factory, { schemaVersion: 5, motions: [REJECTED_MOTION] }),
+    );
 
     expect(thrown).toBeInstanceOf(TypeError);
     expect(thrown).not.toBeInstanceOf(AggregateError);
-    expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
+    expect((thrown as Error).message).toMatch(/^id-qualified-separator at /);
     // The refusal lands before anything is compiled, built or subscribed at all.
     expect(triggers.created).toBe(0);
     expect(clock.liveSubscriptions).toBe(0);

@@ -1,68 +1,31 @@
 import { useCallback, useEffect, useMemo, type RefCallback } from "react";
-import type { DomPatchAdapter } from "@motion5/core/adapters";
-import { patchRender } from "@motion5/core/internal";
-import type { Patch, PatchSource } from "@motion5/core/internal";
+import type { DomPatchAdapter } from "@motion5/dom/engine";
+import { patchRender, selectRecord, unreachable } from "@motion5/core/internal";
+import type { PatchSource } from "@motion5/core/internal";
 import { useDomBinding } from "./dom-binding";
 
-/**
- * The composed values of one source node, positioned by where its id was named.
- *
- * Read off the ready member rather than off `Patch`, because a status that did not compose owns no
- * values at all since ADR-098. Extracted from the union rather than imported: `ReadyPatch` is not on
- * the `@motion5/core/internal` entry, and adding it there is a surface decision this change does not
- * make. The narrowing in `pose` below is what a consumer needs, not a name for the variant.
- */
-export type PatchValues = Extract<Patch, { status: "ready" }>["values"];
+/** Composed values of one source node, as a derivation receives them. */
+export type PatchValues = Readonly<Record<string, unknown>>;
 
 /**
- * A consumer's geometry, as a pure function of its source nodes' values.
- *
- * Returns the renderable record to write, or `undefined` for nothing to draw from these values,
- * which the binding writes as a hidden target rather than as an unmount. Positional, in the order
- * the ids were named. It is called on every publication of every node it reads, so keep it pure, and
- * keep its identity stable: declare it at module scope, or memoize it.
- */
+ * Geometry as a pure function of source values: record to write, `undefined` to hide the target.
+ * Called on every publication; keep it pure and its identity stable. */
 export type PatchDerivation = (
   values: readonly PatchValues[],
 ) => Readonly<Record<string, unknown>> | undefined;
 
-// Absence, as the one write a derivation cannot express itself. A bound element cannot unmount
-// itself, and removing the geometry alone would collapse a line onto the origin rather than hide it,
-// so the binding writes the hide and the adapter's omitted-key removal takes it back on the first
-// frame that derives again. See ADR-075.
+// Hide, not unmount: adapter's omitted-key removal restores once the derivation derives again.
 const NOT_DERIVABLE: Readonly<Record<string, unknown>> = Object.freeze({ visibility: "hidden" });
 
 /**
- * Binds a derivation over one or more published nodes to one DOM or SVG target.
- *
- * `useDomPatch` writes one node's pose. Every consumer that combines two nodes, or maps one node's
- * values onto its element's own geometry, was left on `usePatch` and therefore on a React render per
- * published patch, at tick rate. This hook owns the fan-in and nothing else: geometry stays with the
- * consumer in the derivation, and translating a record into writes stays with
- * `createDomPatchAdapter`, through `applyValues`, so transform composition, dirty diffing and
- * omitted-key removal have one owner for one node and for many.
- *
- * Liveness is this binding's rule, unlike `useDomPatch`'s: a derivation is a function of every node
- * it names, so one input that is blocked, errored or destroyed makes the whole result meaningless,
- * and the target is hidden until every input is ready again. That is what lets a derivation take
- * values and never a status, which is what keeps the rule out of every consumer.
- *
- * Values are read from the source on each delivery rather than accumulated here, so the registry
- * stays the only owner of what a node currently holds and no batch order can leave the target
- * composed from a mix that outlives its own batch. No scheduler: a batch that delivers twice writes
- * twice, and the adapter's dirty diff makes the second one nothing.
- *
- * `PatchSource` is all this takes. A derivation authors its own keys, so there is no plugin output to
- * serialize and no metadata channel to require. See ADR-075.
- */
+ * Binds a derivation over published nodes to one DOM or SVG target.
+ * Owns fan-in and liveness; writes stay with the adapter. */
 export function useDerivedDomPatch<T extends Element>(
   source: PatchSource,
   nodeIds: readonly string[],
   derive: PatchDerivation,
 ): RefCallback<T> {
-  // The ids are the subscription, so a fresh array literal on every render must not be a new one.
-  // Serialized rather than joined, so that no separator has to be a character an id cannot hold, and
-  // readable as the label this binding writes under.
+  // Ids are the subscription: serialized to a stable key, reused as the write label.
   const key = JSON.stringify(nodeIds);
   const ids = useMemo(() => JSON.parse(key) as readonly string[], [key]);
   const pose = useCallback(
@@ -75,16 +38,26 @@ export function useDerivedDomPatch<T extends Element>(
           adapter.applyValues(key, NOT_DERIVABLE);
           return;
         }
-        values.push(decision.patch.values);
+        const picked = selectRecord(decision.patch.outputs.values);
+        switch (picked.kind) {
+          case "record":
+            values.push(picked.values);
+            break;
+          case "missing-output":
+          case "wrong-kind":
+            adapter.applyValues(key, NOT_DERIVABLE);
+            return;
+          default:
+            return unreachable(picked);
+        }
       }
       adapter.applyValues(key, derive(values) ?? NOT_DERIVABLE);
     },
     [derive, ids, key, source],
   );
-  const binding = useDomBinding<T>(undefined, pose);
+  const binding = useDomBinding<T>(pose);
 
-  // Subscribe to every source before the first write, for the reason the one-node binding does it in
-  // that order too: a publication between the two would otherwise be lost.
+  // Subscribe before first write: a publication in between would otherwise be lost.
   useEffect(() => {
     const releases = ids.map((id) => source.subscribeNode(id, () => pose(binding.adapter)));
     pose(binding.adapter);

@@ -46,6 +46,7 @@ function createSeam(): Seam {
   const timelines: RealTimeline[] = [];
   let created = 0;
   const interpolator = createGsapInterpolator({
+    parseEase: gsap.parseEase,
     timeline(vars): GsapTimelineLike {
       created += 1;
       const real = gsap.timeline(vars as Parameters<typeof gsap.timeline>[0]);
@@ -261,7 +262,7 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     // The rule fires only when two keys disagree at one percent, so one key alone is blind to it.
     expect(compilePercentKeyframes({ y: COLLIDING_Y }).diagnostics).toEqual([]);
     const whole = compilePercentKeyframes(effective).diagnostics;
-    expect(whole.map(({ ruleId }) => ruleId)).toEqual(["plugin-contribution-ease-collision"]);
+    expect(whole.map(({ ruleId }) => ruleId)).toEqual(["ease-collision"]);
 
     expect(patch(timeline, { y: COLLIDING_Y })).toEqual({ kind: "recompile" });
 

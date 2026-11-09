@@ -7,7 +7,7 @@ function publish(registry: PatchRegistry, tick: number, opacity: number): void {
   registry.beginBatch(tick, [NODE_ID]);
   registry.publish({
     nodeId: NODE_ID,
-    values: { opacity },
+    outputs: { values: { opacity } },
     sourceProgress: 0,
     status: "ready",
   });

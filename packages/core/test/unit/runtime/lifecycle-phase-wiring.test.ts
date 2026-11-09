@@ -1,4 +1,4 @@
-import { builtinRegistry } from "../../support/builtin-registry";
+import { builtinRegistry, testCatalog } from "../../support/builtin-registry";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
@@ -42,11 +42,20 @@ const HAND_ID = "hero/hand";
 const FOOT_ID = "hero/foot";
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
+  motions: [
+    {
+      id: MOTION_ID,
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "arm", output: { model: "TestRecord" } },
+        { id: "leg", output: { model: "TestRecord" } },
+      ],
+    },
+  ],
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
-  values: { [node.id]: 1 },
+  outputs: { values: { [node.id]: 1 } },
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -91,6 +100,7 @@ function rig(onCompile: (nodeId: string) => void = () => undefined): Rig {
   let releases = 0;
   const options = {
     clock: createManualClock(),
+    capabilities: testCatalog(),
     compose,
     graphBuilder: { build: (project: ProjectDefinition) => inner.build(project) },
     compileTrack: (_track: { duration?: number }, nodeId?: string) => {
@@ -163,7 +173,12 @@ describe("the phase admits every verb the two guard rungs used to", () => {
       deferred.push(...test.runtime.seek(LEG_ID, 0.5).seeds);
       deferred.push(...test.runtime.seek(ARM_ID, 0.75).seeds);
       mounted = thrownBy(() => test.runtime.mount(LEG_ID));
-      structural = thrownBy(() => test.runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+      structural = thrownBy(() =>
+        test.runtime.addTrack(
+          { id: "hand", output: { model: "TestRecord" } },
+          { motionId: MOTION_ID },
+        ),
+      );
     });
 
     // Every staged write answered its own seed, in the order it was asked and repeats included,
@@ -191,7 +206,7 @@ describe("the phase admits every verb the two guard rungs used to", () => {
     const batch = test.runtime.values(() => {
       refused = thrownBy(() =>
         test.runtime.edit((tx) => {
-          tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+          tx.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
         }),
       );
     });
@@ -214,11 +229,16 @@ describe("the phase admits every verb the two guard rungs used to", () => {
     let reentered: unknown;
     const test = rig((nodeId) => {
       if (nodeId !== HAND_ID) return;
-      reentered = thrownBy(() => holder.runtime?.addTrack({ id: "foot" }, { motionId: MOTION_ID }));
+      reentered = thrownBy(() =>
+        holder.runtime?.addTrack(
+          { id: "foot", output: { model: "TestRecord" } },
+          { motionId: MOTION_ID },
+        ),
+      );
     });
     holder.runtime = test.runtime;
 
-    test.runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    test.runtime.addTrack({ id: "hand", output: { model: "TestRecord" } }, { motionId: MOTION_ID });
 
     // The depth is a field of a live phase rather than a phase beside it, so the scope is still
     // idle here and the commit is what refuses.
@@ -242,7 +262,12 @@ describe("the phase admits every verb the two guard rungs used to", () => {
     holder.runtime = test.runtime;
     test.runtime.mount(ARM_ID);
 
-    const thrown = thrownBy(() => test.runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    const thrown = thrownBy(() =>
+      test.runtime.addTrack(
+        { id: "hand", output: { model: "TestRecord" } },
+        { motionId: MOTION_ID },
+      ),
+    );
 
     // Retiring, not retired: the scope and the depth are still the facts the refusals read, and the
     // release is owed until the commit that was in flight has unwound.
@@ -330,10 +355,20 @@ describe("the runtime holds one phase and none of the fields it replaces", () =>
         '#setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {',
         'immediateVerb("setTrigger", "resolved")',
       ],
-      ["#setKeyframe(", 'valueVerb("setKeyframe", "resolved")'],
+      [
+        "#applyCheap(id: string, token: number, edit: CheapEdit): PatchBatch {",
+        'valueVerb(publicVerbOf(edit.kind), "resolved")',
+      ],
+      [
+        "#applyLive(id: string, token: number, edit: LiveEdit): PatchBatch {",
+        'valueVerb(publicVerbOf(edit.kind), "resolved")',
+      ],
       ["track(nodeId: string): TrackHandle {", "this.#admit(READ)"],
       ["edit<T>(recipe: (transaction: SchemaTransaction) => T): T {", "this.#admit(OPEN_RECIPE)"],
-      ["#commit(plan: StagedPair): void {", 'this.#admit(COMMIT) === "join"'],
+      [
+        "#commit(plan: StagedPair, noBuild: ReadonlySet<string> = NO_BUILD): void {",
+        'this.#admit(COMMIT) === "join"',
+      ],
     ];
 
     expect(asked.filter(([signature, call]) => !member(source, signature).includes(call))).toEqual(

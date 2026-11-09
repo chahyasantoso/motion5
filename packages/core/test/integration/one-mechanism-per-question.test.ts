@@ -4,6 +4,7 @@ import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { testEngine } from "../support/builtin-registry";
 
 /**
  * Phase 3 of issue #362: where two mechanisms answer one question, the weaker one is deleted.
@@ -34,16 +35,15 @@ const PROJECT: ProjectDefinition = {
       tracks: [
         {
           id: "arm",
-          keyframes: {
-            transform: {
-              values: {
-                x: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 100 },
-                ],
-              },
+          input: {
+            values: {
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 100 },
+              ],
             },
           },
+          output: { model: "TestRecord" },
         },
       ],
     },
@@ -51,7 +51,7 @@ const PROJECT: ProjectDefinition = {
 };
 
 function load(): ProjectHandle {
-  return new Engine({
+  return testEngine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
     scheduler: createFakeScheduler(),
@@ -80,7 +80,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       const seenPatch = seen.at(-1);
       if (seenPatch?.status !== "ready")
         throw new Error(`seenPatch is ${seenPatch?.status ?? "absent"}, not ready.`);
-      expect(seenPatch.values).toEqual({ x: 50 });
+      expect(seenPatch.outputs.values).toEqual({ x: 50 });
 
       // The node keeps publishing after the unsubscribe, which is what makes the count below a
       // claim about this listener rather than about a deduplicated patch: the values move.
@@ -90,7 +90,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       const heroArmPatch = handle.get("hero/arm");
       if (heroArmPatch?.status !== "ready")
         throw new Error(`hero/arm is ${heroArmPatch?.status ?? "absent"}, not ready.`);
-      expect(heroArmPatch.values).toEqual({ x: 75 });
+      expect(heroArmPatch.outputs.values).toEqual({ x: 75 });
       expect(seen).toHaveLength(1);
     } finally {
       handle.dispose();
@@ -105,7 +105,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       expect("destroyAdopted" in handle).toBe(false);
 
       const seen: Patch[] = [];
-      const added = handle.addTrack({ id: "cursor" });
+      const added = handle.addTrack({ id: "cursor", output: { model: "TestTable" } });
       handle.subscribeNode(added.id, (patch) => {
         seen.push(patch);
       });
@@ -137,7 +137,7 @@ describe("one question, one mechanism on the runtime surface", () => {
       // than a comparison against an object the caller invented.
       // `unified-mutation-surface.test.ts` owns that refusal; this asserts only that a removal asks
       // for no owner at all.
-      const added = runtime.addTrack({ id: "cursor" });
+      const added = runtime.addTrack({ id: "cursor", output: { model: "TestTable" } });
       added.remove();
 
       expect(runtime.tryTrack(added.id)).toBeUndefined();

@@ -2,6 +2,8 @@
 
 Status: accepted, and amended in part by [ADR-075](./ADR-075-derived-dom-binding.md): the SVG reference-box pin below is now a view-box pin with a zero origin, and derived geometry no longer stays on `usePatch`. Supersedes nothing. Issue [#354](https://github.com/chahyasantoso/motion5/issues/354).
 
+**Superseded in part by** [ADR-146](./ADR-146-render-metadata-is-removed.md): the metadata channel is removed.
+
 ## Context
 
 Every React consumer read `patch.values` by hand and re-implemented the same translation: `x` and `y` off the record, into a `translate(...)` string, once per component. Nothing consumed a new `transformPlugin` key until each of those components was edited, so there was no choke point where a published value became visible.

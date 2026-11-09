@@ -173,6 +173,12 @@ describe("boundary scan predicates", () => {
     expect(bannedSymbol(cleanFixture)).toBe(false);
   });
 
+  it("lets core import the moves package and no other workspace package", () => {
+    expect(importsBoundary('import { lanes } from "@motion5/moves";')).toBe(false);
+    expect(importsBoundary('import { hop } from "@motion5/moves/hop";')).toBe(true);
+    expect(importsBoundary('import { hopPlugin } from "@motion5/plugins/motion/hop";')).toBe(true);
+  });
+
   it("fails on renderer and animation-engine imports", () => {
     expect(importsBoundary(rendererViolationFixture)).toBe(true);
     expect(importsRenderer(rendererViolationFixture)).toBe(true);
@@ -202,7 +208,7 @@ describe("boundary scan predicates", () => {
   it("keeps the shared contract compiler, new sink, aliases, and longer names clean", () => {
     for (const source of [
       'import { compiler } from "../../contract/keyframe-compiler";',
-      'import type { RenderMetadata } from "../../ports/render-metadata";',
+      'import type { Clock } from "../../ports/clock";',
       'import { exhaustive } from "../lang/exhaustive";',
       'import { helpers } from "../domain-helpers/exhaustive";',
       'import { sink } from "@motion5/core/domain/exhaustive";',
@@ -548,6 +554,118 @@ describe("boundary scan: the public 3D surface", () => {
     ]);
   });
 
+  it("allows a plugin to import the moves package", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/plugins/src/motion/step.ts":
+          'import { hop } from "@motion5/moves";\nexport const move = hop;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("lets a pure package import its own files and any other pure package", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/rig/package.json": await readFile(
+          join(root, "packages", "rig", "package.json"),
+          "utf8",
+        ),
+        "packages/moves/src/inside.ts":
+          'import { a } from "./sibling";\nimport { fk } from "@motion5/rig";\nexport const b = [a, fk];',
+        "packages/moves/src/sibling.ts": "export const a = 1;",
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("refuses a pure package reaching core, a library, a non-pure package or a path outside it", async () => {
+    const violations = await withTree(
+      {
+        "packages/moves/package.json": await readFile(
+          join(root, "packages", "moves", "package.json"),
+          "utf8",
+        ),
+        "packages/moves/src/core.ts":
+          'import { Spec } from "@motion5/core/plugin-api";\nexport const s = Spec;',
+        "packages/moves/src/lib.ts": 'import gsap from "gsap";\nexport const g = gsap;',
+        "packages/moves/src/outside.ts":
+          'import { x } from "../../plugins/src/x";\nexport const y = x;',
+        "packages/moves/src/plugins.ts":
+          'import { Sprite2d } from "@motion5/plugins/models";\nexport const m = Sprite2d;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/moves/src/core.ts: pure package import outside the pure layer",
+      "packages/moves/src/lib.ts: pure package import outside the pure layer",
+      "packages/moves/src/outside.ts: pure package import outside the pure layer",
+      "packages/moves/src/plugins.ts: pure package import outside the pure layer",
+    ]);
+  });
+
+  it("holds any package that declares the pure layer to it, whatever its name", async () => {
+    const violations = await withTree(
+      {
+        "packages/geometry/package.json": JSON.stringify({
+          name: "@motion5/geometry",
+          motion5: { layer: "pure" },
+          exports: { ".": "./src/index.ts" },
+        }),
+        "packages/geometry/src/index.ts":
+          'import { unreachable } from "@motion5/core/plugin-api";\nexport const u = unreachable;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/geometry/src/index.ts: pure package import outside the pure layer",
+    ]);
+  });
+
+  it("keeps page tools to node, playwright-core and vite", async () => {
+    const violations = await withTree(
+      {
+        "packages/tools/package.json": JSON.stringify({ name: "@motion5/tools", exports: {} }),
+        "packages/tools/src/page/frames.ts":
+          'import { join } from "node:path";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, chromium, a];',
+        "packages/tools/src/page/page.ts":
+          'import { createServer } from "vite";\nexport const a = createServer;',
+        "packages/tools/src/page/sample.ts":
+          'import { Engine } from "@motion5/core";\nexport const e = Engine;',
+        "packages/tools/src/page/reach.ts":
+          'import { s } from "../engine/sample";\nexport const r = s;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/tools/src/page/reach.ts: page tool import outside node, playwright-core and vite",
+      "packages/tools/src/page/sample.ts: page tool import outside node, playwright-core and vite",
+    ]);
+  });
+
+  it("TH-203a refuses a core import from a plugin domain layer", async () => {
+    const violations = await withTree(
+      {
+        "packages/plugins/src/models/body/domain.ts":
+          'import { diagnostic } from "@motion5/core/plugin-api";\nexport const value = diagnostic;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/plugins/src/models/body/domain.ts: domain layer must import zero core code",
+    ]);
+  });
+
   it("TH-204 checks nested, dynamic, and re-export plugin edges after path normalization", async () => {
     const violations = await withTree(
       {
@@ -569,7 +687,7 @@ describe("boundary scan: the public 3D surface", () => {
   it("allows native lazy imports in the built-in plugin catalog", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts":
+        "packages/plugins/src/host/builtin-catalog.ts":
           'import type { PluginCatalog } from "./loader"; export const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((module) => module.fkPlugin) }]]);',
       },
       (tree) => scan(tree),
@@ -580,12 +698,13 @@ describe("boundary scan: the public 3D surface", () => {
   it("refuses eager sibling imports in the built-in plugin catalog", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts": 'import { fkPlugin } from "./fk"; export { fkPlugin };',
+        "packages/plugins/src/host/builtin-catalog.ts":
+          'import { fkPlugin } from "./fk"; export { fkPlugin };',
       },
       (tree) => scan(tree),
     );
     expect(violations).toEqual([
-      "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+      "packages/plugins/src/host/builtin-catalog.ts: plugin definitions must be reached through lazy imports",
     ]);
   });
 
@@ -597,11 +716,12 @@ describe("boundary scan: the public 3D surface", () => {
       'import type { PluginCatalog } from "./loader"; import * as fk from "../src/fk"; export { fk };',
     ];
     for (const source of eager) {
-      const violations = await withTree({ "packages/plugins/src/catalog.ts": source }, (tree) =>
-        scan(tree),
+      const violations = await withTree(
+        { "packages/plugins/src/host/builtin-catalog.ts": source },
+        (tree) => scan(tree),
       );
       expect(violations, source).toEqual([
-        "packages/plugins/src/catalog.ts: plugin definitions must be reached through lazy imports",
+        "packages/plugins/src/host/builtin-catalog.ts: plugin definitions must be reached through lazy imports",
       ]);
     }
   });
@@ -609,7 +729,7 @@ describe("boundary scan: the public 3D surface", () => {
   it("reads catalog imports through comments and strings as code, not prose", async () => {
     const violations = await withTree(
       {
-        "packages/plugins/src/catalog.ts":
+        "packages/plugins/src/host/builtin-catalog.ts":
           '// import { fkPlugin } from "./fk";\nimport type { PluginCatalog } from "./loader";\nconst note = \'from "./fk"\';\nexport const catalog: PluginCatalog = new Map([["fk", { load: () => import("./fk").then((m) => m.fkPlugin) }]]);\nvoid note;',
       },
       (tree) => scan(tree),

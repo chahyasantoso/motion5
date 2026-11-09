@@ -2,4 +2,6 @@
 
 **Status:** Accepted, 2026-08-15
 
-**Decision.** Motion computes per-track staggered progress; Track remains a passive leaf.
+**Superseded in part by [ADR-150](./ADR-150-time-and-the-time-module.md), 2026-11-08.** The stagger calculation moves to the time module; Track stays a passive leaf.
+
+**Decision.** Motion computes per-track staggered progress; Track stays passive leaf.

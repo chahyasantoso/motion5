@@ -12,7 +12,7 @@ describe("PatchRegistry lifecycle retention", () => {
     registry.beginBatch(1, ["~/source"]);
     const first = registry.publish({
       nodeId: "~/source",
-      values: { value: 1 },
+      outputs: { values: { value: 1 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -27,7 +27,7 @@ describe("PatchRegistry lifecycle retention", () => {
     registry.beginBatch(2, ["~/source"]);
     const second = registry.publish({
       nodeId: "~/source",
-      values: { value: 2 },
+      outputs: { values: { value: 2 } },
       sourceProgress: 0,
       status: "ready",
     });
@@ -42,7 +42,7 @@ describe("PatchRegistry lifecycle retention", () => {
     registry.beginBatch(1, ["~/source"]);
     registry.publish({
       nodeId: "~/source",
-      values: { value: 1 },
+      outputs: { values: { value: 1 } },
       sourceProgress: 0,
       status: "ready",
     });

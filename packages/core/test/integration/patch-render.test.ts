@@ -7,7 +7,9 @@ import { unreachable } from "../../src/lang/exhaustive";
 import { code, codeOnly, member } from "../helpers/source-region";
 
 const NODE_ID = "hero/arm";
-const DOM_PATH = fileURLToPath(new URL("../../src/adapters/dom.ts", import.meta.url));
+const DOM_PATH = fileURLToPath(
+  new URL("../../../dom/src/engine/patch-adapter.ts", import.meta.url),
+);
 const DERIVED_PATH = fileURLToPath(
   new URL("../../../react/src/derived-dom-patch.ts", import.meta.url),
 );
@@ -22,7 +24,7 @@ const READY: Patch = {
   nodeId: NODE_ID,
   revision: 1,
   status: "ready",
-  values: { x: 1 },
+  outputs: { values: { x: 1 } },
   sourceProgress: 0.5,
   sourceRevisions: {},
   diagnostics: [],
