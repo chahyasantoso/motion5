@@ -1,14 +1,39 @@
-export * from "./chain";
-export * from "./frame/frame";
-export * from "./frame/frame3d";
-export * from "./ik/shared/constraint";
-export * from "./ik/shared/goal";
-export * from "./ik/shared/member";
-export * from "./ik/shared/result";
-export * from "./ik/solve2d/solve";
-export * from "./ik/solve3d/analytic";
-export * from "./ik/solve3d/chain";
-export * from "./ik/solve3d/constraint";
-export * from "./ik/solve3d/solve";
-export * from "./vocabulary";
-export * from "./body";
+export {
+  buildChain,
+  chainPoses,
+  composeChain,
+  fk,
+  ik,
+  type Bone2d,
+  type BonePose,
+  type Chain2d,
+  type ChainPose,
+  type Goal2d,
+  type Link2d,
+  type TipPose,
+} from "./chain";
+export type { PivotOffset, WorldFrame } from "./frame/frame";
+export {
+  eulerFromMatrix3d,
+  IDENTITY_MATRIX3,
+  matrixFromEuler3d,
+  matrixFromQuaternion,
+  multiplyMatrix3,
+  quaternionFromEuler3d,
+  slerpQuaternion,
+  swingFrame3d,
+  swingTwist3d,
+  transposeMatrix3,
+  type Euler3d,
+  type Matrix3,
+  type PivotOffset3d,
+  type Quaternion,
+  type SwingTwist3d,
+  type Vec3,
+  type WorldFrame3d,
+} from "./frame/frame3d";
+export type { SolveQuality, SolveResult } from "./ik/shared/result";
+export { UNBOUND_POLE3D, type Pole3d } from "./ik/solve3d/analytic";
+export type { ChainMember3d } from "./ik/solve3d/chain";
+export { FREE_JOINT3D, type JointLimit3d } from "./ik/solve3d/constraint";
+export { chainShape3d, solveChain3d, type ChainShape3d } from "./ik/solve3d/solve";

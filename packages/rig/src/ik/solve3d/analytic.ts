@@ -17,7 +17,6 @@ import {
   ZERO_EULER,
   effectiveLink3d,
   pivotFromBase3d,
-  readFrame3d,
   readPivotOffset3d,
   type EffectiveLink3d,
   type Euler3d,
@@ -49,13 +48,6 @@ export type Pole3d =
 
 /** Solve with no pole bound; shared, not allocated per solve. */
 export const UNBOUND_POLE3D: Pole3d = Object.freeze({ kind: "unbound" });
-
-/** Delivered `pole` slot: absent is `unbound`, else the point its frame names; non-finite reads as zero. */
-export function readPole3d(input: unknown): Pole3d {
-  if (input === undefined) return UNBOUND_POLE3D;
-  const frame = readFrame3d(input);
-  return { kind: "point", point: [frame.x, frame.y, frame.z] };
-}
 
 /** Pole re-read componentwise through `readNumber`: non-finite reads as zero; `unbound` returns itself. */
 export function rereadPole3d(pole: Pole3d): Pole3d {

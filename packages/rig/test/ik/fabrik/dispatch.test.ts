@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readSolveMembers } from "../../../src/ik/shared/chain";
 import { solveTwoBone } from "../../../src/ik/shared/analytic";
 import { solveChain } from "../../../src/ik/solve2d/solve";
 
@@ -27,17 +26,9 @@ function bone(id: string, base: string, length: number) {
   return { id, base, length };
 }
 
-function authoredBone(id: string, base: string, length: number) {
-  return { id, base, values: { length }, progress: 0 };
-}
-
 /** A chain leaf: the same member, plus the goal that makes it addressed. */
 function tip(id: string, base: string, length: number, goal: Frame) {
   return { id, base, length, goal };
-}
-
-function authoredTip(id: string, base: string, length: number, goal: Frame) {
-  return { id, base, values: { length }, progress: 0, goal };
 }
 
 /** ADR-051's worked rig, addressed through the bare `target` slot. */
@@ -45,11 +36,6 @@ const ARM = [bone(UPPER, SHOULDER, 80), bone(FOREARM, UPPER, 60)];
 
 /** The same rig with the goal on the leaf, which is what the dict derives. */
 const ADDRESSED_ARM = [bone(UPPER, SHOULDER, 80), tip(FOREARM, UPPER, 60, HAND)];
-const AUTHORED_ARM = [authoredBone(UPPER, SHOULDER, 80), authoredBone(FOREARM, UPPER, 60)];
-const AUTHORED_ADDRESSED_ARM = [
-  authoredBone(UPPER, SHOULDER, 80),
-  authoredTip(FOREARM, UPPER, 60, HAND),
-];
 
 describe("the solve dispatches on derived shape (Slice D3)", () => {
   it("FB-9 two members and one goal are byte-identical to the closed form", () => {
@@ -72,7 +58,10 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // FABRIK would be caught by the convention rather than only by the byte comparison above.
     const solved = solveChain(
       ROOT,
-      readSolveMembers(AUTHORED_ARM, new Map([[FOREARM, HAND]])),
+      [
+        { ...bone(UPPER, SHOULDER, 80), pivot: { x: 0, y: 0 } },
+        { ...tip(FOREARM, UPPER, 60, HAND), pivot: { x: 0, y: 0 } },
+      ],
       false,
     ).rotations;
     expect(solved[UPPER]).toBeCloseTo(40.168, 3);

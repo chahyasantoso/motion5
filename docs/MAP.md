@@ -45,7 +45,7 @@ Public: `.`
 
 ## packages/rig
 
-Public: `.`, `./internal`
+Public: `.`
 
 - `src/`: joint vocabulary
 - `src/frame/`: world frames

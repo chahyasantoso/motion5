@@ -7,9 +7,19 @@ import {
   matrixFromEuler3d,
   multiplyMatrix3,
   multiplyVector3,
-  readFrame3d,
   swingFrame3d,
+  type WorldFrame3d,
 } from "../../src/frame/frame3d";
+
+const frame3d = (partial: Partial<WorldFrame3d> = {}): WorldFrame3d => ({
+  x: 0,
+  y: 0,
+  z: 0,
+  rotation: 0,
+  rotationX: 0,
+  rotationY: 0,
+  ...partial,
+});
 
 // Issue #349 phase 8: the 3D seam keeps CSS's Rz * Rx * Ry convention in one owner. The
 // gimbal-lock branch is intentionally deterministic rather than pretending Euler coordinates are
@@ -38,8 +48,8 @@ describe("3D frame convention", () => {
 
   it("TH-2 composes translation through the parent matrix", () => {
     const result = composeWorld3d(
-      readFrame3d({ x: 10, y: 20, z: 30, rotation: 90 }),
-      readFrame3d({ x: 5, y: 0, z: 0 }),
+      frame3d({ x: 10, y: 20, z: 30, rotation: 90 }),
+      frame3d({ x: 5, y: 0, z: 0 }),
     );
     expect(result.x).toBeCloseTo(10, 12);
     expect(result.y).toBeCloseTo(25, 12);
@@ -72,21 +82,6 @@ describe("3D frame convention", () => {
       const error = Math.max(...matrix.map((value, index) => Math.abs(value - rebuilt[index]!)));
       expect(error).toBeLessThanOrEqual(1e-12);
     }
-    expect(
-      readFrame3d({
-        x: Number.NaN,
-        y: Number.POSITIVE_INFINITY,
-        z: "bad",
-        rotation: Number.NEGATIVE_INFINITY,
-      }),
-    ).toEqual({
-      x: 0,
-      y: 0,
-      z: 0,
-      rotation: 0,
-      rotationX: 0,
-      rotationY: 0,
-    });
   });
 
   it("TH-21 multiplies and composes every entry exactly as the row-major oracle does", () => {

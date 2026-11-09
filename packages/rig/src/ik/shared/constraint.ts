@@ -1,7 +1,4 @@
 import {
-  BEND_KEY,
-  classifyBend,
-  FLIP_KEY,
   LIMIT_CEILING,
   LIMIT_FLOOR,
   MAX_ROTATION_KEY,
@@ -170,18 +167,4 @@ export function readAngleRange(
   if (min === undefined && max === undefined) return FREE_JOINT;
   const lower = min ?? LIMIT_FLOOR;
   return { kind: "range", min: lower, max: Math.max(lower, max ?? LIMIT_CEILING) };
-}
-
-/** Closed form's `flip` from either branch-hint spelling: `positive` bend is true, `negative` false; absent or malformed `bend` falls back to `flip`. */
-export function readBend(values: Readonly<Record<string, unknown>>): boolean {
-  const bend = classifyBend(values[BEND_KEY]);
-  switch (bend.kind) {
-    case "bend":
-      return bend.bend === "positive";
-    case "absent":
-    case "malformed":
-      return Boolean(values[FLIP_KEY]);
-    default:
-      return unreachable(bend);
-  }
 }
