@@ -13,9 +13,9 @@ import {
   scan,
   searchablePaths,
   searchBytes,
-} from "../../../../../scripts/repo-metrics.mjs";
+} from "../../scripts/repo-metrics.mjs";
 
-const REPO = fileURLToPath(new URL("../../../../../", import.meta.url));
+const REPO = fileURLToPath(new URL("../../", import.meta.url));
 
 async function fixture(files: Record<string, string>): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "motion5-repo-metrics-"));

@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const root = fileURLToPath(new URL("../../../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 async function text(path: string): Promise<string> {
   return readFile(join(root, path), "utf8");

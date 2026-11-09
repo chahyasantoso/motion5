@@ -27,7 +27,7 @@
     },
     {
       "id": "boundaries",
-      "test": "packages/core/test/unit/scripts/boundary-scan.test.ts"
+      "test": "test/repo/boundary-scan.test.ts"
     },
     {
       "id": "end-to-end",
@@ -169,7 +169,7 @@
     },
     {
       "id": "s7-audit-workflow",
-      "test": "packages/core/test/unit/scripts/s7-recovery-audit.test.ts"
+      "test": "test/repo/s7-recovery-audit.test.ts"
     },
     {
       "id": "p2-runtime-smells",
@@ -181,7 +181,7 @@
     },
     {
       "id": "k-public-port-types",
-      "test": "packages/core/test/unit/scripts/public-port-types.test.ts"
+      "test": "test/repo/public-port-types.test.ts"
     },
     {
       "id": "b-clock-tick-error-boundaries",

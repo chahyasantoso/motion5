@@ -13,7 +13,7 @@ type MutationConfig = {
 describe("mutation gate configuration (E3)", () => {
   it("uses the Vitest 4-compatible runner and emits the audit JSON report", async () => {
     const config = JSON.parse(
-      await readFile(new URL("../../../../../stryker.config.json", import.meta.url), "utf8"),
+      await readFile(new URL("../../stryker.config.json", import.meta.url), "utf8"),
     ) as MutationConfig;
 
     expect(config.testRunner).toBe("vitest");

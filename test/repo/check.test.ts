@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STEPS, run } from "../../../../../scripts/check.mjs";
+import { STEPS, run } from "../../scripts/check.mjs";
 
 function steps(codes: Record<string, number> = {}, logs: Record<string, string> = {}) {
   return (step: string) => ({ code: codes[step] ?? 0, log: logs[step] ?? "" });

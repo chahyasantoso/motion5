@@ -10,7 +10,7 @@ import {
   declaration,
   parseSource,
   seamResultReads,
-} from "../../helpers/source-region";
+} from "../../packages/core/test/helpers/source-region";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -33,8 +33,8 @@ import {
 //
 // The scan root and the walk are `evidence-case-ids.test.ts`'s, deliberately: a source-reading idiom
 // is no more one package's than a citation id is.
-const REPO_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
-const SELF = "packages/core/test/unit/scripts/source-region-anchors.test.ts";
+const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const SELF = "test/repo/source-region-anchors.test.ts";
 const HELPER = "packages/core/test/helpers/source-region.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 const TEST_FILE = /\.test\.tsx?$/;
@@ -183,12 +183,17 @@ describe("source-region anchors", () => {
   });
 
   it("requires a real helper import rather than prose or a type-only import", () => {
-    const statement = 'import { code as readCode } from "../../helpers/source-region";';
+    const statement =
+      'import { code as readCode } from "../../packages/core/test/helpers/source-region";';
     expect(importsOwner(statement)).toBe(true);
     expect(importsOwner(`// ${statement}`)).toBe(false);
     expect(importsOwner(`const example = ${JSON.stringify(statement)};`)).toBe(false);
-    expect(importsOwner('import type { code } from "../../helpers/source-region";')).toBe(false);
-    expect(importsOwner('import { type code } from "../../helpers/source-region";')).toBe(false);
+    expect(
+      importsOwner('import type { code } from "../../packages/core/test/helpers/source-region";'),
+    ).toBe(false);
+    expect(
+      importsOwner('import { type code } from "../../packages/core/test/helpers/source-region";'),
+    ).toBe(false);
   });
 
   it("keeps parsed declaration bounds through nested braces and semicolons", () => {

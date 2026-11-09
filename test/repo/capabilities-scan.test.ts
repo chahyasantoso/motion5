@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const ROOT = fileURLToPath(new URL("../../../../..", import.meta.url));
+const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const RETIRED = /\b(capabilityOf|dedicatedMembers|PluginCapability|UNJUDGED|NO_PLUGIN)\b/;
 
 function sources(dir: string, out: string[] = []): string[] {

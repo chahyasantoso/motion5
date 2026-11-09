@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const root = fileURLToPath(new URL("../../../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../", import.meta.url));
 function scenario(body: string) {
   const result = spawnSync(
     process.execPath,

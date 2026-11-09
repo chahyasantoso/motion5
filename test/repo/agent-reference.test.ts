@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
-const ROOT = new URL("../../../../../", import.meta.url);
+const ROOT = new URL("../../", import.meta.url);
 const reference = readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8");
 const PACKAGES = [
   "moves/src/index.ts",

@@ -2,7 +2,7 @@
 
 Current project state only. Replace stale entries rather than append history. The four sections below
 are the complete shape. **Now** and **Next in line** carry exactly one bullet each, and no bullet
-states a phase; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces the shape and
+states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-08, Asia/Jakarta.

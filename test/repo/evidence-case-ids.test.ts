@@ -6,8 +6,8 @@ import { describe, expect, it } from "vitest";
 // of those citations ambiguous. Uniqueness is therefore asked across the suite rather than within a
 // file, and titles are matched rather than bare ids so a comment naming another case cannot read as
 // a second declaration.
-const REPO_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
-const SELF = "packages/core/test/unit/scripts/evidence-case-ids.test.ts";
+const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const SELF = "test/repo/evidence-case-ids.test.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 // A series is one to three capital letters, a hyphen and a number at the head of a test title. A
 // prefix carrying a digit is a plan slice (`T4-3`) and does not match, so nothing has to list which

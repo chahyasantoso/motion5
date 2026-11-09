@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkMap, mapProblems, render } from "../../../../../scripts/repo-map.mjs";
+import { checkMap, mapProblems, render } from "../../scripts/repo-map.mjs";
 
 const OWNERS = { "packages/a/src": "the a entry", "packages/a/src/b": "the b part" };
 

@@ -6,7 +6,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
-const root = fileURLToPath(new URL("../../../../..", import.meta.url));
+const root = fileURLToPath(new URL("../..", import.meta.url));
 // The local compiler run by this Node binary, so the spawn carries no shell and no batch file.
 const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
 const FORBIDDEN_DIRECTORY = /\/(?:runtime|graph)\//;

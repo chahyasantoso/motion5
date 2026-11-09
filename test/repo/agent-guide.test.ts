@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const ROOT = new URL("../../../../../", import.meta.url);
+const ROOT = new URL("../../", import.meta.url);
 const guide = [
   "docs/guide/agent-motion.md",
   "docs/guide/agent-events.md",

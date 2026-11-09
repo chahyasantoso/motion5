@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { checkIndex } from "../../../../../scripts/adr-index.mjs";
+import { checkIndex } from "../../scripts/adr-index.mjs";
 
 /**
  * A number names exactly one record, and a link to one resolves.
@@ -18,7 +18,7 @@ import { checkIndex } from "../../../../../scripts/adr-index.mjs";
  * resolves to one file and that a link resolves to a file at all. See ADR-093 and ADR-095.
  */
 
-const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
+const DOCS = fileURLToPath(new URL("../../docs/", import.meta.url));
 const RECORD = /^ADR-(\d{3})-[a-z0-9-]+\.md$/;
 const RECORD_LINK = /\]\((\.\/ADR-[^)]*)\)/g;
 const MARKDOWN = /\.md$/;

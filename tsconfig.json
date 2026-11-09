@@ -49,5 +49,5 @@
     },
     "jsx": "react-jsx"
   },
-  "include": ["packages/**/*.ts", "demo/**/*", "apps/**/*"]
+  "include": ["packages/**/*.ts", "test/repo/**/*.ts", "demo/**/*", "apps/**/*"]
 }

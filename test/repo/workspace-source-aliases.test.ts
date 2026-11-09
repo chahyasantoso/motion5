@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { workspaceSourceAliases } from "../../../../../scripts/workspace-source-aliases.mjs";
-import { code } from "../../helpers/source-region";
+import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
+import { code } from "../../packages/core/test/helpers/source-region";
 
 // PR #558: core aliases were a hand-written prefix list, so the declared
 // `@motion5/core/adapters/browser-clock` subpath resolved through the `adapters` alias to a missing
 // file and Vitest discovery failed. Every workspace manifest now owns its aliases (R1, widened).
-const root = new URL("../../../../../", import.meta.url);
+const root = new URL("../../", import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), "utf8");
 
 interface Manifest {

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
+import { PENDING_LEDGER, pendingPaths } from "../../test/pending.mjs";
 
 /**
  * The pending ledger may only shrink.
@@ -18,7 +18,7 @@ import { PENDING_LEDGER, pendingPaths } from "../../../../../test/pending.mjs";
  */
 const PENDING_CEILING = 0;
 
-const ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const MARKER = "// @ts-nocheck";
 const PHASES = new Set([3, 4, 5, 6, 7]);
 

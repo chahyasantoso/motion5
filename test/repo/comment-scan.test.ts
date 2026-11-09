@@ -8,7 +8,7 @@ import {
   scan,
   trackedSources,
   violationsOf,
-} from "../../../../../scripts/comment-scan.mjs";
+} from "../../scripts/comment-scan.mjs";
 
 const THREE = "// one\n// two\n// three";
 const FOUR = "// one\n// two\n// three\n// four";

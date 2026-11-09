@@ -62,7 +62,7 @@ import { describe, expect, it } from "vitest";
  * argument. The subject both of them read has one owner now. See ADR-095.
  */
 
-const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
+const DOCS = fileURLToPath(new URL("../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
 const LEADING_DIR = /^\.\//;
@@ -111,7 +111,7 @@ const CEILING = 8000;
 // The only two files a reader opens on every task, and so the only two with a ceiling. AGENTS.md
 // held 8,013 bytes of narrative before it was cut to its rules, which is the headroom this number
 // refuses to give back.
-const AGENTS = fileURLToPath(new URL("../../../../../AGENTS.md", import.meta.url));
+const AGENTS = fileURLToPath(new URL("../../AGENTS.md", import.meta.url));
 const AGENTS_CEILING = 4000;
 
 const SECTIONS = [

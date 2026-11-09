@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const execFileAsync = promisify(execFile);
-const root = fileURLToPath(new URL("../../../../..", import.meta.url));
+const root = fileURLToPath(new URL("../..", import.meta.url));
 // The local compiler run by this Node binary: no shell, no batch file, and no `npx` resolution per
 // call, which is what a deprecation warned about when the spawn carried both arguments and a shell.
 const tsc = join(root, "node_modules", "typescript", "bin", "tsc");

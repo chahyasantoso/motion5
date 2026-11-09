@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareCycles, cycleKey } from "../../../../../scripts/cycle-scan.mjs";
+import { compareCycles, cycleKey } from "../../scripts/cycle-scan.mjs";
 
 describe("cycle scan", () => {
   it("spells a cycle one way whatever its rotation", () => {

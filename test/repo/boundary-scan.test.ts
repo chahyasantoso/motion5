@@ -16,7 +16,7 @@ import {
   undeclaredWorkspaceSubpaths,
   walk,
   withoutComments,
-} from "../../../../../scripts/boundary-scan.mjs";
+} from "../../scripts/boundary-scan.mjs";
 import {
   adapterEntrypointFixture,
   appCoreInternalViolationFixture,
@@ -38,9 +38,9 @@ import {
   testingEntrypointViolationFixture,
   testingSourcePathViolationFixture,
   undeclaredSubpathFixture,
-} from "../../../../../scripts/boundary-scan-fixtures";
+} from "../../scripts/boundary-scan-fixtures";
 
-const root = fileURLToPath(new URL("../../../../..", import.meta.url));
+const root = fileURLToPath(new URL("../..", import.meta.url));
 const WORKSPACES = JSON.stringify({ workspaces: ["packages/*", "apps/*"] });
 const PACKAGES_ONLY = JSON.stringify({ workspaces: ["packages/*"] });
 
