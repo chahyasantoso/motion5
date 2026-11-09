@@ -9,12 +9,10 @@ const PACKAGES = [
   "player/src/index.ts",
   "dom/src/index.ts",
   "react/src/index.ts",
-  "react/src/engine.ts",
   "rig/src/index.ts",
   "physics/src/index.ts",
   "rapier/src/index.ts",
   "three/src/index.ts",
-  "three/src/engine.ts",
 ];
 
 /** Every name a package's entry exports, read by the compiler as a caller sees them. */

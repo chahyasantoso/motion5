@@ -5,7 +5,6 @@
   "type": "module",
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/core": "0.0.0",
     "@motion5/dom": "0.0.0",
     "@motion5/moves": "0.0.0",
     "@motion5/player": "0.0.0"
@@ -17,23 +16,6 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./engine": {
-      "types": "./src/engine.ts",
-      "default": "./src/engine.ts"
     }
-  },
-  "motion5": {
-    "engine": [
-      "src/engine.ts",
-      "src/use-anchor.ts",
-      "src/derived-dom-patch.ts",
-      "src/dom-binding.ts",
-      "src/dom-patch.ts",
-      "src/motion-project.ts",
-      "src/patch-store.ts",
-      "src/row-patch-source.ts",
-      "src/word.ts"
-    ]
   }
 }

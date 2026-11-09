@@ -9,7 +9,6 @@ const guide = [
   "docs/guide/agent-rigs.md",
   "docs/guide/agent-principles.md",
   "docs/guide/agent-3d.md",
-  "docs/guide/agent-motion-engine.md",
 ]
   .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
   .join("\n");

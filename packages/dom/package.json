@@ -6,7 +6,6 @@
   "sideEffects": false,
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/core": "0.0.0",
     "@motion5/moves": "0.0.0",
     "@motion5/player": "0.0.0"
   },
@@ -14,15 +13,6 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./engine": {
-      "types": "./src/engine/index.ts",
-      "default": "./src/engine/index.ts"
     }
-  },
-  "motion5": {
-    "engine": [
-      "src/engine/"
-    ]
   }
 }

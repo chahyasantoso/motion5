@@ -1,5 +1,6 @@
 import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@motion5/moves";
 import { manualDriver, play } from "@motion5/player";
+import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
@@ -97,7 +98,7 @@ function pick(value: unknown, fields: readonly string[] | undefined): unknown {
   );
 }
 
-/** Each target's value at each requested point, with no browser and no engine. */
+/** Each target's value at each requested point, with no browser. */
 export function sampleScene(
   module: SceneModule,
   request: SceneRequest,
@@ -147,4 +148,82 @@ export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): 
     ),
   );
   return { kind: "timeline", step: STEP_MS, end, rows };
+}
+
+export type SampleArgs =
+  | {
+      readonly kind: "ok";
+      readonly file: string;
+      readonly request: SceneRequest;
+      readonly nodes?: readonly string[];
+      readonly fields?: readonly string[];
+      readonly events?: Events;
+    }
+  | { readonly kind: "usage"; readonly message: string };
+
+const SAMPLE_USAGE =
+  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events name:target@ms,...]";
+
+/** The scene file, what to sample and which targets and fields to print, or the usage text. */
+export function parseSampleArgs(argv: readonly string[]): SampleArgs {
+  const usage = (message: string): SampleArgs => ({ kind: "usage", message });
+  const files: string[] = [];
+  const flags = new Map<string, string | undefined>();
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === undefined) break;
+    if (!arg.startsWith("--")) {
+      files.push(arg);
+      continue;
+    }
+    if (!["--at", "--progress", "--nodes", "--fields", "--events"].includes(arg))
+      return usage(`Unknown flag ${arg}. ${SAMPLE_USAGE}`);
+    if (flags.has(arg)) return usage(`Repeated flag ${arg}. ${SAMPLE_USAGE}`);
+    flags.set(arg, argv[i + 1]);
+    i += 1;
+  }
+  const file = files[0];
+  if (file === undefined || files.length !== 1)
+    return usage(`Expected one scene file. ${SAMPLE_USAGE}`);
+  const hasAt = flags.has("--at");
+  if (hasAt === flags.has("--progress"))
+    return usage(`Pass exactly one of --at and --progress. ${SAMPLE_USAGE}`);
+
+  let request: SceneRequest;
+  if (hasAt) {
+    const ms = parseNumbers(flags.get("--at"));
+    if (ms === undefined)
+      return usage(`--at needs ascending non-negative numbers, comma-separated. ${SAMPLE_USAGE}`);
+    request = { kind: "time", ms };
+  } else {
+    const progress = parseNumbers(flags.get("--progress"));
+    if (progress === undefined || progress.some((value) => value > 1))
+      return usage(
+        `--progress needs ascending numbers from 0 to 1, comma-separated. ${SAMPLE_USAGE}`,
+      );
+    request = { kind: "progress", progress };
+  }
+  const list = (flag: string): readonly string[] | "missing" | undefined => {
+    if (!flags.has(flag)) return undefined;
+    const text = flags.get(flag);
+    return text === undefined || text === "" ? "missing" : text.split(",");
+  };
+  const nodes = list("--nodes");
+  if (nodes === "missing") return usage(`--nodes needs ids. ${SAMPLE_USAGE}`);
+  const fields = list("--fields");
+  if (fields === "missing") return usage(`--fields needs names. ${SAMPLE_USAGE}`);
+  const eventText = flags.get("--events");
+  const events = eventText === undefined ? undefined : parseEvents(eventText);
+  if (flags.has("--events") && (events === undefined || "reason" in events))
+    return usage(
+      `${events !== undefined && "reason" in events ? events.reason : "--events needs a list."} ${SAMPLE_USAGE}`,
+    );
+  return {
+    kind: "ok",
+    file,
+    request,
+    ...(events === undefined || "reason" in events ? {} : { events }),
+    ...(nodes === undefined ? {} : { nodes }),
+    ...(fields === undefined ? {} : { fields }),
+  };
 }

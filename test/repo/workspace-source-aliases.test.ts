@@ -35,10 +35,8 @@ describe("workspace source aliases", () => {
   });
 
   it("resolves a nested subpath to its own module, not its parent's", () => {
-    const [engine] = aliases.filter(({ find }) => find.test("@motion5/dom/engine"));
-    expect(engine!.replacement).toBe(
-      fileURLToPath(new URL("packages/dom/src/engine/index.ts", root)),
-    );
+    const [nested] = aliases.filter(({ find }) => find.test("@motion5/three/react"));
+    expect(nested!.replacement).toBe(fileURLToPath(new URL("packages/three/src/react.ts", root)));
   });
 
   it("leaves undeclared subpaths unresolved", () => {
@@ -48,9 +46,9 @@ describe("workspace source aliases", () => {
   });
 
   it("is the only alias source of the root and every app Vite config", () => {
-    const configs = ["vite.config.ts", "apps/ik-playground/vite.config.ts"]
-      .concat(["apps/pose-gap-filler/vite.config.ts", "apps/react-demo/vite.config.ts"])
-      .map((path) => [path, code(new URL(path, root))] as const);
+    const configs = ["vite.config.ts", "apps/react-demo/vite.config.ts"].map(
+      (path) => [path, code(new URL(path, root))] as const,
+    );
     for (const [path, source] of configs) {
       expect([path, /alias: \[\.\.\.workspaceSourceAliases\(/.test(source)]).toEqual([path, true]);
       expect([path, source.includes("find:")]).toEqual([path, false]);

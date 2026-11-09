@@ -19,7 +19,6 @@ The guide documents the surface the package declares in its `exports` map and no
 10. [Events](./agent-events.md), [physics](./agent-physics.md), [rigs](./agent-rigs.md),
     [motion principles](./agent-principles.md) and [3D scenes](./agent-3d.md): the parts of the agent guide a brief may need.
 11. [Agent reference](./agent-reference.md): every function, type and command a scene uses, each with a short example.
-12. [Making motion with the engine](./agent-motion-engine.md): JSON projects, the catalog, and the engine's sample loop.
 
 ## What this guide is not
 

@@ -109,6 +109,3 @@ a list, as `Glyph` in `Catch.tsx` does. To pass the player to a child, type the 
 From the worked examples; defaults to begin from, not rules: letter `squash` `0.18` at a 170 px font, dot `squash`
 `0.45`, `hop` `decay` `0.35` with `bounces` `2`, letter `stagger` `0.25` at about 450 ms a letter, a wipe of 600 ms, and
 a final hold long enough to read the last words.
-
-Motion can also be a JSON project run by the engine: see [Making motion with the engine](./agent-motion-engine.md). A
-code scene needs none of it.

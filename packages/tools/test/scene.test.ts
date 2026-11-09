@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { validateV5 } from "@motion5/core";
 import { atProgress } from "@motion5/moves";
 import {
   parseEvents,
@@ -8,8 +7,6 @@ import {
   sceneTimeline,
   type SceneModule,
 } from "@motion5/tools/scene";
-import { loadBuiltinCatalog, timelineOf } from "@motion5/tools/engine";
-import timingBeat from "../../../apps/react-demo/src/timing-beat.json";
 import * as timing from "../../../apps/react-demo/src/timing-scene";
 
 function moduleOf(value: unknown): SceneModule {
@@ -37,16 +34,9 @@ describe("scene tools", () => {
     });
   });
 
-  it("draw the same timeline for the code scene as for the engine project", async () => {
-    const catalog = await loadBuiltinCatalog();
-    const project = validateV5(timingBeat, catalog);
-    if (project.kind === "refused") throw new Error(JSON.stringify(project.diagnostics));
-    const engine = timelineOf(project.value, catalog);
+  it("draw one timeline row per target", () => {
     const code = sceneTimeline(beat);
-    if (engine.kind !== "timeline" || code.kind !== "timeline") throw new Error("No timeline.");
-    const spans = (rows: typeof code.rows) =>
-      rows.map((row) => (row.kind === "moves" ? [row.start, row.rest] : "still"));
-    expect(spans(code.rows)).toEqual(spans(engine.rows));
+    if (code.kind !== "timeline") throw new Error("No timeline.");
     expect(code.rows.map(({ node }) => node)).toEqual(["letters", "dot", "cover"]);
   });
 });
