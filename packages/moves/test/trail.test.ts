@@ -60,6 +60,12 @@ describe("trail", () => {
     expect(Math.abs(windowed - value)).toBeLessThan(0.001 * 2);
   });
 
+  it("comes to rest exactly on the signal once it is close and slow", () => {
+    const tail = trail(step, { stiffness: 170, damping: 14 });
+    expect(tail(liveAt(2500), [])).toBe(1);
+    expect(tail(liveAt(2516), [])).toBe(1);
+  });
+
   it("is the signal itself with no clock", () => {
     expect(trail(() => 3, {})(atProgress(0.5), [])).toBe(3);
   });

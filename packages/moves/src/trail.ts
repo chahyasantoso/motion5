@@ -10,7 +10,7 @@ export interface TrailOptions {
   readonly damping?: number;
   /** Ms between spring steps, 1 to 33; default 8. */
   readonly stepMs?: number;
-  /** History that would move the value by less than this share of its swing is forgotten; default 0.001. */
+  /** Closer than this and slower than ten times it a second, it rests on the signal; also how far history fades. */
   readonly rest?: number;
 }
 
@@ -23,7 +23,8 @@ export function trail(
 ): (time: Time, events: Events) => number {
   const springOptions = { stiffness: options.stiffness ?? 170, damping: options.damping ?? 26 };
   const stepMs = options.stepMs ?? 8;
-  const memoryMs = springMemory(springOptions, options.rest ?? 0.001) * 1000;
+  const rest = options.rest ?? 0.001;
+  const memoryMs = springMemory(springOptions, rest) * 1000;
   if (!(stepMs >= 1 && stepMs <= 33)) throw new RangeError("trail: stepMs must be from 1 to 33.");
   if (!(memoryMs <= LONGEST_MEMORY_MS))
     throw new RangeError("trail: the spring rings too long to forget its past; raise damping.");
@@ -33,14 +34,16 @@ export function trail(
     let at = Math.max(0, Math.floor((now - memoryMs) / stepMs) * stepMs);
     let value = signal(timeAt(time, at), events);
     let speed = 0;
+    let goal = value;
     while (at < now) {
-      const goal = signal(timeAt(time, at), events);
+      goal = signal(timeAt(time, at), events);
       const dt = Math.min(stepMs, now - at);
       const moved = spring(value - goal, speed, dt / 1000, springOptions);
       value = goal + moved.offset;
       speed = moved.speed;
       at += dt;
     }
-    return value;
+    const resting = Math.abs(value - goal) < rest && Math.abs(speed) < 10 * rest;
+    return resting ? goal : value;
   };
 }
