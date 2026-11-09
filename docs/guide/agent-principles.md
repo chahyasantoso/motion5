@@ -51,4 +51,6 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
 
 - `Pose2d` only: no skew and no 3D. `smear` on content that must not turn needs the inner element.
 - `trail` refuses a spring that rings past 4 s; raise damping.
+- `trail` and `velocity` take the scene's time, never `span.of(time, ease)`: they sample the signal at other ms, so
+  the signal applies its own spans and eases.
 - An overshooting ease (`back*`, `elasticOut`, `springEase`) goes on values through `mix`, never into a move's progress.

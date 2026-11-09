@@ -16,7 +16,7 @@ export interface TrailOptions {
 
 const LONGEST_MEMORY_MS = 4000;
 
-/** A value chasing `signal` on a spring; starts from rest one spring memory ago, so a frame's cost never grows. */
+/** A value chasing `signal` on a spring at a fixed cost per frame; pass the scene's time, never an eased one. */
 export function trail(
   signal: (time: Time, events: Events) => number,
   options: TrailOptions,

@@ -131,7 +131,8 @@ const { offset } = spring(-1, 0, 0.2, { stiffness: 170, damping: 12 });
 ```
 
 **`trail(signal, { stiffness, damping, stepMs, rest })`**: a value chasing `signal(time, events)` on a spring, for
-follow-through and drag; the signal itself with no clock. **`TrailOptions`** is its options' type.
+follow-through and drag; the signal itself with no clock. Pass the scene's time: the signal applies its own spans
+and eases, since an eased time cannot be moved to another ms. **`TrailOptions`** is its options' type.
 ```ts
 const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
 tail(time, events);
@@ -188,7 +189,7 @@ target's rest, so a path ending at 0,0 arrives at rest; `turn: true` adds `rotat
 const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
 ```
 
-**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock.
+**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock. Pass the scene's time, not an eased one.
 ```ts
 const { vx, vy } = velocity(ball, time, events);
 ```

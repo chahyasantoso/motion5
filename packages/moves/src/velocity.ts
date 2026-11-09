@@ -22,7 +22,7 @@ function between(
   return { vx: ((b.x ?? 0) - (a.x ?? 0)) / seconds, vy: ((b.y ?? 0) - (a.y ?? 0)) / seconds };
 }
 
-/** Px per second a signal's `x` and `y` move at `time`, from a central difference `stepMs` wide; zero with no clock. */
+/** Px per second a signal's `x` and `y` move at the scene's `time`, never an eased one; zero with no clock. */
 export function velocity(
   signal: (time: Time, events: Events) => Pose2d,
   time: Time,
