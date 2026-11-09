@@ -1,6 +1,7 @@
 import type { Events } from "./events";
 import { spring, springMemory } from "./spring";
-import { elapsedOf, unreachable, type Time } from "./time";
+import { elapsedOf, type Time } from "./time";
+import { unreachable } from "./unreachable";
 
 export interface TrailOptions {
   /** Pull towards the signal, per second squared; default 170. */

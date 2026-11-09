@@ -1,5 +1,6 @@
 import { spring } from "./spring";
-import { elapsedOf, unreachable, type Time } from "./time";
+import { elapsedOf, type Time } from "./time";
+import { unreachable } from "./unreachable";
 
 /** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where. */
 export interface MotionEvent {

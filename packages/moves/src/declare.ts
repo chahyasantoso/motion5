@@ -1,7 +1,7 @@
 import type { Pose2d } from "./pose";
 import type { Anchor2d, Drawn, Point2d, Reveal } from "./shapes";
 import type { Time } from "./time";
-import { unreachable } from "./time";
+import { unreachable } from "./unreachable";
 
 /** One option of a move; an option with a `default` may be left out by the caller. */
 export type OptionField =

@@ -1,4 +1,5 @@
-import { UNTIMED, unreachable, type Time } from "./time";
+import { UNTIMED, type Time } from "./time";
+import { unreachable } from "./unreachable";
 
 /** Lanes started `stagger` lane-lengths apart; `span` reaches the last finish. */
 export interface Lanes {

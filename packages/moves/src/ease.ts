@@ -1,5 +1,5 @@
 import { spring, springMemory, type SpringOptions } from "./spring";
-import { unreachable } from "./time";
+import { unreachable } from "./unreachable";
 
 /** A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot. */
 export type Ease = (progress: number) => number;
