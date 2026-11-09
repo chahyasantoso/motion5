@@ -1,7 +1,7 @@
 import type { Time } from "./time";
 import { unreachable } from "./unreachable";
 
-/** `time` moved to `ms` on its own clock. */
+/** `time` moved to `ms` on its own clock, for reading a signal a moment earlier or later; untimed stays as it is. */
 export function timeAt(time: Time, ms: number): Time {
   const clock = time.clock;
   switch (clock.kind) {
