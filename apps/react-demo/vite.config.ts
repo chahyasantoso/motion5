@@ -13,8 +13,6 @@ export default defineConfig({
       "@motion5/player",
       "@motion5/physics",
       "@motion5/rapier",
-      "@motion5/plugins",
-      "@motion5/core",
       "@motion5/react",
     ],
   },

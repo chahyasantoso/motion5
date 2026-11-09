@@ -18,17 +18,7 @@ const HEADER = [
 ];
 
 export const OWNERS = {
-  "apps/ik-playground/src": "IK demo app",
-  "apps/ik-playground/src/components": "stages, panels",
-  "apps/pose-gap-filler/src/body": "body state",
-  "apps/pose-gap-filler/src/filler": "gap filling",
-  "apps/pose-gap-filler/src/live": "live capture",
-  "apps/pose-gap-filler/src/replay": "record, replay",
-  "apps/pose-gap-filler/src/rig": "rig and solver",
-  "apps/pose-gap-filler/src/synthetic": "simulated actor",
-  "apps/pose-gap-filler/src/view": "views",
   "apps/react-demo/src": "React demo app",
-  "apps/react-demo/src/components": "inspector, rig",
   "packages/core/src": "Engine and entries",
   "packages/core/src/adapters": "scheduler, scroll, gsap",
   "packages/core/src/adapters/interpolator": "GSAP interpolator",
@@ -56,7 +46,6 @@ export const OWNERS = {
   "packages/plugins/src/models/goals": "goals Model rules",
   "packages/plugins/src/models/solved": "solved Model rules",
   "packages/dom/src": "DOM and SVG renderer",
-  "packages/dom/src/engine": "engine patch adapter, clock",
   "packages/moves/src": "moves, time, pose",
   "packages/player/src": "scene player, manual driver",
   "packages/physics/src": "physics",
@@ -69,7 +58,6 @@ export const OWNERS = {
   "packages/plugins/src/transform": "transform plugins",
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
-  "packages/tools/src/engine": "engine tools",
   "packages/tools/src/scene/templates": "motion:new templates",
   "packages/tools/src/page": "page tools",
   "packages/tools/src/scene": "scene sample, timeline",

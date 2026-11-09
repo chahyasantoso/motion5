@@ -48,8 +48,7 @@
     "bench:values": "node scripts/bench-values.mjs",
     "bench:edit-cost": "node scripts/bench-edit-cost.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@motion5/react-demo",
-    "dev:ik": "npm run dev --workspace=@motion5/ik-playground"
+    "dev": "npm run dev --workspace=@motion5/react-demo"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",
