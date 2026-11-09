@@ -46,6 +46,13 @@ describe("applyPose", () => {
     });
   });
 
+  it("puts the target back at rest when a later pose moves nothing", () => {
+    const target = element();
+    applyPose(target, { rotation: 180, scaleX: 1.6 });
+    applyPose(target, {});
+    expect(target.style.transform).toBe("");
+  });
+
   it("anchors at the centre when the pose names no anchor", () => {
     const target = element();
     applyPose(target, { rotation: 90 });

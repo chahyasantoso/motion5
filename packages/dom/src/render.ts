@@ -93,7 +93,7 @@ export function pathData(cubics: readonly Cubic2d[]): string {
 /** Writes a pose; an absent anchor is the centre, measured on the element's own box for SVG as for HTML. */
 export function applyPose(target: RenderTarget, pose: Pose2d): void {
   const transform = cssTransform(pose);
-  if (transform !== "") target.style.transform = transform;
+  target.style.transform = transform;
   if (pose.opacity !== undefined) target.style.opacity = String(pose.opacity);
   if ("ownerSVGElement" in target) target.style.transformBox = "fill-box";
   target.style.transformOrigin = cssOrigin(pose.anchor ?? "center");
