@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = new URL("../../", import.meta.url);
 const guide = [
+  "docs/guide/live.md",
   "docs/guide/agent-motion.md",
   "docs/guide/agent-events.md",
   "docs/guide/agent-physics.md",
@@ -59,6 +60,7 @@ describe("agent guide", () => {
     const index = readFileSync(new URL("docs/guide/README.md", ROOT), "utf8");
     const core = readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8");
     for (const part of [
+      "live",
       "agent-motion",
       "agent-events",
       "agent-physics",
