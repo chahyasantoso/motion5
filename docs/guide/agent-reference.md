@@ -501,9 +501,15 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
-- **`motion:new <name>`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in `apps/react-demo`.
+- **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
+  `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
+  the scene returns `Pose3d` targets.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
   `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+  On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
+- **`motion:review <scene.ts> [--to ms] [--hold ms] [--jump n]`**: no page: samples every field of every target each
+  16 ms and finds a jump over `--jump` in one step (positions in their units, turns in degrees, scales and opacity at
+  `--jump / 100`), a final hold under `--hold`, and a target still moving at the end; for 3D scenes above all.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
