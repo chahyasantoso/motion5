@@ -12,6 +12,7 @@ export {
 } from "./time";
 export { backEase, ease, springEase, type Ease, type EaseDirection } from "./ease";
 export { spring, type SpringOptions, type SpringState } from "./spring";
+export { trail, type TrailOptions } from "./trail";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
 export { seeded } from "./random";
