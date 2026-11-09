@@ -1,9 +1,6 @@
 import type { Pose2d } from "./pose";
 
-/**
- * A pose stretching a body along its travel by `stretch` per 1000 px/s, capped at `max`, area kept; `heading`
- * is the travel in degrees. A body whose content must not turn wraps it in an inner element posed `{ rotation: -heading }`.
- */
+/** Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; turn content back by `-heading`. */
 export function smear(
   velocity: { readonly vx: number; readonly vy: number },
   options: { readonly stretch: number; readonly max: number },

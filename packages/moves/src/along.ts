@@ -44,11 +44,7 @@ function tableOf(cubics: readonly Cubic2d[]): readonly Sample[] {
   return table;
 }
 
-/**
- * The pose `share` (0 to 1) of the way along the path by distance, so equal steps cover equal ground.
- * Coordinates are relative to the target's rest: a path ending at 0,0 arrives at rest. `turn` adds the
- * heading in degrees, y down, so a downward path is 90. Empty `cubics` throw `RangeError`.
- */
+/** The pose `share` of the way along a path by distance, from the target's rest; `turn` adds the heading, down 90. */
 export function along(
   cubics: readonly Cubic2d[],
   share: number,
