@@ -172,4 +172,16 @@ describe("replace", () => {
     player.replace(fast);
     expect(heard).toEqual(["hit"]);
   });
+
+  it("takes new cues when given, and keeps the old ones when not", () => {
+    const driver = manualDriver({ durationMs: 4000 });
+    const player = play(slow, driver, { cues: [{ name: "hit", at: 500 }] });
+    const heard: number[] = [];
+    player.on("hit", (event) => heard.push(event.at));
+    player.replace(fast);
+    driver.seekMs(1000);
+    player.replace(slow, [{ name: "hit", at: 1500 }]);
+    driver.seekMs(2000);
+    expect(heard).toEqual([500, 1500]);
+  });
 });

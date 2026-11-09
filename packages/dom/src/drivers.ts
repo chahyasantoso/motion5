@@ -90,6 +90,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress,
       clock: { kind: "timed", elapsed: progress * options.duration, length: options.duration },
     }),
+    options,
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -152,6 +153,7 @@ export function scrollDriver(options: {
     atProgress(span <= 0 ? 1 : Math.max(0, Math.min(1, (offset() - options.start) / span)));
   return {
     now,
+    options,
     subscribe(listener) {
       target.addEventListener("scroll", listener);
       return () => target.removeEventListener("scroll", listener);

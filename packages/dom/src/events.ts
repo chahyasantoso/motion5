@@ -83,6 +83,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const driver: EventDriver = {
     now: (): Time => liveAt(elapsed()),
     events: (): Events => log,
+    options,
     subscribe(listener) {
       listeners.add(listener);
       return () => {

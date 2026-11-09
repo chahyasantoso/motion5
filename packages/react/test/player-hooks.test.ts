@@ -1,7 +1,7 @@
 import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import type { RenderTarget } from "@motion5/dom";
+import { clockDriver, type RenderTarget } from "@motion5/dom";
 import { drop, type Time } from "@motion5/moves";
 import { manualDriver, type ManualDriver } from "@motion5/player";
 import {
@@ -10,7 +10,6 @@ import {
   usePlayer,
   useTarget,
   useValue,
-  type DriverKeeper,
   type PlayerHost,
   type Playing,
 } from "@motion5/react";
@@ -123,77 +122,143 @@ describe("useWatch", () => {
 });
 
 describe("a page host", () => {
-  const first = (time: Time) => ({ box: { x: time.progress * 100 } });
-  const second = (time: Time) => ({ box: { x: time.progress * 200 } });
+  type Frame = { box: { x: number } };
+  const first = (time: Time): Frame => ({ box: { x: time.progress * 100 } });
+  const second = (time: Time): Frame => ({ box: { x: time.progress * 200 } });
 
-  function hosted(keeper: DriverKeeper, guard?: PlayerHost["guard"]) {
-    let seen: Playing<{ box: { x: number } }, ManualDriver> | undefined;
-    const driver = manualDriver({ durationMs: 1000 });
-    let disposed = 0;
-    const own = (): ManualDriver & { dispose(): void } => ({
-      ...driver,
-      dispose: () => {
-        disposed += 1;
-      },
-    });
-    const Probe: FC<{ scene: typeof first }> = ({ scene }) => {
-      seen = usePlayer(scene, own);
+  /** A scene file as a hot update sees it: every export a fresh identity, with the clock's length as written. */
+  function sceneFile(scene: (time: Time) => Frame, durationMs: number, cue = 300) {
+    return {
+      scene,
+      clock: () => manualDriver({ durationMs }),
+      cues: [{ name: "hit", at: cue }],
+    };
+  }
+
+  function hosted(guard?: PlayerHost["guard"]) {
+    const keeper = driverKeeper();
+    let seen: Playing<Frame, ManualDriver> | undefined;
+    const Probe: FC<{ file: ReturnType<typeof sceneFile> }> = ({ file }) => {
+      seen = usePlayer(file.scene, file.clock, file.cues);
       return null;
     };
     const host: PlayerHost = { createDriver: keeper.createDriver, ...(guard ? { guard } : {}) };
-    const tree = (scene: typeof first) =>
-      createElement(PlayerHostProvider, { value: host }, createElement(Probe, { scene }));
+    const tree = (file: ReturnType<typeof sceneFile>) =>
+      createElement(PlayerHostProvider, { value: host }, createElement(Probe, { file }));
     return {
+      keeper,
       tree,
-      driver,
       get playing() {
         return seen;
-      },
-      get disposed() {
-        return disposed;
       },
     };
   }
 
-  it("keeps the host's driver and its time when the component leaves and returns, and never disposes it", async () => {
-    const probe = hosted(driverKeeper());
+  it("keeps the driver and its time when the component leaves and returns", async () => {
+    const probe = hosted();
+    const file = sceneFile(first, 1000);
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(probe.tree(first));
+      renderer = create(probe.tree(file));
     });
     const kept = probe.playing?.driver;
     await act(() => probe.playing?.driver.seekMs(400));
     await act(() => renderer?.unmount());
     await act(() => {
-      renderer = create(probe.tree(first));
+      renderer = create(probe.tree(sceneFile(first, 1000)));
     });
     expect(probe.playing?.driver).toBe(kept);
     expect(probe.playing?.player.time.progress).toBeCloseTo(0.4);
-    expect(probe.disposed).toBe(0);
   });
 
-  it("swaps a changed scene in place, keeping the player and the time", async () => {
-    const probe = hosted(driverKeeper());
+  it("swaps a saved file in place: the same player, driver and time, with the new scene and cues", async () => {
+    const probe = hosted();
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(probe.tree(first));
+      renderer = create(probe.tree(sceneFile(first, 1000)));
     });
-    const player = probe.playing?.player;
-    await act(() => probe.playing?.driver.seekMs(500));
-    await act(() => renderer?.update(probe.tree(second)));
-    expect(probe.playing?.player).toBe(player);
+    const before = probe.playing;
+    const heard: number[] = [];
+    before?.player.on("hit", (event) => heard.push(event.at));
+    await act(() => before?.driver.seekMs(500));
+    await act(() => renderer?.update(probe.tree(sceneFile(second, 1000, 700))));
+    expect(probe.playing).toBe(before);
     expect(probe.playing?.player.values.box.x).toBeCloseTo(100);
+    await act(() => before?.driver.seekMs(800));
+    expect(heard).toEqual([300, 700]);
   });
 
-  it("wraps each scene in the host's guard", async () => {
-    let wrapped = 0;
-    const probe = hosted(driverKeeper(), (scene) => {
-      wrapped += 1;
+  it("gives a changed clock a fresh driver at the same ms", async () => {
+    const probe = hosted();
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(probe.tree(sceneFile(first, 1000)));
+    });
+    const old = probe.playing;
+    await act(() => old?.driver.seekMs(500));
+    await act(() => renderer?.update(probe.tree(sceneFile(first, 2000))));
+    expect(probe.playing?.driver).not.toBe(old?.driver);
+    expect(probe.keeper.current()).toBe(probe.playing?.driver);
+    expect(probe.playing?.driver.now().clock).toEqual({
+      kind: "timed",
+      elapsed: 500,
+      length: 2000,
+    });
+    expect(probe.playing?.player.values.box.x).toBeCloseTo(25);
+  });
+
+  it("gives a clock of another kind a driver of that kind, at the same time, and disposes the old", async () => {
+    const keeper = driverKeeper();
+    let disposed = 0;
+    const manual = keeper.createDriver(() => ({
+      ...manualDriver({ durationMs: 1000 }),
+      dispose: () => {
+        disposed += 1;
+      },
+    }));
+    manual.seekMs(250);
+    const clocked = keeper.createDriver(() =>
+      clockDriver({ duration: 1000, autoplay: false, frames: NO_FRAMES, reducedMotion: "play" }),
+    );
+    expect(clocked).not.toBe(manual);
+    expect(typeof clocked.replay).toBe("function");
+    expect(clocked.now().progress).toBeCloseTo(0.25);
+    expect(disposed).toBe(1);
+  });
+
+  it("wraps the first scene and every swapped one in the host's guard", async () => {
+    const wrapped: unknown[] = [];
+    const probe = hosted((scene) => {
+      wrapped.push(scene);
       return scene;
     });
+    let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      create(probe.tree(first));
+      renderer = create(probe.tree(sceneFile(first, 1000)));
     });
-    expect(wrapped).toBe(1);
+    await act(() => renderer?.update(probe.tree(sceneFile(second, 1000))));
+    expect(wrapped).toEqual([first, second]);
+  });
+
+  it("still disposes a driver the component made itself when there is no host", async () => {
+    let disposed = 0;
+    const own = (): ManualDriver & { dispose(): void } => ({
+      ...manualDriver(),
+      dispose: () => {
+        disposed += 1;
+      },
+    });
+    const Bare: FC = () => {
+      usePlayer(first, own);
+      return null;
+    };
+    let renderer: ReturnType<typeof create> | undefined;
+    await act(() => {
+      renderer = create(createElement(Bare));
+    });
+    await act(() => renderer?.unmount());
+    expect(disposed).toBe(1);
   });
 });
+
+const NO_FRAMES = { requestFrame: () => 1, cancelFrame: () => undefined };

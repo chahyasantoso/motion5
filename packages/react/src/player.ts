@@ -9,7 +9,7 @@ import {
   type RefCallback,
 } from "react";
 import { applyPose, type EventDriver, type RenderTarget } from "@motion5/dom";
-import { NO_EVENTS, type Events, type Pose2d } from "@motion5/moves";
+import { NO_EVENTS, elapsedOf, type Events, type Pose2d } from "@motion5/moves";
 import { play, type Driver, type Player, type Scene } from "@motion5/player";
 
 /** A driver a component owns, released when the component leaves. */
@@ -22,7 +22,7 @@ export interface Playing<T extends object, D extends OwnedDriver> {
 
 /** What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped. */
 export interface PlayerHost {
-  /** Answers the driver to play on, given the component's own factory; the host keeps it and no component disposes it. */
+  /** Answers the driver to play on, given the component's own factory; the host owns it and no component disposes it. */
   readonly createDriver?: <D extends OwnedDriver>(own: () => D) => D;
   /** Wraps each scene before it plays, such as to fall back to the last good one when it throws. */
   readonly guard?: <T extends object>(scene: Scene<T>) => Scene<T>;
@@ -35,13 +35,63 @@ const HostContext = createContext<PlayerHost>(NO_HOST);
 /** Gives every `usePlayer` below it the host's driver and guard. */
 export const PlayerHostProvider = HostContext.Provider;
 
-/** A host's driver slot: the first driver a component's factory makes stays for every component and every remount. */
+/** A host's one driver: kept while a factory makes the same driver, replaced at the same time when it does not. */
 export interface DriverKeeper {
   readonly createDriver: NonNullable<PlayerHost["createDriver"]>;
   /** The kept driver, once a component has made it. */
   current(): OwnedDriver | undefined;
-  /** Calls `listener` when the driver is first kept, and returns how to stop. */
+  /** Calls `listener` each time the kept driver changes, and returns how to stop. */
   subscribe(listener: () => void): () => void;
+}
+
+function sameOptions(a: object | undefined, b: object | undefined): boolean {
+  if (a === undefined || b === undefined) return false;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => Object.is(Reflect.get(a, key), Reflect.get(b, key)));
+}
+
+/** Whether `kept` has every member `made` has, of the same kind, and was made with equal options. */
+function sameDriver<D extends OwnedDriver>(kept: OwnedDriver, made: D): kept is D {
+  const keys = Object.keys(made);
+  if (keys.length !== Object.keys(kept).length) return false;
+  const shaped = keys.every((key) => {
+    const mine: unknown = Reflect.get(made, key);
+    const theirs: unknown = Reflect.get(kept, key);
+    return typeof mine === typeof theirs;
+  });
+  return shaped && sameOptions(kept.options, made.options);
+}
+
+interface Seekable {
+  seek(progress: number): void;
+}
+
+function seekable(driver: OwnedDriver): driver is OwnedDriver & Seekable {
+  return "seek" in driver && typeof driver.seek === "function";
+}
+
+interface Playable {
+  play(): void;
+}
+
+function playable(driver: OwnedDriver): driver is OwnedDriver & Playable {
+  return "play" in driver && typeof driver.play === "function";
+}
+
+/** Moves `next` to the time `previous` shows, by ms when both are timed, and keeps it playing. */
+function carryTime(previous: OwnedDriver, next: OwnedDriver): void {
+  if (!seekable(next)) return;
+  const was = previous.now();
+  const now = next.now();
+  const elapsed = elapsedOf(was.clock);
+  const length = now.clock.kind === "timed" ? now.clock.length : undefined;
+  next.seek(
+    elapsed !== undefined && length !== undefined && length > 0
+      ? Math.min(1, elapsed / length)
+      : was.progress,
+  );
+  if (playable(next)) next.play();
 }
 
 export function driverKeeper(): DriverKeeper {
@@ -49,14 +99,19 @@ export function driverKeeper(): DriverKeeper {
   const listeners = new Set<() => void>();
   return {
     createDriver<D extends OwnedDriver>(own: () => D): D {
-      if (kept === undefined) {
-        const made = own();
-        kept = made;
-        for (const listener of [...listeners]) listener();
-        return made;
+      const made = own();
+      if (kept !== undefined && kept !== made && sameDriver(kept, made)) {
+        made.dispose?.();
+        return kept;
       }
-      // The kept driver came from a factory of the same scene file, so it has the same type.
-      return kept as D;
+      const previous = kept;
+      kept = made;
+      if (previous !== undefined && previous !== made) {
+        carryTime(previous, made);
+        previous.dispose?.();
+      }
+      for (const listener of [...listeners]) listener();
+      return made;
     },
     current: () => kept,
     subscribe(listener) {
@@ -68,7 +123,14 @@ export function driverKeeper(): DriverKeeper {
   };
 }
 
-/** Plays `scene` on a driver, with its `cues`, while the component stays; keep every argument stable across renders. */
+interface Shown<T extends object, D extends OwnedDriver> {
+  readonly playing: Playing<T, D>;
+  readonly scene: Scene<T>;
+  readonly createDriver: () => D;
+  readonly cues: Events;
+}
+
+/** Plays `scene` on a driver with its `cues`; keep every argument stable. Under a host, a change swaps in place. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Scene<T>,
   createDriver: () => D,
@@ -77,26 +139,48 @@ export function usePlayer<T extends object, D extends OwnedDriver>(
   const host = useContext(HostContext);
   const adopt = host.createDriver;
   const guard = host.guard;
+  const hosted = adopt !== undefined;
   const [playing, setPlaying] = useState<Playing<T, D>>();
-  const shown = useRef<Scene<T> | undefined>(undefined);
-  const sceneKey = adopt === undefined ? scene : undefined;
+  const shown = useRef<Shown<T, D> | undefined>(undefined);
+  const start = (driver: D): void => {
+    const player = play(guard === undefined ? scene : guard(scene), driver, { cues });
+    const next = { player, driver };
+    shown.current = { playing: next, scene, createDriver, cues };
+    setPlaying(next);
+  };
   useEffect(() => {
-    const driver = adopt === undefined ? createDriver() : adopt(createDriver);
-    const first = guard === undefined ? scene : guard(scene);
-    const player = play(first, driver, { cues });
-    shown.current = scene;
-    setPlaying({ player, driver });
+    start(adopt === undefined ? createDriver() : adopt(createDriver));
     return () => {
-      player.dispose();
-      if (adopt === undefined) driver.dispose?.();
+      const last = shown.current;
+      shown.current = undefined;
+      if (last === undefined) return;
+      last.playing.player.dispose();
+      if (adopt === undefined) last.playing.driver.dispose?.();
       setPlaying(undefined);
     };
-  }, [sceneKey, adopt, guard, createDriver, cues]);
+    // Under a host the scene, factory and cues change in place, in the effect below.
+  }, [
+    hosted ? undefined : scene,
+    hosted ? undefined : createDriver,
+    hosted ? undefined : cues,
+    adopt,
+    guard,
+  ]);
   useEffect(() => {
-    if (adopt === undefined || playing === undefined || shown.current === scene) return;
-    shown.current = scene;
-    playing.player.replace(guard === undefined ? scene : guard(scene));
-  }, [scene, playing, adopt, guard]);
+    const last = shown.current;
+    if (adopt === undefined || last === undefined) return;
+    if (last.createDriver !== createDriver) {
+      const driver = adopt(createDriver);
+      if (driver !== last.playing.driver) {
+        last.playing.player.dispose();
+        start(driver);
+        return;
+      }
+    }
+    if (last.scene !== scene || last.cues !== cues)
+      last.playing.player.replace(guard === undefined ? scene : guard(scene), cues);
+    shown.current = { playing: last.playing, scene, createDriver, cues };
+  }, [scene, createDriver, cues, adopt, guard]);
   return playing;
 }
 

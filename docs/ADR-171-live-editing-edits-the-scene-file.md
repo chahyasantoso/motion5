@@ -14,8 +14,13 @@ without losing its place, and a person and an agent to share one session.
 - A host may own the clock. `@motion5/react` gets a `PlayerHost` context, `{ createDriver?, guard? }`. `usePlayer` asks
   the host for its driver, handing it the component's own factory, and never disposes a driver it did not make. `guard`
   wraps the scene so a throw falls back to the last good one. With no host, `usePlayer` behaves as before.
-- `player.replace(scene)` swaps the scene and keeps the driver, time, cues and listeners. It is the one owner of "a new
-  scene, same time"; `usePlayer` calls it under a host when only the scene changed.
+- A host keeps one driver. `driverKeeper` keeps it while the scene file's factory makes a driver with the same members
+  and equal `options`, so a save keeps time, play state, loop and speed. A factory that makes a different driver (a new
+  length, a new kind) gives a fresh driver, sought to the old time and playing, and the old one is disposed. Every
+  driver therefore carries the `options` it was made with.
+- `player.replace(scene, cues?)` swaps the scene, and the cues when given, and keeps the driver, time and listeners. It
+  is the one owner of "a new scene, same time"; under a host `usePlayer` calls it whenever the scene or cues change,
+  and makes a new player only when the driver itself changes.
 - `clockDriver` gains a rate and a loop range, `setRate(r)` and `setRange(fromMs, toMs)`. It stays the one owner of a
   page's timed clock; there is no second, live clock.
 - The live page lives in `apps/react-demo` (`live.html`, `src/live/`), with its dev endpoints in a Vite plugin,
@@ -31,3 +36,5 @@ Core and plugins stay untouched. An agent that edits the file lands on the stage
 
 - An in-page compiler and a second copy of the code: two owners of the source.
 - A separate live clock: a second owner of the page's timed clock.
+- Keeping the first driver whatever the factory makes: a clock edit would be ignored, and a new kind would break the
+  component that reads it.

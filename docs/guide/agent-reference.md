@@ -324,7 +324,7 @@ const slide = defineMove({
 **`Scene`**: `(time, events) => targets`.
 
 **`play(scene, driver, { cues })`**: runs a scene on a driver; **`Player`** has `.values`, `.time`,
-`.subscribe(target, fn)`, `.refresh()`, `.replace(scene)` (a new scene at the same time, keeping the driver, cues and listeners), `.on(name, fn)` for events passed going forward, `.dispose()`.
+`.subscribe(target, fn)`, `.refresh()`, `.replace(scene, cues?)` (a new scene, and cues when given, at the same time, keeping the driver and listeners), `.on(name, fn)` for events passed going forward, `.dispose()`.
 **`PlayOptions`** holds `cues`.
 ```ts
 const player = play(scene, clock(), { cues });
@@ -332,7 +332,7 @@ player.on("catch", () => sound.play());
 ```
 
 **`manualDriver({ durationMs })`**: a driver moved by hand; `.seek(progress)`, `.seekMs(ms)`. **`ManualDriver`** is its
-type; **`Driver`** is what any driver gives: `now()`, `events?()`, `subscribe(fn)`.
+type; **`Driver`** is what any driver gives: `now()`, `events?()`, `subscribe(fn)`, and `options` it was made with, so a host can tell a changed driver from the same one.
 ```ts
 const driver = manualDriver({ durationMs });
 play(scene, driver);
@@ -392,9 +392,11 @@ const playing = usePlayer(scene, clock, cues);
 ```
 
 **`PlayerHostProvider`** gives every `usePlayer` below it a **`PlayerHost`** `{ createDriver?, guard? }`: `createDriver(own)` answers the
-driver to play on, which the host keeps and `usePlayer` never disposes; `guard(scene)` wraps each scene. Under a host a
-changed `scene` calls `player.replace` and keeps time. **`driverKeeper()`** makes a **`DriverKeeper`**: its `createDriver` keeps the
-first driver a component makes, `current()` reads it and `subscribe` tells when it appears. With no host, nothing changes.
+driver to play on, which the host owns and `usePlayer` never disposes; `guard(scene)` wraps each scene. Under a host a
+saved file swaps in place: a new `scene` or `cues` calls `player.replace` and keeps the player and its time.
+**`driverKeeper()`** makes a **`DriverKeeper`**, one driver per host: while a factory makes a driver of the same members
+and equal `options`, it keeps the old one with its state; otherwise it takes the new one, seeks it to the old time, plays
+it and disposes the old. `current()` reads it and `subscribe` tells each time it changes. With no host, nothing changes.
 **`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
 list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
 its index, as `Letter` in `apps/react-demo/src/principles.tsx` does.
