@@ -1,6 +1,6 @@
 import { composeChain, type Link2d } from "@motion5/rig";
 import { defineMove } from "./declare";
-import type { Anchor2d } from "./shapes";
+import type { Anchor2d, Point2d } from "./shapes";
 
 const OVERSHOOT_SCALE = 2.5;
 const ORIGIN = { x: 0, y: 0 } as const;
@@ -60,13 +60,13 @@ export const rope = defineMove({
         "Share of the move spent passing the bend from one end to the other; default 0.6.",
     },
   },
-  inputs: {
-    points: { kind: "points2d", min: 2, description: "The rope's shape at rest, end to end." },
-  },
-  output: "anchors2d",
-  extras: {},
   moments: () => ({}),
-  run({ angle, pin, release, overshoot, ripple }, { progress }, { points }) {
+  run(
+    { angle, pin, release, overshoot, ripple },
+    { progress },
+    { points }: { readonly points: readonly Point2d[] },
+  ): readonly Anchor2d[] {
+    if (points.length < 2) throw new RangeError(`rope: input "points" needs at least 2 rows.`);
     const pinEnd = pin === "end";
     const shape = pinEnd ? [...points].reverse() : points;
     const pinned = shape[0] ?? { x: 0, y: 0 };

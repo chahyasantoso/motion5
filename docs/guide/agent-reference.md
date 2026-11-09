@@ -306,16 +306,16 @@ const all = mergeEvents(events, sim.events(time));
 
 ### Writing a move
 
-**`defineMove({ id, description, options, inputs, output, extras, moments, run })`**: makes a move from one
-declaration, checked options and all. Its types: **`Move`**, **`MoveDeclaration`**, **`MoveOutput`**, **`Moments`**,
-**`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputField`**, **`InputFields`**,
-**`InputTypes`**, **`Inputs`**, **`InputArgs`**, **`OutputKind`**, **`OutputTypes`**, **`ExtraFields`**.
+**`defineMove({ id, description, options, moments, run })`**: makes a move from one declaration. The call checks
+the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults; `run(options, time, input)` takes an
+optional third argument of any type, which callers must then pass. Its types: **`Move`**, **`MoveDeclaration`**,
+**`Moments`**, **`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputArgs`**.
 ```ts
 const slide = defineMove({
-  id: "slide", description: "Slides in.", inputs: {}, output: "pose2d", extras: {},
-  options: { distance: { kind: "number", description: "px" } },
+  id: "slide", description: "Slides in.",
+  options: { distance: { kind: "number", min: 0, description: "px" } },
   moments: () => ({}),
-  run: ({ distance }, { progress }) => ({ x: -distance * (1 - progress) }),
+  run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
 

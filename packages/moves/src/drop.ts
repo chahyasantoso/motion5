@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import { squashed } from "./pose";
+import { squashed, type Pose2d } from "./pose";
 
 const FALL_SHARE = 0.75;
 
@@ -17,10 +17,7 @@ export const drop = defineMove({
       description: "Height lost on landing, as a share; default 0.",
     },
   },
-  inputs: {},
-  output: "pose2d",
-  extras: {},
-  run({ distance, squash }, { progress }) {
+  run({ distance, squash }, { progress }): Pose2d {
     const fall = Math.min(1, progress / FALL_SHARE);
     const settled = Math.max(0, (progress - FALL_SHARE) / (1 - FALL_SHARE));
     const weight = progress < FALL_SHARE ? 0 : (1 - settled) ** 2;

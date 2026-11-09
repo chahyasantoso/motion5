@@ -1,4 +1,5 @@
 import { defineMove } from "./declare";
+import type { Reveal } from "./shapes";
 
 /** Grows a circle from `(x, y)` to `radius`, easing in and out; the target shows through it. */
 export const wipe = defineMove({
@@ -13,11 +14,8 @@ export const wipe = defineMove({
     x: { kind: "number", description: "Circle centre from the target's left edge, in px." },
     y: { kind: "number", description: "Circle centre from the target's top edge, in px." },
   },
-  inputs: {},
-  output: "reveal",
-  extras: {},
   moments: () => ({}),
-  run({ radius, x, y }, { progress }) {
+  run({ radius, x, y }, { progress }): Reveal {
     return { x, y, radius: radius * progress * progress * (3 - 2 * progress) };
   },
 });

@@ -46,22 +46,14 @@ export type { Anchor3d, Cubic3d } from "./shapes";
 export { combine } from "./combine";
 export {
   defineMove,
-  type ExtraFields,
   type InputArgs,
-  type InputField,
-  type InputFields,
-  type Inputs,
-  type InputTypes,
   type Move,
   type MoveDeclaration,
   type Moments,
-  type MoveOutput,
   type OptionField,
   type OptionFields,
   type Options,
   type OptionsIn,
-  type OutputKind,
-  type OutputTypes,
 } from "./declare";
 export { drop } from "./drop";
 export { hop } from "./hop";
