@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { manualDriver, play } from "@motion5/player";
+import { manualDriver, play } from "@gerak/player";
 import { code } from "../../../test/repo/helpers/source-region";
 import { BEAT_MS, timingScene } from "../src/timing-scene";
 

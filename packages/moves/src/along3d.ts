@@ -1,4 +1,4 @@
-import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "@motion5/rig";
+import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "@gerak/rig";
 import { arcLength } from "./arc-length";
 import type { Pose3d } from "./pose3d";
 import type { Anchor3d, Cubic3d } from "./shapes";

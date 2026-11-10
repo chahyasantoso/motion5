@@ -19,12 +19,12 @@ move(options, time, inputs) -> output
 
 The declaration names the move, its options and its inputs as plain spec data, with defaults and descriptions.
 From it come the options and input types, validation, the catalog listing and the engine's plugin. The format
-lives in `@motion5/moves` and imports nothing from core; core's value specs are plain objects of the same shape.
+lives in `@gerak/moves` and imports nothing from core; core's value specs are plain objects of the same shape.
 
 Inputs are plain values. Code passes them; the engine binds them through the track's `requires`. A move never
 reads engine state, never keeps state between calls, and never formats CSS or SVG.
 
-`movePlugin(move)` in `@motion5/plugins` is the one place that turns a move into a plugin. Nodes that need setup
+`movePlugin(move)` in `@gerak/plugins` is the one place that turns a move into a plugin. Nodes that need setup
 from an engine-owned rig keep the full plugin contract with `prepare`.
 
 ## Consequences

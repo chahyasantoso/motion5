@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { motionLivePlugin } from "@motion5/tools/vite";
+import { motionLivePlugin } from "@gerak/tools/vite";
 import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
 
 export default defineConfig({
@@ -9,13 +9,13 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: [
-      "@motion5/moves",
-      "@motion5/rig",
-      "@motion5/dom",
-      "@motion5/player",
-      "@motion5/physics",
-      "@motion5/rapier",
-      "@motion5/react",
+      "@gerak/moves",
+      "@gerak/rig",
+      "@gerak/dom",
+      "@gerak/player",
+      "@gerak/physics",
+      "@gerak/rapier",
+      "@gerak/react",
     ],
   },
 });

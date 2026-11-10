@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { laneTime, lanes } from "@motion5/moves";
+import { laneTime, lanes } from "@gerak/moves";
 
 describe("lanes", () => {
   it("spans to the last finish", () => {

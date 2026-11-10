@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { backEase, ease, spring, springEase } from "@motion5/moves";
+import { backEase, ease, spring, springEase } from "@gerak/moves";
 
 const samples = Array.from({ length: 51 }, (_, i) => i / 50);
 

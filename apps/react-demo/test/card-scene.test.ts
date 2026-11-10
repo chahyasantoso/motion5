@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events } from "@motion5/moves";
+import { liveAt, type Events } from "@gerak/moves";
 import { scene } from "../src/card-scene";
 
 const pointer = (...steps: readonly [string, number][]): Events =>

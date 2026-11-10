@@ -6,7 +6,7 @@
 
 **Context.** Project initially considered keeping schema v4 while renaming top-level free-track field to `freeTracks`. That makes version claim dishonest: v4-shaped document rejected.
 
-**Decision.** motion5 authored contract is `schemaVersion: 5`. Schema v4 not accepted as alias. Existing v4 documents go through explicit migration in [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md) before loading.
+**Decision.** gerak authored contract is `schemaVersion: 5`. Schema v4 not accepted as alias. Existing v4 documents go through explicit migration in [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md) before loading.
 
 **Alternatives rejected.** Silent v4 acceptance creates two dialects. Automatic in-runtime migration gives loader two meanings for same input, hides migration work from callers.
 

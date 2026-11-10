@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@motion5/tools/page";
+import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 
 const TIMING_SCENE = join(DEFAULT_ROOT, "src/timing-scene.ts");
 const PILE_SCENE = join(DEFAULT_ROOT, "src/pile-scene.ts");

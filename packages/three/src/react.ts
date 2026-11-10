@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type RefCallback } from "react";
-import type { Pose3d } from "@motion5/moves";
-import type { Player } from "@motion5/player";
+import type { Pose3d } from "@gerak/moves";
+import type { Player } from "@gerak/player";
 import type { Object3D } from "three";
 import { applyPose3d } from "./pose3d";
 

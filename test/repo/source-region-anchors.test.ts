@@ -272,7 +272,7 @@ describe("source-region anchors", () => {
   });
 
   it("reads statement syntax without comments while preserving quoted tokens", () => {
-    const directory = mkdtempSync(join(tmpdir(), "motion5-source-projection-"));
+    const directory = mkdtempSync(join(tmpdir(), "gerak-source-projection-"));
     const path = join(directory, "fixture.ts");
     const source = [
       '/** removed-doc */ const url = "https://example.test/a"; // removed-tail',

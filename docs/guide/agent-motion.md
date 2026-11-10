@@ -37,8 +37,8 @@ range.
 ## A scene
 
 ```ts
-import { clockDriver } from "@motion5/dom";
-import { drop, hop, lane, lanes, span, type Time } from "@motion5/moves";
+import { clockDriver } from "@gerak/dom";
+import { drop, hop, lane, lanes, span, type Time } from "@gerak/moves";
 
 export const durationMs = 3000;
 const LETTERS = lanes([1, 1, 1, 1, 1, 1], 0.25);

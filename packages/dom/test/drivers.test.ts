@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockDriver, scrollDriver, type FrameSource } from "@motion5/dom";
+import { clockDriver, scrollDriver, type FrameSource } from "@gerak/dom";
 
 function frames(): FrameSource & { run(at: number): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();

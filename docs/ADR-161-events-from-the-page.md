@@ -10,7 +10,7 @@ way to make a page see a hover, so an answer to one could not be sampled, checke
 
 ## Decision
 
-- **One event list.** `@motion5/moves` owns `MotionEvent` `{ name, at, target }`, `at` in ms on the scene's clock.
+- **One event list.** `@gerak/moves` owns `MotionEvent` `{ name, at, target }`, `at` in ms on the scene's clock.
   A scene is `(time, events) => targets`; a scene of time alone still fits. A driver may answer `events()`, and the
   player passes them, or none, to the scene on every step.
 - **A live clock.** `Clock` gains `{ kind: "live", elapsed }`: ms with no end, and progress 0. `span` reads a live
@@ -18,10 +18,10 @@ way to make a page see a hover, so an answer to one could not be sampled, checke
 - **`follow`.** A closed-form unit-mass spring whose goal each named event sets, carried from its position and speed
   at that event, so it is a pure function of time and events and turns back with no jump. Within 0.001 of its goal
   and slower than ten times that a second, it is at rest on the goal.
-- **`eventDriver` in `@motion5/dom`.** A live clock from its creation and a log of `enter`, `leave`, `down`, `up`,
+- **`eventDriver` in `@gerak/dom`.** A live clock from its creation and a log of `enter`, `leave`, `down`, `up`,
   `click`, `focus` and `blur` from the elements it watches, `in-view` and `out-of-view` from an intersection
   observer, and anything passed to `emit`. Frames run through `introMs`, then for `settleMs` after each event.
-  `useWatch` in `@motion5/react` watches the element a ref lands on.
+  `useWatch` in `@gerak/react` watches the element a ref lands on.
 - **`--action` in every page tool.** `hover`, `leave`, `click`, `press`, `release` and `scroll` at exact ms, done with
   the real mouse between steps of the paused clock, so a page sees what a person's pointer gives it.
 

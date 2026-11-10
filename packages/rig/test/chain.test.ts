@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildChain, chainPoses, fk, ik } from "@motion5/rig";
+import { buildChain, chainPoses, fk, ik } from "@gerak/rig";
 
 const ARM = [
   { id: "lower", parentId: "upper", length: 80 },

@@ -17,8 +17,8 @@ import {
   type BufferGeometry,
   type Material,
 } from "three";
-import { usePlayer } from "@motion5/react";
-import { useTarget3d } from "@motion5/three/react";
+import { usePlayer } from "@gerak/react";
+import { useTarget3d } from "@gerak/three/react";
 import { BODY_HEIGHT, clock, scene } from "./principles3d-scene";
 
 const WIDTH = 1280;

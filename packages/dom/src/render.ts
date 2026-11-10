@@ -1,4 +1,4 @@
-import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@motion5/moves";
+import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@gerak/moves";
 import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */

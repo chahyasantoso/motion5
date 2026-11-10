@@ -1,4 +1,4 @@
-import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d, transposeMatrix3 } from "@motion5/rig";
+import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d, transposeMatrix3 } from "@gerak/rig";
 import type { Pose3d } from "./pose3d";
 
 /** Stretches along travel by `stretch` per unit a second up to `max`, volume kept; reversing never flips it; `turn` undoes it. */

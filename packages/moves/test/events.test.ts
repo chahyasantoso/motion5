@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, follow, liveAt, mergeEvents, react, span, type Events } from "@motion5/moves";
+import { UNTIMED, follow, liveAt, mergeEvents, react, span, type Events } from "@gerak/moves";
 
 const lift = follow({ start: 0, on: { enter: -8, leave: 0 }, target: "card" });
 const hover = (enter: number, leave?: number): Events => [

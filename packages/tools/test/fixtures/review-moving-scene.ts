@@ -1,4 +1,4 @@
-import type { Time } from "@motion5/moves";
+import type { Time } from "@gerak/moves";
 
 export const durationMs = 2000;
 

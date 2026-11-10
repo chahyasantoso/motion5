@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as builtIn from "@motion5/moves";
-import type { NumericLiteralSpan } from "@motion5/tools/vite";
+import * as builtIn from "@gerak/moves";
+import type { NumericLiteralSpan } from "@gerak/tools/vite";
 
 export type { NumericLiteralSpan };
 

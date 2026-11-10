@@ -28,7 +28,7 @@ afterEach(() => {
 describe("scanNumericLiterals", () => {
   it("scans numbers inside a move call and attaches call and property names", () => {
     const source = `
-      import { drop } from "@motion5/moves";
+      import { drop } from "@gerak/moves";
       const pose = drop({ distance: 700, squash: 0.18 }, time);
     `;
     const spans = scanNumericLiterals(source);

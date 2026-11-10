@@ -1,4 +1,4 @@
-import { clockDriver } from "@motion5/dom";
+import { clockDriver } from "@gerak/dom";
 import {
   along,
   backEase,
@@ -19,7 +19,7 @@ import {
   type Events,
   type Pose2d,
   type Time,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;

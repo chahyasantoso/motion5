@@ -10,7 +10,7 @@ estimation or trust decisions.
 
 ## Decision
 
-Pure `@motion5/three/skeleton` entrypoint captures rigid rest hierarchy, generates zero-length FK
+Pure `@gerak/three/skeleton` entrypoint captures rigid rest hierarchy, generates zero-length FK
 pivot tracks, drives presentation bones through one caller-provided source space. Capture snapshots
 and freezes cloned rest transforms. Scale admission has one owner. Unknown keys throw TypeError.
 Unmapped bones get tracks, restored by reset.

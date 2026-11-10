@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { clockDriver, type ClockDriver, type FrameSource } from "@motion5/dom";
+import { clockDriver, type ClockDriver, type FrameSource } from "@gerak/dom";
 import { extractMarks, scrubByWheel, Timeline, type TimelineMark } from "../src/live/timeline";
 
 function createFrameSource(): FrameSource & { run(at: number): void; readonly waiting: number } {

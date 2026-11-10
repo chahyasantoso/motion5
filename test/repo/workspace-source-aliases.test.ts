@@ -5,7 +5,7 @@ import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.m
 import { code } from "./helpers/source-region";
 
 // PR #558: aliases were a hand-written prefix list, so the declared
-// `@motion5/three/adapters/clock` subpath resolved through the `adapters` alias to a missing
+// `@gerak/three/adapters/clock` subpath resolved through the `adapters` alias to a missing
 // file and Vitest discovery failed. Every workspace manifest now owns its aliases (R1, widened).
 const root = new URL("../../", import.meta.url);
 const read = (path: string) => readFileSync(new URL(path, root), "utf8");
@@ -35,12 +35,12 @@ describe("workspace source aliases", () => {
   });
 
   it("resolves a nested subpath to its own module, not its parent's", () => {
-    const [nested] = aliases.filter(({ find }) => find.test("@motion5/three/react"));
+    const [nested] = aliases.filter(({ find }) => find.test("@gerak/three/react"));
     expect(nested!.replacement).toBe(fileURLToPath(new URL("packages/three/src/react.ts", root)));
   });
 
   it("leaves undeclared subpaths unresolved", () => {
-    for (const specifier of ["@motion5/three/internal", "@motion5/react/adapters/dom"]) {
+    for (const specifier of ["@gerak/three/internal", "@gerak/react/adapters/dom"]) {
       expect(aliases.some(({ find }) => find.test(specifier))).toBe(false);
     }
   });

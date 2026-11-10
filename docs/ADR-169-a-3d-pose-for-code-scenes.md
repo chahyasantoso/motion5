@@ -11,7 +11,7 @@ for motion principles are numbers, so most of them already work in 3D.
 
 ## Decision
 
-- `Pose3d` lives in `@motion5/moves` beside `Pose2d`: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX,
+- `Pose3d` lives in `@gerak/moves` beside `Pose2d`: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX,
   scaleY, scaleZ, opacity }`, all optional, with turns in degrees on rig's `ZXY` Euler. Rig stays the one owner of
   3D orientation math. Moves calls it and adds no quaternion code.
 - `y` is up, as in Three.js. Field names match `Pose2d` and mean the same, apart from the axis direction and the
@@ -23,7 +23,7 @@ for motion principles are numbers, so most of them already work in 3D.
   `mixPose3d` blends turns along the short arc. Neither ever adds Euler angles across different axes.
 - A 3D pivot is the object's origin. A pivot elsewhere is a parent group. `squashed3d` names the axis it shortens.
 - A stretch along a 3D direction uses an outer object turned to it and an inner object turned back, as in 2D.
-- `useTarget3d` lives in a `@motion5/three/react` entry, so `@motion5/react` never depends on three. It works in
+- `useTarget3d` lives in a `@gerak/three/react` entry, so `@gerak/react` never depends on three. It works in
   plain Three.js and in React Three Fiber.
 - The page tools learn nothing about WebGL. A 3D scene is checked from its sampled values and its frame sheet.
 

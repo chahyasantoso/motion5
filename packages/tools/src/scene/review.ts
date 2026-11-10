@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { quaternionFromEuler3d } from "@motion5/rig";
+import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { readSceneModule, sampleScene, type SceneModule } from "./scene";

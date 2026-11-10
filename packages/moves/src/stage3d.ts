@@ -1,4 +1,4 @@
-import { eulerFromMatrix3d, type Matrix3, type Vec3 } from "@motion5/rig";
+import { eulerFromMatrix3d, type Matrix3, type Vec3 } from "@gerak/rig";
 import type { Pose3d } from "./pose3d";
 
 type Point3 = { readonly x: number; readonly y: number; readonly z: number };

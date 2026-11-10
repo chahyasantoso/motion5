@@ -8,7 +8,7 @@ import {
   slerpQuaternion,
   type Euler3d,
   type Matrix3,
-} from "@motion5/rig";
+} from "@gerak/rig";
 import { mix } from "./mix";
 import type { Pose2d } from "./pose";
 import { unreachable } from "./unreachable";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, defineMove, type Time } from "@motion5/moves";
+import { atProgress, defineMove, type Time } from "@gerak/moves";
 
 const slide = defineMove({
   id: "slide",

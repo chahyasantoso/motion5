@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventDriver, type EventSource, type FrameSource, type PointerLike } from "@motion5/dom";
+import { eventDriver, type EventSource, type FrameSource, type PointerLike } from "@gerak/dom";
 
 function frames(): FrameSource & { run(): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();

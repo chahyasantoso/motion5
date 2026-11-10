@@ -15,7 +15,7 @@ it would skip a library whose conventions it had to read from source.
   `move.moments` reads the caller's options with defaults filled, as the move itself does.
 - `span(fromMs, toMs, durationMs)` in the time module names a stretch of a scene: `of(time, ease?)` gives a move its
   time inside it, and `at(share)` gives the ms a moment falls on.
-- `@motion5/moves` owns the eases, blends and keyframes a code scene uses: `ease`, `mix`, `mixAngle`, `mixPoint`, `keyframes` and
+- `@gerak/moves` owns the eases, blends and keyframes a code scene uses: `ease`, `mix`, `mixAngle`, `mixPoint`, `keyframes` and
   `mixPose`. `combine` and `mixPose` read one list of added and multiplied pose fields.
 - `buildChain` keeps the bone ids it was given, so `fk` and `ik` answer every bone with no missing entry, and
   `chainPoses` gives bone and tip poses for elements laid out at the chain's base.

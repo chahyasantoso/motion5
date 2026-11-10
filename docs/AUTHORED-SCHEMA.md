@@ -164,19 +164,19 @@ commit. There is no authored schema to infer from.
 ```
 
 Models are registered in the catalog's `models` list, or by a plugin declaration naming them. The
-first-party models are exported as `builtinModels` from `@motion5/plugins/models`; hosts that author
+first-party models are exported as `builtinModels` from `@gerak/plugins/models`; hosts that author
 `Body2d`, `Point2d`, `Goals2d` and their 3D counterparts register that list. A model carries `id`
 (PascalCase, equal to its exported name), `spec`, and optional `parse`. Tables use
 `{ kind: "table", schema: { row: { fields }, minRows?, maxRows? } }`. Records use
 `{ kind: "record", fields, additionalProperties? }`. A field declares `kind`, optional `optional`,
-`enum`, `min`, `max`, or source-only `static`. In code, `Spec` from `@motion5/core/plugin-api` builds the
+`enum`, `min`, `max`, or source-only `static`. In code, `Spec` from `@gerak/core/plugin-api` builds the
 same objects: `Spec.record({ x: Spec.number({ optional: true }) })`, `Spec.table(fields, { minRows: 2 })`.
 
 ## Plugins
 
 A plugin definition has:
 
-- `id`: the public name, matching its `@motion5/plugins/<id>` path.
+- `id`: the public name, matching its `@gerak/plugins/<id>` path.
 - `inputs.param`: optional record spec for authored `input.param`.
 - `inputs.values`: optional local value spec or model.
 - `inputs.requires`: optional slot declarations, each a model, an optional model, or a shape spec.

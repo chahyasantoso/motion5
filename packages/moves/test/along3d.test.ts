@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matrixFromEuler3d } from "@motion5/rig";
+import { matrixFromEuler3d } from "@gerak/rig";
 import {
   along3d,
   combine3d,
@@ -7,7 +7,7 @@ import {
   type Anchor3d,
   type Cubic3d,
   type Pose3d,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 const cubic = (id: string, p: number[]): Cubic3d => ({
   id,

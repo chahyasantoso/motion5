@@ -7,7 +7,7 @@ import {
   velocity,
   type Pose2d,
   type Time,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const falling = (time: Time): Pose2d => ({ x: 5, y: (ms(time) * 2000) / 1000 });

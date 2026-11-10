@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { elapsedOf, liveAt, trail, trailTurn, type Pose3d, type Time } from "@motion5/moves";
+import { elapsedOf, liveAt, trail, trailTurn, type Pose3d, type Time } from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const stepTo =

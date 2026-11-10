@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { atProgress } from "@motion5/moves";
+import { atProgress } from "@gerak/moves";
 import {
   parseEvents,
   readSceneModule,
   sampleScene,
   sceneTimeline,
   type SceneModule,
-} from "@motion5/tools/scene";
+} from "@gerak/tools/scene";
 import { renderTimeline } from "../src/timeline/timeline";
 import * as timing from "../../../apps/react-demo/src/timing-scene";
 

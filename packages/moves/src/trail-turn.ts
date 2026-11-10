@@ -4,7 +4,7 @@ import {
   quaternionFromEuler3d,
   type Quaternion,
   type Vec3,
-} from "@motion5/rig";
+} from "@gerak/rig";
 import type { Events } from "./events";
 import type { Pose3d } from "./pose3d";
 import { elapsedOf, type Time } from "./time";

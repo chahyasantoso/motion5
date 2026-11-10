@@ -1,9 +1,9 @@
 import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { clockDriver, type RenderTarget } from "@motion5/dom";
-import { drop, type Time } from "@motion5/moves";
-import { manualDriver, type ManualDriver } from "@motion5/player";
+import { clockDriver, type RenderTarget } from "@gerak/dom";
+import { drop, type Time } from "@gerak/moves";
+import { manualDriver, type ManualDriver } from "@gerak/player";
 import {
   PlayerHostProvider,
   driverKeeper,
@@ -12,7 +12,7 @@ import {
   useValue,
   type PlayerHost,
   type Playing,
-} from "@motion5/react";
+} from "@gerak/react";
 
 const scene = (time: Time) => ({
   box: drop({ distance: 100 }, time),
@@ -98,8 +98,8 @@ describe("player hooks", () => {
 
 describe("useWatch", () => {
   it("logs the events of the element its ref lands on, and stops when the component leaves", async () => {
-    const { eventDriver } = await import("@motion5/dom");
-    const { useWatch } = await import("@motion5/react");
+    const { eventDriver } = await import("@gerak/dom");
+    const { useWatch } = await import("@gerak/react");
     const driver = eventDriver({
       clock: () => 0,
       frames: { requestFrame: () => 1, cancelFrame: () => undefined },

@@ -6,8 +6,8 @@ a landing. Names are in [the reference](./agent-reference.md#events).
 ## From the page
 
 ```ts
-import { eventDriver } from "@motion5/dom";
-import { follow, type Events, type Time } from "@motion5/moves";
+import { eventDriver } from "@gerak/dom";
+import { follow, type Events, type Time } from "@gerak/moves";
 
 const lift = follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" });
 export const scene = (time: Time, events: Events) => ({ card: { y: lift(time, events) } });

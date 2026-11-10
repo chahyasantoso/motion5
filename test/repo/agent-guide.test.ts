@@ -48,9 +48,7 @@ describe("agent guide", () => {
         );
       }),
     );
-    const named = [...guide.matchAll(/["`](@motion5\/[\w/-]+)["`]/g)].map(
-      (match) => match[1] ?? "",
-    );
+    const named = [...guide.matchAll(/["`](@gerak\/[\w/-]+)["`]/g)].map((match) => match[1] ?? "");
     expect(named.length).toBeGreaterThan(5);
     for (const path of named)
       if (!path.endsWith("/") && !path.includes("<")) expect(declared, path).toContain(path);

@@ -6,18 +6,18 @@
 
 ADR-015 says core stays renderer-neutral, yet `packages/core/src/adapters/` holds the DOM adapter, the browser
 clock, the GSAP interpolator and the GSAP scroll source. Plain HTML has no renderer package of its own; React
-reaches the DOM through `@motion5/core/adapters`.
+reaches the DOM through `@gerak/core/adapters`.
 
 ## Decision
 
-- `@motion5/dom` owns `applyPose`, `applyReveal`, `applyDrawn`, `applyPath` and the CSS and SVG formats for HTML
-  and SVG; `@motion5/dom/engine` holds the engine's DOM patch adapter and the browser clock.
-- `@motion5/three` owns `applyPose2d(object, pose)`.
-- `@motion5/react` depends on `@motion5/dom`.
+- `@gerak/dom` owns `applyPose`, `applyReveal`, `applyDrawn`, `applyPath` and the CSS and SVG formats for HTML
+  and SVG; `@gerak/dom/engine` holds the engine's DOM patch adapter and the browser clock.
+- `@gerak/three` owns `applyPose2d(object, pose)`.
+- `@gerak/react` depends on `@gerak/dom`.
 
 Core keeps no DOM code, and drops its `./adapters/browser-clock` subpath. `./adapters` keeps the microtask
 scheduler, the scroll trigger port, the trigger factory and the GSAP adapters: none touches an environment, and
-core never imports GSAP, which callers inject. A `@motion5/gsap` package waits for the engine decision, since
+core never imports GSAP, which callers inject. A `@gerak/gsap` package waits for the engine decision, since
 moving the GSAP interpolator needs core's keyframe compiler public.
 
 ## Consequences
@@ -28,6 +28,6 @@ environment import from core.
 ## Rejected
 
 - Keeping adapters in core under a subpath: core then ships environment code to every reader.
-- One `@motion5/web` package for DOM and GSAP: GSAP is optional and most pages do not need it.
-- A `@motion5/gsap` package now: it would make core's keyframe compiler public for an adapter that touches no
+- One `@gerak/web` package for DOM and GSAP: GSAP is optional and most pages do not need it.
+- A `@gerak/gsap` package now: it would make core's keyframe compiler public for an adapter that touches no
   environment.

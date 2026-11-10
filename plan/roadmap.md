@@ -5,7 +5,7 @@ section 5 gets its own plan before any code, and what has landed is stated only 
 
 ## 1. Objective
 
-**motion5 is a standard vocabulary of motion that an agent or a person authors as reusable code, and that plays
+**gerak is a standard vocabulary of motion that an agent or a person authors as reusable code, and that plays
 anywhere: on a web page, on a live stage, in a video.**
 
 Three things follow from it:
@@ -131,7 +131,7 @@ rebuild beside the reference and reports where they differ; the looking and draw
 ## 8. The names
 
 - **`gerak`** is the base: the packages publish as `@gerak/*`. Until the rename lands, the code and this document
-  say `motion5`.
+  say `gerak`.
 - **`da-lang`** is held for the short notation a person types in the instrument, and for the instrument itself. It is
   written in TypeScript and builds the same scene function, so it is a way of writing a `gerak` scene and never a
   second way to make motion. Its shape is decided in the instrument's plan.

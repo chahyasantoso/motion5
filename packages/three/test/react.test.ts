@@ -2,9 +2,9 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { Object3D } from "three";
-import { type Time } from "@motion5/moves";
-import { manualDriver, type ManualDriver } from "@motion5/player";
-import { usePlayer } from "@motion5/react";
+import { type Time } from "@gerak/moves";
+import { manualDriver, type ManualDriver } from "@gerak/player";
+import { usePlayer } from "@gerak/react";
 import { useTarget3d } from "../src/react";
 
 const scene = (time: Time) => ({ box: { x: 10 * time.progress, y: 2 } });

@@ -1,8 +1,8 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { applyPose } from "@motion5/dom";
-import type { Player } from "@motion5/player";
-import type { Pose2d } from "@motion5/moves";
-import { usePlayer, useTarget } from "@motion5/react";
+import { applyPose } from "@gerak/dom";
+import type { Player } from "@gerak/player";
+import type { Pose2d } from "@gerak/moves";
+import { usePlayer, useTarget } from "@gerak/react";
 import { DROPLETS, RINGS, WORD, clock, scene } from "./splash-scene";
 
 type Frame = ReturnType<typeof scene>;

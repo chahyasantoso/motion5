@@ -7,7 +7,7 @@ import {
   cssTransform,
   pathData,
   type RenderTarget,
-} from "@motion5/dom";
+} from "@gerak/dom";
 
 function element(extra: Record<string, unknown> = {}): RenderTarget & {
   readonly attributes: Record<string, string>;

@@ -22,7 +22,7 @@ type Time = { progress: number; clock: Clock };
 `progress` runs from 0 to 1. `elapsed` and `length` are milliseconds within one pass of the track's own window.
 A reader of `clock` switches on `kind`.
 
-One time module in `@motion5/moves` owns windows and stagger as lanes, and computes each track's `Time` from the
+One time module in `@gerak/moves` owns windows and stagger as lanes, and computes each track's `Time` from the
 Motion's position, the track's place among its siblings and a timed trigger's duration. Delay, repeat and yoyo
 stay with the trigger, which drives the position, so `elapsed` holds through a delay, restarts each pass and runs
 backwards on a yoyo pass. `Motion`, `cascade` and the player call it, and the engine's `EvaluationContext`

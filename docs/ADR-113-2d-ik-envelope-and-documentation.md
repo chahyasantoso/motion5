@@ -25,7 +25,7 @@ report's conditions and results. No benchmark fixture may become second behavior
 
 Guide's coordinate convention: +x right, +y down, degrees, positive rotation clockwise on screen. One-to-one with DOM
 adapter: same numeric frame written `translate3d(x, y, 0)`, `rotate(rotation deg)`. On mathematical y-up axes same positive
-number appears counter-clockwise; motion5 does not silently convert.
+number appears counter-clockwise; gerak does not silently convert.
 
 Solve reads world position, rotation, lengths, pivot offsets, limits, goals. Reads no scale — solver frame has no scale
 field. Draw rig larger/smaller: scale container holding rig. Uniform container scale preserves pose; nonuniform changes

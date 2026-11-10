@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { manualDriver, play } from "@motion5/player";
-import { NO_EVENTS, liveAt } from "@motion5/moves";
+import { manualDriver, play } from "@gerak/player";
+import { NO_EVENTS, liveAt } from "@gerak/moves";
 import {
   CROUCH_MS,
   LAND_MS,

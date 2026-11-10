@@ -7,7 +7,7 @@
 ## Context
 
 The Phase 5 solver redesign must replace grouped plugin definitions with identified-table definitions,
-but the package already declares `@motion5/plugins/transform`, `fk`, `ik`, `transform3d`, `fk3d`,
+but the package already declares `@gerak/plugins/transform`, `fk`, `ik`, `transform3d`, `fk3d`,
 `ik3d`, and `rig`. Applications, tests and the Three package import those paths directly, and the
 public-subpaths test treats the manifest as the package contract.
 
@@ -20,8 +20,8 @@ meanings; and a bridge hides whether a caller is testing the old or new registry
 
 Each plugin keeps its existing public package path and is cut over there in one vertical slice. The
 slice moves the grouped implementation to `packages/plugins/src/legacy/<name>.ts`, exposes it during
-the transition through the explicit repository-only path `@motion5/plugins/internal/legacy/<name>`,
-installs the identified-table implementation at `@motion5/plugins/<name>`, and registers only the v5
+the transition through the explicit repository-only path `@gerak/plugins/internal/legacy/<name>`,
+installs the identified-table implementation at `@gerak/plugins/<name>`, and registers only the v5
 definition in `identified-catalog.ts`.
 
 The grouped `PluginRegistry` and loader may consume only the internal legacy definitions. The v5

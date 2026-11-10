@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, elapsedOf, liveAt, spring, trail, type Time } from "@motion5/moves";
+import { atProgress, elapsedOf, liveAt, spring, trail, type Time } from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const step = (time: Time) => (ms(time) < 500 ? 0 : 1);

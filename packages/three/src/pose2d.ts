@@ -1,4 +1,4 @@
-import type { Anchor, Pose2d } from "@motion5/moves";
+import type { Anchor, Pose2d } from "@gerak/moves";
 import { BufferGeometry, Vector3, type Object3D } from "three";
 
 /** The anchor's point on the object's own geometry box, in its local space, y up; the origin without geometry. */

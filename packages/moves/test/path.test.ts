@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCubics } from "@motion5/moves";
+import { toCubics } from "@gerak/moves";
 
 describe("toCubics", () => {
   it("joins each anchor to the next through their handles, one segment per pair", () => {

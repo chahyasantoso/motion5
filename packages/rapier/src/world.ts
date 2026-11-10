@@ -1,12 +1,5 @@
 import RAPIER from "@dimforge/rapier2d-deterministic-compat";
-import type {
-  BodySpec,
-  BodyState,
-  Collider,
-  Contact,
-  PhysicsWorld,
-  Surface,
-} from "@motion5/physics";
+import type { BodySpec, BodyState, Collider, Contact, PhysicsWorld, Surface } from "@gerak/physics";
 
 /** Stage px per Rapier metre: Rapier's tolerances are tuned for bodies about a metre across. */
 const SCALE = 100;

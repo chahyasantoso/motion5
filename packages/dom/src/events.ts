@@ -1,5 +1,5 @@
-import { liveAt, type Events, type MotionEvent, type Time } from "@motion5/moves";
-import type { Driver } from "@motion5/player";
+import { liveAt, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import type { Driver } from "@gerak/player";
 import { pageFrames, type FrameSource } from "./drivers";
 
 /** What a pointer event says about where it happened. */

@@ -4,17 +4,17 @@
 
 ## Context
 
-ADR-156 froze `@motion5/core` and `@motion5/plugins`, and ADR-167 put the engine parts of the other packages behind
+ADR-156 froze `@gerak/core` and `@gerak/plugins`, and ADR-167 put the engine parts of the other packages behind
 `/engine` entries. Frozen, the engine was still about 60% of the source and 69% of the tests, cost about 30 s of every
 check, imported moves and rig in 36 places so their APIs could not change freely, and kept two ways to make motion.
 
 ## Decision
 
-- `@motion5/core` and `@motion5/plugins` are deleted. The engine path goes with them: JSON projects, patches, the plugin
+- `@gerak/core` and `@gerak/plugins` are deleted. The engine path goes with them: JSON projects, patches, the plugin
   catalog and the GSAP adapters. This supersedes ADR-156's freeze.
-- Every `/engine` entry goes (`dom`, `react`, `three`, `tools`), and with it ADR-167's `"motion5": { "engine" }`
+- Every `/engine` entry goes (`dom`, `react`, `three`, `tools`), and with it ADR-167's `"gerak": { "engine" }`
   manifest key and the boundary rule that read it.
-- `@motion5/three/skeleton`, the apps `ik-playground` and `pose-gap-filler`, `react-demo`'s engine demos, the engine
+- `@gerak/three/skeleton`, the apps `ik-playground` and `pose-gap-filler`, `react-demo`'s engine demos, the engine
   modes of the tools, the benchmarks and CI steps that build or run core, and the engine guide pages go too.
 - `moves`, `rig`, `player`, `dom`, `react`, `three`, `tools`, `physics`, `rapier` and every code-scene worked example
   stay. Rig keeps its 3D solvers.

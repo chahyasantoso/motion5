@@ -1,5 +1,5 @@
 {
-  "name": "@motion5/rapier",
+  "name": "@gerak/rapier",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
   "types": "./src/index.ts",
   "dependencies": {
     "@dimforge/rapier2d-deterministic-compat": "0.21.0",
-    "@motion5/physics": "0.0.0"
+    "@gerak/physics": "0.0.0"
   },
   "exports": {
     ".": {

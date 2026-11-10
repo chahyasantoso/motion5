@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { defineMove, type Time } from "@motion5/moves";
+import { defineMove, type Time } from "@gerak/moves";
 import { dragNumberValue, rangeForLiteral, stepForLiteral } from "../src/live/code-panel";
 
 describe("stepForLiteral", () => {

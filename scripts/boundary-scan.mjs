@@ -236,14 +236,14 @@ function* importSpecifiers(source) {
  *
  * Each workspace manifest's `exports` is the owner of what a consumer may import, so the
  * sets are read from them rather than listed here. The root `tsconfig.json` maps package subpaths
- * to source, so an undeclared subpath such as `@motion5/rig/fabrik` typechecks here while
+ * to source, so an undeclared subpath such as `@gerak/rig/fabrik` typechecks here while
  * failing for every consumer of the built package. This reads the code the way the other specifier
  * predicates do, through `importSpecifiers`, so a path named in prose is not an import of it.
  */
 export function undeclaredWorkspaceSubpaths(source, declared, specifiers) {
   const undeclared = [];
   for (const specifier of asSpecifierList(source, specifiers)) {
-    const match = /^(@motion5\/[^/]+)(\/.*)?$/.exec(specifier);
+    const match = /^(@gerak\/[^/]+)(\/.*)?$/.exec(specifier);
     if (match !== null && !declared.get(match[1])?.has(`.${match[2] ?? ""}`))
       undeclared.push(specifier);
   }
@@ -317,7 +317,7 @@ async function declaredWorkspaceSubpaths(scanRoot, workspaces) {
   return declared;
 }
 
-/** Workspaces whose manifest declares `"motion5": { "layer": "pure" }`, by folder and by package name. */
+/** Workspaces whose manifest declares `"gerak": { "layer": "pure" }`, by folder and by package name. */
 async function pureLayer(scanRoot, workspaces) {
   const folders = new Set();
   const names = new Set();
@@ -329,7 +329,7 @@ async function pureLayer(scanRoot, workspaces) {
       if (error?.code === "ENOENT") continue;
       throw error;
     }
-    if (manifest?.motion5?.layer !== "pure" || typeof manifest.name !== "string") continue;
+    if (manifest?.gerak?.layer !== "pure" || typeof manifest.name !== "string") continue;
     folders.add(workspace);
     names.add(manifest.name);
   }
@@ -341,7 +341,7 @@ function packageOf(specifier) {
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Page tools work on any page, so they import node, a browser driver and a dev server, never motion5. */
+/** Page tools work on any page, so they import node, a browser driver and a dev server, never gerak. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
     specifier.startsWith(".")

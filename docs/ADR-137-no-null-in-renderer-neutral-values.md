@@ -12,7 +12,7 @@ Immutable value type, its freezer, graph publication each answered whether a lea
 
 Invariant: one leaf rule (`isImmutableLeaf`) decides which leaves allowed; structural rules stay with owners. Authored `null` already refused by validator (`keyframes-ungrouped-key` at top level, leaf path inside `values`) → only composed output changes. Fixtures composing `null` for "absent" now omit key.
 
-`ImmutableLeaf` names leaf type. Labels are `ImmutableLeaf`; `readLabel` calls `isImmutableLeaf`; both, with `patchRender`, re-exported from `@motion5/core/plugin-api` → plugin-package consumers reuse core leaf rule and ADR-094 status policy rather than copying them. Label read is closed union (`label`, `retained`, `gone`) read by exhaustive switches. Listener retains prior value through blocked and error patches, emits one destroyed edge only when label delivered; synchronous write from listener refused with `schema-commit-reentrant`.
+`ImmutableLeaf` names leaf type. Labels are `ImmutableLeaf`; `readLabel` calls `isImmutableLeaf`; both, with `patchRender`, re-exported from `@gerak/core/plugin-api` → plugin-package consumers reuse core leaf rule and ADR-094 status policy rather than copying them. Label read is closed union (`label`, `retained`, `gone`) read by exhaustive switches. Listener retains prior value through blocked and error patches, emits one destroyed edge only when label delivered; synchronous write from listener refused with `schema-commit-reentrant`.
 
 ## Rejected
 

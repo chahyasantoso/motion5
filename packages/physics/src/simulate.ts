@@ -1,4 +1,4 @@
-import { NO_EVENTS, elapsedOf, type Events, type MotionEvent, type Time } from "@motion5/moves";
+import { NO_EVENTS, elapsedOf, type Events, type MotionEvent, type Time } from "@gerak/moves";
 import type { BodySpec, BodyState, PhysicsWorld } from "./world";
 
 /** What a spawn may do to the world: add bodies, nothing else. */

@@ -38,9 +38,9 @@ Scanner gains one rule: `contract/`, `ports/`, `adapters/` module importing reti
 violation. Adapters scanned first time as consequence, external-engine imports exempt from renderer/engine rule — two
 of seven violators adapter files, rule unable to see them not rule.
 
-Private React sink deleted. `unreachable` exposed on unadvertised `@motion5/core/internal` entry beside `liveOrAbsent`
+Private React sink deleted. `unreachable` exposed on unadvertised `@gerak/core/internal` entry beside `liveOrAbsent`
 — precedent exactly this: partition whose narrowing outside module owes shipped with function discharging it. Public
-`@motion5/core` entry, package export map, boundary allow-list unchanged.
+`@gerak/core` entry, package export map, boundary allow-list unchanged.
 
 Supersedes one paragraph of ADR-092: why sink lives in `domain/`, why `lang/` rejected. Nothing else superseded —
 including decision that read of closed union names every variant and ends at shared `never` sink, semantics, rejected

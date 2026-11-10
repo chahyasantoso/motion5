@@ -9,8 +9,8 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { usePlayer } from "@motion5/react";
-import { useTarget3d } from "@motion5/three/react";
+import { usePlayer } from "@gerak/react";
+import { useTarget3d } from "@gerak/three/react";
 import { clock, scene } from "./__NAME__-scene";
 
 const WIDTH = 1280;

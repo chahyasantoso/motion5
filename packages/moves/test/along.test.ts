@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { along, type Cubic2d } from "@motion5/moves";
+import { along, type Cubic2d } from "@gerak/moves";
 
 const cubic = (id: string, p: number[]): Cubic2d => ({
   id,

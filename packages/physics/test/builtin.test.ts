@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, seeded } from "@motion5/moves";
-import { builtinWorld, simulate, type PhysicsWorld } from "@motion5/physics";
+import { liveAt, seeded } from "@gerak/moves";
+import { builtinWorld, simulate, type PhysicsWorld } from "@gerak/physics";
 import { conformance } from "./conformance";
 
 conformance("the built-in engine", builtinWorld);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ease } from "@motion5/moves";
+import { ease } from "@gerak/moves";
 import { NAMED_CURVES, bezier, fitCurve } from "../src/page/curves";
 import { parseReadArgs, segmentsOf } from "../src/page/read";
 
@@ -9,7 +9,7 @@ const sample = (curve: (u: number) => number, count = 30) =>
   Array.from({ length: count + 1 }, (_, index) => ({ u: index / count, p: curve(index / count) }));
 
 describe("motion:read curves", () => {
-  it("name each curve as @motion5/moves names its ease", () => {
+  it("name each curve as @gerak/moves names its ease", () => {
     const eases: Readonly<Record<string, (u: number) => number>> = ease;
     for (const [name, curve] of Object.entries(NAMED_CURVES))
       for (const u of [0, 0.1, 0.35, 0.5, 0.8, 1])

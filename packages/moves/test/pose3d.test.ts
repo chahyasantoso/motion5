@@ -9,7 +9,7 @@ import {
   squashed3d,
   type Pose2d,
   type Pose3d,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 describe("Pose3d", () => {
   it("refuses a 2D pose where a 3D one goes", () => {
