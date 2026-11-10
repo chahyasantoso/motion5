@@ -128,6 +128,10 @@ rebuild beside the reference and reports where they differ; the looking and draw
 - Working inside footage: keying, tracking a graphic to something filmed, grading. A clip is an object that plays.
 - Simulated effects: fluids, smoke, light. Colour, blur, shadow and masks are values, and in.
 
-## 8. The name
+## 8. The names
 
-The packages publish as `@gerak/*`. Until the rename lands, the code and this document say `motion5`.
+- **`gerak`** is the base: the packages publish as `@gerak/*`. Until the rename lands, the code and this document
+  say `motion5`.
+- **`da-lang`** is held for the short notation a person types in the instrument, and for the instrument itself. It is
+  written in TypeScript and builds the same scene function, so it is a way of writing a `gerak` scene and never a
+  second way to make motion. Its shape is decided in the instrument's plan.
