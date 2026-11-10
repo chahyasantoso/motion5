@@ -105,6 +105,10 @@ Three things follow from it:
 **3D runs beside this, any time after stage 2:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
 a React Three Fiber scaffold and worked example.
 
+**Artwork from a reference runs after stage 6:** an agent looks at an image and rebuilds it as SVG or as a Three.js
+scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders the
+rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
+
 ## 6. Waiting for a brief that needs them
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent
