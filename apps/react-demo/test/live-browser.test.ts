@@ -5,10 +5,15 @@ import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 
 const TIMING_SCENE = join(DEFAULT_ROOT, "src/timing-scene.ts");
 const PILE_SCENE = join(DEFAULT_ROOT, "src/pile-scene.ts");
+// Read once, before any test writes, so a test that fails cannot hand a changed file to the next.
+const TIMING_ORIGINAL = readFileSync(TIMING_SCENE, "utf8");
+const PILE_ORIGINAL = readFileSync(PILE_SCENE, "utf8");
+// A missing element fails its own step by name, well inside the test's time.
+const STEP_TIMEOUT_MS = 5000;
 
 describe("live editor in the browser", () => {
   it("drags the scrubber to 1500 ms, hot-swaps a scene edit at 1500 ms, and shows a syntax error in the banner without losing the stage", async () => {
-    const original = readFileSync(TIMING_SCENE, "utf8");
+    const original = TIMING_ORIGINAL;
     try {
       await withPage(
         {
@@ -18,6 +23,7 @@ describe("live editor in the browser", () => {
           source: DEFAULT_SOURCE,
         },
         async ({ page }) => {
+          page.setDefaultTimeout(STEP_TIMEOUT_MS);
           const scrubber = await page.locator("[data-live-scrubber]").boundingBox();
           if (scrubber === null) throw new Error("Scrubber not found");
 
@@ -63,8 +69,34 @@ describe("live editor in the browser", () => {
     }
   }, 30000);
 
+  it("keeps the banner when an older update finishes after a newer error", async () => {
+    await withPage(
+      { page: "live.html?scene=timing", width: 1280, height: 720, source: DEFAULT_SOURCE },
+      async ({ page }) => {
+        page.setDefaultTimeout(STEP_TIMEOUT_MS);
+        await page.locator(".beat-dot").waitFor();
+        const banners = () => page.locator("[data-live-error]").count();
+        const finish = (stamp: number) =>
+          page.evaluate(`(async () => {
+            const module = await import("/src/TimingBeat.tsx");
+            const detail = { ...module, __motionStamp: ${stamp} };
+            window.dispatchEvent(new CustomEvent("motion:hot", { detail, cancelable: true }));
+          })()`);
+        await page.evaluate(() => {
+          const detail = { err: { message: "a newer save does not compile" }, stamp: 200 };
+          window.dispatchEvent(new CustomEvent("motion:error", { detail }));
+        });
+        expect(await banners()).toBe(1);
+        await finish(100);
+        expect(await banners()).toBe(1);
+        await finish(300);
+        expect(await banners()).toBe(0);
+      },
+    );
+  }, 30000);
+
   it("rebuilds a physics scene on a hot swap and replays to the same time", async () => {
-    const original = readFileSync(PILE_SCENE, "utf8");
+    const original = PILE_ORIGINAL;
     try {
       await withPage(
         {
@@ -74,6 +106,7 @@ describe("live editor in the browser", () => {
           source: DEFAULT_SOURCE,
         },
         async ({ page }) => {
+          page.setDefaultTimeout(STEP_TIMEOUT_MS);
           const scrubber = await page.locator("[data-live-scrubber]").boundingBox();
           if (scrubber === null) throw new Error("Scrubber not found");
 
@@ -109,11 +142,12 @@ describe("live editor in the browser", () => {
   }, 30000);
 
   it("shows a saved scene edit on a page with no live host, by reloading it", async () => {
-    const original = readFileSync(TIMING_SCENE, "utf8");
+    const original = TIMING_ORIGINAL;
     try {
       await withPage(
         { page: "timing.html", width: 1280, height: 720, source: DEFAULT_SOURCE },
         async ({ page }) => {
+          page.setDefaultTimeout(STEP_TIMEOUT_MS);
           await page.evaluate(() => Reflect.set(window, "motionMarker", "first load"));
           writeFileSync(TIMING_SCENE, original.replace("distance: 700", "distance: 640"), "utf8");
           // The page's clock is paused, so the reload Vite schedules runs only as the clock is stepped.
@@ -144,7 +178,7 @@ describe("live editor in the browser", () => {
   }, 30000);
 
   it("drags 700 to 760 in the code panel and updates the scene file and stage", async () => {
-    const original = readFileSync(TIMING_SCENE, "utf8");
+    const original = TIMING_ORIGINAL;
     try {
       await withPage(
         {
@@ -154,6 +188,7 @@ describe("live editor in the browser", () => {
           source: DEFAULT_SOURCE,
         },
         async ({ page }) => {
+          page.setDefaultTimeout(STEP_TIMEOUT_MS);
           const readFirstGlyph = () =>
             page
               .locator(".beat-glyph")

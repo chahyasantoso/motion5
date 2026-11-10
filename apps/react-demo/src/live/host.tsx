@@ -85,6 +85,12 @@ export function clockLengthMs(driver: ClockDriver | undefined): number {
   }
 }
 
+/** The update a hot module or an error belongs to, as the stamp under `key`, or `missing` when it carries none. */
+export function stampOf(detail: unknown, key: string, missing: number): number {
+  const stamp: unknown = isRecord(detail) ? Reflect.get(detail, key) : undefined;
+  return typeof stamp === "number" ? stamp : missing;
+}
+
 /** Reads the error message from a Vite server error payload. */
 export function extractErrorMessage(payload: unknown): string {
   if (isRecord(payload)) {
@@ -221,6 +227,10 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
     [keeper],
   );
 
+  // Updates can finish out of order, so each is placed by its stamp, not by when it arrived.
+  const shownStamp = useRef(0);
+  const errorStamp = useRef(0);
+
   useEffect(() => {
     const onHot = (event: Event): void => {
       if (!("detail" in event)) return;
@@ -229,8 +239,11 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       const nextComponent = extractComponent(detail);
       if (nextComponent === undefined) return;
       event.preventDefault();
+      const stamp = stampOf(detail, "__motionStamp", Number.POSITIVE_INFINITY);
+      if (stamp < shownStamp.current) return;
+      shownStamp.current = Number.isFinite(stamp) ? stamp : shownStamp.current;
       const nextScene = extractMotionScene(detail);
-      setError(undefined);
+      if (stamp >= errorStamp.current) setError(undefined);
       setBundle((prev) => ({ name: prev.name, Component: nextComponent, sceneModule: nextScene }));
     };
     window.addEventListener("motion:hot", onHot);
@@ -240,7 +253,9 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
   useEffect(() => {
     const onError = (event: Event): void => {
       if (!("detail" in event)) return;
-      setError(extractErrorMessage(Reflect.get(event, "detail")));
+      const detail = Reflect.get(event, "detail");
+      errorStamp.current = Math.max(errorStamp.current, stampOf(detail, "stamp", 0));
+      setError(extractErrorMessage(detail));
     };
     window.addEventListener("motion:error", onError);
     return () => window.removeEventListener("motion:error", onError);
