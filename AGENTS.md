@@ -11,6 +11,7 @@ is one line, and a rule this file does not carry is not a rule.
 
 ## Read on demand
 
+- Where the repository is going: [plan/roadmap.md](plan/roadmap.md).
 - Where code lives: [docs/MAP.md](docs/MAP.md).
 - Who owns what: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - What a complete change looks like: [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md).

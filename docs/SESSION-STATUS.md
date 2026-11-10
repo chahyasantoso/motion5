@@ -5,7 +5,7 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-09, Asia/Jakarta.
+- **Captured:** 2026-11-10, Asia/Jakarta.
 - **Read against:** `live-editor` after the full check gate.
 
 ## Now
@@ -28,8 +28,9 @@ byte ceiling.
 
 ## Next in line
 
-- **Hover knobs and live review marks on the live page:** sliders for a move call's options from its `defineMove`
-  declaration with an ease curve preview, and jump, hold and overlap findings marked directly on the live timeline.
+- **Authoring, after the rename to `gerak`:** a move library with modifiers, a home, a catalog and a gate for a move
+  an agent writes, and the guide, skill and scaffold rewritten so a piece starts from its brief. `plan/roadmap.md`
+  holds the order past it.
 
 ## Open, and not scheduled
 
