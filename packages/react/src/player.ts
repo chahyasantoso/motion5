@@ -79,9 +79,18 @@ function playable(driver: OwnedDriver): driver is OwnedDriver & Playable {
   return "play" in driver && typeof driver.play === "function";
 }
 
-/** Moves `next` to the time `previous` shows, by ms when both are timed, and keeps it playing. */
+interface Stoppable {
+  playing(): boolean;
+}
+
+function stoppable(driver: OwnedDriver): driver is OwnedDriver & Stoppable {
+  return "playing" in driver && typeof driver.playing === "function";
+}
+
+/** Moves `next` to the time `previous` shows, by ms when both are timed; it plays unless `previous` says it had stopped. */
 function carryTime(previous: OwnedDriver, next: OwnedDriver): void {
   if (!seekable(next)) return;
+  const stopped = stoppable(previous) && !previous.playing();
   const was = previous.now();
   const now = next.now();
   const elapsed = elapsedOf(was.clock);
@@ -91,7 +100,7 @@ function carryTime(previous: OwnedDriver, next: OwnedDriver): void {
       ? Math.min(1, elapsed / length)
       : was.progress,
   );
-  if (playable(next)) next.play();
+  if (!stopped && playable(next)) next.play();
 }
 
 export function driverKeeper(): DriverKeeper {

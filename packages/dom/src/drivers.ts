@@ -54,6 +54,8 @@ export interface ClockDriver extends Driver {
   dispose(): void;
   setRate(rate: number): void;
   setRange(fromMs?: number, toMs?: number): void;
+  /** Whether frames are advancing it now; subscribers hear each change. */
+  playing(): boolean;
 }
 
 export function clockDriver(options: ClockOptions): ClockDriver {
@@ -73,8 +75,13 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let previous: number | undefined;
   let rate = 1;
   let range: { readonly from: number; readonly to: number } | undefined;
+  let running = false;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
+  };
+  // A listener may pause or play during `notify`, so the next frame is asked for only after it.
+  const request = (): void => {
+    if (running && handle === undefined) handle = frames.requestFrame(frame);
   };
   const frame = (at: number): void => {
     handle = undefined;
@@ -90,18 +97,28 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress = options.duration > 0 ? elapsed / options.duration : 0;
       cycle = fresh(undefined);
       cycle.advance(elapsed);
-      notify();
-      handle = frames.requestFrame(frame);
     } else {
       progress = cycle.advance(delta).progress;
-      notify();
-      if (cycle.state.kind === "running") handle = frames.requestFrame(frame);
+      if (cycle.state.kind === "finished") running = false;
     }
+    notify();
+    request();
   };
   const stop = (): void => {
     if (handle !== undefined) frames.cancelFrame(handle);
     handle = undefined;
     previous = undefined;
+    running = false;
+  };
+  const start = (): void => {
+    if (progress >= 1 || cycle.state.kind === "finished") {
+      cycle = fresh(undefined);
+      progress =
+        range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
+      if (range !== undefined && range.from > 0) cycle.advance(range.from);
+    }
+    running = true;
+    request();
   };
   const driver: ClockDriver = {
     now: () => ({
@@ -116,15 +133,16 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       };
     },
     play() {
-      if (progress >= 1 || cycle.state.kind === "finished") {
-        cycle = fresh(undefined);
-        progress =
-          range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
-        if (range !== undefined && range.from > 0) cycle.advance(range.from);
-      }
-      if (handle === undefined) handle = frames.requestFrame(frame);
+      if (running) return;
+      start();
+      notify();
     },
-    pause: stop,
+    pause() {
+      if (!running) return;
+      stop();
+      notify();
+    },
+    playing: () => running,
     seek(next) {
       stop();
       progress = Math.max(0, Math.min(1, next));
@@ -136,8 +154,8 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       stop();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
+      if (!still) start();
       notify();
-      if (!still) driver.play();
     },
     dispose() {
       stop();
@@ -162,12 +180,13 @@ export function clockDriver(options: ClockOptions): ClockDriver {
           return;
         }
       }
+      if (range === undefined) return;
       range = undefined;
       cycle = fresh(undefined);
       cycle.advance(progress * options.duration);
     },
   };
-  if (options.autoplay !== false && !still) driver.play();
+  if (options.autoplay !== false && !still) start();
   return driver;
 }
 

@@ -226,6 +226,20 @@ describe("a page host", () => {
     expect(disposed).toBe(1);
   });
 
+  it("keeps a playing clock playing and a stopped one stopped across a changed clock", () => {
+    const keeper = driverKeeper();
+    const clock = (duration: number) => () => clockDriver({ duration, frames: NO_FRAMES });
+    const first = keeper.createDriver(clock(1000));
+    expect(first.playing()).toBe(true);
+    const second = keeper.createDriver(clock(2000));
+    expect(second).not.toBe(first);
+    expect(second.playing()).toBe(true);
+    second.seek(0.25);
+    const third = keeper.createDriver(clock(3000));
+    expect(third.playing()).toBe(false);
+    expect(third.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 3000 });
+  });
+
   it("wraps the first scene and every swapped one in the host's guard", async () => {
     const wrapped: unknown[] = [];
     const probe = hosted((scene) => {
