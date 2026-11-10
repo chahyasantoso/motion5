@@ -1,6 +1,6 @@
 # Roadmap
 
-**Status:** Draft for the owner's review. It is the one statement of where the repository is going. Each stage in
+**Status:** Accepted by the owner, 2026-11-10. It is the one statement of where the repository is going. Each stage in
 section 5 gets its own plan before any code, and what has landed is stated only in `docs/SESSION-STATUS.md`.
 
 ## 1. Objective
