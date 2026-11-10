@@ -5,30 +5,32 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-09, Asia/Jakarta.
-- **Read against:** `chore/trim-pure-layer` after the full check gate.
+- **Captured:** 2026-11-10, Asia/Jakarta.
+- **Read against:** `live-editor` after the full check gate.
 
 ## Now
 
-- **The repository is the code path alone:** `@motion5/core` and `@motion5/plugins` are deleted (ADR-170), with every
-  `/engine` entry, `@motion5/three/skeleton`, the apps `ik-playground` and `pose-gap-filler`, `react-demo`'s engine
-  demos, the engine modes of the tools, core's benchmarks, Stryker and CI jobs, and the engine guide pages; the branch
-  `archive/core-plugins` holds them. A scene is `(time, events) => targets` built from `@motion5/moves` (time, spans,
-  lanes, eases, springs, 2D and 3D poses, events and the moves) and `@motion5/rig` (chains, FK and IK in 2D and 3D),
-  played by `@motion5/player` on a manual, clock, scroll or event driver, and written by `@motion5/dom`,
-  `@motion5/react` and `@motion5/three`. `@motion5/physics` gives a seekable `PhysicsWorld`, built in or on Rapier
-  through `@motion5/rapier`. `@motion5/tools` holds the `motion:*` commands: `motion:new` scaffolds a 2D or Three.js
-  scene, `motion:sample` and `motion:timeline` read a `.ts` scene with no browser, and `motion:review` checks, reads and
-  photographs a page or a scene file in one call. Seven worked examples in `apps/react-demo`, each held by a test,
-  and `docs/guide/agent-reference.md` names every export and command, held complete by a test. The repository gate
-  tests live in `test/repo/`. A move is declared by `defineMove` with its id, description, options (kinds, defaults,
-  ranges) and moments; an input is a typed third argument of `run`. `@motion5/rig` exports the 2D chain API, frames and
-  the 3D solvers and constraints; it no longer reads engine rows or the joint vocabulary.
+- **The code path and its live editor are in place:** `@motion5/core` and `@motion5/plugins` are deleted (ADR-170), and
+  the branch `archive/core-plugins` holds the retired JSON engine. A scene is `(time, events) => targets` built from
+  `@motion5/moves` (time, spans, lanes, eases, springs, 2D and 3D poses, events and `defineMove` moves) and
+  `@motion5/rig` (2D chains, frames, and 3D FK/IK solvers and constraints), played by `@motion5/player` (`play`,
+  `Player.replace`, `manualDriver`) on a manual, clock (`setRate`, `setRange`), scroll or event driver, and written by
+  `@motion5/dom`, `@motion5/react` (`usePlayer`, `useTarget`, `useValue`, `useWatch`, `PlayerHostProvider`,
+  `driverKeeper`) and `@motion5/three`. `@motion5/physics` gives a seekable `PhysicsWorld`, built in or on Rapier
+  through `@motion5/rapier`. `@motion5/tools` holds the `motion:*` commands (`motion:live`, `motion:new`,
+  `motion:review`, `motion:check`, `motion:read`, `motion:frames`, `motion:probe`, `motion:render`, `motion:sample`,
+  `motion:timeline`, `motion:points`) and `@motion5/tools/vite` (`motionLivePlugin`, `scanNumericLiterals`,
+  `resolveSceneFile`, `applySourceEdit`). `live.html?scene=<name>` in `apps/react-demo` hot-swaps saved scene edits in
+  place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
+  holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
+  code panel straight back into `src/<name>-scene.ts`. Seven worked examples in `apps/react-demo` and
+  `docs/guide/agent-reference.md` are held complete by tests under `test/repo/`.
 
 ## Next in line
 
-- **The live editor:** save a scene file and the stage follows on the next frame without losing its place; scrub,
-  loop, slow down, and drag a number in the code to watch the motion follow.
+- **Authoring, after the rename to `gerak`:** a move library with modifiers, a home, a catalog and a gate for a move
+  an agent writes, and the guide, skill and scaffold rewritten so a piece starts from its brief. `plan/roadmap.md`
+  holds the order past it.
 
 ## Open, and not scheduled
 

@@ -27,6 +27,13 @@ searching it for the name, not by reading package source. Read a part below only
 Use the other tools only to dig into what a review showed; each call costs time and tokens. Values can be right while
 the picture is wrong, so read the sheet before calling anything finished.
 
+## Live
+
+`npm run motion:live -- <name>` starts the dev server (or reuses one) and prints the address of `live.html?scene=<name>` (see
+[the live guide](./live.md)). An agent works the same way a person does, by editing `src/<name>-scene.ts`, and the
+person watching sees each edit land on the stage in place without a restart or losing the playhead time, speed or loop
+range.
+
 ## A scene
 
 ```ts

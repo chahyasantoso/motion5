@@ -6,6 +6,7 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 ## apps/react-demo
 
 - `src/`: React demo app
+- `src/live/`: live editor
 
 ## packages/dom
 
@@ -62,9 +63,10 @@ Public: `.`, `./react`
 
 ## packages/tools
 
-Public: `./page`, `./scene`
+Public: `./page`, `./scene`, `./vite`
 
 - `src/page/`: page tools
 - `src/scene/`: scene sample, timeline
 - `src/scene/templates/`: motion:new templates
 - `src/timeline/`: timeline bars
+- `src/vite/`: live editor Vite plugin

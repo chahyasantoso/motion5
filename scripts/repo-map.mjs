@@ -19,6 +19,7 @@ const HEADER = [
 
 export const OWNERS = {
   "apps/react-demo/src": "React demo app",
+  "apps/react-demo/src/live": "live editor",
   "packages/rig/src": "joint vocabulary",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",
@@ -36,6 +37,7 @@ export const OWNERS = {
   "packages/tools/src/page": "page tools",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",
+  "packages/tools/src/vite": "live editor Vite plugin",
 };
 
 function publicEntries(workspace, scanRoot = root) {

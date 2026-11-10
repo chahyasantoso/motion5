@@ -20,6 +20,10 @@
     "./scene": {
       "types": "./src/scene/index.ts",
       "default": "./src/scene/index.ts"
+    },
+    "./vite": {
+      "types": "./src/vite/index.ts",
+      "default": "./src/vite/index.ts"
     }
   }
 }

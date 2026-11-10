@@ -31,7 +31,7 @@ const Glyph: React.FC<{ player: Player<Beat> | undefined; index: number; glyph: 
 /** The timing beat as plain code: one scene of moves on one clock. Click replays. */
 export const TimingBeat: React.FC = () => {
   const centre = useRef({ x: 0, y: 0 }).current;
-  const scene = useMemo(() => timingScene(centre), [centre]);
+  const scene = useMemo(() => timingScene(centre), [centre, timingScene]);
   const playing = usePlayer(scene, beatClock);
   const dotRef = useRef<HTMLSpanElement | null>(null);
   const coverRef = useRef<HTMLDivElement | null>(null);

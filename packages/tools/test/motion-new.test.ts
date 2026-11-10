@@ -6,6 +6,8 @@ import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
 import { readSceneModule, sampleScene, scaffold } from "@motion5/tools/scene";
+import { DEFAULT_ROOT, parseLiveArgs, startLiveServer } from "../src/page/live";
+import { guard } from "../../../apps/react-demo/src/live/guard";
 
 const roots: string[] = [];
 function root(): string {
@@ -119,5 +121,89 @@ describe("motion:new", () => {
       const config = await resolveConfig(join(process.cwd(), "apps/react-demo", file));
       expect(await format(source, { ...config, filepath: file }), file).toBe(source);
     }
+  });
+
+  it("parses live args and validates scene existence", () => {
+    expect(parseLiveArgs(["timing"])).toEqual({
+      kind: "ok",
+      scene: "timing",
+      root: DEFAULT_ROOT,
+      port: 5173,
+    });
+
+    const dir = root();
+    mkdirSync(join(dir, "src"), { recursive: true });
+    writeFileSync(join(dir, "src/custom-scene.ts"), "export const scene = () => ({});");
+    expect(parseLiveArgs(["custom", "--root", dir, "--port", "4321"])).toEqual({
+      kind: "ok",
+      scene: "custom",
+      root: dir,
+      port: 4321,
+    });
+
+    expect(parseLiveArgs(["timing", "--bogus"]).kind).toBe("usage");
+    expect(parseLiveArgs(["Timing"]).kind).toBe("usage");
+    expect(parseLiveArgs(["missing-scene"]).kind).toBe("usage");
+  });
+
+  it("starts a live server and reuses an already running server", async () => {
+    const first = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port: 0 });
+    try {
+      expect(first.reused).toBe(false);
+      expect(first.url).toContain("live.html?scene=timing");
+      const port = Number(new URL(first.url).port);
+      expect(port).toBeGreaterThan(0);
+
+      const second = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port });
+      expect(second.reused).toBe(true);
+      expect(second.url).toBe(first.url);
+    } finally {
+      await first.close();
+    }
+  });
+
+  it("samples the first frame of every worked example under guard", async () => {
+    const examples = [
+      "timing",
+      "catch",
+      "splash",
+      "card",
+      "pile",
+      "principles",
+      "principles3d",
+    ] as const;
+    for (const name of examples) {
+      const scenePath = join(process.cwd(), "apps/react-demo/src", `${name}-scene.ts`);
+      const imported = await import(pathToFileURL(scenePath).href);
+      const module = readSceneModule(imported);
+      if ("reason" in module) throw new Error(`${name}: ${module.reason}`);
+      const errors: string[] = [];
+      const guarded = guard(module.scene, (err) => errors.push(err));
+      const [first] = sampleScene({ ...module, scene: guarded }, { kind: "time", ms: [0] });
+      expect(first).toBeDefined();
+      expect(errors).toEqual([]);
+    }
+  });
+
+  it("resolves newly scaffolded DOM and Three.js scenes via parseLiveArgs", () => {
+    const domDir = root();
+    const domResult = scaffold("scaffold-dom", domDir);
+    if (domResult.kind !== "written") throw new Error(JSON.stringify(domResult));
+    expect(parseLiveArgs(["scaffold-dom", "--root", domDir])).toEqual({
+      kind: "ok",
+      scene: "scaffold-dom",
+      root: domDir,
+      port: 5173,
+    });
+
+    const threeDir = appRoot();
+    const threeResult = scaffold("scaffold-three", threeDir, { three: true });
+    if (threeResult.kind !== "written") throw new Error(JSON.stringify(threeResult));
+    expect(parseLiveArgs(["scaffold-three", "--root", threeDir])).toEqual({
+      kind: "ok",
+      scene: "scaffold-three",
+      root: threeDir,
+      port: 5173,
+    });
   });
 });

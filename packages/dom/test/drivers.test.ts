@@ -61,6 +61,23 @@ describe("clockDriver under reduced motion", () => {
     driver.seek(0.5);
     expect(driver.now().progress).toBe(0.5);
   });
+
+  it("plays from the start when driver.play() is called directly", () => {
+    const source = frames();
+    const driver = clockDriver({
+      duration: 1000,
+      frames: source,
+      prefersReducedMotion: () => true,
+    });
+    expect(driver.now().progress).toBe(1);
+    expect(source.waiting).toBe(0);
+    driver.play();
+    expect(driver.now().progress).toBe(0);
+    expect(source.waiting).toBe(1);
+    source.run(0);
+    source.run(250);
+    expect(driver.now().progress).toBe(0.25);
+  });
 });
 
 describe("clockDriver", () => {
@@ -118,6 +135,84 @@ describe("clockDriver", () => {
     const driver = clockDriver({ duration: 100, frames: source, autoplay: false });
     expect(source.waiting).toBe(0);
     driver.play();
+    expect(source.waiting).toBe(1);
+  });
+
+  it("says whether it is playing, and tells subscribers each time that changes", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 100, frames: source });
+    const seen: boolean[] = [];
+    driver.subscribe(() => seen.push(driver.playing()));
+    expect(driver.playing()).toBe(true);
+    driver.pause();
+    driver.pause();
+    driver.play();
+    driver.play();
+    expect(seen).toEqual([false, true]);
+    driver.seek(0.5);
+    expect(driver.playing()).toBe(false);
+    driver.play();
+    source.run(0);
+    source.run(100);
+    expect(driver.now().progress).toBe(1);
+    expect(seen.at(-1)).toBe(false);
+    expect(driver.playing()).toBe(false);
+    driver.replay();
+    expect(seen.at(-1)).toBe(true);
+  });
+
+  it("stops when a subscriber pauses it during a frame", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source });
+    driver.subscribe(() => {
+      if (driver.now().progress >= 0.25) driver.pause();
+    });
+    source.run(0);
+    source.run(250);
+    expect(source.waiting).toBe(0);
+    expect(driver.playing()).toBe(false);
+  });
+
+  it("keeps its delay when a range that was never set is cleared", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, delay: 500, frames: source });
+    driver.setRange();
+    source.run(0);
+    source.run(400);
+    expect(driver.now().progress).toBe(0);
+  });
+
+  it("advances at half speed when rate is 0.5", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source });
+    driver.setRate(0.5);
+    source.run(0);
+    expect(driver.now().progress).toBe(0);
+    source.run(1000);
+    expect(driver.now()).toEqual({
+      progress: 0.5,
+      clock: { kind: "timed", elapsed: 500, length: 1000 },
+    });
+  });
+
+  it("loops within a range and wraps back to fromMs exactly", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 2000, frames: source });
+    driver.setRange(800, 1600);
+    expect(driver.now().clock).toEqual({
+      kind: "timed",
+      elapsed: 800,
+      length: 2000,
+    });
+    expect(driver.now().progress).toBe(800 / 2000);
+    source.run(0);
+    source.run(800);
+    expect(driver.now().progress).toBe(800 / 2000);
+    expect(driver.now().clock).toEqual({
+      kind: "timed",
+      elapsed: 800,
+      length: 2000,
+    });
     expect(source.waiting).toBe(1);
   });
 });

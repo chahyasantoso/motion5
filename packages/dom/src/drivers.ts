@@ -52,6 +52,10 @@ export interface ClockDriver extends Driver {
   seek(progress: number): void;
   replay(): void;
   dispose(): void;
+  setRate(rate: number): void;
+  setRange(fromMs?: number, toMs?: number): void;
+  /** Whether frames are advancing it now; subscribers hear each change. */
+  playing(): boolean;
 }
 
 export function clockDriver(options: ClockOptions): ClockDriver {
@@ -69,27 +73,59 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let progress = still ? 1 : 0;
   let handle: number | undefined;
   let previous: number | undefined;
+  let rate = 1;
+  let range: { readonly from: number; readonly to: number } | undefined;
+  let running = false;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
+  // A listener may pause or play during `notify`, so the next frame is asked for only after it.
+  const request = (): void => {
+    if (running && handle === undefined) handle = frames.requestFrame(frame);
+  };
   const frame = (at: number): void => {
     handle = undefined;
-    const delta = previous === undefined ? 0 : Math.max(0, at - previous);
+    const delta = (previous === undefined ? 0 : Math.max(0, at - previous)) * rate;
     previous = at;
-    progress = cycle.advance(delta).progress;
+    if (range !== undefined) {
+      let elapsed = progress * options.duration + delta;
+      const span = range.to - range.from;
+      if (span > 0 && elapsed >= range.to) {
+        const wraps = Math.floor((elapsed - range.from) / span);
+        if (wraps > 0) elapsed -= wraps * span;
+      }
+      progress = options.duration > 0 ? elapsed / options.duration : 0;
+      cycle = fresh(undefined);
+      cycle.advance(elapsed);
+    } else {
+      progress = cycle.advance(delta).progress;
+      if (cycle.state.kind === "finished") running = false;
+    }
     notify();
-    if (cycle.state.kind === "running") handle = frames.requestFrame(frame);
+    request();
   };
   const stop = (): void => {
     if (handle !== undefined) frames.cancelFrame(handle);
     handle = undefined;
     previous = undefined;
+    running = false;
+  };
+  const start = (): void => {
+    if (progress >= 1 || cycle.state.kind === "finished") {
+      cycle = fresh(undefined);
+      progress =
+        range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
+      if (range !== undefined && range.from > 0) cycle.advance(range.from);
+    }
+    running = true;
+    request();
   };
   const driver: ClockDriver = {
     now: () => ({
       progress,
       clock: { kind: "timed", elapsed: progress * options.duration, length: options.duration },
     }),
+    options,
     subscribe(listener) {
       listeners.add(listener);
       return () => {
@@ -97,11 +133,16 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       };
     },
     play() {
-      if (still) return;
-      if (handle === undefined && cycle.state.kind === "running")
-        handle = frames.requestFrame(frame);
+      if (running) return;
+      start();
+      notify();
     },
-    pause: stop,
+    pause() {
+      if (!running) return;
+      stop();
+      notify();
+    },
+    playing: () => running,
     seek(next) {
       stop();
       progress = Math.max(0, Math.min(1, next));
@@ -113,15 +154,39 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       stop();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
+      if (!still) start();
       notify();
-      driver.play();
     },
     dispose() {
       stop();
       listeners.clear();
     },
+    setRate(next) {
+      rate = Math.max(0, next);
+    },
+    setRange(fromMs?: number, toMs?: number) {
+      if (fromMs !== undefined && toMs !== undefined) {
+        const from = Math.max(0, Math.min(options.duration, fromMs));
+        const to = Math.max(from, Math.min(options.duration, toMs));
+        if (to > from) {
+          range = { from, to };
+          const elapsed = progress * options.duration;
+          if (elapsed < from || elapsed > to) {
+            progress = options.duration > 0 ? from / options.duration : 0;
+            cycle = fresh(undefined);
+            cycle.advance(from);
+            notify();
+          }
+          return;
+        }
+      }
+      if (range === undefined) return;
+      range = undefined;
+      cycle = fresh(undefined);
+      cycle.advance(progress * options.duration);
+    },
   };
-  if (options.autoplay !== false) driver.play();
+  if (options.autoplay !== false && !still) start();
   return driver;
 }
 
@@ -152,6 +217,7 @@ export function scrollDriver(options: {
     atProgress(span <= 0 ? 1 : Math.max(0, Math.min(1, (offset() - options.start) / span)));
   return {
     now,
+    options,
     subscribe(listener) {
       target.addEventListener("scroll", listener);
       return () => target.removeEventListener("scroll", listener);

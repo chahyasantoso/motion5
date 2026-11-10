@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
+import { motionLivePlugin } from "@motion5/tools/vite";
 import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
 
 export default defineConfig({
+  plugins: [motionLivePlugin()],
   resolve: {
     alias: [...workspaceSourceAliases()],
   },
