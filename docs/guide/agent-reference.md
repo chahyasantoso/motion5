@@ -361,8 +361,9 @@ applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
 ### Drivers
 
 **`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames, reducedMotion })`**: a timed clock on the page's
-frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`, `.setRate(rate)`, `.setRange(fromMs?, toMs?)`. When the person prefers reduced motion it shows the
-last frame and never ticks; `reducedMotion: "play"` opts out. **`ClockDriver`** and **`ClockOptions`** are its types.
+frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`, `.setRate(rate)`, `.setRange(fromMs?, toMs?)`,
+and `.playing()`, whether frames are advancing it now, which subscribers hear change. When the person prefers reduced
+motion it shows the last frame and never ticks until `.play()`; `reducedMotion: "play"` opts out. **`ClockDriver`** and **`ClockOptions`** are its types.
 ```ts
 export const clock = () => clockDriver({ duration: durationMs });
 ```
@@ -396,7 +397,7 @@ driver to play on, which the host owns and `usePlayer` never disposes; `guard(sc
 saved file swaps in place: a new `scene` or `cues` calls `player.replace` and keeps the player and its time.
 **`driverKeeper()`** makes a **`DriverKeeper`**, one driver per host: while a factory makes a driver of the same members
 and equal `options`, it keeps the old one with its state; otherwise it takes the new one, seeks it to the old time, plays
-it and disposes the old. `current()` reads it and `subscribe` tells each time it changes. With no host, nothing changes.
+it unless the old one says it had stopped, and disposes the old. `current()` reads it and `subscribe` tells each time it changes. With no host, nothing changes.
 **`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
 list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
 its index, as `Letter` in `apps/react-demo/src/principles.tsx` does.
@@ -521,8 +522,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
-- **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and opens
-  `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
+- **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
+  address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
 - **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
   `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets.

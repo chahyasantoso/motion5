@@ -22,7 +22,7 @@ byte ceiling.
   `motion:timeline`, `motion:points`) and `@motion5/tools/vite` (`motionLivePlugin`, `scanNumericLiterals`,
   `resolveSceneFile`, `applySourceEdit`). `live.html?scene=<name>` in `apps/react-demo` hot-swaps saved scene edits in
   place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
-  holding the last good frame, scrubs and loops on a timeline with span and cue marks, and drags numeric literals in the
+  holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
   code panel straight back into `src/<name>-scene.ts`. Seven worked examples in `apps/react-demo` and
   `docs/guide/agent-reference.md` are held complete by tests under `test/repo/`.
 
