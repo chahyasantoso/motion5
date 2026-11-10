@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-10, Asia/Jakarta.
-- **Read against:** `live-editor` after the full check gate.
+- **Read against:** `chore/rename-gerak` after the full check gate.
 
 ## Now
 
@@ -28,7 +28,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Authoring, after the rename to `gerak`:** a move library with modifiers, a home, a catalog and a gate for a move
+- **Authoring:** a move library with modifiers, a home, a catalog and a gate for a move
   an agent writes, and the guide, skill and scaffold rewritten so a piece starts from its brief. `plan/roadmap.md`
   holds the order past it.
 
