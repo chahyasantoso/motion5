@@ -1,5 +1,5 @@
 {
-  "name": "motion5",
+  "name": "gerak",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -43,7 +43,7 @@
     "motion:live": "node packages/tools/bin/motion-live.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@motion5/react-demo"
+    "dev": "npm run dev --workspace=@gerak/react-demo"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

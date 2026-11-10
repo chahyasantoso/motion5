@@ -1,9 +1,9 @@
 # Rigs
 
-Read this when bones reach: an arm, a leg, a figure. Names are in [the reference](./agent-reference.md#motion5rig).
+Read this when bones reach: an arm, a leg, a figure. Names are in [the reference](./agent-reference.md#gerakrig).
 
 ```ts
-import { buildChain, chainPoses, ik } from "@motion5/rig";
+import { buildChain, chainPoses, ik } from "@gerak/rig";
 
 const base = { x: 250, y: 300, rotation: 0 };
 const arm = buildChain([

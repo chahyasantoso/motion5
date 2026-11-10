@@ -2,4 +2,4 @@
 
 **Status:** Accepted, 2026-08-10
 
-**Decision.** `@motion5/react` consumes only documented public core surface; stays outside core.
+**Decision.** `@gerak/react` consumes only documented public core surface; stays outside core.

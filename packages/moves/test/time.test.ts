@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { UNTIMED, atProgress, window, windowed, type Time } from "@motion5/moves";
+import { UNTIMED, atProgress, window, windowed, type Time } from "@gerak/moves";
 
 describe("windowed", () => {
   it("maps a window onto 0 to 1 and holds outside it", () => {

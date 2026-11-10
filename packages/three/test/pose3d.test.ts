@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Mesh, MeshBasicMaterial, PerspectiveCamera, Vector3 } from "three";
-import { aim, lift2d } from "@motion5/moves";
+import { aim, lift2d } from "@gerak/moves";
 import { applyPose2d, applyPose3d } from "../src/index";
 
 function box(): Mesh<BoxGeometry, MeshBasicMaterial> {

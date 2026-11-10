@@ -8,9 +8,9 @@
 
 ## Context
 
-User guide surfaced gap: repository imports ≠ package declaration. `packages/core/package.json` declared three entries: `.`, `./internal`, `./adapters`. `apps/react-demo` imports `@motion5/core/adapters/browser-clock`, `@motion5/core/plugins/fk`, `@motion5/core/plugins/transform`, `@motion5/core/ports/fakes`.
+User guide surfaced gap: repository imports ≠ package declaration. `packages/core/package.json` declared three entries: `.`, `./internal`, `./adapters`. `apps/react-demo` imports `@gerak/core/adapters/browser-clock`, `@gerak/core/plugins/fk`, `@gerak/core/plugins/transform`, `@gerak/core/ports/fakes`.
 
-Both Vite configs alias `@motion5/core` → `packages/core/src`, bypassing `exports`; published install fails all four with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Demo should consume package as user does.
+Both Vite configs alias `@gerak/core` → `packages/core/src`, bypassing `exports`; published install fails all four with `ERR_PACKAGE_PATH_NOT_EXPORTED`. Demo should consume package as user does.
 
 Docs left no honest option: public paths describe workspace-only resolution; three declared entries leave plugins unreachable; unreachable plugins animate nothing -- every authored keyframe key needs registered plugin → `transformPlugin` required for `x` track, not convenience.
 

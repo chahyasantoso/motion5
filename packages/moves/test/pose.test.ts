@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { squashed } from "@motion5/moves";
+import { squashed } from "@gerak/moves";
 
 const weights = Array.from({ length: 20 }, (_, i) => i / 19);
 

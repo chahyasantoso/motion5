@@ -10,7 +10,7 @@ model has a lifecycle pure graph composition cannot own.
 
 ## Decision
 
-`@motion5/plugins/runner` owns `attachRunners`, `Runner`, `RunnerStep`, `RunnerFailure`,
+`@gerak/plugins/runner` owns `attachRunners`, `Runner`, `RunnerStep`, `RunnerFailure`,
 `AttachRunnersOptions`, `LatestSlot`, `createLatestSlot` and `describeRunnerFailure`. Application
 attaches runners after engine construction using same clock. Core owns no runner lifecycle.
 

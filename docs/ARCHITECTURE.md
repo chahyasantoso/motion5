@@ -1,4 +1,4 @@
-# motion5 architecture
+# gerak architecture
 
 **Status:** Who owns what. Current implementation state lives in [SESSION-STATUS.md](./SESSION-STATUS.md); where code
 lives is in [MAP.md](./MAP.md).
@@ -22,7 +22,7 @@ driver owns only time, a player owns only playback, and a renderer owns only wri
                       moves  <--  rig          physics  <--  rapier
 ```
 
-- **Pure:** `moves`, `rig`, `player` and `physics`. Their manifests say `"motion5": { "layer": "pure" }`, and the
+- **Pure:** `moves`, `rig`, `player` and `physics`. Their manifests say `"gerak": { "layer": "pure" }`, and the
   boundary scan refuses a pure file that imports anything outside the pure layer. They touch no DOM, no clock and no
   global state.
 - **Renderers:** `dom` (CSS strings, element writes and the page drivers), `react` (hooks over a player) and `three`
@@ -36,15 +36,15 @@ driver owns only time, a player owns only playback, and a renderer owns only wri
 | Question | Owner |
 | --- | --- |
 | What a value is at a time | the scene, built from `moves` |
-| Time, eases, spans, lanes, poses, blends and the moves | `@motion5/moves` |
-| Bones, chains, FK, IK and frames, 2D and 3D | `@motion5/rig` |
-| Bodies, contacts and a seekable simulation | `@motion5/physics` |
-| Which moment is shown, and who hears a value or a cue | `@motion5/player` |
-| Where time comes from on a page: a clock, scroll, events | the drivers in `@motion5/dom` |
-| The CSS a pose becomes | `@motion5/dom` |
-| A pose on a Three.js object | `@motion5/three` |
-| Binding a player to React | `@motion5/react` |
-| Reading, checking and photographing motion | `@motion5/tools` |
+| Time, eases, spans, lanes, poses, blends and the moves | `@gerak/moves` |
+| Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig` |
+| Bodies, contacts and a seekable simulation | `@gerak/physics` |
+| Which moment is shown, and who hears a value or a cue | `@gerak/player` |
+| Where time comes from on a page: a clock, scroll, events | the drivers in `@gerak/dom` |
+| The CSS a pose becomes | `@gerak/dom` |
+| A pose on a Three.js object | `@gerak/three` |
+| Binding a player to React | `@gerak/react` |
+| Reading, checking and photographing motion | `@gerak/tools` |
 
 One owner per question. A second place that answers one of these is the defect to fix, not a convenience to keep.
 

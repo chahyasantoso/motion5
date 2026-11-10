@@ -1,15 +1,15 @@
 {
-  "name": "@motion5/player",
+  "name": "@gerak/player",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "motion5": {
+  "gerak": {
     "layer": "pure"
   },
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/moves": "0.0.0"
+    "@gerak/moves": "0.0.0"
   },
   "exports": {
     ".": {

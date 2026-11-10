@@ -1,5 +1,5 @@
 import React from "react";
-import { usePlayer, useTarget } from "@motion5/react";
+import { usePlayer, useTarget } from "@gerak/react";
 import { clock, scene } from "./__NAME__-scene";
 
 /** Binds each target to its element; all motion lives in `__NAME__-scene.ts`. Click replays. */

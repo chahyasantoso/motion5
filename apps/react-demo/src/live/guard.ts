@@ -1,5 +1,5 @@
-import type { Events, Time } from "@motion5/moves";
-import type { Scene } from "@motion5/player";
+import type { Events, Time } from "@gerak/moves";
+import type { Scene } from "@gerak/player";
 
 /** Wraps a scene so a throw reports each distinct message once and falls back to the last good values. */
 export function guard<T extends object>(

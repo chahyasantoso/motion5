@@ -5,7 +5,7 @@ import ts from "typescript";
 import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
-import { readSceneModule, sampleScene, scaffold } from "@motion5/tools/scene";
+import { readSceneModule, sampleScene, scaffold } from "@gerak/tools/scene";
 import { DEFAULT_ROOT, parseLiveArgs, startLiveServer } from "../src/page/live";
 import { guard } from "../../../apps/react-demo/src/live/guard";
 
@@ -92,7 +92,7 @@ describe("motion:new", () => {
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
     const component = readFileSync(join(dir, "src/rope-word.tsx"), "utf8");
-    expect(component).toContain('from "@motion5/three/react"');
+    expect(component).toContain('from "@gerak/three/react"');
     expect(component).toContain("preserveDrawingBuffer: true");
     const module = readSceneModule(
       await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href),

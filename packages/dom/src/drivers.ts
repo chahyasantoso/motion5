@@ -1,5 +1,5 @@
-import { atProgress, createLoopCycle, type LoopCycle, type Time } from "@motion5/moves";
-import type { Driver } from "@motion5/player";
+import { atProgress, createLoopCycle, type LoopCycle, type Time } from "@gerak/moves";
+import type { Driver } from "@gerak/player";
 import { unreachable } from "./unreachable";
 
 /** Where frames come from: `requestAnimationFrame` on a page, a fake one in a test. */

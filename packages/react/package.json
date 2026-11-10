@@ -1,13 +1,13 @@
 {
-  "name": "@motion5/react",
+  "name": "@gerak/react",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/dom": "0.0.0",
-    "@motion5/moves": "0.0.0",
-    "@motion5/player": "0.0.0"
+    "@gerak/dom": "0.0.0",
+    "@gerak/moves": "0.0.0",
+    "@gerak/player": "0.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeRefs } from "@motion5/react";
+import { mergeRefs } from "@gerak/react";
 
 describe("mergeRefs", () => {
   it("lets several ref callbacks bind one element", () => {

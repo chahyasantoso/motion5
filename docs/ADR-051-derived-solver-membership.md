@@ -4,7 +4,7 @@
 **Date:** 2026-08-27  
 **Closes:** issue [#195](https://github.com/chahyasantoso/motion5/issues/195)
 
-This record defines IK solver architecture in motion5: how solvers join single-pass transactional dataflow
+This record defines IK solver architecture in gerak: how solvers join single-pass transactional dataflow
 graph, how member chains derive without cyclic requirement edges, how FK bones apply solved rotations
 without mutating published output schemas.
 

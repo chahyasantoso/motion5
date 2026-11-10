@@ -1,6 +1,6 @@
-# motion5 user guide
+# gerak user guide
 
-This directory is written for someone using motion5. Everything else under `docs/` is written for someone building it.
+This directory is written for someone using gerak. Everything else under `docs/` is written for someone building it.
 
 The guide documents the surface each package declares in its `exports` map and nothing else. If a symbol or subpath is
 not listed here, treat it as internal even when a workspace checkout lets you import it through a source path.

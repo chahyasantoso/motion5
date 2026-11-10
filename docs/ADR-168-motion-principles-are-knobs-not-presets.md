@@ -33,7 +33,7 @@ look, and a wrapper that rewrote a move's progress breaks moves, which are not d
 
 ## Consequences
 
-Each listed export is new public API in `@motion5/moves`, or an option on an existing one; existing calls keep their
+Each listed export is new public API in `@gerak/moves`, or an option on an existing one; existing calls keep their
 values. `Pose2d` gets no skew: an outer element takes `smear`'s pose and an inner one turns back by its `heading`,
 which is exact. A timed shake is `react` on a cue, and a crouch is `backEase` with `squashed`; the guide shows both.
 3D scenes get none of this until a later decision.

@@ -6,17 +6,17 @@ y down, degrees clockwise, ms on clocks and events, seconds inside physics.
 
 ## Index
 
-- [`@motion5/moves`](#motion5moves): [time](#time), [lanes](#lanes), [moves](#moves), [eases and blends](#eases-and-blends), [poses](#poses), [events](#events), [writing a move](#writing-a-move)
-- [`@motion5/player`](#motion5player)
-- [`@motion5/dom`](#motion5dom): [rendering](#rendering), [drivers](#drivers)
-- [`@motion5/react`](#motion5react)
-- [`@motion5/rig`](#motion5rig)
-- [`@motion5/physics`](#motion5physics) and [`@motion5/rapier`](#motion5rapier)
-- [`@motion5/three`](#motion5three)
+- [`@gerak/moves`](#gerakmoves): [time](#time), [lanes](#lanes), [moves](#moves), [eases and blends](#eases-and-blends), [poses](#poses), [events](#events), [writing a move](#writing-a-move)
+- [`@gerak/player`](#gerakplayer)
+- [`@gerak/dom`](#gerakdom): [rendering](#rendering), [drivers](#drivers)
+- [`@gerak/react`](#gerakreact)
+- [`@gerak/rig`](#gerakrig)
+- [`@gerak/physics`](#gerakphysics) and [`@gerak/rapier`](#gerakrapier)
+- [`@gerak/three`](#gerakthree)
 - [Commands](#commands)
 - [Not for scenes](#not-for-scenes)
 
-## @motion5/moves
+## @gerak/moves
 
 ### Time
 
@@ -319,7 +319,7 @@ const slide = defineMove({
 });
 ```
 
-## @motion5/player
+## @gerak/player
 
 **`Scene`**: `(time, events) => targets`.
 
@@ -339,7 +339,7 @@ play(scene, driver);
 driver.seekMs(1200);
 ```
 
-## @motion5/dom
+## @gerak/dom
 
 ### Rendering
 
@@ -384,7 +384,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 
 **`FrameSource`**: where frames come from, for a test's fake frames.
 
-## @motion5/react
+## @gerak/react
 
 **`usePlayer(scene, createDriver, cues?)`**: plays while the component stays; gives **`Playing`** `{ player, driver }` or
 `undefined`. Define all three outside the component. **`OwnedDriver`**: a driver it may dispose.
@@ -425,7 +425,7 @@ it measures. **`mergeRefs(...refs)`**: one ref that sets several.
 const centre = centreIn(dot, stage);
 ```
 
-## @motion5/rig
+## @gerak/rig
 
 **`buildChain(bones)`**: a checked bone tree from **`Bone2d`** rows `{ id, parentId?, length, rotation?, minRotation?,
 maxRotation? }`; ids type every answer. **`Chain2d`** is its type.
@@ -454,7 +454,7 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 
 **`ORIGIN`**: the world frame at 0, 0, unturned.
 
-## @motion5/physics
+## @gerak/physics
 
 **`builtinWorld()`**: the pure engine, a **`PhysicsWorld`**: `addBody`, `addCollider`, `setGravity`, `step`, `body`,
 `drainContacts`, `snapshot`, `restore`.
@@ -484,7 +484,7 @@ const sim = simulate(builtinWorld(), (world) => {
 sim.place(`bit${click.at}`, time, events);
 ```
 
-## @motion5/rapier
+## @gerak/rapier
 
 **`rapierEngine()`**: loads Rapier once and gives a factory of **`RapierWorld`**s, which are `PhysicsWorld`s with
 `native` and `rigidBody(id)` for joints and the rest of Rapier.
@@ -493,7 +493,7 @@ const rapier = await rapierEngine();
 const sim = simulate(rapier(), build);
 ```
 
-## @motion5/three
+## @gerak/three
 
 **`applyPose2d(object, pose, rest?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes.
 ```ts
@@ -506,7 +506,7 @@ missing field writes its rest.
 player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
 ```
 
-**`useTarget3d(player, target, { invalidate })`** from `@motion5/three/react`: a ref for an `Object3D` that writes the
+**`useTarget3d(player, target, { invalidate })`** from `@gerak/three/react`: a ref for an `Object3D` that writes the
 target's `Pose3d` every step with no render; in React Three Fiber pass `invalidate` when the canvas renders on demand.
 ```tsx
 const ball = useTarget3d(playing?.player, "ball");
@@ -557,4 +557,4 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 These are exported for other packages, and a scene does not use them. They are named so this reference stays
 complete.
 
-- **`@motion5/rig`**: `composeChain`, `Link2d`, `PivotOffset`, `eulerFromMatrix3d`, `IDENTITY_MATRIX3`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `quaternionFromEuler3d`, `slerpQuaternion`, `swingFrame3d`, `swingTwist3d`, `transposeMatrix3`, `Euler3d`, `Matrix3`, `PivotOffset3d`, `Quaternion`, `SwingTwist3d`, `Vec3`, `WorldFrame3d`, `UNBOUND_POLE3D`, `Pole3d`, `ChainMember3d`, `FREE_JOINT3D`, `JointLimit3d`, `chainShape3d`, `solveChain3d`, `ChainShape3d`.
+- **`@gerak/rig`**: `composeChain`, `Link2d`, `PivotOffset`, `eulerFromMatrix3d`, `IDENTITY_MATRIX3`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `quaternionFromEuler3d`, `slerpQuaternion`, `swingFrame3d`, `swingTwist3d`, `transposeMatrix3`, `Euler3d`, `Matrix3`, `PivotOffset3d`, `Quaternion`, `SwingTwist3d`, `Vec3`, `WorldFrame3d`, `UNBOUND_POLE3D`, `Pole3d`, `ChainMember3d`, `FREE_JOINT3D`, `JointLimit3d`, `chainShape3d`, `solveChain3d`, `ChainShape3d`.

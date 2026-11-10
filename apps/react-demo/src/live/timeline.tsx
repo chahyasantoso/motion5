@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import type { ClockDriver } from "@motion5/dom";
+import type { ClockDriver } from "@gerak/dom";
 
 export interface TimelineMark {
   readonly name: string;

@@ -1,6 +1,6 @@
-import { clockDriver } from "@motion5/dom";
-import { mergeEvents, react, seeded, type Events, type Pose2d, type Time } from "@motion5/moves";
-import { builtinWorld, simulate } from "@motion5/physics";
+import { clockDriver } from "@gerak/dom";
+import { mergeEvents, react, seeded, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { builtinWorld, simulate } from "@gerak/physics";
 
 export const durationMs = 4200;
 export const WORD = "TUMBLE";

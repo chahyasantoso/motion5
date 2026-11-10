@@ -2,7 +2,7 @@
 
 **Status:** Accepted, 2026-10-04
 
-**Superseded in part by [ADR-152](./ADR-152-rig-owns-solvers-and-their-vocabulary.md), 2026-11-08.** Solver vocabulary leaves `plugin-api` for `@motion5/rig`.
+**Superseded in part by [ADR-152](./ADR-152-rig-owns-solvers-and-their-vocabulary.md), 2026-11-08.** Solver vocabulary leaves `plugin-api` for `@gerak/rig`.
 
 ## Context
 
@@ -14,13 +14,13 @@ owners or copying them would create a second answer to the same questions.
 
 ## Decision
 
-`@motion5/core/plugin-api` is the one declared entrypoint for plugin implementations. It is a
+`@gerak/core/plugin-api` is the one declared entrypoint for plugin implementations. It is a
 re-export-only module. It exposes the plugin definition protocol, immutable value types, render
 serializer type, solver vocabulary used by plugin implementations, `POLE_SLOT`, and the shared
 `unreachable` function. The owners remain in `domain`, `ports`, `contract` and `lang`; the entrypoint
 only assembles their public surface.
 
-Every extracted plugin file imports core-owned symbols through `@motion5/core/plugin-api` and may
+Every extracted plugin file imports core-owned symbols through `@gerak/core/plugin-api` and may
 import sibling implementation modules. The package permits only the declared core root and plugin
 authoring contract, not internal, adapters or test support. The boundary scanner reads the exports
 of every workspace package once and rejects undeclared package subpaths. Relative plugin imports
@@ -32,13 +32,13 @@ so the workspace resolves the same contract that the published package declares.
 closure must not reach `runtime` or `graph`, and the declaration-surface test verifies that property.
 
 The first change is additive. The extraction change moves every implementation unchanged except
-import specifiers into `@motion5/plugins`, with six definition subpaths and the complete `frame3d`
+import specifiers into `@gerak/plugins`, with six definition subpaths and the complete `frame3d`
 utility module. Core removes its old plugin exports and the internal frame-reader export; no
 implementation remains in core. Registry and graph protocols remain core-owned.
 
 ## Alternatives rejected
 
-- Plugins importing `@motion5/core/internal`: that entrypoint is intentionally not the authoring
+- Plugins importing `@gerak/core/internal`: that entrypoint is intentionally not the authoring
   contract.
 - Moving solver vocabulary into the plugin package: graph code also reads the protocol, so that
   would give the vocabulary two owners.

@@ -1,5 +1,5 @@
-import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@motion5/moves";
-import { manualDriver, play } from "@motion5/player";
+import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import { manualDriver, play } from "@gerak/player";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";

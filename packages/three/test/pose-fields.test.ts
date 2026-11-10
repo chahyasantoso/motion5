@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Mesh, MeshBasicMaterial } from "three";
-import { applyPose, type RenderTarget } from "@motion5/dom";
-import { POSE_2D_FIELDS, type Pose2d } from "@motion5/moves";
+import { applyPose, type RenderTarget } from "@gerak/dom";
+import { POSE_2D_FIELDS, type Pose2d } from "@gerak/moves";
 import { applyPose2d } from "../src/index";
 
 /** A value for each field that differs from rest, so a renderer that drops the field shows no change. */

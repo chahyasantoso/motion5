@@ -10,7 +10,7 @@
     "composite": false,
     "baseUrl": ".",
     "paths": {
-      "@motion5/rig": ["../rig/dist/index.d.ts"]
+      "@gerak/rig": ["../rig/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts"],

@@ -1,12 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { ClockDriver } from "@motion5/dom";
-import type { Scene } from "@motion5/player";
-import {
-  driverKeeper,
-  PlayerHostProvider,
-  type OwnedDriver,
-  type PlayerHost,
-} from "@motion5/react";
+import type { ClockDriver } from "@gerak/dom";
+import type { Scene } from "@gerak/player";
+import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
 import { extractMarks, scrubByWheel, Timeline } from "./timeline";

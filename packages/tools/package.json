@@ -1,12 +1,12 @@
 {
-  "name": "@motion5/tools",
+  "name": "@gerak/tools",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@motion5/moves": "0.0.0",
-    "@motion5/player": "0.0.0",
-    "@motion5/rig": "0.0.0"
+    "@gerak/moves": "0.0.0",
+    "@gerak/player": "0.0.0",
+    "@gerak/rig": "0.0.0"
   },
   "peerDependencies": {
     "playwright-core": "*",

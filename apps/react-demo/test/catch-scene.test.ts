@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { manualDriver, play } from "@motion5/player";
-import { NO_EVENTS } from "@motion5/moves";
+import { manualDriver, play } from "@gerak/player";
+import { NO_EVENTS } from "@gerak/moves";
 import { BALL, CATCH, LAND_MS, SHOULDER, cues, durationMs, scene } from "../src/catch-scene";
 
 function at(ms: number, events = cues) {

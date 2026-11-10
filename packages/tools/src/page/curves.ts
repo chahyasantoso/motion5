@@ -18,7 +18,7 @@ const quartIn: Curve = (u) => u ** 4;
 const expoIn: Curve = (u) => (u === 0 ? 0 : 2 ** (10 * u - 10));
 const backIn: Curve = (u) => u * u * ((BACK + 1) * u - BACK);
 
-/** The curves a measured move is named after, under the names `@motion5/moves` gives its eases. */
+/** The curves a measured move is named after, under the names `@gerak/moves` gives its eases. */
 export const NAMED_CURVES: Readonly<Record<string, Curve>> = Object.freeze({
   linear: (u: number) => u,
   sineIn,

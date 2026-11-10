@@ -10,16 +10,16 @@ node can be refused or destroyed mid-edit.
 
 ## Decision
 
-`@motion5/player` owns `play(scene, driver)`. A scene is a function from `Time` to poses by target. Each frame the
+`@gerak/player` owns `play(scene, driver)`. A scene is a function from `Time` to poses by target. Each frame the
 player reads the driver, reruns the whole scene, and notifies each target's subscribers with plain values; a target
 that subscribes late receives the current value, and `refresh` reruns the scene for inputs it reads from outside,
 such as a measured layout. The player is in the pure layer.
 
-Drivers produce `Time` and own where it goes: a manual driver in the player, and in `@motion5/dom` a clock driver
+Drivers produce `Time` and own where it goes: a manual driver in the player, and in `@gerak/dom` a clock driver
 on the page's frames, with `play`, `pause`, `seek` and `replay`, and a scroll driver. The clock driver and the
-engine's `time` trigger share one loop owner for delay, repeat and yoyo, in `@motion5/moves`.
+engine's `time` trigger share one loop owner for delay, repeat and yoyo, in `@gerak/moves`.
 
-`@motion5/react` adds `usePlayer`, which plays a scene for a component's life, `useTarget`, which writes each step
+`@gerak/react` adds `usePlayer`, which plays a scene for a component's life, `useTarget`, which writes each step
 through a ref with no re-render, and `useValue`, which reads rarely changing values through
 `useSyncExternalStore`. All sit beside the engine hooks.
 

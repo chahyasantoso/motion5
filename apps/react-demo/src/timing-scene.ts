@@ -1,5 +1,5 @@
-import { clockDriver } from "@motion5/dom";
-import { drop, hop, lane, lanes, span, wipe, type Time } from "@motion5/moves";
+import { clockDriver } from "@gerak/dom";
+import { drop, hop, lane, lanes, span, wipe, type Time } from "@gerak/moves";
 
 /** The whole beat, in ms: letters fall, the dot hops in, then the cover wipes out from the dot. */
 export const BEAT_MS = 3000;

@@ -6,11 +6,11 @@ Accepted for issue #534 phase 5; exact-head Node 24 CI still required before mer
 
 ## Context
 
-After plugin implementations moved to `@motion5/plugins`, consumers still eagerly imported definitions, registered full set even when project used only one plugin. Resolving names from authored strings with `import(name)` would turn project data into executable module paths, make bundling and review opaque, defeat explicit public package surface. Registration now atomic through `PluginRegistry.registerAll`, so loader can prepare complete missing set before one commit.
+After plugin implementations moved to `@gerak/plugins`, consumers still eagerly imported definitions, registered full set even when project used only one plugin. Resolving names from authored strings with `import(name)` would turn project data into executable module paths, make bundling and review opaque, defeat explicit public package surface. Registration now atomic through `PluginRegistry.registerAll`, so loader can prepare complete missing set before one commit.
 
 ## Decision
 
-`@motion5/plugins/loader` snapshots explicit `Map<string, PluginDescriptor>` at construction. First-party `builtinCatalog` separate `@motion5/plugins/catalog` entry, literal dynamic imports only, historic order `transform`, `fk`, `ik`, `transform3d`, `fk3d`, `ik3d`. Factories and application-specific plugins stay with caller, which composes new catalog map.
+`@gerak/plugins/loader` snapshots explicit `Map<string, PluginDescriptor>` at construction. First-party `builtinCatalog` separate `@gerak/plugins/catalog` entry, literal dynamic imports only, historic order `transform`, `fk`, `ik`, `transform3d`, `fk3d`, `ik3d`. Factories and application-specific plugins stay with caller, which composes new catalog map.
 
 `ensure(registry, demand)` validates supplied project or tracks, discovers only top-level `keyframes` group names, plans dependency closure before importing anything, loads only names missing from that registry. Demanded group registry already holds but catalog does not list is satisfied, not refused: invariant about what ensure registers; plugin host registered directly needs no registration. Dependencies explicit descriptor metadata, used for plugins such as prepare-stage contributors with no authored group. Roots visited lexically for stable failure selection; successful registration follows catalog insertion order.
 

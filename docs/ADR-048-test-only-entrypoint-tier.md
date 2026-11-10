@@ -31,7 +31,7 @@ async function discoverConsumerPackages(scanRoot) {
 
 **The scan never walked `apps/`.** Covered `packages/core/src/{contract,domain,graph,runtime,ports}`, core root entries, `packages/*/src` for non-core packages, `index.ts` export allow list. `apps/react-demo`, workspace that made #164 mistake, invisible to every gate in that file.
 
-Both halves had to land together. Fixing only subpath leaves future demo importing `@motion5/core/testing` with equal confidence and silence.
+Both halves had to land together. Fixing only subpath leaves future demo importing `@gerak/core/testing` with equal confidence and silence.
 
 ## Decision
 
@@ -66,7 +66,7 @@ Four things deliberate.
 
 ```js
 export function importsTestingEntrypoint(source) {
-  return /(?:from|import)\s*["'](?:@motion5\/core\/testing|[^"']*core\/src\/testing)(?:["'/]|$)/.test(
+  return /(?:from|import)\s*["'](?:@gerak\/core\/testing|[^"']*core\/src\/testing)(?:["'/]|$)/.test(
     source,
   );
 }
@@ -84,7 +84,7 @@ Documentation states tier, not implies it. `docs/guide/api-reference.md` gains e
 
 **Leave a re-export shim at the old path.** Covered above: second door TR-A-08 bans; `bannedSymbol()` would reject the word anyway.
 
-**Publish the fakes as a separate `@motion5/testing` package.** Duplicates version and build pipeline for one 5 KB module; port contracts fakes double live in core. Tier was thing that needed to exist, not another package.
+**Publish the fakes as a separate `@gerak/testing` package.** Duplicates version and build pipeline for one 5 KB module; port contracts fakes double live in core. Tier was thing that needed to exist, not another package.
 
 **Fix the subpath and not the scan.** Rejected in context section. Subpath was symptom issue saw; unscanned workspace is why symptom mattered.
 
@@ -104,7 +104,7 @@ Evidence ids gain `W-` series; `packages/core/test/unit/scripts/evidence-case-id
 
 `packages/core/test/unit/scripts/boundary-scan.test.ts`, built against synthetic trees in temp directories, not real repository → each case proves gate can fail, not observes today it does not. TR-T-05 requires planted-violation fixture for every mechanical gate.
 
-- `W-1` predicate names `@motion5/core/testing` and relative `core/src/testing` path, does not name `@motion5/core`, `/plugins/fk`, or `/adapters/browser-clock`.
+- `W-1` predicate names `@gerak/core/testing` and relative `core/src/testing` path, does not name `@gerak/core`, `/plugins/fk`, or `/adapters/browser-clock`.
 - `W-2` scan reports app importing test-only entrypoint.
 - `W-3` scan reports app reaching into core source. #164's actual mistake, finally visible to gate.
 - `W-4` scan reports renderer import inside core testing layer — `coreLayers` guard.

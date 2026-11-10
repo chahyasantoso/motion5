@@ -1,5 +1,5 @@
 {
-  "name": "@motion5/react-demo",
+  "name": "@gerak/react-demo",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -8,8 +8,8 @@
     "build": "vite build"
   },
   "dependencies": {
-    "@motion5/react": "*",
-    "@motion5/three": "*",
+    "@gerak/react": "*",
+    "@gerak/three": "*",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "^0.186.1"

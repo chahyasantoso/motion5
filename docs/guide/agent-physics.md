@@ -1,10 +1,10 @@
 # Physics
 
 Read this when motion should follow forces: many bodies, collisions, a pile. For a designed bounce or squash, a move is
-simpler. Names are in [the reference](./agent-reference.md#motion5physics).
+simpler. Names are in [the reference](./agent-reference.md#gerakphysics).
 
 ```ts
-import { builtinWorld, simulate } from "@motion5/physics";
+import { builtinWorld, simulate } from "@gerak/physics";
 
 const sim = simulate(builtinWorld(), (world) => {
   world.setGravity(0, 2600);
@@ -31,4 +31,4 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
   `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.
 - Engines: `builtinWorld()` has no dependency and suits a few hundred bodies. For more, or for joints, `const rapier =
-  await rapierEngine()` from `@motion5/rapier` at the top of the module, then pass `rapier()` instead.
+  await rapierEngine()` from `@gerak/rapier` at the top of the module, then pass `rapier()` instead.

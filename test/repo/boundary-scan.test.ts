@@ -30,7 +30,7 @@ async function withTree<T>(
   use: (tree: string) => Promise<T>,
   manifest: string = PACKAGES_ONLY,
 ): Promise<T> {
-  const tree = await mkdtemp(join(tmpdir(), "motion5-boundary-"));
+  const tree = await mkdtemp(join(tmpdir(), "gerak-boundary-"));
   try {
     await writeFile(join(tree, "package.json"), manifest);
     for (const name of ["rig", "moves", "dom"]) {
@@ -67,10 +67,10 @@ describe("boundary scan", () => {
     const files = { "apps/demo/src/main.ts": undeclaredSubpathFixture };
     const declared = await withTree(files, (tree) => scan(tree), WORKSPACES);
     const undeclared = await withTree(files, (tree) => scan(tree), PACKAGES_ONLY);
-    const violation = "apps/demo/src/main.ts: undeclared workspace subpath @motion5/rig/fabrik";
+    const violation = "apps/demo/src/main.ts: undeclared workspace subpath @gerak/rig/fabrik";
     expect(declared).toContain(violation);
     expect(undeclared).not.toContain(violation);
-    const bare = await mkdtemp(join(tmpdir(), "motion5-no-manifest-"));
+    const bare = await mkdtemp(join(tmpdir(), "gerak-no-manifest-"));
     try {
       await expect(scan(bare)).rejects.toThrow(/package\.json/);
     } finally {
@@ -84,7 +84,7 @@ describe("boundary scan: pure packages", () => {
     const violations = await withTree(
       {
         "packages/moves/src/inside.ts":
-          'import { a } from "./sibling";\nimport { fk } from "@motion5/rig";\nexport const b = [a, fk];',
+          'import { a } from "./sibling";\nimport { fk } from "@gerak/rig";\nexport const b = [a, fk];',
         "packages/moves/src/sibling.ts": "export const a = 1;",
       },
       (tree) => scan(tree),
@@ -99,7 +99,7 @@ describe("boundary scan: pure packages", () => {
         "packages/moves/src/outside.ts":
           'import { x } from "../../dom/src/x";\nexport const y = x;',
         "packages/moves/src/dom.ts":
-          'import { applyPose } from "@motion5/dom";\nexport const m = applyPose;',
+          'import { applyPose } from "@gerak/dom";\nexport const m = applyPose;',
       },
       (tree) => scan(tree),
     );
@@ -114,12 +114,12 @@ describe("boundary scan: pure packages", () => {
     const violations = await withTree(
       {
         "packages/geometry/package.json": JSON.stringify({
-          name: "@motion5/geometry",
-          motion5: { layer: "pure" },
+          name: "@gerak/geometry",
+          gerak: { layer: "pure" },
           exports: { ".": "./src/index.ts" },
         }),
         "packages/geometry/src/index.ts":
-          'import { applyPose } from "@motion5/dom";\nexport const u = applyPose;',
+          'import { applyPose } from "@gerak/dom";\nexport const u = applyPose;',
       },
       (tree) => scan(tree),
     );
@@ -133,13 +133,13 @@ describe("boundary scan: page tools", () => {
   it("keeps page tools to node, playwright-core and vite", async () => {
     const violations = await withTree(
       {
-        "packages/tools/package.json": JSON.stringify({ name: "@motion5/tools", exports: {} }),
+        "packages/tools/package.json": JSON.stringify({ name: "@gerak/tools", exports: {} }),
         "packages/tools/src/page/frames.ts":
           'import { join } from "node:path";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, chromium, a];',
         "packages/tools/src/page/page.ts":
           'import { createServer } from "vite";\nexport const a = createServer;',
         "packages/tools/src/page/sample.ts":
-          'import { hop } from "@motion5/moves";\nexport const e = hop;',
+          'import { hop } from "@gerak/moves";\nexport const e = hop;',
         "packages/tools/src/page/reach.ts":
           'import { s } from "../scene/scene";\nexport const r = s;',
       },
@@ -166,11 +166,11 @@ describe("boundary scan: declared subpaths", () => {
   it("refuses an undeclared subpath of any workspace package", async () => {
     const subpaths = await declared;
     expect(undeclaredWorkspaceSubpaths(undeclaredSubpathFixture, subpaths)).toEqual([
-      "@motion5/rig/fabrik",
+      "@gerak/rig/fabrik",
     ]);
     for (const fixture of [
       rigEntrypointFixture,
-      '// see "@motion5/rig/fabrik" for the solve\nexport const kept = 1;',
+      '// see "@gerak/rig/fabrik" for the solve\nexport const kept = 1;',
     ])
       expect(undeclaredWorkspaceSubpaths(fixture, subpaths)).toEqual([]);
 
@@ -179,17 +179,17 @@ describe("boundary scan: declared subpaths", () => {
       scan(tree),
     );
     expect(withManifest).toEqual([
-      "packages/three/src/index.ts: undeclared workspace subpath @motion5/rig/fabrik",
+      "packages/three/src/index.ts: undeclared workspace subpath @gerak/rig/fabrik",
     ]);
     // With no manifest nothing is declared, so the same consumer fails closed on both.
-    const bare = await mkdtemp(join(tmpdir(), "motion5-no-rig-"));
+    const bare = await mkdtemp(join(tmpdir(), "gerak-no-rig-"));
     try {
       await writeFile(join(bare, "package.json"), PACKAGES_ONLY);
       await mkdir(join(bare, "packages/three/src"), { recursive: true });
       await writeFile(join(bare, "packages/three/src/index.ts"), `${consumer}\n`);
       expect(await scan(bare)).toEqual([
-        "packages/three/src/index.ts: undeclared workspace subpath @motion5/rig",
-        "packages/three/src/index.ts: undeclared workspace subpath @motion5/rig/fabrik",
+        "packages/three/src/index.ts: undeclared workspace subpath @gerak/rig",
+        "packages/three/src/index.ts: undeclared workspace subpath @gerak/rig/fabrik",
       ]);
     } finally {
       await rm(bare, { recursive: true, force: true });
@@ -199,16 +199,16 @@ describe("boundary scan: declared subpaths", () => {
   it("reads a specifier from code, dynamic imports included, and not from prose", async () => {
     const subpaths = await declared;
     expect(undeclaredWorkspaceSubpaths(dynamicUndeclaredFixture, subpaths)).toEqual([
-      "@motion5/rig/fabrik",
+      "@gerak/rig/fabrik",
     ]);
     expect(undeclaredWorkspaceSubpaths(importMentionFixture, subpaths)).toEqual([]);
     expect(
       undeclaredWorkspaceSubpaths(
-        '/* from "@motion5/rig/fabrik" */ import { a } from "@motion5/rig/fabrik";',
+        '/* from "@gerak/rig/fabrik" */ import { a } from "@gerak/rig/fabrik";',
         subpaths,
       ),
-    ).toEqual(["@motion5/rig/fabrik"]);
-    expect(withoutComments('// from "@motion5/rig/fabrik"\nexport const x = 1;')).not.toContain(
+    ).toEqual(["@gerak/rig/fabrik"]);
+    expect(withoutComments('// from "@gerak/rig/fabrik"\nexport const x = 1;')).not.toContain(
       "fabrik",
     );
   });

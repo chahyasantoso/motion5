@@ -1,4 +1,4 @@
-import { composeChain, type Link2d } from "@motion5/rig";
+import { composeChain, type Link2d } from "@gerak/rig";
 import { defineMove } from "./declare";
 import type { Anchor2d, Point2d } from "./shapes";
 

@@ -6,7 +6,7 @@ import {
   type Events,
   type MotionEvent,
   type Time,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 /** What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves. */
 export interface Driver {

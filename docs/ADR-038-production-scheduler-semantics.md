@@ -6,7 +6,7 @@
 
 ## Context
 
-`Engine` validates three ports at construction and refuses to build without a `Scheduler`, but no implementation shipped from any declared entrypoint. The only bundled one was `createFakeScheduler` under `@motion5/core/ports/fakes`, which collects jobs and then waits for the caller to call `flush()`.
+`Engine` validates three ports at construction and refuses to build without a `Scheduler`, but no implementation shipped from any declared entrypoint. The only bundled one was `createFakeScheduler` under `@gerak/core/ports/fakes`, which collects jobs and then waits for the caller to call `flush()`.
 
 That left two dishonest things in the tree. The getting-started guide told every consumer to write the port themselves and called it about ten lines, which holds only until the second pass matters: applying progress can enqueue the graph flush that publishes it, so a naive one-shot drain publishes nothing and the guide had to ship a `while` loop to hide it. And `apps/react-demo` composed the test double in a production page and called `scheduler.flush()` by hand from inside its scroll subscriber, which is precisely the shape a reader would copy.
 
@@ -34,7 +34,7 @@ The shipped `Scheduler` is `createMicrotaskScheduler`, and it drains on an injec
 
 **A bare `queueMicrotask` call with no injection.** One line shorter and it gives the same ordering, but it puts a host global inside core and makes the pass boundary untestable without fake timers. The `FrameSource` precedent exists for this reason.
 
-**Promoting `createFakeScheduler` to the production entry.** It already ships, and its `flush()` is genuinely useful, but a scheduler whose pass only happens when the consumer remembers to ask is not a scheduler. Promoting it would also erase the line between a test double and runtime API, which is the line `@motion5/core/ports/fakes` exists to draw.
+**Promoting `createFakeScheduler` to the production entry.** It already ships, and its `flush()` is genuinely useful, but a scheduler whose pass only happens when the consumer remembers to ask is not a scheduler. Promoting it would also erase the line between a test double and runtime API, which is the line `@gerak/core/ports/fakes` exists to draw.
 
 **A dedicated `./scheduler` subpath.** It reads well, and it widens the public surface for nothing: the factory is an optional implementation chosen at the composition root, which is what the adapters entry already means. ADR-036 prefers enumeration to convenience, and the cheapest enumeration here is none.
 

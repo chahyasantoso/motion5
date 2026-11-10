@@ -1,5 +1,5 @@
 import React from "react";
-import { usePlayer, useTarget, useWatch } from "@motion5/react";
+import { usePlayer, useTarget, useWatch } from "@gerak/react";
 import { clock, scene } from "./card-scene";
 
 /** The card's motion lives in `card-scene.ts`; the still hit area takes the pointer, so the lift never loses it. */

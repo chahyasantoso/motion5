@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { manualDriver, play } from "@motion5/player";
+import { manualDriver, play } from "@gerak/player";
 import { DROPLETS, IMPACT_MS, durationMs, scene } from "../src/splash-scene";
 
 function at(ms: number) {

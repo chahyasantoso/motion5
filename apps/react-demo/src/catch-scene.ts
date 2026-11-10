@@ -1,4 +1,4 @@
-import { clockDriver } from "@motion5/dom";
+import { clockDriver } from "@gerak/dom";
 import {
   combine,
   drop,
@@ -12,8 +12,8 @@ import {
   type Events,
   type Pose2d,
   type Time,
-} from "@motion5/moves";
-import { buildChain, chainPoses, ik } from "@motion5/rig";
+} from "@gerak/moves";
+import { buildChain, chainPoses, ik } from "@gerak/rig";
 
 export const durationMs = 4800;
 

@@ -1,9 +1,9 @@
-# motion5 documentation
+# gerak documentation
 
 This directory is the project's working contract. It answers questions that should not be rediscovered in every
 session.
 
-## Using motion5
+## Using gerak
 
 To make motion rather than build the runtime, read the [user guide](./guide/README.md). It documents the declared
 package entrypoints and nothing else. Everything else in this directory is written for implementors.

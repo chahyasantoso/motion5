@@ -1,11 +1,11 @@
 # Roadmap
 
-**Status:** Draft for the owner's review. It is the one statement of where the repository is going. Each stage in
+**Status:** Accepted by the owner, 2026-11-10. It is the one statement of where the repository is going. Each stage in
 section 5 gets its own plan before any code, and what has landed is stated only in `docs/SESSION-STATUS.md`.
 
 ## 1. Objective
 
-**motion5 is a standard vocabulary of motion that an agent or a person authors as reusable code, and that plays
+**gerak is a standard vocabulary of motion that an agent or a person authors as reusable code, and that plays
 anywhere: on a web page, on a live stage, in a video.**
 
 Three things follow from it:
@@ -83,29 +83,26 @@ Three things follow from it:
 
 ## 5. Order
 
-1. **Land `live-editor`, then rename to `gerak`.** The branch is the file-based live page, complete as it stands, and
-   the seed of the web overlay. The rename is one mechanical change with no behaviour in it, made once the npm
-   organisation is claimed and before the guides are rewritten.
-2. **Authoring.** The move library and modifiers, the moves folder, catalog and gate, the guide and skill rewritten
+1. **Authoring.** The move library and modifiers, the moves folder, catalog and gate, the guide and skill rewritten
    around the brief, the empty scaffold. Proof: one brief run cold three times gives three different pieces, and
    three briefs do not share a move set.
-3. **Composition.** Shots in a sequence, transitions between two scenes, an element moved between two layouts and
+2. **Composition.** Shots in a sequence, transitions between two scenes, an element moved between two layouts and
    carried across a transition, and values past a pose. It comes before publishing because it shapes the public
    surface, and it serves a site (a route change, a list reordering, a card opening) as much as a video.
-4. **Publish.** A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
+3. **Publish.** A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
    `stage` package and one app have held the surface still.
-5. **The live kit and the web overlay.** The panel, timeline and guard become a package; the overlay attaches to any
+4. **The live kit and the web overlay.** The panel, timeline and guard become a package; the overlay attaches to any
    page, picks elements and loops a trigger. Hover knobs and review marks on the timeline land here.
-6. **Objects.** The `stage` package: makers, the generic stage, frame formats, text in parts. A piece becomes one
+5. **Objects.** The `stage` package: makers, the generic stage, frame formats, text in parts. A piece becomes one
    file.
-7. **The instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
+6. **The instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
    links, a static site.
-8. **Video.** The camera, the beat driver, sound in the rendered file, a clip of footage as an object.
+7. **Video.** The camera, the beat driver, sound in the rendered file, a clip of footage as an object.
 
-**3D runs beside this, any time after stage 2:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
+**3D runs beside this, any time after stage 1:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
 a React Three Fiber scaffold and worked example.
 
-**Artwork from a reference runs after stage 6:** an agent looks at an image and rebuilds it as SVG or as a Three.js
+**Artwork from a reference runs after stage 5:** an agent looks at an image and rebuilds it as SVG or as a Three.js
 scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders the
 rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
 
@@ -130,8 +127,8 @@ rebuild beside the reference and reports where they differ; the looking and draw
 
 ## 8. The names
 
-- **`gerak`** is the base: the packages publish as `@gerak/*`. Until the rename lands, the code and this document
-  say `motion5`.
+- **`gerak`** is the base: the packages publish as `@gerak/*`. The GitHub repository keeps the address
+  `chahyasantoso/motion5` until its owner renames it.
 - **`da-lang`** is held for the short notation a person types in the instrument, and for the instrument itself. It is
   written in TypeScript and builds the same scene function, so it is a way of writing a `gerak` scene and never a
   second way to make motion. Its shape is decided in the instrument's plan.

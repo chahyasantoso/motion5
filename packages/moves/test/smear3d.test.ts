@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { matrixFromEuler3d, multiplyMatrix3, type Euler3d, type Matrix3 } from "@motion5/rig";
-import { elapsedOf, liveAt, smear3d, velocity3d, type Pose3d, type Time } from "@motion5/moves";
+import { matrixFromEuler3d, multiplyMatrix3, type Euler3d, type Matrix3 } from "@gerak/rig";
+import { elapsedOf, liveAt, smear3d, velocity3d, type Pose3d, type Time } from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const rising = (time: Time): Pose3d => ({ x: 1, y: 2, z: (ms(time) * 2000) / 1000 });

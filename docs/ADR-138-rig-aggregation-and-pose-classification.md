@@ -18,7 +18,7 @@ orientation. An axis-wise mean would falsely reject that pose at a ten-degree th
 
 ## Decision
 
-`@motion5/plugins/rig` exports `rigPlugin`, `readRigValues`, and the nameable `RigPose`, `RigControls`
+`@gerak/plugins/rig` exports `rigPlugin`, `readRigValues`, and the nameable `RigPose`, `RigControls`
 and `RigValues` types. Rig has empty keys and dict-valued `bones` and `controls` requirements.
 It publishes nested records assembled only from those bound tracks. It declares no solver chain,
 imports no fk/ik implementation, owns no limits, and has no output serializer.
@@ -34,7 +34,7 @@ the tolerant binding parser derives no bindings from an empty dict, but public v
 empty groups, values and requirement dictionaries. An unbound data track omits the rig group.
 G3b pins its absent pose and the decoder's empty records without weakening validation.
 
-`rig` is appended to the lazy built-in catalog. `@motion5/plugins/pose-classify` exports the
+`rig` is appended to the lazy built-in catalog. `@gerak/plugins/pose-classify` exports the
 `createPoseClassifyPlugin` factory and nameable `PoseTemplate` and `PoseClassifyOptions` types.
 The factory is not a built-in catalog entry: an app supplies its descriptor and may fetch templates
 inside the descriptor's async load before constructing the pure definition.

@@ -1,5 +1,5 @@
-import { eventDriver } from "@motion5/dom";
-import { combine, drop, follow, span, type Events, type Pose2d, type Time } from "@motion5/moves";
+import { eventDriver } from "@gerak/dom";
+import { combine, drop, follow, span, type Events, type Pose2d, type Time } from "@gerak/moves";
 
 /** How long the intro runs, in ms; the tools sample this much, and the card answers the pointer after it too. */
 export const durationMs = 900;

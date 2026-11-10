@@ -46,7 +46,7 @@ Issue #349's study and implementation plan in its first comment both find `ik.ts
 
 **Withdrawn from the plan: a shared `reachBand`.** Plan said reachability band `[|reach - l2|, reach + l2]` stated twice, once in closed form, once in iterative path. Re-read at `b609fbda`, `fabrik.ts` states no such band; FABRIK reaches bound by enforcing lengths outward. Band has one caller → extracting now = module for one line. Phase 2 extracts it if reachability report needs band on both paths.
 
-**Public surface narrows, deliberately.** `@motion5/core/plugins/ik` exported `readMembers`, `readGoals`, `solveTwoBone`, `solveChain`, `MemberState` (now `DeliveredMember` in `ik-chain.ts`) and `BaseFrame` beside `ikPlugin`. Now exports `ikPlugin` only. No app, package entry or document consumed others; `BaseFrame` was alias of `WorldFrame` with nothing to add. Tests import each owner directly.
+**Public surface narrows, deliberately.** `@gerak/core/plugins/ik` exported `readMembers`, `readGoals`, `solveTwoBone`, `solveChain`, `MemberState` (now `DeliveredMember` in `ik-chain.ts`) and `BaseFrame` beside `ikPlugin`. Now exports `ikPlugin` only. No app, package entry or document consumed others; `BaseFrame` was alias of `WorldFrame` with nothing to add. Tests import each owner directly.
 
 ## Delivery order after this record
 

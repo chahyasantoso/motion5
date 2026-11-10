@@ -16,16 +16,16 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@motion5/dom": ["packages/dom/src/index.ts"],
-      "@motion5/moves": ["packages/moves/src/index.ts"],
-      "@motion5/player": ["packages/player/src/index.ts"],
-      "@motion5/physics": ["packages/physics/src/index.ts"],
-      "@motion5/rapier": ["packages/rapier/src/index.ts"],
-      "@motion5/tools/page": ["packages/tools/src/page/index.ts"],
-      "@motion5/tools/scene": ["packages/tools/src/scene/index.ts"],
-      "@motion5/tools/vite": ["packages/tools/src/vite/index.ts"],
-      "@motion5/rig": ["packages/rig/src/index.ts"],
-      "@motion5/react": ["packages/react/src/index.ts"]
+      "@gerak/dom": ["packages/dom/src/index.ts"],
+      "@gerak/moves": ["packages/moves/src/index.ts"],
+      "@gerak/player": ["packages/player/src/index.ts"],
+      "@gerak/physics": ["packages/physics/src/index.ts"],
+      "@gerak/rapier": ["packages/rapier/src/index.ts"],
+      "@gerak/tools/page": ["packages/tools/src/page/index.ts"],
+      "@gerak/tools/scene": ["packages/tools/src/scene/index.ts"],
+      "@gerak/tools/vite": ["packages/tools/src/vite/index.ts"],
+      "@gerak/rig": ["packages/rig/src/index.ts"],
+      "@gerak/react": ["packages/react/src/index.ts"]
     },
     "jsx": "react-jsx"
   },

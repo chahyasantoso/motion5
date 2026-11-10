@@ -18,7 +18,7 @@ import {
 const REPO = fileURLToPath(new URL("../../", import.meta.url));
 
 async function fixture(files: Record<string, string>): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "motion5-repo-metrics-"));
+  const root = await mkdtemp(join(tmpdir(), "gerak-repo-metrics-"));
   for (const [path, contents] of Object.entries(files)) {
     await mkdir(join(root, path.split("/").slice(0, -1).join("/")), { recursive: true });
     await writeFile(join(root, path), contents, "utf8");

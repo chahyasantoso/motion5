@@ -1,8 +1,8 @@
 import React, { useCallback } from "react";
-import { applyPose, type RenderTarget } from "@motion5/dom";
-import type { Pose2d } from "@motion5/moves";
-import type { Player } from "@motion5/player";
-import { usePlayer, useTarget } from "@motion5/react";
+import { applyPose, type RenderTarget } from "@gerak/dom";
+import type { Pose2d } from "@gerak/moves";
+import type { Player } from "@gerak/player";
+import { usePlayer, useTarget } from "@gerak/react";
 import { SIZE, STARTS, WORD, clock, scene } from "./pile-scene";
 
 type Frame = ReturnType<typeof scene>;

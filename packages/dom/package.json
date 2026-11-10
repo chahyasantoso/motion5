@@ -1,13 +1,13 @@
 {
-  "name": "@motion5/dom",
+  "name": "@gerak/dom",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
   "types": "./src/index.ts",
   "dependencies": {
-    "@motion5/moves": "0.0.0",
-    "@motion5/player": "0.0.0"
+    "@gerak/moves": "0.0.0",
+    "@gerak/player": "0.0.0"
   },
   "exports": {
     ".": {

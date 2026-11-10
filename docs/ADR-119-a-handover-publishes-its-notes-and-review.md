@@ -36,7 +36,7 @@ carried, at most once per publication identity; every non-published result retai
 
 ### Versioned address and compatibility
 
-Manifest remains `motion5-handover`, version 2 adds exactly `title` + `target` to v1 keys. `target` has exactly
+Manifest remains `gerak-handover`, version 2 adds exactly `title` + `target` to v1 keys. `target` has exactly
 `repository`, `branch`, `into`, `destination`. Repository = GitHub `owner/name`; `branch` = branch carrying
 applied tip; `into` = intended merge target; destination = closed union `pull-request { number }`, `branch`,
 `issue`.
@@ -56,7 +56,7 @@ destination verifies and uses manifest issue in target repository.
 
 ### Review contract
 
-Optional `REVIEW.json` component: format `motion5-review`, version `1`, exactly `status`, `reviewer`, `summary`,
+Optional `REVIEW.json` component: format `gerak-review`, version `1`, exactly `status`, `reviewer`, `summary`,
 `findings`, `evidence` besides format fields. Status `passed`, `failed`, `pending`. Finding has `severity`
 (`blocking`/`advisory`), `state` (`open`/`fixed`/`deferred`), `title`, `detail`. `passed` review refused
 `invalid-review` while any blocking finding not fixed; advisory findings do not block pass, failed or pending
@@ -79,7 +79,7 @@ pull-request + notes markers; notes comment carries notes marker; review comment
 posting, publisher reads pull-request body and all comments, skips already marked part. Retry idempotent for same
 identity. Does not hide changed notes or review file — changed publication bytes have different identity.
 
-Publisher writes complete applied payload to Git directory under resolved `motion5-handover/pending` path before
+Publisher writes complete applied payload to Git directory under resolved `gerak-handover/pending` path before
 contacting GitHub. Payload includes identity, address, notes, review, exact applied tip, applied commits. Removes
 file only after all owed publication parts present. Deferrals, failures, crashes leave payload for
 `npm run patches:publish`, retries pending payloads in file-name order. File named `<identity>.json` not

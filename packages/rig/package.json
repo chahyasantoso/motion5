@@ -1,10 +1,10 @@
 {
-  "name": "@motion5/rig",
+  "name": "@gerak/rig",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "motion5": {
+  "gerak": {
     "layer": "pure"
   },
   "types": "./src/index.ts",

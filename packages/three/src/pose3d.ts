@@ -1,4 +1,4 @@
-import type { Pose3d } from "@motion5/moves";
+import type { Pose3d } from "@gerak/moves";
 import { Euler, type EulerOrder, type Object3D } from "three";
 
 /** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */

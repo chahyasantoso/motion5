@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, hop, type Time } from "@motion5/moves";
-import { manualDriver, play } from "@motion5/player";
+import { atProgress, hop, type Time } from "@gerak/moves";
+import { manualDriver, play } from "@gerak/player";
 
 const scene = (time: Time) => ({
   ball: hop({ height: 100, bounces: 1 }, time),

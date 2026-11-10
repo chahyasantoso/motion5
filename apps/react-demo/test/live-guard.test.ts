@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { elapsedOf, NO_EVENTS, type Time } from "@motion5/moves";
-import { manualDriver, play } from "@motion5/player";
+import { elapsedOf, NO_EVENTS, type Time } from "@gerak/moves";
+import { manualDriver, play } from "@gerak/player";
 import { guard } from "../src/live/guard";
 
 function timed(elapsed: number, length: number): Time {

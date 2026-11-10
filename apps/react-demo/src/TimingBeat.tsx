@@ -1,7 +1,7 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { applyPose, applyReveal } from "@motion5/dom";
-import type { Player } from "@motion5/player";
-import { centreIn, useTarget, usePlayer } from "@motion5/react";
+import { applyPose, applyReveal } from "@gerak/dom";
+import type { Player } from "@gerak/player";
+import { centreIn, useTarget, usePlayer } from "@gerak/react";
 import { WORD, beatClock, timingScene } from "./timing-scene";
 
 type Beat = ReturnType<ReturnType<typeof timingScene>>;

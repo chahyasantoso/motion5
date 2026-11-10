@@ -1,6 +1,6 @@
 ---
 name: make-motion
-description: Make, change or polish an animation or motion piece for a web page with motion5 — anything that drops, bounces, reaches, wipes, draws on, or moves a rig, letters or shapes over time. Use it whenever a brief asks for motion, an animated title, a kinetic word, or an animated character in this repository.
+description: Make, change or polish an animation or motion piece for a web page with gerak — anything that drops, bounces, reaches, wipes, draws on, or moves a rig, letters or shapes over time. Use it whenever a brief asks for motion, an animated title, a kinetic word, or an animated character in this repository.
 ---
 
 # Make motion

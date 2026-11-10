@@ -24,7 +24,7 @@ One authored value model survives.
   `cells.id` is ordinary data.
 - `input.requires` binds one declared dependency slot to one source, or to a map of member keys to
   sources. Edges derive from that record alone, so no grouped keyframes member exists.
-- A plugin is one identified definition at `@motion5/plugins/<name>`: declared `inputs`, named
+- A plugin is one identified definition at `@gerak/plugins/<name>`: declared `inputs`, named
   `outputs`, an optional `validate`, and one `transform`. Admission is atomic in `PluginCatalog`, and
   `EngineOptions.plugins` accepts that catalog only.
 - Selection is a consumer concern. One core selector module owns record and row selection, returning

@@ -156,7 +156,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-149 — The move contract — Accepted, 2026-11-08
 - ADR-150 — Time and the time module — Accepted, 2026-11-08
 - ADR-151 — Neutral pose and path outputs — Accepted, 2026-11-08
-- ADR-152 — `@motion5/rig` owns solvers and their vocabulary — Accepted, 2026-11-08
+- ADR-152 — `@gerak/rig` owns solvers and their vocabulary — Accepted, 2026-11-08
 - ADR-153 — Renderer and environment packages — Accepted, 2026-11-08
 - ADR-154 — The player — Accepted, 2026-11-08
 - ADR-155 — The motion tools package — Accepted, 2026-11-08

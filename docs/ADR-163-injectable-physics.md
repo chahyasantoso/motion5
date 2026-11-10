@@ -10,7 +10,7 @@ the engine injectable: the built-in one, or Rapier.
 
 ## Decision
 
-- **One port.** `@motion5/physics`, in the pure layer, owns `PhysicsWorld`: circle and box bodies that do not turn,
+- **One port.** `@gerak/physics`, in the pure layer, owns `PhysicsWorld`: circle and box bodies that do not turn,
   floor, wall and segment colliders, gravity, a fixed step, body states, contacts that started, and opaque
   snapshots. Units are stage px and seconds with y down. The port holds only what every engine does.
 - **One runner.** `simulate(world, build, { dt, checkpointMs, maxCheckpoints })` builds once, steps at a fixed
@@ -18,12 +18,12 @@ the engine injectable: the built-in one, or Rapier.
   Past `maxCheckpoints` it drops every other snapshot and doubles the gap. Contacts become `contact` events, one per
   body, recorded the first time a step is played.
 - **Two engines.** `builtinWorld()`: pure TypeScript, a grid for pairs, impulses with averaged restitution and
-  friction, and positional correction. `@motion5/rapier`: Rapier's deterministic 2D build at 100 px a metre, behind
+  friction, and positional correction. `@gerak/rapier`: Rapier's deterministic 2D build at 100 px a metre, behind
   the same port, with rotation locked on port bodies; `native` and `rigidBody` reach the rest of Rapier.
 - **One conformance suite** runs against every engine: a ball lands and rests on the floor with one contact, bounces
   lose height, a restored snapshot gives the same next step, and any order of seeks gives the same states. Each
   engine is held to itself, never to another.
-- `seeded(seed)` in `@motion5/moves` gives repeatable randomness for scattering bodies.
+- `seeded(seed)` in `@gerak/moves` gives repeatable randomness for scattering bodies.
 
 ## Consequences
 

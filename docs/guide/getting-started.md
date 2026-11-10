@@ -1,15 +1,15 @@
 # Getting started
 
-motion5 makes motion from code. A **scene** is a function from time, and the events so far, to one value per target.
+gerak makes motion from code. A **scene** is a function from time, and the events so far, to one value per target.
 A **player** runs a scene on a **driver** (a clock, the page's scroll, or your hand), and a renderer writes each value
 onto an element or a Three.js object.
 
 ## A scene on a plain page
 
 ```ts
-import { applyPose, clockDriver } from "@motion5/dom";
-import { drop, span, type Time } from "@motion5/moves";
-import { play } from "@motion5/player";
+import { applyPose, clockDriver } from "@gerak/dom";
+import { drop, span, type Time } from "@gerak/moves";
+import { play } from "@gerak/player";
 
 const durationMs = 1200;
 const fall = span(0, 900, durationMs);
@@ -29,8 +29,8 @@ if (title !== null) player.subscribe("title", (pose) => applyPose(title, pose));
 ## In React
 
 ```tsx
-import { clockDriver } from "@motion5/dom";
-import { usePlayer, useTarget } from "@motion5/react";
+import { clockDriver } from "@gerak/dom";
+import { usePlayer, useTarget } from "@gerak/react";
 
 const clock = () => clockDriver({ duration: durationMs });
 
@@ -47,7 +47,7 @@ with no render.
 ## Seeking by hand
 
 ```ts
-import { manualDriver, play } from "@motion5/player";
+import { manualDriver, play } from "@gerak/player";
 
 const driver = manualDriver({ durationMs });
 const player = play(scene, driver);

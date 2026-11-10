@@ -11,7 +11,7 @@ Issue #487 = infrastructure for human with Codespaces access, not AI automation.
 
 Infrastructure; AGENTS.md asks separate landing from #349 behavior work. Pull request #488 carries both, phase 6 commits first, these after → separable commit by commit despite one review. ADR-111 = phase 6 record → this record takes ADR-112. #349 phase 7 plan earmarked 112 for envelope record; second to land takes next free number; `adr-integrity` refuses collision.
 
-Measurements: sandbox 2026-09-24, main snapshot `7e6f4edc`, sample `motion5-349-handover-p6-cp001.zip`.
+Measurements: sandbox 2026-09-24, main snapshot `7e6f4edc`, sample `gerak-349-handover-p6-cp001.zip`.
 
 **The patch series was sufficient.** `git am -3 p6/patches/*.patch` on repository built from main snapshot: all three commits clean. Blob ids = final `post` ids declared in sample `p6/cpstore/cp001/manifest.json`, all nine of nine touched paths. Application source stays authored format-patch series; post-image ids = gate after each patch.
 
@@ -35,7 +35,7 @@ Preflight refuses missing committer identity, detached HEAD, operation in progre
 
 Archive: exactly one top-level folder, name = `handover.json` `name`. Listing read before extraction. Max 2,000 entries, 64 MiB uncompressed, regular files and directories only, no symlinks or special entries, path segments matching `[A-Za-z0-9_.@+-]`. Refuses absolute paths, backslashes, dot segments, empty segments, files outside one root. Extracted set must equal listing.
 
-Manifest: exactly keys `format`, `version`, `name`, `issue`, `base`, `patches`, `components`. Format `motion5-handover`, version `1` required; unknown format or version refused by name, not guessed. Every patch: exactly `seq`, `file`, `sha256`, `pre`, `post`. Sequence number + four-digit filename agree; digest covers patch bytes; pre/post maps cover same paths, full blob ids or null.
+Manifest: exactly keys `format`, `version`, `name`, `issue`, `base`, `patches`, `components`. Format `gerak-handover`, version `1` required; unknown format or version refused by name, not guessed. Every patch: exactly `seq`, `file`, `sha256`, `pre`, `post`. Sequence number + four-digit filename agree; digest covers patch bytes; pre/post maps cover same paths, full blob ids or null.
 
 Chain reuses `checkpointChain()` from `checkpoint-policy.mjs` → existing max 20 patches, 50 paths inherited, not restated by second owner. First patch pre image per path = base blob; later pre image = preceding post image. `base-disagrees` = checkout base bytes differ from first pre image. Commit subjects not duplicated: patch file owns commit metadata.
 

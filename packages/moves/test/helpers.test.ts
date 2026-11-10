@@ -11,7 +11,7 @@ import {
   mixPose,
   span,
   type Time,
-} from "@motion5/moves";
+} from "@gerak/moves";
 
 const timed = (elapsed: number): Time => ({
   progress: elapsed / 4000,
