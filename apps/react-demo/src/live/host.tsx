@@ -51,6 +51,8 @@ function isClockDriver(driver: OwnedDriver | undefined): driver is ClockDriver {
     typeof driver.setRate === "function" &&
     "setRange" in driver &&
     typeof driver.setRange === "function" &&
+    "playing" in driver &&
+    typeof driver.playing === "function" &&
     "dispose" in driver &&
     typeof driver.dispose === "function"
   );
@@ -75,15 +77,17 @@ export function extractMotionScene(
   return undefined;
 }
 
-/** Reads durationMs or BEAT_MS from the scene module, defaulting to 3000 ms. */
-export function extractDurationMs(sceneModule: Record<string, unknown> | undefined): number {
-  if (sceneModule !== undefined) {
-    const duration = Reflect.get(sceneModule, "durationMs");
-    if (typeof duration === "number") return duration;
-    const beat = Reflect.get(sceneModule, "BEAT_MS");
-    if (typeof beat === "number") return beat;
+/** The length in ms of the clock a driver runs, and 0 for no driver or a clock with no length. */
+export function clockLengthMs(driver: ClockDriver | undefined): number {
+  if (driver === undefined) return 0;
+  const clock = driver.now().clock;
+  switch (clock.kind) {
+    case "timed":
+      return clock.length;
+    case "live":
+    case "untimed":
+      return 0;
   }
-  return 3000;
 }
 
 /** Reads the error message from a Vite server error payload. */
@@ -131,7 +135,6 @@ export interface SceneBundle {
   readonly name: string;
   readonly Component: React.FC;
   readonly sceneModule?: Record<string, unknown> | undefined;
-  readonly durationMs: number;
 }
 
 /** Loads the component module and styles for a named scene. */
@@ -144,9 +147,62 @@ export async function loadSceneBundle(name: string): Promise<SceneBundle> {
   const Component = extractComponent(mod);
   if (Component === undefined) throw new Error(`No React component found in ${url}.`);
   const sceneModule = extractMotionScene(mod);
-  const durationMs = extractDurationMs(sceneModule);
-  return { name, Component, sceneModule, durationMs };
+  return { name, Component, sceneModule };
 }
+
+interface StageBoundaryProps {
+  readonly resetOn: unknown;
+  readonly onError: (message: string) => void;
+  readonly children: React.ReactNode;
+}
+
+class StageBoundary extends React.Component<StageBoundaryProps, { readonly failed: boolean }> {
+  override state = { failed: false };
+
+  static getDerivedStateFromError(): { readonly failed: boolean } {
+    return { failed: true };
+  }
+
+  override componentDidCatch(error: unknown): void {
+    this.props.onError(error instanceof Error ? error.message : String(error));
+  }
+
+  override componentDidUpdate(previous: StageBoundaryProps): void {
+    if (this.state.failed && previous.resetOn !== this.props.resetOn)
+      this.setState({ failed: false });
+  }
+
+  override render(): React.ReactNode {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+/** Calls the current component as a function, so a swapped one keeps the hooks, and the player, of the last. */
+const Swapped: React.FC<{ readonly Component: React.FC }> = ({ Component }) => Component({});
+
+export interface LiveStageProps {
+  readonly Component: React.FC;
+  readonly onError: (message: string) => void;
+}
+
+/** Shows the scene's component; one that throws is mounted afresh once, then reported while the page stays up. */
+export const LiveStage: React.FC<LiveStageProps> = ({ Component, onError }) => {
+  const [mount, setMount] = useState(0);
+  const retried = useRef<React.FC | undefined>(undefined);
+  const failed = (message: string): void => {
+    if (retried.current === Component) {
+      onError(message);
+      return;
+    }
+    retried.current = Component;
+    setMount((count) => count + 1);
+  };
+  return (
+    <StageBoundary key={mount} resetOn={Component} onError={failed}>
+      <Swapped Component={Component} />
+    </StageBoundary>
+  );
+};
 
 export interface LiveAppProps {
   readonly initial: SceneBundle;
@@ -177,15 +233,10 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       if (!isRecord(detail)) return;
       const nextComponent = extractComponent(detail);
       if (nextComponent === undefined) return;
+      event.preventDefault();
       const nextScene = extractMotionScene(detail);
-      const nextDuration = extractDurationMs(nextScene);
       setError(undefined);
-      setBundle((prev) => ({
-        name: prev.name,
-        Component: nextComponent,
-        sceneModule: nextScene,
-        durationMs: nextDuration,
-      }));
+      setBundle((prev) => ({ name: prev.name, Component: nextComponent, sceneModule: nextScene }));
     };
     window.addEventListener("motion:hot", onHot);
     return () => window.removeEventListener("motion:hot", onHot);
@@ -200,13 +251,11 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
     return () => window.removeEventListener("motion:error", onError);
   }, []);
 
+  const durationMs = clockLengthMs(clock);
   const marks = useMemo(
-    () => (bundle.sceneModule ? extractMarks(bundle.sceneModule, bundle.durationMs) : []),
-    [bundle.sceneModule, bundle.durationMs],
+    () => (bundle.sceneModule ? extractMarks(bundle.sceneModule, durationMs) : []),
+    [bundle.sceneModule, durationMs],
   );
-  const componentRef = useRef<React.FC>(initial.Component);
-  componentRef.current = bundle.Component;
-  const Stage = useMemo<React.FC>(() => () => componentRef.current({}), [bundle.name]);
 
   return (
     <div className="live-editor">
@@ -218,14 +267,14 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       <div
         data-live-stage
         className="live-stage"
-        onWheel={(e) => scrubByWheel(clock, bundle.durationMs, e.deltaY)}
+        onWheel={(e) => scrubByWheel(clock, durationMs, e.deltaY)}
       >
         <PlayerHostProvider value={host}>
-          <Stage />
+          <LiveStage Component={bundle.Component} onError={setError} />
         </PlayerHostProvider>
       </div>
-      <CodePanel sceneName={bundle.name} version={bundle.sceneModule} />
-      <Timeline driver={clock} durationMs={bundle.durationMs} marks={marks} />
+      <CodePanel sceneName={bundle.name} version={bundle.sceneModule} moves={bundle.sceneModule} />
+      <Timeline driver={clock} durationMs={durationMs} marks={marks} />
     </div>
   );
 };

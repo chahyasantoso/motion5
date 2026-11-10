@@ -99,7 +99,7 @@ export async function startLiveServer(options: {
   const { createServer } = await import("vite");
   const server = await createServer({
     root: options.root,
-    logLevel: "silent",
+    logLevel: "error",
     server: { port: options.port },
   });
   await server.listen();

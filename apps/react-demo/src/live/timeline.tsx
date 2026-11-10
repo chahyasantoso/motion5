@@ -74,81 +74,67 @@ function isInputElement(target: EventTarget | null): boolean {
   return false;
 }
 
-function defaultPlaying(driver: ClockDriver | undefined): boolean {
-  if (!driver || !driver.options || typeof driver.options !== "object") return false;
-  if ("autoplay" in driver.options && driver.options.autoplay === false) return false;
-  if (
-    "prefersReducedMotion" in driver.options &&
-    typeof driver.options.prefersReducedMotion === "function"
-  ) {
-    if (
-      driver.options.prefersReducedMotion() &&
-      (!("reducedMotion" in driver.options) || driver.options.reducedMotion !== "play")
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
+const NO_DRIVER = (): (() => void) => () => undefined;
 
 export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks }) => {
+  const subscribe = useCallback(
+    (notify: () => void) => (driver ? driver.subscribe(notify) : NO_DRIVER()),
+    [driver],
+  );
   const progress = useSyncExternalStore(
-    (notify) => (driver ? driver.subscribe(notify) : () => {}),
+    subscribe,
     () => (driver ? driver.now().progress : 0),
     () => 0,
   );
+  const isPlaying = useSyncExternalStore(
+    subscribe,
+    () => driver?.playing() ?? false,
+    () => false,
+  );
   const elapsed = Math.round(progress * durationMs);
-  const [isPlaying, setIsPlaying] = useState(() => defaultPlaying(driver));
   const [rate, setRate] = useState(1);
   const [savedRange, setSavedRange] = useState<
     { readonly from: number; readonly to: number } | undefined
   >(undefined);
   const [isLoopActive, setIsLoopActive] = useState(false);
+  const loop =
+    isLoopActive && savedRange !== undefined && savedRange.from < durationMs
+      ? { from: savedRange.from, to: Math.min(savedRange.to, durationMs) }
+      : undefined;
+  const loopFrom = loop?.from;
+  const loopTo = loop?.to;
 
   const isScrubbingRef = useRef(false);
   const rangeDragRef = useRef<{ readonly startX: number } | undefined>(undefined);
 
+  // The timeline owns the chosen speed and loop, and writes them to whichever driver is current.
   useEffect(() => {
-    setIsPlaying(defaultPlaying(driver));
-  }, [driver]);
+    driver?.setRate(rate);
+  }, [driver, rate]);
+  useEffect(() => {
+    driver?.setRange(loopFrom, loopTo);
+  }, [driver, loopFrom, loopTo]);
 
   const togglePlay = useCallback(() => {
     if (!driver) return;
-    if (isPlaying) {
-      driver.pause();
-      setIsPlaying(false);
-    } else {
-      driver.play();
-      setIsPlaying(true);
-    }
-  }, [driver, isPlaying]);
+    if (driver.playing()) driver.pause();
+    else driver.play();
+  }, [driver]);
 
-  const selectRate = useCallback(
-    (next: number) => {
-      setRate(next);
-      driver?.setRate(next);
-    },
-    [driver],
-  );
+  const selectRate = setRate;
 
   const toggleLoop = useCallback(() => {
-    if (!driver) return;
     if (isLoopActive) {
       setIsLoopActive(false);
-      driver.setRange(undefined);
     } else {
-      const rangeToSet = savedRange ?? { from: 0, to: durationMs };
       setIsLoopActive(true);
-      setSavedRange(rangeToSet);
-      driver.setRange(rangeToSet.from, rangeToSet.to);
+      setSavedRange(savedRange ?? { from: 0, to: durationMs });
     }
-  }, [driver, durationMs, isLoopActive, savedRange]);
+  }, [durationMs, isLoopActive, savedRange]);
 
   const step = useCallback(
     (deltaMs: number) => {
       if (!driver || durationMs <= 0) return;
-      driver.pause();
-      setIsPlaying(false);
       const currentMs = driver.now().progress * durationMs;
       const next = Math.max(0, Math.min(1, (currentMs + deltaMs) / durationMs));
       driver.seek(next);
@@ -234,7 +220,6 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
     if (toMs > fromMs) {
       setSavedRange({ from: fromMs, to: toMs });
       setIsLoopActive(true);
-      driver?.setRange(fromMs, toMs);
     }
   };
 
@@ -256,7 +241,6 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
     if (toMs > fromMs) {
       setSavedRange({ from: fromMs, to: toMs });
       setIsLoopActive(true);
-      driver?.setRange(fromMs, toMs);
     }
   };
 
@@ -359,13 +343,13 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
         onPointerMove={onRangePointerMove}
         onPointerUp={onRangePointerUp}
       >
-        {isLoopActive && savedRange && durationMs > 0 && (
+        {loop !== undefined && durationMs > 0 && (
           <div
             data-live-range-active
             style={{
               position: "absolute",
-              left: `${(savedRange.from / durationMs) * 100}%`,
-              width: `${((savedRange.to - savedRange.from) / durationMs) * 100}%`,
+              left: `${(loop.from / durationMs) * 100}%`,
+              width: `${((loop.to - loop.from) / durationMs) * 100}%`,
               top: 0,
               bottom: 0,
               pointerEvents: "none",

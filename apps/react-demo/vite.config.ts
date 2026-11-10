@@ -4,11 +4,6 @@ import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.m
 
 export default defineConfig({
   plugins: [motionLivePlugin()],
-  server: {
-    hmr: {
-      overlay: false,
-    },
-  },
   resolve: {
     alias: [...workspaceSourceAliases()],
   },

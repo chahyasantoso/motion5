@@ -149,6 +149,68 @@ describe("Timeline component", () => {
     expect(source.waiting).toBe(0);
   });
 
+  it("shows what the clock is doing when a seek or the end stops it", async () => {
+    const source = createFrameSource();
+    const driver = clockDriver({ duration: 1000, frames: source });
+    let root: ReactTestRenderer | undefined;
+    await act(async () => {
+      root = create(createElement(Timeline, { driver, durationMs: 1000, marks: [] }));
+    });
+    if (root === undefined) throw new Error("Render failed");
+    const playButton = root.root.findByProps({ "data-live-play": true });
+    expect(playButton.children).toEqual(["Pause"]);
+
+    await act(async () => {
+      scrubByWheel(driver, 1000, 100);
+    });
+    expect(playButton.children).toEqual(["Play"]);
+
+    await act(async () => {
+      playButton.props.onClick();
+    });
+    expect(playButton.children).toEqual(["Pause"]);
+    expect(source.waiting).toBe(1);
+
+    await act(async () => {
+      source.run(0);
+      source.run(2000);
+    });
+    expect(playButton.children).toEqual(["Play"]);
+
+    await act(async () => {
+      playButton.props.onClick();
+    });
+    expect(driver.now().progress).toBe(0);
+    expect(playButton.children).toEqual(["Pause"]);
+  });
+
+  it("writes the chosen speed and loop to a driver that replaces the first", async () => {
+    const source = createFrameSource();
+    const first = clockDriver({ duration: 2000, frames: source, autoplay: false });
+    let root: ReactTestRenderer | undefined;
+    await act(async () => {
+      root = create(createElement(Timeline, { driver: first, durationMs: 2000, marks: [] }));
+    });
+    if (root === undefined) throw new Error("Render failed");
+    const rendered = root;
+    await act(async () => {
+      rendered.root.findByProps({ "data-live-rate": "0.5" }).props.onClick();
+      mockWindowTarget.dispatchEvent(new FakeKeyboardEvent("keydown", { key: "l" }));
+    });
+
+    const second = clockDriver({ duration: 1000, frames: source, autoplay: false });
+    await act(async () => {
+      rendered.update(createElement(Timeline, { driver: second, durationMs: 1000, marks: [] }));
+    });
+    second.seek(0.9);
+    second.play();
+    source.run(0);
+    source.run(100);
+    expect(second.now().clock).toEqual({ kind: "timed", elapsed: 950, length: 1000 });
+    source.run(300);
+    expect(second.now().clock).toEqual({ kind: "timed", elapsed: 50, length: 1000 });
+  });
+
   it("changes speed when rate buttons are clicked", async () => {
     const source = createFrameSource();
     const driver = clockDriver({ duration: 2000, frames: source, autoplay: false });

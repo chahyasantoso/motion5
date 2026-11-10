@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { defineMove, type Time } from "@motion5/moves";
 import { dragNumberValue, rangeForLiteral, stepForLiteral } from "../src/live/code-panel";
 
 describe("stepForLiteral", () => {
@@ -18,6 +19,21 @@ describe("rangeForLiteral", () => {
     expect(rangeForLiteral(undefined, undefined)).toEqual({});
     expect(rangeForLiteral("drop", "unknownProp")).toEqual({});
     expect(rangeForLiteral("unknownMove", "distance")).toEqual({});
+  });
+
+  it("reads the bounds of a move the scene exports, before a built-in move of that name", () => {
+    expect(rangeForLiteral("drop", "distance", { drop: 1 })).toEqual({});
+    const slide = defineMove({
+      id: "slide",
+      description: "Slides in from the side.",
+      options: { from: { kind: "number", min: -50, max: 50, description: "Start offset." } },
+      moments: () => ({}),
+      run: (options, time: Time) => ({ x: options.from * (1 - time.progress) }),
+    });
+    expect(rangeForLiteral("slide", "from")).toEqual({});
+    expect(rangeForLiteral("slide", "from", { slide })).toEqual({ min: -50, max: 50 });
+    expect(dragNumberValue(40, "40", 30, "slide", "from", { slide })).toBe("50");
+    expect(rangeForLiteral("span", "from")).toEqual({});
   });
 });
 

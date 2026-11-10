@@ -108,6 +108,41 @@ describe("live editor in the browser", () => {
     }
   }, 30000);
 
+  it("shows a saved scene edit on a page with no live host, by reloading it", async () => {
+    const original = readFileSync(TIMING_SCENE, "utf8");
+    try {
+      await withPage(
+        { page: "timing.html", width: 1280, height: 720, source: DEFAULT_SOURCE },
+        async ({ page }) => {
+          await page.evaluate(() => Reflect.set(window, "motionMarker", "first load"));
+          writeFileSync(TIMING_SCENE, original.replace("distance: 700", "distance: 640"), "utf8");
+          // The page's clock is paused, so the reload Vite schedules runs only as the clock is stepped.
+          const stepped = async <T>(read: () => Promise<T>): Promise<T | "navigating"> => {
+            try {
+              await page.clock.runFor(100);
+              return await read();
+            } catch {
+              return "navigating";
+            }
+          };
+          await expect
+            .poll(() => stepped(() => page.evaluate(() => Reflect.get(window, "motionMarker"))), {
+              timeout: 10000,
+            })
+            .toBeUndefined();
+          await page.locator(".beat-stage").click();
+          const replayed = await page
+            .locator(".beat-glyph")
+            .first()
+            .evaluate((el) => (el instanceof HTMLElement ? el.style.transform : ""));
+          expect(replayed).toContain("-640px");
+        },
+      );
+    } finally {
+      writeFileSync(TIMING_SCENE, original, "utf8");
+    }
+  }, 30000);
+
   it("drags 700 to 760 in the code panel and updates the scene file and stage", async () => {
     const original = readFileSync(TIMING_SCENE, "utf8");
     try {

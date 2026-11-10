@@ -73,6 +73,15 @@ describe("scanNumericLiterals", () => {
       property: "distance",
     });
   });
+
+  it("reads a separated number and a spaced minus as the compiler does", () => {
+    const spans = scanNumericLiterals("const a = 12_000;\nconst b = - 5;");
+    expect(spans.map((span) => [span.text, span.value])).toEqual([
+      ["12_000", 12000],
+      ["- 5", -5],
+    ]);
+    expect(JSON.parse(JSON.stringify(spans))).toEqual(spans);
+  });
 });
 
 describe("resolveSceneFile", () => {
@@ -97,6 +106,16 @@ describe("resolveSceneFile", () => {
 
     const nonTsResult = resolveSceneFile("src/timing-scene.json", demoDir, repo);
     expect(nonTsResult.kind).toBe("refused");
+  });
+
+  it("refuses a file inside the app that is not a scene file", () => {
+    const repo = makeTempDir();
+    const demoDir = join(repo, "apps", "react-demo");
+    mkdirSync(join(demoDir, "src"), { recursive: true });
+
+    expect(resolveSceneFile("vite.config.ts", demoDir, repo).kind).toBe("refused");
+    expect(resolveSceneFile("src/TimingBeat.tsx", demoDir, repo).kind).toBe("refused");
+    expect(resolveSceneFile("src/timing-main.tsx", demoDir, repo).kind).toBe("refused");
   });
 });
 
@@ -124,8 +143,32 @@ describe("applySourceEdit", () => {
     });
     expect(writtenResult.kind).toBe("written");
     expect(readFileSync(file, "utf8")).toBe("const x = 760;");
+    if (writtenResult.kind !== "written") return;
     expect(writtenResult.literals).toHaveLength(1);
     expect(writtenResult.literals[0]?.value).toBe(760);
+  });
+
+  it("writes only a plain number, and only over a numeric literal", () => {
+    const dir = makeTempDir();
+    const file = join(dir, "scene.ts");
+    const initial = "const x = 700;";
+    writeFileSync(file, initial, "utf8");
+
+    const code = applySourceEdit(file, {
+      start: 10,
+      end: 13,
+      oldText: "700",
+      newText: "700; steal()",
+    });
+    expect(code.kind).toBe("refused");
+
+    const inserted = applySourceEdit(file, { start: 0, end: 0, oldText: "", newText: "1" });
+    expect(inserted.kind).toBe("stale");
+
+    const name = applySourceEdit(file, { start: 6, end: 7, oldText: "x", newText: "1" });
+    expect(name.kind).toBe("stale");
+
+    expect(readFileSync(file, "utf8")).toBe(initial);
   });
 });
 
@@ -158,6 +201,92 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
       expect(transformed.code).toContain('export * as __motionScene from "./timing-scene";');
       expect(transformed.code).toContain("import.meta.hot");
     }
+  });
+
+  it("runs only on a dev server, and hands an update no page took back to Vite", () => {
+    const plugin = motionLivePlugin();
+    expect(plugin.apply).toBe("serve");
+    const transformed = plugin.transform(
+      `import { scene } from "./timing-scene";`,
+      resolve("apps/react-demo/src/TimingBeat.tsx"),
+    );
+    expect(transformed?.code).toContain("cancelable: true");
+    expect(transformed?.code).toContain(
+      "if (window.dispatchEvent(hot)) import.meta.hot.invalidate();",
+    );
+  });
+
+  it("refuses a read or an edit from another site's page", () => {
+    const repo = makeTempDir();
+    const demoDir = join(repo, "apps", "react-demo");
+    mkdirSync(join(demoDir, "src"), { recursive: true });
+    const sceneFile = join(demoDir, "src", "timing-scene.ts");
+    writeFileSync(sceneFile, "const x = 700;", "utf8");
+
+    let handler:
+      | ((req: MotionLiveRequest, res: MotionLiveResponse, next: () => void) => void)
+      | undefined;
+    motionLivePlugin({ appRoot: demoDir, repoRoot: repo }).configureServer({
+      config: { command: "serve", isProduction: false, root: demoDir },
+      middlewares: {
+        use(fn) {
+          handler = fn;
+        },
+      },
+    });
+    if (handler === undefined) throw new Error("no middleware");
+
+    const statusFor = (req: MotionLiveRequest): number => {
+      const res: MotionLiveResponse = { statusCode: 0, setHeader() {}, end() {} };
+      let listened = false;
+      handler?.(
+        {
+          ...req,
+          on() {
+            listened = true;
+          },
+        },
+        res,
+        () => {},
+      );
+      expect(listened).toBe(false);
+      return res.statusCode;
+    };
+    const source = "/__motion/source?file=src/timing-scene.ts";
+
+    expect(
+      statusFor({
+        method: "GET",
+        url: source,
+        headers: { "sec-fetch-site": "cross-site" },
+        on() {},
+      }),
+    ).toBe(403);
+    expect(
+      statusFor({
+        method: "POST",
+        url: "/__motion/edit",
+        headers: { "sec-fetch-site": "cross-site" },
+        on() {},
+      }),
+    ).toBe(403);
+    expect(
+      statusFor({
+        method: "POST",
+        url: "/__motion/edit",
+        headers: { origin: "http://elsewhere.example", host: "localhost:5173" },
+        on() {},
+      }),
+    ).toBe(403);
+    expect(
+      statusFor({
+        method: "GET",
+        url: source,
+        headers: { "sec-fetch-site": "same-origin" },
+        on() {},
+      }),
+    ).toBe(200);
+    expect(readFileSync(sceneFile, "utf8")).toBe("const x = 700;");
   });
 
   it("serves GET /__motion/source and POST /__motion/edit via dev server middleware", async () => {

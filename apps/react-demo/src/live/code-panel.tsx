@@ -1,33 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { drop, hop, rope, trace, wipe, type OptionField } from "@motion5/moves";
+import * as builtIn from "@motion5/moves";
 import type { NumericLiteralSpan } from "@motion5/tools/vite";
 
 export type { NumericLiteralSpan };
 
-type KnownMoveName = "drop" | "hop" | "rope" | "trace" | "wipe";
+/** Names a scene can call, each perhaps a move: the scene module's own exports, searched before the built-in moves. */
+export type MoveSource = Readonly<Record<string, unknown>>;
 
-const MOVES: Readonly<
-  Record<KnownMoveName, { readonly options: Readonly<Record<string, OptionField>> }>
-> = {
-  drop,
-  hop,
-  rope,
-  trace,
-  wipe,
-};
-
-function isKnownMove(name: string): name is KnownMoveName {
-  switch (name) {
-    case "drop":
-    case "hop":
-    case "rope":
-    case "trace":
-    case "wipe":
-      return true;
-    default:
-      return false;
-  }
-}
+const NO_MOVES: MoveSource = {};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -83,28 +63,31 @@ export function stepForLiteral(text: string, value: number): number {
   return 1;
 }
 
-/** Resolves the min and max bounds for an option in a recognized move call. */
+/** The options a move declares, when `value` is a move. */
+function declaredOptions(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== "function" && !isRecord(value)) return undefined;
+  const options: unknown = Reflect.get(value, "options");
+  return isRecord(options) ? options : undefined;
+}
+
+/** The min and max a move declares for a numeric option; `own` is searched before the built-in moves. */
 export function rangeForLiteral(
   call?: string,
   property?: string,
+  own: MoveSource = NO_MOVES,
 ): { readonly min?: number; readonly max?: number } {
-  if (call === undefined || property === undefined) {
-    return {};
-  }
-  if (!isKnownMove(call)) {
-    return {};
-  }
-  const move = MOVES[call];
-  if (!Object.hasOwn(move.options, property)) {
-    return {};
-  }
-  const field = move.options[property];
-  if (field === undefined || field.kind !== "number") {
-    return {};
-  }
+  if (call === undefined || property === undefined) return {};
+  const options = declaredOptions(
+    Object.hasOwn(own, call) ? own[call] : Reflect.get(builtIn, call),
+  );
+  if (options === undefined || !Object.hasOwn(options, property)) return {};
+  const field = options[property];
+  if (!isRecord(field) || Reflect.get(field, "kind") !== "number") return {};
+  const min: unknown = Reflect.get(field, "min");
+  const max: unknown = Reflect.get(field, "max");
   return {
-    ...(field.min !== undefined ? { min: field.min } : {}),
-    ...(field.max !== undefined ? { max: field.max } : {}),
+    ...(typeof min === "number" ? { min } : {}),
+    ...(typeof max === "number" ? { max } : {}),
   };
 }
 
@@ -115,10 +98,11 @@ export function dragNumberValue(
   deltaPx: number,
   call?: string,
   property?: string,
+  own: MoveSource = NO_MOVES,
 ): string {
   const step = stepForLiteral(text, startValue);
   let next = startValue + Math.round(deltaPx) * step;
-  const range = rangeForLiteral(call, property);
+  const range = rangeForLiteral(call, property, own);
   if (range.min !== undefined && next < range.min) {
     next = range.min;
   }
@@ -144,10 +128,12 @@ interface ActiveDrag {
 export interface CodePanelProps {
   readonly sceneName: string;
   readonly version?: unknown;
+  /** The scene module, whose exported moves give a dragged option its range. */
+  readonly moves?: MoveSource | undefined;
 }
 
 /** Renders scene source code with interactive numeric literal spans. */
-export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version }) => {
+export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves }) => {
   const [source, setSource] = useState<string>("");
   const [literals, setLiterals] = useState<readonly NumericLiteralSpan[]>([]);
   const dragRef = useRef<ActiveDrag | null>(null);
@@ -297,6 +283,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version }) => {
       deltaPx,
       drag.call,
       drag.property,
+      moves,
     );
     if (newText === drag.currentText) return;
 
@@ -317,6 +304,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version }) => {
       deltaPx,
       drag.call,
       drag.property,
+      moves,
     );
     if (newText !== drag.currentText) {
       applyLocalAndQueueEdit(drag, newText);

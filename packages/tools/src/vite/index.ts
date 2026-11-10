@@ -28,7 +28,8 @@ export type SourceEditResult =
       readonly kind: "stale";
       readonly source: string;
       readonly literals: readonly NumericLiteralSpan[];
-    };
+    }
+  | { readonly kind: "refused"; readonly message: string };
 
 interface EditPayload {
   readonly file: string;
@@ -88,6 +89,18 @@ function enclosingCallAndProperty(node: ts.Node): {
   };
 }
 
+/** The number a literal, or a minus sign and a literal, stands for, read as the compiler reads it. */
+function numericValue(node: ts.Node): number | undefined {
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(node.operand)
+  )
+    return -Number(node.operand.text);
+  return undefined;
+}
+
 /** Scans all numeric literals in TypeScript source and their enclosing call and property. */
 export function scanNumericLiterals(source: string): readonly NumericLiteralSpan[] {
   const sf = ts.createSourceFile(
@@ -100,32 +113,11 @@ export function scanNumericLiterals(source: string): readonly NumericLiteralSpan
   const spans: NumericLiteralSpan[] = [];
 
   function visit(node: ts.Node): void {
-    if (
-      ts.isPrefixUnaryExpression(node) &&
-      node.operator === ts.SyntaxKind.MinusToken &&
-      ts.isNumericLiteral(node.operand)
-    ) {
+    const value = numericValue(node);
+    if (value !== undefined) {
       const start = node.getStart(sf);
       const end = node.getEnd();
       const text = source.slice(start, end);
-      const value = Number(text);
-      const { call, property } = enclosingCallAndProperty(node);
-      spans.push({
-        start,
-        end,
-        text,
-        value,
-        ...(call !== undefined ? { call } : {}),
-        ...(property !== undefined ? { property } : {}),
-      });
-      return;
-    }
-
-    if (ts.isNumericLiteral(node)) {
-      const start = node.getStart(sf);
-      const end = node.getEnd();
-      const text = source.slice(start, end);
-      const value = Number(text);
       const { call, property } = enclosingCallAndProperty(node);
       spans.push({
         start,
@@ -151,8 +143,8 @@ export function resolveSceneFile(
   appRoot: string,
   repoRoot?: string,
 ): ResolveSceneResult {
-  if (fileParam.length === 0 || (!fileParam.endsWith(".ts") && !fileParam.endsWith(".tsx"))) {
-    return { kind: "refused", message: "Path must end in .ts or .tsx." };
+  if (!fileParam.endsWith("-scene.ts")) {
+    return { kind: "refused", message: "Path must be a scene file ending in -scene.ts." };
   }
   const fullAppRoot = resolve(appRoot);
   const fullPath = resolve(fullAppRoot, fileParam);
@@ -170,7 +162,9 @@ export function resolveSceneFile(
   return { kind: "ok", path: fullPath };
 }
 
-/** Applies a replacement edit to a file on disk if oldText matches current contents. */
+const NUMBER_TEXT = /^-?\d+(?:\.\d+)?$/;
+
+/** Writes a plain number over a numeric literal that still reads `oldText`; any other span is stale. */
 export function applySourceEdit(
   filePath: string,
   edit: {
@@ -180,14 +174,14 @@ export function applySourceEdit(
     readonly newText: string;
   },
 ): SourceEditResult {
+  if (!NUMBER_TEXT.test(edit.newText)) {
+    return { kind: "refused", message: "An edit may only write a plain number." };
+  }
   const current = readFileSync(filePath, "utf8");
-  if (
-    edit.start < 0 ||
-    edit.end < edit.start ||
-    edit.end > current.length ||
-    current.slice(edit.start, edit.end) !== edit.oldText
-  ) {
-    return { kind: "stale", source: current, literals: scanNumericLiterals(current) };
+  const literals = scanNumericLiterals(current);
+  const literal = literals.find((span) => span.start === edit.start && span.end === edit.end);
+  if (literal === undefined || literal.text !== edit.oldText) {
+    return { kind: "stale", source: current, literals };
   }
   const next = current.slice(0, edit.start) + edit.newText + current.slice(edit.end);
   writeFileSync(filePath, next, "utf8");
@@ -202,9 +196,37 @@ export function canAttachLiveEndpoints(config: {
   return config.command === "serve" && config.isProduction !== true;
 }
 
+type MotionLiveHeaders = Readonly<Record<string, string | readonly string[] | undefined>>;
+
+function firstHeader(value: string | readonly string[] | undefined): string | undefined {
+  return typeof value === "string" ? value : value?.[0];
+}
+
+/** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */
+function isOwnRequest(headers: MotionLiveHeaders | undefined): boolean {
+  const site = firstHeader(headers?.["sec-fetch-site"]);
+  if (site !== undefined) return site === "same-origin" || site === "none";
+  const origin = firstHeader(headers?.["origin"]);
+  if (origin === undefined) return true;
+  const host = firstHeader(headers?.["host"]);
+  return host !== undefined && URL.canParse(origin) && new URL(origin).host === host;
+}
+
+function statusOf(result: SourceEditResult): number {
+  switch (result.kind) {
+    case "written":
+      return 200;
+    case "stale":
+      return 409;
+    case "refused":
+      return 400;
+  }
+}
+
 export interface MotionLiveRequest {
   readonly method?: string | undefined;
   readonly url?: string | undefined;
+  readonly headers?: MotionLiveHeaders | undefined;
   on(event: "data", listener: (chunk: Buffer | string) => void): unknown;
   on(event: "end", listener: () => void): unknown;
 }
@@ -235,6 +257,7 @@ export interface MotionLiveServer {
 
 export interface MotionLivePlugin {
   readonly name: string;
+  readonly apply: "serve";
   transform(code: string, id: string): { readonly code: string; readonly map: null } | null;
   configureServer(server: MotionLiveServer): void;
 }
@@ -246,6 +269,7 @@ export function motionLivePlugin(options?: {
 }): MotionLivePlugin {
   return {
     name: "motion-live",
+    apply: "serve",
     transform(code: string, id: string) {
       const normalized = id.replace(/\\/g, "/");
       if (
@@ -263,7 +287,9 @@ export function motionLivePlugin(options?: {
             `    window.dispatchEvent(new CustomEvent("motion:error", { detail: payload }));\n` +
             `  });\n` +
             `  import.meta.hot.accept((next) => {\n` +
-            `    if (next) window.dispatchEvent(new CustomEvent("motion:hot", { detail: next }));\n` +
+            `    if (!next) return;\n` +
+            `    const hot = new CustomEvent("motion:hot", { detail: next, cancelable: true });\n` +
+            `    if (window.dispatchEvent(hot)) import.meta.hot.invalidate();\n` +
             `  });\n` +
             `}\n`;
           return { code: appended, map: null };
@@ -282,6 +308,12 @@ export function motionLivePlugin(options?: {
       server.middlewares.use((req, res, next) => {
         const rawUrl = req.url ?? "";
         const url = new URL(rawUrl, "http://localhost");
+        if (url.pathname.startsWith("/__motion/") && !isOwnRequest(req.headers)) {
+          res.statusCode = 403;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "Only this server's own pages may read or edit." }));
+          return;
+        }
         if (req.method === "GET" && url.pathname === "/__motion/source") {
           const file = url.searchParams.get("file") ?? "";
           const resolved = resolveSceneFile(file, appRoot, options?.repoRoot);
@@ -336,7 +368,7 @@ export function motionLivePlugin(options?: {
               if (result.kind === "written") {
                 server.watcher?.emit("change", resolved.path);
               }
-              res.statusCode = result.kind === "written" ? 200 : 409;
+              res.statusCode = statusOf(result);
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
             } catch (err: unknown) {
