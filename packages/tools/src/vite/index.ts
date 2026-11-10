@@ -282,9 +282,16 @@ export function motionLivePlugin(options?: {
           const appended =
             code +
             `\nexport * as __motionScene from "${match[1]}";\n` +
+            `export const __motionStamp = Number(new URL(import.meta.url).searchParams.get("t") ?? 0);\n` +
             `if (import.meta.hot) {\n` +
+            `  const seen = import.meta.hot.data;\n` +
+            `  import.meta.hot.on("vite:beforeUpdate", (payload) => {\n` +
+            `    for (const update of payload.updates)\n` +
+            `      seen.latest = Math.max(seen.latest ?? 0, update.timestamp);\n` +
+            `  });\n` +
             `  import.meta.hot.on("vite:error", (payload) => {\n` +
-            `    window.dispatchEvent(new CustomEvent("motion:error", { detail: payload }));\n` +
+            `    const detail = { ...payload, stamp: seen.latest ?? 0 };\n` +
+            `    window.dispatchEvent(new CustomEvent("motion:error", { detail }));\n` +
             `  });\n` +
             `  import.meta.hot.accept((next) => {\n` +
             `    if (!next) return;\n` +
