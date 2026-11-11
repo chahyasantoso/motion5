@@ -1,5 +1,6 @@
 import type { Pose3d } from "@gerak/moves";
 import { Euler, type EulerOrder, type Object3D } from "three";
+import { writeCustom, type CustomWriter } from "./pose2d";
 
 /** Three.js Euler order for core's CSS convention (`ZXY`, Rz·Rx·Ry). Core angles are degrees. */
 export const EULER_ORDER_3D: EulerOrder = "ZXY";
@@ -24,6 +25,7 @@ export function applyPose3d(
   object: Object3D,
   pose: Pose3d,
   rest: { readonly x: number; readonly y: number; readonly z: number } = { x: 0, y: 0, z: 0 },
+  custom?: CustomWriter,
 ): void {
   const all = pose.scale ?? 1;
   object.position.set(rest.x + (pose.x ?? 0), rest.y + (pose.y ?? 0), rest.z + (pose.z ?? 0));
@@ -36,4 +38,5 @@ export function applyPose3d(
       Reflect.set(material, "transparent", true);
     }
   }
+  writeCustom(object, pose.custom, custom);
 }

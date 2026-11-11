@@ -1,4 +1,4 @@
-import type { Anchor, Cubic2d, Drawn, Pose2d, Reveal } from "@gerak/moves";
+import type { Anchor, Cubic2d, Pose2d } from "@gerak/moves";
 import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
@@ -7,9 +7,11 @@ export interface RenderStyle {
   transformOrigin?: string;
   transformBox?: string;
   opacity?: string;
+  filter?: string;
   clipPath?: string;
   strokeDasharray?: string;
   strokeDashoffset?: string;
+  setProperty?(name: string, value: string): void;
 }
 
 /** An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has. */
@@ -67,17 +69,19 @@ export function cssOrigin(anchor: Anchor): string {
   }
 }
 
-/** A CSS clip path showing what lies inside a reveal's circle. */
-export function cssClip(reveal: Reveal): string {
-  return `circle(${reveal.radius}px at ${reveal.x}px ${reveal.y}px)`;
+/** A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left. */
+export function cssClip(x: number, y: number, radius: number): string {
+  return `circle(${radius}px at ${x}px ${y}px)`;
 }
 
-/** The stroke dash that shows the drawn share of a path `length` long. */
+/** The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long. */
 export function cssDash(
-  drawn: Drawn,
+  from: number,
+  to: number,
   length: number,
 ): { readonly strokeDasharray: string; readonly strokeDashoffset: number } {
-  return { strokeDasharray: `${length} ${length}`, strokeDashoffset: length * (1 - drawn.drawn) };
+  const shown = Math.max(0, to - from) * length;
+  return { strokeDasharray: `${shown} ${length}`, strokeDashoffset: -from * length };
 }
 
 /** SVG path data for joined cubic segments. */
@@ -90,27 +94,34 @@ export function pathData(cubics: readonly Cubic2d[]): string {
   ].join(" ");
 }
 
-/** Writes a pose; an absent anchor is the centre, measured on the element's own box for SVG as for HTML. */
-export function applyPose(target: RenderTarget, pose: Pose2d): void {
-  const transform = cssTransform(pose);
-  target.style.transform = transform;
-  if (pose.opacity !== undefined) target.style.opacity = String(pose.opacity);
-  if ("ownerSVGElement" in target) target.style.transformBox = "fill-box";
-  target.style.transformOrigin = cssOrigin(pose.anchor ?? "center");
+/** Writes a value, a left-out field at rest and each custom number as `--<name>`; a custom name absent now keeps its last. */
+export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
+  const style = target.style;
+  style.transform = cssTransform(value);
+  style.opacity = String(value.opacity ?? 1);
+  if ("ownerSVGElement" in target) style.transformBox = "fill-box";
+  style.transformOrigin = cssOrigin(value.anchor ?? "center");
+  const blur = value.blur ?? 0;
+  style.filter = blur > 0 ? `blur(${blur}px)` : "";
+  style.clipPath =
+    value.clipRadius === undefined
+      ? ""
+      : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
+  if (value.drawn !== undefined || value.drawnFrom !== undefined) {
+    const dash = cssDash(
+      value.drawnFrom ?? 0,
+      value.drawn ?? 1,
+      target.getTotalLength?.() ?? length ?? 0,
+    );
+    style.strokeDasharray = dash.strokeDasharray;
+    style.strokeDashoffset = String(dash.strokeDashoffset);
+  } else if ((style.strokeDasharray ?? "") !== "") {
+    style.strokeDasharray = "";
+    style.strokeDashoffset = "";
+  }
+  for (const [name, number] of Object.entries(value.custom ?? {}))
+    style.setProperty?.(`--${name}`, String(number));
 }
-
-/** Clips the target to a reveal's circle. */
-export function applyReveal(target: RenderTarget, reveal: Reveal): void {
-  target.style.clipPath = cssClip(reveal);
-}
-
-/** Dashes a stroke to its drawn share, measuring the path itself when it can. */
-export function applyDrawn(target: RenderTarget, drawn: Drawn, length?: number): void {
-  const dash = cssDash(drawn, target.getTotalLength?.() ?? length ?? 0);
-  target.style.strokeDasharray = dash.strokeDasharray;
-  target.style.strokeDashoffset = String(dash.strokeDashoffset);
-}
-
 /** Sets a path element's `d` to the cubic segments. */
 export function applyPath(target: RenderTarget, cubics: readonly Cubic2d[]): void {
   target.setAttribute?.("d", pathData(cubics));

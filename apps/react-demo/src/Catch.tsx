@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { applyPose, type RenderTarget } from "@gerak/dom";
+import { applyValue, type RenderTarget } from "@gerak/dom";
 import type { Player } from "@gerak/player";
 import { usePlayer, useTarget } from "@gerak/react";
 import { WORD, clock, cues, scene } from "./catch-scene";
@@ -17,7 +17,7 @@ const Glyph: React.FC<{ player: Player<Frame> | undefined; index: number; glyph:
   const render = useCallback(
     (element: RenderTarget, letters: Frame["letters"]) => {
       const pose = letters[index];
-      if (pose !== undefined) applyPose(element, pose);
+      if (pose !== undefined) applyValue(element, pose);
     },
     [index],
   );

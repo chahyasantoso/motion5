@@ -1,6 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef } from "react";
-import { applyDrawn, applyPose, applyReveal, type RenderTarget } from "@gerak/dom";
-import type { Drawn, Pose2d } from "@gerak/moves";
+import { applyValue, type RenderTarget } from "@gerak/dom";
+import type { Pose2d } from "@gerak/moves";
 import type { Player } from "@gerak/player";
 import { centreIn, usePlayer, useTarget } from "@gerak/react";
 import { BEATS, clock, geo, scene, STRINGS } from "./showreel-scene";
@@ -30,7 +30,7 @@ const Item: React.FC<{
   children?: React.ReactNode;
 }> = ({ player, target, i, className, id, touch, children }) => {
   const render = useCallback(
-    (el: RenderTarget, poses: readonly Pose2d[]) => applyPose(el, poses[i] ?? {}),
+    (el: RenderTarget, poses: readonly Pose2d[]) => applyValue(el, poses[i] ?? {}),
     [i],
   );
   return (
@@ -56,9 +56,9 @@ const drawSegment = (el: RenderTarget, value: { drawn: number; tail: number }) =
   el.style.opacity = to - from > 0.5 ? "1" : "0";
 };
 
-const drawUnderline = (el: RenderTarget, drawn: Drawn) => {
-  applyDrawn(el, drawn);
-  el.style.opacity = drawn.drawn > 0.002 ? "1" : "0";
+const drawUnderline = (el: RenderTarget, drawn: Pose2d) => {
+  applyValue(el, drawn);
+  el.style.opacity = (drawn.drawn ?? 1) > 0.002 ? "1" : "0";
 };
 
 /** Colour, blur and the counter's text: values the scene carries as plain numbers. */
@@ -143,7 +143,7 @@ export const Showreel: React.FC = () => {
       onClick={() => playing?.driver.replay()}
     >
       <div id="camera" ref={setCamera}>
-        <div id="wipe" ref={useTarget(player, "wipe", applyReveal)} />
+        <div id="wipe" ref={useTarget(player, "wipe")} />
         <svg id="fx" width="1280" height="720" viewBox="0 0 1280 720" aria-hidden="true">
           <path
             id="trail-up"

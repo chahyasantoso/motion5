@@ -1,5 +1,5 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef } from "react";
-import { applyPose, applyReveal } from "@gerak/dom";
+import { applyValue } from "@gerak/dom";
 import type { Player } from "@gerak/player";
 import { centreIn, useTarget, usePlayer } from "@gerak/react";
 import { WORD, beatClock, timingScene } from "./timing-scene";
@@ -14,9 +14,9 @@ const Glyph: React.FC<{ player: Player<Beat> | undefined; index: number; glyph: 
   glyph,
 }) => {
   const render = useCallback(
-    (element: Parameters<typeof applyPose>[0], letters: Beat["letters"]) => {
+    (element: Parameters<typeof applyValue>[0], letters: Beat["letters"]) => {
       const pose = letters[index];
-      if (pose !== undefined) applyPose(element, pose);
+      if (pose !== undefined) applyValue(element, pose);
     },
     [index],
   );
@@ -36,7 +36,7 @@ export const TimingBeat: React.FC = () => {
   const dotRef = useRef<HTMLSpanElement | null>(null);
   const coverRef = useRef<HTMLDivElement | null>(null);
   const dot = useTarget(playing?.player, "dot");
-  const cover = useTarget(playing?.player, "cover", applyReveal);
+  const cover = useTarget(playing?.player, "cover");
 
   useLayoutEffect(() => {
     if (dotRef.current === null || coverRef.current === null) return;

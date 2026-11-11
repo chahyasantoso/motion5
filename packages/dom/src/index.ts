@@ -1,8 +1,6 @@
 export {
-  applyDrawn,
   applyPath,
-  applyPose,
-  applyReveal,
+  applyValue,
   cssClip,
   cssDash,
   cssOrigin,

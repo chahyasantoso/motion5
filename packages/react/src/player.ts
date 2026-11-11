@@ -8,7 +8,7 @@ import {
   useSyncExternalStore,
   type RefCallback,
 } from "react";
-import { applyPose, type EventDriver, type RenderTarget } from "@gerak/dom";
+import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
 import { NO_EVENTS, elapsedOf, type Events, type Pose2d } from "@gerak/moves";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 
@@ -203,7 +203,7 @@ function isPose(value: unknown): value is Pose2d {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Writes a pose target onto the element the ref lands on, every step, with no React render. */
+/** Writes a value target onto the element the ref lands on with `applyValue`, every step, with no React render. */
 export function useTarget<T extends object, K extends PoseTargets<T>>(
   player: Player<T> | undefined,
   target: K,
@@ -224,7 +224,7 @@ export function useTarget<T extends object, K extends keyof T>(
     if (player === undefined || element === null) return undefined;
     return player.subscribe(target, (value) => {
       if (render !== undefined) render(element, value);
-      else if (isPose(value)) applyPose(element, value);
+      else if (isPose(value)) applyValue(element, value);
     });
   }, [player, element, target, render]);
   return useCallback((next: RenderTarget | null) => setElement(next), []);

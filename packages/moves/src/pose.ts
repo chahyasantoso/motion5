@@ -20,6 +20,7 @@ export interface ValueField {
 const OFFSET: ValueField = { rest: 0, combines: "add", smooth: true, shows: false };
 const SIZE: ValueField = { rest: 1, combines: "multiply", smooth: false, shows: false };
 const SHOWN: ValueField = { combines: "replace", smooth: true, shows: true };
+const PLACED: ValueField = { combines: "replace", smooth: true, shows: false };
 
 /** Every field a value can carry, one row each; nothing else states a field's rest or how it combines. */
 export const VALUE_FIELDS = Object.freeze({
@@ -34,8 +35,12 @@ export const VALUE_FIELDS = Object.freeze({
   scaleY: SIZE,
   scaleZ: SIZE,
   opacity: { rest: 1, combines: "multiply", smooth: true, shows: false },
-  drawn: SHOWN,
-  radius: SHOWN,
+  blur: OFFSET,
+  drawn: { rest: 1, combines: "replace", smooth: true, shows: true },
+  drawnFrom: { rest: 0, combines: "replace", smooth: true, shows: false },
+  clipX: PLACED,
+  clipY: PLACED,
+  clipRadius: SHOWN,
 }) satisfies Readonly<Record<string, ValueField>>;
 
 /** A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes. */
@@ -57,6 +62,12 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "scaleX",
   "scaleY",
   "opacity",
+  "blur",
+  "drawn",
+  "drawnFrom",
+  "clipX",
+  "clipY",
+  "clipRadius",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
 /** A 2D pose: table fields, the anchor, and the piece's own `custom` numbers; each renderer writes it its way. */

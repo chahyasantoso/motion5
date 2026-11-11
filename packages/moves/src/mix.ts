@@ -1,4 +1,4 @@
-import { POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d } from "./pose";
+import { CUSTOM_FIELD, POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d } from "./pose";
 
 /** The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates. */
 export function mix(from: number, to: number, share: number): number {
@@ -20,6 +20,25 @@ export function mixPoint(
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share) };
 }
 
+type Customized = { readonly custom?: Readonly<Record<string, number>> };
+
+/** The custom numbers `share` of the way between two values, each missing one at its rest, or nothing when neither has one. */
+export function mixCustom(
+  from: Customized,
+  to: Customized,
+  share: number,
+): Record<string, number> | undefined {
+  const names = new Set([...Object.keys(from.custom ?? {}), ...Object.keys(to.custom ?? {})]);
+  if (names.size === 0) return undefined;
+  const rest = CUSTOM_FIELD.rest ?? 0;
+  return Object.fromEntries(
+    [...names].map((name) => [
+      name,
+      mix(from.custom?.[name] ?? rest, to.custom?.[name] ?? rest, share),
+    ]),
+  );
+}
+
 /** A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0. */
 export function mixPose(from: Pose2d, to: Pose2d, share: number): Pose2d {
   const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
@@ -28,14 +47,8 @@ export function mixPose(from: Pose2d, to: Pose2d, share: number): Pose2d {
     const rest = VALUE_FIELDS[key].rest ?? 0;
     out[key] = mix(from[key] ?? rest, to[key] ?? rest, share);
   }
-  const names = new Set([...Object.keys(from.custom ?? {}), ...Object.keys(to.custom ?? {})]);
-  if (names.size > 0)
-    out.custom = Object.fromEntries(
-      [...names].map((name) => [
-        name,
-        mix(from.custom?.[name] ?? 0, to.custom?.[name] ?? 0, share),
-      ]),
-    );
+  const custom = mixCustom(from, to, share);
+  if (custom !== undefined) out.custom = custom;
   const anchor = share < 1 ? (from.anchor ?? to.anchor) : (to.anchor ?? from.anchor);
   if (anchor !== undefined) out.anchor = anchor;
   return out;

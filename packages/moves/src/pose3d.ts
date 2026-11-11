@@ -9,31 +9,35 @@ import {
   type Euler3d,
   type Matrix3,
 } from "@gerak/rig";
-import { mix } from "./mix";
-import type { Pose2d } from "./pose";
+import { addCustom, join } from "./combine";
+import { mix, mixCustom } from "./mix";
+import { VALUE_FIELDS, type Pose2d } from "./pose";
 import { unreachable } from "./unreachable";
+
+/** The turns a 3D pose carries; they compose as one rotation rather than by their rows. */
+const TURNS = Object.freeze(["rotation", "rotationX", "rotationY"] as const);
+
+/** The other numbers a 3D pose carries, each a row of the table. */
+const NUMBERS = Object.freeze([
+  "x",
+  "y",
+  "z",
+  "scale",
+  "scaleX",
+  "scaleY",
+  "scaleZ",
+  "opacity",
+] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
 /** A 3D pose, y up, turns in degrees on rig's Z-X-Y Euler; a page pose reaches it only through `lift2d`. */
 export type Pose3d = {
-  readonly x?: number;
-  readonly y?: number;
-  readonly z?: number;
-  readonly rotation?: number;
-  readonly rotationX?: number;
-  readonly rotationY?: number;
-  readonly scale?: number;
-  readonly scaleX?: number;
-  readonly scaleY?: number;
-  readonly scaleZ?: number;
-  readonly opacity?: number;
+  readonly [K in (typeof TURNS)[number] | (typeof NUMBERS)[number]]?: number;
+} & {
   readonly anchor?: never;
+  readonly custom?: Readonly<Record<string, number>>;
 };
 
-type Mutable3d = { -readonly [K in Exclude<keyof Pose3d, "anchor">]?: number };
-
-const OFFSETS = Object.freeze(["x", "y", "z"] as const);
-const TURNS = Object.freeze(["rotation", "rotationX", "rotationY"] as const);
-const SCALES = Object.freeze(["scale", "scaleX", "scaleY", "scaleZ", "opacity"] as const);
+type Mutable3d = { -readonly [K in Exclude<keyof Pose3d, "anchor">]?: Pose3d[K] };
 
 function eulerOf(pose: Pose3d): Euler3d {
   return {
@@ -49,19 +53,16 @@ function writeEuler(out: Mutable3d, euler: Euler3d): void {
   out.rotationY = euler.rotationY;
 }
 
-/** Poses on one target as one: offsets add, scales multiply, turns compose in order without flipping. */
+/** Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order. */
 export function combine3d(poses: readonly Pose3d[]): Pose3d {
   const out: Mutable3d = {};
-  for (const pose of poses) {
-    for (const key of OFFSETS) {
+  for (const pose of poses)
+    for (const key of NUMBERS) {
       const value = pose[key];
-      if (value !== undefined) out[key] = (out[key] ?? 0) + value;
+      if (value !== undefined) out[key] = join(VALUE_FIELDS[key].combines, out[key], value);
     }
-    for (const key of SCALES) {
-      const value = pose[key];
-      if (value !== undefined) out[key] = (out[key] ?? 1) * value;
-    }
-  }
+  const custom = addCustom(poses);
+  if (custom !== undefined) out.custom = custom;
   const turned = poses.filter((pose) => TURNS.some((key) => pose[key] !== undefined));
   const axes = TURNS.filter((key) => turned.some((pose) => pose[key] !== undefined));
   if (turned.length === 1 || axes.length === 1) {
@@ -79,12 +80,13 @@ export function combine3d(poses: readonly Pose3d[]): Pose3d {
 /** A pose `share` of the way between two; turns take the short arc, past the ends too; a missing field rests. */
 export function mixPose3d(from: Pose3d, to: Pose3d, share: number): Pose3d {
   const out: Mutable3d = {};
-  for (const key of OFFSETS)
-    if (from[key] !== undefined || to[key] !== undefined)
-      out[key] = mix(from[key] ?? 0, to[key] ?? 0, share);
-  for (const key of SCALES)
-    if (from[key] !== undefined || to[key] !== undefined)
-      out[key] = mix(from[key] ?? 1, to[key] ?? 1, share);
+  for (const key of NUMBERS) {
+    if (from[key] === undefined && to[key] === undefined) continue;
+    const rest = VALUE_FIELDS[key].rest ?? 0;
+    out[key] = mix(from[key] ?? rest, to[key] ?? rest, share);
+  }
+  const custom = mixCustom(from, to, share);
+  if (custom !== undefined) out.custom = custom;
   if (TURNS.some((key) => from[key] !== undefined || to[key] !== undefined)) {
     const turn = slerpQuaternion(
       quaternionFromEuler3d(eulerOf(from)),
@@ -117,6 +119,7 @@ export function lift2d(pose: Pose2d, options: { readonly unitsPerPx: number }): 
     const value = pose[key];
     if (value !== undefined) out[key] = value;
   }
+  if (pose.custom !== undefined) out.custom = pose.custom;
   return out;
 }
 

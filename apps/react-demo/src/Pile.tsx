@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { applyPose, type RenderTarget } from "@gerak/dom";
+import { applyValue, type RenderTarget } from "@gerak/dom";
 import type { Pose2d } from "@gerak/moves";
 import type { Player } from "@gerak/player";
 import { usePlayer, useTarget } from "@gerak/react";
@@ -11,7 +11,7 @@ type Frame = ReturnType<typeof scene>;
 function pick(index: number) {
   return (element: RenderTarget, poses: readonly Pose2d[]) => {
     const pose = poses[index];
-    if (pose !== undefined) applyPose(element, pose);
+    if (pose !== undefined) applyValue(element, pose);
   };
 }
 

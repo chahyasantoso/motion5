@@ -142,7 +142,7 @@ return <div ref={title} onClick={() => playing?.driver.replay()} />;
 `useTarget` writes a pose every step with no render; its third argument writes anything else, such as one pose out of
 a list (the reference's `useTarget` entry shows it). To pass the player to a child, type the prop
 `Player<ReturnType<typeof scene>> | undefined`. On a plain page, `play(scene, clock())` and
-`player.subscribe("title", (pose) => applyPose(element, pose))`.
+`player.subscribe("title", (pose) => applyValue(element, pose))`.
 
 ## Traps
 

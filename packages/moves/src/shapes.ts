@@ -9,12 +9,6 @@ export type Anchor2d = Point2d & {
   readonly outY: number;
 };
 
-/** A circle that shows what lies inside it. */
-export type Reveal = { readonly x: number; readonly y: number; readonly radius: number };
-
-/** The share of a path drawn from its start, from 0 to 1. */
-export type Drawn = { readonly drawn: number };
-
 /** One cubic Bézier segment from `(x0, y0)` to `(x3, y3)`, named by the anchor it leaves. */
 export type Cubic2d = {
   readonly id: string;

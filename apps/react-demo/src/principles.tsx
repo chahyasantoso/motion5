@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { applyPose } from "@gerak/dom";
+import { applyValue } from "@gerak/dom";
 import type { Player } from "@gerak/player";
 import { usePlayer, useTarget } from "@gerak/react";
 import { WORD, clock, scene } from "./principles-scene";
@@ -13,9 +13,9 @@ const Letter: React.FC<{
   children: string;
 }> = ({ player, index, children }) => {
   const render = useCallback(
-    (element: Parameters<typeof applyPose>[0], poses: Frame["letters"]) => {
+    (element: Parameters<typeof applyValue>[0], poses: Frame["letters"]) => {
       const pose = poses[index];
-      if (pose !== undefined) applyPose(element, pose);
+      if (pose !== undefined) applyValue(element, pose);
     },
     [index],
   );
