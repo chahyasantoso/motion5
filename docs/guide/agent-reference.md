@@ -122,6 +122,12 @@ reversed({}, time, (t) => drop({ distance: 400 }, t));
 overshoot({ share: 0.3, amount: 0.1 }, time, (t) => anticipate({}, t, (u) => hop(options, u)));
 ```
 
+The library: `npm run motion:moves` prints each one's options and example.
+
+- Entrances: **`rise`** up from below, **`slide`** in from a side, **`pop`** grows past full size and settles (moment `peak`), **`fade`** opacity in, **`unfold`** grows along one axis from an edge, **`swing`** hangs in and swings to rest on a hinge.
+- Emphases: **`pulse`** swells and returns (moment `peak`), **`shake`** side to side, **`wobble`** turning back and forth, **`nod`** dips and returns (moment `bottom`).
+- Travel: **`arc`** from an offset to rest along a bowed path.
+
 ### Eases and blends
 
 **`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`

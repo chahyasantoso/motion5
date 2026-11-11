@@ -11,14 +11,25 @@ describe("the move gate", () => {
     const exported = all.filter(isMove);
     expect(exported.map((move) => move.id).sort()).toEqual([
       "anticipate",
+      "arc",
       "drop",
+      "fade",
       "hop",
+      "nod",
       "overshoot",
+      "pop",
+      "pulse",
       "repeated",
       "reversed",
+      "rise",
       "rope",
+      "shake",
+      "slide",
+      "swing",
       "trace",
+      "unfold",
       "wipe",
+      "wobble",
     ]);
     for (const move of exported)
       expect(checkMove(move).map((finding) => describeFinding(move.id, finding))).toEqual([]);
