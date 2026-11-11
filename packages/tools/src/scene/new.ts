@@ -55,9 +55,17 @@ export function scaffold(
   return { kind: "written", files: files.map(({ path }) => path) };
 }
 
+const RESERVED = new Set(
+  "break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield let static await async of".split(
+    " ",
+  ),
+);
+
+/** The id in camelCase, with `Move` after a word JavaScript keeps for itself. */
 function exportName(id: string): string {
   const [first = "", ...rest] = id.split("-");
-  return first + rest.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
+  const name = first + rest.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
+  return RESERVED.has(name) ? `${name}Move` : name;
 }
 
 /** Writes `<root>/src/moves/<id>.ts`, a move for its author to fill in, or nothing at all. */

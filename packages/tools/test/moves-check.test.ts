@@ -114,6 +114,42 @@ describe("the move gate", () => {
     expect(checkMove(needy).map((finding) => finding.kind)).toEqual(["throws"]);
   });
 
+  it("reads a field a sample leaves out at its rest, so a move cannot pass by dropping one", () => {
+    const base = {
+      description: "Slides in.",
+      options: {},
+      example: { options: {} },
+      moments: () => ({}),
+    };
+    const dropsAtEnd = defineMove({
+      ...base,
+      id: "drops-at-end",
+      role: "enter",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d =>
+        progress < 1 ? { x: -100 * (1 - progress) } : {},
+    });
+    expect(checkMove(dropsAtEnd)).toEqual([]);
+    const offThenNothing = defineMove({
+      ...base,
+      id: "off-then-nothing",
+      role: "exit",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d =>
+        progress > 0 ? { x: 100 * progress } : { y: 5 },
+    });
+    expect(checkMove(offThenNothing).map((finding) => finding.kind)).toEqual([
+      "jump",
+      "not-at-rest",
+    ]);
+    const brokenMidway = defineMove({
+      ...base,
+      id: "broken-midway",
+      role: "enter",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d =>
+        progress > 0.4 && progress < 0.6 ? { x: Number.NaN } : {},
+    });
+    expect(checkMove(brokenMidway).map((finding) => finding.kind)).toEqual(["not-finite"]);
+  });
+
   it("holds a reveal to end fully shown", () => {
     const fading = defineMove({
       id: "fading",

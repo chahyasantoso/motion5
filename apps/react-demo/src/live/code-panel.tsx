@@ -28,7 +28,9 @@ function isMoveFiles(value: unknown): value is { readonly files: readonly string
   return Array.isArray(files) && files.every((file) => typeof file === "string");
 }
 
+// Each load asks for the files afresh, so a move edited since the last one is read as it now stands.
 async function importAppMoves(): Promise<readonly MoveSource[]> {
+  const stamp = Date.now();
   const res = await fetch("/__motion/moves");
   if (!res.ok) return NO_MODULES;
   const data: unknown = await res.json();
@@ -36,7 +38,7 @@ async function importAppMoves(): Promise<readonly MoveSource[]> {
   const loaded = await Promise.all(
     data.files.map(async (path): Promise<unknown> => {
       try {
-        return await import(/* @vite-ignore */ path);
+        return await import(/* @vite-ignore */ `${path}?t=${stamp}`);
       } catch {
         return undefined;
       }

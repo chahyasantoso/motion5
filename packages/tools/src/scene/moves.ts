@@ -130,10 +130,14 @@ function checkRun(move: CheckedMove, options: object, smooth: boolean): readonly
     return [{ kind: "throws", options: label, message }];
   }
   const findings: MoveFinding[] = [];
-  const first = samples[0] ?? new Map<string, number>();
-  const last = samples[STEPS] ?? new Map<string, number>();
-  for (const [field] of last) {
-    const values = samples.map((sample) => sample.get(field) ?? Number.NaN);
+  // A pose that leaves a field out rests on it, so a sample without one is read at its rest.
+  const fields = new Set(samples.flatMap((sample) => [...sample.keys()]));
+  const filled = (sample: Map<string, number> | undefined): Map<string, number> =>
+    new Map([...fields].map((field) => [field, sample?.get(field) ?? restOf(field) ?? Number.NaN]));
+  const first = filled(samples[0]);
+  const last = filled(samples[STEPS]);
+  for (const field of fields) {
+    const values = samples.map((sample) => sample.get(field) ?? restOf(field) ?? Number.NaN);
     const broken = values.findIndex((value) => !Number.isFinite(value));
     if (broken >= 0) {
       findings.push({ kind: "not-finite", options: label, field, progress: broken / STEPS });

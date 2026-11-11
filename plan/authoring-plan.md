@@ -188,6 +188,7 @@ Builders get a brief with the invariant, the owner, the files and the failing te
 
 | 3 | Sonnet A, A3 | 90 k | 26 | 3.2 min | nothing |
 | 3 | Sonnet B, A7 | 83 k | 22 | 2.1 min | nothing |
+| 3 | Sonnet, cold review of waves 1 to 3 | 92 k | 8 | 1.5 min | twelve findings; seven fixed, the rest minor or by design |
 
 Wave 3 ran under the rules below and combined on one run of the full check.
 Combining wave 2 took the lead four runs of the full check where one was planned. None of the causes was the

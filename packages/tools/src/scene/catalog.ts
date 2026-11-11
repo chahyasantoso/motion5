@@ -221,7 +221,10 @@ export async function loadAppModules(root: string): Promise<{
   for (const name of files) {
     const file = join(folder, name);
     try {
-      modules.push({ file, module: await import(pathToFileURL(file).href) });
+      const module: Readonly<Record<string, unknown>> = await import(pathToFileURL(file).href);
+      if (!Object.values(module).some(isMove))
+        problems.push(`${file}: exports no move made by defineMove with a role and an example.`);
+      modules.push({ file, module });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       problems.push(`${file}: could not be imported: ${message}`);
@@ -244,7 +247,7 @@ export async function runCatalog(
   const all = collectRecords(modules);
   const byRole = all.filter(({ record }) => args.role === undefined || record.role === args.role);
   const selected =
-    args.id === undefined ? byRole : all.filter(({ record }) => record.id === args.id);
+    args.id === undefined ? byRole : byRole.filter(({ record }) => record.id === args.id);
   if (args.id !== undefined && selected.length === 0)
     return {
       lines: [`No move "${args.id}". Known: ${all.map(({ record }) => record.id).join(", ")}.`],
@@ -260,7 +263,11 @@ export async function runCatalog(
     return { lines, code: findings.length === 0 ? 0 : 1 };
   }
   const records = selected.map(({ record }) => record);
-  if (args.json) return { lines: [JSON.stringify(records)], code: problems.length === 0 ? 0 : 1 };
+  // A modifier's example input is a function, which JSON drops; its source is what a reader can use.
+  const printable = (_key: string, value: unknown): unknown =>
+    typeof value === "function" ? String(value).replace(/s+/g, " ") : value;
+  if (args.json)
+    return { lines: [JSON.stringify(records, printable)], code: problems.length === 0 ? 0 : 1 };
   const body = args.id === undefined ? records.map(formatLine) : records.flatMap(formatFull);
   return { lines: [...body, ...problems], code: problems.length === 0 ? 0 : 1 };
 }

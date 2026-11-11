@@ -89,6 +89,8 @@ describe("motion:new", () => {
     for (const id of ["", "Rope", "rope_in", "../rope"])
       expect(scaffoldMove(id, dir).kind).toBe("refused");
     expect(scaffoldMove("rope-in", dir).kind).toBe("written");
+    expect(scaffoldMove("new", dir).kind).toBe("written");
+    expect(readFileSync(join(dir, "src/moves/new.ts"), "utf8")).toContain("export const newMove =");
     writeFileSync(join(dir, "src/moves/keep.ts"), "keep");
     expect(scaffoldMove("rope-in", dir).kind).toBe("refused");
     expect(scaffoldMove("keep", dir).kind).toBe("refused");

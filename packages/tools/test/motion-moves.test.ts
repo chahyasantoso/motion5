@@ -53,6 +53,23 @@ describe("motion:moves", () => {
     );
   });
 
+  it("applies the role filter to a named move, and prints a modifier's input in JSON", async () => {
+    const dir = app();
+    const mismatch = await runCatalog(ok(["good", "--role", "exit"]), dir);
+    expect(mismatch.code).toBe(1);
+    expect(mismatch.lines[0]).toContain('No move "good"');
+    const json = await runCatalog(ok(["reversed", "--json"]), dir);
+    expect(json.lines[0]).toContain('"input":"(time');
+  });
+
+  it("reports an app file that exports no move", async () => {
+    const dir = app();
+    writeFileSync(join(dir, "src/moves/plain.ts"), "export const plain = () => ({ x: 0 });");
+    const run = await runCatalog(ok(["--check"]), dir);
+    expect(run.code).toBe(1);
+    expect(run.lines.some((line) => line.includes("plain.ts: exports no move"))).toBe(true);
+  });
+
   it("lists the built-ins alone when the app has no moves folder", async () => {
     const dir = mkdtempSync(join(tmpdir(), "motion-moves-"));
     roots.push(dir);

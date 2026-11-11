@@ -8,7 +8,11 @@ export const shake = defineMove({
   role: "emphasis",
   description: "Shakes side to side, starting hard and dying away.",
   options: {
-    distance: { kind: "number", min: 0, description: "The widest reach, in px." },
+    distance: {
+      kind: "number",
+      min: 0,
+      description: "The most it can reach to either side, in px.",
+    },
     count: {
       kind: "number",
       default: 4,
