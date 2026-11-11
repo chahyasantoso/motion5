@@ -31,7 +31,17 @@ export {
 } from "./events";
 export { lane, laneTime, lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";
-export { POSE_2D_FIELDS, squashed, type Anchor, type Pose2d } from "./pose";
+export {
+  CUSTOM_FIELD,
+  POSE_2D_FIELDS,
+  VALUE_FIELDS,
+  squashed,
+  valueField,
+  type Anchor,
+  type Combining,
+  type Pose2d,
+  type ValueField,
+} from "./pose";
 export { combine3d, lift2d, mixPoint3d, mixPose3d, squashed3d, type Pose3d } from "./pose3d";
 export { aim, orbit } from "./stage3d";
 export type { Anchor2d, Cubic2d, Drawn, Point2d, Reveal } from "./shapes";

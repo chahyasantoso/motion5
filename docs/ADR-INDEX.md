@@ -177,3 +177,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-170 — Core and plugins are retired — Accepted, 2026-11-09
 - ADR-171 — Live editing edits the scene file — Accepted, 2026-11-09
 - ADR-172 — A move declares its role, and a gate holds it to it — Accepted, 2026-11-11
+- ADR-173 — One value, and one table of its fields — Accepted, 2026-11-11

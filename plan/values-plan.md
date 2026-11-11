@@ -1,6 +1,6 @@
 # Values and sequence plan
 
-**Status:** Draft for the owner's review.
+**Status:** Approved by the owner, 2026-11-11.
 **Base:** `feat/authoring-proof-2` at the commit that adds this file (pull request 578).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` ("What a real piece asked for"),
 `plan/authoring-plan.md` ("A hand-made piece, rebuilt"), `.claude/skills/wave-build/SKILL.md`, then this plan.

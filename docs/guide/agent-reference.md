@@ -318,6 +318,11 @@ const slide = defineMove({
   run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
+**`VALUE_FIELDS`** is the one table of what a value's fields are: each row a **`ValueField`** with its `rest`, how it
+combines (a **`Combining`**: `add`, `multiply` or `replace`), whether its path must be `smooth` and whether a reveal
+`shows` it. **`valueField(name)`** reads a row. A pose may also carry `custom`, a record of numbers the piece names
+itself; each is a **`CUSTOM_FIELD`**: it rests at 0 and adds. `combine`, `mixPose` and the gate all read the table.
+
 `checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each ranged
 option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays finite,
 has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.

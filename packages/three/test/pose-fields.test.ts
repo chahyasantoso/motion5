@@ -5,7 +5,7 @@ import { POSE_2D_FIELDS, type Pose2d } from "@gerak/moves";
 import { applyPose2d } from "../src/index";
 
 /** A value for each field that differs from rest, so a renderer that drops the field shows no change. */
-const MOVED: Required<Pose2d> = {
+const MOVED: Required<Pick<Pose2d, (typeof POSE_2D_FIELDS)[number]>> = {
   x: 7,
   y: 9,
   rotation: 30,
