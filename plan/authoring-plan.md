@@ -1,6 +1,6 @@
 # Authoring plan
 
-**Status:** Draft for the owner's review.
+**Status:** Approved by the owner, 2026-11-11.
 **Base:** `main` at `07336c35`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` section 1 and stage 1, then this plan.
 
@@ -134,6 +134,22 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
 - **Passes when** no two of the three same-brief pieces share a move set, the two other briefs share none with
   them, and at least one piece carries a move written for it that passes the gate.
 
+### A9. Ask the agents
+
+- Each of the five agents is interviewed at the end of its run, in the same session, so it answers from what it
+  did and not from a summary. The questions are fixed:
+  1. What did you read before your first frame, and which of it did you not need?
+  2. What did you look for and not find, and where did you look?
+  3. Where did you open package source, and what were you missing?
+  4. What failed the first time, and what told you why?
+  5. Which tool output was longer than you needed, and what part of it did you use?
+  6. Which step did you repeat, and what would have made once enough?
+  7. What one change to gerak would have saved you the most time or the most reading?
+- The lead records each run's tokens and tool calls beside its answers, and writes one ranked list: each item names
+  what to change, how many of the five asked for it, and what it would save.
+- **Ends with** the top items as slices in this plan when they are small, or as an entry in `plan/roadmap.md` when
+  they are not. An item nobody acts on is dropped, not kept as a list.
+
 ## 5. Risks
 
 - **A bigger library is a bigger thing to copy.** Sixteen moves could look as alike as five. The modifiers and the
@@ -159,11 +175,11 @@ Builders get a brief with the invariant, the owner, the files and the failing te
 | 3 | Sonnet A, again | A3 | the library, with the modifiers and the gate in hand |
 | 3 | Sonnet B, again | A7 | builds on its own catalog |
 | 4 | Lead | A6 | the guide is judgment |
-| 5 | five cold Sonnet runs, then the lead | A8 | independent eyes, then one reading |
+| 5 | five cold Sonnet runs, then the lead | A8, A9 | independent eyes, then one reading and one ranked list |
 
 `npm run check` runs once per wave, each slice is one commit, and each wave is one pull request.
 
 ## 7. Done when
 
-The five proof pieces pass section A8, `npm run check` is green, the guide names no worked example, and
+The five proof pieces pass section A8, the ranked list of A9 is acted on, `npm run check` is green, the guide names no worked example, and
 `docs/SESSION-STATUS.md` says so.
