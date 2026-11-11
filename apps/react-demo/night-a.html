@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>night-a</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b1020;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: #0b1020;
+      }
+      .words {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 270px;
+        display: flex;
+        justify-content: center;
+        gap: 44px;
+        font:
+          800 130px/1 "Helvetica Neue",
+          Arial,
+          sans-serif;
+        letter-spacing: 10px;
+        color: #e8ecf5;
+      }
+      .word {
+        display: inline-block;
+      }
+      .amber {
+        color: #f2b45a;
+      }
+      .dot {
+        position: absolute;
+        left: 626px;
+        top: 470px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #f2b45a;
+        box-shadow: 0 0 24px 6px rgba(242, 180, 90, 0.45);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/night-a-main.tsx"></script>
+  </body>
+</html>
