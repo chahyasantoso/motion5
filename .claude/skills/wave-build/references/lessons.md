@@ -93,3 +93,22 @@ cost before the limit is not shown. The lead worked on Sonnet at medium effort f
   tool, a line and a number. Keep it.
 - **A review path argument was wrong in the lead's own call.** The lead passed a file path where `motion:review`
   wants a page name with `--root`, and read five sheets of the index page. Rule: run one before running five.
+
+## 2026-11-11, the second proof and the rebuilt showreel (gerak)
+
+Costs: four cold Sonnet runs at medium effort, 295 k tokens, about 2.3 min each, started by the conductor with no
+session between. Two Opus workers at medium effort: 141 k tokens for a free-form piece, 198 k tokens and 15 min for
+its rebuild. One run of the full check after each batch; one failed on a source map the new folder was missing from.
+
+- **Starting workers straight from the conductor cost less than a session that starts them.** The conductor's
+  context was cached; a relay session would have re-read the plan and the skill to do the same launches.
+- **A rule stated as a rule was followed; the same rule stated as advice was not.** "Every motion with a name must
+  be a move" gave seven written moves. "Where nothing fits, write a move" gave none. Write a brief's constraints as
+  constraints.
+- **Asking an agent to choose against its first thought moved the motion and not the look.** The step named motion
+  only, and three runs kept one palette. A divergence step changes only what it names.
+- **A usage limit stopped a worker twice in one day; resuming by message worked both times.**
+- **A new source folder needs its line in the map before the check.** When a brief lets a worker create a folder,
+  say which gate will ask about it, or add the line when combining.
+- **The safety check on two workers' reports was unavailable.** The conductor read each commit's file list before
+  taking it. Do that for any report that arrives so marked.

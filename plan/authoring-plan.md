@@ -315,6 +315,29 @@ choosing against its own first thought. Three runs of one model on one brief sta
 constraint handed to each run (a limit on colour, on the number of moving things, on what the hero is) would start
 them from three. That is proposed, not built.
 
+## A hand-made piece, rebuilt
+
+The owner's experiment: an Opus worker at medium effort made a 15 second showreel with no gerak, as one HTML page
+with one clock function (`C:\Data\dev\motion5\showreel-free\`, 141 k tokens). A second Opus worker at medium effort
+rebuilt it with gerak as the piece `showreel` (198 k tokens, 66 tool calls, 15 minutes), under the rule that every
+motion with a name is a move.
+
+- **It can.** All six beats are rebuilt with the original's palette, type and layout; the conductor read one sheet
+  of six frames. Three beats are faithful and three are approximated: a slower tremble, a fall without stretch, and
+  letters that swing by a catalogued move where the original simulated them hanging from a moving bar.
+- **The rule held when it was stated as a rule.** The worker used fifteen catalogued moves and wrote seven
+  (`launch`, `spring-settle`, `jolt`, `bump`, `kick`, `shockwave`, `ballistic`), all passing the gate. The
+  catalog holds 27 moves. The metronome run, told only "where nothing fits", wrote none.
+- **What gerak could not say,** most limiting first: colour, blur and text that changes have no value, and about
+  thirty elements needed them; a drawn stroke has a head and no tail; modifiers take a pose and nothing else; nothing
+  hangs from a thing that moves; a move holds its pose outside its span, so a target with eight phases is stitched
+  by time in the scene; an opacity left out keeps its last value; the gate refuses a fast tremble; the review does
+  not see a parent's clip.
+- **What was slow:** stitching phases by elapsed time, and spans and lanes set by hand for seventy elements.
+
+Not verified: neither piece was watched at full speed, and the rebuild was compared with the original's clock code,
+not with its frames.
+
 ## 7. Done when
 
 The five proof pieces pass section A8, the ranked list of A9 is acted on, `npm run check` is green, the guide names no worked example, and
