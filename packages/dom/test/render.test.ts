@@ -47,11 +47,11 @@ describe("applyValue", () => {
     expect(target.style.transform).toBe("");
   });
 
-  it("writes opacity at its rest when a later value leaves it out", () => {
+  it("hands opacity back to the page's own style when a later value leaves it out", () => {
     const target = element();
     applyValue(target, { opacity: 0.3 });
     applyValue(target, {});
-    expect(target.style.opacity).toBe("1");
+    expect(target.style.opacity).toBe("");
   });
 
   it("anchors at the centre when the value names no anchor", () => {

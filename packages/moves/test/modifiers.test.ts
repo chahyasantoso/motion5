@@ -23,8 +23,8 @@ describe("modifiers", () => {
 
   it("reversed plays a move that answers something other than a pose backwards", () => {
     const options = { radius: 100, x: 0, y: 0 };
-    expect(wipe(options, reversed(atProgress(1))).radius).toBeCloseTo(0);
-    expect(wipe(options, reversed(atProgress(0))).radius).toBeCloseTo(100);
+    expect(wipe(options, reversed(atProgress(1))).clipRadius).toBeCloseTo(0);
+    expect(wipe(options, reversed(atProgress(0))).clipRadius).toBeCloseTo(100);
   });
 
   it("anticipate goes the other way mid wind-up and ends on the input's end", () => {

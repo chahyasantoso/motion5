@@ -94,11 +94,12 @@ export function pathData(cubics: readonly Cubic2d[]): string {
   ].join(" ");
 }
 
-/** Writes a value, a left-out field at rest and each custom number as `--<name>`; a custom name absent now keeps its last. */
+// A field the value leaves out is cleared, so the page's own style shows again and no old amount stays.
+/** Writes a value, each custom number as `--<name>`; a custom name absent now keeps its last. */
 export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
   const style = target.style;
   style.transform = cssTransform(value);
-  style.opacity = String(value.opacity ?? 1);
+  style.opacity = value.opacity === undefined ? "" : String(value.opacity);
   if ("ownerSVGElement" in target) style.transformBox = "fill-box";
   style.transformOrigin = cssOrigin(value.anchor ?? "center");
   const blur = value.blur ?? 0;
