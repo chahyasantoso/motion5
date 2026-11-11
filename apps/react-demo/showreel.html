@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Timing Is Everything</title>
+    <style>
+      :root {
+        --ink: #101114;
+        --paper: #f3efe6;
+        --coral: #ff5b3a;
+        --mute: #7d8290;
+      }
+      body {
+        margin: 0;
+        background: #050506;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        cursor: pointer;
+        background: var(--ink);
+        color: var(--paper);
+        font-family: "Arial Black", "Arial Bold", Gadget, Arial, sans-serif;
+        font-weight: 900;
+        user-select: none;
+      }
+      #camera {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 720px;
+      }
+      #wipe {
+        position: absolute;
+        left: -160px;
+        top: -420px;
+        width: 1600px;
+        height: 1600px;
+        background: var(--coral);
+        clip-path: circle(0px at 800px 800px);
+      }
+      #fx {
+        position: absolute;
+        left: 0;
+        top: 0;
+        overflow: visible;
+        pointer-events: none;
+      }
+      #fx path {
+        fill: none;
+        stroke-linecap: round;
+        opacity: 0;
+      }
+      #trail-arc {
+        stroke-opacity: 0.7;
+      }
+      .word {
+        position: absolute;
+        left: 0;
+        width: 1280px;
+        display: flex;
+        justify-content: center;
+        line-height: 1;
+        white-space: pre;
+      }
+      .ch {
+        display: inline-block;
+      }
+      #ant {
+        top: 312px;
+        height: 100px;
+        font-size: 100px;
+        letter-spacing: 0.01em;
+        clip-path: inset(-900px -200px 0 -200px);
+      }
+      #wgt {
+        top: 326px;
+        font-size: 180px;
+      }
+      #wgt .ch {
+        margin: 0 0.01em;
+      }
+      #floor {
+        position: absolute;
+        left: 300px;
+        top: 488px;
+        width: 680px;
+        height: 5px;
+        display: flex;
+      }
+      .floor-half {
+        width: 340px;
+        height: 5px;
+        background: var(--coral);
+      }
+      #floor-left {
+        border-radius: 3px 0 0 3px;
+      }
+      #floor-right {
+        border-radius: 0 3px 3px 0;
+      }
+      .dust {
+        position: absolute;
+        left: -5px;
+        top: -5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--paper);
+      }
+      #ovl {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1280px;
+        height: 720px;
+      }
+      #bar {
+        position: absolute;
+        left: 250px;
+        top: 150px;
+        width: 780px;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--coral);
+      }
+      #ovl-row {
+        position: absolute;
+        left: 0;
+        top: 155px;
+        width: 1280px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+      .hg {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .str {
+        display: block;
+        width: 2px;
+        background: rgba(243, 239, 230, 0.45);
+      }
+      .hg b {
+        display: block;
+        font-size: 110px;
+        line-height: 0.92;
+        font-weight: 900;
+      }
+      #stl {
+        top: 226px;
+        font-size: 140px;
+      }
+      #fin {
+        top: 286px;
+        align-items: flex-end;
+        font-family: Georgia, "Times New Roman", serif;
+        font-style: italic;
+        font-weight: 700;
+        font-size: 84px;
+      }
+      .fm {
+        display: inline-block;
+        overflow: hidden;
+        line-height: 1.15;
+        padding: 0 0.08em 0.12em;
+        margin: 0 0.04em;
+      }
+      .fw {
+        display: inline-block;
+      }
+      #fin-slot {
+        width: 0.32em;
+        padding: 0;
+        margin-left: -0.06em;
+      }
+      #fin-base {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        vertical-align: baseline;
+      }
+      #credit {
+        position: absolute;
+        left: 0;
+        top: 438px;
+        width: 1280px;
+        text-align: center;
+        font:
+          700 14px/1 Arial,
+          Helvetica,
+          sans-serif;
+        letter-spacing: 0.42em;
+        color: var(--mute);
+      }
+      #credit em {
+        font-style: normal;
+        color: var(--coral);
+      }
+      .ring {
+        position: absolute;
+        left: -60px;
+        top: -60px;
+        width: 120px;
+        height: 120px;
+        box-sizing: border-box;
+        border-radius: 50%;
+        border: 3px solid var(--coral);
+      }
+      #dot {
+        position: absolute;
+        left: -18px;
+        top: -18px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--coral);
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          ellipse at 50% 46%,
+          rgba(0, 0, 0, 0) 52%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+      }
+      #hud {
+        position: absolute;
+        left: 32px;
+        right: 32px;
+        bottom: 26px;
+        display: flex;
+        justify-content: space-between;
+        font:
+          12px/1 Consolas,
+          "Courier New",
+          monospace;
+        letter-spacing: 0.18em;
+        color: var(--mute);
+        opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/showreel-main.tsx"></script>
+  </body>
+</html>
