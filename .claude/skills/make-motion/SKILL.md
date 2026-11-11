@@ -26,6 +26,7 @@ A piece starts from its brief, not from a piece that already exists.
 ## Report
 
 - The obvious answer you named, the ideas you dropped, your three lines, and whether the finished piece shows them.
-- Each move you used, and each move you wrote: its id, its role and why no catalogued move would do.
+- Each move you used, and each move you wrote: its id, its role and why no catalogued move would do. Name any
+  motion you built from `keyframes` in the scene and say why it is not a move.
 - Any package source you opened, which file and why: that is a gap in the reference.
 - What you did not see at full speed.

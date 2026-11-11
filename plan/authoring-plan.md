@@ -279,6 +279,42 @@ All five were asked the seven questions in the same session. Every one opened no
 No piece was watched at full speed; each was read from the `motion:review` frame sheet, and the lead read one sheet per
 piece. `saved` renders small inside its page. The full `npm run check` ran once on the combined branch.
 
+## Second proof
+
+Run on `feat/authoring-proof-2` after one change to the guide: before any code, name the obvious answer, write three
+ideas that differ from it in what moves and how, and pick one that is not it. Four cold Sonnet runs at medium effort,
+started by the conductor with no session between: 295 k tokens, 64 tool calls, about 2.3 minutes each.
+
+| Piece | Brief | Chosen idea | Moves | Written for it | Tokens |
+| --- | --- | --- | --- | --- | --- |
+| `night-d` | NIGHT SHIFT title card | NIGHT drops, SHIFT slides over, a small clock hand ticks through the hold | `drop`, `slide`, `pop`, `fade`, `overshoot`, `combine` | none | 74 k |
+| `night-e` | the same | NIGHT rises, SHIFT slides in, a crescent moon on a thread swings to rest | `rise`, `slide`, `fade`, `swing`, `combine` | none | 72 k |
+| `night-f` | the same | the words slide in from either side, a lamp breathes | `slide`, `fade`, `pulse`, `repeated`, `combine` | none | 70 k |
+| `tempo` | a metronome that ticks evenly, then stops dead | a bare arm with a sliding weight, a dot that flashes at each tick | `rise`, `fade`, `combine`, and `keyframes` for the arm | none | 79 k |
+
+The pass mark changed with this run: the same brief three times must give three motion ideas, and shared standard
+moves are allowed, since a shared vocabulary is the objective and not a fault.
+
+- **Three motion ideas from one brief: passes, narrowly.** A ticking hand, a pendulum and a pulse are three devices
+  from three different moves, where the first proof gave a pulse three times. Each run named the pulsing dot as the
+  obvious answer and dropped it. Each also chose the calmest of its three ideas; the bolder ones (a lamp cone wiping
+  the words in, a split-flap shift, a lever thrown) were listed and left.
+- **The look: fails.** All three are a navy ground with a cream NIGHT and an amber SHIFT, as all three were in the
+  first proof. The conductor read one frame sheet per piece. The step asked for different motion and said nothing
+  of the look, so the look stayed where the model's first thought put it.
+- **A move written when the catalog has none: fails.** `tempo` needed a steady swing of constant width, saw that no
+  catalogued move gives one, and drew it with `keyframes` in the scene, calling it glue. The guide said to write a
+  move "where nothing fits", and `keyframes` fits anything.
+
+What changed in the guide after this run, untested: the look step names the obvious look and chooses another; a
+motion with a name another piece could use is a move even where `keyframes` could draw it; the report names any
+motion built from `keyframes` and says why it is not a move.
+
+What is not done: a third run to test those changes, and a source of difference that does not depend on the agent
+choosing against its own first thought. Three runs of one model on one brief start from one place; a drawn
+constraint handed to each run (a limit on colour, on the number of moving things, on what the hero is) would start
+them from three. That is proposed, not built.
+
 ## 7. Done when
 
 The five proof pieces pass section A8, the ranked list of A9 is acted on, `npm run check` is green, the guide names no worked example, and
