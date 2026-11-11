@@ -44,11 +44,14 @@ The surface is small: about 250 lines across those files decide what a value is.
   | `blur` | 0 | add | none |
   | `drawn`, `drawnFrom` | 1 and 0 | replace | `Drawn`, which had no tail |
   | `clipX`, `clipY`, `clipRadius` | 0, 0 and none | replace | `Reveal` |
-  | `--<name>` | 0 | add | none |
+  | `custom.<name>` | 0 | add | none |
 
-- **A custom field is a CSS variable.** A key that starts with `--` is written onto the element as that custom
-  property, and the page's CSS decides what it means: a colour by `color-mix`, a glow, a counter. The library never
-  learns what a colour is, so it carries no look.
+- **A custom field is a named number, and each renderer says where it goes.** A value may carry `custom`, a record
+  of numbers a piece names itself, such as `{ tint: 0.4 }`. The pure layer only combines, blends and checks them.
+  The DOM renderer writes each as the CSS custom property `--<name>`, and the page's CSS decides what it means: a
+  colour by `color-mix`, a glow, a counter. The Three.js renderer hands each to a function the piece gives it, which
+  sets a material's colour, a uniform or a light. The library never learns what a colour is, so it carries no look,
+  and no renderer's vocabulary reaches the moves.
 - **`Reveal` and `Drawn` go, and so do `applyReveal`, `applyDrawn` and `applyPose`.** One `applyValue` writes
   whatever fields a value carries. `wipe` answers clip fields and `trace` answers `drawn`. Nothing is published, so
   there is no alias.
@@ -59,6 +62,15 @@ The surface is small: about 250 lines across those files decide what a value is.
 - **`sequence` is one function for phases and for shots.** Given a time and a list of `[span, answer]`, it answers
   the phase the time is in, holds the last one that ended, and before the first holds its start. It is generic, so
   the same call orders moves on one target and scenes in a piece.
+- **A piece is still one scene.** There is no second kind of thing called a multi-scene. A long piece is one scene
+  function built from parts by `sequence`, and each part is given a time that starts at 0, so a beat can be written
+  and reused without knowing where it sits. What `sequence` does not do is put a shot's elements on the page or
+  take them off, or blend two shots; those belong to the `stage` package and to transitions, later in the roadmap.
+- **A built-in is for what an app cannot build.** A new field, a renderer's ability or a simulation goes in the
+  packages. A move that can be made from the parts already there is written in the app's `src/moves` by whoever
+  needs it, and moves into `@gerak/moves` when a second piece uses it. So the catalog lists the parts as well as
+  the moves: `trail`, `spring`, `along`, `velocity`, `smear`, `keyframes`, the eases and blends, one line each,
+  because a worker that did not know `trail` was there could not build a hanging letter from it.
 - **A span takes the scene's length from the time it is given.** `span(fromMs, toMs)` has no third argument. A
   timed clock already carries its length; an untimed driver, such as scroll, is given one where it is made.
 
@@ -69,20 +81,20 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
 ### V1. The field table and the one value
 
 - **Invariant:** `VALUE_FIELDS` lists every field with its rest and how it combines; `Pose2d` is derived from it
-  and takes `--name` keys; `combine` and the blend walk the table; `checkMove` reads rest and smoothness from it.
+  and carries a `custom` record; `combine` and the blend walk the table; `checkMove` reads rest and smoothness from it.
 - **Owner:** `packages/moves/src/pose.ts`; `packages/tools/src/scene/moves.ts` loses its sets.
-- **Test:** two values with `blur` and `--tint` combine by adding; a field added to the table with no row in the
+- **Test:** two values with `blur` and `custom.tint` combine by adding; a field added to the table with no row in the
   gate is impossible, because the gate has no rows; an entrance that ends with `blur: 2` is refused as off rest.
 
 ### V2. One renderer
 
 - **Invariant:** `applyValue(target, value)` writes transform, opacity, `filter: blur()`, the clip circle, the dash
-  with a head and a tail, and each `--name` as a custom property. A field left out is written at its rest, so an
+  with a head and a tail, and each custom number as the property `--<name>`. A field left out is written at its rest, so an
   opacity set once does not stay. `useTarget` with no `render` uses it for any value.
 - **Owner:** `packages/dom/src/render.ts`, `packages/react/src/player.ts`; `packages/three` ignores fields it has no
   place for.
 - **Test:** a value with `opacity: 0.3` then one without leaves the element at 1; `drawnFrom: 0.2, drawn: 0.6` gives
-  the dash that shows that stretch; `--tint: 0.4` is on the element's style. `wipe` and `trace` pieces render as
+  the dash that shows that stretch; `custom.tint` of 0.4 is on the element's style as `--tint`. `wipe` and `trace` pieces render as
   before.
 
 ### V3. Modifiers over a value
@@ -102,12 +114,15 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
   in a gap; the same call over two scenes switches whole records; every worked example and proof piece still
   samples the same after its spans lose their third argument.
 
-### V5. What the showreel still lacked
+### V5. The catalog lists the parts
 
-- **Invariant:** `dangle`, a follow whose input is its parent's motion as a function of time, swings behind it and
-  settles, built on `trail`; `trace` takes `tail`, a share of the path that follows the head.
-- **Owner:** `packages/moves/src/`.
-- **Test:** a parent that stops makes `dangle` swing past and settle; a parent that never moves leaves it at rest.
+- **Invariant:** `npm run motion:moves -- --parts` prints one line for each building block a move is made from,
+  with its call shape; the plain listing ends with a line that says so. `trace` takes `tail`, a share of the path
+  that follows the head. No `dangle` is added to the packages: the proof's worker builds it from `trail` in the
+  app, which is the test that the parts can be found.
+- **Owner:** `packages/tools/src/scene/catalog.ts`, `packages/moves/src/trace.ts`.
+- **Test:** every function the reference lists under eases, blends, paths and follow-through appears under
+  `--parts`, read from one list the reference test also reads.
 
 ### V6. Tools that say less
 
@@ -129,7 +144,7 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
   changes, and nothing outside the repository reads it.
 - **A field written at rest when left out** changes what a component sees if it relied on a value staying. The
   worked examples and proof pieces are the test.
-- **Custom fields put meaning in CSS.** That is the point, and it also means the gate cannot say what `--tint: 3`
+- **Custom fields put meaning in CSS.** That is the point, and it also means the gate cannot say what a `tint` of 3
   looks like. It can still hold it to rest and to a smooth path.
 - **`sequence` holding the last phase** is right for a dot and wrong for a scene that should clear. A phase may
   answer an empty record; that is the caller's choice, not a second mode.
@@ -149,7 +164,7 @@ after one full check and one cold review.
 | 2 | Sonnet B | V3 | four small moves made generic; touches no file of V2 |
 | 3 | Opus | V4 | time is subtle, and every scene changes |
 | 3 | Sonnet | V6 | tools only, no shared file |
-| 4 | Opus | V5, V7 | the same worker writes the two moves and uses them |
+| 4 | Opus | V5, V7 | the catalog shows the parts, and the same worker builds from them |
 
 ## 7. Done when
 
