@@ -1,7 +1,7 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "./pose";
-import type { Time } from "./time";
-import { customNames, pushed, whole } from "./whole";
+import { withProgress, type Time } from "./time";
+import { carried, pushed, whole } from "./whole";
 
 /** Plays its input, then passes its last pose and settles back onto it. */
 export const overshoot = defineMove({
@@ -29,17 +29,16 @@ export const overshoot = defineMove({
     input: (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) }),
   },
   run({ share, amount }, time, input: (time: Time) => Pose2d): Pose2d {
-    const at = (progress: number) => input({ ...time, progress });
+    const at = (progress: number) => input(withProgress(time, progress));
     const first = at(0);
     const last = at(1);
-    const names = customNames(first, last);
     const playing = 1 - share;
     if (time.progress <= playing) {
       const played = at(time.progress / playing);
-      return whole(played, customNames(first, last, played));
+      return whole(played, carried(first, last, played));
     }
     const v = (time.progress - playing) / share;
-    return pushed(last, first, amount * Math.sin(Math.PI * v) * (1 - v), names);
+    return pushed(last, first, amount * Math.sin(Math.PI * v) * (1 - v), carried(first, last));
   },
   moments: ({ share }) => ({ settle: 1 - share }),
 });

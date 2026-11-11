@@ -112,3 +112,27 @@ its rebuild. One run of the full check after each batch; one failed on a source 
   say which gate will ask about it, or add the line when combining.
 - **The safety check on two workers' reports was unavailable.** The conductor read each commit's file list before
   taking it. Do that for any report that arrives so marked.
+
+## 2026-11-12, values waves 1 and 2 (gerak)
+
+Costs: the conductor built the first slice. Opus at medium effort, 156 k tokens and 9.5 min, for a renderer that
+touched 28 files; Sonnet at medium effort, 87 k tokens and 3.2 min, for four modifiers; a cold review by Sonnet,
+120 k tokens, ten findings, seven fixed. Three runs of the full check on combining where one was planned.
+
+- **A rename in one slice broke the other slice's test.** One worker renamed a move's answer field; the other's new
+  test read the old name. The earlier rule covered counts and lists. Rule: when planning a wave, list every name a
+  slice renames or removes, and tell the other workers not to read it.
+- **A worker's "not verified" list is the conductor's to-do list.** The renderer's worker noted that always writing
+  opacity would show elements a stylesheet hides. It had not been asked to decide that, and the brief was wrong;
+  the fix was the conductor's. Read that section first.
+- **Frames before and after are a cheap check for a change that should not show.** Sixty-two frames over twelve
+  pieces, compared by bytes, took two commands. Bytes differ for changes no eye can see, so a difference still has
+  to be looked at; until a pixel comparison exists, look at the few that differ.
+- **Samples before and after prove a call-shape change.** Six pieces sampled at thirty-seven moments were the same
+  to the byte after the modifiers changed shape, which the worker had not checked.
+- **A pull request with no package or tool code skipped the cold review.** Pieces, plans and guides were merged on
+  the full check alone. Rule: review cold when packages or tools change; say in the pull request when it was skipped.
+- **Pick the worker's model by how many files the slice touches, not by how hard it sounds.** The renderer was not
+  subtle, but it changed every caller; the stronger worker found callers and documents the brief had missed.
+- **A usage limit stopped the reviewer; a message resumed it, a third time.** It reread from the start, since its
+  notes had not been saved. Ask a reviewer to keep notes in a scratch file as it goes.

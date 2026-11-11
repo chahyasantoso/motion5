@@ -118,6 +118,25 @@ describe("applyValue", () => {
     applyValue(target, { custom: { tint: 0.4 } });
     expect(written).toEqual([["--tint", "0.4"]]);
   });
+
+  it("removes a custom name a later value leaves out, and refuses one CSS could not carry", () => {
+    const removed: string[] = [];
+    const target = element();
+    target.style.setProperty = () => undefined;
+    target.style.removeProperty = (name) => removed.push(name);
+    applyValue(target, { custom: { tint: 0.4, glow: 1 } });
+    applyValue(target, { custom: { glow: 2 } });
+    expect(removed).toEqual(["--tint"]);
+    applyValue(target, {});
+    expect(removed).toEqual(["--tint", "--glow"]);
+    expect(() => applyValue(target, { custom: { "bad name": 1 } })).toThrow(/bad name/);
+  });
+
+  it("leaves a stroke undashed when there is no length to measure", () => {
+    const target = element();
+    applyValue(target, { drawn: 0.5 });
+    expect(target.style.strokeDasharray ?? "").toBe("");
+  });
 });
 describe("pathData", () => {
   const cubics = [

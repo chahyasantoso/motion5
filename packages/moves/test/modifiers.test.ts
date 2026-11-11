@@ -14,9 +14,12 @@ const ramp = (time: Time): Pose2d => ({ x: time.progress });
 const slide = (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) });
 
 describe("modifiers", () => {
-  it("reversed answers the time at 1 - progress and keeps its clock", () => {
+  it("reversed answers the time at 1 - progress, and a timed clock runs back with it", () => {
     const time: Time = { progress: 0.25, clock: { kind: "timed", elapsed: 250, length: 1000 } };
-    expect(reversed(time)).toEqual({ progress: 0.75, clock: time.clock });
+    expect(reversed(time)).toEqual({
+      progress: 0.75,
+      clock: { kind: "timed", elapsed: 750, length: 1000 },
+    });
     expect(slide(reversed(atProgress(0))).x).toBeCloseTo(0);
     expect(slide(reversed(atProgress(1))).x).toBeCloseTo(-200);
   });

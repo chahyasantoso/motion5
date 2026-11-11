@@ -18,7 +18,13 @@ describe("the field table", () => {
       shows: true,
     });
     expect(valueField("clipRadius")).toEqual({ combines: "replace", smooth: true, shows: true });
-    expect(valueField("blur")).toEqual({ rest: 0, combines: "add", smooth: true, shows: false });
+    expect(valueField("blur")).toEqual({
+      rest: 0,
+      combines: "add",
+      smooth: true,
+      shows: false,
+      least: 0,
+    });
     expect(valueField("radius")).toBeUndefined();
     expect(valueField("tint")).toBeUndefined();
     expect(CUSTOM_FIELD).toEqual(VALUE_FIELDS.x);

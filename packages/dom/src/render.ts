@@ -12,6 +12,7 @@ export interface RenderStyle {
   strokeDasharray?: string;
   strokeDashoffset?: string;
   setProperty?(name: string, value: string): void;
+  removeProperty?(name: string): void;
 }
 
 /** An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has. */
@@ -94,8 +95,11 @@ export function pathData(cubics: readonly Cubic2d[]): string {
   ].join(" ");
 }
 
-// A field the value leaves out is cleared, so the page's own style shows again and no old amount stays.
-/** Writes a value, each custom number as `--<name>`; a custom name absent now keeps its last. */
+const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
+const WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
+
+// A field or custom name the value leaves out is cleared, so the page's own style shows again.
+/** Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed. */
 export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
   const style = target.style;
   style.transform = cssTransform(value);
@@ -108,21 +112,28 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
     value.clipRadius === undefined
       ? ""
       : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
-  if (value.drawn !== undefined || value.drawnFrom !== undefined) {
-    const dash = cssDash(
-      value.drawnFrom ?? 0,
-      value.drawn ?? 1,
-      target.getTotalLength?.() ?? length ?? 0,
-    );
+  const measured = target.getTotalLength?.() ?? length ?? 0;
+  if ((value.drawn !== undefined || value.drawnFrom !== undefined) && measured > 0) {
+    const dash = cssDash(value.drawnFrom ?? 0, value.drawn ?? 1, measured);
     style.strokeDasharray = dash.strokeDasharray;
     style.strokeDashoffset = String(dash.strokeDashoffset);
   } else if ((style.strokeDasharray ?? "") !== "") {
     style.strokeDasharray = "";
     style.strokeDashoffset = "";
   }
-  for (const [name, number] of Object.entries(value.custom ?? {}))
+  const custom = value.custom ?? {};
+  for (const name of WRITTEN.get(style) ?? [])
+    if (!Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);
+  for (const [name, number] of Object.entries(custom)) {
+    if (!CUSTOM_NAME.test(name))
+      throw new RangeError(
+        `applyValue: custom name "${name}" must be letters, digits, "-" or "_".`,
+      );
     style.setProperty?.(`--${name}`, String(number));
+  }
+  WRITTEN.set(style, new Set(Object.keys(custom)));
 }
+
 /** Sets a path element's `d` to the cubic segments. */
 export function applyPath(target: RenderTarget, cubics: readonly Cubic2d[]): void {
   target.setAttribute?.("d", pathData(cubics));

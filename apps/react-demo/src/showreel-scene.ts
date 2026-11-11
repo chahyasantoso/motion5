@@ -98,7 +98,7 @@ const share = (ms: number, from: number, to: number) =>
   Math.min(1, Math.max(0, (ms - from) / (to - from)));
 const at = (x: number, y: number): Pose2d => ({ x, y });
 const hidden: Pose2d = { opacity: 0 };
-/** A pose that leaves opacity out keeps the last one written, so a target that was hidden says it is shown. */
+/** Shown outright: a pose that leaves opacity out hands the target back to the page's own style. */
 const shown: Pose2d = { opacity: 1 };
 
 const wgtLand = (i: number) => WGT_LAND0 + i * 165 + (i === 5 ? 90 : 0);

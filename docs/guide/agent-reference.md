@@ -357,10 +357,10 @@ driver.seekMs(1200);
 
 ### Rendering
 
-**`applyValue(element, value, length?)`**: writes a value: the transform and origin, `opacity` (1 when left out),
+**`applyValue(element, value, length?)`**: writes a value: the transform and origin, `opacity`,
 `blur` as a filter, the clip circle as a clip path, the stretch from `drawnFrom` to `drawn` as a stroke dash (measured
 with `getTotalLength`, else `length`), and each `custom` number as the CSS property `--<name>`. A field left out is
-cleared; a custom name left out keeps its last value.
+cleared, a custom name too, so the page's own style shows again.
 ```ts
 player.subscribe("title", (pose) => applyValue(title, pose));
 ```

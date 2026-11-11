@@ -15,6 +15,8 @@ export interface ValueField {
   readonly smooth: boolean;
   /** Whether a reveal must end with it at its greatest. */
   readonly shows: boolean;
+  /** The least it can be; a modifier that pushes it past that stops there. */
+  readonly least?: number;
 }
 
 const OFFSET: ValueField = { rest: 0, combines: "add", smooth: true, shows: false };
@@ -35,7 +37,7 @@ export const VALUE_FIELDS = Object.freeze({
   scaleY: SIZE,
   scaleZ: SIZE,
   opacity: { rest: 1, combines: "multiply", smooth: true, shows: false },
-  blur: OFFSET,
+  blur: { ...OFFSET, least: 0 },
   drawn: { rest: 1, combines: "replace", smooth: true, shows: true },
   drawnFrom: { rest: 0, combines: "replace", smooth: true, shows: false },
   clipX: PLACED,

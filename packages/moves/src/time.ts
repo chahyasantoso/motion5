@@ -38,6 +38,20 @@ export function atProgress(progress: number): Time {
   return { progress, clock: UNTIMED };
 }
 
+/** `time` moved to `progress`: a timed clock's elapsed follows it, so a move that reads the clock is moved too. */
+export function withProgress(time: Time, progress: number): Time {
+  const clock = time.clock;
+  switch (clock.kind) {
+    case "timed":
+      return { progress, clock: { ...clock, elapsed: progress * clock.length } };
+    case "live":
+    case "untimed":
+      return { progress, clock };
+    default:
+      return unreachable(clock);
+  }
+}
+
 /** Maps `progress` inside `[from, to]` onto `[0, 1]`, holding outside it; a zero-length window steps at `from`. */
 export function windowed(progress: number, from: number, to: number): number {
   if (to <= from) return progress < from ? 0 : 1;

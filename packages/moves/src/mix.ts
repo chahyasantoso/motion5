@@ -39,13 +39,17 @@ export function mixCustom(
   );
 }
 
+// A field with no rest, such as a clip, has nothing to blend from: the side that has it gives both ends.
 /** A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0. */
 export function mixPose(from: Pose2d, to: Pose2d, share: number): Pose2d {
   const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
   for (const key of POSE_2D_NUMBERS) {
+    const rest = VALUE_FIELDS[key].rest;
+    const start = from[key] ?? rest ?? to[key];
+    const end = to[key] ?? rest ?? from[key];
+    if (start === undefined || end === undefined) continue;
     if (from[key] === undefined && to[key] === undefined) continue;
-    const rest = VALUE_FIELDS[key].rest ?? 0;
-    out[key] = mix(from[key] ?? rest, to[key] ?? rest, share);
+    out[key] = mix(start, end, share);
   }
   const custom = mixCustom(from, to, share);
   if (custom !== undefined) out.custom = custom;
