@@ -8,7 +8,9 @@ description: Make, change or polish an animation or motion piece for a web page 
 A piece starts from its brief, not from a piece that already exists.
 
 1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short.
-2. Before any code, write the motion idea and its character in three lines. Choose the look for this brief yourself.
+2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
+   how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
+   look for this brief yourself.
 3. Choose moves from the catalog, `npm run motion:moves`, and compose them with the modifiers and `combine`. Where
    nothing fits, write a move with `npm run motion:new -- --move <id>` and pass it through
    `npm run motion:moves -- --check`.
@@ -23,7 +25,7 @@ A piece starts from its brief, not from a piece that already exists.
 
 ## Report
 
-- Your three lines, and whether the finished piece shows them.
+- The obvious answer you named, the ideas you dropped, your three lines, and whether the finished piece shows them.
 - Each move you used, and each move you wrote: its id, its role and why no catalogued move would do.
 - Any package source you opened, which file and why: that is a gap in the reference.
 - What you did not see at full speed.
