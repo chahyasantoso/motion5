@@ -157,6 +157,9 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
 - **Agents can still open the examples.** The guide stops pointing at them, but they are in the tree. If A8 shows
   copying, the examples move under their own folder and into `.ignore`; that is not done up front because it
   touches every test and page path.
+- **The catalog and the scaffold still hand out numbers.** `motion:moves -- <id>` prints each move's example with
+  its values, the move scaffold writes a default, and the on-demand guide pages keep numbers in their snippets. A8
+  reads the five pieces for those values; if they recur, the catalog prints the call's shape without them.
 - **The rest rule may be wrong for a real move.** A move that ends off rest on purpose, such as a carry, has no
   role today. If one turns up in A3, the roles gain a member in that slice, not an exemption.
 - **`overshoot` leaves 0 to 1.** A move is not defined past its ends, so the modifier reshapes the answer, never the
@@ -189,6 +192,8 @@ Builders get a brief with the invariant, the owner, the files and the failing te
 | 3 | Sonnet A, A3 | 90 k | 26 | 3.2 min | nothing |
 | 3 | Sonnet B, A7 | 83 k | 22 | 2.1 min | nothing |
 | 3 | Sonnet, cold review of waves 1 to 3 | 92 k | 8 | 1.5 min | twelve findings; seven fixed, the rest minor or by design |
+| 4 | Lead, A6, in a new session | not shown | not shown | one sitting | nothing to combine |
+| 4 | Sonnet, cold review of wave 4 | 88 k | 17 | 1.9 min | twelve findings; five fixed, four left for the proof to measure, three no defect |
 
 Wave 3 ran under the rules below and combined on one run of the full check.
 Combining wave 2 took the lead four runs of the full check where one was planned. None of the causes was the

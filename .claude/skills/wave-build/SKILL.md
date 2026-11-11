@@ -23,13 +23,16 @@ writing that brief is cheaper than doing the work. Keep for yourself:
 - judgment about wording, taste or direction;
 - work that needs this conversation's history.
 
+A wave may hold only slices you keep. It still gets its own session, one full check and the cold review.
+
 ## Plan the wave
 
 1. List the slices and what each depends on. A wave holds only slices that do not need each other's result.
 2. Give each file to one builder. If two slices must touch one document, name each one's section in its brief.
 3. Look for anything a slice will change that another slice's tests will state: a count, a list of names, a
    snapshot. Have the test read it from the source instead.
-4. If a file the wave edits has mixed line endings or pending formatting, normalise it in its own commit first.
+4. If a file the wave edits has mixed line endings or pending formatting, normalise it in its own commit first, and
+   confirm with `git ls-files --eol` that git reads it as `i/lf`.
 5. Commit and push the branch the builders start from, and note its hash.
 
 ## Brief a builder
@@ -58,7 +61,12 @@ write that down as a lesson.
 Before the pull request, start one reviewer that has seen neither the plan nor the briefs. Give it the diff range,
 the conventions file, a plain list of what the change claims to do, and the places you would most doubt. Ask for a
 capped list of findings, each with the input that breaks it and whether it was confirmed by running or by reading.
-It reads only; it edits nothing.
+It edits nothing in the repository, but it runs what the change claims: every command a document names, every call
+shape a snippet shows, in a scratch folder where a command writes files. Ask it what passes a new gate that should
+not.
+
+Before the review, when a slice removed a kind of thing from one document, search its sibling documents for the same
+kind by content, not by name.
 
 Triage every finding: fix it, or record why not. Expect the worst one to be in the part you built yourself.
 
@@ -75,7 +83,7 @@ Triage every finding: fix it, or record why not. Expect the worst one to be in t
 At the end of every wave, before anything else:
 
 1. Add the wave's rows to the cost table in the plan: who, tokens, tool calls, time, and what you had to fix on
-   combining.
+   combining. Your own cost is not shown to you; write "not shown" for the lead's row and do not guess.
 2. Append to `references/lessons.md`: what went wrong or right, its cause, and the rule it gives. Change this file's
    steps when a lesson contradicts them; do not let the two disagree.
 3. Tell the user, in a few lines, what the wave cost and whether the workflow paid for itself.
