@@ -64,3 +64,32 @@ before the review and one after.
   the cost row says "not shown" for the lead; the user reads it from the session.
 - **A wave of one slice by the lead still pays for the review and nothing else.** There was no brief to write and
   nothing to combine. The workflow's saving here was the reviewer's independence, not its price.
+
+## 2026-11-11, where waves 4 and 5 ran (gerak)
+
+- **Fresh sessions on the conductor's model emptied the owner's five-hour quota.** Waves 4 and 5 each started a new
+  session that inherited the most capable model, re-read the plan, the skill and the guides uncached, and then did
+  work that was mostly carrying out a brief. Wave 5 stopped at the limit with five cold agents running. The earlier
+  rule, "a new session per wave", was too blunt: it counted the old session's history and ignored the new one's
+  cold start and its model. Rule: the most capable model conducts and stays in one session; execution moves to a
+  fresh session only on a cheaper model at medium effort, and every start names its model.
+- **The owner set the roles.** The conductor thinks, plans and judges; workers are a cheaper model at medium
+  effort. Weigh an agent's cold start and the brief's cost before spawning one.
+
+## 2026-11-11, authoring wave 5, the proof (gerak)
+
+Costs: five cold Sonnet runs and their interviews, 383 k tokens, 95 tool calls, about 12 minutes; the first four runs'
+cost before the limit is not shown. The lead worked on Sonnet at medium effort for the second half.
+
+- **A usage limit stopped five agents at once.** Each had written its scene and committed nothing. Four were resumed
+  by message and finished; one had written nothing and was started again. Rule: resume by message, and tell a cold
+  agent to commit early, after its first working scene, so a stop loses less.
+- **The proof failed, and the cause was not the one the plan feared.** The fallback assumed agents copy a worked
+  example; none opened one. They converged because the brief and the catalog offer one obvious answer. Rule: before
+  acting on a plan's fallback, read what the agents say they read.
+- **One unclear argument cost every agent a wrong render.** All five passed a stretch's length where `span` wants the
+  scene's. Rule: read the interviews for the question the five share; it is the cheapest fix in the wave.
+- **An interview in the same session was cheap and specific.** Each answer cost about a thousand tokens and named a
+  tool, a line and a number. Keep it.
+- **A review path argument was wrong in the lead's own call.** The lead passed a file path where `motion:review`
+  wants a page name with `--root`, and read five sheets of the index page. Rule: run one before running five.

@@ -86,6 +86,12 @@ Three things follow from it:
 1. **Authoring.** The move library and modifiers, the moves folder, catalog and gate, the guide and skill rewritten
    around the brief, the empty scaffold. Proof: one brief run cold three times gives three different pieces, and
    three briefs do not share a move set.
+   The proof did not pass (`plan/authoring-plan.md`, "Proof and interviews"), so this stage stays open with these
+   items: `span` takes the scene's length once, not at every call; `motion:review` prints findings and the sheet by
+   default and the per-channel eases on request; the "Cannot fast-forward to the past" error on a first run is
+   reproduced and fixed; and the guide's idea step asks what the piece does that the obvious answer does not, and
+   asks for a move written where the catalog's nearest answer would make a piece like the last one. A second proof
+   runs after them.
 2. **Composition.** Shots in a sequence, transitions between two scenes, an element moved between two layouts and
    carried across a transition, and values past a pose. It comes before publishing because it shapes the public
    surface, and it serves a site (a route change, a list reordering, a card opening) as much as a video.

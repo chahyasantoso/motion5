@@ -45,7 +45,7 @@ number goes.
 // Every move, modifier and helper below is imported from this one package.
 import { combine, ease, lane, lanes, mix, reversed, rise, span, type Time } from "@gerak/moves";
 
-const enter = span(fromMs, toMs, durationMs); // a stretch of the scene, in ms
+const enter = span(fromMs, toMs, durationMs); // a stretch in ms; durationMs is the whole scene, not the stretch
 rise({ distance }, enter.of(time)); // a move placed on it
 reversed({}, leave.of(time), (t) => rise({ distance }, t)); // the same move as an exit
 overshoot({ amount }, enter.of(time), (t) => slide({ distance }, t)); // past its end, then settling
