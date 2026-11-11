@@ -15,21 +15,27 @@ not by reading package source. Read a part below only when the brief needs it:
 
 ## The loop
 
-1. **Write the idea in three lines before any code,** and keep them for your report: what moves, and in what order;
-   its character (heavy or light, quick or slow, stiff or loose, playful or calm); the one moment the eye must not
-   miss. Every choice after this answers to those lines.
-2. `npm run motion:new -- <name>` writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
+1. **Find the idea before any code.** Name the obvious answer to the brief in one line: the piece most people would
+   make. Then write three other ideas, one line each, that differ from it and from each other in what moves and how
+   (what the thing is made of, where it comes from, what it does while it holds), not in colour or type. Pick the
+   one that serves the brief best and is not the obvious one.
+2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
+   your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
+   or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
+3. `npm run motion:new -- <name>` writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
    `apps/react-demo`. The scene leaves its one target at rest and the page sets no look.
-3. Choose the look the brief calls for: background, palette, type, shapes. Lay the page out as the final frame.
-4. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
+4. Choose the look the brief calls for: background, palette, type, shapes. Name the look most people would give
+   it, and choose another the brief supports as well. Lay the page out as the final frame.
+5. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
    their ranges, its moments. `-- --role enter` lists one role; `-- <id>` prints one move in full with its call.
    Choose by role and by the character you wrote down.
-5. **Compose.** Place each move on a span, reshape it with a modifier, add moves together on one target (see
+6. **Compose.** Place each move on a span, reshape it with a modifier, add moves together on one target (see
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
-6. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other.
-7. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for what a person does,
+7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
+   motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
+8. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for what a person does,
    gives in one call the findings, the moves read back with their eases, and a labelled frame `sheet`.
-8. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
+9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
 The other scene files in `apps/react-demo/src` are tests of the runtime. Do not open them: a piece begun from one
@@ -90,6 +96,8 @@ Two pieces with the same moves and the same numbers have the same character, so 
 ## Writing a move
 
 Write one when the motion in your three lines has a name and no catalogued move, modified or combined, gives it.
+`keyframes` and `mix` in a scene are for a value this piece alone needs; a tick, a flip, a wave or any motion you
+can name goes in `src/moves`, where the next piece finds it.
 Glue that only this piece needs stays in the scene as a `mix`.
 
 1. `npm run motion:new -- --move <id>` writes `apps/react-demo/src/moves/<id>.ts`, a declaration the gate refuses.

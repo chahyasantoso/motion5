@@ -7,6 +7,7 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 - `src/`: React demo app
 - `src/live/`: live editor
+- `src/moves/`: moves written for this app's pieces
 
 ## packages/dom
 

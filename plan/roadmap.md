@@ -112,6 +112,34 @@ a React Three Fiber scaffold and worked example.
 scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders the
 rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
 
+### What a real piece asked for
+
+A 15 second hand-made showreel was rebuilt with gerak (`plan/authoring-plan.md`, "A hand-made piece, rebuilt"). Its
+gaps reorder stage 2, Composition, by what limited it most:
+
+1. **A pose carries more than a transform:** colour, blur and any numeric field a renderer can apply, so they
+   compose, ease and pass the gate like position does. Thirty of seventy elements needed this.
+2. **A target with several phases:** a sequence on one target, so a move's pose does not have to be chosen by
+   elapsed time in the scene. This is the shot sequence of stage 2 at the scale of one element.
+3. **A stroke with a head and a tail,** and `trace` by time as well as by length.
+4. **Modifiers over any value,** a reveal and a stroke included.
+5. **Something that hangs from a thing that moves:** a follow driven by its parent's motion.
+6. Smaller: a pose that leaves opacity out resets it; the gate's jump rule allows a declared tremble; the review
+   reads a parent's clip.
+
+### After the values plan
+
+Two improvements the owner asked to keep, each its own small plan:
+
+- **One app holds too much.** `apps/react-demo` carries the worked examples that tests read, the proof pieces, the
+  showreel and the live page, and an agent making a piece works beside all of them. Split it in three: examples for
+  the tests, pieces for what agents make, and the live page by itself. It touches every page path, the scaffold's
+  target and the tools' default root, so it is one mechanical move by script, before the web overlay is built.
+- **The reference is written by hand.** `docs/guide/agent-reference.md` restates each function and move in over
+  five hundred lines beside the code's own comments, and a worker opened package source four times where it had
+  gaps. Generate it from the declarations and the doc comments, keep the hand-written part to the few lines that
+  explain how the pieces fit, and let the test that holds it complete compare the two.
+
 ## 6. Waiting for a brief that needs them
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent

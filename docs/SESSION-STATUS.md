@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-11, Asia/Jakarta.
-- **Read against:** `feat/authoring-proof` after the full check gate.
+- **Read against:** `feat/authoring-proof-2` after the full check gate.
 
 ## Now
 
@@ -30,9 +30,9 @@ byte ceiling.
 
 ## Next in line
 
-- **A second authoring proof:** the first did not pass. Five cold runs over three briefs converged on one move set
-  and one look, and none wrote a move; `plan/authoring-plan.md` records it and `plan/roadmap.md` holds the changes
-  that come before the second run.
+- **Values past a transform, and phases on one target:** a second proof gave three motion ideas from one brief but
+  one look, and a hand-made 15 second piece rebuilt with gerak (`showreel`) showed colour, blur and a sequence on one
+  target as the largest gaps; `plan/roadmap.md` orders them.
 
 ## Open, and not scheduled
 
