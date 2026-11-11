@@ -213,7 +213,7 @@ target's rest, so a path ending at 0,0 arrives at rest; `turn: true` adds `rotat
 const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
 ```
 
-**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock. Pass the scene's time, not an eased one.
+**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock. Pass the scene's time, not an eased one.
 ```ts
 const { vx, vy } = velocity(ball, time, events);
 ```
