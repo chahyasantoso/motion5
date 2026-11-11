@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>night-c</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b1226;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 50% 40%, #16224a 0%, #0b1226 70%);
+      }
+      .glow {
+        position: absolute;
+        left: 596px;
+        top: 150px;
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          rgba(255, 214, 140, 0.55) 0%,
+          rgba(255, 214, 140, 0) 70%
+        );
+      }
+      .moon {
+        position: absolute;
+        left: 620px;
+        top: 174px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        box-shadow: inset -12px 0 0 0 #ffd68c;
+      }
+      .words {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 320px;
+        text-align: center;
+        white-space: nowrap;
+        font:
+          700 120px/1 Georgia,
+          serif;
+        letter-spacing: 0.14em;
+        color: #f4ead5;
+      }
+      .word {
+        display: inline-block;
+      }
+      .dim {
+        color: #ffd68c;
+        margin-left: 0.4em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/night-c-main.tsx"></script>
+  </body>
+</html>
