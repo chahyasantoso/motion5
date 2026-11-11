@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { defineMove, type Time } from "@gerak/moves";
-import { dragNumberValue, rangeForLiteral, stepForLiteral } from "../src/live/code-panel";
+import {
+  dragNumberValue,
+  moveSourceFrom,
+  rangeForLiteral,
+  stepForLiteral,
+} from "../src/live/code-panel";
 
 describe("stepForLiteral", () => {
   it("uses step 1 for integer values and step 0.01 for decimal values", () => {
@@ -36,6 +41,37 @@ describe("rangeForLiteral", () => {
     expect(rangeForLiteral("slide", "from", { slide })).toEqual({ min: -50, max: 50 });
     expect(dragNumberValue(40, "40", 30, "slide", "from", { slide })).toBe("50");
     expect(rangeForLiteral("span", "from")).toEqual({});
+  });
+});
+
+describe("moveSourceFrom", () => {
+  it("puts app moves after the scene's exports and before the built-ins", () => {
+    const own = { a: "scene", b: "scene" };
+    const merged = moveSourceFrom(own, [
+      { a: "app", c: "app" },
+      { c: "later", d: "app" },
+    ]);
+    expect(merged["a"]).toBe("scene");
+    expect(merged["b"]).toBe("scene");
+    expect(merged["c"]).toBe("app");
+    expect(merged["d"]).toBe("app");
+  });
+
+  it("clamps a drag on a move that came only from an imported module", () => {
+    const slide = defineMove({
+      id: "slide",
+      role: "enter",
+      example: { options: { from: 40 } },
+      description: "Slides in from the side.",
+      options: { from: { kind: "number", min: -50, max: 50, description: "Start offset." } },
+      moments: () => ({}),
+      run: (options, time: Time) => ({ x: options.from * (1 - time.progress) }),
+    });
+    const merged = moveSourceFrom({}, [{ slide }]);
+    expect(rangeForLiteral("slide", "from", merged)).toEqual({ min: -50, max: 50 });
+    expect(dragNumberValue(40, "40", 30, "slide", "from", merged)).toBe("50");
+    const shadow = moveSourceFrom({}, [{ drop: 1 }]);
+    expect(rangeForLiteral("drop", "distance", shadow)).toEqual({});
   });
 });
 

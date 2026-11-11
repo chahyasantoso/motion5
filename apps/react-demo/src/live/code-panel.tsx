@@ -1,13 +1,49 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as builtIn from "@gerak/moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
 
 export type { NumericLiteralSpan };
 
-/** Names a scene can call, each perhaps a move: the scene module's own exports, searched before the built-in moves. */
+/** Names a scene can call, each perhaps a move: the scene module's own exports, then the app's move modules, searched before the built-in moves. */
 export type MoveSource = Readonly<Record<string, unknown>>;
 
 const NO_MOVES: MoveSource = {};
+const NO_MODULES: readonly MoveSource[] = [];
+
+/** The names to search: the scene's exports, then the app's move modules (the first to export a name wins). */
+export function moveSourceFrom(own: MoveSource, modules: readonly MoveSource[]): MoveSource {
+  const merged: Record<string, unknown> = Object.create(null);
+  for (const module of modules) {
+    for (const [name, value] of Object.entries(module)) {
+      if (!Object.hasOwn(merged, name)) merged[name] = value;
+    }
+  }
+  for (const [name, value] of Object.entries(own)) merged[name] = value;
+  return merged;
+}
+
+function isMoveFiles(value: unknown): value is { readonly files: readonly string[] } {
+  if (!isRecord(value)) return false;
+  const files = Reflect.get(value, "files");
+  return Array.isArray(files) && files.every((file) => typeof file === "string");
+}
+
+async function importAppMoves(): Promise<readonly MoveSource[]> {
+  const res = await fetch("/__motion/moves");
+  if (!res.ok) return NO_MODULES;
+  const data: unknown = await res.json();
+  if (!isMoveFiles(data)) return NO_MODULES;
+  const loaded = await Promise.all(
+    data.files.map(async (path): Promise<unknown> => {
+      try {
+        return await import(/* @vite-ignore */ path);
+      } catch {
+        return undefined;
+      }
+    }),
+  );
+  return loaded.filter(isRecord);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -136,6 +172,11 @@ export interface CodePanelProps {
 export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves }) => {
   const [source, setSource] = useState<string>("");
   const [literals, setLiterals] = useState<readonly NumericLiteralSpan[]>([]);
+  const [appModules, setAppModules] = useState<readonly MoveSource[]>(NO_MODULES);
+  const searched = useMemo(
+    () => moveSourceFrom(moves ?? NO_MOVES, appModules),
+    [moves, appModules],
+  );
   const dragRef = useRef<ActiveDrag | null>(null);
   const inFlightRef = useRef<boolean>(false);
   const serverTextRef = useRef<string>("");
@@ -157,6 +198,11 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
           setSource(data.source);
           setLiterals(data.literals);
         }
+      })
+      .catch(() => {});
+    importAppMoves()
+      .then((modules) => {
+        if (!cancelled) setAppModules(modules);
       })
       .catch(() => {});
 
@@ -283,7 +329,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
       deltaPx,
       drag.call,
       drag.property,
-      moves,
+      searched,
     );
     if (newText === drag.currentText) return;
 
@@ -304,7 +350,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
       deltaPx,
       drag.call,
       drag.property,
-      moves,
+      searched,
     );
     if (newText !== drag.currentText) {
       applyLocalAndQueueEdit(drag, newText);
