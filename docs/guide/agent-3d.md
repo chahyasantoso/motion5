@@ -2,7 +2,7 @@
 
 Read this when the brief is three-dimensional: depth, turns about more than one axis, a camera that moves. A 3D scene
 is a code scene like any other; only its poses and its renderer change. Names are in
-[the reference](./agent-reference.md#3d-poses). `apps/react-demo/src/principles3d-scene.ts` uses most of what follows.
+[the reference](./agent-reference.md#3d-poses).
 
 ## The loop
 

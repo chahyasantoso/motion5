@@ -2,7 +2,6 @@
 
 Read this when the brief asks for weight, life, character or polish. Each principle below is a tool with knobs, not a
 look: pick the amounts the brief's style calls for. Names are in [the reference](./agent-reference.md).
-`apps/react-demo/src/principles-scene.ts` uses most of them in one scene.
 
 ## The tools
 
@@ -33,7 +32,7 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
   link on the one before it.
 - **A timed shake.** `react({ on: ["hit"], kind: "shake", amplitude })` with a cue at the hit's ms in `play`'s
   `cues`.
-- **A pop.** Scale with `springEase` on a `mix` from 0, plus opacity on a short `span`. There is no preset.
+- **A pop.** The `pop` move; for one that rings, scale with `springEase` on a `mix` from 0, plus opacity on a short `span`.
 
 ## Judgment
 

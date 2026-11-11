@@ -26,4 +26,5 @@ export const scene = (time: Time) => {
 - A goal out of reach points the chain straight at it, and `ik`'s `quality.kind` is `"too-far"`.
 - Lay every rig element out at the base: a bone pointing right from it, left end vertically centred, width its length;
   a joint or hand centred on it. `chainPoses` gives bone poses turning on their left end and tip offsets.
-- To carry something in a hand, add the hand's move since the catch to its pose, as `catch-scene.ts` does.
+- To carry something in a hand, `combine` its own pose with the hand's offset since the catch:
+  `{ x: tips.lower.x - caught.x, y: tips.lower.y - caught.y }`, both read on the same origin.

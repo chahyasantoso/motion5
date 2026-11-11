@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-11, Asia/Jakarta.
-- **Read against:** `feat/authoring-roles` after the full check gate.
+- **Read against:** `feat/authoring-guide` after the full check gate.
 
 ## Now
 
@@ -23,14 +23,16 @@ byte ceiling.
   `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `live.html?scene=<name>` in `apps/react-demo` hot-swaps saved scene edits in
   place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
   holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
-  code panel straight back into `src/<name>-scene.ts`. Seven worked examples in `apps/react-demo` and
-  `docs/guide/agent-reference.md` are held complete by tests under `test/repo/`.
+  code panel straight back into `src/<name>-scene.ts`. Twenty moves by role, four of them modifiers, are listed
+  by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
+  brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples in
+  `apps/react-demo` stay as tests, and `docs/guide/agent-reference.md` is held complete by another.
 
 ## Next in line
 
-- **Authoring, after its first wave:** modifiers, a move library by role, the `motion:moves` catalog over a home
-  for a move an agent writes, and the guide, skill and scaffold rewritten so a piece starts from its brief. `plan/roadmap.md`
-  holds the order past it.
+- **The authoring proof:** five cold runs over three briefs, read for whether any two pieces share a move set or a look,
+  then each agent asked what it read and did not need; `plan/authoring-plan.md` holds the pass rule. Not run yet.
+  `plan/roadmap.md` holds the order past it.
 
 ## Open, and not scheduled
 

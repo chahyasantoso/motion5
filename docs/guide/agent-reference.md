@@ -81,52 +81,32 @@ drop(options, lane(word.of(time), i, LETTERS));
 
 ### Moves
 
-Each move is `move(options, time)` and gives a pose or a shape. `move.options` lists its options with ranges;
-`move.moments(options)` gives named shares of its progress.
+Each move is `move(options, time)`. `move.options` lists its options with ranges; `move.moments(options)` gives named
+shares of its progress. The catalog, not this page, says what each move does and takes: `npm run motion:moves` prints
+one line per move, `-- --role <role>` one role, and `-- <id>` one move in full with a call to paste. By role:
 
-**`drop`**: falls from `distance` px above rest and lands with `squash`; moment `landing`.
-```ts
-drop({ distance: 700, squash: 0.18 }, time);
-```
+- `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
+- `emphasis`: **`pulse`**, **`shake`**, **`wobble`**, **`nod`**
+- `travel`: **`arc`**
+- `reveal`: **`wipe`**, **`trace`**
+- `follow`: **`rope`**
+- `modifier`: **`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**
 
-**`hop`**: `bounces + 1` landings, each `decay` as high, arriving from `dx` px left (negative: right); also gives
-`contact: { hits, justHit }`: `hits` counts the landings so far, and `justHit` runs 1 at a landing to 0 a fifth of a
-flight away, for what the landing touches; moments `landings`, `lastLanding`. `bounces: 0` is one arc.
-```ts
-const ball = hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: -1100 }, time);
-const give = ball.contact.hits === 3 ? squashed(0.1, ball.contact.justHit) : {};
-```
+What a move answers, which the catalog does not print:
 
-**`wipe`**: a reveal circle `{ x, y, radius }` growing to `radius` from `x`, `y`.
-```ts
-applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
-```
-
-**`trace`**: a drawn share `{ drawn }` from 0 to 1, for a stroke.
-```ts
-applyDrawn(path, trace({}, time));
-```
-
-**`rope`**: anchors of a rope following `{ points }`, the third argument; options `angle`, `pin`, `release`, `overshoot`,
-`ripple`.
-```ts
-applyPath(path, toCubics(rope({ angle: 0, pin: "start" }, time, { points })));
-```
-
-**`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**: modifiers, moves whose input is another move's
-answer as a `(time) => pose` function. `reversed` plays it backwards, so an entrance becomes an exit. `anticipate`
-spends `share` of the progress going `amount` of the travel the other way, then plays it. `overshoot` plays it over
-the first `1 - share`, passes its end by `amount` of the travel and settles onto it. `repeated` plays it `count` times.
-```ts
-reversed({}, time, (t) => drop({ distance: 400 }, t));
-overshoot({ share: 0.3, amount: 0.1 }, time, (t) => anticipate({}, t, (u) => hop(options, u)));
-```
-
-The library: `npm run motion:moves` prints each one's options and example.
-
-- Entrances: **`rise`** up from below, **`slide`** in from a side, **`pop`** grows past full size and settles (moment `peak`), **`fade`** opacity in, **`unfold`** grows along one axis from an edge, **`swing`** hangs in and swings to rest on a hinge.
-- Emphases: **`pulse`** swells and returns (moment `peak`), **`shake`** side to side, **`wobble`** turning back and forth, **`nod`** dips and returns (moment `bottom`).
-- Travel: **`arc`** from an offset to rest along a bowed path.
+- An `enter`, `emphasis` or `travel` move answers a `Pose2d`. `hop` adds `contact: { hits, justHit }`: `hits` counts
+  the landings so far, and `justHit` runs 1 at a landing to 0 a fifth of a flight away, for what the landing touches.
+- `wipe` answers a `Reveal` for `applyReveal`, and `trace` a `Drawn` for `applyDrawn`.
+- `rope` takes the points it follows as a third argument and answers anchors for `toCubics`.
+  ```ts
+  applyPath(path, toCubics(rope(options, time, { points })));
+  ```
+- A modifier takes the move it reshapes as a third argument, a `(time) => pose` function, and answers what that
+  move answers. Modifiers nest.
+  ```ts
+  reversed({}, time, (t) => rise(options, t));
+  overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options, u)));
+  ```
 
 ### Eases and blends
 
@@ -422,7 +402,7 @@ and equal `options`, it keeps the old one with its state; otherwise it takes the
 it unless the old one says it had stopped, and disposes the old. `current()` reads it and `subscribe` tells each time it changes. With no host, nothing changes.
 **`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
 list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
-its index, as `Letter` in `apps/react-demo/src/principles.tsx` does.
+its index.
 ```tsx
 const ball = useTarget(playing?.player, "ball");
 const Letter = ({ player, i, char }: { player: Player<Frame> | undefined; i: number; char: string }) => {
