@@ -131,12 +131,37 @@ Each slice: invariant, owner, failing test, reference and guide entries in the s
 - **Owner:** `packages/tools/src/`.
 - **Test:** the default output of a clean review is under a stated number of lines.
 
+### V8. The review sees fast motion
+
+- **Invariant:** `motion:review` chooses its own frame times when none are given: more where a watched element
+  moves fastest or changes direction, few where it rests, and always the first and last. The sheet labels each frame
+  with its time and the speed that put it there.
+- **Owner:** `packages/tools/src/page/`.
+- **Test:** a scene with one 100 ms snap in three seconds gets at least three frames inside the snap; a scene at rest
+  gets the two ends and no more.
+- **Why now:** every piece in both proofs was reported as not seen at full speed, and six evenly spaced frames miss
+  a pop that lasts two.
+
+### V9. Tests that write a scene use a copy
+
+- **Invariant:** no test writes a file the repository tracks. The live browser tests copy the scene they edit into
+  a temporary app and serve that.
+- **Owner:** `apps/react-demo/test/live-browser.test.ts`, with a helper in `packages/tools/src/page/` if one is
+  needed.
+- **Test:** `git status` is clean after the suite is stopped halfway through a write.
+- **Why now:** a test that timed out with the scene file broken on disk took the two tests after it down, and that
+  was the red build on `main`.
+
 ### V7. Proof: the showreel again
 
 - The `showreel` piece is rewritten on the new value and `sequence`. **Passes when** its component has no `render`
   function that carries a plain number for colour, blur or a stroke; its scene has no `if` on elapsed time; and its
   frame sheet at the six times matches the one read before this plan.
 - The worker reports what is still awkward, as the first rebuild did.
+- **The rebuild becomes the standing measure.** The hand-made original is copied into the repository as a fixture,
+  and each rebuild records three numbers beside the last: the worker's tokens, the moves it wrote, and the plain
+  numbers its component still carries by hand. The first rebuild's row is 198 k tokens, 7 moves and about 30
+  elements carried by hand. A change to the base is judged by whether those go down.
 
 ## 5. Risks
 
@@ -163,7 +188,7 @@ after one full check and one cold review.
 | 2 | Sonnet A | V2 | a renderer against a table that exists |
 | 2 | Sonnet B | V3 | four small moves made generic; touches no file of V2 |
 | 3 | Opus | V4 | time is subtle, and every scene changes |
-| 3 | Sonnet | V6 | tools only, no shared file |
+| 3 | Sonnet | V6, V8, V9 | tools and tests only, no file shared with V4 |
 | 4 | Opus | V5, V7 | the catalog shows the parts, and the same worker builds from them |
 
 ## 7. Done when

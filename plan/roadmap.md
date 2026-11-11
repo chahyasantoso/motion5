@@ -127,6 +127,19 @@ gaps reorder stage 2, Composition, by what limited it most:
 6. Smaller: a pose that leaves opacity out resets it; the gate's jump rule allows a declared tremble; the review
    reads a parent's clip.
 
+### After the values plan
+
+Two improvements the owner asked to keep, each its own small plan:
+
+- **One app holds too much.** `apps/react-demo` carries the worked examples that tests read, the proof pieces, the
+  showreel and the live page, and an agent making a piece works beside all of them. Split it in three: examples for
+  the tests, pieces for what agents make, and the live page by itself. It touches every page path, the scaffold's
+  target and the tools' default root, so it is one mechanical move by script, before the web overlay is built.
+- **The reference is written by hand.** `docs/guide/agent-reference.md` restates each function and move in over
+  five hundred lines beside the code's own comments, and a worker opened package source four times where it had
+  gaps. Generate it from the declarations and the doc comments, keep the hand-written part to the few lines that
+  explain how the pieces fit, and let the test that holds it complete compare the two.
+
 ## 6. Waiting for a brief that needs them
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent
