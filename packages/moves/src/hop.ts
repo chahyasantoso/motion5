@@ -30,6 +30,7 @@ function schedule(bounces: number, decay: number) {
 
 export const hop = defineMove({
   id: "hop",
+  role: "enter",
   description: "Lands bounces + 1 times, each flight lower, and settles at rest.",
   options: {
     height: { kind: "number", min: 0, description: "Peak of the first flight above rest, in px." },
@@ -59,6 +60,7 @@ export const hop = defineMove({
       description: "Start this far left of rest, in px, arriving by the last landing.",
     },
   },
+  example: { options: { height: 200, bounces: 1, squash: 0.3, dx: 600 } },
   run(
     { height, bounces, decay, squash, dx },
     { progress },

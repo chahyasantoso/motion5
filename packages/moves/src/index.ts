@@ -45,10 +45,13 @@ export { smear3d } from "./smear3d";
 export type { Anchor3d, Cubic3d } from "./shapes";
 export { combine } from "./combine";
 export {
+  MOVE_ROLES,
   defineMove,
   type InputArgs,
   type Move,
   type MoveDeclaration,
+  type MoveExample,
+  type MoveRole,
   type Moments,
   type OptionField,
   type OptionFields,

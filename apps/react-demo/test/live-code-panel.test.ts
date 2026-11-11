@@ -25,6 +25,8 @@ describe("rangeForLiteral", () => {
     expect(rangeForLiteral("drop", "distance", { drop: 1 })).toEqual({});
     const slide = defineMove({
       id: "slide",
+      role: "enter",
+      example: { options: { from: 40 } },
       description: "Slides in from the side.",
       options: { from: { kind: "number", min: -50, max: 50, description: "Start offset." } },
       moments: () => ({}),

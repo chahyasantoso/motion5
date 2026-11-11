@@ -25,6 +25,7 @@ function backOut(u: number, overshoot: number): number {
 // then each link turns to its heading in the shape, rippling along from the end `release` names.
 export const rope = defineMove({
   id: "rope",
+  role: "follow",
   description: "Bends a chain of points from straight into their shape, link by link.",
   options: {
     angle: {
@@ -58,6 +59,16 @@ export const rope = defineMove({
       max: RIPPLE_LIMIT,
       description:
         "Share of the move spent passing the bend from one end to the other; default 0.6.",
+    },
+  },
+  example: {
+    options: { angle: 90 },
+    input: {
+      points: [
+        { id: "a", x: 0, y: 0 },
+        { id: "b", x: 60, y: 20 },
+        { id: "c", x: 120, y: 0 },
+      ],
     },
   },
   moments: () => ({}),

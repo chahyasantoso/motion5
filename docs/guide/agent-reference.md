@@ -306,18 +306,25 @@ const all = mergeEvents(events, sim.events(time));
 
 ### Writing a move
 
-**`defineMove({ id, description, options, moments, run })`**: makes a move from one declaration. The call checks
+**`defineMove({ id, role, description, options, example, moments, run })`**: makes a move from one declaration. `role`
+is a **`MoveRole`**, one of **`MOVE_ROLES`**: `enter` and `travel` end at rest, `exit` starts at rest, `emphasis` does
+both, `reveal` ends fully shown, and `follow` and `modifier` hold no rest of their own. `example` is a
+**`MoveExample`**, `{ options, input? }`: a call the gate samples. The call checks
 the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults; `run(options, time, input)` takes an
 optional third argument of any type, which callers must then pass. Its types: **`Move`**, **`MoveDeclaration`**,
 **`Moments`**, **`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputArgs`**.
 ```ts
 const slide = defineMove({
-  id: "slide", description: "Slides in.",
+  id: "slide", role: "enter", description: "Slides in.",
   options: { distance: { kind: "number", min: 0, description: "px" } },
+  example: { options: { distance: 300 } },
   moments: () => ({}),
   run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
+`checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each ranged
+option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays finite,
+has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.
 
 ## @gerak/player
 

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { atProgress, defineMove, type Time } from "@gerak/moves";
 
 const slide = defineMove({
+  role: "enter",
+  example: { options: { distance: 100 } },
   id: "slide",
   description: "Slides along x.",
   options: {
