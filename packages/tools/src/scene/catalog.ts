@@ -160,8 +160,10 @@ export function formatLine(record: MoveRecord): string {
 
 /** A call the reader could paste into a scene. */
 export function exampleCall(record: MoveRecord): string {
-  const input =
-    record.example.input === undefined ? "" : `, ${JSON.stringify(record.example.input)}`;
+  const given = record.example.input;
+  const shown =
+    typeof given === "function" ? String(given).replace(/\s+/g, " ") : JSON.stringify(given);
+  const input = given === undefined ? "" : `, ${shown}`;
   return `${record.exportName}(${JSON.stringify(record.example.options)}, time${input})`;
 }
 

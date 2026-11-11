@@ -113,6 +113,15 @@ applyDrawn(path, trace({}, time));
 applyPath(path, toCubics(rope({ angle: 0, pin: "start" }, time, { points })));
 ```
 
+**`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**: modifiers, moves whose input is another move's
+answer as a `(time) => pose` function. `reversed` plays it backwards, so an entrance becomes an exit. `anticipate`
+spends `share` of the progress going `amount` of the travel the other way, then plays it. `overshoot` plays it over
+the first `1 - share`, passes its end by `amount` of the travel and settles onto it. `repeated` plays it `count` times.
+```ts
+reversed({}, time, (t) => drop({ distance: 400 }, t));
+overshoot({ share: 0.3, amount: 0.1 }, time, (t) => anticipate({}, t, (u) => hop(options, u)));
+```
+
 ### Eases and blends
 
 **`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`

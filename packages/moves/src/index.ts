@@ -63,3 +63,7 @@ export { hop } from "./hop";
 export { rope } from "./rope";
 export { trace } from "./trace";
 export { wipe } from "./wipe";
+export { reversed } from "./reversed";
+export { anticipate } from "./anticipate";
+export { overshoot } from "./overshoot";
+export { repeated } from "./repeated";

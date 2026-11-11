@@ -10,8 +10,12 @@ describe("the move gate", () => {
     const all: readonly unknown[] = Object.values(moves);
     const exported = all.filter(isMove);
     expect(exported.map((move) => move.id).sort()).toEqual([
+      "anticipate",
       "drop",
       "hop",
+      "overshoot",
+      "repeated",
+      "reversed",
       "rope",
       "trace",
       "wipe",

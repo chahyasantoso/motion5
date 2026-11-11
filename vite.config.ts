@@ -22,7 +22,8 @@ export default defineConfig({
     setupFiles: ["./test/setup.ts"],
     // The one exclusion list, read from the same ledger the guard test checks. The defaults stay
     // in front of it so a pending entry can only ever remove a test, never add a search root.
-    exclude: [...configDefaults.exclude, ...pendingPaths()],
+    // An agent's worktree under `.claude` is another checkout, with tests of its own that are not this tree's.
+    exclude: [...configDefaults.exclude, "**/.claude/**", ...pendingPaths()],
     // React 19 only exports `act` from its development build. `react-test-renderer` re-exports
     // `React.act`, so an ambient `NODE_ENV=production` resolves it to `undefined` and every React
     // test fails with `act is not a function`. Pin the test environment instead of depending on

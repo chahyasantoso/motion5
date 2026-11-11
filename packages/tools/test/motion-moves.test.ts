@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { MOVE_ROLES } from "@gerak/moves";
-import { parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
+import { collectRecords, parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -37,13 +37,18 @@ function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
   return args;
 }
 
+// Read from the package, so a move added to it needs no change here.
+const builtInIds = collectRecords([])
+  .map(({ record }) => record.id)
+  .sort();
+
 describe("motion:moves", () => {
   it("lists the built-ins first and then the app's moves, each group by id", async () => {
     const run = await runCatalog(ok([]), app());
     const ids = run.lines.map((line) => line.split(" ")[0]);
-    expect(ids).toEqual(["drop", "hop", "rope", "trace", "wipe", "bad", "good"]);
+    expect(ids).toEqual([...builtInIds, "bad", "good"]);
     expect(run.code).toBe(0);
-    expect(run.lines[6]).toBe(
+    expect(run.lines.at(-1)).toBe(
       "good [enter] Slides in from the left. | options: distance number 0..500, default 100 | moments: arrive",
     );
   });
@@ -52,7 +57,7 @@ describe("motion:moves", () => {
     const dir = mkdtempSync(join(tmpdir(), "motion-moves-"));
     roots.push(dir);
     const run = await runCatalog(ok([]), dir);
-    expect(run.lines).toHaveLength(5);
+    expect(run.lines.map((line) => line.split(" ")[0])).toEqual(builtInIds);
     expect(run.code).toBe(0);
   });
 
