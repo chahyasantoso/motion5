@@ -83,8 +83,9 @@ drop(options, lane(word.of(time), i, LETTERS));
 
 Each move is `move(options, time)`. `move.options` lists its options with ranges; `move.moments(options)` gives named
 shares of its progress. The catalog, not this page, says what each move does and takes: `npm run motion:moves` prints
-one line per move, `-- --role <role>` one role, and `-- <id>` one move in full with a call to paste. By role:
+one line per move, `-- --role <role>` one role, and `-- <id>` one move in full with the shape of its call. By role:
 
+- `exit`: none of its own; `reversed` makes one of any entrance
 - `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
 - `emphasis`: **`pulse`**, **`shake`**, **`wobble`**, **`nod`**
 - `travel`: **`arc`**

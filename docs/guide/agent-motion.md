@@ -42,7 +42,8 @@ Each line shows one function on a plain target. A bare name such as `distance` o
 number goes.
 
 ```ts
-import { combine, ease, lane, lanes, mix, reversed, rise, span, type Time } from "@gerak/moves"; // every move too
+// Every move, modifier and helper below is imported from this one package.
+import { combine, ease, lane, lanes, mix, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs, durationMs); // a stretch of the scene, in ms
 rise({ distance }, enter.of(time)); // a move placed on it
@@ -56,8 +57,9 @@ enter.at(drop.moments(options).landing); // the ms a move's moment falls on, to 
 mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, eased
 ```
 
-- A scene module exports `scene` and `durationMs`, which the tools read, and `clock`. Every number of motion lives in
-  the scene, none in the component.
+- The scaffolded scene file is the whole shape: `scene` returns one object with a key per target, and the module
+  exports `durationMs`, which the tools read, and `clock`. Add a key per element and a span per move, in the order
+  of your first line. Every number of motion lives in the scene, none in the component.
 - A modifier takes the move it reshapes as a function of time, and modifiers nest: an `anticipate` inside an
   `overshoot` winds up, goes, passes and settles.
 - A move holds still outside its span, on the side its role says: an `enter` waits at its start and stays at rest

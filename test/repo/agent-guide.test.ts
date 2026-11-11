@@ -96,6 +96,18 @@ describe("agent guide", () => {
     expect(examples.filter((example) => read.includes(example))).toEqual([]);
   });
 
+  it("names no source file of the demo app, a worked example's component or entry included", () => {
+    // Lists the folder's file names only; no source text is read.
+    const sources = new Set(readdirSync(new URL("src", new URL("apps/react-demo/", ROOT))));
+    const read = [
+      guide,
+      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
+      readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
+    ].join("\n");
+    const named = [...read.matchAll(/[\w-]+\.tsx?\b/g)].map((match) => match[0]);
+    expect(named.filter((file) => sources.has(file))).toEqual([]);
+  });
+
   it("is what the make-motion skill sends an agent to, by a link that resolves", () => {
     const skill = new URL(".claude/skills/make-motion/SKILL.md", ROOT);
     const text = readFileSync(skill, "utf8");
