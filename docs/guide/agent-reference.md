@@ -533,7 +533,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
 - **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
   `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
-  the scene returns `Pose3d` targets.
+  the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.
+- **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
+  empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
+  you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
 - **`motion:moves [<id>] [--role role] [--check] [--json] [--root dir]`**: lists every move of `@gerak/moves`, then of
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses

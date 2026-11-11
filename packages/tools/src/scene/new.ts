@@ -54,3 +54,23 @@ export function scaffold(
   }
   return { kind: "written", files: files.map(({ path }) => path) };
 }
+
+function exportName(id: string): string {
+  const [first = "", ...rest] = id.split("-");
+  return first + rest.map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
+}
+
+/** Writes `<root>/src/moves/<id>.ts`, a move for its author to fill in, or nothing at all. */
+export function scaffoldMove(id: string, root: string): ScaffoldResult {
+  if (!NAME.test(id))
+    return { kind: "refused", message: `Id "${id}" must be lowercase words joined by "-".` };
+  const path = join(root, "src", "moves", `${id}.ts`);
+  if (existsSync(path))
+    return { kind: "refused", message: `Already exists, nothing written: ${path}` };
+  const source = readFileSync(join(TEMPLATES, "move.ts.template"), "utf8")
+    .replaceAll("__EXPORT__", exportName(id))
+    .replaceAll("__NAME__", id);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, source);
+  return { kind: "written", files: [path] };
+}
