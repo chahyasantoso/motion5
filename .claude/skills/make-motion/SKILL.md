@@ -5,12 +5,25 @@ description: Make, change or polish an animation or motion piece for a web page 
 
 # Make motion
 
+A piece starts from its brief, not from a piece that already exists.
+
 1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short.
-2. Read a part it lists (events, physics, rigs) only when the brief needs it.
-3. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
-   do not read the reference whole, and do not read package source. If you must open source, say which file and why
-   in your report: that is a gap in the reference.
-4. Review with `motion:review`; dig with the other tools only into what a review showed.
-5. Choose a look for this brief yourself; copy the examples' patterns, never their colours or type.
-6. Read the sheet before calling the piece finished, and say in your report what you did not see at full speed.
-7. Change only your piece's files, and commit nothing unless asked.
+2. Before any code, write the motion idea and its character in three lines. Choose the look for this brief yourself.
+3. Choose moves from the catalog, `npm run motion:moves`, and compose them with the modifiers and `combine`. Where
+   nothing fits, write a move with `npm run motion:new -- --move <id>` and pass it through
+   `npm run motion:moves -- --check`.
+4. Do not open any other scene file in `apps/react-demo/src`, nor the components beside them. They are tests of the
+   runtime, and a piece begun from one comes out as its copy.
+5. Read a part the guide lists (events, physics, rigs, principles, 3D) only when the brief needs it.
+6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
+   do not read the reference whole, and do not read package source.
+7. Review with `motion:review`; dig with the other tools only into what a review showed. Read the sheet before
+   calling the piece finished.
+8. Change only your piece's files and the moves you wrote, and commit nothing unless asked.
+
+## Report
+
+- Your three lines, and whether the finished piece shows them.
+- Each move you used, and each move you wrote: its id, its role and why no catalogued move would do.
+- Any package source you opened, which file and why: that is a gap in the reference.
+- What you did not see at full speed.

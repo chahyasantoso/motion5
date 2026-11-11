@@ -20,7 +20,7 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
 - `simulate` steps at a fixed 1/120 s with snapshots, so any time gives the same world however play got there. Pass
   the scene's events to every question.
 - `sim.pose(id, time)` is the move from the body's start: lay its element out where the body starts, centred and
-  upright, with its anchor at the centre; put a squash on a child element, as `Pile.tsx` does.
+  upright, with its anchor at the centre; put a squash on a child element.
 - Bodies from events: `simulate(world, build, { spawn })` calls `spawn(event, world)` as play reaches each event, and
   `spawn` adds bodies with ids that are new and the same for the same event, such as `` `bit${event.at}-${i}` ``.
   Every event's bodies share one world. Render a fixed pool of elements centred on the stage's top left corner, and

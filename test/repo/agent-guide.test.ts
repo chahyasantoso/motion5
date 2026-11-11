@@ -30,8 +30,6 @@ describe("agent guide", () => {
     const paths = [...guide.matchAll(/`((?:apps|packages)\/[\w./-]+)`/g)].map((match) => match[1]);
     expect(paths.length).toBeGreaterThan(0);
     for (const path of paths) expect(existsSync(new URL(path ?? "", ROOT)), path).toBe(true);
-    for (const page of ["src/timing-main.tsx", "src/TimingBeat.tsx"])
-      expect(existsSync(new URL(`apps/react-demo/${page}`, ROOT)), page).toBe(true);
   });
 
   it("names only package import paths a workspace package exports", () => {
@@ -78,6 +76,36 @@ describe("agent guide", () => {
     expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(
       "docs/guide/agent-motion.md",
     );
+  });
+
+  it("names no worked example's scene file, so a piece starts from its brief and not from a copy", () => {
+    const read = [
+      guide,
+      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
+      readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
+    ].join("\n");
+    const examples = [
+      "timing-scene",
+      "catch-scene",
+      "splash-scene",
+      "card-scene",
+      "pile-scene",
+      "principles-scene",
+      "principles3d-scene",
+    ];
+    expect(examples.filter((example) => read.includes(example))).toEqual([]);
+  });
+
+  it("names no source file of the demo app, a worked example's component or entry included", () => {
+    // Lists the folder's file names only; no source text is read.
+    const sources = new Set(readdirSync(new URL("src", new URL("apps/react-demo/", ROOT))));
+    const read = [
+      guide,
+      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
+      readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
+    ].join("\n");
+    const named = [...read.matchAll(/[\w-]+\.tsx?\b/g)].map((match) => match[0]);
+    expect(named.filter((file) => sources.has(file))).toEqual([]);
   });
 
   it("is what the make-motion skill sends an agent to, by a link that resolves", () => {
