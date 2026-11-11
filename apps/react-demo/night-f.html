@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>night-f</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b1020;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 50% 60%, #151d3a 0%, #0b1020 70%);
+      }
+      .word {
+        position: absolute;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: Georgia, "Times New Roman", serif;
+        font-weight: 700;
+        font-size: 190px;
+        line-height: 1;
+        letter-spacing: 0.12em;
+        padding-left: 0.12em;
+      }
+      .night {
+        top: 150px;
+        color: #e8e4d8;
+      }
+      .shift {
+        top: 340px;
+        color: #f2a93b;
+      }
+      .lamp {
+        position: absolute;
+        left: 618px;
+        top: 598px;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #ffd27a;
+        box-shadow: 0 0 40px 10px rgba(242, 169, 59, 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/night-f-main.tsx"></script>
+  </body>
+</html>
