@@ -194,6 +194,12 @@ Builders get a brief with the invariant, the owner, the files and the failing te
 | 3 | Sonnet, cold review of waves 1 to 3 | 92 k | 8 | 1.5 min | twelve findings; seven fixed, the rest minor or by design |
 | 4 | Lead, A6, in a new session | not shown | not shown | one sitting | nothing to combine |
 | 4 | Sonnet, cold review of wave 4 | 88 k | 17 | 1.9 min | twelve findings; five fixed, four left for the proof to measure, three no defect |
+| 5 | Sonnet, night-a (brief A), run and interview | 78 k | 21 | 2.9 min | the commit was taken as it stood |
+| 5 | Sonnet, night-b (brief A) | 75 k | 16 | 2.2 min | the commit was taken as it stood |
+| 5 | Sonnet, night-c (brief A) | 76 k | 19 | 2.5 min | the commit was taken as it stood |
+| 5 | Sonnet, saved (brief B), started again after the limit | 75 k | 21 | 2.4 min | the commit was taken as it stood |
+| 5 | Sonnet, kelvin (brief C) | 79 k | 18 | 2.3 min | the commit was taken as it stood |
+| 5 | Lead, A8 and A9, two sessions | not shown | not shown | two sittings | nothing to combine |
 
 Wave 3 ran under the rules below and combined on one run of the full check.
 Combining wave 2 took the lead four runs of the full check where one was planned. None of the causes was the
@@ -213,6 +219,65 @@ builders' judgment; each was something the brief or the setup left open. So:
   diff alone. The lead wrote the briefs and so cannot be the fresh eye on them.
 - **The lead starts a new session at each wave's end.** The plan, `docs/SESSION-STATUS.md` and this table carry the
   state; a long session pays for its own history on every step, and that is the largest cost a wave has.
+
+## Proof and interviews
+
+Run on `feat/authoring-proof`, cut from `feat/authoring-guide` (pull request 576 was still open), by five cold Sonnet
+runs that read the wave 4 guide and the `make-motion` skill. The first launch stopped at the usage limit with four scene
+files written and nothing committed; those four were resumed by message and `saved` was started again. The first
+attempts' cost is not shown. The cost rows above are the runs that finished, interview included, 383 k tokens and 95 tool
+calls in all.
+
+### The five pieces
+
+| Piece | Brief | Moves used | Written for it | Look |
+| --- | --- | --- | --- | --- |
+| `night-a` | A | `rise`, `fade`, `pop`, `repeated` of `pulse`, `combine` | none | navy ground, heavy white NIGHT and amber SHIFT, an amber dot below that pulses once |
+| `night-b` | A | `slide`, `fade`, `pop`, `repeated` of `pulse`, `combine`, `lane` | none | the same navy and amber, the words slide in from either side, the dot sits at the top right of SHIFT and pulses twice |
+| `night-c` | A | `rise`, `fade`, `pop`, `repeated` of `nod` and of `pulse`, `combine` | none | navy with a soft glow, serif type, a crescent moon above the words that bobs and glows |
+| `saved` | B | `pop`, `fade`, `slide`, `reversed`, `combine` | none | pale card, green check and a small dark word that fade in and drift out |
+| `kelvin` | C | `drop`, `fade`, `swing`, `combine` | none | near-black stage, cream serif KELVIN, a brass rule, a paper price tag that swings to rest |
+
+`npm run motion:moves -- --check` passes: twenty moves, all built in. No agent opened package source or an example scene.
+
+### Verdict: A8 does not pass
+
+- **Brief A, no two share a move set: fails.** `night-a` and `night-c` use the same five moves and `night-c` adds one
+  more; `night-b` swaps `rise` for `slide`. All three are a navy card, two words that arrive one after the other, and one
+  small glowing thing that pulses or bobs while the words rest. The look is one look.
+- **Briefs B and C against A: passes.** `saved` and `kelvin` differ in look, but every piece is built from the same
+  six or seven catalogued moves, `fade`, `pop`, `combine` and an enter in all of them.
+- **A move written for a piece: fails.** None of the five wrote a move. Every one said the catalog had what it needed.
+- **Against the baseline:** the two archived pieces, `chrono` and `forge`, each hand-built physics and rig work and
+  used `drop` with different numbers, so their move sets differed but their vocabulary was five moves and a simulator.
+  The new pieces are tidier, and they are closer to each other than the baseline was.
+
+The plan's fallback is to move the worked examples out of the agents' reach. It would not help here: no agent opened an
+example, and every one reported reading the guide, the catalog and the scaffold only. The convergence comes from the
+brief, the catalog and the loop: a brief that asks for words that arrive and one detail that holds is answered by an
+enter, a fade and a pulse, and the catalog offers exactly those. What this run suggests instead is in the roadmap: the
+guide's step that writes the idea in three lines does not ask the agent to say what its piece does that the obvious one
+does not, and nothing asks it to write a move.
+
+### Interviews and the ranked list
+
+All five were asked the seven questions in the same session. Every one opened no package source.
+
+| # | Change | Asked by | What it saves | Done |
+| --- | --- | --- | --- | --- |
+| 1 | State that `span`'s third argument is the whole scene's length, not the stretch's; ideally take it from the scene | 5 of 5 | a wrong render and one or two extra review runs each | words fixed in the guide, the reference and the source comment; the signature change is in the roadmap |
+| 2 | A shorter `motion:review` output: findings and the sheet path, with the per-channel eases on request | 4 of 5 | most of a long result read and not used | roadmap |
+| 3 | The catalog listing is longer than a piece needs | 4 of 5 | about twenty lines | none: the guide already names `-- --role` |
+| 4 | `motion:review` threw "Cannot fast-forward to the past" on a first run without `--at` | 2 of 5 | a re-run and a guess | roadmap, to be reproduced first |
+| 5 | A review finding when an entrance runs the length of the scene | 1 of 5 | the same mistake as item 1, caught later | dropped: the existing finding already caught it |
+| 6 | `motion:sample` taking a scene name | 1 of 5 | one retry | dropped |
+| 7 | How to draw a check mark on, with `trace` | 1 of 5 | a choice made on a guess | dropped |
+| 8 | A looping or ambient move | 1 of 5 | none; `repeated` was found | dropped |
+
+### What was not verified
+
+No piece was watched at full speed; each was read from the `motion:review` frame sheet, and the lead read one sheet per
+piece. `saved` renders small inside its page. The full `npm run check` ran once on the combined branch.
 
 ## 7. Done when
 

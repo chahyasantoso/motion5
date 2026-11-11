@@ -72,7 +72,7 @@ export interface Span {
   at(share: number): number;
 }
 
-/** The stretch from `fromMs` to `toMs` of a scene `durationMs` long. */
+/** The stretch from `fromMs` to `toMs` of a scene `durationMs` long; `durationMs` is the scene, not the stretch. */
 export function span(fromMs: number, toMs: number, durationMs: number): Span {
   if (!(durationMs > 0))
     throw new RangeError(`span: durationMs must be above 0, not ${durationMs}.`);

@@ -48,7 +48,7 @@ const ms = elapsedOf(time.clock) ?? 0;
 const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
 ```
 
-**`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `.of(time, ease?)` is a move's time inside it, `.at(share)`
+**`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `durationMs` is the whole scene's length, never the stretch's; `.of(time, ease?)` is a move's time inside it, `.at(share)`
 the ms a share falls on. Reads a live clock's ms directly. **`Span`** is its type.
 ```ts
 const flight = span(400, 2400, durationMs);

@@ -41,6 +41,9 @@ Read `references/brief-template.md` and fill it in. A brief that leaves a design
 from each builder, so make the choices: signatures, option names and ranges, file names, the commit message. Say what
 not to read. Ask for a report that lists what the brief got wrong.
 
+Tell a cold agent to commit after its first working version, so a stop (a usage limit) loses less; a stopped agent is
+resumed by message, not started again. Before acting on a plan's fallback, read what the agents say they read.
+
 Launch the wave's builders in one message, each in its own worktree, on the cheapest model that can do the slice.
 Do not poll; you are told when each finishes.
 
