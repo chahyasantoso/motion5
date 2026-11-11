@@ -562,8 +562,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
   an id declared twice) and exits `1` on a finding.
-- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
-  `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+  prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames at six even times by default; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
 - **`motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame (positions over `--jump`, default

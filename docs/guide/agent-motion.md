@@ -34,7 +34,7 @@ not by reading package source. Read a part below only when the brief needs it:
 7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
 8. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for what a person does,
-   gives in one call the findings, the moves read back with their eases, and a labelled frame `sheet`.
+   gives in one call the findings and a labelled frame `sheet`; `--full` adds the moves read back with their eases.
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
