@@ -177,7 +177,36 @@ Builders get a brief with the invariant, the owner, the files and the failing te
 | 4 | Lead | A6 | the guide is judgment |
 | 5 | five cold Sonnet runs, then the lead | A8, A9 | independent eyes, then one reading and one ranked list |
 
-`npm run check` runs once per wave, each slice is one commit, and each wave is one pull request.
+`npm run check` runs once per wave, each slice is one commit, and a pull request opens only when a wave is finished.
+
+### What a wave costs, and the rules that came of it
+
+| Wave | Who | Tokens | Tool calls | Time | What the lead had to fix on combining |
+| --- | --- | --- | --- | --- | --- |
+| 2 | Sonnet A, A2 | 82 k | 18 | 2.3 min | a whole-file line-ending rewrite of the reference; a helper duplicated in two files |
+| 2 | Sonnet B, A4 and A5 | 104 k | 42 | 5.0 min | tests that hard-coded how many built-in moves there are, which A2 changed |
+
+| 3 | Sonnet A, A3 | 90 k | 26 | 3.2 min | nothing |
+| 3 | Sonnet B, A7 | 83 k | 22 | 2.1 min | nothing |
+
+Wave 3 ran under the rules below and combined on one run of the full check.
+Combining wave 2 took the lead four runs of the full check where one was planned. None of the causes was the
+builders' judgment; each was something the brief or the setup left open. So:
+
+- **A brief names the commit to start from,** by hash, and the builder confirms it before reading anything. Both
+  builders began on `main` instead of the wave's branch.
+- **No test states a count or a list another slice of the same wave will change.** It reads the list from the
+  package.
+- **One builder per file per wave.** Where two must touch one document, the brief gives each its own section.
+- **A document with mixed line endings is normalised in a commit of its own before a wave that edits it.**
+- **The lead removes a builder's worktree as soon as its commits are taken.** The test runner and git now ignore
+  `.claude/worktrees`, so a leftover one cannot fail a run.
+- **A builder's report lists what the brief got wrong or left out.** Two of wave 2's fixes to the gate's rule came
+  from there.
+- **One cold review per pull request, by a reviewer that has seen neither the brief nor the build,** reading the
+  diff alone. The lead wrote the briefs and so cannot be the fresh eye on them.
+- **The lead starts a new session at each wave's end.** The plan, `docs/SESSION-STATUS.md` and this table carry the
+  state; a long session pays for its own history on every step, and that is the largest cost a wave has.
 
 ## 7. Done when
 
