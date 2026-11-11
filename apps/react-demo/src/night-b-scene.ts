@@ -28,7 +28,7 @@ export const scene = (time: Time) => {
     shift: combine([slide({ distance: 90, from: "right" }, shift), fade({}, shift)]),
     dot: combine([
       pop({ overshoot: 0.15 }, dotIn.of(time)),
-      repeated({ count: 2 }, beat.of(time), (t) => pulse({ amount: 0.45 }, t)),
+      pulse({ amount: 0.45 }, repeated(beat.of(time), 2)),
     ]),
   };
 };

@@ -14,14 +14,14 @@ export const scene = (time: Time) => ({
   mark: combine([
     pop({ overshoot: 0.15 }, markIn.of(time)),
     fade({}, markIn.of(time)),
-    reversed({}, markOut.of(time), (t) => slide({ distance: 8, from: "top" }, t)),
-    reversed({}, markOut.of(time), (t) => fade({}, t)),
+    slide({ distance: 8, from: "top" }, reversed(markOut.of(time))),
+    fade({}, reversed(markOut.of(time))),
   ]),
   word: combine([
     slide({ distance: 14, from: "left" }, wordIn.of(time)),
     fade({}, wordIn.of(time)),
-    reversed({}, wordOut.of(time), (t) => slide({ distance: 8, from: "top" }, t)),
-    reversed({}, wordOut.of(time), (t) => fade({}, t)),
+    slide({ distance: 8, from: "top" }, reversed(wordOut.of(time))),
+    fade({}, reversed(wordOut.of(time))),
   ]),
 });
 

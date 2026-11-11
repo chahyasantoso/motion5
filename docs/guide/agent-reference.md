@@ -85,13 +85,13 @@ Each move is `move(options, time)`. `move.options` lists its options with ranges
 shares of its progress. The catalog, not this page, says what each move does and takes: `npm run motion:moves` prints
 one line per move, `-- --role <role>` one role, and `-- <id>` one move in full with the shape of its call. By role:
 
-- `exit`: none of its own; `reversed` makes one of any entrance
+- `exit`: none of its own; `reversed(time)` turns any move into one
 - `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
 - `emphasis`: **`pulse`**, **`shake`**, **`wobble`**, **`nod`**
 - `travel`: **`arc`**
 - `reveal`: **`wipe`**, **`trace`**
 - `follow`: **`rope`**
-- `modifier`: **`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**
+- `modifier`: **`anticipate`**, **`overshoot`**
 
 What a move answers, which the catalog does not print:
 
@@ -102,10 +102,12 @@ What a move answers, which the catalog does not print:
   ```ts
   applyPath(path, toCubics(rope(options, time, { points })));
   ```
-- A modifier takes the move it reshapes as a third argument, a `(time) => pose` function, and answers what that
-  move answers. Modifiers nest.
+- `reversed(time)` and `repeated(time, count)` are functions of time, not moves: each answers a time, and any move
+  or value can be played through it. `anticipate` and `overshoot` are moves that take another move's answer as a
+  third argument, a `(time) => pose` function, and act on every number that adds, `custom` numbers included.
   ```ts
-  reversed({}, time, (t) => rise(options, t));
+  rise(options, reversed(time));
+  pulse(options, repeated(time, 3));
   overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options, u)));
   ```
 

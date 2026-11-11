@@ -21,7 +21,7 @@ export const scene = (time: Time) => ({
   ]),
   dot: combine([
     pop({ overshoot: 0.15 }, dotIn.of(time)),
-    repeated({ count: 1 }, breathe.of(time), (t) => pulse({ amount: 0.6 }, t)),
+    pulse({ amount: 0.6 }, repeated(breathe.of(time), 1)),
   ]),
 });
 

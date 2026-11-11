@@ -49,14 +49,14 @@ number goes.
 
 ```ts
 // Every move, modifier and helper below is imported from this one package.
-import { combine, ease, lane, lanes, mix, reversed, rise, span, type Time } from "@gerak/moves";
+import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs, durationMs); // a stretch in ms; durationMs is the whole scene, not the stretch
 rise({ distance }, enter.of(time)); // a move placed on it
-reversed({}, leave.of(time), (t) => rise({ distance }, t)); // the same move as an exit
+rise({ distance }, reversed(leave.of(time))); // the same move as an exit
 overshoot({ amount }, enter.of(time), (t) => slide({ distance }, t)); // past its end, then settling
 anticipate({ amount }, enter.of(time), (t) => slide({ distance }, t)); // the other way first
-repeated({ count }, beat.of(time), (t) => nod({ distance }, t)); // several times in one span
+nod({ distance }, repeated(beat.of(time), count)); // several times in one span
 combine([rise({ distance }, enter.of(time)), fade({}, enter.of(time))]); // two moves on one target
 lane(enter.of(time), i, lanes([1, 1, 1], stagger)); // target i's own time, each starting after the last
 enter.at(drop.moments(options).landing); // the ms a move's moment falls on, to time something else to it
@@ -66,8 +66,9 @@ mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, e
 - The scaffolded scene file is the whole shape: `scene` returns one object with a key per target, and the module
   exports `durationMs`, which the tools read, and `clock`. Add a key per element and a span per move, in the order
   of your first line. Every number of motion lives in the scene, none in the component.
-- A modifier takes the move it reshapes as a function of time, and modifiers nest: an `anticipate` inside an
-  `overshoot` winds up, goes, passes and settles.
+- `reversed(time)` and `repeated(time, count)` reshape a time and wrap any move. `anticipate` and `overshoot` take
+  the move they reshape as a function of time, and nest: an `anticipate` inside an `overshoot` winds up, goes,
+  passes and settles.
 - A move holds still outside its span, on the side its role says: an `enter` waits at its start and stays at rest
   after, an `emphasis` rests on both sides. So one target that arrives, is stressed and leaves is a `combine` of
   three moves, each on its own span.

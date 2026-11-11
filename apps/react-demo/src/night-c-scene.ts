@@ -32,11 +32,11 @@ export const scene = (time: Time) => ({
   ]),
   moon: combine([
     pop({ overshoot: 0.1 }, moonIn.of(time, ease.sineInOut)),
-    repeated({ count: 2 }, bob.of(time, ease.linear), (t) => nod({ distance: 12 }, t)),
+    nod({ distance: 12 }, repeated(bob.of(time, ease.linear), 2)),
   ]),
   glow: combine([
     pop({ overshoot: 0 }, moonIn.of(time, ease.sineInOut)),
-    repeated({ count: 2 }, bob.of(time, ease.linear), (t) => pulse({ amount: 0.3 }, t)),
+    pulse({ amount: 0.3 }, repeated(bob.of(time, ease.linear), 2)),
   ]),
 });
 

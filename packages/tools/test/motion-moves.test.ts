@@ -58,7 +58,7 @@ describe("motion:moves", () => {
     const mismatch = await runCatalog(ok(["good", "--role", "exit"]), dir);
     expect(mismatch.code).toBe(1);
     expect(mismatch.lines[0]).toContain('No move "good"');
-    const json = await runCatalog(ok(["reversed", "--json"]), dir);
+    const json = await runCatalog(ok(["overshoot", "--json"]), dir);
     expect(json.lines[0]).toContain('"input":"(time');
   });
 

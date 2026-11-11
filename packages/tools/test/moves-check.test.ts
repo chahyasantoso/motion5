@@ -19,8 +19,6 @@ describe("the move gate", () => {
       "overshoot",
       "pop",
       "pulse",
-      "repeated",
-      "reversed",
       "rise",
       "rope",
       "shake",
