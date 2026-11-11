@@ -87,9 +87,30 @@ At the end of every wave, before anything else:
 2. Append to `references/lessons.md`: what went wrong or right, its cause, and the rule it gives. Change this file's
    steps when a lesson contradicts them; do not let the two disagree.
 3. Tell the user, in a few lines, what the wave cost and whether the workflow paid for itself.
-4. Start the next wave in a new session. The plan, the status file and the cost table carry the state.
+4. Decide where the next wave runs; see "Choose the model and the session" below. Do not start a new session
+   out of habit.
 
 Read `references/lessons.md` at the start of a wave if you have not run one in this repository before.
+
+## Choose the model and the session
+
+The most capable model is for thinking: the plan, the architecture, the strategy, the briefs and the judgment of
+what comes back. It is the conductor. Everything else runs on a cheaper model at medium effort: builders, reviewers,
+cold runs, and any session whose work is mostly carrying out a brief.
+
+Before starting a session or an agent, ask in this order:
+
+1. **Is it worth an agent at all?** A handful of tool calls, a script, or anything needing this conversation's
+   history is cheaper done here. An agent pays for its own start: the conventions, the plan and the files it must
+   read, none of it cached.
+2. **Which model?** State it on every start; never let a worker inherit the conductor's model. A session that
+   orchestrates agents and writes up results is a worker too.
+3. **Fresh session or this one?** A long session is cheap per step while its context is cached and expensive once
+   the cache goes cold or the context must be compacted. A fresh session on the conductor's model re-reads
+   everything at full price, which is the worst of both. So: stay in the conductor's session for decisions, and
+   move execution to a fresh session only on a cheaper model, with a brief that names exactly what to read.
+4. **What does the brief cost?** A brief is paid for twice, written by the conductor and read by the worker. Keep it
+   to what the worker cannot find by itself, and point at files instead of restating them.
 
 ## Adapting it
 

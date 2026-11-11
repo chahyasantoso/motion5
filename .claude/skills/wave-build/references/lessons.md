@@ -64,3 +64,14 @@ before the review and one after.
   the cost row says "not shown" for the lead; the user reads it from the session.
 - **A wave of one slice by the lead still pays for the review and nothing else.** There was no brief to write and
   nothing to combine. The workflow's saving here was the reviewer's independence, not its price.
+
+## 2026-11-11, where waves 4 and 5 ran (gerak)
+
+- **Fresh sessions on the conductor's model emptied the owner's five-hour quota.** Waves 4 and 5 each started a new
+  session that inherited the most capable model, re-read the plan, the skill and the guides uncached, and then did
+  work that was mostly carrying out a brief. Wave 5 stopped at the limit with five cold agents running. The earlier
+  rule, "a new session per wave", was too blunt: it counted the old session's history and ignored the new one's
+  cold start and its model. Rule: the most capable model conducts and stays in one session; execution moves to a
+  fresh session only on a cheaper model at medium effort, and every start names its model.
+- **The owner set the roles.** The conductor thinks, plans and judges; workers are a cheaper model at medium
+  effort. Weigh an agent's cold start and the brief's cost before spawning one.
