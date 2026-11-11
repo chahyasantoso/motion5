@@ -20,6 +20,24 @@ export type OptionField =
 
 export type OptionFields = Readonly<Record<string, OptionField>>;
 
+const ROLES = {
+  enter: true,
+  exit: true,
+  emphasis: true,
+  travel: true,
+  reveal: true,
+  follow: true,
+  modifier: true,
+} as const;
+
+/** What a move is for; each role but `follow` and `modifier` names where the move must hold its rest. */
+export type MoveRole = keyof typeof ROLES;
+
+/** Every role, in the order a catalog lists them. */
+export const MOVE_ROLES: readonly MoveRole[] = Object.freeze(
+  Object.keys(ROLES).filter((key): key is MoveRole => key in ROLES),
+);
+
 /** Named times a move reaches, as shares of its progress, such as a hop's landings. */
 export type Moments = Readonly<Record<string, number | readonly number[]>>;
 
@@ -46,11 +64,20 @@ export type OptionsIn<Fs extends OptionFields> = {
 /** The trailing argument a caller passes: none for a move whose `run` takes no input. */
 export type InputArgs<I> = unknown extends I ? [] : [input: I];
 
-/** A move's one declaration: the source of its types, its option checks and its moments. */
+/** One call of a move: options a caller would pass, and the input when its `run` takes one. */
+export interface MoveExample<Fs extends OptionFields, I> {
+  readonly options: OptionsIn<Fs>;
+  readonly input?: I;
+}
+
+/** A move's one declaration: the source of its types, option checks, moments and catalog entry. */
 export interface MoveDeclaration<Fs extends OptionFields, I, R, M extends Moments = Moments> {
   readonly id: string;
+  readonly role: MoveRole;
   readonly description: string;
   readonly options: Fs;
+  /** A call the gate samples and the catalog shows; its options are checked when the move is defined. */
+  readonly example: MoveExample<Fs, I>;
   run(options: Options<Fs>, time: Time, input: I): R;
   /** Where in its progress the move reaches each named moment, for these options. */
   moments(options: Options<Fs>): M;
@@ -60,8 +87,10 @@ export interface MoveDeclaration<Fs extends OptionFields, I, R, M extends Moment
 export interface Move<Fs extends OptionFields, I, R, M extends Moments = Moments> {
   (options: OptionsIn<Fs>, time: Time, ...input: InputArgs<I>): R;
   readonly id: string;
+  readonly role: MoveRole;
   readonly description: string;
   readonly options: Fs;
+  readonly example: MoveExample<Fs, I>;
   /** Where in its progress the move reaches each named moment, as shares from 0 to 1. */
   moments(options: OptionsIn<Fs>): M;
 }
@@ -135,10 +164,13 @@ export function defineMove(
   const read = (value: unknown) => readOptions(declaration.id, declaration.options, value);
   const call = (options: OptionsIn<OptionFields>, time: Time, ...input: readonly unknown[]) =>
     declaration.run(read(options), time, input[0]);
+  read(declaration.example.options);
   return Object.assign(call, {
     id: declaration.id,
+    role: declaration.role,
     description: declaration.description,
     options: declaration.options,
+    example: declaration.example,
     moments: (options: OptionsIn<OptionFields>) => declaration.moments(read(options)),
   });
 }

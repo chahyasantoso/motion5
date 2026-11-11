@@ -45,10 +45,13 @@ export { smear3d } from "./smear3d";
 export type { Anchor3d, Cubic3d } from "./shapes";
 export { combine } from "./combine";
 export {
+  MOVE_ROLES,
   defineMove,
   type InputArgs,
   type Move,
   type MoveDeclaration,
+  type MoveExample,
+  type MoveRole,
   type Moments,
   type OptionField,
   type OptionFields,
@@ -56,7 +59,22 @@ export {
   type OptionsIn,
 } from "./declare";
 export { drop } from "./drop";
+export { rise } from "./rise";
+export { slide } from "./slide";
+export { pop } from "./pop";
+export { fade } from "./fade";
+export { unfold } from "./unfold";
+export { swing } from "./swing";
+export { pulse } from "./pulse";
+export { shake } from "./shake";
+export { wobble } from "./wobble";
+export { nod } from "./nod";
+export { arc } from "./arc";
 export { hop } from "./hop";
 export { rope } from "./rope";
 export { trace } from "./trace";
 export { wipe } from "./wipe";
+export { reversed } from "./reversed";
+export { anticipate } from "./anticipate";
+export { overshoot } from "./overshoot";
+export { repeated } from "./repeated";

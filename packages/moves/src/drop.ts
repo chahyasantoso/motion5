@@ -6,6 +6,7 @@ const FALL_SHARE = 0.75;
 /** Falls from `distance` above its rest pose, accelerating, then lands and recovers from `squash`. */
 export const drop = defineMove({
   id: "drop",
+  role: "enter",
   description: "Falls from above, accelerating, then lands and recovers from its squash.",
   options: {
     distance: { kind: "number", min: 0, description: "Start this far above rest, in px." },
@@ -17,6 +18,7 @@ export const drop = defineMove({
       description: "Height lost on landing, as a share; default 0.",
     },
   },
+  example: { options: { distance: 400, squash: 0.2 } },
   run({ distance, squash }, { progress }): Pose2d {
     const fall = Math.min(1, progress / FALL_SHARE);
     const settled = Math.max(0, (progress - FALL_SHARE) / (1 - FALL_SHARE));

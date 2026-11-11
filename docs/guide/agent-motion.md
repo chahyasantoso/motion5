@@ -15,7 +15,7 @@ searching it for the name, not by reading package source. Read a part below only
 ## The loop
 
 1. `npm run motion:new -- <name>` writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-   `apps/react-demo`.
+   `apps/react-demo`; the scene leaves every target at rest.
 2. Choose the look the brief calls for: background, palette, type, shapes. The scaffold sets none, and the examples'
    looks are not a house style.
 3. Lay the page out as the final frame, then write the scene so each target arrives there.

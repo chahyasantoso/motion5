@@ -12,3 +12,5 @@ coverage
 # Pose recordings are landmarks of a real person: never committed (#530).
 apps/pose-gap-filler/recordings/
 pose-recording-*.json
+# Agent worktrees are other checkouts of this repository.
+.claude/worktrees/

@@ -1,0 +1,13 @@
+import { defineMove, type Pose2d } from "@gerak/moves";
+
+export const __EXPORT__ = defineMove({
+  id: "__NAME__",
+  role: "enter",
+  description: "",
+  options: {
+    distance: { kind: "number", default: 100, description: "" },
+  },
+  example: { options: { distance: 100 } },
+  moments: () => ({}),
+  run: ({ distance }, { progress }): Pose2d => ({ x: distance * (1 - progress) + 1 }),
+});

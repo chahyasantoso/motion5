@@ -289,6 +289,48 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     expect(readFileSync(sceneFile, "utf8")).toBe("const x = 700;");
   });
 
+  it("lists the app's move files, sorted, and refuses another site", () => {
+    const demoDir = makeTempDir();
+    const empty = makeTempDir();
+    const movesDir = join(demoDir, "src", "moves");
+    mkdirSync(movesDir, { recursive: true });
+    for (const name of ["b.ts", "a.ts", "a.d.ts", "notes.md"]) {
+      writeFileSync(join(movesDir, name), "", "utf8");
+    }
+    const answer = (
+      root: string,
+      headers?: Record<string, string>,
+    ): { readonly status: number; readonly body: string } => {
+      let handler:
+        | ((req: MotionLiveRequest, res: MotionLiveResponse, next: () => void) => void)
+        | undefined;
+      motionLivePlugin({ appRoot: root }).configureServer({
+        config: { command: "serve", isProduction: false, root },
+        middlewares: {
+          use(fn) {
+            handler = fn;
+          },
+        },
+      });
+      let body = "";
+      const res: MotionLiveResponse = {
+        statusCode: 0,
+        setHeader() {},
+        end(chunk?: string) {
+          if (typeof chunk === "string") body += chunk;
+        },
+      };
+      handler?.({ method: "GET", url: "/__motion/moves", headers, on() {} }, res, () => {});
+      return { status: res.statusCode, body };
+    };
+
+    const listed = answer(demoDir);
+    expect(listed.status).toBe(200);
+    expect(JSON.parse(listed.body)).toEqual({ files: ["/src/moves/a.ts", "/src/moves/b.ts"] });
+    expect(JSON.parse(answer(empty).body)).toEqual({ files: [] });
+    expect(answer(demoDir, { "sec-fetch-site": "cross-site" }).status).toBe(403);
+  });
+
   it("serves GET /__motion/source and POST /__motion/edit via dev server middleware", async () => {
     const repo = makeTempDir();
     const appsDir = join(repo, "apps");

@@ -113,6 +113,21 @@ applyDrawn(path, trace({}, time));
 applyPath(path, toCubics(rope({ angle: 0, pin: "start" }, time, { points })));
 ```
 
+**`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**: modifiers, moves whose input is another move's
+answer as a `(time) => pose` function. `reversed` plays it backwards, so an entrance becomes an exit. `anticipate`
+spends `share` of the progress going `amount` of the travel the other way, then plays it. `overshoot` plays it over
+the first `1 - share`, passes its end by `amount` of the travel and settles onto it. `repeated` plays it `count` times.
+```ts
+reversed({}, time, (t) => drop({ distance: 400 }, t));
+overshoot({ share: 0.3, amount: 0.1 }, time, (t) => anticipate({}, t, (u) => hop(options, u)));
+```
+
+The library: `npm run motion:moves` prints each one's options and example.
+
+- Entrances: **`rise`** up from below, **`slide`** in from a side, **`pop`** grows past full size and settles (moment `peak`), **`fade`** opacity in, **`unfold`** grows along one axis from an edge, **`swing`** hangs in and swings to rest on a hinge.
+- Emphases: **`pulse`** swells and returns (moment `peak`), **`shake`** side to side, **`wobble`** turning back and forth, **`nod`** dips and returns (moment `bottom`).
+- Travel: **`arc`** from an offset to rest along a bowed path.
+
 ### Eases and blends
 
 **`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`
@@ -306,18 +321,25 @@ const all = mergeEvents(events, sim.events(time));
 
 ### Writing a move
 
-**`defineMove({ id, description, options, moments, run })`**: makes a move from one declaration. The call checks
+**`defineMove({ id, role, description, options, example, moments, run })`**: makes a move from one declaration. `role`
+is a **`MoveRole`**, one of **`MOVE_ROLES`**: `enter` and `travel` end at rest, `exit` starts at rest, `emphasis` does
+both, `reveal` ends fully shown, and `follow` and `modifier` hold no rest of their own. `example` is a
+**`MoveExample`**, `{ options, input? }`: a call the gate samples. The call checks
 the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults; `run(options, time, input)` takes an
 optional third argument of any type, which callers must then pass. Its types: **`Move`**, **`MoveDeclaration`**,
 **`Moments`**, **`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputArgs`**.
 ```ts
 const slide = defineMove({
-  id: "slide", description: "Slides in.",
+  id: "slide", role: "enter", description: "Slides in.",
   options: { distance: { kind: "number", min: 0, description: "px" } },
+  example: { options: { distance: 300 } },
   moments: () => ({}),
   run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
+`checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each ranged
+option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays finite,
+has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.
 
 ## @gerak/player
 
@@ -526,7 +548,14 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
 - **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
   `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
-  the scene returns `Pose3d` targets.
+  the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.
+- **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
+  empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
+  you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
+- **`motion:moves [<id>] [--role role] [--check] [--json] [--root dir]`**: lists every move of `@gerak/moves`, then of
+  `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
+  that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
+  an id declared twice) and exits `1` on a finding.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
   `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.

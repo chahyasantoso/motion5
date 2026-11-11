@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
 
@@ -202,6 +202,20 @@ function firstHeader(value: string | readonly string[] | undefined): string | un
   return typeof value === "string" ? value : value?.[0];
 }
 
+/** The `.ts` files directly inside the app's `src/moves`, as paths the page can import, sorted. */
+function listMoveFiles(appRoot: string): string[] {
+  try {
+    return readdirSync(resolve(appRoot, "src", "moves"), { withFileTypes: true })
+      .filter(
+        (entry) => entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts"),
+      )
+      .map((entry) => `/src/moves/${entry.name}`)
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
 /** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */
 function isOwnRequest(headers: MotionLiveHeaders | undefined): boolean {
   const site = firstHeader(headers?.["sec-fetch-site"]);
@@ -319,6 +333,12 @@ export function motionLivePlugin(options?: {
           res.statusCode = 403;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Only this server's own pages may read or edit." }));
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/__motion/moves") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ files: listMoveFiles(appRoot) }));
           return;
         }
         if (req.method === "GET" && url.pathname === "/__motion/source") {
