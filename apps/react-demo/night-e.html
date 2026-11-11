@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>night-e</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0b1020;
+      }
+      .stage {
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 50% 55%, #1a2342 0%, #0b1020 70%);
+        font-family: "Arial Black", Impact, sans-serif;
+      }
+      .words {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 300px;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .word {
+        display: inline-block;
+        font-size: 140px;
+        letter-spacing: 6px;
+        line-height: 1;
+      }
+      .night {
+        color: #e8ecf8;
+        margin-right: 36px;
+      }
+      .shift {
+        color: #f2b54a;
+      }
+      .moon {
+        position: absolute;
+        left: 1010px;
+        top: 0;
+        width: 60px;
+        height: 250px;
+      }
+      .thread {
+        position: absolute;
+        left: 29px;
+        top: 0;
+        width: 2px;
+        height: 190px;
+        background: #6b769c;
+      }
+      .crescent {
+        position: absolute;
+        left: 6px;
+        top: 186px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        box-shadow: -11px 5px 0 0 #f4e7b8;
+        transform: translate(11px, -2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/night-e-main.tsx"></script>
+  </body>
+</html>
