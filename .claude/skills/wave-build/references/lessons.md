@@ -163,3 +163,13 @@ touched 28 files; Sonnet at medium effort, 87 k tokens and 3.2 min, for four mod
 - **A generated document needs its format chosen for its reader.** Three lines an export made a reference longer than
   the hand-written one it replaced. One line each, found by searching a name, is what an agent reads.
 - **Backticks inside a shell string are run as commands.** Writing markdown through `node -e "..."` ran three npm scripts and dropped their names from the text, twice in one day. The earlier lesson said to use the file tool for backslashes; it holds for backticks too.
+
+## 2026-11-12, stage plan wave 2 (gerak)
+
+- **Cost:** renderer on Opus medium 131k after resume, tools on Sonnet medium 118k after resume; both first runs hit
+  the usage limit and resumed from saved work by message, nothing lost. Combining cost two auto-merges and one fix.
+- **Two workers each defined the shape they both read.** The renderer typed the module in its own package beside the
+  tools' reader. A brief that has two slices read one record must name the package that owns its type.
+- **An option no test drives is a feature nobody chose.** The renderer kept a module `clock` from the brief, untested
+  and unwired for watched members; it was dropped on combining.
+- **A lenient reader hides a bad export.** A malformed `rest` fell back to none in silence; readers refuse with a reason.
