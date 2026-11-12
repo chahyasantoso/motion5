@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, springMemory, trail } from "@gerak/moves";
+import { liveAt, trail } from "@gerak/moves";
+import { springMemory } from "../src/spring";
 import { trailSettings } from "../src/trail";
 
 const slow = { stiffness: 170, damping: 4 };
