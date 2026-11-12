@@ -48,12 +48,21 @@ const ms = elapsedOf(time.clock) ?? 0;
 const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
 ```
 
-**`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `durationMs` is the whole scene's length, never the stretch's; `.of(time, ease?)` is a move's time inside it, `.at(share)`
-the ms a share falls on. Reads a live clock's ms directly. **`Span`** is its type.
+**`span(fromMs, toMs)`**: a stretch in ms; `.of(time, ease?)` is a move's time inside it, `.at(share)`
+the ms a share falls on. `.of` reads the ms from the clock of the time it is given, timed or live, and answers a timed
+clock that counts from `fromMs`, so a span inside another span's time counts from that span's start. An untimed time
+throws a `RangeError`: give its driver a length. **`Span`** is its type.
 ```ts
-const flight = span(400, 2400, durationMs);
+const flight = span(400, 2400);
 hop(options, flight.of(time, ease.quadOut));
 const landMs = flight.at(hop.moments(options).lastLanding);
+```
+
+**`sequence(time, phases)`**: `phases` is a list of `[span, answer]`, `answer` a function of time to anything. It
+answers the last phase that has started, given that phase's own time, so an ended phase holds at its end until the
+next begins; before the first starts, the first at its start. An empty list throws. **`Phase`** is a pair's type.
+```ts
+const card = (time: Time) => sequence(time, [[enter, (t) => rise(options, t)], [leave, (t) => fade({}, reversed(t))]]);
 ```
 
 **`window(time, from, to)`**: `time` inside the shares `from` to `to`; prefer `span`. **`windowed(progress, from, to)`**
@@ -117,7 +126,7 @@ What a move answers, which the catalog does not print:
 **`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`
 with `In`, `Out` and `InOut`, plus `elasticOut`, `bounceOut`, `bounceIn`. **`Ease`** is their type.
 ```ts
-span(0, 600, durationMs).of(time, ease.backOut);
+span(0, 600).of(time, ease.backOut);
 ```
 
 **`backEase({ amount, direction })`**: a back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it
@@ -152,10 +161,10 @@ tail(time, events);
 const hand = mixPoint(REST, CATCH, lunge.of(time, ease.cubicInOut).progress);
 ```
 
-**`keyframes(durationMs, start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
+**`keyframes(start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
 **`Key`** is a key's type.
 ```ts
-const lean = keyframes(durationMs, 0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
+const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
 lean(time);
 ```
 
@@ -384,10 +393,11 @@ motion it shows the last frame and never ticks until `.play()`; `reducedMotion: 
 export const clock = () => clockDriver({ duration: durationMs });
 ```
 
-**`scrollDriver({ start, end, target })`**: progress 0 to 1 as the page scrolls from `start` to `end` px; untimed.
+**`scrollDriver({ start, end, target, length? })`**: progress 0 to 1 as the page scrolls from `start` to `end` px;
+untimed, or with `length` in ms a timed clock at `progress * length`, so a scene with spans can run on scroll.
 **`ScrollTarget`** is what it listens to.
 ```ts
-const scrolled = () => scrollDriver({ start: 0, end: 1200 });
+const scrolled = () => scrollDriver({ start: 0, end: 1200, length: durationMs });
 ```
 
 **`eventDriver({ introMs, settleMs })`**: a live clock that logs events: `.watch(target, element)` for `enter`,
@@ -552,8 +562,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
   an id declared twice) and exits `1` on a finding.
-- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir]`**: `check`, `read` and `frames` at once:
-  `findings`, `motion` (the first 40 moves) and `sheet`; frames at six even times by default; exits `1` on a finding.
+- **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+  prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
 - **`motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame (positions over `--jump`, default

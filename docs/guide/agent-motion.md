@@ -34,7 +34,7 @@ not by reading package source. Read a part below only when the brief needs it:
 7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
 8. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for what a person does,
-   gives in one call the findings, the moves read back with their eases, and a labelled frame `sheet`.
+   gives the findings and a `sheet` of frames picked where the motion is fast; `--full` adds the moves with their eases.
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
@@ -51,7 +51,7 @@ number goes.
 // Every move, modifier and helper below is imported from this one package.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
-const enter = span(fromMs, toMs, durationMs); // a stretch in ms; durationMs is the whole scene, not the stretch
+const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
 rise({ distance }, enter.of(time)); // a move placed on it
 rise({ distance }, reversed(leave.of(time))); // the same move as an exit
 overshoot({ amount }, enter.of(time), (t) => slide({ distance }, t)); // past its end, then settling
@@ -72,6 +72,9 @@ mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, e
 - A move holds still outside its span, on the side its role says: an `enter` waits at its start and stays at rest
   after, an `emphasis` rests on both sides. So one target that arrives, is stressed and leaves is a `combine` of
   three moves, each on its own span.
+- `sequence(time, [[span, (t) => answer], ...])` answers the last phase that has started, in its own time, and holds
+  an ended one until the next begins. Use it for phases on one target that replace one another rather than add, and
+  for a longer piece: each beat is a function of time written from 0, and `sequence` places the beats.
 - A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional; `anchor` is the point that
   stays still while it turns or scales, the centre when absent. A plain pose built with `mix`, `keyframes` or an
   `ease` goes into `combine` beside a move.
@@ -148,7 +151,8 @@ a list (the reference's `useTarget` entry shows it). To pass the player to a chi
 
 - Never cast with `as` or assert with `!`: type a pose literal, `const carry: Pose2d = { x: 1 }`, and read a field a
   pose may lack as `pose.x ?? 0`.
-- A span is not a time: pass `span.of(time)` to a move or `lane`.
+- A span is not a time: pass `span.of(time)` to a move or `lane`. It needs a clock in ms, so a scroll-driven scene
+  gives `scrollDriver` a `length`.
 - An ease that overshoots goes on a value through `mix`, never into a move's time: a move is not defined past its
   ends. To overshoot a move, use the `overshoot` modifier.
 - A squash widens a letter into its neighbour; a shape drawn after another passes in front of it unless `z-index`

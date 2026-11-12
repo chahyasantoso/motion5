@@ -4,10 +4,10 @@ import { combine, ease, fade, pop, pulse, repeated, rise, span, type Time } from
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;
 
-const nightIn = span(200, 1100, durationMs);
-const shiftIn = span(550, 1450, durationMs);
-const dotIn = span(1700, 2100, durationMs);
-const breathe = span(2200, 3400, durationMs);
+const nightIn = span(200, 1100);
+const shiftIn = span(550, 1450);
+const dotIn = span(1700, 2100);
+const breathe = span(2200, 3400);
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
 export const scene = (time: Time) => ({

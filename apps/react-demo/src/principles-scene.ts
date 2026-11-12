@@ -53,7 +53,6 @@ const PATH = toCubics([
 ]);
 
 const crouch = keyframes(
-  durationMs,
   0,
   [
     { at: CROUCH_MS, to: 0 },
@@ -66,7 +65,7 @@ const crouch = keyframes(
   mix,
 );
 
-const leap = span(LEAP_MS, LAND_MS, durationMs);
+const leap = span(LEAP_MS, LAND_MS);
 const pull = backEase({ amount: 1.6, direction: "in" });
 
 /** The body's offset from its landing spot: a short pull back, then along the arc. */
@@ -88,8 +87,8 @@ const LETTERS = lanes(
   0.45,
   { from: "center" },
 );
-const word = span(WORD_MS, WORD_MS + 900, durationMs);
-const settle = span(LAND_MS, LAND_MS + 1300, durationMs);
+const word = span(WORD_MS, WORD_MS + 900);
+const settle = span(LAND_MS, LAND_MS + 1300);
 const pop = springEase({ stiffness: 170, damping: 9 });
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */

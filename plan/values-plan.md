@@ -204,6 +204,14 @@ V3 changed shape before it was briefed: `reversed` and `repeated` only reshape t
 time (`slide(options, reversed(time))`) and left the catalog's moves, which needed no typing for every kind of
 answer. `anticipate` and `overshoot` stayed moves.
 
+| 3 | Opus, medium | V4 | 116 k | 71 | 8.5 min | keyframes kept the scene length it no longer read; the conductor removed it |
+| 3 | Sonnet, medium | V6, V8, V9 | 140 k | 7 after a restart | two sittings | the picker gave every frame to six letters and none to the dot |
+| 3 | Sonnet, medium, cold review | | 92 k | 19 | 2.1 min | eight findings: six fixed, two left |
+
+Wave 3 left from the review: concurrent test runs share one scratch prefix and the first to finish removes the other's
+copies; a flag value equal to `--full` is dropped. The wipe at the end of the timing page gets no picked frame of its
+own, since the picker sees boxes and a clip does not move one.
+
 Left from the review, and why: a `trace` with a `tail` below 1 ends with only the tail drawn and still passes as
 a reveal (a comet is what a tail is for); `lift2d` names the fields it carries from a page pose onto a plane (a
 mapping, not a rest or a rule); a custom name with a dot in it is read wrongly by the gate (the renderer now refuses

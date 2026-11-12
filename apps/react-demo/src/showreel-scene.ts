@@ -107,7 +107,6 @@ const stlOut = (i: number) => COLL + (2 - (Math.abs(i - 2.5) - 0.5)) * 50;
 const STL_TURN = [-48, 30, -16, 18, -30, 50];
 
 const camScale = keyframes(
-  D,
   1.12,
   [
     { at: 500, to: 1.12 },
@@ -124,15 +123,15 @@ const ANT_RISE = lanes(
   Array.from({ length: 10 }, () => 1),
   45 / 520,
 );
-const antRise = span(ANT_IN, ANT_IN + 520 + 9 * 45, D);
+const antRise = span(ANT_IN, ANT_IN + 520 + 9 * 45);
 const FIN_LANES = lanes([1, 1, 1], 110 / 650);
-const finIn = span(MATCH, MATCH + 650 + 2 * 110, D);
+const finIn = span(MATCH, MATCH + 650 + 2 * 110);
 
 const DROP_OPTIONS = { distance: 640, squash: 0.24 };
 const DROP_LANDING = drop.moments(DROP_OPTIONS).landing;
 
 /** The dot's final leap, from the burst point to the full stop. */
-const leap = span(LEAP, PERIOD, D);
+const leap = span(LEAP, PERIOD);
 const arcOptions = () => ({ dx: DX - geo.px, dy: DY1 - geo.py, apex: 430 });
 const flight = (time: Time): Pose2d =>
   combine([at(geo.px, geo.py), ballistic(arcOptions(), leap.of(time))]);
@@ -168,7 +167,7 @@ const shock = (
     : combine([
         at(x, y),
         { scale: 0.2 },
-        shockwave({ grow: grow / 0.2 }, span(from, from + length, D).of(time)),
+        shockwave({ grow: grow / 0.2 }, span(from, from + length).of(time)),
       ]);
 
 function dot(ms: number, time: Time, events: Events): Pose2d {
@@ -176,10 +175,10 @@ function dot(ms: number, time: Time, events: Events): Pose2d {
     return combine([
       launch(
         { height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 },
-        span(450, 1250, D).of(time),
+        span(450, 1250).of(time),
       ),
       at(DX, DY0),
-      springSettle({ scale: 0, rings: 2, damping: 5 }, span(60, 900, D).of(time)),
+      springSettle({ scale: 0, rings: 2, damping: 5 }, span(60, 900).of(time)),
       { opacity: ms < 60 ? 0 : 1 },
     ]);
   }
@@ -189,8 +188,8 @@ function dot(ms: number, time: Time, events: Events): Pose2d {
     const stretch = ms < LAND ? 1 + 0.55 * fall * fall : 1;
     return combine([
       ms < 9983
-        ? drop({ distance: 440, squash: 0.48 }, span(DROP, 9983, D).of(time))
-        : hop({ height: 42, bounces: 0, squash: 0.3 }, span(9983, 10200, D).of(time)),
+        ? drop({ distance: 440, squash: 0.48 }, span(DROP, 9983).of(time))
+        : hop({ height: 42, bounces: 0, squash: 0.3 }, span(9983, 10200).of(time)),
       at(DX, DY1),
       { scaleY: stretch, scaleX: 1 / Math.sqrt(stretch) },
       squashed(0.38, ease.cubicOut(share(ms, 10150, BURST)), "bottom"),
@@ -199,16 +198,16 @@ function dot(ms: number, time: Time, events: Events): Pose2d {
   }
   if (ms < MATCH) {
     const arrivals = [0, 1, 2, 3, 4, 5].map((i) =>
-      pulse({ amount: 0.2 }, span(stlOut(i) + 520, stlOut(i) + 720, D).of(time)),
+      pulse({ amount: 0.2 }, span(stlOut(i) + 520, stlOut(i) + 720).of(time)),
     );
     const wipeBeat =
       ms < WIPE
         ? { scale: 1 - 0.3 * ease.cubicInOut(share(ms, WIPE - 150, WIPE)) }
-        : springSettle({ scale: 0.7, rings: 2, damping: 4 }, span(WIPE, 12150, D).of(time));
+        : springSettle({ scale: 0.7, rings: 2, damping: 4 }, span(WIPE, 12150).of(time));
     return combine([
       at(DX, DY1),
-      springSettle({ squash: 0.38, rings: 2.5, damping: 3 }, span(BURST, 11100, D).of(time)),
-      pulse({ amount: 0.45 }, span(BURST, 10450, D).of(time)),
+      springSettle({ squash: 0.38, rings: 2.5, damping: 3 }, span(BURST, 11100).of(time)),
+      pulse({ amount: 0.45 }, span(BURST, 10450).of(time)),
       wipeBeat,
       ...arrivals,
       shown,
@@ -232,7 +231,7 @@ function dot(ms: number, time: Time, events: Events): Pose2d {
   }
   const contact = 0.42 * Math.exp(-(ms - PERIOD) / 50);
   return combine([
-    hop({ height: 16, bounces: 0, squash: 0.25 }, span(PERIOD, 14260, D).of(time)),
+    hop({ height: 16, bounces: 0, squash: 0.25 }, span(PERIOD, 14260).of(time)),
     at(geo.px, geo.py),
     { scale: 0.64 },
     squashed(contact, 1, "bottom"),
@@ -244,17 +243,17 @@ function camera(time: Time): Pose2d {
   const landings = [0, 1, 2, 3, 4, 5].map((i) =>
     jolt(
       { distance: 3 + i * i * 0.6, count: 5, sideways: 0.35 },
-      span(wgtLand(i), wgtLand(i) + 450, D).of(time),
+      span(wgtLand(i), wgtLand(i) + 450).of(time),
     ),
   );
   return combine([
     { scale: camScale(time) },
-    bump({ dy: 50 }, span(ANT_LEAP, 3700, D).of(time)),
+    bump({ dy: 50 }, span(ANT_LEAP, 3700).of(time)),
     ...landings,
-    bump({ dy: -40 }, span(WGT_DROP, 6450, D).of(time)),
-    bump({ turn: 0.9 }, span(OVL_IN, 7700, D).of(time)),
-    jolt({ distance: 6, count: 3, sideways: 0.2 }, span(LAND, LAND + 450, D).of(time)),
-    jolt({ distance: 3, count: 3, sideways: 0.2 }, span(PERIOD, PERIOD + 400, D).of(time)),
+    bump({ dy: -40 }, span(WGT_DROP, 6450).of(time)),
+    bump({ turn: 0.9 }, span(OVL_IN, 7700).of(time)),
+    jolt({ distance: 6, count: 3, sideways: 0.2 }, span(LAND, LAND + 450).of(time)),
+    jolt({ distance: 3, count: 3, sideways: 0.2 }, span(PERIOD, PERIOD + 400).of(time)),
   ]);
 }
 
@@ -273,7 +272,7 @@ function anticipateLetter(i: number, time: Time): Pose2d {
         tremble: 1.6,
         flight: "accelerate",
       },
-      span(c0, l0 + 650, D).of(time),
+      span(c0, l0 + 650).of(time),
     ),
     overshoot({ amount: 0.1 }, rising, (t) => rise({ distance: 120 }, t)),
     { rotation: mix(9, 0, ease.cubicOut(rising.progress)) },
@@ -285,11 +284,11 @@ function weightLetter(i: number, time: Time): Pose2d {
   const fallFrom = land - 420;
   const plungeAt = WGT_DROP + Math.abs(i - 2.5) * 30;
   return combine([
-    drop(DROP_OPTIONS, span(fallFrom, fallFrom + 420 / DROP_LANDING, D).of(time)),
-    wobble({ angle: 2.5, count: 2 }, span(land, land + 600, D).of(time)),
+    drop(DROP_OPTIONS, span(fallFrom, fallFrom + 420 / DROP_LANDING).of(time)),
+    wobble({ angle: 2.5, count: 2 }, span(land, land + 600).of(time)),
     anticipate(
       { share: (plungeAt - WGT_LIFT) / (plungeAt + 520 - WGT_LIFT), amount: 0.013 },
-      span(WGT_LIFT, plungeAt + 520, D).of(time),
+      span(WGT_LIFT, plungeAt + 520).of(time),
       (t) => rise({ distance: 1080 }, reversed(t)),
     ),
   ]);
@@ -312,15 +311,15 @@ function dust(j: number, ms: number, time: Time): Pose2d {
         fall: 30 * (kk === 2 ? 1 : 0.3),
         shrink: 0.75,
       },
-      span(land, land + 700, D).of(time),
+      span(land, land + 700).of(time),
     ),
   ]);
 }
 
 function floorHalf(from: "left" | "right", time: Time): Pose2d {
   return combine([
-    unfold({ from }, span(3350, 3800, D).of(time, ease.cubicOut)),
-    unfold({ from }, reversed(span(WGT_DROP, 6000, D).of(time, ease.cubicIn))),
+    unfold({ from }, span(3350, 3800).of(time, ease.cubicOut)),
+    unfold({ from }, reversed(span(WGT_DROP, 6000).of(time, ease.cubicIn))),
   ]);
 }
 
@@ -332,11 +331,11 @@ function hanger(i: number, time: Time): Pose2d {
   return combine([
     swing(
       { angle: 26 + (length - 140) * 0.12, swings: Math.min(8, (2 * hz * (to - from)) / 1000) },
-      span(from, to, D).of(time),
+      span(from, to).of(time),
     ),
     anticipate(
       { share: 0.33, amount: 0.25 },
-      span(OVL_SETTLED + i * 28, OVL_GONE + i * 28, D).of(time),
+      span(OVL_SETTLED + i * 28, OVL_GONE + i * 28).of(time),
       (t) => swing({ angle: 45, swings: 1 }, reversed(t)),
     ),
   ]);
@@ -352,10 +351,10 @@ function settleLetter(i: number, ms: number, time: Time): Pose2d {
   return combine([
     springSettle(
       { dx, dy, lift: 70, turn: STL_TURN[i] ?? 0, scale: 0.15, rings: 2, damping: 4.5 },
-      span(b0, b0 + 1250, D).of(time),
+      span(b0, b0 + 1250).of(time),
     ),
-    fade({}, span(b0, b0 + 60, D).of(time)),
-    anticipate({ share: 0.35, amount: 0.15 }, span(out, out + 520, D).of(time), (t) =>
+    fade({}, span(b0, b0 + 60).of(time)),
+    anticipate({ share: 0.35, amount: 0.15 }, span(out, out + 520).of(time), (t) =>
       springSettle(
         { dx, dy, turn: (STL_TURN[i] ?? 0) * 0.5, scale: 0.05, rings: 0, damping: 3 },
         reversed(t),
@@ -366,8 +365,8 @@ function settleLetter(i: number, ms: number, time: Time): Pose2d {
 
 function underline(time: Time, ms: number) {
   return ms < COLL - 100
-    ? trace({}, span(UNDERLINE, UNDERLINE + 500, D).of(time, ease.cubicOut))
-    : erased(span(COLL - 100, COLL + 200, D).of(time, ease.cubicIn));
+    ? trace({}, span(UNDERLINE, UNDERLINE + 500).of(time, ease.cubicOut))
+    : erased(span(COLL - 100, COLL + 200).of(time, ease.cubicIn));
 }
 
 /** `time` run backwards, for a reveal or a stroke: `reversed` answers a pose, so it cannot take them back. */
@@ -397,7 +396,7 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
     trailUp: {
       drawn: trace(
         {},
-        span(LAUNCH, 1250, D).of(time, (p) => Math.min(1, ((1 - (1 - p) ** 2) * 620) / 540)),
+        span(LAUNCH, 1250).of(time, (p) => Math.min(1, ((1 - (1 - p) ** 2) * 620) / 540)),
       ).drawn,
       tail: ease.cubicInOut(share(ms, 950, 1450)),
     },
@@ -406,7 +405,7 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
     wgt: [0, 1, 2, 3, 4, 5].map((i) => weightLetter(i, time)),
     floor: combine([
       ...[0, 1, 2, 3, 4, 5].map((i) =>
-        nod({ distance: 2 + i }, span(wgtLand(i), wgtLand(i) + 170, D).of(time)),
+        nod({ distance: 2 + i }, span(wgtLand(i), wgtLand(i) + 170).of(time)),
       ),
       {
         y: -14 * ease.cubicInOut(share(ms, WGT_LIFT, WGT_DROP)),
@@ -417,10 +416,10 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
     floorRight: floorHalf("left", time),
     dust: Array.from({ length: 18 }, (_, j) => dust(j, ms, time)),
     overlap: combine([
-      slide({ distance: 1250, from: "left" }, span(OVL_IN, 7150, D).of(time, ease.sineIn)),
+      slide({ distance: 1250, from: "left" }, span(OVL_IN, 7150).of(time, ease.sineIn)),
       anticipate(
         { share: 250 / 750, amount: 55 / 1450 },
-        span(OVL_SETTLED, OVL_GONE, D).of(time),
+        span(OVL_SETTLED, OVL_GONE).of(time),
         (t) => slide({ distance: 1450, from: "right" }, reversed(t)),
       ),
       { opacity: ms >= OVL_IN && ms < OVL_GONE + 100 ? 1 : 0 },
@@ -430,10 +429,10 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
     underline: ul,
     wipe:
       ms < SHRINK
-        ? wipe({ radius: 800, x: 800, y: 800 }, span(WIPE, WIPE + 600, D).of(time, ease.quartOut))
+        ? wipe({ radius: 800, x: 800, y: 800 }, span(WIPE, WIPE + 600).of(time, ease.quartOut))
         : wipe(
             { radius: 800, x: 800, y: 800 },
-            backwards(span(SHRINK, MATCH, D).of(time, ease.cubicIn)),
+            backwards(span(SHRINK, MATCH).of(time, ease.cubicIn)),
           ),
     fin: [0, 1, 2].map((i) => {
       const t = lane(finIn.of(time), i, FIN_LANES);
@@ -442,13 +441,13 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
         { rotation: mix(5, 0, ease.cubicOut(t.progress)) },
         jolt(
           { distance: 6, count: 2, sideways: 0 },
-          span(PERIOD + (2 - i) * 45, PERIOD + (2 - i) * 45 + 500, D).of(time),
+          span(PERIOD + (2 - i) * 45, PERIOD + (2 - i) * 45 + 500).of(time),
         ),
       ]);
     }),
     credit: combine([
-      rise({ distance: 14 }, span(CREDIT, CREDIT + 600, D).of(time)),
-      fade({}, span(CREDIT, CREDIT + 600, D).of(time)),
+      rise({ distance: 14 }, span(CREDIT, CREDIT + 600).of(time)),
+      fade({}, span(CREDIT, CREDIT + 600).of(time)),
     ]),
     paint: {
       antCharge: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) =>

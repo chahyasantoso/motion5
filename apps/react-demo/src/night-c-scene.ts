@@ -15,10 +15,10 @@ import {
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;
 
-const nightIn = span(200, 1200, durationMs);
-const shiftIn = span(700, 1700, durationMs);
-const moonIn = span(1500, 2100, durationMs);
-const bob = span(2100, 3700, durationMs);
+const nightIn = span(200, 1200);
+const shiftIn = span(700, 1700);
+const moonIn = span(1500, 2100);
+const bob = span(2100, 3700);
 
 /** Every target's value at `time`. */
 export const scene = (time: Time) => ({

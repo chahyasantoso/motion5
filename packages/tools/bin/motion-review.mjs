@@ -1,7 +1,7 @@
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { parseReviewArgs, reviewPage } = await import("../src/page/review.ts");
+const { parseReviewArgs, printReview, reviewPage } = await import("../src/page/review.ts");
 
 const { isSceneFile, parseSceneReviewArgs, reviewSceneFile } = await import(
   "../src/scene/review.ts"
@@ -35,7 +35,7 @@ async function reviewPageMain(argv) {
   } else
     try {
       const result = await reviewPage(args);
-      console.log(JSON.stringify(result));
+      console.log(printReview(result));
       if (result.findings.length > 0 || result.pageErrors.length > 0) process.exitCode = 1;
     } catch (error) {
       console.log(

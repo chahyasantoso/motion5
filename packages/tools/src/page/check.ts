@@ -269,6 +269,13 @@ text,tspan{fill:transparent!important;stroke:transparent!important}`;
 
 /** Samples every watched element each 16 ms up to `to`, then reports what `analyse` finds. */
 export async function checkMotion(request: CheckRequest): Promise<CheckResult> {
+  return (await sampleMotion(request)).result;
+}
+
+/** `checkMotion` that also hands back the 16 ms samples it judged. */
+export async function sampleMotion(
+  request: CheckRequest,
+): Promise<{ readonly result: CheckResult; readonly samples: readonly Frame[] }> {
   const { value, pageErrors } = await withPage(request, async ({ page, advanceTo }) => {
     const frames: Frame[] = [];
     let texts: FinalText[] = [];
@@ -420,12 +427,15 @@ export async function checkMotion(request: CheckRequest): Promise<CheckResult> {
     return { frames, texts, behind };
   });
   return {
-    kind: "checked",
-    frames: value.frames.length,
-    findings: [
-      ...analyse(value.frames, request, request.limits),
-      ...auditText(value.texts, value.behind),
-    ],
-    pageErrors,
+    samples: value.frames,
+    result: {
+      kind: "checked",
+      frames: value.frames.length,
+      findings: [
+        ...analyse(value.frames, request, request.limits),
+        ...auditText(value.texts, value.behind),
+      ],
+      pageErrors,
+    },
   };
 }

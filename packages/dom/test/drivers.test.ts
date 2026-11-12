@@ -241,4 +241,13 @@ describe("scrollDriver", () => {
     leave();
     expect(listeners.size).toBe(0);
   });
+
+  it("reports a timed clock when it is given a length", () => {
+    const page = { scrollY: 150, addEventListener() {}, removeEventListener() {} };
+    const driver = scrollDriver({ target: page, start: 100, end: 300, length: 2000 });
+    expect(driver.now()).toEqual({
+      progress: 0.25,
+      clock: { kind: "timed", elapsed: 500, length: 2000 },
+    });
+  });
 });

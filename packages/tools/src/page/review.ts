@@ -1,42 +1,57 @@
 import { parseNumbers } from "./args";
-import { DEFAULT_LIMITS, checkMotion, describeFinding } from "./check";
+import { DEFAULT_LIMITS, describeFinding, sampleMotion } from "./check";
 import { captureFrames } from "./frames";
+import { pickFrames, type PickReason } from "./pick";
 import { fromCaller, readPageArgs, type PageTarget } from "./page";
 import { describeMotion, readMotion } from "./read";
 
 export interface ReviewRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
-  readonly at: readonly number[];
+  /** Frame times; absent, they are picked from the motion. */
+  readonly at?: readonly number[];
   readonly out?: string;
+  /** Also read every move back with its ease. */
+  readonly full: boolean;
 }
 
 export type ReviewArgs =
   | ({ readonly kind: "ok" } & ReviewRequest)
   | { readonly kind: "usage"; readonly message: string };
 
-export interface ReviewResult {
+interface ReviewBase {
   readonly kind: "reviewed";
   /** What `motion:check` found, one line each; none means clean. */
   readonly findings: readonly string[];
-  /** What `motion:read` read, one line per move, cut to the first `MOTION_LINES`. */
-  readonly motion: readonly string[];
-  /** The labelled contact sheet of frames at `at`. */
+  /** The frames photographed, each as its time and, when picked, why. */
+  readonly frames: readonly string[];
+  /** The labelled contact sheet of those frames. */
   readonly sheet: string;
   readonly pageErrors: readonly string[];
 }
 
+export type ReviewResult =
+  | (ReviewBase & { readonly full: false })
+  | (ReviewBase & {
+      readonly full: true;
+      /** What `motion:read` read, one line per move, cut to the first `MOTION_LINES`. */
+      readonly motion: readonly string[];
+    });
+
 /** A review lists at most this many moves; the rest are counted in one closing line. */
 const MOTION_LINES = 40;
 const USAGE =
-  "usage: motion:review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--action ...] [--size WxH] [--root dir | --url address]";
+  "usage: motion:review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH] [--root dir | --url address]";
 
 export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   const usage = (message: string): ReviewArgs => ({
     kind: "usage",
     message: `${message} ${USAGE}`,
   });
-  const read = readPageArgs(argv, ["--watch", "--to", "--at", "--out"]);
+  const read = readPageArgs(
+    argv.filter((arg) => arg !== "--full"),
+    ["--watch", "--to", "--at", "--out"],
+  );
   if (read.kind === "usage") return usage(read.message);
   const watch = (read.flags.get("--watch") ?? "")
     .split(",")
@@ -49,28 +64,50 @@ export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   const given = read.flags.has("--at") ? parseNumbers(read.flags.get("--at")) : undefined;
   if (read.flags.has("--at") && given === undefined)
     return usage("--at needs ascending times in ms.");
-  const at =
-    given ??
-    [0, 1, 2, 3, 4, 5].map((index) => Math.min(end, Math.round((end * index) / 5 / 16) * 16));
   const out = read.flags.get("--out");
   return {
     kind: "ok",
     ...read.target,
     watch,
     to: end,
-    at,
+    ...(given === undefined ? {} : { at: given }),
+    full: argv.includes("--full"),
     ...(out === undefined ? {} : { out: fromCaller(out) }),
   };
 }
 
-/** Checks, reads and photographs the page in one call, each in its own browser at once. */
+/** Checks and photographs the page in one call; reads the moves back too only when `full`. */
 export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> {
-  const { watch, to, at, out, ...target } = request;
-  const [checked, read, frames] = await Promise.all([
-    checkMotion({ ...target, watch, to, limits: DEFAULT_LIMITS }),
-    readMotion({ ...target, select: watch, to }),
-    captureFrames({ ...target, at, ...(out === undefined ? {} : { out }) }),
+  const { watch, to, at, out, full, ...target } = request;
+  const sampled = sampleMotion({ ...target, watch, to, limits: DEFAULT_LIMITS });
+  const photographed = sampled.then(async ({ samples }) => {
+    const picks: readonly { readonly at: number; readonly reason?: PickReason }[] =
+      at === undefined ? pickFrames(samples) : at.map((time) => ({ at: time }));
+    const captured = await captureFrames({
+      ...target,
+      at: picks.map((pick) => pick.at),
+      labels: picks.map((pick) => pick.reason ?? ""),
+      ...(out === undefined ? {} : { out }),
+    });
+    return { captured, picks };
+  });
+  const [{ result: checked }, read, { captured: frames, picks }] = await Promise.all([
+    sampled,
+    full ? readMotion({ ...target, select: watch, to }) : undefined,
+    photographed,
   ]);
+  const base = {
+    kind: "reviewed" as const,
+    findings: checked.findings.map(describeFinding),
+    frames: picks.map((pick) =>
+      pick.reason === undefined ? `${pick.at}` : `${pick.at} ${pick.reason}`,
+    ),
+    sheet: frames.sheet,
+    pageErrors: [
+      ...new Set([...checked.pageErrors, ...(read?.pageErrors ?? []), ...frames.pageErrors]),
+    ],
+  };
+  if (read === undefined) return { ...base, full: false };
   const lines = read.elements.flatMap(describeMotion);
   const motion =
     lines.length <= MOTION_LINES
@@ -79,11 +116,18 @@ export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> 
           ...lines.slice(0, MOTION_LINES),
           `… ${lines.length - MOTION_LINES} more moves; run motion:read for all`,
         ];
-  return {
-    kind: "reviewed",
-    findings: checked.findings.map(describeFinding),
-    motion,
-    sheet: frames.sheet,
-    pageErrors: [...new Set([...checked.pageErrors, ...read.pageErrors, ...frames.pageErrors])],
-  };
+  return { ...base, full: true, motion };
+}
+
+/** The review as a reader wants it: findings, then the sheet, then the moves when they were read. */
+export function printReview(result: ReviewResult): string {
+  const lines = [
+    result.findings.length === 0 ? "findings: none" : `findings: ${result.findings.length}`,
+    ...result.findings.map((finding) => `  ${finding}`),
+    ...result.pageErrors.map((error) => `page error: ${error}`),
+    `frames: ${result.frames.join(", ")}`,
+    `sheet: ${result.sheet}`,
+  ];
+  if (result.full) lines.push("moves:", ...result.motion.map((line) => `  ${line}`));
+  return lines.join("\n");
 }

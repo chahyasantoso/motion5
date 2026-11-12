@@ -198,12 +198,16 @@ export interface ScrollTarget {
   removeEventListener(type: "scroll", listener: () => void): void;
 }
 
-/** A driver from 0 to 1 as the target scrolls from `start` to `end` px; it has no clock. */
+/** A driver from 0 to 1 as the target scrolls from `start` to `end` px; untimed unless given a `length` in ms. */
 export function scrollDriver(options: {
   readonly target?: ScrollTarget;
   readonly start: number;
   readonly end: number;
+  readonly length?: number;
 }): Driver {
+  const length = options.length;
+  if (length !== undefined && !(length > 0))
+    throw new RangeError(`scrollDriver: length must be above 0 ms, not ${length}.`);
   const target: ScrollTarget = options.target ?? {
     get scrollY() {
       return globalThis.scrollY;
@@ -213,8 +217,12 @@ export function scrollDriver(options: {
   };
   const offset = (): number => target.scrollY ?? target.scrollTop ?? 0;
   const span = options.end - options.start;
-  const now = (): Time =>
-    atProgress(span <= 0 ? 1 : Math.max(0, Math.min(1, (offset() - options.start) / span)));
+  const now = (): Time => {
+    const progress = span <= 0 ? 1 : Math.max(0, Math.min(1, (offset() - options.start) / span));
+    return length === undefined
+      ? atProgress(progress)
+      : { progress, clock: { kind: "timed", elapsed: progress * length, length } };
+  };
   return {
     now,
     options,

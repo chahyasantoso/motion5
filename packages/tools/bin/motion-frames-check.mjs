@@ -336,10 +336,11 @@ const review = await reviewPage({
   watch: [".beat-dot", ".beat-glyph"],
   to: 3000,
   at: [0, 1500, 3000],
+  full: true,
 });
 assert.deepEqual(review.findings, []);
 assert.ok(
-  review.motion.some((line) => line.startsWith(".beat-dot[0] x -1300 → 0")),
+  review.full && review.motion.some((line) => line.startsWith(".beat-dot[0] x -1300 → 0")),
   review.motion[0],
 );
 assert.ok(readFileSync(review.sheet).length > 1000, "review sheet written");

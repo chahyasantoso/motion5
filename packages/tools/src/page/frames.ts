@@ -6,6 +6,8 @@ import { parseNumbers } from "./args";
 
 export interface FramesRequest extends PageTarget {
   readonly at: readonly number[];
+  /** A short reason to print under each frame, in step with `at`. */
+  readonly labels?: readonly string[];
   readonly out?: string;
 }
 
@@ -98,10 +100,13 @@ function dataUrl(path: string): string {
 }
 
 /** Lays captured frames into one labelled image, so a reader looks once instead of per frame. */
-function sheetHtml(frames: readonly { readonly at: number; readonly path: string }[]): string {
+function sheetHtml(
+  frames: readonly { readonly at: number; readonly path: string }[],
+  labels: readonly string[],
+): string {
   const cells = frames.map(
-    ({ at, path }) =>
-      `<figure><img src="${dataUrl(path)}"><figcaption>${at} ms</figcaption></figure>`,
+    ({ at, path }, index) =>
+      `<figure><img src="${dataUrl(path)}"><figcaption>${at} ms${labels[index] === undefined ? "" : ` ${labels[index]}`}</figcaption></figure>`,
   );
   return `<style>
     body { margin: 0; display: grid; grid-template-columns: repeat(${SHEET_COLUMNS}, ${SHEET_CELL_WIDTH}px); gap: 4px; background: #fff; }
@@ -124,7 +129,7 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     const sheetPage = await browser.newPage({
       viewport: { width: SHEET_COLUMNS * (SHEET_CELL_WIDTH + 4), height: 100 },
     });
-    await sheetPage.setContent(sheetHtml(frames), { waitUntil: "load" });
+    await sheetPage.setContent(sheetHtml(frames, request.labels ?? []), { waitUntil: "load" });
     const sheet = join(out, "sheet.png");
     writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
     return { frames, sheet };

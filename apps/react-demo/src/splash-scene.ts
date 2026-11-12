@@ -36,13 +36,13 @@ export const DROPLETS = [
 ] as const;
 
 const FALL = { distance: 660, squash: 0.32 };
-const fall = span(250, 1000, durationMs);
+const fall = span(250, 1000);
 /** The ms the falling drop touches the water. */
 export const IMPACT_MS = fall.at(drop.moments(FALL).landing);
-const swallow = span(IMPACT_MS, IMPACT_MS + 180, durationMs);
+const swallow = span(IMPACT_MS, IMPACT_MS + 180);
 
 const ringSpans = RINGS.map((ring) =>
-  span(IMPACT_MS + ring.delay, IMPACT_MS + ring.delay + ring.ms, durationMs),
+  span(IMPACT_MS + ring.delay, IMPACT_MS + ring.delay + ring.ms),
 );
 
 const flights = DROPLETS.map((d) => {
@@ -50,12 +50,11 @@ const flights = DROPLETS.map((d) => {
   const landMs = launchMs + d.flight;
   const apexMs = launchMs + d.flight * 0.45;
   return {
-    flight: span(launchMs, landMs, durationMs),
-    pop: span(launchMs, launchMs + 30, durationMs),
-    sink: span(landMs, landMs + 200, durationMs),
-    ripple: span(landMs - 20, landMs + 900, durationMs),
+    flight: span(launchMs, landMs),
+    pop: span(launchMs, launchMs + 30),
+    sink: span(landMs, landMs + 200),
+    ripple: span(landMs - 20, landMs + 900),
     height: keyframes(
-      durationMs,
       -d.depth,
       [
         { at: launchMs, to: -d.depth },
@@ -73,7 +72,7 @@ const LETTERS = lanes(
   0.35,
 );
 const firstLanding = Math.min(...flights.map((f) => f.landMs));
-const word = span(firstLanding + 150, firstLanding + 150 + 1450, durationMs);
+const word = span(firstLanding + 150, firstLanding + 150 + 1450);
 
 /** A ring's pose: it widens eased out and fades as it goes. */
 function ringPose(ring: (typeof RINGS)[number], index: number, time: Time): Pose2d {

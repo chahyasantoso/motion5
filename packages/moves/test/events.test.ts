@@ -50,7 +50,7 @@ describe("follow", () => {
 
 describe("a live clock", () => {
   it("places a span by its ms", () => {
-    const intro = span(200, 600, 1000);
+    const intro = span(200, 600);
     expect(intro.of(liveAt(400)).progress).toBeCloseTo(0.5, 9);
     expect(intro.of(liveAt(5000)).progress).toBe(1);
   });

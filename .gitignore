@@ -12,5 +12,8 @@ coverage
 # Pose recordings are landmarks of a real person: never committed (#530).
 apps/pose-gap-filler/recordings/
 pose-recording-*.json
+# Copies the live browser tests edit in place of the tracked scenes.
+apps/react-demo/scratch-*
+apps/react-demo/src/scratch-*
 # Agent worktrees are other checkouts of this repository.
 .claude/worktrees/
