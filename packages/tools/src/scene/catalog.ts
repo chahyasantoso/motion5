@@ -5,6 +5,7 @@ import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { checkMove, describeFinding, isMove, type CheckedMove } from "./moves";
+import { formatParts } from "./parts";
 
 /** Where a catalog entry was declared: the built-in package, or a file of the app. */
 export type MoveSource =
@@ -24,7 +25,11 @@ export interface MoveRecord {
 }
 
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--parts] [--root dir]";
+
+/** The line a plain listing ends with, pointing at the building blocks. */
+export const PARTS_HINT =
+  "npm run motion:moves -- --parts lists the building blocks moves are made from: time, eases, blends, paths, follow-through, events, randomness.";
 
 export type CatalogArgs =
   | { readonly kind: "usage"; readonly message: string }
@@ -34,6 +39,7 @@ export type CatalogArgs =
       readonly role: MoveRole | undefined;
       readonly check: boolean;
       readonly json: boolean;
+      readonly parts: boolean;
       readonly root: string | undefined;
     };
 
@@ -43,6 +49,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const ids: string[] = [];
   let check = false;
   let json = false;
+  let parts = false;
   let role: string | undefined;
   let root: string | undefined;
   for (let i = 0; i < argv.length; i += 1) {
@@ -50,6 +57,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     if (arg === undefined) break;
     if (arg === "--check") check = true;
     else if (arg === "--json") json = true;
+    else if (arg === "--parts") parts = true;
     else if (arg === "--role" || arg === "--root") {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
@@ -64,7 +72,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const known = MOVE_ROLES.find((candidate) => candidate === role);
   if (role !== undefined && known === undefined)
     return usage(`Unknown role "${role}". Roles: ${MOVE_ROLES.join(", ")}.`);
-  return { kind: "ok", id: ids[0], role: known, check, json, root };
+  return { kind: "ok", id: ids[0], role: known, check, json, parts, root };
 }
 
 function momentNames(move: CheckedMove): readonly string[] {
@@ -243,6 +251,7 @@ export async function runCatalog(
   args: Extract<CatalogArgs, { kind: "ok" }>,
   root: string,
 ): Promise<CatalogRun> {
+  if (args.parts) return { lines: formatParts(), code: 0 };
   const { modules, problems } = await loadAppModules(root);
   const all = collectRecords(modules);
   const byRole = all.filter(({ record }) => args.role === undefined || record.role === args.role);
@@ -269,5 +278,6 @@ export async function runCatalog(
   if (args.json)
     return { lines: [JSON.stringify(records, printable)], code: problems.length === 0 ? 0 : 1 };
   const body = args.id === undefined ? records.map(formatLine) : records.flatMap(formatFull);
-  return { lines: [...body, ...problems], code: problems.length === 0 ? 0 : 1 };
+  const hint = args.id === undefined ? [PARTS_HINT] : [];
+  return { lines: [...body, ...problems, ...hint], code: problems.length === 0 ? 0 : 1 };
 }

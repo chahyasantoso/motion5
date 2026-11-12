@@ -558,10 +558,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
-- **`motion:moves [<id>] [--role role] [--check] [--json] [--root dir]`**: lists every move of `@gerak/moves`, then of
+- **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--root dir]`**: lists every move of `@gerak/moves`, then of
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
-  an id declared twice) and exits `1` on a finding.
+  an id declared twice) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
+  moves, by group, each with its call shape and what it is for.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.

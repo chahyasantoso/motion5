@@ -3,7 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { MOVE_ROLES } from "@gerak/moves";
-import { collectRecords, parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
+import {
+  MOVE_PARTS,
+  PARTS_HINT,
+  PART_GROUPS,
+  collectRecords,
+  parseCatalogArgs,
+  runCatalog,
+  type CatalogArgs,
+} from "@gerak/tools/scene";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -45,10 +53,12 @@ const builtInIds = collectRecords([])
 describe("motion:moves", () => {
   it("lists the built-ins first and then the app's moves, each group by id", async () => {
     const run = await runCatalog(ok([]), app());
-    const ids = run.lines.map((line) => line.split(" ")[0]);
+    const listed = run.lines.slice(0, -1);
+    const ids = listed.map((line) => line.split(" ")[0]);
     expect(ids).toEqual([...builtInIds, "bad", "good"]);
     expect(run.code).toBe(0);
-    expect(run.lines.at(-1)).toBe(
+    expect(run.lines.at(-1)).toBe(PARTS_HINT);
+    expect(listed.at(-1)).toBe(
       "good [enter] Slides in from the left. | options: distance number 0..500, default 100 | moments: arrive",
     );
   });
@@ -74,7 +84,7 @@ describe("motion:moves", () => {
     const dir = mkdtempSync(join(tmpdir(), "motion-moves-"));
     roots.push(dir);
     const run = await runCatalog(ok([]), dir);
-    expect(run.lines.map((line) => line.split(" ")[0])).toEqual(builtInIds);
+    expect(run.lines.slice(0, -1).map((line) => line.split(" ")[0])).toEqual(builtInIds);
     expect(run.code).toBe(0);
   });
 
@@ -108,7 +118,7 @@ describe("motion:moves", () => {
 
   it("filters by role, and refuses an unknown role with the known ones", async () => {
     const reveals = await runCatalog(ok(["--role", "reveal"]), app());
-    expect(reveals.lines.map((line) => line.split(" ")[0])).toEqual(["trace", "wipe"]);
+    expect(reveals.lines.map((line) => line.split(" ")[0])).toEqual(["trace", "wipe", "npm"]);
     const usage = parseCatalogArgs(["--role", "dance"]);
     expect(usage.kind).toBe("usage");
     if (usage.kind === "usage")
@@ -131,6 +141,16 @@ describe("motion:moves", () => {
       { id: "trace" },
       { id: "wipe", role: "reveal" },
     ]);
+  });
+
+  it("prints the parts under --parts, a heading per group and a line per part", async () => {
+    const run = await runCatalog(ok(["--parts"]), app());
+    expect(run.code).toBe(0);
+    expect(run.lines.filter((line) => !line.startsWith("  "))).toEqual(
+      PART_GROUPS.map((group) => `${group}:`),
+    );
+    expect(run.lines.filter((line) => line.startsWith("  "))).toHaveLength(MOVE_PARTS.length);
+    expect(run.lines).toContainEqual(expect.stringMatching(/^ {2}trail\(/));
   });
 
   it.each([["--bogus"], ["a", "b"], ["--role"]])("refuses the arguments %j", (...argv) => {

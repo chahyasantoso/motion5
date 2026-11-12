@@ -14,6 +14,8 @@ A piece starts from its brief, not from a piece that already exists.
 3. Choose moves from the catalog, `npm run motion:moves`, and compose them with the modifiers and `combine`. Where
    nothing fits, write a move with `npm run motion:new -- --move <id>` and pass it through
    `npm run motion:moves -- --check`.
+   `npm run motion:moves -- --parts` lists the building blocks a move is made from: time, eases, blends, paths,
+   follow-through, events, randomness.
 4. Do not open any other scene file in `apps/react-demo/src`, nor the components beside them. They are tests of the
    runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide lists (events, physics, rigs, principles, 3D) only when the brief needs it.
