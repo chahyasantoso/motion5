@@ -10,17 +10,17 @@ export type ScaffoldResult =
 const TEMPLATES = fileURLToPath(new URL("./templates/", import.meta.url));
 const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
-/** Each file a page needs, as its template and its path under the app root. */
+/** Each file a piece needs, as its template and its path under the app root. */
 function plan(
   name: string,
   three: boolean,
 ): readonly { readonly template: string; readonly path: string }[] {
-  const kind = three ? ".three" : "";
+  if (!three) return [{ template: "stage.ts.template", path: `src/${name}.ts` }];
   return [
-    { template: `page${kind}.html.template`, path: `${name}.html` },
+    { template: "page.three.html.template", path: `${name}.html` },
     { template: "main.tsx.template", path: `src/${name}-main.tsx` },
-    { template: `component${kind}.tsx.template`, path: `src/${name}.tsx` },
-    { template: `scene${kind}.ts.template`, path: `src/${name}-scene.ts` },
+    { template: "component.three.tsx.template", path: `src/${name}.tsx` },
+    { template: "scene.three.ts.template", path: `src/${name}-scene.ts` },
   ];
 }
 
@@ -31,7 +31,8 @@ function componentName(name: string): string {
     .join("");
 }
 
-/** Writes a page, entry, component and starter scene for `name` under `root` (Three.js with `three`), or nothing at all. */
+/** Writes one stage module for `name` under `root`; with `three`, a Three.js page, entry, component and
+ * starter scene instead. Or nothing at all. */
 export function scaffold(
   name: string,
   root: string,

@@ -60,6 +60,12 @@ Public: `.`
 - `src/ik/solve2d/`: 2D solve
 - `src/ik/solve3d/`: 3D solve
 
+## packages/stage
+
+Public: `.`
+
+- `src/`: the cast, the story and where things rest
+
 ## packages/three
 
 Public: `.`, `./react`

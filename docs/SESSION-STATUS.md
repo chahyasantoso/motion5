@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-12, Asia/Jakarta.
-- **Read against:** `feat/apps-split` after the full check gate.
+- **Read against:** `feat/stage` after the full check gate.
 
 ## Now
 
@@ -15,12 +15,12 @@ byte ceiling.
   `@gerak/moves` (time, spans, lanes, eases, springs, 2D and 3D poses, events and `defineMove` moves, each with a role and an example the gate samples) and
   `@gerak/rig` (2D chains, frames, and 3D FK/IK solvers and constraints), played by `@gerak/player` (`play`,
   `Player.replace`, `manualDriver`) on a manual, clock (`setRate`, `setRange`), scroll or event driver, and written by
-  `@gerak/dom`, `@gerak/react` (`usePlayer`, `useTarget`, `useValue`, `useWatch`, `PlayerHostProvider`,
+  `@gerak/dom`, `@gerak/react` (`Stage`, `usePlayer`, `useTarget`, `useValue`, `useWatch`, `PlayerHostProvider`,
   `driverKeeper`) and `@gerak/three`. `@gerak/physics` gives a seekable `PhysicsWorld`, built in or on Rapier
   through `@gerak/rapier`. `@gerak/tools` holds the `motion:*` commands (`motion:live`, `motion:new`,
   `motion:review`, `motion:check`, `motion:read`, `motion:frames`, `motion:probe`, `motion:render`, `motion:sample`,
   `motion:timeline`, `motion:points`) and `@gerak/tools/vite` (`motionLivePlugin`, `scanNumericLiterals`,
-  `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `VALUE_FIELDS` is the one table of a value's fields, with blur, a stroke's tail, a clip and a piece's own `custom` numbers, written by one `applyValue` (ADR-173). `sequence` orders phases and beats, `span(from, to)` is placed by the clock, `motion:moves -- --parts` lists the building blocks, and `motion:review` picks its own frames. The hand-made showreel rebuilt as `showreel-b` is the standing measure. `live.html?scene=<name>` in `apps/pieces` hot-swaps saved scene edits in
+  `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `VALUE_FIELDS` is the one table of a value's fields, with blur, a stroke's tail, a clip and a piece's own `custom` numbers, written by one `applyValue` (ADR-173). `sequence` orders phases and beats, `span(from, to)` is placed by the clock, `motion:moves -- --parts` lists the building blocks, and `motion:review` picks its own frames. A piece is one stage module (ADR-174): `@gerak/stage` gives the cast (`actor`, `many`, `group`, `letters`, `words`), the `story` of named beats and measured `Rest` boxes; `mountStage` in `@gerak/dom` builds it with its `skins.dom.css`, `stage.html?piece=<name>` plays it, `motion:new` writes one, and `motion:review <file>.ts` checks the cast against the scene. The hand-made showreel rebuilt as the stage module `showreel-c` is the standing measure. `live.html?scene=<name>` in `apps/pieces` hot-swaps saved scene or stage-module edits in
   place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
   holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
   code panel straight back into `src/<name>-scene.ts`. Twenty moves by role, four of them modifiers, are listed
@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **The cast and the story:** the `stage` package (layer 3 of `docs/ARCHITECTURE.md`): objects made in code, and
-  beats and cues a tool can check, compiled to the same scene function; then publish.
+- **Composition:** transitions and layout moves (roadmap stage 4), with the measure's gaps: strokes on a stage
+  member, presence over more than one beat, and a move that shows its start pose outside its span; then publish.
 
 ## Open, and not scheduled
 

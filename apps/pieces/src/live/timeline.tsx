@@ -4,7 +4,9 @@ import type { ClockDriver } from "@gerak/dom";
 export interface TimelineMark {
   readonly name: string;
   readonly at: number;
-  readonly kind: "cue" | "moment";
+  readonly kind: "cue" | "moment" | "beat";
+  /** Where a beat ends, in ms. */
+  readonly endMs?: number;
 }
 
 export interface TimelineProps {
@@ -20,11 +22,29 @@ function isCueObject(item: unknown): item is { readonly name: string; readonly a
   return true;
 }
 
+function beatMarks(story: unknown): readonly TimelineMark[] {
+  if (typeof story !== "object" || story === null) return [];
+  const order: unknown = Reflect.get(story, "order");
+  if (!Array.isArray(order)) return [];
+  const marks: TimelineMark[] = [];
+  for (const name of order) {
+    if (typeof name !== "string") continue;
+    const beat: unknown = Reflect.get(story, name);
+    if (typeof beat !== "object" || beat === null) continue;
+    const from: unknown = Reflect.get(beat, "from");
+    const to: unknown = Reflect.get(beat, "to");
+    if (typeof from === "number" && typeof to === "number")
+      marks.push({ name, at: from, kind: "beat", endMs: to });
+  }
+  return marks;
+}
+
+/** The timeline's marks: each beat of the module's story at its start, then its cues and `_MS` moments. */
 export function extractMarks(
   sceneModule: Readonly<Record<string, unknown>>,
   durationMs: number,
 ): readonly TimelineMark[] {
-  const result: TimelineMark[] = [];
+  const result: TimelineMark[] = [...beatMarks(sceneModule.beats)];
   const cues = sceneModule.cues;
   if (Array.isArray(cues)) {
     for (const item of cues) {
@@ -313,7 +333,11 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
           <div
             key={`${mark.kind}-${mark.name}-${mark.at}`}
             data-live-mark={mark.name}
-            title={`${mark.name} (${mark.at}ms, ${mark.kind})`}
+            title={
+              mark.endMs === undefined
+                ? `${mark.name} (${mark.at}ms, ${mark.kind})`
+                : `${mark.name} (${mark.at} to ${mark.endMs}ms, ${mark.kind})`
+            }
             style={{
               position: "absolute",
               left: `${durationMs > 0 ? (mark.at / durationMs) * 100 : 0}%`,

@@ -26,3 +26,13 @@ export {
   type EventSource,
   type PointerLike,
 } from "./events";
+export {
+  mountStage,
+  type MountedStage,
+  type StageElement,
+  type StageEvent,
+  type StageFonts,
+  type StageOptions,
+  type StageStyle,
+  type StageValues,
+} from "./stage";

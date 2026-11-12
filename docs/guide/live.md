@@ -14,6 +14,10 @@ npm run motion:live -- saved
 and the `showreel`s) and every scene made with `npm run motion:new` (DOM or `--three`) plays in it with no change to its
 files.
 
+A stage module, `src/<name>.ts`, opens the same way. A save that keeps its cast, skin and story swaps the scene on
+the same elements and the same time; any other save mounts the stage afresh at the same time. A scene that throws
+keeps the last good values under the banner. The code panel is for scene files, so a stage module has none.
+
 ## Save and keep your place
 
 The scene file (`src/<name>-scene.ts`) is the only source of truth. When you save it in your editor:
@@ -27,7 +31,7 @@ The scene file (`src/<name>-scene.ts`) is the only source of truth. When you sav
   banner at the top reports the error until the next clean save.
 - If you edit the component file and it can no longer render, the banner reports it and the stage is empty until the
   next save that renders; the timeline and the code panel stay up.
-- Any other page of the app, such as `saved.html`, reloads on a save.
+- Any other page of the app, such as `kelvin.html` or `stage.html?piece=<name>`, reloads on a save.
 
 ## Timeline and keys
 

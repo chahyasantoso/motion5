@@ -83,32 +83,29 @@ Three things follow from it:
 
 ## 5. Order
 
-1. **Authoring.** The move library and modifiers, the moves folder, catalog and gate, the guide and skill rewritten
-   around the brief, the empty scaffold. Proof: one brief run cold three times gives three different pieces, and
-   three briefs do not share a move set.
-   The proof did not pass (`plan/authoring-plan.md`, "Proof and interviews"), so this stage stays open with these
-   items: `span` takes the scene's length once, not at every call; `motion:review` prints findings and the sheet by
-   default and the per-channel eases on request; the "Cannot fast-forward to the past" error on a first run is
-   reproduced and fixed; and the guide's idea step asks what the piece does that the obvious answer does not, and
-   asks for a move written where the catalog's nearest answer would make a piece like the last one. A second proof
-   runs after them.
-2. **Composition.** Shots in a sequence, transitions between two scenes, an element moved between two layouts and
-   carried across a transition, and values past a pose. It comes before publishing because it shapes the public
-   surface, and it serves a site (a route change, a list reordering, a card opening) as much as a video.
-3. **Publish.** A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
+1. **Authoring.** Done (`plan/authoring-plan.md`): roles on moves, the gate, modifiers, the library, the catalog,
+   the guide rewritten round the brief, and two proofs. Agents no longer copy the examples.
+2. **Values and sequence.** Done (`plan/values-plan.md`): one table of a value's fields with colour, blur, strokes
+   and clips; modifiers over any value; `sequence`; a span placed by the clock; the catalog's parts; a review that
+   picks its frames. The showreel rebuilt on it is the standing measure.
+3. **Objects and story.** Next (`plan/stage-plan.md`): the `stage` package, layer 3 of `docs/ARCHITECTURE.md`. A cast
+   described in code (shapes, text, letters and words, images, paths, groups), a frame format, beats as named spans,
+   and presence (when each member is on stage), played by one stage with no component, and read by the tools. A
+   piece becomes one file.
+4. **Composition, the rest.** Transitions between two scenes, an element moved between two layouts and carried
+   across a transition. It serves a site (a route change, a list reordering, a card opening) as much as a video.
+5. **Publish.** A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
    `stage` package and one app have held the surface still.
-4. **The live kit and the web overlay.** The panel, timeline and guard become a package; the overlay attaches to any
+6. **The live kit and the web overlay.** The panel, timeline and guard become a package; the overlay attaches to any
    page, picks elements and loops a trigger. Hover knobs and review marks on the timeline land here.
-5. **Objects.** The `stage` package: makers, the generic stage, frame formats, text in parts. A piece becomes one
-   file.
-6. **The instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
+7. **The instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
    links, a static site.
-7. **Video.** The camera, the beat driver, sound in the rendered file, a clip of footage as an object.
+8. **Video.** The camera, the beat driver, sound in the rendered file, a clip of footage as an object.
 
-**3D runs beside this, any time after stage 1:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
+**3D runs beside this, any time:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
 a React Three Fiber scaffold and worked example.
 
-**Artwork from a reference runs after stage 5:** an agent looks at an image and rebuilds it as SVG or as a Three.js
+**Artwork from a reference runs after stage 3:** an agent looks at an image and rebuilds it as SVG or as a Three.js
 scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders the
 rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
 
@@ -144,8 +141,8 @@ Two improvements the owner asked to keep, each its own small plan:
 
 `docs/ARCHITECTURE.md` names five layers. Two show gaps:
 
-- **The scene has no cast.** Objects and text are made by hand in a component. The `stage` package (stage 5) is
-  that layer, and it comes before the instrument and video.
+- **The scene has no cast.** Objects and text are made by hand in a component. The `stage` package (stage 3,
+  `plan/stage-plan.md`) is that layer, together with the story: beats and presence a tool can check.
 - **Logic has no plan.** A game, a quiz or an interactive explainer needs rules over the event log: state as a fold
   over events, collisions from the seekable physics world, and a fixed step so a replay gives the same answer. It is
   written when a brief needs it, not before.

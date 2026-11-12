@@ -320,6 +320,14 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`EventDriverOptions`** `type EventDriverOptions`: Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`.
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
+- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>, options?: StageOpt… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
+- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test.
+- **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
+- **`StageFonts`** `type StageFonts`: The document's font loading, which tells the stage when text may have changed size.
+- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.
+- **`StageStyle`** `type StageStyle`: The style properties the stage writes beside a value's; a page element's style has them all.
+- **`StageValues`** `type StageValues`: A scene's answer per member name: one value, or one per item of a `many`.
 <!-- generated:reference:end -->
 
 ## @gerak/react
@@ -355,6 +363,8 @@ const centre = centreIn(dot, stage);
 - **`OwnedDriver`** `type OwnedDriver`: A driver a component owns, released when the component leaves.
 - **`PlayerHost`** `type PlayerHost`: What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped.
 - **`Playing`** `type Playing`: What `usePlayer` gives: the `player` and the `driver` it plays on.
+- **`Stage`** `<B extends string>({ module, options }: StageProps<B>): ReactNode`: Plays a stage module in a div that fills its parent; a new module mounts afresh, options are read when it mounts, and leaving disposes it.
+- **`StageProps`** `type StageProps`: What `<Stage />` plays: a stage module, and the frames and clock its drivers run on.
 <!-- generated:reference:end -->
 
 ## @gerak/rig
@@ -411,6 +421,45 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 - **`chainShape3d`** `(members: readonly ChainMember3d[]): ChainShape3d`: Chain shape, or a throw when no member carries a goal. Order: goal guard → `constrained` → `two-bone` pair → `tree`.
 - **`solveChain3d`** `(root: WorldFrame3d, members: readonly ChainMember3d[], bend?: Pole3d): SolveResult3d`: Solves one 3D chain: position by shape, then each oriented leaf toward its goal. Orientation turns leaves without moving the tip, so position keeps priority.
 - **`ChainShape3d`** `type ChainShape3d`: Strategy answering one 3D chain; derived at solve time, never authored. `two-bone` carries pair + goal, `tree` members, `constrained` members with a limiting joint.
+<!-- generated:reference:end -->
+
+## @gerak/stage
+
+Who is on stage and when. A cast member is a proxy: `actor`, `many` and `group` say only what the scene's motion
+needs (a name, how many parts, the text, when it is shown, whether it is watched); how it looks is the renderer's
+skin. `story` names the beats and owns the piece's length; `restOf` reads where a member rests once laid out.
+
+```ts
+export const beats = story(4000, { arrive: [0, 1600], hold: [1600, 4000] });
+export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor() };
+```
+
+<!-- generated:reference:start -->
+- **`actor`** `(options?: Behaviour & { readonly text?: string; }): Actor`: One thing on stage, saying `text` when it has one.
+- **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
+- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order.
+- **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
+- **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
+- **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
+- **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
+- **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
+- **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
+- **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
+- **`Many`** `type Many`: A list of things; the scene answers one value per item. To move the whole list, put it in a `group`.
+- **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
+- **`Presence`** `type Presence`: When a member is on stage, by the names of the story's beats; a member without them takes its group's.
+- **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
+- **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
+- **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
+- **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
+- **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
+- **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
+- **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
+- **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
+- **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
+- **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
 <!-- generated:reference:end -->
 
 ## @gerak/physics
@@ -513,6 +562,9 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   every field of every target each 16 ms and finds a step over its limit in one frame (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
+  For a stage module (it exports `beats` and `cast`) a finding that names a time also names the beat there, and it
+  adds: a cast member the scene never moves that is not `still`, a target the scene answers that is not cast, and a
+  member whose value changes before its `enters` beat starts or after its `leaves` beat ends.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's

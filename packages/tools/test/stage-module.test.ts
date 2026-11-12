@@ -1,0 +1,112 @@
+import { describe, expect, it } from "vitest";
+import type { Time } from "@gerak/moves";
+import { actor, story } from "@gerak/stage";
+import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
+import { reviewSceneModule } from "../src/scene/review";
+import * as clean from "./fixtures/stage-clean";
+import * as outside from "./fixtures/stage-outside";
+import * as unknown from "./fixtures/stage-unknown";
+import * as unused from "./fixtures/stage-unused";
+
+const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
+
+function moduleOf(value: object): SceneModule {
+  const read = readSceneModule(value);
+  if ("reason" in read) throw new Error(read.reason);
+  return read;
+}
+
+const findings = (value: object) => reviewSceneModule(moduleOf(value), limits).findings;
+
+describe("a stage module in the scene tools", () => {
+  it("is read with its length from the story, its beats and its cast names", () => {
+    const read = moduleOf(clean);
+    expect(read.durationMs).toBe(2000);
+    expect(read.beats).toEqual([
+      { name: "intro", from: 0, to: 400 },
+      { name: "go", from: 400, to: 1400 },
+      { name: "out", from: 1400, to: 2000 },
+    ]);
+    expect(read.cast?.map(({ name }) => name)).toEqual([
+      "stage",
+      "dot",
+      "word",
+      "word.0",
+      "word.1",
+      "mark",
+    ]);
+  });
+
+  it("samples, handing the scene the module's rest or an empty one", () => {
+    const [start, end] = sampleScene(moduleOf(clean), { kind: "time", ms: [0, 1500] });
+    expect(start?.targets["dot"]).toEqual({ x: 0 });
+    expect(end?.targets["dot"]).toEqual({ x: 100 });
+    const boxed = moduleOf({ ...clean, rest: { dot: { x: 7, y: 0, width: 1, height: 1 } } });
+    expect(sampleScene(boxed, { kind: "time", ms: [0] })[0]?.targets["dot"]).toEqual({ x: 7 });
+  });
+
+  it("refuses a duration unlike the story's, a cast naming a missing beat, and a bad rest", () => {
+    const apart = readSceneModule({ ...clean, durationMs: 1000 });
+    expect("reason" in apart && apart.reason).toMatch(/1000.*2000|2000.*1000/);
+    const lost = readSceneModule({ ...clean, cast: { dot: actor({ enters: "nowhere" }) } });
+    expect("reason" in lost && lost.reason).toMatch(/nowhere/);
+    const badRest = readSceneModule({ ...clean, rest: { dot: { x: 1 } } });
+    expect("reason" in badRest && badRest.reason).toMatch(/rest/);
+    const agree = readSceneModule({ ...clean, durationMs: 2000 });
+    expect("reason" in agree).toBe(false);
+  });
+
+  it("reads a module without beats exactly as before", () => {
+    const read = moduleOf({ scene: () => ({ a: { x: 1 } }), durationMs: 500 });
+    expect(read.beats).toBeUndefined();
+    expect(read.cast).toBeUndefined();
+    expect(reviewSceneModule(read, limits).findings.some((line) => /cast/.test(line))).toBe(false);
+  });
+
+  it("names the beat a time falls in, the latest started, and none in a gap", () => {
+    const read = moduleOf({
+      scene: () => ({}),
+      beats: story(1000, { a: [0, 600], b: [300, 400] }),
+      cast: {},
+    });
+    expect(beatAt(read.beats ?? [], 100)).toBe("a");
+    expect(beatAt(read.beats ?? [], 350)).toBe("b");
+    expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
+  });
+});
+
+describe("motion:review on a stage module", () => {
+  it("finds nothing in a clean one", () => {
+    expect(findings(clean)).toEqual([]);
+  });
+
+  it("finds a member the scene never moves that is not still", () => {
+    expect(findings(unused)).toEqual([
+      'cast member "spare" is never moved by the scene; move it or mark it still.',
+    ]);
+  });
+
+  it("lets a watched member move only on events, and reports a still member that moves", () => {
+    const beats = story(500, { all: [0, 500] });
+    expect(findings({ beats, cast: { play: actor({ watch: true }) }, scene: () => ({}) })).toEqual(
+      [],
+    );
+    const moved = {
+      beats,
+      cast: { a: actor({ still: true }) },
+      scene: (time: Time) => ({ a: { x: time.progress } }),
+    };
+    expect(findings(moved)).toContain('cast member "a" is marked still, but the scene moves it.');
+  });
+
+  it("finds a target the scene answers that is not cast", () => {
+    expect(findings(unknown)).toEqual(['the scene answers "ghost", which is not in the cast.']);
+  });
+
+  it("finds a member changing before it enters and after it leaves, with the beat there", () => {
+    expect(findings(outside)).toEqual([
+      'dot changes at 16 ms (beat "intro"), before its beat "go" starts at 400 ms.',
+      'dot changes at 1424 ms (beat "out"), after its beat "go" ends at 1400 ms.',
+    ]);
+  });
+});

@@ -69,8 +69,10 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   }
   const page = positional[0];
   if (page === undefined || positional.length !== 1) return usage("Expected one page path.");
-  if (!/^[\w./-]+$/.test(page) || page.startsWith("/") || page.includes(".."))
-    return usage(`Page ${page} must be a path inside the site, like timing.html.`);
+  if (!/^[\w./-]+(?:\?[\w.=&-]+)?$/.test(page) || page.startsWith("/") || page.includes(".."))
+    return usage(
+      `Page ${page} must be a path inside the site, like timing.html or stage.html?piece=saved.`,
+    );
   const size = /^(\d+)x(\d+)$/.exec(flags.get("--size") ?? "1280x720");
   if (size === null) return usage("--size needs WIDTHxHEIGHT.");
   const root = flags.get("--root");
@@ -164,6 +166,10 @@ export async function withPage<T>(
     await page.clock.pauseAt(1);
     await page.goto(new URL(target.page, base).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
+    await page.evaluate(() =>
+      Promise.resolve(Reflect.get(window, "__motionReady")).then(() => undefined),
+    );
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
     await page.clock.runFor(FIRST_FRAME_MS);
     await page.evaluate(holdAnimations, 0);

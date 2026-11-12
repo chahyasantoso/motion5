@@ -59,7 +59,7 @@ describe("motion:moves", () => {
     expect(run.code).toBe(0);
     expect(run.lines.at(-1)).toBe(PARTS_HINT);
     expect(listed.at(-1)).toBe(
-      "good [enter] Slides in from the left. | options: distance number 0..500, default 100 | moments: arrive",
+      "good [enter] Slides in from the left. | options: distance number 0..500, default 100 | moments: arrive | import from ./moves/good",
     );
   });
 

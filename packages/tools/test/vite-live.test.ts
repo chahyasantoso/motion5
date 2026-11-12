@@ -203,6 +203,15 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     }
   });
 
+  it("hands a stage module's update to the page, and leaves other modules alone", () => {
+    const plugin = motionLivePlugin();
+    const stage = `export const beats = story(1000, {});\nexport const cast = {};`;
+    const id = resolve("apps/pieces/src/saved.ts");
+    expect(plugin.transform(stage, id)?.code).toContain("import.meta.hot.accept");
+    expect(plugin.transform(`export const beats = 1;`, id)).toBeNull();
+    expect(plugin.transform(stage, resolve("apps/pieces/lib/saved.ts"))).toBeNull();
+  });
+
   it("runs only on a dev server, and hands an update no page took back to Vite", () => {
     const plugin = motionLivePlugin();
     expect(plugin.apply).toBe("serve");

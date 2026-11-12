@@ -60,6 +60,20 @@ describe("extractMarks", () => {
     ]);
   });
 
+  it("marks each beat of a story by name at its start, before the cues", () => {
+    const beats = {
+      durationMs: 3000,
+      order: ["drop", "settle"],
+      drop: { from: 0, to: 900 },
+      settle: { from: 900, to: 3000 },
+    };
+    expect(extractMarks({ beats, cues: [{ name: "catch", at: 1850 }] }, 3000)).toEqual([
+      { name: "drop", at: 0, kind: "beat", endMs: 900 },
+      { name: "settle", at: 900, kind: "beat", endMs: 3000 },
+      { name: "catch", at: 1850, kind: "cue" },
+    ]);
+  });
+
   it("includes BEAT_MS if its value differs from durationMs", () => {
     const sceneModule = {
       BEAT_MS: 2000,

@@ -276,6 +276,31 @@ export interface MotionLivePlugin {
   configureServer(server: MotionLiveServer): void;
 }
 
+/** What a hot module appends: its stamp, the errors Vite reports, and the update it hands the page. */
+const HOT_SWAP =
+  `export const __motionStamp = Number(new URL(import.meta.url).searchParams.get("t") ?? 0);\n` +
+  `if (import.meta.hot) {\n` +
+  `  const seen = import.meta.hot.data;\n` +
+  `  import.meta.hot.on("vite:beforeUpdate", (payload) => {\n` +
+  `    for (const update of payload.updates)\n` +
+  `      seen.latest = Math.max(seen.latest ?? 0, update.timestamp);\n` +
+  `  });\n` +
+  `  import.meta.hot.on("vite:error", (payload) => {\n` +
+  `    const detail = { ...payload, stamp: seen.latest ?? 0 };\n` +
+  `    window.dispatchEvent(new CustomEvent("motion:error", { detail }));\n` +
+  `  });\n` +
+  `  import.meta.hot.accept((next) => {\n` +
+  `    if (!next) return;\n` +
+  `    const hot = new CustomEvent("motion:hot", { detail: next, cancelable: true });\n` +
+  `    if (window.dispatchEvent(hot)) import.meta.hot.invalidate();\n` +
+  `  });\n` +
+  `}\n`;
+
+/** Whether a source file exports the story and the cast of a stage module. */
+function isStageSource(code: string): boolean {
+  return /export\s+const\s+beats\b/.test(code) && /export\s+const\s+cast\b/.test(code);
+}
+
 /** Provides live HMR scene transform and source/edit endpoints for the live editor. */
 export function motionLivePlugin(options?: {
   readonly appRoot?: string;
@@ -286,36 +311,15 @@ export function motionLivePlugin(options?: {
     apply: "serve",
     transform(code: string, id: string) {
       const normalized = id.replace(/\\/g, "/");
-      if (
-        normalized.endsWith(".tsx") &&
-        normalized.includes("/src/") &&
-        !normalized.endsWith("-main.tsx")
-      ) {
+      if (!normalized.includes("/src/") || normalized.endsWith("-main.tsx")) return null;
+      if (normalized.endsWith(".tsx")) {
         const match = /from\s+["'](\.\/[a-z0-9-]+-scene)["']/.exec(code);
-        if (match !== null && match[1] !== undefined) {
-          const appended =
-            code +
-            `\nexport * as __motionScene from "${match[1]}";\n` +
-            `export const __motionStamp = Number(new URL(import.meta.url).searchParams.get("t") ?? 0);\n` +
-            `if (import.meta.hot) {\n` +
-            `  const seen = import.meta.hot.data;\n` +
-            `  import.meta.hot.on("vite:beforeUpdate", (payload) => {\n` +
-            `    for (const update of payload.updates)\n` +
-            `      seen.latest = Math.max(seen.latest ?? 0, update.timestamp);\n` +
-            `  });\n` +
-            `  import.meta.hot.on("vite:error", (payload) => {\n` +
-            `    const detail = { ...payload, stamp: seen.latest ?? 0 };\n` +
-            `    window.dispatchEvent(new CustomEvent("motion:error", { detail }));\n` +
-            `  });\n` +
-            `  import.meta.hot.accept((next) => {\n` +
-            `    if (!next) return;\n` +
-            `    const hot = new CustomEvent("motion:hot", { detail: next, cancelable: true });\n` +
-            `    if (window.dispatchEvent(hot)) import.meta.hot.invalidate();\n` +
-            `  });\n` +
-            `}\n`;
-          return { code: appended, map: null };
-        }
+        if (match === null || match[1] === undefined) return null;
+        const scene = `\nexport * as __motionScene from "${match[1]}";\n`;
+        return { code: code + scene + HOT_SWAP, map: null };
       }
+      if (normalized.endsWith(".ts") && isStageSource(code))
+        return { code: `${code}\n${HOT_SWAP}`, map: null };
       return null;
     },
     configureServer(server: MotionLiveServer): void {

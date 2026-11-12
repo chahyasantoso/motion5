@@ -9,3 +9,5 @@ export {
   useWatch,
 } from "./player";
 export type { DriverKeeper, OwnedDriver, PlayerHost, Playing } from "./player";
+export { Stage } from "./stage";
+export type { StageProps } from "./stage";

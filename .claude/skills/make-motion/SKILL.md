@@ -7,7 +7,9 @@ description: Make, change or polish an animation or motion piece for a web page 
 
 A piece starts from its brief, not from a piece that already exists.
 
-1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short.
+1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short. A
+   piece is one stage module: `npm run motion:new -- <name>` writes `apps/pieces/src/<name>.ts` with its cast, its
+   story and its skin, and `stage.html?piece=<name>` shows it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
@@ -16,8 +18,8 @@ A piece starts from its brief, not from a piece that already exists.
    `npm run motion:moves -- --check`.
    `npm run motion:moves -- --parts` lists the building blocks a move is made from: time, eases, blends, paths,
    follow-through, events, randomness.
-4. Do not open any other scene file in `apps/pieces/src`, nor the components beside them. They are tests of the
-   runtime, and a piece begun from one comes out as its copy.
+4. Do not open any other piece in `apps/pieces/src`, whether a stage module, a scene file or a component. They are
+   tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide lists (events, physics, rigs, principles, 3D) only when the brief needs it.
 6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
    do not read the reference whole, and do not read package source.

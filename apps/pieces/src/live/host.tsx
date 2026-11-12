@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { ClockDriver } from "@gerak/dom";
-import type { Scene } from "@gerak/player";
+import type { Driver, Scene } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
+import { loadStageModule, isStageModule, type LoadedStage } from "../stage-module";
+import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
+import { LiveStageView } from "./stage-view";
 import { extractMarks, scrubByWheel, Timeline } from "./timeline";
 
 const COMPONENT_FILES: Readonly<Record<string, string>> = {};
@@ -21,28 +24,6 @@ function isComponentName(name: string): boolean {
 
 function isComponentType(value: unknown): value is React.FC {
   return typeof value === "function";
-}
-
-function isClockDriver(driver: OwnedDriver | undefined): driver is ClockDriver {
-  return (
-    driver !== undefined &&
-    "play" in driver &&
-    typeof driver.play === "function" &&
-    "pause" in driver &&
-    typeof driver.pause === "function" &&
-    "seek" in driver &&
-    typeof driver.seek === "function" &&
-    "replay" in driver &&
-    typeof driver.replay === "function" &&
-    "setRate" in driver &&
-    typeof driver.setRate === "function" &&
-    "setRange" in driver &&
-    typeof driver.setRange === "function" &&
-    "playing" in driver &&
-    typeof driver.playing === "function" &&
-    "dispose" in driver &&
-    typeof driver.dispose === "function"
-  );
 }
 
 /** Extracts the first exported React component function whose name starts with an uppercase letter. */
@@ -124,14 +105,39 @@ export async function applySceneStyles(name: string): Promise<void> {
   }
 }
 
-export interface SceneBundle {
+/** A scene made of a component and a scene file. */
+export interface ComponentBundle {
+  readonly kind: "component";
   readonly name: string;
   readonly Component: React.FC;
   readonly sceneModule?: Record<string, unknown> | undefined;
 }
 
-/** Loads the component module and styles for a named scene. */
+/** A scene made of one stage module. */
+export interface StageBundle {
+  readonly kind: "stage";
+  readonly name: string;
+  readonly module: LoadedStage;
+}
+
+export type SceneBundle = ComponentBundle | StageBundle;
+
+/** Whether `src/<name>.ts` exists; a name that is not a piece's has none. */
+async function hasStageFile(name: string): Promise<boolean> {
+  if (typeof fetch !== "function") return false;
+  const response = await fetch(`/src/${name}.ts`).catch(() => undefined);
+  return (
+    response?.ok === true && (response.headers.get("content-type") ?? "").includes("javascript")
+  );
+}
+
+/** Loads a named scene: the stage module `src/<name>.ts` when there is one, else its component and styles. */
 export async function loadSceneBundle(name: string): Promise<SceneBundle> {
+  if (await hasStageFile(name)) {
+    const module = await loadStageModule(name);
+    if (typeof module === "string") throw new Error(module);
+    return { kind: "stage", name, module };
+  }
   await applySceneStyles(name);
   const file = COMPONENT_FILES[name] ?? name;
   const url = `/src/${file}.tsx`;
@@ -140,7 +146,7 @@ export async function loadSceneBundle(name: string): Promise<SceneBundle> {
   const Component = extractComponent(mod);
   if (Component === undefined) throw new Error(`No React component found in ${url}.`);
   const sceneModule = extractMotionScene(mod);
-  return { name, Component, sceneModule };
+  return { kind: "component", name, Component, sceneModule };
 }
 
 interface StageBoundaryProps {
@@ -197,6 +203,24 @@ export const LiveStage: React.FC<LiveStageProps> = ({ Component, onError }) => {
   );
 };
 
+function shown(
+  bundle: SceneBundle,
+  host: PlayerHost,
+  onError: (message: string) => void,
+  onDriver: (driver: Driver) => void,
+): React.ReactNode {
+  switch (bundle.kind) {
+    case "component":
+      return (
+        <PlayerHostProvider value={host}>
+          <LiveStage Component={bundle.Component} onError={onError} />
+        </PlayerHostProvider>
+      );
+    case "stage":
+      return <LiveStageView module={bundle.module} onError={onError} onDriver={onDriver} />;
+  }
+}
+
 export interface LiveAppProps {
   readonly initial: SceneBundle;
 }
@@ -207,7 +231,9 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
   const [error, setError] = useState<string | undefined>(undefined);
   const keeper = useMemo(() => driverKeeper(), []);
   const ownedDriver = useSyncExternalStore(keeper.subscribe, keeper.current, () => undefined);
-  const clock = isClockDriver(ownedDriver) ? ownedDriver : undefined;
+  const [stageDriver, setStageDriver] = useState<Driver | undefined>(undefined);
+  const driver = initial.kind === "stage" || bundle.kind === "stage" ? stageDriver : ownedDriver;
+  const clock = isClockDriver(driver) ? driver : undefined;
 
   const host: PlayerHost = useMemo(
     () => ({
@@ -228,15 +254,25 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       if (!("detail" in event)) return;
       const detail = Reflect.get(event, "detail");
       if (!isRecord(detail)) return;
-      const nextComponent = extractComponent(detail);
-      if (nextComponent === undefined) return;
+      const nextStage = isStageModule(detail) ? detail : undefined;
+      const nextComponent = nextStage === undefined ? extractComponent(detail) : undefined;
+      if (nextStage === undefined && nextComponent === undefined) return;
       event.preventDefault();
       const stamp = stampOf(detail, "__motionStamp", Number.POSITIVE_INFINITY);
       if (stamp < shownStamp.current) return;
       shownStamp.current = Number.isFinite(stamp) ? stamp : shownStamp.current;
       const nextScene = extractMotionScene(detail);
       if (stamp >= errorStamp.current) setError(undefined);
-      setBundle((prev) => ({ name: prev.name, Component: nextComponent, sceneModule: nextScene }));
+      setBundle((prev) => {
+        if (nextStage !== undefined) return { kind: "stage", name: prev.name, module: nextStage };
+        if (nextComponent === undefined) return prev;
+        return {
+          kind: "component",
+          name: prev.name,
+          Component: nextComponent,
+          sceneModule: nextScene,
+        };
+      });
     };
     window.addEventListener("motion:hot", onHot);
     return () => window.removeEventListener("motion:hot", onHot);
@@ -254,9 +290,10 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
   }, []);
 
   const durationMs = clockLengthMs(clock);
+  const marked = bundle.kind === "stage" ? bundle.module : bundle.sceneModule;
   const marks = useMemo(
-    () => (bundle.sceneModule ? extractMarks(bundle.sceneModule, durationMs) : []),
-    [bundle.sceneModule, durationMs],
+    () => (marked ? extractMarks(marked, durationMs) : []),
+    [marked, durationMs],
   );
 
   return (
@@ -271,11 +308,15 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
         className="live-stage"
         onWheel={(e) => scrubByWheel(clock, durationMs, e.deltaY)}
       >
-        <PlayerHostProvider value={host}>
-          <LiveStage Component={bundle.Component} onError={setError} />
-        </PlayerHostProvider>
+        {shown(bundle, host, setError, setStageDriver)}
       </div>
-      <CodePanel sceneName={bundle.name} version={bundle.sceneModule} moves={bundle.sceneModule} />
+      {bundle.kind === "component" && (
+        <CodePanel
+          sceneName={bundle.name}
+          version={bundle.sceneModule}
+          moves={bundle.sceneModule}
+        />
+      )}
       <Timeline driver={clock} durationMs={durationMs} marks={marks} />
     </div>
   );

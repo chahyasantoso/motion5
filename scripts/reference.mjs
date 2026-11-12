@@ -16,6 +16,7 @@ export const PACKAGES = [
   "dom/src/index.ts",
   "react/src/index.ts",
   "rig/src/index.ts",
+  "stage/src/index.ts",
   "physics/src/index.ts",
   "rapier/src/index.ts",
   "three/src/index.ts",

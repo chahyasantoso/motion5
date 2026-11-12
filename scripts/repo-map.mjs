@@ -31,6 +31,7 @@ export const OWNERS = {
   "packages/dom/src": "DOM and SVG renderer",
   "packages/moves/src": "moves, time, pose",
   "packages/player/src": "scene player, manual driver",
+  "packages/stage/src": "the cast, the story and where things rest",
   "packages/physics/src": "physics",
   "packages/rapier/src": "Rapier",
   "packages/react/src": "React hooks",
