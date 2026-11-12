@@ -83,7 +83,9 @@ function entryOf(name, exportedSymbol, checker) {
       : exportedSymbol;
   const doc = ts.displayPartsToString(symbol.getDocumentationComment(checker)).trim();
   const signature = signatureOf(symbol, checker);
-  return { name, doc, text: `**\`${name}\`**: \`${signature}\`\n${doc === "" ? NO_DOC : doc}` };
+  // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
+  const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
+  return { name, doc, text: `- **\`${name}\`** \`${signature}\`: ${meaning}` };
 }
 
 /** One generated body per package, and the names with no doc comment. */
@@ -104,7 +106,7 @@ export function generate(scanRoot = root, packages = PACKAGES) {
     );
     for (const entry of entries)
       if (entry.doc === "") undocumented.push(`${name.split("/")[0]}: ${entry.name}`);
-    bodies.push(entries.map(({ text }) => text).join("\n\n"));
+    bodies.push(entries.map(({ text }) => text).join("\n"));
   });
   return { bodies, undocumented };
 }
