@@ -161,10 +161,10 @@ tail(time, events);
 const hand = mixPoint(REST, CATCH, lunge.of(time, ease.cubicInOut).progress);
 ```
 
-**`keyframes(durationMs, start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
+**`keyframes(start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
 **`Key`** is a key's type.
 ```ts
-const lean = keyframes(durationMs, 0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
+const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
 lean(time);
 ```
 

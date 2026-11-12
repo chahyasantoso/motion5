@@ -55,7 +55,6 @@ const flights = DROPLETS.map((d) => {
     sink: span(landMs, landMs + 200),
     ripple: span(landMs - 20, landMs + 900),
     height: keyframes(
-      durationMs,
       -d.depth,
       [
         { at: launchMs, to: -d.depth },

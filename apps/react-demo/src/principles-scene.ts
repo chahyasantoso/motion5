@@ -53,7 +53,6 @@ const PATH = toCubics([
 ]);
 
 const crouch = keyframes(
-  durationMs,
   0,
   [
     { at: CROUCH_MS, to: 0 },

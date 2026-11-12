@@ -105,7 +105,6 @@ describe("span", () => {
 
 describe("keyframes", () => {
   const lean = keyframes(
-    4000,
     0,
     [
       { at: 1000, to: 0 },
@@ -127,14 +126,13 @@ describe("keyframes", () => {
   });
 
   it("blends points or poses with the matching mix", () => {
-    const hand = keyframes(4000, { x: 0, y: 0 }, [{ at: 2000, to: { x: 100, y: 50 } }], mixPoint);
+    const hand = keyframes({ x: 0, y: 0 }, [{ at: 2000, to: { x: 100, y: 50 } }], mixPoint);
     expect(hand(timed(1000))).toEqual({ x: 50, y: 25 });
   });
 
   it("refuses keys out of order", () => {
     expect(() =>
       keyframes(
-        4000,
         0,
         [
           { at: 2000, to: 1 },

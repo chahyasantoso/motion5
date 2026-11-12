@@ -34,7 +34,7 @@ const swingKeys: Key<number>[] = [
   ),
   { at: STOP_MS, to: 0, ease: ease.sineIn },
 ];
-const swing = keyframes(durationMs, REACH, swingKeys, mix);
+const swing = keyframes(REACH, swingKeys, mix);
 
 /** A mark that flashes at each tick on its side, and is dark otherwise. */
 const flashKeys = (side: number): Key<number>[] =>
@@ -45,8 +45,8 @@ const flashKeys = (side: number): Key<number>[] =>
       { at: Math.max(2, beat * BEAT_MS + 20), to: 1, ease: ease.cubicOut },
       { at: beat * BEAT_MS + 260, to: 0, ease: ease.cubicOut },
     ]);
-const flashRight = keyframes(durationMs, 0, flashKeys(1), mix);
-const flashLeft = keyframes(durationMs, 0, flashKeys(-1), mix);
+const flashRight = keyframes(0, flashKeys(1), mix);
+const flashLeft = keyframes(0, flashKeys(-1), mix);
 
 const arrive = span(STOP_MS, STOP_MS + 420);
 

@@ -10,7 +10,6 @@ export interface Key<T> {
 
 /** A value moving from `start` at 0 ms to each key in turn, then holding; `blend` is `mix`, `mixPoint`, `mixPose` or alike. */
 export function keyframes<T>(
-  durationMs: number,
   start: T,
   keys: readonly Key<T>[],
   blend: (from: T, to: T, share: number) => T,

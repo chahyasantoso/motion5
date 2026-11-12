@@ -107,7 +107,6 @@ const stlOut = (i: number) => COLL + (2 - (Math.abs(i - 2.5) - 0.5)) * 50;
 const STL_TURN = [-48, 30, -16, 18, -30, 50];
 
 const camScale = keyframes(
-  D,
   1.12,
   [
     { at: 500, to: 1.12 },
