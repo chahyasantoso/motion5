@@ -12,9 +12,10 @@ timeline. And two readers, one in the tools and one in the pieces app, each deci
 
 ## Decision
 
-- **A path is content.** `actor({ path })` gives a member a geometry its motion depends on, as `text` gives it words.
-  The DOM stage draws it as an SVG `path` inside the member, its `viewBox` the path's own box; a value's transform
-  goes to the member and its stroke fields to the path. The skin decides colour and width.
+- **A path is content.** `actor({ path })` gives a member a geometry its motion depends on, as `text` gives it words:
+  the `Cubic2d` segments gerak already uses for `along` and `applyPath`, one path type, never an SVG string. The DOM
+  stage draws it as an SVG `path` inside the member, its `viewBox` the segments' box; a value's transform goes to the
+  member and its stroke fields to the path. The skin decides colour and width.
 - **Presence is a list of stretches.** `on` lists beats, or pairs of beats meaning from the first's start to the
   second's end; a member is shown while any runs. A member without `on` takes its group's; with none it is always
   shown. `enters` and `leaves` are removed.

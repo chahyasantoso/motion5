@@ -20,11 +20,12 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 
 ## 2. Decisions to record (C0, ADR-175)
 
-- **A path is content, like text.** `actor({ path: "M0 0 C…" })` gives a member a geometry the motion depends on:
-  its length, which `drawn` and `trace` read, and later the line a thing moves along. A renderer draws it its own
-  way: the DOM stage as an SVG `path` inside the member, its `viewBox` the path's own box so the skin's width and
-  height scale it; a 3D renderer as a line. A value's transform goes to the member, its stroke fields to the path.
-  The skin decides stroke colour and width.
+- **A path is content, like text.** `actor({ path })` gives a member a geometry the motion depends on: gerak's one
+  path type, the cubic Bézier segments `toCubics(anchors)` makes, which `along` already travels and `applyPath`
+  already draws. Its length is known in core, so `drawn` and `trace` need no browser. A renderer draws it its own way:
+  the DOM stage as an SVG `path` inside the member, its `viewBox` the segments' own box so the skin's width and height
+  scale it; a 3D renderer as a line. A value's transform goes to the member, its stroke fields to the path. The skin
+  decides stroke colour and width. No second path format, no SVG string.
 - **Presence is a list of stretches.** `on: ["landing1", "landing2", ["anticipate", "weight"]]` shows a member while
   any of them runs, and hides it otherwise. An entry is a beat, or a pair of beats meaning from the first's start to
   the second's end. A member without `on` takes its group's, and a member with none is always shown. A stretch that
@@ -47,7 +48,7 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 
 ### C1. A path on stage
 
-- **Invariant:** `actor({ path })` is recorded; `mountStage` draws a path member as an SVG whose `path` carries
+- **Invariant:** `actor({ path })` records `Cubic2d` segments; `mountStage` draws a path member as an SVG whose `path` carries
   `data-cast`, and a value's `drawn`, `drawnFrom` and stroke fields reach it; `trace`, `streak` and `spread` draw on
   a stage member.
 - **Owner:** `packages/stage/src/cast.ts`, `packages/dom/src/stage.ts`.
