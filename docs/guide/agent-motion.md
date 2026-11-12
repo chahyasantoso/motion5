@@ -29,6 +29,7 @@ not by reading package source. Read a part below only when the brief needs it:
 5. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
    their ranges, its moments. `-- --role enter` lists one role; `-- <id>` prints one move in full with its call.
    Choose by role and by the character you wrote down.
+   `-- --parts` lists the building blocks moves are made from (`trail`, `sequence`, `springEase`, `along`, ...).
 6. **Compose.** Place each move on a span, reshape it with a modifier, add moves together on one target (see
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
 7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A

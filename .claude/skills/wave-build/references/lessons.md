@@ -143,3 +143,12 @@ touched 28 files; Sonnet at medium effort, 87 k tokens and 3.2 min, for four mod
 
 - **Look at the tool's output, not only its tests.** The frame picker passed its tests and gave every frame of the timing page to six letters; one look at the sheet showed it. A tool that summarises motion is checked by reading what it produces on a real page.
 - **A reviewer finds what a builder's own tests share with its code.** The span read elapsed and its tests built times whose elapsed matched progress, so an eased time slipped through both.
+
+## 2026-11-12, values wave 4 and the standing measure (gerak)
+
+- **A measure needs the same task each time.** The plan said to rewrite the first rebuild; that would not compare with
+  it. The conductor briefed a fresh rebuild from the original, with the earlier app moves allowed, so reuse counts.
+- **Two slices in one worker blur the measure.** The token count includes the parts list as well as the rebuild.
+  Next time the measure runs alone, in its own worker.
+- **A worker's gap list is a backlog.** The top gap was an error message that named one fix and not the other; it
+  took one line to fix.

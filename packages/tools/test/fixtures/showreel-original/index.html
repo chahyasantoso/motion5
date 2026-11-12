@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Timing Is Everything</title>
+<style>
+  :root { --ink:#101114; --paper:#f3efe6; --coral:#ff5b3a; --mute:#7d8290; }
+  html, body { margin:0; height:100%; background:#050506; overflow:hidden; }
+  body { cursor:pointer; }
+  #stage {
+    position:absolute; left:50%; top:50%; width:1280px; height:720px;
+    transform:translate(-50%,-50%); transform-origin:50% 50%;
+    overflow:hidden; background:var(--ink); color:var(--paper);
+    font-family:"Arial Black","Arial Bold",Gadget,Arial,sans-serif; font-weight:900;
+    user-select:none; -webkit-user-select:none;
+  }
+  #camera { position:absolute; left:0; top:0; width:1280px; height:720px; transform-origin:640px 360px; }
+  #wipe {
+    position:absolute; left:-160px; top:-420px; width:1600px; height:1600px;
+    border-radius:50%; background:var(--coral); transform:scale(0); opacity:0;
+  }
+  #fx { position:absolute; left:0; top:0; overflow:visible; pointer-events:none; }
+  #fx path { fill:none; stroke-linecap:round; opacity:0; }
+  .word {
+    position:absolute; left:0; width:1280px; display:flex; justify-content:center;
+    line-height:1; white-space:pre;
+  }
+  .ch { display:inline-block; opacity:0; }
+  #ant { top:312px; height:100px; font-size:100px; letter-spacing:.01em;
+         clip-path:inset(-900px -200px 0 -200px); }
+  #ant .ch { transform-origin:50% 80%; }
+  #wgt { top:326px; font-size:180px; }
+  #wgt .ch { transform-origin:50% 80%; margin:0 .01em; }
+  #floor { position:absolute; left:300px; top:488px; width:680px; height:5px; border-radius:3px;
+           background:var(--paper); transform:scaleX(0); opacity:0; }
+  .dust { position:absolute; left:-5px; top:-5px; width:10px; height:10px; border-radius:50%;
+          background:var(--paper); opacity:0; }
+  #ovl { position:absolute; left:0; top:0; width:1280px; height:720px; opacity:0; }
+  #bar { position:absolute; left:250px; top:150px; width:780px; height:6px; border-radius:3px; background:var(--coral); }
+  #ovl-row { position:absolute; left:0; top:155px; width:1280px; display:flex; justify-content:center; gap:6px; }
+  .hg { display:flex; flex-direction:column; align-items:center; transform-origin:50% 0; }
+  .str { display:block; width:2px; background:rgba(243,239,230,.45); }
+  .hg b { display:block; font-size:110px; line-height:.92; font-weight:900; }
+  #stl { top:226px; font-size:140px; }
+  #stl .ch { transform-origin:50% 55%; }
+  #fin { top:286px; align-items:flex-end; font-family:Georgia,"Times New Roman",serif;
+         font-style:italic; font-weight:700; font-size:84px; }
+  .fm { display:inline-block; overflow:hidden; line-height:1.15; padding:0 .08em .12em; margin:0 .04em; }
+  .fw { display:inline-block; transform:translateY(130%); }
+  #fin-slot { width:.32em; padding:0; margin-left:-.06em; }
+  #fin-base { display:inline-block; width:0; height:0; vertical-align:baseline; }
+  #credit { position:absolute; left:0; top:438px; width:1280px; text-align:center;
+            font:700 14px/1 Arial,Helvetica,sans-serif; letter-spacing:.42em; color:var(--mute); opacity:0; }
+  #credit em { font-style:normal; color:var(--coral); }
+  .ring { position:absolute; left:-60px; top:-60px; width:120px; height:120px; box-sizing:border-box;
+          border-radius:50%; border:3px solid var(--coral); opacity:0; }
+  #dot { position:absolute; left:-18px; top:-18px; width:36px; height:36px; border-radius:50%;
+         background:var(--coral); opacity:0; }
+  #vignette { position:absolute; inset:0; pointer-events:none;
+              background:radial-gradient(ellipse at 50% 46%, rgba(0,0,0,0) 52%, rgba(0,0,0,.42) 100%); }
+  #hud { position:absolute; left:32px; right:32px; bottom:26px; display:flex; justify-content:space-between;
+         font:12px/1 Consolas,"Courier New",monospace; letter-spacing:.18em; color:var(--mute); opacity:0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="camera">
+    <div id="wipe"></div>
+    <svg id="fx" width="1280" height="720" viewBox="0 0 1280 720" aria-hidden="true">
+      <path id="trail-up" stroke="#ff5b3a" stroke-width="3"/>
+      <path id="trail-arc" stroke="#ff5b3a" stroke-width="2.5"/>
+      <path id="stl-line" stroke="#f3efe6" stroke-width="7"/>
+    </svg>
+
+    <div class="word" id="ant"><span class="ch" id="ant0">A</span><span class="ch" id="ant1">N</span><span class="ch" id="ant2">T</span><span class="ch" id="ant3">I</span><span class="ch" id="ant4">C</span><span class="ch" id="ant5">I</span><span class="ch" id="ant6">P</span><span class="ch" id="ant7">A</span><span class="ch" id="ant8">T</span><span class="ch" id="ant9">E</span></div>
+
+    <div id="floor"></div>
+    <div class="word" id="wgt"><span class="ch" id="wgt0">W</span><span class="ch" id="wgt1">E</span><span class="ch" id="wgt2">I</span><span class="ch" id="wgt3">G</span><span class="ch" id="wgt4">H</span><span class="ch" id="wgt5">T</span></div>
+    <div id="dust"><i class="dust" id="dust0"></i><i class="dust" id="dust1"></i><i class="dust" id="dust2"></i><i class="dust" id="dust3"></i><i class="dust" id="dust4"></i><i class="dust" id="dust5"></i><i class="dust" id="dust6"></i><i class="dust" id="dust7"></i><i class="dust" id="dust8"></i><i class="dust" id="dust9"></i><i class="dust" id="dust10"></i><i class="dust" id="dust11"></i><i class="dust" id="dust12"></i><i class="dust" id="dust13"></i><i class="dust" id="dust14"></i><i class="dust" id="dust15"></i><i class="dust" id="dust16"></i><i class="dust" id="dust17"></i></div>
+
+    <div id="ovl">
+      <div id="bar"></div>
+      <div id="ovl-row">
+        <div class="hg" id="ovl0"><i class="str" style="height:140px"></i><b>O</b></div>
+        <div class="hg" id="ovl1"><i class="str" style="height:185px"></i><b>V</b></div>
+        <div class="hg" id="ovl2"><i class="str" style="height:160px"></i><b>E</b></div>
+        <div class="hg" id="ovl3"><i class="str" style="height:200px"></i><b>R</b></div>
+        <div class="hg" id="ovl4"><i class="str" style="height:170px"></i><b>L</b></div>
+        <div class="hg" id="ovl5"><i class="str" style="height:210px"></i><b>A</b></div>
+        <div class="hg" id="ovl6"><i class="str" style="height:180px"></i><b>P</b></div>
+      </div>
+    </div>
+
+    <div class="word" id="stl"><span class="ch" id="stl0">S</span><span class="ch" id="stl1">E</span><span class="ch" id="stl2">T</span><span class="ch" id="stl3">T</span><span class="ch" id="stl4">L</span><span class="ch" id="stl5">E</span></div>
+
+    <div class="word" id="fin"><span class="fm"><span class="fw" id="fin0">Timing</span></span><span class="fm"><span class="fw" id="fin1">is</span></span><span class="fm"><span class="fw" id="fin2">everything</span></span><span class="fm" id="fin-slot"><span class="fw">&#8203;<i id="fin-base"></i></span></span></div>
+    <div id="credit">CLAUDE <em>&#183;</em> MOTION DESIGN <em>&#183;</em> REEL 2026</div>
+
+    <div class="ring" id="ring-launch"></div>
+    <div class="ring" id="ring-land"></div>
+    <div class="ring" id="ring-burst"></div>
+    <div class="ring" id="ring-period"></div>
+    <div id="dot"></div>
+  </div>
+  <div id="vignette"></div>
+  <div id="hud"><span id="idx"></span><span id="tc"></span></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var D = 15000;
+  window.DURATION_MS = D;
+
+  /* ---------- math ---------- */
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+  function P(t, a, b) { return clamp((t - a) / (b - a), 0, 1); }
+  function L(a, b, p) { return a + (b - a) * p; }
+  var E = {
+    inQ: function (p) { return p * p; },
+    outQ: function (p) { return 1 - (1 - p) * (1 - p); },
+    inC: function (p) { return p * p * p; },
+    outC: function (p) { return 1 - Math.pow(1 - p, 3); },
+    ioC: function (p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; },
+    outQt: function (p) { return 1 - Math.pow(1 - p, 4); },
+    outBack: function (p, s) { var q = p - 1; return 1 + (s + 1) * q * q * q + s * q * q; },
+    inBack: function (p, s) { return (s + 1) * p * p * p - s * p * p; }
+  };
+  /* damped spring step response 0 -> 1, f in Hz, z damping ratio */
+  function spring(ms, f, z) {
+    if (ms <= 0) return 0;
+    var w = 2 * Math.PI * f, s = ms / 1000, wd = w * Math.sqrt(1 - z * z);
+    return 1 - Math.exp(-z * w * s) * (Math.cos(wd * s) + (z * w / wd) * Math.sin(wd * s));
+  }
+  /* damped impulse response: starts at 0, swings, dies out */
+  function wob(ms, f, z) {
+    if (ms <= 0) return 0;
+    var w = 2 * Math.PI * f, s = ms / 1000;
+    return Math.exp(-z * w * s) * Math.sin(w * Math.sqrt(1 - z * z) * s);
+  }
+  var INK = [16, 17, 20], PAPER = [243, 239, 230], CORAL = [255, 91, 58];
+  function mix(a, b, p) {
+    return "rgb(" + Math.round(L(a[0], b[0], p)) + "," + Math.round(L(a[1], b[1], p)) + "," + Math.round(L(a[2], b[2], p)) + ")";
+  }
+  function n(v) { return Math.abs(v) < 1e-5 ? 0 : Math.round(v * 1e4) / 1e4; }
+  function T(el, x, y, r, sx, sy, o, blur) {
+    el.style.transform = "translate(" + n(x) + "px," + n(y) + "px) rotate(" + n(r) + "deg) scale(" + n(sx) + "," + n(sy) + ")";
+    el.style.opacity = String(n(clamp(o, 0, 1)));
+    if (blur !== undefined) el.style.filter = blur > 0.05 ? "blur(" + n(blur) + "px)" : "none";
+  }
+  /* cubic bezier with an arc-length table, for draw-on strokes and the dot's flight */
+  function curve(p0, p1, p2, p3) {
+    function at(s) {
+      var u = 1 - s;
+      return {
+        x: u * u * u * p0[0] + 3 * u * u * s * p1[0] + 3 * u * s * s * p2[0] + s * s * s * p3[0],
+        y: u * u * u * p0[1] + 3 * u * u * s * p1[1] + 3 * u * s * s * p2[1] + s * s * s * p3[1]
+      };
+    }
+    var N = 160, acc = [0], prev = at(0), tot = 0;
+    for (var k = 1; k <= N; k++) { var q = at(k / N); tot += Math.hypot(q.x - prev.x, q.y - prev.y); acc.push(tot); prev = q; }
+    return {
+      at: at, len: tot,
+      lenAt: function (s) { s = clamp(s, 0, 1); var f = s * N, i = Math.floor(f); return i >= N ? tot : L(acc[i], acc[i + 1], f - i); },
+      d: "M" + p0 + " C" + p1 + " " + p2 + " " + p3
+    };
+  }
+  function quad(a, c, b) {
+    return curve(a, [a[0] + 2 / 3 * (c[0] - a[0]), a[1] + 2 / 3 * (c[1] - a[1])],
+                    [b[0] + 2 / 3 * (c[0] - b[0]), b[1] + 2 / 3 * (c[1] - b[1])], b);
+  }
+  /* show the stretch of a stroke between lengths a and b */
+  function seg(el, len, a, b, o, color) {
+    var A = clamp(a, 0, len), B = clamp(b, 0, len);
+    el.style.strokeDasharray = n(B - A) + " " + n(len + 20);
+    el.style.strokeDashoffset = String(n(-A));
+    el.style.opacity = String(B - A > 0.5 ? o : 0);
+    if (color) el.style.stroke = color;
+  }
+
+  /* ---------- elements ---------- */
+  function $(id) { return document.getElementById(id); }
+  function list(prefix, count) { var a = []; for (var i = 0; i < count; i++) a.push($(prefix + i)); return a; }
+  var cam = $("camera"), wipe = $("wipe"), dotEl = $("dot"), floorEl = $("floor"), ovl = $("ovl");
+  var ANT = list("ant", 10), WGT = list("wgt", 6), DUST = list("dust", 18), OVL = list("ovl", 7),
+      STL = list("stl", 6), FIN = list("fin", 3);
+  var trailUp = $("trail-up"), trailArc = $("trail-arc"), stlLine = $("stl-line");
+  var rLaunch = $("ring-launch"), rLand = $("ring-land"), rBurst = $("ring-burst"), rPeriod = $("ring-period");
+  var credit = $("credit"), hud = $("hud"), idx = $("idx"), tc = $("tc");
+
+  /* ---------- beat clock (ms) ---------- */
+  var LAUNCH = 850,
+      ANT_IN = 1000, ANT_CROUCH = 2250, ANT_LEAP = 2900,
+      WGT_LAND0 = 3880, WGT_LIFT = 5550, WGT_DROP = 5750,
+      OVL_IN = 6150, OVL_STOP = 7150, OVL_ANTIC = 8700, OVL_WHIP = 8950, OVL_GONE = 9450,
+      DROP = 9450, LAND = 9850, HOP_END = 10150, BURST = 10230,
+      UNDERLINE = 10800, WIPE = 11550, COLL = 12300, SHRINK = 12700, MATCH = 13050,
+      FIN_IN = 13050, LEAP = 13250, PERIOD = 13900, CREDIT = 14250;
+  var DX = 640, DY0 = 400, DY1 = 380, R = 18;
+  var WIPE_MIN = 36 / 1600;
+
+  function wgtLand(i) { return WGT_LAND0 + i * 165 + (i === 5 ? 90 : 0); }
+  function stlIn(i) { return BURST + (Math.abs(i - 2.5) - 0.5) * 55; }
+  function stlOut(i) { return COLL + (2 - (Math.abs(i - 2.5) - 0.5)) * 50; }
+  var STL_ROT = [-48, 30, -16, 18, -30, 50];
+
+  /* ---------- geometry measured once from layout ---------- */
+  var G = {};
+  function pos(e) {
+    var x = 0, y = 0, el = e, guard = 0;
+    while (el && el !== cam && guard++ < 24) { x += el.offsetLeft || 0; y += el.offsetTop || 0; el = el.offsetParent; }
+    return { l: x, t: y, w: (e && e.offsetWidth) || 0, h: (e && e.offsetHeight) || 0 };
+  }
+  function boxes(els, fx, fy, fw, fh) {
+    return els.map(function (e, i) {
+      var b = pos(e);
+      if (!b.w) b = { l: fx + i * fw, t: fy, w: fw, h: fh };
+      b.x = b.l + b.w / 2; b.y = b.t + b.h / 2;
+      return b;
+    });
+  }
+  function layout() {
+    G.w = boxes(WGT, 360, 326, 96, 180);
+    G.s = boxes(STL, 400, 226, 80, 140);
+    var b = pos($("fin-base"));
+    G.px = b.l ? b.l + 7 : 930;
+    G.py = b.t ? b.t - 13 : 372;
+    G.arc = quad([DX, DY1], [(DX + G.px) / 2, Math.min(DY1, G.py) - 430], [G.px, G.py]);
+    trailArc.setAttribute("d", G.arc.d);
+    G.up = curve([DX, DY0], [DX, 230], [DX, 60], [DX, -140]);
+    trailUp.setAttribute("d", G.up.d);
+    var half = Math.max(DX - G.s[0].l, G.s[5].l + G.s[5].w - DX) - 6, l = DX - half, r = DX + half;
+    G.ul = curve([l, DY1 - 7], [L(l, r, 1 / 3), DY1 + 2.33], [L(l, r, 2 / 3), DY1 + 2.33], [r, DY1 - 7]);
+    stlLine.setAttribute("d", G.ul.d);
+    bakeOverlap();
+  }
+
+  /* ---------- OVERLAP: pendulums driven by the bar, baked once at a fixed 1 ms step ---------- */
+  var OV0 = 5900, OV1 = 10000, LEN = [140, 185, 160, 200, 170, 210, 180], THETA = [];
+  function barX(t) {
+    if (t < OVL_IN) return -1250;
+    if (t < OVL_STOP) return L(-1250, 0, E.ioC(Math.pow(P(t, OVL_IN, OVL_STOP), 0.6)));
+    if (t < OVL_ANTIC) return 0;
+    if (t < OVL_WHIP) return L(0, -55, E.ioC(P(t, OVL_ANTIC, OVL_WHIP)));
+    return L(-55, 1450, E.inC(P(t, OVL_WHIP, OVL_GONE)));
+  }
+  function bakeOverlap() {
+    var raw = [], peak = 1e-6;
+    for (var i = 0; i < 7; i++) {
+      var len = LEN[i] + 50, f = 1.25 * Math.sqrt(160 / LEN[i]), w = 2 * Math.PI * f, z = 0.18, lag = i * 28;
+      var th = 0, om = 0, arr = new Float32Array(OV1 - OV0 + 1);
+      for (var k = 0; k <= OV1 - OV0; k++) {
+        var t = OV0 + k - lag;
+        var a = (barX(t + 1) - 2 * barX(t) + barX(t - 1)) * 1e6;
+        var alpha = -w * w * th - 2 * z * w * om + a / len;
+        om += alpha * 0.001; th += om * 0.001; arr[k] = th;
+        if (OV0 + k < OVL_ANTIC) peak = Math.max(peak, Math.abs(th));
+      }
+      raw.push(arr);
+    }
+    var gain = (34 * Math.PI / 180) / peak;
+    THETA = raw.map(function (arr) { return arr.map(function (v) { return clamp(v * gain, -1.1, 1.1); }); });
+  }
+  function theta(i, t) {
+    var k = Math.round(clamp(t, OV0, OV1) - OV0);
+    var v = THETA[i] ? THETA[i][k] : 0;
+    return (isFinite(v) ? v : 0) * 180 / Math.PI;
+  }
+
+  /* ---------- the dot ---------- */
+  function dotAt(t) {
+    var x = DX, y = DY0, sx = 1, sy = 1, r = 0, o = 1, k, p, dt;
+    if (t < LAUNCH) {
+      var s = t < 60 ? 0 : spring(t - 60, 2.4, 0.4);
+      k = E.ioC(P(t, 450, LAUNCH));
+      sx = s * (1 + 0.34 * k); sy = s * (1 - 0.42 * k);
+      y = DY0 + R * (s - sy); o = s > 0.001 ? 1 : 0;
+    } else if (t < 1250) {
+      p = P(t, LAUNCH, 1250);
+      y = DY0 - 620 * E.outQ(p);
+      sy = t < 900 ? L(0.58, 1.9, E.outC(P(t, LAUNCH, 900))) : L(1.9, 1.25, P(t, 900, 1250));
+      sx = 1 / Math.sqrt(sy);
+    } else if (t < DROP) {
+      o = 0; y = -200;
+    } else if (t < LAND) {
+      p = P(t, DROP, LAND);
+      y = L(-60, DY1, p * p); sy = 1 + 0.55 * p; sx = 1 / Math.sqrt(sy);
+    } else if (t < HOP_END) {
+      dt = t - LAND; p = dt / (HOP_END - LAND);
+      var sq = 0.48 * Math.exp(-dt / 55);
+      sy = 1 - sq; sx = 1 + 0.8 * sq;
+      y = DY1 - 42 * 4 * p * (1 - p) + R * (1 - sy);
+    } else if (t < BURST) {
+      k = E.outC(P(t, HOP_END, BURST));
+      sy = 1 - 0.38 * k; sx = 1 + 0.3 * k; y = DY1 + R * (1 - sy);
+    } else if (t < MATCH) {
+      dt = t - BURST; y = DY1;
+      var u = spring(dt, 3.2, 0.3), pop = 0.45 * Math.exp(-dt / 100);
+      sy = L(0.62, 1, u) + pop; sx = L(1.3, 1, u) + pop;
+      if (t >= WIPE - 150) {
+        var s2 = t < WIPE ? 1 - 0.3 * E.ioC(P(t, WIPE - 150, WIPE)) : L(0.7, 1, spring(t - WIPE, 3, 0.35));
+        sx *= s2; sy *= s2;
+      }
+      for (var i = 0; i < 6; i++) {
+        var ai = stlOut(i) + 520;
+        if (t > ai) { var g = 0.2 * Math.exp(-(t - ai) / 90); sx += g; sy += g; }
+      }
+    } else if (t < LEAP) {
+      k = E.ioC(P(t, MATCH, LEAP));
+      sy = 1 - 0.4 * k; sx = 1 + 0.3 * k; y = DY1 + R * (1 - sy);
+    } else if (t < PERIOD) {
+      p = P(t, LEAP, PERIOD);
+      var a = G.arc.at(p), b1 = G.arc.at(Math.min(1, p + 0.01)), b0 = G.arc.at(Math.max(0, p - 0.01));
+      x = a.x; y = a.y;
+      r = Math.atan2(b1.y - b0.y, b1.x - b0.x) * 180 / Math.PI;
+      var base = L(1, 0.64, E.ioC(p)), st = Math.sin(Math.PI * p);
+      sx = base * (1 + 0.45 * st); sy = base / (1 + 0.2 * st);
+    } else {
+      dt = t - PERIOD; x = G.px;
+      var q = dt / 240, hop = dt < 240 ? 16 * 4 * q * (1 - q) : 0;
+      var sq2 = 0.42 * Math.exp(-dt / 50) + (dt > 240 ? 0.18 * Math.exp(-(dt - 240) / 45) : 0);
+      sy = 0.64 * (1 - sq2); sx = 0.64 * (1 + 0.7 * sq2);
+      y = G.py - hop + R * (0.64 - sy);
+    }
+    return { x: x, y: y, r: r, sx: sx, sy: sy, o: o };
+  }
+
+  function ringAt(el, x, y, t0, t, dur, maxS, alpha) {
+    var dt = t - t0;
+    if (dt < 0 || dt > dur) { T(el, x, y, 0, 0.2, 0.2, 0); return; }
+    var p = dt / dur, s = L(0.2, maxS, E.outC(p));
+    T(el, x, y, 0, s, s, alpha * (1 - p));
+  }
+
+  var LABELS = [[0, "00 — ORIGIN"], [ANT_IN, "01 — ANTICIPATION"], [3460, "02 — WEIGHT"],
+                [OVL_IN, "03 — OVERLAP"], [DROP, "04 — SETTLE"]];
+  function pad(v) { return (v < 10 ? "0" : "") + v; }
+
+  /* ---------- the one clock ---------- */
+  function seek(ms) {
+    var t = Number(ms);
+    if (!isFinite(t)) t = 0;
+    t = clamp(t, 0, D);
+    var i, p, k, dt, x, y, r, sx, sy, o, blur, col;
+
+    /* camera */
+    var cs = t < 1400 ? L(1.12, 1, E.outC(P(t, 500, 1400)))
+           : t < ANT_LEAP ? L(1, 1.04, E.ioC(P(t, 1400, ANT_LEAP)))
+           : t < MATCH ? L(1.04, 1, E.outC(P(t, ANT_LEAP, 3500)))
+           : L(1, 1.045, E.outC(P(t, MATCH, D)));
+    var cx = 0, cy = 0, cr = 0;
+    cy += 50 * Math.sin(Math.PI * P(t, ANT_LEAP, 3700));
+    for (i = 0; i < 6; i++) {
+      dt = t - wgtLand(i);
+      if (dt >= 0 && dt < 900) {
+        var A = 3 + i * i * 0.6, env = Math.exp(-dt / 140);
+        cy += A * env * Math.sin(2 * Math.PI * 11 * dt / 1000);
+        cx += A * 0.35 * env * Math.sin(2 * Math.PI * 7 * dt / 1000 + i);
+      }
+    }
+    cy -= 40 * Math.sin(Math.PI * P(t, WGT_DROP, 6450));
+    cr += 0.9 * Math.sin(Math.PI * P(t, OVL_IN, 7700));
+    dt = t - LAND; if (dt >= 0 && dt < 600) cy += 6 * Math.exp(-dt / 120) * Math.sin(2 * Math.PI * 10 * dt / 1000);
+    dt = t - PERIOD; if (dt >= 0 && dt < 500) cy += 3 * Math.exp(-dt / 110) * Math.sin(2 * Math.PI * 10 * dt / 1000);
+    T(cam, cx, cy, cr, cs, cs, 1);
+
+    /* dot */
+    var d = dotAt(t);
+    T(dotEl, d.x, d.y, d.r, d.sx, d.sy, d.o);
+    dotEl.style.background = t >= WIPE && t < MATCH ? mix(CORAL, INK, P(t, WIPE, WIPE + 70)) : mix(CORAL, CORAL, 0);
+
+    /* launch trail + rings */
+    var head = G.up.len * clamp(E.outQ(P(t, LAUNCH, 1250)) * 620 / 540, 0, 1);
+    var tail = G.up.len * E.ioC(P(t, 950, 1450));
+    seg(trailUp, G.up.len, tail, head, 1);
+    ringAt(rLaunch, DX, DY0 + R, LAUNCH, t, 600, 2.2, 0.9);
+    ringAt(rLand, DX, DY1 + R, LAND, t, 550, 1.6, 0.8);
+    ringAt(rBurst, DX, DY1, BURST, t, 700, 4.2, 0.9);
+    ringAt(rPeriod, G.px, G.py + 6, PERIOD, t, 500, 0.8, 0.7);
+
+    /* ANTICIPATE: masked rise, crouch with colour charge, explosive leap */
+    for (i = 0; i < 10; i++) {
+      var r0 = ANT_IN + i * 45, c0 = ANT_CROUCH + i * 35, l0 = ANT_LEAP + i * 38;
+      x = 0; y = 120; r = 0; sx = 1; sy = 1; o = t >= r0 ? 1 : 0; blur = 0;
+      p = P(t, r0, r0 + 520);
+      y = L(120, 0, E.outBack(p, 1.3)); r = L(9, 0, E.outC(p));
+      k = E.ioC(P(t, c0, c0 + 420));
+      sy = 1 - 0.3 * k; sx = 1 + 0.1 * k;
+      if (t > c0 + 420) x = k * 1.6 * Math.sin(t * 0.11 + i * 1.7);
+      col = mix(PAPER, CORAL, k);
+      dt = t - l0;
+      if (dt >= 0) {
+        x = 0;
+        sy = dt < 80 ? L(0.7, 1.45, E.outC(dt / 80)) : L(1.45, 1.15, P(dt, 80, 400));
+        sx = 1 / Math.sqrt(sy);
+        y = -(1.1 * dt + 0.0014 * dt * dt);
+        blur = Math.min(5, dt / 60);
+        if (dt > 650) o = 0;
+      }
+      T(ANT[i], x, y, r, sx, sy, o, blur);
+      ANT[i].style.color = col;
+    }
+
+    /* WEIGHT: gravity drops, squash on contact, escalating camera shake, dust */
+    var floorDip = 0;
+    for (i = 0; i < 6; i++) {
+      var land = wgtLand(i), s0 = land - 420;
+      x = 0; y = 0; r = 0; sx = 1; sy = 1; o = 1; blur = 0;
+      if (t < s0) { y = -700; o = 0; }
+      else if (t < land) {
+        p = P(t, s0, land);
+        y = L(-640, 0, p * p); sy = 1 + 0.18 * p; sx = 1 - 0.06 * p; blur = 3 * p;
+      } else {
+        dt = t - land;
+        var h = Math.exp(-dt / 120) * Math.cos(2 * Math.PI * 4 * dt / 1000);
+        sy = 1 - 0.24 * h; sx = 1 + 0.16 * h;
+        r = (i % 2 ? 1 : -1) * 2.5 * wob(dt, 2.5, 0.35);
+        floorDip += (2 + i) * Math.exp(-dt / 90) * Math.max(0, Math.sin(2 * Math.PI * 6 * dt / 1000));
+        y -= 14 * E.ioC(P(t, WGT_LIFT, WGT_DROP));
+        var e0 = WGT_DROP + Math.abs(i - 2.5) * 30, de = t - e0;
+        if (de > 0) { y += 0.004 * de * de; blur = Math.min(4, de / 80); sy *= 1 + Math.min(0.15, de / 2000); if (de > 520) o = 0; }
+      }
+      T(WGT[i], x, y, r, sx, sy, o, blur);
+    }
+    var fp = E.outC(P(t, 3350, 3800)), fx2 = 1 - E.inC(P(t, WGT_DROP, 6000));
+    var lift = -14 * E.ioC(P(t, WGT_LIFT, WGT_DROP));
+    T(floorEl, 0, floorDip + lift, 0, fp * fx2, 1, t >= 3350 && t < 6000 ? 1 : 0);
+    floorEl.style.background = mix(CORAL, PAPER, P(t, wgtLand(5), wgtLand(5) + 700));
+    for (var j = 0; j < 18; j++) {
+      var li = Math.floor(j / 3), kk = j % 3, b = G.w[li];
+      var side = kk === 0 ? -1 : kk === 1 ? 1 : (li % 2 ? 1 : -1);
+      dt = t - wgtLand(li);
+      if (dt < 0 || dt > 700) { T(DUST[j], b.x, 488, 0, 0.2, 0.2, 0); continue; }
+      p = dt / 700; var q = E.outC(p);
+      x = b.x + side * (b.w * 0.42 + (40 + kk * 28) * q);
+      y = 484 - (10 + 22 * kk) * q + 30 * p * p * (kk === 2 ? 1 : 0.3);
+      var sc = L(1, 0.25, p) * (0.6 + 0.3 * kk) * (li === 5 ? 1.5 : 1);
+      T(DUST[j], x, y, 0, sc, sc, 0.75 * (1 - p));
+    }
+
+    /* OVERLAP: bar sweeps in, baked pendulums lag and settle, anticipation, whip out */
+    T(ovl, barX(t), 0, 0, 1, 1, t >= OVL_IN && t < OVL_GONE + 100 ? 1 : 0);
+    for (i = 0; i < 7; i++) T(OVL[i], 0, 0, theta(i, t), 1, 1, 1);
+
+    /* SETTLE: burst out of the dot, spring settle, underline draw-on, colour flip, collapse */
+    for (i = 0; i < 6; i++) {
+      var sb = G.s[i], dx0 = DX - sb.x, dy0 = DY1 - sb.y, b0 = stlIn(i), cOut = stlOut(i);
+      x = 0; y = 0; r = 0; sx = 1; o = 1; blur = 0;
+      dt = t - b0;
+      if (dt < 0 || t > cOut + 520) { o = 0; x = dx0; y = dy0; sx = 0.1; }
+      else {
+        var u = spring(dt, 1.7, 0.34);
+        x = L(dx0, 0, u); y = L(dy0, 0, u) - 70 * Math.sin(Math.PI * clamp(u, 0, 1));
+        r = L(STL_ROT[i], 0, spring(dt, 1.4, 0.3));
+        sx = L(0.15, 1, spring(dt, 2.3, 0.32));
+        blur = 4 * (1 - P(dt, 0, 220));
+        o = Math.min(1, dt / 60);
+        if (t > cOut) {
+          p = P(t, cOut, cOut + 520); q = E.inBack(p, 2.2);
+          x = L(0, dx0, q); y = L(0, dy0, q);
+          sx = L(1, 0.05, E.inC(p)); r = q * STL_ROT[i] * 0.5;
+          o = p < 0.85 ? 1 : L(1, 0, P(p, 0.85, 1)); blur = 3 * E.inC(p);
+        }
+      }
+      T(STL[i], x, y, r, sx, sx, o, blur);
+      STL[i].style.color = mix(PAPER, INK, P(t, WIPE + 150, WIPE + 300));
+    }
+    var ulOn = G.ul.len * E.outC(P(t, UNDERLINE, UNDERLINE + 500)), ulOff = E.inC(P(t, COLL - 100, COLL + 200));
+    var ulE = (ulOn / G.ul.len) * (1 - ulOff);
+    seg(stlLine, G.ul.len, G.ul.len * 0.5 * (1 - ulE), G.ul.len * 0.5 * (1 + ulE), 1,
+        mix(PAPER, INK, P(t, WIPE + 150, WIPE + 300)));
+
+    /* coral wipe: grows out of the dot, collapses back into it */
+    var ws = t < SHRINK ? L(WIPE_MIN, 1, E.outQt(P(t, WIPE, WIPE + 600))) : L(1, WIPE_MIN, E.inC(P(t, SHRINK, MATCH)));
+    T(wipe, 0, 0, 0, ws, ws, t >= WIPE && t < MATCH ? 1 : 0);
+
+    /* finale line: masked word reveal, ripple when the full stop lands */
+    for (i = 0; i < 3; i++) {
+      var f0 = FIN_IN + i * 110;
+      p = P(t, f0, f0 + 650);
+      y = L(130, 0, E.outBack(p, 1.4));
+      y += 6 * wob(t - PERIOD - (2 - i) * 45, 3.5, 0.3);
+      T(FIN[i], 0, y, L(5, 0, E.outC(p)), 1, 1, t >= f0 ? 1 : 0);
+    }
+    p = P(t, CREDIT, CREDIT + 600);
+    T(credit, 0, L(14, 0, E.outC(p)), 0, 1, 1, E.outQ(p));
+
+    /* arc trail behind the leaping dot */
+    var pa = P(t, LEAP, PERIOD);
+    var ah = G.arc.lenAt(pa), at0 = G.arc.lenAt(Math.max(0, pa - 0.32));
+    if (t >= PERIOD) at0 = L(at0, ah, E.outC(P(t, PERIOD, PERIOD + 350)));
+    seg(trailArc, G.arc.len, at0, ah, 0.7);
+
+    /* hud */
+    var lab = LABELS[0][1];
+    for (i = 0; i < LABELS.length; i++) if (t >= LABELS[i][0]) lab = LABELS[i][1];
+    idx.textContent = lab;
+    var sec = Math.floor(t / 1000), fr = Math.floor((t % 1000) * 30 / 1000);
+    tc.textContent = "00:" + pad(sec) + ":" + pad(fr);
+    hud.style.opacity = String(n(0.55 * P(t, 200, 600) * (1 - P(t, 12600, 13000))));
+  }
+
+  /* ---------- playback ---------- */
+  var stage = $("stage"), start = null, raf = 0;
+  function fit() {
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720, 1);
+    stage.style.transform = "translate(-50%,-50%) scale(" + n(s) + ")";
+  }
+  function frame(now) {
+    if (start === null) start = now;
+    var t = Math.min(now - start, D);
+    seek(t);
+    if (t < D) raf = requestAnimationFrame(frame);
+  }
+  function play() {
+    cancelAnimationFrame(raf);
+    start = null;
+    seek(0);
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.seek = seek;
+  layout();
+  fit();
+  window.addEventListener("resize", fit);
+  window.addEventListener("click", play);
+  play();
+})();
+</script>
+</body>
+</html>

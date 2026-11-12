@@ -31,7 +31,9 @@ export function trailSettings(options: TrailOptions, name: string): TrailSetting
   const memoryMs = springMemory(springOptions, rest) * 1000;
   if (!(stepMs >= 1 && stepMs <= 33)) throw new RangeError(`${name}: stepMs must be from 1 to 33.`);
   if (!(memoryMs <= LONGEST_MEMORY_MS))
-    throw new RangeError(`${name}: the spring rings too long to forget its past; raise damping.`);
+    throw new RangeError(
+      `${name}: the spring rings ${Math.round(memoryMs)} ms, longer than ${LONGEST_MEMORY_MS}; raise damping, or raise rest (now ${rest}) so a smaller swing counts as settled.`,
+    );
   return { spring: springOptions, stepMs, rest, memoryMs };
 }
 
