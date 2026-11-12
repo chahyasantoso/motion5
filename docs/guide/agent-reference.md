@@ -1,94 +1,43 @@
 # Agent reference
 
-Every export a scene uses, by package, with a line on what it does and a short example. Look things up here instead
-of reading source. How to put them together is in [the agent guide](./agent-motion.md). Units everywhere: stage px,
-y down, degrees clockwise, ms on clocks and events, seconds inside physics.
+Every export a scene uses, by package: a hand-written head on what the package is for and how its parts fit, then
+one generated entry per export (its signature and doc comment), held current by `npm run reference -- --write`.
+Look things up here instead of reading source. How to put them together is in [the agent guide](./agent-motion.md).
+Units everywhere: stage px, y down, degrees clockwise, ms on clocks and events, seconds inside physics.
 
 ## Index
 
-- [`@gerak/moves`](#gerakmoves): [time](#time), [lanes](#lanes), [moves](#moves), [eases and blends](#eases-and-blends), [poses](#poses), [events](#events), [writing a move](#writing-a-move)
+- [`@gerak/moves`](#gerakmoves)
 - [`@gerak/player`](#gerakplayer)
-- [`@gerak/dom`](#gerakdom): [rendering](#rendering), [drivers](#drivers)
+- [`@gerak/dom`](#gerakdom)
 - [`@gerak/react`](#gerakreact)
 - [`@gerak/rig`](#gerakrig)
 - [`@gerak/physics`](#gerakphysics) and [`@gerak/rapier`](#gerakrapier)
 - [`@gerak/three`](#gerakthree)
 - [Commands](#commands)
-- [Not for scenes](#not-for-scenes)
 
 ## @gerak/moves
 
-### Time
+Time, lanes, moves, eases, poses and events: everything a scene is made of. A `Time` is `{ progress, clock }` and
+`progress` runs 0 to 1.
 
-**`Time`**: `{ progress, clock }`, what every move and scene takes. `progress` runs 0 to 1.
-
-**`Clock`**: `{ kind: "timed", elapsed, length }`, `{ kind: "live", elapsed }` or `{ kind: "untimed" }`; ms.
-
-**`UNTIMED`**: the untimed clock.
-
-**`atProgress(progress)`**: a time at a progress with no clock, for tests.
 ```ts
 drop({ distance: 300 }, atProgress(0.5));
-```
-
-**`liveAt(ms)`**: a live time `ms` after the page started; progress stays 0.
-```ts
 scene(liveAt(1200), events);
-```
-
-**`elapsedOf(clock)`**: a clock's ms, or `undefined` for an untimed one.
-```ts
-const ms = elapsedOf(time.clock) ?? 0;
-```
-
-**`timeAt(time, ms)`**: `time` moved to `ms` on its own clock, to read a signal a moment earlier or later, such as a
-turn rate; an untimed time stays as it is. Pass it the scene's time, not an eased one.
-```ts
 const ms = elapsedOf(time.clock) ?? 0;
 const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
-```
 
-**`span(fromMs, toMs)`**: a stretch in ms; `.of(time, ease?)` is a move's time inside it, `.at(share)`
-the ms a share falls on. `.of` reads the ms from the clock of the time it is given, timed or live, and answers a timed
-clock that counts from `fromMs`, so a span inside another span's time counts from that span's start. An untimed time
-throws a `RangeError`: give its driver a length. **`Span`** is its type.
-```ts
 const flight = span(400, 2400);
 hop(options, flight.of(time, ease.quadOut));
 const landMs = flight.at(hop.moments(options).lastLanding);
-```
 
-**`sequence(time, phases)`**: `phases` is a list of `[span, answer]`, `answer` a function of time to anything. It
-answers the last phase that has started, given that phase's own time, so an ended phase holds at its end until the
-next begins; before the first starts, the first at its start. An empty list throws. **`Phase`** is a pair's type.
-```ts
 const card = (time: Time) => sequence(time, [[enter, (t) => rise(options, t)], [leave, (t) => fade({}, reversed(t))]]);
-```
-
-**`window(time, from, to)`**: `time` inside the shares `from` to `to`; prefer `span`. **`windowed(progress, from, to)`**
-does the same to a bare number.
-```ts
 window(time, 0.25, 0.5);
-```
 
-### Lanes
-
-**`lanes(lengths, stagger, { from, spacing })`**: lanes for staggered targets; `stagger` is a share of a lane's length.
-`from` picks which start first, a **`LaneOrigin`**: `"start"` (default), `"end"`, `"center"`, `"edges"` or `{ seed }`;
-`spacing`, an ease, bends the start times. **`Lanes`** (with each lane's `starts`) and **`LanesOptions`** are its types.
-```ts
 const LETTERS = lanes([1, 1, 1, 1], 0.25);
 const BURST = lanes([1, 1, 1, 1, 1], 0.2, { from: "center", spacing: ease.quadOut });
-```
-
-**`lane(time, index, lanes)`**: lane `index`'s time inside `time`.
-```ts
 drop(options, lane(word.of(time), i, LETTERS));
 ```
-
-**`laneTime(position, index, lanes, durationMs?)`**: the same from a bare progress.
-
-### Moves
 
 Each move is `move(options, time)`. `move.options` lists its options with ranges; `move.moments(options)` gives named
 shares of its progress. The catalog, not this page, says what each move does and takes: `npm run motion:moves` prints
@@ -109,218 +58,83 @@ What a move answers, which the catalog does not print:
 - `wipe` answers a `Pose2d` of `clipX`, `clipY` and `clipRadius`, and `trace` one of `drawn` and `drawnFrom`; `trace`'s
   `tail` (default 1) is the share of the path kept drawn behind the head. `applyValue` writes both.
 - `rope` takes the points it follows as a third argument and answers anchors for `toCubics`.
-  ```ts
-  applyPath(path, toCubics(rope(options, time, { points })));
-  ```
 - `reversed(time)` and `repeated(time, count)` are functions of time, not moves: each answers a time, and any move
   or value can be played through it. `anticipate` and `overshoot` are moves that take another move's answer as a
   third argument, a `(time) => pose` function, and act on every number that adds, `custom` numbers included.
-  ```ts
-  rise(options, reversed(time));
-  pulse(options, repeated(time, 3));
-  overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options, u)));
-  ```
 
-### Eases and blends
+```ts
+applyPath(path, toCubics(rope(options, time, { points })));
+rise(options, reversed(time));
+pulse(options, repeated(time, 3));
+overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options, u)));
+```
 
-**`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`
-with `In`, `Out` and `InOut`, plus `elasticOut`, `bounceOut`, `bounceIn`. **`Ease`** is their type.
+Eases are `(share) => share`; feed `springEase` to values, not to a move's progress. `trail`, `follow` and `velocity`
+take the scene's time, never an eased one.
+
 ```ts
 span(0, 600).of(time, ease.backOut);
-```
-
-**`backEase({ amount, direction })`**: a back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it
-as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic. **`EaseDirection`** is the direction's type.
-```ts
 const crouch = mix(0, 400, leap.of(time, backEase({ amount: 3, direction: "in" })).progress);
-```
-
-**`springEase({ stiffness, damping })`**: a spring from 0 settling on 1, fitted to the span; lower damping rings more.
-Feed it to values, not to a move's progress.
-```ts
 const scale = mix(0, 1, pop.of(time, springEase({ stiffness: 170, damping: 10 })).progress);
-```
-
-**`spring(offset, speed, seconds, { stiffness, damping })`**: where a unit-mass spring is after `seconds`, as a
-**`SpringState`** `{ offset, speed }`. **`SpringOptions`** is its options' type.
-```ts
 const { offset } = spring(-1, 0, 0.2, { stiffness: 170, damping: 12 });
-```
 
-**`trail(signal, { stiffness, damping, stepMs, rest })`**: a value chasing `signal(time, events)` on a spring, for
-follow-through and drag; the signal itself with no clock. Pass the scene's time: the signal applies its own spans
-and eases, since an eased time cannot be moved to another ms. **`TrailOptions`** is its options' type.
-```ts
 const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
 tail(time, events);
-```
 
-**`mix(a, b, share)`**, **`mixPoint(a, b, share)`**, **`mixAngle(a, b, share)`** (the short way round),
-**`mixPose(a, b, share)`** (a missing field at its rest).
-```ts
 const hand = mixPoint(REST, CATCH, lunge.of(time, ease.cubicInOut).progress);
-```
-
-**`keyframes(start, keys, blend)`**: a value through keys `{ at, to, ease }` in ms, then holding.
-**`Key`** is a key's type.
-```ts
 const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
 lean(time);
-```
 
-**`seeded(seed)`**: repeatable random numbers from 0 up to 1; use it, never `Math.random()`.
-```ts
 const random = seeded(5);
 const x = 400 + random() * 200;
 ```
 
-### Poses
+A pose may carry `custom`, a record of numbers the piece names itself; each rests at 0 and adds.
 
-**`Pose2d`**: `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional. **`Anchor`**: `"center"`,
-`"bottom"`, `"top"`, `"left"`, `"right"`.
 ```ts
 const carry: Pose2d = { x: 10, anchor: "bottom" };
-```
-
-**`combine(poses)`**: poses on one target as one; offsets and turns add, scales multiply, the first anchor stays.
-```ts
 combine([drop(options, time), { opacity: 0.5 }]);
-```
-
-**`squashed(squash, weight, anchor?)`**: a squash pose `weight` of the way in against the `anchor` side, `"bottom"`
-when absent; `"left"` and `"right"` squash sideways.
-```ts
 combine([slide, squashed(0.3, hit, "right")]);
-```
-
-**`POSE_2D_FIELDS`**: every field name of `Pose2d`.
-
-**`Point2d`**, **`Anchor2d`**, **`Cubic2d`**: the shapes moves give: a point with an id, a rope
-anchor, a path segment.
-
-**`toCubics(anchors)`**: a rope's anchors as path segments for `applyPath`.
-
-**`along(cubics, share, { turn })`**: the `{ x, y }` pose `share` of the way along a path by distance, relative to the
-target's rest, so a path ending at 0,0 arrives at rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
-```ts
 const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
-```
-
-**`velocity(signal, time, events, stepMs?)`**: the `{ vx, vy }` px per second a pose signal moves at `time`; zero with no clock. Pass the scene's time, not an eased one.
-```ts
 const { vx, vy } = velocity(ball, time, events);
-```
-
-**`smear({ vx, vy }, { stretch, max })`**: a pose stretching a body along its travel, area kept, and the `heading`; wrap
-content that must not turn in an inner element posed `{ rotation: -heading }`.
-```ts
 const { pose, heading } = smear(velocity(ball, time, events), { stretch: 0.2, max: 2 });
 ```
 
-### 3D poses
+3D poses are `Pose3d`: y up, turns in degrees on the Z-X-Y Euler (`rotation` is about z). A `Pose2d` is refused where a
+`Pose3d` goes; every 2D move reaches 3D through `lift2d`.
 
-**`Pose3d`**: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY, scaleZ, opacity }`, all optional; y up,
-turns in degrees on the Z-X-Y Euler (`rotation` is about z). A `Pose2d` is refused where a `Pose3d` goes.
 ```ts
 const lid: Pose3d = { y: 0.4, rotationX: -70 };
-```
-
-**`lift2d(pose, { unitsPerPx })`**: a 2D pose on the 3D xy plane, px scaled to units, y and the turn flipped, the
-anchor dropped; every 2D move reaches 3D through it.
-```ts
 const ball = lift2d(hop({ height: 260, bounces: 2 }, time), { unitsPerPx: 0.01 });
-```
-
-**`combine3d(poses)`**: poses on one target as one; offsets add, scales multiply, turns compose in order, and turns
-about one shared axis add exactly, so a spin keeps its winding.
-```ts
 combine3d([ball, { rotationY: spin }]);
-```
-
-**`mixPose3d(a, b, share)`**: blends two poses, turns along the short arc and past the ends for a share past 1; a
-missing field at its rest. **`mixPoint3d(a, b, share)`** blends `{ x, y, z }`.
-```ts
 const head = mixPose3d(LOOK_LEFT, LOOK_RIGHT, turn.of(time, springEase({ stiffness: 170, damping: 12 })).progress);
-```
-
-**`trailTurn(signal, { stiffness, damping, stepMs, rest })`**: a turn chasing a `Pose3d` signal's turn on a spring,
-the short way round, resting exactly on it; give it the scene's time. Trail a position with three `trail` calls.
-```ts
 const head = trailTurn((t) => body(t), { damping: 12 });
 head(time, events);
-```
-
-**`squashed3d(squash, weight, axis?)`**: shortens `axis` (`"y"` when absent) and widens the other two, keeping volume.
-```ts
 combine3d([squashed3d(0.3, landing), ball]);
-```
-
-**`Anchor3d`**, **`Cubic3d`**: the 3D path anchor and segment, `Anchor2d` and `Cubic2d` with `z`, `inZ`, `outZ`.
-**`toCubics3d(anchors)`**: 3D anchors as path segments.
-
-**`along3d(cubics, share, { face })`**: the `{ x, y, z }` `share` of the way along a 3D path by distance; `face: true`
-adds the turn of local +x onto the path, with no roll.
-```ts
 const pose = along3d(toCubics3d(anchors), flight.of(time, ease.sineInOut).progress, { face: true });
-```
-
-**`velocity3d(signal, time, events, stepMs?)`**: the `{ vx, vy, vz }` units per second a `Pose3d` signal moves at the
-scene's time, never read past the clock's ends; zero with no clock.
-
-**`smear3d({ vx, vy, vz }, { stretch, max })`**: `{ pose, turn }`: `pose` turns local +x onto the travel and stretches
-it by `stretch` per unit a second up to `max`, volume kept; an inner object takes `turn` so its content stays upright.
-```ts
 const { pose, turn } = smear3d(velocity3d(body, time, events), { stretch: 0.08, max: 1.8 });
-```
-
-**`aim(from, to, up?)`**: the turn that points local -z, a camera's forward, from `from` at `to`, `up` +y when absent,
-no roll; `{}` when they meet.
-```ts
 const camera = { ...eye, ...aim(eye, { x: 0, y: 0.5, z: 0 }) };
-```
-
-**`orbit({ target, radius, azimuth, elevation })`**: a point `radius` from `target`, azimuth in degrees about +y from +z
-toward +x, elevation up from the ground plane; a camera move is a `span` on `azimuth`.
-```ts
 const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 6, azimuth: mix(-30, 30, pan.of(time).progress), elevation: 20 });
 ```
 
-### Events
+Events are `{ name, at, target?, x?, y? }`, `at` in ms and `x`, `y` from the watched element's corner.
 
-**`MotionEvent`**: `{ name, at, target?, x?, y? }`; `at` in ms, `x` and `y` from the watched element's corner.
-**`Events`**: a list of them, oldest first. **`NO_EVENTS`**: the empty list.
-
-**`follow({ start, on, target, stiffness, damping, rest })`**: a spring each named event sends towards its value,
-turning back with no jump. **`FollowOptions`** is its options' type.
 ```ts
 const lift = follow({ start: 0, on: { enter: -12, leave: 0 }, target: "card" });
 lift(time, events);
-```
-
-**`react({ on, target, kind, amplitude, decay, frequency })`**: a damped answer to each past event: `recoil`, `wobble`,
-`flash` or `shake`; 0 before. **`ReactOptions`** and **`ReactionKind`** are its types.
-```ts
 const give = react({ on: ["catch"], kind: "wobble", amplitude: 26 });
 give(time, events);
-```
-
-**`mergeEvents(...lists)`**: lists as one, oldest first.
-```ts
 const all = mergeEvents(events, sim.events(time));
 ```
 
-**`createLoopCycle({ duration, delay, repeat, yoyo })`**: the delay, repeat and yoyo arithmetic a clock driver uses;
-`.advance(ms)` gives a **`LoopCycleStep`**. **`LoopCycle`** and **`LoopCycleOptions`** are its types.
+Writing a move: `defineMove` checks the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults;
+`run(options, time, input)` takes an optional third argument of any type, which callers must then pass. `VALUE_FIELDS`
+is the one table of what a value's fields are (`rest`, how it combines, whether its path must be `smooth`, whether a
+reveal `shows` it); beside the transform and `opacity` its rows are `blur`, `drawn`, `drawnFrom`, `clipX`, `clipY` and
+`clipRadius`. `checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each
+ranged option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays
+finite, has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.
 
-### Writing a move
-
-**`defineMove({ id, role, description, options, example, moments, run })`**: makes a move from one declaration. `role`
-is a **`MoveRole`**, one of **`MOVE_ROLES`**: `enter` and `travel` end at rest, `exit` starts at rest, `emphasis` does
-both, `reveal` ends fully shown, and `follow` and `modifier` hold no rest of their own. `example` is a
-**`MoveExample`**, `{ options, input? }`: a call the gate samples. The call checks
-the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults; `run(options, time, input)` takes an
-optional third argument of any type, which callers must then pass. Its types: **`Move`**, **`MoveDeclaration`**,
-**`Moments`**, **`OptionField`**, **`OptionFields`**, **`Options`**, **`OptionsIn`**, **`InputArgs`**.
 ```ts
 const slide = defineMove({
   id: "slide", role: "enter", description: "Slides in.",
@@ -330,174 +144,677 @@ const slide = defineMove({
   run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
-**`VALUE_FIELDS`** is the one table of what a value's fields are: each row a **`ValueField`** with its `rest`, how it
-combines (a **`Combining`**: `add`, `multiply` or `replace`), whether its path must be `smooth` and whether a reveal
-`shows` it. **`valueField(name)`** reads a row. A pose may also carry `custom`, a record of numbers the piece names
-itself; each is a **`CUSTOM_FIELD`**: it rests at 0 and adds. `combine`, `mixPose`, `combine3d`, `mixPose3d` and the
-gate all read the table. Beside the transform and `opacity`, its rows are `blur` (px, resting at 0), `drawn` and
-`drawnFrom` (a stroke's head and tail as shares of its length, resting at 1 and 0), and `clipX`, `clipY` and
-`clipRadius` (a clip circle in px from the target's top left, with no rest).
 
-`checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each ranged
-option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays finite,
-has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.
+<!-- generated:reference:start -->
+**`UNTIMED`**: `const UNTIMED: Clock`
+(no doc comment)
+
+**`atProgress`**: `(progress: number): Time`
+A `Time` at `progress` with no clock, for code that drives a move by hand.
+
+**`elapsedOf`**: `(clock: Clock): number`
+The ms a clock has run, or `undefined` for a clock that has none.
+
+**`liveAt`**: `(elapsed: number): Time`
+A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0.
+
+**`span`**: `(fromMs: number, toMs: number): Span`
+The stretch from `fromMs` to `toMs`, placed by the ms of the clock its `of` is given.
+
+**`window`**: `(time: Time, from: number, to: number): Time`
+`time` seen through the window `[from, to]`: progress mapped, and a timed clock cut to the window.
+
+**`windowed`**: `(progress: number, from: number, to: number): number`
+Maps `progress` inside `[from, to]` onto `[0, 1]`, holding outside it; a zero-length window steps at `from`.
+
+**`Clock`**: `type Clock`
+A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
+
+**`Span`**: `type Span`
+A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on.
+
+**`Time`**: `type Time`
+Where a move is: `progress` from 0 to 1, and the clock behind it.
+
+**`backEase`**: `(options: { readonly amount: number; readonly direction: EaseDirection; }): Ease`
+Pulls back by `amount` before it goes, or overshoots by it as it ends; `amount: 0` is the cubic curve.
+
+**`ease`**: `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ease; sineInOut: Ease; quadIn: Ease; quadOut: Ease; quadInOut:…`
+The common eases under their usual names: `In` starts slow, `Out` ends slow, `InOut` does both.
+
+**`springEase`**: `(options: SpringOptions): Ease`
+A spring from 0 settling on 1, stretched to fit the span: the knobs change its shape, never its length.
+
+**`Ease`**: `type Ease`
+A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot.
+
+**`EaseDirection`**: `type EaseDirection`
+Which end of a curve is slow: `in` starts slow, `out` ends slow, `inOut` does both.
+
+**`spring`**: `(offset: number, speed: number, seconds: number, options: SpringOptions): SpringState`
+Where a spring is, `seconds` after it left `offset` from its goal at `speed`, and how fast it goes.
+
+**`SpringOptions`**: `type SpringOptions`
+A unit-mass spring: pull towards its goal per second squared, and drag on its speed per second.
+
+**`SpringState`**: `type SpringState`
+Where a spring is from its goal, and how fast it moves, in units and units a second.
+
+**`trail`**: `(signal: (time: Time, events: Events) => number, options: TrailOptions): (time: Time, events: Events) => number`
+A value chasing `signal` on a spring at a fixed cost per frame; pass the scene's time, never an eased one.
+
+**`TrailOptions`**: `type TrailOptions`
+(no doc comment)
+
+**`trailTurn`**: `(signal: (time: Time, events: Events) => Pose3d, options: TrailOptions): (time: Time, events: Events) => Pose3d`
+A turn chasing `signal`'s turn on a spring the short way round, resting exactly on it; pass the scene's time.
+
+**`timeAt`**: `(time: Time, ms: number): Time`
+`time` moved to `ms` on its own clock, for reading a signal a moment earlier or later; untimed stays as it is.
+
+**`mix`**: `(from: number, to: number, share: number): number`
+The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates.
+
+**`mixAngle`**: `(from: number, to: number, share: number): number`
+An angle in degrees `share` of the way from `from` to `to`, turning the short way round.
+
+**`mixPoint`**: `(from: { readonly x: number; readonly y: number; }, to: { readonly x: number; readonly y: number; }, share: number): { readonly x: number; …`
+A point `share` of the way from `from` to `to`.
+
+**`mixPose`**: `(from: Pose2d, to: Pose2d, share: number): Pose2d`
+A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0.
+
+**`keyframes`**: `<T>(start: T, keys: readonly Key<T>[], blend: (from: T, to: T, share: number) => T): (time: Time) => T`
+A value moving from `start` at 0 ms to each key in turn, then holding; `blend` is `mix`, `mixPoint`, `mixPose` or alike.
+
+**`Key`**: `type Key`
+One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear.
+
+**`sequence`**: `<R>(time: Time, phases: readonly Phase<R>[]): R`
+The phase that started last, given its own time; a tie goes to the later in the list; before any, the first.
+
+**`Phase`**: `type Phase`
+One phase of a sequence: the span it runs in, and what it answers given its own time there.
+
+**`seeded`**: `(seed: number): () => number`
+Numbers from 0 up to 1 that look random but repeat for the same seed, so a scattered scene is the same each run.
+
+**`NO_EVENTS`**: `const NO_EVENTS: Events`
+(no doc comment)
+
+**`follow`**: `(options: FollowOptions): (time: Time, events: Events) => number`
+A value springing to each named event's goal from where it is and how fast it goes; pure in time and events.
+
+**`mergeEvents`**: `(...lists: readonly Events[]): Events`
+Several event lists as one, oldest first; a scene's own cues joined with the page's events.
+
+**`react`**: `(options: ReactOptions): (time: Time, events: Events) => number`
+A damped answer to each past named event, added together; exactly 0 before the first and once all have died.
+
+**`Events`**: `type Events`
+Every event so far, oldest first; a scene reads it beside its time.
+
+**`FollowOptions`**: `type FollowOptions`
+(no doc comment)
+
+**`MotionEvent`**: `type MotionEvent`
+Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where.
+
+**`ReactionKind`**: `type ReactionKind`
+How a response to one event moves: from a full start, from rest, as a fade, or as a shake.
+
+**`ReactOptions`**: `type ReactOptions`
+(no doc comment)
+
+**`lane`**: `(time: Time, index: number, of: Lanes): Time`
+Lane `index` run inside `time`: its progress, and a timed clock split among the lanes.
+
+**`laneTime`**: `(position: number, index: number, of: Lanes, durationMs?: number): Time`
+Lane `index` at overall `position`; with `durationMs` its clock is that lane's own window, in ms.
+
+**`lanes`**: `(lengths: readonly number[], stagger: number, options?: LanesOptions): Lanes`
+Lanes of these relative lengths, each starting `stagger` after the one before it in the order `from` gives.
+
+**`LaneOrigin`**: `type LaneOrigin`
+Which lanes start first: from one end, from the centre out, from both edges in, or shuffled by a seed.
+
+**`Lanes`**: `type Lanes`
+Lanes started `stagger` lane-lengths apart in the order `from` gives; `span` reaches the last finish.
+
+**`LanesOptions`**: `type LanesOptions`
+(no doc comment)
+
+**`createLoopCycle`**: `(options: LoopCycleOptions): LoopCycle`
+Creates loop state and cycle arithmetic; `duration` is not re-validated here.
+
+**`LoopCycle`**: `type LoopCycle`
+Loop phase state; `advance` consumes a clock delta and returns progress.
+
+**`LoopCycleOptions`**: `type LoopCycleOptions`
+Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver.
+
+**`LoopCycleStep`**: `type LoopCycleStep`
+The progress a single `advance` produces.
+
+**`CUSTOM_FIELD`**: `const CUSTOM_FIELD: ValueField`
+A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
+
+**`POSE_2D_FIELDS`**: `const POSE_2D_FIELDS: readonly ("rotation" | "x" | "y" | "scale" | "scaleX" | "scaleY" | "opacity" | "blur" | "drawn" | "drawnFrom" | "clip…`
+Every field a renderer must write for a pose: its numbers and its anchor.
+
+**`VALUE_FIELDS`**: `const VALUE_FIELDS: Readonly<{ x: ValueField; y: ValueField; z: ValueField; rotation: ValueField; rotationX: ValueField; rotationY: ValueFi…`
+Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
+
+**`squashed`**: `(squash: number, weight: number, anchor?: Anchor): Pose2d`
+A box `weight` of the way into its `squash` against the `anchor` side, which stays put; widens the other way.
+
+**`valueField`**: `(name: string): ValueField`
+The row a field name has in the table, or nothing when it has none.
+
+**`Anchor`**: `type Anchor`
+The point of a box that stays put while it scales and turns.
+
+**`Combining`**: `type Combining`
+How two answers for one field on one target become one.
+
+**`Pose2d`**: `type Pose2d`
+A 2D pose: table fields, the anchor, and the piece's own `custom` numbers; each renderer writes it its way.
+
+**`ValueField`**: `type ValueField`
+What a field of a value is: where it rests, how it combines, and what the gate asks of it.
+
+**`combine3d`**: `(poses: readonly Pose3d[]): Pose3d`
+Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order.
+
+**`lift2d`**: `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`
+A page pose on the 3D xy plane: px scaled to units, y and the turn flipped, the anchor dropped.
+
+**`mixPoint3d`**: `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { readonly x: number; readonly y: number; readonly z: number; }…`
+A 3D point `share` of the way from `from` to `to`.
+
+**`mixPose3d`**: `(from: Pose3d, to: Pose3d, share: number): Pose3d`
+A pose `share` of the way between two; turns take the short arc, past the ends too; a missing field rests.
+
+**`squashed3d`**: `(squash: number, weight: number, axis?: "x" | "y" | "z"): Pose3d`
+A body `weight` of the way into its `squash` along `axis`, widened on the other two so its volume stays.
+
+**`Pose3d`**: `type Pose3d`
+A 3D pose, y up, turns in degrees on rig's Z-X-Y Euler; a page pose reaches it only through `lift2d`.
+
+**`aim`**: `(from: Point3, to: Point3, up?: Point3): Pose3d`
+The turn that points local -z (a camera's forward) from `from` at `to`, `up` keeping the horizon, no roll.
+
+**`orbit`**: `(options: { readonly target: Point3; readonly radius: number; readonly azimuth: number; readonly elevation: number; }): { readonly x: numbe…`
+A point `radius` from `target`: azimuth about +y from +z toward +x, elevation up from the xz plane, degrees.
+
+**`Anchor2d`**: `type Anchor2d`
+A named path point with the handles of a smooth cubic through it, relative to the point.
+
+**`Cubic2d`**: `type Cubic2d`
+One cubic Bézier segment from `(x0, y0)` to `(x3, y3)`, named by the anchor it leaves.
+
+**`Point2d`**: `type Point2d`
+A named point in px.
+
+**`toCubics`**: `(anchors: readonly Anchor2d[]): readonly Cubic2d[]`
+One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
+
+**`along`**: `(cubics: readonly Cubic2d[], share: number, options?: { readonly turn?: boolean; }): Pose2d`
+The pose `share` of the way along a path by distance, from the target's rest; `turn` adds the heading, down 90.
+
+**`velocity`**: `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; }`
+Px per second a signal's `x` and `y` move at the scene's `time`, never an eased one; zero with no clock.
+
+**`smear`**: `(velocity: { readonly vx: number; readonly vy: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: P…`
+Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90], so reversing never flips it.
+
+**`toCubics3d`**: `(anchors: readonly Anchor3d[]): readonly Cubic3d[]`
+One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
+
+**`along3d`**: `(cubics: readonly Cubic3d[], share: number, options?: { readonly face?: boolean; }): Pose3d`
+The pose `share` of the way along a 3D path by distance; `face` adds the turn of local +x onto the tangent, no roll.
+
+**`velocity3d`**: `(signal: (time: Time, events: Events) => Pose3d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; …`
+Units per second a signal's `x`, `y` and `z` move at the scene's `time`, never an eased one; zero with no clock.
+
+**`smear3d`**: `(velocity: { readonly vx: number; readonly vy: number; readonly vz: number; }, options: { readonly stretch: number; readonly max: number; }…`
+Stretches along travel by `stretch` per unit a second up to `max`, volume kept; reversing never flips it; `turn` undoes it.
+
+**`Anchor3d`**: `type Anchor3d`
+A named 3D path point with the handles of a smooth cubic through it, relative to the point.
+
+**`Cubic3d`**: `type Cubic3d`
+One 3D cubic Bézier segment from `(x0, y0, z0)` to `(x3, y3, z3)`, named by the anchor it leaves.
+
+**`combine`**: `(poses: readonly Pose2d[]): Pose2d`
+Poses on one target as one: each field joins as its table row says, custom numbers add, the first anchor stays.
+
+**`MOVE_ROLES`**: `const MOVE_ROLES: readonly ("enter" | "exit" | "emphasis" | "travel" | "reveal" | "follow" | "modifier")[]`
+Every role, in the order a catalog lists them.
+
+**`defineMove`**: `<const Fs extends OptionFields, I, R, const M extends Moments>(declaration: MoveDeclaration<Fs, I, R, M>): Move<Fs, I, R, M>`
+Makes a move from its declaration.
+
+**`InputArgs`**: `type InputArgs`
+The trailing argument a caller passes: none for a move whose `run` takes no input.
+
+**`Move`**: `type Move`
+A move: callable with a caller's options, and carrying what its declaration says of them.
+
+**`MoveDeclaration`**: `type MoveDeclaration`
+A move's one declaration: the source of its types, option checks, moments and catalog entry.
+
+**`MoveExample`**: `type MoveExample`
+One call of a move: options a caller would pass, and the input when its `run` takes one.
+
+**`MoveRole`**: `type MoveRole`
+What a move is for; each role but `follow` and `modifier` names where the move must hold its rest.
+
+**`Moments`**: `type Moments`
+Named times a move reaches, as shares of its progress, such as a hop's landings.
+
+**`OptionField`**: `type OptionField`
+One option of a move; an option with a `default` may be left out by the caller.
+
+**`OptionFields`**: `type OptionFields`
+(no doc comment)
+
+**`Options`**: `type Options`
+Options as a move runs on them: every default filled in.
+
+**`OptionsIn`**: `type OptionsIn`
+Options as a caller passes them: defaulted ones may be left out.
+
+**`drop`**: `(options: OptionsIn<{ readonly distance: { readonly kind: "number"; readonly min: 0; readonly description: "Start this far above rest, in p…`
+Falls from `distance` above its rest pose, accelerating, then lands and recovers from `squash`.
+
+**`rise`**: `(options: OptionsIn<{ readonly distance: { readonly kind: "number"; readonly min: 0; readonly description: "Start this far below rest, in p…`
+Rises from `distance` px below its rest pose, decelerating.
+
+**`slide`**: `(options: OptionsIn<{ readonly distance: { readonly kind: "number"; readonly min: 0; readonly description: "Start this far from rest, in px…`
+Slides in from `distance` px away on one side, decelerating.
+
+**`pop`**: `(options: OptionsIn<{ readonly overshoot: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 1; readonly desc…`
+Grows from nothing past full size and settles back to exactly 1.
+
+**`fade`**: `(options: OptionsIn<{}>, time: Time): Pose2d`
+Fades in, opacity from 0 to 1.
+
+**`unfold`**: `(options: OptionsIn<{ readonly from: { readonly kind: "string"; readonly enum: readonly ["top", "bottom", "left", "right"]; readonly defaul…`
+Grows from nothing along one axis to full size, held at an edge.
+
+**`swing`**: `(options: OptionsIn<{ readonly angle: { readonly kind: "number"; readonly description: "Start turned this far, in degrees."; }; readonly sw…`
+Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge.
+
+**`pulse`**: `(options: OptionsIn<{ readonly amount: { readonly kind: "number"; readonly default: 0.15; readonly min: 0; readonly max: 2; readonly descri…`
+Grows to `1 + amount` times its size and returns.
+
+**`shake`**: `(options: OptionsIn<{ readonly distance: { readonly kind: "number"; readonly min: 0; readonly description: "The most it can reach to either…`
+Shakes sideways `count` times, starting hard and dying away.
+
+**`wobble`**: `(options: OptionsIn<{ readonly angle: { readonly kind: "number"; readonly min: 0; readonly description: "The widest turn, in degrees."; }; …`
+Wobbles `count` times, a shake that turns instead of moving.
+
+**`nod`**: `(options: OptionsIn<{ readonly distance: { readonly kind: "number"; readonly min: 0; readonly description: "How far down it dips, in px."; …`
+Dips `distance` px down and comes back up, once.
+
+**`arc`**: `(options: OptionsIn<{ readonly dx: { readonly kind: "number"; readonly description: "Start this far right of rest, in px (negative: left)."…`
+Travels from an offset to rest along a path bowed by `lift` px.
+
+**`hop`**: `(options: OptionsIn<{ readonly height: { readonly kind: "number"; readonly min: 0; readonly description: "Peak of the first flight above re…`
+(no doc comment)
+
+**`rope`**: `(options: OptionsIn<{ readonly angle: { readonly kind: "number"; readonly default: 0; readonly description: "Heading of the straight rope a…`
+(no doc comment)
+
+**`trace`**: `(options: OptionsIn<{ readonly tail: { readonly kind: "number"; readonly default: 1; readonly min: 0; readonly max: 1; readonly description…`
+Draws a path on from its start, keeping `tail` of it drawn behind the head; a renderer dashes the stroke.
+
+**`wipe`**: `(options: OptionsIn<{ readonly radius: { readonly kind: "number"; readonly min: 0; readonly description: "Final circle radius, in px; cover…`
+Grows a circle from `(x, y)` to `radius`, easing in and out; the target shows through it.
+
+**`reversed`**: `(time: Time): Time`
+The time run backwards: at progress `p` it answers `1 - p`, and a timed clock's elapsed runs back with it.
+
+**`anticipate`**: `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 0.9; readonly descri…`
+Winds up the other way from its input's travel, then plays the input and ends where it ends.
+
+**`overshoot`**: `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.3; readonly min: 0; readonly max: 0.9; readonly descri…`
+Plays its input, then passes its last pose and settles back onto it.
+
+**`repeated`**: `(time: Time, count: number): Time`
+The time with its progress running 0 to 1 `count` times (rounded down, at least 1), and 1 at the end.
+<!-- generated:reference:end -->
 
 ## @gerak/player
 
-**`Scene`**: `(time, events) => targets`.
+A scene is `(time, events) => targets`; `play` runs it on a driver.
 
-**`play(scene, driver, { cues })`**: runs a scene on a driver; **`Player`** has `.values`, `.time`,
-`.subscribe(target, fn)`, `.refresh()`, `.replace(scene, cues?)` (a new scene, and cues when given, at the same time, keeping the driver and listeners), `.on(name, fn)` for events passed going forward, `.dispose()`.
-**`PlayOptions`** holds `cues`.
 ```ts
 const player = play(scene, clock(), { cues });
 player.on("catch", () => sound.play());
-```
 
-**`manualDriver({ durationMs })`**: a driver moved by hand; `.seek(progress)`, `.seekMs(ms)`. **`ManualDriver`** is its
-type; **`Driver`** is what any driver gives: `now()`, `events?()`, `subscribe(fn)`, and `options` it was made with, so a host can tell a changed driver from the same one.
-```ts
 const driver = manualDriver({ durationMs });
 play(scene, driver);
 driver.seekMs(1200);
 ```
 
+<!-- generated:reference:start -->
+**`manualDriver`**: `(options?: { readonly durationMs?: number; }): ManualDriver`
+(no doc comment)
+
+**`play`**: `<T extends object>(scene: Scene<T>, driver: Driver, options?: PlayOptions): Player<T>`
+Runs `scene` against `driver`, telling each target's subscribers its value on every step.
+
+**`Driver`**: `type Driver`
+What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves.
+
+**`ManualDriver`**: `type ManualDriver`
+A driver moved by hand, timed when it knows its length in ms.
+
+**`Player`**: `type Player`
+A scene's values by target, rerun whole on each step of its driver.
+
+**`PlayOptions`**: `type PlayOptions`
+(no doc comment)
+
+**`Scene`**: `type Scene`
+A scene: every target's value from the time and the events so far.
+<!-- generated:reference:end -->
+
 ## @gerak/dom
 
-### Rendering
+Writes a value onto an element, and the drivers that move a scene on the page's frames, scroll or pointer events.
 
-**`applyValue(element, value, length?)`**: writes a value: the transform and origin, `opacity`,
-`blur` as a filter, the clip circle as a clip path, the stretch from `drawnFrom` to `drawn` as a stroke dash (measured
-with `getTotalLength`, else `length`), and each `custom` number as the CSS property `--<name>`. A field left out is
-cleared, a custom name too, so the page's own style shows again.
 ```ts
 player.subscribe("title", (pose) => applyValue(title, pose));
-```
-
-**`applyPath(path, cubics)`**: sets an SVG path's `d`.
-```ts
 applyValue(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
-```
 
-**`cssTransform(values)`**, **`cssOrigin(anchor)`**, **`cssClip(x, y, radius)`**, **`cssDash(from, to, length)`**,
-**`pathData(cubics)`**: the CSS strings the above write. **`TRANSFORM_KEYS`**: the pose keys a transform reads.
-**`RenderTarget`** and **`RenderStyle`**: an element, or anything with a `style`.
-
-### Drivers
-
-**`clockDriver({ duration, delay, repeat, yoyo, autoplay, frames, reducedMotion })`**: a timed clock on the page's
-frames; `.play()`, `.pause()`, `.seek(p)`, `.replay()`, `.dispose()`, `.setRate(rate)`, `.setRange(fromMs?, toMs?)`,
-and `.playing()`, whether frames are advancing it now, which subscribers hear change. When the person prefers reduced
-motion it shows the last frame and never ticks until `.play()`; `reducedMotion: "play"` opts out. **`ClockDriver`** and **`ClockOptions`** are its types.
-```ts
 export const clock = () => clockDriver({ duration: durationMs });
-```
-
-**`scrollDriver({ start, end, target, length? })`**: progress 0 to 1 as the page scrolls from `start` to `end` px;
-untimed, or with `length` in ms a timed clock at `progress * length`, so a scene with spans can run on scroll.
-**`ScrollTarget`** is what it listens to.
-```ts
 const scrolled = () => scrollDriver({ start: 0, end: 1200, length: durationMs });
-```
-
-**`eventDriver({ introMs, settleMs })`**: a live clock that logs events: `.watch(target, element)` for `enter`,
-`leave`, `down`, `up`, `click`, `focus`, `blur` with `x` and `y`; `.watchView(target, element)` for `in-view` and
-`out-of-view`; `.emit(name, target, point)`. **`EventDriver`**, **`EventDriverOptions`**, **`EventSource`** and
-**`PointerLike`** are its types; **`WATCHED`** maps DOM event names to motion event names.
-```ts
 export const clock = () => eventDriver({ introMs: 900 });
 ```
 
-**`FrameSource`**: where frames come from, for a test's fake frames.
+<!-- generated:reference:start -->
+**`applyPath`**: `(target: RenderTarget, cubics: readonly Cubic2d[]): void`
+Sets a path element's `d` to the cubic segments.
+
+**`applyValue`**: `(target: RenderTarget, value: Pose2d, length?: number): void`
+Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed.
+
+**`cssClip`**: `(x: number, y: number, radius: number): string`
+A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left.
+
+**`cssDash`**: `(from: number, to: number, length: number): { readonly strokeDasharray: string; readonly strokeDashoffset: number; }`
+The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long.
+
+**`cssOrigin`**: `(anchor: Anchor): string`
+The CSS transform origin an anchor names.
+
+**`cssTransform`**: `(values: Readonly<Record<string, unknown>>): string`
+A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves.
+
+**`pathData`**: `(cubics: readonly Cubic2d[]): string`
+SVG path data for joined cubic segments.
+
+**`TRANSFORM_KEYS`**: `const TRANSFORM_KEYS: readonly string[]`
+The value keys a CSS transform carries; every other key writes as its own property.
+
+**`RenderStyle`**: `type RenderStyle`
+The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all.
+
+**`RenderTarget`**: `type RenderTarget`
+An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has.
+
+**`clockDriver`**: `(options: ClockOptions): ClockDriver`
+(no doc comment)
+
+**`scrollDriver`**: `(options: { readonly target?: ScrollTarget; readonly start: number; readonly end: number; readonly length?: number; }): Driver`
+A driver from 0 to 1 as the target scrolls from `start` to `end` px; untimed unless given a `length` in ms.
+
+**`ClockDriver`**: `type ClockDriver`
+A driver on the page's frames, timed in ms, with the delay, repeat and yoyo a `time` trigger has.
+
+**`ClockOptions`**: `type ClockOptions`
+(no doc comment)
+
+**`FrameSource`**: `type FrameSource`
+Where frames come from: `requestAnimationFrame` on a page, a fake one in a test.
+
+**`ScrollTarget`**: `type ScrollTarget`
+What a scroll driver reads: a window or a scrolling element.
+
+**`eventDriver`**: `(options?: EventDriverOptions): EventDriver`
+(no doc comment)
+
+**`WATCHED`**: `const WATCHED: Readonly<Record<string, string>>`
+The page events a watched element turns into motion events, and the name each gets.
+
+**`EventDriver`**: `type EventDriver`
+A live driver: its clock runs from creation, and it logs the events of the elements it watches.
+
+**`EventDriverOptions`**: `type EventDriverOptions`
+(no doc comment)
+
+**`EventSource`**: `type EventSource`
+Something that sends DOM events: an element, or a stand-in in a test.
+
+**`PointerLike`**: `type PointerLike`
+What a pointer event says about where it happened.
+<!-- generated:reference:end -->
 
 ## @gerak/react
 
-**`usePlayer(scene, createDriver, cues?)`**: plays while the component stays; gives **`Playing`** `{ player, driver }` or
-`undefined`. Define all three outside the component. **`OwnedDriver`**: a driver it may dispose.
-```ts
-const playing = usePlayer(scene, clock, cues);
-```
+Hooks that play a scene while a component stays and write each target onto its element with no render. Define the
+scene, driver factory and cues outside the component. For a list target, give each element its own `useTarget` on the
+list with a `render` that picks its index.
 
-**`PlayerHostProvider`** gives every `usePlayer` below it a **`PlayerHost`** `{ createDriver?, guard? }`: `createDriver(own)` answers the
-driver to play on, which the host owns and `usePlayer` never disposes; `guard(scene)` wraps each scene. Under a host a
-saved file swaps in place: a new `scene` or `cues` calls `player.replace` and keeps the player and its time.
-**`driverKeeper()`** makes a **`DriverKeeper`**, one driver per host: while a factory makes a driver of the same members
-and equal `options`, it keeps the old one with its state; otherwise it takes the new one, seeks it to the old time, plays
-it unless the old one says it had stopped, and disposes the old. `current()` reads it and `subscribe` tells each time it changes. With no host, nothing changes.
-**`useTarget(player, target, render?)`**: a ref that writes a target onto the element every step, with no render. For a
-list target, such as one pose per letter, give each element its own `useTarget` on the list with a `render` that picks
-its index.
 ```tsx
+const playing = usePlayer(scene, clock, cues);
 const ball = useTarget(playing?.player, "ball");
 const Letter = ({ player, i, char }: { player: Player<Frame> | undefined; i: number; char: string }) => {
   const render = useCallback((el: HTMLElement, poses: Frame["letters"]) => applyValue(el, poses[i] ?? {}), [i]);
   return <span ref={useTarget(player, "letters", render)}>{char}</span>;
 };
-```
-
-**`useValue(player, target, select)`**: re-renders when `select`'s answer changes.
-```ts
 const landed = useValue(playing?.player, "ball", (pose) => (pose.y ?? 0) === 0);
-```
-
-**`useWatch(driver, target)`**: a ref whose element's events the driver logs as `target`'s; put it on a still element.
-```ts
 const hit = useWatch(playing?.driver, "card");
-```
-
-**`centreIn(from, to)`**: `from`'s layout centre measured from `to`'s corner, an **`Offset`**; **`LayoutBox`** is what
-it measures. **`mergeRefs(...refs)`**: one ref that sets several.
-```ts
 const centre = centreIn(dot, stage);
 ```
 
+<!-- generated:reference:start -->
+**`centreIn`**: `(from: LayoutBox, to: LayoutBox): Offset`
+`from`'s layout centre measured from `to`'s top-left corner; layout ignores transforms, so this is the rest pose.
+
+**`mergeRefs`**: `<T>(...refs: readonly RefCallback<T>[]): RefCallback<T>`
+Combines ref callbacks so one element can be bound by several hooks.
+
+**`LayoutBox`**: `type LayoutBox`
+The layout an element exposes; an `HTMLElement` has it.
+
+**`Offset`**: `type Offset`
+(no doc comment)
+
+**`PlayerHostProvider`**: `(props: ProviderProps<PlayerHost>): ReactNode`
+Gives every `usePlayer` below it the host's driver and guard.
+
+**`driverKeeper`**: `(): DriverKeeper`
+(no doc comment)
+
+**`usePlayer`**: `<T extends object, D extends OwnedDriver>(scene: Scene<T>, createDriver: () => D, cues?: Events): Playing<T, D>`
+Plays `scene` on a driver with its `cues`; keep every argument stable. Under a host, a change swaps in place.
+
+**`useTarget`**: `<T extends object, K extends PoseTargets<T>>(player: Player<T>, target: K): RefCallback<RenderTarget> (+1 overloads)`
+Writes a value target onto the element the ref lands on with `applyValue`, every step, with no React render.
+Writes a target onto the element the ref lands on through `render`, every step, with no React render.
+
+**`useValue`**: `<T extends object, K extends keyof T, V>(player: Player<T>, target: K, select: (value: T[K]) => V): V`
+Reads a rarely changing value of a target into a render; `select` should answer a primitive.
+
+**`useWatch`**: `(driver: EventDriver, target: string): RefCallback<Element>`
+Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still.
+
+**`DriverKeeper`**: `type DriverKeeper`
+A host's one driver: kept while a factory makes the same driver, replaced at the same time when it does not.
+
+**`OwnedDriver`**: `type OwnedDriver`
+A driver a component owns, released when the component leaves.
+
+**`PlayerHost`**: `type PlayerHost`
+What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped.
+
+**`Playing`**: `type Playing`
+(no doc comment)
+<!-- generated:reference:end -->
+
 ## @gerak/rig
 
-**`buildChain(bones)`**: a checked bone tree from **`Bone2d`** rows `{ id, parentId?, length, rotation?, minRotation?,
-maxRotation? }`; ids type every answer. **`Chain2d`** is its type.
+Joint chains: `buildChain` checks a bone tree, `ik` solves it to goals, `fk` and `chainPoses` read it back as poses.
+Exports below that no scene calls (matrices, quaternions, 3D chain solving) are there for other packages.
+
 ```ts
 const arm = buildChain([{ id: "upper", length: 170 }, { id: "lower", parentId: "upper", length: 150 }]);
-```
-
-**`ik(chain, goals, { base, flip })`**: rotations that bring each goal's bone tip to its **`Goal2d`** `{ x, y }`; a
-**`SolveResult`** with `rotations` and a **`SolveQuality`** `quality.kind` (`"too-far"` past reach). `flip` bends the
-elbow the other way.
-```ts
 const { rotations } = ik(arm, { lower: { x: 486, y: 412 } }, { base, flip: true });
-```
-
-**`fk(chain, { rotations, base })`**: each bone's tip as a **`WorldFrame`** `{ x, y, rotation }`. **`ChainPose`** is the
-options' type.
-```ts
 const tips = fk(arm, { rotations, base });
-```
-
-**`chainPoses(chain, { rotations, base })`**: **`BonePose`**s for bone elements laid out at the base, and **`TipPose`**
-offsets for joints.
-```ts
 const { bones, tips } = chainPoses(arm, { rotations, base });
 ```
 
-**`ORIGIN`**: the world frame at 0, 0, unturned.
+<!-- generated:reference:start -->
+**`buildChain`**: `<const B extends readonly Bone2d[]>(bones: B): Chain2d<B[number]["id"]>`
+Checks a bone list and orders it parent first; the ids it was given type every later answer.
+
+**`chainPoses`**: `<Id extends string>(chain: Chain2d<Id>, options?: ChainPose): { readonly bones: Readonly<Record<Id, BonePose>>; readonly tips: Readonly<Rec…`
+Poses for elements laid out at the base: each bone from its start joint, and each tip as an offset.
+
+**`composeChain`**: `(structure: Pick<BodyStructure, "ids" | "parentById">, base: WorldFrame, linkOf: (id: string, position: number) => Link2d): ReadonlyMap<...>`
+The world frame at each bone's tip, parent first, from each bone's link.
+
+**`fk`**: `<Id extends string>(chain: Chain2d<Id>, options?: ChainPose): Readonly<Record<Id, WorldFrame>>`
+Each bone's tip in world space; `rotations` replace rest rotations by bone id.
+
+**`ik`**: `<Id extends string>(chain: Chain2d<Id>, goals: Readonly<Partial<Record<Id, Goal2d>>>, options?: { readonly base?: WorldFrame; readonly flip…`
+The rotations that bring each goal's bone tip to its goal, within the bones' limits.
+
+**`Bone2d`**: `type Bone2d`
+One 2D bone: its length along its own x axis, a rest rotation in degrees, and an optional pivot offset.
+
+**`BonePose`**: `type BonePose`
+A bone's pose for an element laid out from the chain's base pointing right, turning on its left end.
+
+**`Chain2d`**: `type Chain2d`
+A checked bone tree, built once and reused every frame; `order` lists its bone ids parent first.
+
+**`ChainPose`**: `type ChainPose`
+How a chain is posed: each bone's rotation against its parent, in degrees, and where its root sits.
+
+**`Goal2d`**: `type Goal2d`
+Where a bone's tip should go, with an optional weight against other goals.
+
+**`Link2d`**: `type Link2d`
+What composes one link: its length, its rotation against its parent, and its pivot offset.
+
+**`TipPose`**: `type TipPose`
+An offset from the chain's base, for an element centred on the base, such as a hand on a tip.
+
+**`PivotOffset`**: `type PivotOffset`
+Authored pivot offset, in base's rotated frame.
+
+**`WorldFrame`**: `type WorldFrame`
+Pivot and direction in world space: keys a plugin publishes.
+
+**`eulerFromMatrix3d`**: `(matrix: Matrix3): Euler3d`
+Decomposes a CSS Z-X-Y matrix into angles canonical in `(-180, 180]`.
+
+**`IDENTITY_MATRIX3`**: `const IDENTITY_MATRIX3: Matrix3`
+Identity rotation: the frame a swing or twist is measured from.
+
+**`matrixFromEuler3d`**: `(euler: Euler3d): Matrix3`
+CSS `Rz(rotation) * Rx(rotationX) * Ry(rotationY)`, in degrees.
+
+**`matrixFromQuaternion`**: `(q: Quaternion): Matrix3`
+`q`'s row-major matrix; the `2 / |q|²` scale keeps a non-unit `q` a rotation.
+
+**`multiplyMatrix3`**: `(left: Matrix3, right: Matrix3): Matrix3`
+Multiplies row-major 3x3 matrices.
+
+**`quaternionFromEuler3d`**: `(euler: Euler3d): Quaternion`
+Unit quaternion of a CSS Z-X-Y triple: `qz * qx * qy`, `matrixFromEuler3d`'s order.
+
+**`slerpQuaternion`**: `(from: Quaternion, to: Quaternion, weight: number): Quaternion`
+Short-arc blend `weight` from `from` to `to`; a negative dot negates `to` first.
+
+**`swingFrame3d`**: `(frame: Matrix3, direction: Vec3): Matrix3`
+`frame` turned minimally to take local +x onto `direction`: a swing, no twist.
+
+**`swingTwist3d`**: `(local: Matrix3): SwingTwist3d`
+Splits `local` into swing and twist about local +x; a pure swing reads no twist.
+
+**`transposeMatrix3`**: `(matrix: Matrix3): Matrix3`
+The inverse of an orthonormal rotation matrix.
+
+**`Euler3d`**: `type Euler3d`
+3D orientation convention, owned here: CSS Euler order Z-X-Y, degrees.
+
+**`Matrix3`**: `type Matrix3`
+(no doc comment)
+
+**`PivotOffset3d`**: `type PivotOffset3d`
+A pivot offset, read in its parent's rotated frame.
+
+**`Quaternion`**: `type Quaternion`
+`w + xi + yj + zk`; unit where produced here; never authored or published.
+
+**`SwingTwist3d`**: `type SwingTwist3d`
+Local orientation as `swing * twist`; `twist` turns about local +x, applied first.
+
+**`Vec3`**: `type Vec3`
+(no doc comment)
+
+**`WorldFrame3d`**: `type WorldFrame3d`
+(no doc comment)
+
+**`SolveQuality`**: `type SolveQuality`
+How well rotations met the goal: one flat union over both strategies. Residual is distance left;
+kind says why.
+
+**`SolveResult`**: `type SolveResult`
+One IK solve answer, same shape every strategy: rotations plus quality.
+
+**`UNBOUND_POLE3D`**: `const UNBOUND_POLE3D: Pole3d`
+Solve with no pole bound; shared, not allocated per solve.
+
+**`Pole3d`**: `type Pole3d`
+Authored bend control: `unbound` keeps the root-local +z rule; `point` is the world position the
+elbow bends toward, with the bend plane through pivot, goal and pole.
+
+**`ChainMember3d`**: `type ChainMember3d`
+One member of a 3D solver chain, as both 3D strategies read it.
+`base` names parent or root; `limit`, `influence`, `orient`, `goal` only where authored; absent = free or unpulled.
+
+**`FREE_JOINT3D`**: `const FREE_JOINT3D: JointLimit3d`
+(no doc comment)
+
+**`JointLimit3d`**: `type JointLimit3d`
+Sole owner of 3D joint limits: the legal local orientation, relative to the parent's solved frame, nearest the one the solve proposes.
+
+**`chainShape3d`**: `(members: readonly ChainMember3d[]): ChainShape3d`
+Chain shape, or a throw when no member carries a goal.
+Order: goal guard → `constrained` → `two-bone` pair → `tree`.
+
+**`solveChain3d`**: `(root: WorldFrame3d, members: readonly ChainMember3d[], bend?: Pole3d): SolveResult3d`
+Solves one 3D chain: position by shape, then each oriented leaf toward its goal.
+Orientation turns leaves without moving the tip, so position keeps priority.
+
+**`ChainShape3d`**: `type ChainShape3d`
+Strategy answering one 3D chain; derived at solve time, never authored.
+`two-bone` carries pair + goal, `tree` members, `constrained` members with a limiting joint.
+<!-- generated:reference:end -->
 
 ## @gerak/physics
 
-**`builtinWorld()`**: the pure engine, a **`PhysicsWorld`**: `addBody`, `addCollider`, `setGravity`, `step`, `body`,
-`drainContacts`, `snapshot`, `restore`.
+The pure engine and `simulate`, which makes a seekable simulation from a world and a build function.
 
-**`BodySpec`**: `{ id, shape, x, y, vx?, vy?, angle?, spin?, fixedRotation?, restitution?, friction?, drag?, mass? }`;
-**`Shape`** `{ kind: "circle", radius }` or `{ kind: "box", width, height }`. **`Surface`**: `{ restitution?, friction? }`.
-**`Collider`**: `{ kind: "floor", y }`, `{ kind: "wall", x, side }`, `{ kind: "segment", from, to }`.
-**`BodyState`**: `{ x, y, rotation, vx, vy, spin }`. **`Contact`**: `{ a, b }` ids that started touching.
 ```ts
 world.addBody({ id: "ball", shape: { kind: "circle", radius: 20 }, x: 640, y: 0, restitution: 0.5 });
-```
-
-**`simulate(world, build, { dt, checkpointMs, maxCheckpoints, durationMs, spawn })`**: a **`Simulation`**, seekable:
-`at(time, events)` states, `bodies(time, events)` ids, `pose(id, time, events)` the move from its start,
-`place(id, time, events)` a **`Placed`** on the stage with opacity 0 before it exists, `events(time, events)` its
-`contact` events. **`SimulateOptions`** are its options; `spawn(event, world)` adds bodies through a **`Spawner`**.
-```ts
 const sim = simulate(builtinWorld(), (world) => {
   world.setGravity(0, 2600);
   world.addCollider("floor", { kind: "floor", y: 600 });
@@ -510,36 +827,86 @@ const sim = simulate(builtinWorld(), (world) => {
 sim.place(`bit${click.at}`, time, events);
 ```
 
+<!-- generated:reference:start -->
+**`builtinWorld`**: `(): PhysicsWorld`
+The built-in engine: circles and boxes that turn, on floors, walls and segments; pure and synchronous.
+
+**`simulate`**: `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions): Simulation`
+Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
+
+**`Placed`**: `type Placed`
+Where a body is for an element laid out centred on the stage's top left corner, and whether it exists yet.
+
+**`SimulateOptions`**: `type SimulateOptions`
+(no doc comment)
+
+**`Simulation`**: `type Simulation`
+A world played from time 0, seekable to any time, the same at the same time and events whatever came before.
+
+**`Spawner`**: `type Spawner`
+What a spawn may do to the world: add bodies, nothing else.
+
+**`BodySpec`**: `type BodySpec`
+A body to add: where its centre starts in stage px, its turn in degrees, and how fast both change.
+
+**`BodyState`**: `type BodyState`
+Where a body's centre is in stage px and how it is turned in degrees, and how fast each changes a second.
+
+**`Collider`**: `type Collider`
+A collider that never moves: the line bodies rest on, a side that keeps them in, or a ramp.
+
+**`Contact`**: `type Contact`
+Two things that started touching during a step: body ids, or a body id and a collider id.
+
+**`PhysicsWorld`**: `type PhysicsWorld`
+What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise.
+
+**`Shape`**: `type Shape`
+A body's outline: a circle by its radius, or a box by its size, centred on the body.
+
+**`Surface`**: `type Surface`
+How a surface answers a hit: bounce kept, from 0 to 1, and grip, from 0 up; the two sides' values average.
+<!-- generated:reference:end -->
+
 ## @gerak/rapier
 
-**`rapierEngine()`**: loads Rapier once and gives a factory of **`RapierWorld`**s, which are `PhysicsWorld`s with
-`native` and `rigidBody(id)` for joints and the rest of Rapier.
+The same worlds on Rapier, loaded once. `RapierWorld`s are `PhysicsWorld`s with `native` and `rigidBody(id)`.
+
 ```ts
 const rapier = await rapierEngine();
 const sim = simulate(rapier(), build);
 ```
 
+<!-- generated:reference:start -->
+**`rapierEngine`**: `(): Promise<() => RapierWorld>`
+Loads Rapier's WASM once; the factory it gives makes worlds synchronously after that.
+
+**`RapierWorld`**: `type RapierWorld`
+A Rapier world behind the port, with Rapier's own world for what the port leaves out.
+<!-- generated:reference:end -->
+
 ## @gerak/three
 
-**`applyPose2d(object, pose, rest?, custom?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes;
-it calls `custom(name, value, object)` for each custom number and leaves blur, the stroke and the clip alone.
-**`THREE_POSE_FIELDS`**: the pose fields it writes.
-```ts
-player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
-```
+Writes poses onto Three.js objects. `useTarget3d(player, target, { invalidate })` comes from `@gerak/three/react`: a
+ref for an `Object3D` that writes the target's `Pose3d` every step; pass `invalidate` when the canvas renders on demand.
 
-**`applyPose3d(object, pose, rest?, custom?)`**: writes a `Pose3d` on a Three.js object, y up, turns in degrees on Z-X-Y; a
-missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
-```ts
-player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
-```
-
-**`useTarget3d(player, target, { invalidate })`** from `@gerak/three/react`: a ref for an `Object3D` that writes the
-target's `Pose3d` every step with no render; in React Three Fiber pass `invalidate` when the canvas renders on demand.
 ```tsx
+player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
+player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
 const ball = useTarget3d(playing?.player, "ball");
 return <mesh ref={ball} />;
 ```
+
+<!-- generated:reference:start -->
+**`applyPose2d`**: `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`
+Writes a 2D pose on an object: page y points down, so y and rotation flip; the anchor stays still.
+
+**`THREE_POSE_FIELDS`**: `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`
+The pose fields a Three.js object has a place for; it leaves blur, the stroke and the clip alone.
+
+**`applyPose3d`**: `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`
+Writes a 3D pose on an object: y up, turns in degrees on `ZXY`; a missing field writes its rest.
+<!-- generated:reference:end -->
 
 ## Commands
 
@@ -587,10 +954,3 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   values with no browser; reads the module's `cues`.
 - **`motion:timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
 - **`motion:points <points.json> --spacing px`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
-
-## Not for scenes
-
-These are exported for other packages, and a scene does not use them. They are named so this reference stays
-complete.
-
-- **`@gerak/rig`**: `composeChain`, `Link2d`, `PivotOffset`, `eulerFromMatrix3d`, `IDENTITY_MATRIX3`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `quaternionFromEuler3d`, `slerpQuaternion`, `swingFrame3d`, `swingTwist3d`, `transposeMatrix3`, `Euler3d`, `Matrix3`, `PivotOffset3d`, `Quaternion`, `SwingTwist3d`, `Vec3`, `WorldFrame3d`, `UNBOUND_POLE3D`, `Pole3d`, `ChainMember3d`, `FREE_JOINT3D`, `JointLimit3d`, `chainShape3d`, `solveChain3d`, `ChainShape3d`.
