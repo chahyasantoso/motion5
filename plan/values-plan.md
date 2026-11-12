@@ -1,6 +1,6 @@
 # Values and sequence plan
 
-**Status:** Approved by the owner, 2026-11-11.
+**Status:** Done, 2026-11-12. Approved by the owner, 2026-11-11.
 **Base:** `feat/authoring-proof-2` at the commit that adds this file (pull request 578).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` ("What a real piece asked for"),
 `plan/authoring-plan.md` ("A hand-made piece, rebuilt"), `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -216,6 +216,22 @@ Left from the review, and why: a `trace` with a `tail` below 1 ends with only th
 a reveal (a comet is what a tail is for); `lift2d` names the fields it carries from a page pose onto a plane (a
 mapping, not a rest or a rule); a custom name with a dot in it is read wrongly by the gate (the renderer now refuses
 such a name).
+
+### The standing measure
+
+The hand-made showreel (`packages/tools/test/fixtures/showreel-original/`) rebuilt with gerak, from the original only.
+
+| Rebuild | Base | Worker | Tokens | Moves written | Elements styled by hand | Phases chosen by `if` on time |
+| --- | --- | --- | --- | --- | --- | --- |
+| `showreel` | before this plan | Opus, medium | 198 k | 7 | about 30 | the dot's eight |
+| `showreel-b` | after waves 1 to 3 | Opus, medium | 217 k | 5, reusing all 7 earlier ones | 0 | 0 |
+
+It passes V7: no component writes colour, blur or a stroke by hand, the scene has no `if` on time, and its seven
+frames match the first rebuild's, read by the conductor. Tokens did not go down: the worker also built the catalog's
+parts list in the same run and reused twelve moves it had to read first. What remained, most limiting first:
+`trail`'s refusal of a lightly damped spring named one fix and not the other (its message now names both); an exit
+move shows at rest before its span; nothing built in covers motion blur, a colour number, a stroke opening from its
+middle or a moving stroke window; an enter move holds its start before its span; text cannot go through a value.
 
 ## 7. Done when
 
