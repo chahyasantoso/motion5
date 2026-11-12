@@ -142,9 +142,10 @@ export function checkReference(scanRoot = root) {
   const expected = fill(committed, generate(scanRoot).bodies);
   if (expected === undefined)
     return [`${REFERENCE_PATH}: marker pairs do not match the ${PACKAGES.length} packages`];
+  const undocumented = generate(scanRoot).undocumented.map((name) => `${name} has no doc comment`);
   return expected === committed
-    ? []
-    : [`${REFERENCE_PATH} is out of date: run npm run reference -- --write`];
+    ? undocumented
+    : [`${REFERENCE_PATH} is out of date: run npm run reference -- --write`, ...undocumented];
 }
 
 export function main(argv = process.argv.slice(2), scanRoot = root) {

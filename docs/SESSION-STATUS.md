@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-12, Asia/Jakarta.
-- **Read against:** `feat/values-proof` after the full check gate.
+- **Read against:** `feat/apps-split` after the full check gate.
 
 ## Now
 
@@ -26,12 +26,12 @@ byte ceiling.
   code panel straight back into `src/<name>-scene.ts`. Twenty moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
-  own moves and the live page live in `apps/pieces`, the tools' default root, and `docs/guide/agent-reference.md` is held complete by another.
+  own moves and the live page live in `apps/pieces`, the tools' default root, and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **The rest of `plan/apps-and-reference-plan.md`:** generate the
-  reference from the code (`plan/roadmap.md`, "After the values plan"); then publish.
+- **The cast and the story:** the `stage` package (layer 3 of `docs/ARCHITECTURE.md`): objects made in code, and
+  beats and cues a tool can check, compiled to the same scene function; then publish.
 
 ## Open, and not scheduled
 

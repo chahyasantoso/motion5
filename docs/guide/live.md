@@ -6,12 +6,12 @@ the stage answers on the next frame without losing its place in time.
 ## Open a scene
 
 ```bash
-npm run motion:live -- timing
+npm run motion:live -- saved
 ```
 
 `motion:live` starts the Vite dev server (or reuses one already listening on the port) and prints the URL for
-`live.html?scene=timing`. Every worked example (`timing`, `catch`, `splash`, `card`, `pile`, `principles`,
-`principles3d`) and every scene made with `npm run motion:new` (DOM or `--three`) plays in it with no change to its
+`live.html?scene=saved`. Every piece in `apps/pieces` (`saved`, `kelvin`, `tempo`, the `night-*` cards,
+and the `showreel`s) and every scene made with `npm run motion:new` (DOM or `--three`) plays in it with no change to its
 files.
 
 ## Save and keep your place
@@ -27,7 +27,7 @@ The scene file (`src/<name>-scene.ts`) is the only source of truth. When you sav
   banner at the top reports the error until the next clean save.
 - If you edit the component file and it can no longer render, the banner reports it and the stage is empty until the
   next save that renders; the timeline and the code panel stay up.
-- Any other page of the app, such as `timing.html`, reloads on a save.
+- Any other page of the app, such as `saved.html`, reloads on a save.
 
 ## Timeline and keys
 

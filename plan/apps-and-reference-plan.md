@@ -1,6 +1,6 @@
 # Apps and reference plan
 
-**Status:** Draft for the owner's review.
+**Status:** Done, 2026-11-12.
 **Base:** `main` at `85c5b728` plus pull request 582.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` ("After the values plan"),
 `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -81,7 +81,20 @@ One pull request per wave.
   the "how it fits" lines, and the proof's next run says whether agents miss anything.
 - **Moving the live page later** is deferred, not avoided; the live kit stage owns it.
 
-## 6. Done when
+## 6. What it cost
+
+| Wave | Who | Slices | Tokens | Time | What the conductor fixed on combining |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Conductor, by script | S1 | not shown | | the script rewrote plans and decision records, which are history; reverted |
+| 2 | Sonnet, medium | S2 | 106 k | 5.3 min | three lines an export made the file 956 lines; one line each made it 532 |
+| 2 | Sonnet, medium | S3 | 150 k | 6.8 min | nothing |
+| 3 | Sonnet, medium, cold review | | 108 k | 5.7 min | seven findings: three fixed, four left as cosmetic or with no case today |
+
+The review found `npm run test:frames` broken by the split (it opened examples from the pieces app) and the live
+guide naming examples that no longer play live; neither is in `npm run check`. Both are fixed, and the reference check now
+fails on an export with no doc comment.
+
+## 7. Done when
 
 `apps/react-demo` is gone, the reference's generated part is current under test, `npm run check` is green, and
 `docs/SESSION-STATUS.md` says so.
