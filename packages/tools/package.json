@@ -6,7 +6,8 @@
   "dependencies": {
     "@gerak/moves": "0.0.0",
     "@gerak/player": "0.0.0",
-    "@gerak/rig": "0.0.0"
+    "@gerak/rig": "0.0.0",
+    "@gerak/stage": "0.0.0"
   },
   "peerDependencies": {
     "playwright-core": "*",

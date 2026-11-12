@@ -2,7 +2,9 @@ import { pathToFileURL } from "node:url";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
-import { readSceneModule, sampleScene, type SceneModule } from "./scene";
+import type { CastName } from "@gerak/stage";
+import { unreachable } from "../page/unreachable";
+import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
 export interface SceneReviewRequest {
@@ -197,6 +199,96 @@ export function reviewValues(
   return [...jumps, ...rest.map(describeFinding)];
 }
 
+type Samples = Parameters<typeof reviewValues>[0];
+
+/** A name's value in a sample: a target's own, or one item of a `many` target, as `dust.3`. */
+function valueOf(targets: Readonly<Record<string, unknown>>, name: CastName): unknown {
+  switch (name.kind) {
+    case "actor":
+    case "many":
+    case "group":
+      return targets[name.name];
+    case "item": {
+      const dot = name.name.lastIndexOf(".");
+      const list = targets[name.name.slice(0, dot)];
+      if (!Array.isArray(list)) return undefined;
+      const item: unknown = list[Number(name.name.slice(dot + 1))];
+      return item;
+    }
+    default:
+      return unreachable(name.kind);
+  }
+}
+
+/** A name that must be moved to be of use: a lone actor or a list, not a group or an item of one. */
+function mustMove(name: CastName): boolean {
+  switch (name.kind) {
+    case "actor":
+    case "many":
+      return !name.still;
+    case "group":
+    case "item":
+      return false;
+    default:
+      return unreachable(name.kind);
+  }
+}
+
+/** What a stage module's scene does against its cast and beats: a member never moved, a target not
+ * cast, a value changing outside its presence. */
+function stageFindings(
+  cast: readonly CastName[],
+  beats: readonly Beat[],
+  samples: Samples,
+): readonly string[] {
+  const known = new Set(cast.map(({ name }) => name));
+  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))];
+  const found: string[] = targets
+    .filter((target) => !known.has(target))
+    .map((target) => `the scene answers "${target}", which is not in the cast.`);
+  const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
+  for (const member of cast) {
+    const prints = samples.map(({ targets: values }) => fingerprint(valueOf(values, member)));
+    if (mustMove(member) && prints.every((print) => print === prints[0]))
+      found.push(
+        `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
+      );
+    const enters = member.enters === undefined ? undefined : beatNamed(member.enters);
+    const leaves = member.leaves === undefined ? undefined : beatNamed(member.leaves);
+    const changes = prints.flatMap((print, index) => {
+      const before = samples[index - 1];
+      const now = samples[index];
+      return before === undefined || now === undefined || print === prints[index - 1]
+        ? []
+        : [{ from: before.at, at: now.at }];
+    });
+    const early = enters === undefined ? undefined : changes.find(({ at }) => at < enters.from);
+    const late = leaves === undefined ? undefined : changes.find(({ from }) => from >= leaves.to);
+    if (early !== undefined && enters !== undefined)
+      found.push(
+        `${member.name} changes at ${early.at} ms${labelAt(beats, early.at)}, before its beat "${enters.name}" starts at ${enters.from} ms.`,
+      );
+    if (late !== undefined && leaves !== undefined)
+      found.push(
+        `${member.name} changes at ${late.at} ms${labelAt(beats, late.at)}, after its beat "${leaves.name}" ends at ${leaves.to} ms.`,
+      );
+  }
+  return found;
+}
+
+function labelAt(beats: readonly Beat[], ms: number): string {
+  const name = beatAt(beats, ms);
+  return name === undefined ? "" : ` (beat "${name}")`;
+}
+
+/** A finding that names a time, `at 480 ms`, also names the beat it falls in. */
+function labelled(beats: readonly Beat[], finding: string): string {
+  return finding.replace(
+    /\bat (\d+(?:\.\d+)?) ms\b/,
+    (time, ms: string) => `${time}${labelAt(beats, Number(ms))}`,
+  );
+}
+
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> & Limits,
@@ -205,7 +297,16 @@ export function reviewSceneModule(
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const samples = sampleScene(module, { kind: "time", ms });
-  return { kind: "reviewed", findings: reviewValues(samples, request) };
+  const findings = reviewValues(samples, request);
+  const { beats, cast } = module;
+  if (beats === undefined) return { kind: "reviewed", findings };
+  return {
+    kind: "reviewed",
+    findings: [
+      ...findings.map((finding) => labelled(beats, finding)),
+      ...(cast === undefined ? [] : stageFindings(cast, beats, samples)),
+    ],
+  };
 }
 
 /** Loads a scene file as `motion:sample` does and reviews its values, with no page. */

@@ -1,14 +1,81 @@
 import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
+import { NO_REST, castNames, type Cast, type CastName, type Member, type Rest } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
-/** What a scene module exports for the tools: its scene, how long it runs in ms, and its own cues. */
+/** One named beat of a stage module's story, in ms. */
+export interface Beat {
+  readonly name: string;
+  readonly from: number;
+  readonly to: number;
+}
+
+/** What a scene module exports for the tools: its scene, how long it runs in ms, and its own cues;
+ * a stage module also carries its beats and the names its cast makes. */
 export interface SceneModule {
   readonly scene: (time: Time, events: Events) => object;
   readonly durationMs: number;
   readonly cues: Events;
+  readonly beats?: readonly Beat[];
+  readonly cast?: readonly CastName[];
+}
+
+/** The latest beat started at `ms`, or `undefined` before the first one. */
+export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
+  let found: Beat | undefined;
+  for (const beat of beats)
+    if (beat.from <= ms && (found === undefined || beat.from >= found.from)) found = beat;
+  return found?.name;
+}
+
+function isNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+/** The beats of a story in the order it gave them, or why it is not one. */
+function readBeats(
+  story: unknown,
+): { readonly beats: readonly Beat[]; readonly durationMs: number } | string {
+  const durationMs: unknown = Reflect.get(Object(story), "durationMs");
+  const order: unknown = Reflect.get(Object(story), "order");
+  if (!isNumber(durationMs) || !Array.isArray(order))
+    return "The module's `beats` must be made by `story`.";
+  const beats: Beat[] = [];
+  for (const name of order) {
+    const span: unknown = typeof name === "string" ? Reflect.get(Object(story), name) : undefined;
+    const from: unknown = Reflect.get(Object(span), "from");
+    const to: unknown = Reflect.get(Object(span), "to");
+    if (typeof name !== "string" || !isNumber(from) || !isNumber(to))
+      return "The module's `beats` must be made by `story`.";
+    beats.push({ name, from, to });
+  }
+  return { beats, durationMs };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isMember(value: unknown): value is Member {
+  if (!isRecord(value)) return false;
+  switch (value["kind"]) {
+    case "actor":
+      return true;
+    case "many": {
+      const items = value["items"];
+      return Array.isArray(items) && items.every(isMember);
+    }
+    case "group":
+      return isCast(value["members"]);
+    default:
+      return false;
+  }
+}
+
+function isCast(value: unknown): value is Cast {
+  return isRecord(value) && Object.values(value).every(isMember);
 }
 
 function isEvent(value: unknown): value is MotionEvent {
@@ -68,26 +135,63 @@ export interface SceneSample {
   readonly targets: Readonly<Record<string, unknown>>;
 }
 
-/** The scene and duration a module exports, or why it has none. */
+/** The rest boxes a stage module gives tools with no renderer, or none. */
+function isRest(value: unknown): value is Rest {
+  return (
+    isRecord(value) &&
+    Object.values(value).every(
+      (box) => isRecord(box) && ["x", "y", "width", "height"].every((key) => isNumber(box[key])),
+    )
+  );
+}
+
+/** The scene and duration a module exports, or why it has none. A stage module's duration may come
+ * from its story, and its scene gets the module's `rest` as its third argument. */
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
   const scene: unknown = Reflect.get(Object(value), "scene");
-  const durationMs: unknown = Reflect.get(Object(value), "durationMs");
+  const given: unknown = Reflect.get(Object(value), "durationMs");
   if (typeof scene !== "function")
     return { reason: "The module exports no `scene`, a function from time to targets." };
+  const story: unknown = Reflect.get(Object(value), "beats");
+  const read = story === undefined ? undefined : readBeats(story);
+  if (typeof read === "string") return { reason: read };
+  if (read !== undefined && given !== undefined && given !== read.durationMs)
+    return {
+      reason: `The module's \`durationMs\` ${String(given)} differs from its story's ${read.durationMs}; export only \`beats\`.`,
+    };
+  const durationMs = given ?? read?.durationMs;
   if (typeof durationMs !== "number" || !Number.isFinite(durationMs) || durationMs <= 0)
     return { reason: "The module exports no `durationMs`, a positive number." };
   const cues: unknown = Reflect.get(Object(value), "cues");
   if (cues !== undefined && !(Array.isArray(cues) && cues.every(isEvent)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
+  const cast: unknown = Reflect.get(Object(value), "cast");
+  let names: readonly CastName[] | undefined;
+  if (read !== undefined && cast !== undefined) {
+    if (!isCast(cast))
+      return { reason: "The module's `cast` must be made by `group`, `actor` and `many`." };
+    try {
+      names = castNames(
+        cast,
+        read.beats.map(({ name }) => name),
+      );
+    } catch (error) {
+      return { reason: error instanceof Error ? error.message : String(error) };
+    }
+  }
+  const restValue: unknown = Reflect.get(Object(value), "rest");
+  const rest = isRest(restValue) ? restValue : NO_REST;
   return {
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     scene: (time, events) => {
-      const values: unknown = Reflect.apply(scene, undefined, [time, events]);
+      const values: unknown = Reflect.apply(scene, undefined, [time, events, rest]);
       if (typeof values !== "object" || values === null)
         throw new TypeError("The scene returned no targets.");
       return values;
     },
     durationMs,
+    ...(read === undefined ? {} : { beats: read.beats }),
+    ...(names === undefined ? {} : { cast: names }),
   };
 }
 
