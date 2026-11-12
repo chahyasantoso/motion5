@@ -22,11 +22,12 @@ export interface SceneModule {
   readonly cast?: readonly CastName[];
 }
 
-/** The latest beat started at `ms`, or `undefined` before the first one. */
+/** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
 export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
   let found: Beat | undefined;
   for (const beat of beats)
-    if (beat.from <= ms && (found === undefined || beat.from >= found.from)) found = beat;
+    if (beat.from <= ms && ms <= beat.to && (found === undefined || beat.from >= found.from))
+      found = beat;
   return found?.name;
 }
 

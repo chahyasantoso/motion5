@@ -121,6 +121,8 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
   const seen = new Set<string>();
   const visit = (members: Cast, groups: readonly string[], inherited: Behaviour): void => {
     for (const [key, member] of Object.entries(members)) {
+      if (key.includes("."))
+        throw new RangeError(`cast: the name "${key}" holds a dot, which only an item's name has.`);
       if (seen.has(key)) throw new RangeError(`cast: the name "${key}" is used twice.`);
       seen.add(key);
       const presence = presenceOf(member, inherited);

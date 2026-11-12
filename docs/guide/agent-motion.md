@@ -35,7 +35,7 @@ not by reading package source. Read a part below only when the brief needs it:
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
 7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
-8. `npm run motion:review -- <name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
+8. `npm run motion:review -- apps/pieces/src/<name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
    "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does,
    gives the findings and a `sheet` of frames picked where the motion is fast; `--full` adds the moves with their eases.
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
@@ -69,9 +69,11 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   hides a member outside them (a member takes its group's); `watch: true` sends its hover and click to the scene's
   events under its name; `still: true` says the scene never moves it.
 - **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
-- **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, scoped to the stage. A member it leaves out is a
-  grey box with its name, or its text. Keep every member positioned: no `position: static`, no `display: contents`,
-  or its rest box is wrong.
+- **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, an item by `[data-cast="dust.3"]` or all of a
+  list's by `[data-cast^="dust."]`, scoped to the stage. A member it leaves out is a grey box with its name, or its
+  text. By default the frame and every group or `many` lay their members out in a centred, wrapping row (gaps 24 and
+  8 px), each `position: relative`. To place one yourself, give it `position: absolute` with `left` and `top` from
+  its parent's top-left. Never `position: static` or `display: contents`: its rest box would be wrong.
 - **Rest.** `restOf(rest, "dot")` is the measured box of a member after layout, `{ x, y, width, height }` from its
   centre in the frame; it is a zero box under a tool with no browser.
 - `R`, or a click on the background, replays.
@@ -82,7 +84,8 @@ Each line shows one function on a plain target. A bare name such as `distance` o
 number goes.
 
 ```ts
-// Every move, modifier and helper below is imported from this one package.
+// Every helper below, and every built-in move, comes from this package; a move `motion:moves` lists from
+// `apps/pieces/src/moves` is imported from `./moves/<id>`.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given

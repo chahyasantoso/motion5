@@ -33,7 +33,8 @@ function firstLine(path: string): string {
 function typescriptFiles(directory: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "dist") continue;
+    if (entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith("."))
+      continue;
     const path = join(directory, entry.name);
     if (entry.isDirectory()) found.push(...typescriptFiles(path));
     else if (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")) found.push(path);

@@ -68,9 +68,10 @@ describe("the cast", () => {
     expect(byName.get("card")).toMatchObject({ watch: true, groups: [] });
   });
 
-  it("refuses a name used twice and a presence the story lacks", () => {
+  it("refuses a name used twice, a name with a dot, and a presence the story lacks", () => {
     expect(() => castNames({ a: group({ dot: actor() }), dot: actor() })).toThrow(/used twice/);
     expect(() => castNames({ dot: actor({ enters: "nope" }) }, ["start"])).toThrow(/nope/);
+    expect(() => castNames({ dust: many(2), "dust.1": actor() })).toThrow(/dot/);
   });
 });
 

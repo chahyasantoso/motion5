@@ -362,7 +362,7 @@ const centre = centreIn(dot, stage);
 - **`OwnedDriver`** `type OwnedDriver`: A driver a component owns, released when the component leaves.
 - **`PlayerHost`** `type PlayerHost`: What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped.
 - **`Playing`** `type Playing`: What `usePlayer` gives: the `player` and the `driver` it plays on.
-- **`Stage`** `<B extends string>({ module, options }: StageProps<B>): ReactNode`: Plays a stage module in a div that fills its parent; a new module or options mounts afresh, and leaving disposes it.
+- **`Stage`** `<B extends string>({ module, options }: StageProps<B>): ReactNode`: Plays a stage module in a div that fills its parent; a new module mounts afresh, options are read when it mounts, and leaving disposes it.
 - **`StageProps`** `type StageProps`: What `<Stage />` plays: a stage module, and the frames and clock its drivers run on.
 <!-- generated:reference:end -->
 

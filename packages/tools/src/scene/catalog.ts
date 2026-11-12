@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
@@ -165,6 +165,9 @@ export function formatLine(record: MoveRecord): string {
     `${record.id} [${record.role}] ${record.description}`,
     `options: ${options.length === 0 ? "none" : options.join("; ")}`,
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
+    ...(record.source.kind === "app"
+      ? [`import from ./moves/${basename(record.source.file, ".ts")}`]
+      : []),
   ].join(" | ");
 }
 

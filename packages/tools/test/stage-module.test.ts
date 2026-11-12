@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Time } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
 import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
@@ -62,7 +63,7 @@ describe("a stage module in the scene tools", () => {
     expect(reviewSceneModule(read, limits).findings.some((line) => /cast/.test(line))).toBe(false);
   });
 
-  it("names the beat a time falls in as the latest one started", () => {
+  it("names the beat a time falls in, the latest started, and none in a gap", () => {
     const read = moduleOf({
       scene: () => ({}),
       beats: story(1000, { a: [0, 600], b: [300, 400] }),
@@ -70,7 +71,7 @@ describe("a stage module in the scene tools", () => {
     });
     expect(beatAt(read.beats ?? [], 100)).toBe("a");
     expect(beatAt(read.beats ?? [], 350)).toBe("b");
-    expect(beatAt(read.beats ?? [], 900)).toBe("b");
+    expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
   });
 });
 
@@ -83,6 +84,19 @@ describe("motion:review on a stage module", () => {
     expect(findings(unused)).toEqual([
       'cast member "spare" is never moved by the scene; move it or mark it still.',
     ]);
+  });
+
+  it("lets a watched member move only on events, and reports a still member that moves", () => {
+    const beats = story(500, { all: [0, 500] });
+    expect(findings({ beats, cast: { play: actor({ watch: true }) }, scene: () => ({}) })).toEqual(
+      [],
+    );
+    const moved = {
+      beats,
+      cast: { a: actor({ still: true }) },
+      scene: (time: Time) => ({ a: { x: time.progress } }),
+    };
+    expect(findings(moved)).toContain('cast member "a" is marked still, but the scene moves it.');
   });
 
   it("finds a target the scene answers that is not cast", () => {

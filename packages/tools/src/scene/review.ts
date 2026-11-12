@@ -220,12 +220,13 @@ function valueOf(targets: Readonly<Record<string, unknown>>, name: CastName): un
   }
 }
 
-/** A name that must be moved to be of use: a lone actor or a list, not a group or an item of one. */
+/** A name that must be moved to be of use: a lone actor or a list, not a group, an item, or a
+ * watched member, which may move only on a person's events. */
 function mustMove(name: CastName): boolean {
   switch (name.kind) {
     case "actor":
     case "many":
-      return !name.still;
+      return !name.still && !name.watch;
     case "group":
     case "item":
       return false;
@@ -249,10 +250,13 @@ function stageFindings(
   const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
   for (const member of cast) {
     const prints = samples.map(({ targets: values }) => fingerprint(valueOf(values, member)));
-    if (mustMove(member) && prints.every((print) => print === prints[0]))
+    const unmoved = prints.every((print) => print === prints[0]);
+    if (mustMove(member) && unmoved)
       found.push(
         `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
       );
+    if (member.still && member.kind !== "group" && !unmoved)
+      found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
     const enters = member.enters === undefined ? undefined : beatNamed(member.enters);
     const leaves = member.leaves === undefined ? undefined : beatNamed(member.leaves);
     const changes = prints.flatMap((print, index) => {

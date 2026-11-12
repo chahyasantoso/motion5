@@ -59,8 +59,6 @@ export interface StageElement<E> {
 /** A scene's answer per member name: one value, or one per item of a `many`. */
 export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
 
-/** What a stage module exports, as the DOM stage reads it. */
-
 /** Settings of `mountStage`: the frames and the ms clock its own drivers run on. */
 export interface StageOptions {
   readonly frames?: FrameSource;
@@ -86,6 +84,7 @@ const DEFAULT_SKIN = `
   align-content: center; gap: 24px; overflow: hidden; font: 16px/1.2 system-ui, sans-serif;
 }
 :where([data-cast]) { position: relative; box-sizing: border-box; }
+:where([data-text]) { white-space: pre; }
 :where([data-kind="group"], [data-kind="many"]) {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
 }
