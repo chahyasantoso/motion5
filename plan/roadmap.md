@@ -140,6 +140,16 @@ Two improvements the owner asked to keep, each its own small plan:
   gaps. Generate it from the declarations and the doc comments, keep the hand-written part to the few lines that
   explain how the pieces fit, and let the test that holds it complete compare the two.
 
+### Layers 3 and 4
+
+`docs/ARCHITECTURE.md` names five layers. Two show gaps:
+
+- **The scene has no cast.** Objects and text are made by hand in a component. The `stage` package (stage 5) is
+  that layer, and it comes before the instrument and video.
+- **Logic has no plan.** A game, a quiz or an interactive explainer needs rules over the event log: state as a fold
+  over events, collisions from the seekable physics world, and a fixed step so a replay gives the same answer. It is
+  written when a brief needs it, not before.
+
 ## 6. Waiting for a brief that needs them
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent

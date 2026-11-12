@@ -31,6 +31,27 @@ driver owns only time, a player owns only playback, and a renderer owns only wri
 - **Tools:** `tools/scene` reads a scene module with no browser; `tools/page` drives a real page with Playwright and
   Vite, and the scan holds it to `node:`, `playwright-core` and `vite`.
 
+## 2a. What a piece is built from
+
+Five layers, each using only the ones below it. A piece stops at the highest layer it needs; an explainer stops at
+the scene.
+
+| Layer | Answers | In gerak |
+| --- | --- | --- |
+| 1. Parts | how a value changes over time | `span`, `sequence`, `spring`, `trail`, `mix`, `along`, eases: `npm run motion:moves -- --parts` |
+| 2. Moves | what the common motions are | `defineMove` with a role, held by the gate, listed by `motion:moves`; an app's own in `src/moves` |
+| 3. Scene | what happens, and when | a scene function of time and events; `sequence` for beats; the cast and text are written by hand today |
+| 4. Logic | what happens because of what a person did | the event log, `react` and `follow` today; rules, score and state wait for a brief |
+| 5. App | the thing that ships | the web overlay, the instrument, video, and later a game or a quiz |
+
+- A lower layer never knows a higher one: a spring does not know it is in a game. The boundary scan's pure layer
+  enforces it for layers 1 to 3.
+- Logic is a fold over the event log, never state changed in place. Score, position and collisions are worked out
+  from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,
+  edited live and rendered frame-exact.
+- A move written for one piece lives in that app's `src/moves` and moves down into `@gerak/moves` when a second
+  piece uses it. Any agent may write a part or a move; promotion is the review step, not a separate author.
+
 ## 3. Ownership
 
 | Question | Owner |
