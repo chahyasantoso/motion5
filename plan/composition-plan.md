@@ -1,6 +1,6 @@
 # Composition plan, part one: what the measure asked for, and events on a clock
 
-**Status:** Draft for the owner, 2026-11-12.
+**Status:** Draft for the owner, 2026-11-12; critiqued once.
 **Base:** `main` at `3e484893`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-174-a-cast-of-proxies-and-a-story.md`,
 `plan/stage-plan.md` section 5a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -22,20 +22,23 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 
 - **A path is content, like text.** `actor({ path: "M0 0 C…" })` gives a member a geometry the motion depends on:
   its length, which `drawn` and `trace` read, and later the line a thing moves along. A renderer draws it its own
-  way: the DOM stage as an SVG `path` inside the member, sized by the skin; a 3D renderer as a line. The skin still
-  decides stroke colour and width.
-- **Presence is a list of beats.** `on: ["landing1", "landing2"]` shows a member while any of those beats runs, and
-  hides it otherwise; a member without `on` takes its group's, and a member with none is always shown. A stretch
-  across several beats is a beat of its own in the story, since beats may overlap. `enters` and `leaves` go: one way
-  to say presence. Every piece and fixture is moved by script in the same slice.
+  way: the DOM stage as an SVG `path` inside the member, its `viewBox` the path's own box so the skin's width and
+  height scale it; a 3D renderer as a line. A value's transform goes to the member, its stroke fields to the path.
+  The skin decides stroke colour and width.
+- **Presence is a list of stretches.** `on: ["landing1", "landing2", ["anticipate", "weight"]]` shows a member while
+  any of them runs, and hides it otherwise. An entry is a beat, or a pair of beats meaning from the first's start to
+  the second's end. A member without `on` takes its group's, and a member with none is always shown. A stretch that
+  ends at the story's end holds to the last frame. `enters` and `leaves` go: one way to say presence. Every piece and
+  fixture is moved by script in the same slice.
 - **A one-shot move needs no fix of its own.** Its start pose outside its span is hidden by presence on its beat,
   which is now one word. The proof checks it.
 - **`trail` finds its own `rest`.** When none is given, it takes the smallest that keeps the spring's memory under
   the cap; a `rest` given and too small still throws, naming the one it would take.
 - **Events ride a clock.** The clock driver watches members as the event driver does and records each event at the
-  clock's elapsed time. Seeking keeps the log, and the scene sees only events at or before the time, so scrubbing
-  back undoes them and playing forward again replays them; `replay` clears the log. The stage always plays on the
-  clock driver. A recorded log can be saved as the module's `cues`, so what a person did becomes part of the piece.
+  clock's elapsed time. Seeking keeps the log, and the player hands the scene only events at or before the time, cues
+  included, so a scene that reads `events` by hand never sees the future; scrubbing back undoes them and playing
+  forward replays them; `replay` clears the log. The stage always plays on the clock driver. Saving a recorded log as
+  the module's `cues` belongs to the live kit (roadmap stage 6), not here.
 - **One reader of a stage module.** `readStageModule(value)` in `@gerak/stage` answers the module or why it is not
   one; the tools and the pieces app both call it.
 - **`letters` splits by grapheme,** so an emoji or an accented letter is one item.
@@ -53,9 +56,11 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 ### C2. Presence as a list of beats
 
 - **Invariant:** `on` replaces `enters` and `leaves` in `@gerak/stage`, the DOM stage and the scene review; a
-  member is shown exactly while one of its beats runs; `letters` splits by grapheme.
+  member is shown exactly while one of its stretches runs; `castNames` refuses an unknown beat in `on`; `letters`
+  splits by grapheme.
 - **Owner:** `packages/stage/src/cast.ts`, `packages/dom/src/stage.ts` (presence only),
-  `packages/tools/src/scene/review.ts`, every piece and fixture using presence, the guide's cast lines.
+  `packages/tools/src/scene/review.ts`, every piece and fixture using presence, and the cast and skin bullets of
+  "The stage module" in `docs/guide/agent-motion.md` (C1's path line included).
 - **Test:** a member on two beats with a gap between is shown, hidden, shown; the review reports a change in the
   gap; `letters("é👍🏽")` has two items.
 
@@ -68,10 +73,11 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 
 ### C4. Events on a clock
 
-- **Invariant:** `clockDriver` gains `watch(name, element)`, recording pointer events at its elapsed time; the scene
-  sees only events at or before the time; seek keeps the log; replay clears it. The live page's timeline plays,
-  scrubs and loops a watched piece and marks its recorded events; a button writes the log into the module as `cues`.
-- **Owner:** `packages/dom/src/drivers.ts`, `packages/dom/src/events.ts`, `apps/pieces/src/live/`.
+- **Invariant:** `clockDriver` gains `watch(name, element)`, recording pointer events at its elapsed time; `play`
+  hands the scene only events at or before the time; seek keeps the log; replay clears it. The live page's timeline
+  plays, scrubs and loops a watched piece and marks its recorded events.
+- **Owner:** `packages/dom/src/drivers.ts`, `packages/dom/src/events.ts`, `packages/player/src/player.ts`,
+  `apps/pieces/src/live/`, `docs/guide/live.md`.
 - **Test:** a hover at 1 s seen at 1.5 s, gone after seeking to 0.5 s, back on playing to 1.5 s, gone after replay;
   the live browser test scrubs a watched piece.
 
@@ -102,12 +108,16 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 
 One pull request, after wave 3.
 
+Both wave 2 workers regenerate the reference for their own commits; the conductor regenerates once on combining.
+
 ## 5. Risks
 
 - **Dropping `enters` and `leaves` breaks pieces made since the stage merged.** All are in this repository and move
   by one script; nothing is published yet.
 - **Events on a clock change what a watched piece means on replay:** a person's hover is forgotten on replay, as it
   is today, but kept on a seek. The live page says so on the timeline.
+- **The player hiding future events changes what a scene with module `cues` sees.** Built-in moves already ignore
+  events after the time; a test samples every piece before and after to show nothing else moved.
 - **An SVG inside a member** puts a second element under one name; the stage writes a value's stroke fields to the
   path and its transform to the member.
 
