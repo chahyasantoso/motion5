@@ -6,6 +6,7 @@ import {
   type FrameSource,
   type StageElement,
   type StageEvent,
+  type StageFonts,
   type StageStyle,
   type StageValues,
 } from "@gerak/dom";
@@ -22,6 +23,7 @@ class FakeStyle implements StageStyle {
 
 interface FakeDocument {
   createElement(tag: "div" | "style"): FakeElement;
+  fonts?: StageFonts;
 }
 
 class FakeElement implements StageElement<FakeElement> {
@@ -124,9 +126,10 @@ function stageModule(seen: Seen): StageModule<"intro" | "word", StageValues> {
   };
 }
 
-function mounted(seen: Seen = {}) {
+function mounted(seen: Seen = {}, fonts?: StageFonts) {
   let ms = 0;
   const container = new FakeElement("div");
+  if (fonts !== undefined) container.ownerDocument.fonts = fonts;
   const stage = mountStage(container, stageModule(seen), { frames: frames(), clock: () => ms });
   const root = container.children[0]?.shadowRoot;
   if (root === undefined) throw new Error("No shadow root.");
@@ -284,6 +287,27 @@ describe("mountStage", () => {
     resized?.();
     expect(seen.rest).not.toBe(before);
     expect(seen.rest?.dot?.width).toBe(64);
+  });
+
+  it("measures again when a web font lands, and not after it is disposed", async () => {
+    vi.stubGlobal("Element", FakeElement);
+    const listeners = new Set<() => void>();
+    let ready: () => void = () => undefined;
+    const fonts = {
+      ready: new Promise<void>((resolve) => {
+        ready = resolve;
+      }),
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+    };
+    const seen: Seen = {};
+    const { root, stage } = mounted(seen, fonts);
+    root.find("dot").offsetWidth = 80;
+    ready();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(seen.rest?.dot?.width).toBe(80);
+    stage.dispose();
+    expect(listeners.size).toBe(0);
   });
 
   it("removes everything it added when disposed", () => {

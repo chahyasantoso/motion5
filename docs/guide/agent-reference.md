@@ -324,6 +324,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
 - **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
+- **`StageFonts`** `type StageFonts`: The document's font loading, which tells the stage when text may have changed size.
 - **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.
 - **`StageStyle`** `type StageStyle`: The style properties the stage writes beside a value's; a page element's style has them all.
 - **`StageValues`** `type StageValues`: A scene's answer per member name: one value, or one per item of a `many`.

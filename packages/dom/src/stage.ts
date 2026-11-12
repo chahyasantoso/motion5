@@ -36,6 +36,13 @@ export interface StageEvent extends PointerLike {
   readonly target?: unknown;
 }
 
+/** The document's font loading, which tells the stage when text may have changed size. */
+export interface StageFonts {
+  readonly ready: Promise<unknown>;
+  addEventListener(type: "loadingdone", listener: () => void): void;
+  removeEventListener(type: "loadingdone", listener: () => void): void;
+}
+
 /** An element the stage builds with and writes: a page element, or a stand-in in a test. */
 export interface StageElement<E> {
   readonly style: StageStyle;
@@ -47,7 +54,7 @@ export interface StageElement<E> {
   readonly offsetHeight: number;
   readonly clientWidth: number;
   readonly clientHeight: number;
-  readonly ownerDocument: { createElement(tag: "div" | "style"): E };
+  readonly ownerDocument: { createElement(tag: "div" | "style"): E; readonly fonts?: StageFonts };
   attachShadow(init: { readonly mode: "open" }): { append(...nodes: E[]): void };
   setAttribute(name: string, value: string): void;
   append(...nodes: E[]): void;
@@ -373,7 +380,18 @@ export function mountStage<B extends string, E extends StageElement<E>>(
     isElement(container) && typeof ResizeObserver !== "undefined"
       ? new ResizeObserver(resized)
       : undefined;
-  if (observer !== undefined && isElement(container)) observer.observe(container);
+  if (observer !== undefined && isElement(container)) {
+    observer.observe(container);
+    for (const { element: own } of placed.values()) if (isElement(own)) observer.observe(own);
+  }
+  // A web font that lands after mount changes text sizes, so the boxes are measured again.
+  let live = true;
+  const fonts = document.fonts;
+  const fontsLoaded = (): void => {
+    if (live) resized();
+  };
+  fonts?.addEventListener("loadingdone", fontsLoaded);
+  void fonts?.ready.then(fontsLoaded);
 
   return {
     get player() {
@@ -388,6 +406,8 @@ export function mountStage<B extends string, E extends StageElement<E>>(
       run.player.replace(sceneOf());
     },
     dispose() {
+      live = false;
+      fonts?.removeEventListener("loadingdone", fontsLoaded);
       observer?.disconnect();
       host.removeEventListener("keydown", onKey);
       frame.removeEventListener("click", onClick);
