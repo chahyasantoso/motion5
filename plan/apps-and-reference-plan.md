@@ -58,7 +58,7 @@ four times where it had gaps.
 ### S3. Comments that carry the reference
 
 - **Invariant:** no export's line in the generated reference is empty or says less than the hand-written reference
-  said; the hand-written part is under 150 lines.
+  said; the hand-written part keeps every code example and stays near 300 lines; the whole file is shorter than the hand-written one it replaced.
 - **Owner:** the doc comments in `packages/*/src`.
 - **Test:** the generator refuses an export with no doc comment.
 

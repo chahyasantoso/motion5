@@ -19,6 +19,7 @@ export const PACKAGES = [
   "physics/src/index.ts",
   "rapier/src/index.ts",
   "three/src/index.ts",
+  "three/src/react.ts",
 ];
 
 function createChecker(files) {
