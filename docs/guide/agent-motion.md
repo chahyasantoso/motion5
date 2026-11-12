@@ -22,10 +22,11 @@ not by reading package source. Read a part below only when the brief needs it:
 2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
-3. `npm run motion:new -- <name>` writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-   `apps/pieces`. The scene leaves its one target at rest and the page sets no look.
-4. Choose the look the brief calls for: background, palette, type, shapes. Name the look most people would give
-   it, and choose another the brief supports as well. Lay the page out as the final frame.
+3. `npm run motion:new -- <name>` writes `apps/pieces/src/<name>.ts`, one stage module: a story of one beat, one
+   actor at rest and an empty skin. Open it as `stage.html?piece=<name>`.
+4. **Cast, story, skin** (see [The stage module](#the-stage-module)). Name who is on stage in `cast`, the beats in
+   `beats`, and give each member the look the brief calls for in `skins.dom.css`. Name the look most people would
+   give it, and choose another the brief supports as well. Lay the skin out as the final frame.
 5. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
    their ranges, its moments. `-- --role enter` lists one role; `-- <id>` prints one move in full with its call.
    Choose by role and by the character you wrote down.
@@ -34,7 +35,8 @@ not by reading package source. Read a part below only when the brief needs it:
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
 7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
-8. `npm run motion:review -- <name>.html --watch <selectors> --to <ms>`, with `--action` for what a person does,
+8. `npm run motion:review -- <name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
+   "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does,
    gives the findings and a `sheet` of frames picked where the motion is fast; `--full` adds the moves with their eases.
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
@@ -42,6 +44,37 @@ not by reading package source. Read a part below only when the brief needs it:
 The other scene files in `apps/pieces/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
 picture is wrong, so read the sheet before calling anything finished.
+
+## The stage module
+
+A piece is one file that exports `beats`, `cast`, `skins` and `scene`, and optionally `frame` (default 1280 by 720)
+and `rest`.
+
+```ts
+import type { Events, Time } from "@gerak/moves";
+import { actor, group, letters, many, story, type Rest } from "@gerak/stage";
+
+export const beats = story(3000, { enter: [0, 600], hold: [600, 2400], leave: [2400, 3000] });
+export const cast = {
+  card: group({ dot: actor(), word: letters("HELLO", { enters: "enter", leaves: "leave" }), dust: many(6) }),
+};
+export const skins = { dom: { css: `[data-cast="dot"] { width: 36px; height: 36px; background: #f53 }` } };
+export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, dot: {}, word: [], dust: [] });
+```
+
+- **Cast.** A member is a name. `actor()` takes one value, `many(n)` a list with one value per item, `group({...})`
+  one value that moves its members; a member's own value is relative to its group. A `many` moves only item by item:
+  to move a whole row of letters, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
+- **Names** are the keys, unique across the cast; an item is `dust.3`. `enters` and `leaves` name beats and the stage
+  hides a member outside them (a member takes its group's); `watch: true` sends its hover and click to the scene's
+  events under its name; `still: true` says the scene never moves it.
+- **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
+- **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, scoped to the stage. A member it leaves out is a
+  grey box with its name, or its text. Keep every member positioned: no `position: static`, no `display: contents`,
+  or its rest box is wrong.
+- **Rest.** `restOf(rest, "dot")` is the measured box of a member after layout, `{ x, y, width, height }` from its
+  centre in the frame; it is a zero box under a tool with no browser.
+- `R`, or a click on the background, replays.
 
 ## Composing
 
@@ -64,9 +97,8 @@ enter.at(drop.moments(options).landing); // the ms a move's moment falls on, to 
 mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, eased
 ```
 
-- The scaffolded scene file is the whole shape: `scene` returns one object with a key per target, and the module
-  exports `durationMs`, which the tools read, and `clock`. Add a key per element and a span per move, in the order
-  of your first line. Every number of motion lives in the scene, none in the component.
+- `scene` returns one object with a key per cast member. Add a key per member and a span per move, in the order of
+  your first line. Every number of motion lives in the scene, none in the skin.
 - `reversed(time)` and `repeated(time, count)` reshape a time and wrap any move. `anticipate` and `overshoot` take
   the move they reshape as a function of time, and nest: an `anticipate` inside an `overshoot` winds up, goes,
   passes and settles.
@@ -117,25 +149,18 @@ Glue that only this piece needs stays in the scene as a `mix`.
 ## Live
 
 When a person is watching, `npm run motion:live -- <name>` prints the address of `live.html?scene=<name>` (see
-[the live guide](./live.md)): each save of `src/<name>-scene.ts` lands on their stage in place, keeping the time.
+[the live guide](./live.md)): each save of `src/<name>.ts` lands on their stage in place, keeping the time.
 
 ## Layout
 
-- An entrance ends at its rest pose, the element's layout position, and starts away from it by its options. Start far
-  enough out to be off the stage, and clip the stage with `overflow: hidden`.
-- A `span` element needs `display: inline-block` before a transform moves it.
-- A value the page must measure, such as the point a reveal grows from, comes from `centreIn(from, to)` after layout:
-  write it into an object the scene reads, then refresh the player.
-  ```tsx
-  useLayoutEffect(() => {
-    Object.assign(origin, centreIn(dot, stage));
-    playing?.player.refresh();
-  }, [playing]);
-  ```
+- An entrance ends at its rest pose, the member's layout position, and starts away from it by its options. Start far
+  enough out to be off the stage; the frame clips what leaves it.
+- A value the layout decides, such as the point a reveal grows from, is `restOf(rest, "dot")`, not a number you guess.
 
-## Rendering
+## On a real site's elements
 
-In React the scaffold does this; define `scene` and `clock` outside the component, or `usePlayer` restarts:
+A stage module needs none of this. To bind a page's own elements, define `scene` and `clock` outside the component,
+or `usePlayer` restarts:
 
 ```tsx
 const playing = usePlayer(scene, clock);

@@ -52,9 +52,11 @@ export function parseLiveArgs(argv: readonly string[]): LiveArgs {
   }
 
   const root = rootArg !== undefined ? fromCaller(rootArg) : DEFAULT_ROOT;
-  const scenePath = join(root, `src/${scene}-scene.ts`);
-  if (!existsSync(scenePath)) {
-    return usage(`No scene src/${scene}-scene.ts under ${root}.`);
+  if (
+    !existsSync(join(root, `src/${scene}.ts`)) &&
+    !existsSync(join(root, `src/${scene}-scene.ts`))
+  ) {
+    return usage(`No stage module src/${scene}.ts or scene src/${scene}-scene.ts under ${root}.`);
   }
 
   let port = DEFAULT_PORT;

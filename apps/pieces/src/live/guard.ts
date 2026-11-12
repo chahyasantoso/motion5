@@ -1,7 +1,7 @@
 import type { Events, Time } from "@gerak/moves";
 
-/** Wraps a scene so a throw reports each distinct message once and falls back to the last good values;
- * a scene may take more arguments after time and events, as a stage scene takes its rest boxes. */
+/** Wraps a scene so a throw reports each distinct message once and falls back to the last good values.
+ * It passes on any arguments after time and events, such as a stage scene's rest boxes. */
 export function guard<T extends object, Rest extends readonly unknown[] = []>(
   scene: (time: Time, events: Events, ...rest: Rest) => T,
   report: (message: string) => void,

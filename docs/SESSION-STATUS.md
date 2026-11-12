@@ -15,12 +15,12 @@ byte ceiling.
   `@gerak/moves` (time, spans, lanes, eases, springs, 2D and 3D poses, events and `defineMove` moves, each with a role and an example the gate samples) and
   `@gerak/rig` (2D chains, frames, and 3D FK/IK solvers and constraints), played by `@gerak/player` (`play`,
   `Player.replace`, `manualDriver`) on a manual, clock (`setRate`, `setRange`), scroll or event driver, and written by
-  `@gerak/dom`, `@gerak/react` (`usePlayer`, `useTarget`, `useValue`, `useWatch`, `PlayerHostProvider`,
+  `@gerak/dom`, `@gerak/react` (`Stage`, `usePlayer`, `useTarget`, `useValue`, `useWatch`, `PlayerHostProvider`,
   `driverKeeper`) and `@gerak/three`. `@gerak/physics` gives a seekable `PhysicsWorld`, built in or on Rapier
   through `@gerak/rapier`. `@gerak/tools` holds the `motion:*` commands (`motion:live`, `motion:new`,
   `motion:review`, `motion:check`, `motion:read`, `motion:frames`, `motion:probe`, `motion:render`, `motion:sample`,
   `motion:timeline`, `motion:points`) and `@gerak/tools/vite` (`motionLivePlugin`, `scanNumericLiterals`,
-  `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `VALUE_FIELDS` is the one table of a value's fields, with blur, a stroke's tail, a clip and a piece's own `custom` numbers, written by one `applyValue` (ADR-173). `sequence` orders phases and beats, `span(from, to)` is placed by the clock, `motion:moves -- --parts` lists the building blocks, and `motion:review` picks its own frames. The hand-made showreel rebuilt as `showreel-b` is the standing measure. `live.html?scene=<name>` in `apps/pieces` hot-swaps saved scene edits in
+  `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `VALUE_FIELDS` is the one table of a value's fields, with blur, a stroke's tail, a clip and a piece's own `custom` numbers, written by one `applyValue` (ADR-173). `sequence` orders phases and beats, `span(from, to)` is placed by the clock, `motion:moves -- --parts` lists the building blocks, and `motion:review` picks its own frames. The hand-made showreel rebuilt as `showreel-b` is the standing measure. `stage.html?piece=<name>` plays a stage module (`motion:new <name>` writes one), `saved` and `tempo` are two, and `live.html?scene=<name>` in `apps/pieces` hot-swaps saved scene or stage-module edits in
   place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
   holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
   code panel straight back into `src/<name>-scene.ts`. Twenty moves by role, four of them modifiers, are listed

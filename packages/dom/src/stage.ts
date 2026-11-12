@@ -23,6 +23,8 @@ export interface StageStyle extends RenderStyle {
   overflow?: string;
   left?: string;
   top?: string;
+  marginLeft?: string;
+  marginTop?: string;
   width?: string;
   height?: string;
   aspectRatio?: string;
@@ -68,12 +70,12 @@ export interface StageOptions {
 }
 
 /** A playing stage: its player and driver, which a replay swaps for fresh ones. */
-export interface MountedStage {
+export interface MountedStage<B extends string = string> {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
   replay(): void;
   /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
-  replace(next: StageModule<string, StageValues>): void;
+  replace(next: StageModule<B, StageValues>): void;
   dispose(): void;
 }
 
@@ -141,17 +143,17 @@ export function mountStage<B extends string>(
   container: HTMLElement,
   module: StageModule<B, StageValues>,
   options?: StageOptions,
-): MountedStage;
+): MountedStage<B>;
 export function mountStage<B extends string, E extends StageElement<E>>(
   container: E,
   module: StageModule<B, StageValues>,
   options?: StageOptions,
-): MountedStage;
+): MountedStage<B>;
 export function mountStage<B extends string, E extends StageElement<E>>(
   container: E,
   module: StageModule<B, StageValues>,
   options: StageOptions = {},
-): MountedStage {
+): MountedStage<B> {
   const { beats, cast } = module;
   const size = module.frame ?? DEFAULT_FRAME;
   const document = container.ownerDocument;
@@ -177,6 +179,8 @@ export function mountStage<B extends string, E extends StageElement<E>>(
     position: "absolute",
     left: "50%",
     top: "50%",
+    marginLeft: `${-size.width / 2}px`,
+    marginTop: `${-size.height / 2}px`,
     width: `${size.width}px`,
     height: `${size.height}px`,
     transformOrigin: "50% 50%",
@@ -247,7 +251,8 @@ export function mountStage<B extends string, E extends StageElement<E>>(
       width > 0 ? width / size.width : Infinity,
       height > 0 ? height / size.height : Infinity,
     );
-    frame.style.transform = `translate(-50%, -50%) scale(${Number.isFinite(scale) ? scale : 1})`;
+    // At scale 1 the frame carries no transform, so its content is rasterised as a plain page would be.
+    frame.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
   const measure = (): Rest => {
     const rest: Record<string, Box> = {};

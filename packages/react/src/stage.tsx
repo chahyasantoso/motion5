@@ -1,16 +1,16 @@
-import { useEffect, useRef, type FC } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { mountStage, type StageOptions, type StageValues } from "@gerak/dom";
 import type { StageModule } from "@gerak/stage";
 
 /** What `<Stage />` plays: a stage module, and the frames and clock its drivers run on. */
-export interface StageProps {
-  readonly module: StageModule<string, StageValues>;
+export interface StageProps<B extends string = string> {
+  readonly module: StageModule<B, StageValues>;
   readonly options?: StageOptions;
 }
 
 /** Plays a stage module in a div that fills its parent; a new module or options mounts afresh,
  * and leaving disposes it. */
-export const Stage: FC<StageProps> = ({ module, options }) => {
+export function Stage<B extends string>({ module, options }: StageProps<B>): ReactNode {
   const container = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const element = container.current;
@@ -19,4 +19,4 @@ export const Stage: FC<StageProps> = ({ module, options }) => {
     return () => mounted.dispose();
   }, [module, options]);
   return <div ref={container} style={{ width: "100%", height: "100%" }} />;
-};
+}

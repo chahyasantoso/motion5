@@ -34,6 +34,7 @@ function appRoot(): string {
   return dir;
 }
 
+const STAGE_FILES = ["src/rope-word.ts"];
 const FILES = [
   "rope-word.html",
   "src/rope-word-main.tsx",
@@ -42,15 +43,17 @@ const FILES = [
 ];
 
 describe("motion:new", () => {
-  it("writes a page, entry, component and a scene that samples", async () => {
+  it("writes one stage module of one beat and one actor, and it samples to rest", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
-    expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
-    const module = readSceneModule(
-      await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href),
-    );
+    expect(result.files).toEqual(STAGE_FILES.map((file) => join(dir, file)));
+    const imported = await import(pathToFileURL(join(dir, "src/rope-word.ts")).href);
+    const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
+    expect(module.beats?.map(({ name }) => name)).toEqual(["show"]);
+    expect(module.cast?.map(({ name, kind }) => [name, kind])).toEqual([["title", "actor"]]);
+    expect(imported.skins).toEqual({ dom: { css: "" } });
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
     expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({ title: {} }));
   });
@@ -59,7 +62,7 @@ describe("motion:new", () => {
     const dir = root();
     scaffold("rope-word", dir);
     scaffold("rope-box", dir, { three: true });
-    for (const file of ["src/rope-word-scene.ts", "src/rope-box-scene.ts"])
+    for (const file of ["src/rope-word.ts", "src/rope-box-scene.ts"])
       expect(readFileSync(join(dir, file), "utf8")).not.toMatch(/drop|lift2d/);
   });
 
@@ -97,9 +100,9 @@ describe("motion:new", () => {
     expect(readFileSync(join(dir, "src/moves/keep.ts"), "utf8")).toBe("keep");
   });
 
-  it("names the component after the page and points each file at the next", () => {
+  it("with --three names the component after the page and points each file at the next", () => {
     const dir = root();
-    scaffold("rope-word", dir);
+    scaffold("rope-word", dir, { three: true });
     expect(readFileSync(join(dir, "rope-word.html"), "utf8")).toContain("/src/rope-word-main.tsx");
     expect(readFileSync(join(dir, "src/rope-word-main.tsx"), "utf8")).toContain(
       'import { RopeWord } from "./rope-word";',
@@ -112,7 +115,7 @@ describe("motion:new", () => {
   it("writes files that are already formatted", async () => {
     const dir = root();
     scaffold("rope-word", dir);
-    for (const file of FILES) {
+    for (const file of STAGE_FILES) {
       const source = readFileSync(join(dir, file), "utf8");
       const config = await resolveConfig(join(process.cwd(), "apps/pieces", file));
       expect(await format(source, { ...config, filepath: file }), file).toBe(source);
@@ -121,10 +124,11 @@ describe("motion:new", () => {
 
   it("refuses a name whose files exist, and writes nothing", () => {
     const dir = root();
-    writeFileSync(join(dir, "rope-word.html"), "keep");
+    mkdirSync(join(dir, "src"));
+    writeFileSync(join(dir, "src/rope-word.ts"), "keep");
     expect(scaffold("rope-word", dir)).toMatchObject({ kind: "refused" });
-    expect(readFileSync(join(dir, "rope-word.html"), "utf8")).toBe("keep");
-    expect(existsSync(join(dir, "src/rope-word.tsx"))).toBe(false);
+    expect(readFileSync(join(dir, "src/rope-word.ts"), "utf8")).toBe("keep");
+    expect(existsSync(join(dir, "rope-word.html"))).toBe(false);
   });
 
   it.each(["", "Rope", "rope_word", "-rope", "../rope", "rope/word"])(

@@ -2,6 +2,7 @@ import { readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
+import { scaffold } from "@gerak/tools/scene";
 
 const PREFIX = "stage-scratch-";
 const SRC = join(DEFAULT_ROOT, "src");
@@ -56,6 +57,23 @@ describe("stage pages in the browser", () => {
         await expect
           .poll(() => page.locator("#root").textContent())
           .toContain('No stage piece named "no-such-piece"');
+      },
+    );
+  }, 30000);
+
+  it("mounts the module motion:new writes, with its one actor at rest", async () => {
+    const name = `${PREFIX}new`;
+    const result = scaffold(name, DEFAULT_ROOT);
+    if (result.kind !== "written") throw new Error(result.message);
+    await withPage(
+      { page: `stage.html?piece=${name}`, width: 640, height: 360, source: DEFAULT_SOURCE },
+      async ({ page }) => {
+        page.setDefaultTimeout(STEP_TIMEOUT_MS);
+        const title = page.locator('[data-cast="title"]');
+        await title.waitFor();
+        expect(
+          await title.evaluate((el) => (el instanceof HTMLElement ? el.style.transform : "")),
+        ).toBe("");
       },
     );
   }, 30000);

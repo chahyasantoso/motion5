@@ -22,8 +22,8 @@ interface Shown {
   readonly shape: string;
 }
 
-/** Plays a stage module; a save with the same cast, skin and story swaps the scene in place and keeps
- * the time, and any other change mounts afresh at the same time. A scene that throws is reported. */
+/** Plays a stage module. A save with the same cast, skin and story swaps the scene in place; any other
+ * mounts afresh at the same time. A scene that throws is reported. */
 export const LiveStageView: FC<LiveStageViewProps> = ({ module, onError, onDriver }) => {
   const container = useRef<HTMLDivElement>(null);
   const shown = useRef<Shown | undefined>(undefined);
