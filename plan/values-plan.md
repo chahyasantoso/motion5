@@ -209,7 +209,7 @@ answer. `anticipate` and `overshoot` stayed moves.
 | 3 | Sonnet, medium, cold review | | 92 k | 19 | 2.1 min | eight findings: six fixed, two left |
 
 Wave 3 left from the review: concurrent test runs share one scratch prefix and the first to finish removes the other's
-copies; a flag value equal to  is dropped. The wipe at the end of the timing page gets no picked frame of its
+copies; a flag value equal to `--full` is dropped. The wipe at the end of the timing page gets no picked frame of its
 own, since the picker sees boxes and a clip does not move one.
 
 Left from the review, and why: a `trace` with a `tail` below 1 ends with only the tail drawn and still passes as
