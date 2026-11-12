@@ -24,6 +24,7 @@ interface Step {
 }
 
 interface Candidate {
+  readonly element: string;
   readonly at: number;
   readonly reason: "fast" | "turn";
   readonly score: number;
@@ -59,12 +60,13 @@ function candidates(frames: readonly Frame[]): {
       for (const index of [step.start, step.start + 1])
         speed.set(index, Math.max(speed.get(index) ?? 0, step.length));
     for (const [index, score] of speed)
-      if (score >= REST_PX) fast.push({ at: atIndex(index), reason: "fast", score });
+      if (score >= REST_PX) fast.push({ element: name, at: atIndex(index), reason: "fast", score });
     const moving = steps.filter(({ dx, dy }) => Math.hypot(dx, dy) >= REST_PX);
     moving.forEach((step, index) => {
       const next = moving[index + 1];
       if (next === undefined || step.dx * next.dx + step.dy * next.dy >= 0) return;
       turn.push({
+        element: name,
         at: atIndex(step.start + 1),
         reason: "turn",
         score: Math.hypot(step.dx, step.dy) + Math.hypot(next.dx, next.dy),
@@ -74,16 +76,17 @@ function candidates(frames: readonly Frame[]): {
   return { fast, turn };
 }
 
-/** Each kind's strongest candidate scores 1, so a quiet turn can stand beside a fast snap. */
+/** Each element's strongest candidate of a kind scores 1, so a small dot stands beside six letters. */
 function rank(list: readonly Candidate[]): readonly Candidate[] {
-  const top = Math.max(...list.map(({ score }) => score));
+  const top = new Map<string, number>();
+  for (const { element, score } of list) top.set(element, Math.max(top.get(element) ?? 0, score));
   return list.map((candidate) => ({
     ...candidate,
-    score: Math.round((candidate.score / top) * 100) / 100,
+    score: Math.round((candidate.score / (top.get(candidate.element) ?? 1)) * 100) / 100,
   }));
 }
 
-/** Times to photograph, ascending: both ends, then the fastest and turning samples, 48 ms apart, up to `cap`. */
+/** Times to photograph, ascending: both ends, then each element's fastest and turning samples in turn, 48 ms apart, up to `cap`. */
 export function pickFrames(frames: readonly Frame[], cap = DEFAULT_PICKS): readonly PickedFrame[] {
   const first = frames[0];
   const last = frames.at(-1);
@@ -98,9 +101,21 @@ export function pickFrames(frames: readonly Frame[], cap = DEFAULT_PICKS): reado
   const ranked = [...rank(turn), ...rank(fast)].sort(
     (a, b) => b.score - a.score || kinds[a.reason] - kinds[b.reason] || a.at - b.at,
   );
-  for (const { at, reason } of ranked) {
-    if (picked.length >= Math.max(2, cap)) break;
-    if (picked.every((other) => Math.abs(other.at - at) >= MIN_GAP)) picked.push({ at, reason });
+  // Elements take turns, each its best moment left, so one busy element cannot take every frame.
+  const queues = new Map<string, Candidate[]>();
+  for (const candidate of ranked)
+    queues.set(candidate.element, [...(queues.get(candidate.element) ?? []), candidate]);
+  const free = (at: number) => picked.every((other) => Math.abs(other.at - at) >= MIN_GAP);
+  for (let taken = true; taken && picked.length < Math.max(2, cap); ) {
+    taken = false;
+    for (const queue of queues.values()) {
+      if (picked.length >= Math.max(2, cap)) break;
+      const next = queue.findIndex(({ at }) => free(at));
+      if (next < 0) continue;
+      const [{ at, reason }] = queue.splice(next, 1);
+      picked.push({ at, reason });
+      taken = true;
+    }
   }
   return picked.sort((a, b) => a.at - b.at);
 }

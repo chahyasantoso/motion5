@@ -39,6 +39,22 @@ describe("pickFrames", () => {
     expect(turns[1]).toBeLessThanOrEqual(976);
   });
 
+  it("gives a small late element a frame beside a busy early one", () => {
+    const frames: Frame[] = [];
+    for (let ms = 0; ms <= 3000; ms += 16) {
+      const elements = [0, 1, 2, 3, 4, 5].map((index) => {
+        const lands = 300 + index * 100;
+        const y = Math.max(0, Math.min(1, (lands - ms) / 200)) * -500;
+        return { name: `.letter[${index}]`, box: { x: index * 60, y, width: 40, height: 40 } };
+      });
+      const hop = Math.max(0, Math.min(1, (ms - 2000) / 600));
+      elements.push({ name: ".dot", box: { x: 400 + hop * 300, y: 0, width: 10, height: 10 } });
+      frames.push({ at: ms, elements });
+    }
+    const late = pickFrames(frames).filter(({ at }) => at >= 2000 && at <= 2600);
+    expect(late.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("holds the cap, keeps times ascending and 48 ms apart", () => {
     const picked = pickFrames(
       samples((ms) => 50 + 50 * Math.sin(ms / 60), 3000),
