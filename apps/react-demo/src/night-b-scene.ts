@@ -15,9 +15,9 @@ import {
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;
 
-const words = span(300, 1900, durationMs);
-const dotIn = span(1800, 2300, durationMs);
-const beat = span(2300, 3600, durationMs);
+const words = span(300, 1900);
+const dotIn = span(1800, 2300);
+const beat = span(2300, 3600);
 
 /** Every target's value at `time`. */
 export const scene = (time: Time) => {

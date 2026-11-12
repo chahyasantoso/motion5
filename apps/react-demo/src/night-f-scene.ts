@@ -4,10 +4,10 @@ import { combine, fade, pulse, repeated, slide, span, type Time } from "@gerak/m
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;
 
-const night = span(200, 1200, durationMs);
-const shift = span(700, 1700, durationMs);
-const lampOn = span(1900, 2400, durationMs);
-const breathe = span(2400, 3600, durationMs);
+const night = span(200, 1200);
+const shift = span(700, 1700);
+const lampOn = span(1900, 2400);
+const breathe = span(2400, 3600);
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
 export const scene = (time: Time) => ({

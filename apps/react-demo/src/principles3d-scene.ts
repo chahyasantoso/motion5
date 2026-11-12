@@ -76,7 +76,7 @@ const crouch = keyframes(
   mix,
 );
 
-const leap = span(LEAP_MS, LAND_MS, durationMs);
+const leap = span(LEAP_MS, LAND_MS);
 const pull = backEase({ amount: 1.6, direction: "in" });
 
 /** The body's place: a short pull back, then along an arc that leaves the xy plane. */
@@ -109,11 +109,11 @@ const BITS = lanes(
   0.45,
   { from: "center" },
 );
-const arrival = span(BITS_MS, BITS_MS + 900, durationMs);
-const settle = span(LAND_MS, LAND_MS + 1300, durationMs);
+const arrival = span(BITS_MS, BITS_MS + 900);
+const settle = span(LAND_MS, LAND_MS + 1300);
 const pop = springEase({ stiffness: 170, damping: 9 });
-const pan = span(0, CAMERA_END_MS, durationMs);
-const gaze = span(LAND_MS - 300, CAMERA_END_MS, durationMs);
+const pan = span(0, CAMERA_END_MS);
+const gaze = span(LAND_MS - 300, CAMERA_END_MS);
 const STAGE_CENTER = { x: -0.5, y: 2, z: 0 };
 
 /** One small object's place, rising and growing in its turn. */

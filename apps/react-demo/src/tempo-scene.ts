@@ -48,7 +48,7 @@ const flashKeys = (side: number): Key<number>[] =>
 const flashRight = keyframes(durationMs, 0, flashKeys(1), mix);
 const flashLeft = keyframes(durationMs, 0, flashKeys(-1), mix);
 
-const arrive = span(STOP_MS, STOP_MS + 420, durationMs);
+const arrive = span(STOP_MS, STOP_MS + 420);
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
 export const scene = (time: Time) => ({

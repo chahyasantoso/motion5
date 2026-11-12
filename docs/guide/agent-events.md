@@ -33,9 +33,9 @@ export const clock = () => eventDriver({ introMs: 900 });
 A scene's own moments are events too. Export them as `cues`, and pass them to `usePlayer(scene, clock, cues)`:
 
 ```ts
-const fall = span(fromMs, toMs, durationMs);
+const fall = span(fromMs, toMs);
 const HIT_MS = fall.at(drop.moments(options).landing); // the ms the move's moment falls on
-const reach = span(startMs, HIT_MS, durationMs); // something else timed to end on it
+const reach = span(startMs, HIT_MS); // something else timed to end on it
 export const cues: Events = [{ name: "hit", at: HIT_MS, target: "box" }];
 const give = react({ on: ["hit"], kind: "wobble", amplitude });
 ```

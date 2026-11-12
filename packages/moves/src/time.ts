@@ -80,34 +80,30 @@ export function window(time: Time, from: number, to: number): Time {
 export interface Span {
   readonly from: number;
   readonly to: number;
-  /** `time` inside this span, its progress run through `ease` when one is given. */
+  /** `time` inside this span, its progress run through `ease` when one is given; an untimed time throws. */
   of(time: Time, ease?: Ease): Time;
   /** The scene ms `share` of the way through this span, such as a move's moment. */
   at(share: number): number;
 }
 
-/** The stretch from `fromMs` to `toMs` of a scene `durationMs` long; `durationMs` is the scene, not the stretch. */
-export function span(fromMs: number, toMs: number, durationMs: number): Span {
-  if (!(durationMs > 0))
-    throw new RangeError(`span: durationMs must be above 0, not ${durationMs}.`);
-  const from = fromMs / durationMs;
-  const to = toMs / durationMs;
+/** The stretch from `fromMs` to `toMs`, placed by the ms of the clock its `of` is given. */
+export function span(fromMs: number, toMs: number): Span {
+  const length = Math.max(0, toMs - fromMs);
   return Object.freeze({
     from: fromMs,
     to: toMs,
     of(time: Time, curve?: Ease): Time {
-      const inner =
-        time.clock.kind === "live"
-          ? {
-              progress: windowed(time.clock.elapsed, fromMs, toMs),
-              clock: {
-                kind: "timed" as const,
-                elapsed: Math.max(0, Math.min(toMs - fromMs, time.clock.elapsed - fromMs)),
-                length: Math.max(0, toMs - fromMs),
-              },
-            }
-          : window(time, from, to);
-      return curve === undefined ? inner : { ...inner, progress: curve(inner.progress) };
+      const now = elapsedOf(time.clock);
+      if (now === undefined)
+        throw new RangeError(
+          "span: this time has no clock in ms; give its driver a length, such as scrollDriver's `length`.",
+        );
+      const progress = windowed(now, fromMs, toMs);
+      const elapsed = Math.max(0, Math.min(length, now - fromMs));
+      return {
+        progress: curve === undefined ? progress : curve(progress),
+        clock: { kind: "timed", elapsed, length },
+      };
     },
     at: (share: number) => fromMs + (toMs - fromMs) * share,
   });

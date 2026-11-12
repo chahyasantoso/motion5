@@ -51,7 +51,7 @@ number goes.
 // Every move, modifier and helper below is imported from this one package.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
-const enter = span(fromMs, toMs, durationMs); // a stretch in ms; durationMs is the whole scene, not the stretch
+const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
 rise({ distance }, enter.of(time)); // a move placed on it
 rise({ distance }, reversed(leave.of(time))); // the same move as an exit
 overshoot({ amount }, enter.of(time), (t) => slide({ distance }, t)); // past its end, then settling
@@ -148,7 +148,8 @@ a list (the reference's `useTarget` entry shows it). To pass the player to a chi
 
 - Never cast with `as` or assert with `!`: type a pose literal, `const carry: Pose2d = { x: 1 }`, and read a field a
   pose may lack as `pose.x ?? 0`.
-- A span is not a time: pass `span.of(time)` to a move or `lane`.
+- A span is not a time: pass `span.of(time)` to a move or `lane`. It needs a clock in ms, so a scroll-driven scene
+  gives `scrollDriver` a `length`.
 - An ease that overshoots goes on a value through `mix`, never into a move's time: a move is not defined past its
   ends. To overshoot a move, use the `overshoot` modifier.
 - A squash widens a letter into its neighbour; a shape drawn after another passes in front of it unless `z-index`

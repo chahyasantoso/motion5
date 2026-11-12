@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress } from "@gerak/moves";
+import type { Time } from "@gerak/moves";
 import {
   parseEvents,
   readSceneModule,
@@ -20,8 +20,9 @@ describe("scene tools", () => {
   const beat = moduleOf(timing);
 
   it("sample a scene module with no browser, at times or progress", () => {
+    const halfway: Time = { progress: 0.5, clock: { kind: "timed", elapsed: 1500, length: 3000 } };
     const [atHalf] = sampleScene(beat, { kind: "time", ms: [1500] });
-    expect(atHalf?.targets).toEqual(timing.scene(atProgress(0.5)));
+    expect(atHalf?.targets).toEqual(timing.scene(halfway));
     const [start] = sampleScene(beat, { kind: "progress", progress: [0] }, ["dot"], ["x"]);
     expect(start).toEqual({ at: 0, targets: { dot: { x: -1300 } } });
   });

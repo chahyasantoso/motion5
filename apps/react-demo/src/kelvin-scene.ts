@@ -3,18 +3,18 @@ import { combine, drop, ease, fade, mix, span, swing, type Pose2d, type Time } f
 
 export const durationMs = 5000;
 
-const fall = span(300, 1500, durationMs);
-const hang = span(1750, 4400, durationMs);
-const tagIn = span(1750, 2050, durationMs);
-const caption = span(3300, 4400, durationMs);
-const rule = span(1500, 2600, durationMs);
+const fall = span(300, 1500);
+const hang = span(1750, 4400);
+const tagIn = span(1750, 2050);
+const caption = span(3300, 4400);
+const rule = span(1500, 2600);
 
 export const scene = (time: Time) => {
   const ruleProgress = rule.of(time, ease.sineInOut).progress;
   return {
     name: combine([
       drop({ distance: 560, squash: 0.05 }, fall.of(time)),
-      fade({}, span(300, 700, durationMs).of(time)),
+      fade({}, span(300, 700).of(time)),
     ]),
     rule: {
       scaleX: mix(0, 1, ruleProgress),

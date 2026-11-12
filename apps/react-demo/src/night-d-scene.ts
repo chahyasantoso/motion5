@@ -14,15 +14,15 @@ import {
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 4000;
 
-const nightIn = span(250, 1150, durationMs);
-const nightFade = span(250, 650, durationMs);
-const shiftIn = span(800, 1600, durationMs);
-const shiftFade = span(800, 1100, durationMs);
-const dialIn = span(1700, 2100, durationMs);
+const nightIn = span(250, 1150);
+const nightFade = span(250, 650);
+const shiftIn = span(800, 1600);
+const shiftFade = span(800, 1100);
+const dialIn = span(1700, 2100);
 const tickStart = 2300;
 const tickEvery = 380;
 const ticks = [0, 1, 2, 3].map((i) =>
-  span(tickStart + i * tickEvery, tickStart + i * tickEvery + 240, durationMs),
+  span(tickStart + i * tickEvery, tickStart + i * tickEvery + 240),
 );
 
 /** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */

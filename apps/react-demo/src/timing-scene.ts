@@ -10,9 +10,9 @@ const LETTERS = lanes(
   0.25,
 );
 
-const word = span(0, 1000, BEAT_MS);
-const flight = span(880, 1870, BEAT_MS);
-const cover = span(2400, 3000, BEAT_MS);
+const word = span(0, 1000);
+const flight = span(880, 1870);
+const cover = span(2400, 3000);
 
 /** The beat as one scene; the wipe grows from `centre`, which the page measures after layout. */
 export function timingScene(centre: { readonly x: number; readonly y: number }) {

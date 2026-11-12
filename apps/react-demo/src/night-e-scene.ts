@@ -4,9 +4,9 @@ import { combine, fade, rise, slide, span, swing, type Time } from "@gerak/moves
 /** How long the scene runs, in ms. */
 export const durationMs = 4000;
 
-const night = span(200, 1500, durationMs);
-const shift = span(800, 1900, durationMs);
-const moonIn = span(1500, 3600, durationMs);
+const night = span(200, 1500);
+const shift = span(800, 1900);
+const moonIn = span(1500, 3600);
 
 export const scene = (time: Time) => ({
   night: combine([rise({ distance: 70 }, night.of(time)), fade({}, night.of(time))]),

@@ -24,7 +24,7 @@ export const BALL = { x: 520, y: 440, radius: 30 };
 export const WORD = "CATCH";
 
 const BOUNCE = { height: 330, bounces: 2, decay: 0.35, squash: 0.35, dx: -1100 };
-const flight = span(400, 2400, durationMs);
+const flight = span(400, 2400);
 /** The scene ms of the ball's last landing, where the hand meets it. */
 export const LAND_MS = flight.at(hop.moments(BOUNCE).lastLanding);
 
@@ -33,10 +33,10 @@ export const cues: Events = [{ name: "catch", at: LAND_MS, target: "ball" }];
 /** The hand gives under the ball's weight and springs back, starting from rest. */
 const give = react({ on: ["catch"], kind: "wobble", amplitude: 26, decay: 7, frequency: 2.2 });
 
-const raise = span(200, 1100, durationMs);
-const lunge = span(1450, LAND_MS, durationMs);
-const cradle = span(LAND_MS, LAND_MS + 600, durationMs);
-const word = span(2750, 3900, durationMs);
+const raise = span(200, 1100);
+const lunge = span(1450, LAND_MS);
+const cradle = span(LAND_MS, LAND_MS + 600);
+const word = span(2750, 3900);
 const LETTERS = lanes(
   [...WORD].map(() => 1),
   0.3,

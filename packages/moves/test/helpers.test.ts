@@ -4,6 +4,7 @@ import {
   ease,
   hop,
   keyframes,
+  liveAt,
   seeded,
   mix,
   mixAngle,
@@ -57,14 +58,35 @@ describe("mix", () => {
 });
 
 describe("span", () => {
-  const flight = span(400, 2400, 4000);
+  const flight = span(400, 2400);
 
   it("gives a move its time inside the span, with an optional ease", () => {
     const inside = flight.of(timed(1400));
     expect(inside.progress).toBeCloseTo(0.5, 9);
     expect(inside.clock).toEqual({ kind: "timed", elapsed: 1000, length: 2000 });
-    expect(flight.of(atProgress(0.1)).progress).toBe(0);
+    expect(flight.of(timed(100))).toEqual({
+      progress: 0,
+      clock: { kind: "timed", elapsed: 0, length: 2000 },
+    });
+    expect(flight.of(timed(3000))).toEqual({
+      progress: 1,
+      clock: { kind: "timed", elapsed: 2000, length: 2000 },
+    });
     expect(flight.of(timed(900), ease.quadIn).progress).toBeCloseTo(0.0625, 9);
+  });
+
+  it("counts a span taken inside another span's time from that span's start", () => {
+    const beat = span(1000, 3000);
+    const lift = span(200, 600);
+    const inner = lift.of(beat.of(timed(1400)));
+    expect(inner.progress).toBeCloseTo(0.5, 9);
+    expect(inner.clock).toEqual({ kind: "timed", elapsed: 200, length: 400 });
+  });
+
+  it("places a live clock by its ms", () => {
+    const inside = flight.of(liveAt(900));
+    expect(inside.progress).toBeCloseTo(0.25, 9);
+    expect(inside.clock).toEqual({ kind: "timed", elapsed: 500, length: 2000 });
   });
 
   it("names the scene ms a move's moment falls on", () => {
@@ -75,8 +97,9 @@ describe("span", () => {
     expect(hop(options, flight.of(timed(landMs - 1e-6))).y).toBeCloseTo(0, 3);
   });
 
-  it("refuses a scene with no length", () => {
-    expect(() => span(0, 100, 0)).toThrow(/span: durationMs must be above 0/);
+  it("refuses a time with no clock in ms and names the fix", () => {
+    expect(() => flight.of(atProgress(0.1))).toThrow(RangeError);
+    expect(() => flight.of(atProgress(0.1))).toThrow(/length/);
   });
 });
 

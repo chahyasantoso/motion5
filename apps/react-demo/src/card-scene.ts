@@ -4,7 +4,7 @@ import { combine, drop, follow, span, type Events, type Pose2d, type Time } from
 /** How long the intro runs, in ms; the tools sample this much, and the card answers the pointer after it too. */
 export const durationMs = 900;
 
-const intro = span(0, 700, durationMs);
+const intro = span(0, 700);
 /** Up on hover and back down on leave, from wherever it is when the pointer changes its mind. */
 const lift = follow({
   start: 0,

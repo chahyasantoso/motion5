@@ -20,7 +20,7 @@ export function keyframes<T>(
   for (const key of keys) {
     if (key.at < from)
       throw new RangeError(`keyframes: key at ${key.at} ms comes before ${from} ms.`);
-    segments.push({ span: span(from, key.at, durationMs), key });
+    segments.push({ span: span(from, key.at), key });
     from = key.at;
   }
   return (time) => {

@@ -48,10 +48,12 @@ const ms = elapsedOf(time.clock) ?? 0;
 const turnRate = ((heading(timeAt(time, ms + 8)) - heading(timeAt(time, ms - 8))) * 1000) / 16;
 ```
 
-**`span(fromMs, toMs, durationMs)`**: a stretch of the scene; `durationMs` is the whole scene's length, never the stretch's; `.of(time, ease?)` is a move's time inside it, `.at(share)`
-the ms a share falls on. Reads a live clock's ms directly. **`Span`** is its type.
+**`span(fromMs, toMs)`**: a stretch in ms; `.of(time, ease?)` is a move's time inside it, `.at(share)`
+the ms a share falls on. `.of` reads the ms from the clock of the time it is given, timed or live, and answers a timed
+clock that counts from `fromMs`, so a span inside another span's time counts from that span's start. An untimed time
+throws a `RangeError`: give its driver a length. **`Span`** is its type.
 ```ts
-const flight = span(400, 2400, durationMs);
+const flight = span(400, 2400);
 hop(options, flight.of(time, ease.quadOut));
 const landMs = flight.at(hop.moments(options).lastLanding);
 ```
@@ -117,7 +119,7 @@ What a move answers, which the catalog does not print:
 **`ease`**: named curves, each `(share) => share`: `linear`, and `sine`, `quad`, `cubic`, `quart`, `expo`, `back`
 with `In`, `Out` and `InOut`, plus `elasticOut`, `bounceOut`, `bounceIn`. **`Ease`** is their type.
 ```ts
-span(0, 600, durationMs).of(time, ease.backOut);
+span(0, 600).of(time, ease.backOut);
 ```
 
 **`backEase({ amount, direction })`**: a back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it
@@ -384,10 +386,11 @@ motion it shows the last frame and never ticks until `.play()`; `reducedMotion: 
 export const clock = () => clockDriver({ duration: durationMs });
 ```
 
-**`scrollDriver({ start, end, target })`**: progress 0 to 1 as the page scrolls from `start` to `end` px; untimed.
+**`scrollDriver({ start, end, target, length? })`**: progress 0 to 1 as the page scrolls from `start` to `end` px;
+untimed, or with `length` in ms a timed clock at `progress * length`, so a scene with spans can run on scroll.
 **`ScrollTarget`** is what it listens to.
 ```ts
-const scrolled = () => scrollDriver({ start: 0, end: 1200 });
+const scrolled = () => scrollDriver({ start: 0, end: 1200, length: durationMs });
 ```
 
 **`eventDriver({ introMs, settleMs })`**: a live clock that logs events: `.watch(target, element)` for `enter`,
