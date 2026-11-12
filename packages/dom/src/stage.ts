@@ -1,5 +1,5 @@
 import { elapsedOf, type Events, type Pose2d, type Span, type Time } from "@gerak/moves";
-import { play, type Driver, type Player } from "@gerak/player";
+import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   castNames,
   DEFAULT_FRAME,
@@ -63,6 +63,8 @@ export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | u
 export interface StageOptions {
   readonly frames?: FrameSource;
   readonly clock?: () => number;
+  /** Told of the driver each time a run starts, the first and every replay. */
+  readonly onDriver?: (driver: Driver) => void;
 }
 
 /** A playing stage: its player and driver, which a replay swaps for fresh ones. */
@@ -70,6 +72,8 @@ export interface MountedStage {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
   replay(): void;
+  /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
+  replace(next: StageModule<string, StageValues>): void;
   dispose(): void;
 }
 
@@ -322,9 +326,12 @@ export function mountStage<B extends string, E extends StageElement<E>>(
 
   fit();
   let rest = measure();
+  let scene = module.scene;
+  const sceneOf = (): Scene<StageValues> => (time, events) => scene(time, events, rest);
   const start = () => {
     const { driver, stop } = drive();
-    const player = play<StageValues>((time, events) => module.scene(time, events, rest), driver);
+    const player = play<StageValues>(sceneOf(), driver);
+    options.onDriver?.(driver);
     for (const target of placed.values())
       if (target.info.kind !== "item")
         player.subscribe(target.info.name, (value) => bind(target, value));
@@ -372,6 +379,10 @@ export function mountStage<B extends string, E extends StageElement<E>>(
       return run.driver;
     },
     replay,
+    replace(next) {
+      scene = next.scene;
+      run.player.replace(sceneOf());
+    },
     dispose() {
       observer?.disconnect();
       host.removeEventListener("keydown", onKey);

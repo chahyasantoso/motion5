@@ -15,5 +15,6 @@ pose-recording-*.json
 # Copies the live browser tests edit in place of the tracked scenes.
 apps/pieces/scratch-*
 apps/pieces/src/scratch-*
+apps/pieces/src/stage-scratch-*
 # Agent worktrees are other checkouts of this repository.
 .claude/worktrees/

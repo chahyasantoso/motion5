@@ -224,6 +224,24 @@ describe("mountStage", () => {
     expect(root.find("word.1").style.transform).toBe("translate3d(2px, 0px, 0px)");
   });
 
+  it("swaps in a new scene on the same elements, and tells of each run's driver", () => {
+    const drivers: unknown[] = [];
+    const container = new FakeElement("div");
+    const stage = mountStage(container, stageModule({}), {
+      frames: frames(),
+      clock: () => 0,
+      onDriver: (driver) => drivers.push(driver),
+    });
+    const root = container.children[0]?.shadowRoot;
+    const element = root?.find("camera");
+    stage.replace({ ...stageModule({}), scene: () => ({ camera: { y: 99 } }) });
+    expect(root?.find("camera")).toBe(element);
+    expect(element?.style.transform).toBe("translate3d(0px, 99px, 0px)");
+    stage.replay();
+    expect(drivers).toEqual([drivers[0], stage.driver]);
+    expect(drivers).toHaveLength(2);
+  });
+
   it("brings a hover on a watched member to the scene under its name", () => {
     const seen: Seen = {};
     const { root, at } = mounted(seen);
