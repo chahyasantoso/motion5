@@ -1,7 +1,8 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "./pose";
 
-/** Grows a circle from `(x, y)` to `radius`, easing in and out; the target shows through it. */
+/** Grows a circle from `(x, y)` to `radius`, easing in and out, answering `clipX`, `clipY` and
+ * `clipRadius` in px from the target's top left. */
 export const wipe = defineMove({
   id: "wipe",
   role: "reveal",

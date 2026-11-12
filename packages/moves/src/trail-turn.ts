@@ -59,7 +59,8 @@ function turnFields(pose: Pose3d): Pose3d {
   return out;
 }
 
-/** A turn chasing `signal`'s turn on a spring the short way round, resting exactly on it; pass the scene's time. */
+/** A turn chasing a `Pose3d` signal's turn on a spring, the short way round, resting exactly on it;
+ * pass the scene's time. Trail a position with three `trail` calls. */
 export function trailTurn(
   signal: (time: Time, events: Events) => Pose3d,
   options: TrailOptions,

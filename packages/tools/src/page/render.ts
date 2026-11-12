@@ -9,18 +9,22 @@ import { unreachable } from "./unreachable";
 /** One frame per page frame: the paused clock steps 16 ms, so the video runs at 62.5 frames a second. */
 export const RENDER_STEP_MS = 16;
 
+/** `mp4` at 62.5 frames a second, the same bytes each run, or a 640 px `gif` at 25. */
 export type RenderFormat = "mp4" | "gif";
 
+/** What `motion:render` runs: the page, the end `to` in ms, the `format` and the `out` file. */
 export interface RenderRequest extends PageTarget {
   readonly to: number;
   readonly format: RenderFormat;
   readonly out?: string;
 }
 
+/** Parsed `motion:render` arguments, or the usage text. */
 export type RenderArgs =
   | ({ readonly kind: "ok" } & RenderRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** The `path` and `frames` of the video, or `no-ffmpeg` with why when `ffmpeg` is missing. */
 export type RenderResult =
   | {
       readonly kind: "rendered";
@@ -33,6 +37,7 @@ export type RenderResult =
 const USAGE =
   "usage: motion:render <page> --to ms [--format mp4|gif] [--out file] [--size WxH] [--root dir | --url address]";
 
+/** Reads `<page> --to ms [--format mp4|gif] [--out file]`, or answers the usage text. */
 export function parseRenderArgs(argv: readonly string[]): RenderArgs {
   const usage = (message: string): RenderArgs => ({
     kind: "usage",

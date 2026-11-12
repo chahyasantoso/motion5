@@ -1,6 +1,7 @@
 import type { Pose2d } from "./pose";
 
-/** Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90], so reversing never flips it. */
+/** Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90].
+ * Content that must not turn goes in an inner element posed `{ rotation: -heading }`. */
 export function smear(
   velocity: { readonly vx: number; readonly vy: number },
   options: { readonly stretch: number; readonly max: number },

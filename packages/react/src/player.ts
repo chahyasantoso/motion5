@@ -15,6 +15,7 @@ import { play, type Driver, type Player, type Scene } from "@gerak/player";
 /** A driver a component owns, released when the component leaves. */
 export type OwnedDriver = Driver & { dispose?(): void };
 
+/** What `usePlayer` gives: the `player` and the `driver` it plays on. */
 export interface Playing<T extends object, D extends OwnedDriver> {
   readonly player: Player<T>;
   readonly driver: D;
@@ -32,7 +33,8 @@ const NO_HOST: PlayerHost = {};
 
 const HostContext = createContext<PlayerHost>(NO_HOST);
 
-/** Gives every `usePlayer` below it the host's driver and guard. */
+/** Gives every `usePlayer` below it a `PlayerHost`; a saved file then swaps a new `scene` or `cues` in
+ * with `player.replace`, keeping the player and its time. */
 export const PlayerHostProvider = HostContext.Provider;
 
 /** A host's one driver: kept while a factory makes the same driver, replaced at the same time when it does not. */
@@ -103,6 +105,8 @@ function carryTime(previous: OwnedDriver, next: OwnedDriver): void {
   if (!stopped && playable(next)) next.play();
 }
 
+/** Makes a `DriverKeeper`: keeps its driver while a factory makes one of the same members and equal
+ * `options`; else takes the new one at the old time and disposes the old. */
 export function driverKeeper(): DriverKeeper {
   let kept: OwnedDriver | undefined;
   const listeners = new Set<() => void>();
@@ -139,7 +143,8 @@ interface Shown<T extends object, D extends OwnedDriver> {
   readonly cues: Events;
 }
 
-/** Plays `scene` on a driver with its `cues`; keep every argument stable. Under a host, a change swaps in place. */
+/** Plays `scene` on a driver from `createDriver` with `cues`; define all three outside the component.
+ * Gives `Playing`, or `undefined` before it exists. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
   scene: Scene<T>,
   createDriver: () => D,
@@ -203,7 +208,8 @@ function isPose(value: unknown): value is Pose2d {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Writes a value target onto the element the ref lands on with `applyValue`, every step, with no React render. */
+/** Writes a target onto the element the ref lands on every step, with no render. For a list target give
+ * each element its own `useTarget` with a `render` that picks its index. */
 export function useTarget<T extends object, K extends PoseTargets<T>>(
   player: Player<T> | undefined,
   target: K,

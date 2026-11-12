@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+/** The files written, or `refused` with why; nothing is written then, and an existing file is never overwritten. */
 export type ScaffoldResult =
   | { readonly kind: "written"; readonly files: readonly string[] }
   | { readonly kind: "refused"; readonly message: string };

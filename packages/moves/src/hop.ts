@@ -28,6 +28,8 @@ function schedule(bounces: number, decay: number) {
   };
 }
 
+/** Lands `bounces + 1` times, each flight `decay` as high, and settles at rest. Adds `contact { hits,
+ * justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on. */
 export const hop = defineMove({
   id: "hop",
   role: "enter",

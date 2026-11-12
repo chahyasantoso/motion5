@@ -23,6 +23,8 @@ function backOut(u: number, overshoot: number): number {
 
 // A chain through the points that never stretches: straight along `angle` from its pinned end,
 // then each link turns to its heading in the shape, rippling along from the end `release` names.
+/** Bends a chain of points from straight into their shape, link by link. Takes `{ points }` as a third
+ * argument and answers anchors for `toCubics`. */
 export const rope = defineMove({
   id: "rope",
   role: "follow",

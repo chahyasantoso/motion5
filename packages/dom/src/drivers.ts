@@ -15,6 +15,7 @@ export function pageFrames(): FrameSource {
   };
 }
 
+/** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
 export interface ClockOptions {
   readonly duration: number;
   readonly delay?: number;
@@ -58,6 +59,8 @@ export interface ClockDriver extends Driver {
   playing(): boolean;
 }
 
+/** A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks
+ * until `.play()`; `reducedMotion: "play"` opts out. */
 export function clockDriver(options: ClockOptions): ClockDriver {
   const frames = options.frames ?? pageFrames();
   const listeners = new Set<() => void>();

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 
+/** What `motion:frames` captures: the page, the times `at` in ms, a short `labels` entry per frame and the `out` folder. */
 export interface FramesRequest extends PageTarget {
   readonly at: readonly number[];
   /** A short reason to print under each frame, in step with `at`. */
@@ -11,6 +12,8 @@ export interface FramesRequest extends PageTarget {
   readonly out?: string;
 }
 
+/** An onion capture: the element `select` drawn at each step from `from` to `to` ms every `every` ms
+ * (at most 120 steps) on one frame. */
 export interface OnionRequest extends PageTarget {
   readonly select: string;
   readonly from: number;
@@ -19,11 +22,13 @@ export interface OnionRequest extends PageTarget {
   readonly out?: string;
 }
 
+/** Parsed `motion:frames` arguments: frames at times, an onion, or the usage text. */
 export type FramesArgs =
   | ({ readonly kind: "frames" } & FramesRequest)
   | ({ readonly kind: "onion" } & OnionRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** A PNG path per time, the path of the labelled `sheet.png`, and the page's errors. */
 export interface FramesResult {
   readonly kind: "captured";
   readonly frames: readonly { readonly at: number; readonly path: string }[];
@@ -31,6 +36,7 @@ export interface FramesResult {
   readonly pageErrors: readonly string[];
 }
 
+/** A box in px: the top left corner `x`, `y`, and `width` and `height`. */
 export interface Box {
   readonly x: number;
   readonly y: number;
@@ -38,6 +44,7 @@ export interface Box {
   readonly height: number;
 }
 
+/** The onion frame's `path`, and the boxes the element had at each step. */
 export interface OnionResult {
   readonly kind: "onion";
   readonly path: string;
@@ -59,6 +66,8 @@ function nonNegative(text: string | undefined): number | undefined {
     : undefined;
 }
 
+/** Reads `<page>` with `--at ms,ms` or `--onion sel --from ms --to ms --every ms`, and `--out dir`; or
+ * answers the usage text. */
 export function parseFramesArgs(argv: readonly string[]): FramesArgs {
   const usage = (message: string): FramesArgs => ({
     kind: "usage",

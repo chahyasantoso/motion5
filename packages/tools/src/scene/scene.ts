@@ -62,6 +62,7 @@ export type SceneRequest =
   | { readonly kind: "time"; readonly ms: readonly number[] }
   | { readonly kind: "progress"; readonly progress: readonly number[] };
 
+/** One sample of a scene: `at` ms and each target's value then. */
 export interface SceneSample {
   readonly at: number;
   readonly targets: Readonly<Record<string, unknown>>;
@@ -150,6 +151,8 @@ export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): 
   return { kind: "timeline", step: STEP_MS, end, rows };
 }
 
+/** Parsed `motion:sample` arguments: the scene file, `--at` ms or `--progress` shares, `--nodes`,
+ * `--fields` and `--events`; or the usage text. */
 export type SampleArgs =
   | {
       readonly kind: "ok";

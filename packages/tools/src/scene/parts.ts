@@ -9,6 +9,8 @@ export const PART_GROUPS = [
   "randomness",
 ] as const;
 
+/** One group of `@gerak/moves` building blocks that are not moves, such as events or randomness; groups
+ * print in this order. */
 export type PartGroup = (typeof PART_GROUPS)[number];
 
 /** One building block of `@gerak/moves`: its export name, its call shape and what it is for. */

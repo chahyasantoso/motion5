@@ -35,6 +35,7 @@ export interface Player<T extends object> {
   dispose(): void;
 }
 
+/** Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. */
 export interface PlayOptions {
   /** The scene's own events at known ms, such as a landing; the scene gets them merged with the page's. */
   readonly cues?: Events;
@@ -118,6 +119,7 @@ export interface ManualDriver extends Driver {
   seekMs(ms: number): void;
 }
 
+/** A driver moved by hand: `.seek(progress)`, `.seekMs(ms)`. Timed when given `durationMs`, untimed otherwise. */
 export function manualDriver(options: { readonly durationMs?: number } = {}): ManualDriver {
   const listeners = new Set<() => void>();
   let progress = 0;

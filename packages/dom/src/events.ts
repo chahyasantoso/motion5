@@ -26,6 +26,7 @@ export const WATCHED: Readonly<Record<string, string>> = Object.freeze({
   focusout: "blur",
 });
 
+/** Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`. */
 export interface EventDriverOptions {
   /** How long frames keep coming after the last event, for a response to settle; default 2000 ms. */
   readonly settleMs?: number;
@@ -47,6 +48,8 @@ export interface EventDriver extends Driver {
   dispose(): void;
 }
 
+/** A live clock that logs events: `.watch`, `.watchView` and `.emit`. `introMs` keeps frames coming for
+ * an intro, `settleMs` after the last event. */
 export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const frames = options.frames ?? pageFrames();
   const clock = options.clock ?? (() => globalThis.performance.now());

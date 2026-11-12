@@ -1,8 +1,10 @@
+/** A point in stage px. */
 export interface Point {
   readonly x: number;
   readonly y: number;
 }
 
+/** Parsed `motion:points` arguments: the file, the `spacing` in px and the id `prefix`; or the usage text. */
 export type PointsArgs =
   | {
       readonly kind: "ok";
@@ -14,6 +16,7 @@ export type PointsArgs =
 
 const USAGE = "usage: motion:points <points.json> --spacing px [--prefix p]";
 
+/** Reads `<points.json> --spacing px [--prefix p]`, or answers the usage text. */
 export function parsePointsArgs(argv: readonly string[]): PointsArgs {
   const usage = (message: string): PointsArgs => ({
     kind: "usage",

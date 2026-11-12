@@ -20,7 +20,8 @@ export function setEulerDegrees(
   );
 }
 
-/** Writes a 3D pose on an object: y up, turns in degrees on `ZXY`; a missing field writes its rest. */
+/** Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each
+ * custom number goes to `custom(name, value, object)`. */
 export function applyPose3d(
   object: Object3D,
   pose: Pose3d,

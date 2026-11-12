@@ -1,6 +1,7 @@
 import { withProgress, type Time } from "./time";
 
-/** The time run backwards: at progress `p` it answers `1 - p`, and a timed clock's elapsed runs back with it. */
+/** A time run backwards (progress `p` answers `1 - p`); a function of time, not a move, so any move or
+ * value plays through it. */
 export function reversed(time: Time): Time {
   return withProgress(time, 1 - time.progress);
 }

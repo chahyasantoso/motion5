@@ -3,6 +3,8 @@ import { spring, springMemory } from "./spring";
 import { elapsedOf, type Time } from "./time";
 import { timeAt } from "./time-at";
 
+/** Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and
+ * `rest`, the distance under which it sits on the signal. */
 export interface TrailOptions {
   /** Pull towards the signal, per second squared; default 170. */
   readonly stiffness?: number;
@@ -42,7 +44,8 @@ export function trailStart(now: number, settings: TrailSettings): number {
   return Math.max(0, Math.floor((now - settings.memoryMs) / settings.stepMs) * settings.stepMs);
 }
 
-/** A value chasing `signal` on a spring at a fixed cost per frame; pass the scene's time, never an eased one. */
+/** A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's
+ * time: the signal applies its own spans and eases. */
 export function trail(
   signal: (time: Time, events: Events) => number,
   options: TrailOptions,

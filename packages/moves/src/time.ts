@@ -13,6 +13,7 @@ export interface Time {
   readonly clock: Clock;
 }
 
+/** The untimed clock: no ms at all, as under scroll or manual control. */
 export const UNTIMED: Clock = Object.freeze({ kind: "untimed" });
 
 /** A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0. */
@@ -58,7 +59,8 @@ export function windowed(progress: number, from: number, to: number): number {
   return Math.max(0, Math.min(1, (progress - from) / (to - from)));
 }
 
-/** `time` seen through the window `[from, to]`: progress mapped, and a timed clock cut to the window. */
+/** `time` inside the shares `from` to `to`: progress mapped, a timed clock cut to it. Prefer `span`;
+ * `windowed` does the same to a bare number. */
 export function window(time: Time, from: number, to: number): Time {
   const progress = windowed(time.progress, from, to);
   const clock = time.clock;
@@ -87,7 +89,8 @@ export interface Span {
 }
 
 // A timed time is placed by its progress, so an ease or a reversal applied to it carries into a span taken inside.
-/** The stretch from `fromMs` to `toMs`, placed by the ms of the clock its `of` is given. */
+/** A stretch in ms: `.of(time, ease?)` is a move's time inside it, counting from `fromMs`; `.at(share)`
+ * the ms a share falls on. Throws `RangeError` on an untimed time. */
 export function span(fromMs: number, toMs: number): Span {
   if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs)
     throw new RangeError(`span: ${fromMs} to ${toMs} ms is not a stretch of time.`);

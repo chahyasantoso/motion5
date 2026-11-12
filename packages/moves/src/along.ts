@@ -25,7 +25,8 @@ function slopeOf(c: Cubic2d, t: number): { readonly dx: number; readonly dy: num
   };
 }
 
-/** The pose `share` of the way along a path by distance, from the target's rest; `turn` adds the heading, down 90. */
+/** The `{ x, y }` pose `share` of the way along a path by distance, from the target's rest; `turn:
+ * true` adds `rotation`, the heading in degrees (down is 90). */
 export function along(
   cubics: readonly Cubic2d[],
   share: number,

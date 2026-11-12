@@ -52,7 +52,8 @@ export function writeCustom(
   for (const [name, value] of Object.entries(values ?? {})) custom(name, value, object);
 }
 
-/** Writes a 2D pose on an object: page y points down, so y and rotation flip; the anchor stays still. */
+/** Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)`
+ * for each custom number; leaves blur, stroke and clip alone. */
 export function applyPose2d(
   object: Object3D,
   pose: Pose2d,

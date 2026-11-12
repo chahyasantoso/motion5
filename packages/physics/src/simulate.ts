@@ -6,6 +6,8 @@ export interface Spawner {
   addBody(body: BodySpec): void;
 }
 
+/** Settings of `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints`
+ * (32), `durationMs` (0) and `spawn`. */
 export interface SimulateOptions {
   /** Seconds per step; default 1/120. The same step always gives the same result. */
   readonly dt?: number;

@@ -15,8 +15,11 @@ export interface MotionEvent {
 /** Every event so far, oldest first; a scene reads it beside its time. */
 export type Events = readonly MotionEvent[];
 
+/** The empty event list; share it rather than allocating one. */
 export const NO_EVENTS: Events = Object.freeze([]);
 
+/** Settings of a `follow`: `start`, `on` (goal by event name), `target`, `stiffness` (default 170),
+ * `damping` (26) and `rest` (0.001). */
 export interface FollowOptions {
   /** The value before any event. */
   readonly start: number;
@@ -32,7 +35,7 @@ export interface FollowOptions {
   readonly rest?: number;
 }
 
-/** A value springing to each named event's goal from where it is and how fast it goes; pure in time and events. */
+/** A spring each named event sends towards its goal, turning back with no jump; pure in time and events. */
 export function follow(options: FollowOptions): (time: Time, events: Events) => number {
   const stiffness = options.stiffness ?? 170;
   const damping = options.damping ?? 26;
@@ -78,6 +81,8 @@ export function mergeEvents(...lists: readonly Events[]): Events {
 /** How a response to one event moves: from a full start, from rest, as a fade, or as a shake. */
 export type ReactionKind = "recoil" | "wobble" | "flash" | "shake";
 
+/** Settings of a `react`: event names `on`, `target`, `kind`, `amplitude`, `decay` (default 6 a second)
+ * and `frequency` (4 a second). */
 export interface ReactOptions {
   /** The event names this answers. */
   readonly on: readonly string[];
@@ -115,7 +120,8 @@ function shape(
   }
 }
 
-/** A damped answer to each past named event, added together; exactly 0 before the first and once all have died. */
+/** A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the
+ * first and once all have died. */
 export function react(options: ReactOptions): (time: Time, events: Events) => number {
   const decay = options.decay ?? 6;
   const frequency = options.frequency ?? 4;

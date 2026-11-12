@@ -7,6 +7,8 @@ export type Euler3d = {
   readonly rotationY: number;
 };
 
+/** A 3D frame in world space: a position `x`, `y`, `z` and a turn `rotation`, `rotationX`, `rotationY`
+ * in degrees on the CSS Z-X-Y order. */
 export type WorldFrame3d = {
   readonly x: number;
   readonly y: number;
@@ -16,6 +18,7 @@ export type WorldFrame3d = {
   readonly rotationY: number;
 };
 
+/** A 3D vector as `[x, y, z]`. */
 export type Vec3 = readonly [number, number, number];
 
 /** A pivot offset, read in its parent's rotated frame. */
@@ -40,6 +43,7 @@ export type Quaternion = {
   readonly y: number;
   readonly z: number;
 };
+/** A row-major 3x3 rotation matrix, nine numbers. */
 export type Matrix3 = readonly [
   number,
   number,

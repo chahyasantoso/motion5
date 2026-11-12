@@ -3,7 +3,8 @@ import type { Pose2d } from "./pose";
 import { speedOf } from "./speed-of";
 import type { Time } from "./time";
 
-/** Px per second a signal's `x` and `y` move at the scene's `time`, never an eased one; zero with no clock. */
+/** The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`;
+ * zero with no clock. */
 export function velocity(
   signal: (time: Time, events: Events) => Pose2d,
   time: Time,

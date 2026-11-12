@@ -1,4 +1,5 @@
-/** Numbers from 0 up to 1 that look random but repeat for the same seed, so a scattered scene is the same each run. */
+/** Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use
+ * it, never `Math.random()`. */
 export function seeded(seed: number): () => number {
   let state = Math.floor(seed) | 0;
   return () => {

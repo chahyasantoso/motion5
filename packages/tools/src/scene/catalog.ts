@@ -24,6 +24,7 @@ export interface MoveRecord {
   readonly source: MoveSource;
 }
 
+/** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
   "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--parts] [--root dir]";
 
@@ -31,6 +32,7 @@ export const CATALOG_USAGE =
 export const PARTS_HINT =
   "npm run motion:moves -- --parts lists the building blocks moves are made from: time, eases, blends, paths, follow-through, events, randomness.";
 
+/** Parsed `motion:moves` arguments: `id`, `--role`, `--check`, `--json`, `--parts` and `--root`; or the usage text. */
 export type CatalogArgs =
   | { readonly kind: "usage"; readonly message: string }
   | {
@@ -241,6 +243,7 @@ export async function loadAppModules(root: string): Promise<{
   return { modules, problems };
 }
 
+/** What `motion:moves` prints: the `lines`, and the exit `code`, 1 on a finding. */
 export interface CatalogRun {
   readonly lines: readonly string[];
   readonly code: 0 | 1;
