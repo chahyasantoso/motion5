@@ -58,6 +58,13 @@ hop(options, flight.of(time, ease.quadOut));
 const landMs = flight.at(hop.moments(options).lastLanding);
 ```
 
+**`sequence(time, phases)`**: `phases` is a list of `[span, answer]`, `answer` a function of time to anything. It
+answers the last phase that has started, given that phase's own time, so an ended phase holds at its end until the
+next begins; before the first starts, the first at its start. An empty list throws. **`Phase`** is a pair's type.
+```ts
+const card = (time: Time) => sequence(time, [[enter, (t) => rise(options, t)], [leave, (t) => fade({}, reversed(t))]]);
+```
+
 **`window(time, from, to)`**: `time` inside the shares `from` to `to`; prefer `span`. **`windowed(progress, from, to)`**
 does the same to a bare number.
 ```ts

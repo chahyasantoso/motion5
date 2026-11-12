@@ -72,6 +72,9 @@ mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, e
 - A move holds still outside its span, on the side its role says: an `enter` waits at its start and stays at rest
   after, an `emphasis` rests on both sides. So one target that arrives, is stressed and leaves is a `combine` of
   three moves, each on its own span.
+- `sequence(time, [[span, (t) => answer], ...])` answers the last phase that has started, in its own time, and holds
+  an ended one until the next begins. Use it for phases on one target that replace one another rather than add, and
+  for a longer piece: each beat is a function of time written from 0, and `sequence` places the beats.
 - A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional; `anchor` is the point that
   stays still while it turns or scales, the centre when absent. A plain pose built with `mix`, `keyframes` or an
   `ease` goes into `combine` beside a move.

@@ -17,6 +17,7 @@ export { trailTurn } from "./trail-turn";
 export { timeAt } from "./time-at";
 export { mix, mixAngle, mixPoint, mixPose } from "./mix";
 export { keyframes, type Key } from "./keyframes";
+export { sequence, type Phase } from "./sequence";
 export { seeded } from "./random";
 export {
   NO_EVENTS,
