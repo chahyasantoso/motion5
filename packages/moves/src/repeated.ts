@@ -1,29 +1,8 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "./pose";
-import type { Time } from "./time";
+import { withProgress, type Time } from "./time";
 
-/** Plays its input `count` times inside one progress, and ends on the input's end. */
-export const repeated = defineMove({
-  id: "repeated",
-  role: "modifier",
-  description: "Plays another move several times in the span of one.",
-  options: {
-    count: {
-      kind: "number",
-      default: 2,
-      min: 1,
-      max: 32,
-      description: "Times the input plays, rounded down; default 2.",
-    },
-  },
-  example: {
-    options: { count: 2 },
-    input: (time: Time): Pose2d => ({ y: -100 * Math.sin(Math.PI * time.progress) }),
-  },
-  run({ count }, time, input: (time: Time) => Pose2d): Pose2d {
-    if (time.progress >= 1) return input({ ...time, progress: 1 });
-    const scaled = time.progress * Math.floor(count);
-    return input({ ...time, progress: scaled - Math.floor(scaled) });
-  },
-  moments: () => ({}),
-});
+/** The time with its progress running 0 to 1 `count` times (rounded down, at least 1), and 1 at the end. */
+export function repeated(time: Time, count: number): Time {
+  if (time.progress >= 1) return withProgress(time, 1);
+  const scaled = time.progress * Math.max(1, Math.floor(count));
+  return withProgress(time, scaled - Math.floor(scaled));
+}

@@ -7,7 +7,7 @@ onto an element or a Three.js object.
 ## A scene on a plain page
 
 ```ts
-import { applyPose, clockDriver } from "@gerak/dom";
+import { applyValue, clockDriver } from "@gerak/dom";
 import { drop, span, type Time } from "@gerak/moves";
 import { play } from "@gerak/player";
 
@@ -20,7 +20,7 @@ const scene = (time: Time) => ({
 
 const title = document.querySelector<HTMLElement>("#title");
 const player = play(scene, clockDriver({ duration: durationMs }));
-if (title !== null) player.subscribe("title", (pose) => applyPose(title, pose));
+if (title !== null) player.subscribe("title", (pose) => applyValue(title, pose));
 ```
 
 `drop` waits `distance` above the element's layout position and lands on it; `span` places the move between 0 and

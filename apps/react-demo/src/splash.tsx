@@ -1,5 +1,5 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { applyPose } from "@gerak/dom";
+import { applyValue } from "@gerak/dom";
 import type { Player } from "@gerak/player";
 import type { Pose2d } from "@gerak/moves";
 import { usePlayer, useTarget } from "@gerak/react";
@@ -27,9 +27,9 @@ function Part<K extends PoseList>({
   children?: React.ReactNode;
 }) {
   const render = useCallback(
-    (element: Parameters<typeof applyPose>[0], poses: Frame[K]) => {
+    (element: Parameters<typeof applyValue>[0], poses: Frame[K]) => {
       const pose = poses[index];
-      if (pose !== undefined) applyPose(element, pose);
+      if (pose !== undefined) applyValue(element, pose);
     },
     [index],
   );

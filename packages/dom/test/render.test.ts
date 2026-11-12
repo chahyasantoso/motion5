@@ -1,13 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  applyDrawn,
-  applyPath,
-  applyPose,
-  applyReveal,
-  cssTransform,
-  pathData,
-  type RenderTarget,
-} from "@gerak/dom";
+import { applyPath, applyValue, cssTransform, pathData, type RenderTarget } from "@gerak/dom";
 
 function element(extra: Record<string, unknown> = {}): RenderTarget & {
   readonly attributes: Record<string, string>;
@@ -35,60 +27,117 @@ describe("cssTransform", () => {
   });
 });
 
-describe("applyPose", () => {
-  it("writes the transform, opacity and the anchor as transform origin", () => {
+describe("applyValue", () => {
+  it("writes the transform, opacity and the anchor as transform origin, and clears filter and clip", () => {
     const target = element();
-    applyPose(target, { x: 5, y: -20, scaleX: 1.2, opacity: 0.5, anchor: "bottom" });
+    applyValue(target, { x: 5, y: -20, scaleX: 1.2, opacity: 0.5, anchor: "bottom" });
     expect(target.style).toEqual({
       transform: "translate3d(5px, -20px, 0px) scaleX(1.2)",
       opacity: "0.5",
+      filter: "",
+      clipPath: "",
       transformOrigin: "50% 100%",
     });
   });
 
-  it("puts the target back at rest when a later pose moves nothing", () => {
+  it("puts the target back at rest when a later value moves nothing", () => {
     const target = element();
-    applyPose(target, { rotation: 180, scaleX: 1.6 });
-    applyPose(target, {});
+    applyValue(target, { rotation: 180, scaleX: 1.6 });
+    applyValue(target, {});
     expect(target.style.transform).toBe("");
   });
 
-  it("anchors at the centre when the pose names no anchor", () => {
+  it("hands opacity back to the page's own style when a later value leaves it out", () => {
     const target = element();
-    applyPose(target, { rotation: 90 });
+    applyValue(target, { opacity: 0.3 });
+    applyValue(target, {});
+    expect(target.style.opacity).toBe("");
+  });
+
+  it("anchors at the centre when the value names no anchor", () => {
+    const target = element();
+    applyValue(target, { rotation: 90 });
     expect(target.style.transformOrigin).toBe("50% 50%");
   });
 
   it("measures an SVG element's anchor against its own box, as HTML does", () => {
     const target = element({ ownerSVGElement: {} });
-    applyPose(target, { y: 1, anchor: "top" });
+    applyValue(target, { y: 1, anchor: "top" });
     expect(target.style.transformBox).toBe("fill-box");
     expect(target.style.transformOrigin).toBe("50% 0%");
   });
-});
 
-describe("applyReveal", () => {
-  it("clips the target to the reveal's circle", () => {
+  it("blurs by the value's blur, and clears the filter when a later value has none", () => {
     const target = element();
-    applyReveal(target, { x: 10, y: 20, radius: 30 });
-    expect(target.style.clipPath).toBe("circle(30px at 10px 20px)");
+    applyValue(target, { blur: 4 });
+    expect(target.style.filter).toBe("blur(4px)");
+    applyValue(target, {});
+    expect(target.style.filter).toBe("");
   });
-});
 
-describe("applyDrawn", () => {
-  it("dashes the stroke so the drawn share of the path's own length shows", () => {
-    const target = element({ getTotalLength: () => 200 });
-    applyDrawn(target, { drawn: 0.25 });
-    expect(target.style).toEqual({ strokeDasharray: "200 200", strokeDashoffset: "150" });
+  it("clips to the value's circle, and clears the clip when a later value has none", () => {
+    const target = element();
+    applyValue(target, { clipX: 10, clipY: 20, clipRadius: 30 });
+    expect(target.style.clipPath).toBe("circle(30px at 10px 20px)");
+    applyValue(target, { x: 1 });
+    expect(target.style.clipPath).toBe("");
+  });
+
+  it("dashes the stroke so exactly the stretch from drawnFrom to drawn shows", () => {
+    const target = element({ getTotalLength: () => 100 });
+    applyValue(target, { drawnFrom: 0.2, drawn: 0.6 });
+    expect(target.style.strokeDasharray).toBe("40 100");
+    expect(target.style.strokeDashoffset).toBe("-20");
   });
 
   it("takes the length from the caller when the target cannot measure itself", () => {
     const target = element();
-    applyDrawn(target, { drawn: 1 }, 80);
-    expect(target.style).toEqual({ strokeDasharray: "80 80", strokeDashoffset: "0" });
+    applyValue(target, { drawn: 0.25 }, 80);
+    expect(target.style.strokeDasharray).toBe("20 80");
+    expect(target.style.strokeDashoffset).toBe("0");
+  });
+
+  it("writes no dash when the value draws no stroke", () => {
+    const target = element();
+    applyValue(target, { x: 1 });
+    expect("strokeDasharray" in target.style).toBe(false);
+  });
+
+  it("clears a dash an earlier value wrote when a later value draws no stroke", () => {
+    const target = element({ getTotalLength: () => 100 });
+    applyValue(target, { drawn: 0.5 });
+    applyValue(target, {});
+    expect(target.style.strokeDasharray).toBe("");
+    expect(target.style.strokeDashoffset).toBe("");
+  });
+
+  it("writes each custom number as a CSS custom property", () => {
+    const written: [string, string][] = [];
+    const target = element();
+    target.style.setProperty = (name, value) => written.push([name, value]);
+    applyValue(target, { custom: { tint: 0.4 } });
+    expect(written).toEqual([["--tint", "0.4"]]);
+  });
+
+  it("removes a custom name a later value leaves out, and refuses one CSS could not carry", () => {
+    const removed: string[] = [];
+    const target = element();
+    target.style.setProperty = () => undefined;
+    target.style.removeProperty = (name) => removed.push(name);
+    applyValue(target, { custom: { tint: 0.4, glow: 1 } });
+    applyValue(target, { custom: { glow: 2 } });
+    expect(removed).toEqual(["--tint"]);
+    applyValue(target, {});
+    expect(removed).toEqual(["--tint", "--glow"]);
+    expect(() => applyValue(target, { custom: { "bad name": 1 } })).toThrow(/bad name/);
+  });
+
+  it("leaves a stroke undashed when there is no length to measure", () => {
+    const target = element();
+    applyValue(target, { drawn: 0.5 });
+    expect(target.style.strokeDasharray ?? "").toBe("");
   });
 });
-
 describe("pathData", () => {
   const cubics = [
     { id: "a", x0: 0, y0: 0, x1: 10, y1: 0, x2: 90, y2: 5, x3: 100, y3: 0 },

@@ -1,7 +1,7 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "./pose";
-import type { Time } from "./time";
-import { num, whole } from "./whole";
+import { withProgress, type Time } from "./time";
+import { carried, pushed, whole } from "./whole";
 
 /** Winds up the other way from its input's travel, then plays the input and ends where it ends. */
 export const anticipate = defineMove({
@@ -29,17 +29,15 @@ export const anticipate = defineMove({
     input: (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) }),
   },
   run({ share, amount }, time, input: (time: Time) => Pose2d): Pose2d {
-    const at = (progress: number) => input({ ...time, progress });
-    if (time.progress >= share) return whole(at((time.progress - share) / (1 - share)));
+    const at = (progress: number) => input(withProgress(time, progress));
     const first = at(0);
     const last = at(1);
+    if (time.progress >= share) {
+      const played = at((time.progress - share) / (1 - share));
+      return whole(played, carried(first, last, played));
+    }
     const wind = amount * Math.sin(Math.PI * (time.progress / share));
-    return {
-      ...first,
-      x: num(first.x) + wind * (num(first.x) - num(last.x)),
-      y: num(first.y) + wind * (num(first.y) - num(last.y)),
-      rotation: num(first.rotation) + wind * (num(first.rotation) - num(last.rotation)),
-    };
+    return pushed(first, last, wind, carried(first, last));
   },
   moments: ({ share }) => ({ windUp: share / 2 }),
 });

@@ -98,7 +98,7 @@ const share = (ms: number, from: number, to: number) =>
   Math.min(1, Math.max(0, (ms - from) / (to - from)));
 const at = (x: number, y: number): Pose2d => ({ x, y });
 const hidden: Pose2d = { opacity: 0 };
-/** A pose that leaves opacity out keeps the last one written, so a target that was hidden says it is shown. */
+/** Shown outright: a pose that leaves opacity out hands the target back to the page's own style. */
 const shown: Pose2d = { opacity: 1 };
 
 const wgtLand = (i: number) => WGT_LAND0 + i * 165 + (i === 5 ? 90 : 0);
@@ -290,7 +290,7 @@ function weightLetter(i: number, time: Time): Pose2d {
     anticipate(
       { share: (plungeAt - WGT_LIFT) / (plungeAt + 520 - WGT_LIFT), amount: 0.013 },
       span(WGT_LIFT, plungeAt + 520, D).of(time),
-      (t) => reversed({}, t, (u) => rise({ distance: 1080 }, u)),
+      (t) => rise({ distance: 1080 }, reversed(t)),
     ),
   ]);
 }
@@ -320,7 +320,7 @@ function dust(j: number, ms: number, time: Time): Pose2d {
 function floorHalf(from: "left" | "right", time: Time): Pose2d {
   return combine([
     unfold({ from }, span(3350, 3800, D).of(time, ease.cubicOut)),
-    reversed({}, span(WGT_DROP, 6000, D).of(time, ease.cubicIn), (t) => unfold({ from }, t)),
+    unfold({ from }, reversed(span(WGT_DROP, 6000, D).of(time, ease.cubicIn))),
   ]);
 }
 
@@ -337,7 +337,7 @@ function hanger(i: number, time: Time): Pose2d {
     anticipate(
       { share: 0.33, amount: 0.25 },
       span(OVL_SETTLED + i * 28, OVL_GONE + i * 28, D).of(time),
-      (t) => reversed({}, t, (u) => swing({ angle: 45, swings: 1 }, u)),
+      (t) => swing({ angle: 45, swings: 1 }, reversed(t)),
     ),
   ]);
 }
@@ -356,11 +356,9 @@ function settleLetter(i: number, ms: number, time: Time): Pose2d {
     ),
     fade({}, span(b0, b0 + 60, D).of(time)),
     anticipate({ share: 0.35, amount: 0.15 }, span(out, out + 520, D).of(time), (t) =>
-      reversed({}, t, (u) =>
-        springSettle(
-          { dx, dy, turn: (STL_TURN[i] ?? 0) * 0.5, scale: 0.05, rings: 0, damping: 3 },
-          u,
-        ),
+      springSettle(
+        { dx, dy, turn: (STL_TURN[i] ?? 0) * 0.5, scale: 0.05, rings: 0, damping: 3 },
+        reversed(t),
       ),
     ),
   ]);
@@ -423,7 +421,7 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
       anticipate(
         { share: 250 / 750, amount: 55 / 1450 },
         span(OVL_SETTLED, OVL_GONE, D).of(time),
-        (t) => reversed({}, t, (u) => slide({ distance: 1450, from: "right" }, u)),
+        (t) => slide({ distance: 1450, from: "right" }, reversed(t)),
       ),
       { opacity: ms >= OVL_IN && ms < OVL_GONE + 100 ? 1 : 0 },
     ]),

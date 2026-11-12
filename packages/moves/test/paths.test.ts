@@ -2,21 +2,25 @@ import { describe, expect, it } from "vitest";
 import { atProgress, combine, lane, lanes, rope, trace, wipe, type Time } from "@gerak/moves";
 
 describe("wipe", () => {
-  it("grows its reveal from nothing to the radius, easing in and out", () => {
+  it("grows its clip circle from nothing to the radius, easing in and out", () => {
     const options = { radius: 200, x: 10, y: 20 };
-    expect(wipe(options, atProgress(0))).toEqual({ x: 10, y: 20, radius: 0 });
-    expect(wipe(options, atProgress(0.5))).toEqual({ x: 10, y: 20, radius: 100 });
-    expect(wipe(options, atProgress(1))).toEqual({ x: 10, y: 20, radius: 200 });
-    expect(wipe(options, atProgress(0.25)).radius).toBeCloseTo(200 * 0.15625, 12);
+    expect(wipe(options, atProgress(0))).toEqual({ clipX: 10, clipY: 20, clipRadius: 0 });
+    expect(wipe(options, atProgress(0.5))).toEqual({ clipX: 10, clipY: 20, clipRadius: 100 });
+    expect(wipe(options, atProgress(1))).toEqual({ clipX: 10, clipY: 20, clipRadius: 200 });
+    expect(wipe(options, atProgress(0.25)).clipRadius).toBeCloseTo(200 * 0.15625, 12);
   });
 });
 
 describe("trace", () => {
-  it("draws the share of its path that progress has reached", () => {
-    expect(trace({}, atProgress(0.3))).toEqual({ drawn: 0.3 });
+  it("draws the share of its path that progress has reached, from its start", () => {
+    expect(trace({}, atProgress(0.3))).toEqual({ drawn: 0.3, drawnFrom: 0 });
+  });
+
+  it("keeps only the tail's share drawn behind the head", () => {
+    expect(trace({ tail: 0.25 }, atProgress(0.5))).toEqual({ drawn: 0.5, drawnFrom: 0.25 });
+    expect(trace({ tail: 0.25 }, atProgress(0.1))).toEqual({ drawn: 0.1, drawnFrom: 0 });
   });
 });
-
 describe("rope", () => {
   const points = [
     { id: "a", x: 0, y: 0 },

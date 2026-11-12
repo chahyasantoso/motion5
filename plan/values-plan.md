@@ -1,6 +1,6 @@
 # Values and sequence plan
 
-**Status:** Draft for the owner's review.
+**Status:** Approved by the owner, 2026-11-11.
 **Base:** `feat/authoring-proof-2` at the commit that adds this file (pull request 578).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` ("What a real piece asked for"),
 `plan/authoring-plan.md` ("A hand-made piece, rebuilt"), `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -190,6 +190,24 @@ after one full check and one cold review.
 | 3 | Opus | V4 | time is subtle, and every scene changes |
 | 3 | Sonnet | V6, V8, V9 | tools and tests only, no file shared with V4 |
 | 4 | Opus | V5, V7 | the catalog shows the parts, and the same worker builds from them |
+
+### What each wave cost
+
+| Wave | Who | Slices | Tokens | Tool calls | Time | What the conductor fixed on combining |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Conductor (Fable) | V0, V1 | not shown | | | |
+| 2 | Opus, medium | V2 | 156 k | 68 | 9.5 min | opacity written at 1 overrode the page's own style; now a left-out field is cleared |
+| 2 | Sonnet, medium | V3 | 87 k | 22 | 3.2 min | its test read the wipe's old field name, which V2 renamed |
+| 2 | Sonnet, medium, cold review | | 120 k | 31 | 4.6 min | ten findings: seven fixed, three left |
+
+V3 changed shape before it was briefed: `reversed` and `repeated` only reshape time, so they became functions of
+time (`slide(options, reversed(time))`) and left the catalog's moves, which needed no typing for every kind of
+answer. `anticipate` and `overshoot` stayed moves.
+
+Left from the review, and why: a `trace` with a `tail` below 1 ends with only the tail drawn and still passes as
+a reveal (a comet is what a tail is for); `lift2d` names the fields it carries from a page pose onto a plane (a
+mapping, not a rest or a rule); a custom name with a dot in it is read wrongly by the gate (the renderer now refuses
+such a name).
 
 ## 7. Done when
 

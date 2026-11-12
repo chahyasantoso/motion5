@@ -3,22 +3,80 @@ import { unreachable } from "./unreachable";
 /** The point of a box that stays put while it scales and turns. */
 export type Anchor = "center" | "bottom" | "top" | "left" | "right";
 
-/** A 2D pose; each renderer writes it in its own format. */
-export type Pose2d = {
-  readonly x?: number;
-  readonly y?: number;
-  readonly rotation?: number;
-  readonly scale?: number;
-  readonly scaleX?: number;
-  readonly scaleY?: number;
-  readonly opacity?: number;
-  readonly anchor?: Anchor;
-};
+/** How two answers for one field on one target become one. */
+export type Combining = "add" | "multiply" | "replace";
 
-/** Pose fields that offsets and turns: two poses on one target add them, and their rest is 0. */
-export const ADDED_FIELDS = Object.freeze(["x", "y", "rotation"] as const);
-/** Pose fields that scale: two poses on one target multiply them, and their rest is 1. */
-export const MULTIPLIED_FIELDS = Object.freeze(["scale", "scaleX", "scaleY", "opacity"] as const);
+/** What a field of a value is: where it rests, how it combines, and what the gate asks of it. */
+export interface ValueField {
+  /** The amount that changes nothing; a field with none is never held to rest. */
+  readonly rest?: number;
+  readonly combines: Combining;
+  /** Whether its path must be smooth; a scale may snap at a contact. */
+  readonly smooth: boolean;
+  /** Whether a reveal must end with it at its greatest. */
+  readonly shows: boolean;
+  /** The least it can be; a modifier that pushes it past that stops there. */
+  readonly least?: number;
+}
+
+const OFFSET: ValueField = { rest: 0, combines: "add", smooth: true, shows: false };
+const SIZE: ValueField = { rest: 1, combines: "multiply", smooth: false, shows: false };
+const SHOWN: ValueField = { combines: "replace", smooth: true, shows: true };
+const PLACED: ValueField = { combines: "replace", smooth: true, shows: false };
+
+/** Every field a value can carry, one row each; nothing else states a field's rest or how it combines. */
+export const VALUE_FIELDS = Object.freeze({
+  x: OFFSET,
+  y: OFFSET,
+  z: OFFSET,
+  rotation: OFFSET,
+  rotationX: OFFSET,
+  rotationY: OFFSET,
+  scale: SIZE,
+  scaleX: SIZE,
+  scaleY: SIZE,
+  scaleZ: SIZE,
+  opacity: { rest: 1, combines: "multiply", smooth: true, shows: false },
+  blur: { ...OFFSET, least: 0 },
+  drawn: { rest: 1, combines: "replace", smooth: true, shows: true },
+  drawnFrom: { rest: 0, combines: "replace", smooth: true, shows: false },
+  clipX: PLACED,
+  clipY: PLACED,
+  clipRadius: SHOWN,
+}) satisfies Readonly<Record<string, ValueField>>;
+
+/** A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes. */
+export const CUSTOM_FIELD: ValueField = OFFSET;
+
+const BY_NAME: ReadonlyMap<string, ValueField> = new Map(Object.entries(VALUE_FIELDS));
+
+/** The row a field name has in the table, or nothing when it has none. */
+export function valueField(name: string): ValueField | undefined {
+  return BY_NAME.get(name);
+}
+
+/** The numbers a 2D pose carries, each a row of the table. */
+export const POSE_2D_NUMBERS = Object.freeze([
+  "x",
+  "y",
+  "rotation",
+  "scale",
+  "scaleX",
+  "scaleY",
+  "opacity",
+  "blur",
+  "drawn",
+  "drawnFrom",
+  "clipX",
+  "clipY",
+  "clipRadius",
+] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
+
+/** A 2D pose: table fields, the anchor, and the piece's own `custom` numbers; each renderer writes it its way. */
+export type Pose2d = { readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: number } & {
+  readonly anchor?: Anchor;
+  readonly custom?: Readonly<Record<string, number>>;
+};
 
 /** A box `weight` of the way into its `squash` against the `anchor` side, which stays put; widens the other way. */
 export function squashed(squash: number, weight: number, anchor: Anchor = "bottom"): Pose2d {
@@ -37,18 +95,8 @@ export function squashed(squash: number, weight: number, anchor: Anchor = "botto
   }
 }
 
-const FIELDS: Record<keyof Pose2d, true> = {
-  x: true,
-  y: true,
-  rotation: true,
-  scale: true,
-  scaleX: true,
-  scaleY: true,
-  opacity: true,
-  anchor: true,
-};
-
-/** Every field a pose can carry; TypeScript refuses this list when `Pose2d` gains a field it lacks. */
-export const POSE_2D_FIELDS: readonly (keyof Pose2d)[] = Object.freeze(
-  Object.keys(FIELDS).filter((key): key is keyof Pose2d => key in FIELDS),
-);
+/** Every field a renderer must write for a pose: its numbers and its anchor. */
+export const POSE_2D_FIELDS: readonly Exclude<keyof Pose2d, "custom">[] = Object.freeze([
+  ...POSE_2D_NUMBERS,
+  "anchor",
+]);

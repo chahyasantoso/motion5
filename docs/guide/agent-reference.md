@@ -85,27 +85,30 @@ Each move is `move(options, time)`. `move.options` lists its options with ranges
 shares of its progress. The catalog, not this page, says what each move does and takes: `npm run motion:moves` prints
 one line per move, `-- --role <role>` one role, and `-- <id>` one move in full with the shape of its call. By role:
 
-- `exit`: none of its own; `reversed` makes one of any entrance
+- `exit`: none of its own; `reversed(time)` turns any move into one
 - `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
 - `emphasis`: **`pulse`**, **`shake`**, **`wobble`**, **`nod`**
 - `travel`: **`arc`**
 - `reveal`: **`wipe`**, **`trace`**
 - `follow`: **`rope`**
-- `modifier`: **`reversed`**, **`anticipate`**, **`overshoot`**, **`repeated`**
+- `modifier`: **`anticipate`**, **`overshoot`**
 
 What a move answers, which the catalog does not print:
 
 - An `enter`, `emphasis` or `travel` move answers a `Pose2d`. `hop` adds `contact: { hits, justHit }`: `hits` counts
   the landings so far, and `justHit` runs 1 at a landing to 0 a fifth of a flight away, for what the landing touches.
-- `wipe` answers a `Reveal` for `applyReveal`, and `trace` a `Drawn` for `applyDrawn`.
+- `wipe` answers a `Pose2d` of `clipX`, `clipY` and `clipRadius`, and `trace` one of `drawn` and `drawnFrom`; `trace`'s
+  `tail` (default 1) is the share of the path kept drawn behind the head. `applyValue` writes both.
 - `rope` takes the points it follows as a third argument and answers anchors for `toCubics`.
   ```ts
   applyPath(path, toCubics(rope(options, time, { points })));
   ```
-- A modifier takes the move it reshapes as a third argument, a `(time) => pose` function, and answers what that
-  move answers. Modifiers nest.
+- `reversed(time)` and `repeated(time, count)` are functions of time, not moves: each answers a time, and any move
+  or value can be played through it. `anticipate` and `overshoot` are moves that take another move's answer as a
+  third argument, a `(time) => pose` function, and act on every number that adds, `custom` numbers included.
   ```ts
-  reversed({}, time, (t) => rise(options, t));
+  rise(options, reversed(time));
+  pulse(options, repeated(time, 3));
   overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options, u)));
   ```
 
@@ -183,8 +186,8 @@ combine([slide, squashed(0.3, hit, "right")]);
 
 **`POSE_2D_FIELDS`**: every field name of `Pose2d`.
 
-**`Point2d`**, **`Anchor2d`**, **`Cubic2d`**, **`Reveal`**, **`Drawn`**: the shapes moves give: a point with an id, a rope
-anchor, a path segment, a reveal circle, a drawn share.
+**`Point2d`**, **`Anchor2d`**, **`Cubic2d`**: the shapes moves give: a point with an id, a rope
+anchor, a path segment.
 
 **`toCubics(anchors)`**: a rope's anchors as path segments for `applyPath`.
 
@@ -318,6 +321,14 @@ const slide = defineMove({
   run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) }),
 });
 ```
+**`VALUE_FIELDS`** is the one table of what a value's fields are: each row a **`ValueField`** with its `rest`, how it
+combines (a **`Combining`**: `add`, `multiply` or `replace`), whether its path must be `smooth` and whether a reveal
+`shows` it. **`valueField(name)`** reads a row. A pose may also carry `custom`, a record of numbers the piece names
+itself; each is a **`CUSTOM_FIELD`**: it rests at 0 and adds. `combine`, `mixPose`, `combine3d`, `mixPose3d` and the
+gate all read the table. Beside the transform and `opacity`, its rows are `blur` (px, resting at 0), `drawn` and
+`drawnFrom` (a stroke's head and tail as shares of its length, resting at 1 and 0), and `clipX`, `clipY` and
+`clipRadius` (a clip circle in px from the target's top left, with no rest).
+
 `checkMove(move)` from `@gerak/tools/scene` is the gate: it samples the example, and the example at each ranged
 option's least and greatest, and answers a list of findings, empty when the move holds its role's rest, stays finite,
 has its descriptions and takes no jump. `describeFinding(id, finding)` turns one into a line.
@@ -346,18 +357,20 @@ driver.seekMs(1200);
 
 ### Rendering
 
-**`applyPose(element, pose)`**: writes a pose as a CSS transform, origin and opacity.
+**`applyValue(element, value, length?)`**: writes a value: the transform and origin, `opacity`,
+`blur` as a filter, the clip circle as a clip path, the stretch from `drawnFrom` to `drawn` as a stroke dash (measured
+with `getTotalLength`, else `length`), and each `custom` number as the CSS property `--<name>`. A field left out is
+cleared, a custom name too, so the page's own style shows again.
 ```ts
-player.subscribe("title", (pose) => applyPose(title, pose));
+player.subscribe("title", (pose) => applyValue(title, pose));
 ```
 
-**`applyReveal(element, reveal)`**: clips to a circle. **`applyDrawn(path, drawn, length?)`**: draws a stroke a share
-of the way. **`applyPath(path, cubics)`**: sets an SVG path's `d`.
+**`applyPath(path, cubics)`**: sets an SVG path's `d`.
 ```ts
-applyReveal(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
+applyValue(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
 ```
 
-**`cssTransform(values)`**, **`cssOrigin(anchor)`**, **`cssClip(reveal)`**, **`cssDash(drawn, length)`**,
+**`cssTransform(values)`**, **`cssOrigin(anchor)`**, **`cssClip(x, y, radius)`**, **`cssDash(from, to, length)`**,
 **`pathData(cubics)`**: the CSS strings the above write. **`TRANSFORM_KEYS`**: the pose keys a transform reads.
 **`RenderTarget`** and **`RenderStyle`**: an element, or anything with a `style`.
 
@@ -407,7 +420,7 @@ its index.
 ```tsx
 const ball = useTarget(playing?.player, "ball");
 const Letter = ({ player, i, char }: { player: Player<Frame> | undefined; i: number; char: string }) => {
-  const render = useCallback((el: HTMLElement, poses: Frame["letters"]) => applyPose(el, poses[i] ?? {}), [i]);
+  const render = useCallback((el: HTMLElement, poses: Frame["letters"]) => applyValue(el, poses[i] ?? {}), [i]);
   return <span ref={useTarget(player, "letters", render)}>{char}</span>;
 };
 ```
@@ -498,13 +511,15 @@ const sim = simulate(rapier(), build);
 
 ## @gerak/three
 
-**`applyPose2d(object, pose, rest?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes.
+**`applyPose2d(object, pose, rest?, custom?)`**: writes a 2D pose on a Three.js object, flipping y and turns for its axes;
+it calls `custom(name, value, object)` for each custom number and leaves blur, the stroke and the clip alone.
+**`THREE_POSE_FIELDS`**: the pose fields it writes.
 ```ts
 player.subscribe("ball", (pose) => applyPose2d(mesh, pose));
 ```
 
-**`applyPose3d(object, pose, rest?)`**: writes a `Pose3d` on a Three.js object, y up, turns in degrees on Z-X-Y; a
-missing field writes its rest.
+**`applyPose3d(object, pose, rest?, custom?)`**: writes a `Pose3d` on a Three.js object, y up, turns in degrees on Z-X-Y; a
+missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
 ```ts
 player.subscribe("ball", (pose) => applyPose3d(mesh, pose));
 ```

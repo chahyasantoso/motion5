@@ -1,4 +1,13 @@
-import { MOVE_ROLES, atProgress, type MoveRole, type OptionField, type Time } from "@gerak/moves";
+import {
+  CUSTOM_FIELD,
+  MOVE_ROLES,
+  atProgress,
+  valueField,
+  type MoveRole,
+  type OptionField,
+  type Time,
+  type ValueField,
+} from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */
@@ -48,23 +57,20 @@ const STEPS = 62;
 const JUMP_SHARE = 0.35;
 const REST_SLACK = 1e-6;
 
-const AT_ZERO = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY"]);
-const AT_ONE = new Set(["scale", "scaleX", "scaleY", "scaleZ", "opacity"]);
-const SHOWN = new Set(["drawn", "radius"]);
-/** A contact may squash in one frame, so a scale is held to its rest but not to a smooth path. */
-const MAY_SNAP = new Set(["scale", "scaleX", "scaleY", "scaleZ"]);
+/** The table row a dotted path ends on: a custom number under `custom`, else the row its last name has. */
+function fieldAt(path: string): ValueField | undefined {
+  const names = path.split(".");
+  if (names.at(-2) === "custom") return CUSTOM_FIELD;
+  return valueField(names.at(-1) ?? "");
+}
 
-/** Where a field rests, when it is one a pose rests on. */
+/** Where a field rests, when its row gives it a rest. */
 function restOf(field: string): number | undefined {
-  const name = field.slice(field.lastIndexOf(".") + 1);
-  if (AT_ZERO.has(name)) return 0;
-  if (AT_ONE.has(name)) return 1;
-  return undefined;
+  return fieldAt(field)?.rest;
 }
 
 function isSmoothField(field: string): boolean {
-  const name = field.slice(field.lastIndexOf(".") + 1);
-  return (restOf(field) !== undefined || SHOWN.has(name)) && !MAY_SNAP.has(name);
+  return fieldAt(field)?.smooth === true;
 }
 
 /** Every number in a move's answer, by its dotted path; an answer that is a list numbers its rows. */
@@ -160,7 +166,7 @@ function checkRun(move: CheckedMove, options: object, smooth: boolean): readonly
         from: values[jumpAt - 1] ?? 0,
         to: values[jumpAt] ?? 0,
       });
-    const shown = SHOWN.has(field.slice(field.lastIndexOf(".") + 1));
+    const shown = fieldAt(field)?.shows === true;
     if (move.role === "reveal" && shown && (values[STEPS] ?? 0) < greatest - REST_SLACK)
       findings.push({ kind: "not-shown", options: label, field });
   }

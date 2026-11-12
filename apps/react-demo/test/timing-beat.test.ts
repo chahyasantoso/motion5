@@ -17,7 +17,7 @@ describe("timing beat", () => {
     const first = at(0);
     expect(first.letters.map((letter) => letter.y)).toEqual([-700, -700, -700, -700, -700, -700]);
     expect(first.dot).toMatchObject({ x: -1300, y: 0 });
-    expect(first.cover).toMatchObject({ radius: 0, x: 0, y: 0 });
+    expect(first.cover).toMatchObject({ clipRadius: 0, clipX: 0, clipY: 0 });
   });
 
   it("drops the letters in order", () => {
@@ -35,7 +35,7 @@ describe("timing beat", () => {
   });
 
   it("covers the stage by the end", () => {
-    expect(at(3000).cover.radius).toBe(1500);
+    expect(at(3000).cover.clipRadius).toBe(1500);
   });
 
   it("keeps all motion out of the component: no arithmetic, easing or timing there", () => {

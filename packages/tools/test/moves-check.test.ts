@@ -19,8 +19,6 @@ describe("the move gate", () => {
       "overshoot",
       "pop",
       "pulse",
-      "repeated",
-      "reversed",
       "rise",
       "rope",
       "shake",
@@ -148,6 +146,42 @@ describe("the move gate", () => {
         progress > 0.4 && progress < 0.6 ? { x: Number.NaN } : {},
     });
     expect(checkMove(brokenMidway).map((finding) => finding.kind)).toEqual(["not-finite"]);
+  });
+
+  it("holds a custom number to rest and to a smooth path, as the table's row for one says", () => {
+    const base = {
+      role: "enter" as const,
+      description: "Arrives with a tint.",
+      options: {},
+      example: { options: {} },
+      moments: () => ({}),
+    };
+    const tinted = defineMove({
+      ...base,
+      id: "tinted",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d => ({
+        custom: { tint: 1 - progress },
+      }),
+    });
+    expect(checkMove(tinted)).toEqual([]);
+    const stained = defineMove({
+      ...base,
+      id: "stained",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d => ({
+        custom: { tint: 2 - progress },
+      }),
+    });
+    expect(checkMove(stained)).toEqual([
+      { kind: "not-at-rest", options: "{}", field: "custom.tint", progress: 1, value: 1, rest: 0 },
+    ]);
+    const flicked = defineMove({
+      ...base,
+      id: "flicked",
+      run: (_: object, { progress }: { readonly progress: number }): Pose2d => ({
+        custom: { tint: progress < 0.5 ? 1 : 0 },
+      }),
+    });
+    expect(checkMove(flicked).map((finding) => finding.kind)).toEqual(["jump"]);
   });
 
   it("holds a reveal to end fully shown", () => {

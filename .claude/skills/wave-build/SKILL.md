@@ -30,7 +30,8 @@ A wave may hold only slices you keep. It still gets its own session, one full ch
 1. List the slices and what each depends on. A wave holds only slices that do not need each other's result.
 2. Give each file to one builder. If two slices must touch one document, name each one's section in its brief.
 3. Look for anything a slice will change that another slice's tests will state: a count, a list of names, a
-   snapshot. Have the test read it from the source instead.
+   snapshot, or a name the slice renames or removes. Have the test read it from the source, or tell the other
+   worker which names not to use.
 4. If a file the wave edits has mixed line endings or pending formatting, normalise it in its own commit first, and
    confirm with `git ls-files --eol` that git reads it as `i/lf`.
 5. Commit and push the branch the builders start from, and note its hash.
