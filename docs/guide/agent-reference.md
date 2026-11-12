@@ -320,6 +320,14 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`EventDriverOptions`** `type EventDriverOptions`: Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`.
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
+- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B>, options?: StageOptions): MountedStage (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
+- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test.
+- **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
+- **`StageModule`** `type StageModule`: What a stage module exports, as the DOM stage reads it.
+- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.
+- **`StageStyle`** `type StageStyle`: The style properties the stage writes beside a value's; a page element's style has them all.
+- **`StageValues`** `type StageValues`: A scene's answer per member name: one value, or one per item of a `many`.
 <!-- generated:reference:end -->
 
 ## @gerak/react
