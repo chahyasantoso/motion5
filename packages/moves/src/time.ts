@@ -86,14 +86,18 @@ export interface Span {
   at(share: number): number;
 }
 
+// A timed time is placed by its progress, so an ease or a reversal applied to it carries into a span taken inside.
 /** The stretch from `fromMs` to `toMs`, placed by the ms of the clock its `of` is given. */
 export function span(fromMs: number, toMs: number): Span {
-  const length = Math.max(0, toMs - fromMs);
+  if (!Number.isFinite(fromMs) || !Number.isFinite(toMs) || toMs < fromMs)
+    throw new RangeError(`span: ${fromMs} to ${toMs} ms is not a stretch of time.`);
+  const length = toMs - fromMs;
   return Object.freeze({
     from: fromMs,
     to: toMs,
     of(time: Time, curve?: Ease): Time {
-      const now = elapsedOf(time.clock);
+      const now =
+        time.clock.kind === "timed" ? time.progress * time.clock.length : elapsedOf(time.clock);
       if (now === undefined)
         throw new RangeError(
           "span: this time has no clock in ms; give its driver a length, such as scrollDriver's `length`.",

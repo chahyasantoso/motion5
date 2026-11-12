@@ -136,3 +136,10 @@ touched 28 files; Sonnet at medium effort, 87 k tokens and 3.2 min, for four mod
   subtle, but it changed every caller; the stronger worker found callers and documents the brief had missed.
 - **A usage limit stopped the reviewer; a message resumed it, a third time.** It reread from the start, since its
   notes had not been saved. Ask a reviewer to keep notes in a scratch file as it goes.
+
+- **A check piped into `tail` reports `tail`'s exit, not the check's.** `npm run check | tail && git commit` committed and pushed a typecheck failure. Rule: save the check's output to a file and test its exit code before any commit.
+
+## 2026-11-12, values wave 3 (gerak)
+
+- **Look at the tool's output, not only its tests.** The frame picker passed its tests and gave every frame of the timing page to six letters; one look at the sheet showed it. A tool that summarises motion is checked by reading what it produces on a real page.
+- **A reviewer finds what a builder's own tests share with its code.** The span read elapsed and its tests built times whose elapsed matched progress, so an eased time slipped through both.

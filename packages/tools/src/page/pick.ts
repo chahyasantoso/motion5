@@ -1,6 +1,6 @@
 import type { Frame } from "./check";
 
-export type PickReason = "start" | "end" | "fast" | "turn";
+export type PickReason = "start" | "end" | "fast" | "turn" | "even";
 
 export interface PickedFrame {
   readonly at: number;
@@ -9,6 +9,8 @@ export interface PickedFrame {
 
 /** The most frames a review photographs unless told otherwise. */
 export const DEFAULT_PICKS = 10;
+/** A sheet with fewer frames than this is filled with frames at even times. */
+const EVEN_FLOOR = 6;
 /** Two picked frames are at least this far apart, in ms. */
 const MIN_GAP = 48;
 /** A centre or size that moves less than this between two samples is at rest, in px. */
@@ -116,6 +118,13 @@ export function pickFrames(frames: readonly Frame[], cap = DEFAULT_PICKS): reado
       picked.push({ at: chosen.at, reason: chosen.reason });
       taken = true;
     }
+  }
+  // Where little moves as a box, such as a canvas, frames at even times keep the sheet worth reading.
+  const floor = Math.min(Math.max(2, cap), EVEN_FLOOR);
+  for (let slot = 1; picked.length < floor && slot < EVEN_FLOOR; slot += 1) {
+    const at = Math.round(first.at + ((last.at - first.at) * slot) / (EVEN_FLOOR - 1));
+    if (picked.every((other) => Math.abs(other.at - at) >= MIN_GAP))
+      picked.push({ at, reason: "even" });
   }
   return picked.sort((a, b) => a.at - b.at);
 }

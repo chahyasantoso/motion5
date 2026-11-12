@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -6,6 +5,9 @@ import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 
 const TIMING_SCENE = join(DEFAULT_ROOT, "src/timing-scene.ts");
 const PILE_SCENE = join(DEFAULT_ROOT, "src/pile-scene.ts");
+// Read once at load, so the last test can tell whether the suite changed them.
+const TIMING_BEFORE = readFileSync(TIMING_SCENE, "utf8");
+const PILE_BEFORE = readFileSync(PILE_SCENE, "utf8");
 // A missing element fails its own step by name, well inside the test's time.
 const STEP_TIMEOUT_MS = 5000;
 
@@ -301,11 +303,8 @@ describe("live editor in the browser", () => {
     }
   }, 30000);
 
-  it("leaves the tracked scenes untouched", () => {
-    const changed = execFileSync("git", ["status", "--porcelain", "--", TIMING_SCENE, PILE_SCENE], {
-      cwd: DEFAULT_ROOT,
-      encoding: "utf8",
-    });
-    expect(changed).toBe("");
+  it("leaves the tracked scenes as they were before the suite", () => {
+    expect(readFileSync(TIMING_SCENE, "utf8")).toBe(TIMING_BEFORE);
+    expect(readFileSync(PILE_SCENE, "utf8")).toBe(PILE_BEFORE);
   });
 });

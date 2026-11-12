@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, sequence, span, type Time } from "@gerak/moves";
+import { atProgress, liveAt, sequence, span, type Time } from "@gerak/moves";
 
 const at = (elapsed: number): Time => ({
   progress: elapsed / 3000,
@@ -66,5 +66,25 @@ describe("sequence", () => {
 
   it("refuses a time with no clock in ms", () => {
     expect(() => sequence(atProgress(0.5), phases)).toThrow(/length/);
+  });
+
+  it("answers the phase that started last, whatever the list order, and follows a live clock", () => {
+    const phases = [
+      [span(500, 600), () => "late"],
+      [span(0, 100), () => "early"],
+    ] as const;
+    expect(sequence(liveAt(1000), phases)).toBe("late");
+    expect(sequence(liveAt(200), phases)).toBe("early");
+  });
+
+  it("carries an ease on a timed time into a span taken inside it", () => {
+    const outer = span(0, 3000);
+    const eased = outer.of(
+      { progress: 0.5, clock: { kind: "timed", elapsed: 1500, length: 3000 } },
+      (x) => x * x,
+    );
+    expect(span(0, 3000).of(eased).progress).toBeCloseTo(0.25);
+    expect(() => span(300, 100)).toThrow(RangeError);
+    expect(() => span(Number.NaN, 5)).toThrow(RangeError);
   });
 });

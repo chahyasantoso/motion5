@@ -21,11 +21,23 @@ describe("pickFrames", () => {
     ).toBeGreaterThanOrEqual(3);
   });
 
-  it("takes only the two ends where nothing moves", () => {
-    expect(pickFrames(samples(() => 40, 3000))).toEqual([
-      { at: 0, reason: "start" },
-      { at: 2992, reason: "end" },
+  it("fills a sheet where nothing moves with frames at even times", () => {
+    const picked = pickFrames(samples(() => 40, 3000));
+    expect(picked.map(({ reason }) => reason)).toEqual([
+      "start",
+      "even",
+      "even",
+      "even",
+      "even",
+      "end",
     ]);
+    expect(picked.map(({ at }) => at)).toEqual([0, 598, 1197, 1795, 2394, 2992]);
+    expect(
+      pickFrames(
+        samples(() => 40, 3000),
+        3,
+      ),
+    ).toHaveLength(3);
   });
 
   it("marks each reversal of a swing as a turn", () => {
