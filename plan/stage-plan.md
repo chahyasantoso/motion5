@@ -58,7 +58,7 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({
   | `many(n)` or `many(list, make)` | a list of values, one per item | one thing per item |
   | `group({ ...members })` | one value for the group, and each member's | a parent holding its members |
 
-  `letters(text)` and `words(text)` are helpers in `@gerak/stage` that build a group of text actors. No renderer
+  `letters(text)` and `words(text)` are helpers in `@gerak/stage` that make `many` of text actors. No renderer
   knows them.
 - **A group's value applies to its members.** A member's value is relative to its group, as an element's transform
   is relative to its parent's; a 3D renderer nests in the same way.

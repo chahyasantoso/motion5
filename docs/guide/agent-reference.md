@@ -413,6 +413,43 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 - **`ChainShape3d`** `type ChainShape3d`: Strategy answering one 3D chain; derived at solve time, never authored. `two-bone` carries pair + goal, `tree` members, `constrained` members with a limiting joint.
 <!-- generated:reference:end -->
 
+## @gerak/stage
+
+Who is on stage and when. A cast member is a proxy: `actor`, `many` and `group` say only what the scene's motion
+needs (a name, how many parts, the text, when it is shown, whether it is watched); how it looks is the renderer's
+skin. `story` names the beats and owns the piece's length; `restOf` reads where a member rests once laid out.
+
+```ts
+export const beats = story(4000, { arrive: [0, 1600], hold: [1600, 4000] });
+export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor() };
+```
+
+<!-- generated:reference:start -->
+- **`actor`** `(options?: Behaviour & { readonly text?: string; }): Actor`: One thing on stage, saying `text` when it has one.
+- **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
+- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order.
+- **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
+- **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
+- **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
+- **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
+- **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
+- **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
+- **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
+- **`Many`** `type Many`: A list of things; the scene answers one value per item, in order.
+- **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
+- **`Presence`** `type Presence`: When a member is on stage, by the names of the story's beats; a member without them takes its group's.
+- **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
+- **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
+- **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
+- **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
+- **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
+- **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
+- **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
+- **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
+<!-- generated:reference:end -->
+
 ## @gerak/physics
 
 The pure engine and `simulate`, which makes a seekable simulation from a world and a build function.

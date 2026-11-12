@@ -25,6 +25,7 @@
       "@gerak/tools/scene": ["packages/tools/src/scene/index.ts"],
       "@gerak/tools/vite": ["packages/tools/src/vite/index.ts"],
       "@gerak/rig": ["packages/rig/src/index.ts"],
+      "@gerak/stage": ["packages/stage/src/index.ts"],
       "@gerak/react": ["packages/react/src/index.ts"]
     },
     "jsx": "react-jsx"
