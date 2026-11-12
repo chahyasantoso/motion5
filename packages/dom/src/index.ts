@@ -28,6 +28,7 @@ export {
 } from "./events";
 export {
   mountStage,
+  stageModuleOf,
   type MountedStage,
   type StageElement,
   type StageEvent,

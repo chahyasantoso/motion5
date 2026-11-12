@@ -1,6 +1,6 @@
 # Composition plan, part one: what the measure asked for, and events on a clock
 
-**Status:** Draft for the owner, 2026-11-12; critiqued once.
+**Status:** Approved by the owner, 2026-11-12.
 **Base:** `main` at `3e484893`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-174-a-cast-of-proxies-and-a-story.md`,
 `plan/stage-plan.md` section 5a, `.claude/skills/wave-build/SKILL.md`, then this plan.

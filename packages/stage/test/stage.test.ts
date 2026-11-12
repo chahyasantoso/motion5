@@ -8,6 +8,7 @@ import {
   group,
   letters,
   many,
+  readStageModule,
   restOf,
   story,
   words,
@@ -107,5 +108,36 @@ describe("where things rest", () => {
       width: 6,
       height: 7,
     });
+  });
+});
+
+describe("reading a stage module", () => {
+  const good = {
+    beats: story(1000, { go: [0, 1000] }),
+    cast: { dot: actor() },
+    skins: { dom: { css: "" } },
+    scene: () => ({ dot: { x: 1 } }),
+  };
+
+  it("answers the module, its scene checked to answer an object", () => {
+    const read = readStageModule(good);
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.beats.order).toEqual(["go"]);
+    expect(read.scene(at(0, 1000), [], NO_REST)).toEqual({ dot: { x: 1 } });
+  });
+
+  it("answers why a value is not one, and never throws", () => {
+    const why = (value: unknown) => {
+      const read = readStageModule(value);
+      return "reason" in read ? read.reason : "";
+    };
+    expect(why(undefined)).toMatch(/exports nothing/);
+    expect(why({ ...good, scene: 1 })).toMatch(/scene/);
+    expect(why({ ...good, beats: { durationMs: 1 } })).toMatch(/story/);
+    expect(why({ ...good, cast: { dot: { kind: "shape" } } })).toMatch(/cast/);
+    expect(why({ ...good, cast: { "a.b": actor() } })).toMatch(/dot/);
+    expect(why({ ...good, skins: { dom: { css: 1 } } })).toMatch(/skins/);
+    expect(why({ ...good, rest: { dot: { x: 1 } } })).toMatch(/rest/);
+    expect(why({ ...good, frame: { width: 0, height: 1 } })).toMatch(/frame/);
   });
 });

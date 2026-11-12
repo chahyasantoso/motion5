@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import type { ClockDriver } from "@gerak/dom";
 import type { Driver, Scene } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
-import { loadStageModule, isStageModule, type LoadedStage } from "../stage-module";
+import { loadStageModule, stageOf, type LoadedStage } from "../stage-module";
 import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
@@ -118,6 +118,7 @@ export interface StageBundle {
   readonly kind: "stage";
   readonly name: string;
   readonly module: LoadedStage;
+  readonly exports: Readonly<Record<string, unknown>>;
 }
 
 export type SceneBundle = ComponentBundle | StageBundle;
@@ -134,9 +135,9 @@ async function hasStageFile(name: string): Promise<boolean> {
 /** Loads a named scene: the stage module `src/<name>.ts` when there is one, else its component and styles. */
 export async function loadSceneBundle(name: string): Promise<SceneBundle> {
   if (await hasStageFile(name)) {
-    const module = await loadStageModule(name);
-    if (typeof module === "string") throw new Error(module);
-    return { kind: "stage", name, module };
+    const piece = await loadStageModule(name);
+    if (typeof piece === "string") throw new Error(piece);
+    return { kind: "stage", name, ...piece };
   }
   await applySceneStyles(name);
   const file = COMPONENT_FILES[name] ?? name;
@@ -254,7 +255,8 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       if (!("detail" in event)) return;
       const detail = Reflect.get(event, "detail");
       if (!isRecord(detail)) return;
-      const nextStage = isStageModule(detail) ? detail : undefined;
+      const read = Reflect.get(detail, "beats") === undefined ? undefined : stageOf(detail);
+      const nextStage = typeof read === "string" ? undefined : read;
       const nextComponent = nextStage === undefined ? extractComponent(detail) : undefined;
       if (nextStage === undefined && nextComponent === undefined) return;
       event.preventDefault();
@@ -264,7 +266,8 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       const nextScene = extractMotionScene(detail);
       if (stamp >= errorStamp.current) setError(undefined);
       setBundle((prev) => {
-        if (nextStage !== undefined) return { kind: "stage", name: prev.name, module: nextStage };
+        if (nextStage !== undefined)
+          return { kind: "stage", name: prev.name, module: nextStage, exports: detail };
         if (nextComponent === undefined) return prev;
         return {
           kind: "component",
@@ -290,7 +293,7 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
   }, []);
 
   const durationMs = clockLengthMs(clock);
-  const marked = bundle.kind === "stage" ? bundle.module : bundle.sceneModule;
+  const marked = bundle.kind === "stage" ? bundle.exports : bundle.sceneModule;
   const marks = useMemo(
     () => (marked ? extractMarks(marked, durationMs) : []),
     [marked, durationMs],

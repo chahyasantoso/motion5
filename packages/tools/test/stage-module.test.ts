@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Time } from "@gerak/moves";
-import { actor, story } from "@gerak/stage";
+import { actor, readStageModule, story } from "@gerak/stage";
 import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
@@ -68,10 +68,20 @@ describe("a stage module in the scene tools", () => {
       scene: () => ({}),
       beats: story(1000, { a: [0, 600], b: [300, 400] }),
       cast: {},
+      skins: {},
     });
     expect(beatAt(read.beats ?? [], 100)).toBe("a");
     expect(beatAt(read.beats ?? [], 350)).toBe("b");
     expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
+  });
+});
+
+describe("one reader of a stage module", () => {
+  it("refuses a bad stage module with the reason @gerak/stage gives", () => {
+    const bad = { ...clean, skins: { dom: { css: 1 } } };
+    const own = readStageModule(bad);
+    const tools = readSceneModule(bad);
+    expect("reason" in own && "reason" in tools && tools.reason === own.reason).toBe(true);
   });
 });
 
@@ -88,11 +98,12 @@ describe("motion:review on a stage module", () => {
 
   it("lets a watched member move only on events, and reports a still member that moves", () => {
     const beats = story(500, { all: [0, 500] });
-    expect(findings({ beats, cast: { play: actor({ watch: true }) }, scene: () => ({}) })).toEqual(
-      [],
-    );
+    expect(
+      findings({ beats, cast: { play: actor({ watch: true }) }, skins: {}, scene: () => ({}) }),
+    ).toEqual([]);
     const moved = {
       beats,
+      skins: {},
       cast: { a: actor({ still: true }) },
       scene: (time: Time) => ({ a: { x: time.progress } }),
     };

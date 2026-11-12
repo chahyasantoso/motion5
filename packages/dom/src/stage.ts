@@ -1,4 +1,11 @@
-import { elapsedOf, type Events, type Pose2d, type Span, type Time } from "@gerak/moves";
+import {
+  POSE_2D_FIELDS,
+  elapsedOf,
+  type Events,
+  type Pose2d,
+  type Span,
+  type Time,
+} from "@gerak/moves";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   castNames,
@@ -65,6 +72,43 @@ export interface StageElement<E> {
 
 /** A scene's answer per member name: one value, or one per item of a `many`. */
 export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
+
+function isPose(value: unknown): value is Pose2d {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const custom: unknown = Reflect.get(value, "custom");
+  return (
+    POSE_2D_FIELDS.every((field) => {
+      const given: unknown = Reflect.get(value, field);
+      return given === undefined || typeof given === (field === "anchor" ? "string" : "number");
+    }) &&
+    (custom === undefined ||
+      (typeof custom === "object" &&
+        custom !== null &&
+        Object.values(custom).every((entry) => typeof entry === "number")))
+  );
+}
+
+function isStageValues(values: object): values is StageValues {
+  return Object.values(values).every(
+    (value) =>
+      value === undefined || isPose(value) || (Array.isArray(value) && value.every(isPose)),
+  );
+}
+
+/** A stage module whose scene answers any object, checked on every frame to be stage values. */
+export function stageModuleOf<B extends string>(
+  module: StageModule<B>,
+): StageModule<B, StageValues> {
+  return {
+    ...module,
+    scene: (time, events, rest) => {
+      const values = module.scene(time, events, rest);
+      if (!isStageValues(values))
+        throw new TypeError("The scene answered a value that is not a pose or a list of poses.");
+      return values;
+    },
+  };
+}
 
 /** Settings of `mountStage`: the frames and the ms clock its own drivers run on. */
 export interface StageOptions {
