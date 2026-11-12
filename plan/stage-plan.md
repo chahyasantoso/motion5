@@ -1,6 +1,6 @@
 # Stage plan: the cast and the story
 
-**Status:** Approved by the owner, 2026-11-12.
+**Status:** Built, 2026-11-12; approved by the owner the same day.
 **Base:** `main` at `924c6451`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md` (section 2a, the five layers),
 `plan/roadmap.md` stage 3, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -151,6 +151,28 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({
 | 4 | Sonnet, medium | P5 cold run and review | one start for both |
 
 One pull request, after wave 4.
+
+## 5a. Results
+
+The standing measure, the hand-made showreel rebuilt from the original only:
+
+| Rebuild | Worker | Tokens | Files | Component lines | Moves written, reused | Hidden by `fade` |
+| --- | --- | --- | --- | --- | --- | --- |
+| `showreel` | Opus, medium | 198 k | 4 | not counted | 7, 0 | not counted |
+| `showreel-b` | Opus, medium | 217 k | 4 | 250 | 5, 7 | 16 |
+| `showreel-c` | Opus, medium | 190 k | 1 | 0 | 3, 19 | 0 |
+
+`showreel-c` passes: one file, no component, 27 members with presence and none hidden by `fade`, every measured
+position from `restOf`. Its frames match the original's at seven moments by a mean difference of 0.4 to 7 of 255;
+the largest is the pendulums, a spring where the original baked a simulation.
+
+The cold run (Sonnet, medium, 134 k) made `nowplaying` from the guide alone, and its review gave ten findings; eight
+are fixed. Left: a piece with a `watch` member has no timeline on the live page, since it plays on events; rest boxes
+are measured at mount and on resize only, so a font that arrives late leaves them stale.
+
+What cost the measure most, for the next plan: the stage builds plain boxes, so `trace`, `streak` and `spread` draw
+nothing on a member; presence is one span per member, so six dust landings took six members; a move outside its span
+shows its start pose; `trail` throws on a slow spring until `rest` is found by trial.
 
 ## 6. Risks
 
