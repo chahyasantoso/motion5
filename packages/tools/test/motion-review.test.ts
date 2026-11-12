@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import { parseReviewArgs, printReview, type ReviewResult } from "../src/page/review";
 
 describe("motion:review arguments", () => {
-  it("need selectors and an end, and spread six frames over the run by default", () => {
+  it("need selectors and an end, and leave the frames to be picked unless --at is given", () => {
     expect(parseReviewArgs(["timing.html", "--to", "3000"]).kind).toBe("usage");
     expect(parseReviewArgs(["timing.html", "--watch", ".a", "--to", "3000"])).toMatchObject({
       kind: "ok",
       watch: [".a"],
       to: 3000,
-      at: [0, 608, 1200, 1808, 2400, 3000],
     });
+    expect(parseReviewArgs(["timing.html", "--watch", ".a", "--to", "3000"])).not.toHaveProperty(
+      "at",
+    );
     expect(
       parseReviewArgs(["timing.html", "--watch", ".a", "--to", "3000", "--at", "100,200"]),
     ).toMatchObject({
@@ -28,6 +30,7 @@ describe("motion:review result", () => {
   const clean = {
     kind: "reviewed",
     findings: [],
+    frames: ["0 start", "2992 end"],
     sheet: "/tmp/sheet.png",
     pageErrors: [],
   } as const;

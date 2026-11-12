@@ -1,13 +1,15 @@
 import { parseNumbers } from "./args";
-import { DEFAULT_LIMITS, checkMotion, describeFinding } from "./check";
+import { DEFAULT_LIMITS, describeFinding, sampleMotion } from "./check";
 import { captureFrames } from "./frames";
+import { pickFrames, type PickReason } from "./pick";
 import { fromCaller, readPageArgs, type PageTarget } from "./page";
 import { describeMotion, readMotion } from "./read";
 
 export interface ReviewRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
-  readonly at: readonly number[];
+  /** Frame times; absent, they are picked from the motion. */
+  readonly at?: readonly number[];
   readonly out?: string;
   /** Also read every move back with its ease. */
   readonly full: boolean;
@@ -21,7 +23,9 @@ interface ReviewBase {
   readonly kind: "reviewed";
   /** What `motion:check` found, one line each; none means clean. */
   readonly findings: readonly string[];
-  /** The labelled contact sheet of frames at `at`. */
+  /** The frames photographed, each as its time and, when picked, why. */
+  readonly frames: readonly string[];
+  /** The labelled contact sheet of those frames. */
   readonly sheet: string;
   readonly pageErrors: readonly string[];
 }
@@ -60,16 +64,13 @@ export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   const given = read.flags.has("--at") ? parseNumbers(read.flags.get("--at")) : undefined;
   if (read.flags.has("--at") && given === undefined)
     return usage("--at needs ascending times in ms.");
-  const at =
-    given ??
-    [0, 1, 2, 3, 4, 5].map((index) => Math.min(end, Math.round((end * index) / 5 / 16) * 16));
   const out = read.flags.get("--out");
   return {
     kind: "ok",
     ...read.target,
     watch,
     to: end,
-    at,
+    ...(given === undefined ? {} : { at: given }),
     full: argv.includes("--full"),
     ...(out === undefined ? {} : { out: fromCaller(out) }),
   };
@@ -78,14 +79,29 @@ export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
 /** Checks and photographs the page in one call; reads the moves back too only when `full`. */
 export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> {
   const { watch, to, at, out, full, ...target } = request;
-  const [checked, read, frames] = await Promise.all([
-    checkMotion({ ...target, watch, to, limits: DEFAULT_LIMITS }),
+  const sampled = sampleMotion({ ...target, watch, to, limits: DEFAULT_LIMITS });
+  const photographed = sampled.then(async ({ samples }) => {
+    const picks: readonly { readonly at: number; readonly reason?: PickReason }[] =
+      at === undefined ? pickFrames(samples) : at.map((time) => ({ at: time }));
+    const captured = await captureFrames({
+      ...target,
+      at: picks.map((pick) => pick.at),
+      labels: picks.map((pick) => pick.reason ?? ""),
+      ...(out === undefined ? {} : { out }),
+    });
+    return { captured, picks };
+  });
+  const [{ result: checked }, read, { captured: frames, picks }] = await Promise.all([
+    sampled,
     full ? readMotion({ ...target, select: watch, to }) : undefined,
-    captureFrames({ ...target, at, ...(out === undefined ? {} : { out }) }),
+    photographed,
   ]);
   const base = {
     kind: "reviewed" as const,
     findings: checked.findings.map(describeFinding),
+    frames: picks.map((pick) =>
+      pick.reason === undefined ? `${pick.at}` : `${pick.at} ${pick.reason}`,
+    ),
     sheet: frames.sheet,
     pageErrors: [
       ...new Set([...checked.pageErrors, ...(read?.pageErrors ?? []), ...frames.pageErrors]),
@@ -109,6 +125,7 @@ export function printReview(result: ReviewResult): string {
     result.findings.length === 0 ? "findings: none" : `findings: ${result.findings.length}`,
     ...result.findings.map((finding) => `  ${finding}`),
     ...result.pageErrors.map((error) => `page error: ${error}`),
+    `frames: ${result.frames.join(", ")}`,
     `sheet: ${result.sheet}`,
   ];
   if (result.full) lines.push("moves:", ...result.motion.map((line) => `  ${line}`));
