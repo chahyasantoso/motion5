@@ -8,7 +8,7 @@ import {
   type CastName,
   type Frame,
   type Rest,
-  type Story,
+  type StageModule,
 } from "@gerak/stage";
 import { clockDriver, type FrameSource } from "./drivers";
 import { eventDriver, type PointerLike } from "./events";
@@ -58,15 +58,6 @@ export interface StageElement<E> {
 export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
 
 /** What a stage module exports, as the DOM stage reads it. */
-export interface StageModule<B extends string> {
-  readonly beats: Story<B>;
-  readonly cast: Cast;
-  readonly scene: (time: Time, events: Events, rest: Rest) => StageValues;
-  readonly skins: { readonly dom?: { readonly css?: string } };
-  readonly frame?: Frame;
-  /** Makes the driver the stage plays on, in place of the one it chooses. */
-  readonly clock?: () => Driver & { dispose?(): void };
-}
 
 /** Settings of `mountStage`: the frames and the ms clock its own drivers run on. */
 export interface StageOptions {
@@ -144,17 +135,17 @@ function isElement(value: unknown): value is Element {
  * each rest box and binds the scene's values; `R` or a click on the background replays it. */
 export function mountStage<B extends string>(
   container: HTMLElement,
-  module: StageModule<B>,
+  module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage;
 export function mountStage<B extends string, E extends StageElement<E>>(
   container: E,
-  module: StageModule<B>,
+  module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage;
 export function mountStage<B extends string, E extends StageElement<E>>(
   container: E,
-  module: StageModule<B>,
+  module: StageModule<B, StageValues>,
   options: StageOptions = {},
 ): MountedStage {
   const { beats, cast } = module;
@@ -313,10 +304,6 @@ export function mountStage<B extends string, E extends StageElement<E>>(
 
   const watched = [...placed.values()].filter(({ info }) => info.watch);
   const drive = (): { readonly driver: Driver; stop(): void } => {
-    if (module.clock !== undefined) {
-      const driver = module.clock();
-      return { driver, stop: () => driver.dispose?.() };
-    }
     const timing = {
       ...(options.frames === undefined ? {} : { frames: options.frames }),
       ...(options.clock === undefined ? {} : { clock: options.clock }),

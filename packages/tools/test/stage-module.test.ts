@@ -44,11 +44,13 @@ describe("a stage module in the scene tools", () => {
     expect(sampleScene(boxed, { kind: "time", ms: [0] })[0]?.targets["dot"]).toEqual({ x: 7 });
   });
 
-  it("refuses a duration that differs from the story's, and a cast that names a missing beat", () => {
+  it("refuses a duration unlike the story's, a cast naming a missing beat, and a bad rest", () => {
     const apart = readSceneModule({ ...clean, durationMs: 1000 });
     expect("reason" in apart && apart.reason).toMatch(/1000.*2000|2000.*1000/);
     const lost = readSceneModule({ ...clean, cast: { dot: actor({ enters: "nowhere" }) } });
     expect("reason" in lost && lost.reason).toMatch(/nowhere/);
+    const badRest = readSceneModule({ ...clean, rest: { dot: { x: 1 } } });
+    expect("reason" in badRest && badRest.reason).toMatch(/rest/);
     const agree = readSceneModule({ ...clean, durationMs: 2000 });
     expect("reason" in agree).toBe(false);
   });

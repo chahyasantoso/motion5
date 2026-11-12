@@ -31,7 +31,6 @@ export {
   type MountedStage,
   type StageElement,
   type StageEvent,
-  type StageModule,
   type StageOptions,
   type StageStyle,
   type StageValues,

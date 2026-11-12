@@ -180,6 +180,8 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
     }
   }
   const restValue: unknown = Reflect.get(Object(value), "rest");
+  if (restValue !== undefined && !isRest(restValue))
+    return { reason: "The module's `rest` must hold { x, y, width, height } boxes by name." };
   const rest = isRest(restValue) ? restValue : NO_REST;
   return {
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),

@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Events, Pose2d, Time } from "@gerak/moves";
-import { actor, group, letters, story, type Rest } from "@gerak/stage";
+import { actor, group, letters, story, type Rest, type StageModule } from "@gerak/stage";
 import {
   mountStage,
   type FrameSource,
   type StageElement,
   type StageEvent,
-  type StageModule,
   type StageStyle,
+  type StageValues,
 } from "@gerak/dom";
 
 class FakeStyle implements StageStyle {
@@ -106,7 +106,7 @@ interface Seen {
   rest?: Rest;
 }
 
-function stageModule(seen: Seen): StageModule<"intro" | "word"> {
+function stageModule(seen: Seen): StageModule<"intro" | "word", StageValues> {
   return {
     beats,
     cast: {
