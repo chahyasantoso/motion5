@@ -111,9 +111,9 @@ export function pickFrames(frames: readonly Frame[], cap = DEFAULT_PICKS): reado
     for (const queue of queues.values()) {
       if (picked.length >= Math.max(2, cap)) break;
       const next = queue.findIndex(({ at }) => free(at));
-      if (next < 0) continue;
-      const [{ at, reason }] = queue.splice(next, 1);
-      picked.push({ at, reason });
+      const [chosen] = next < 0 ? [] : queue.splice(next, 1);
+      if (chosen === undefined) continue;
+      picked.push({ at: chosen.at, reason: chosen.reason });
       taken = true;
     }
   }
