@@ -18,6 +18,7 @@ function isLayoutBox(value: unknown): value is LayoutBox {
   );
 }
 
+/** A point in px: `x` right and `y` down from a corner. */
 export interface Offset {
   readonly x: number;
   readonly y: number;
@@ -34,7 +35,8 @@ function pageOffset(element: LayoutBox): Offset {
   return { x, y };
 }
 
-/** `from`'s layout centre measured from `to`'s top-left corner; layout ignores transforms, so this is the rest pose. */
+/** `from`'s layout centre as an `Offset` from `to`'s top-left corner; layout ignores transforms, so
+ * this is the rest pose. */
 export function centreIn(from: LayoutBox, to: LayoutBox): Offset {
   const origin = pageOffset(to);
   const target = pageOffset(from);

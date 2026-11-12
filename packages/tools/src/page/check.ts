@@ -3,6 +3,7 @@ import { blend, contrastNeeded, contrastRatio, parseColour, type Colour } from "
 import type { Box } from "./frames";
 import { readPageArgs, withPage, type PageTarget } from "./page";
 
+/** What `motion:check` tolerates: `overlap` frames, final `hold` in ms, and centre `jump` between two frames in px. */
 export interface Limits {
   /** Overlapping frames tolerated before an overlap is reported. */
   readonly overlap: number;
@@ -12,8 +13,11 @@ export interface Limits {
   readonly jump: number;
 }
 
+/** The limits when no flag sets them: 12 overlapping frames, a 500 ms final hold, a 150 px jump. */
 export const DEFAULT_LIMITS: Limits = Object.freeze({ overlap: 12, hold: 500, jump: 150 });
 
+/** One thing `motion:check` found, by `kind`: overlap, jump, short-hold, still-moving, low-contrast
+ * (under 3:1 large text, 4.5:1 other) or cut-off. */
 export type Finding =
   | {
       readonly kind: "overlap";
@@ -34,6 +38,7 @@ export type Finding =
     }
   | { readonly kind: "cut-off"; readonly element: string; readonly shown: number };
 
+/** One sample at `at` ms: each watched element's name and box, and the watched elements it may touch. */
 export interface Frame {
   readonly at: number;
   readonly elements: readonly {
@@ -55,16 +60,19 @@ export interface FinalText {
   readonly fontWeight: number;
 }
 
+/** What `motion:check` runs: the page, the `watch` selectors, the end `to` in ms and the `limits`; sampled every 16 ms. */
 export interface CheckRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
   readonly limits: Limits;
 }
 
+/** Parsed `motion:check` arguments, or the usage text. */
 export type CheckArgs =
   | ({ readonly kind: "ok" } & CheckRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** What `motion:check` found: the `frames` sampled, the `findings` (none means clean) and the page's errors. */
 export interface CheckResult {
   readonly kind: "checked";
   readonly frames: number;
@@ -205,6 +213,7 @@ export function describeFinding(finding: Finding): string {
   }
 }
 
+/** Reads `<page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`, or answers the usage text. */
 export function parseCheckArgs(argv: readonly string[]): CheckArgs {
   const usage = (message: string): CheckArgs => ({ kind: "usage", message: `${message} ${USAGE}` });
   const read = readPageArgs(argv, ["--watch", "--to", "--overlap", "--hold", "--jump"]);

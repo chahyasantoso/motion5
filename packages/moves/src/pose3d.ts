@@ -29,7 +29,8 @@ const NUMBERS = Object.freeze([
   "opacity",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
-/** A 3D pose, y up, turns in degrees on rig's Z-X-Y Euler; a page pose reaches it only through `lift2d`. */
+/** A 3D pose, every field optional: `x`, `y`, `z`, `rotation` (about z), `rotationX`, `rotationY`,
+ * scales, `opacity`. Y up, degrees on Z-X-Y; a `Pose2d` is refused. */
 export type Pose3d = {
   readonly [K in (typeof TURNS)[number] | (typeof NUMBERS)[number]]?: number;
 } & {
@@ -107,7 +108,8 @@ export function mixPoint3d(
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share), z: mix(from.z, to.z, share) };
 }
 
-/** A page pose on the 3D xy plane: px scaled to units, y and the turn flipped, the anchor dropped. */
+/** A 2D pose on the 3D xy plane: px scaled by `unitsPerPx`, y and the turn flipped, the anchor dropped;
+ * every 2D move reaches 3D through it. */
 export function lift2d(pose: Pose2d, options: { readonly unitsPerPx: number }): Pose3d {
   const unit = options.unitsPerPx;
   if (!(unit > 0)) throw new RangeError("lift2d: unitsPerPx must be above 0.");

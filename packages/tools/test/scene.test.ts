@@ -8,7 +8,7 @@ import {
   type SceneModule,
 } from "@gerak/tools/scene";
 import { renderTimeline } from "../src/timeline/timeline";
-import * as timing from "../../../apps/react-demo/src/timing-scene";
+import * as timing from "../../../apps/examples/src/timing-scene";
 
 function moduleOf(value: unknown): SceneModule {
   const read = readSceneModule(value);
@@ -64,7 +64,7 @@ describe("scene tools", () => {
 
 describe("scene tools and events", () => {
   it("read a module's own cues and refuse ones that are not events", async () => {
-    const catcher = moduleOf(await import("../../../apps/react-demo/src/catch-scene"));
+    const catcher = moduleOf(await import("../../../apps/examples/src/catch-scene"));
     expect(catcher.cues.map(({ name }) => name)).toEqual(["catch"]);
     expect(readSceneModule({ scene: () => ({}), durationMs: 10, cues: [{ at: 1 }] })).toEqual({
       reason: "The module's `cues` must be a list of { name, at, target } events.",
@@ -82,7 +82,7 @@ describe("scene tools and events", () => {
   });
 
   it("play the events given beside the scene's own", async () => {
-    const card = moduleOf(await import("../../../apps/react-demo/src/card-scene"));
+    const card = moduleOf(await import("../../../apps/examples/src/card-scene"));
     const lifted = sampleScene(
       card,
       { kind: "time", ms: [1400] },

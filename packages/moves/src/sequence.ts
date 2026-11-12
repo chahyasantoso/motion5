@@ -3,7 +3,8 @@ import { elapsedOf, type Span, type Time } from "./time";
 /** One phase of a sequence: the span it runs in, and what it answers given its own time there. */
 export type Phase<R> = readonly [Span, (time: Time) => R];
 
-/** The phase that started last, given its own time; a tie goes to the later in the list; before any, the first. */
+/** Answers the last phase that started, given its own time: an ended phase holds its end, before the
+ * first the first holds its start. An empty list throws. */
 export function sequence<R>(time: Time, phases: readonly Phase<R>[]): R {
   const first = phases[0];
   if (first === undefined) throw new RangeError("sequence: give it at least one phase.");

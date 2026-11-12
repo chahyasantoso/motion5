@@ -4,6 +4,7 @@ import { readPageArgs, withPage, type PageTarget } from "./page";
 
 /** What `motion:read` measures on each element: its own transform, decomposed, and its own opacity. */
 export const CHANNELS = ["x", "y", "rotation", "scaleX", "scaleY", "opacity"] as const;
+/** What `motion:read` measures: `x`, `y`, `rotation`, `scaleX`, `scaleY` or `opacity`. */
 export type Channel = (typeof CHANNELS)[number];
 
 /** The least change between two frames that counts as motion, per channel. */
@@ -19,6 +20,8 @@ const STILL: Readonly<Record<Channel, number>> = {
 /** A reversal splits a move when it goes back at least this share of the way it came. */
 const RETRACE = 0.3;
 
+/** One move on a channel: `from` and `to`, `start` and `end` ms, and its ease by name (or nearest name
+ * and fitted bezier), or a step. */
 export interface Segment {
   readonly channel: Channel;
   readonly from: number;
@@ -28,20 +31,24 @@ export interface Segment {
   readonly ease: Fit | { readonly name: "step" };
 }
 
+/** One element's moves; a move splits where it turns back. */
 export interface ElementMotion {
   readonly name: string;
   readonly segments: readonly Segment[];
 }
 
+/** What `motion:read` runs: the page, the `select` selectors and the end `to` in ms. */
 export interface ReadMotionRequest extends PageTarget {
   readonly select: readonly string[];
   readonly to: number;
 }
 
+/** Parsed `motion:read` arguments, or the usage text. */
 export type ReadMotionArgs =
   | ({ readonly kind: "ok" } & ReadMotionRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** Each element's moves, and the page's errors. */
 export interface ReadMotionResult {
   readonly kind: "read";
   readonly elements: readonly ElementMotion[];
@@ -51,6 +58,7 @@ export interface ReadMotionResult {
 const STEP_MS = 16;
 const USAGE = "usage: motion:read <page> --select selector,selector --to ms [--size WxH]";
 
+/** Reads `<page> --select sel,sel --to ms`, or answers the usage text. */
 export function parseReadArgs(argv: readonly string[]): ReadMotionArgs {
   const usage = (message: string): ReadMotionArgs => ({
     kind: "usage",

@@ -100,7 +100,8 @@ function byId<Id extends string, V>(
   return record;
 }
 
-/** Checks a bone list and orders it parent first; the ids it was given type every later answer. */
+/** A checked bone tree from `Bone2d` rows `{ id, parentId?, length, rotation?, minRotation?,
+ * maxRotation? }`, parent first; ids type every later answer. Throws on a bad list. */
 export function buildChain<const B extends readonly Bone2d[]>(bones: B): Chain2d<B[number]["id"]> {
   const parsed = parseBody(
     bones.map(({ id, ...cells }) => ({ id, cells })),
@@ -145,7 +146,8 @@ export type ChainPose = {
   readonly base?: WorldFrame;
 };
 
-/** Each bone's tip in world space; `rotations` replace rest rotations by bone id. */
+/** Each bone's tip as a world frame `{ x, y, rotation }`; `rotations` (degrees, by bone id) replace
+ * rest rotations, `base` is the root frame. */
 export function fk<Id extends string>(
   chain: Chain2d<Id>,
   options: ChainPose = {},
@@ -208,7 +210,8 @@ export function solveMember(
   };
 }
 
-/** The rotations that bring each goal's bone tip to its goal, within the bones' limits. */
+/** Rotations that bring each goal's bone tip to its `{ x, y }` goal within limits, with a
+ * `quality.kind` (`"too-far"` past reach); `flip` bends the elbow the other way. */
 export function ik<Id extends string>(
   chain: Chain2d<Id>,
   goals: Readonly<Partial<Record<Id, Goal2d>>>,

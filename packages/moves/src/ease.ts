@@ -29,7 +29,8 @@ const bounceOut: Ease = (u) => {
   if (u < 2.5 / 2.75) return n * (u - 2.25 / 2.75) ** 2 + 0.9375;
   return n * (u - 2.625 / 2.75) ** 2 + 0.984375;
 };
-/** Pulls back by `amount` before it goes, or overshoots by it as it ends; `amount: 0` is the cubic curve. */
+/** A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends
+ * (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic. */
 export function backEase(options: {
   readonly amount: number;
   readonly direction: EaseDirection;
@@ -51,7 +52,8 @@ export function backEase(options: {
 
 const SETTLED = 0.001;
 
-/** A spring from 0 settling on 1, stretched to fit the span: the knobs change its shape, never its length. */
+/** A spring from 0 settling on 1, fitted to the span; lower `damping` rings more. Feed it to values,
+ * not to a move's progress. */
 export function springEase(options: SpringOptions): Ease {
   const settle = springMemory(options, SETTLED) / 2;
   if (!Number.isFinite(settle)) throw new RangeError("springEase: damping must be above 0.");

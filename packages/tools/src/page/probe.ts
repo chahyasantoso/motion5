@@ -1,15 +1,18 @@
 import { readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 
+/** What `motion:probe` measures: the times `at` in ms and the elements `select` matches. */
 export interface ProbeRequest extends PageTarget {
   readonly at: readonly number[];
   readonly select: string;
 }
 
+/** Parsed `motion:probe` arguments, or the usage text. */
 export type ProbeArgs =
   | ({ readonly kind: "ok" } & ProbeRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** One match: its text, box, centre, transform, colour, background, opacity and z-index. */
 export interface ProbedElement {
   readonly text: string;
   readonly box: {
@@ -26,6 +29,7 @@ export interface ProbedElement {
   readonly zIndex: string;
 }
 
+/** Each time's matches, and the page's errors. */
 export interface ProbeResult {
   readonly kind: "probed";
   readonly samples: readonly { readonly at: number; readonly elements: readonly ProbedElement[] }[];
@@ -34,6 +38,7 @@ export interface ProbeResult {
 
 const USAGE = "usage: motion:probe <page> --at ms,ms --select selector [--size WxH]";
 
+/** Reads `<page> --at ms,ms --select sel`, or answers the usage text. */
 export function parseProbeArgs(argv: readonly string[]): ProbeArgs {
   const usage = (message: string): ProbeArgs => ({ kind: "usage", message: `${message} ${USAGE}` });
   const read = readPageArgs(argv, ["--at", "--select"]);

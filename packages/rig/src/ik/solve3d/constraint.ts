@@ -40,6 +40,7 @@ export type JointLimit3d =
       readonly twist: JointLimit;
     };
 
+/** The joint limit that constrains nothing; shared, not allocated per read. */
 export const FREE_JOINT3D: JointLimit3d = Object.freeze({ kind: "free" });
 
 /** Share of the swept circle's size a direction may lie off a hinge axis by and still name an

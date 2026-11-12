@@ -14,7 +14,8 @@ function unit(v: Vec3): Vec3 | undefined {
   return size > EPSILON ? [v[0] / size, v[1] / size, v[2] / size] : undefined;
 }
 
-/** The turn that points local -z (a camera's forward) from `from` at `to`, `up` keeping the horizon, no roll. */
+/** The turn that points local -z (a camera's forward) from `from` at `to`, `up` +y when absent, no
+ * roll; `{}` when they meet. */
 export function aim(from: Point3, to: Point3, up: Point3 = { x: 0, y: 1, z: 0 }): Pose3d {
   const forward = unit([to.x - from.x, to.y - from.y, to.z - from.z]);
   if (forward === undefined) return {};

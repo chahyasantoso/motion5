@@ -6,6 +6,8 @@ import { unreachable } from "./unreachable";
 /** Which lanes start first: from one end, from the centre out, from both edges in, or shuffled by a seed. */
 export type LaneOrigin = "start" | "end" | "center" | "edges" | { readonly seed: number };
 
+/** Settings of `lanes`: `from` picks which start first (default `"start"`); `spacing`, an ease, bends
+ * the start times (default even). */
 export interface LanesOptions {
   /** Which lanes start first; default `"start"`. */
   readonly from?: LaneOrigin;

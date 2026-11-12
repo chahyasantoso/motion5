@@ -13,7 +13,7 @@ coverage
 apps/pose-gap-filler/recordings/
 pose-recording-*.json
 # Copies the live browser tests edit in place of the tracked scenes.
-apps/react-demo/scratch-*
-apps/react-demo/src/scratch-*
+apps/pieces/scratch-*
+apps/pieces/src/scratch-*
 # Agent worktrees are other checkouts of this repository.
 .claude/worktrees/

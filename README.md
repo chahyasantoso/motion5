@@ -31,7 +31,7 @@ springs, rigs with FK and IK, and seekable physics. Drivers only report time and
 | `@gerak/three` | writes a pose on a Three.js object |
 | `@gerak/tools` | the `motion:*` commands: scaffold, sample, review, render |
 
-The worked examples live in `apps/react-demo`. None of the packages is published; consumers build from the workspace.
+The worked examples live in `apps/examples`; pieces made with gerak live in `apps/pieces`. None of the packages is published; consumers build from the workspace.
 
 ## Toolchain and commands
 

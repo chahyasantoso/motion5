@@ -5,6 +5,8 @@ import { pickFrames, type PickReason } from "./pick";
 import { fromCaller, readPageArgs, type PageTarget } from "./page";
 import { describeMotion, readMotion } from "./read";
 
+/** What `motion:review` runs: `check` and `frames` at once on the `watch` selectors to `to` ms; `at`
+ * names frames, `full` adds the moves. */
 export interface ReviewRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
@@ -15,6 +17,7 @@ export interface ReviewRequest extends PageTarget {
   readonly full: boolean;
 }
 
+/** Parsed `motion:review` arguments, or the usage text. */
 export type ReviewArgs =
   | ({ readonly kind: "ok" } & ReviewRequest)
   | { readonly kind: "usage"; readonly message: string };
@@ -30,6 +33,7 @@ interface ReviewBase {
   readonly pageErrors: readonly string[];
 }
 
+/** The findings, the frames and the sheet path; with `full`, also the moves read back, cut to the first 40. */
 export type ReviewResult =
   | (ReviewBase & { readonly full: false })
   | (ReviewBase & {
@@ -43,6 +47,7 @@ const MOTION_LINES = 40;
 const USAGE =
   "usage: motion:review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH] [--root dir | --url address]";
 
+/** Reads `<page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`, or answers the usage text. */
 export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   const usage = (message: string): ReviewArgs => ({
     kind: "usage",

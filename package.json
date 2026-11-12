@@ -19,6 +19,7 @@
     "scan:cycles": "node scripts/cycle-scan.mjs",
     "adr-index": "node scripts/adr-index.mjs",
     "map": "node scripts/repo-map.mjs",
+    "reference": "node scripts/reference.mjs",
     "adr-index:write": "node scripts/adr-index.mjs --write",
     "format": "prettier . --write --log-level warn",
     "format:check": "prettier . --check --log-level warn",
@@ -44,7 +45,7 @@
     "motion:live": "node packages/tools/bin/motion-live.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@gerak/react-demo"
+    "dev": "npm run dev --workspace=@gerak/pieces"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

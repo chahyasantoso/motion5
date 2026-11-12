@@ -146,7 +146,7 @@ describe("source-region anchors", () => {
     expect(readers.length).toBeGreaterThanOrEqual(2);
     expect(readers.map(({ path }) => path)).toEqual(
       expect.arrayContaining([
-        "apps/react-demo/test/timing-beat.test.ts",
+        "apps/examples/test/timing-beat.test.ts",
         "test/repo/workspace-source-aliases.test.ts",
       ]),
     );

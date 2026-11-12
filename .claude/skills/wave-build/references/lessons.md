@@ -152,3 +152,14 @@ touched 28 files; Sonnet at medium effort, 87 k tokens and 3.2 min, for four mod
   Next time the measure runs alone, in its own worker.
 - **A worker's gap list is a backlog.** The top gap was an error message that named one fix and not the other; it
   took one line to fix.
+
+## 2026-11-12, apps split and generated reference (gerak)
+
+- **A mechanical move must run every script that reads paths, not only the check.** The split passed every gate and
+  broke `npm run test:frames`, which the check does not run. List the repository's scripts and run the ones that
+  open files by path before calling a move done.
+- **A path rewrite by script must leave history alone.** It rewrote plans and decision records; they were reverted.
+  Scope the rewrite to code, tests, guides and configs.
+- **A generated document needs its format chosen for its reader.** Three lines an export made a reference longer than
+  the hand-written one it replaced. One line each, found by searching a name, is what an agent reads.
+- **Backticks inside a shell string are run as commands.** Writing markdown through `node -e "..."` ran three npm scripts and dropped their names from the text, twice in one day. The earlier lesson said to use the file tool for backslashes; it holds for backticks too.

@@ -9,6 +9,7 @@ export type PageSource =
   | { readonly kind: "serve"; readonly root: string }
   | { readonly kind: "url"; readonly base: string };
 
+/** The page a tool opens: its `page` path, stage size, `source` and the `actions` done to it at exact ms. */
 export interface PageTarget {
   readonly page: string;
   readonly width: number;
@@ -19,7 +20,8 @@ export interface PageTarget {
 }
 
 /** The demo app, served when no `--root` or `--url` is given. */
-export const DEFAULT_ROOT = fileURLToPath(new URL("../../../../apps/react-demo/", import.meta.url));
+export const DEFAULT_ROOT = fileURLToPath(new URL("../../../../apps/pieces/", import.meta.url));
+/** The page source when no `--root` or `--url` is given: the demo app folder, served. */
 export const DEFAULT_SOURCE: PageSource = Object.freeze({ kind: "serve", root: DEFAULT_ROOT });
 
 /** A path as the caller typed it, read from the folder they ran `npm run` in, not the repo root. */
@@ -27,6 +29,7 @@ export function fromCaller(path: string): string {
   return resolve(process.env.INIT_CWD ?? process.cwd(), path);
 }
 
+/** An open page and its `browser`; `advanceTo(ms)` runs the paused clock forward and must not go back. */
 export interface PageSession {
   readonly page: Page;
   readonly browser: Browser;
@@ -34,6 +37,7 @@ export interface PageSession {
   advanceTo(ms: number): Promise<void>;
 }
 
+/** A page's target and the tool's own flags with their values, or the usage text. */
 export type ReadArgs =
   | {
       readonly kind: "ok";

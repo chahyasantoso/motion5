@@ -72,13 +72,15 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "clipRadius",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
-/** A 2D pose: table fields, the anchor, and the piece's own `custom` numbers; each renderer writes it its way. */
+/** A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`,
+ * `anchor` and `custom` numbers. Stage px, y down, degrees clockwise. */
 export type Pose2d = { readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: number } & {
   readonly anchor?: Anchor;
   readonly custom?: Readonly<Record<string, number>>;
 };
 
-/** A box `weight` of the way into its `squash` against the `anchor` side, which stays put; widens the other way. */
+/** A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"`
+ * and `"right"` squash sideways. */
 export function squashed(squash: number, weight: number, anchor: Anchor = "bottom"): Pose2d {
   const short = 1 - squash * weight;
   const wide = 1 + 0.9 * squash * weight;

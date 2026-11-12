@@ -18,6 +18,7 @@ export type OptionField =
     }
   | { readonly kind: "boolean"; readonly default?: boolean; readonly description: string };
 
+/** A move's options by name, each an `OptionField` with its kind, range, default and description. */
 export type OptionFields = Readonly<Record<string, OptionField>>;
 
 const ROLES = {
@@ -30,7 +31,8 @@ const ROLES = {
   modifier: true,
 } as const;
 
-/** What a move is for; each role but `follow` and `modifier` names where the move must hold its rest. */
+/** What a move is for: `enter`, `travel` end at rest; `exit` starts at rest; `emphasis` both; `reveal`
+ * ends shown; `follow`, `modifier` hold no rest. */
 export type MoveRole = keyof typeof ROLES;
 
 /** Every role, in the order a catalog lists them. */
@@ -64,7 +66,7 @@ export type OptionsIn<Fs extends OptionFields> = {
 /** The trailing argument a caller passes: none for a move whose `run` takes no input. */
 export type InputArgs<I> = unknown extends I ? [] : [input: I];
 
-/** One call of a move: options a caller would pass, and the input when its `run` takes one. */
+/** A call the gate samples: `options` a caller would pass, and `input` when the move's `run` takes one. */
 export interface MoveExample<Fs extends OptionFields, I> {
   readonly options: OptionsIn<Fs>;
   readonly input?: I;
@@ -154,7 +156,8 @@ function readOptions<Fs extends OptionFields>(id: string, fields: Fs, value: unk
   return frozen;
 }
 
-/** Makes a move from its declaration. */
+/** Makes a move from its declaration. The call checks options (kind, `min`, `max`, `enum`) and fills
+ * defaults; `run(options, time, input)` may take a third argument callers must then pass. */
 export function defineMove<const Fs extends OptionFields, I, R, const M extends Moments>(
   declaration: MoveDeclaration<Fs, I, R, M>,
 ): Move<Fs, I, R, M>;

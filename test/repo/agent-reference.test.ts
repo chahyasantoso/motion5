@@ -2,19 +2,10 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { MOVE_PARTS } from "@gerak/tools/scene";
+import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
 const reference = readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8");
-const PACKAGES = [
-  "moves/src/index.ts",
-  "player/src/index.ts",
-  "dom/src/index.ts",
-  "react/src/index.ts",
-  "rig/src/index.ts",
-  "physics/src/index.ts",
-  "rapier/src/index.ts",
-  "three/src/index.ts",
-];
 
 /** Every name a package's entry exports, read by the compiler as a caller sees them. */
 function exportsOf(names: readonly string[]): ReadonlyMap<string, readonly string[]> {

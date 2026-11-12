@@ -1,7 +1,8 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "./pose";
 
-/** Draws a path on from its start, keeping `tail` of it drawn behind the head; a renderer dashes the stroke. */
+/** Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share
+ * kept drawn behind the head. */
 export const trace = defineMove({
   id: "trace",
   role: "reveal",

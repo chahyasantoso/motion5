@@ -195,7 +195,7 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
   it("transforms scene imports by attaching HMR code", () => {
     const plugin = motionLivePlugin();
     const code = `import { TimingScene } from "./timing-scene";`;
-    const transformed = plugin.transform(code, resolve("apps/react-demo/src/TimingBeat.tsx"));
+    const transformed = plugin.transform(code, resolve("apps/pieces/src/TimingBeat.tsx"));
     expect(transformed).not.toBeNull();
     if (transformed !== null) {
       expect(transformed.code).toContain('export * as __motionScene from "./timing-scene";');
@@ -208,7 +208,7 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     expect(plugin.apply).toBe("serve");
     const transformed = plugin.transform(
       `import { scene } from "./timing-scene";`,
-      resolve("apps/react-demo/src/TimingBeat.tsx"),
+      resolve("apps/pieces/src/TimingBeat.tsx"),
     );
     expect(transformed?.code).toContain("cancelable: true");
     expect(transformed?.code).toContain(

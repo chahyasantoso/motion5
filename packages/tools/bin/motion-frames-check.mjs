@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
@@ -16,12 +17,14 @@ const { readMotion } = await import("../src/page/read.ts");
 const { renderPage } = await import("../src/page/render.ts");
 const { reviewPage } = await import("../src/page/review.ts");
 const { perform } = await import("../src/page/actions.ts");
-const { DEFAULT_SOURCE, withPage } = await import("../src/page/page.ts");
+const { withPage } = await import("../src/page/page.ts");
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
 const CREAM = [244, 237, 223];
-const stage = { width: 1280, height: 720, source: DEFAULT_SOURCE };
+// The worked examples this check opens live in their own app.
+const examples = fileURLToPath(new URL("../../../apps/examples/", import.meta.url));
+const stage = { width: 1280, height: 720, source: { kind: "serve", root: examples } };
 const request = { page: "timing.html", at: [0, 500, 3000], ...stage };
 
 const first = await captureFrames(request);

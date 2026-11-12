@@ -64,6 +64,8 @@ export function distance(points: readonly { u: number; p: number }[], curve: Cur
   return Math.sqrt(sum / points.length);
 }
 
+/** A measured ease named by the nearest curve, with its distance `rms`; `bezier` is the fitted
+ * cubic-bezier when none is within 0.02. */
 export interface Fit {
   readonly name: string;
   readonly rms: number;

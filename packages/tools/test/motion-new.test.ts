@@ -14,7 +14,7 @@ import {
   scaffoldMove,
 } from "@gerak/tools/scene";
 import { DEFAULT_ROOT, parseLiveArgs, startLiveServer } from "../src/page/live";
-import { guard } from "../../../apps/react-demo/src/live/guard";
+import { guard } from "../../../apps/pieces/src/live/guard";
 
 const roots: string[] = [];
 function root(): string {
@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 function appRoot(): string {
-  const parent = join(process.cwd(), "apps/react-demo/.scaffold");
+  const parent = join(process.cwd(), "apps/pieces/.scaffold");
   mkdirSync(parent, { recursive: true });
   const dir = mkdtempSync(join(parent, "three-"));
   roots.push(dir, parent);
@@ -80,7 +80,7 @@ describe("motion:new", () => {
     expect(checked.lines).toContain("rope-in: the move has no description.");
     expect(checked.lines.some((line) => line.includes('"x" is 1 at progress 1'))).toBe(true);
     const source = readFileSync(join(dir, "src/moves/rope-in.ts"), "utf8");
-    const config = await resolveConfig(join(process.cwd(), "apps/react-demo/src/moves/rope-in.ts"));
+    const config = await resolveConfig(join(process.cwd(), "apps/pieces/src/moves/rope-in.ts"));
     expect(await format(source, { ...config, filepath: "rope-in.ts" })).toBe(source);
   });
 
@@ -114,7 +114,7 @@ describe("motion:new", () => {
     scaffold("rope-word", dir);
     for (const file of FILES) {
       const source = readFileSync(join(dir, file), "utf8");
-      const config = await resolveConfig(join(process.cwd(), "apps/react-demo", file));
+      const config = await resolveConfig(join(process.cwd(), "apps/pieces", file));
       expect(await format(source, { ...config, filepath: file }), file).toBe(source);
     }
   });
@@ -165,15 +165,15 @@ describe("motion:new", () => {
     scaffold("rope-word", dir, { three: true });
     for (const file of FILES) {
       const source = readFileSync(join(dir, file), "utf8");
-      const config = await resolveConfig(join(process.cwd(), "apps/react-demo", file));
+      const config = await resolveConfig(join(process.cwd(), "apps/pieces", file));
       expect(await format(source, { ...config, filepath: file }), file).toBe(source);
     }
   });
 
   it("parses live args and validates scene existence", () => {
-    expect(parseLiveArgs(["timing"])).toEqual({
+    expect(parseLiveArgs(["saved"])).toEqual({
       kind: "ok",
-      scene: "timing",
+      scene: "saved",
       root: DEFAULT_ROOT,
       port: 5173,
     });
@@ -220,7 +220,7 @@ describe("motion:new", () => {
       "principles3d",
     ] as const;
     for (const name of examples) {
-      const scenePath = join(process.cwd(), "apps/react-demo/src", `${name}-scene.ts`);
+      const scenePath = join(process.cwd(), "apps/examples/src", `${name}-scene.ts`);
       const imported = await import(pathToFileURL(scenePath).href);
       const module = readSceneModule(imported);
       if ("reason" in module) throw new Error(`${name}: ${module.reason}`);
