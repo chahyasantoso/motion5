@@ -323,7 +323,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>, options?: StageOpt… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
 - **`stageModuleOf`** `<B extends string>(module: StageModule<B, object>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>`: A stage module whose scene answers any object, checked on every frame to be stage values.
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
-- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test.
+- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
 - **`StageFonts`** `type StageFonts`: The document's font loading, which tells the stage when text may have changed size.
 - **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.

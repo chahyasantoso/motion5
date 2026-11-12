@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Events, Pose2d, Time } from "@gerak/moves";
-import { actor, group, letters, story, type Rest, type StageModule } from "@gerak/stage";
+import { toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { actor, group, letters, many, story, type Rest, type StageModule } from "@gerak/stage";
 import {
   mountStage,
+  pathData,
   type FrameSource,
   type StageElement,
   type StageEvent,
@@ -23,10 +24,11 @@ class FakeStyle implements StageStyle {
 
 interface FakeDocument {
   createElement(tag: "div" | "style"): FakeElement;
+  createElementNS(namespace: string, name: "svg" | "path"): FakeElement;
   fonts?: StageFonts;
 }
 
-class FakeElement implements StageElement<FakeElement> {
+class FakeElement implements StageElement<FakeElement, FakeElement> {
   readonly style: FakeStyle & StageStyle = new FakeStyle();
   readonly attributes = new Map<string, string>();
   readonly children: FakeElement[] = [];
@@ -49,7 +51,12 @@ class FakeElement implements StageElement<FakeElement> {
   ) {
     this.ownerDocument = document ?? {
       createElement: (tag) => new FakeElement(tag, this.ownerDocument),
+      createElementNS: (_namespace, name) => new FakeElement(name, this.ownerDocument),
     };
+  }
+  /** A path's length, as a page `path` measures it; 100 for any fake path. */
+  getTotalLength(): number {
+    return this.tagName === "path" ? 100 : 0;
   }
   attachShadow(): FakeElement {
     const root = new FakeElement("#shadow", this.ownerDocument);
@@ -96,7 +103,7 @@ function frames(): FrameSource {
 }
 
 /** Any page element is a stage element. */
-export function acceptsPageElements(element: HTMLElement): StageElement<HTMLElement> {
+export function acceptsPageElements(element: HTMLElement): StageElement<HTMLElement, SVGElement> {
   return element;
 }
 
@@ -126,11 +133,15 @@ function stageModule(seen: Seen): StageModule<"intro" | "word" | "late", StageVa
   };
 }
 
-function mounted(seen: Seen = {}, fonts?: StageFonts) {
+function mounted(seen: Seen = {}, fonts?: StageFonts, module?: StageModule<"all", StageValues>) {
   let ms = 0;
   const container = new FakeElement("div");
   if (fonts !== undefined) container.ownerDocument.fonts = fonts;
-  const stage = mountStage(container, stageModule(seen), { frames: frames(), clock: () => ms });
+  const options = { frames: frames(), clock: () => ms };
+  const stage =
+    module === undefined
+      ? mountStage(container, stageModule(seen), options)
+      : mountStage(container, module, options);
   const root = container.children[0]?.shadowRoot;
   if (root === undefined) throw new Error("No shadow root.");
   return {
@@ -188,6 +199,50 @@ describe("mountStage", () => {
     expect(root.find("word").style.visibility).toBe("");
   });
 
+  it("draws a path member as an SVG stroke: transform on the member, dash on the path", () => {
+    const line = toCubics([
+      { id: "a", x: 10, y: 20, inX: 0, inY: 0, outX: 30, outY: 0 },
+      { id: "b", x: 110, y: 60, inX: -30, inY: 0, outX: 0, outY: 0 },
+    ]);
+    const whole = story(1000, { all: [0, 1000] });
+    const module: StageModule<"all", StageValues> = {
+      beats: whole,
+      cast: {
+        trail: actor({ path: line }),
+        marks: many([line, line], (each) => actor({ path: each })),
+        card: actor({ watch: true }),
+      },
+      skins: { dom: { css: `[data-path="trail"] { stroke: red }` } },
+      scene: (time) => ({
+        trail: { x: 5, opacity: 0.5, ...trace({}, whole.all.of(time)) },
+        marks: [{ drawn: 0.25 }, { y: 3 }],
+      }),
+    };
+    const { root, at } = mounted({}, undefined, module);
+    const trail = root.find("trail");
+    const [svg] = trail.children;
+    const path = svg?.children[0];
+    expect(svg?.tagName).toBe("svg");
+    expect(svg?.attributes.get("viewBox")).toBe("10 20 100 40");
+    expect(path?.attributes.get("data-path")).toBe("trail");
+    expect(path?.attributes.get("d")).toBe(pathData(line));
+    expect(trail.attributes.has("data-skin")).toBe(false);
+    const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
+    expect(style).toContain(`:where([data-cast="trail"]) { width: 100px; height: 40px; }`);
+    expect(style).toContain(`:where([data-cast="marks.1"])`);
+    at(500);
+    expect(trail.style.transform).toBe("translate3d(5px, 0px, 0px)");
+    expect(trail.style.opacity).toBe("0.5");
+    expect(trail.style.strokeDasharray ?? "").toBe("");
+    expect(path?.style.strokeDasharray).toBe("50 100");
+    expect(path?.style.strokeDashoffset).toBe("0");
+    expect(path?.style.transform).toBe("");
+    const marks = [0, 1].map((index) => root.find(`marks.${index}`).children[0]?.children[0]);
+    expect(marks[0]?.style.strokeDasharray).toBe("25 100");
+    expect(marks[1]?.style.strokeDasharray ?? "").toBe("");
+    expect(root.find("marks.1").style.transform).toBe("translate3d(0px, 3px, 0px)");
+  });
+
   it("hands the scene a rest box for every name the cast makes", () => {
     const seen: Seen = {};
     mounted(seen);
@@ -204,6 +259,7 @@ describe("mountStage", () => {
       dot: [10, 20, 40, 30],
     };
     const document: FakeDocument = {
+      createElementNS: (_namespace, name) => new FakeElement(name, document),
       createElement(tag) {
         const element = new FakeElement(tag, document);
         const setAttribute = element.setAttribute.bind(element);

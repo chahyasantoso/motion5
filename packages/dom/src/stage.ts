@@ -1,6 +1,7 @@
 import {
   POSE_2D_FIELDS,
   elapsedOf,
+  type Cubic2d,
   type Events,
   type Pose2d,
   type Span,
@@ -19,7 +20,7 @@ import {
 } from "@gerak/stage";
 import { clockDriver, type FrameSource } from "./drivers";
 import { eventDriver, type PointerLike } from "./events";
-import { applyValue, type RenderStyle } from "./render";
+import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
 import { unreachable } from "./unreachable";
 
 /** The style properties the stage writes beside a value's; a page element's style has them all. */
@@ -50,8 +51,19 @@ export interface StageFonts {
   removeEventListener(type: "loadingdone", listener: () => void): void;
 }
 
-/** An element the stage builds with and writes: a page element, or a stand-in in a test. */
-export interface StageElement<E> {
+const SVG = "http://www.w3.org/2000/svg";
+
+/** An SVG element the stage draws a stroke with: a page `svg` or `path`, or a stand-in in a test. */
+export interface StageStroke<S> {
+  readonly style: RenderStyle;
+  setAttribute(name: string, value: string): void;
+  append(...nodes: S[]): void;
+  getTotalLength?(): number;
+}
+
+/** An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is
+ * the SVG element it draws a stroke member's path with. */
+export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> {
   readonly style: StageStyle;
   textContent: string | null;
   tabIndex: number;
@@ -61,10 +73,14 @@ export interface StageElement<E> {
   readonly offsetHeight: number;
   readonly clientWidth: number;
   readonly clientHeight: number;
-  readonly ownerDocument: { createElement(tag: "div" | "style"): E; readonly fonts?: StageFonts };
+  readonly ownerDocument: {
+    createElement(tag: "div" | "style"): E;
+    createElementNS(namespace: typeof SVG, name: "svg" | "path"): S;
+    readonly fonts?: StageFonts;
+  };
   attachShadow(init: { readonly mode: "open" }): { append(...nodes: E[]): void };
   setAttribute(name: string, value: string): void;
-  append(...nodes: E[]): void;
+  append(...nodes: (E | S)[]): void;
   remove(): void;
   addEventListener(type: string, listener: (event: StageEvent) => void): void;
   removeEventListener(type: string, listener: (event: StageEvent) => void): void;
@@ -136,6 +152,8 @@ const DEFAULT_SKIN = `
 }
 :where([data-cast]) { position: relative; box-sizing: border-box; }
 :where([data-text]) { white-space: pre; }
+:where([data-stroke]) > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+:where([data-path]) { fill: none; stroke: currentColor; stroke-width: 2; }
 :where([data-kind="group"], [data-kind="many"]) {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
 }
@@ -167,6 +185,33 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
     prefixes.some((start) => name.startsWith(start));
 }
 
+/** The box the control points of `cubics` span, never thinner than 1 so a straight line still shows. */
+function boxOf(cubics: readonly Cubic2d[]): Box {
+  const xs = cubics.flatMap((c) => [c.x0, c.x1, c.x2, c.x3]);
+  const ys = cubics.flatMap((c) => [c.y0, c.y1, c.y2, c.y3]);
+  const span = (values: readonly number[]): readonly [number, number] => {
+    const low = values.length === 0 ? 0 : Math.min(...values);
+    const size = values.length === 0 ? 0 : Math.max(...values) - low;
+    return size > 0 ? [low, size] : [low - 0.5, 1];
+  };
+  const [x, width] = span(xs);
+  const [y, height] = span(ys);
+  return { x, y, width, height };
+}
+
+/** Each stroke member sized to its path's own box, at no specificity so a skin overrides it. */
+function strokeSizes(infos: Iterable<CastName>): string {
+  return [...infos]
+    .flatMap(({ name, path }) => {
+      if (path === undefined) return [];
+      const { width, height } = boxOf(path);
+      return [
+        `:where([data-cast=${JSON.stringify(name)}]) { width: ${width}px; height: ${height}px; }`,
+      ];
+    })
+    .join("\n");
+}
+
 interface Placed<E> {
   readonly info: CastName;
   readonly element: E;
@@ -194,13 +239,21 @@ export function mountStage<B extends string>(
   module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage<B>;
-export function mountStage<B extends string, E extends StageElement<E>>(
-  container: E,
+export function mountStage<
+  B extends string,
+  E extends StageElement<E, S>,
+  S extends StageStroke<S>,
+>(
+  container: E & StageElement<E, S>,
   module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage<B>;
-export function mountStage<B extends string, E extends StageElement<E>>(
-  container: E,
+export function mountStage<
+  B extends string,
+  E extends StageElement<E, S>,
+  S extends StageStroke<S>,
+>(
+  container: E & StageElement<E, S>,
   module: StageModule<B, StageValues>,
   options: StageOptions = {},
 ): MountedStage<B> {
@@ -222,7 +275,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
   });
   const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
-  style.textContent = `${DEFAULT_SKIN}\n${module.skins.dom?.css ?? ""}`;
+  style.textContent = `${DEFAULT_SKIN}\n${strokeSizes(infos.values())}\n${module.skins.dom?.css ?? ""}`;
   const frame = document.createElement("div");
   frame.setAttribute("data-stage", "frame");
   Object.assign(frame.style, {
@@ -238,12 +291,34 @@ export function mountStage<B extends string, E extends StageElement<E>>(
   root.append(style, frame);
 
   const placed = new Map<string, Placed<E>>();
+  const strokes = new Map<E, S>();
   const leaf = (element: E, info: CastName, list?: string): void => {
     if (info.text !== undefined) {
       element.textContent = info.text;
       element.setAttribute("data-text", "");
     }
-    if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
+    if (info.path !== undefined) {
+      const box = boxOf(info.path);
+      const svg = document.createElementNS(SVG, "svg");
+      svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+      const path = document.createElementNS(SVG, "path");
+      path.setAttribute("d", pathData(info.path));
+      path.setAttribute("data-path", info.name);
+      svg.append(path);
+      element.append(svg);
+      element.setAttribute("data-stroke", "");
+      strokes.set(element, path);
+    } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
+  };
+  const write = (element: E, value: Pose2d): void => {
+    const path = strokes.get(element);
+    if (path === undefined) {
+      applyValue(element, value);
+      return;
+    }
+    const { stroke, body } = splitStroke(value);
+    applyValue(element, body);
+    applyValue(path, stroke);
   };
   const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
@@ -344,7 +419,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
       case "group":
         if (isList(value))
           throw new TypeError(`mountStage: "${target.info.name}" takes one value, not a list.`);
-        applyValue(target.element, value);
+        write(target.element, value);
         break;
       case "many":
         if (!isList(value))
@@ -353,7 +428,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
           );
         target.items.forEach((item, index) => {
           const each = value[index];
-          if (each !== undefined) applyValue(item, each);
+          if (each !== undefined) write(item, each);
         });
         break;
       case "item":

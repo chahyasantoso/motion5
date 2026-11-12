@@ -95,6 +95,19 @@ export function pathData(cubics: readonly Cubic2d[]): string {
   ].join(" ");
 }
 
+/** A value split into the fields `applyValue` writes as a stroke's dash and the rest, for a
+ * renderer that draws a stroke inside its member. */
+export function splitStroke(value: Pose2d): { readonly stroke: Pose2d; readonly body: Pose2d } {
+  const { drawn, drawnFrom, ...body } = value;
+  return {
+    stroke: {
+      ...(drawn === undefined ? {} : { drawn }),
+      ...(drawnFrom === undefined ? {} : { drawnFrom }),
+    },
+    body,
+  };
+}
+
 const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 
