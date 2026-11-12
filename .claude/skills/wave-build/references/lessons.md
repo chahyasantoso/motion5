@@ -18,3 +18,4 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-11 | second proof | 4 Sonnet + 2 Opus | 295k + 339k | 1 |
 | 2026-11-12 | values 1–2 | Opus + Sonnet + review | 156k + 87k + 120k | review 7 of 10 |
 | 2026-11-12 | stage 2 | Opus + Sonnet | 131k + 118k (after resume) | 2 |
+| 2026-11-12 | stage 3 | Sonnet | 261k, 161 calls, 24 min | 0 |
