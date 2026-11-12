@@ -6,15 +6,7 @@ import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
 import { extractMarks, scrubByWheel, Timeline } from "./timeline";
 
-const COMPONENT_FILES: Readonly<Record<string, string>> = {
-  timing: "TimingBeat",
-  card: "HoverCard",
-  catch: "Catch",
-  pile: "Pile",
-  principles: "principles",
-  principles3d: "principles3d",
-  splash: "splash",
-};
+const COMPONENT_FILES: Readonly<Record<string, string>> = {};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

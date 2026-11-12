@@ -10,7 +10,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
    light and one mesh per target, each bound with `useTarget3d`. It sets no look.
 2. Write the scene. It returns `Pose3d` targets: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY,
    scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
-3. `npm run motion:review -- apps/react-demo/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
+3. `npm run motion:review -- apps/pieces/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
    a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
    units, and its default of 150 is for px, so give a 3D scene its own; `--turn` (degrees) and `--ratio` (scale and
    opacity) keep their defaults.

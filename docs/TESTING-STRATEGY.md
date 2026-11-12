@@ -5,7 +5,7 @@ Tests are evidence for the contract, not a museum of implementation details.
 ## Test tiers
 
 1. **Unit:** one module, deterministic and headless. Most of the suite: moves, rig, player, physics, renderers and tools.
-2. **Scene:** each worked example in `apps/react-demo` has a test that samples its scene at named times, with no browser.
+2. **Scene:** each worked example in `apps/pieces` has a test that samples its scene at named times, with no browser.
 3. **Repository gates:** `test/repo/` holds the tests that guard the whole repository: the reference, the guide, the
    ADR index, the map, boundaries, comments, the session status and source-text reading.
 4. **Page:** `motion:review` and `motion:frames` drive a real page; they are tools a change runs, not part of `npm test`.

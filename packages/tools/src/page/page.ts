@@ -19,7 +19,7 @@ export interface PageTarget {
 }
 
 /** The demo app, served when no `--root` or `--url` is given. */
-export const DEFAULT_ROOT = fileURLToPath(new URL("../../../../apps/react-demo/", import.meta.url));
+export const DEFAULT_ROOT = fileURLToPath(new URL("../../../../apps/pieces/", import.meta.url));
 export const DEFAULT_SOURCE: PageSource = Object.freeze({ kind: "serve", root: DEFAULT_ROOT });
 
 /** A path as the caller typed it, read from the folder they ran `npm run` in, not the repo root. */

@@ -23,7 +23,7 @@ not by reading package source. Read a part below only when the brief needs it:
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
 3. `npm run motion:new -- <name>` writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-   `apps/react-demo`. The scene leaves its one target at rest and the page sets no look.
+   `apps/pieces`. The scene leaves its one target at rest and the page sets no look.
 4. Choose the look the brief calls for: background, palette, type, shapes. Name the look most people would give
    it, and choose another the brief supports as well. Lay the page out as the final frame.
 5. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
@@ -39,7 +39,7 @@ not by reading package source. Read a part below only when the brief needs it:
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
-The other scene files in `apps/react-demo/src` are tests of the runtime. Do not open them: a piece begun from one
+The other scene files in `apps/pieces/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
 picture is wrong, so read the sheet before calling anything finished.
 
@@ -105,7 +105,7 @@ Write one when the motion in your three lines has a name and no catalogued move,
 can name goes in `src/moves`, where the next piece finds it.
 Glue that only this piece needs stays in the scene as a `mix`.
 
-1. `npm run motion:new -- --move <id>` writes `apps/react-demo/src/moves/<id>.ts`, a declaration the gate refuses.
+1. `npm run motion:new -- --move <id>` writes `apps/pieces/src/moves/<id>.ts`, a declaration the gate refuses.
 2. Fill it in: the `role`, a `description` the next agent will choose it by, each option with its range and a
    description, an `example`, and `run`, which answers a pose from the options and `progress` alone. Make an option of
    what another brief would change, not of this piece's numbers. [`defineMove`](./agent-reference.md#writing-a-move)

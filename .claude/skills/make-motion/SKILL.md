@@ -16,7 +16,7 @@ A piece starts from its brief, not from a piece that already exists.
    `npm run motion:moves -- --check`.
    `npm run motion:moves -- --parts` lists the building blocks a move is made from: time, eases, blends, paths,
    follow-through, events, randomness.
-4. Do not open any other scene file in `apps/react-demo/src`, nor the components beside them. They are tests of the
+4. Do not open any other scene file in `apps/pieces/src`, nor the components beside them. They are tests of the
    runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide lists (events, physics, rigs, principles, 3D) only when the brief needs it.
 6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;

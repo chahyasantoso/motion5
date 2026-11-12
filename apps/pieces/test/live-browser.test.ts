@@ -1,10 +1,13 @@
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 
-const TIMING_SCENE = join(DEFAULT_ROOT, "src/timing-scene.ts");
-const PILE_SCENE = join(DEFAULT_ROOT, "src/pile-scene.ts");
+/** The worked examples the scratch copies are made from; they live in their own app. */
+const EXAMPLES = fileURLToPath(new URL("../../examples/", import.meta.url));
+const TIMING_SCENE = join(EXAMPLES, "src/timing-scene.ts");
+const PILE_SCENE = join(EXAMPLES, "src/pile-scene.ts");
 // Read once at load, so the last test can tell whether the suite changed them.
 const TIMING_BEFORE = readFileSync(TIMING_SCENE, "utf8");
 const PILE_BEFORE = readFileSync(PILE_SCENE, "utf8");
@@ -45,7 +48,7 @@ function removeLeftovers(): void {
 }
 
 function readApp(file: string): string {
-  return readFileSync(join(DEFAULT_ROOT, file), "utf8");
+  return readFileSync(join(EXAMPLES, file), "utf8");
 }
 
 /** Copies a piece's page, component and scene to files named `scratch-*` that git ignores. */
@@ -146,29 +149,39 @@ describe("live editor in the browser", () => {
   }, 30000);
 
   it("keeps the banner when an older update finishes after a newer error", async () => {
-    await withPage(
-      { page: "live.html?scene=timing", width: 1280, height: 720, source: DEFAULT_SOURCE },
-      async ({ page }) => {
-        page.setDefaultTimeout(STEP_TIMEOUT_MS);
-        await page.locator(".beat-dot").waitFor();
-        const banners = () => page.locator("[data-live-error]").count();
-        const finish = (stamp: number) =>
-          page.evaluate(`(async () => {
-            const module = await import("/src/TimingBeat.tsx");
+    const scratch = scratchOf(TIMING);
+    try {
+      await withPage(
+        {
+          page: `live.html?scene=${scratch.name}`,
+          width: 1280,
+          height: 720,
+          source: DEFAULT_SOURCE,
+        },
+        async ({ page }) => {
+          page.setDefaultTimeout(STEP_TIMEOUT_MS);
+          await page.locator(".beat-dot").waitFor();
+          const banners = () => page.locator("[data-live-error]").count();
+          const finish = (stamp: number) =>
+            page.evaluate(`(async () => {
+            const module = await import("/src/${scratch.name}.tsx");
             const detail = { ...module, __motionStamp: ${stamp} };
             window.dispatchEvent(new CustomEvent("motion:hot", { detail, cancelable: true }));
           })()`);
-        await page.evaluate(() => {
-          const detail = { err: { message: "a newer save does not compile" }, stamp: 200 };
-          window.dispatchEvent(new CustomEvent("motion:error", { detail }));
-        });
-        expect(await banners()).toBe(1);
-        await finish(100);
-        expect(await banners()).toBe(1);
-        await finish(300);
-        expect(await banners()).toBe(0);
-      },
-    );
+          await page.evaluate(() => {
+            const detail = { err: { message: "a newer save does not compile" }, stamp: 200 };
+            window.dispatchEvent(new CustomEvent("motion:error", { detail }));
+          });
+          expect(await banners()).toBe(1);
+          await finish(100);
+          expect(await banners()).toBe(1);
+          await finish(300);
+          expect(await banners()).toBe(0);
+        },
+      );
+    } finally {
+      scratch.remove();
+    }
   }, 30000);
 
   it("rebuilds a physics scene on a hot swap and replays to the same time", async () => {

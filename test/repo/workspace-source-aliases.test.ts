@@ -46,9 +46,11 @@ describe("workspace source aliases", () => {
   });
 
   it("is the only alias source of the root and every app Vite config", () => {
-    const configs = ["vite.config.ts", "apps/react-demo/vite.config.ts"].map(
-      (path) => [path, code(new URL(path, root))] as const,
-    );
+    const configs = [
+      "vite.config.ts",
+      "apps/pieces/vite.config.ts",
+      "apps/examples/vite.config.ts",
+    ].map((path) => [path, code(new URL(path, root))] as const);
     for (const [path, source] of configs) {
       expect([path, /alias: \[\.\.\.workspaceSourceAliases\(/.test(source)]).toEqual([path, true]);
       expect([path, source.includes("find:")]).toEqual([path, false]);

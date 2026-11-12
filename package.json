@@ -44,7 +44,7 @@
     "motion:live": "node packages/tools/bin/motion-live.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@gerak/react-demo"
+    "dev": "npm run dev --workspace=@gerak/pieces"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

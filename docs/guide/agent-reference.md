@@ -543,7 +543,7 @@ return <mesh ref={ball} />;
 
 ## Commands
 
-Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/react-demo`
+Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/pieces`
 unless `--root <dir>` serves another folder or `--url <address>` names a running server, and `--root` and `--out` are
 read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` and
@@ -553,7 +553,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
 - **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-  `apps/react-demo`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
+  `apps/pieces`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
