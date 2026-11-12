@@ -1,157 +1,164 @@
 # Stage plan: the cast and the story
 
-**Status:** Draft for the owner's review.
+**Status:** Approved by the owner, 2026-11-12.
 **Base:** `main` at `924c6451`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md` (section 2a, the five layers),
 `plan/roadmap.md` stage 3, `.claude/skills/wave-build/SKILL.md`, then this plan.
 
 ## 1. Goal
 
-**A piece is one file: who is on stage, how it looks, when each beat happens and how each thing moves, written as
-data a tool can read and check, and played by one stage that needs no component and no page of its own.**
+**A piece is one file: who is on stage, when each beat happens, how each thing moves, and how it looks on each
+renderer, played by one stage that needs no component and no page of its own.**
 
 This is layer 3 of `docs/ARCHITECTURE.md`. Today a piece is three files: a scene, a component and a page. The
-component is the cast: hand-written JSX, one `useTarget` per element (17 in the second showreel). The page holds the
-look as CSS. The scene names targets but cannot say what they are, and its beats are raw numbers: 71 `span(...)`
-calls in the second showreel, and a `BEATS` list used only for a corner label. So no tool can tell whether a thing
-shows before its beat, whether every cast member is used, or what the piece's beats are called. The rebuild worker
-hit the first of these twice: exits that showed at rest before their span, hidden by hand with 16 ms fades.
+component is the cast, hand-written JSX with one `useTarget` per element (17 in the second showreel); the page holds
+the look. The scene names targets but cannot say what they are, and its beats are raw numbers: 71 `span(...)` calls
+in the second showreel. No tool can tell whether a thing shows before its beat, whether every cast member is used, or
+what the beats are called; the rebuild worker hid exits by hand with 16 ms fades.
 
 ## 2. The shape
 
 ```ts
-export const beats = story(15000, {
-  origin: [0, 1250],
-  anticipate: [1000, 3550],
-  weight: [3460, 6260],
-});
-
-export const stage = frame({ width: 1280, height: 720 });
+export const beats = story(15000, { origin: [0, 1250], anticipate: [1000, 3550], weight: [3460, 6260] });
 
 export const cast = {
-  dot: shape("circle", { size: 36, className: "dot" }),
-  word: letters("ANTICIPATE", { className: "title", enters: "anticipate", leaves: "weight" }),
-  card: shape("rect", { width: 320, height: 200, className: "card", watch: true }),
-  mark: markup(`<svg viewBox="0 0 24 24">...</svg>`, { className: "mark" }),
+  camera: group({
+    dot: actor(),
+    word: letters("ANTICIPATE", { enters: "anticipate", leaves: "weight" }),
+    dust: many(6),
+  }),
+  card: actor({ watch: true }),
 };
 
-export const look = css`
-  .dot { background: #ff5533; border-radius: 50%; }
-  .title { font: 900 120px "Arial Black", sans-serif; color: #f3ead8; }
-`;
+export const skins = {
+  dom: {
+    css: `[data-cast="dot"] { width: 36px; height: 36px; border-radius: 50%; background: #ff5533 }`,
+  },
+};
 
-export const scene = (time: Time, events: Events) => ({
-  dot: sequence(time, [[beats.origin, (t) => launch({ ... }, t)], ...]),
-  word: rise({ distance: 60 }, beats.anticipate.of(time)),
+export const scene = (time: Time, events: Events, rest: Rest) => ({
+  camera: bump({ dy: 40 }, beats.weight.of(time)),
+  dot: sequence(time, [[beats.origin, (t) => launch({}, t)]]),
+  word: [...],                       // one value per letter
+  dust: [...],                       // one value per item
+  card: lift(events, "card"),
 });
 ```
 
-- **The story owns the duration.** `story(durationMs, { name: [from, to] })` answers one `span` per beat and the
-  length; the module's `durationMs` is `beats.durationMs`, so the length is stated once.
-- **A cast member says when it is on stage.** `enters` and `leaves` name beats on the member itself, so presence has
-  one place; the stage hides the member outside them.
-- **A cast member is described, not drawn.** `shape`, `text`, `letters`, `words`, `image`, `path`, `group` and
-  `markup` answer plain records: a kind, its size or content, a `className` and a `style` the piece chooses, and
-  `watch: true` when the scene reads its pointer events. They carry no look of their own.
-- **The look lives in the file too.** `look` is CSS the stage puts on the page, scoped to the stage, so a piece needs
-  no HTML file of its own.
-- **One stage plays any piece.** `<Stage module={...} />` in `@gerak/react` and `mountStage(element, module)` in
-  `@gerak/dom` read the module, make one element per cast member, bind each with `applyValue`, wire `watch` members
-  to the event driver, fit the frame to its container, and replay on a click. One page, `stage.html?piece=<name>`,
-  shows any piece, and the live page plays it.
-
 ## 3. Decisions to record (P0, ADR-174)
 
-- **`@gerak/stage` is a pure package** for the cast's records, `frame`, `story` and the checks. It knows no DOM;
-  `@gerak/dom` and `@gerak/react` render it. A cast for Three.js is a later slice, when a 3D piece needs it.
-- **There is one way to make a piece.** A stage module. What used to need its own component becomes a cast member:
-  `markup` for an SVG or HTML fragment, `group` for nesting. The component path stays only for the worked examples,
-  which tests read and nothing new copies; the scaffold no longer writes one.
-- **A cast member's look is the piece's.** Makers set no colour, font or size the piece did not give. `look` and
-  `style` decide.
-- **Text in parts is a cast kind.** `letters` and `words` make one element each and one list target, laid out in a
-  line by the browser; the stage measures each part's rest centre after layout and hands it to the scene through
-  `layout`, as `centreIn` does today.
-- **Layout is the browser's.** A member sits in normal flow inside the frame, or at `at: [x, y]` from its centre.
-- **The story is the one source of beat names.** The timeline's marks, the review's labels and the sheet's captions
-  read it; `_MS` constants and `cues` keep working for the examples.
-- **A member the scene never moves says so.** `still: true` on the member; the check refuses a member that is
-  neither moved nor still.
+- **A cast member is a proxy.** Core says only what the scene's motion depends on: the member's name, how many parts
+  it has, the text it says, and its behaviour (`enters`, `leaves`, `watch`, `still`). What it looks like, its shape,
+  size and layout, belongs to the renderer's skin.
+- **Three kinds.**
+
+  | Kind | The scene answers | A renderer makes |
+  | --- | --- | --- |
+  | `actor({ text? })` | one value | one thing, showing its text if it has one |
+  | `many(n)` or `many(list, make)` | a list of values, one per item | one thing per item |
+  | `group({ ...members })` | one value for the group, and each member's | a parent holding its members |
+
+  `letters(text)` and `words(text)` are helpers in `@gerak/stage` that build a group of text actors. No renderer
+  knows them.
+- **A group's value applies to its members.** A member's value is relative to its group, as an element's transform
+  is relative to its parent's; a 3D renderer nests in the same way.
+- **Names are paths.** A member is named by its key, inside a group by its key alone (keys are unique across the
+  cast), and an item of `many` by its key and index, `dust.3`. Events from a `watch` member carry that name.
+- **Presence is inherited.** A member without `enters` or `leaves` takes its group's; the stage hides a member
+  outside its presence.
+- **Skins are per renderer and live in the module.** `skins.dom` holds `css`, scoped to the stage, that styles each
+  member by `[data-cast="<name>"]`. A member the skin does not style is drawn by the default skin: a grey box with its
+  name, or its text. `skins.three` is a later slice; nothing in core changes for it.
+- **The renderer hands back where things rest.** After layout the stage measures each member's rest box and passes a
+  `Rest` record to the scene as its third argument, the boxes keyed by name. Tools with no renderer pass a fallback:
+  the boxes the module exports as `rest`, or an empty record. A scene reads a box through `restOf(rest, name)`, which
+  answers a zero box when there is none, so a tool never throws on a piece that measures.
+- **The story owns the duration.** `story(durationMs, { name: [from, to] })` answers one `span` per beat and the
+  length; beats may overlap. The module's `durationMs` is `beats.durationMs`.
+- **The module's names are one contract.** `readSceneModule` in `@gerak/tools/scene` is the one owner of what a
+  stage module exports: `beats`, `cast`, `skins`, `scene`, and optionally `frame` (default 1280 by 720) and `rest`.
+- **Pieces use the stage; sites use the hooks.** A piece is a stage module. `usePlayer` and `useTarget` stay for
+  binding a real site's own elements, which is what the web overlay needs. The worked examples keep their components.
+- **Replay is the `R` key and a click on the frame's background**, never a click on a `watch` member.
 
 ## 4. Slices
 
-### P1. Cast, frame, story and look
+### P1. The records
 
-- **Invariant:** the makers, `frame`, `story` and `css` answer frozen records; `story` refuses a beat that runs
-  backwards or past the duration; a member's `enters` and `leaves` must be beats of the module's story, checked
-  where the module is read.
+- **Invariant:** `actor`, `many`, `group`, `letters`, `words`, `story` and `frame` answer frozen records; `story`
+  refuses a beat that is not finite, runs backwards or passes the duration; `castNames(cast)` answers every name the
+  cast makes, refuses a key used twice, and resolves presence through groups; `restOf` answers a zero box for a name
+  it lacks.
 - **Owner:** `packages/stage/src/`.
-- **Test:** each maker's record holds only what it was given; `story`'s spans equal `span(from, to)`; bad beats are
-  refused.
+- **Test:** each maker's record holds only what it was given; `letters("ABC")` has three text actors; nested names,
+  `many` names and inherited presence come out as above; a duplicate key and a bad beat are refused.
 
-### P2. The stage, the page and the live page
+### P2a. The renderer
 
-- **Invariant:** `mountStage` and `<Stage />` build the cast, inject `look`, fit the frame, bind targets with
-  `applyValue`, measure `letters` and `words` before the first value, wire `watch` members, hide a member outside
-  its presence, and replay on a click. `apps/pieces/stage.html?piece=<name>` shows any stage module, and the live
-  page plays one.
-- **Owner:** `packages/dom/src/stage.ts`, `packages/react/src/stage.tsx`, `apps/pieces`.
-- **Test:** a module with four kinds renders four elements with their class names and the injected CSS; a member
-  outside its presence has `visibility: hidden`; letters report their centres; a `watch` member's hover reaches the
-  scene's events; the live page swaps a stage module in place.
+- **Invariant:** `mountStage(element, module)` in `@gerak/dom` builds the cast as nested elements tagged
+  `data-cast`, injects `skins.dom.css` scoped to the stage, draws unstyled members with the default skin, measures
+  each member's rest box after layout and before the first value, plays the scene with those boxes, binds each value
+  with `applyValue`, hides a member outside its presence, wires `watch` members to an event driver, fits the frame to
+  its container, and replays on `R` or a click on the background.
+- **Owner:** `packages/dom/src/stage.ts`.
+- **Test:** a module with every kind renders the right nesting and tags; a group's value moves its members; a member
+  outside its presence has `visibility: hidden`; a hover on a `watch` member reaches the scene as an event with its
+  name; the scene receives measured boxes.
+
+### P2b. The page and the live page
+
+- **Invariant:** `<Stage module />` in `@gerak/react` wraps `mountStage`; `apps/pieces/stage.html?piece=<name>` shows
+  any stage module; the live page plays a stage module and swaps it in place on a save.
+- **Owner:** `packages/react/src/stage.tsx`, `apps/pieces`.
+- **Test:** the shared page shows a fixture module; the live browser test swaps a stage module's scene in place.
 
 ### P3. Tools read the story
 
-- **Invariant:** the live timeline marks beats by name; `motion:review` labels picked frames with their beat; a
-  scene-file review reports a member the scene never moves and is not `still`, a target the scene moves that is not
-  cast, and a member whose value changes before it enters or after it leaves.
-- **Owner:** `apps/pieces/src/live/timeline.tsx`, `packages/tools/src/scene/review.ts`, `packages/tools/src/page/`.
-- **Test:** one finding of each kind on a fixture; a clean fixture has none.
+- **Invariant:** `readSceneModule` reads a stage module; the live timeline marks beats by name; `motion:review`
+  labels picked frames with their beat; a scene-file review reports a member the scene never moves and is not
+  `still`, a target the scene moves that is not cast, and a member whose value changes outside its presence.
+- **Owner:** `packages/tools/src/scene/`, `packages/tools/src/page/`, `apps/pieces/src/live/timeline.tsx`.
+- **Test:** one finding of each kind on a fixture; a clean fixture has none; `motion:sample` runs a module whose
+  scene reads `rest`.
 
-### P4. Scaffold, guide, and the pieces moved
+### P4. Scaffold, guide and two pieces
 
-- **Invariant:** `motion:new <name>` writes one stage module with a story of one beat, one cast member at rest and an
-  empty `look`; no component and no page. The guide's loop names the cast, the look and the story. The reference
-  covers `@gerak/stage` by the generator. Two small pieces (`saved`, `tempo`) are rewritten as stage modules, by
-  script where it can, and sample the same.
-- **Owner:** `packages/tools/src/scene/new.ts` and templates; `docs/guide/agent-motion.md`; the skill; the two pieces.
-- **Test:** the scaffold's module mounts and samples to rest; the two pieces' samples and frames match before and
-  after.
+- **Invariant:** `motion:new <name>` writes one stage module with a story of one beat, one actor at rest and an empty
+  `skins.dom.css`. The guide's loop names the cast, the story and the skin; the reference covers `@gerak/stage`
+  through the generator. `saved` and `tempo` are rewritten as stage modules by hand and sample the same.
+- **Owner:** `packages/tools/src/scene/new.ts` and templates, `docs/guide/agent-motion.md`, the skill, the two pieces.
+- **Test:** the scaffold mounts and samples to rest; the two pieces' samples and frames match before and after.
 
 ### P5. Proof
 
 - **Measure, alone in its worker:** the hand-made showreel rebuilt a third time as one stage module. New columns:
   files per piece and lines of component code (the second rebuild: 4 files, a 250-line component). Passes when it is
-  one file with no component, no `fade` hides a member outside its beat, and the frames match the second rebuild's.
-- **Cold run:** one Sonnet agent at medium effort makes a piece from a new brief with the guide alone, then is asked
-  the interview's questions about the cast, the look and the story.
+  one file with no component, no `fade` hides a member outside its presence, and its frames match the second's.
+- **Cold run and review, one agent:** a Sonnet agent at medium effort makes a piece from a new brief with the guide
+  alone, then reviews the plan's diff with that experience, and answers the interview's questions on the cast, the
+  story and the skin.
 
 ## 5. Team and order
 
 | Wave | Who | Slices | Why |
 | --- | --- | --- | --- |
 | 1 | Conductor | P0, P1 | the records' shapes decide the rest |
-| 2 | Opus, medium | P2 | a renderer with layout, measuring and events, touching dom, react and the app |
+| 2 | Opus, medium | P2a | the renderer: nesting, measuring, presence, events |
 | 2 | Sonnet, medium | P3 | tools only, against P1's records |
-| 3 | Sonnet, medium | P4 | after the stage exists |
+| 3 | Sonnet, medium | P2b, P4 | the page, the live page, the scaffold, the guide and two pieces, after the renderer |
 | 4 | Opus, medium, alone | P5 measure | the measure runs alone, so its tokens are its own |
-| 4 | Sonnet, medium | P5 cold run, then the cold review | independent eyes |
+| 4 | Sonnet, medium | P5 cold run and review | one start for both |
 
 One pull request, after wave 4.
 
 ## 6. Risks
 
-- **A generic stage tempts a house look.** The makers set no visual default; each maker's test checks its record
-  holds nothing it was not given.
-- **CSS in a string has no checking.** A typo in `look` shows only on the sheet. The review's sheet is the check, as
-  it is for CSS in a page today.
-- **Measuring letters after layout** needs a frame before the first value; the stage holds the first frame until the
-  measure lands.
-- **`markup` takes trusted strings.** It is the piece's own code, not user input; the reference says so.
-- **The examples keep components.** They are tests of the runtime; the guide never names them, so they are not a
-  second way an agent learns.
+- **A default skin can become a house look.** It draws grey boxes and plain text only, meant to be replaced.
+- **CSS in a string has no checking.** The review's sheet is the check, as for CSS in a page today.
+- **Measuring before the first value** holds the first frame until layout lands.
+- **A third scene argument** changes `Scene`'s shape for stage modules only; a scene that ignores it is unchanged.
 
 ## 7. Done when
 
-A new piece is one file, the showreel's third rebuild is one file with no component, the tools read beat names,
-`npm run check` is green, and `docs/SESSION-STATUS.md` says so.
+A new piece is one file, the third rebuild is one file with no component, the tools read beat names, `npm run check`
+is green, and `docs/SESSION-STATUS.md` says so.
