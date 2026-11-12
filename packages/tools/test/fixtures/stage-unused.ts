@@ -5,7 +5,7 @@ export const beats = story(2000, { intro: [0, 400], go: [400, 1400], out: [1400,
 
 export const cast = {
   stage: group({
-    dot: actor({ enters: "go", leaves: "go" }),
+    dot: actor({ on: ["go"] }),
     word: letters("AB"),
     spare: actor(),
   }),

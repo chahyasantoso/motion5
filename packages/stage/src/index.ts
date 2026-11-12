@@ -12,7 +12,7 @@ export {
   type Group,
   type Many,
   type Member,
-  type Presence,
+  type Stretch,
 } from "./cast";
 export { DEFAULT_FRAME, frame, story, type Frame, type Story } from "./story";
 export { NO_REST, restOf, type Box, type Rest } from "./rest";

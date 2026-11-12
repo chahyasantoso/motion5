@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { span, type Time } from "@gerak/moves";
+import { span, toCubics, type Time } from "@gerak/moves";
 import {
   NO_REST,
   actor,
@@ -38,18 +38,36 @@ describe("the cast", () => {
     expect(words(" night  shift ").items.map(({ text }) => text)).toEqual(["night", "shift"]);
   });
 
+  it("splits letters by grapheme, so an accented letter or a toned emoji is one", () => {
+    expect(letters("é👍🏽").items.map(({ text }) => text)).toEqual(["é", "👍🏽"]);
+    expect(letters("é👍🏽").items).toHaveLength(2);
+  });
+
+  it("records a path as frozen cubics, and the cast name carries it", () => {
+    const path = toCubics([
+      { id: "a", x: 0, y: 0, inX: 0, inY: 0, outX: 10, outY: 0 },
+      { id: "b", x: 40, y: 20, inX: -10, inY: 0, outX: 0, outY: 0 },
+    ]);
+    const stroke = actor({ path });
+    expect(stroke.path).toEqual(path);
+    expect(Object.isFrozen(stroke.path?.[0])).toBe(true);
+    expect(castNames({ stroke }).at(0)?.path).toEqual(path);
+    const strokes = many([path, path], (each) => actor({ path: each }));
+    expect(castNames({ strokes }).map(({ path: own }) => own?.length)).toEqual([undefined, 1, 1]);
+  });
+
   it("names every member, item and group, with presence taken from the nearest group", () => {
     const cast = {
       camera: group(
         {
           dot: actor(),
-          word: letters("HI", { leaves: "end" }),
+          word: letters("HI", { on: [["start", "end"], "late"] }),
         },
-        { enters: "start" },
+        { on: ["start"] },
       ),
       card: actor({ watch: true }),
     };
-    const names = castNames(cast, ["start", "end"]);
+    const names = castNames(cast, ["start", "end", "late"]);
     expect(names.map(({ name }) => name)).toEqual([
       "camera",
       "dot",
@@ -59,19 +77,29 @@ describe("the cast", () => {
       "card",
     ]);
     const byName = new Map(names.map((entry) => [entry.name, entry]));
-    expect(byName.get("dot")).toMatchObject({ groups: ["camera"], enters: "start", watch: false });
+    expect(byName.get("dot")).toMatchObject({
+      groups: ["camera"],
+      on: [["start", "start"]],
+      watch: false,
+    });
     expect(byName.get("word.1")).toMatchObject({
       kind: "item",
-      enters: "start",
-      leaves: "end",
+      on: [
+        ["start", "end"],
+        ["late", "late"],
+      ],
       text: "I",
     });
     expect(byName.get("card")).toMatchObject({ watch: true, groups: [] });
+    expect(byName.get("card")?.on).toBeUndefined();
   });
 
   it("refuses a name used twice, a name with a dot, and a presence the story lacks", () => {
     expect(() => castNames({ a: group({ dot: actor() }), dot: actor() })).toThrow(/used twice/);
-    expect(() => castNames({ dot: actor({ enters: "nope" }) }, ["start"])).toThrow(/nope/);
+    expect(() => castNames({ dot: actor({ on: ["nope"] }) }, ["start"])).toThrow(/nope/);
+    expect(() => castNames({ dot: actor({ on: [["start", "gone"]] }) }, ["start"])).toThrow(/gone/);
+    expect(() => castNames({ dust: many(1, { on: ["start"] }) }, ["end"])).toThrow(/start/);
+    expect(() => castNames({ dot: actor({ on: [] }) })).toThrow(/empty/);
     expect(() => castNames({ dust: many(2), "dust.1": actor() })).toThrow(/dot/);
   });
 });
@@ -136,6 +164,16 @@ describe("reading a stage module", () => {
     expect(why({ ...good, beats: { durationMs: 1 } })).toMatch(/story/);
     expect(why({ ...good, cast: { dot: { kind: "shape" } } })).toMatch(/cast/);
     expect(why({ ...good, cast: { "a.b": actor() } })).toMatch(/dot/);
+    expect(why({ ...good, cast: { dot: { kind: "actor", path: "M0 0" } } })).toMatch(/path/);
+    expect(why({ ...good, cast: { dot: { kind: "actor", path: [{ id: "a", x0: 0 }] } } })).toMatch(
+      /path/,
+    );
+    expect(why({ ...good, cast: { dot: { kind: "actor", on: [["go"]] } } })).toMatch(/on/);
+    const stroke = actor({
+      path: [{ id: "a", x0: 0, y0: 0, x1: 1, y1: 0, x2: 2, y2: 0, x3: 3, y3: 0 }],
+      on: ["go"],
+    });
+    expect(why({ ...good, cast: { dot: stroke } })).toBe("");
     expect(why({ ...good, skins: { dom: { css: 1 } } })).toMatch(/skins/);
     expect(why({ ...good, rest: { dot: { x: 1 } } })).toMatch(/rest/);
     expect(why({ ...good, frame: { width: 0, height: 1 } })).toMatch(/frame/);

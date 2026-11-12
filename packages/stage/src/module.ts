@@ -29,11 +29,39 @@ function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+function isOptional(value: unknown, test: (given: unknown) => boolean): boolean {
+  return value === undefined || test(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isStretch(value: unknown): boolean {
+  return isString(value) || (Array.isArray(value) && value.length === 2 && value.every(isString));
+}
+
+const CUBIC_NUMBERS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"];
+
+function isPath(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (cubic) =>
+        isRecord(cubic) &&
+        isString(cubic["id"]) &&
+        CUBIC_NUMBERS.every((key) => isNumber(cubic[key])),
+    )
+  );
+}
+
 function isMember(value: unknown): value is Member {
   if (!isRecord(value)) return false;
+  const on = value["on"];
+  if (!isOptional(on, (given) => Array.isArray(given) && given.every(isStretch))) return false;
   switch (value["kind"]) {
     case "actor":
-      return true;
+      return isOptional(value["text"], isString) && isOptional(value["path"], isPath);
     case "many": {
       const items = value["items"];
       return Array.isArray(items) && items.every(isMember);
@@ -97,7 +125,10 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
     const beats = readStory(value["beats"]);
     if (typeof beats === "string") return reason(beats);
     const cast = value["cast"];
-    if (!isCast(cast)) return reason("`cast` must be made by `actor`, `many` and `group`.");
+    if (!isCast(cast))
+      return reason(
+        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` and `on` a list of beats or pairs of beats.",
+      );
     castNames(cast, beats.order);
     const skins = readSkins(value["skins"]);
     if (typeof skins === "string") return reason(skins);

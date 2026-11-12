@@ -320,18 +320,20 @@ export function mountStage<B extends string, E extends StageElement<E>>(
     return Object.freeze(rest);
   };
 
-  const spanOf = (beat: string | undefined): Span | undefined =>
-    beat !== undefined && isBeat(beats.order, beat) ? beats[beat] : undefined;
-  const present = (info: CastName, ms: number): boolean => {
-    const enters = spanOf(info.enters);
-    const leaves = spanOf(info.leaves);
-    return (enters === undefined || ms >= enters.from) && (leaves === undefined || ms <= leaves.to);
-  };
+  const spanOf = (beat: string): Span | undefined =>
+    isBeat(beats.order, beat) ? beats[beat] : undefined;
+  // A stretch that ends at the story's end holds through the last frame and past it.
+  const present = (on: NonNullable<CastName["on"]>, ms: number): boolean =>
+    on.some(([first, last]) => {
+      const from = spanOf(first)?.from ?? 0;
+      const to = spanOf(last)?.to ?? beats.durationMs;
+      return ms >= from && (ms <= to || to >= beats.durationMs);
+    });
   const showAt = (time: Time): void => {
     const ms = elapsedOf(time.clock) ?? time.progress * beats.durationMs;
     for (const { info, element: own } of placed.values()) {
-      if (info.enters === undefined && info.leaves === undefined) continue;
-      own.style.visibility = present(info, ms) ? "" : "hidden";
+      if (info.on === undefined) continue;
+      own.style.visibility = present(info.on, ms) ? "" : "hidden";
     }
   };
   const bind = (target: Placed<E>, value: Pose2d | readonly Pose2d[] | undefined): void => {

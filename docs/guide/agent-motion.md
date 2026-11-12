@@ -56,7 +56,7 @@ import { actor, group, letters, many, story, type Rest } from "@gerak/stage";
 
 export const beats = story(3000, { enter: [0, 600], hold: [600, 2400], leave: [2400, 3000] });
 export const cast = {
-  card: group({ dot: actor(), word: letters("HELLO", { enters: "enter", leaves: "leave" }), dust: many(6) }),
+  card: group({ dot: actor(), word: letters("HELLO", { on: [["enter", "leave"]] }), dust: many(6) }),
 };
 export const skins = { dom: { css: `[data-cast="dot"] { width: 36px; height: 36px; background: #f53 }` } };
 export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, dot: {}, word: [], dust: [] });
@@ -65,9 +65,12 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
 - **Cast.** A member is a name. `actor()` takes one value, `many(n)` a list with one value per item, `group({...})`
   one value that moves its members; a member's own value is relative to its group. A `many` moves only item by item:
   to move a whole row of letters, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
-- **Names** are the keys, unique across the cast; an item is `dust.3`. `enters` and `leaves` name beats and the stage
-  hides a member outside them (a member takes its group's); `watch: true` sends its hover and click to the scene's
-  events under its name; `still: true` says the scene never moves it.
+- **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
+  it by `[data-path="<name>"]` (`stroke`, `stroke-width`).
+- **Names** are the keys, unique across the cast; an item is `dust.3`. `on: ["land", ["rise", "fall"]]` shows a
+  member only while one of its stretches runs, a beat or a pair from the first's start to the second's end (a member
+  without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
+  `still: true` says the scene never moves it.
 - **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
 - **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, an item by `[data-cast="dust.3"]` or all of a
   list's by `[data-cast^="dust."]`, scoped to the stage. A member it leaves out is a grey box with its name, or its

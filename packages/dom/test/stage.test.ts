@@ -100,7 +100,7 @@ export function acceptsPageElements(element: HTMLElement): StageElement<HTMLElem
   return element;
 }
 
-const beats = story(1000, { intro: [0, 200], word: [300, 600] });
+const beats = story(1000, { intro: [0, 200], word: [300, 600], late: [800, 1000] });
 
 interface Seen {
   time?: Time;
@@ -108,11 +108,11 @@ interface Seen {
   rest?: Rest;
 }
 
-function stageModule(seen: Seen): StageModule<"intro" | "word", StageValues> {
+function stageModule(seen: Seen): StageModule<"intro" | "word" | "late", StageValues> {
   return {
     beats,
     cast: {
-      camera: group({ dot: actor(), word: letters("HI", { enters: "word", leaves: "word" }) }),
+      camera: group({ dot: actor(), word: letters("HI", { on: ["word", "late"] }) }),
       card: actor({ watch: true }),
     },
     skins: { dom: { css: `[data-cast="dot"] { width: 10px }` } },
@@ -173,7 +173,7 @@ describe("mountStage", () => {
     expect(root.find("card").attributes.get("data-skin")).toBe("default");
   });
 
-  it("hides a member outside its presence and shows it inside", () => {
+  it("shows a member on two beats, hides it in the gap, and holds a stretch ending the story", () => {
     const { root, at } = mounted();
     expect(root.find("word").style.visibility).toBe("hidden");
     at(400);
@@ -182,6 +182,10 @@ describe("mountStage", () => {
     at(700);
     expect(root.find("word").style.visibility).toBe("hidden");
     expect(root.find("card").style.visibility).not.toBe("hidden");
+    at(900);
+    expect(root.find("word").style.visibility).toBe("");
+    at(1500);
+    expect(root.find("word").style.visibility).toBe("");
   });
 
   it("hands the scene a rest box for every name the cast makes", () => {

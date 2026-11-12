@@ -48,7 +48,7 @@ describe("a stage module in the scene tools", () => {
   it("refuses a duration unlike the story's, a cast naming a missing beat, and a bad rest", () => {
     const apart = readSceneModule({ ...clean, durationMs: 1000 });
     expect("reason" in apart && apart.reason).toMatch(/1000.*2000|2000.*1000/);
-    const lost = readSceneModule({ ...clean, cast: { dot: actor({ enters: "nowhere" }) } });
+    const lost = readSceneModule({ ...clean, cast: { dot: actor({ on: ["nowhere"] }) } });
     expect("reason" in lost && lost.reason).toMatch(/nowhere/);
     const badRest = readSceneModule({ ...clean, rest: { dot: { x: 1 } } });
     expect("reason" in badRest && badRest.reason).toMatch(/rest/);
@@ -114,10 +114,25 @@ describe("motion:review on a stage module", () => {
     expect(findings(unknown)).toEqual(['the scene answers "ghost", which is not in the cast.']);
   });
 
-  it("finds a member changing before it enters and after it leaves, with the beat there", () => {
+  it("finds a member changing before its first stretch and after its last, with the beat there", () => {
     expect(findings(outside)).toEqual([
       'dot changes at 16 ms (beat "intro"), before its beat "go" starts at 400 ms.',
       'dot changes at 1424 ms (beat "out"), after its beat "go" ends at 1400 ms.',
+    ]);
+  });
+
+  it("finds a change in the gap between two stretches, and none after one ending the story", () => {
+    const beats = story(1000, { a: [0, 300], gap: [300, 600], b: [600, 1000] });
+    const twice = {
+      beats,
+      skins: {},
+      cast: { dot: actor({ on: ["a", "b"] }) },
+      scene: (time: Time) => ({
+        dot: { x: Math.round(time.progress * 1000) % 300 < 150 ? 0 : 1 },
+      }),
+    };
+    expect(findings(twice).filter((finding) => finding.startsWith("dot"))).toEqual([
+      'dot changes at 464 ms (beat "gap"), between its beats "a", ending at 300 ms, and "b", starting at 600 ms.',
     ]);
   });
 });
