@@ -35,7 +35,8 @@ export interface Player<T extends object> {
   dispose(): void;
 }
 
-/** Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. */
+/** Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. The scene sees only
+ * events at or before the time's elapsed ms. */
 export interface PlayOptions {
   /** The scene's own events at known ms, such as a landing; the scene gets them merged with the page's. */
   readonly cues?: Events;
@@ -48,12 +49,16 @@ export function play<T extends object>(
   options: PlayOptions = {},
 ): Player<T> {
   let cues = options.cues ?? NO_EVENTS;
+  let time = driver.now();
   const events = (): Events => {
     const page = driver.events?.() ?? NO_EVENTS;
-    return page.length === 0 ? cues : cues.length === 0 ? page : mergeEvents(cues, page);
+    const all = page.length === 0 ? cues : cues.length === 0 ? page : mergeEvents(cues, page);
+    const now = elapsedOf(time.clock);
+    return now === undefined || all.every((event) => event.at <= now)
+      ? all
+      : all.filter((event) => event.at <= now);
   };
   let current = scene;
-  let time = driver.now();
   let values = current(time, events());
   let reached = elapsedOf(time.clock);
   const listeners = new Set<() => void>();

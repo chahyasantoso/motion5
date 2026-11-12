@@ -280,7 +280,7 @@ driver.seekMs(1200);
 - **`Driver`** `type Driver`: What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves.
 - **`ManualDriver`** `type ManualDriver`: A driver moved by hand, timed when it knows its length in ms.
 - **`Player`** `type Player`: A scene's values by target, rerun whole on each step of its driver.
-- **`PlayOptions`** `type PlayOptions`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's.
+- **`PlayOptions`** `type PlayOptions`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. The scene sees only events at or before the time's elapsed ms.
 - **`Scene`** `type Scene`: A scene: every target's value from the time and the events so far.
 <!-- generated:reference:end -->
 

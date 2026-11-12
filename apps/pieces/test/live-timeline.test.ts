@@ -420,4 +420,27 @@ describe("Timeline component", () => {
     // Should still be paused
     expect(source.waiting).toBe(0);
   });
+
+  it("marks the events a watched piece records, at their ms, as they come", async () => {
+    const source = createFrameSource();
+    const driver = clockDriver({ duration: 2000, frames: source, autoplay: false });
+    const listeners = new Map<string, () => void>();
+    driver.watch("card", {
+      addEventListener: (type, listener) => listeners.set(type, () => listener({})),
+      removeEventListener: (type) => listeners.delete(type),
+    });
+    let root: ReactTestRenderer | undefined;
+    await act(async () => {
+      root = create(createElement(Timeline, { driver, durationMs: 2000, marks: [] }));
+    });
+    if (root === undefined) throw new Error("Render failed");
+    expect(root.root.findAllByProps({ "data-live-mark": "card enter" })).toHaveLength(0);
+    await act(async () => {
+      driver.seek(0.5);
+      listeners.get("pointerenter")?.();
+    });
+    const marks = root.root.findAllByProps({ "data-live-mark": "card enter" });
+    expect(marks).toHaveLength(1);
+    expect(marks[0]?.props.title).toBe("card enter (1000ms, event)");
+  });
 });

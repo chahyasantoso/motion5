@@ -1,19 +1,10 @@
-import { atProgress, createLoopCycle, type LoopCycle, type Time } from "@gerak/moves";
+import { atProgress, createLoopCycle, type Events, type LoopCycle, type Time } from "@gerak/moves";
 import type { Driver } from "@gerak/player";
+import { eventRecorder, type EventSource } from "./events";
+import { pageFrames, type FrameSource } from "./frames";
 import { unreachable } from "./unreachable";
 
-/** Where frames come from: `requestAnimationFrame` on a page, a fake one in a test. */
-export interface FrameSource {
-  requestFrame(listener: (time: number) => void): number;
-  cancelFrame(handle: number): void;
-}
-
-export function pageFrames(): FrameSource {
-  return {
-    requestFrame: (listener) => globalThis.requestAnimationFrame(listener),
-    cancelFrame: (handle) => globalThis.cancelAnimationFrame(handle),
-  };
-}
+export { pageFrames, type FrameSource };
 
 /** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
 export interface ClockOptions {
@@ -57,6 +48,9 @@ export interface ClockDriver extends Driver {
   setRange(fromMs?: number, toMs?: number): void;
   /** Whether frames are advancing it now; subscribers hear each change. */
   playing(): boolean;
+  /** Logs the pointer events of `element` for `target` at the clock's ms; a seek keeps them, `replay` forgets them. */
+  watch(target: string, element: EventSource): () => void;
+  events(): Events;
 }
 
 /** A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks
@@ -82,6 +76,10 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
+  const recorder = eventRecorder(
+    () => progress * options.duration,
+    () => notify(),
+  );
   // A listener may pause or play during `notify`, so the next frame is asked for only after it.
   const request = (): void => {
     if (running && handle === undefined) handle = frames.requestFrame(frame);
@@ -146,6 +144,8 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       notify();
     },
     playing: () => running,
+    watch: recorder.watch,
+    events: () => recorder.log,
     seek(next) {
       stop();
       progress = Math.max(0, Math.min(1, next));
@@ -155,6 +155,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     replay() {
       stop();
+      recorder.clear();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
       if (!still) start();
@@ -162,6 +163,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     dispose() {
       stop();
+      recorder.dispose();
       listeners.clear();
     },
     setRate(next) {

@@ -98,7 +98,25 @@ describe("cues", () => {
     const player = play((_time, events) => ({ names: events.map(({ name }) => name) }), driver, {
       cues,
     });
+    driver.seek(0.6);
     expect(player.values.names).toEqual(["enter", "land"]);
+  });
+
+  it("hide a cue later than the time, and show it from its ms on", () => {
+    const driver = manualDriver({ durationMs: 1000 });
+    const player = play((_time, events) => ({ names: events.map(({ name }) => name) }), driver, {
+      cues,
+    });
+    expect(player.values.names).toEqual([]);
+    driver.seek(0.5);
+    expect(player.values.names).toEqual(["land"]);
+    driver.seek(0.4);
+    expect(player.values.names).toEqual([]);
+  });
+
+  it("all show when the time has no elapsed ms", () => {
+    const player = play((_time, events) => ({ count: events.length }), manualDriver(), { cues });
+    expect(player.values.count).toBe(1);
   });
 
   it("call on() once as forward play passes them, and never on a seek back", () => {
