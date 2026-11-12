@@ -124,7 +124,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({
 ### P4. Scaffold, guide and two pieces
 
 - **Invariant:** `motion:new <name>` writes one stage module with a story of one beat, one actor at rest and an empty
-  `skins.dom.css`. The guide's loop names the cast, the story and the skin; the reference covers `@gerak/stage`
+  `skins.dom.css`. The guide's loop names the cast, the story and the skin, and its cast section says that a `many`
+  moves only item by item: to move a whole row of letters, wrap it in a `group`. The reference covers `@gerak/stage`
   through the generator. `saved` and `tempo` are rewritten as stage modules by hand and sample the same.
 - **Owner:** `packages/tools/src/scene/new.ts` and templates, `docs/guide/agent-motion.md`, the skill, the two pieces.
 - **Test:** the scaffold mounts and samples to rest; the two pieces' samples and frames match before and after.

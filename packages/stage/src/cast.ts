@@ -23,7 +23,7 @@ export interface Actor extends Behaviour {
   readonly text?: string;
 }
 
-/** A list of things; the scene answers one value per item, in order. */
+/** A list of things; the scene answers one value per item. To move the whole list, put it in a `group`. */
 export interface Many extends Behaviour {
   readonly kind: "many";
   readonly items: readonly Actor[];

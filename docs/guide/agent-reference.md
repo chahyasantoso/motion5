@@ -436,7 +436,7 @@ export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor()
 - **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
 - **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
-- **`Many`** `type Many`: A list of things; the scene answers one value per item, in order.
+- **`Many`** `type Many`: A list of things; the scene answers one value per item. To move the whole list, put it in a `group`.
 - **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
 - **`Presence`** `type Presence`: When a member is on stage, by the names of the story's beats; a member without them takes its group's.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
