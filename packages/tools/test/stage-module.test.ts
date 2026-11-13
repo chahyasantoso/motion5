@@ -175,6 +175,33 @@ describe("motion:review on a stage module", () => {
     ]);
   });
 
+  it("skips a jump while a member is hidden, holds a still group to its word, and leaves its members their own", () => {
+    const beats = story(1000, { early: [0, 300], late: [700, 1000] });
+    const hop = (time: Time) => ({ x: time.progress < 0.5 ? 0 : 400 + time.progress });
+    const hidden = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor({ on: ["early", "late"] }) },
+      scene: (time: Time) => ({ dot: hop(time) }),
+    });
+    expect(hidden.some((line) => /jumps/.test(line))).toBe(false);
+    const shown = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor() },
+      scene: (time: Time) => ({ dot: hop(time) }),
+    });
+    expect(shown.some((line) => /dot\.x jumps/.test(line))).toBe(true);
+    const still = findings({
+      beats,
+      skins: {},
+      cast: { box: group({ inner: actor() }, { still: true }) },
+      scene: (time: Time) => ({ box: { y: time.progress }, inner: { x: time.progress } }),
+    });
+    expect(still).toContain('cast member "box" is marked still, but the scene moves it.');
+    expect(still.some((line) => /"inner"/.test(line))).toBe(false);
+  });
+
   it("lets a watched member move only on events, and reports a still member that moves", () => {
     const beats = story(500, { all: [0, 500] });
     expect(

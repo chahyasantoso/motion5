@@ -1,6 +1,6 @@
 # Composition plan, part three: what the fifth rebuild still paid for
 
-**Status:** Draft for the owner, 2026-11-13; critiqued twice.
+**Status:** Approved by the owner, 2026-11-13.
 **Base:** `main` at `99c04055`, the merge of pull request 586.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-176-strokes-from-the-layout-and-a-library-that-grows.md`,
 `plan/composition-two-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.

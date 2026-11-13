@@ -13,7 +13,7 @@ describe("the field table", () => {
     expect(VALUE_FIELDS.opacity.smooth).toBe(true);
     expect(valueField("drawn")).toEqual({
       rest: 1,
-      combines: "replace",
+      combines: "multiply",
       smooth: true,
       shows: true,
     });
@@ -25,6 +25,7 @@ describe("the field table", () => {
       shows: false,
       least: 0,
     });
+    expect(valueField("drawnFrom")).toMatchObject({ rest: 0, combines: "add" });
     expect(valueField("radius")).toBeUndefined();
     expect(valueField("tint")).toBeUndefined();
     expect(CUSTOM_FIELD).toEqual(VALUE_FIELDS.x);
@@ -47,5 +48,13 @@ describe("the field table", () => {
       custom: { tint: 0.5 },
     });
     expect(mixPose({ opacity: 0 }, {}, 0.25)).toEqual({ opacity: 0.25 });
+  });
+});
+
+describe("strokes that combine", () => {
+  it("multiplies a draw-on by its retract, and adds where each starts", () => {
+    expect(combine([{ drawn: 1 }, { drawn: 0.25 }]).drawn).toBe(0.25);
+    expect(combine([{ drawn: 0.5 }, {}]).drawn).toBe(0.5);
+    expect(combine([{ drawnFrom: 0.25 }, { drawnFrom: 0.5 }]).drawnFrom).toBe(0.75);
   });
 });

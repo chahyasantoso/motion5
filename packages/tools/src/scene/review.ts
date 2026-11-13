@@ -2,7 +2,15 @@ import { pathToFileURL } from "node:url";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
-import { NO_REST, pathOf, restOf, type Box, type CastName, type Rest } from "@gerak/stage";
+import {
+  NO_REST,
+  pathOf,
+  presentAt,
+  restOf,
+  type Box,
+  type CastName,
+  type Rest,
+} from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
@@ -153,6 +161,7 @@ function fingerprint(value: unknown): string {
 export function reviewValues(
   samples: readonly { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[],
   limits: Limits,
+  hidden: (path: string, ms: number) => boolean = () => false,
 ): readonly string[] {
   const jumps: string[] = [];
   const numbers = samples.map(({ targets }) => {
@@ -180,7 +189,9 @@ export function reviewValues(
       if (earlier === undefined) continue;
       if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
       const [step, limit] = stepAndLimit(path, earlier, value, limits);
-      if (step > limit)
+      const from = samples[index - 1]?.at ?? 0;
+      const at = samples[index]?.at ?? 0;
+      if (step > limit && !hidden(path, from) && !hidden(path, at))
         jumps.push(
           `${path} jumps ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
         );
@@ -256,7 +267,7 @@ function stageFindings(
       found.push(
         `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
       );
-    if (member.still && member.kind !== "group" && !unmoved)
+    if (member.still && !unmoved)
       found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
     if (member.on === undefined) continue;
     const changes = prints.flatMap((print, index) => {
@@ -382,8 +393,24 @@ export function reviewSceneModule(
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const samples = sampleScene(module, { kind: "time", ms });
-  const findings = reviewValues(samples, request);
   const { beats, cast } = module;
+  const stretches = new Map(
+    (cast ?? []).flatMap(({ name, on }) => (on === undefined ? [] : [[name, on] as const])),
+  );
+  const ownerOfPath = (path: string): string | undefined => {
+    for (let cut = path.lastIndexOf("."); cut > 0; cut = path.lastIndexOf(".", cut - 1)) {
+      const name = path.slice(0, cut);
+      if (stretches.has(name)) return name;
+    }
+    return undefined;
+  };
+  const spanOf = (name: string) => beats?.find((beat) => beat.name === name);
+  const hidden = (path: string, at: number): boolean => {
+    const owner = ownerOfPath(path);
+    const on = owner === undefined ? undefined : stretches.get(owner);
+    return on !== undefined && !presentAt(on, spanOf, module.durationMs, at);
+  };
+  const findings = reviewValues(samples, request, hidden);
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
     kind: "reviewed",

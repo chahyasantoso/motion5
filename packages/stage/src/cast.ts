@@ -191,7 +191,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
         groups,
         ...(on === undefined ? {} : { on }),
         watch: member.watch ?? inherited.watch,
-        still: member.still ?? inherited.still,
+        still: member.still ?? false,
       };
       switch (member.kind) {
         case "actor":
@@ -230,4 +230,18 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
   };
   visit(cast, [], { watch: false, still: false });
   return names;
+}
+
+/** Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it. */
+export function presentAt(
+  on: readonly (readonly [string, string])[],
+  spanOf: (beat: string) => { readonly from: number; readonly to: number } | undefined,
+  durationMs: number,
+  ms: number,
+): boolean {
+  return on.some(([first, last]) => {
+    const from = spanOf(first)?.from ?? 0;
+    const to = spanOf(last)?.to ?? durationMs;
+    return ms >= from && (ms <= to || to >= durationMs);
+  });
 }

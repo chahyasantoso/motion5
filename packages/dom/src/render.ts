@@ -11,6 +11,7 @@ export interface RenderStyle {
   clipPath?: string;
   strokeDasharray?: string;
   strokeDashoffset?: string;
+  visibility?: string;
   setProperty?(name: string, value: string): void;
   removeProperty?(name: string): void;
 }
@@ -110,6 +111,7 @@ export function splitStroke(value: Pose2d): { readonly stroke: Pose2d; readonly 
 
 const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
+const EMPTIED = new WeakSet<RenderStyle>();
 
 // A field or custom name the value leaves out is cleared, so the page's own style shows again.
 /** Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed. */
@@ -130,7 +132,8 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
       ? ""
       : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
   const measured = target.getTotalLength?.() ?? length ?? 0;
-  if ((value.drawn !== undefined || value.drawnFrom !== undefined) && measured > 0) {
+  const stroked = value.drawn !== undefined || value.drawnFrom !== undefined;
+  if (stroked && measured > 0) {
     const dash = cssDash(value.drawnFrom ?? 0, value.drawn ?? 1, measured);
     style.strokeDasharray = dash.strokeDasharray;
     style.strokeDashoffset = String(dash.strokeDashoffset);
@@ -138,6 +141,12 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
     style.strokeDasharray = "";
     style.strokeDashoffset = "";
   }
+  // An empty stroke would still paint its caps; it is hidden, and otherwise left to its parent, never `visible`.
+  const empty = stroked && (value.drawn ?? 1) <= (value.drawnFrom ?? 0);
+  if (empty) style.visibility = "hidden";
+  else if (style.visibility === "hidden" && EMPTIED.has(style)) style.visibility = "";
+  if (empty) EMPTIED.add(style);
+  else EMPTIED.delete(style);
   const custom = value.custom ?? {};
   for (const name of WRITTEN.get(style) ?? [])
     if (!Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);

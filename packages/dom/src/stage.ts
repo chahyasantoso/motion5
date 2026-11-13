@@ -19,6 +19,7 @@ import {
   type Frame,
   type Rest,
   type StageModule,
+  presentAt,
 } from "@gerak/stage";
 import { clockDriver, type ClockDriver } from "./drivers";
 import type { PointerLike } from "./events";
@@ -488,11 +489,7 @@ export function mountStage<
     isBeat(beats.order, beat) ? beats[beat] : undefined;
   // A stretch that ends at the story's end holds through the last frame and past it.
   const present = (on: NonNullable<CastName["on"]>, ms: number): boolean =>
-    on.some(([first, last]) => {
-      const from = spanOf(first)?.from ?? 0;
-      const to = spanOf(last)?.to ?? beats.durationMs;
-      return ms >= from && (ms <= to || to >= beats.durationMs);
-    });
+    presentAt(on, spanOf, beats.durationMs, ms);
   const showAt = (time: Time): void => {
     const ms = elapsedOf(time.clock) ?? time.progress * beats.durationMs;
     for (const { info, element: own } of placed.values()) {

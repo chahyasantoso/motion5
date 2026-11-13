@@ -440,6 +440,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 <!-- generated:reference:start -->
 - **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readonly from: number; readonly to: number; }, durationMs: number,…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
 - **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
