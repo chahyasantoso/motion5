@@ -13,6 +13,6 @@
       "@gerak/rig": ["../rig/dist/index.d.ts"]
     }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["**/*.test.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }
