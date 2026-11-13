@@ -158,7 +158,7 @@ export const cast = {
   camera: group({
     flood: actor({ on: [["wipe", "matchCut"]] }),
     trailUp: actor({ path: TRAIL_UP, on: [["launch", "antIn"]] }),
-    trailArc: actor({ path: ARC, on: [["leap", "push"]] }),
+    trailArc: actor({ path: ARC, on: [["leap", "period"]] }),
     underline: actor({ path: UNDERLINE, on: [["underline", "collapse"]] }),
     ant: letters("ANTICIPATE", { on: [["antIn", "antLeap"]] }),
     floor: actor({ path: FLOOR, on: [["floor", "floor"]] }),
@@ -284,6 +284,7 @@ ${HANG.map((length, i) => `[data-cast="hang.${i}"]::before { height: ${length}px
 [data-cast="stop"] { width: 0.32em; height: 0; margin-left: -0.06em; }
 [data-cast="credit"] { left: 0; top: 438px; width: 1280px; display: flex; flex-wrap: nowrap; justify-content: center;
   gap: 0; font: 700 14px/1 Arial, Helvetica, sans-serif; letter-spacing: 0.42em; color: ${MUTE}; }
+[data-cast="maker"], [data-cast="craft"], [data-cast="year"] { color: inherit; }
 [data-cast="dotA"], [data-cast="dotB"] { color: ${CORAL}; }
 [data-cast^="ring"] { width: 24px; height: 24px; box-sizing: border-box; border-radius: 50%;
   border: 0.6px solid ${CORAL}; }
@@ -301,6 +302,7 @@ ${HANG.map((length, i) => `[data-cast="hang.${i}"]::before { height: ${length}px
 [data-cast="chapter"] { display: block; width: 400px; height: 12px; }
 [data-cast^="label"] { position: absolute; left: 0; top: 0; }
 [data-cast="timecode"] { display: flex; flex-wrap: nowrap; gap: 0; align-items: flex-start; height: 12px; }
+[data-cast="minutes"], [data-cast="colon"] { line-height: 1; }
 [data-cast$="Box"] { display: block; height: 12px; overflow: hidden; }
 [data-cast="secTens"], [data-cast="secOnes"], [data-cast="frameTens"], [data-cast="frameOnes"] { line-height: 1; }
 `,
@@ -309,6 +311,8 @@ ${HANG.map((length, i) => `[data-cast="hang.${i}"]::before { height: ${length}px
 
 const LAUNCH = span(450, 1250);
 const BAR_IN = span(0, 1000);
+/** The bar's sweep in: slow to start, fast through the middle, easing onto its mark. */
+const BAR_SWEEP = (p: number) => 1 - Math.cbrt(1 - ease.cubicInOut(p ** 0.6));
 const BAR_OUT = span(2550, 3300);
 const OVERLAP = span(6150, 9450);
 const WIPE_AT = 11550;
@@ -322,7 +326,7 @@ const collapseAt = (i: number) => COLLAPSE_AT + (2 - (Math.abs(i - 2.5) - 0.5)) 
 /** The bar's sideways travel on the overlap beat's own clock: in from the left, back, then whipped out. */
 const barOf = (time: Time): number =>
   combine([
-    slide({ distance: 1250, from: "left" }, BAR_IN.of(time, ease.sineIn)),
+    slide({ distance: 1250, from: "left" }, BAR_IN.of(time, BAR_SWEEP)),
     anticipate({ share: 1 / 3, amount: 55 / 1450 }, BAR_OUT.of(time), (t) =>
       slide({ distance: 1450, from: "right" }, reversed(t)),
     ),
@@ -533,10 +537,9 @@ const settleLetter = (time: Time, rest: Rest, i: number): Pose2d => {
         span(burstAt(i), out),
         (t) =>
           combine([
-            springSettle(
-              { ...away, lift: 70, turn, scale: 0.15, rings: 2.4, damping: 5 },
-              span(0, 1400).of(t),
-            ),
+            springSettle({ ...away, lift: 70, rings: 2.4, damping: 5 }, span(0, 1400).of(t)),
+            springSettle({ turn, rings: 2, damping: 3.7 }, span(0, 1400).of(t)),
+            springSettle({ scale: 0.15, rings: 3.2, damping: 6.5 }, span(0, 1400).of(t)),
             smudge({ amount: 4 }, reversed(span(0, 220).of(t))),
           ]),
       ],
@@ -618,7 +621,7 @@ export const scene = (time: Time, events: Events, rest: Rest) => {
     rig: { x: barOf(overlap) },
     bar: {},
     hang: HANG.map((length, i) =>
-      dangle({ length: length + 50, damping: 0.18, gain: 6, lag: i * 28, limit: 63 }, overlap, {
+      dangle({ length, damping: 0.18, gain: 0.36, lag: i * 28, limit: 63 }, overlap, {
         carrier: barOf,
       }),
     ),
