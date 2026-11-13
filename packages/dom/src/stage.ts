@@ -21,9 +21,11 @@ import {
   type Cast,
   type CastName,
   type Frame,
+  type Layouts,
   type Rest,
   type StageModule,
   NO_LAYOUTS,
+  NO_REST,
   presentAt,
 } from "@gerak/stage";
 import { clockDriver, type ClockDriver } from "./drivers";
@@ -92,6 +94,7 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> 
   };
   attachShadow(init: { readonly mode: "open" }): { append(...nodes: E[]): void };
   setAttribute(name: string, value: string): void;
+  removeAttribute(name: string): void;
   append(...nodes: (E | S)[]): void;
   remove(): void;
   addEventListener(type: string, listener: (event: StageEvent) => void): void;
@@ -198,20 +201,36 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
 
 /** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it;
  * with no box it is only taken out of the flow. */
-function strokePlace(name: string, box: Box | undefined): string {
+function strokePlace(name: string, box: Box | undefined, layout?: string): string {
   const at =
     box === undefined
       ? ""
       : ` left: ${box.x}px; top: ${box.y}px; width: ${box.width}px; height: ${box.height}px;`;
-  return `:where([data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
+  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
+  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
 }
 
-/** A stroke member's drawing: its svg and path, the path it is given, and its last good cubics. */
+/** The key a stroke keeps its drawing under on a stage with no layouts. */
+const UNLAID = "";
+
+/** A stroke member's drawing: its svg and path, the path it is given, its last good cubics by
+ * layout, and the cubics its path shows. */
 interface Stroke<S> {
   readonly svg: S;
   readonly path: S;
   readonly source: ActorPath;
-  cubics: readonly Cubic2d[] | undefined;
+  readonly cubics: Map<string, readonly Cubic2d[]>;
+  painted: readonly Cubic2d[] | undefined;
+}
+
+/** What one measure finds: the rest of a stage with no layouts, or every layout's rest. */
+interface Measured {
+  readonly rest: Rest;
+  readonly layouts: Layouts;
+}
+
+function sameNames(next: readonly string[], last: readonly string[]): boolean {
+  return next.length === last.length && next.every((name, index) => name === last[index]);
 }
 
 /** Reports an error the way an uncaught one in a frame is, without stopping the caller. */
@@ -346,7 +365,13 @@ export function mountStage<
       svg.append(path);
       element.append(svg);
       element.setAttribute("data-stroke", "");
-      strokes.set(element, { svg, path, source: info.path, cubics: undefined });
+      strokes.set(element, {
+        svg,
+        path,
+        source: info.path,
+        cubics: new Map(),
+        painted: undefined,
+      });
     } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
   };
   const write = (element: E, value: Pose2d): void => {
@@ -376,11 +401,13 @@ export function mountStage<
         cubic.y3 === was.y3
       );
     });
-  // Draws a stroke from its pass's answer; a path function that throws is reported and its last good path kept.
+  // A stroke's cubics in one layout from its pass's answer; a path function that throws is reported and
+  // that layout's last good path kept.
   const draw = (
     name: string,
     stroke: Stroke<S>,
     answer: PathAnswer,
+    layout: string,
   ): readonly Cubic2d[] | undefined => {
     switch (answer.kind) {
       case "failed":
@@ -389,19 +416,24 @@ export function mountStage<
             cause: answer.error,
           }),
         );
-        return stroke.cubics;
+        return stroke.cubics.get(layout);
       case "drawn":
-        break;
+        stroke.cubics.set(layout, answer.cubics);
+        return answer.cubics;
       default:
-        unreachable(answer);
+        return unreachable(answer);
     }
-    const cubics = answer.cubics;
-    if (sameCubics(cubics, stroke.cubics)) return stroke.cubics;
-    const box = boundsOf(cubics);
-    stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
-    stroke.path.setAttribute("d", pathData(cubics));
-    stroke.cubics = cubics;
-    return cubics;
+  };
+  // Shows every stroke as drawn in `layout`, writing a path only when its cubics changed.
+  const paint = (layout: string): void => {
+    for (const stroke of strokes.values()) {
+      const cubics = stroke.cubics.get(layout);
+      if (cubics === undefined || sameCubics(cubics, stroke.painted)) continue;
+      const box = boundsOf(cubics);
+      stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+      stroke.path.setAttribute("d", pathData(cubics));
+      stroke.painted = cubics;
+    }
   };
   const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
@@ -462,76 +494,103 @@ export function mountStage<
     // At scale 1 the frame carries no transform, so its content is rasterised as a plain page would be.
     frame.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
-  // Strokes sit out of the flow, so every other member is measured first and each path drawn from that.
-  const measure = (): Rest => {
-    const boxes: Record<string, Box> = {};
-    for (const [name, { element: own, parent }] of placed) {
-      if (strokes.has(own)) continue;
-      let left = own.offsetLeft;
-      let top = own.offsetTop;
-      for (let up = parent; up !== undefined; up = up.parent) {
-        left += up.element.offsetLeft + up.element.clientLeft;
-        top += up.element.offsetTop + up.element.clientTop;
+  let names: readonly string[] = module.layouts ?? [];
+  let pick = module.layout;
+  // The layout the frame is styled under; the stage keeps no record of when it changed.
+  let shown: string | undefined = names[0];
+  if (shown !== undefined) frame.setAttribute("data-layout", shown);
+  // Measures the stage as laid out, or under every layout in turn, then shows the layout in force again.
+  const measure = (): Measured => {
+    const ordered: string[] = [];
+    // Strokes sit out of the flow, so every other member is measured first and each path drawn from that.
+    const laidOut = (layout: string | undefined): Rest => {
+      const boxes: Record<string, Box> = {};
+      for (const [name, { element: own, parent }] of placed) {
+        if (strokes.has(own)) continue;
+        let left = own.offsetLeft;
+        let top = own.offsetTop;
+        for (let up = parent; up !== undefined; up = up.parent) {
+          left += up.element.offsetLeft + up.element.clientLeft;
+          top += up.element.offsetTop + up.element.clientTop;
+        }
+        const width = own.offsetWidth;
+        const height = own.offsetHeight;
+        boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
       }
-      const width = own.offsetWidth;
-      const height = own.offsetHeight;
-      boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
-    }
-    const laid: Rest = Object.freeze({ ...boxes });
-    const places = new Map<string, string>();
-    const paths: (readonly [string, ActorPath])[] = [];
-    const owners = new Map<
-      string,
-      { readonly stroke: Stroke<S>; readonly parent: Placed<E> | undefined }
-    >();
-    for (const [name, { element: own, parent }] of placed) {
-      const stroke = strokes.get(own);
-      if (stroke === undefined) continue;
-      paths.push([name, stroke.source]);
-      owners.set(name, { stroke, parent });
-    }
-    // Paths draw in passes, each reading the strokes drawn before it; a loop of reads is reported.
-    const loop = drawInPasses(paths, laid, (name, answer) => {
-      const owner = owners.get(name);
-      if (owner === undefined) return undefined;
-      const { stroke, parent } = owner;
-      const cubics = draw(name, stroke, answer);
-      if (cubics === undefined) return undefined;
-      const box = boundsOf(cubics);
-      const home = parent === undefined ? undefined : laid[parent.info.name];
-      const left =
-        home === undefined || parent === undefined
-          ? 0
-          : home.x - home.width / 2 + parent.element.clientLeft;
-      const top =
-        home === undefined || parent === undefined
-          ? 0
-          : home.y - home.height / 2 + parent.element.clientTop;
-      places.set(name, strokePlace(name, { ...box, x: box.x - left, y: box.y - top }));
-      const rests = restOfBounds(box);
-      boxes[name] = rests;
-      return rests;
-    });
-    const looped = loop === undefined ? undefined : `mountStage: ${describeLoop(loop)}.`;
-    if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
-    lastLoop = looped;
-    for (const name of owners.keys())
-      if (!places.has(name)) {
-        places.set(name, strokePlace(name, undefined));
-        boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
+      const laid: Rest = Object.freeze({ ...boxes });
+      const places = new Map<string, string>();
+      const paths: (readonly [string, ActorPath])[] = [];
+      const owners = new Map<
+        string,
+        { readonly stroke: Stroke<S>; readonly parent: Placed<E> | undefined }
+      >();
+      for (const [name, { element: own, parent }] of placed) {
+        const stroke = strokes.get(own);
+        if (stroke === undefined) continue;
+        paths.push([name, stroke.source]);
+        owners.set(name, { stroke, parent });
       }
-    const ordered = [...owners.keys()].flatMap((name) => {
-      const place = places.get(name);
-      return place === undefined ? [] : [place];
-    });
+      // Paths draw in passes, each reading the strokes drawn before it; a loop of reads is reported.
+      const loop = drawInPasses(paths, laid, (name, answer) => {
+        const owner = owners.get(name);
+        if (owner === undefined) return undefined;
+        const { stroke, parent } = owner;
+        const cubics = draw(name, stroke, answer, layout ?? UNLAID);
+        if (cubics === undefined) return undefined;
+        const box = boundsOf(cubics);
+        const home = parent === undefined ? undefined : laid[parent.info.name];
+        const left =
+          home === undefined || parent === undefined
+            ? 0
+            : home.x - home.width / 2 + parent.element.clientLeft;
+        const top =
+          home === undefined || parent === undefined
+            ? 0
+            : home.y - home.height / 2 + parent.element.clientTop;
+        places.set(name, strokePlace(name, { ...box, x: box.x - left, y: box.y - top }, layout));
+        const rests = restOfBounds(box);
+        boxes[name] = rests;
+        return rests;
+      });
+      const looped = loop === undefined ? undefined : `mountStage: ${describeLoop(loop)}.`;
+      if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
+      lastLoop = looped;
+      for (const name of owners.keys())
+        if (!places.has(name)) {
+          places.set(name, strokePlace(name, undefined, layout));
+          boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
+        }
+      for (const name of owners.keys()) {
+        const place = places.get(name);
+        if (place !== undefined) ordered.push(place);
+      }
+      const rest: Record<string, Box> = {};
+      for (const name of placed.keys()) {
+        const box = boxes[name];
+        if (box !== undefined) rest[name] = box;
+      }
+      return Object.freeze(rest);
+    };
+    let measured: Measured;
+    if (names.length === 0) {
+      measured = { rest: laidOut(undefined), layouts: NO_LAYOUTS };
+      paint(UNLAID);
+    } else {
+      const layouts: Record<string, Rest> = {};
+      for (const name of names) {
+        frame.setAttribute("data-layout", name);
+        layouts[name] = laidOut(name);
+      }
+      if (shown === undefined || !names.includes(shown)) shown = names[0];
+      if (shown !== undefined) {
+        frame.setAttribute("data-layout", shown);
+        paint(shown);
+      }
+      measured = { rest: NO_REST, layouts: Object.freeze(layouts) };
+    }
     const text = styleWith(ordered);
     if (style.textContent !== text) style.textContent = text;
-    const rest: Record<string, Box> = {};
-    for (const name of placed.keys()) {
-      const box = boxes[name];
-      if (box !== undefined) rest[name] = box;
-    }
-    return Object.freeze(rest);
+    return measured;
   };
 
   const spanOf = (beat: string): Span | undefined =>
@@ -588,17 +647,44 @@ export function mountStage<
   };
 
   fit();
-  let rest = measure();
+  let measured = measure();
   let scene = module.scene;
-  const sceneOf = (): Scene<StageValues> => (time, events) => scene(time, events, rest, NO_LAYOUTS);
+  // The layout the latest scene call put in force, read from that call's events alone.
+  let inForce: string | undefined;
+  const sceneOf = (): Scene<StageValues> => (time, events) => {
+    const [initial] = names;
+    if (initial === undefined) {
+      inForce = undefined;
+      return scene(time, events, measured.rest, NO_LAYOUTS);
+    }
+    const name = pick?.(events) ?? initial;
+    const rest = measured.layouts[name];
+    if (rest === undefined)
+      throw new RangeError(
+        `mountStage: layout answered "${name}", which is not one of ${names.join(", ")}.`,
+      );
+    inForce = name;
+    return scene(time, events, rest, measured.layouts);
+  };
+  // Styles the frame under the layout in force before a frame's values are written.
+  const follow = (): void => {
+    if (inForce === shown) return;
+    shown = inForce;
+    if (shown === undefined) frame.removeAttribute("data-layout");
+    else {
+      frame.setAttribute("data-layout", shown);
+      paint(shown);
+    }
+  };
   const start = () => {
     const { driver, stop } = drive();
     const player = play<StageValues>(sceneOf(), driver);
     options.onDriver?.(driver);
+    const [first] = placed.keys();
+    if (first !== undefined) player.subscribe(first, follow);
     for (const target of placed.values())
       if (target.info.kind !== "item")
         player.subscribe(target.info.name, (value) => bind(target, value));
-    const [first] = placed.keys();
     if (first !== undefined) player.subscribe(first, () => showAt(player.time));
     return {
       driver,
@@ -625,7 +711,7 @@ export function mountStage<
   frame.addEventListener("click", onClick);
   const resized = (): void => {
     fit();
-    rest = measure();
+    measured = measure();
     run.player.refresh();
   };
   const observer =
@@ -658,6 +744,12 @@ export function mountStage<
     replay,
     replace(next) {
       scene = next.scene;
+      pick = next.layout;
+      const nextNames = next.layouts ?? [];
+      if (!sameNames(nextNames, names)) {
+        names = nextNames;
+        measured = measure();
+      }
       run.player.replace(sceneOf());
     },
     dispose() {

@@ -5,8 +5,10 @@ import {
   group,
   letters,
   many,
+  NO_LAYOUTS,
   restOf,
   story,
+  type Layouts,
   type Rest,
   type StageModule,
 } from "@gerak/stage";
@@ -76,6 +78,9 @@ class FakeElement implements StageElement<FakeElement, FakeElement> {
   }
   setAttribute(name: string, value: string): void {
     this.attributes.set(name, value);
+  }
+  removeAttribute(name: string): void {
+    this.attributes.delete(name);
   }
   append(...nodes: FakeElement[]): void {
     for (const node of nodes) {
@@ -573,6 +578,189 @@ describe("mountStage", () => {
       expect(String(reported[0])).toMatch(/"under".*no word/);
       expect(path?.attributes.get("d")).toBe(drawn);
       expect(seen.rest?.under?.width).toBe(200);
+    });
+  });
+
+  describe("named layouts", () => {
+    interface Laid {
+      rest?: Rest;
+      layouts?: Layouts;
+      layoutAtWrite?: string | undefined;
+    }
+
+    /** A stage whose `card` rests at 100 px under `list` and 700 px under `detail`; the fake does no
+     * layout, so `card` reads its offset from the frame's `data-layout`. */
+    function layered(seen: Laid, extra: Partial<StageModule<"all", StageValues>> = {}) {
+      let resized: (() => void) | undefined;
+      vi.stubGlobal("Element", FakeElement);
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(listener: () => void) {
+            resized = listener;
+          }
+          observe(): void {}
+          disconnect(): void {}
+        },
+      );
+      const layoutSets: string[] = [];
+      let frame: FakeElement | undefined;
+      const document: FakeDocument = {
+        createElementNS: (_namespace, name) => new FakeElement(name, document),
+        createElement(tag) {
+          const element = new FakeElement(tag, document);
+          const setAttribute = element.setAttribute.bind(element);
+          element.setAttribute = (name, value) => {
+            setAttribute(name, value);
+            if (name === "data-stage" && value === "frame") frame = element;
+            if (name === "data-layout") layoutSets.push(value);
+            if (name === "data-cast" && value === "card") {
+              Object.defineProperty(element, "offsetLeft", {
+                get: () => (frame?.attributes.get("data-layout") === "detail" ? 700 : 100),
+              });
+              [element.offsetWidth, element.offsetHeight] = [200, 100];
+            }
+          };
+          return element;
+        },
+      };
+      const host = new FakeElement("div", document);
+      new FakeElement("div").append(host);
+      const module: StageModule<"all", StageValues> = {
+        beats: story(1000, { all: [0, 1000] }),
+        cast: { card: actor({ watch: true }), dot: actor() },
+        skins: {
+          dom: {
+            css: `[data-layout="list"] [data-cast="card"] { left: 0 } [data-layout="detail"] [data-cast="card"] { left: 600px }`,
+          },
+        },
+        layouts: ["list", "detail"],
+        layout: (events) => (events.some((event) => event.name === "click") ? "detail" : "list"),
+        scene: (_time, _events, rest, layouts) => {
+          seen.rest = rest;
+          seen.layouts = layouts;
+          return { card: { x: 1 } };
+        },
+        ...extra,
+      };
+      const stage = mountStage(host, module, { frames: frames() });
+      const root = host.children[0]?.shadowRoot;
+      if (root === undefined || frame === undefined) throw new Error("No frame.");
+      const card = root.find("card");
+      const style = card.style;
+      const shown = frame;
+      Object.defineProperty(card, "style", {
+        get: () => {
+          seen.layoutAtWrite = shown.attributes.get("data-layout");
+          return style;
+        },
+      });
+      return {
+        root,
+        stage,
+        frame,
+        layoutSets,
+        resize: () => resized?.(),
+        at: (ms: number) => stage.driver.seek(ms / 1000),
+      };
+    }
+
+    it("measures every layout and hands the scene the one in force beside all of them", () => {
+      const seen: Laid = {};
+      const { frame } = layered(seen);
+      expect(seen.layouts?.list?.card).toEqual({ x: 200, y: 50, width: 200, height: 100 });
+      expect(seen.layouts?.detail?.card).toEqual({ x: 800, y: 50, width: 200, height: 100 });
+      expect(seen.rest).toBe(seen.layouts?.list);
+      expect(frame.attributes.get("data-layout")).toBe("list");
+    });
+
+    it("follows the layout an event puts in force, before the frame's values are written, and back on a seek", () => {
+      const seen: Laid = {};
+      const { root, frame, at } = layered(seen);
+      at(200);
+      root.find("card").fire("click", { target: root.find("card") });
+      at(400);
+      expect(frame.attributes.get("data-layout")).toBe("detail");
+      expect(seen.rest).toBe(seen.layouts?.detail);
+      expect(seen.layoutAtWrite).toBe("detail");
+      at(100);
+      expect(frame.attributes.get("data-layout")).toBe("list");
+      expect(seen.rest).toBe(seen.layouts?.list);
+      expect(seen.layoutAtWrite).toBe("list");
+    });
+
+    it("draws a stroke under every layout and shows the one in force", () => {
+      const seen: Laid = {};
+      const under = (rest: Rest) => {
+        const card = restOf(rest, "card");
+        return toCubics([
+          { id: "a", x: card.x - 50, y: 120, inX: 0, inY: 0, outX: 0, outY: 0 },
+          { id: "b", x: card.x + 50, y: 120, inX: 0, inY: 0, outX: 0, outY: 0 },
+        ]);
+      };
+      const { root, at } = layered(seen, {
+        cast: { card: actor({ watch: true }), line: actor({ path: under }) },
+      });
+      const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
+      expect(style).toContain(
+        `:where([data-layout="list"] [data-cast="line"]) { position: absolute; left: 150px;`,
+      );
+      expect(style).toContain(
+        `:where([data-layout="detail"] [data-cast="line"]) { position: absolute; left: 750px;`,
+      );
+      const path = root.find("line").children[0]?.children[0];
+      expect(path?.attributes.get("d")).toBe(pathData(under(seen.layouts?.list ?? {})));
+      at(200);
+      root.find("card").fire("click", { target: root.find("card") });
+      at(400);
+      expect(path?.attributes.get("d")).toBe(pathData(under(seen.layouts?.detail ?? {})));
+    });
+
+    it("measures every layout once per resize and restores the one in force", () => {
+      const seen: Laid = {};
+      const { root, frame, layoutSets, resize, at } = layered(seen);
+      at(200);
+      root.find("card").fire("click", { target: root.find("card") });
+      at(400);
+      layoutSets.length = 0;
+      resize();
+      expect(layoutSets).toEqual(["list", "detail", "detail"]);
+      expect(frame.attributes.get("data-layout")).toBe("detail");
+    });
+
+    it("measures again when a swapped module changes its layouts", () => {
+      const seen: Laid = {};
+      const { stage } = layered(seen);
+      stage.replace({
+        beats: story(1000, { all: [0, 1000] }),
+        cast: { card: actor({ watch: true }), dot: actor() },
+        skins: {},
+        layouts: ["list", "detail", "wide"],
+        scene: (_time, _events, rest, layouts) => {
+          seen.rest = rest;
+          seen.layouts = layouts;
+          return {};
+        },
+      });
+      expect(Object.keys(seen.layouts ?? {})).toEqual(["list", "detail", "wide"]);
+      expect(seen.layouts?.wide?.card).toEqual({ x: 200, y: 50, width: 200, height: 100 });
+    });
+
+    it("leaves a module without layouts unlabelled, handing the scene no layouts", () => {
+      let handed: Layouts | undefined;
+      const module: StageModule<"all", StageValues> = {
+        beats: story(1000, { all: [0, 1000] }),
+        cast: { dot: actor() },
+        skins: {},
+        scene: (_time, _events, _rest, layouts) => {
+          handed = layouts;
+          return {};
+        },
+      };
+      const { root } = mounted({}, undefined, module);
+      const frame = root.children.find((child) => child.tagName === "div");
+      expect(frame?.attributes.has("data-layout")).toBe(false);
+      expect(handed).toBe(NO_LAYOUTS);
     });
   });
 
