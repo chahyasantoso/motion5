@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `feat/publish` after the full check gate.
+- **Read against:** `main` at `8b157254`, after the merge of pull request 589.
 
 ## Now
 
@@ -26,18 +26,19 @@ byte ceiling.
   code panel straight back into `src/<name>-scene.ts`. Twenty-one moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
-  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
+  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; the nine runtime packages build to `dist` and `npm run pack:check` installs and type-checks them outside the repository, with nothing on npm (ADR-179); and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **Ready to publish (roadmap stage 5):** built on `feat/publish` (`plan/publish-plan.md`) and waiting for the
-  owner's merge; publishing to npm waits for a project that needs it.
+- **Artwork from a reference (roadmap stage 6):** an agent rebuilds an image as SVG or Three.js in named parts, and
+  a command compares the rebuild with the reference; no plan yet. 3D follows, then a motion-atlas brainstorm.
 
 ## Open, and not scheduled
 
 - Retargeting remains a proposed design only.
-- 3D rigs, a skinned mesh's bones (rebuilt on the code path, reading the archive), 3D physics (Rapier is 2D today) and
-  an R3F scaffold for code scenes: wanted, not started.
+- 3D (roadmap stage 7, after the artwork): typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading
+  the archive), 3D physics (Rapier is 2D today) and an R3F scaffold: not started.
+- The instrument (roadmap, deferred) waits for the live kit and a person who asks to live-code.
 
 ## Where the rest of it lives
 
