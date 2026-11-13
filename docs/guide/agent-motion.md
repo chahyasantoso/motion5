@@ -153,6 +153,9 @@ Glue that only this piece needs stays in the scene as a `mix`.
 3. `npm run motion:moves -- --check` until it prints no finding. It samples the move and refuses one that breaks its
    role's rest, jumps between frames, or lacks a description.
 4. Import it into the scene from `./moves/<id>` and use it like a built-in. Name it in your report.
+5. Name the parts your move is built from in `recipe: ["span", "squashFromSpeed"]` (ids from `--parts`); the catalog
+   shows it and the gate refuses an unknown id. A move two pieces import is listed by `motion:moves -- --candidates`,
+   and `motion:promote <id>` moves it into the library; a person decides when.
 
 ## Live
 

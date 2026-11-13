@@ -35,6 +35,7 @@
     "motion:frames": "node packages/tools/bin/motion-frames.mjs",
     "motion:new": "node packages/tools/bin/motion-new.mjs",
     "motion:moves": "node packages/tools/bin/motion-moves.mjs",
+    "motion:promote": "node packages/tools/bin/motion-promote.mjs",
     "motion:check": "node packages/tools/bin/motion-check.mjs",
     "motion:points": "node packages/tools/bin/motion-points.mjs",
     "motion:probe": "node packages/tools/bin/motion-probe.mjs",

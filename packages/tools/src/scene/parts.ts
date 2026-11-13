@@ -216,6 +216,12 @@ export const MOVE_PARTS: readonly MovePart[] = [
     use: "a body stretched along its travel, area kept, and its heading",
   },
   {
+    name: "squashFromSpeed",
+    group: "follow-through",
+    call: "squashFromSpeed({ vx, vy }, { amount, most })",
+    use: "a pose stretched along a speed's heading and squashed across it, from velocity or any speed",
+  },
+  {
     name: "velocity3d",
     group: "follow-through",
     call: "velocity3d(signal, time, events)",
