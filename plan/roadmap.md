@@ -88,11 +88,11 @@ Three things follow from it:
 2. **Values and sequence.** Done (`plan/values-plan.md`): one table of a value's fields with colour, blur, strokes
    and clips; modifiers over any value; `sequence`; a span placed by the clock; the catalog's parts; a review that
    picks its frames. The showreel rebuilt on it is the standing measure.
-3. **Objects and story.** Next (`plan/stage-plan.md`): the `stage` package, layer 3 of `docs/ARCHITECTURE.md`. A cast
+3. **Objects and story.** Done (`plan/stage-plan.md`): the `stage` package, layer 3 of `docs/ARCHITECTURE.md`. A cast
    described in code (shapes, text, letters and words, images, paths, groups), a frame format, beats as named spans,
    and presence (when each member is on stage), played by one stage with no component, and read by the tools. A
    piece becomes one file.
-4. **Composition, the rest.** Transitions between two scenes, an element moved between two layouts and carried
+4. **Composition, the rest.** Next (`plan/composition-four-plan.md`). Transitions between two scenes, an element moved between two layouts and carried
    across a transition. It serves a site (a route change, a list reordering, a card opening) as much as a video.
 5. **Publish.** A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
    `stage` package and one app have held the surface still.

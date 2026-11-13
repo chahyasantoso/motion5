@@ -23,15 +23,15 @@ byte ceiling.
   `resolveSceneFile`, `applySourceEdit`). `checkMove` in `@gerak/tools/scene` is the move gate (ADR-172). `VALUE_FIELDS` is the one table of a value's fields, with blur, a stroke's tail, a clip and a piece's own `custom` numbers, written by one `applyValue` (ADR-173). `sequence` orders phases and beats, `span(from, to)` is placed by the clock, `motion:moves -- --parts` lists the building blocks, and `motion:review` picks its own frames. A piece is one stage module (ADR-174, ADR-175): `@gerak/stage` gives the cast (`actor`, `many`, `group`, `letters`, `words`; a path member draws `Cubic2d` strokes, fixed or a function of where things rest, placed by the stage; `on` lists the beats a member shows in), the `story` of named beats, measured `Rest` boxes and `readStageModule`, the one reader; `mountStage` in `@gerak/dom` builds it with its `skins.dom.css` and plays it on a clock that records watched hovers, so a watched piece scrubs, `stage.html?piece=<name>` plays it, `motion:new` writes one, and `motion:review <file>.ts` checks the cast against the scene. The hand-made showreel rebuilt as the stage module `showreel-f` (189 k tokens) is the standing measure; `motion:frames --compare` compares two runs. A move may name its `recipe`; `motion:moves -- --candidates` lists local moves used by two or more files, and `motion:promote` moves one into `@gerak/moves`. `live.html?scene=<name>` in `apps/pieces` hot-swaps saved scene or stage-module edits in
   place (ADR-171) without losing time, playback rate or loop range, guards broken edits with an error banner while
   holding the last good frame, scrubs and loops on a timeline with cue and named-moment marks, and drags numeric literals in the
-  code panel straight back into `src/<name>-scene.ts`. Twenty moves by role, four of them modifiers, are listed
+  code panel straight back into `src/<name>-scene.ts`. Twenty-one moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
   own moves and the live page live in `apps/pieces`, the tools' default root, and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **Composition, part four:** transitions and layout moves (roadmap stage 4), measured on a small site built cold;
-  `plan/handoff.md` says where to start. Then publish.
+- **Composition, part four:** named layouts the stage measures and `carry` between boxes (roadmap stage 4), measured
+  on a small site built cold; `plan/composition-four-plan.md`, proposed. Then publish.
 
 ## Open, and not scheduled
 
