@@ -31,7 +31,7 @@ byte ceiling.
 ## Next in line
 
 - **Driving a rig from live inputs (roadmap stage 7):** samples as valued events followed by a spring, a recorded
-  session as `cues`, and outlines that morph; `plan/live-inputs-plan.md`, proposed. 3D follows, then a motion-atlas
+  session as `cues`, and outlines that morph; `plan/live-inputs-plan.md`, approved; start from `plan/handoff.md`. 3D follows, then a motion-atlas
   brainstorm.
 
 ## Open, and not scheduled

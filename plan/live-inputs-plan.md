@@ -1,6 +1,6 @@
 # Live inputs plan: driving a rig from numbers
 
-**Status:** Proposed, 2026-11-13.
+**Status:** Approved by the owner, 2026-11-13.
 **Base:** `main` at `42a22c4a`, the merge of pull request 590.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` section 5 (stage 7), `docs/ADR-175`,
 `docs/ADR-178` to `docs/ADR-180`, `.claude/skills/wave-build/SKILL.md`, then this plan.
