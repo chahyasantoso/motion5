@@ -349,6 +349,35 @@ describe("clockDriver watch", () => {
     expect(loop.events()).toEqual([]);
   });
 
+  it("logs a sample at its ms and runs on past its end until it settles", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    source.run(0);
+    source.run(1200);
+    expect(driver.playing()).toBe(false);
+    driver.send("mouthOpen", 0.6);
+    expect(driver.events()).toEqual([{ name: "mouthOpen", at: 1000, value: 0.6 }]);
+    expect(driver.playing()).toBe(true);
+    source.run(2000);
+    source.run(2500);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1500, length: 1000 });
+    source.run(4100);
+    expect(driver.playing()).toBe(false);
+    expect(() => driver.send("mouthOpen", Number.NaN)).toThrow(/finite/);
+  });
+
+  it("forgets its samples on replay, and stops at the end of the next run", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    source.run(0);
+    driver.send("blink", 1);
+    driver.replay();
+    expect(driver.events()).toEqual([]);
+    source.run(5000);
+    source.run(6100);
+    expect(driver.playing()).toBe(false);
+  });
+
   it("stops at its end when it watches nothing", () => {
     const source = frames();
     const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });

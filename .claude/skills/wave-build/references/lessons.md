@@ -39,3 +39,4 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-13 | artwork 2 | 3 Sonnet | 70k + 115k + 194k, 118 calls, 15 min | 2 (moving-base test, compare within one pixel) |
 | 2026-11-13 | artwork 3 cold review | Sonnet | 121k, 32 calls, 4 min | 6 of 10 fixed; bar moved to 15 |
 | 2026-11-13 | artwork 3 measure | Opus | 180k, 60 calls, 14 min | — |
+| 2026-11-14 | live-inputs 1 | Conductor | not shown | 1 (a cost test that passed without the cache it guards) |

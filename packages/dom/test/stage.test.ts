@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { follow, toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
 import {
   actor,
   group,
@@ -365,6 +365,42 @@ describe("mountStage", () => {
     root.find("card").fire("pointerenter");
     at(10);
     expect(seen.events?.map((event) => [event.name, event.target])).toEqual([["enter", "card"]]);
+  });
+
+  it("takes a sample past the story's end into the scene's next frame, and hands back its log", () => {
+    const module: StageModule<"all", StageValues> = {
+      beats: story(1000, { all: [0, 1000] }),
+      cast: { beak: actor() },
+      skins: {},
+      scene: (time, events) => ({
+        beak: { scaleY: follow({ start: 0, on: { mouthOpen: "value" } })(time, events) },
+      }),
+    };
+    let queued: ((at: number) => void)[] = [];
+    const run = (ms: number) => {
+      const due = queued;
+      queued = [];
+      for (const frame of due) frame(ms);
+    };
+    const container = new FakeElement("div");
+    const stage = mountStage(container, module, {
+      frames: {
+        requestFrame: (frame) => queued.push(frame),
+        cancelFrame: () => undefined,
+      },
+    });
+    const beak = container.children[0]?.shadowRoot?.find("beak");
+    run(0);
+    run(1200);
+    expect(stage.driver.playing()).toBe(false);
+    expect(beak?.style.transform).toBe("scaleY(0)");
+    stage.send("mouthOpen", 1);
+    expect(stage.events()).toEqual([{ name: "mouthOpen", at: 1000, value: 1 }]);
+    run(1300);
+    run(1500);
+    expect(beak?.style.transform).not.toBe("scaleY(0)");
+    stage.replay();
+    expect(stage.events()).toEqual([]);
   });
 
   it("replays on R and on a click on the background, never on a watched member", () => {

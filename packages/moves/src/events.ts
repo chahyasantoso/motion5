@@ -2,7 +2,8 @@ import { spring } from "./spring";
 import { elapsedOf, type Time } from "./time";
 import { unreachable } from "./unreachable";
 
-/** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where. */
+/** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a
+ * live number; `target` names where. */
 export interface MotionEvent {
   readonly name: string;
   readonly at: number;
@@ -10,12 +11,15 @@ export interface MotionEvent {
   /** Where a pointer event happened, in px from the watched element's top left corner. */
   readonly x?: number;
   readonly y?: number;
+  /** A sample's number, such as how far a mouth is open; `follow` reads it with `"value"`. */
+  readonly value?: number;
 }
 
 /** Every event so far, oldest first; a scene reads it beside its time. */
 export type Events = readonly MotionEvent[];
 
-/** Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target` and an `x`, `y`. */
+/** Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y` and a
+ * `value`. */
 export function isMotionEvent(value: unknown): value is MotionEvent {
   if (typeof value !== "object" || value === null) return false;
   const optional = (key: string, kind: "string" | "number") => {
@@ -27,20 +31,22 @@ export function isMotionEvent(value: unknown): value is MotionEvent {
     typeof Reflect.get(value, "at") === "number" &&
     optional("target", "string") &&
     optional("x", "number") &&
-    optional("y", "number")
+    optional("y", "number") &&
+    optional("value", "number")
   );
 }
 
 /** The empty event list; share it rather than allocating one. */
 export const NO_EVENTS: Events = Object.freeze([]);
 
-/** Settings of a `follow`: `start`, `on` (goal by event name), `target`, `stiffness` (default 170),
- * `damping` (26) and `rest` (0.001). */
+/** Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own),
+ * `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001). */
 export interface FollowOptions {
   /** The value before any event. */
   readonly start: number;
-  /** The value each event's name sends the spring towards; events not named here are ignored. */
-  readonly on: Readonly<Record<string, number>>;
+  /** The goal each event's name sends the spring towards, or `"value"` for the event's own value; events
+   * not named here, and `"value"` events with no value, are ignored. */
+  readonly on: Readonly<Record<string, number | "value">>;
   /** Only events with this target count; with none, events count whatever their target. */
   readonly target?: string;
   /** Pull towards the goal, per second squared; default 170. */
@@ -51,41 +57,72 @@ export interface FollowOptions {
   readonly rest?: number;
 }
 
-/** A spring each named event sends towards its goal, turning back with no jump; pure in time and events. */
+/** The spring of a `follow` just after the event at `index - 1` set its goal at `since` ms. */
+interface FollowState {
+  readonly index: number;
+  readonly last: MotionEvent;
+  readonly goal: number;
+  readonly value: number;
+  readonly speed: number;
+  readonly since: number;
+}
+
+/** A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with
+ * no jump; pure in time and events, a later call goes on from the last. */
 export function follow(options: FollowOptions): (time: Time, events: Events) => number {
   const stiffness = options.stiffness ?? 170;
   const damping = options.damping ?? 26;
   const rest = options.rest ?? 0.001;
   if (!(stiffness > 0) || !(damping >= 0))
     throw new RangeError("follow: stiffness must be above 0 and damping at least 0.");
+  const goalOf = (event: MotionEvent): number | undefined => {
+    if (options.target !== undefined && event.target !== options.target) return undefined;
+    const goal = options.on[event.name];
+    if (goal === "value") return event.value;
+    return goal;
+  };
+  let kept: FollowState | undefined;
   return (time, events) => {
     const now = elapsedOf(time.clock);
-    let goal = options.start;
-    let value = options.start;
-    let speed = 0;
-    let since: number | undefined;
-    for (const event of events) {
-      const next = options.on[event.name];
+    // The kept spring holds when the event it last took is still where it was, and is not in the future.
+    const resumes =
+      kept !== undefined &&
+      events[kept.index - 1] === kept.last &&
+      (now === undefined || kept.since <= now);
+    let state = resumes ? kept : undefined;
+    for (let index = state?.index ?? 0; index < events.length; index += 1) {
+      const event = events[index];
+      if (event === undefined) continue;
+      const next = goalOf(event);
       if (next === undefined) continue;
-      if (options.target !== undefined && event.target !== options.target) continue;
       if (now !== undefined && event.at > now) break;
-      if (since !== undefined) {
-        const moved = spring(value - goal, speed, (event.at - since) / 1000, {
-          stiffness,
-          damping,
-        });
-        value = goal + moved.offset;
+      let value = state?.value ?? options.start;
+      let speed = state?.speed ?? 0;
+      if (state !== undefined) {
+        const moved = spring(
+          state.value - state.goal,
+          state.speed,
+          (event.at - state.since) / 1000,
+          {
+            stiffness,
+            damping,
+          },
+        );
+        value = state.goal + moved.offset;
         speed = moved.speed;
       }
-      goal = next;
-      since = event.at;
+      state = { index: index + 1, last: event, goal: next, value, speed, since: event.at };
     }
-    if (since === undefined) return options.start;
-    if (now === undefined) return goal;
-    const moved = spring(value - goal, speed, (now - since) / 1000, { stiffness, damping });
+    kept = state;
+    if (state === undefined) return options.start;
+    if (now === undefined) return state.goal;
+    const moved = spring(state.value - state.goal, state.speed, (now - state.since) / 1000, {
+      stiffness,
+      damping,
+    });
     return Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest
-      ? goal
-      : goal + moved.offset;
+      ? state.goal
+      : state.goal + moved.offset;
   };
 }
 

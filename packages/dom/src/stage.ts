@@ -159,6 +159,11 @@ export interface MountedStage<B extends string = string> {
   replay(): void;
   /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
   replace(next: StageModule<B, StageValues>): void;
+  /** Logs a sample of a live number at the clock's ms, such as a microphone's level; the clock runs on past
+   * the story's end until it settles. */
+  send(name: string, value: number, target?: string): void;
+  /** Everything logged so far, oldest first: hovers and samples, ready to save as a module's `cues`. */
+  events(): Events;
   dispose(): void;
 }
 
@@ -772,6 +777,10 @@ export function mountStage<
       return run.driver;
     },
     replay,
+    send(name, value, target) {
+      run.driver.send(name, value, target);
+    },
+    events: () => [...run.driver.events()],
     replace(next) {
       scene = next.scene;
       pick = next.layout;

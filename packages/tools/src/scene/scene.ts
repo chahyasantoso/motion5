@@ -56,14 +56,15 @@ export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
 export function parseEvents(text: string): Events | { readonly reason: string } {
   const events: MotionEvent[] = [];
   for (const part of text.split(/,(?![^(]*\))/).map((piece) => piece.trim())) {
-    const match = /^([\w-]+)(?::([\w-]+))?@(\d+(?:\.\d+)?)(?:\((-?[\d.]+),(-?[\d.]+)\))?$/.exec(
-      part,
-    );
+    const match =
+      /^([\w-]+)(?::([\w-]+))?(?:=(-?\d+(?:\.\d+)?))?@(\d+(?:\.\d+)?)(?:\((-?[\d.]+),(-?[\d.]+)\))?$/.exec(
+        part,
+      );
     if (match === null || match[1] === undefined)
       return {
-        reason: `Event "${part}" needs name@ms or name:target@ms, with (x,y) after it for a point, like click:stage@300(640,360).`,
+        reason: `Event "${part}" needs name@ms or name:target@ms, with (x,y) after it for a point, like click:stage@300(640,360), or =value before @ for a sample, like mouthOpen=0.6@1234.`,
       };
-    const at = Number(match[3]);
+    const at = Number(match[4]);
     if (events.length > 0 && at < (events.at(-1)?.at ?? 0))
       return {
         reason: `Event "${part}" comes before the one ahead of it; list events in time order.`,
@@ -72,9 +73,10 @@ export function parseEvents(text: string): Events | { readonly reason: string } 
       name: match[1],
       at,
       ...(match[2] === undefined ? {} : { target: match[2] }),
-      ...(match[4] === undefined || match[5] === undefined
+      ...(match[3] === undefined ? {} : { value: Number(match[3]) }),
+      ...(match[5] === undefined || match[6] === undefined
         ? {}
-        : { x: Number(match[4]), y: Number(match[5]) }),
+        : { x: Number(match[5]), y: Number(match[6]) }),
     });
   }
   return events;
@@ -226,7 +228,7 @@ export type SampleArgs =
   | { readonly kind: "usage"; readonly message: string };
 
 const SAMPLE_USAGE =
-  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events name:target@ms,...]";
+  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
 
 /** The scene file, what to sample and which targets and fields to print, or the usage text. */
 export function parseSampleArgs(argv: readonly string[]): SampleArgs {

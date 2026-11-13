@@ -48,6 +48,67 @@ describe("follow", () => {
   });
 });
 
+describe("follow on a stream of samples", () => {
+  const stream = (count: number, step = 33): Events =>
+    Array.from({ length: count }, (_, index) => ({
+      name: "mouthOpen",
+      at: index * step,
+      value: (Math.sin(index * 0.7) + 1) / 2,
+    }));
+  const fresh = () => follow({ start: 0, on: { mouthOpen: "value" } });
+
+  it("springs to each sample's own value, and skips a sample with none", () => {
+    const mouth = fresh();
+    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0, value: 0.6 }])).toBeCloseTo(0.6, 4);
+    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0 }])).toBe(0);
+    const near = mouth(liveAt(66), stream(3));
+    expect(near).toBeGreaterThan(0);
+    expect(near).toBeLessThan(1);
+  });
+
+  it("answers what a run from the start gives, forwards, backwards and at random", () => {
+    const log = stream(300);
+    const kept = fresh();
+    let seed = 7;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 10_000;
+    const times = [
+      ...Array.from({ length: 200 }, (_, index) => index * 16),
+      3000,
+      1200,
+      ...Array.from({ length: 200 }, random),
+    ];
+    for (const ms of times) expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
+  });
+
+  it("goes on from its last answer as the log grows, and starts again on another log", () => {
+    const log = [...stream(200)];
+    const kept = fresh();
+    for (let ms = 0; ms < 6600; ms += 16) {
+      while (log.length < 400 && (log.at(-1)?.at ?? 0) < ms)
+        log.push({ name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 });
+      expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
+    }
+    const other = stream(50, 20);
+    expect(kept(liveAt(900), other)).toBe(fresh()(liveAt(900), other));
+  });
+
+  it("costs about the same per frame over 10 000 samples as over the last 100", () => {
+    const long = stream(10_000);
+    const short = long.slice(-100);
+    const frameCost = (log: Events) => {
+      const kept = fresh();
+      const from = (log.at(-1)?.at ?? 0) - 3300;
+      kept(liveAt(from), log);
+      const start = performance.now();
+      for (let ms = from; ms < from + 3300; ms += 16) kept(liveAt(ms), log);
+      return performance.now() - start;
+    };
+    const best = (log: Events) => Math.min(...[0, 1, 2, 3, 4].map(() => frameCost(log)));
+    const [longest, shortest] = [best(long), best(short)];
+    expect(longest).toBeLessThan(4 * shortest + 1);
+  });
+});
+
 describe("a live clock", () => {
   it("places a span by its ms", () => {
     const intro = span(200, 600);

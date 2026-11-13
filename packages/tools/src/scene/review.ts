@@ -437,6 +437,17 @@ function labelled(beats: readonly Beat[], finding: string): string {
   );
 }
 
+/** One finding when cues fall after the module's end, which no clock reaches: how many, and the first. */
+function lateCueFindings(module: SceneModule): readonly string[] {
+  const late = module.cues.filter(({ at }) => at > module.durationMs);
+  const [first] = late;
+  if (first === undefined) return [];
+  const count = late.length === 1 ? "a cue comes" : `${late.length} cues come`;
+  return [
+    `${count} after the end at ${module.durationMs} ms, the first "${first.name}" at ${first.at} ms; no clock reaches them, so lengthen the story or cut the recording.`,
+  ];
+}
+
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> & Limits,
@@ -470,7 +481,7 @@ export function reviewSceneModule(
     const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
     return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
   };
-  const findings = reviewValues(samples, request, hidden);
+  const findings = [...reviewValues(samples, request, hidden), ...lateCueFindings(module)];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
     kind: "reviewed",

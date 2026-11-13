@@ -49,8 +49,14 @@ export interface ClockDriver extends Driver {
   /** Logs the pointer events of `element` for `target` at the clock's ms, and keeps the clock running past its
    * end while any is watched; a seek keeps the log, `replay` forgets it. */
   watch(target: string, element: EventSource): () => void;
+  /** Logs a sample of a live number at the clock's ms, and keeps the clock running past its end until
+   * `SAMPLE_SETTLE_MS` after the latest; a seek keeps the log, `replay` forgets it. */
+  send(name: string, value: number, target?: string): void;
   events(): Events;
 }
+
+/** How long a clock runs on past its end after the latest sample, for a spring to settle. */
+export const SAMPLE_SETTLE_MS = 2000;
 
 /** A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks
  * until `.play()`; `reducedMotion: "play"` opts out. */
@@ -75,11 +81,20 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   // While it watches a member the clock runs on past the end, so a later hover still plays out.
   let watching = 0;
   let overtime = 0;
+  // A sample likewise keeps it running past the end until this ms.
+  let settleUntil = -Infinity;
+  // Whether the clock stopped by itself at its end, so a sample may start it again.
+  let ended = false;
   const elapsedNow = (): number => progress * options.duration + overtime;
+  const runsOver = (): boolean => watching > 0 || elapsedNow() < settleUntil;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
   const recorder = eventRecorder(elapsedNow, () => notify());
+  const forget = (): void => {
+    recorder.clear();
+    settleUntil = -Infinity;
+  };
   // A listener may pause or play during `notify`, so the next frame is asked for only after it.
   const request = (): void => {
     if (running && handle === undefined) handle = frames.requestFrame(frame);
@@ -99,15 +114,19 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress = options.duration > 0 ? elapsed / options.duration : 0;
       cycle = fresh(undefined);
       cycle.advance(elapsed);
-    } else if (cycle.state.kind === "finished" && watching > 0) {
+    } else if (cycle.state.kind === "finished" && runsOver()) {
       overtime += delta;
     } else {
       progress = cycle.advance(delta).progress;
-      if (cycle.state.kind === "finished" && watching === 0) running = false;
+    }
+    if (range === undefined && cycle.state.kind === "finished" && !runsOver()) {
+      running = false;
+      ended = true;
+      previous = undefined;
     }
     // A loop that wrapped starts a fresh pass, so what was recorded in the last one is forgotten;
     // a yoyo runs backwards on purpose and keeps its log.
-    if (elapsedNow() < before && options.yoyo !== true) recorder.clear();
+    if (elapsedNow() < before && options.yoyo !== true) forget();
     notify();
     request();
   };
@@ -116,17 +135,19 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     handle = undefined;
     previous = undefined;
     running = false;
+    ended = false;
   };
   const start = (): void => {
-    // Past the end while watching, playing resumes the overtime; otherwise a finished clock starts again.
-    if (cycle.state.kind === "finished" && watching > 0 && range === undefined) {
+    ended = false;
+    // Past the end while watching or settling, playing resumes the overtime; a finished clock starts again.
+    if (cycle.state.kind === "finished" && runsOver() && range === undefined) {
       running = true;
       request();
       return;
     }
     if (progress >= 1 || cycle.state.kind === "finished") {
       overtime = 0;
-      recorder.clear();
+      forget();
       cycle = fresh(undefined);
       progress =
         range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
@@ -169,6 +190,15 @@ export function clockDriver(options: ClockOptions): ClockDriver {
         unwatch();
       };
     },
+    send(name, value, target) {
+      recorder.sample(name, value, target);
+      settleUntil = Math.max(settleUntil, elapsedNow() + SAMPLE_SETTLE_MS);
+      if (ended && range === undefined) {
+        ended = false;
+        running = true;
+        request();
+      }
+    },
     events: () => recorder.log,
     seek(next) {
       stop();
@@ -181,7 +211,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     replay() {
       stop();
       overtime = 0;
-      recorder.clear();
+      forget();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
       if (!still) start();
