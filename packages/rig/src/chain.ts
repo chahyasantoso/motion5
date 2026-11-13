@@ -225,8 +225,10 @@ export function chainThrough<const Id extends string>(
   const bones: Bone2d[] = [];
   const rotations: Record<string, number> = {};
   let parentAngle = 0;
+  let parentId: Id | undefined;
   joints.slice(0, -1).forEach((joint, index) => {
-    const next = joints[index + 1]!;
+    const next = joints[index + 1];
+    if (next === undefined) return;
     const dx = next.x - joint.x;
     const dy = next.y - joint.y;
     const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
@@ -235,15 +237,17 @@ export function chainThrough<const Id extends string>(
     rotations[joint.id] = rotation;
     bones.push({
       id: joint.id,
-      ...(index === 0 ? {} : { parentId: joints[index - 1]!.id }),
+      ...(parentId === undefined ? {} : { parentId }),
       length: Math.hypot(dx, dy),
       rotation,
     });
+    parentId = joint.id;
   });
   const given = new Set<string>(joints.map((joint) => joint.id));
   const isId = (id: string): id is Id => given.has(id);
   const built = buildChain(bones);
-  const first = joints[0]!;
+  const [first] = joints;
+  if (first === undefined) throw new RangeError("chainThrough: needs at least two joints, got 0.");
   return {
     chain: { ...built, order: built.order.filter(isId) },
     rest: { rotations, base: { x: first.x, y: first.y, rotation: 0 } },

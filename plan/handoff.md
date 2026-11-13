@@ -41,4 +41,7 @@ The decision record is ADR-181 (ADR-180 is the last). Slice I1 touches these, ch
   team table splits I5 by owner so one worker holds `packages/dom/src/stage.ts`.
 - Per-part gradients copy a shared gradient once per part that uses it; the owner asked for a note, which is in the
   plan's risks. Revisit it if a scene has hundreds of parts on one gradient.
+- AGENTS.md forbids `!` (a non-null assertion), but no gate holds it, and a rough grep finds about 170 lines with one in package and app
+  sources (`grep -rnE '[A-Za-z0-9_)\]]!(\.|;|,|\))' packages/*/src apps/*/src`). `chainThrough`'s are fixed on this
+  branch. A scan like `scan:comments`, with a baseline that may only shrink, would hold it; a plan of its own.
 - Deferred: the `trail` cache (ADR-176), a clip that grows.
