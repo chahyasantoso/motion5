@@ -20,40 +20,49 @@ cannot exercise this, so part four has a measure of its own: a small site built 
   DOM skin styles each under `[data-layout="<name>"]` on the frame. The stage measures each layout's `Rest` in turn
   at mount and on every re-measure, and passes the scene a fourth argument, `layouts: Readonly<Record<L, Rest>>`.
   `rest`, the third, stays the rest of the layout in force, so every existing piece reads as before.
-- **Which layout is in force is a function of time and events.** A module with `layouts` exports
-  `layout: (time, events) => L`; the stage sets `data-layout` when the answer changes, before it writes that frame's
+- **Which layout is in force is a function of the events alone.** A module with `layouts` exports
+  `layout: (events) => L`; the stage sets `data-layout` when the answer changes, before it writes that frame's
   values. With no `layout`, the first layout is in force. A route is a layout: a member a route does not show is
-  hidden by its skin, and its box in that layout is zero.
+  hidden by its skin, and its box in that layout is zero. Answering from events alone makes the moment of each change
+  the time of the event that caused it, so nothing else has to store it.
 - **Carrying is one function of boxes.** `carry(own, from, to, progress, size?)` in `@gerak/stage` answers the pose
-  that puts a member resting at `own` on `from` at progress 0 and on `to` at 1. A layout change passes the new
-  layout's box as both `own` and `to`; a reorder passes the item's own box and two slots' boxes, with no layout
-  change at all. `size` is `"scale"` (default), `"clip"` (the member rests at the larger box and is clipped to the
-  smaller, so a card opening does not stretch its text) or `"keep"`. It is not a `defineMove`: its options are boxes.
+  that puts a member resting at `own` on `from` at progress 0 and on `to` at 1. `size` is `"scale"` (default),
+  `"clip"` (the member rests at the larger box and is clipped to the smaller, so a card opening does not stretch its
+  text) or `"keep"`. It is not a `defineMove`: its options are boxes.
+- **`carried` owns every change of place, interrupted ones included.** `carried({ own, at, events, time, ms, ease,
+  size })` takes `at: (events) => Box`, where the member should be after the events so far, finds each event that
+  changed the answer, and carries from where the member was drawn at that event to the new box. A click mid-flight
+  starts from the drawn place, never jumps back to the old rest. A layout change passes
+  `(events) => restOf(layouts[layout(events)], name)`; a reorder passes the slot box its item takes after the events,
+  with no layout change at all. Scenes call `carried`; `carry` is what it is built from.
 - **Tools with no renderer read layouts too.** A module with `layouts` may give `rest` per layout for tools, and
   `readStageModule` checks that every name in `layout`'s answers is declared.
 - **Joining two modules waits for the video stage.** On a site, two scenes are two layouts of one module. Two stage
   modules played one after the other, with a cut or a dissolve, belong with the camera and the beat driver.
-- **A move is promoted when pieces from two different briefs import it.** A stage module may export `brief`, a name;
-  `motion:moves -- --candidates` counts distinct briefs, and a module with none counts as its own. Rebuilds of one
-  brief count once.
+- **A move is promoted when pieces from two different briefs import it.** A piece file, stage module or plain scene,
+  may export `const brief = "<name>"`; `motion:moves -- --candidates` reads it from source as it reads imports,
+  counts distinct briefs, and counts a file with none as its own. Rebuilds of one brief count once.
 
 ## 3. Slices
 
 ### F1. Layouts measured and switched
 
 - **Invariant:** `mountStage` measures every declared layout, passes `layouts` to the scene, and sets `data-layout`
-  from `layout(time, events)` before writing the frame's values; a re-measure measures every layout again.
+  from `layout(events)` before writing the frame's values; a re-measure measures every layout again and leaves the
+  layout in force as it found it.
 - **Owner:** `packages/dom/src/stage.ts`; the types and `readStageModule` in `packages/stage/src/module.ts` (F0).
 - **Test:** a two-layout module where a member sits left in one and right in the other reads both boxes; a click
-  event switches the attribute on the frame that answers it; a module without layouts samples and frames as before.
+  event switches the attribute on the frame that answers it; measuring every layout does not start a second
+  measure through the resize observer; a module without layouts samples and frames as before.
 
-### F2. `carry`
+### F2. `carry` and `carried`
 
 - **Invariant:** at progress 0 the member's drawn box equals `from`, at 1 it equals `to`, for each `size`; with
-  `own` equal to `to`, progress 1 is the rest pose.
+  `own` equal to `to`, progress 1 is the rest pose. `carried` is continuous across every event that changes `at`.
 - **Owner:** `packages/stage/src/carry.ts`.
 - **Test:** boxes of different centre and size, each `size`, checked at 0, 0.5 and 1; a zero `from` box is a
-  `RangeError` naming it, since a member absent from a layout has nowhere to come from.
+  `RangeError` naming it, since a member absent from a layout has nowhere to come from; two changes 100 ms apart
+  in a 400 ms carry draw no jump at the second; seeking backwards answers what playing forwards did.
 
 ### F3. Tools read layouts
 
@@ -64,8 +73,8 @@ cannot exercise this, so part four has a measure of its own: a small site built 
 
 ### F4. Smaller costs the showreel named
 
-- `motion:moves -- --candidates` counts briefs (owner `packages/tools/src/scene/` catalog, `brief` read by
-  `readStageModule`); the six showreel rebuilds declare `brief: "showreel"`.
+- `motion:moves -- --candidates` counts briefs (owner the catalog in `packages/tools/src/scene/`); the six showreel
+  rebuilds, two of them plain scenes, export `brief = "showreel"`.
 - `motion:promote` writes the description as the move's doc comment, so the generated reference holds without a
   hand edit (owner `packages/tools/src/scene/promote.ts`).
 - `jolt`'s `count` and `push`'s `to` state the ranges they throw outside of, so the catalog and the gate show them.
@@ -77,8 +86,9 @@ cannot exercise this, so part four has a measure of its own: a small site built 
 - **Measure, alone, fresh:** a small site built cold from a brief by an Opus worker at medium effort: a list of
   cards with a sort control that reorders them, and a route from a card to its detail page and back, the card
   carried across. It records tokens, tool calls, moves written and reused, and frames at each layout change. It
-  passes when no box is computed by hand, the reorder and the route each read as one motion, and the review is clean.
-  Its row starts a table of its own; the showreel's rows are not its baseline.
+  passes when the scene does no arithmetic on boxes outside `carried`, the review finds no jump at any layout change
+  or at a second click mid-flight, and the review is otherwise clean. Its row starts a table of its own; the
+  showreel's rows are not its baseline, and no run on today's tools is made to compare against.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims.
 
 ## 4. Team and order
@@ -101,6 +111,10 @@ One pull request, after wave 3.
 - **Measuring every layout** sets the attribute and reads offsets once per layout; a module with many layouts pays
   that on each resize. The stage measures only on mount, font load and resize, never per frame.
 - **Clip-sized carries** depend on the `clip` value field reading the member's own box; F2 checks it on the DOM.
+- **A reorder moves items by transform only**, so the page's order, tab order and what a screen reader reads stay
+  the first order. That is the site's to fix by reordering its data at rest; the guide says so.
+- **`carried` folds every past change** on each frame; a page clicked hundreds of times pays for each. It reads only
+  changes still inside `ms` of the time asked, plus the last settled one.
 - **A route as a layout** keeps every route's members in one cast. A site with many routes may need more; the measure
   says whether it does.
 
