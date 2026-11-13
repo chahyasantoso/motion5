@@ -1,6 +1,6 @@
 # Publish plan: ready to publish, not published
 
-**Status:** Approved by the owner, 2026-11-13.
+**Status:** Built, 2026-11-13; approved by the owner the same day.
 **Base:** `main` at `21a2cc2f`, the merge of pull request 588.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` sections 2 and 5,
 `plan/composition-four-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -77,6 +77,26 @@ wants it, publishing is one command added to what this plan builds.
   and reads only the guide's pages, and makes a small animated title on a plain Vite page. It passes when it never
   opens this repository's source. Tokens and tool calls are recorded.
 - **Cold review:** a Sonnet agent reviews the diff and runs the pack check.
+
+## 3a. Results
+
+| Measure | Worker | Tokens | Tool calls | Built and loaded | Repo source opened | Built files opened |
+| --- | --- | --- | --- | --- | --- | --- |
+| "Hello, motion" outside the repository | Sonnet, medium | 84 k | 35 | yes, `vite build` and the dev server | none | 5 |
+
+It passes: the nine tarballs installed, the page built and loaded with no console error, and the worker never
+opened this repository. Each built file it opened was a gap in the guide, now closed: the `motion:*` scripts exist
+only here, nothing showed how to mount a module on a page, the stage lives in a shadow root, `seek` takes progress
+not ms, and the reference clipped a move's options. The guide has an "Outside this repository" section, and the
+reference prints every move option in full.
+
+The cold review (Sonnet, 97 k) gave ten findings; eight are fixed. The build edited strings and comments that looked
+like imports and guessed a folder index for any missing file: it now edits only parsed module specifiers and refuses
+one that names nothing. Declaration maps pointed at source that does not ship: none ship. `pack:check` now also
+type-checks a strict consumer of every export, which found that Rapier's types need the `esnext` lib (the README says
+so, with the `@types` a consumer adds). The boundary scan now holds an app's tests and configs. Left: `sideEffects`
+is unset on `react` and `three`, which only limits tree-shaking; package tests may read app files, since they ship
+nothing.
 
 ## 4. Team and order
 

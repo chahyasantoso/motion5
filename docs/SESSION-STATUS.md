@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `main` at `21a2cc2f`, after the merge of pull request 588.
+- **Read against:** `feat/publish` after the full check gate.
 
 ## Now
 
@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Ready to publish (roadmap stage 5):** the runtime packages built and checked by installing them outside the
-  repository, and the app boundary in the check; nothing is published; `plan/publish-plan.md`, approved.
+- **Ready to publish (roadmap stage 5):** built on `feat/publish` (`plan/publish-plan.md`) and waiting for the
+  owner's merge; publishing to npm waits for a project that needs it.
 
 ## Open, and not scheduled
 
