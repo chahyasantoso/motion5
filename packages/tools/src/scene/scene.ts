@@ -37,6 +37,8 @@ export interface SceneModule {
   readonly cast?: readonly CastName[];
   /** Where things rest for a stage module at the start, its own `rest` or the first layout's; a path function is called with it. */
   readonly rest?: Rest;
+  /** A stage module whose layouts no renderer measured: it names `layouts` and gives no `rests`. */
+  readonly unmeasured?: boolean;
 }
 
 /** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
@@ -115,7 +117,10 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
       return (current === undefined ? undefined : named[current]) ?? NO_REST;
     };
     const rest = restFor(NO_EVENTS);
+    const unmeasured =
+      stage.layouts !== undefined && Reflect.get(Object(value), "rests") === undefined;
     return {
+      ...(unmeasured ? { unmeasured } : {}),
       cues: ownCues,
       scene: (time, events) => scene(time, events, restFor(events), layouts),
       durationMs: beats.durationMs,

@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Publish (roadmap stage 5):** a first `0.x` release of the runtime packages, a release command and the app
-  boundary in the check; `plan/publish-plan.md`, proposed.
+- **Ready to publish (roadmap stage 5):** the runtime packages built and checked by installing them outside the
+  repository, and the app boundary in the check; nothing is published; `plan/publish-plan.md`, approved.
 
 ## Open, and not scheduled
 

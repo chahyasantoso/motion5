@@ -298,6 +298,23 @@ describe("motion:review on a stage module", () => {
     expect("reason" in read && read.reason).toMatch(/"row\.0".*text that follows time/);
   });
 
+  it("says once that layouts are unmeasured without a browser, in place of a carried member never moved", () => {
+    const laid = { beats: story(1000, { all: [0, 1000] }), skins: {}, cast: { card: actor() } };
+    const scene = () => ({ card: {} });
+    const unmeasured = findings({ ...laid, layouts: ["list", "detail"], scene });
+    expect(unmeasured).toHaveLength(1);
+    expect(unmeasured[0]).toMatch(/not measured without a browser/);
+    const measured = findings({
+      ...laid,
+      layouts: ["list", "detail"],
+      rests: { list: {}, detail: {} },
+      scene,
+    });
+    expect(measured).toEqual([
+      'cast member "card" is never moved by the scene; move it or mark it still.',
+    ]);
+  });
+
   it("finds a member the scene never moves that is not still", () => {
     expect(findings(unused)).toEqual([
       'cast member "spare" is never moved by the scene; move it or mark it still.',
