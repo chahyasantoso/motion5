@@ -33,6 +33,14 @@ springs, rigs with FK and IK, and seekable physics. Drivers only report time and
 
 The worked examples live in `apps/examples`; pieces made with gerak live in `apps/pieces`. None of the packages is published; consumers build from the workspace.
 
+## Use it in another project
+
+Nothing is on npm yet. Pack the packages and install the tarballs:
+
+1. Run `npm run pack:check -- --keep`; it prints the folder that holds the tarballs.
+2. In your project, run `npm install <path>/*.tgz`, plus `react` or `three` when you use those packages.
+3. Point your agent at [the agent guide](https://github.com/chahyasantoso/motion5/blob/main/docs/guide/agent-motion.md).
+
 ## Toolchain and commands
 
 Node 24, ESM, TypeScript, Vitest, and Prettier.
