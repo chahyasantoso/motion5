@@ -169,6 +169,28 @@ describe("motion:import-svg geometry", () => {
   }, 60000);
 });
 
+describe("motion:import-svg use of a symbol", () => {
+  const extent = (imported: Imported, name: string) => {
+    const points = along(cubicsOf(imported, name));
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
+  const near = (corners: readonly number[]) => corners.map((value) => expect.closeTo(value, 3));
+
+  it("places each use's copy of the symbol by its box, viewBox and preserveAspectRatio", async () => {
+    const imported = await bring(join(fixtures, "svg-symbol.svg"), "fixture");
+    expect(imported.result.members).toEqual(["part1", "part2", "part3"]);
+    expect(imported.result.leftOut).toEqual([]);
+    // A 10x10 view in a 40x40 box at (20, 10) scales by 4: the 10x5 rect is 40x20.
+    expect(extent(imported, "part1")).toEqual(near([20, 10, 60, 30]));
+    // A 50x20 box meets at scale 2, centred across: x shifts by 15.
+    expect(extent(imported, "part2")).toEqual(near([115, 10, 135, 20]));
+    // preserveAspectRatio none stretches by 5 across and 3 down.
+    expect(extent(imported, "part3")).toEqual(near([10, 60, 60, 75]));
+  }, 60000);
+});
+
 describe("motion:import-svg strokes", () => {
   it("scales a stroke under a uniform scale and lists one under an uneven scale", async () => {
     const imported = await bring(join(fixtures, "svg-strokes.svg"), "fixture");

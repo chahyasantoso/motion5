@@ -167,6 +167,74 @@ export function extractSvg(): Extracted {
         note(use, "use points at nothing in this file");
         continue;
       }
+      if (target.localName === "symbol") {
+        const group = document.createElementNS(NS, "g");
+        for (const attribute of [...use.attributes]) {
+          if (
+            ["href", "xlink:href", "x", "y", "width", "height", "transform", "id"].includes(
+              attribute.name,
+            )
+          )
+            continue;
+          group.setAttribute(attribute.name, attribute.value);
+        }
+        const x = number(use.getAttribute("x") ?? "0", 0);
+        const y = number(use.getAttribute("y") ?? "0", 0);
+        const view = (target.getAttribute("viewBox") ?? "")
+          .trim()
+          .split(/[\s,]+/)
+          .map((part) => Number.parseFloat(part));
+        const [minX, minY, viewWidth, viewHeight] = view;
+        let place = `translate(${x} ${y})`;
+        if (
+          view.length === 4 &&
+          view.every(Number.isFinite) &&
+          minX !== undefined &&
+          minY !== undefined &&
+          viewWidth !== undefined &&
+          viewHeight !== undefined &&
+          viewWidth > 0 &&
+          viewHeight > 0
+        ) {
+          const boxWidth = number(use.getAttribute("width") ?? "", viewWidth);
+          const boxHeight = number(use.getAttribute("height") ?? "", viewHeight);
+          const [align = "xMidYMid", fit = "meet"] = (
+            target.getAttribute("preserveAspectRatio") ?? ""
+          )
+            .trim()
+            .split(/\s+/)
+            .filter((word) => word !== "defer");
+          const across = boxWidth / viewWidth;
+          const down = boxHeight / viewHeight;
+          const uniform = fit === "slice" ? Math.max(across, down) : Math.min(across, down);
+          const [scaleX, scaleY] = align === "none" ? [across, down] : [uniform, uniform];
+          const fraction = (word: string): number => {
+            switch (word) {
+              case "Min":
+                return 0;
+              case "Max":
+                return 1;
+              default:
+                return 0.5;
+            }
+          };
+          const alignX = align === "none" ? 0 : fraction(align.slice(1, 4));
+          const alignY = align === "none" ? 0 : fraction(align.slice(5, 8));
+          const shiftX = x + (boxWidth - viewWidth * scaleX) * alignX - minX * scaleX;
+          const shiftY = y + (boxHeight - viewHeight * scaleY) * alignY - minY * scaleY;
+          place = `translate(${shiftX} ${shiftY}) scale(${scaleX} ${scaleY})`;
+        }
+        group.setAttribute("transform", `${use.getAttribute("transform") ?? ""} ${place}`);
+        for (const child of target.children) {
+          const copy = child.cloneNode(true);
+          if (!(copy instanceof Element)) continue;
+          copy.removeAttribute("id");
+          for (const inner of copy.querySelectorAll("[id]")) inner.removeAttribute("id");
+          group.append(copy);
+        }
+        use.replaceWith(group);
+        continue;
+      }
       if (!SHAPES.has(target.localName) && !["g", "use"].includes(target.localName)) {
         refused.add(use);
         note(use, `use of ${target.localName} is not placed`);
