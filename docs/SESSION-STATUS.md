@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `feat/composition-four` after the full check gate.
+- **Read against:** `main` at `21a2cc2f`, after the merge of pull request 588.
 
 ## Now
 
@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Publish (roadmap stage 5):** a first `0.x` release, a release command and the app boundary in the scan; no plan
-  yet. Composition part four is built (`plan/composition-four-plan.md`) and waits for the owner's merge.
+- **Publish (roadmap stage 5):** a first `0.x` release of the runtime packages, a release command and the app
+  boundary in the check; `plan/publish-plan.md`, proposed.
 
 ## Open, and not scheduled
 
