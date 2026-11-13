@@ -1,6 +1,6 @@
 # Composition plan, part three: what the fifth rebuild still paid for
 
-**Status:** Approved by the owner, 2026-11-13.
+**Status:** Built, 2026-11-13; approved by the owner the same day.
 **Base:** `main` at `99c04055`, the merge of pull request 586.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-176-strokes-from-the-layout-and-a-library-that-grows.md`,
 `plan/composition-two-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -86,6 +86,30 @@ the showreel.
   its own, its strokes use no beat only to hide an empty stroke, the timecode is back, and its frames are as close as
   `showreel-e`'s. Its token count is recorded beside the earlier rows; one run is too noisy to pass or fail on it.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims.
+
+## 3a. Results
+
+| Rebuild | Worker | Tokens | Tool calls | Moves written, reused | Own PNG code | Timecode | Mean frame difference |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `showreel-d` | Opus, medium | 242 k | 72 | 2, 22 | a diff script | no | 0.1 to 5.1 |
+| `showreel-e` | Opus, medium | 252 k | 84 | 1, 22 | a PNG decoder and diff | no | 0.1 to 4.9 |
+| `showreel-f` | Opus, medium | 189 k | 46 | 1, 23 | none | a readout | 0.1 to 5.1 |
+
+`showreel-f` passes: no PNG code of its own (`--compare` did it), no beat exists only to hide an empty stroke, the
+timecode and the beat label are text readouts, and every stroke is a path function of `rest`. Tokens fell for the
+first time in three rebuilds, and tool calls nearly halved; one run is noisy, so the next rebuild confirms it. Frames
+are as close as before, a little further at 13600 (rising words, swing angles).
+
+What cost it most, for part four: an option range found only when the move throws at run time (`jolt` count, `push`
+`to`); a `many` with one `on` for all its items, so dust that rests visible needed per-item beats; enter and exit
+moves holding their end, so replacing phases still need `sequence`; `anticipate` returns to the start where the
+original holds its lift; and `dangle` ties swing rate and lag angle to one length. The scene review also reports a
+follow move still ringing after its member is hidden, which nobody sees.
+
+The cold review (Sonnet, 119 k) gave ten findings; eight are fixed (the jump skip now reaches items and every group,
+a loop is reported once, a readout's width change measures again, a failed comparison keeps its frames, `trace`'s
+tail is above 0, and the guide and reference say what changed). A path that enumerates `rest` cannot be ordered and
+is told to read by name.
 
 ## 4. Team and order
 
