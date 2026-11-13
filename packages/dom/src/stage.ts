@@ -18,8 +18,9 @@ import {
   type Rest,
   type StageModule,
 } from "@gerak/stage";
-import { clockDriver, type FrameSource } from "./drivers";
-import { eventDriver, type PointerLike } from "./events";
+import { clockDriver, type ClockDriver } from "./drivers";
+import type { PointerLike } from "./events";
+import type { FrameSource } from "./frames";
 import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
 import { unreachable } from "./unreachable";
 
@@ -126,18 +127,17 @@ export function stageModuleOf<B extends string>(
   };
 }
 
-/** Settings of `mountStage`: the frames and the ms clock its own drivers run on. */
+/** Settings of `mountStage`: the frames its clock runs on. */
 export interface StageOptions {
   readonly frames?: FrameSource;
-  readonly clock?: () => number;
   /** Told of the driver each time a run starts, the first and every replay. */
-  readonly onDriver?: (driver: Driver) => void;
+  readonly onDriver?: (driver: ClockDriver) => void;
 }
 
 /** A playing stage: its player and driver, which a replay swaps for fresh ones. */
 export interface MountedStage<B extends string = string> {
   readonly player: Player<StageValues>;
-  readonly driver: Driver;
+  readonly driver: ClockDriver;
   replay(): void;
   /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
   replace(next: StageModule<B, StageValues>): void;
@@ -439,20 +439,12 @@ export function mountStage<
   };
 
   const watched = [...placed.values()].filter(({ info }) => info.watch);
-  const drive = (): { readonly driver: Driver; stop(): void } => {
-    const timing = {
-      ...(options.frames === undefined ? {} : { frames: options.frames }),
-      ...(options.clock === undefined ? {} : { clock: options.clock }),
-    };
-    if (watched.length > 0) {
-      const driver = eventDriver({ ...timing, introMs: beats.durationMs });
-      for (const { info, element: own } of watched) driver.watch(info.name, own);
-      return { driver, stop: () => driver.dispose() };
-    }
+  const drive = (): { readonly driver: ClockDriver; stop(): void } => {
     const driver = clockDriver({
       duration: beats.durationMs,
       ...(options.frames === undefined ? {} : { frames: options.frames }),
     });
+    for (const { info, element: own } of watched) driver.watch(info.name, own);
     return { driver, stop: () => driver.dispose() };
   };
 

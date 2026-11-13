@@ -134,10 +134,9 @@ function stageModule(seen: Seen): StageModule<"intro" | "word" | "late", StageVa
 }
 
 function mounted(seen: Seen = {}, fonts?: StageFonts, module?: StageModule<"all", StageValues>) {
-  let ms = 0;
   const container = new FakeElement("div");
   if (fonts !== undefined) container.ownerDocument.fonts = fonts;
-  const options = { frames: frames(), clock: () => ms };
+  const options = { frames: frames() };
   const stage =
     module === undefined
       ? mountStage(container, stageModule(seen), options)
@@ -149,8 +148,7 @@ function mounted(seen: Seen = {}, fonts?: StageFonts, module?: StageModule<"all"
     root,
     stage,
     at(next: number) {
-      ms = next;
-      stage.player.refresh();
+      stage.driver.seek(next / 1000);
     },
   };
 }
@@ -275,7 +273,7 @@ describe("mountStage", () => {
     };
     const host = new FakeElement("div", document);
     container.append(host);
-    mountStage(host, stageModule(seen), { frames: frames(), clock: () => 0 });
+    mountStage(host, stageModule(seen), { frames: frames() });
     expect(seen.rest?.camera).toEqual({ x: 200, y: 100, width: 200, height: 100 });
     expect(seen.rest?.dot).toEqual({ x: 130, y: 85, width: 40, height: 30 });
   });
@@ -292,7 +290,6 @@ describe("mountStage", () => {
     const container = new FakeElement("div");
     const stage = mountStage(container, stageModule({}), {
       frames: frames(),
-      clock: () => 0,
       onDriver: (driver) => drivers.push(driver),
     });
     const root = container.children[0]?.shadowRoot;

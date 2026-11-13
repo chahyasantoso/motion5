@@ -4,8 +4,6 @@ import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { unreachable } from "./unreachable";
 
-export { pageFrames, type FrameSource };
-
 /** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
 export interface ClockOptions {
   readonly duration: number;
@@ -48,7 +46,8 @@ export interface ClockDriver extends Driver {
   setRange(fromMs?: number, toMs?: number): void;
   /** Whether frames are advancing it now; subscribers hear each change. */
   playing(): boolean;
-  /** Logs the pointer events of `element` for `target` at the clock's ms; a seek keeps them, `replay` forgets them. */
+  /** Logs the pointer events of `element` for `target` at the clock's ms, and keeps the clock running past its
+   * end while any is watched; a seek keeps the log, `replay` forgets it. */
   watch(target: string, element: EventSource): () => void;
   events(): Events;
 }
@@ -73,13 +72,14 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let rate = 1;
   let range: { readonly from: number; readonly to: number } | undefined;
   let running = false;
+  // While it watches a member the clock runs on past the end, so a later hover still plays out.
+  let watching = 0;
+  let overtime = 0;
+  const elapsedNow = (): number => progress * options.duration + overtime;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
-  const recorder = eventRecorder(
-    () => progress * options.duration,
-    () => notify(),
-  );
+  const recorder = eventRecorder(elapsedNow, () => notify());
   // A listener may pause or play during `notify`, so the next frame is asked for only after it.
   const request = (): void => {
     if (running && handle === undefined) handle = frames.requestFrame(frame);
@@ -98,9 +98,11 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress = options.duration > 0 ? elapsed / options.duration : 0;
       cycle = fresh(undefined);
       cycle.advance(elapsed);
+    } else if (cycle.state.kind === "finished" && watching > 0) {
+      overtime += delta;
     } else {
       progress = cycle.advance(delta).progress;
-      if (cycle.state.kind === "finished") running = false;
+      if (cycle.state.kind === "finished" && watching === 0) running = false;
     }
     notify();
     request();
@@ -113,6 +115,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   };
   const start = (): void => {
     if (progress >= 1 || cycle.state.kind === "finished") {
+      overtime = 0;
       cycle = fresh(undefined);
       progress =
         range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
@@ -124,7 +127,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   const driver: ClockDriver = {
     now: () => ({
       progress,
-      clock: { kind: "timed", elapsed: progress * options.duration, length: options.duration },
+      clock: { kind: "timed", elapsed: elapsedNow(), length: options.duration },
     }),
     options,
     subscribe(listener) {
@@ -144,10 +147,21 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       notify();
     },
     playing: () => running,
-    watch: recorder.watch,
+    watch(target, element) {
+      const unwatch = recorder.watch(target, element);
+      watching += 1;
+      let watched = true;
+      return () => {
+        if (!watched) return;
+        watched = false;
+        watching -= 1;
+        unwatch();
+      };
+    },
     events: () => recorder.log,
     seek(next) {
       stop();
+      overtime = 0;
       progress = Math.max(0, Math.min(1, next));
       cycle = fresh(undefined);
       cycle.advance(progress * options.duration);
@@ -155,6 +169,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     replay() {
       stop();
+      overtime = 0;
       recorder.clear();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
@@ -175,6 +190,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
         const to = Math.max(from, Math.min(options.duration, toMs));
         if (to > from) {
           range = { from, to };
+          overtime = 0;
           const elapsed = progress * options.duration;
           if (elapsed < from || elapsed > to) {
             progress = options.duration > 0 ? from / options.duration : 0;

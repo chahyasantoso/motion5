@@ -312,8 +312,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`scrollDriver`** `(options: { readonly target?: ScrollTarget; readonly start: number; readonly end: number; readonly length?: number; }): Driver`: A driver from 0 to 1 as the target scrolls from `start` to `end` px; untimed unless given a `length` in ms.
 - **`ClockDriver`** `type ClockDriver`: A driver on the page's frames, timed in ms, with the delay, repeat and yoyo a `time` trigger has.
 - **`ClockOptions`** `type ClockOptions`: Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`.
-- **`FrameSource`** `type FrameSource`: Where frames come from: `requestAnimationFrame` on a page, a fake one in a test.
 - **`ScrollTarget`** `type ScrollTarget`: What a scroll driver reads: a window or a scrolling element.
+- **`FrameSource`** `type FrameSource`: Where frames come from: `requestAnimationFrame` on a page, a fake one in a test.
 - **`eventDriver`** `(options?: EventDriverOptions): EventDriver`: A live clock that logs events: `.watch`, `.watchView` and `.emit`. `introMs` keeps frames coming for an intro, `settleMs` after the last event.
 - **`WATCHED`** `const WATCHED: Readonly<Record<string, string>>`: The page events a watched element turns into motion events, and the name each gets.
 - **`EventDriver`** `type EventDriver`: A live driver: its clock runs from creation, and it logs the events of the elements it watches.
@@ -326,7 +326,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
 - **`StageFonts`** `type StageFonts`: The document's font loading, which tells the stage when text may have changed size.
-- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.
+- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames its clock runs on.
 - **`StageStyle`** `type StageStyle`: The style properties the stage writes beside a value's; a page element's style has them all.
 - **`StageValues`** `type StageValues`: A scene's answer per member name: one value, or one per item of a `many`.
 <!-- generated:reference:end -->

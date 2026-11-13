@@ -15,9 +15,9 @@ export {
   scrollDriver,
   type ClockDriver,
   type ClockOptions,
-  type FrameSource,
   type ScrollTarget,
 } from "./drivers";
+export type { FrameSource } from "./frames";
 export {
   eventDriver,
   WATCHED,
