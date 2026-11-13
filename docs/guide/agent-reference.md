@@ -589,6 +589,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   and a fitted `cubic-bezier`. A move splits where it turns back.
 - **`motion:frames <page> --at ms,ms [--out dir]`**: a PNG per time and a labelled `sheet.png`; read the sheet.
   `--onion sel --from ms --to ms --every ms` draws an element at each step on one frame, with its path.
+  `--compare dir` (with `--at`) also compares the new frames with an earlier run's, and `motion:frames --compare
+  dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
+  the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
+  Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
 - **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.

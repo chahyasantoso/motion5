@@ -1,8 +1,9 @@
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
+import { decodePng } from "./png";
 
 /** What `motion:frames` captures: the page, the times `at` in ms, a short `labels` entry per frame and the `out` folder. */
 export interface FramesRequest extends PageTarget {
@@ -10,6 +11,8 @@ export interface FramesRequest extends PageTarget {
   /** A short reason to print under each frame, in step with `at`. */
   readonly labels?: readonly string[];
   readonly out?: string;
+  /** A folder of earlier frames to compare these against once they are written. */
+  readonly compare?: string;
 }
 
 /** An onion capture: the element `select` drawn at each step from `from` to `to` ms every `every` ms
@@ -26,6 +29,7 @@ export interface OnionRequest extends PageTarget {
 export type FramesArgs =
   | ({ readonly kind: "frames" } & FramesRequest)
   | ({ readonly kind: "onion" } & OnionRequest)
+  | { readonly kind: "compare"; readonly here: string; readonly there: string }
   | { readonly kind: "usage"; readonly message: string };
 
 /** A PNG path per time, the path of the labelled `sheet.png`, and the page's errors. */
@@ -34,6 +38,31 @@ export interface FramesResult {
   readonly frames: readonly { readonly at: number; readonly path: string }[];
   readonly sheet: string;
   readonly pageErrors: readonly string[];
+  /** Present when `compare` was asked for. */
+  readonly comparison?: Comparison;
+}
+
+/** How far one frame is from its twin in the other folder. */
+export interface FrameDifference {
+  readonly at: number;
+  /** The mean absolute difference over R, G and B, out of 255. */
+  readonly mean: number;
+  /** The percent of pixels whose mean channel difference is above 32. */
+  readonly over32: number;
+}
+
+/** What two folders of `frame-*.png` hold: the differences, the frames one side lacks, the size mismatches. */
+export interface Comparison {
+  readonly here: string;
+  readonly there: string;
+  readonly differences: readonly FrameDifference[];
+  readonly onlyHere: readonly string[];
+  readonly onlyThere: readonly string[];
+  readonly sizes: readonly {
+    readonly name: string;
+    readonly here: string;
+    readonly there: string;
+  }[];
 }
 
 /** A box in px: the top left corner `x`, `y`, and `width` and `height`. */
@@ -53,8 +82,10 @@ export interface OnionResult {
 }
 
 const USAGE =
-  "usage: motion:frames <page> (--at ms,ms | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]";
-const FLAGS = ["--at", "--out", "--onion", "--from", "--to", "--every"];
+  "usage: motion:frames <page> (--at ms,ms [--compare dir] | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]; or motion:frames --compare dirA dirB";
+const FLAGS = ["--at", "--out", "--onion", "--from", "--to", "--every", "--compare"];
+const OVER_LEVEL = 32;
+const FRAME_NAME = /^frame-(\d+)\.png$/;
 const SHEET_COLUMNS = 4;
 const SHEET_CELL_WIDTH = 480;
 const ONION_STEP_LIMIT = 120;
@@ -73,18 +104,30 @@ export function parseFramesArgs(argv: readonly string[]): FramesArgs {
     kind: "usage",
     message: `${message} ${USAGE}`,
   });
+  if (argv[0] === "--compare") {
+    const [, here, there] = argv;
+    if (argv.length !== 3 || here === undefined || there === undefined || there.startsWith("--"))
+      return usage("--compare alone needs two folders.");
+    return { kind: "compare", here: fromCaller(here), there: fromCaller(there) };
+  }
   const read = readPageArgs(argv, FLAGS);
   if (read.kind === "usage") return usage(read.message);
   const { target, flags } = read;
   const outFlag = flags.get("--out");
   const out = outFlag === undefined ? undefined : fromCaller(outFlag);
   const outField = out === undefined ? {} : { out };
+  const compareFlag = flags.get("--compare");
+  if (flags.has("--compare") && (compareFlag === undefined || compareFlag.startsWith("--")))
+    return usage("--compare needs a folder.");
+  if (flags.has("--compare") && flags.has("--onion"))
+    return usage("--compare goes with --at, not --onion.");
+  const compareField = compareFlag === undefined ? {} : { compare: fromCaller(compareFlag) };
   if (flags.has("--onion") === flags.has("--at"))
     return usage("Pass exactly one of --at and --onion.");
   if (flags.has("--at")) {
     const at = parseNumbers(flags.get("--at"));
     if (at === undefined) return usage("--at needs ascending non-negative numbers.");
-    return { kind: "frames", ...target, at, ...outField };
+    return { kind: "frames", ...target, at, ...outField, ...compareField };
   }
   const select = flags.get("--onion");
   const from = nonNegative(flags.get("--from"));
@@ -143,7 +186,71 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
     return { frames, sheet };
   });
-  return { kind: "captured", ...value, pageErrors };
+  const comparison =
+    request.compare === undefined ? {} : { comparison: compareFrames(out, request.compare) };
+  return { kind: "captured", ...value, pageErrors, ...comparison };
+}
+
+function frameNames(dir: string): string[] {
+  return readdirSync(dir)
+    .filter((name) => FRAME_NAME.test(name))
+    .sort();
+}
+
+/** Compares every `frame-*.png` both folders hold; frames on one side only, or of different sizes, are named. */
+export function compareFrames(here: string, there: string): Comparison {
+  const hereNames = frameNames(here);
+  const thereNames = frameNames(there);
+  const differences: FrameDifference[] = [];
+  const sizes: { name: string; here: string; there: string }[] = [];
+  for (const name of hereNames.filter((candidate) => thereNames.includes(candidate))) {
+    const a = decodePng(readFileSync(join(here, name)));
+    const b = decodePng(readFileSync(join(there, name)));
+    if (a.width !== b.width || a.height !== b.height) {
+      sizes.push({ name, here: `${a.width}x${a.height}`, there: `${b.width}x${b.height}` });
+      continue;
+    }
+    const pixels = a.width * a.height;
+    let total = 0;
+    let over = 0;
+    for (let pixel = 0; pixel < pixels; pixel += 1) {
+      const at = pixel * 3;
+      const sum =
+        Math.abs((a.rgb[at] ?? 0) - (b.rgb[at] ?? 0)) +
+        Math.abs((a.rgb[at + 1] ?? 0) - (b.rgb[at + 1] ?? 0)) +
+        Math.abs((a.rgb[at + 2] ?? 0) - (b.rgb[at + 2] ?? 0));
+      total += sum;
+      if (sum / 3 > OVER_LEVEL) over += 1;
+    }
+    const at = Number(FRAME_NAME.exec(name)?.[1]);
+    differences.push({
+      at,
+      mean: pixels === 0 ? 0 : total / (pixels * 3),
+      over32: pixels === 0 ? 0 : (over / pixels) * 100,
+    });
+  }
+  return {
+    here,
+    there,
+    differences,
+    onlyHere: hereNames.filter((name) => !thereNames.includes(name)),
+    onlyThere: thereNames.filter((name) => !hereNames.includes(name)),
+    sizes,
+  };
+}
+
+/** One line per compared frame, then a line per frame named for lacking a twin or for a different size. */
+export function comparisonLines(comparison: Comparison): string[] {
+  return [
+    ...comparison.differences.map(
+      ({ at, mean, over32 }) => `${at} ms  mean ${mean.toFixed(3)}  over32 ${over32.toFixed(2)}%`,
+    ),
+    ...comparison.sizes.map(
+      ({ name, here, there }) => `${name}  not compared: ${here} here, ${there} there`,
+    ),
+    ...comparison.onlyHere.map((name) => `${name}  only in ${comparison.here}`),
+    ...comparison.onlyThere.map((name) => `${name}  only in ${comparison.there}`),
+  ];
 }
 
 /** Draws each match of `select` at every step onto the last frame, faded, with its centre path. */
