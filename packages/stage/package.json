@@ -1,20 +1,24 @@
 {
   "name": "@gerak/stage",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "gerak": {
     "layer": "pure"
   },
-  "types": "./src/index.ts",
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
   "dependencies": {
-    "@gerak/moves": "0.0.0"
+    "@gerak/moves": "0.1.0"
   },
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   }
 }

@@ -10,9 +10,12 @@ import {
   withoutComments,
 } from "../../scripts/boundary-scan.mjs";
 import {
+  appImportsAppFixture,
+  appImportsPackagePathFixture,
   cleanFixture,
   dynamicUndeclaredFixture,
   importMentionFixture,
+  packageImportsAppFixture,
   rigEntrypointFixture,
   undeclaredSubpathFixture,
 } from "../../scripts/boundary-scan-fixtures";
@@ -210,6 +213,77 @@ describe("boundary scan: declared subpaths", () => {
     ).toEqual(["@gerak/rig/fabrik"]);
     expect(withoutComments('// from "@gerak/rig/fabrik"\nexport const x = 1;')).not.toContain(
       "fabrik",
+    );
+  });
+});
+
+describe("boundary scan: app boundary", () => {
+  const appManifest = (name: string) => JSON.stringify({ name, exports: {} });
+  const apps = {
+    "apps/demo/package.json": appManifest("@gerak/demo"),
+    "apps/other/package.json": appManifest("@gerak/other"),
+  };
+
+  it("refuses a package importing an app, by path or by name", async () => {
+    const violations = await withTree(
+      {
+        ...apps,
+        "packages/moves/src/path.ts": packageImportsAppFixture,
+        "packages/moves/src/name.ts": 'import { a } from "@gerak/demo";',
+      },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect(violations).toContain(
+      "packages/moves/src/path.ts: package imports an app ../../../apps/demo/src/main",
+    );
+    expect(violations).toContain("packages/moves/src/name.ts: package imports an app @gerak/demo");
+  });
+
+  it("refuses an app importing a package by path, and allows a declared export", async () => {
+    const violations = await withTree(
+      {
+        ...apps,
+        "apps/demo/src/path.ts": appImportsPackagePathFixture,
+        "apps/demo/src/declared.ts": 'import { fk } from "@gerak/rig";\nexport const k = fk;',
+      },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect(violations).toEqual([
+      "apps/demo/src/path.ts: app imports a package by path ../../../packages/moves/src/pose",
+    ]);
+  });
+
+  it("holds an app's tests and configs beside src to the app boundary, and leaves out node_modules", async () => {
+    const violations = await withTree(
+      {
+        ...apps,
+        "apps/demo/test/path.test.ts": appImportsPackagePathFixture,
+        "apps/demo/vite.config.ts": "import { pose } from '../../packages/moves/src/pose';",
+        "apps/demo/node_modules/x/index.ts": appImportsPackagePathFixture,
+      },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect([...violations].sort()).toEqual([
+      "apps/demo/test/path.test.ts: app imports a package by path ../../../packages/moves/src/pose",
+      "apps/demo/vite.config.ts: app imports a package by path ../../packages/moves/src/pose",
+    ]);
+  });
+
+  it("refuses an app importing another app", async () => {
+    const violations = await withTree(
+      {
+        ...apps,
+        "apps/demo/src/path.ts": appImportsAppFixture,
+        "apps/demo/src/own.ts": 'import { a } from "./path";\nexport const b = a;',
+      },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect(violations).toContain(
+      "apps/demo/src/path.ts: app imports another app ../../other/src/main",
     );
   });
 });

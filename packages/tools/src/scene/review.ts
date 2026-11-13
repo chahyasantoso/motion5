@@ -252,23 +252,28 @@ function mustMove(name: CastName): boolean {
 }
 
 /** What a stage module's scene does against its cast and beats: a member never moved, a target not
- * cast, a value changing outside its presence. */
+ * cast, a value changing outside its presence; unmeasured layouts say so once instead. */
 function stageFindings(
   cast: readonly CastName[],
   beats: readonly Beat[],
   samples: Samples,
   durationMs: number,
+  unmeasured: boolean,
 ): readonly string[] {
   const known = new Set(cast.map(({ name }) => name));
   const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))];
   const found: string[] = targets
     .filter((target) => !known.has(target))
     .map((target) => `the scene answers "${target}", which is not in the cast.`);
+  if (unmeasured)
+    found.push(
+      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `motion:review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
+    );
   const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
   for (const member of cast) {
     const prints = samples.map(({ targets: values }) => fingerprint(valueOf(values, member)));
     const unmoved = prints.every((print) => print === prints[0]);
-    if (mustMove(member) && unmoved)
+    if (mustMove(member) && unmoved && !unmeasured)
       found.push(
         `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
       );
@@ -452,7 +457,9 @@ export function reviewSceneModule(
     kind: "reviewed",
     findings: [
       ...findings.map((finding) => labelled(beats, finding)),
-      ...(cast === undefined ? [] : stageFindings(cast, beats, samples, module.durationMs)),
+      ...(cast === undefined
+        ? []
+        : stageFindings(cast, beats, samples, module.durationMs, module.unmeasured === true)),
       ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
       ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
     ],

@@ -15,6 +15,7 @@ export const STEPS = [
   "scan:raw-templates",
   "scan:comments",
   "scan:cycles",
+  "scan:boundaries",
   "format:check",
   "typecheck",
   "test",

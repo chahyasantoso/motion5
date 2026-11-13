@@ -26,7 +26,9 @@
       "@gerak/tools/vite": ["packages/tools/src/vite/index.ts"],
       "@gerak/rig": ["packages/rig/src/index.ts"],
       "@gerak/stage": ["packages/stage/src/index.ts"],
-      "@gerak/react": ["packages/react/src/index.ts"]
+      "@gerak/react": ["packages/react/src/index.ts"],
+      "@gerak/three": ["packages/three/src/index.ts"],
+      "@gerak/three/react": ["packages/three/src/react.ts"]
     },
     "jsx": "react-jsx"
   },

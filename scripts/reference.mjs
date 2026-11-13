@@ -23,8 +23,16 @@ export const PACKAGES = [
   "three/src/react.ts",
 ];
 
+/** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */
+function workspacePaths() {
+  const read = ts.readConfigFile(join(root, "tsconfig.json"), ts.sys.readFile);
+  const paths = read.config?.compilerOptions?.paths;
+  return paths === undefined ? {} : { baseUrl: root, paths };
+}
+
 function createChecker(files) {
   const program = ts.createProgram(files, {
+    ...workspacePaths(),
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     target: ts.ScriptTarget.ES2022,
@@ -78,16 +86,58 @@ function signatureOf(symbol, checker) {
   return `type ${symbol.name}`;
 }
 
+/** A literal field of an option's declared type, as written: `0`, `"in"`, or nothing when absent. */
+function literalOf(type, key, checker) {
+  const field = type.getProperty(key);
+  if (field === undefined) return undefined;
+  const text = checker.typeToString(checker.getTypeOfSymbol(field));
+  return text.startsWith('"') ? JSON.parse(text) : text;
+}
+
+function rangeOf(min, max) {
+  if (min !== undefined && max !== undefined) return ` ${min}..${max}`;
+  if (min !== undefined) return ` >=${min}`;
+  return max === undefined ? "" : ` <=${max}`;
+}
+
+/** A move's options in full from its declared type, so the clipped signature never hides them;
+ * nothing for an export that is not a move. */
+function optionsOf(symbol, checker) {
+  const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0];
+  if (declaration === undefined) return undefined;
+  const [call] = checker.getTypeOfSymbolAtLocation(symbol, declaration).getCallSignatures();
+  const [parameter] = call?.getParameters() ?? [];
+  if (parameter === undefined) return undefined;
+  const given = checker.getTypeOfSymbol(parameter);
+  if (given.aliasSymbol?.name !== "OptionsIn") return undefined;
+  const [fields] = given.aliasTypeArguments ?? [];
+  if (fields === undefined) return undefined;
+  const lines = checker.getPropertiesOfType(fields).map((option) => {
+    const type = checker.getTypeOfSymbol(option);
+    const kind = literalOf(type, "kind", checker) ?? "";
+    const range = rangeOf(literalOf(type, "min", checker), literalOf(type, "max", checker));
+    const fallback = literalOf(type, "default", checker);
+    const said = literalOf(type, "description", checker) ?? "";
+    const needed = fallback === undefined ? "required" : `default ${fallback}`;
+    return `\`${option.name}\` ${kind}${range}, ${needed}: ${said}`;
+  });
+  if (lines.length === 0) return undefined;
+  const names = call?.getParameters().map(({ name }) => name) ?? [];
+  return { call: `(${names.join(", ")})`, text: `Options: ${lines.join("; ")}` };
+}
+
 function entryOf(name, exportedSymbol, checker) {
   const symbol =
     (exportedSymbol.flags & ts.SymbolFlags.Alias) !== 0
       ? checker.getAliasedSymbol(exportedSymbol)
       : exportedSymbol;
   const doc = ts.displayPartsToString(symbol.getDocumentationComment(checker)).trim();
-  const signature = signatureOf(symbol, checker);
+  const options = optionsOf(symbol, checker);
+  const signature = options === undefined ? signatureOf(symbol, checker) : options.call;
   // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
   const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
-  return { name, doc, text: `- **\`${name}\`** \`${signature}\`: ${meaning}` };
+  const tail = options === undefined ? "" : ` ${options.text}`;
+  return { name, doc, text: `- **\`${name}\`** \`${signature}\`: ${meaning}${tail}` };
 }
 
 /** One generated body per package, and the names with no doc comment. */

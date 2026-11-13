@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@gerak/moves": ["../moves/dist/index.d.ts"],
+      "@gerak/rig": ["../rig/dist/index.d.ts"],
+      "@gerak/player": ["../player/dist/index.d.ts"],
+      "@gerak/stage": ["../stage/dist/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}
