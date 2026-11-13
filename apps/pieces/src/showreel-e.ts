@@ -99,7 +99,7 @@ function stroke(
 /** Where the full stop lands: on the final line's baseline, just after its last word. */
 function periodPoint(rest: Rest): { x: number; y: number } {
   const slot = restOf(rest, "slot");
-  return { x: slot.x - slot.width / 2 + 7, y: slot.y - 13 };
+  return { x: slot.x - slot.width / 2 + 7, y: slot.y - 5 };
 }
 
 /** The WEIGHT floor's height: the word's baseline. */
@@ -121,8 +121,8 @@ const floorPath = (rest: Rest) => {
   const first = restOf(rest, "weight.0");
   const last = restOf(rest, "weight.5");
   const y = floorY(rest);
-  const left = first.x - first.width / 2 - 40;
-  const right = last.x + last.width / 2 + 40;
+  const left = first.x;
+  const right = last.x;
   const third = (right - left) / 3;
   return stroke({ x: left, y }, { x: left + third, y }, { x: right - third, y }, { x: right, y });
 };
@@ -271,8 +271,8 @@ ${HANG.map((h, i) => `[data-cast="hang.${i}"] { --string: ${h}px; }`).join("\n")
   font: italic 700 84px/1.15 Georgia, "Times New Roman", serif;
   clip-path: inset(-400px -100px 0 -100px);
 }
-[data-cast="line"] { gap: 20px; flex-wrap: nowrap; align-items: baseline; }
-[data-cast="slot"] { width: 27px; height: 0; margin-left: 5px; }
+[data-cast="line"] { gap: 20px; flex-wrap: nowrap; align-items: baseline; padding-left: 10px; }
+[data-cast="slot"] { width: 27px; height: 0; margin-left: 5px; margin-right: 3px; }
 [data-cast="credit"] {
   position: absolute; left: 0; top: 438px; width: 1280px; text-align: center;
   font: 700 14px/1 Arial, Helvetica, sans-serif; letter-spacing: 0.42em; color: var(--mute);
@@ -400,7 +400,7 @@ function dot(time: Time, rest: Rest): Pose2d {
                 squish({ squash: 0.42, bulge: 0.7, wobbles: 0.5 }, at(0, 240, l)),
                 squish({ squash: 0.18, bulge: 0.7, wobbles: 0.5 }, at(240, 480, l)),
                 lob({ dx: 0, dy: 0, apex: 32, stretch: 0, facing: "upright" }, at(0, 240, l)),
-                { x: ex, y: ey + sink, scale: small },
+                { x: ex, y: ey - sink, scale: small },
               ]),
           ],
         ]),
@@ -493,9 +493,12 @@ function dust(time: Time, j: number, rest: Rest): Pose2d {
 // The OVERLAP beat, written from its own 0: the bar sweeps in, holds, pulls back and whips out.
 const OVERLAP = span(6150, 9550);
 
+// Bends slide's own ease-out into a sweep that starts gently, speeds through the middle and lands soft.
+const sweep = (u: number): number => 1 - Math.cbrt(1 - ease.cubicInOut(u ** 0.6));
+
 function bar(time: Time): Pose2d {
   return combine([
-    slide({ distance: 1250, from: "left" }, at(0, 1000, time)),
+    slide({ distance: 1250, from: "left" }, span(0, 1000).of(time, sweep)),
     anticipate({ share: 0.33, amount: 55 / 1450 }, at(2550, 3300, time), (t) =>
       slide({ distance: 1450, from: "right" }, reversed(t)),
     ),
@@ -509,7 +512,7 @@ function hang(time: Time, i: number): Pose2d {
       length,
       pace: Math.sqrt(length / hangLength(i)),
       damping: 0.18,
-      gain: 1.6,
+      gain: 0.45,
       lag: i * 28,
       limit: 65,
     },
@@ -600,10 +603,10 @@ export const scene = (time: Time, _events: Events, rest: Rest) => {
   return {
     camera: camera(time),
     wipe: flood(time, rest),
-    trailUp: streak({ arrive: 0.43, lag: 0.17 }, at(850, 1450, time)),
+    trailUp: streak({ arrive: 0.43, lag: 0.33 }, at(850, 1450, time)),
     floor: floor(time),
     underline: underline(time),
-    trailArc: streak({ arrive: 0.65, lag: 0.21 }, at(13250, 14250, time)),
+    trailArc: streak({ arrive: 0.65, lag: 0.12 }, at(13250, 14250, time)),
     ant: indices(10).map((i) => ant(time, i)),
     weight: indices(6).map((i) => weight(time, i)),
     dust: indices(DUST).map((j) => dust(time, j, rest)),
