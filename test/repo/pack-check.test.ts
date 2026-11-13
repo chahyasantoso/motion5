@@ -5,6 +5,7 @@ import {
   formatResult,
   missingExportFiles,
   peerVersions,
+  typeCheckFiles,
 } from "../../scripts/pack-check.mjs";
 
 const manifest = {
@@ -59,9 +60,28 @@ describe("pack check", () => {
         "node_modules/react": { version: "19.2.8" },
         "node_modules/react-dom": { version: "19.2.9" },
         "node_modules/three": { version: "0.186.1" },
+        "node_modules/typescript": { version: "5.8.3" },
+        "node_modules/@types/react": { version: "19.2.2" },
+        "node_modules/@types/three": { version: "0.186.0" },
       },
     };
-    expect(peerVersions(lock)).toEqual(["react@19.2.8", "react-dom@19.2.9", "three@0.186.1"]);
+    expect(peerVersions(lock)).toEqual([
+      "react@19.2.8",
+      "react-dom@19.2.9",
+      "three@0.186.1",
+      "typescript@5.8.3",
+      "@types/react@19.2.2",
+      "@types/three@0.186.0",
+    ]);
     expect(() => peerVersions({ packages: {} })).toThrow("react");
+  });
+
+  it("writes a strict consumer that imports every export under node resolution", () => {
+    const files = typeCheckFiles(["@gerak/moves", "@gerak/three/react"]);
+    expect(files["consumer.ts"]).toContain('import * as m1 from "@gerak/three/react";');
+    const config: unknown = JSON.parse(files["tsconfig.json"] ?? "");
+    expect(config).toMatchObject({
+      compilerOptions: { strict: true, skipLibCheck: false, moduleResolution: "nodenext" },
+    });
   });
 });

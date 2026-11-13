@@ -423,8 +423,38 @@ export async function scan(scanRoot = root) {
       for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))
         violations.push(`${file}: undeclared workspace subpath ${specifier}`);
     }
+    // An app's tests, configs and scripts beside `src` hold the app boundary too; a package's tests
+    // may read an app's files, since they ship nothing.
+    if (!workspace.startsWith("apps/")) continue;
+    for (const path of await walkOutsideSource(join(scanRoot, workspace))) {
+      const source = await readFile(path, "utf8");
+      const file = relative(path, scanRoot);
+      checkAppBoundary(workspace, file, [...importSpecifiers(source)], violations, apps);
+    }
   }
   return violations;
+}
+
+const LEFT_OUT = new Set(["src", "node_modules", "dist"]);
+
+/** Every scanned file of a workspace outside `src`, `node_modules`, `dist` and hidden folders. */
+async function walkOutsideSource(directory) {
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  const files = [];
+  for (const entry of entries) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (!LEFT_OUT.has(entry.name) && !entry.name.startsWith("."))
+        files.push(...(await walk(path)));
+    } else if (scannedExtensions.includes(extname(entry.name))) files.push(path);
+  }
+  return files;
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const violations = await scan();

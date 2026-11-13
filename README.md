@@ -31,15 +31,17 @@ springs, rigs with FK and IK, and seekable physics. Drivers only report time and
 | `@gerak/three` | writes a pose on a Three.js object |
 | `@gerak/tools` | the `motion:*` commands: scaffold, sample, review, render |
 
-The worked examples live in `apps/examples`; pieces made with gerak live in `apps/pieces`. None of the packages is published; consumers build from the workspace.
+The worked examples live in `apps/examples`; pieces made with gerak live in `apps/pieces`.
 
 ## Use it in another project
 
 Nothing is on npm yet. Pack the packages and install the tarballs:
 
 1. Run `npm run pack:check -- --keep`; it prints the folder that holds the tarballs.
-2. In your project, run `npm install <path>/*.tgz`, plus `react` or `three` when you use those packages.
+2. In your project, run `npm install <path>/*.tgz`, plus `react` or `three` when you use those packages, and
+   `@types/react` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
 3. Point your agent at [the agent guide](https://github.com/chahyasantoso/motion5/blob/main/docs/guide/agent-motion.md).
+   The `motion:*` npm scripts it names live in this repository; outside it, check by seeking the stage.
 
 ## Toolchain and commands
 

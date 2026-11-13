@@ -267,7 +267,7 @@ function stageFindings(
     .map((target) => `the scene answers "${target}", which is not in the cast.`);
   if (unmeasured)
     found.push(
-      'its layouts are not measured without a browser, so a member carried between them reads as unmoved here; review it in the browser, `motion:review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
+      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `motion:review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
     );
   const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
   for (const member of cast) {

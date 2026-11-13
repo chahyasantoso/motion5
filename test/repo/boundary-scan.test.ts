@@ -255,6 +255,23 @@ describe("boundary scan: app boundary", () => {
     ]);
   });
 
+  it("holds an app's tests and configs beside src to the app boundary, and leaves out node_modules", async () => {
+    const violations = await withTree(
+      {
+        ...apps,
+        "apps/demo/test/path.test.ts": appImportsPackagePathFixture,
+        "apps/demo/vite.config.ts": "import { pose } from '../../packages/moves/src/pose';",
+        "apps/demo/node_modules/x/index.ts": appImportsPackagePathFixture,
+      },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect([...violations].sort()).toEqual([
+      "apps/demo/test/path.test.ts: app imports a package by path ../../../packages/moves/src/pose",
+      "apps/demo/vite.config.ts: app imports a package by path ../../packages/moves/src/pose",
+    ]);
+  });
+
   it("refuses an app importing another app", async () => {
     const violations = await withTree(
       {

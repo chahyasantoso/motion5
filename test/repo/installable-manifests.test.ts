@@ -1,6 +1,8 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { withExtensions } from "../../scripts/build.mjs";
 import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-packages.mjs";
 
@@ -49,17 +51,48 @@ describe("installable manifests", () => {
 });
 
 describe("withExtensions", () => {
-  const exists = (path: string) => path.endsWith("ease.js");
+  const folder = mkdtempSync(join(tmpdir(), "gerak-build-"));
+  const inner = join(folder, "sub");
+  mkdirSync(inner);
+  writeFileSync(join(folder, "ease.js"), "");
+  writeFileSync(join(folder, "index.js"), "");
+  writeFileSync(join(inner, "index.js"), "");
+  afterAll(() => rmSync(folder, { recursive: true, force: true }));
 
-  it("names the emitted file or the directory index of a relative import", () => {
-    const text = 'export { a } from "./ease";\nimport { b } from "./sub";\nawait import("./ease");';
-    expect(withExtensions(text, "/d", exists)).toBe(
-      'export { a } from "./ease.js";\nimport { b } from "./sub/index.js";\nawait import("./ease.js");',
+  it("names the emitted file or the folder index of every real module specifier", () => {
+    const text = [
+      'export { a } from "./ease";',
+      'import { b } from "./sub";',
+      'export * from "./ease";',
+      'await import("./ease");',
+      'type T = import("./ease").T;',
+    ].join("\n");
+    expect(withExtensions(text, folder, undefined, "x.d.ts")).toBe(
+      [
+        'export { a } from "./ease.js";',
+        'import { b } from "./sub/index.js";',
+        'export * from "./ease.js";',
+        'await import("./ease.js");',
+        'type T = import("./ease.js").T;',
+      ].join("\n"),
+    );
+    expect(withExtensions('import { c } from "..";', inner)).toBe(
+      'import { c } from "../index.js";',
     );
   });
 
-  it("leaves package specifiers and named extensions alone", () => {
-    const text = 'import "@gerak/moves";\nimport x from "./x.js";';
-    expect(withExtensions(text, "/d", exists)).toBe(text);
+  it("leaves strings, templates, comments, packages and named extensions alone", () => {
+    const text = [
+      'import "@gerak/moves";',
+      'import x from "./x.js";',
+      '// reads from "./ease"',
+      "const said = 'text from \"./ease\" ok';",
+      'const line = `import y from "./ease"`;',
+    ].join("\n");
+    expect(withExtensions(text, folder)).toBe(text);
+  });
+
+  it("refuses a relative specifier that names no emitted module", () => {
+    expect(() => withExtensions('import z from "./nothing";', folder)).toThrow(/"\.\/nothing"/);
   });
 });

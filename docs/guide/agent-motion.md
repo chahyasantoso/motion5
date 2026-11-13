@@ -214,6 +214,30 @@ export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layou
   per order and view: the slot an item takes is `restOf(all[layout(past)], \`card.${slotOf(past, index)}\`)`, the box
   the page puts the item of that index at in that layout.
 
+## Outside this repository
+
+The `motion:*` npm scripts and `stage.html` live in this repository. In your own project, install the
+packages (see the README) and mount the module on a page yourself:
+
+```ts
+import { mountStage, stageModuleOf } from "@gerak/dom";
+import { readStageModule } from "@gerak/stage";
+import * as piece from "./piece";
+
+const read = readStageModule(piece);
+if ("reason" in read) throw new Error(read.reason);
+const container = document.querySelector<HTMLElement>("#stage");
+if (container === null) throw new Error("No #stage element.");
+const stage = mountStage(container, stageModuleOf(read));
+```
+
+- The stage builds inside a shadow root, so `document.querySelector` does not find its members; read them through
+  `container.firstElementChild?.shadowRoot`.
+- To check a moment by hand, pause and seek: `stage.driver.pause()`, then `stage.driver.seek(progress)`, where
+  progress runs from 0 to 1 over the story, not in ms.
+- A move's options, with their ranges, are in its entry in [the reference](./agent-reference.md#gerakmoves); the
+  catalog command prints the same in this repository.
+
 ## On a real site's elements
 
 A stage module needs none of this. To bind a page's own elements, define `scene` and `clock` outside the component,

@@ -14,4 +14,5 @@ export function peerVersions(
   lock: { packages?: Record<string, { version?: string }> },
   names?: readonly string[],
 ): string[];
+export function typeCheckFiles(specifiers: readonly string[]): Record<string, string>;
 export function packCheck(options?: { keep?: boolean; log?: (text: string) => void }): number;

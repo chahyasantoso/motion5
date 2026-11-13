@@ -37,8 +37,11 @@ export function missingExportFiles(manifest, exists) {
   });
 }
 
-/** The exact versions the lockfile installed for the peers a consumer must bring. */
-export function peerVersions(lock, names = ["react", "react-dom", "three"]) {
+/** The exact versions the lockfile installed for the peers a consumer must bring, and their types. */
+export function peerVersions(
+  lock,
+  names = ["react", "react-dom", "three", "typescript", "@types/react", "@types/three"],
+) {
   return names.map((name) => {
     const version = lock.packages?.[`node_modules/${name}`]?.version;
     if (version === undefined) throw new TypeError(`package-lock.json has no ${name}`);
@@ -55,7 +58,30 @@ function fileSpec(path) {
   return `file:${path.replace(/\\/g, "/")}`;
 }
 
-/** Packs every package, installs the tarballs into an empty project and imports each export. */
+/** A consumer's module importing every export, and its strict tsconfig, for `tsc` to check. */
+export function typeCheckFiles(specifiers) {
+  const lines = specifiers.map((specifier, index) => `import * as m${index} from "${specifier}";`);
+  lines.push(`export const all = [${specifiers.map((_, index) => `m${index}`).join(", ")}];`);
+  return {
+    "consumer.ts": `${lines.join("\n")}\n`,
+    "tsconfig.json": JSON.stringify({
+      compilerOptions: {
+        strict: true,
+        noEmit: true,
+        skipLibCheck: false,
+        module: "nodenext",
+        moduleResolution: "nodenext",
+        target: "es2022",
+        lib: ["esnext", "dom", "dom.iterable"],
+        types: [],
+      },
+      files: ["consumer.ts"],
+    }),
+  };
+}
+
+/** Packs every package, installs the tarballs into an empty project, imports each export and
+ * type-checks a consumer of them all. */
 export function packCheck({ keep = false, log = console.log } = {}) {
   if (build(INSTALLABLE_PACKAGES, () => undefined) !== 0) {
     log("FAIL build");
@@ -109,6 +135,13 @@ export function packCheck({ keep = false, log = console.log } = {}) {
       if (failure !== undefined) failed += 1;
       log(formatResult(specifier, failure));
     }
+    for (const [name, text] of Object.entries(typeCheckFiles(allSpecifiers())))
+      writeFileSync(join(project, name), text);
+    const types = sh("npx --no-install tsc -p tsconfig.json", project);
+    if (types.code !== 0) failed += 1;
+    log(
+      formatResult("types", types.code === 0 ? undefined : firstErrorLine(types.out || types.err)),
+    );
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);
