@@ -146,6 +146,30 @@ function names(text: string, path: string, target: string): boolean {
   );
 }
 
+const MAX_DOC_CHARS = 200;
+
+/** `/** description *\/` on one line, cut to the description's first sentence when it would pass the comment limit. */
+function docLine(description: string): string {
+  const whole = `/** ${description} */`;
+  if (whole.length <= MAX_DOC_CHARS) return whole;
+  const sentence = /^.*?[.!?](?=\s|$)/.exec(description)?.[0] ?? description;
+  return `/** ${sentence} */`;
+}
+
+/** The text with a doc comment of each move's description above its `export const`, where it has none. */
+function documented(
+  text: string,
+  moves: readonly { readonly exportName: string; readonly description: string }[],
+): string {
+  return moves.reduce((out, { exportName, description }) => {
+    const declaration = new RegExp(`^export\\s+const\\s+${exportName}\\b`, "m").exec(out);
+    if (declaration === null) return out;
+    const above = out.slice(0, declaration.index).trimEnd();
+    if (above.endsWith("*/")) return out;
+    return `${out.slice(0, declaration.index)}${docLine(description)}\n${out.slice(declaration.index)}`;
+  }, text);
+}
+
 /** Moves the candidate `id` of the app at `root` into the moves package: the file, its export from the
  * index, and every importer's import; or refuses and changes nothing. */
 export async function promoteMove(
@@ -159,7 +183,7 @@ export async function promoteMove(
   const candidate = candidates.find((found) => found.id === id);
   if (candidate === undefined)
     return refuse(
-      `${id} is not a candidate: it must be a local move that passes the gate and is imported by two or more files.`,
+      `${id} is not a candidate: it must be a local move that passes the gate and is used by two or more briefs.`,
       candidates.length === 0
         ? "No candidates."
         : `Candidates: ${candidates.map(formatCandidate).join("; ")}.`,
@@ -221,7 +245,10 @@ export async function promoteMove(
     return refuse(
       `${stuck.map(({ importer }) => importer).join(", ")} refer to ${candidate.file} in a form promotion does not rewrite (a re-export, import *, or a dynamic import); make them named imports first.`,
     );
-  writeFileSync(destination, relativeText.text);
+  const here = all.flatMap(({ record }) =>
+    record.source.kind === "app" && record.source.file === candidate.file ? [record] : [],
+  );
+  writeFileSync(destination, documented(relativeText.text, here));
   unlinkSync(candidate.file);
   const separator = index.endsWith("\n") ? "" : "\n";
   writeFileSync(

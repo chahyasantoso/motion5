@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, type FC } from "react";
 import { mountStage, type MountedStage, type StageValues } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
-import type { Rest, StageModule } from "@gerak/stage";
+import type { Layouts, Rest, StageModule } from "@gerak/stage";
 import { guard } from "./guard";
 
 /** What of a module decides its elements; a scene swaps in place only while this stays the same. */
@@ -29,8 +29,8 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ module, onError, onDrive
   const current = useRef(module.scene);
   const scene = useMemo(
     () =>
-      guard<StageValues, [Rest]>(
-        (time, events, rest) => current.current(time, events, rest),
+      guard<StageValues, [Rest, Layouts]>(
+        (time, events, rest, layouts) => current.current(time, events, rest, layouts),
         onError,
       ),
     [onError],

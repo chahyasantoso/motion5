@@ -17,6 +17,7 @@ import {
   type Events,
   type Pose2d,
   type Time,
+  smudge,
 } from "@gerak/moves";
 import {
   actor,
@@ -38,12 +39,13 @@ import { launch } from "./moves/launch";
 import { lob } from "./moves/lob";
 import { push } from "./moves/push";
 import { shockwave } from "./moves/shockwave";
-import { smudge } from "./moves/smudge";
 import { springSettle } from "./moves/spring-settle";
 import { spread } from "./moves/spread";
 import { squish } from "./moves/squish";
 import { streak } from "./moves/streak";
 import { tint } from "./moves/tint";
+
+export const brief = "showreel";
 
 // Each WEIGHT letter's landing; the last lands late and hardest.
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;

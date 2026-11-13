@@ -11,9 +11,9 @@ import {
   type Events,
   type Pose2d,
   type Time,
+  smudge,
 } from "@gerak/moves";
 import { actor, group, letters, story, type Rest } from "@gerak/stage";
-import { smudge } from "./moves/smudge";
 
 const TITLE = "Night Shift";
 

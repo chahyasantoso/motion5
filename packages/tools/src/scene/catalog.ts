@@ -253,16 +253,30 @@ export async function loadAppModules(root: string): Promise<{
   return { modules, problems };
 }
 
-/** A local move that passes the gate and is imported by two or more files of the app. */
+/** A local move that passes the gate and is used by two or more briefs of the app. */
 export interface Candidate {
   readonly id: string;
   readonly file: string;
   readonly importers: readonly string[];
+  /** The distinct briefs among the importers: a file's `brief`, else the file itself. */
+  readonly briefs: readonly string[];
 }
 
-/** One line of `--candidates`: the id, its file and how many files import it. */
+/** One line of `--candidates`: the id, its file and how many briefs use it. */
 export function formatCandidate(candidate: Candidate): string {
-  return `${candidate.id} | ${basename(candidate.file)} | importers: ${candidate.importers.length}`;
+  return `${candidate.id} | ${basename(candidate.file)} | briefs: ${candidate.briefs.length}`;
+}
+
+const BRIEF = /^export\s+const\s+brief\s*(?::\s*string\s*)?=\s*(["'`])(.+?)\1/m;
+
+/** The brief a piece file names with a top-level `export const brief = "..."`, read from its text. */
+export function briefOf(path: string): string | undefined {
+  return BRIEF.exec(readFileSync(path, "utf8"))?.[2];
+}
+
+/** The distinct briefs among `paths`; a file with no brief is a brief of its own. */
+export function briefsOf(paths: readonly string[]): readonly string[] {
+  return [...new Set(paths.map((path) => briefOf(path) ?? `file:${path}`))];
 }
 
 /** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
@@ -290,7 +304,7 @@ export function importersOf(root: string, file: string): readonly string[] {
   });
 }
 
-/** The app's moves that pass the gate and are imported by two or more files, by id. */
+/** The app's moves that pass the gate and are used by two or more briefs, by id. */
 export function candidatesOf(
   root: string,
   all: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
@@ -301,7 +315,9 @@ export function candidatesOf(
     if (record.source.kind !== "app") continue;
     if (checkCatalog(all, [entry]).length > 0 || checkMove(move).length > 0) continue;
     const importers = importersOf(root, record.source.file);
-    if (importers.length >= 2) found.push({ id: record.id, file: record.source.file, importers });
+    const briefs = briefsOf(importers);
+    if (briefs.length >= 2)
+      found.push({ id: record.id, file: record.source.file, importers, briefs });
   }
   return found.sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }

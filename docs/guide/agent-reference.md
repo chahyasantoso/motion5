@@ -179,6 +179,7 @@ const slide = defineMove({
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, turning back with no jump; pure in time and events.
+- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target` and an `x`, `y`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
@@ -261,6 +262,7 @@ const slide = defineMove({
 - **`anticipate`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 0.9; readonly descri…`: Winds up the other way from its input's travel, then plays the input and ends where it ends.
 - **`overshoot`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.3; readonly min: 0; readonly max: 0.9; readonly descri…`: Plays its input, then passes its last pose and settles back onto it.
 - **`repeated`** `(time: Time, count: number): Time`: A time with its progress running 0 to 1 `count` times (rounded down, at least 1); a function of time, not a move.
+- **`smudge`** `(options: OptionsIn<{ readonly amount: { readonly kind: "number"; readonly min: 0; readonly description: "The blur it ends at, in px."; }; …`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows.
 <!-- generated:reference:end -->
 
 ## @gerak/player
@@ -322,8 +324,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`EventDriverOptions`** `type EventDriverOptions`: Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`.
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
-- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>, options?: StageOpt… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
-- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>`: A stage module whose scene answers any object, checked on every frame to be stage values.
+- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>, options?: … (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object, string>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>`: A stage module whose scene answers any object, checked on every frame to be stage values.
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
 - **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
@@ -461,11 +463,17 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
 - **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
+- **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: CarrySize): Pose2d`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`. Nothing is carried from or to a box with no size.
+- **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
+- **`CarrySize`** `type CarrySize`: How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"` leaves it and hides all outside the box.
+- **`NO_LAYOUTS`** `const NO_LAYOUTS: Readonly<Record<never, Readonly<Record<string, Box>>>>`: The layouts a module with none passes: no layout, no boxes.
 - **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
 - **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
 - **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
+- **`Layouts`** `type Layouts`: Each named layout's `Rest`, as a renderer measured every one.
 - **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
-- **`readStageModule`** `(value: unknown): StageModule<string, object> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
+- **`readStageModule`** `(value: unknown): StageModule<string, object, string> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
 - **`boundsOf`** `(cubics: readonly Cubic2d[]): Box`: The box the control points of `cubics` span, from its top-left, never thinner than 1 so a straight line still shows.
@@ -570,7 +578,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
   an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
   moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
-  and are imported by two or more files of `<root>/src`, one line each: id, file, importers.
+  and are used by two or more briefs of `<root>/src` (a file's `export const brief = "<name>"`, else the file itself), one line each: id, file, briefs.
 - **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
   `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
   index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and

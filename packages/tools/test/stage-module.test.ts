@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCubics, type Time } from "@gerak/moves";
+import { toCubics, type Events, type Time } from "@gerak/moves";
 import {
   actor,
   group,
@@ -110,6 +110,64 @@ describe("a stage module in the scene tools", () => {
     expect(beatAt(read.beats ?? [], 100)).toBe("a");
     expect(beatAt(read.beats ?? [], 350)).toBe("b");
     expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
+  });
+});
+
+describe("a stage module with layouts in the scene tools", () => {
+  const box = (x: number) => ({ dot: { x, y: 0, width: 1, height: 1 } });
+  it("hands the scene the rest of the layout in force, before and after a cue", () => {
+    const read = moduleOf({
+      ...clean,
+      layouts: ["wide", "tall"],
+      layout: (events: readonly { readonly name: string }[]) =>
+        events.some(({ name }) => name === "turn") ? "tall" : "wide",
+      rests: { wide: box(10), tall: box(70) },
+    });
+    const [before, after] = sampleScene(read, { kind: "time", ms: [0, 100] }, ["dot"], undefined, [
+      { name: "turn", at: 50 },
+    ]);
+    expect(before?.targets["dot"]).toEqual({ x: 10 });
+    expect(after?.targets["dot"]).toEqual({ x: 70 });
+    expect(sampleScene(read, { kind: "time", ms: [100] })[0]?.targets["dot"]).toEqual({ x: 10 });
+  });
+
+  it("reports a layout answering an undeclared name, by that name", () => {
+    const read = moduleOf({
+      ...clean,
+      layouts: ["wide", "tall"],
+      layout: (events: readonly { readonly name: string }[]) =>
+        events.length > 0 ? "square" : "wide",
+      rests: { wide: box(10), tall: box(70) },
+    });
+    expect(() =>
+      sampleScene(read, { kind: "time", ms: [100] }, undefined, undefined, [
+        { name: "turn", at: 50 },
+      ]),
+    ).toThrow(/"square"/);
+  });
+});
+
+describe("motion:review of a member still ringing", () => {
+  const ringing = (on: readonly string[]) => ({
+    ...clean,
+    cast: {
+      stage: group({
+        dot: actor({ on }),
+        word: letters("AB"),
+        mark: actor({ still: true }),
+      }),
+    },
+    scene: (time: Time, events: Events, rest: Rest) => ({
+      ...clean.scene(time, events, rest),
+      dot: { x: Math.sin(time.progress * 200) },
+    }),
+  });
+  const ringingLines = (on: readonly string[]) =>
+    findings(ringing(on)).filter((line) => /still moving/.test(line));
+
+  it("reports it while the member is shown and not while a beat has hidden it", () => {
+    expect(ringingLines(["go", "out"])).toEqual(["dot is still moving on the last frame"]);
+    expect(ringingLines(["go"])).toEqual([]);
   });
 });
 

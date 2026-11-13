@@ -89,6 +89,16 @@ describe("applyValue", () => {
     expect(target.style.clipPath).toBe("");
   });
 
+  it("clips to a box when the value gives a width and a height, its radius rounding the corners", () => {
+    const target = element();
+    applyValue(target, { clipX: 50, clipY: 20, clipWidth: 40, clipHeight: 10 });
+    expect(target.style.clipPath).toBe("xywh(30px 15px 40px 10px)");
+    applyValue(target, { clipX: 50, clipY: 20, clipWidth: 40, clipHeight: 10, clipRadius: 4 });
+    expect(target.style.clipPath).toBe("xywh(30px 15px 40px 10px round 4px)");
+    applyValue(target, { clipX: 50, clipY: 20, clipWidth: 40 });
+    expect(target.style.clipPath).toBe("");
+  });
+
   it("dashes the stroke so exactly the stretch from drawnFrom to drawn shows", () => {
     const target = element({ getTotalLength: () => 100 });
     applyValue(target, { drawnFrom: 0.2, drawn: 0.6 });

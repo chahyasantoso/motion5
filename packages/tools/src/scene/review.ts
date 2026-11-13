@@ -159,7 +159,7 @@ function fingerprint(value: unknown): string {
   );
 }
 
-/** Findings over a scene's values sampled every 16 ms: jumps, a short final hold, targets still moving. */
+/** Findings over a scene's values sampled every 16 ms: jumps, a short final hold, targets still moving; a hidden target counts as still. */
 export function reviewValues(
   samples: readonly { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[],
   limits: Limits,
@@ -206,7 +206,10 @@ export function reviewValues(
   const rest = restFindings(
     samples.map(({ at }) => at),
     names,
-    (name, before, after) => prints[before]?.[name] === prints[after]?.[name],
+    (name, before, after) =>
+      hidden(name, samples[before]?.at ?? 0) ||
+      hidden(name, samples[after]?.at ?? 0) ||
+      prints[before]?.[name] === prints[after]?.[name],
     limits.hold,
   );
   return [...jumps, ...rest.map(describeFinding)];
@@ -423,6 +426,8 @@ export function reviewSceneModule(
   // A sampled path names its member first, an item as `dust[3]`; the member is the longest name it starts with.
   const ownerOfPath = (path: string): CastName | undefined => {
     const dotted = path.replace(/\[(\d+)\]/g, ".$1");
+    const whole = byName.get(dotted);
+    if (whole !== undefined) return whole;
     for (let cut = dotted.lastIndexOf("."); cut > 0; cut = dotted.lastIndexOf(".", cut - 1)) {
       const found = byName.get(dotted.slice(0, cut));
       if (found !== undefined) return found;

@@ -1,6 +1,21 @@
-import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import {
+  NO_EVENTS,
+  isMotionEvent,
+  mergeEvents,
+  type Events,
+  type MotionEvent,
+  type Time,
+} from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
-import { NO_REST, castNames, readStageModule, type CastName, type Rest } from "@gerak/stage";
+import {
+  NO_LAYOUTS,
+  NO_REST,
+  castNames,
+  readStageModule,
+  type CastName,
+  type Layouts,
+  type Rest,
+} from "@gerak/stage";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
@@ -20,7 +35,7 @@ export interface SceneModule {
   readonly cues: Events;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
-  /** Where things rest for a stage module, its own `rest` or none; a path function is called with it. */
+  /** Where things rest for a stage module at the start, its own `rest` or the first layout's; a path function is called with it. */
   readonly rest?: Rest;
 }
 
@@ -31,21 +46,6 @@ export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
     if (beat.from <= ms && ms <= beat.to && (found === undefined || beat.from >= found.from))
       found = beat;
   return found?.name;
-}
-
-function isEvent(value: unknown): value is MotionEvent {
-  if (typeof value !== "object" || value === null) return false;
-  const optional = (key: string, kind: "string" | "number") => {
-    const field: unknown = Reflect.get(value, key);
-    return field === undefined || typeof field === kind;
-  };
-  return (
-    typeof Reflect.get(value, "name") === "string" &&
-    typeof Reflect.get(value, "at") === "number" &&
-    optional("target", "string") &&
-    optional("x", "number") &&
-    optional("y", "number")
-  );
 }
 
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
@@ -94,7 +94,7 @@ export interface SceneSample {
  * `readStageModule`; its length is its story's and its scene gets the module's `rest`. */
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
   const cues: unknown = Reflect.get(Object(value), "cues");
-  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isEvent)))
+  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
@@ -106,10 +106,18 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
       return {
         reason: `The module's \`durationMs\` ${String(given)} differs from its story's ${beats.durationMs}; export only \`beats\`.`,
       };
-    const rest = stage.rest ?? NO_REST;
+    const layouts = stage.rests ?? NO_LAYOUTS;
+    const named: Layouts = layouts;
+    const first = stage.layouts?.[0];
+    const restFor = (events: Events): Rest => {
+      if (stage.layouts === undefined) return stage.rest ?? NO_REST;
+      const current = stage.layout?.(events) ?? first;
+      return (current === undefined ? undefined : named[current]) ?? NO_REST;
+    };
+    const rest = restFor(NO_EVENTS);
     return {
       cues: ownCues,
-      scene: (time, events) => scene(time, events, rest),
+      scene: (time, events) => scene(time, events, restFor(events), layouts),
       durationMs: beats.durationMs,
       beats: beats.order.flatMap((name) => {
         const span = beats[name];
