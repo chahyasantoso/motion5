@@ -32,6 +32,7 @@ describe("check gate runner (S2)", () => {
       "PASS scan:raw-templates",
       "PASS scan:comments",
       "PASS scan:cycles",
+      "PASS scan:boundaries",
       "FAIL format:check",
       "Checking formatting...\ndrift.ts",
     ]);
@@ -44,6 +45,7 @@ describe("check gate runner (S2)", () => {
       "PASS scan:raw-templates",
       "PASS scan:comments",
       "PASS scan:cycles",
+      "PASS scan:boundaries",
       "PASS format:check",
       "FAIL typecheck",
     ]);

@@ -17,6 +17,7 @@
     "scan:raw-templates": "node scripts/raw-template-scan.mjs",
     "scan:comments": "node scripts/comment-scan.mjs",
     "scan:cycles": "node scripts/cycle-scan.mjs",
+    "scan:boundaries": "node scripts/boundary-scan.mjs",
     "adr-index": "node scripts/adr-index.mjs",
     "map": "node scripts/repo-map.mjs",
     "reference": "node scripts/reference.mjs",

@@ -335,6 +335,51 @@ async function pureLayer(scanRoot, workspaces) {
   }
   return { folders, names };
 }
+/** Package names of the workspaces under `apps/`, by folder. */
+async function appNames(scanRoot, workspaces) {
+  const names = new Map();
+  for (const workspace of workspaces.filter((entry) => entry.startsWith("apps/"))) {
+    try {
+      const manifest = JSON.parse(
+        await readFile(join(scanRoot, workspace, "package.json"), "utf8"),
+      );
+      if (typeof manifest.name === "string") names.set(workspace, manifest.name);
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
+  return names;
+}
+/** The workspace folder a repository path lies in, or null. */
+function folderOf(path) {
+  const match = /^(packages|apps)\/([^/]+)\//.exec(path);
+  return match === null ? null : `${match[1]}/${match[2]}`;
+}
+/**
+ * A package never reaches an app, an app never reaches another app, and an app reaches a package
+ * only through its manifest, never by a relative path into `packages/`.
+ */
+function checkAppBoundary(workspace, file, specifiers, violations, apps) {
+  const ownName = apps.get(workspace);
+  for (const specifier of specifiers) {
+    if (specifier.startsWith(".")) {
+      const target = folderOf(`${posix.normalize(posix.join(posix.dirname(file), specifier))}/`);
+      if (target === null || target === workspace) continue;
+      if (workspace.startsWith("packages/") && target.startsWith("apps/"))
+        violations.push(`${file}: package imports an app ${specifier}`);
+      else if (workspace.startsWith("apps/") && target.startsWith("packages/"))
+        violations.push(`${file}: app imports a package by path ${specifier}`);
+      else if (workspace.startsWith("apps/") && target.startsWith("apps/"))
+        violations.push(`${file}: app imports another app ${specifier}`);
+    } else {
+      const name = packageOf(specifier);
+      if (name === ownName || ![...apps.values()].includes(name)) continue;
+      if (workspace.startsWith("packages/"))
+        violations.push(`${file}: package imports an app ${specifier}`);
+      else violations.push(`${file}: app imports another app ${specifier}`);
+    }
+  }
+}
 /** The package a bare specifier names: `@scope/name` or `name`, without its subpath. */
 function packageOf(specifier) {
   const parts = specifier.split("/");
@@ -365,6 +410,7 @@ export async function scan(scanRoot = root) {
   const workspaces = await discoverConsumerWorkspaces(scanRoot);
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
   const pure = await pureLayer(scanRoot, workspaces);
+  const apps = await appNames(scanRoot, workspaces);
   for (const workspace of workspaces) {
     for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
@@ -373,6 +419,7 @@ export async function scan(scanRoot = root) {
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
       if (pure.folders.has(workspace))
         checkPureSource(workspace, file, specifiers, violations, pure);
+      checkAppBoundary(workspace, file, specifiers, violations, apps);
       for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))
         violations.push(`${file}: undeclared workspace subpath ${specifier}`);
     }
