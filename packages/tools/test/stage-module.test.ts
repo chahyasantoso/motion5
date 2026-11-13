@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { toCubics, type Time } from "@gerak/moves";
-import { actor, group, letters, readStageModule, restOf, story, type Rest } from "@gerak/stage";
+import {
+  actor,
+  group,
+  letters,
+  many,
+  readStageModule,
+  restOf,
+  story,
+  type Rest,
+} from "@gerak/stage";
 import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
@@ -187,6 +196,48 @@ describe("motion:review on a stage module", () => {
       cast: markedBy((rest) => level(0, 10 / restOf(rest, "dot").width, 0)),
     });
     expect(scaled).toEqual([]);
+  });
+
+  it("calls a text function at each sample, and reports one answering a non-string once", () => {
+    const beats = story(1000, { all: [0, 1000] });
+    const scene = (time: Time) => ({ dot: { x: time.progress } });
+    const seen: number[] = [];
+    const fine = findings({
+      beats,
+      skins: {},
+      cast: {
+        dot: actor(),
+        clock: actor({
+          still: true,
+          text: (time) => {
+            seen.push(time.progress);
+            return String(time.progress);
+          },
+        }),
+      },
+      scene,
+    });
+    expect(fine.filter((line) => /text/.test(line))).toEqual([]);
+    expect(seen).toEqual(Array.from({ length: 63 }, (_, index) => (index * 16) / 1000));
+    const bad = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor(), clock: { kind: "actor", still: true, text: () => 7 } },
+      scene,
+    });
+    expect(bad.filter((line) => /text/.test(line))).toEqual([
+      'text of "clock" answers number, not a string at 0 ms',
+    ]);
+  });
+
+  it("refuses a text function on a list's item, naming it", () => {
+    const read = readStageModule({
+      beats: story(1000, { all: [0, 1000] }),
+      skins: {},
+      cast: { row: many([1], () => actor({ text: () => "x" })) },
+      scene: () => ({}),
+    });
+    expect("reason" in read && read.reason).toMatch(/"row\.0".*text that follows time/);
   });
 
   it("finds a member the scene never moves that is not still", () => {

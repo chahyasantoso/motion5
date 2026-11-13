@@ -254,6 +254,41 @@ describe("mountStage", () => {
     expect(root.find("marks.1").style.transform).toBe("translate3d(0px, 3px, 0px)");
   });
 
+  it("writes a readout's text from the time, only when it changed", () => {
+    const seconds = (time: Time) => {
+      const elapsed = time.clock.kind === "timed" ? time.clock.elapsed : 0;
+      return `00:${String(Math.floor(elapsed / 1000)).padStart(2, "0")}`;
+    };
+    const module: StageModule<"all", StageValues> = {
+      beats: story(3000, { all: [0, 3000] }),
+      cast: { timecode: actor({ text: seconds }), dot: actor() },
+      skins: {},
+      scene: (time) => ({ dot: { x: time.progress } }),
+    };
+    const container = new FakeElement("div");
+    const stage = mountStage(container, module, { frames: frames() });
+    const timecode = container.children[0]?.shadowRoot?.find("timecode");
+    if (timecode === undefined) throw new Error("No timecode.");
+    expect(timecode.textContent).toBe("00:00");
+    expect(timecode.attributes.has("data-text")).toBe(true);
+    let text = timecode.textContent;
+    const writes: string[] = [];
+    Object.defineProperty(timecode, "textContent", {
+      get: () => text,
+      set: (value: string) => {
+        writes.push(value);
+        text = value;
+      },
+    });
+    const at = (ms: number) => stage.driver.seek(ms / 3000);
+    at(1000);
+    expect(timecode.textContent).toBe("00:01");
+    at(1500);
+    at(2000);
+    expect(timecode.textContent).toBe("00:02");
+    expect(writes).toEqual(["00:01", "00:02"]);
+  });
+
   it("hands the scene a rest box for every name the cast makes", () => {
     const seen: Seen = {};
     mounted(seen);

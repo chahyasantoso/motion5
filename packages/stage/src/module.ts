@@ -41,6 +41,11 @@ function isStretch(value: unknown): boolean {
   return isString(value) || (Array.isArray(value) && value.length === 2 && value.every(isString));
 }
 
+/** Fixed text, or a function of time answering it on each frame. */
+function isText(value: unknown): boolean {
+  return isString(value) || typeof value === "function";
+}
+
 /** A fixed list of cubics, or a function answering them once the stage has measured. */
 function isPath(value: unknown): boolean {
   return typeof value === "function" || isCubics(value);
@@ -52,7 +57,7 @@ function isMember(value: unknown): value is Member {
   if (!isOptional(on, (given) => Array.isArray(given) && given.every(isStretch))) return false;
   switch (value["kind"]) {
     case "actor":
-      return isOptional(value["text"], isString) && isOptional(value["path"], isPath);
+      return isOptional(value["text"], isText) && isOptional(value["path"], isPath);
     case "many": {
       const items = value["items"];
       return Array.isArray(items) && items.every(isMember);
@@ -118,15 +123,20 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
     const cast = value["cast"];
     if (!isCast(cast))
       return reason(
-        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` or a function of `rest` answering them, and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
+        "`cast` must be made by `actor`, `many` and `group`, with `text` a string or a function of time, `path` cubics made by `toCubics` or a function of `rest` answering them, and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
       );
-    for (const { name, on } of castNames(cast, beats.order))
+    for (const { name, on, kind, text } of castNames(cast, beats.order)) {
+      if (kind === "item" && typeof text === "function")
+        return reason(
+          `"${name}" is an item of a list with text that follows time; a list's text is fixed, since its length is the scene's shape. Make it an \`actor\`.`,
+        );
       for (const [from, to] of on ?? []) {
         const start = beats[from]?.from ?? 0;
         const end = beats[to]?.to ?? 0;
         if (end < start)
           return reason(`"${name}" is on from "${from}" to "${to}", which ends before it starts.`);
       }
+    }
     const skins = readSkins(value["skins"]);
     if (typeof skins === "string") return reason(skins);
     const size = value["frame"];

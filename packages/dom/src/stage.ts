@@ -308,9 +308,33 @@ export function mountStage<
 
   const placed = new Map<string, Placed<E>>();
   const strokes = new Map<E, Stroke<S>>();
+  const readouts = new Map<E, { readonly name: string; readonly text: (time: Time) => string }>();
+  const startTime: Time = {
+    progress: 0,
+    clock: { kind: "timed", elapsed: 0, length: beats.durationMs },
+  };
+  const misread = new Set<string>();
+  // A readout throwing or answering a non-string is reported once, and the text it last wrote kept.
+  const readout = (name: string, text: (time: Time) => string, time: Time): string | undefined => {
+    let error: Error;
+    try {
+      const said: unknown = text(time);
+      if (typeof said === "string") return said;
+      error = new TypeError(`The text of "${name}" answered ${typeof said}, not a string.`);
+    } catch (thrown) {
+      error = new Error(`The text of "${name}" failed: ${String(thrown)}`, { cause: thrown });
+    }
+    if (!misread.has(name)) report(error);
+    misread.add(name);
+    return undefined;
+  };
   const leaf = (element: E, info: CastName, list?: string): void => {
-    if (info.text !== undefined) {
-      element.textContent = info.text;
+    const text = info.text;
+    if (text !== undefined) {
+      if (typeof text === "function") {
+        readouts.set(element, { name: info.name, text });
+        element.textContent = readout(info.name, text, startTime) ?? "";
+      } else element.textContent = text;
       element.setAttribute("data-text", "");
     }
     if (info.path !== undefined) {
@@ -517,6 +541,10 @@ export function mountStage<
       if (info.on === undefined) continue;
       own.style.visibility = present(info.on, ms) ? "" : "hidden";
     }
+    for (const [own, { name, text }] of readouts) {
+      const said = readout(name, text, time);
+      if (said !== undefined && own.textContent !== said) own.textContent = said;
+    }
   };
   const bind = (target: Placed<E>, value: Pose2d | readonly Pose2d[] | undefined): void => {
     if (value === undefined) return;
@@ -602,9 +630,9 @@ export function mountStage<
       : undefined;
   if (observer !== undefined && isElement(container)) {
     observer.observe(container);
-    // A stroke's size is set from its path, so watching it would measure again on its own redraw.
+    // A stroke's size follows its path and a readout's its text, so neither is watched for its own redraw.
     for (const { element: own } of placed.values())
-      if (isElement(own) && !strokes.has(own)) observer.observe(own);
+      if (isElement(own) && !strokes.has(own) && !readouts.has(own)) observer.observe(own);
   }
   // A web font that lands after mount changes text sizes, so the boxes are measured again.
   let live = true;

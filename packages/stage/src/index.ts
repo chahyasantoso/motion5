@@ -9,6 +9,7 @@ export {
   words,
   type Actor,
   type ActorPath,
+  type ActorText,
   type Behaviour,
   type Cast,
   type CastName,

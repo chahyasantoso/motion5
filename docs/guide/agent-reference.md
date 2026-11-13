@@ -438,7 +438,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readonly from: number; readonly to: number; }, durationMs: number,…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
@@ -448,6 +448,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
 - **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
+- **`ActorText`** `type ActorText`: What an actor says: fixed text, or a readout the renderer writes from the time on each frame.
 - **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
 - **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.

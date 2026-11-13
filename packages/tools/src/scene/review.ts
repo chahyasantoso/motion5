@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import { manualDriver } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
@@ -326,6 +327,37 @@ function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] 
   return found;
 }
 
+/** Each text function called at each sampled ms: one that throws or answers a non-string, once each. */
+function textFindings(
+  cast: readonly CastName[],
+  ms: readonly number[],
+  durationMs: number,
+): readonly string[] {
+  const found: string[] = [];
+  const driver = manualDriver({ durationMs });
+  const readouts = cast.flatMap(({ name, text }) =>
+    typeof text === "function" ? [[name, text] as const] : [],
+  );
+  const wrong = new Set<string>();
+  for (const at of ms) {
+    driver.seekMs(at);
+    for (const [name, text] of readouts) {
+      if (wrong.has(name)) continue;
+      let why: string | undefined;
+      try {
+        const said: unknown = text(driver.now());
+        if (typeof said !== "string") why = `answers ${typeof said}, not a string`;
+      } catch (error) {
+        why = `fails: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      if (why === undefined) continue;
+      wrong.add(name);
+      found.push(`text of "${name}" ${why} at ${at} ms`);
+    }
+  }
+  return found;
+}
+
 interface Outside {
   readonly after: number;
   readonly until: number;
@@ -411,6 +443,7 @@ export function reviewSceneModule(
       ...findings.map((finding) => labelled(beats, finding)),
       ...(cast === undefined ? [] : stageFindings(cast, beats, samples, module.durationMs)),
       ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
+      ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
     ],
   };
 }

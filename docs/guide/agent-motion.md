@@ -65,6 +65,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
 - **Cast.** A member is a name. `actor()` takes one value, `many(n)` a list with one value per item, `group({...})`
   one value that moves its members; a member's own value is relative to its group. A `many` moves only item by item:
   to move a whole row of letters, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
+- **Readout.** `actor({ text: (time) => … })` is a readout written each frame, for a timecode or a counter; it is
+  not a value and does not ease.
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
   it by `[data-path="<name>"]` (`stroke`, `stroke-width`). Its points are frame px from the frame's top-left, in any
   group, and the stage places the member at the path's box. To follow the layout, pass `path: (rest) => toCubics([...])`
