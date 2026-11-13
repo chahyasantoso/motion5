@@ -73,8 +73,40 @@ describe("motion:moves --candidates", () => {
   it("lists a local move imported by two files", async () => {
     const { root } = fixture();
     const run = await runCatalog(ok(["--candidates"]), root);
-    expect(run.lines).toEqual(["slide-in | x.ts | importers: 2"]);
+    expect(run.lines).toEqual(["slide-in | x.ts | briefs: 2"]);
     expect(run.code).toBe(0);
+  });
+
+  it("counts files of one brief once, files of two briefs twice, and a file with no brief as its own", async () => {
+    const { root } = fixture();
+    const one = join(root, "src", "one.ts");
+    const two = join(root, "src", "deep", "two.ts");
+    const text = (file: string) => readFileSync(file, "utf8");
+    const oneText = text(one);
+    const twoText = text(two);
+    writeFileSync(
+      one,
+      `${oneText}export const brief = "reel";
+`,
+    );
+    writeFileSync(
+      two,
+      `${twoText}export const brief = "reel";
+`,
+    );
+    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual(["No candidates."]);
+    writeFileSync(
+      two,
+      `${twoText}export const brief = "title";
+`,
+    );
+    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual([
+      "slide-in | x.ts | briefs: 2",
+    ]);
+    writeFileSync(two, twoText);
+    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual([
+      "slide-in | x.ts | briefs: 2",
+    ]);
   });
 
   it("leaves out a move imported by one file", async () => {
@@ -106,6 +138,21 @@ describe("motion:promote", () => {
       `import { slideIn } from "@gerak/moves";\nexport const b = slideIn;\n`,
     );
     expect(run.lines.some((line) => line.includes("two.ts"))).toBe(true);
+  });
+
+  it("writes the description above a moved move that has no doc comment, and keeps one it has", async () => {
+    const { root, movesPackage } = fixture();
+    await promoteMove("slide-in", root, { movesPackage });
+    expect(readFileSync(join(movesPackage, "src", "x.ts"), "utf8")).toContain(
+      "/** Slides in from the left. */\nexport const slideIn = defineMove(",
+    );
+    const again = fixture();
+    const file = join(again.root, "src", "moves", "x.ts");
+    writeFileSync(file, MOVE.replace("export const", "/** Mine. */\nexport const"));
+    await promoteMove("slide-in", again.root, { movesPackage: again.movesPackage });
+    const kept = readFileSync(join(again.movesPackage, "src", "x.ts"), "utf8");
+    expect(kept).toContain("/** Mine. */\nexport const slideIn");
+    expect(kept).not.toContain("Slides in from the left. */");
   });
 
   it("leaves a move that passes the gate in the moved copy", async () => {

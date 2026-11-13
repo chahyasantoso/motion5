@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCubics, type Time } from "@gerak/moves";
+import { toCubics, type Events, type Time } from "@gerak/moves";
 import {
   actor,
   group,
@@ -144,6 +144,30 @@ describe("a stage module with layouts in the scene tools", () => {
         { name: "turn", at: 50 },
       ]),
     ).toThrow(/"square"/);
+  });
+});
+
+describe("motion:review of a member still ringing", () => {
+  const ringing = (on: readonly string[]) => ({
+    ...clean,
+    cast: {
+      stage: group({
+        dot: actor({ on }),
+        word: letters("AB"),
+        mark: actor({ still: true }),
+      }),
+    },
+    scene: (time: Time, events: Events, rest: Rest) => ({
+      ...clean.scene(time, events, rest),
+      dot: { x: Math.sin(time.progress * 200) },
+    }),
+  });
+  const ringingLines = (on: readonly string[]) =>
+    findings(ringing(on)).filter((line) => /still moving/.test(line));
+
+  it("reports it while the member is shown and not while a beat has hidden it", () => {
+    expect(ringingLines(["go", "out"])).toEqual(["dot is still moving on the last frame"]);
+    expect(ringingLines(["go"])).toEqual([]);
   });
 });
 

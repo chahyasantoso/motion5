@@ -577,7 +577,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
   an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
   moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
-  and are imported by two or more files of `<root>/src`, one line each: id, file, importers.
+  and are used by two or more briefs of `<root>/src` (a file's `export const brief = "<name>"`, else the file itself), one line each: id, file, briefs.
 - **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
   `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
   index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and

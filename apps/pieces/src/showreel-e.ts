@@ -45,6 +45,8 @@ import { squish } from "./moves/squish";
 import { streak } from "./moves/streak";
 import { tint } from "./moves/tint";
 
+export const brief = "showreel";
+
 // Each WEIGHT letter's landing; the last lands late and hardest.
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;
 const landOf = (i: number): number => LAND[i] ?? LAND[0];

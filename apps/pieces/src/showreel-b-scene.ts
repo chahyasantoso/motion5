@@ -44,6 +44,8 @@ import { squish } from "./moves/squish";
 import { streak } from "./moves/streak";
 import { tint } from "./moves/tint";
 
+export const brief = "showreel";
+
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 15000;
 
