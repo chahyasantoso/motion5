@@ -142,10 +142,23 @@ describe("motion:review holds a skin to its cast", () => {
     expect(
       review(
         stage(
-          '[data-cast="box"] { z-index: 1; } [data-path="box"] { fill: red; } [data-cast="dust"] { x: 1; } [data-cast="dust.0"] { x: 2; } [data-cast^="du"] { x: 3; }',
+          '[data-cast="box"] { z-index: 1; } [data-cast="dust"] { x: 1; } [data-cast="dust.0"] { x: 2; } [data-cast^="du"] { x: 3; }',
         ),
       ).findings,
     ).toEqual([]);
     expect(review(stage("")).findings).toEqual([]);
+  });
+
+  it("reads an unquoted name, skips comments, and finds a stroke rule on a member with no path", () => {
+    expect(
+      review(
+        stage(
+          '/* [data-cast="old"] */ [data-cast=bogus] { x: 1; } [data-path="box"] { fill: red; }',
+        ),
+      ).findings,
+    ).toEqual([
+      'skin rule names "bogus", which is not in the cast.',
+      'skin rule styles "box" as a stroke, but it has no path.',
+    ]);
   });
 });

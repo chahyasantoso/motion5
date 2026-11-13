@@ -111,7 +111,7 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
 - **Measure, alone, fresh:** an Opus worker at medium effort rigs `apps/pieces/references/penguin.svg`, a public-domain
   mascot of 21 unnamed paths with radial gradients, as the stage module `penguin`, and makes it waddle and wave a
   flipper. It passes when the parts are named for what moves, each jointed part has a pivot, the wave turns about
-  the shoulder, and `motion:compare` at rest gives a whole-frame mean under 2 out of 255 and no part over 8. Tokens,
+  the shoulder, and `motion:compare` at rest gives a whole-frame mean under 2 out of 255 and no part over 15 (a faithful import of the penguin scores 10.5 at worst, a missing 1 px line about 30). Tokens,
   tool calls and the compare scores are recorded.
 - **Cold review:** a Sonnet agent reviews the diff, writes a second SVG by hand with groups, transforms and a gradient,
   imports it and runs both commands. It downloads nothing.

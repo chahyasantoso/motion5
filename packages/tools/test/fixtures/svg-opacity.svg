@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="pair" opacity="0.5">
+    <rect id="red" x="10" y="10" width="80" height="80" fill="#ff0000"/>
+    <rect id="blue" x="50" y="30" width="80" height="60" fill="#0000ff"/>
+  </g>
+  <g id="single" opacity="0.5">
+    <rect id="green" x="10" y="110" width="80" height="80" fill="#00ff00"/>
+  </g>
+</svg>

@@ -187,10 +187,29 @@ describe("pathData", () => {
     expect(pathData([])).toBe("");
   });
 
+  it("closes an outline that ends where it began, and joins ends that meet but for rounding", () => {
+    const side = (x0: number, y0: number, x3: number, y3: number) => ({
+      id: `${x0},${y0}`,
+      x0,
+      y0,
+      x1: x0,
+      y1: y0,
+      x2: x3,
+      y2: y3,
+      x3,
+      y3,
+    });
+    const square = [side(0, 0, 10, 0), side(10, 0, 10, 10), side(10, 10, 0, 10), side(0, 10, 0, 0)];
+    expect(pathData(square).endsWith("Z")).toBe(true);
+    expect(pathData(square.slice(0, 3)).includes("Z")).toBe(false);
+    const rounded = [side(0, 0, 0.1 + 0.2, 0), side(0.3, 0, 1, 0)];
+    expect(pathData(rounded).match(/M/g)).toHaveLength(1);
+  });
+
   it("starts another outline where a cubic does not begin where the last one ended", () => {
     const hole = { id: "c", x0: 40, y0: 40, x1: 50, y1: 40, x2: 60, y2: 50, x3: 40, y3: 40 };
     expect(pathData([...cubics, hole])).toBe(
-      "M 0 0 C 10 0, 90 5, 100 0 C 100 0, 100 100, 100 100 M 40 40 C 50 40, 60 50, 40 40",
+      "M 0 0 C 10 0, 90 5, 100 0 C 100 0, 100 100, 100 100 M 40 40 C 50 40, 60 50, 40 40 Z",
     );
   });
 

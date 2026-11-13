@@ -103,14 +103,32 @@ export function cssDash(
 /** SVG path data for joined cubic segments. */
 export function pathData(cubics: readonly Cubic2d[]): string {
   const parts: string[] = [];
+  let start: Cubic2d | undefined;
   let last: Cubic2d | undefined;
   for (const c of cubics) {
     // A cubic that does not start where the last one ended starts another outline.
-    if (last === undefined || last.x3 !== c.x0 || last.y3 !== c.y0) parts.push(`M ${c.x0} ${c.y0}`);
+    if (last === undefined || !meets(last.x3, last.y3, c.x0, c.y0)) {
+      if (closes(start, last)) parts.push("Z");
+      parts.push(`M ${c.x0} ${c.y0}`);
+      start = c;
+    }
     parts.push(`C ${c.x1} ${c.y1}, ${c.x2} ${c.y2}, ${c.x3} ${c.y3}`);
     last = c;
   }
+  if (closes(start, last)) parts.push("Z");
   return parts.join(" ");
+}
+
+/** How near two ends must be to meet, in px: rounding apart, not a gap anyone draws. */
+const SEAM = 1e-6;
+
+function meets(x: number, y: number, toX: number, toY: number): boolean {
+  return Math.abs(x - toX) <= SEAM && Math.abs(y - toY) <= SEAM;
+}
+
+/** Whether an outline ends where it began, so its corner there joins like every other. */
+function closes(start: Cubic2d | undefined, last: Cubic2d | undefined): boolean {
+  return start !== undefined && last !== undefined && meets(last.x3, last.y3, start.x0, start.y0);
 }
 
 /** A value split into the fields `applyValue` writes as a stroke's dash and the rest, for a

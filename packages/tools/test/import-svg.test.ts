@@ -195,6 +195,14 @@ describe("motion:import-svg paint", () => {
     );
     expect(imported.result.members).toEqual(["sun", "strip", "plain"]);
   }, 60000);
+
+  it("says when a translucent group's opacity goes on more than one part", async () => {
+    const imported = await bring(join(fixtures, "svg-opacity.svg"), "fixture");
+    const groups = imported.result.leftOut.filter(({ reason }) =>
+      reason.startsWith("group opacity"),
+    );
+    expect(groups.map(({ element }) => element)).toEqual(["g#pair"]);
+  }, 60000);
 });
 
 describe("motion:import-svg on the penguin", () => {

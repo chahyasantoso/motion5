@@ -36,7 +36,7 @@ describe("motion:compare pure parts", () => {
     expect(meanDifference(black, wrong, { x: 5, y: 5, width: 3, height: 3 })).toBe(0);
   });
 
-  it("forgives an edge smoothed or set one pixel off, and a lone stray pixel", () => {
+  it("forgives an edge smoothed or set one pixel off", () => {
     const edge = (at: number) => {
       const picture = solid(8, 4, [0, 0, 0]);
       for (let y = 0; y < 4; y += 1)
@@ -45,9 +45,15 @@ describe("motion:compare pure parts", () => {
     };
     expect(meanDifference(edge(4), edge(5))).toBe(0);
     expect(meanDifference(edge(4), edge(6))).toBeGreaterThan(0);
-    const stray = solid(4, 4, [0, 0, 0]);
-    stray.rgb.set([90, 0, 0], (1 * 4 + 1) * 3);
-    expect(meanDifference(solid(4, 4, [0, 0, 0]), stray)).toBe(0);
+  });
+
+  it("finds a one-pixel line missing from either picture", () => {
+    const line = solid(6, 6, [238, 238, 238]);
+    for (let x = 0; x < 6; x += 1) line.rgb.set([255, 0, 255], (3 * 6 + x) * 3);
+    const blank = solid(6, 6, [238, 238, 238]);
+    expect(meanDifference(blank, line)).toBeGreaterThan(0);
+    expect(meanDifference(line, blank)).toBeGreaterThan(0);
+    expect(meanDifference(blank, line, { x: 0, y: 2, width: 6, height: 3 })).toBeGreaterThan(8);
   });
 
   it("clips a box to the picture and calls an empty one zero", () => {

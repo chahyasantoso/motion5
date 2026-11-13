@@ -86,9 +86,14 @@ export function meanDifference(a: Picture, b: Picture, box?: Box): number {
   return total / ((x1 - x0) * (y1 - y0) * 3);
 }
 
-/** The summed RGB difference between `a` at (x, y) and the closest of `b`'s pixels within one of it, so
- * edges smoothed a sub-pixel differently count as the same drawing. */
+/** The summed RGB difference at (x, y), looked for both ways within one pixel: a pixel of either picture
+ * with no close match in the other counts, so a part missing from either side shows. */
 export function nearestDifference(a: Picture, b: Picture, x: number, y: number): number {
+  return Math.max(closestOf(a, b, x, y), closestOf(b, a, x, y));
+}
+
+/** The summed RGB difference between `a` at (x, y) and the closest of `b`'s pixels within one of it. */
+function closestOf(a: Picture, b: Picture, x: number, y: number): number {
   const at = (y * a.width + x) * 3;
   let best = Infinity;
   for (let dy = -1; dy <= 1; dy += 1)

@@ -381,6 +381,7 @@ export function extractSvg(): Extracted {
   }
 
   const shapes: RawShape[] = [];
+  const translucent = new Map<Element, number>();
   for (const element of svg.querySelectorAll(
     "path, rect, circle, ellipse, polygon, polyline, line",
   )) {
@@ -399,7 +400,9 @@ export function extractSvg(): Extracted {
         drawn = false;
       const look = getComputedStyle(above);
       if (look.display === "none") hiddenAt = above;
-      opacity *= number(look.getPropertyValue("opacity"), 1);
+      const own = number(look.getPropertyValue("opacity"), 1);
+      opacity *= own;
+      if (above !== element && own < 1) translucent.set(above, (translucent.get(above) ?? 0) + 1);
     }
     if (!drawn) continue;
     if (hiddenAt !== undefined) {
@@ -489,5 +492,9 @@ export function extractSvg(): Extracted {
       dashOffset: number(style.getPropertyValue("stroke-dashoffset"), 0),
     });
   }
+  // A translucent group's opacity goes on each part, so parts overlapping inside it blend differently.
+  for (const [group, count] of translucent)
+    if (count > 1)
+      note(group, "group opacity is applied to each part, so overlapping parts blend differently");
   return { kind: "ok", viewBox, shapes, leftOut };
 }
