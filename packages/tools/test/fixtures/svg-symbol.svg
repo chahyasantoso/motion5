@@ -6,8 +6,12 @@
     <symbol id="stretch" viewBox="0 0 10 10" preserveAspectRatio="none">
       <rect x="0" y="0" width="10" height="5" fill="#aa3322"/>
     </symbol>
+    <symbol id="crop" viewBox="0 0 10 10" preserveAspectRatio="xMinYMax slice">
+      <rect x="0" y="0" width="10" height="5" fill="#227744"/>
+    </symbol>
   </defs>
   <use href="#bar" x="20" y="10" width="40" height="40"/>
   <use href="#bar" x="100" y="10" width="50" height="20"/>
   <use href="#stretch" x="10" y="60" width="50" height="30"/>
+  <use href="#crop" x="120" y="60" width="40" height="20"/>
 </svg>

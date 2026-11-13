@@ -223,6 +223,8 @@ export function extractSvg(): Extracted {
           const shiftX = x + (boxWidth - viewWidth * scaleX) * alignX - minX * scaleX;
           const shiftY = y + (boxHeight - viewHeight * scaleY) * alignY - minY * scaleY;
           place = `translate(${shiftX} ${shiftY}) scale(${scaleX} ${scaleY})`;
+          if (fit === "slice" && align !== "none")
+            note(use, "symbol slices into its box, and the clip at its edge is not carried");
         }
         group.setAttribute("transform", `${use.getAttribute("transform") ?? ""} ${place}`);
         for (const child of target.children) {

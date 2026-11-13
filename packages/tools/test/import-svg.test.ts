@@ -180,14 +180,17 @@ describe("motion:import-svg use of a symbol", () => {
 
   it("places each use's copy of the symbol by its box, viewBox and preserveAspectRatio", async () => {
     const imported = await bring(join(fixtures, "svg-symbol.svg"), "fixture");
-    expect(imported.result.members).toEqual(["part1", "part2", "part3"]);
-    expect(imported.result.leftOut).toEqual([]);
+    expect(imported.result.members).toEqual(["part1", "part2", "part3", "part4"]);
+    expect(imported.result.leftOut).toHaveLength(1);
+    expect(JSON.stringify(imported.result.leftOut)).toMatch(/slices into its box/);
     // A 10x10 view in a 40x40 box at (20, 10) scales by 4: the 10x5 rect is 40x20.
     expect(extent(imported, "part1")).toEqual(near([20, 10, 60, 30]));
     // A 50x20 box meets at scale 2, centred across: x shifts by 15.
     expect(extent(imported, "part2")).toEqual(near([115, 10, 135, 20]));
     // preserveAspectRatio none stretches by 5 across and 3 down.
     expect(extent(imported, "part3")).toEqual(near([10, 60, 60, 75]));
+    // A 40x20 box sliced at scale 4 and aligned to its bottom left lifts the rect by the 20 it overflows.
+    expect(extent(imported, "part4")).toEqual(near([120, 40, 160, 60]));
   }, 60000);
 });
 
