@@ -255,7 +255,7 @@ const slide = defineMove({
 - **`arc`** `(options: OptionsIn<{ readonly dx: { readonly kind: "number"; readonly description: "Start this far right of rest, in px (negative: left)."…`: Travels from an offset to rest along a path bowed by `lift` px.
 - **`hop`** `(options: OptionsIn<{ readonly height: { readonly kind: "number"; readonly min: 0; readonly description: "Peak of the first flight above re…`: Lands `bounces + 1` times, each flight `decay` as high, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on.
 - **`rope`** `(options: OptionsIn<{ readonly angle: { readonly kind: "number"; readonly default: 0; readonly description: "Heading of the straight rope a…`: Bends a chain of points from straight into their shape, link by link. Takes `{ points }` as a third argument and answers anchors for `toCubics`.
-- **`trace`** `(options: OptionsIn<{ readonly tail: { readonly kind: "number"; readonly default: 1; readonly min: 0; readonly max: 1; readonly description…`: Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share kept drawn behind the head.
+- **`trace`** `(options: OptionsIn<{ readonly tail: { readonly kind: "number"; readonly default: 1; readonly min: 0.001; readonly max: 1; readonly descrip…`: Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share kept drawn behind the head.
 - **`wipe`** `(options: OptionsIn<{ readonly radius: { readonly kind: "number"; readonly min: 0; readonly description: "Final circle radius, in px; cover…`: Grows a circle from `(x, y)` to `radius`, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left.
 - **`reversed`** `(time: Time): Time`: A time run backwards (progress `p` answers `1 - p`); a function of time, not a move, so any move or value plays through it.
 - **`anticipate`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 0.9; readonly descri…`: Winds up the other way from its input's travel, then plays the input and ends where it ends.
@@ -438,8 +438,9 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readonly from: number; readonly to: number; }, durationMs: number,…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
 - **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
@@ -447,6 +448,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
 - **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
+- **`ActorText`** `type ActorText`: What an actor says: fixed text, or a readout the renderer writes from the time on each frame.
 - **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
 - **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
@@ -466,6 +468,12 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`readStageModule`** `(value: unknown): StageModule<string, object> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
+- **`boundsOf`** `(cubics: readonly Cubic2d[]): Box`: The box the control points of `cubics` span, from its top-left, never thinner than 1 so a straight line still shows.
+- **`describeLoop`** `({ loop, behind }: StrokeLoop): string`: The loop said in one line: `paths "a" and "b" read each other`, and any stroke reading them.
+- **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: Readonly<Record<string, Box>>, settle: (name: string, answer: PathAnswer, read: Re…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box. Answers the loop when a pass draws none.
+- **`restOfBounds`** `(bounds: Box): Box`: Where a stroke of these bounds rests: their centre and size, as a rest box is.
+- **`PathAnswer`** `type PathAnswer`: What a path answered in its pass: its cubics, or what it threw.
+- **`StrokeLoop`** `type StrokeLoop`: The strokes no pass could draw: those reading each other in a loop, and those reading one of them.
 <!-- generated:reference:end -->
 
 ## @gerak/physics
@@ -576,8 +584,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   For a stage module (it exports `beats` and `cast`) a finding that names a time also names the beat there, and it
-  adds: a cast member the scene never moves that is not `still`, a target the scene answers that is not cast, and a
-  member whose value changes outside its `on` stretches: before the first, in a gap, or after the last.
+  adds: a cast member the scene never moves that is not `still`, a `still` member or group the scene moves, a target
+  the scene answers that is not cast, a member whose value changes outside its `on` stretches (before the first, in a
+  gap, or after the last), a path that reads its own box, paths that read each other in a loop, and a text function
+  that throws or answers something other than a string. A step while a member, its group or its list is hidden by
+  `on` is not a jump.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
@@ -588,6 +599,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   and a fitted `cubic-bezier`. A move splits where it turns back.
 - **`motion:frames <page> --at ms,ms [--out dir]`**: a PNG per time and a labelled `sheet.png`; read the sheet.
   `--onion sel --from ms --to ms --every ms` draws an element at each step on one frame, with its path.
+  `--compare dir` (with `--at`) also compares the new frames with an earlier run's, and `motion:frames --compare
+  dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
+  the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
+  Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
 - **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.

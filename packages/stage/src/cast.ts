@@ -1,10 +1,13 @@
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d, Time } from "@gerak/moves";
 import type { Rest } from "./rest";
 import { unreachable } from "./unreachable";
 
 /** A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the
  * other members rest; the stage places the member at the stroke's box. */
 export type ActorPath = readonly Cubic2d[] | ((rest: Rest) => readonly Cubic2d[]);
+
+/** What an actor says: fixed text, or a readout the renderer writes from the time on each frame. */
+export type ActorText = string | ((time: Time) => string);
 
 /** A stretch of the story: one beat, or a pair from the first beat's start to the second's end. */
 export type Stretch = string | readonly [string, string];
@@ -23,8 +26,8 @@ export interface Behaviour {
 /** One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like. */
 export interface Actor extends Behaviour {
   readonly kind: "actor";
-  /** What it says, on any renderer. */
-  readonly text?: string;
+  /** What it says, on any renderer; a function of time is a readout, such as a timecode, not a value. */
+  readonly text?: ActorText;
   /** The stroke it is, as cubics made by `toCubics` or a function of `Rest` answering them; its
    * length is what `drawn` reads. */
   readonly path?: ActorPath;
@@ -50,7 +53,7 @@ export type Cast = Readonly<Record<string, Member>>;
 
 /** One thing on stage, saying `text` or drawing the stroke `path` when given one. */
 export function actor(
-  options: Behaviour & { readonly text?: string; readonly path?: ActorPath } = {},
+  options: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath } = {},
 ): Actor {
   const path = options.path;
   return Object.freeze({
@@ -121,7 +124,7 @@ export interface CastName {
   readonly on?: readonly (readonly [string, string])[];
   readonly watch: boolean;
   readonly still: boolean;
-  readonly text?: string;
+  readonly text?: ActorText;
   readonly path?: ActorPath;
 }
 
@@ -191,7 +194,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
         groups,
         ...(on === undefined ? {} : { on }),
         watch: member.watch ?? inherited.watch,
-        still: member.still ?? inherited.still,
+        still: member.still ?? false,
       };
       switch (member.kind) {
         case "actor":
@@ -230,4 +233,18 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
   };
   visit(cast, [], { watch: false, still: false });
   return names;
+}
+
+/** Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it. */
+export function presentAt(
+  on: readonly (readonly [string, string])[],
+  spanOf: (beat: string) => { readonly from: number; readonly to: number } | undefined,
+  durationMs: number,
+  ms: number,
+): boolean {
+  return on.some(([first, last]) => {
+    const from = spanOf(first)?.from ?? 0;
+    const to = spanOf(last)?.to ?? durationMs;
+    return ms >= from && (ms <= to || to >= durationMs);
+  });
 }

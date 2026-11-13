@@ -103,6 +103,19 @@ describe("applyValue", () => {
     expect(target.style.strokeDashoffset).toBe("0");
   });
 
+  it("hides an empty stroke, then leaves its visibility to its parent once it draws again", () => {
+    const target = element({ getTotalLength: () => 100 });
+    applyValue(target, { drawn: 0 });
+    expect(target.style.visibility).toBe("hidden");
+    applyValue(target, { drawnFrom: 0.5, drawn: 0.5 });
+    expect(target.style.visibility).toBe("hidden");
+    applyValue(target, { drawn: 0.3 });
+    expect(target.style.visibility).toBe("");
+    target.style.visibility = "hidden";
+    applyValue(target, { drawn: 0.6 });
+    expect(target.style.visibility).toBe("hidden");
+  });
+
   it("writes no dash when the value draws no stroke", () => {
     const target = element();
     applyValue(target, { x: 1 });

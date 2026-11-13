@@ -1,8 +1,18 @@
 import { pathToFileURL } from "node:url";
+import { manualDriver } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
-import { NO_REST, pathOf, restOf, type Box, type CastName, type Rest } from "@gerak/stage";
+import {
+  NO_REST,
+  boundsOf,
+  describeLoop,
+  drawInPasses,
+  presentAt,
+  restOfBounds,
+  type CastName,
+  type Rest,
+} from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
@@ -153,6 +163,7 @@ function fingerprint(value: unknown): string {
 export function reviewValues(
   samples: readonly { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[],
   limits: Limits,
+  hidden: (path: string, ms: number) => boolean = () => false,
 ): readonly string[] {
   const jumps: string[] = [];
   const numbers = samples.map(({ targets }) => {
@@ -180,7 +191,9 @@ export function reviewValues(
       if (earlier === undefined) continue;
       if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
       const [step, limit] = stepAndLimit(path, earlier, value, limits);
-      if (step > limit)
+      const from = samples[index - 1]?.at ?? 0;
+      const at = samples[index]?.at ?? 0;
+      if (step > limit && !hidden(path, from) && !hidden(path, at))
         jumps.push(
           `${path} jumps ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
         );
@@ -256,7 +269,7 @@ function stageFindings(
       found.push(
         `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
       );
-    if (member.still && member.kind !== "group" && !unmoved)
+    if (member.still && !unmoved)
       found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
     if (member.on === undefined) continue;
     const changes = prints.flatMap((print, index) => {
@@ -284,40 +297,63 @@ function stageFindings(
   return found;
 }
 
-const ZERO_BOX: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
-
-/** Each path function called once where the module's things rest: one that fails, or one that
- * reads its own box, which it is handed as zero. */
+/** The path functions drawn in passes where the module's things rest, as the stage draws them: one
+ * that fails, one that reads its own box, and paths that read each other in a loop. */
 function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
   const found: string[] = [];
-  const strokes = new Set(cast.flatMap(({ name, path }) => (path === undefined ? [] : [name])));
-  const names = new Set([...cast.map(({ name }) => name), ...Object.keys(rest)]);
-  for (const { name, path } of cast) {
-    if (typeof path !== "function") continue;
-    const read = new Set<string>();
-    const recording: Record<string, Box> = {};
-    for (const key of names)
-      Object.defineProperty(recording, key, {
-        enumerable: true,
-        get: (): Box => {
-          read.add(key);
-          return strokes.has(key) ? ZERO_BOX : restOf(rest, key);
-        },
-      });
-    // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
-    const measured = Object.keys(rest).length > 0;
-    try {
-      pathOf(path, recording);
-    } catch (error) {
-      if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
-        found.push(
-          `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
-        );
-    }
+  const paths = cast.flatMap(({ name, path }) =>
+    path === undefined ? [] : [[name, path] as const],
+  );
+  // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
+  const measured = Object.keys(rest).length > 0;
+  const loop = drawInPasses(paths, rest, (name, answer, read) => {
     if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
-    for (const other of read)
-      if (other !== name && strokes.has(other))
-        found.push(`path "${name}" reads the stroke "${other}", whose box a path cannot read`);
+    switch (answer.kind) {
+      case "drawn":
+        return restOfBounds(boundsOf(answer.cubics));
+      case "failed": {
+        const { error } = answer;
+        if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
+          found.push(
+            `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        return undefined;
+      }
+      default:
+        return unreachable(answer);
+    }
+  });
+  if (loop !== undefined) found.push(describeLoop(loop));
+  return found;
+}
+
+/** Each text function called at each sampled ms: one that throws or answers a non-string, once each. */
+function textFindings(
+  cast: readonly CastName[],
+  ms: readonly number[],
+  durationMs: number,
+): readonly string[] {
+  const found: string[] = [];
+  const driver = manualDriver({ durationMs });
+  const readouts = cast.flatMap(({ name, text }) =>
+    typeof text === "function" ? [[name, text] as const] : [],
+  );
+  const wrong = new Set<string>();
+  for (const at of ms) {
+    driver.seekMs(at);
+    for (const [name, text] of readouts) {
+      if (wrong.has(name)) continue;
+      let why: string | undefined;
+      try {
+        const said: unknown = text(driver.now());
+        if (typeof said !== "string") why = `answers ${typeof said}, not a string`;
+      } catch (error) {
+        why = `fails: ${error instanceof Error ? error.message : String(error)}`;
+      }
+      if (why === undefined) continue;
+      wrong.add(name);
+      found.push(`text of "${name}" ${why} at ${at} ms`);
+    }
   }
   return found;
 }
@@ -382,8 +418,30 @@ export function reviewSceneModule(
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const samples = sampleScene(module, { kind: "time", ms });
-  const findings = reviewValues(samples, request);
   const { beats, cast } = module;
+  const byName = new Map((cast ?? []).map((entry) => [entry.name, entry] as const));
+  // A sampled path names its member first, an item as `dust[3]`; the member is the longest name it starts with.
+  const ownerOfPath = (path: string): CastName | undefined => {
+    const dotted = path.replace(/\[(\d+)\]/g, ".$1");
+    for (let cut = dotted.lastIndexOf("."); cut > 0; cut = dotted.lastIndexOf(".", cut - 1)) {
+      const found = byName.get(dotted.slice(0, cut));
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  };
+  const spanOf = (name: string) => beats?.find((beat) => beat.name === name);
+  const shown = (name: string, at: number): boolean => {
+    const on = byName.get(name)?.on;
+    return on === undefined || presentAt(on, spanOf, module.durationMs, at);
+  };
+  // A member shows only while it and every group around it, and an item's list, are shown.
+  const hidden = (path: string, at: number): boolean => {
+    const owner = ownerOfPath(path);
+    if (owner === undefined) return false;
+    const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
+    return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
+  };
+  const findings = reviewValues(samples, request, hidden);
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
     kind: "reviewed",
@@ -391,6 +449,7 @@ export function reviewSceneModule(
       ...findings.map((finding) => labelled(beats, finding)),
       ...(cast === undefined ? [] : stageFindings(cast, beats, samples, module.durationMs)),
       ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
+      ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
     ],
   };
 }

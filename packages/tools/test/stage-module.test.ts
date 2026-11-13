@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { toCubics, type Time } from "@gerak/moves";
-import { actor, group, letters, readStageModule, restOf, story, type Rest } from "@gerak/stage";
+import {
+  actor,
+  group,
+  letters,
+  many,
+  readStageModule,
+  restOf,
+  story,
+  type Rest,
+} from "@gerak/stage";
 import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
@@ -149,19 +158,39 @@ describe("motion:review on a stage module", () => {
     expect(broken).toEqual(['path "mark" fails: no dot']);
   });
 
-  it("reports a path that reads another stroke, and lets a path divide by a size nothing measured", () => {
+  it("draws a path reading another stroke after it, reports two reading each other, and lets a path divide by a size nothing measured", () => {
+    const widths: number[] = [];
     const other = findings({
       ...clean,
       cast: {
         stage: group({
           dot: actor({ on: ["go"] }),
           word: letters("AB"),
+          mark: actor({
+            still: true,
+            path: (rest) => {
+              widths.push(restOf(rest, "line").width);
+              return level(0, restOf(rest, "line").width + 1, 0);
+            },
+          }),
           line: actor({ still: true, path: level(0, 10, 0) }),
-          mark: actor({ still: true, path: (rest) => level(0, restOf(rest, "line").width + 1, 0) }),
         }),
       },
     });
-    expect(other).toEqual(['path "mark" reads the stroke "line", whose box a path cannot read']);
+    expect(other).toEqual([]);
+    expect(widths.at(-1)).toBe(10);
+    const loop = findings({
+      ...clean,
+      cast: {
+        stage: group({
+          dot: actor({ on: ["go"] }),
+          word: letters("AB"),
+          a: actor({ still: true, path: (rest) => level(0, restOf(rest, "b").width + 1, 0) }),
+          b: actor({ still: true, path: (rest) => level(0, restOf(rest, "a").width + 1, 0) }),
+        }),
+      },
+    });
+    expect(loop).toEqual(['paths "a" and "b" read each other']);
     const scaled = findings({
       ...clean,
       cast: markedBy((rest) => level(0, 10 / restOf(rest, "dot").width, 0)),
@@ -169,10 +198,88 @@ describe("motion:review on a stage module", () => {
     expect(scaled).toEqual([]);
   });
 
+  it("calls a text function at each sample, and reports one answering a non-string once", () => {
+    const beats = story(1000, { all: [0, 1000] });
+    const scene = (time: Time) => ({ dot: { x: time.progress } });
+    const seen: number[] = [];
+    const fine = findings({
+      beats,
+      skins: {},
+      cast: {
+        dot: actor(),
+        clock: actor({
+          still: true,
+          text: (time) => {
+            seen.push(time.progress);
+            return String(time.progress);
+          },
+        }),
+      },
+      scene,
+    });
+    expect(fine.filter((line) => /text/.test(line))).toEqual([]);
+    expect(seen).toEqual(Array.from({ length: 63 }, (_, index) => (index * 16) / 1000));
+    const bad = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor(), clock: { kind: "actor", still: true, text: () => 7 } },
+      scene,
+    });
+    expect(bad.filter((line) => /text/.test(line))).toEqual([
+      'text of "clock" answers number, not a string at 0 ms',
+    ]);
+  });
+
+  it("refuses a text function on a list's item, naming it", () => {
+    const read = readStageModule({
+      beats: story(1000, { all: [0, 1000] }),
+      skins: {},
+      cast: { row: many([1], () => actor({ text: () => "x" })) },
+      scene: () => ({}),
+    });
+    expect("reason" in read && read.reason).toMatch(/"row\.0".*text that follows time/);
+  });
+
   it("finds a member the scene never moves that is not still", () => {
     expect(findings(unused)).toEqual([
       'cast member "spare" is never moved by the scene; move it or mark it still.',
     ]);
+  });
+
+  it("skips a jump while a member is hidden, holds a still group to its word, and leaves its members their own", () => {
+    const beats = story(1000, { early: [0, 300], late: [700, 1000] });
+    const hop = (time: Time) => ({ x: time.progress < 0.5 ? 0 : 400 + time.progress });
+    const hidden = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor({ on: ["early", "late"] }) },
+      scene: (time: Time) => ({ dot: hop(time) }),
+    });
+    expect(hidden.some((line) => /jumps/.test(line))).toBe(false);
+    const shown = findings({
+      beats,
+      skins: {},
+      cast: { dot: actor() },
+      scene: (time: Time) => ({ dot: hop(time) }),
+    });
+    expect(shown.some((line) => /dot\.x jumps/.test(line))).toBe(true);
+    const nested = findings({
+      beats,
+      skins: {},
+      cast: {
+        outer: group({ dust: many(2, { on: ["late"] }), solo: actor() }, { on: ["late"] }),
+      },
+      scene: (time: Time) => ({ outer: {}, dust: [hop(time), hop(time)], solo: hop(time) }),
+    });
+    expect(nested.some((line) => /jumps/.test(line))).toBe(false);
+    const still = findings({
+      beats,
+      skins: {},
+      cast: { box: group({ inner: actor() }, { still: true }) },
+      scene: (time: Time) => ({ box: { y: time.progress }, inner: { x: time.progress } }),
+    });
+    expect(still).toContain('cast member "box" is marked still, but the scene moves it.');
+    expect(still.some((line) => /"inner"/.test(line))).toBe(false);
   });
 
   it("lets a watched member move only on events, and reports a still member that moves", () => {

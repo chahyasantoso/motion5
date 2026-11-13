@@ -1,7 +1,8 @@
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { captureFrames, captureOnion, parseFramesArgs } = await import("../src/page/frames.ts");
+const { captureFrames, captureOnion, compareFrames, comparisonLines, parseFramesArgs } =
+  await import("../src/page/frames.ts");
 
 const args = parseFramesArgs(process.argv.slice(2));
 if (args.kind === "usage") {
@@ -9,8 +10,25 @@ if (args.kind === "usage") {
   process.exitCode = 1;
 } else
   try {
-    const result = args.kind === "onion" ? await captureOnion(args) : await captureFrames(args);
+    let result;
+    switch (args.kind) {
+      case "onion":
+        result = await captureOnion(args);
+        break;
+      case "compare":
+        result = {
+          kind: "compared",
+          pageErrors: [],
+          comparison: compareFrames(args.here, args.there),
+        };
+        break;
+      case "frames":
+        result = await captureFrames(args);
+        break;
+    }
     console.log(JSON.stringify(result));
+    if ("comparison" in result && result.comparison !== undefined)
+      for (const line of comparisonLines(result.comparison)) console.log(line);
     if (result.pageErrors.length > 0) process.exitCode = 1;
   } catch (error) {
     console.log(
