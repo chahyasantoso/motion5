@@ -66,16 +66,16 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   one value that moves its members; a member's own value is relative to its group. A `many` moves only item by item:
   to move a whole row of letters, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
 - **Readout.** `actor({ text: (time) => … })` is a readout written each frame, for a timecode or a counter; it is
-  not a value and does not ease.
+  not a value and does not ease. Only an `actor` takes one: the items of `letters` and `words` keep their text.
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
   it by `[data-path="<name>"]` (`stroke`, `stroke-width`). Its points are frame px from the frame's top-left, in any
   group, and the stage places the member at the path's box. To follow the layout, pass `path: (rest) => toCubics([...])`
-  reading other members with `restOf`, other strokes too, which are drawn first; it is drawn again on each measure,
+  reading other members by name with `restOf`, other strokes too, which are drawn first; it is drawn again on each measure,
   and never reads its own box. Two paths that read each other are a loop: neither is drawn, and both are reported.
 - **Names** are the keys, unique across the cast; an item is `dust.3`. `on: ["land", ["rise", "fall"]]` shows a
   member only while one of its stretches runs, a beat or a pair from the first's start to the second's end, so
   `["rise", "fall"]` is two beats and `[["rise", "fall"]]` one stretch (a member without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
-  `still: true` says the scene never moves it.
+  `still: true` says the scene never moves that member; on a group it says nothing of the group's members.
 - **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
 - **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, an item by `[data-cast="dust.3"]` or all of a
   list's by `[data-cast^="dust."]`, scoped to the stage. A member it leaves out is a grey box with its name, or its

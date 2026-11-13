@@ -40,6 +40,19 @@ export interface FramesResult {
   readonly pageErrors: readonly string[];
   /** Present when `compare` was asked for. */
   readonly comparison?: Comparison;
+  /** Why the comparison could not run; the captured frames stand. */
+  readonly compareError?: string;
+}
+
+function compareSafely(
+  here: string,
+  there: string,
+): { readonly comparison: Comparison } | { readonly compareError: string } {
+  try {
+    return { comparison: compareFrames(here, there) };
+  } catch (error) {
+    return { compareError: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 /** How far one frame is from its twin in the other folder. */
@@ -186,9 +199,8 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
     return { frames, sheet };
   });
-  const comparison =
-    request.compare === undefined ? {} : { comparison: compareFrames(out, request.compare) };
-  return { kind: "captured", ...value, pageErrors, ...comparison };
+  const compared = request.compare === undefined ? undefined : compareSafely(out, request.compare);
+  return { kind: "captured", ...value, pageErrors, ...(compared ?? {}) };
 }
 
 function frameNames(dir: string): string[] {

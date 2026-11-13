@@ -12,9 +12,10 @@ export const trace = defineMove({
     tail: {
       kind: "number",
       default: 1,
-      min: 0,
+      min: 0.001,
       max: 1,
-      description: "Share of the path that stays drawn behind the head; default 1 keeps all of it.",
+      description:
+        "Share of the path that stays drawn behind the head; default 1 keeps all of it. An empty stroke draws nothing, so a moving dot is a member of its own.",
     },
   },
   example: { options: {} },

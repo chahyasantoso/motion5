@@ -419,21 +419,27 @@ export function reviewSceneModule(
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const samples = sampleScene(module, { kind: "time", ms });
   const { beats, cast } = module;
-  const stretches = new Map(
-    (cast ?? []).flatMap(({ name, on }) => (on === undefined ? [] : [[name, on] as const])),
-  );
-  const ownerOfPath = (path: string): string | undefined => {
-    for (let cut = path.lastIndexOf("."); cut > 0; cut = path.lastIndexOf(".", cut - 1)) {
-      const name = path.slice(0, cut);
-      if (stretches.has(name)) return name;
+  const byName = new Map((cast ?? []).map((entry) => [entry.name, entry] as const));
+  // A sampled path names its member first, an item as `dust[3]`; the member is the longest name it starts with.
+  const ownerOfPath = (path: string): CastName | undefined => {
+    const dotted = path.replace(/\[(\d+)\]/g, ".$1");
+    for (let cut = dotted.lastIndexOf("."); cut > 0; cut = dotted.lastIndexOf(".", cut - 1)) {
+      const found = byName.get(dotted.slice(0, cut));
+      if (found !== undefined) return found;
     }
     return undefined;
   };
   const spanOf = (name: string) => beats?.find((beat) => beat.name === name);
+  const shown = (name: string, at: number): boolean => {
+    const on = byName.get(name)?.on;
+    return on === undefined || presentAt(on, spanOf, module.durationMs, at);
+  };
+  // A member shows only while it and every group around it, and an item's list, are shown.
   const hidden = (path: string, at: number): boolean => {
     const owner = ownerOfPath(path);
-    const on = owner === undefined ? undefined : stretches.get(owner);
-    return on !== undefined && !presentAt(on, spanOf, module.durationMs, at);
+    if (owner === undefined) return false;
+    const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
+    return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
   };
   const findings = reviewValues(samples, request, hidden);
   if (beats === undefined) return { kind: "reviewed", findings };

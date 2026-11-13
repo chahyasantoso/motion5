@@ -263,6 +263,15 @@ describe("motion:review on a stage module", () => {
       scene: (time: Time) => ({ dot: hop(time) }),
     });
     expect(shown.some((line) => /dot\.x jumps/.test(line))).toBe(true);
+    const nested = findings({
+      beats,
+      skins: {},
+      cast: {
+        outer: group({ dust: many(2, { on: ["late"] }), solo: actor() }, { on: ["late"] }),
+      },
+      scene: (time: Time) => ({ outer: {}, dust: [hop(time), hop(time)], solo: hop(time) }),
+    });
+    expect(nested.some((line) => /jumps/.test(line))).toBe(false);
     const still = findings({
       beats,
       skins: {},

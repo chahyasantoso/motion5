@@ -255,7 +255,7 @@ const slide = defineMove({
 - **`arc`** `(options: OptionsIn<{ readonly dx: { readonly kind: "number"; readonly description: "Start this far right of rest, in px (negative: left)."…`: Travels from an offset to rest along a path bowed by `lift` px.
 - **`hop`** `(options: OptionsIn<{ readonly height: { readonly kind: "number"; readonly min: 0; readonly description: "Peak of the first flight above re…`: Lands `bounces + 1` times, each flight `decay` as high, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on.
 - **`rope`** `(options: OptionsIn<{ readonly angle: { readonly kind: "number"; readonly default: 0; readonly description: "Heading of the straight rope a…`: Bends a chain of points from straight into their shape, link by link. Takes `{ points }` as a third argument and answers anchors for `toCubics`.
-- **`trace`** `(options: OptionsIn<{ readonly tail: { readonly kind: "number"; readonly default: 1; readonly min: 0; readonly max: 1; readonly description…`: Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share kept drawn behind the head.
+- **`trace`** `(options: OptionsIn<{ readonly tail: { readonly kind: "number"; readonly default: 1; readonly min: 0.001; readonly max: 1; readonly descrip…`: Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share kept drawn behind the head.
 - **`wipe`** `(options: OptionsIn<{ readonly radius: { readonly kind: "number"; readonly min: 0; readonly description: "Final circle radius, in px; cover…`: Grows a circle from `(x, y)` to `radius`, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left.
 - **`reversed`** `(time: Time): Time`: A time run backwards (progress `p` answers `1 - p`); a function of time, not a move, so any move or value plays through it.
 - **`anticipate`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 0.9; readonly descri…`: Winds up the other way from its input's travel, then plays the input and ends where it ends.
@@ -584,8 +584,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   For a stage module (it exports `beats` and `cast`) a finding that names a time also names the beat there, and it
-  adds: a cast member the scene never moves that is not `still`, a target the scene answers that is not cast, and a
-  member whose value changes outside its `on` stretches: before the first, in a gap, or after the last.
+  adds: a cast member the scene never moves that is not `still`, a `still` member or group the scene moves, a target
+  the scene answers that is not cast, a member whose value changes outside its `on` stretches (before the first, in a
+  gap, or after the last), a path that reads its own box, paths that read each other in a loop, and a text function
+  that throws or answers something other than a string. A step while a member, its group or its list is hidden by
+  `on` is not a jump.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's

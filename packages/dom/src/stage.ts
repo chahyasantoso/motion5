@@ -314,6 +314,7 @@ export function mountStage<
     clock: { kind: "timed", elapsed: 0, length: beats.durationMs },
   };
   const misread = new Set<string>();
+  let lastLoop: string | undefined;
   // A readout throwing or answering a non-string is reported once, and the text it last wrote kept.
   const readout = (name: string, text: (time: Time) => string, time: Time): string | undefined => {
     let error: Error;
@@ -510,7 +511,9 @@ export function mountStage<
       boxes[name] = rests;
       return rests;
     });
-    if (loop !== undefined) report(new Error(`mountStage: ${describeLoop(loop)}.`));
+    const looped = loop === undefined ? undefined : `mountStage: ${describeLoop(loop)}.`;
+    if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
+    lastLoop = looped;
     for (const name of owners.keys())
       if (!places.has(name)) {
         places.set(name, strokePlace(name, undefined));
@@ -630,9 +633,10 @@ export function mountStage<
       : undefined;
   if (observer !== undefined && isElement(container)) {
     observer.observe(container);
-    // A stroke's size follows its path and a readout's its text, so neither is watched for its own redraw.
+    // A stroke's size follows its path, so it is not watched for its own redraw; a readout is, since its text
+    // changing width moves what rests beside it.
     for (const { element: own } of placed.values())
-      if (isElement(own) && !strokes.has(own) && !readouts.has(own)) observer.observe(own);
+      if (isElement(own) && !strokes.has(own)) observer.observe(own);
   }
   // A web font that lands after mount changes text sizes, so the boxes are measured again.
   let live = true;
