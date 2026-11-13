@@ -20,19 +20,27 @@ member's outline is fixed, so a mouth cannot change shape.
 - **A sample is an event with a value.** `MotionEvent` gains `value?: number`. `mouthOpen` 0.6 at 1234 ms is
   `{ name: "mouthOpen", at: 1234, value: 0.6 }`, logged like a click, so a scene stays a pure function of time and
   events, and a session replays, scrubs and renders like any other.
-- **The stage takes samples by hand.** `MountedStage.send(name, value, target?)` logs one at the clock's time, and the
-  clock keeps running while samples arrive, as it does while a member is watched.
+- **The stage takes samples by hand.** `MountedStage.send(name, value, target?)` logs one at the clock's time. A
+  sample keeps the clock running past the story's end, as a watched member does, until a settle time after the last
+  one. A piece driven live does not loop its story, since a loop clears the log each pass: an idle motion such as
+  breathing loops inside the scene while the clock runs on.
+- **The tools take samples too.** The event text of `motion:sample` and `motion:review` gains `name=0.6@1234` (and
+  `name:target=0.6@1234`), so a sample is tested by hand like a click. The review reports a cue past the story's end,
+  which no clock would reach.
 - **`follow` follows a stream.** An entry of its `on` may be `"value"`: the event's own value is the goal. The same
-  spring smooths a jittery tracker and turns back with no jump; there is no second spring helper. A follow is
-  evaluated from the last time the spring was at rest, so a long session costs only its recent samples.
+  spring smooths a jittery tracker and turns back with no jump; there is no second spring helper. A stream at 30 a
+  second never rests between samples, so each follow keeps the spring's state at the last time it answered, and a
+  later call over the same log, longer or not, goes on from there; any other call starts again. Its answers are what
+  a run from the start gives, so it stays pure from outside.
 - **A recorded session is `cues`.** `motion:record` is not needed: a session is a JSON list of events a piece imports
   as its `cues`, and the stage already plays a module's cues. `stage.events()` hands back what was logged, ready to
   save.
 - **A path member may morph.** An actor gives `shapes`, a list of outlines after its `path`; the value field `shape`
   blends them: 0 is `path`, 1 is `shapes[0]`, 1.5 halfway between `shapes[0]` and `shapes[1]`. Outlines are matched
-  once, when the cast is read: each pair of corresponding outlines is split at its longest cubics until both have as
-  many, so the geometry of each is exact. Outlines whose counts of separate pieces differ are refused, naming the
-  member. A member's box stays its `path`'s.
+  once, when the cast is read: a closed outline is turned to start at the point nearest the first outline's start and
+  to run the same way round, then each pair is split at its longest cubics until both have as many, so the geometry
+  of each is exact. Outlines whose counts of separate pieces differ are refused, naming the member. A member's box
+  stays its `path`'s, and the review reports `shape` given to a member with no `shapes`.
 - **Switching needs nothing new.** Mouth parts drawn apart switch with `opacity` from the scene; a morph is for the
   steps switching makes too visible.
 
@@ -40,12 +48,14 @@ member's outline is fixed, so a mouth cannot change shape.
 
 ### I1. Values on events, `send`, and `follow` on a stream
 
-- **Invariant:** `isMotionEvent` accepts `value`; `send` logs it at the clock's time and keeps the clock running;
-  `follow` with `on: { mouthOpen: "value" }` springs to each sample and starts from its last rest.
+- **Invariant:** `isMotionEvent` accepts `value`; `send` logs it at the clock's time and keeps the clock running past
+  the end until it settles; `follow` with `on: { mouthOpen: "value" }` springs to each sample, going on from its last
+  answer over the same log; the event text reads `name=0.6@1234`; the review reports a cue past the story's end.
 - **Owner:** `packages/moves/src/events.ts` (`MotionEvent`, `follow`), `packages/dom/src/drivers.ts` and `stage.ts`
-  (`send`, `events`).
-- **Test:** a stream of samples followed; seeking backwards answers what playing forwards did; 10 000 samples cost
-  about what the last 100 do; `send` on a mounted stage changes the scene's next frame.
+  (`send`, `events`), `packages/tools/src/scene/` (event text, the review).
+- **Test:** a stream of samples followed; seeking backwards answers what playing forwards did; frame after frame over
+  10 000 samples costs about what the last 100 do, and gives what one call from the start gives; `send` past the
+  story's end changes the scene's next frame.
 
 ### I2. Morphing outlines
 
@@ -53,13 +63,19 @@ member's outline is fixed, so a mouth cannot change shape.
   outline each frame it changes.
 - **Owner:** `packages/stage/src/strokes.ts` (matching, read by `readStageModule`), `packages/dom/src/render.ts` and
   `stage.ts` (the blend), `VALUE_FIELDS` (`shape`).
-- **Test:** two outlines of three and five cubics match to five each and draw the same shapes as before; `shape` 0.5
-  is the cubic-wise midpoint; a two-piece outline against a one-piece outline is refused by name.
+- **Test:** two outlines of three and five cubics match to five each and draw the same shapes as before; a circle
+  started at its top against one started at its bottom, drawn the other way round, blends without twisting; `shape`
+  0.5 is the cubic-wise midpoint; a two-piece outline against a one-piece outline is refused by name; the review
+  reports `shape` on a member with no `shapes`.
 
 ### I3. Guide
 
 - A section of `docs/guide/agent-motion.md`, "Driving a rig": samples as events, `follow` on `"value"`, `send` for a
-  live source, a recording as `cues`, switching mouth parts and morphing them, and what to check.
+  live source, a recording as `cues` inside the story's length, no story loop for a live piece, switching mouth parts
+  and morphing them, and what to check.
+- "Rigging artwork" gains its first step for a character with no SVG: draw it as an SVG file in
+  `apps/pieces/references/`, each part its own shape with a clear id, then import it, so a drawn character and a
+  supplied one take one path.
 
 ### I4. Proof
 
@@ -89,8 +105,9 @@ One pull request, after wave 3.
 
 ## 5. Risks
 
-- **A long session:** every frame reads the events; `follow` reads only those since its last rest, and the review of a
-  piece with thousands of cues is timed in the measure.
+- **A long session:** every frame reads the events; `follow` goes on from its last answer, and the review of a piece
+  with thousands of cues is timed in the measure. A cache inside a pure function is held by a test that compares it
+  with a run from the start at random times, forwards and back.
 - **Matching outlines by splitting** keeps each outline exact but can pair a corner with a curve, so a blend may twist
   midway. The measure looks at the midway frames; a better pairing waits for a brief that needs it.
 - **The microphone page** is the only part no test reaches.
