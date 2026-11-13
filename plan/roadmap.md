@@ -99,11 +99,11 @@ Three things follow from it:
 5. **Ready to publish.** Done (`plan/publish-plan.md`): the runtime packages build and install outside the repository,
    and the app boundary is in the check. Nothing is on npm; publishing waits for a project that needs it, and `1.0`
    until the `stage` package and one app have held the surface still.
-6. **Rigging vector artwork.** Next (`plan/artwork-plan.md`). An SVG drawn by someone else is imported as a stage
+6. **Rigging vector artwork.** Done (`plan/artwork-plan.md`). An SVG drawn by someone else is imported as a stage
    module, and the agent rigs it: parts named by what moves, grouped by what carries what, a pivot at each joint, so
    each part can take a move or a bone. A command compares the rigged piece with the SVG. Rebuilding from a raster
    picture is out; a Three.js model belongs with stage 8.
-7. **Driving a rig from live inputs.** A small plan after stage 6, no plan yet. Tracking stays outside; the base takes
+7. **Driving a rig from live inputs.** Next (`plan/live-inputs-plan.md`). Tracking stays outside; the base takes
    its numbers: each sample a named value in the event log, such as `mouthOpen` 0.6 at 1234 ms, read smoothed by a
    helper, so a scene stays pure and a recorded session replays, scrubs and renders. Proof: the rigged penguin blinks
    and talks from a recorded input file. Mouth shapes switch between drawn parts with a quick fade, and morph from

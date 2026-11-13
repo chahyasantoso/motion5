@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `feat/artwork` after the full check gate.
+- **Read against:** `main` at `42a22c4a`, after the merge of pull request 590.
 
 ## Now
 
@@ -26,12 +26,13 @@ byte ceiling.
   code panel straight back into `src/<name>-scene.ts`. Twenty-one moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
-  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; the nine runtime packages build to `dist` and `npm run pack:check` installs and type-checks them outside the repository, with nothing on npm (ADR-179); and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
+  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; an SVG imports as a stage module of flat parts that `pivot` about their joints and ride `chainFromRest` chains, checked by `motion:compare` (ADR-180); the nine runtime packages build to `dist` and `npm run pack:check` installs and type-checks them outside the repository, with nothing on npm (ADR-179); and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **Rigging vector artwork (roadmap stage 6):** built on `feat/artwork` (`plan/artwork-plan.md`) and waiting for the
-  owner's merge. Driving that rig from live inputs follows, then 3D, then a motion-atlas brainstorm.
+- **Driving a rig from live inputs (roadmap stage 7):** samples as valued events followed by a spring, a recorded
+  session as `cues`, and outlines that morph; `plan/live-inputs-plan.md`, proposed. 3D follows, then a motion-atlas
+  brainstorm.
 
 ## Open, and not scheduled
 
