@@ -29,10 +29,10 @@ function stageOf(module: unknown): StageModule {
   return read;
 }
 
-async function bring(svg: string, name: string): Promise<Imported> {
+async function bring(svg: string, name: string, margin?: number): Promise<Imported> {
   const root = mkdtempSync(join(tmpdir(), "import-svg-test-"));
   folders.push(root);
-  const result = await importSvg(svg, name, root);
+  const result = await importSvg(svg, name, root, margin === undefined ? {} : { margin });
   if (result.kind !== "written") throw new Error(result.message);
   const module: Record<string, unknown> = await import(pathToFileURL(result.file).href);
   const stage = stageOf(module);
@@ -156,6 +156,16 @@ describe("motion:import-svg geometry", () => {
       '[data-path="tile"] { fill: #336699; stroke: #112233; stroke-width: 3; }',
     );
     expect(imported.css).toContain('[data-path="dot"] { fill: #aa3322; stroke: none; }');
+  }, 60000);
+
+  it("leaves a margin round the drawing, the frame grown and every point moved in by it", async () => {
+    const plain = await bring(join(fixtures, "svg-transforms.svg"), "fixture");
+    const roomy = await bring(join(fixtures, "svg-transforms.svg"), "fixture", 40);
+    expect(roomy.result.frame).toEqual({ width: 280, height: 200 });
+    const [first] = cubicsOf(plain, "tile");
+    const [moved] = cubicsOf(roomy, "tile");
+    expect(moved?.x0).toBeCloseTo((first?.x0 ?? Number.NaN) + 40, 6);
+    expect(moved?.y0).toBeCloseTo((first?.y0 ?? Number.NaN) + 40, 6);
   }, 60000);
 });
 

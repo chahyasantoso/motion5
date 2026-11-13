@@ -207,7 +207,7 @@ export async function promoteMove(
     return refuse(
       `${candidate.file} imports @gerak/moves in a form promotion does not rewrite; use named imports.`,
     );
-  if (/^export\s+(default|\{|\*|enum|async|let|var|abstract|class)/m.test(source))
+  if (/^export\s+(default|\{|\*|enum|async|let|var|abstract|class)\b/m.test(source))
     return refuse(
       `${candidate.file} exports in a form promotion does not carry; export each move as a const.`,
     );

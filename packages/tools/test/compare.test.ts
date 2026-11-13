@@ -13,6 +13,7 @@ import {
   rankMembers,
   sideBySide,
   viewBoxOf,
+  withMargin,
 } from "../src/page/compare";
 import { decodePng, encodePng, type Picture } from "../src/page/png";
 
@@ -93,6 +94,14 @@ describe("motion:compare pure parts", () => {
   });
 
   it("reads a viewBox, and nothing from an SVG without one", () => {
+    expect(viewBoxOf(withMargin('<svg viewBox="10 20 200 100" xmlns="x"/>', 40))).toEqual({
+      width: 280,
+      height: 180,
+    });
+    expect(withMargin('<svg viewBox="10 20 200 100"/>', 40)).toBe(
+      '<svg viewBox="-30 -20 280 180"/>',
+    );
+    expect(withMargin('<svg viewBox="0 0 1 1"/>', 0)).toBe('<svg viewBox="0 0 1 1"/>');
     expect(viewBoxOf('<svg viewBox="0 0 200 100" xmlns="x"/>')).toEqual({
       width: 200,
       height: 100,

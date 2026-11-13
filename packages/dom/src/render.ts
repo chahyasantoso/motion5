@@ -1,4 +1,4 @@
-import type { Anchor, Cubic2d, Pose2d } from "@gerak/moves";
+import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/moves";
 import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
@@ -46,11 +46,13 @@ function turnOrScale(key: string, value: unknown): string {
 /** A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves. */
 export function cssTransform(values: Readonly<Record<string, unknown>>): string {
   const parts: string[] = [];
-  if ("x" in values || "y" in values || "z" in values)
+  // A field at its rest writes nothing, so a pose that moves nothing draws exactly as the page does.
+  const moved = (key: string) => key in values && values[key] !== (valueField(key)?.rest ?? 0);
+  if (moved("x") || moved("y") || moved("z"))
     parts.push(
       `translate3d(${String(values.x ?? 0)}px, ${String(values.y ?? 0)}px, ${String(values.z ?? 0)}px)`,
     );
-  for (const key of TURNS_AND_SCALES) if (key in values) parts.push(turnOrScale(key, values[key]));
+  for (const key of TURNS_AND_SCALES) if (moved(key)) parts.push(turnOrScale(key, values[key]));
   return parts.join(" ");
 }
 

@@ -232,7 +232,10 @@ interface Part {
 }
 
 /** The parts, defs and leftovers of an extracted SVG. */
-function build(extracted: Extract<Extracted, { kind: "ok" }>): {
+function build(
+  extracted: Extract<Extracted, { kind: "ok" }>,
+  margin: number,
+): {
   readonly parts: readonly Part[];
   readonly defs: readonly string[];
   readonly leftOut: readonly LeftOut[];
@@ -240,7 +243,8 @@ function build(extracted: Extract<Extracted, { kind: "ok" }>): {
   const { viewBox } = extracted;
   const leftOut = [...extracted.leftOut];
   const defs = new Defs(viewBox);
-  const toFrame: Matrix = [1, 0, 0, 1, -viewBox.x, -viewBox.y];
+  // A margin moves the drawing in from the frame's edges, so a part that turns outward still shows.
+  const toFrame: Matrix = [1, 0, 0, 1, margin - viewBox.x, margin - viewBox.y];
   const used = new Set<string>();
   let unnamed = 0;
   const parts: Part[] = [];
@@ -392,14 +396,17 @@ async function readSvg(file: string): Promise<Extracted> {
   }
 }
 
-/** Writes `<root>/src/<name>.ts`, a stage module of the SVG's shapes as flat parts in frame px, or
- * nothing at all. An existing file is overwritten only with `force`. */
+/** Writes `<root>/src/<name>.ts`, the SVG's shapes as flat parts in frame px with `margin` px of room
+ * round them, or nothing; an existing file is overwritten only with `force`. */
 export async function importSvg(
   file: string,
   name: string,
   root: string,
-  options: { readonly force?: boolean } = {},
+  options: { readonly force?: boolean; readonly margin?: number } = {},
 ): Promise<ImportResult> {
+  const margin = options.margin ?? 0;
+  if (!(Number.isFinite(margin) && margin >= 0))
+    return { kind: "refused", message: `--margin must be 0 or more px, not ${String(margin)}.` };
   if (!NAME.test(name))
     return { kind: "refused", message: `Name "${name}" must be lowercase words joined by "-".` };
   if (!existsSync(file)) return { kind: "refused", message: `No file at ${file}.` };
@@ -411,12 +418,12 @@ export async function importSvg(
     };
   const extracted = await readSvg(file);
   if (extracted.kind === "error") return { kind: "refused", message: extracted.message };
-  const built = build(extracted);
+  const built = build(extracted, margin);
   if (built.parts.length === 0)
     return { kind: "refused", message: "The SVG holds no shape this can draw." };
   const frame = {
-    width: thousandth(extracted.viewBox.width),
-    height: thousandth(extracted.viewBox.height),
+    width: thousandth(extracted.viewBox.width + 2 * margin),
+    height: thousandth(extracted.viewBox.height + 2 * margin),
   };
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, moduleSource(file, name, frame, built));

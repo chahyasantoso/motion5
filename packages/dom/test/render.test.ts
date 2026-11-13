@@ -100,6 +100,12 @@ describe("applyValue", () => {
     expect(target.style.clipPath).toBe("");
   });
 
+  it("writes no transform for a pose whose fields are all at rest", () => {
+    expect(cssTransform({ x: 0, y: 0, rotation: 0, scale: 1, scaleX: 1 })).toBe("");
+    expect(cssTransform({ x: 0, rotation: 5 })).toBe("rotate(5deg)");
+    expect(cssTransform({ y: 3 })).toBe("translate3d(0px, 3px, 0px)");
+  });
+
   it("writes a layer as the nearest whole z-index, and clears it when a later value has none", () => {
     const target = element();
     applyValue(target, { layer: 2.6 });

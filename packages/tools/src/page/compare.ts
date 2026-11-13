@@ -10,6 +10,8 @@ export interface CompareRequest extends PageTarget {
   readonly at: number;
   readonly reference: string;
   readonly out?: string;
+  /** Room around the drawing in px, as `motion:import-svg --margin` gave the piece. */
+  readonly margin?: number;
 }
 
 /** Parsed `motion:compare` arguments, or the usage text. */
@@ -34,8 +36,9 @@ export type CompareResult =
     }
   | { readonly kind: "usage"; readonly message: string };
 
-const USAGE = "usage: motion:compare <page> --reference <svg> [--at ms] [--size WxH] [--out dir]";
-const FLAGS = ["--reference", "--at", "--out"];
+const USAGE =
+  "usage: motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]";
+const FLAGS = ["--reference", "--at", "--out", "--margin"];
 const ASPECT_TOLERANCE = 0.01;
 const GAP = 8;
 const GAP_GREY = 128;
@@ -59,12 +62,17 @@ export function parseCompareArgs(argv: readonly string[]): CompareArgs {
   const outFlag = flags.get("--out");
   if (flags.has("--out") && (outFlag === undefined || outFlag.startsWith("--")))
     return usage("--out needs a folder.");
+  const marginText = flags.get("--margin");
+  const margin = marginText === undefined ? undefined : Number(marginText);
+  if (margin !== undefined && !(marginText !== undefined && /^\d+(\.\d+)?$/.test(marginText)))
+    return usage("--margin needs one non-negative number of px.");
   return {
     kind: "compare",
     ...target,
     at,
     reference: fromCaller(reference),
     ...(outFlag === undefined ? {} : { out: fromCaller(outFlag) }),
+    ...(margin === undefined ? {} : { margin }),
   };
 }
 
@@ -224,6 +232,18 @@ function readStageBoxes(): StageBoxes | undefined {
   return { frame: { x: here.x, y: here.y, width: here.width, height: here.height }, members };
 }
 
+/** The SVG with `margin` px of room round its root `viewBox`, as an import with that margin drew it. */
+export function withMargin(svg: string, margin: number): string {
+  if (margin === 0) return svg;
+  return svg.replace(/(<svg\b[^>]*?\bviewBox\s*=\s*["'])([^"']*)(["'])/i, (_, open, box, close) => {
+    const [x = 0, y = 0, width = 0, height = 0] = String(box)
+      .trim()
+      .split(/[\s,]+/)
+      .map(Number);
+    return `${open}${x - margin} ${y - margin} ${width + 2 * margin} ${height + 2 * margin}${close}`;
+  });
+}
+
 function referenceHtml(svg: string, width: number, height: number): string {
   const src = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
   return `<body style="margin:0;background:#fff"><img id="r" width="${width}" height="${height}" src="${src}" style="display:block"></body>`;
@@ -241,7 +261,7 @@ export async function comparePage(request: CompareRequest): Promise<CompareResul
   const usage = (message: string): CompareResult => ({ kind: "usage", message });
   if (!existsSync(request.reference))
     return usage(`The reference ${request.reference} does not exist. ${USAGE}`);
-  const svg = readFileSync(request.reference, "utf8");
+  const svg = withMargin(readFileSync(request.reference, "utf8"), request.margin ?? 0);
   const view = viewBoxOf(svg);
   if (view === undefined)
     return usage(`The reference ${request.reference} is not an SVG with a viewBox. ${USAGE}`);

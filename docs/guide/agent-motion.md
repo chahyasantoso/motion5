@@ -218,9 +218,11 @@ export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layou
 
 To animate a drawing someone else made, start from its SVG, not from shapes you draw.
 
-1. `npm run motion:import-svg -- references/<file>.svg --name <name>` writes `src/<name>.ts`: every shape a flat path
-   member in the SVG's paint order, its colours and gradients in the skin, the frame from the `viewBox`. It prints
-   what it could not carry; nothing else is left out.
+1. `npm run motion:import-svg -- apps/pieces/references/<file>.svg --name <name> --margin 40` writes
+   `apps/pieces/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
+   the skin. The frame is the `viewBox` with `--margin` px of room on every side; a drawing that touches its edges
+   needs that room, or a part that turns outward is cut off by the frame. It prints what it could not carry; nothing
+   else is left out.
 2. **Name the parts by what moves.** Rename `path3806` to `flipperLeft` with one whole-word find-and-replace: the name
    is the cast key and the skin's `[data-cast]` and `[data-path]` selectors. A rename that misses the skin is a
    review finding.
@@ -230,8 +232,8 @@ To animate a drawing someone else made, start from its SVG, not from shapes you 
    what is in front. Group only a rigid piece whose parts sit next to each other in paint order, such as an eye's
    white and pupil. `layer` in a value changes paint order while a part moves, such as a leg crossing behind; it does not add, so of two moves giving it the later one wins.
 5. **Check the rig still looks like the drawing:** `npm run motion:compare -- "stage.html?piece=<name>" --reference
-   references/<file>.svg` at rest. Its mean stays under 2 out of 255 and no part over 15; read `difference.png` for
-   the worst part.
+   apps/pieces/references/<file>.svg --margin 40`, with the margin the import was given, at rest. Its mean stays under
+   2 out of 255 and no part over 15; read `difference.png` for the worst part.
 6. **Animate the chain's joints and the free parts.**
 
 ```ts
@@ -255,7 +257,8 @@ export const scene = (time: Time) => {
 
 `chainThrough` builds a chain through the joints as drawn, each bone named by the joint it starts at; `chainFromRest`
 answers the pose that carries each part from where it was drawn, so a part whose `pivot` is its bone's start joint
-follows it. Move the chain's `base` to carry the whole arm with the body.
+follows it. A chain's pose is `{ rotations, base }`: `rotations` by bone id in degrees, `base` the root joint's
+`{ x, y, rotation }`. Move the `base` to carry the whole arm with the body.
 
 ## Outside this repository
 

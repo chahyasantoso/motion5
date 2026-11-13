@@ -575,8 +575,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
-- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
-  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox), one `actor({ still: true, path })`
+- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
+  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `actor({ still: true, path })`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
@@ -620,8 +620,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
-- **`motion:compare <page> --reference <svg> [--at ms] [--out dir]`**: the page's stage frame at `--at` (default 0), at
-  its frame size, against the SVG drawn from its `viewBox` at that size. Writes `piece.png`, `reference.png`,
+- **`motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
+  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
+  that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing
+  part is not. Writes `piece.png`, `reference.png`,
   `side-by-side.png` and `difference.png` (brighter is more different), and prints `{ kind: "compared", mean, members,
   notes, out }`: `mean` the frame's mean difference over R, G and B out of 255, `members` every cast member with the mean
   inside its box, worst first. A viewBox whose aspect differs from the frame's by over 1% is noted, never stretched.

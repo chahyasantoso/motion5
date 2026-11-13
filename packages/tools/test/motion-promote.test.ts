@@ -232,4 +232,16 @@ describe("motion:promote refuses what it cannot rewrite whole", () => {
       /overshoot/,
     );
   });
+
+  it("refuses a class or a default export beside the move, and changes nothing", async () => {
+    const { root, movesPackage } = fixture();
+    const file = join(root, "src", "moves", "x.ts");
+    for (const extra of ["export class Helper {}\n", "export default 1;\n"]) {
+      writeFileSync(file, `${MOVE}${extra}`);
+      const run = await promoteMove("slide-in", root, { movesPackage });
+      expect(run.code).toBe(1);
+      expect(run.lines.join(" ")).toMatch(/exports in a form promotion does not carry/);
+      expect(readFileSync(file, "utf8")).toBe(`${MOVE}${extra}`);
+    }
+  });
 });
