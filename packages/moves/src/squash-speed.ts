@@ -7,7 +7,7 @@ export interface SquashFromSpeedOptions {
 }
 
 /** A pose stretched along the heading of a px/s `speed` and squashed across it, `amount` per px/s up to
- * `most`; empty at zero speed. The rotation is the heading in (-90, 90], so content stays upright. */
+ * `most`; empty at zero speed. Rotation is the heading in (-90, 90]. */
 export function squashFromSpeed(
   speed: { readonly vx: number; readonly vy: number },
   options: SquashFromSpeedOptions,

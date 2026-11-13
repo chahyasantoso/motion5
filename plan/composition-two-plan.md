@@ -86,6 +86,12 @@ Transitions between scenes and layout moves are part three.
 - **Owner:** `packages/moves/src/trail.ts`, the plan's results.
 - **Test:** the measurement's numbers; if the cache is built, the same answers for times forward, backward and
   jumping, and a forward run of 300 frames simulating at most 300 plus one memory of steps.
+- **D4 result:** measured in Chrome on the Vite dev server, calling the scene of `showreel-d` directly with
+  `performance.now()` over 60 evenly spaced times across the 15 s, four runs. The scene took 3.4 to 4.4 ms a frame on
+  average (pooled 3.9 ms; 3.6 to 4.1 ms with 20 passes a frame; 3.5 to 4.9 ms over 900 frames), the worst frame 8 to
+  18 ms. The same scene with `trail` replaced by its signal took 0.2 to 0.3 ms, so `trail` is about 3.5 ms of it,
+  all from the seven `dangle` hangers. The mean sits on the 4 ms line and the rule asks for more than 4, so `trail` is
+  unchanged and no `key` was built; a worst frame past 16 ms is the case that would justify it.
 
 ### D5. Proof
 
