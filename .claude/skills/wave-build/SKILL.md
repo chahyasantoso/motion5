@@ -52,7 +52,7 @@ Launch a wave's builders in one message, each in its own worktree. Do not poll.
 
 1. Read the "not verified" list first: it is your to-do list. Then the diff of source files, against the invariant.
 2. Cherry-pick its commits, then remove its worktree at once. Grep the diff for control characters: an escape lost
-   in a shell or script edit leaves a backspace where `` was meant, and no gate sees it.
+   in a shell or script edit leaves a backspace where `\b` was meant, and no gate sees it.
 3. Drop any option no test drives; it is a feature nobody chose.
 4. For a change that should not show, compare samples and frames before and after.
 5. Look at a tool's output on a real page, not only its tests.
