@@ -305,6 +305,25 @@ function stageFindings(
   return found;
 }
 
+const SKIN_NAME = /\[data-(cast|path)\s*=\s*(?:"([^"]*)"|'([^']*)'|([\w.-]+))\s*\]/g;
+
+/** One finding for each name an exact `[data-cast=x]` or `[data-path=x]` rule of the skin gives that no
+ * member has, or that names as a stroke a member with no path; comments are skipped. */
+function skinFindings(cast: readonly CastName[], css: string | undefined): readonly string[] {
+  const byName = new Map(cast.map((member) => [member.name, member]));
+  const found = new Set<string>();
+  const plain = (css ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const [, kind, double, single, bare] of plain.matchAll(SKIN_NAME)) {
+    const named = double ?? single ?? bare;
+    if (named === undefined) continue;
+    const member = byName.get(named);
+    if (member === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
+    else if (kind === "path" && member.path === undefined)
+      found.add(`skin rule styles "${named}" as a stroke, but it has no path.`);
+  }
+  return [...found];
+}
+
 /** The path functions drawn in passes where the module's things rest, as the stage draws them: one
  * that fails, one that reads its own box, and paths that read each other in a loop. */
 function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
@@ -460,6 +479,7 @@ export function reviewSceneModule(
       ...(cast === undefined
         ? []
         : stageFindings(cast, beats, samples, module.durationMs, module.unmeasured === true)),
+      ...(cast === undefined ? [] : skinFindings(cast, module.skinCss)),
       ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
       ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
     ],

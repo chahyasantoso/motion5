@@ -261,6 +261,23 @@ describe("reading a stage module", () => {
     expect(read.rests).toEqual({ list: {}, detail: {} });
   });
 
+  it("reads a member's pivot and a skin's defs, and refuses them malformed", () => {
+    const read = readStageModule({
+      ...good,
+      cast: { dot: actor({ pivot: { x: 4, y: 8 } }) },
+      skins: { dom: { css: "", defs: '<linearGradient id="g"></linearGradient>' } },
+    });
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.skins.dom?.defs).toBe('<linearGradient id="g"></linearGradient>');
+    expect(castNames(read.cast)[0]?.pivot).toEqual({ x: 4, y: 8 });
+    const why = (value: unknown) => {
+      const refused = readStageModule(value);
+      return "reason" in refused ? refused.reason : "";
+    };
+    expect(why({ ...good, cast: { dot: { kind: "actor", pivot: { x: 1 } } } })).toMatch(/pivot/);
+    expect(why({ ...good, skins: { dom: { defs: 3 } } })).toMatch(/defs/);
+  });
+
   it("checks every answer of `layout` against the declared names", () => {
     const read = readStageModule({
       ...good,

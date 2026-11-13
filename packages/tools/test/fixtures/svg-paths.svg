@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120">
+  <path id="curve" fill="#222" d="m10 10 l20 0 q10 15 20 0 t20 0 a10 15 30 1 1 20 20 h-10 v10 s5 5 10 0 c1 2 3 4 5 6 z m60 5 l10 0 l0 10 z"/>
+  <path id="arcs" fill="none" stroke="#000" d="M20 80 A30 20 0 0 1 80 80 a15 15 0 1 0 -30 0 A10 25 45 0 1 120 100"/>
+  <polygon id="tri" fill="#0a0" points="150,10 190,10 170,40"/>
+  <polyline id="zig" fill="none" stroke="#00a" points="130,60 150,80 170,60 190,80"/>
+  <line id="bar" stroke="#a00" x1="130" y1="100" x2="190" y2="110"/>
+  <circle id="ring" fill="#fa0" cx="30" cy="50" r="12"/>
+</svg>

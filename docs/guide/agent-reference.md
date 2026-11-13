@@ -386,7 +386,9 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 
 <!-- generated:reference:start -->
 - **`buildChain`** `<const B extends readonly Bone2d[]>(bones: B): Chain2d<B[number]["id"]>`: A checked bone tree from `Bone2d` rows `{ id, parentId?, length, rotation?, minRotation?, maxRotation? }`, parent first; ids type every later answer. Throws on a bad list.
+- **`chainFromRest`** `<Id extends string>(chain: Chain2d<Id>, rest: ChainPose, now: ChainPose): Readonly<Record<Id, { readonly x: number; readonly y: number; rea…`: Each bone's pose against the chain at rest: `{ x, y, rotation }` moving its start joint and turning it, for a part drawn in place whose pivot is that joint.
 - **`chainPoses`** `<Id extends string>(chain: Chain2d<Id>, options?: ChainPose): { readonly bones: Readonly<Record<Id, BonePose>>; readonly tips: Readonly<Rec…`: Poses for elements laid out at the base: each bone from its start joint, and each tip as an offset.
+- **`chainThrough`** `<const Id extends string>(joints: readonly { readonly id: Id; readonly x: number; readonly y: number; }[]): { readonly chain: Chain2d<Id>; …`: A chain through drawn joints, in order: each bone from one joint to the next, its length and rest rotation measured, and the pose it rests in.
 - **`composeChain`** `(structure: Pick<BodyStructure, "ids" | "parentById">, base: WorldFrame, linkOf: (id: string, position: number) => Link2d): ReadonlyMap<...>`: The world frame at each bone's tip, parent first, from each bone's link.
 - **`fk`** `<Id extends string>(chain: Chain2d<Id>, options?: ChainPose): Readonly<Record<Id, WorldFrame>>`: Each bone's tip as a world frame `{ x, y, rotation }`; `rotations` (degrees, by bone id) replace rest rotations, `base` is the root frame.
 - **`ik`** `<Id extends string>(chain: Chain2d<Id>, goals: Readonly<Partial<Record<Id, Goal2d>>>, options?: { readonly base?: WorldFrame; readonly flip…`: Rotations that bring each goal's bone tip to its `{ x, y }` goal within limits, with a `quality.kind` (`"too-far"` past reach); `flip` bends the elbow the other way.
@@ -457,6 +459,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
 - **`Many`** `type Many`: A list of things; the scene answers one value per item. To move the whole list, put it in a `group`.
 - **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
+- **`Pivot`** `type Pivot`: A point in frame px from the frame's top-left.
 - **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
@@ -544,8 +547,8 @@ return <mesh ref={ball} />;
 ```
 
 <!-- generated:reference:start -->
-- **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke and clip alone.
-- **`THREE_POSE_FIELDS`** `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The pose fields a Three.js object has a place for; it leaves blur, the stroke and the clip alone.
+- **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke, clip and layer alone.
+- **`THREE_POSE_FIELDS`** `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone.
 - **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
 <!-- generated:reference:end -->
 
@@ -572,6 +575,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
+- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
+  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `actor({ still: true, path })`
+  per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
+  skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
+  `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
+  `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
   `recipe` a move names. `<id>` prints
@@ -611,6 +620,13 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
+- **`motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
+  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
+  that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing
+  part is not. Writes `piece.png`, `reference.png`,
+  `side-by-side.png` and `difference.png` (brighter is more different), and prints `{ kind: "compared", mean, members,
+  notes, out }`: `mean` the frame's mean difference over R, G and B out of 255, `members` every cast member with the mean
+  inside its box, worst first. A viewBox whose aspect differs from the frame's by over 1% is noted, never stretched.
 - **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.

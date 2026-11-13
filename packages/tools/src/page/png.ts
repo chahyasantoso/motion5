@@ -1,4 +1,4 @@
-import { inflateSync } from "node:zlib";
+import { deflateSync, inflateSync } from "node:zlib";
 
 /** A decoded picture: `width`, `height` and `rgb`, three bytes per pixel row by row (alpha dropped). */
 export interface Picture {
@@ -97,4 +97,45 @@ export function decodePng(bytes: Uint8Array): Picture {
   for (let pixel = 0; pixel < width * height; pixel += 1)
     for (let c = 0; c < 3; c += 1) rgb[pixel * 3 + c] = rows[pixel * 4 + c] ?? 0;
   return { width, height, rgb };
+}
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(bytes: Uint8Array): number {
+  let c = 0xffffffff;
+  for (const byte of bytes) c = (CRC_TABLE[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+function chunk(type: string, body: Uint8Array): Buffer {
+  const out = Buffer.alloc(12 + body.length);
+  out.writeUInt32BE(body.length, 0);
+  out.write(type, 4, "latin1");
+  out.set(body, 8);
+  out.writeUInt32BE(crc32(out.subarray(4, 8 + body.length)), 8 + body.length);
+  return out;
+}
+
+/** Writes a picture as an 8-bit RGB, non-interlaced PNG that `decodePng` and any viewer read back. */
+export function encodePng(picture: Picture): Uint8Array {
+  const { width, height, rgb } = picture;
+  const stride = width * 3;
+  const raw = Buffer.alloc((stride + 1) * height);
+  for (let y = 0; y < height; y += 1)
+    raw.set(rgb.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = COLOUR_RGB;
+  return Buffer.concat([
+    Buffer.from(SIGNATURE),
+    chunk("IHDR", header),
+    chunk("IDAT", deflateSync(raw)),
+    chunk("IEND", new Uint8Array(0)),
+  ]);
 }

@@ -21,6 +21,14 @@ export interface Behaviour {
   readonly watch?: boolean;
   /** The scene never moves it; the review does not report it as unused. */
   readonly still?: boolean;
+  /** Where it turns and scales, in frame px, usually its joint; a pose's `anchor` wins on the frames that give one. */
+  readonly pivot?: Pivot;
+}
+
+/** A point in frame px from the frame's top-left. */
+export interface Pivot {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like. */
@@ -126,6 +134,7 @@ export interface CastName {
   readonly still: boolean;
   readonly text?: ActorText;
   readonly path?: ActorPath;
+  readonly pivot?: Pivot;
 }
 
 const CUBIC_NUMBERS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"] as const;
@@ -195,6 +204,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
         ...(on === undefined ? {} : { on }),
         watch: member.watch ?? inherited.watch,
         still: member.still ?? false,
+        ...(member.pivot === undefined ? {} : { pivot: member.pivot }),
       };
       switch (member.kind) {
         case "actor":
@@ -217,6 +227,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
               kind: "item",
               watch: item.watch ?? base.watch,
               still: item.still ?? base.still,
+              ...(item.pivot === undefined ? {} : { pivot: item.pivot }),
               ...(item.text === undefined ? {} : { text: item.text }),
               ...(item.path === undefined ? {} : { path: item.path }),
             });

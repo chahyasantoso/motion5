@@ -27,7 +27,7 @@ function pivotOf(object: Object3D, anchor: Anchor): Vector3 {
   }
 }
 
-/** The pose fields a Three.js object has a place for; it leaves blur, the stroke and the clip alone. */
+/** The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone. */
 export const THREE_POSE_FIELDS = Object.freeze([
   "x",
   "y",
@@ -53,7 +53,7 @@ export function writeCustom(
 }
 
 /** Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)`
- * for each custom number; leaves blur, stroke and clip alone. */
+ * for each custom number; leaves blur, stroke, clip and layer alone. */
 export function applyPose2d(
   object: Object3D,
   pose: Pose2d,

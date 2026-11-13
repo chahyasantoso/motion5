@@ -35,6 +35,8 @@ export interface SceneModule {
   readonly cues: Events;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
+  /** A stage module's `skins.dom.css`, which the review reads for the members it names. */
+  readonly skinCss?: string;
   /** Where things rest for a stage module at the start, its own `rest` or the first layout's; a path function is called with it. */
   readonly rest?: Rest;
   /** A stage module whose layouts no renderer measured: it names `layouts` and gives no `rests`. */
@@ -129,6 +131,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
         return span === undefined ? [] : [{ name, from: span.from, to: span.to }];
       }),
       cast: castNames(cast, beats.order),
+      ...(stage.skins.dom?.css === undefined ? {} : { skinCss: stage.skins.dom.css }),
       rest,
     };
   }

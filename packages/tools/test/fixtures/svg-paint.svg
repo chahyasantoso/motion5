@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="120" viewBox="0 0 200 120">
+  <defs>
+    <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="20" cy="20" r="10" gradientTransform="matrix(2 0 0 1 5 0)">
+      <stop offset="0" stop-color="#ff0"/>
+      <stop offset="1" stop-color="#f00"/>
+    </radialGradient>
+    <linearGradient id="base"><stop offset="0" stop-color="#000"/><stop offset="1" stop-color="#fff"/></linearGradient>
+    <linearGradient id="ramp" xlink:href="#base" x1="0" x2="1"/>
+  </defs>
+  <g transform="translate(10 10)"><rect id="sun" x="0" y="0" width="60" height="40" fill="url(#glow)"/></g>
+  <rect id="strip" x="50" y="60" width="40" height="20" fill="url(#ramp)"/>
+  <text id="label" x="10" y="110">Hello</text>
+  <switch><foreignObject id="private" requiredExtensions="http://ns.example/private" width="1" height="1"/><g><rect id="plain" x="120" y="60" width="30" height="30" fill="#0a0"/></g></switch>
+</svg>

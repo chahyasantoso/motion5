@@ -16,6 +16,7 @@ export {
   type Group,
   type Many,
   type Member,
+  type Pivot,
   type Stretch,
 } from "./cast";
 export { DEFAULT_FRAME, frame, story, type Frame, type Story } from "./story";

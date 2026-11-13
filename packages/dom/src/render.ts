@@ -1,9 +1,10 @@
-import type { Anchor, Cubic2d, Pose2d } from "@gerak/moves";
+import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/moves";
 import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
 export interface RenderStyle {
   transform?: string;
+  zIndex?: string;
   transformOrigin?: string;
   transformBox?: string;
   opacity?: string;
@@ -45,11 +46,13 @@ function turnOrScale(key: string, value: unknown): string {
 /** A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves. */
 export function cssTransform(values: Readonly<Record<string, unknown>>): string {
   const parts: string[] = [];
-  if ("x" in values || "y" in values || "z" in values)
+  // A field at its rest writes nothing, so a pose that moves nothing draws exactly as the page does.
+  const moved = (key: string) => key in values && values[key] !== (valueField(key)?.rest ?? 0);
+  if (moved("x") || moved("y") || moved("z"))
     parts.push(
       `translate3d(${String(values.x ?? 0)}px, ${String(values.y ?? 0)}px, ${String(values.z ?? 0)}px)`,
     );
-  for (const key of TURNS_AND_SCALES) if (key in values) parts.push(turnOrScale(key, values[key]));
+  for (const key of TURNS_AND_SCALES) if (moved(key)) parts.push(turnOrScale(key, values[key]));
   return parts.join(" ");
 }
 
@@ -101,12 +104,33 @@ export function cssDash(
 
 /** SVG path data for joined cubic segments. */
 export function pathData(cubics: readonly Cubic2d[]): string {
-  const [first] = cubics;
-  if (first === undefined) return "";
-  return [
-    `M ${first.x0} ${first.y0}`,
-    ...cubics.map((c) => `C ${c.x1} ${c.y1}, ${c.x2} ${c.y2}, ${c.x3} ${c.y3}`),
-  ].join(" ");
+  const parts: string[] = [];
+  let start: Cubic2d | undefined;
+  let last: Cubic2d | undefined;
+  for (const c of cubics) {
+    // A cubic that does not start where the last one ended starts another outline.
+    if (last === undefined || !meets(last.x3, last.y3, c.x0, c.y0)) {
+      if (closes(start, last)) parts.push("Z");
+      parts.push(`M ${c.x0} ${c.y0}`);
+      start = c;
+    }
+    parts.push(`C ${c.x1} ${c.y1}, ${c.x2} ${c.y2}, ${c.x3} ${c.y3}`);
+    last = c;
+  }
+  if (closes(start, last)) parts.push("Z");
+  return parts.join(" ");
+}
+
+/** How near two ends must be to meet, in px: rounding apart, not a gap anyone draws. */
+const SEAM = 1e-6;
+
+function meets(x: number, y: number, toX: number, toY: number): boolean {
+  return Math.abs(x - toX) <= SEAM && Math.abs(y - toY) <= SEAM;
+}
+
+/** Whether an outline ends where it began, so its corner there joins like every other. */
+function closes(start: Cubic2d | undefined, last: Cubic2d | undefined): boolean {
+  return start !== undefined && last !== undefined && meets(last.x3, last.y3, start.x0, start.y0);
 }
 
 /** A value split into the fields `applyValue` writes as a stroke's dash and the rest, for a
@@ -132,6 +156,8 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   const style = target.style;
   style.transform = cssTransform(value);
   style.opacity = value.opacity === undefined ? "" : String(value.opacity);
+  // Paint order steps, so a layer between two whole numbers paints as the nearer one.
+  style.zIndex = value.layer === undefined ? "" : String(Math.round(value.layer));
   // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;

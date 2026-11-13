@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120">
+  <style>.tile { fill: #336699; stroke: #112233; stroke-width: 2; }</style>
+  <g transform="translate(50 20) rotate(30) scale(1.5)">
+    <rect id="tile" class="tile" x="0" y="0" width="40" height="20" rx="6"/>
+    <ellipse id="dot" cx="60" cy="10" rx="15" ry="8" style="fill: #aa3322"/>
+  </g>
+</svg>

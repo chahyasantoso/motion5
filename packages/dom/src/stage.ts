@@ -22,6 +22,7 @@ import {
   type Cast,
   type CastName,
   type Frame,
+  type Pivot,
   type Layouts,
   type Rest,
   type StageModule,
@@ -71,6 +72,8 @@ export interface StageStroke<S> {
   setAttribute(name: string, value: string): void;
   append(...nodes: S[]): void;
   getTotalLength?(): number;
+  /** Markup inside it; the stage writes a skin's `defs` this way. */
+  innerHTML?: string;
 }
 
 /** An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is
@@ -211,6 +214,14 @@ function strokePlace(name: string, box: Box | undefined, layout?: string): strin
   return `:where(${under}[data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
 }
 
+/** A member's transform origin at its pivot, from where its box rests; under the skin and a pose's anchor. */
+function pivotPlace(name: string, box: Box, pivot: Pivot, layout?: string): string {
+  const left = pivot.x - (box.x - box.width / 2);
+  const top = pivot.y - (box.y - box.height / 2);
+  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
+  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { transform-origin: ${left}px ${top}px; }`;
+}
+
 /** The key a stroke keeps its drawing under on a stage with no layouts. */
 const UNLAID = "";
 
@@ -326,6 +337,15 @@ export function mountStage<
     transformOrigin: "50% 50%",
   });
   root.append(style, frame);
+  const paints = module.skins.dom?.defs;
+  if (paints !== undefined) {
+    // Paint servers live once in the stage's root, so every member's `fill: url(#id)` reaches them.
+    const defs = document.createElementNS(SVG, "svg");
+    defs.setAttribute("aria-hidden", "true");
+    defs.setAttribute("style", "position: absolute; width: 0; height: 0; overflow: hidden;");
+    defs.innerHTML = `<defs>${paints}</defs>`;
+    frame.append(defs);
+  }
 
   const placed = new Map<string, Placed<E>>();
   const strokes = new Map<E, Stroke<S>>();
@@ -565,9 +585,11 @@ export function mountStage<
         if (place !== undefined) ordered.push(place);
       }
       const rest: Record<string, Box> = {};
-      for (const name of placed.keys()) {
+      for (const [name, { info }] of placed) {
         const box = boxes[name];
-        if (box !== undefined) rest[name] = box;
+        if (box === undefined) continue;
+        rest[name] = box;
+        if (info.pivot !== undefined) ordered.push(pivotPlace(name, box, info.pivot, layout));
       }
       return Object.freeze(rest);
     };

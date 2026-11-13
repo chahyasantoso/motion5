@@ -44,27 +44,28 @@ Three things follow from it:
 
 ## 3. What the base must answer
 
-| Question | Owner | Today | Gap |
-| --- | --- | --- | --- |
-| A value at a time, from time and events | the scene, `moves` | have | none |
-| The vocabulary of moves | `moves` | five declared moves | a library by role, and modifiers that wrap any move |
-| Where an authored move lives and how it is found | `moves`, `tools` | `defineMove`, no home | a moves folder, a catalog command, a gate for a new move |
-| How an agent is told to work | the guides, the scaffold | told to copy the nearest example | start from the brief and the catalog; an empty scaffold |
-| What is on the stage | a new `stage` package | hand-written component and CSS | object makers, a generic stage that applies each value by its maker |
-| The frame and the camera | `stage` | none | fixed formats, pan and zoom |
-| Text in parts | `stage` | by hand, per letter | lines, words and letters from one maker |
-| Several shots in one piece | `moves` | one beat per scene | a scene nested on a span, and a sequence of shots |
-| Getting from one shot, page or state to the next | `moves` | one `wipe` | transitions: a move over two scenes, with cut, dissolve, wipe, slide and push to start |
-| An element between two layouts | `dom` measures, `moves` plays | `centreIn` for one point | measure the old box and the new, play from the offset to rest; the same move carries a shared element across a transition |
-| Values past a pose | `moves`, each renderer | position, turn, scale, opacity, a circular reveal, a drawn stroke | colour, blur, shadow, a mask of any shape |
-| Where time comes from | drivers in `dom` | clock, scroll, events, manual | a beat driver; time from a sound file |
-| A new scene at the same time | `player`, `react` | `replace`, a host-owned driver | none |
-| Source text into a running scene | the live kit | Vite, in a clone | evaluation in the page, moves in scope |
-| A file of the motion | `tools` | MP4 and GIF, frame-exact | sound in the file |
-| Bones | `rig` | 2D chains, 3D solvers | typed 3D chains, a skinned mesh's bones |
-| Bodies | `physics`, `rapier` | 2D, seekable | 3D |
-| Bindings | `dom`, `react`, `three` | plain DOM, React, Three.js | a React Three Fiber scaffold |
-| Getting it | every package | private, `0.0.0` | published |
+| Question | Owner |
+| --- | --- |
+| A value at a time, from time and events | the scene, `moves` |
+| The vocabulary of moves | `moves` |
+| Where an authored move lives and how it is found | `moves`, `tools` |
+| How an agent is told to work | the guides, the scaffold |
+| What is on the stage | `stage` |
+| The frame and the camera | `stage` |
+| Text in parts | `stage` |
+| Several shots in one piece | `moves` |
+| Getting from one shot, page or state to the next | `moves` |
+| An element between two layouts | `dom` measures, `stage` carries |
+| Values past a pose | `moves`, each renderer |
+| Where time comes from | drivers in `dom` |
+| A new scene at the same time | `player`, `react` |
+| Source text into a running scene | the live kit |
+| A file of the motion | `tools` |
+| Bones | `rig` |
+| Bodies | `physics`, `rapier` |
+| Bindings | `dom`, `react`, `three` |
+| How a rigged piece differs from its SVG | `tools` |
+| Getting it | every package |
 
 ## 4. The apps
 
@@ -79,7 +80,7 @@ Three things follow from it:
 - **Instrument:** `Ctrl+Enter` swaps the scene at the same moment of the loop; a broken edit changes nothing and
   shows in a status line; the caret's line lights its object; the move playing now glows in the code; a commented
   line rests its object.
-- **Video:** the instrument's stage on a longer timeline, with shots, sound and export.
+- **Video:** the stage on a longer timeline, with shots, sound and export.
 
 ## 5. Order
 
@@ -92,22 +93,49 @@ Three things follow from it:
    described in code (shapes, text, letters and words, images, paths, groups), a frame format, beats as named spans,
    and presence (when each member is on stage), played by one stage with no component, and read by the tools. A
    piece becomes one file.
-4. **Composition, the rest.** Done (`plan/composition-four-plan.md`, built). Transitions between two scenes, an element moved between two layouts and carried
-   across a transition. It serves a site (a route change, a list reordering, a card opening) as much as a video.
-5. **Publish.** Next (`plan/publish-plan.md`). A first `0.x` release, a release command, and the app boundary in the scan. `1.0` waits until the
-   `stage` package and one app have held the surface still.
-6. **The live kit and the web overlay.** The panel, timeline and guard become a package; the overlay attaches to any
-   page, picks elements and loops a trigger. Hover knobs and review marks on the timeline land here.
-7. **The instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
-   links, a static site.
-8. **Video.** The camera, the beat driver, sound in the rendered file, a clip of footage as an object.
+4. **Composition, the rest.** Done (`plan/composition-four-plan.md`): named layouts the stage measures, and a member
+   carried between boxes, for a route change, a list reordering and a card opening. Joining two stage modules with a
+   cut or a dissolve waits for stage 10.
+5. **Ready to publish.** Done (`plan/publish-plan.md`): the runtime packages build and install outside the repository,
+   and the app boundary is in the check. Nothing is on npm; publishing waits for a project that needs it, and `1.0`
+   until the `stage` package and one app have held the surface still.
+6. **Rigging vector artwork.** Next (`plan/artwork-plan.md`). An SVG drawn by someone else is imported as a stage
+   module, and the agent rigs it: parts named by what moves, grouped by what carries what, a pivot at each joint, so
+   each part can take a move or a bone. A command compares the rigged piece with the SVG. Rebuilding from a raster
+   picture is out; a Three.js model belongs with stage 8.
+7. **Driving a rig from live inputs.** A small plan after stage 6, no plan yet. Tracking stays outside; the base takes
+   its numbers: each sample a named value in the event log, such as `mouthOpen` 0.6 at 1234 ms, read smoothed by a
+   helper, so a scene stays pure and a recorded session replays, scrubs and renders. Proof: the rigged penguin blinks
+   and talks from a recorded input file. Mouth shapes switch between drawn parts with a quick fade, and morph from
+   one outline into another where switching looks too stepped: each outline resampled to the same cubics, then
+   blended: blend shapes in 2D.
+8. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
+   example.
+9. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
+   objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
+10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
+   to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
+   the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 
-**3D runs beside this, any time:** typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and
-a React Three Fiber scaffold and worked example.
+**Deferred: the instrument.** Evaluation in the page, the code over the stage, the status line, the caret and playhead
+links, a static site. It waits until the live kit exists and a person asks to live-code; `da-lang` waits with it.
 
-**Artwork from a reference runs after stage 3:** an agent looks at an image and rebuilds it as SVG or as a Three.js
-scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders the
-rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
+### Done and not done
+
+Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
+
+| Area | Done | Not done |
+| --- | --- | --- |
+| Moves | a library by role with modifiers, a gate, a catalog, local moves and promotion by brief | particles from a seed |
+| Values | position, turn, scale, opacity, blur, strokes, circle and box clips, a piece's own numbers as CSS variables | colour and shadow as fields of their own, a mask of any shape |
+| Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues | a camera, joining two stage modules |
+| Bones | 2D chains, 3D FK and IK solvers with constraints | typed 3D chains, a skinned mesh's bones, retargeting |
+| Bodies | 2D physics, built in or on Rapier, seekable | 3D physics |
+| Bindings | DOM, React, Three.js poses | a React Three Fiber scaffold, Vue, Svelte |
+| Artwork | | importing an SVG as a stage module, pivots at joints, the command that compares the rig with its SVG |
+| Tools | the `motion:*` commands, the live page, frames and their comparison | the live kit as a package |
+| Getting it | installable outside the repository, checked by installing | on npm |
+| Apps | the live page in `apps/pieces` | the web overlay, video, the instrument (deferred) |
 
 ### What a real piece asked for
 
@@ -155,7 +183,7 @@ Two improvements the owner asked to keep, each its own small plan:
   the same `buildChain`.
 - Particles from a seed, as a move over a list of targets.
 - Vue and Svelte bindings.
-- Retargeting, blend shapes, and matching a reference site's motion.
+- Retargeting, 3D blend shapes, and matching a reference site's motion.
 
 ## 7. Out
 
