@@ -614,6 +614,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
+- **`motion:compare <page> --reference <svg> [--at ms] [--out dir]`**: the page's stage frame at `--at` (default 0), at
+  its frame size, against the SVG drawn from its `viewBox` at that size. Writes `piece.png`, `reference.png`,
+  `side-by-side.png` and `difference.png` (brighter is more different), and prints `{ kind: "compared", mean, members,
+  notes, out }`: `mean` the frame's mean difference over R, G and B out of 255, `members` every cast member with the mean
+  inside its box, worst first. A viewBox whose aspect differs from the frame's by over 1% is noted, never stretched.
 - **`motion:probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`motion:render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.

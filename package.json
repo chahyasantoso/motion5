@@ -36,6 +36,7 @@
     "benchmark": "node performance/graph-benchmark.mjs",
     "motion:sample": "node packages/tools/bin/motion-sample.mjs",
     "motion:frames": "node packages/tools/bin/motion-frames.mjs",
+    "motion:compare": "node packages/tools/bin/motion-compare.mjs",
     "motion:new": "node packages/tools/bin/motion-new.mjs",
     "motion:moves": "node packages/tools/bin/motion-moves.mjs",
     "motion:promote": "node packages/tools/bin/motion-promote.mjs",

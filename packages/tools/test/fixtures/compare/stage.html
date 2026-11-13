@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      html,
+      body,
+      #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      const host = document.createElement("div");
+      host.setAttribute("data-stage", "host");
+      host.style.cssText = "position: relative; overflow: hidden; width: 100%; height: 100%";
+      const root = host.attachShadow({ mode: "open" });
+      const style = document.createElement("style");
+      style.textContent = `
+        [data-stage="frame"] { position: absolute; left: 50%; top: 50%; margin: -50px 0 0 -100px; width: 200px; height: 100px; background: #fff; transform-origin: 50% 50%; overflow: hidden; }
+        [data-cast] { position: absolute; width: 40px; height: 40px; top: 30px; }
+        [data-cast="red"] { left: 10px; background: #d00; }
+        [data-cast="green"] { left: 80px; background: #0a0; }
+        [data-cast="blue"] { left: 150px; background: #00d; }
+      `;
+      const frame = document.createElement("div");
+      frame.setAttribute("data-stage", "frame");
+      for (const name of ["red", "green", "blue"]) {
+        const member = document.createElement("div");
+        member.setAttribute("data-cast", name);
+        frame.append(member);
+      }
+      root.append(style, frame);
+      document.getElementById("root").append(host);
+      const scale = Math.min(innerWidth / 200, innerHeight / 100);
+      frame.style.transform = `scale(${scale})`;
+    </script>
+  </body>
+</html>
