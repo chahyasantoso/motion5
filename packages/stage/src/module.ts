@@ -46,6 +46,7 @@ const CUBIC_NUMBERS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"];
 function isPath(value: unknown): boolean {
   return (
     Array.isArray(value) &&
+    value.length > 0 &&
     value.every(
       (cubic) =>
         isRecord(cubic) &&
@@ -56,7 +57,7 @@ function isPath(value: unknown): boolean {
 }
 
 function isMember(value: unknown): value is Member {
-  if (!isRecord(value)) return false;
+  if (!isRecord(value) || "enters" in value || "leaves" in value) return false;
   const on = value["on"];
   if (!isOptional(on, (given) => Array.isArray(given) && given.every(isStretch))) return false;
   switch (value["kind"]) {
@@ -127,9 +128,15 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
     const cast = value["cast"];
     if (!isCast(cast))
       return reason(
-        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` and `on` a list of beats or pairs of beats.",
+        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
       );
-    castNames(cast, beats.order);
+    for (const { name, on } of castNames(cast, beats.order))
+      for (const [from, to] of on ?? []) {
+        const start = beats[from]?.from ?? 0;
+        const end = beats[to]?.to ?? 0;
+        if (end < start)
+          return reason(`"${name}" is on from "${from}" to "${to}", which ends before it starts.`);
+      }
     const skins = readSkins(value["skins"]);
     if (typeof skins === "string") return reason(skins);
     const size = value["frame"];

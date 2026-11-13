@@ -190,9 +190,11 @@ function boxOf(cubics: readonly Cubic2d[]): Box {
   const xs = cubics.flatMap((c) => [c.x0, c.x1, c.x2, c.x3]);
   const ys = cubics.flatMap((c) => [c.y0, c.y1, c.y2, c.y3]);
   const span = (values: readonly number[]): readonly [number, number] => {
-    const low = values.length === 0 ? 0 : Math.min(...values);
-    const size = values.length === 0 ? 0 : Math.max(...values) - low;
-    return size > 0 ? [low, size] : [low - 0.5, 1];
+    const low = values.reduce((least, value) => Math.min(least, value), Infinity);
+    const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
+    const size = values.length === 0 ? 0 : high - low;
+    const from = values.length === 0 ? 0 : low;
+    return size > 0 ? [from, size] : [from - 0.5, 1];
   };
   const [x, width] = span(xs);
   const [y, height] = span(ys);

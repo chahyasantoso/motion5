@@ -86,6 +86,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   };
   const frame = (at: number): void => {
     handle = undefined;
+    const before = elapsedNow();
     const delta = (previous === undefined ? 0 : Math.max(0, at - previous)) * rate;
     previous = at;
     if (range !== undefined) {
@@ -104,6 +105,9 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress = cycle.advance(delta).progress;
       if (cycle.state.kind === "finished" && watching === 0) running = false;
     }
+    // A loop that wrapped starts a fresh pass, so what was recorded in the last one is forgotten;
+    // a yoyo runs backwards on purpose and keeps its log.
+    if (elapsedNow() < before && options.yoyo !== true) recorder.clear();
     notify();
     request();
   };
@@ -114,8 +118,15 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     running = false;
   };
   const start = (): void => {
+    // Past the end while watching, playing resumes the overtime; otherwise a finished clock starts again.
+    if (cycle.state.kind === "finished" && watching > 0 && range === undefined) {
+      running = true;
+      request();
+      return;
+    }
     if (progress >= 1 || cycle.state.kind === "finished") {
       overtime = 0;
+      recorder.clear();
       cycle = fresh(undefined);
       progress =
         range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;

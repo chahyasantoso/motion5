@@ -322,6 +322,33 @@ describe("clockDriver watch", () => {
     expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 1000 });
   });
 
+  it("resumes past its end on play, and forgets a hover when it starts again or loops", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    const card = hoverable();
+    driver.watch("card", card);
+    source.run(0);
+    source.run(1000);
+    source.run(1500);
+    card.fire("click");
+    driver.pause();
+    driver.play();
+    source.run(1600);
+    source.run(1700);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1600, length: 1000 });
+    expect(driver.events()).toHaveLength(1);
+
+    const looping = frames();
+    const loop = clockDriver({ duration: 1000, frames: looping, repeat: 3, reducedMotion: "play" });
+    loop.watch("card", card);
+    looping.run(0);
+    looping.run(600);
+    card.fire("click");
+    expect(loop.events()).toHaveLength(1);
+    looping.run(1200);
+    expect(loop.events()).toEqual([]);
+  });
+
   it("stops at its end when it watches nothing", () => {
     const source = frames();
     const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });

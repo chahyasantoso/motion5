@@ -177,5 +177,11 @@ describe("reading a stage module", () => {
     expect(why({ ...good, skins: { dom: { css: 1 } } })).toMatch(/skins/);
     expect(why({ ...good, rest: { dot: { x: 1 } } })).toMatch(/rest/);
     expect(why({ ...good, frame: { width: 0, height: 1 } })).toMatch(/frame/);
+    expect(why({ ...good, cast: { dot: { kind: "actor", enters: "go" } } })).toMatch(/enters/);
+    expect(why({ ...good, cast: { dot: { kind: "actor", path: [] } } })).toMatch(/path/);
+    const two = story(1000, { a: [0, 400], b: [600, 1000] });
+    expect(why({ ...good, beats: two, cast: { dot: actor({ on: [["b", "a"]] }) } })).toMatch(
+      /ends before it starts/,
+    );
   });
 });

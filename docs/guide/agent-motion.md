@@ -68,8 +68,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
   it by `[data-path="<name>"]` (`stroke`, `stroke-width`).
 - **Names** are the keys, unique across the cast; an item is `dust.3`. `on: ["land", ["rise", "fall"]]` shows a
-  member only while one of its stretches runs, a beat or a pair from the first's start to the second's end (a member
-  without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
+  member only while one of its stretches runs, a beat or a pair from the first's start to the second's end, so
+  `["rise", "fall"]` is two beats and `[["rise", "fall"]]` one stretch (a member without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
   `still: true` says the scene never moves it.
 - **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
 - **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, an item by `[data-cast="dust.3"]` or all of a
