@@ -21,7 +21,7 @@ timeline. And two readers, one in the tools and one in the pieces app, each deci
   shown. `enters` and `leaves` are removed.
 - **`trail` finds its own `rest`** when none is given: the smallest that keeps the spring's memory under the cap.
 - **Events ride a clock.** The clock driver watches members and records events at its elapsed time; seeking keeps
-  the log; replay clears it. The player hands the scene only events at or before the time, cues included. The stage
+  the log; replay clears it; while it watches a member it keeps time past the story's end, so a late hover plays out. The player hands the scene only events at or before the time, cues included. The stage
   always plays on the clock driver.
 - **One reader.** `readStageModule` in `@gerak/stage` answers a stage module or why a value is not one; every caller
   uses it.

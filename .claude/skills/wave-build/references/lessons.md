@@ -21,3 +21,4 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-12 | stage 3 | Sonnet | 261k, 161 calls, 24 min | 0 |
 | 2026-11-12 | stage 4 measure | Opus | 190k, 62 calls, 14 min | — |
 | 2026-11-12 | stage 4 cold run + review | Sonnet | 134k, 48 calls, 7 min | 8 of 10 fixed |
+| 2026-11-12 | composition 2 | Opus + Sonnet | 186k + 121k | 3 (re-export, clock switch, clock stopped at end) |
