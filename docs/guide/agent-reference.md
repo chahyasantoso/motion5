@@ -565,8 +565,9 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   and are imported by two or more files of `<root>/src`, one line each: id, file, importers.
 - **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
   `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
-  index and points every importer at `@gerak/moves`; prints each change. It refuses a move that is not a candidate and
-  changes nothing then. Run `npm run format` and `npm run reference -- --write` after it.
+  index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and
+  changes nothing, for a move that is not a candidate, one whose file exports a helper or a name the library has, or
+  one some file names in a form it cannot rewrite (a re-export, `import *`, a dynamic import). Run `npm run format` and `npm run reference -- --write` after it.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.

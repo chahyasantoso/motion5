@@ -51,6 +51,8 @@ class FakeElement implements StageElement<FakeElement, FakeElement> {
   offsetWidth = 0;
   offsetHeight = 0;
   clientWidth = 0;
+  clientLeft = 0;
+  clientTop = 0;
   clientHeight = 0;
   readonly ownerDocument: FakeDocument;
 
@@ -278,6 +280,8 @@ describe("mountStage", () => {
           if (size !== undefined)
             [element.offsetLeft, element.offsetTop, element.offsetWidth, element.offsetHeight] =
               size;
+          if (name === "data-cast" && value === "camera")
+            [element.clientLeft, element.clientTop] = [3, 2];
         };
         return element;
       },
@@ -286,7 +290,8 @@ describe("mountStage", () => {
     container.append(host);
     mountStage(host, stageModule(seen), { frames: frames() });
     expect(seen.rest?.camera).toEqual({ x: 200, y: 100, width: 200, height: 100 });
-    expect(seen.rest?.dot).toEqual({ x: 130, y: 85, width: 40, height: 30 });
+    // The camera's 3 by 2 px border sits between its box and the dot's offsets.
+    expect(seen.rest?.dot).toEqual({ x: 133, y: 87, width: 40, height: 30 });
   });
 
   it("writes a group's value on the group's element and a list item by item", () => {

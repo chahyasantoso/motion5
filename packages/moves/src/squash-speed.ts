@@ -16,7 +16,7 @@ export function squashFromSpeed(
   if (!(options.most >= 0 && options.most <= 0.9))
     throw new RangeError("squashFromSpeed: most must be from 0 to 0.9.");
   const pace = Math.hypot(speed.vx, speed.vy);
-  if (options.amount === 0 || options.most === 0 || pace === 0) return {};
+  if (options.amount === 0 || options.most === 0 || !(pace > 0)) return {};
   const travel = (Math.atan2(speed.vy, speed.vx) * 180) / Math.PI;
   const heading = travel > 90 ? travel - 180 : travel <= -90 ? travel + 180 : travel;
   const squash = squashed(Math.min(options.most, options.amount * pace), 1, "bottom");

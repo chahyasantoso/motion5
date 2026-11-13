@@ -149,6 +149,26 @@ describe("motion:review on a stage module", () => {
     expect(broken).toEqual(['path "mark" fails: no dot']);
   });
 
+  it("reports a path that reads another stroke, and lets a path divide by a size nothing measured", () => {
+    const other = findings({
+      ...clean,
+      cast: {
+        stage: group({
+          dot: actor({ on: ["go"] }),
+          word: letters("AB"),
+          line: actor({ still: true, path: level(0, 10, 0) }),
+          mark: actor({ still: true, path: (rest) => level(0, restOf(rest, "line").width + 1, 0) }),
+        }),
+      },
+    });
+    expect(other).toEqual(['path "mark" reads the stroke "line", whose box a path cannot read']);
+    const scaled = findings({
+      ...clean,
+      cast: markedBy((rest) => level(0, 10 / restOf(rest, "dot").width, 0)),
+    });
+    expect(scaled).toEqual([]);
+  });
+
   it("finds a member the scene never moves that is not still", () => {
     expect(findings(unused)).toEqual([
       'cast member "spare" is never moved by the scene; move it or mark it still.',

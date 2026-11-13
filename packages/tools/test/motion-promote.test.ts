@@ -149,3 +149,37 @@ describe("motion:promote", () => {
     expect(parsePromoteArgs([]).kind).toBe("usage");
   });
 });
+
+describe("motion:promote refuses what it cannot rewrite whole", () => {
+  it("also repoints a test outside src that imports the move", async () => {
+    const { root, movesPackage } = fixture();
+    mkdirSync(join(root, "test"));
+    const spec = join(root, "test", "x.test.ts");
+    writeFileSync(spec, `import { slideIn } from "../src/moves/x";\nexport const t = slideIn;\n`);
+    const run = await promoteMove("slide-in", root, { movesPackage });
+    expect(run.code).toBe(0);
+    expect(readFileSync(spec, "utf8")).toContain('from "@gerak/moves"');
+  });
+
+  it("refuses a re-export it cannot rewrite, and changes nothing", async () => {
+    const { root, movesPackage } = fixture();
+    writeFileSync(join(root, "src", "three.ts"), `export { slideIn } from "./moves/x";\n`);
+    const run = await promoteMove("slide-in", root, { movesPackage });
+    expect(run.code).toBe(1);
+    expect(run.lines.join(" ")).toMatch(/three\.ts/);
+    expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(true);
+  });
+
+  it("refuses a helper exported beside the move, and a name the library has", async () => {
+    const { root, movesPackage } = fixture();
+    const file = join(root, "src", "moves", "x.ts");
+    writeFileSync(file, `${MOVE}export const clamp = (n: number) => n;\n`);
+    expect((await promoteMove("slide-in", root, { movesPackage })).lines.join(" ")).toMatch(
+      /clamp/,
+    );
+    writeFileSync(file, `${MOVE}export function overshoot(): void {}\n`);
+    expect((await promoteMove("slide-in", root, { movesPackage })).lines.join(" ")).toMatch(
+      /overshoot/,
+    );
+  });
+});

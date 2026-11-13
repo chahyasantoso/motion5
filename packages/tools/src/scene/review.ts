@@ -290,6 +290,7 @@ const ZERO_BOX: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
  * reads its own box, which it is handed as zero. */
 function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
   const found: string[] = [];
+  const strokes = new Set(cast.flatMap(({ name, path }) => (path === undefined ? [] : [name])));
   const names = new Set([...cast.map(({ name }) => name), ...Object.keys(rest)]);
   for (const { name, path } of cast) {
     if (typeof path !== "function") continue;
@@ -300,15 +301,23 @@ function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] 
         enumerable: true,
         get: (): Box => {
           read.add(key);
-          return key === name ? ZERO_BOX : restOf(rest, key);
+          return strokes.has(key) ? ZERO_BOX : restOf(rest, key);
         },
       });
+    // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
+    const measured = Object.keys(rest).length > 0;
     try {
       pathOf(path, recording);
     } catch (error) {
-      found.push(`path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`);
+      if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
+        found.push(
+          `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
+        );
     }
     if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
+    for (const other of read)
+      if (other !== name && strokes.has(other))
+        found.push(`path "${name}" reads the stroke "${other}", whose box a path cannot read`);
   }
   return found;
 }

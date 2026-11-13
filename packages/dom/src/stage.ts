@@ -71,6 +71,9 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> 
   textContent: string | null;
   tabIndex: number;
   readonly offsetLeft: number;
+  /** Its left and top border widths: offsets inside it start past them. */
+  readonly clientLeft: number;
+  readonly clientTop: number;
   readonly offsetTop: number;
   readonly offsetWidth: number;
   readonly offsetHeight: number;
@@ -341,6 +344,23 @@ export function mountStage<
     applyValue(element, body);
     applyValue(path, stroke);
   };
+  const sameCubics = (next: readonly Cubic2d[], last: readonly Cubic2d[] | undefined): boolean =>
+    last !== undefined &&
+    next.length === last.length &&
+    next.every((cubic, index) => {
+      const was = last[index];
+      return (
+        was !== undefined &&
+        cubic.x0 === was.x0 &&
+        cubic.y0 === was.y0 &&
+        cubic.x1 === was.x1 &&
+        cubic.y1 === was.y1 &&
+        cubic.x2 === was.x2 &&
+        cubic.y2 === was.y2 &&
+        cubic.x3 === was.x3 &&
+        cubic.y3 === was.y3
+      );
+    });
   // Draws a stroke where things rest; a path function that throws is reported and its last good path kept.
   const draw = (name: string, stroke: Stroke<S>, laid: Rest): readonly Cubic2d[] | undefined => {
     let cubics = stroke.cubics;
@@ -349,7 +369,7 @@ export function mountStage<
     } catch (error) {
       report(new Error(`The path of "${name}" failed: ${String(error)}`, { cause: error }));
     }
-    if (cubics === undefined || cubics === stroke.cubics) return cubics;
+    if (cubics === undefined || sameCubics(cubics, stroke.cubics)) return stroke.cubics ?? cubics;
     const box = boxOf(cubics);
     stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
     stroke.path.setAttribute("d", pathData(cubics));
@@ -423,8 +443,8 @@ export function mountStage<
       let left = own.offsetLeft;
       let top = own.offsetTop;
       for (let up = parent; up !== undefined; up = up.parent) {
-        left += up.element.offsetLeft;
-        top += up.element.offsetTop;
+        left += up.element.offsetLeft + up.element.clientLeft;
+        top += up.element.offsetTop + up.element.clientTop;
       }
       const width = own.offsetWidth;
       const height = own.offsetHeight;
@@ -443,8 +463,14 @@ export function mountStage<
       }
       const box = boxOf(cubics);
       const home = parent === undefined ? undefined : laid[parent.info.name];
-      const left = home === undefined ? 0 : home.x - home.width / 2;
-      const top = home === undefined ? 0 : home.y - home.height / 2;
+      const left =
+        home === undefined || parent === undefined
+          ? 0
+          : home.x - home.width / 2 + parent.element.clientLeft;
+      const top =
+        home === undefined || parent === undefined
+          ? 0
+          : home.y - home.height / 2 + parent.element.clientTop;
       places.push(strokePlace(name, { ...box, x: box.x - left, y: box.y - top }));
       boxes[name] = { ...box, x: box.x + box.width / 2, y: box.y + box.height / 2 };
     }
@@ -558,7 +584,9 @@ export function mountStage<
       : undefined;
   if (observer !== undefined && isElement(container)) {
     observer.observe(container);
-    for (const { element: own } of placed.values()) if (isElement(own)) observer.observe(own);
+    // A stroke's size is set from its path, so watching it would measure again on its own redraw.
+    for (const { element: own } of placed.values())
+      if (isElement(own) && !strokes.has(own)) observer.observe(own);
   }
   // A web font that lands after mount changes text sizes, so the boxes are measured again.
   let live = true;

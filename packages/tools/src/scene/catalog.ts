@@ -265,11 +265,15 @@ export function formatCandidate(candidate: Candidate): string {
   return `${candidate.id} | ${basename(candidate.file)} | importers: ${candidate.importers.length}`;
 }
 
-function sourceFiles(folder: string): readonly string[] {
+/** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
+export function sourceFiles(folder: string): readonly string[] {
   if (!existsSync(folder)) return [];
   return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
     const path = join(folder, entry.name);
-    if (entry.isDirectory()) return entry.name === "node_modules" ? [] : sourceFiles(path);
+    if (entry.isDirectory())
+      return entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")
+        ? []
+        : sourceFiles(path);
     return /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts") ? [path] : [];
   });
 }

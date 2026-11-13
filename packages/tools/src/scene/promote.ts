@@ -1,7 +1,13 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { candidatesOf, collectRecords, formatCandidate, loadAppModules } from "./catalog";
+import {
+  candidatesOf,
+  collectRecords,
+  formatCandidate,
+  loadAppModules,
+  sourceFiles,
+} from "./catalog";
 
 /** The usage line of `motion:promote`. */
 export const PROMOTE_USAGE = "usage: motion:promote <id> [--root dir]";
@@ -131,6 +137,15 @@ function repointImports(text: string, importer: string, target: string): string 
   return out.replace(first[0], `import { ${merged.join(", ")} } from "@gerak/moves";\n`);
 }
 
+const SPECIFIER = /["'](\.{1,2}\/[^"']*)["']/g;
+
+/** Whether `text`, a file at `path`, names the module `target` (no extension) in any import, export or call. */
+function names(text: string, path: string, target: string): boolean {
+  return [...text.matchAll(SPECIFIER)].some(
+    ([, spec = ""]) => resolve(dirname(path), spec).replace(/\.(js|ts|tsx)$/, "") === target,
+  );
+}
+
 /** Moves the candidate `id` of the app at `root` into the moves package: the file, its export from the
  * index, and every importer's import; or refuses and changes nothing. */
 export async function promoteMove(
@@ -168,14 +183,44 @@ export async function promoteMove(
     return refuse(
       `${candidate.file} imports @gerak/moves in a form promotion does not rewrite; use named imports.`,
     );
-  const exported = [...source.matchAll(OWN_EXPORT)].map(([, kind = "", name = ""]) =>
-    clause({ name, type: kind === "type" || kind === "interface" }),
+  if (/^export\s+(default|\{|\*|enum|async|let|var|abstract|class)/m.test(source))
+    return refuse(
+      `${candidate.file} exports in a form promotion does not carry; export each move as a const.`,
+    );
+  const moves = new Set(
+    all.flatMap(({ record }) =>
+      record.source.kind === "app" && record.source.file === candidate.file
+        ? [record.exportName]
+        : [],
+    ),
   );
-  const target = candidate.file.replace(/\.ts$/, "");
-  const rewrites = candidate.importers.map((importer) => ({
-    importer,
-    text: repointImports(readFileSync(importer, "utf8"), importer, resolve(target)),
+  const own = [...source.matchAll(OWN_EXPORT)].map(([, kind = "", name = ""]) => ({
+    name,
+    type: kind === "type" || kind === "interface",
   }));
+  const extra = own.filter(({ name, type }) => !type && !moves.has(name)).map(({ name }) => name);
+  if (extra.length > 0)
+    return refuse(
+      `${candidate.file} exports ${extra.join(", ")} beside its moves; the library would publish it. Keep helpers unexported.`,
+    );
+  const known = moduleOfNames(index);
+  const clash = own.filter(({ name }) => known.has(name)).map(({ name }) => name);
+  if (clash.length > 0) return refuse(`@gerak/moves already exports ${clash.join(", ")}.`);
+  const exported = own.map(clause);
+  const target = resolve(candidate.file.replace(/\.ts$/, ""));
+  const referring = sourceFiles(root).filter(
+    (path) =>
+      resolve(path) !== resolve(candidate.file) && names(readFileSync(path, "utf8"), path, target),
+  );
+  const rewrites = referring.map((importer) => ({
+    importer,
+    text: repointImports(readFileSync(importer, "utf8"), importer, target),
+  }));
+  const stuck = rewrites.filter(({ importer, text }) => names(text, importer, target));
+  if (stuck.length > 0)
+    return refuse(
+      `${stuck.map(({ importer }) => importer).join(", ")} refer to ${candidate.file} in a form promotion does not rewrite (a re-export, import *, or a dynamic import); make them named imports first.`,
+    );
   writeFileSync(destination, relativeText.text);
   unlinkSync(candidate.file);
   const separator = index.endsWith("\n") ? "" : "\n";
