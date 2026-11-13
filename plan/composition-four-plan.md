@@ -1,6 +1,6 @@
 # Composition plan, part four: things that change place
 
-**Status:** Approved by the owner, 2026-11-13.
+**Status:** Built, 2026-11-13; approved by the owner the same day.
 **Base:** `main` at `e6957839`, the merge of pull request 587, plus `smudge` promoted on `feat/composition-four`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-174` to `docs/ADR-177`,
 `plan/composition-three-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -91,6 +91,28 @@ cannot exercise this, so part four has a measure of its own: a small site built 
   showreel's rows are not its baseline, and no run on today's tools is made to compare against.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims.
 
+## 3a. Results
+
+| Site | Worker | Tokens | Tool calls | Moves written, reused | Box arithmetic outside `carried` | Jumps |
+| --- | --- | --- | --- | --- | --- | --- |
+| `shop` | Opus, medium | 112 k | 33 | 0, 0 (`carried` and one fade) | none | none at any cue or mid-flight |
+
+`shop` passes: six cards sort, sort again mid-flight and turn back from where they are, and a card opens into a
+detail view while the other five fold into a rail; the browser review is clean. The review without a browser still
+calls three members unmoved, since nothing is measured there.
+
+What cost it most: two axes, sort and view, became fourteen layouts, one per pair, where one layout per view and a
+slot per order would do (the guide now says so); `carried` crashed in the tools without a browser, fixed by the cold
+review's findings before this run was combined; a `many` whose items are placed absolutely still sat in the centred
+row; and `"clip"` cannot draw a closing card larger than its own box, so the card was carried by `"scale"` with its
+text in members of its own.
+
+The cold review (Sonnet, 91 k) gave ten findings; eight are fixed (`carried` walks back only through changes still
+moving and starts a change at 0, an empty box carries nothing, a swap to no layouts measures with none on the frame,
+a failed measure restores the layout, a loop is reported once, a module without `rests` rests nowhere, `layout` must
+answer before any event, a brief may hold an apostrophe). Unsorted events and `"clip"` never growing are the
+documented contract.
+
 ## 4. Team and order
 
 | Wave | Who | Slices | Why |
@@ -126,6 +148,9 @@ One pull request, after wave 3.
   end; `anticipate` holding its lift; `dangle` tying swing rate and lag to one length. The site measure decides
   whether any of them costs it.
 - Every move except `smudge` is imported by showreel rebuilds alone and waits for a second brief.
+- A clip that grows: `"clip"` crops to the member's own box, so a closing card is scaled. A clip larger than the box
+  needs the member to rest at the larger box in every layout it crosses.
+- The review without a browser measures no box, so a piece that moves only by `carried` reads as unmoved there.
 
 ## 7. Done when
 

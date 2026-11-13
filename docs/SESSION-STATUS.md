@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `feat/composition-three` after the full check gate.
+- **Read against:** `feat/composition-four` after the full check gate.
 
 ## Now
 
@@ -26,12 +26,12 @@ byte ceiling.
   code panel straight back into `src/<name>-scene.ts`. Twenty-one moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
-  own moves and the live page live in `apps/pieces`, the tools' default root, and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
+  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **Composition, part four:** named layouts the stage measures and `carry` between boxes (roadmap stage 4), measured
-  on a small site built cold; `plan/composition-four-plan.md`, approved. Then publish.
+- **Publish (roadmap stage 5):** a first `0.x` release, a release command and the app boundary in the scan; no plan
+  yet. Composition part four is built (`plan/composition-four-plan.md`) and waits for the owner's merge.
 
 ## Open, and not scheduled
 
