@@ -163,7 +163,7 @@ const DEFAULT_SKIN = `
 }
 :where([data-skin="default"]:not([data-text]))::before { content: attr(data-cast); }
 :where([data-skin="default"][data-text]) {
-  min-width: 0; min-height: 0; padding: 0; background: none; color: inherit; font-size: 48px;
+  min-width: 0; min-height: 0; padding: 0; background: none; color: inherit; font-size: inherit;
   white-space: pre;
 }
 `;

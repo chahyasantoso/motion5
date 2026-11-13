@@ -1,6 +1,6 @@
 # Composition plan, part two: strokes that follow the layout, skins that keep their own, and a library that grows
 
-**Status:** Draft for the owner, 2026-11-13; critiqued once.
+**Status:** Approved by the owner, 2026-11-13.
 **Base:** `main` at the merge of pull request 585.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-175-paths-presence-by-beats-and-events-on-a-clock.md`,
 `plan/composition-plan.md` section 4a, `.claude/skills/wave-build/SKILL.md`, then this plan.
