@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
-import { actor, group, letters, many, story, type Rest, type StageModule } from "@gerak/stage";
+import {
+  actor,
+  group,
+  letters,
+  many,
+  restOf,
+  story,
+  type Rest,
+  type StageModule,
+} from "@gerak/stage";
 import {
   mountStage,
   pathData,
@@ -226,8 +235,10 @@ describe("mountStage", () => {
     expect(path?.attributes.get("d")).toBe(pathData(line));
     expect(trail.attributes.has("data-skin")).toBe(false);
     const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
-    expect(style).toContain(`:where([data-cast="trail"]) { width: 100px; height: 40px; }`);
-    expect(style).toContain(`:where([data-cast="marks.1"])`);
+    expect(style).toContain(
+      `:where([data-cast="trail"]) { position: absolute; left: 10px; top: 20px; width: 100px; height: 40px; }`,
+    );
+    expect(style).toContain(`:where([data-cast="marks.1"]) { position: absolute; left: 10px;`);
     at(500);
     expect(trail.style.transform).toBe("translate3d(5px, 0px, 0px)");
     expect(trail.style.opacity).toBe("0.5");
@@ -365,6 +376,115 @@ describe("mountStage", () => {
     expect(seen.rest?.dot?.width).toBe(80);
     stage.dispose();
     expect(listeners.size).toBe(0);
+  });
+
+  describe("a path drawn from where things rest", () => {
+    type Size = [number, number, number, number];
+    const level = (from: number, to: number, y: number) =>
+      toCubics([
+        { id: "a", x: from, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+        { id: "b", x: to, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+      ]);
+
+    /** A stage whose members take the offsets and sizes in `sizes` by name, with a resize to call. */
+    function laidOut(module: StageModule<"all", StageValues>, sizes: Record<string, Size>) {
+      let resized: (() => void) | undefined;
+      vi.stubGlobal("Element", FakeElement);
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          constructor(listener: () => void) {
+            resized = listener;
+          }
+          observe(): void {}
+          disconnect(): void {}
+        },
+      );
+      const document: FakeDocument = {
+        createElementNS: (_namespace, name) => new FakeElement(name, document),
+        createElement(tag) {
+          const element = new FakeElement(tag, document);
+          const setAttribute = element.setAttribute.bind(element);
+          element.setAttribute = (name, value) => {
+            setAttribute(name, value);
+            const size = name === "data-cast" ? sizes[value] : undefined;
+            if (size !== undefined)
+              [element.offsetLeft, element.offsetTop, element.offsetWidth, element.offsetHeight] =
+                size;
+          };
+          return element;
+        },
+      };
+      const host = new FakeElement("div", document);
+      new FakeElement("div").append(host);
+      mountStage(host, module, { frames: frames() });
+      const root = host.children[0]?.shadowRoot;
+      if (root === undefined) throw new Error("No shadow root.");
+      const style = () => root.children.find((child) => child.tagName === "style")?.textContent;
+      return { root, style, resize: () => resized?.() };
+    }
+
+    function underlined(seen: Seen, path: (rest: Rest) => ReturnType<typeof level>) {
+      const module: StageModule<"all", StageValues> = {
+        beats: story(1000, { all: [0, 1000] }),
+        cast: { line: group({ word: actor({ text: "HI" }), under: actor({ path }) }) },
+        skins: {},
+        scene: (_time, _events, rest) => {
+          seen.rest = rest;
+          return {};
+        },
+      };
+      return laidOut(module, { line: [100, 200, 600, 100], word: [50, 10, 200, 80] });
+    }
+
+    it("sits under a measured word, in the word's group, after layout and after a resize", () => {
+      const seen: Seen = {};
+      const handed: Rest[] = [];
+      const { root, style, resize } = underlined(seen, (rest) => {
+        handed.push(rest);
+        const word = restOf(rest, "word");
+        return level(
+          word.x - word.width / 2,
+          word.x + word.width / 2,
+          word.y + word.height / 2 + 4,
+        );
+      });
+      expect(seen.rest?.word).toEqual({ x: 250, y: 250, width: 200, height: 80 });
+      expect(seen.rest?.under).toEqual({ x: 250, y: 294, width: 200, height: 1 });
+      expect(style()).toContain(
+        `:where([data-cast="under"]) { position: absolute; left: 50px; top: 93.5px; width: 200px; height: 1px; }`,
+      );
+      const svg = root.find("under").children[0];
+      expect(svg?.attributes.get("viewBox")).toBe("150 293.5 200 1");
+      expect(svg?.children[0]?.attributes.get("d")).toBe(pathData(level(150, 350, 294)));
+      expect(handed.every((rest) => !Object.hasOwn(rest, "under"))).toBe(true);
+      root.find("word").offsetWidth = 300;
+      resize();
+      expect(seen.rest?.under).toEqual({ x: 300, y: 294, width: 300, height: 1 });
+      expect(style()).toContain(`left: 50px; top: 93.5px; width: 300px; height: 1px; }`);
+      expect(svg?.children[0]?.attributes.get("d")).toBe(pathData(level(150, 450, 294)));
+    });
+
+    it("reports a path function that throws and keeps its last good path", () => {
+      const reported: unknown[] = [];
+      vi.stubGlobal("reportError", (error: unknown) => reported.push(error));
+      let broken = false;
+      const seen: Seen = {};
+      const { root, resize } = underlined(seen, (rest) => {
+        if (broken) throw new Error("no word");
+        const word = restOf(rest, "word");
+        return level(word.x - word.width / 2, word.x + word.width / 2, word.y);
+      });
+      const path = root.find("under").children[0]?.children[0];
+      const drawn = path?.attributes.get("d");
+      broken = true;
+      root.find("word").offsetWidth = 300;
+      resize();
+      expect(reported).toHaveLength(1);
+      expect(String(reported[0])).toMatch(/"under".*no word/);
+      expect(path?.attributes.get("d")).toBe(drawn);
+      expect(seen.rest?.under?.width).toBe(200);
+    });
   });
 
   it("removes everything it added when disposed", () => {

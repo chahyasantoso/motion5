@@ -8,10 +8,12 @@ import {
   group,
   letters,
   many,
+  pathOf,
   readStageModule,
   restOf,
   story,
   words,
+  type Rest,
 } from "@gerak/stage";
 
 const at = (elapsed: number, length: number): Time => ({
@@ -50,10 +52,28 @@ describe("the cast", () => {
     ]);
     const stroke = actor({ path });
     expect(stroke.path).toEqual(path);
-    expect(Object.isFrozen(stroke.path?.[0])).toBe(true);
+    expect(Object.isFrozen(pathOf(stroke.path ?? [], NO_REST)[0])).toBe(true);
     expect(castNames({ stroke }).at(0)?.path).toEqual(path);
     const strokes = many([path, path], (each) => actor({ path: each }));
     expect(castNames({ strokes }).map(({ path: own }) => own?.length)).toEqual([undefined, 1, 1]);
+  });
+
+  it("answers a path function's cubics where things rest, checked and frozen", () => {
+    const under = (rest: Rest) => {
+      const word = restOf(rest, "word");
+      const y = word.y + word.height / 2;
+      return toCubics([
+        { id: "a", x: word.x - word.width / 2, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+        { id: "b", x: word.x + word.width / 2, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+      ]);
+    };
+    const stroke = actor({ path: under });
+    expect(stroke.path).toBe(under);
+    expect(castNames({ stroke }).at(0)?.path).toBe(under);
+    const cubics = pathOf(under, { word: { x: 100, y: 50, width: 80, height: 20 } });
+    expect([cubics[0]?.x0, cubics[0]?.y0, cubics[0]?.x3]).toEqual([60, 60, 140]);
+    expect(Object.isFrozen(cubics[0])).toBe(true);
+    expect(() => pathOf(() => [], NO_REST)).toThrow(/cubics/);
   });
 
   it("names every member, item and group, with presence taken from the nearest group", () => {
@@ -174,6 +194,9 @@ describe("reading a stage module", () => {
       on: ["go"],
     });
     expect(why({ ...good, cast: { dot: stroke } })).toBe("");
+    expect(
+      why({ ...good, cast: { dot: actor({ path: () => pathOf(stroke.path ?? [], NO_REST) }) } }),
+    ).toBe("");
     expect(why({ ...good, skins: { dom: { css: 1 } } })).toMatch(/skins/);
     expect(why({ ...good, rest: { dot: { x: 1 } } })).toMatch(/rest/);
     expect(why({ ...good, frame: { width: 0, height: 1 } })).toMatch(/frame/);

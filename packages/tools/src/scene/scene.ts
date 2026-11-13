@@ -1,6 +1,6 @@
 import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
-import { NO_REST, castNames, readStageModule, type CastName } from "@gerak/stage";
+import { NO_REST, castNames, readStageModule, type CastName, type Rest } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
@@ -20,6 +20,8 @@ export interface SceneModule {
   readonly cues: Events;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
+  /** Where things rest for a stage module, its own `rest` or none; a path function is called with it. */
+  readonly rest?: Rest;
 }
 
 /** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
@@ -114,6 +116,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
         return span === undefined ? [] : [{ name, from: span.from, to: span.to }];
       }),
       cast: castNames(cast, beats.order),
+      rest,
     };
   }
   const scene: unknown = Reflect.get(Object(value), "scene");
