@@ -67,9 +67,9 @@ cannot exercise this, so part four has a measure of its own: a small site built 
 ### F3. Tools read layouts
 
 - **Invariant:** `motion:sample`, `motion:review` and `motion:frames` run a module with layouts on its per-layout
-  `rest`; the review reports a `carry` from or to a member whose box is zero in that layout.
+  `rest`; a `carry` from or to a zero box throws, and the review reports it as the scene error it is.
 - **Owner:** `packages/tools/src/scene/`.
-- **Test:** a module whose `layout` names an undeclared layout is refused by name; the zero-box carry is reported.
+- **Test:** a module whose `layout` names an undeclared layout is refused by name; a scene whose `carry` meets a zero box is reported.
 
 ### F4. Smaller costs the showreel named
 
