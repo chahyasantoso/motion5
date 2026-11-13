@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120">
+  <g transform="scale(2)"><path id="even" fill="none" stroke="#000" stroke-width="3" d="M5 5 L40 5 L40 40"/></g>
+  <g transform="translate(0 70) scale(2 1)"><path id="uneven" fill="none" stroke="#000" stroke-width="3" d="M5 5 L40 5 L40 40"/></g>
+</svg>

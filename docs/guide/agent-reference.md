@@ -575,6 +575,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
+- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
+  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox), one `actor({ still: true, path })`
+  per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
+  skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
+  `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
+  `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
   `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
   `recipe` a move names. `<id>` prints
