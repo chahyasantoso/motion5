@@ -33,3 +33,4 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-13 | composition-four 2 | Opus + 2 Sonnet | 126k + 81k + 133k, 143 calls, 7 min | 3 (overshoot clamped, clip a circle, comment length) |
 | 2026-11-13 | composition-four 3 cold review | Sonnet | 91k, 15 calls, 2 min | 8 of 10 fixed |
 | 2026-11-13 | composition-four 3 measure | Opus | 112k, 33 calls, 7 min | — |
+| 2026-11-13 | publish 2 | 2 Sonnet | 92k + 90k, 79 calls, 7 min | 2 (tools pin, reference without dist) |

@@ -55,7 +55,7 @@ Launch a wave's builders in one message, each in its own worktree. Do not poll.
 3. Drop any option no test drives; it is a feature nobody chose.
 4. For a change that should not show, compare samples and frames before and after.
 5. Look at a tool's output on a real page, not only its tests.
-6. Run the full check once. One purpose per shell call; never move git state in a call that runs tests.
+6. Run the full check once, from a clean state when the change adds a build: no `dist` the check could lean on. One purpose per shell call; never move git state in a call that runs tests.
 
 ## Review cold
 
