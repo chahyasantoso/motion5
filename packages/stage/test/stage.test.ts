@@ -233,6 +233,20 @@ describe("reading a stage module", () => {
     expect(why({ ...layered, layout: () => "grid" })).toMatch(/"grid"/);
   });
 
+  it("reads the module's own cues in time order, and refuses what is not an event", () => {
+    const read = readStageModule({
+      ...good,
+      cues: [
+        { name: "b", at: 20 },
+        { name: "a", at: 10, target: "dot" },
+      ],
+    });
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.cues?.map((cue) => cue.name)).toEqual(["a", "b"]);
+    const bad = readStageModule({ ...good, cues: [{ name: "a" }] });
+    expect("reason" in bad ? bad.reason : "").toMatch(/`cues`/);
+  });
+
   it("checks every answer of `layout` against the declared names", () => {
     const read = readStageModule({
       ...good,

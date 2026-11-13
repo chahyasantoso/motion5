@@ -689,6 +689,16 @@ describe("mountStage", () => {
       expect(seen.layoutAtWrite).toBe("list");
     });
 
+    it("plays the module's own cues, so a scripted click changes the layout at its time", () => {
+      const seen: Laid = {};
+      const { frame, at } = layered(seen, { cues: [{ name: "click", at: 500, target: "card" }] });
+      at(400);
+      expect(frame.attributes.get("data-layout")).toBe("list");
+      at(600);
+      expect(frame.attributes.get("data-layout")).toBe("detail");
+      expect(seen.rest).toBe(seen.layouts?.detail);
+    });
+
     it("draws a stroke under every layout and shows the one in force", () => {
       const seen: Laid = {};
       const under = (rest: Rest) => {

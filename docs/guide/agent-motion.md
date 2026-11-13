@@ -204,6 +204,8 @@ export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layou
   second click mid-flight sets off from where the member is, never from its old rest. `size` is `"scale"` (default),
   `"clip"` (crops without stretching text, for a card that opens; it never draws larger than the member's own box) or
   `"keep"`.
+- **Scripted clicks.** Export `cues`, events at known ms such as `{ name: "click", at: 1500, target: "card" }`; the
+  stage plays them beside the page's own, so the tools and `stage.html` show each change without a hand on the mouse.
 - **A reorder needs no layout.** The items stay where the page put them; `at` answers the slot box each item takes
   after the events, `(past) => restOf(rest, \`list.${slotOf(past, index)}\`)`. The page's own order, and so its tab
   order, stays the first one until the site reorders its data.

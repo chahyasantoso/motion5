@@ -1,4 +1,4 @@
-import type { Events, Time } from "@gerak/moves";
+import { isMotionEvent, mergeEvents, type Events, type Time } from "@gerak/moves";
 import { castNames, isCubics, type Cast, type Member } from "./cast";
 import type { Box, Layouts, Rest } from "./rest";
 import { frame, story, type Frame, type Story } from "./story";
@@ -30,6 +30,8 @@ export interface StageModule<
   readonly layout?: (events: Events) => L;
   /** Each layout's rest for a tool with no renderer to measure them. */
   readonly rests?: Layouts<L>;
+  /** The piece's own events at known ms, such as a scripted click; the stage plays them beside the page's. */
+  readonly cues?: Events;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -211,11 +213,15 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
       return reason("`rest` must hold { x, y, width, height } boxes by name.");
     const layouts = readLayouts(value);
     if (typeof layouts === "string") return reason(layouts);
+    const cues = value["cues"];
+    if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
+      return reason("`cues` must be a list of { name, at, target } events.");
     return {
       beats,
       cast,
       skins,
       ...layouts,
+      ...(Array.isArray(cues) && cues.every(isMotionEvent) ? { cues: mergeEvents(cues) } : {}),
       scene: (time, events, at, measured) => {
         const values: unknown = Reflect.apply(scene, undefined, [time, events, at, measured]);
         if (!(typeof values === "object" && values !== null))

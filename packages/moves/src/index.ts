@@ -22,6 +22,7 @@ export { seeded } from "./random";
 export {
   NO_EVENTS,
   follow,
+  isMotionEvent,
   mergeEvents,
   react,
   type Events,

@@ -179,6 +179,7 @@ const slide = defineMove({
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, turning back with no jump; pure in time and events.
+- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target` and an `x`, `y`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.

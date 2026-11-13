@@ -1,4 +1,11 @@
-import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import {
+  NO_EVENTS,
+  isMotionEvent,
+  mergeEvents,
+  type Events,
+  type MotionEvent,
+  type Time,
+} from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import {
   NO_LAYOUTS,
@@ -39,21 +46,6 @@ export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
     if (beat.from <= ms && ms <= beat.to && (found === undefined || beat.from >= found.from))
       found = beat;
   return found?.name;
-}
-
-function isEvent(value: unknown): value is MotionEvent {
-  if (typeof value !== "object" || value === null) return false;
-  const optional = (key: string, kind: "string" | "number") => {
-    const field: unknown = Reflect.get(value, key);
-    return field === undefined || typeof field === kind;
-  };
-  return (
-    typeof Reflect.get(value, "name") === "string" &&
-    typeof Reflect.get(value, "at") === "number" &&
-    optional("target", "string") &&
-    optional("x", "number") &&
-    optional("y", "number")
-  );
 }
 
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
@@ -102,7 +94,7 @@ export interface SceneSample {
  * `readStageModule`; its length is its story's and its scene gets the module's `rest`. */
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
   const cues: unknown = Reflect.get(Object(value), "cues");
-  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isEvent)))
+  if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);

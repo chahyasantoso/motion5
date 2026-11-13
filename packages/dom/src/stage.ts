@@ -1,4 +1,5 @@
 import {
+  NO_EVENTS,
   POSE_2D_FIELDS,
   elapsedOf,
   type Cubic2d,
@@ -649,6 +650,7 @@ export function mountStage<
   fit();
   let measured = measure();
   let scene = module.scene;
+  let cues = module.cues;
   // The layout the latest scene call put in force, read from that call's events alone.
   let inForce: string | undefined;
   const sceneOf = (): Scene<StageValues> => (time, events) => {
@@ -678,7 +680,7 @@ export function mountStage<
   };
   const start = () => {
     const { driver, stop } = drive();
-    const player = play<StageValues>(sceneOf(), driver);
+    const player = play<StageValues>(sceneOf(), driver, cues === undefined ? {} : { cues });
     options.onDriver?.(driver);
     const [first] = placed.keys();
     if (first !== undefined) player.subscribe(first, follow);
@@ -745,12 +747,13 @@ export function mountStage<
     replace(next) {
       scene = next.scene;
       pick = next.layout;
+      cues = next.cues;
       const nextNames = next.layouts ?? [];
       if (!sameNames(nextNames, names)) {
         names = nextNames;
         measured = measure();
       }
-      run.player.replace(sceneOf());
+      run.player.replace(sceneOf(), cues ?? NO_EVENTS);
     },
     dispose() {
       live = false;

@@ -15,6 +15,22 @@ export interface MotionEvent {
 /** Every event so far, oldest first; a scene reads it beside its time. */
 export type Events = readonly MotionEvent[];
 
+/** Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target` and an `x`, `y`. */
+export function isMotionEvent(value: unknown): value is MotionEvent {
+  if (typeof value !== "object" || value === null) return false;
+  const optional = (key: string, kind: "string" | "number") => {
+    const field: unknown = Reflect.get(value, key);
+    return field === undefined || typeof field === kind;
+  };
+  return (
+    typeof Reflect.get(value, "name") === "string" &&
+    typeof Reflect.get(value, "at") === "number" &&
+    optional("target", "string") &&
+    optional("x", "number") &&
+    optional("y", "number")
+  );
+}
+
 /** The empty event list; share it rather than allocating one. */
 export const NO_EVENTS: Events = Object.freeze([]);
 
