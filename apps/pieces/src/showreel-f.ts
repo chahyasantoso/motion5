@@ -583,7 +583,7 @@ export const scene = (time: Time, _events: Events, rest: Rest) => {
   return {
     camera: camera(time),
     field: field(time, rest),
-    trailUp: streak({ arrive: 0.43, lag: 0.17 }, span(850, 1450).of(time)),
+    trailUp: streak({ arrive: 0.43, lag: 0.34 }, span(850, 1450).of(time)),
     trailArc: streak({ arrive: 0.65, lag: 0.21 }, span(LEAP, PERIOD + 350).of(time)),
     underline: underline(time),
     ant: Array.from({ length: 10 }, (_, i) => anticipateLetter(time, i)),
@@ -593,9 +593,18 @@ export const scene = (time: Time, _events: Events, rest: Rest) => {
     overlap: { x: bar(time) },
     bar: {},
     hang: STRINGS.map((length, i) =>
-      dangle({ length: length + 50, damping: 0.18, gain: 1, lag: i * 28, limit: 63 }, time, {
-        carrier: bar,
-      }),
+      dangle(
+        {
+          length: length + 50,
+          pace: Math.sqrt((length + 50) / length),
+          damping: 0.18,
+          gain: 0.6,
+          lag: i * 28,
+          limit: 63,
+        },
+        time,
+        { carrier: bar },
+      ),
     ),
     sett: Array.from({ length: 6 }, (_, i) => settleLetter(time, rest, i)),
     fin: {},
