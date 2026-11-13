@@ -1,6 +1,6 @@
 # Composition plan, part three: what the fifth rebuild still paid for
 
-**Status:** Draft for the owner, 2026-11-13; critiqued once.
+**Status:** Draft for the owner, 2026-11-13; critiqued twice.
 **Base:** `main` at `99c04055`, the merge of pull request 586.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-176-strokes-from-the-layout-and-a-library-that-grows.md`,
 `plan/composition-two-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -22,17 +22,22 @@ the showreel.
 ## 2. Decisions to record (E0, ADR-177)
 
 - **Frames compare in the tools.** `motion:frames --compare <dir>` prints, for each frame both runs have, the mean
-  difference out of 255 and the share of pixels off by more than 32, decoded without a new dependency.
+  difference out of 255 and the share of pixels off by more than 32, decoded with Node's own `zlib`, no new
+  dependency; frames of different sizes are named, not compared.
 - **Strokes combine.** `drawn` combines by multiplying and `drawnFrom` by adding, so a draw-on and its retract sum
   into one value; both fields' rests are their neutral elements already.
-- **An empty stroke paints nothing.** A value whose `drawn` is at or below its `drawnFrom` hides the path.
+- **An empty stroke paints nothing.** A value whose `drawn` is at or below its `drawnFrom` sets the path's
+  `visibility` to `hidden`, and any other value clears it, never `visible`, so a member hidden by `on` hides its
+  path too.
 - **`still` is the member's own.** A group marked `still` says its own value never moves, and the review holds it
   to that; it says nothing of its members, each of which states its own.
-- **The review reads presence.** A change while a member is hidden by `on` is not a jump.
+- **The review reads presence.** A change between two samples where the member is hidden at either one is not a
+  jump: a value that moves while hidden, or snaps as the member appears, is presence, not motion.
 - **Text may follow time.** `actor({ text: (time) => string })` is evaluated by the renderer on each frame, as a
   readout, not a value; a `letters` or `words` list keeps fixed text, since its length is the scene's shape.
-- **A path may read strokes it does not depend on in a loop.** The stage draws strokes in the order they read each
-  other's boxes, and the review and the stage refuse a loop, naming it.
+- **A path may read another stroke.** The stage draws strokes in passes: a path that reads a stroke not drawn yet
+  waits for a later pass; a pass that draws nothing new leaves a loop, which the stage reports and the review
+  refuses, naming the strokes. No graph is built ahead of time.
 
 ## 3. Slices
 
@@ -79,7 +84,7 @@ the showreel.
 
 - **Measure, alone, fresh:** the showreel rebuilt a sixth time as `showreel-f`. Passes when it writes no PNG code of
   its own, its strokes use no beat only to hide an empty stroke, the timecode is back, and its frames are as close as
-  `showreel-e`'s. The token count is the number this plan is for.
+  `showreel-e`'s. Its token count is recorded beside the earlier rows; one run is too noisy to pass or fail on it.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims.
 
 ## 4. Team and order
@@ -104,5 +109,5 @@ One pull request, after wave 3.
 
 ## 6. Done when
 
-`showreel-f` passes and costs fewer tokens than `showreel-e`, `npm run check` is green, and
+`showreel-f` passes, its tokens are recorded against `showreel-e`'s, `npm run check` is green, and
 `docs/SESSION-STATUS.md` says so.
