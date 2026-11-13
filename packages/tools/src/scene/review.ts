@@ -305,6 +305,17 @@ function stageFindings(
   return found;
 }
 
+const SKIN_NAME = /\[data-(?:cast|path)\s*=\s*["']([^"']*)["']\s*\]/g;
+
+/** One finding for each name a `[data-cast="x"]` or `[data-path="x"]` rule of the skin gives that no member has. */
+function skinFindings(cast: readonly CastName[], css: string | undefined): readonly string[] {
+  const known = new Set(cast.map(({ name }) => name));
+  const missing = new Set<string>();
+  for (const [, named] of (css ?? "").matchAll(SKIN_NAME))
+    if (named !== undefined && !known.has(named)) missing.add(named);
+  return [...missing].map((named) => `skin rule names "${named}", which is not in the cast.`);
+}
+
 /** The path functions drawn in passes where the module's things rest, as the stage draws them: one
  * that fails, one that reads its own box, and paths that read each other in a loop. */
 function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
@@ -460,6 +471,7 @@ export function reviewSceneModule(
       ...(cast === undefined
         ? []
         : stageFindings(cast, beats, samples, module.durationMs, module.unmeasured === true)),
+      ...(cast === undefined ? [] : skinFindings(cast, module.skinCss)),
       ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
       ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
     ],

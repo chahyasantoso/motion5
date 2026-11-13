@@ -1,3 +1,4 @@
+import { actor, many, story } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import { readSceneModule } from "../src/scene/scene";
 import {
@@ -114,5 +115,37 @@ describe("motion:review on a scene file", () => {
       targets: { flap: { rotationX: index < 3 ? 0 : 0.001 } },
     }));
     expect(reviewValues(settling, { ...limits, hold: 0 })).toEqual([]);
+  });
+});
+
+describe("motion:review holds a skin to its cast", () => {
+  const stage = (css: string) => ({
+    beats: story(400, { show: [0, 400] }),
+    cast: { box: actor({ still: true }), dust: many(2, { still: true }) },
+    skins: { dom: { css } },
+    scene: () => ({}),
+  });
+
+  it("finds a data-cast or data-path rule that names no member, once per name", () => {
+    const { findings } = review(
+      stage(
+        `[data-cast="box"] { z-index: 1; } [data-path="ghost"] { fill: red; } [data-cast="ghost"] { opacity: 0.5; } [data-cast="dust.1"] { color: red; } [data-cast='spook'] { color: blue; }`,
+      ),
+    );
+    expect(findings).toEqual([
+      'skin rule names "ghost", which is not in the cast.',
+      'skin rule names "spook", which is not in the cast.',
+    ]);
+  });
+
+  it("finds nothing in a skin that names its members, a list and its items, or none", () => {
+    expect(
+      review(
+        stage(
+          '[data-cast="box"] { z-index: 1; } [data-path="box"] { fill: red; } [data-cast="dust"] { x: 1; } [data-cast="dust.0"] { x: 2; } [data-cast^="du"] { x: 3; }',
+        ),
+      ).findings,
+    ).toEqual([]);
+    expect(review(stage("")).findings).toEqual([]);
   });
 });
