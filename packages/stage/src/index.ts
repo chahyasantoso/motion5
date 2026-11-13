@@ -19,6 +19,7 @@ export {
   type Pivot,
   type Stretch,
 } from "./cast";
+export { blendShapes, matchOutlines, meets, piecesOf, SEAM } from "./outlines";
 export { DEFAULT_FRAME, frame, story, type Frame, type Story } from "./story";
 export { carried, carry, type CarriedOptions, type CarrySize } from "./carry";
 export { NO_LAYOUTS, NO_REST, restOf, type Box, type Layouts, type Rest } from "./rest";

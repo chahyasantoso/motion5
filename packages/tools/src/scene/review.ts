@@ -277,6 +277,17 @@ function stageFindings(
       found.push(
         `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
       );
+    const given = samples.some(({ targets: values }) => {
+      const value = valueOf(values, member);
+      return (
+        typeof value === "object" &&
+        value !== null &&
+        !Array.isArray(value) &&
+        Reflect.get(value, "shape") !== undefined
+      );
+    });
+    if (given && member.shapes === undefined)
+      found.push(`cast member "${member.name}" is given shape, but has no shapes.`);
     if (member.still && !unmoved)
       found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
     if (member.on === undefined) continue;

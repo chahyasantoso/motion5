@@ -23,6 +23,7 @@ const MOVED: Required<Pick<Pose2d, Field>> = {
   clipRadius: 7,
   clipWidth: 8,
   clipHeight: 4,
+  shape: 0.5,
   layer: 3,
   anchor: "bottom",
 };
@@ -50,6 +51,7 @@ function baseFor(field: Field): Pose2d {
     case "drawn":
     case "drawnFrom":
     case "clipRadius":
+    case "shape":
     case "layer":
       return {};
     default: {
@@ -74,10 +76,14 @@ function threeWrite(pose: Pose2d): string {
 const written: ReadonlySet<Field> = new Set(THREE_POSE_FIELDS);
 
 describe("every Pose2d field", () => {
-  it.each(POSE_2D_FIELDS)("%s reaches the DOM renderer", (field) => {
-    const base = baseFor(field);
-    expect(domWrite({ ...base, [field]: MOVED[field] })).not.toBe(domWrite(base));
-  });
+  // `shape` is written by the stage as a path's outline, not by `applyValue` as style.
+  it.each(POSE_2D_FIELDS.filter((field) => field !== "shape"))(
+    "%s reaches the DOM renderer",
+    (field) => {
+      const base = baseFor(field);
+      expect(domWrite({ ...base, [field]: MOVED[field] })).not.toBe(domWrite(base));
+    },
+  );
 
   it.each(THREE_POSE_FIELDS)("%s reaches the Three.js renderer", (field) => {
     const base = baseFor(field);

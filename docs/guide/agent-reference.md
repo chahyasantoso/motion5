@@ -442,7 +442,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; readonly shapes?: readonly (readonly Cubic2d[])[]; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readonly from: number; readonly to: number; }, durationMs: number,…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
@@ -461,6 +461,11 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
 - **`Pivot`** `type Pivot`: A point in frame px from the frame's top-left.
 - **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
+- **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: The cubics `shape` asks of matched outlines: 0 is the first, 1 the second, between them each control point is blended; clamped to the first and the last.
+- **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (readonly Cubic2d[])[]; } | { readonly reason: string; }`: Outlines made to blend, the first being the path: the same pieces in the same order, each with as many cubics in every outline; or why they cannot.
+- **`meets`** `(x: number, y: number, toX: number, toY: number): boolean`: Whether the point `(x, y)` is within a seam of `(toX, toY)`.
+- **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: An outline split into its pieces: a cubic that does not start where the last ended starts another.
+- **`SEAM`** `const SEAM: 0.000001`: How near two ends must be to meet, in px: rounding apart, not a gap anyone draws.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.

@@ -162,3 +162,29 @@ describe("motion:review holds a skin to its cast", () => {
     ]);
   });
 });
+
+describe("motion:review on a value's shape", () => {
+  const line = [
+    { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
+    { id: "b", x0: 20, y0: 0, x1: 25, y1: 5, x2: 30, y2: 5, x3: 40, y3: 0 },
+  ];
+  const stage = (cast: Record<string, ReturnType<typeof actor>>) => ({
+    beats: story(2000, { show: [0, 2000] }),
+    cast,
+    skins: { dom: { css: "" } },
+    scene: (time: { progress: number }) => ({ mouth: { shape: Math.min(1, time.progress * 4) } }),
+  });
+
+  it("finds a member given shape that has no shapes, once", () => {
+    const { findings } = review(stage({ mouth: actor({ path: line }) }));
+    expect(findings).toEqual(['cast member "mouth" is given shape, but has no shapes.']);
+  });
+
+  it("finds nothing when the member has shapes", () => {
+    const shaped = actor({
+      path: line,
+      shapes: [line.map((c) => ({ ...c, y0: c.y0 + 4, y3: c.y3 + 4 }))],
+    });
+    expect(review(stage({ mouth: shaped })).findings).toEqual([]);
+  });
+});

@@ -1,4 +1,5 @@
 import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/moves";
+import { meets } from "@gerak/stage";
 import { unreachable } from "./unreachable";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
@@ -119,13 +120,6 @@ export function pathData(cubics: readonly Cubic2d[]): string {
   }
   if (closes(start, last)) parts.push("Z");
   return parts.join(" ");
-}
-
-/** How near two ends must be to meet, in px: rounding apart, not a gap anyone draws. */
-const SEAM = 1e-6;
-
-function meets(x: number, y: number, toX: number, toY: number): boolean {
-  return Math.abs(x - toX) <= SEAM && Math.abs(y - toY) <= SEAM;
 }
 
 /** Whether an outline ends where it began, so its corner there joins like every other. */
