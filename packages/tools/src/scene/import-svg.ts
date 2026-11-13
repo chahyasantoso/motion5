@@ -270,6 +270,8 @@ interface Placement {
   readonly at: { readonly x: number; readonly y: number };
   readonly scale: number;
   readonly prefix: string;
+  /** The highest `z-index` already painted, so new parts paint above it in their own order. */
+  readonly above: number;
 }
 
 /** The extent of cubics given as eight numbers each, from points along every curve. */
@@ -395,7 +397,7 @@ function build(
           rule.push(`stroke-dashoffset: ${precise(shape.dashOffset * scale)}`);
       }
     }
-    const order = parts.length + 1;
+    const order = placement.above + parts.length + 1;
     const box = [
       `z-index: ${order}`,
       ...(shape.opacity === 1 ? [] : [`opacity: ${precise(shape.opacity)}`]),
@@ -504,7 +506,7 @@ export async function importSvg(
     };
   const extracted = await readSvg(file);
   if (extracted.kind === "error") return { kind: "refused", message: extracted.message };
-  const built = build(extracted, { at: { x: margin, y: margin }, scale: 1, prefix: "" });
+  const built = build(extracted, { at: { x: margin, y: margin }, scale: 1, prefix: "", above: 0 });
   if (built.parts.length === 0)
     return { kind: "refused", message: "The SVG holds no shape this can draw." };
   const frame = {
@@ -567,9 +569,14 @@ export async function importSvgInto(
   if (!existsSync(target)) return refuse(`No piece at ${target}; nothing written.`);
   const extracted = await readSvg(file);
   if (extracted.kind === "error") return refuse(extracted.message);
-  const built = build(extracted, { at, scale, prefix });
+  const source = readFileSync(target, "utf8");
+  const above = Math.max(
+    0,
+    ...[...source.matchAll(/z-index:\s*(-?\d+)/g)].map(([, n]) => Number(n)),
+  );
+  const built = build(extracted, { at, scale, prefix, above });
   if (built.parts.length === 0) return refuse("The SVG holds no shape this can draw.");
-  const edit = addToPiece(readFileSync(target, "utf8"), {
+  const edit = addToPiece(source, {
     names: built.parts.map((part) => part.name),
     members: castSource(built.parts),
     css: cssSource(built.parts),

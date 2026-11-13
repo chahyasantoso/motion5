@@ -387,6 +387,11 @@ export const scene = (_time: unknown) => ({});
     expect(used).toEqual(expect.arrayContaining(["one-glow", "two-glow", "keep"]));
     for (const id of used) expect(ids.filter((known) => known === id)).toHaveLength(1);
     expect(imported.defs).not.toContain('id="glow"');
+    const layer = (name: string) =>
+      Number(new RegExp(`\\[data-cast="${name}"\\] \\{ z-index: (\\d+)`).exec(imported.css)?.[1]);
+    const oneTop = Math.max(...["oneStrip", "onePlain", "oneSun"].map(layer));
+    for (const name of ["twoStrip", "twoPlain", "twoSun"])
+      expect(layer(name)).toBeGreaterThan(oneTop);
   }, 60000);
 
   it("refuses a clash of names, naming the member, and leaves the file as it was", async () => {
