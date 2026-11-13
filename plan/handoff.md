@@ -25,13 +25,18 @@ Carry the showreel measure's remaining costs as smaller slices beside it, only w
 - one `on` for all of a `many`'s items;
 - enter and exit moves holding their end, so replacing phases need `sequence`;
 - `anticipate` returning to its start where a held lift is wanted;
-- the scene review reporting a follow move still ringing after its member is hidden.
+- the scene review reporting a follow move still ringing after its member is hidden;
+- `motion:moves -- --candidates` counting pieces from different briefs, not importing files: the six showreel
+  rebuilds are one brief, so they count once;
+- `motion:promote` writing the doc comment the generated reference requires; today it is added by hand.
 
-## Open items for the owner
+## Promotion
 
-- Two old worktrees outside the repo hold uncommitted blind-test pieces: `../blind-tests/bounce-2d` and
-  `../blind-tests/paperplane-3d`. Keep or remove with `git worktree remove --force <path>`.
-- Remote branches `feat/stage-plan` and `feat/composition-plan` are obsolete; deleting them was refused to the agent.
-- `motion:moves -- --candidates` counts importing files, so the six showreel rebuilds look like six uses. No move has
-  been promoted; promotion is the owner's call.
+A move is promoted when pieces from two different briefs import it. `smudge` (showreel and `nowplaying`) is promoted
+into `@gerak/moves`. Every other candidate is imported only by showreel rebuilds and waits for a second brief; the
+part-four site measure is the likely one.
+
+## Deferred
+
 - `trail` costs about 3.5 ms a frame on a seven-pendulum scene; a keyed cache is designed (ADR-176) but not built.
+  Build it when a measure or a site shows `trail` in its frame budget, not before.

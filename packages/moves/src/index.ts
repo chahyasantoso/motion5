@@ -90,3 +90,4 @@ export { reversed } from "./reversed";
 export { anticipate } from "./anticipate";
 export { overshoot } from "./overshoot";
 export { repeated } from "./repeated";
+export { smudge } from "./smudge";

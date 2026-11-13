@@ -23,6 +23,7 @@ describe("the move gate", () => {
       "rope",
       "shake",
       "slide",
+      "smudge",
       "swing",
       "trace",
       "unfold",

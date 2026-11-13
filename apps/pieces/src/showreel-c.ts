@@ -22,6 +22,7 @@ import {
   type Events,
   type Pose2d,
   type Time,
+  smudge,
 } from "@gerak/moves";
 import {
   actor,
@@ -44,7 +45,6 @@ import { launch } from "./moves/launch";
 import { open } from "./moves/open";
 import { push } from "./moves/push";
 import { shockwave } from "./moves/shockwave";
-import { smudge } from "./moves/smudge";
 import { springSettle } from "./moves/spring-settle";
 import { squish } from "./moves/squish";
 import { tint } from "./moves/tint";

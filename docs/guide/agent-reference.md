@@ -261,6 +261,7 @@ const slide = defineMove({
 - **`anticipate`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.2; readonly min: 0; readonly max: 0.9; readonly descri…`: Winds up the other way from its input's travel, then plays the input and ends where it ends.
 - **`overshoot`** `(options: OptionsIn<{ readonly share: { readonly kind: "number"; readonly default: 0.3; readonly min: 0; readonly max: 0.9; readonly descri…`: Plays its input, then passes its last pose and settles back onto it.
 - **`repeated`** `(time: Time, count: number): Time`: A time with its progress running 0 to 1 `count` times (rounded down, at least 1); a function of time, not a move.
+- **`smudge`** `(options: OptionsIn<{ readonly amount: { readonly kind: "number"; readonly min: 0; readonly description: "The blur it ends at, in px."; }; …`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows.
 <!-- generated:reference:end -->
 
 ## @gerak/player
