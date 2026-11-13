@@ -21,6 +21,8 @@ const MOVED: Required<Pick<Pose2d, Field>> = {
   clipX: 5,
   clipY: 6,
   clipRadius: 7,
+  clipWidth: 8,
+  clipHeight: 4,
   anchor: "bottom",
 };
 
@@ -32,6 +34,10 @@ function baseFor(field: Field): Pose2d {
     case "clipX":
     case "clipY":
       return { clipRadius: 7 };
+    case "clipWidth":
+      return { clipHeight: 4 };
+    case "clipHeight":
+      return { clipWidth: 8 };
     case "x":
     case "y":
     case "rotation":

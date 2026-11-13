@@ -52,15 +52,17 @@ describe("carry", () => {
     }
   });
 
-  it("clips unscaled, centred, to a circle round the interpolated box", () => {
+  it("clips unscaled, centred, to the interpolated box", () => {
     const pose = carry(own, from, to, 0, "clip");
     expect(pose.scaleX).toBeUndefined();
     expect(own.x + (pose.x ?? 0)).toBeCloseTo(from.x);
     expect(pose.clipX).toBe(40);
     expect(pose.clipY).toBe(20);
-    expect(pose.clipRadius).toBeCloseTo(Math.hypot(40, 20) / 2);
+    expect(pose.clipWidth).toBeCloseTo(Math.min(from.width, own.width));
+    expect(pose.clipHeight).toBeCloseTo(Math.min(from.height, own.height));
+    expect(pose.clipRadius).toBeUndefined();
     const grown = carry(own, from, to, 1, "clip");
-    expect(grown.clipRadius).toBeUndefined();
+    expect(grown.clipWidth).toBeUndefined();
   });
 
   it("answers the rest pose where the member rests", () => {

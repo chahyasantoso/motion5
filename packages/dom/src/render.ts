@@ -76,6 +76,19 @@ export function cssClip(x: number, y: number, radius: number): string {
   return `circle(${radius}px at ${x}px ${y}px)`;
 }
 
+/** A CSS clip path showing a `width` by `height` px box centred `x`, `y` px from the top left, its
+ * corners rounded by `radius` px. */
+export function cssClipBox(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius = 0,
+): string {
+  const round = radius > 0 ? ` round ${radius}px` : "";
+  return `xywh(${x - width / 2}px ${y - height / 2}px ${width}px ${height}px${round})`;
+}
+
 /** The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long. */
 export function cssDash(
   from: number,
@@ -127,10 +140,19 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
     value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "";
   const blur = value.blur ?? 0;
   style.filter = blur > 0 ? `blur(${blur}px)` : "";
+  // A clip with a width and a height is a box, its radius rounding the corners; with a radius alone, a circle.
   style.clipPath =
-    value.clipRadius === undefined
-      ? ""
-      : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
+    value.clipWidth !== undefined && value.clipHeight !== undefined
+      ? cssClipBox(
+          value.clipX ?? 0,
+          value.clipY ?? 0,
+          value.clipWidth,
+          value.clipHeight,
+          value.clipRadius,
+        )
+      : value.clipRadius === undefined
+        ? ""
+        : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
   const measured = target.getTotalLength?.() ?? length ?? 0;
   const stroked = value.drawn !== undefined || value.drawnFrom !== undefined;
   if (stroked && measured > 0) {

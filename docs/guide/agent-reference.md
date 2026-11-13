@@ -463,9 +463,9 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
 - **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
 - **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
-- **`carry`** `(own: Box, from: Box, to: Box, progress: number, size?: CarrySize): Pose2d`: The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` shows a circle, never a rectangle. An absent box throws a `RangeError` (not for `"keep"`).
+- **`carry`** `(own: Box, from: Box, to: Box, progress: number, size?: CarrySize): Pose2d`: The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` only crops, so it never draws larger than `own`. An absent box throws a `RangeError` (not for `"keep"`).
 - **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
-- **`CarrySize`** `type CarrySize`: How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"` leaves it and hides all outside a circle.
+- **`CarrySize`** `type CarrySize`: How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"` leaves it and hides all outside the box.
 - **`NO_LAYOUTS`** `const NO_LAYOUTS: Readonly<Record<never, Readonly<Record<string, Box>>>>`: The layouts a module with none passes: no layout, no boxes.
 - **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
 - **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.

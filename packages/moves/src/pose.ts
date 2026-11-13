@@ -43,6 +43,8 @@ export const VALUE_FIELDS = Object.freeze({
   clipX: PLACED,
   clipY: PLACED,
   clipRadius: SHOWN,
+  clipWidth: PLACED,
+  clipHeight: PLACED,
 }) satisfies Readonly<Record<string, ValueField>>;
 
 /** A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes. */
@@ -70,6 +72,8 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "clipX",
   "clipY",
   "clipRadius",
+  "clipWidth",
+  "clipHeight",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
 /** A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`,

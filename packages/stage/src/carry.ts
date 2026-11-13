@@ -3,7 +3,7 @@ import type { Box } from "./rest";
 import { unreachable } from "./unreachable";
 
 /** How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"`
- * leaves it and hides all outside a circle. */
+ * leaves it and hides all outside the box. */
 export type CarrySize = "scale" | "clip" | "keep";
 
 function clamp01(value: number): number {
@@ -31,8 +31,8 @@ function same(a: Box, b: Box): boolean {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
-/** The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` shows a
- * circle, never a rectangle. An absent box throws a `RangeError` (not for `"keep"`). */
+/** The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` only
+ * crops, so it never draws larger than `own`. An absent box throws a `RangeError` (not for `"keep"`). */
 export function carry(
   own: Box,
   from: Box,
@@ -73,7 +73,8 @@ export function carry(
         ...moved,
         clipX: own.width / 2,
         clipY: own.height / 2,
-        clipRadius: Math.hypot(drawn.width, drawn.height) / 2,
+        clipWidth: Math.min(drawn.width, own.width),
+        clipHeight: Math.min(drawn.height, own.height),
       };
     }
     default:
