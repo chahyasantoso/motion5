@@ -8,6 +8,8 @@ CI validates every pull request and the push branches named in [ci.yml](../.gith
 - `boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. The scanner's own tests run in the full suite, not twice.
 - `performance (node 24.21.0)` runs `npm run benchmark` and uploads its report. The benchmark exits nonzero when its structural budgets fail.
 
+On demand, outside `npm run check`: `npm run build` emits the nine installable packages to `dist/`, and `npm run pack:check` packs them, installs the tarballs into an empty project and imports every export under Node. Neither publishes anything.
+
 ## Evidence
 
 [ci-evidence.mjs](../scripts/ci-evidence.mjs) owns discovery parity and the consumption of the single full-suite result. Discovery collects the suite with the installed Vitest CLI, without running test bodies, and the inventory must be nonempty. The suite then runs once with the normal console reporter and the evidence reporter, and verification matches every discovered runnable test to a passed result. It checks completion, module results, unhandled errors, the head, run ID, attempt, Node version, and a digest of the lockfile, Vitest configuration and evidence implementation. A missing result or a dynamically skipped expected test fails verification.

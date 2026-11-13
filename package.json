@@ -15,6 +15,7 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "build": "node scripts/build.mjs",
+    "pack:check": "node scripts/pack-check.mjs",
     "scan:raw-templates": "node scripts/raw-template-scan.mjs",
     "scan:comments": "node scripts/comment-scan.mjs",
     "scan:cycles": "node scripts/cycle-scan.mjs",
