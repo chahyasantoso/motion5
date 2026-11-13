@@ -78,11 +78,12 @@ describe("carry", () => {
     expect(shrunk.scaleX ?? 1).toBeGreaterThanOrEqual(0);
   });
 
-  it("names the box that is absent", () => {
+  it("carries nothing from or to a box with no size, as a tool with no renderer measures", () => {
     const none: Box = { x: 0, y: 0, width: 0, height: 10 };
-    expect(() => carry(own, none, to, 0)).toThrow(/`from`.*absent/);
-    expect(() => carry(own, from, none, 0, "clip")).toThrow(/`to`.*absent/);
-    expect(() => carry(own, none, none, 0, "keep")).not.toThrow();
+    expect(carry(own, none, to, 0)).toEqual(carry(own, to, to, 0));
+    expect(carry(own, from, none, 1, "clip")).toEqual(carry(own, from, from, 1, "clip"));
+    expect(carry(none, none, none, 0.5)).toEqual({});
+    expect(carry(none, from, to, 0.5).scaleX).toBeUndefined();
   });
 });
 
@@ -143,6 +144,28 @@ describe("carried", () => {
 
   it("does not move for an event that leaves the box where it was", () => {
     expect(draw(events(["a", 500]), 600)).toEqual(first);
+  });
+
+  it("draws no jump for two changes at one ms, even with an ease that does not start at 0", () => {
+    const lifted = (u: number) => 0.2 + 0.8 * u;
+    const list = events(["b", 1000], ["a", 1000]);
+    const pose = (t: number) =>
+      carried({ own: first, at: at0, events: list, time: at(t), ms: 400, ease: lifted });
+    expect(pose(999)).toEqual({});
+    expect(pose(1000)).toEqual({});
+  });
+
+  it("asks `at` only about changes still moving, however long the history", () => {
+    let asked = 0;
+    const counted = (past: Events): Box => {
+      asked += 1;
+      return at0(past);
+    };
+    const long = events(
+      ...Array.from({ length: 2000 }, (_, i): [string, number] => [i % 2 ? "a" : "b", i * 1000]),
+    );
+    carried({ own: first, at: counted, events: long, time: at(1999 * 1000 + 100), ms: 400 });
+    expect(asked).toBeLessThan(10);
   });
 
   it("refuses a carry of no length", () => {

@@ -247,6 +247,20 @@ describe("reading a stage module", () => {
     expect("reason" in bad ? bad.reason : "").toMatch(/`cues`/);
   });
 
+  it("says a `layout` must answer before any event, and gives each layout a rest when `rests` is left out", () => {
+    const why = readStageModule({
+      ...good,
+      layouts: ["list"],
+      layout: () => {
+        throw new TypeError("reads the first event");
+      },
+    });
+    expect("reason" in why ? why.reason : "").toMatch(/before any event/);
+    const read = readStageModule({ ...good, layouts: ["list", "detail"] });
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.rests).toEqual({ list: {}, detail: {} });
+  });
+
   it("checks every answer of `layout` against the declared names", () => {
     const read = readStageModule({
       ...good,

@@ -16,12 +16,17 @@ second click while it was moving had nothing to start from but the old rest.
   `layouts: Layouts<L>`, every layout's `Rest`; its third, `rest`, stays the rest of the layout in force.
 - **The layout in force is a function of the events alone:** `layout: (events) => L`. The moment of a change is the
   time of the event that caused it, so nothing stores it. With no `layout`, the first layout is in force.
-- **A route is a layout.** A member a route does not show is hidden by its skin; its box there is zero.
+- **A route is a layout.** A member a route does not show is hidden by its skin; its box there is zero, and
+  nothing is carried from or to a box with no size, so a tool with no renderer samples without throwing.
 - **`carry(own, from, to, progress, size)`** answers the pose that draws a member resting at `own` on `from` at 0 and
   on `to` at 1, by `"scale"`, `"clip"` or `"keep"`. It is not a move: its options are boxes.
 - **`carried` owns every change of place.** Given `at: (events) => Box`, it carries from where the member was drawn
   at each event that changed the answer, so an interrupted carry never jumps. Scenes call `carried`.
-- **Tools read layouts:** a module with `layouts` gives tools `rests`, one `Rest` per layout, instead of `rest`.
+- **Tools read layouts:** a module with `layouts` gives tools `rests`, one `Rest` per layout, instead of `rest`;
+  without them each layout rests nowhere.
+- **A clip may be a box:** `clipWidth` and `clipHeight` clip to a box centred on `clipX`, `clipY`, rounded by
+  `clipRadius`, so a card opening crops instead of stretching its text.
+- **A stage module's `cues` play on the stage** beside the page's events, so a scripted click shows in frames.
 - **Joining two stage modules waits for the video stage;** on a site, two scenes are two layouts of one module.
 - **A move is promoted when pieces from two briefs import it.** A piece file may export `const brief`; candidates
   count distinct briefs, and a file with none counts as its own.

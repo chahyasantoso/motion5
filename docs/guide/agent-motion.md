@@ -199,7 +199,7 @@ export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layou
   force. `layout(events)` answers which one is in force from the events alone, never the time, so the moment of a
   change is its event's. Without `layout`, the first layout is in force.
 - **A route is a layout.** A member one route does not show is `display: none` under that layout; its box there is
-  zero, and carrying from or to it throws, so let it enter or exit instead.
+  zero, and nothing is carried from or to it: it stays put, so let it enter or exit instead.
 - **`carried`** carries the member from where it is drawn to the box `at` names after each event, over `ms`, so a
   second click mid-flight sets off from where the member is, never from its old rest. `size` is `"scale"` (default),
   `"clip"` (crops without stretching text, for a card that opens; it never draws larger than the member's own box) or

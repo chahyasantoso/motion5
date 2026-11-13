@@ -756,6 +756,27 @@ describe("mountStage", () => {
       expect(seen.layouts?.wide?.card).toEqual({ x: 200, y: 50, width: 200, height: 100 });
     });
 
+    it("measures a swapped module without layouts with no layout left on the frame", () => {
+      const seen: Laid = {};
+      const { stage, root, frame, at } = layered(seen);
+      at(200);
+      root.find("card").fire("click", { target: root.find("card") });
+      at(400);
+      expect(frame.attributes.get("data-layout")).toBe("detail");
+      stage.replace({
+        beats: story(1000, { all: [0, 1000] }),
+        cast: { card: actor({ watch: true }), dot: actor() },
+        skins: {},
+        scene: (_time, _events, rest, layouts) => {
+          seen.rest = rest;
+          seen.layouts = layouts;
+          return {};
+        },
+      });
+      expect(frame.attributes.has("data-layout")).toBe(false);
+      expect(seen.rest?.card?.x).toBe(200);
+    });
+
     it("leaves a module without layouts unlabelled, handing the scene no layouts", () => {
       let handed: Layouts | undefined;
       const module: StageModule<"all", StageValues> = {

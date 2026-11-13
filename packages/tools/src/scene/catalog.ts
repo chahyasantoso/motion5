@@ -267,11 +267,11 @@ export function formatCandidate(candidate: Candidate): string {
   return `${candidate.id} | ${basename(candidate.file)} | briefs: ${candidate.briefs.length}`;
 }
 
-const BRIEF = /^export\s+const\s+brief\s*(?::\s*string\s*)?=\s*["']([^"']+)["']/m;
+const BRIEF = /^export\s+const\s+brief\s*(?::\s*string\s*)?=\s*(["'`])(.+?)\1/m;
 
 /** The brief a piece file names with a top-level `export const brief = "..."`, read from its text. */
 export function briefOf(path: string): string | undefined {
-  return BRIEF.exec(readFileSync(path, "utf8"))?.[1];
+  return BRIEF.exec(readFileSync(path, "utf8"))?.[2];
 }
 
 /** The distinct briefs among `paths`; a file with no brief is a brief of its own. */

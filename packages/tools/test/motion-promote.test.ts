@@ -107,6 +107,9 @@ describe("motion:moves --candidates", () => {
     expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual([
       "slide-in | x.ts | briefs: 2",
     ]);
+    writeFileSync(one, `${oneText}export const brief = "reel's cut";\n`);
+    writeFileSync(two, `${twoText}export const brief = \`reel's cut\`;\n`);
+    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual(["No candidates."]);
   });
 
   it("leaves out a move imported by one file", async () => {

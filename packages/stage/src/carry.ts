@@ -31,28 +31,18 @@ function same(a: Box, b: Box): boolean {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
-/** The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` only
- * crops, never drawing larger than `own`. An absent box throws a `RangeError` (not for `"keep"`). */
+/** The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never
+ * past `own`. Nothing is carried from or to a box with no size. */
 export function carry(
   own: Box,
-  from: Box,
-  to: Box,
+  given: Box,
+  target: Box,
   progress: number,
   size: CarrySize = "scale",
 ): Pose2d {
-  switch (size) {
-    case "scale":
-    case "clip":
-      if (absent(from))
-        throw new RangeError("carry: `from` has no box; the member is absent from that layout.");
-      if (absent(to))
-        throw new RangeError("carry: `to` has no box; the member is absent from that layout.");
-      break;
-    case "keep":
-      break;
-    default:
-      return unreachable(size);
-  }
+  if (absent(given) && absent(target)) return {};
+  const from = absent(given) ? target : given;
+  const to = absent(target) ? from : target;
   const drawn = mix(from, to, progress);
   const moved: { x?: number; y?: number; scaleX?: number; scaleY?: number } = {};
   if (drawn.x !== own.x) moved.x = drawn.x - own.x;
@@ -61,8 +51,7 @@ export function carry(
     case "keep":
       return moved;
     case "scale": {
-      if (!(own.width > 0) || !(own.height > 0))
-        throw new RangeError("carry: `own` has no box; the member cannot be scaled to another.");
+      if (absent(own)) return moved;
       if (drawn.width !== own.width) moved.scaleX = drawn.width / own.width;
       if (drawn.height !== own.height) moved.scaleY = drawn.height / own.height;
       return moved;
@@ -111,27 +100,40 @@ export function carried(options: CarriedOptions): Pose2d {
   if (!(ms > 0)) throw new RangeError("carried: ms must be above 0.");
   const size = options.size ?? "scale";
   const now = elapsedOf(time.clock);
-  const changes: Change[] = [];
-  let box = at([]);
-  const first = box;
-  for (let i = 0; i < events.length; i += 1) {
-    const event = events[i];
-    if (event === undefined) continue;
-    if (now !== undefined && event.at > now) break;
-    const next = at(events.slice(0, i + 1));
-    if (!same(next, box)) changes.push({ at: event.at, box: next });
-    box = next;
+  let happened = events.length;
+  if (now !== undefined) {
+    happened = 0;
+    while (happened < events.length && (events[happened]?.at ?? Infinity) <= now) happened += 1;
   }
-  const drawnAt = (t: number, last: number): Box => {
-    const change = changes[last];
-    if (change === undefined) return first;
-    if (t - change.at >= ms) return change.box;
-    return mix(drawnAt(change.at, last - 1), change.box, ease(clamp01((t - change.at) / ms)));
-  };
-  const last = changes.length - 1;
-  const change = changes[last];
-  if (change === undefined || now === undefined || now - change.at >= ms)
-    return carry(own, box, box, 1, size);
-  const p = ease(clamp01((now - change.at) / ms));
-  return carry(own, drawnAt(change.at, last - 1), change.box, p, size);
+  const after = (count: number): Box =>
+    at(count === events.length ? events : events.slice(0, count));
+  const settled = after(happened);
+  if (now === undefined) return carry(own, settled, settled, 1, size);
+  // Walks back only through changes still moving: one that came `ms` before the next has settled.
+  const changes: Change[] = [];
+  let later = settled;
+  let horizon = now;
+  for (let count = happened; count > 0; count -= 1) {
+    const event = events[count - 1];
+    if (event === undefined || event.at <= horizon - ms) break;
+    const before = after(count - 1);
+    if (!same(before, later)) {
+      changes.push({ at: event.at, box: later });
+      horizon = event.at;
+    }
+    later = before;
+  }
+  changes.reverse();
+  const share = (t: number, change: Change): number =>
+    t <= change.at ? 0 : ease(clamp01((t - change.at) / ms));
+  let from = later;
+  for (let index = 0; index + 1 < changes.length; index += 1) {
+    const change = changes[index];
+    const next = changes[index + 1];
+    if (change === undefined || next === undefined) continue;
+    from = mix(from, change.box, share(next.at, change));
+  }
+  const change = changes[changes.length - 1];
+  if (change === undefined || now - change.at >= ms) return carry(own, settled, settled, 1, size);
+  return carry(own, from, change.box, share(now, change), size);
 }

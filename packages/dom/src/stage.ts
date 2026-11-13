@@ -503,6 +503,7 @@ export function mountStage<
   // Measures the stage as laid out, or under every layout in turn, then shows the layout in force again.
   const measure = (): Measured => {
     const ordered: string[] = [];
+    const loops = new Set<string>();
     // Strokes sit out of the flow, so every other member is measured first and each path drawn from that.
     const laidOut = (layout: string | undefined): Rest => {
       const boxes: Record<string, Box> = {};
@@ -553,9 +554,7 @@ export function mountStage<
         boxes[name] = rests;
         return rests;
       });
-      const looped = loop === undefined ? undefined : `mountStage: ${describeLoop(loop)}.`;
-      if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
-      lastLoop = looped;
+      if (loop !== undefined) loops.add(`mountStage: ${describeLoop(loop)}.`);
       for (const name of owners.keys())
         if (!places.has(name)) {
           places.set(name, strokePlace(name, undefined, layout));
@@ -574,21 +573,28 @@ export function mountStage<
     };
     let measured: Measured;
     if (names.length === 0) {
+      if (shown !== undefined) frame.removeAttribute("data-layout");
+      shown = undefined;
       measured = { rest: laidOut(undefined), layouts: NO_LAYOUTS };
       paint(UNLAID);
     } else {
       const layouts: Record<string, Rest> = {};
-      for (const name of names) {
-        frame.setAttribute("data-layout", name);
-        layouts[name] = laidOut(name);
-      }
       if (shown === undefined || !names.includes(shown)) shown = names[0];
-      if (shown !== undefined) {
-        frame.setAttribute("data-layout", shown);
-        paint(shown);
+      try {
+        for (const name of names) {
+          frame.setAttribute("data-layout", name);
+          layouts[name] = laidOut(name);
+        }
+      } finally {
+        if (shown !== undefined) frame.setAttribute("data-layout", shown);
       }
+      if (shown !== undefined) paint(shown);
       measured = { rest: NO_REST, layouts: Object.freeze(layouts) };
     }
+    // A loop is reported once, however many layouts it appears in, and again only when it changes.
+    const looped = loops.size === 0 ? undefined : [...loops].join(" ");
+    if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
+    lastLoop = looped;
     const text = styleWith(ordered);
     if (style.textContent !== text) style.textContent = text;
     return measured;

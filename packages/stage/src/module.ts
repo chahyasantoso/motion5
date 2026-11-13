@@ -1,6 +1,6 @@
 import { isMotionEvent, mergeEvents, type Events, type Time } from "@gerak/moves";
 import { castNames, isCubics, type Cast, type Member } from "./cast";
-import type { Box, Layouts, Rest } from "./rest";
+import { NO_REST, type Box, type Layouts, type Rest } from "./rest";
 import { frame, story, type Frame, type Story } from "./story";
 
 /** How the cast looks on each renderer; a member a skin leaves out gets the renderer's default. */
@@ -166,11 +166,21 @@ function readLayouts(value: Record<string, unknown>): ReadLayouts | string {
           );
         }
       : undefined;
-  if (chosen !== undefined) chosen([]);
+  if (chosen !== undefined)
+    try {
+      chosen([]);
+    } catch (error) {
+      const why = error instanceof Error ? error.message : String(error);
+      return `\`layout\` must answer before any event, the layout a piece opens in; with none it threw: ${why}`;
+    }
+  // Without `rests`, every layout rests nowhere for a tool, as a module without layouts does without `rest`.
+  const resting: Layouts = isLayouts(rests)
+    ? rests
+    : Object.freeze(Object.fromEntries(declared.map((name) => [name, NO_REST])));
   return {
     layouts: declared,
     ...(chosen === undefined ? {} : { layout: chosen }),
-    ...(isLayouts(rests) ? { rests } : {}),
+    rests: resting,
   };
 }
 

@@ -60,16 +60,16 @@ cannot exercise this, so part four has a measure of its own: a small site built 
 - **Invariant:** at progress 0 the member's drawn box equals `from`, at 1 it equals `to`, for each `size`; with
   `own` equal to `to`, progress 1 is the rest pose. `carried` is continuous across every event that changes `at`.
 - **Owner:** `packages/stage/src/carry.ts`.
-- **Test:** boxes of different centre and size, each `size`, checked at 0, 0.5 and 1; a zero `from` box is a
-  `RangeError` naming it, since a member absent from a layout has nowhere to come from; two changes 100 ms apart
+- **Test:** boxes of different centre and size, each `size`, checked at 0, 0.5 and 1; nothing is carried
+  from or to a box with no size, as a tool with no renderer measures; two changes 100 ms apart
   in a 400 ms carry draw no jump at the second; seeking backwards answers what playing forwards did.
 
 ### F3. Tools read layouts
 
 - **Invariant:** `motion:sample`, `motion:review` and `motion:frames` run a module with layouts on its per-layout
-  `rest`; a `carry` from or to a zero box throws, and the review reports it as the scene error it is.
+  `rest`; a module with `layouts` and no `rests` rests nowhere in each layout, as one without `rest` does.
 - **Owner:** `packages/tools/src/scene/`.
-- **Test:** a module whose `layout` names an undeclared layout is refused by name; a scene whose `carry` meets a zero box is reported.
+- **Test:** a module whose `layout` names an undeclared layout is refused by name; a module without `rests` samples on empty layouts.
 
 ### F4. Smaller costs the showreel named
 
