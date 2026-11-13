@@ -1,6 +1,6 @@
 # Composition plan, part one: what the measure asked for, and events on a clock
 
-**Status:** Approved by the owner, 2026-11-12.
+**Status:** Built, 2026-11-13; approved by the owner on 2026-11-12.
 **Base:** `main` at `3e484893`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-174-a-cast-of-proxies-and-a-story.md`,
 `plan/stage-plan.md` section 5a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -110,6 +110,26 @@ Transitions between scenes and layout moves are part two, a plan of their own.
 One pull request, after wave 3.
 
 Both wave 2 workers regenerate the reference for their own commits; the conductor regenerates once on combining.
+
+## 4a. Results
+
+| Rebuild | Worker | Tokens | Files | Moves written, reused | Strokes faked by a move | Mean frame difference |
+| --- | --- | --- | --- | --- | --- | --- |
+| `showreel-c` | Opus, medium | 190 k | 1 | 3, 19 | 2 (`dash`, `open`) | 0.4 to 7.0 |
+| `showreel-d` | Opus, medium | 242 k | 1 | 2, 22 | 0 | 0.1 to 5.1 |
+
+`showreel-d` passes: its trails, floor and underline are path members drawn by `streak` and `spread`, the dust is
+one member per landing on its own beat, nothing is hidden by `fade`, and every one of the seven frames is closer to
+the original than `showreel-c`'s. It cost more tokens: the worker tuned against the original's frames, wrote a
+pendulum on `trail` by reading its source, and paid for four gaps, the next plan's work. A path is fixed when the cast
+is built, so a stroke that follows the layout is stretched by hand from `restOf`; the stage sizes a stroke member but
+does not place it; a text member no skin names falls back to 48 px; `applyValue` writes `transformOrigin` every
+frame, so a skin cannot keep its own.
+
+The cold review (Sonnet, 121 k) gave ten findings; six are fixed (a restarted or looping clock forgets old hovers,
+play past the end resumes, `readStageModule` refuses `enters`, an empty path and a reversed stretch, a long path no
+longer overflows). Kept as decided: a module with `beats` must be a whole stage module for the tools too, and a scene
+never sees a cue before its time.
 
 ## 5. Risks
 
