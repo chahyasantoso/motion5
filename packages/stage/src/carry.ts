@@ -18,8 +18,8 @@ function mix(from: Box, to: Box, progress: number): Box {
   return {
     x: lerp(from.x, to.x, progress),
     y: lerp(from.y, to.y, progress),
-    width: lerp(from.width, to.width, progress),
-    height: lerp(from.height, to.height, progress),
+    width: Math.max(0, lerp(from.width, to.width, progress)),
+    height: Math.max(0, lerp(from.height, to.height, progress)),
   };
 }
 
@@ -53,7 +53,7 @@ export function carry(
     default:
       return unreachable(size);
   }
-  const drawn = mix(from, to, clamp01(progress));
+  const drawn = mix(from, to, progress);
   const moved: { x?: number; y?: number; scaleX?: number; scaleY?: number } = {};
   if (drawn.x !== own.x) moved.x = drawn.x - own.x;
   if (drawn.y !== own.y) moved.y = drawn.y - own.y;

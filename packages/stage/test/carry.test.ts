@@ -68,9 +68,12 @@ describe("carry", () => {
     for (const size of sizes) expect(carry(own, from, own, 1, size)).toEqual({});
   });
 
-  it("clamps progress", () => {
-    expect(carry(own, from, to, 2)).toEqual(carry(own, from, to, 1));
-    expect(carry(own, from, to, -1)).toEqual(carry(own, from, to, 0));
+  it("carries past `to` when an ease overshoots, never to a negative size", () => {
+    const past = carry(own, from, to, 1.1, "keep");
+    const at = carry(own, from, to, 1, "keep");
+    expect(Math.abs((past.x ?? 0) - (at.x ?? 0))).toBeGreaterThan(0);
+    const shrunk = carry(own, own, { ...own, width: 1, height: 1 }, 5);
+    expect(shrunk.scaleX ?? 1).toBeGreaterThanOrEqual(0);
   });
 
   it("names the box that is absent", () => {
