@@ -436,13 +436,15 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: readonly Cubic2d[]; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
 - **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
+- **`pathOf`** `(path: ActorPath, rest: Readonly<Record<string, Box>>): readonly Cubic2d[]`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
 - **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
+- **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
 - **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
 - **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
