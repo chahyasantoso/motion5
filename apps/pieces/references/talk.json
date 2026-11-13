@@ -1,0 +1,2402 @@
+[
+  {
+    "name": "mouthOpen",
+    "at": 0,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 0,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 33,
+    "value": 0.413
+  },
+  {
+    "name": "blink",
+    "at": 33,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 67,
+    "value": 0.72
+  },
+  {
+    "name": "blink",
+    "at": 67,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 100,
+    "value": 0.822
+  },
+  {
+    "name": "blink",
+    "at": 100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 133,
+    "value": 0.701
+  },
+  {
+    "name": "blink",
+    "at": 133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 167,
+    "value": 0.379
+  },
+  {
+    "name": "blink",
+    "at": 167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 200,
+    "value": 0.03
+  },
+  {
+    "name": "blink",
+    "at": 200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 233,
+    "value": 0.351
+  },
+  {
+    "name": "blink",
+    "at": 233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 267,
+    "value": 0.617
+  },
+  {
+    "name": "blink",
+    "at": 267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 300,
+    "value": 0.766
+  },
+  {
+    "name": "blink",
+    "at": 300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 333,
+    "value": 0.781
+  },
+  {
+    "name": "blink",
+    "at": 333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 367,
+    "value": 0.653
+  },
+  {
+    "name": "blink",
+    "at": 367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 400,
+    "value": 0.412
+  },
+  {
+    "name": "blink",
+    "at": 400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 433,
+    "value": 0.1
+  },
+  {
+    "name": "blink",
+    "at": 433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 467,
+    "value": 0.346
+  },
+  {
+    "name": "blink",
+    "at": 467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 500,
+    "value": 0.632
+  },
+  {
+    "name": "blink",
+    "at": 500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 533,
+    "value": 0.567
+  },
+  {
+    "name": "blink",
+    "at": 533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 567,
+    "value": 0.172
+  },
+  {
+    "name": "blink",
+    "at": 567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 600,
+    "value": 0.211
+  },
+  {
+    "name": "blink",
+    "at": 600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 633,
+    "value": 0.458
+  },
+  {
+    "name": "blink",
+    "at": 633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 667,
+    "value": 0.53
+  },
+  {
+    "name": "blink",
+    "at": 667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 700,
+    "value": 0.395
+  },
+  {
+    "name": "blink",
+    "at": 700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 733,
+    "value": 0.11
+  },
+  {
+    "name": "blink",
+    "at": 733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 767,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 800,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 833,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 867,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 900,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 933,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 967,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1000,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1033,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1067,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1100,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1133,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1167,
+    "value": 0.164
+  },
+  {
+    "name": "blink",
+    "at": 1167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1200,
+    "value": 0.356
+  },
+  {
+    "name": "blink",
+    "at": 1200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1233,
+    "value": 0.476
+  },
+  {
+    "name": "blink",
+    "at": 1233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1267,
+    "value": 0.5
+  },
+  {
+    "name": "blink",
+    "at": 1267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1300,
+    "value": 0.422
+  },
+  {
+    "name": "blink",
+    "at": 1300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1333,
+    "value": 0.259
+  },
+  {
+    "name": "blink",
+    "at": 1333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1367,
+    "value": 0.037
+  },
+  {
+    "name": "blink",
+    "at": 1367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1400,
+    "value": 0.435
+  },
+  {
+    "name": "blink",
+    "at": 1400,
+    "value": 0.5
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1433,
+    "value": 0.772
+  },
+  {
+    "name": "blink",
+    "at": 1433,
+    "value": 1
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1467,
+    "value": 0.772
+  },
+  {
+    "name": "blink",
+    "at": 1467,
+    "value": 0.5
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1500,
+    "value": 0.434
+  },
+  {
+    "name": "blink",
+    "at": 1500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1533,
+    "value": 0.082
+  },
+  {
+    "name": "blink",
+    "at": 1533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1567,
+    "value": 0.51
+  },
+  {
+    "name": "blink",
+    "at": 1567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1600,
+    "value": 0.632
+  },
+  {
+    "name": "blink",
+    "at": 1600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1633,
+    "value": 0.393
+  },
+  {
+    "name": "blink",
+    "at": 1633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1667,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1700,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1733,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1767,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1800,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1833,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1867,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1900,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1933,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 1967,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 1967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2000,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 2000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2033,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 2033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2067,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 2067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2100,
+    "value": 0.204
+  },
+  {
+    "name": "blink",
+    "at": 2100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2133,
+    "value": 0.709
+  },
+  {
+    "name": "blink",
+    "at": 2133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2167,
+    "value": 0.86
+  },
+  {
+    "name": "blink",
+    "at": 2167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2200,
+    "value": 0.575
+  },
+  {
+    "name": "blink",
+    "at": 2200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2233,
+    "value": 0.005
+  },
+  {
+    "name": "blink",
+    "at": 2233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2267,
+    "value": 0.467
+  },
+  {
+    "name": "blink",
+    "at": 2267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2300,
+    "value": 0.757
+  },
+  {
+    "name": "blink",
+    "at": 2300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2333,
+    "value": 0.778
+  },
+  {
+    "name": "blink",
+    "at": 2333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2367,
+    "value": 0.511
+  },
+  {
+    "name": "blink",
+    "at": 2367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2400,
+    "value": 0.066
+  },
+  {
+    "name": "blink",
+    "at": 2400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2433,
+    "value": 0.187
+  },
+  {
+    "name": "blink",
+    "at": 2433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2467,
+    "value": 0.376
+  },
+  {
+    "name": "blink",
+    "at": 2467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2500,
+    "value": 0.491
+  },
+  {
+    "name": "blink",
+    "at": 2500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2533,
+    "value": 0.518
+  },
+  {
+    "name": "blink",
+    "at": 2533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2567,
+    "value": 0.45
+  },
+  {
+    "name": "blink",
+    "at": 2567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2600,
+    "value": 0.301
+  },
+  {
+    "name": "blink",
+    "at": 2600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2633,
+    "value": 0.098
+  },
+  {
+    "name": "blink",
+    "at": 2633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2667,
+    "value": 0.244
+  },
+  {
+    "name": "blink",
+    "at": 2667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2700,
+    "value": 0.599
+  },
+  {
+    "name": "blink",
+    "at": 2700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2733,
+    "value": 0.795
+  },
+  {
+    "name": "blink",
+    "at": 2733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2767,
+    "value": 0.777
+  },
+  {
+    "name": "blink",
+    "at": 2767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2800,
+    "value": 0.55
+  },
+  {
+    "name": "blink",
+    "at": 2800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2833,
+    "value": 0.178
+  },
+  {
+    "name": "blink",
+    "at": 2833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2867,
+    "value": 0.324
+  },
+  {
+    "name": "blink",
+    "at": 2867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2900,
+    "value": 0.736
+  },
+  {
+    "name": "blink",
+    "at": 2900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2933,
+    "value": 0.868
+  },
+  {
+    "name": "blink",
+    "at": 2933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 2967,
+    "value": 0.659
+  },
+  {
+    "name": "blink",
+    "at": 2967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3000,
+    "value": 0.2
+  },
+  {
+    "name": "blink",
+    "at": 3000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3033,
+    "value": 0.222
+  },
+  {
+    "name": "blink",
+    "at": 3033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3067,
+    "value": 0.501
+  },
+  {
+    "name": "blink",
+    "at": 3067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3100,
+    "value": 0.585
+  },
+  {
+    "name": "blink",
+    "at": 3100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3133,
+    "value": 0.454
+  },
+  {
+    "name": "blink",
+    "at": 3133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3167,
+    "value": 0.145
+  },
+  {
+    "name": "blink",
+    "at": 3167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3200,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3233,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3267,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3300,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3333,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3367,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3400,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3433,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3467,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3500,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3533,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 3533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3567,
+    "value": 0.023
+  },
+  {
+    "name": "blink",
+    "at": 3567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3600,
+    "value": 0.269
+  },
+  {
+    "name": "blink",
+    "at": 3600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3633,
+    "value": 0.464
+  },
+  {
+    "name": "blink",
+    "at": 3633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3667,
+    "value": 0.573
+  },
+  {
+    "name": "blink",
+    "at": 3667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3700,
+    "value": 0.569
+  },
+  {
+    "name": "blink",
+    "at": 3700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3733,
+    "value": 0.457
+  },
+  {
+    "name": "blink",
+    "at": 3733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3767,
+    "value": 0.252
+  },
+  {
+    "name": "blink",
+    "at": 3767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3800,
+    "value": 0.005
+  },
+  {
+    "name": "blink",
+    "at": 3800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3833,
+    "value": 0.401
+  },
+  {
+    "name": "blink",
+    "at": 3833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3867,
+    "value": 0.637
+  },
+  {
+    "name": "blink",
+    "at": 3867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3900,
+    "value": 0.582
+  },
+  {
+    "name": "blink",
+    "at": 3900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3933,
+    "value": 0.271
+  },
+  {
+    "name": "blink",
+    "at": 3933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 3967,
+    "value": 0.118
+  },
+  {
+    "name": "blink",
+    "at": 3967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4000,
+    "value": 0.38
+  },
+  {
+    "name": "blink",
+    "at": 4000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4033,
+    "value": 0.534
+  },
+  {
+    "name": "blink",
+    "at": 4033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4067,
+    "value": 0.532
+  },
+  {
+    "name": "blink",
+    "at": 4067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4100,
+    "value": 0.375
+  },
+  {
+    "name": "blink",
+    "at": 4100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4133,
+    "value": 0.111
+  },
+  {
+    "name": "blink",
+    "at": 4133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4167,
+    "value": 0.345
+  },
+  {
+    "name": "blink",
+    "at": 4167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4200,
+    "value": 0.639
+  },
+  {
+    "name": "blink",
+    "at": 4200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4233,
+    "value": 0.491
+  },
+  {
+    "name": "blink",
+    "at": 4233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4267,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4300,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4333,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4367,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4400,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4433,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4467,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4500,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4533,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4567,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4600,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4633,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4667,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4700,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4733,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4767,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4800,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4833,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4867,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 4867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4900,
+    "value": 0.194
+  },
+  {
+    "name": "blink",
+    "at": 4900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4933,
+    "value": 0.474
+  },
+  {
+    "name": "blink",
+    "at": 4933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 4967,
+    "value": 0.546
+  },
+  {
+    "name": "blink",
+    "at": 4967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5000,
+    "value": 0.375
+  },
+  {
+    "name": "blink",
+    "at": 5000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5033,
+    "value": 0.04
+  },
+  {
+    "name": "blink",
+    "at": 5033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5067,
+    "value": 0.493
+  },
+  {
+    "name": "blink",
+    "at": 5067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5100,
+    "value": 0.775
+  },
+  {
+    "name": "blink",
+    "at": 5100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5133,
+    "value": 0.653
+  },
+  {
+    "name": "blink",
+    "at": 5133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5167,
+    "value": 0.175
+  },
+  {
+    "name": "blink",
+    "at": 5167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5200,
+    "value": 0.376
+  },
+  {
+    "name": "blink",
+    "at": 5200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5233,
+    "value": 0.696
+  },
+  {
+    "name": "blink",
+    "at": 5233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5267,
+    "value": 0.583
+  },
+  {
+    "name": "blink",
+    "at": 5267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5300,
+    "value": 0.112
+  },
+  {
+    "name": "blink",
+    "at": 5300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5333,
+    "value": 0.189
+  },
+  {
+    "name": "blink",
+    "at": 5333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5367,
+    "value": 0.396
+  },
+  {
+    "name": "blink",
+    "at": 5367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5400,
+    "value": 0.522
+  },
+  {
+    "name": "blink",
+    "at": 5400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5433,
+    "value": 0.552
+  },
+  {
+    "name": "blink",
+    "at": 5433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5467,
+    "value": 0.476
+  },
+  {
+    "name": "blink",
+    "at": 5467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5500,
+    "value": 0.313
+  },
+  {
+    "name": "blink",
+    "at": 5500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5533,
+    "value": 0.092
+  },
+  {
+    "name": "blink",
+    "at": 5533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5567,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5600,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5633,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5667,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5700,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5733,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5733,
+    "value": 0.5
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5767,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5767,
+    "value": 1
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5800,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5800,
+    "value": 0.5
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5833,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5867,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5900,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5933,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 5967,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 5967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6000,
+    "value": 0.244
+  },
+  {
+    "name": "blink",
+    "at": 6000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6033,
+    "value": 0.493
+  },
+  {
+    "name": "blink",
+    "at": 6033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6067,
+    "value": 0.503
+  },
+  {
+    "name": "blink",
+    "at": 6067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6100,
+    "value": 0.269
+  },
+  {
+    "name": "blink",
+    "at": 6100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6133,
+    "value": 0.14
+  },
+  {
+    "name": "blink",
+    "at": 6133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6167,
+    "value": 0.633
+  },
+  {
+    "name": "blink",
+    "at": 6167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6200,
+    "value": 0.824
+  },
+  {
+    "name": "blink",
+    "at": 6200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6233,
+    "value": 0.646
+  },
+  {
+    "name": "blink",
+    "at": 6233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6267,
+    "value": 0.161
+  },
+  {
+    "name": "blink",
+    "at": 6267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6300,
+    "value": 0.301
+  },
+  {
+    "name": "blink",
+    "at": 6300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6333,
+    "value": 0.569
+  },
+  {
+    "name": "blink",
+    "at": 6333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6367,
+    "value": 0.531
+  },
+  {
+    "name": "blink",
+    "at": 6367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6400,
+    "value": 0.21
+  },
+  {
+    "name": "blink",
+    "at": 6400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6433,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6467,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6500,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6533,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6567,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6600,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6633,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6667,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6700,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6733,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 6733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6767,
+    "value": 0.176
+  },
+  {
+    "name": "blink",
+    "at": 6767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6800,
+    "value": 0.505
+  },
+  {
+    "name": "blink",
+    "at": 6800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6833,
+    "value": 0.672
+  },
+  {
+    "name": "blink",
+    "at": 6833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6867,
+    "value": 0.617
+  },
+  {
+    "name": "blink",
+    "at": 6867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6900,
+    "value": 0.363
+  },
+  {
+    "name": "blink",
+    "at": 6900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6933,
+    "value": 0.01
+  },
+  {
+    "name": "blink",
+    "at": 6933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 6967,
+    "value": 0.432
+  },
+  {
+    "name": "blink",
+    "at": 6967,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7000,
+    "value": 0.538
+  },
+  {
+    "name": "blink",
+    "at": 7000,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7033,
+    "value": 0.269
+  },
+  {
+    "name": "blink",
+    "at": 7033,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7067,
+    "value": 0.157
+  },
+  {
+    "name": "blink",
+    "at": 7067,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7100,
+    "value": 0.485
+  },
+  {
+    "name": "blink",
+    "at": 7100,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7133,
+    "value": 0.718
+  },
+  {
+    "name": "blink",
+    "at": 7133,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7167,
+    "value": 0.813
+  },
+  {
+    "name": "blink",
+    "at": 7167,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7200,
+    "value": 0.743
+  },
+  {
+    "name": "blink",
+    "at": 7200,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7233,
+    "value": 0.53
+  },
+  {
+    "name": "blink",
+    "at": 7233,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7267,
+    "value": 0.202
+  },
+  {
+    "name": "blink",
+    "at": 7267,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7300,
+    "value": 0.145
+  },
+  {
+    "name": "blink",
+    "at": 7300,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7333,
+    "value": 0.447
+  },
+  {
+    "name": "blink",
+    "at": 7333,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7367,
+    "value": 0.661
+  },
+  {
+    "name": "blink",
+    "at": 7367,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7400,
+    "value": 0.731
+  },
+  {
+    "name": "blink",
+    "at": 7400,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7433,
+    "value": 0.649
+  },
+  {
+    "name": "blink",
+    "at": 7433,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7467,
+    "value": 0.425
+  },
+  {
+    "name": "blink",
+    "at": 7467,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7500,
+    "value": 0.118
+  },
+  {
+    "name": "blink",
+    "at": 7500,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7533,
+    "value": 0.196
+  },
+  {
+    "name": "blink",
+    "at": 7533,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7567,
+    "value": 0.474
+  },
+  {
+    "name": "blink",
+    "at": 7567,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7600,
+    "value": 0.662
+  },
+  {
+    "name": "blink",
+    "at": 7600,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7633,
+    "value": 0.737
+  },
+  {
+    "name": "blink",
+    "at": 7633,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7667,
+    "value": 0.682
+  },
+  {
+    "name": "blink",
+    "at": 7667,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7700,
+    "value": 0.511
+  },
+  {
+    "name": "blink",
+    "at": 7700,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7733,
+    "value": 0.253
+  },
+  {
+    "name": "blink",
+    "at": 7733,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7767,
+    "value": 0.075
+  },
+  {
+    "name": "blink",
+    "at": 7767,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7800,
+    "value": 0.433
+  },
+  {
+    "name": "blink",
+    "at": 7800,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7833,
+    "value": 0.645
+  },
+  {
+    "name": "blink",
+    "at": 7833,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7867,
+    "value": 0.638
+  },
+  {
+    "name": "blink",
+    "at": 7867,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7900,
+    "value": 0.413
+  },
+  {
+    "name": "blink",
+    "at": 7900,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7933,
+    "value": 0.05
+  },
+  {
+    "name": "blink",
+    "at": 7933,
+    "value": 0
+  },
+  {
+    "name": "mouthOpen",
+    "at": 7967,
+    "value": 0
+  },
+  {
+    "name": "blink",
+    "at": 7967,
+    "value": 0
+  }
+]
