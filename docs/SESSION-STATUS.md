@@ -31,13 +31,13 @@ byte ceiling.
 ## Next in line
 
 - **Rigging vector artwork (roadmap stage 6):** an SVG imported as a stage module that an agent rigs with named parts
-  and pivots, tested on a public-domain penguin; `plan/artwork-plan.md`, proposed. 3D follows, then a
-  motion-atlas brainstorm.
+  and pivots, tested on a public-domain penguin; `plan/artwork-plan.md`, proposed. Driving that rig from live
+  inputs follows, then 3D, then a motion-atlas brainstorm.
 
 ## Open, and not scheduled
 
 - Retargeting remains a proposed design only.
-- 3D (roadmap stage 7, after the artwork): typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading
+- 3D (roadmap stage 8, after the artwork and live inputs): typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading
   the archive), 3D physics (Rapier is 2D today) and an R3F scaffold: not started.
 - The instrument (roadmap, deferred) waits for the live kit and a person who asks to live-code.
 

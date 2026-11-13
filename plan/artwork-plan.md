@@ -12,11 +12,12 @@ rig it and animate it.**
 
 The flow: a person drops an SVG into `apps/pieces/references/` and says what it should do. The agent imports it with
 one command, which turns every shape into a path member of a new stage module. The agent then rigs it: it names
-the parts by what moves, regroups them so the body carries the head, and sets a pivot at each joint. Then it animates
-the parts with moves, or with bones from `@gerak/rig`. The import is mechanical; deciding the parts and the joints is
-the agent's.
+the parts by what moves, sets a pivot at each joint, and builds a chain for what carries what (body, neck, head).
+Then it animates the chain's joints and the free parts with moves. The import is mechanical; deciding the parts, the
+joints and the chain is the agent's.
 
-Rebuilding artwork from a raster picture is out of this plan. A Three.js model belongs with 3D, roadmap stage 7.
+Rebuilding artwork from a raster picture is out of this plan. A Three.js model belongs with 3D, roadmap stage 8. Driving the rig from live inputs, such as an avatar's mouth
+and blinks from tracking, is the next small plan, roadmap stage 7; this plan's rig is its base.
 
 Today three things stop it. A part cannot turn about its joint: for an SVG member the renderer sets the transform
 origin to its centre. A path member draws one outline, so a shape with several outlines gets joined by stray lines.
@@ -29,10 +30,12 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
   artwork format beside the stage module.
 - **`motion:import-svg <file> --name <piece>`** writes `apps/pieces/src/<piece>.ts`. Every drawable shape (`path`,
   `rect`, `circle`, `ellipse`, `polygon`, `polyline`, `line`) becomes a path member, its transforms flattened into
-  frame px and its arcs, lines and quadratics turned into cubics. The SVG's groups become `group` members, named from
-  the element's `id` or label, otherwise `part1`, `part2` in document order. Fill, stroke and opacity go into the
-  skin by `[data-path="<name>"]`; gradients go into the skin's `defs`. The frame is the SVG's `viewBox`. What it cannot
-  carry (text, images, filters, masks, clip paths) it lists by element, never drops in silence.
+  frame px (a stroke's width scaled with them) and its arcs, lines and quadratics turned into cubics. Every part is a
+  top-level member, named from the element's `id` or label, otherwise `part1`, `part2` in document order, and each
+  name is written so one find-and-replace of `"part7"` renames it everywhere. Fill, stroke and opacity go into the
+  skin by `[data-path="<name>"]`, with the SVG's paint order as each part's `z-index`; gradients go into the skin's
+  `defs`. The frame is the SVG's `viewBox`, whatever its `width` and `height` say. What it cannot carry (text, images,
+  filters, masks, clip paths) it lists by element, never drops in silence.
 - **A path member draws every outline it is given.** Where a cubic does not start where the last one ended, a new
   outline starts, so a shape with a hole or several pieces draws as the SVG did.
 - **A skin may carry SVG `defs`:** `skins.dom.defs`, markup of paint servers (gradients, patterns) the stage mounts
@@ -41,11 +44,16 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
   The stage sets the member's transform origin there from its measured box, on mount and on every re-measure. A pose's
   `anchor`, the named side a squash keeps still, wins on the frames that give one. Without either, an HTML member
   keeps its skin's origin and an SVG member its centre, as today.
-- **A part hangs from its parent by grouping.** A body's group holds the head, so moving the body carries the head,
-  and each member's value is relative to its group, as today. A chain from `@gerak/rig` drives the same members: its
-  solved angles become each part's `rotation`.
-- **`motion:compare <page> --reference <svg>`** renders the piece at `--at` ms (default 0) and the reference SVG at the
-  frame's size, writes the two side by side and a difference image, and prints the whole frame's mean difference out
+- **Parts stay flat; a chain carries them.** Grouping changes paint order, since a transformed group paints as one
+  layer, so a rigged piece keeps every part at the top level in the SVG's paint order. What carries what is a chain
+  from `@gerak/rig`: `chainFromRest(chain, rest, options)` answers, for each bone, the pose that moves its part from
+  where it was drawn, `{ x, y, rotation }` of its start joint against the rest chain's, so a part whose `pivot` is that
+  joint follows the bone. `chainPoses` stays for elements laid out at the chain's base. A `group` is only for parts
+  that move as one rigid piece and sit next to each other in paint order, such as an eye's white and pupil.
+- **The review holds a skin to its cast:** a `[data-cast]` or `[data-path]` selector naming no member is a finding, so
+  a rename that missed the skin shows.
+- **`motion:compare <page> --reference <svg>`** renders the piece at `--at` ms (default 0) and the reference SVG from its
+  `viewBox` at the frame's size, writes the two side by side and a difference image, and prints the whole frame's mean difference out
   of 255 and, per cast member, the mean difference inside its box, worst first. It checks that importing and rigging
   kept the drawing; it judges nothing else.
 - **References live in `apps/pieces/references/`,** each with its source and licence in that folder's README. Only
@@ -62,13 +70,22 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
 - **Test:** a two-outline path's data has two `M`; a gradient id in `defs` resolves inside the stage's root; an SVG
   path member and an HTML member, each with an off-centre pivot, rotated 90: the pivot stays where it rests.
 
+### H1b. A chain from rest
+
+- **Invariant:** with the chain at its rest angles, `chainFromRest` answers zero poses; turning one bone moves its
+  part's pivot exactly onto the solved joint, and every bone after it follows.
+- **Owner:** `packages/rig/src/chain.ts`, beside `chainPoses`.
+- **Test:** a three-bone chain drawn at an angle: rest gives `{}` per bone; a 30-degree shoulder turn puts the elbow
+  and wrist joints where `fk` says.
+
 ### H2. `motion:import-svg`
 
 - **Invariant:** as decided above; the imported module passes `readStageModule` and the scene review; every element it
   cannot carry is listed.
 - **Owner:** `packages/tools/src/scene/import-svg.ts` and its bin.
-- **Test:** fixtures with a transformed group, an arc, a rect, a gradient fill and a `text` element: the shapes come
-  through in frame px within half a pixel, the gradient in `defs`, the text in the list.
+- **Test:** fixtures with a scaled and rotated group, an arc, a rect, a gradient fill, a stroke under a scale and a
+  `text` element: the shapes come through in frame px within half a pixel, the stroke width scaled, the paint order as
+  `z-index`, the gradient in `defs`, the text in the list. The review finds a skin rule naming no member.
 
 ### H3. `motion:compare`
 
@@ -79,23 +96,27 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
 
 ### H4. Guide
 
-- A section of `docs/guide/agent-motion.md`, "Rigging artwork": import, then name the parts by what moves, regroup by
-  what carries what, set each joint's `pivot`, check with `motion:compare`, then animate. The reference gains `pivot`,
-  `defs` and both commands by their doc comments.
+- A section of `docs/guide/agent-motion.md`, "Rigging artwork": import, name the parts by what moves, set each
+  joint's `pivot`, build the chain of what carries what and drive it with `chainFromRest`, check with
+  `motion:compare`, then animate. Keep parts flat; group only a rigid piece. The reference gains `pivot`, `defs`,
+  `chainFromRest` and both commands by their doc comments.
 
 ### H5. Proof
 
 - **Measure, alone, fresh:** an Opus worker at medium effort rigs `apps/pieces/references/penguin.svg`, a public-domain
   mascot of 21 unnamed paths with radial gradients, as the stage module `penguin`, and makes it waddle and wave a
-  flipper. It passes when the parts are named for what moves, each jointed part has a pivot, `motion:compare` at rest
-  stays near 0, and the wave turns about the shoulder. Tokens, tool calls and the compare scores are recorded.
-- **Cold review:** a Sonnet agent reviews the diff, imports a second SVG of its choosing and runs both commands.
+  flipper. It passes when the parts are named for what moves, each jointed part has a pivot, the wave turns about
+  the shoulder, and `motion:compare` at rest gives a whole-frame mean under 2 out of 255 and no part over 8. Tokens,
+  tool calls and the compare scores are recorded.
+- **Cold review:** a Sonnet agent reviews the diff, writes a second SVG by hand with groups, transforms and a gradient,
+  imports it and runs both commands. It downloads nothing.
 
 ## 4. Team and order
 
 | Wave | Who | Slices | Why |
 | --- | --- | --- | --- |
 | 1 | Conductor | H0, H1 | the decisions, and the stage, render and cast changes the rest build on |
+| 2 | Sonnet, medium | H1b | the rig only |
 | 2 | Sonnet, medium | H2 | tools, the import |
 | 2 | Sonnet, medium | H3 | tools, the comparison; another file |
 | 3 | Conductor | H4 | what the measure reads |
@@ -106,6 +127,8 @@ One pull request, after wave 3, with the roadmap's reorder and the motion-atlas 
 
 ## 5. Risks
 
+- **Paint order against carrying:** flat parts keep the SVG's order, and a chain carries them. A part that must pass
+  behind another while it moves cannot yet: the order is fixed by the skin, and a paint-order value waits for a brief.
 - **Two owners of an origin:** `pivot` and a pose's `anchor` both set it. The rule is fixed above, a pose's `anchor`
   wins on its frames, and the test holds it.
 - **SVG is wide:** CSS classes in a `<style>` element, `use` references and nested `svg` elements are common in

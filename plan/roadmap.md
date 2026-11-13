@@ -95,19 +95,24 @@ Three things follow from it:
    piece becomes one file.
 4. **Composition, the rest.** Done (`plan/composition-four-plan.md`): named layouts the stage measures, and a member
    carried between boxes, for a route change, a list reordering and a card opening. Joining two stage modules with a
-   cut or a dissolve waits for stage 9.
+   cut or a dissolve waits for stage 10.
 5. **Ready to publish.** Done (`plan/publish-plan.md`): the runtime packages build and install outside the repository,
    and the app boundary is in the check. Nothing is on npm; publishing waits for a project that needs it, and `1.0`
    until the `stage` package and one app have held the surface still.
 6. **Rigging vector artwork.** Next (`plan/artwork-plan.md`). An SVG drawn by someone else is imported as a stage
    module, and the agent rigs it: parts named by what moves, grouped by what carries what, a pivot at each joint, so
    each part can take a move or a bone. A command compares the rigged piece with the SVG. Rebuilding from a raster
-   picture is out; a Three.js model belongs with stage 7.
-7. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
-   example. A Three.js rebuild from stage 6 is its first artwork.
-8. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
+   picture is out; a Three.js model belongs with stage 8.
+7. **Driving a rig from live inputs.** A small plan after stage 6, no plan yet. Tracking stays outside; the base takes
+   its numbers: each sample a named value in the event log, such as `mouthOpen` 0.6 at 1234 ms, read smoothed by a
+   helper, so a scene stays pure and a recorded session replays, scrubs and renders. Proof: the rigged penguin blinks
+   and talks from a recorded input file. Mouth shapes that switch or morph between outlines, the blend shapes of
+   section 6, wait for their own plan.
+8. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
+   example.
+9. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
-9. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
+10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 
