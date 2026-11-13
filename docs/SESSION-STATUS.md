@@ -31,7 +31,8 @@ byte ceiling.
 ## Next in line
 
 - **Artwork from a reference (roadmap stage 6):** an agent rebuilds an image as SVG or Three.js in named parts, and
-  a command compares the rebuild with the reference; no plan yet. 3D follows, then a motion-atlas brainstorm.
+  a command compares the rebuild with the reference; `plan/artwork-plan.md`, proposed. 3D follows, then a
+  motion-atlas brainstorm.
 
 ## Open, and not scheduled
 

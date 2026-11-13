@@ -99,7 +99,7 @@ Three things follow from it:
 5. **Ready to publish.** Done (`plan/publish-plan.md`): the runtime packages build and install outside the repository,
    and the app boundary is in the check. Nothing is on npm; publishing waits for a project that needs it, and `1.0`
    until the `stage` package and one app have held the surface still.
-6. **Artwork from a reference.** Next, no plan yet. An agent looks at an image and rebuilds it as SVG or as a Three.js
+6. **Artwork from a reference.** Next (`plan/artwork-plan.md`). An agent looks at an image and rebuilds it as SVG or as a Three.js
    scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders
    the rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
 7. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
