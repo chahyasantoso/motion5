@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `main` at `8b157254`, after the merge of pull request 589.
+- **Read against:** `feat/artwork` after the full check gate.
 
 ## Now
 
@@ -30,9 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Rigging vector artwork (roadmap stage 6):** an SVG imported as a stage module that an agent rigs with named parts
-  and pivots, tested on a public-domain penguin; `plan/artwork-plan.md`, proposed. Driving that rig from live
-  inputs follows, then 3D, then a motion-atlas brainstorm.
+- **Rigging vector artwork (roadmap stage 6):** built on `feat/artwork` (`plan/artwork-plan.md`) and waiting for the
+  owner's merge. Driving that rig from live inputs follows, then 3D, then a motion-atlas brainstorm.
 
 ## Open, and not scheduled
 

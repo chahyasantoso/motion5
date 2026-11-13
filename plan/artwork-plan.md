@@ -1,6 +1,6 @@
 # Artwork plan: rigging vector artwork
 
-**Status:** Approved by the owner, 2026-11-13.
+**Status:** Built, 2026-11-13; approved by the owner the same day.
 **Base:** `main` at `8b157254`, the merge of pull request 589.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` section 5 (stage 6), `docs/ADR-174` to
 `docs/ADR-179`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -115,6 +115,33 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
   tool calls and the compare scores are recorded.
 - **Cold review:** a Sonnet agent reviews the diff, writes a second SVG by hand with groups, transforms and a gradient,
   imports it and runs both commands. It downloads nothing.
+
+## 3a. Results
+
+| Measure | Worker | Tokens | Tool calls | Parts named, with pivots | Wave about the shoulder | Compare at rest |
+| --- | --- | --- | --- | --- | --- | --- |
+| `penguin` | Opus, medium | 180 k | 60 | 21 of 21 | yes: the flipper's x, y stay fixed while its rotation swings 150 to 172 and back twice | mean 0.97, worst part 10.55 |
+
+`penguin` passes: every part is named for what moves and has a pivot, the flippers ride `chainThrough` chains posed by
+`chainFromRest`, it waddles and waves twice, and at rest it compares exactly as the plain import does. It wrote two
+moves of its own, `waddle` and `hand-wave`, and no keyframes.
+
+What it found, now fixed: the import's frame was the drawing's edges, so a flipper turning outward was cut by the
+frame for a few frames; `motion:import-svg` and `motion:compare` now take `--margin`. A pose of zeros wrote an
+identity transform that redrew a part a little differently; a field at rest now writes nothing. The guide's paths
+ran from `apps/pieces` instead of the repository root, and `ChainPose`'s fields were unnamed. The piece itself was
+made before `--margin` and keeps those few clipped frames.
+
+The cold review (Sonnet, 121 k) gave ten findings. Fixed: `motion:compare` looked only one way, so a thin part
+missing from the piece scored 0; it now looks both ways, which moved the per-part bar from 8 to 15. An outline that
+returns to its start now closes, ends that meet but for rounding join, the import says when a translucent group's
+opacity goes on each part, and the skin check reads unquoted names, skips comments and finds a stroke rule on a
+member with no path. `layer` is last-wins, as the guide says. Left: a 1 px horizontal line lands half a pixel off; a
+dropped `use` of a symbol is listed but scores in no member; defs in a shadow root are checked in Chromium only; no
+test yet holds a pose's `anchor` over a `pivot`.
+
+While fixing them, `motion:promote`'s export check turned out to hold a backspace where a word boundary was meant,
+since part four; it now refuses a class or default export, and a test holds it.
 
 ## 4. Team and order
 
