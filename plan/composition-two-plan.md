@@ -1,6 +1,6 @@
 # Composition plan, part two: strokes that follow the layout, skins that keep their own, and a library that grows
 
-**Status:** Approved by the owner, 2026-11-13.
+**Status:** Built, 2026-11-13; approved by the owner the same day.
 **Base:** `main` at the merge of pull request 585.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-175-paths-presence-by-beats-and-events-on-a-clock.md`,
 `plan/composition-plan.md` section 4a, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -100,6 +100,25 @@ Transitions between scenes and layout moves are part three.
   text is sized by accident, and its frames are at least as close as `showreel-d`'s.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims, `motion:promote` in a scratch copy
   included.
+
+## 3a. Results
+
+| Rebuild | Worker | Tokens | Moves written, reused | Strokes from `rest`, stretched by hand | Mean frame difference |
+| --- | --- | --- | --- | --- | --- |
+| `showreel-d` | Opus, medium | 242 k | 2, 22 | 0 of 4, 2 | 0.1 to 5.1 |
+| `showreel-e` | Opus, medium | 252 k | 1 (with a recipe), 22 | 4 of 4, 0 | 0.1 to 4.9 |
+
+`showreel-e` passes: all four strokes are path functions of `rest`, none is stretched by hand and the skin states no
+stroke box, no text is sized by accident, and six of seven frames are as close to the original as `showreel-d`'s or
+closer (2704 is 1.01 against 0.98). Tokens held level. What cost it most, for part three: a draw-on and its retract
+cannot combine (`drawn` replaces), and a zero-length dash still paints a dot with round caps; presence per item and a
+`still` inherited from a group; the review flags a jump while a member is hidden by `on`; text cannot change over
+time; and `motion:frames` cannot compare two runs, so two measures each wrote their own PNG diff.
+
+The cold review (Sonnet, 110 k) gave seven findings, all fixed: `motion:promote` missed importers outside `src` and
+left re-exports and `import *` broken while deleting the file, and published helper exports; offsets ignored a
+parent's border; a path answering new points each call looped through the resize observer; a path reading another
+stroke was not reported. Known: `--candidates` counts importing files, so the four showreel rebuilds count as four.
 
 ## 4. Team and order
 
