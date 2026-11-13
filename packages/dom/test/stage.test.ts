@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Events, Pose2d, Time } from "@gerak/moves";
-import { actor, group, letters, story, type Rest, type StageModule } from "@gerak/stage";
+import { toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { actor, group, letters, many, story, type Rest, type StageModule } from "@gerak/stage";
 import {
   mountStage,
+  pathData,
   type FrameSource,
   type StageElement,
   type StageEvent,
@@ -23,10 +24,11 @@ class FakeStyle implements StageStyle {
 
 interface FakeDocument {
   createElement(tag: "div" | "style"): FakeElement;
+  createElementNS(namespace: string, name: "svg" | "path"): FakeElement;
   fonts?: StageFonts;
 }
 
-class FakeElement implements StageElement<FakeElement> {
+class FakeElement implements StageElement<FakeElement, FakeElement> {
   readonly style: FakeStyle & StageStyle = new FakeStyle();
   readonly attributes = new Map<string, string>();
   readonly children: FakeElement[] = [];
@@ -49,7 +51,12 @@ class FakeElement implements StageElement<FakeElement> {
   ) {
     this.ownerDocument = document ?? {
       createElement: (tag) => new FakeElement(tag, this.ownerDocument),
+      createElementNS: (_namespace, name) => new FakeElement(name, this.ownerDocument),
     };
+  }
+  /** A path's length, as a page `path` measures it; 100 for any fake path. */
+  getTotalLength(): number {
+    return this.tagName === "path" ? 100 : 0;
   }
   attachShadow(): FakeElement {
     const root = new FakeElement("#shadow", this.ownerDocument);
@@ -96,11 +103,11 @@ function frames(): FrameSource {
 }
 
 /** Any page element is a stage element. */
-export function acceptsPageElements(element: HTMLElement): StageElement<HTMLElement> {
+export function acceptsPageElements(element: HTMLElement): StageElement<HTMLElement, SVGElement> {
   return element;
 }
 
-const beats = story(1000, { intro: [0, 200], word: [300, 600] });
+const beats = story(1000, { intro: [0, 200], word: [300, 600], late: [800, 1000] });
 
 interface Seen {
   time?: Time;
@@ -108,11 +115,11 @@ interface Seen {
   rest?: Rest;
 }
 
-function stageModule(seen: Seen): StageModule<"intro" | "word", StageValues> {
+function stageModule(seen: Seen): StageModule<"intro" | "word" | "late", StageValues> {
   return {
     beats,
     cast: {
-      camera: group({ dot: actor(), word: letters("HI", { enters: "word", leaves: "word" }) }),
+      camera: group({ dot: actor(), word: letters("HI", { on: ["word", "late"] }) }),
       card: actor({ watch: true }),
     },
     skins: { dom: { css: `[data-cast="dot"] { width: 10px }` } },
@@ -126,11 +133,14 @@ function stageModule(seen: Seen): StageModule<"intro" | "word", StageValues> {
   };
 }
 
-function mounted(seen: Seen = {}, fonts?: StageFonts) {
-  let ms = 0;
+function mounted(seen: Seen = {}, fonts?: StageFonts, module?: StageModule<"all", StageValues>) {
   const container = new FakeElement("div");
   if (fonts !== undefined) container.ownerDocument.fonts = fonts;
-  const stage = mountStage(container, stageModule(seen), { frames: frames(), clock: () => ms });
+  const options = { frames: frames() };
+  const stage =
+    module === undefined
+      ? mountStage(container, stageModule(seen), options)
+      : mountStage(container, module, options);
   const root = container.children[0]?.shadowRoot;
   if (root === undefined) throw new Error("No shadow root.");
   return {
@@ -138,8 +148,7 @@ function mounted(seen: Seen = {}, fonts?: StageFonts) {
     root,
     stage,
     at(next: number) {
-      ms = next;
-      stage.player.refresh();
+      stage.driver.seek(next / 1000);
     },
   };
 }
@@ -173,7 +182,7 @@ describe("mountStage", () => {
     expect(root.find("card").attributes.get("data-skin")).toBe("default");
   });
 
-  it("hides a member outside its presence and shows it inside", () => {
+  it("shows a member on two beats, hides it in the gap, and holds a stretch ending the story", () => {
     const { root, at } = mounted();
     expect(root.find("word").style.visibility).toBe("hidden");
     at(400);
@@ -182,6 +191,54 @@ describe("mountStage", () => {
     at(700);
     expect(root.find("word").style.visibility).toBe("hidden");
     expect(root.find("card").style.visibility).not.toBe("hidden");
+    at(900);
+    expect(root.find("word").style.visibility).toBe("");
+    at(1500);
+    expect(root.find("word").style.visibility).toBe("");
+  });
+
+  it("draws a path member as an SVG stroke: transform on the member, dash on the path", () => {
+    const line = toCubics([
+      { id: "a", x: 10, y: 20, inX: 0, inY: 0, outX: 30, outY: 0 },
+      { id: "b", x: 110, y: 60, inX: -30, inY: 0, outX: 0, outY: 0 },
+    ]);
+    const whole = story(1000, { all: [0, 1000] });
+    const module: StageModule<"all", StageValues> = {
+      beats: whole,
+      cast: {
+        trail: actor({ path: line }),
+        marks: many([line, line], (each) => actor({ path: each })),
+        card: actor({ watch: true }),
+      },
+      skins: { dom: { css: `[data-path="trail"] { stroke: red }` } },
+      scene: (time) => ({
+        trail: { x: 5, opacity: 0.5, ...trace({}, whole.all.of(time)) },
+        marks: [{ drawn: 0.25 }, { y: 3 }],
+      }),
+    };
+    const { root, at } = mounted({}, undefined, module);
+    const trail = root.find("trail");
+    const [svg] = trail.children;
+    const path = svg?.children[0];
+    expect(svg?.tagName).toBe("svg");
+    expect(svg?.attributes.get("viewBox")).toBe("10 20 100 40");
+    expect(path?.attributes.get("data-path")).toBe("trail");
+    expect(path?.attributes.get("d")).toBe(pathData(line));
+    expect(trail.attributes.has("data-skin")).toBe(false);
+    const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
+    expect(style).toContain(`:where([data-cast="trail"]) { width: 100px; height: 40px; }`);
+    expect(style).toContain(`:where([data-cast="marks.1"])`);
+    at(500);
+    expect(trail.style.transform).toBe("translate3d(5px, 0px, 0px)");
+    expect(trail.style.opacity).toBe("0.5");
+    expect(trail.style.strokeDasharray ?? "").toBe("");
+    expect(path?.style.strokeDasharray).toBe("50 100");
+    expect(path?.style.strokeDashoffset).toBe("0");
+    expect(path?.style.transform).toBe("");
+    const marks = [0, 1].map((index) => root.find(`marks.${index}`).children[0]?.children[0]);
+    expect(marks[0]?.style.strokeDasharray).toBe("25 100");
+    expect(marks[1]?.style.strokeDasharray ?? "").toBe("");
+    expect(root.find("marks.1").style.transform).toBe("translate3d(0px, 3px, 0px)");
   });
 
   it("hands the scene a rest box for every name the cast makes", () => {
@@ -200,6 +257,7 @@ describe("mountStage", () => {
       dot: [10, 20, 40, 30],
     };
     const document: FakeDocument = {
+      createElementNS: (_namespace, name) => new FakeElement(name, document),
       createElement(tag) {
         const element = new FakeElement(tag, document);
         const setAttribute = element.setAttribute.bind(element);
@@ -215,7 +273,7 @@ describe("mountStage", () => {
     };
     const host = new FakeElement("div", document);
     container.append(host);
-    mountStage(host, stageModule(seen), { frames: frames(), clock: () => 0 });
+    mountStage(host, stageModule(seen), { frames: frames() });
     expect(seen.rest?.camera).toEqual({ x: 200, y: 100, width: 200, height: 100 });
     expect(seen.rest?.dot).toEqual({ x: 130, y: 85, width: 40, height: 30 });
   });
@@ -232,7 +290,6 @@ describe("mountStage", () => {
     const container = new FakeElement("div");
     const stage = mountStage(container, stageModule({}), {
       frames: frames(),
-      clock: () => 0,
       onDriver: (driver) => drivers.push(driver),
     });
     const root = container.children[0]?.shadowRoot;

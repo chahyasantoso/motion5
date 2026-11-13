@@ -280,7 +280,7 @@ driver.seekMs(1200);
 - **`Driver`** `type Driver`: What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves.
 - **`ManualDriver`** `type ManualDriver`: A driver moved by hand, timed when it knows its length in ms.
 - **`Player`** `type Player`: A scene's values by target, rerun whole on each step of its driver.
-- **`PlayOptions`** `type PlayOptions`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's.
+- **`PlayOptions`** `type PlayOptions`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. The scene sees only events at or before the time's elapsed ms.
 - **`Scene`** `type Scene`: A scene: every target's value from the time and the events so far.
 <!-- generated:reference:end -->
 
@@ -312,8 +312,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`scrollDriver`** `(options: { readonly target?: ScrollTarget; readonly start: number; readonly end: number; readonly length?: number; }): Driver`: A driver from 0 to 1 as the target scrolls from `start` to `end` px; untimed unless given a `length` in ms.
 - **`ClockDriver`** `type ClockDriver`: A driver on the page's frames, timed in ms, with the delay, repeat and yoyo a `time` trigger has.
 - **`ClockOptions`** `type ClockOptions`: Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`.
-- **`FrameSource`** `type FrameSource`: Where frames come from: `requestAnimationFrame` on a page, a fake one in a test.
 - **`ScrollTarget`** `type ScrollTarget`: What a scroll driver reads: a window or a scrolling element.
+- **`FrameSource`** `type FrameSource`: Where frames come from: `requestAnimationFrame` on a page, a fake one in a test.
 - **`eventDriver`** `(options?: EventDriverOptions): EventDriver`: A live clock that logs events: `.watch`, `.watchView` and `.emit`. `introMs` keeps frames coming for an intro, `settleMs` after the last event.
 - **`WATCHED`** `const WATCHED: Readonly<Record<string, string>>`: The page events a watched element turns into motion events, and the name each gets.
 - **`EventDriver`** `type EventDriver`: A live driver: its clock runs from creation, and it logs the events of the elements it watches.
@@ -321,11 +321,12 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
 - **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>, options?: StageOpt… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>`: A stage module whose scene answers any object, checked on every frame to be stage values.
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
-- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test.
+- **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
 - **`StageFonts`** `type StageFonts`: The document's font loading, which tells the stage when text may have changed size.
-- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames and the ms clock its own drivers run on.
+- **`StageOptions`** `type StageOptions`: Settings of `mountStage`: the frames its clock runs on.
 - **`StageStyle`** `type StageStyle`: The style properties the stage writes beside a value's; a page element's style has them all.
 - **`StageValues`** `type StageValues`: A scene's answer per member name: one value, or one per item of a `many`.
 <!-- generated:reference:end -->
@@ -431,14 +432,14 @@ skin. `story` names the beats and owns the piece's length; `restOf` reads where 
 
 ```ts
 export const beats = story(4000, { arrive: [0, 1600], hold: [1600, 4000] });
-export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor() };
+export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot: actor() };
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: string; }): Actor`: One thing on stage, saying `text` when it has one.
+- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: readonly Cubic2d[]; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
-- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order.
+- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
 - **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
@@ -448,7 +449,7 @@ export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor()
 - **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
 - **`Many`** `type Many`: A list of things; the scene answers one value per item. To move the whole list, put it in a `group`.
 - **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
-- **`Presence`** `type Presence`: When a member is on stage, by the names of the story's beats; a member without them takes its group's.
+- **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
@@ -458,6 +459,7 @@ export const cast = { word: letters("NIGHT", { enters: "arrive" }), dot: actor()
 - **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
 - **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
 - **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
+- **`readStageModule`** `(value: unknown): StageModule<string, object> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
 <!-- generated:reference:end -->
@@ -564,7 +566,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   For a stage module (it exports `beats` and `cast`) a finding that names a time also names the beat there, and it
   adds: a cast member the scene never moves that is not `still`, a target the scene answers that is not cast, and a
-  member whose value changes before its `enters` beat starts or after its `leaves` beat ends.
+  member whose value changes outside its `on` stretches: before the first, in a gap, or after the last.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's

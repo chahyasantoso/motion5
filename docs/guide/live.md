@@ -42,7 +42,8 @@ The scene file (`src/<name>-scene.ts`) is the only source of truth. When you sav
 - **Loop a beat:** drag across the loop track to bracket a start and end time; press `L` to toggle the loop range.
 - **Slow down:** click `0.25x`, `0.5x` or `1x` to inspect fast motion or squash-and-stretch frames.
 - **Marks:** each cue in an exported `cues` list, and each exported number whose name ends in `_MS`, such as
-  `LAND_MS`, appears as a mark on the bar; click one to jump to it.
+  `LAND_MS`, appears as a mark on the bar; click one to jump to it. A piece that watches an element scrubs
+  like any other: its recorded events appear as marks, a hover is kept across a seek and forgotten on replay.
 
 ## Drag a number in the code
 

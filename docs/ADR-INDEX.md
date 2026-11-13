@@ -179,3 +179,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-172 — A move declares its role, and a gate holds it to it — Accepted, 2026-11-11
 - ADR-173 — One value, and one table of its fields — Accepted, 2026-11-11
 - ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12
+- ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12

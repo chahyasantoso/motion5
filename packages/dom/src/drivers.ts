@@ -1,19 +1,8 @@
-import { atProgress, createLoopCycle, type LoopCycle, type Time } from "@gerak/moves";
+import { atProgress, createLoopCycle, type Events, type LoopCycle, type Time } from "@gerak/moves";
 import type { Driver } from "@gerak/player";
+import { eventRecorder, type EventSource } from "./events";
+import { pageFrames, type FrameSource } from "./frames";
 import { unreachable } from "./unreachable";
-
-/** Where frames come from: `requestAnimationFrame` on a page, a fake one in a test. */
-export interface FrameSource {
-  requestFrame(listener: (time: number) => void): number;
-  cancelFrame(handle: number): void;
-}
-
-export function pageFrames(): FrameSource {
-  return {
-    requestFrame: (listener) => globalThis.requestAnimationFrame(listener),
-    cancelFrame: (handle) => globalThis.cancelAnimationFrame(handle),
-  };
-}
 
 /** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
 export interface ClockOptions {
@@ -57,6 +46,10 @@ export interface ClockDriver extends Driver {
   setRange(fromMs?: number, toMs?: number): void;
   /** Whether frames are advancing it now; subscribers hear each change. */
   playing(): boolean;
+  /** Logs the pointer events of `element` for `target` at the clock's ms, and keeps the clock running past its
+   * end while any is watched; a seek keeps the log, `replay` forgets it. */
+  watch(target: string, element: EventSource): () => void;
+  events(): Events;
 }
 
 /** A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks
@@ -79,15 +72,21 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let rate = 1;
   let range: { readonly from: number; readonly to: number } | undefined;
   let running = false;
+  // While it watches a member the clock runs on past the end, so a later hover still plays out.
+  let watching = 0;
+  let overtime = 0;
+  const elapsedNow = (): number => progress * options.duration + overtime;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
   };
+  const recorder = eventRecorder(elapsedNow, () => notify());
   // A listener may pause or play during `notify`, so the next frame is asked for only after it.
   const request = (): void => {
     if (running && handle === undefined) handle = frames.requestFrame(frame);
   };
   const frame = (at: number): void => {
     handle = undefined;
+    const before = elapsedNow();
     const delta = (previous === undefined ? 0 : Math.max(0, at - previous)) * rate;
     previous = at;
     if (range !== undefined) {
@@ -100,10 +99,15 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       progress = options.duration > 0 ? elapsed / options.duration : 0;
       cycle = fresh(undefined);
       cycle.advance(elapsed);
+    } else if (cycle.state.kind === "finished" && watching > 0) {
+      overtime += delta;
     } else {
       progress = cycle.advance(delta).progress;
-      if (cycle.state.kind === "finished") running = false;
+      if (cycle.state.kind === "finished" && watching === 0) running = false;
     }
+    // A loop that wrapped starts a fresh pass, so what was recorded in the last one is forgotten;
+    // a yoyo runs backwards on purpose and keeps its log.
+    if (elapsedNow() < before && options.yoyo !== true) recorder.clear();
     notify();
     request();
   };
@@ -114,7 +118,15 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     running = false;
   };
   const start = (): void => {
+    // Past the end while watching, playing resumes the overtime; otherwise a finished clock starts again.
+    if (cycle.state.kind === "finished" && watching > 0 && range === undefined) {
+      running = true;
+      request();
+      return;
+    }
     if (progress >= 1 || cycle.state.kind === "finished") {
+      overtime = 0;
+      recorder.clear();
       cycle = fresh(undefined);
       progress =
         range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
@@ -126,7 +138,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   const driver: ClockDriver = {
     now: () => ({
       progress,
-      clock: { kind: "timed", elapsed: progress * options.duration, length: options.duration },
+      clock: { kind: "timed", elapsed: elapsedNow(), length: options.duration },
     }),
     options,
     subscribe(listener) {
@@ -146,8 +158,21 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       notify();
     },
     playing: () => running,
+    watch(target, element) {
+      const unwatch = recorder.watch(target, element);
+      watching += 1;
+      let watched = true;
+      return () => {
+        if (!watched) return;
+        watched = false;
+        watching -= 1;
+        unwatch();
+      };
+    },
+    events: () => recorder.log,
     seek(next) {
       stop();
+      overtime = 0;
       progress = Math.max(0, Math.min(1, next));
       cycle = fresh(undefined);
       cycle.advance(progress * options.duration);
@@ -155,6 +180,8 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     replay() {
       stop();
+      overtime = 0;
+      recorder.clear();
       cycle = fresh(options.delay);
       progress = still ? 1 : 0;
       if (!still) start();
@@ -162,6 +189,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     },
     dispose() {
       stop();
+      recorder.dispose();
       listeners.clear();
     },
     setRate(next) {
@@ -173,6 +201,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
         const to = Math.max(from, Math.min(options.duration, toMs));
         if (to > from) {
           range = { from, to };
+          overtime = 0;
           const elapsed = progress * options.duration;
           if (elapsed < from || elapsed > to) {
             progress = options.duration > 0 ? from / options.duration : 0;

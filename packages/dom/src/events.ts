@@ -1,6 +1,6 @@
 import { liveAt, type Events, type MotionEvent, type Time } from "@gerak/moves";
 import type { Driver } from "@gerak/player";
-import { pageFrames, type FrameSource } from "./drivers";
+import { pageFrames, type FrameSource } from "./frames";
 
 /** What a pointer event says about where it happened. */
 export interface PointerLike {
@@ -25,6 +25,74 @@ export const WATCHED: Readonly<Record<string, string>> = Object.freeze({
   focusin: "focus",
   focusout: "blur",
 });
+
+/** A log of pointer events, in order of `at`, and the watching that fills it. */
+export interface EventRecorder {
+  readonly log: Events;
+  /** Logs an event by hand at the ms `now` gives, and tells `onRecord` that ms. */
+  record(name: string, target?: string, point?: { readonly x: number; readonly y: number }): void;
+  /** Logs `WATCHED` events on `element` for `target`; the returned function stops it. */
+  watch(target: string, element: EventSource): () => void;
+  /** Forgets every event logged. */
+  clear(): void;
+  /** Stops every watch. */
+  dispose(): void;
+}
+
+/** A log of events stamped with `now()`, filled by hand or by watching elements. */
+export function eventRecorder(
+  now: () => number,
+  onRecord: (at: number) => void = () => undefined,
+): EventRecorder {
+  const log: MotionEvent[] = [];
+  const unwatch = new Set<() => void>();
+  const record = (
+    name: string,
+    target?: string,
+    point?: { readonly x: number; readonly y: number },
+  ): void => {
+    const at = now();
+    let index = log.length;
+    while (index > 0 && (log[index - 1]?.at ?? 0) > at) index -= 1;
+    log.splice(index, 0, {
+      name,
+      at,
+      ...(target === undefined ? {} : { target }),
+      ...(point ?? {}),
+    });
+    onRecord(at);
+  };
+  return {
+    log,
+    record,
+    watch(target, element) {
+      const removers = Object.entries(WATCHED).map(([type, name]) => {
+        const listener = (event: PointerLike) => {
+          const box = element.getBoundingClientRect?.();
+          const point =
+            box === undefined || event.clientX === undefined || event.clientY === undefined
+              ? undefined
+              : { x: event.clientX - box.left, y: event.clientY - box.top };
+          record(name, target, point);
+        };
+        element.addEventListener(type, listener);
+        return () => element.removeEventListener(type, listener);
+      });
+      const stop = () => {
+        for (const remove of removers) remove();
+        unwatch.delete(stop);
+      };
+      unwatch.add(stop);
+      return stop;
+    },
+    clear() {
+      log.length = 0;
+    },
+    dispose() {
+      for (const stop of [...unwatch]) stop();
+    },
+  };
+}
 
 /** Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`. */
 export interface EventDriverOptions {
@@ -55,7 +123,6 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const clock = options.clock ?? (() => globalThis.performance.now());
   const settleMs = options.settleMs ?? 2000;
   const start = clock();
-  const log: MotionEvent[] = [];
   const listeners = new Set<() => void>();
   const unwatch = new Set<() => void>();
   let until = options.introMs ?? 0;
@@ -72,20 +139,15 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
   const run = (): void => {
     if (handle === undefined && elapsed() < until) handle = frames.requestFrame(frame);
   };
-  const emit = (
-    name: string,
-    target?: string,
-    point?: { readonly x: number; readonly y: number },
-  ): void => {
-    const at = elapsed();
-    log.push({ name, at, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
+  const recorder = eventRecorder(elapsed, (at) => {
     until = Math.max(until, at + settleMs);
     notify();
     run();
-  };
+  });
+  const emit = recorder.record;
   const driver: EventDriver = {
     now: (): Time => liveAt(elapsed()),
-    events: (): Events => log,
+    events: (): Events => recorder.log,
     options,
     subscribe(listener) {
       listeners.add(listener);
@@ -93,26 +155,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
         listeners.delete(listener);
       };
     },
-    watch(target, element) {
-      const removers = Object.entries(WATCHED).map(([type, name]) => {
-        const listener = (event: PointerLike) => {
-          const box = element.getBoundingClientRect?.();
-          const point =
-            box === undefined || event.clientX === undefined || event.clientY === undefined
-              ? undefined
-              : { x: event.clientX - box.left, y: event.clientY - box.top };
-          emit(name, target, point);
-        };
-        element.addEventListener(type, listener);
-        return () => element.removeEventListener(type, listener);
-      });
-      const stop = () => {
-        for (const remove of removers) remove();
-        unwatch.delete(stop);
-      };
-      unwatch.add(stop);
-      return stop;
-    },
+    watch: recorder.watch,
     watchView(target, element, threshold = 0.5) {
       let inside = false;
       const observer = new IntersectionObserver(
@@ -137,6 +180,7 @@ export function eventDriver(options: EventDriverOptions = {}): EventDriver {
     dispose() {
       if (handle !== undefined) frames.cancelFrame(handle);
       handle = undefined;
+      recorder.dispose();
       for (const stop of [...unwatch]) stop();
       listeners.clear();
     },

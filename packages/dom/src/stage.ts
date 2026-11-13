@@ -1,4 +1,12 @@
-import { elapsedOf, type Events, type Pose2d, type Span, type Time } from "@gerak/moves";
+import {
+  POSE_2D_FIELDS,
+  elapsedOf,
+  type Cubic2d,
+  type Events,
+  type Pose2d,
+  type Span,
+  type Time,
+} from "@gerak/moves";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   castNames,
@@ -10,9 +18,10 @@ import {
   type Rest,
   type StageModule,
 } from "@gerak/stage";
-import { clockDriver, type FrameSource } from "./drivers";
-import { eventDriver, type PointerLike } from "./events";
-import { applyValue, type RenderStyle } from "./render";
+import { clockDriver, type ClockDriver } from "./drivers";
+import type { PointerLike } from "./events";
+import type { FrameSource } from "./frames";
+import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
 import { unreachable } from "./unreachable";
 
 /** The style properties the stage writes beside a value's; a page element's style has them all. */
@@ -43,8 +52,19 @@ export interface StageFonts {
   removeEventListener(type: "loadingdone", listener: () => void): void;
 }
 
-/** An element the stage builds with and writes: a page element, or a stand-in in a test. */
-export interface StageElement<E> {
+const SVG = "http://www.w3.org/2000/svg";
+
+/** An SVG element the stage draws a stroke with: a page `svg` or `path`, or a stand-in in a test. */
+export interface StageStroke<S> {
+  readonly style: RenderStyle;
+  setAttribute(name: string, value: string): void;
+  append(...nodes: S[]): void;
+  getTotalLength?(): number;
+}
+
+/** An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is
+ * the SVG element it draws a stroke member's path with. */
+export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> {
   readonly style: StageStyle;
   textContent: string | null;
   tabIndex: number;
@@ -54,10 +74,14 @@ export interface StageElement<E> {
   readonly offsetHeight: number;
   readonly clientWidth: number;
   readonly clientHeight: number;
-  readonly ownerDocument: { createElement(tag: "div" | "style"): E; readonly fonts?: StageFonts };
+  readonly ownerDocument: {
+    createElement(tag: "div" | "style"): E;
+    createElementNS(namespace: typeof SVG, name: "svg" | "path"): S;
+    readonly fonts?: StageFonts;
+  };
   attachShadow(init: { readonly mode: "open" }): { append(...nodes: E[]): void };
   setAttribute(name: string, value: string): void;
-  append(...nodes: E[]): void;
+  append(...nodes: (E | S)[]): void;
   remove(): void;
   addEventListener(type: string, listener: (event: StageEvent) => void): void;
   removeEventListener(type: string, listener: (event: StageEvent) => void): void;
@@ -66,18 +90,54 @@ export interface StageElement<E> {
 /** A scene's answer per member name: one value, or one per item of a `many`. */
 export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
 
-/** Settings of `mountStage`: the frames and the ms clock its own drivers run on. */
+function isPose(value: unknown): value is Pose2d {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const custom: unknown = Reflect.get(value, "custom");
+  return (
+    POSE_2D_FIELDS.every((field) => {
+      const given: unknown = Reflect.get(value, field);
+      return given === undefined || typeof given === (field === "anchor" ? "string" : "number");
+    }) &&
+    (custom === undefined ||
+      (typeof custom === "object" &&
+        custom !== null &&
+        Object.values(custom).every((entry) => typeof entry === "number")))
+  );
+}
+
+function isStageValues(values: object): values is StageValues {
+  return Object.values(values).every(
+    (value) =>
+      value === undefined || isPose(value) || (Array.isArray(value) && value.every(isPose)),
+  );
+}
+
+/** A stage module whose scene answers any object, checked on every frame to be stage values. */
+export function stageModuleOf<B extends string>(
+  module: StageModule<B>,
+): StageModule<B, StageValues> {
+  return {
+    ...module,
+    scene: (time, events, rest) => {
+      const values = module.scene(time, events, rest);
+      if (!isStageValues(values))
+        throw new TypeError("The scene answered a value that is not a pose or a list of poses.");
+      return values;
+    },
+  };
+}
+
+/** Settings of `mountStage`: the frames its clock runs on. */
 export interface StageOptions {
   readonly frames?: FrameSource;
-  readonly clock?: () => number;
   /** Told of the driver each time a run starts, the first and every replay. */
-  readonly onDriver?: (driver: Driver) => void;
+  readonly onDriver?: (driver: ClockDriver) => void;
 }
 
 /** A playing stage: its player and driver, which a replay swaps for fresh ones. */
 export interface MountedStage<B extends string = string> {
   readonly player: Player<StageValues>;
-  readonly driver: Driver;
+  readonly driver: ClockDriver;
   replay(): void;
   /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
   replace(next: StageModule<B, StageValues>): void;
@@ -92,6 +152,8 @@ const DEFAULT_SKIN = `
 }
 :where([data-cast]) { position: relative; box-sizing: border-box; }
 :where([data-text]) { white-space: pre; }
+:where([data-stroke]) > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+:where([data-path]) { fill: none; stroke: currentColor; stroke-width: 2; }
 :where([data-kind="group"], [data-kind="many"]) {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
 }
@@ -123,6 +185,35 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
     prefixes.some((start) => name.startsWith(start));
 }
 
+/** The box the control points of `cubics` span, never thinner than 1 so a straight line still shows. */
+function boxOf(cubics: readonly Cubic2d[]): Box {
+  const xs = cubics.flatMap((c) => [c.x0, c.x1, c.x2, c.x3]);
+  const ys = cubics.flatMap((c) => [c.y0, c.y1, c.y2, c.y3]);
+  const span = (values: readonly number[]): readonly [number, number] => {
+    const low = values.reduce((least, value) => Math.min(least, value), Infinity);
+    const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
+    const size = values.length === 0 ? 0 : high - low;
+    const from = values.length === 0 ? 0 : low;
+    return size > 0 ? [from, size] : [from - 0.5, 1];
+  };
+  const [x, width] = span(xs);
+  const [y, height] = span(ys);
+  return { x, y, width, height };
+}
+
+/** Each stroke member sized to its path's own box, at no specificity so a skin overrides it. */
+function strokeSizes(infos: Iterable<CastName>): string {
+  return [...infos]
+    .flatMap(({ name, path }) => {
+      if (path === undefined) return [];
+      const { width, height } = boxOf(path);
+      return [
+        `:where([data-cast=${JSON.stringify(name)}]) { width: ${width}px; height: ${height}px; }`,
+      ];
+    })
+    .join("\n");
+}
+
 interface Placed<E> {
   readonly info: CastName;
   readonly element: E;
@@ -150,13 +241,21 @@ export function mountStage<B extends string>(
   module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage<B>;
-export function mountStage<B extends string, E extends StageElement<E>>(
-  container: E,
+export function mountStage<
+  B extends string,
+  E extends StageElement<E, S>,
+  S extends StageStroke<S>,
+>(
+  container: E & StageElement<E, S>,
   module: StageModule<B, StageValues>,
   options?: StageOptions,
 ): MountedStage<B>;
-export function mountStage<B extends string, E extends StageElement<E>>(
-  container: E,
+export function mountStage<
+  B extends string,
+  E extends StageElement<E, S>,
+  S extends StageStroke<S>,
+>(
+  container: E & StageElement<E, S>,
   module: StageModule<B, StageValues>,
   options: StageOptions = {},
 ): MountedStage<B> {
@@ -178,7 +277,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
   });
   const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
-  style.textContent = `${DEFAULT_SKIN}\n${module.skins.dom?.css ?? ""}`;
+  style.textContent = `${DEFAULT_SKIN}\n${strokeSizes(infos.values())}\n${module.skins.dom?.css ?? ""}`;
   const frame = document.createElement("div");
   frame.setAttribute("data-stage", "frame");
   Object.assign(frame.style, {
@@ -194,12 +293,34 @@ export function mountStage<B extends string, E extends StageElement<E>>(
   root.append(style, frame);
 
   const placed = new Map<string, Placed<E>>();
+  const strokes = new Map<E, S>();
   const leaf = (element: E, info: CastName, list?: string): void => {
     if (info.text !== undefined) {
       element.textContent = info.text;
       element.setAttribute("data-text", "");
     }
-    if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
+    if (info.path !== undefined) {
+      const box = boxOf(info.path);
+      const svg = document.createElementNS(SVG, "svg");
+      svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+      const path = document.createElementNS(SVG, "path");
+      path.setAttribute("d", pathData(info.path));
+      path.setAttribute("data-path", info.name);
+      svg.append(path);
+      element.append(svg);
+      element.setAttribute("data-stroke", "");
+      strokes.set(element, path);
+    } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
+  };
+  const write = (element: E, value: Pose2d): void => {
+    const path = strokes.get(element);
+    if (path === undefined) {
+      applyValue(element, value);
+      return;
+    }
+    const { stroke, body } = splitStroke(value);
+    applyValue(element, body);
+    applyValue(path, stroke);
   };
   const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
@@ -276,18 +397,20 @@ export function mountStage<B extends string, E extends StageElement<E>>(
     return Object.freeze(rest);
   };
 
-  const spanOf = (beat: string | undefined): Span | undefined =>
-    beat !== undefined && isBeat(beats.order, beat) ? beats[beat] : undefined;
-  const present = (info: CastName, ms: number): boolean => {
-    const enters = spanOf(info.enters);
-    const leaves = spanOf(info.leaves);
-    return (enters === undefined || ms >= enters.from) && (leaves === undefined || ms <= leaves.to);
-  };
+  const spanOf = (beat: string): Span | undefined =>
+    isBeat(beats.order, beat) ? beats[beat] : undefined;
+  // A stretch that ends at the story's end holds through the last frame and past it.
+  const present = (on: NonNullable<CastName["on"]>, ms: number): boolean =>
+    on.some(([first, last]) => {
+      const from = spanOf(first)?.from ?? 0;
+      const to = spanOf(last)?.to ?? beats.durationMs;
+      return ms >= from && (ms <= to || to >= beats.durationMs);
+    });
   const showAt = (time: Time): void => {
     const ms = elapsedOf(time.clock) ?? time.progress * beats.durationMs;
     for (const { info, element: own } of placed.values()) {
-      if (info.enters === undefined && info.leaves === undefined) continue;
-      own.style.visibility = present(info, ms) ? "" : "hidden";
+      if (info.on === undefined) continue;
+      own.style.visibility = present(info.on, ms) ? "" : "hidden";
     }
   };
   const bind = (target: Placed<E>, value: Pose2d | readonly Pose2d[] | undefined): void => {
@@ -298,7 +421,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
       case "group":
         if (isList(value))
           throw new TypeError(`mountStage: "${target.info.name}" takes one value, not a list.`);
-        applyValue(target.element, value);
+        write(target.element, value);
         break;
       case "many":
         if (!isList(value))
@@ -307,7 +430,7 @@ export function mountStage<B extends string, E extends StageElement<E>>(
           );
         target.items.forEach((item, index) => {
           const each = value[index];
-          if (each !== undefined) applyValue(item, each);
+          if (each !== undefined) write(item, each);
         });
         break;
       case "item":
@@ -318,20 +441,12 @@ export function mountStage<B extends string, E extends StageElement<E>>(
   };
 
   const watched = [...placed.values()].filter(({ info }) => info.watch);
-  const drive = (): { readonly driver: Driver; stop(): void } => {
-    const timing = {
-      ...(options.frames === undefined ? {} : { frames: options.frames }),
-      ...(options.clock === undefined ? {} : { clock: options.clock }),
-    };
-    if (watched.length > 0) {
-      const driver = eventDriver({ ...timing, introMs: beats.durationMs });
-      for (const { info, element: own } of watched) driver.watch(info.name, own);
-      return { driver, stop: () => driver.dispose() };
-    }
+  const drive = (): { readonly driver: ClockDriver; stop(): void } => {
     const driver = clockDriver({
       duration: beats.durationMs,
       ...(options.frames === undefined ? {} : { frames: options.frames }),
     });
+    for (const { info, element: own } of watched) driver.watch(info.name, own);
     return { driver, stop: () => driver.dispose() };
   };
 

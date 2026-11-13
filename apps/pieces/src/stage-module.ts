@@ -1,24 +1,15 @@
-import type { StageValues } from "@gerak/dom";
-import type { StageModule } from "@gerak/stage";
+import { stageModuleOf, type StageValues } from "@gerak/dom";
+import { readStageModule, type StageModule } from "@gerak/stage";
 
-/** A loaded stage module, with every export it has beside the ones a stage reads. */
-export type LoadedStage = Readonly<Record<string, unknown>> & StageModule<string, StageValues>;
+/** A stage module as the pieces' pages play it. */
+export type LoadedStage = StageModule<string, StageValues>;
 
 const PIECE_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** Whether a module has what a stage plays: a story, a cast, skins and a scene. */
-export function isStageModule(value: unknown): value is LoadedStage {
-  return (
-    isRecord(value) &&
-    isRecord(value["beats"]) &&
-    isRecord(value["cast"]) &&
-    isRecord(value["skins"]) &&
-    typeof value["scene"] === "function"
-  );
+/** A stage module from what a file exports, or why it is not one. */
+export function stageOf(value: unknown): LoadedStage | string {
+  const read = readStageModule(value);
+  return "reason" in read ? read.reason : stageModuleOf(read);
 }
 
 /** Where a piece's stage module lives, or `undefined` for a name that is not a piece's. */
@@ -26,15 +17,20 @@ export function stageUrl(name: string): string | undefined {
   return PIECE_NAME.test(name) ? `/src/${name}.ts` : undefined;
 }
 
+/** A loaded piece: its stage module and every export its file has, for the marks it names. */
+export interface LoadedPiece {
+  readonly module: LoadedStage;
+  readonly exports: Readonly<Record<string, unknown>>;
+}
+
 /** The stage module `src/<name>.ts`, or why there is none; it never throws. */
-export async function loadStageModule(name: string): Promise<LoadedStage | string> {
+export async function loadStageModule(name: string): Promise<LoadedPiece | string> {
   const url = stageUrl(name);
   if (url === undefined) return `"${name}" is not a piece name: use lowercase words joined by "-".`;
   try {
-    const loaded: unknown = await import(/* @vite-ignore */ url);
-    return isStageModule(loaded)
-      ? loaded
-      : `${url} is not a stage module: it needs beats, cast, skins and scene.`;
+    const exports: Readonly<Record<string, unknown>> = await import(/* @vite-ignore */ url);
+    const module = stageOf(exports);
+    return typeof module === "string" ? `${url}: ${module}` : { module, exports };
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
     return `No stage piece named "${name}" (${url}): ${why}`;

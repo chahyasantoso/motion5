@@ -241,6 +241,7 @@ function stageFindings(
   cast: readonly CastName[],
   beats: readonly Beat[],
   samples: Samples,
+  durationMs: number,
 ): readonly string[] {
   const known = new Set(cast.map(({ name }) => name));
   const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))];
@@ -257,8 +258,7 @@ function stageFindings(
       );
     if (member.still && member.kind !== "group" && !unmoved)
       found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
-    const enters = member.enters === undefined ? undefined : beatNamed(member.enters);
-    const leaves = member.leaves === undefined ? undefined : beatNamed(member.leaves);
+    if (member.on === undefined) continue;
     const changes = prints.flatMap((print, index) => {
       const before = samples[index - 1];
       const now = samples[index];
@@ -266,17 +266,60 @@ function stageFindings(
         ? []
         : [{ from: before.at, at: now.at }];
     });
-    const early = enters === undefined ? undefined : changes.find(({ at }) => at < enters.from);
-    const late = leaves === undefined ? undefined : changes.find(({ from }) => from >= leaves.to);
-    if (early !== undefined && enters !== undefined)
-      found.push(
-        `${member.name} changes at ${early.at} ms${labelAt(beats, early.at)}, before its beat "${enters.name}" starts at ${enters.from} ms.`,
-      );
-    if (late !== undefined && leaves !== undefined)
-      found.push(
-        `${member.name} changes at ${late.at} ms${labelAt(beats, late.at)}, after its beat "${leaves.name}" ends at ${leaves.to} ms.`,
-      );
+    const stretches = member.on
+      .flatMap(([first, last]) => {
+        const start = beatNamed(first);
+        const end = beatNamed(last);
+        return start === undefined || end === undefined ? [] : [{ start, end }];
+      })
+      .sort((a, b) => a.start.from - b.start.from);
+    for (const outside of outsides(stretches, durationMs)) {
+      const change = changes.find(({ from, at }) => at < outside.until && from >= outside.after);
+      if (change !== undefined)
+        found.push(
+          `${member.name} changes at ${change.at} ms${labelAt(beats, change.at)}, ${outside.where}.`,
+        );
+    }
   }
+  return found;
+}
+
+interface Outside {
+  readonly after: number;
+  readonly until: number;
+  readonly where: string;
+}
+
+/** The times a member is hidden: before its first stretch, in each gap, after its last unless that
+ * ends at the story's end. */
+function outsides(
+  stretches: readonly { readonly start: Beat; readonly end: Beat }[],
+  durationMs: number,
+): readonly Outside[] {
+  const found: Outside[] = [];
+  let shownTo = -Infinity;
+  let lastEnd: Beat | undefined;
+  for (const { start, end } of stretches) {
+    if (start.from > shownTo)
+      found.push({
+        after: lastEnd === undefined ? -Infinity : lastEnd.to,
+        until: start.from,
+        where:
+          lastEnd === undefined
+            ? `before its beat "${start.name}" starts at ${start.from} ms`
+            : `between its beats "${lastEnd.name}", ending at ${lastEnd.to} ms, and "${start.name}", starting at ${start.from} ms`,
+      });
+    if (end.to > shownTo) {
+      shownTo = end.to;
+      lastEnd = end;
+    }
+  }
+  if (lastEnd !== undefined && lastEnd.to < durationMs)
+    found.push({
+      after: lastEnd.to,
+      until: Infinity,
+      where: `after its beat "${lastEnd.name}" ends at ${lastEnd.to} ms`,
+    });
   return found;
 }
 
@@ -308,7 +351,7 @@ export function reviewSceneModule(
     kind: "reviewed",
     findings: [
       ...findings.map((finding) => labelled(beats, finding)),
-      ...(cast === undefined ? [] : stageFindings(cast, beats, samples)),
+      ...(cast === undefined ? [] : stageFindings(cast, beats, samples, module.durationMs)),
     ],
   };
 }

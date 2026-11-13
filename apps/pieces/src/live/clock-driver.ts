@@ -21,6 +21,10 @@ export function isClockDriver(
     typeof driver.setRange === "function" &&
     "playing" in driver &&
     typeof driver.playing === "function" &&
+    "watch" in driver &&
+    typeof driver.watch === "function" &&
+    "events" in driver &&
+    typeof driver.events === "function" &&
     "dispose" in driver &&
     typeof driver.dispose === "function"
   );

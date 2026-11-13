@@ -1,10 +1,17 @@
-import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { ClockDriver } from "@gerak/dom";
 
 export interface TimelineMark {
   readonly name: string;
   readonly at: number;
-  readonly kind: "cue" | "moment" | "beat";
+  readonly kind: "cue" | "moment" | "beat" | "event";
   /** Where a beat ends, in ms. */
   readonly endMs?: number;
 }
@@ -112,6 +119,24 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
     () => false,
   );
   const elapsed = Math.round(progress * durationMs);
+  const recorded = useSyncExternalStore(
+    subscribe,
+    () => driver?.events().length ?? 0,
+    () => 0,
+  );
+  const shownMarks = useMemo(
+    () => [
+      ...marks,
+      ...(driver?.events() ?? []).map(
+        (event): TimelineMark => ({
+          name: event.target === undefined ? event.name : `${event.target} ${event.name}`,
+          at: Math.round(event.at),
+          kind: "event",
+        }),
+      ),
+    ],
+    [marks, driver, recorded],
+  );
   const [rate, setRate] = useState(1);
   const [savedRange, setSavedRange] = useState<
     { readonly from: number; readonly to: number } | undefined
@@ -329,9 +354,9 @@ export const Timeline: React.FC<TimelineProps> = ({ driver, durationMs, marks })
             pointerEvents: "none",
           }}
         />
-        {marks.map((mark) => (
+        {shownMarks.map((mark, index) => (
           <div
-            key={`${mark.kind}-${mark.name}-${mark.at}`}
+            key={`${mark.kind}-${mark.name}-${mark.at}-${index}`}
             data-live-mark={mark.name}
             title={
               mark.endMs === undefined

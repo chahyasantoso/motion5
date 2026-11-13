@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, type FC } from "react";
 import { mountStage, type MountedStage, type StageValues } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
 import type { Rest, StageModule } from "@gerak/stage";
-import { isClockDriver } from "./clock-driver";
 import { guard } from "./guard";
 
 /** What of a module decides its elements; a scene swaps in place only while this stays the same. */
@@ -53,7 +52,7 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ module, onError, onDrive
       kept?.mounted.dispose();
       shown.current = undefined;
       const mounted = mountStage(element, playing, { onDriver });
-      if (progress !== undefined && isClockDriver(mounted.driver)) mounted.driver.seek(progress);
+      if (progress !== undefined) mounted.driver.seek(progress);
       shown.current = { mounted, shape };
     } catch (error) {
       onError(error instanceof Error ? error.message : String(error));

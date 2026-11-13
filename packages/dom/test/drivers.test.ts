@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { clockDriver, scrollDriver, type FrameSource } from "@gerak/dom";
+import { play } from "@gerak/player";
+import {
+  clockDriver,
+  scrollDriver,
+  type EventSource,
+  type FrameSource,
+  type PointerLike,
+} from "@gerak/dom";
 
 function frames(): FrameSource & { run(at: number): void; readonly waiting: number } {
   let queued = new Map<number, (time: number) => void>();
@@ -249,5 +256,116 @@ describe("scrollDriver", () => {
       progress: 0.25,
       clock: { kind: "timed", elapsed: 500, length: 2000 },
     });
+  });
+});
+
+function hoverable(): EventSource & { fire(type: string): void; readonly listening: number } {
+  const listeners = new Map<string, Set<(event: PointerLike) => void>>();
+  return {
+    addEventListener(type, listener) {
+      listeners.set(type, (listeners.get(type) ?? new Set()).add(listener));
+    },
+    removeEventListener(type, listener) {
+      listeners.get(type)?.delete(listener);
+    },
+    fire(type) {
+      for (const listener of [...(listeners.get(type) ?? [])]) listener({});
+    },
+    get listening() {
+      return [...listeners.values()].reduce((total, set) => total + set.size, 0);
+    },
+  };
+}
+
+describe("clockDriver watch", () => {
+  const seen = (driver: ReturnType<typeof clockDriver>) =>
+    play((_time, events) => ({ names: events.map(({ name }) => name) }), driver).values.names;
+
+  it("keeps a hover across a seek, shows it only from its ms, and forgets it on replay", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 2000, frames: source, autoplay: false });
+    const card = hoverable();
+    driver.watch("card", card);
+    driver.seek(0.5);
+    card.fire("pointerenter");
+    expect(driver.events()).toEqual([{ name: "enter", at: 1000, target: "card" }]);
+    driver.seek(0.75);
+    expect(seen(driver)).toEqual(["enter"]);
+    driver.seek(0.25);
+    expect(seen(driver)).toEqual([]);
+    expect(driver.events()).toHaveLength(1);
+    driver.seek(0.75);
+    expect(seen(driver)).toEqual(["enter"]);
+    driver.replay();
+    driver.pause();
+    driver.seek(0.75);
+    expect(driver.events()).toEqual([]);
+    expect(seen(driver)).toEqual([]);
+  });
+
+  it("runs on past its end while it watches, so a hover there plays out", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    const card = hoverable();
+    driver.watch("card", card);
+    source.run(0);
+    source.run(1000);
+    source.run(1500);
+    card.fire("pointerenter");
+    source.run(1800);
+    const time = driver.now();
+    expect(time.progress).toBe(1);
+    expect(time.clock).toEqual({ kind: "timed", elapsed: 1800, length: 1000 });
+    expect(driver.events()).toEqual([{ name: "enter", at: 1500, target: "card" }]);
+    expect(driver.playing()).toBe(true);
+    driver.seek(0.5);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 1000 });
+  });
+
+  it("resumes past its end on play, and forgets a hover when it starts again or loops", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    const card = hoverable();
+    driver.watch("card", card);
+    source.run(0);
+    source.run(1000);
+    source.run(1500);
+    card.fire("click");
+    driver.pause();
+    driver.play();
+    source.run(1600);
+    source.run(1700);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 1600, length: 1000 });
+    expect(driver.events()).toHaveLength(1);
+
+    const looping = frames();
+    const loop = clockDriver({ duration: 1000, frames: looping, repeat: 3, reducedMotion: "play" });
+    loop.watch("card", card);
+    looping.run(0);
+    looping.run(600);
+    card.fire("click");
+    expect(loop.events()).toHaveLength(1);
+    looping.run(1200);
+    expect(loop.events()).toEqual([]);
+  });
+
+  it("stops at its end when it watches nothing", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source, reducedMotion: "play" });
+    source.run(0);
+    source.run(1200);
+    expect(driver.playing()).toBe(false);
+  });
+
+  it("tells subscribers of a recorded event, and unwatches on dispose", () => {
+    const driver = clockDriver({ duration: 2000, frames: frames(), autoplay: false });
+    const card = hoverable();
+    driver.watch("card", card);
+    let heard = 0;
+    driver.subscribe(() => (heard += 1));
+    card.fire("click");
+    expect(heard).toBe(1);
+    driver.dispose();
+    expect(card.listening).toBe(0);
   });
 });

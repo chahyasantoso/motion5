@@ -12,7 +12,8 @@ export interface TrailOptions {
   readonly damping?: number;
   /** Ms between spring steps, 1 to 33; default 8. */
   readonly stepMs?: number;
-  /** Closer than this and slower than ten times it a second, it rests on the signal; also how far history fades. */
+  /** Closer than this and slower than ten times it a second, it rests on the signal; also how far history fades.
+   * Absent, the smallest from 0.001 that keeps the spring's memory within 4000 ms. */
   readonly rest?: number;
 }
 
@@ -25,17 +26,35 @@ export interface TrailSettings {
 }
 
 const LONGEST_MEMORY_MS = 4000;
+const DEFAULT_REST = 0.001;
+
+/** The smallest rest, to two significant digits, that keeps the spring's memory within the cap; at least
+ * 0.001, and `Infinity` when no rest below 1 does. */
+function smallestRest(spring: { readonly stiffness: number; readonly damping: number }): number {
+  const unit = springMemory(spring, Math.exp(-1)) * 1000;
+  if (!Number.isFinite(unit)) return Infinity;
+  const exact = Math.exp(-LONGEST_MEMORY_MS / unit);
+  const step = 10 ** (Math.floor(Math.log10(exact)) - 1);
+  const rounded = Math.ceil(exact / step - 1e-9) * step;
+  const rest = Math.max(DEFAULT_REST, Number(rounded.toPrecision(2)));
+  return rest < 1 ? rest : Infinity;
+}
 
 export function trailSettings(options: TrailOptions, name: string): TrailSettings {
   const springOptions = { stiffness: options.stiffness ?? 170, damping: options.damping ?? 26 };
   const stepMs = options.stepMs ?? 8;
-  const rest = options.rest ?? 0.001;
-  const memoryMs = springMemory(springOptions, rest) * 1000;
   if (!(stepMs >= 1 && stepMs <= 33)) throw new RangeError(`${name}: stepMs must be from 1 to 33.`);
-  if (!(memoryMs <= LONGEST_MEMORY_MS))
+  const rest = options.rest ?? smallestRest(springOptions);
+  const memoryMs = springMemory(springOptions, rest) * 1000;
+  if (!(memoryMs <= LONGEST_MEMORY_MS)) {
+    const needed = smallestRest(springOptions);
+    const advice = Number.isFinite(needed)
+      ? `raise rest to ${needed} or more (now ${rest}) so a smaller swing counts as settled, or raise damping`
+      : "raise damping, since no rest below 1 settles it";
     throw new RangeError(
-      `${name}: the spring rings ${Math.round(memoryMs)} ms, longer than ${LONGEST_MEMORY_MS}; raise damping, or raise rest (now ${rest}) so a smaller swing counts as settled.`,
+      `${name}: the spring rings ${Math.round(memoryMs)} ms, longer than ${LONGEST_MEMORY_MS}; ${advice}.`,
     );
+  }
   return { spring: springOptions, stepMs, rest, memoryMs };
 }
 

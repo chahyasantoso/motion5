@@ -21,4 +21,4 @@ const loaded = await loadStageModule(name);
 if (typeof loaded === "string") {
   container.textContent = loaded;
   mounted();
-} else createRoot(container).render(<Stage module={loaded} options={options} />);
+} else createRoot(container).render(<Stage module={loaded.module} options={options} />);
