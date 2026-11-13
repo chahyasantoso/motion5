@@ -23,8 +23,16 @@ export const PACKAGES = [
   "three/src/react.ts",
 ];
 
+/** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */
+function workspacePaths() {
+  const read = ts.readConfigFile(join(root, "tsconfig.json"), ts.sys.readFile);
+  const paths = read.config?.compilerOptions?.paths;
+  return paths === undefined ? {} : { baseUrl: root, paths };
+}
+
 function createChecker(files) {
   const program = ts.createProgram(files, {
+    ...workspacePaths(),
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     target: ts.ScriptTarget.ES2022,
