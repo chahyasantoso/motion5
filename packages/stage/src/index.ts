@@ -19,7 +19,7 @@ export {
   type Stretch,
 } from "./cast";
 export { DEFAULT_FRAME, frame, story, type Frame, type Story } from "./story";
-export { NO_REST, restOf, type Box, type Rest } from "./rest";
+export { NO_LAYOUTS, NO_REST, restOf, type Box, type Layouts, type Rest } from "./rest";
 export { readStageModule, type Skins, type StageModule } from "./module";
 export {
   boundsOf,

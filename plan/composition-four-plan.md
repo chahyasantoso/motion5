@@ -1,6 +1,6 @@
 # Composition plan, part four: things that change place
 
-**Status:** Proposed, 2026-11-13.
+**Status:** Approved by the owner, 2026-11-13.
 **Base:** `main` at `e6957839`, the merge of pull request 587, plus `smudge` promoted on `feat/composition-four`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-174` to `docs/ADR-177`,
 `plan/composition-three-plan.md` section 3a, `.claude/skills/wave-build/SKILL.md`, then this plan.

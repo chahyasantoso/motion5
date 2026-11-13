@@ -23,6 +23,7 @@ import {
   type Frame,
   type Rest,
   type StageModule,
+  NO_LAYOUTS,
   presentAt,
 } from "@gerak/stage";
 import { clockDriver, type ClockDriver } from "./drivers";
@@ -128,8 +129,8 @@ export function stageModuleOf<B extends string>(
 ): StageModule<B, StageValues> {
   return {
     ...module,
-    scene: (time, events, rest) => {
-      const values = module.scene(time, events, rest);
+    scene: (time, events, rest, layouts) => {
+      const values = module.scene(time, events, rest, layouts);
       if (!isStageValues(values))
         throw new TypeError("The scene answered a value that is not a pose or a list of poses.");
       return values;
@@ -589,7 +590,7 @@ export function mountStage<
   fit();
   let rest = measure();
   let scene = module.scene;
-  const sceneOf = (): Scene<StageValues> => (time, events) => scene(time, events, rest);
+  const sceneOf = (): Scene<StageValues> => (time, events) => scene(time, events, rest, NO_LAYOUTS);
   const start = () => {
     const { driver, stop } = drive();
     const player = play<StageValues>(sceneOf(), driver);

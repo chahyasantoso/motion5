@@ -31,7 +31,7 @@ byte ceiling.
 ## Next in line
 
 - **Composition, part four:** named layouts the stage measures and `carry` between boxes (roadmap stage 4), measured
-  on a small site built cold; `plan/composition-four-plan.md`, proposed. Then publish.
+  on a small site built cold; `plan/composition-four-plan.md`, approved. Then publish.
 
 ## Open, and not scheduled
 

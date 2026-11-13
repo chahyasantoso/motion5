@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { span, toCubics, type Time } from "@gerak/moves";
 import {
+  NO_LAYOUTS,
   NO_REST,
   actor,
   castNames,
@@ -171,7 +172,7 @@ describe("reading a stage module", () => {
     const read = readStageModule(good);
     if ("reason" in read) throw new Error(read.reason);
     expect(read.beats.order).toEqual(["go"]);
-    expect(read.scene(at(0, 1000), [], NO_REST)).toEqual({ dot: { x: 1 } });
+    expect(read.scene(at(0, 1000), [], NO_REST, NO_LAYOUTS)).toEqual({ dot: { x: 1 } });
   });
 
   it("answers why a value is not one, and never throws", () => {
@@ -206,5 +207,39 @@ describe("reading a stage module", () => {
     expect(why({ ...good, beats: two, cast: { dot: actor({ on: [["b", "a"]] }) } })).toMatch(
       /ends before it starts/,
     );
+  });
+
+  it("reads layouts, the layout in force and each layout's rest, and refuses what does not fit", () => {
+    const why = (value: unknown) => {
+      const read = readStageModule(value);
+      return "reason" in read ? read.reason : "";
+    };
+    const box = { x: 1, y: 1, width: 2, height: 2 };
+    const sorted = (events: readonly { readonly name: string }[]) =>
+      events.some((event) => event.name === "sort") ? "sorted" : "list";
+    const layered = { ...good, layouts: ["list", "sorted"], layout: sorted };
+    const read = readStageModule({ ...layered, rests: { list: { dot: box }, sorted: {} } });
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.layouts).toEqual(["list", "sorted"]);
+    expect(read.layout?.([{ name: "sort", at: 10 }])).toBe("sorted");
+    expect(read.rests?.["list"]).toEqual({ dot: box });
+    expect(why({ ...good, layout: sorted })).toMatch(/needs `layouts`/);
+    expect(why({ ...good, rests: {} })).toMatch(/needs `layouts`/);
+    expect(why({ ...good, layouts: [] })).toMatch(/one or more/);
+    expect(why({ ...good, layouts: ["a", "a"] })).toMatch(/twice/);
+    expect(why({ ...layered, rest: {} })).toMatch(/`rests`, not `rest`/);
+    expect(why({ ...layered, layout: "list" })).toMatch(/function of the events/);
+    expect(why({ ...layered, rests: { list: {} } })).toMatch(/"sorted"/);
+    expect(why({ ...layered, layout: () => "grid" })).toMatch(/"grid"/);
+  });
+
+  it("checks every answer of `layout` against the declared names", () => {
+    const read = readStageModule({
+      ...good,
+      layouts: ["list"],
+      layout: (events: readonly unknown[]) => (events.length > 0 ? "grid" : "list"),
+    });
+    if ("reason" in read) throw new Error(read.reason);
+    expect(() => read.layout?.([{ name: "go", at: 0 }])).toThrow(/"grid"/);
   });
 });

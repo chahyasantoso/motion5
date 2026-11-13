@@ -18,3 +18,9 @@ const ZERO: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
 export function restOf(rest: Rest, name: string): Box {
   return Object.hasOwn(rest, name) ? (rest[name] ?? ZERO) : ZERO;
 }
+
+/** Each named layout's `Rest`, as a renderer measured every one. */
+export type Layouts<L extends string = string> = Readonly<Record<L, Rest>>;
+
+/** The layouts a module with none passes: no layout, no boxes. */
+export const NO_LAYOUTS: Layouts<never> = Object.freeze({});

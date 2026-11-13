@@ -323,8 +323,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`EventDriverOptions`** `type EventDriverOptions`: Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`.
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
-- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>, options?: StageOpt… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
-- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>>`: A stage module whose scene answers any object, checked on every frame to be stage values.
+- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>, options?: … (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object, string>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>`: A stage module whose scene answers any object, checked on every frame to be stage values.
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
 - **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.
@@ -462,11 +462,13 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
 - **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`NO_LAYOUTS`** `const NO_LAYOUTS: Readonly<Record<never, Readonly<Record<string, Box>>>>`: The layouts a module with none passes: no layout, no boxes.
 - **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
 - **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
 - **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
+- **`Layouts`** `type Layouts`: Each named layout's `Rest`, as a renderer measured every one.
 - **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
-- **`readStageModule`** `(value: unknown): StageModule<string, object> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
+- **`readStageModule`** `(value: unknown): StageModule<string, object, string> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
 - **`boundsOf`** `(cubics: readonly Cubic2d[]): Box`: The box the control points of `cubics` span, from its top-left, never thinner than 1 so a straight line still shows.

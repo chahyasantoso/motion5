@@ -1,6 +1,13 @@
 import { NO_EVENTS, mergeEvents, type Events, type MotionEvent, type Time } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
-import { NO_REST, castNames, readStageModule, type CastName, type Rest } from "@gerak/stage";
+import {
+  NO_LAYOUTS,
+  NO_REST,
+  castNames,
+  readStageModule,
+  type CastName,
+  type Rest,
+} from "@gerak/stage";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
@@ -107,9 +114,10 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
         reason: `The module's \`durationMs\` ${String(given)} differs from its story's ${beats.durationMs}; export only \`beats\`.`,
       };
     const rest = stage.rest ?? NO_REST;
+    const layouts = stage.rests ?? NO_LAYOUTS;
     return {
       cues: ownCues,
-      scene: (time, events) => scene(time, events, rest),
+      scene: (time, events) => scene(time, events, rest, layouts),
       durationMs: beats.durationMs,
       beats: beats.order.flatMap((name) => {
         const span = beats[name];
