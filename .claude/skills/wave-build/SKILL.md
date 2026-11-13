@@ -73,7 +73,8 @@ Triage every finding: fix it or record why not.
 
 ## Measure
 
-A measure repeats the same task each time, runs alone in its worker, and its interviews are read for the question
+A measure repeats the same task each time, runs alone in a fresh worker on the same model as its earlier rows (never
+the conductor, whatever its cache would save: it knows the fixes), and its interviews are read for the question
 every agent shares. Before acting on a plan's fallback, read what the agents say they read.
 
 ## Record and learn
