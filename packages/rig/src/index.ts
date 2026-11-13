@@ -1,6 +1,8 @@
 export {
   buildChain,
+  chainFromRest,
   chainPoses,
+  chainThrough,
   composeChain,
   fk,
   ik,
