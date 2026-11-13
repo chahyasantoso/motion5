@@ -6,6 +6,7 @@ import {
   castNames,
   readStageModule,
   type CastName,
+  type Layouts,
   type Rest,
 } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
@@ -27,7 +28,7 @@ export interface SceneModule {
   readonly cues: Events;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
-  /** Where things rest for a stage module, its own `rest` or none; a path function is called with it. */
+  /** Where things rest for a stage module at the start, its own `rest` or the first layout's; a path function is called with it. */
   readonly rest?: Rest;
 }
 
@@ -113,11 +114,18 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
       return {
         reason: `The module's \`durationMs\` ${String(given)} differs from its story's ${beats.durationMs}; export only \`beats\`.`,
       };
-    const rest = stage.rest ?? NO_REST;
     const layouts = stage.rests ?? NO_LAYOUTS;
+    const named: Layouts = layouts;
+    const first = stage.layouts?.[0];
+    const restFor = (events: Events): Rest => {
+      if (stage.layouts === undefined) return stage.rest ?? NO_REST;
+      const current = stage.layout?.(events) ?? first;
+      return (current === undefined ? undefined : named[current]) ?? NO_REST;
+    };
+    const rest = restFor(NO_EVENTS);
     return {
       cues: ownCues,
-      scene: (time, events) => scene(time, events, rest, layouts),
+      scene: (time, events) => scene(time, events, restFor(events), layouts),
       durationMs: beats.durationMs,
       beats: beats.order.flatMap((name) => {
         const span = beats[name];

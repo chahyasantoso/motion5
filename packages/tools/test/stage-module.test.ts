@@ -113,6 +113,40 @@ describe("a stage module in the scene tools", () => {
   });
 });
 
+describe("a stage module with layouts in the scene tools", () => {
+  const box = (x: number) => ({ dot: { x, y: 0, width: 1, height: 1 } });
+  it("hands the scene the rest of the layout in force, before and after a cue", () => {
+    const read = moduleOf({
+      ...clean,
+      layouts: ["wide", "tall"],
+      layout: (events: readonly { readonly name: string }[]) =>
+        events.some(({ name }) => name === "turn") ? "tall" : "wide",
+      rests: { wide: box(10), tall: box(70) },
+    });
+    const [before, after] = sampleScene(read, { kind: "time", ms: [0, 100] }, ["dot"], undefined, [
+      { name: "turn", at: 50 },
+    ]);
+    expect(before?.targets["dot"]).toEqual({ x: 10 });
+    expect(after?.targets["dot"]).toEqual({ x: 70 });
+    expect(sampleScene(read, { kind: "time", ms: [100] })[0]?.targets["dot"]).toEqual({ x: 10 });
+  });
+
+  it("reports a layout answering an undeclared name, by that name", () => {
+    const read = moduleOf({
+      ...clean,
+      layouts: ["wide", "tall"],
+      layout: (events: readonly { readonly name: string }[]) =>
+        events.length > 0 ? "square" : "wide",
+      rests: { wide: box(10), tall: box(70) },
+    });
+    expect(() =>
+      sampleScene(read, { kind: "time", ms: [100] }, undefined, undefined, [
+        { name: "turn", at: 50 },
+      ]),
+    ).toThrow(/"square"/);
+  });
+});
+
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
     const bad = { ...clean, skins: { dom: { css: 1 } } };
