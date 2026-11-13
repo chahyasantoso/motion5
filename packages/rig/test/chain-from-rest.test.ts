@@ -81,3 +81,19 @@ describe("chainFromRest", () => {
     expect(poses.a.rotation).toBeCloseTo(20, 9);
   });
 });
+
+describe("chainFromRest with a moving base", () => {
+  it("carries every joint when the base moves and turns, as a body rocking under an arm", () => {
+    const { chain, rest } = chainThrough(JOINTS);
+    const base = { x: 112, y: 46, rotation: 12 };
+    const now = { ...rest, base };
+    const poses = chainFromRest(chain, rest, now);
+    const tips = fk(chain, now);
+    expect(poses.shoulder.x).toBeCloseTo(12, 9);
+    expect(poses.shoulder.y).toBeCloseTo(-4, 9);
+    expect(poses.shoulder.rotation).toBeCloseTo(12, 9);
+    expect(poses.elbow.x).toBeCloseTo(tips.shoulder.x - 160, 9);
+    expect(poses.elbow.y).toBeCloseTo(tips.shoulder.y - 110, 9);
+    expect(poses.elbow.rotation).toBeCloseTo(12, 9);
+  });
+});
