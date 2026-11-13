@@ -32,7 +32,7 @@ function same(a: Box, b: Box): boolean {
 }
 
 /** The pose that draws a member resting at `own` on `from` at 0 and on `to` at 1. `"clip"` only
- * crops, so it never draws larger than `own`. An absent box throws a `RangeError` (not for `"keep"`). */
+ * crops, never drawing larger than `own`. An absent box throws a `RangeError` (not for `"keep"`). */
 export function carry(
   own: Box,
   from: Box,
