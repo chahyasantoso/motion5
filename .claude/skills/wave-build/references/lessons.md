@@ -27,3 +27,4 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-13 | composition-two 2 | Opus + Sonnet | 163k + 148k | 0 |
 | 2026-11-13 | composition-two 3 measure | Opus | 252k, 84 calls, 19 min | — |
 | 2026-11-13 | composition-two 3 cold review | Sonnet | 110k, 27 calls, 4 min | 7 of 7 fixed |
+| 2026-11-13 | composition-three 2 | Opus + Sonnet | 162k (after resume) + 88k | 0 |
