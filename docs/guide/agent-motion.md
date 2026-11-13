@@ -68,7 +68,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
   it by `[data-path="<name>"]` (`stroke`, `stroke-width`). Its points are frame px from the frame's top-left, in any
   group, and the stage places the member at the path's box. To follow the layout, pass `path: (rest) => toCubics([...])`
-  reading other members with `restOf`; it is drawn again on each measure, and never reads its own box.
+  reading other members with `restOf`, other strokes too, which are drawn first; it is drawn again on each measure,
+  and never reads its own box. Two paths that read each other are a loop: neither is drawn, and both are reported.
 - **Names** are the keys, unique across the cast; an item is `dust.3`. `on: ["land", ["rise", "fall"]]` shows a
   member only while one of its stretches runs, a beat or a pair from the first's start to the second's end, so
   `["rise", "fall"]` is two beats and `[["rise", "fall"]]` one stretch (a member without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;

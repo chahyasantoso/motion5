@@ -4,10 +4,11 @@ import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {
   NO_REST,
-  pathOf,
+  boundsOf,
+  describeLoop,
+  drawInPasses,
   presentAt,
-  restOf,
-  type Box,
+  restOfBounds,
   type CastName,
   type Rest,
 } from "@gerak/stage";
@@ -295,41 +296,33 @@ function stageFindings(
   return found;
 }
 
-const ZERO_BOX: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
-
-/** Each path function called once where the module's things rest: one that fails, or one that
- * reads its own box, which it is handed as zero. */
+/** The path functions drawn in passes where the module's things rest, as the stage draws them: one
+ * that fails, one that reads its own box, and paths that read each other in a loop. */
 function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
   const found: string[] = [];
-  const strokes = new Set(cast.flatMap(({ name, path }) => (path === undefined ? [] : [name])));
-  const names = new Set([...cast.map(({ name }) => name), ...Object.keys(rest)]);
-  for (const { name, path } of cast) {
-    if (typeof path !== "function") continue;
-    const read = new Set<string>();
-    const recording: Record<string, Box> = {};
-    for (const key of names)
-      Object.defineProperty(recording, key, {
-        enumerable: true,
-        get: (): Box => {
-          read.add(key);
-          return strokes.has(key) ? ZERO_BOX : restOf(rest, key);
-        },
-      });
-    // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
-    const measured = Object.keys(rest).length > 0;
-    try {
-      pathOf(path, recording);
-    } catch (error) {
-      if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
-        found.push(
-          `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
-        );
-    }
+  const paths = cast.flatMap(({ name, path }) =>
+    path === undefined ? [] : [[name, path] as const],
+  );
+  // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
+  const measured = Object.keys(rest).length > 0;
+  const loop = drawInPasses(paths, rest, (name, answer, read) => {
     if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
-    for (const other of read)
-      if (other !== name && strokes.has(other))
-        found.push(`path "${name}" reads the stroke "${other}", whose box a path cannot read`);
-  }
+    switch (answer.kind) {
+      case "drawn":
+        return restOfBounds(boundsOf(answer.cubics));
+      case "failed": {
+        const { error } = answer;
+        if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
+          found.push(
+            `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        return undefined;
+      }
+      default:
+        return unreachable(answer);
+    }
+  });
+  if (loop !== undefined) found.push(describeLoop(loop));
   return found;
 }
 

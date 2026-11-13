@@ -470,6 +470,55 @@ describe("mountStage", () => {
       expect(svg?.children[0]?.attributes.get("d")).toBe(pathData(level(150, 450, 294)));
     });
 
+    it("draws a path reading another stroke after that stroke, from its end", () => {
+      const module: StageModule<"all", StageValues> = {
+        beats: story(1000, { all: [0, 1000] }),
+        cast: {
+          line: group({
+            link: actor({
+              path: (rest) => {
+                const under = restOf(rest, "under");
+                const word = restOf(rest, "word");
+                return level(under.x + under.width / 2, word.x, word.y);
+              },
+            }),
+            word: actor({ text: "HI" }),
+            under: actor({
+              path: (rest) => {
+                const word = restOf(rest, "word");
+                return level(word.x - word.width / 2, word.x + word.width / 2, word.y + 44);
+              },
+            }),
+          }),
+        },
+        skins: {},
+        scene: () => ({}),
+      };
+      const { root } = laidOut(module, { line: [100, 200, 600, 100], word: [50, 10, 200, 80] });
+      const d = root.find("link").children[0]?.children[0]?.attributes.get("d");
+      expect(d).toBe(pathData(level(350, 250, 250)));
+    });
+
+    it("reports two paths that read each other, naming both, and draws neither", () => {
+      const reported: unknown[] = [];
+      vi.stubGlobal("reportError", (error: unknown) => reported.push(error));
+      const module: StageModule<"all", StageValues> = {
+        beats: story(1000, { all: [0, 1000] }),
+        cast: {
+          a: actor({ path: (rest) => level(0, restOf(rest, "b").width + 1, 0) }),
+          b: actor({ path: (rest) => level(0, restOf(rest, "a").width + 1, 0) }),
+        },
+        skins: {},
+        scene: () => ({}),
+      };
+      const { root, style } = laidOut(module, {});
+      expect(reported.map(String)).toEqual([
+        'Error: mountStage: paths "a" and "b" read each other.',
+      ]);
+      expect(root.find("a").children[0]?.children[0]?.attributes.has("d")).toBe(false);
+      expect(style()).toContain(`:where([data-cast="b"]) { position: absolute; }`);
+    });
+
     it("reports a path function that throws and keeps its last good path", () => {
       const reported: unknown[] = [];
       vi.stubGlobal("reportError", (error: unknown) => reported.push(error));

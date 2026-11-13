@@ -149,19 +149,39 @@ describe("motion:review on a stage module", () => {
     expect(broken).toEqual(['path "mark" fails: no dot']);
   });
 
-  it("reports a path that reads another stroke, and lets a path divide by a size nothing measured", () => {
+  it("draws a path reading another stroke after it, reports two reading each other, and lets a path divide by a size nothing measured", () => {
+    const widths: number[] = [];
     const other = findings({
       ...clean,
       cast: {
         stage: group({
           dot: actor({ on: ["go"] }),
           word: letters("AB"),
+          mark: actor({
+            still: true,
+            path: (rest) => {
+              widths.push(restOf(rest, "line").width);
+              return level(0, restOf(rest, "line").width + 1, 0);
+            },
+          }),
           line: actor({ still: true, path: level(0, 10, 0) }),
-          mark: actor({ still: true, path: (rest) => level(0, restOf(rest, "line").width + 1, 0) }),
         }),
       },
     });
-    expect(other).toEqual(['path "mark" reads the stroke "line", whose box a path cannot read']);
+    expect(other).toEqual([]);
+    expect(widths.at(-1)).toBe(10);
+    const loop = findings({
+      ...clean,
+      cast: {
+        stage: group({
+          dot: actor({ on: ["go"] }),
+          word: letters("AB"),
+          a: actor({ still: true, path: (rest) => level(0, restOf(rest, "b").width + 1, 0) }),
+          b: actor({ still: true, path: (rest) => level(0, restOf(rest, "a").width + 1, 0) }),
+        }),
+      },
+    });
+    expect(loop).toEqual(['paths "a" and "b" read each other']);
     const scaled = findings({
       ...clean,
       cast: markedBy((rest) => level(0, 10 / restOf(rest, "dot").width, 0)),

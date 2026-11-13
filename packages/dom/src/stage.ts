@@ -9,9 +9,13 @@ import {
 } from "@gerak/moves";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
+  boundsOf,
   castNames,
   DEFAULT_FRAME,
-  pathOf,
+  describeLoop,
+  drawInPasses,
+  restOfBounds,
+  type PathAnswer,
   type ActorPath,
   type Box,
   type Cast,
@@ -191,22 +195,6 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
     prefixes.some((start) => name.startsWith(start));
 }
 
-/** The box the control points of `cubics` span, never thinner than 1 so a straight line still shows. */
-function boxOf(cubics: readonly Cubic2d[]): Box {
-  const xs = cubics.flatMap((c) => [c.x0, c.x1, c.x2, c.x3]);
-  const ys = cubics.flatMap((c) => [c.y0, c.y1, c.y2, c.y3]);
-  const span = (values: readonly number[]): readonly [number, number] => {
-    const low = values.reduce((least, value) => Math.min(least, value), Infinity);
-    const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
-    const size = values.length === 0 ? 0 : high - low;
-    const from = values.length === 0 ? 0 : low;
-    return size > 0 ? [from, size] : [from - 0.5, 1];
-  };
-  const [x, width] = span(xs);
-  const [y, height] = span(ys);
-  return { x, y, width, height };
-}
-
 /** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it;
  * with no box it is only taken out of the flow. */
 function strokePlace(name: string, box: Box | undefined): string {
@@ -362,16 +350,28 @@ export function mountStage<
         cubic.y3 === was.y3
       );
     });
-  // Draws a stroke where things rest; a path function that throws is reported and its last good path kept.
-  const draw = (name: string, stroke: Stroke<S>, laid: Rest): readonly Cubic2d[] | undefined => {
-    let cubics = stroke.cubics;
-    try {
-      cubics = pathOf(stroke.source, laid);
-    } catch (error) {
-      report(new Error(`The path of "${name}" failed: ${String(error)}`, { cause: error }));
+  // Draws a stroke from its pass's answer; a path function that throws is reported and its last good path kept.
+  const draw = (
+    name: string,
+    stroke: Stroke<S>,
+    answer: PathAnswer,
+  ): readonly Cubic2d[] | undefined => {
+    switch (answer.kind) {
+      case "failed":
+        report(
+          new Error(`The path of "${name}" failed: ${String(answer.error)}`, {
+            cause: answer.error,
+          }),
+        );
+        return stroke.cubics;
+      case "drawn":
+        break;
+      default:
+        unreachable(answer);
     }
-    if (cubics === undefined || sameCubics(cubics, stroke.cubics)) return stroke.cubics ?? cubics;
-    const box = boxOf(cubics);
+    const cubics = answer.cubics;
+    if (sameCubics(cubics, stroke.cubics)) return stroke.cubics;
+    const box = boundsOf(cubics);
     stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
     stroke.path.setAttribute("d", pathData(cubics));
     stroke.cubics = cubics;
@@ -452,17 +452,26 @@ export function mountStage<
       boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
     }
     const laid: Rest = Object.freeze({ ...boxes });
-    const places: string[] = [];
+    const places = new Map<string, string>();
+    const paths: (readonly [string, ActorPath])[] = [];
+    const owners = new Map<
+      string,
+      { readonly stroke: Stroke<S>; readonly parent: Placed<E> | undefined }
+    >();
     for (const [name, { element: own, parent }] of placed) {
       const stroke = strokes.get(own);
       if (stroke === undefined) continue;
-      const cubics = draw(name, stroke, laid);
-      if (cubics === undefined) {
-        places.push(strokePlace(name, undefined));
-        boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
-        continue;
-      }
-      const box = boxOf(cubics);
+      paths.push([name, stroke.source]);
+      owners.set(name, { stroke, parent });
+    }
+    // Paths draw in passes, each reading the strokes drawn before it; a loop of reads is reported.
+    const loop = drawInPasses(paths, laid, (name, answer) => {
+      const owner = owners.get(name);
+      if (owner === undefined) return undefined;
+      const { stroke, parent } = owner;
+      const cubics = draw(name, stroke, answer);
+      if (cubics === undefined) return undefined;
+      const box = boundsOf(cubics);
       const home = parent === undefined ? undefined : laid[parent.info.name];
       const left =
         home === undefined || parent === undefined
@@ -472,10 +481,22 @@ export function mountStage<
         home === undefined || parent === undefined
           ? 0
           : home.y - home.height / 2 + parent.element.clientTop;
-      places.push(strokePlace(name, { ...box, x: box.x - left, y: box.y - top }));
-      boxes[name] = { ...box, x: box.x + box.width / 2, y: box.y + box.height / 2 };
-    }
-    const text = styleWith(places);
+      places.set(name, strokePlace(name, { ...box, x: box.x - left, y: box.y - top }));
+      const rests = restOfBounds(box);
+      boxes[name] = rests;
+      return rests;
+    });
+    if (loop !== undefined) report(new Error(`mountStage: ${describeLoop(loop)}.`));
+    for (const name of owners.keys())
+      if (!places.has(name)) {
+        places.set(name, strokePlace(name, undefined));
+        boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
+      }
+    const ordered = [...owners.keys()].flatMap((name) => {
+      const place = places.get(name);
+      return place === undefined ? [] : [place];
+    });
+    const text = styleWith(ordered);
     if (style.textContent !== text) style.textContent = text;
     const rest: Record<string, Box> = {};
     for (const name of placed.keys()) {

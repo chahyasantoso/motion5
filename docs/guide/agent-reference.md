@@ -467,6 +467,12 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`readStageModule`** `(value: unknown): StageModule<string, object> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
+- **`boundsOf`** `(cubics: readonly Cubic2d[]): Box`: The box the control points of `cubics` span, from its top-left, never thinner than 1 so a straight line still shows.
+- **`describeLoop`** `({ loop, behind }: StrokeLoop): string`: The loop said in one line: `paths "a" and "b" read each other`, and any stroke reading them.
+- **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: Readonly<Record<string, Box>>, settle: (name: string, answer: PathAnswer, read: Re…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box. Answers the loop when a pass draws none.
+- **`restOfBounds`** `(bounds: Box): Box`: Where a stroke of these bounds rests: their centre and size, as a rest box is.
+- **`PathAnswer`** `type PathAnswer`: What a path answered in its pass: its cubics, or what it threw.
+- **`StrokeLoop`** `type StrokeLoop`: The strokes no pass could draw: those reading each other in a loop, and those reading one of them.
 <!-- generated:reference:end -->
 
 ## @gerak/physics
