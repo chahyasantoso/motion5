@@ -64,7 +64,7 @@ Three things follow from it:
 | Bones | `rig` |
 | Bodies | `physics`, `rapier` |
 | Bindings | `dom`, `react`, `three` |
-| How a rebuild differs from its reference image | `tools` |
+| How a rigged piece differs from its SVG | `tools` |
 | Getting it | every package |
 
 ## 4. The apps
@@ -99,9 +99,10 @@ Three things follow from it:
 5. **Ready to publish.** Done (`plan/publish-plan.md`): the runtime packages build and install outside the repository,
    and the app boundary is in the check. Nothing is on npm; publishing waits for a project that needs it, and `1.0`
    until the `stage` package and one app have held the surface still.
-6. **Artwork from a reference.** Next (`plan/artwork-plan.md`). An agent looks at an image and rebuilds it as SVG or as a Three.js
-   scene, in named parts with anchors so each part can take a move or a bone. The base gains a command that renders
-   the rebuild beside the reference and reports where they differ; the looking and drawing are the agent's.
+6. **Rigging vector artwork.** Next (`plan/artwork-plan.md`). An SVG drawn by someone else is imported as a stage
+   module, and the agent rigs it: parts named by what moves, grouped by what carries what, a pivot at each joint, so
+   each part can take a move or a bone. A command compares the rigged piece with the SVG. Rebuilding from a raster
+   picture is out; a Three.js model belongs with stage 7.
 7. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
    example. A Three.js rebuild from stage 6 is its first artwork.
 8. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
@@ -125,7 +126,7 @@ Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
 | Bones | 2D chains, 3D FK and IK solvers with constraints | typed 3D chains, a skinned mesh's bones, retargeting |
 | Bodies | 2D physics, built in or on Rapier, seekable | 3D physics |
 | Bindings | DOM, React, Three.js poses | a React Three Fiber scaffold, Vue, Svelte |
-| Artwork | | rebuilding a reference image in named parts, and the command that compares them |
+| Artwork | | importing an SVG as a stage module, pivots at joints, the command that compares the rig with its SVG |
 | Tools | the `motion:*` commands, the live page, frames and their comparison | the live kit as a package |
 | Getting it | installable outside the repository, checked by installing | on npm |
 | Apps | the live page in `apps/pieces` | the web overlay, video, the instrument (deferred) |

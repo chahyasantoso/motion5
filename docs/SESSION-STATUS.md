@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Artwork from a reference (roadmap stage 6):** an agent rebuilds an image as SVG or Three.js in named parts, and
-  a command compares the rebuild with the reference; `plan/artwork-plan.md`, proposed. 3D follows, then a
+- **Rigging vector artwork (roadmap stage 6):** an SVG imported as a stage module that an agent rigs with named parts
+  and pivots, tested on a public-domain penguin; `plan/artwork-plan.md`, proposed. 3D follows, then a
   motion-atlas brainstorm.
 
 ## Open, and not scheduled
