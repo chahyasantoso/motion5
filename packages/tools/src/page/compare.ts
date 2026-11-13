@@ -82,9 +82,27 @@ export function meanDifference(a: Picture, b: Picture, box?: Box): number {
   if (x1 <= x0 || y1 <= y0) return 0;
   let total = 0;
   for (let y = y0; y < y1; y += 1)
-    for (let at = (y * a.width + x0) * 3; at < (y * a.width + x1) * 3; at += 1)
-      total += Math.abs((a.rgb[at] ?? 0) - (b.rgb[at] ?? 0));
+    for (let x = x0; x < x1; x += 1) total += nearestDifference(a, b, x, y);
   return total / ((x1 - x0) * (y1 - y0) * 3);
+}
+
+/** The summed RGB difference between `a` at (x, y) and the closest of `b`'s pixels within one of it, so
+ * edges smoothed a sub-pixel differently count as the same drawing. */
+export function nearestDifference(a: Picture, b: Picture, x: number, y: number): number {
+  const at = (y * a.width + x) * 3;
+  let best = Infinity;
+  for (let dy = -1; dy <= 1; dy += 1)
+    for (let dx = -1; dx <= 1; dx += 1) {
+      const bx = x + dx;
+      const by = y + dy;
+      if (bx < 0 || by < 0 || bx >= b.width || by >= b.height) continue;
+      const near = (by * b.width + bx) * 3;
+      let sum = 0;
+      for (let channel = 0; channel < 3; channel += 1)
+        sum += Math.abs((a.rgb[at + channel] ?? 0) - (b.rgb[near + channel] ?? 0));
+      if (sum < best) best = sum;
+    }
+  return best;
 }
 
 /** Members rounded to 2 decimals and sorted worst first, equal ones by name. */
@@ -136,8 +154,11 @@ export function differencePicture(a: Picture, b: Picture): Picture {
       `The pictures differ in size: ${a.width}x${a.height} and ${b.width}x${b.height}.`,
     );
   const rgb = new Uint8Array(a.rgb.length);
-  for (let at = 0; at < rgb.length; at += 1)
-    rgb[at] = Math.abs((a.rgb[at] ?? 0) - (b.rgb[at] ?? 0));
+  for (let y = 0; y < a.height; y += 1)
+    for (let x = 0; x < a.width; x += 1) {
+      const grey = Math.min(255, Math.round(nearestDifference(a, b, x, y) / 3));
+      rgb.fill(grey, (y * a.width + x) * 3, (y * a.width + x) * 3 + 3);
+    }
   return { width: a.width, height: a.height, rgb };
 }
 

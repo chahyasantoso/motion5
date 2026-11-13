@@ -28,11 +28,26 @@ describe("motion:compare pure parts", () => {
     const b = solid(4, 4, [255, 255, 255]);
     expect(meanDifference(a, b)).toBe(255);
     expect(meanDifference(a, a)).toBe(0);
-    const half = solid(4, 4, [0, 0, 0]);
-    half.rgb.set([90, 0, 0], 0);
-    expect(meanDifference(a, half)).toBeCloseTo(90 / (16 * 3), 10);
-    expect(meanDifference(a, half, { x: 0, y: 0, width: 1, height: 1 })).toBe(30);
-    expect(meanDifference(a, half, { x: 1, y: 1, width: 3, height: 3 })).toBe(0);
+    const wrong = solid(8, 8, [0, 0, 0]);
+    for (let y = 0; y < 4; y += 1)
+      for (let x = 0; x < 4; x += 1) wrong.rgb.set([90, 0, 0], (y * 8 + x) * 3);
+    const black = solid(8, 8, [0, 0, 0]);
+    expect(meanDifference(black, wrong, { x: 0, y: 0, width: 3, height: 3 })).toBe(30);
+    expect(meanDifference(black, wrong, { x: 5, y: 5, width: 3, height: 3 })).toBe(0);
+  });
+
+  it("forgives an edge smoothed or set one pixel off, and a lone stray pixel", () => {
+    const edge = (at: number) => {
+      const picture = solid(8, 4, [0, 0, 0]);
+      for (let y = 0; y < 4; y += 1)
+        for (let x = at; x < 8; x += 1) picture.rgb.set([255, 255, 255], (y * 8 + x) * 3);
+      return picture;
+    };
+    expect(meanDifference(edge(4), edge(5))).toBe(0);
+    expect(meanDifference(edge(4), edge(6))).toBeGreaterThan(0);
+    const stray = solid(4, 4, [0, 0, 0]);
+    stray.rgb.set([90, 0, 0], (1 * 4 + 1) * 3);
+    expect(meanDifference(solid(4, 4, [0, 0, 0]), stray)).toBe(0);
   });
 
   it("clips a box to the picture and calls an empty one zero", () => {
@@ -83,12 +98,11 @@ describe("motion:compare pure parts", () => {
     expect(viewBoxOf('<svg width="10" height="10"/>')).toBeUndefined();
   });
 
-  it("draws the per-pixel absolute difference, brighter where more different", () => {
-    const a = solid(2, 1, [10, 200, 50]);
-    const b = solid(2, 1, [60, 100, 50]);
-    b.rgb.set([10, 200, 50], 3);
-    const difference = differencePicture(a, b);
-    expect([...difference.rgb]).toEqual([50, 100, 0, 0, 0, 0]);
+  it("draws the difference within one pixel as grey, brighter where more different", () => {
+    const a = solid(3, 3, [10, 200, 50]);
+    const difference = differencePicture(a, solid(3, 3, [70, 110, 50]));
+    expect([...difference.rgb.subarray(0, 3)]).toEqual([50, 50, 50]);
+    expect([...differencePicture(a, a).rgb].every((value) => value === 0)).toBe(true);
   });
 
   it("puts two pictures side by side with a gap", () => {
