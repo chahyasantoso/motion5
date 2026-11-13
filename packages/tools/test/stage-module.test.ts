@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Time } from "@gerak/moves";
-import { actor, readStageModule, story } from "@gerak/stage";
+import { toCubics, type Time } from "@gerak/moves";
+import { actor, group, letters, readStageModule, restOf, story, type Rest } from "@gerak/stage";
 import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
@@ -17,6 +17,27 @@ function moduleOf(value: object): SceneModule {
 }
 
 const findings = (value: object) => reviewSceneModule(moduleOf(value), limits).findings;
+
+const level = (from: number, to: number, y: number) =>
+  toCubics([
+    { id: "a", x: from, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+    { id: "b", x: to, y, inX: 0, inY: 0, outX: 0, outY: 0 },
+  ]);
+
+/** An underline under the measured `dot`. */
+const underWord = (rest: Rest) => {
+  const dot = restOf(rest, "dot");
+  return level(dot.x - dot.width / 2, dot.x + dot.width / 2, dot.y + dot.height / 2);
+};
+
+/** The clean fixture's cast with its still `mark` drawn by `path`. */
+const markedBy = (path: (rest: Rest) => ReturnType<typeof level>) => ({
+  stage: group({
+    dot: actor({ on: ["go"] }),
+    word: letters("AB"),
+    mark: actor({ still: true, path }),
+  }),
+});
 
 describe("a stage module in the scene tools", () => {
   it("is read with its length from the story, its beats and its cast names", () => {
@@ -43,6 +64,13 @@ describe("a stage module in the scene tools", () => {
     expect(end?.targets["dot"]).toEqual({ x: 100 });
     const boxed = moduleOf({ ...clean, rest: { dot: { x: 7, y: 0, width: 1, height: 1 } } });
     expect(sampleScene(boxed, { kind: "time", ms: [0] })[0]?.targets["dot"]).toEqual({ x: 7 });
+  });
+
+  it("samples a module whose path is a function of where things rest", () => {
+    const read = moduleOf({ ...clean, cast: markedBy(underWord) });
+    expect(read.cast?.find(({ name }) => name === "mark")?.path).toBe(underWord);
+    const [start] = sampleScene(read, { kind: "time", ms: [0] });
+    expect(start?.targets["dot"]).toEqual({ x: 0 });
   });
 
   it("refuses a duration unlike the story's, a cast naming a missing beat, and a bad rest", () => {
@@ -88,6 +116,57 @@ describe("one reader of a stage module", () => {
 describe("motion:review on a stage module", () => {
   it("finds nothing in a clean one", () => {
     expect(findings(clean)).toEqual([]);
+  });
+
+  it("calls a path function once, with the module's rest, and reports one that reads its own box or fails", () => {
+    const cast = markedBy;
+    const handed: Rest[] = [];
+    const box = { x: 50, y: 20, width: 40, height: 10 };
+    const fine = findings({
+      ...clean,
+      rest: { dot: box },
+      cast: cast((rest) => {
+        handed.push(rest);
+        return underWord(rest);
+      }),
+    });
+    expect(fine).toEqual([]);
+    expect(handed.map((rest) => restOf(rest, "dot"))).toEqual([box]);
+    const own = findings({
+      ...clean,
+      cast: cast((rest) => {
+        const mark = restOf(rest, "mark");
+        return level(mark.x, mark.x + 1 + mark.width, 0);
+      }),
+    });
+    expect(own).toEqual(['path "mark" reads its own rest box']);
+    const broken = findings({
+      ...clean,
+      cast: cast(() => {
+        throw new Error("no dot");
+      }),
+    });
+    expect(broken).toEqual(['path "mark" fails: no dot']);
+  });
+
+  it("reports a path that reads another stroke, and lets a path divide by a size nothing measured", () => {
+    const other = findings({
+      ...clean,
+      cast: {
+        stage: group({
+          dot: actor({ on: ["go"] }),
+          word: letters("AB"),
+          line: actor({ still: true, path: level(0, 10, 0) }),
+          mark: actor({ still: true, path: (rest) => level(0, restOf(rest, "line").width + 1, 0) }),
+        }),
+      },
+    });
+    expect(other).toEqual(['path "mark" reads the stroke "line", whose box a path cannot read']);
+    const scaled = findings({
+      ...clean,
+      cast: markedBy((rest) => level(0, 10 / restOf(rest, "dot").width, 0)),
+    });
+    expect(scaled).toEqual([]);
   });
 
   it("finds a member the scene never moves that is not still", () => {

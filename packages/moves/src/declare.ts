@@ -80,6 +80,8 @@ export interface MoveDeclaration<Fs extends OptionFields, I, R, M extends Moment
   readonly options: Fs;
   /** A call the gate samples and the catalog shows; its options are checked when the move is defined. */
   readonly example: MoveExample<Fs, I>;
+  /** The ids of the parts (`motion:moves -- --parts`) the move is built from; the gate refuses an unknown one. */
+  readonly recipe?: readonly string[];
   run(options: Options<Fs>, time: Time, input: I): R;
   /** Where in its progress the move reaches each named moment, for these options. */
   moments(options: Options<Fs>): M;
@@ -93,6 +95,8 @@ export interface Move<Fs extends OptionFields, I, R, M extends Moments = Moments
   readonly description: string;
   readonly options: Fs;
   readonly example: MoveExample<Fs, I>;
+  /** The part ids the move is built from, as its declaration named them. */
+  readonly recipe?: readonly string[];
   /** Where in its progress the move reaches each named moment, as shares from 0 to 1. */
   moments(options: OptionsIn<Fs>): M;
 }
@@ -174,6 +178,7 @@ export function defineMove(
     description: declaration.description,
     options: declaration.options,
     example: declaration.example,
+    ...(declaration.recipe === undefined ? {} : { recipe: declaration.recipe }),
     moments: (options: OptionsIn<OptionFields>) => declaration.moments(read(options)),
   });
 }

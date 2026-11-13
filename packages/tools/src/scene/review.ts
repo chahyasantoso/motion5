@@ -2,7 +2,7 @@ import { pathToFileURL } from "node:url";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
-import type { CastName } from "@gerak/stage";
+import { NO_REST, pathOf, restOf, type Box, type CastName, type Rest } from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
@@ -284,6 +284,44 @@ function stageFindings(
   return found;
 }
 
+const ZERO_BOX: Box = Object.freeze({ x: 0, y: 0, width: 0, height: 0 });
+
+/** Each path function called once where the module's things rest: one that fails, or one that
+ * reads its own box, which it is handed as zero. */
+function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
+  const found: string[] = [];
+  const strokes = new Set(cast.flatMap(({ name, path }) => (path === undefined ? [] : [name])));
+  const names = new Set([...cast.map(({ name }) => name), ...Object.keys(rest)]);
+  for (const { name, path } of cast) {
+    if (typeof path !== "function") continue;
+    const read = new Set<string>();
+    const recording: Record<string, Box> = {};
+    for (const key of names)
+      Object.defineProperty(recording, key, {
+        enumerable: true,
+        get: (): Box => {
+          read.add(key);
+          return strokes.has(key) ? ZERO_BOX : restOf(rest, key);
+        },
+      });
+    // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
+    const measured = Object.keys(rest).length > 0;
+    try {
+      pathOf(path, recording);
+    } catch (error) {
+      if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
+        found.push(
+          `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
+        );
+    }
+    if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
+    for (const other of read)
+      if (other !== name && strokes.has(other))
+        found.push(`path "${name}" reads the stroke "${other}", whose box a path cannot read`);
+  }
+  return found;
+}
+
 interface Outside {
   readonly after: number;
   readonly until: number;
@@ -352,6 +390,7 @@ export function reviewSceneModule(
     findings: [
       ...findings.map((finding) => labelled(beats, finding)),
       ...(cast === undefined ? [] : stageFindings(cast, beats, samples, module.durationMs)),
+      ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
     ],
   };
 }

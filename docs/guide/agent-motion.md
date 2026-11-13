@@ -66,7 +66,9 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   one value that moves its members; a member's own value is relative to its group. A `many` moves only item by item:
   to move a whole row of letters, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
-  it by `[data-path="<name>"]` (`stroke`, `stroke-width`).
+  it by `[data-path="<name>"]` (`stroke`, `stroke-width`). Its points are frame px from the frame's top-left, in any
+  group, and the stage places the member at the path's box. To follow the layout, pass `path: (rest) => toCubics([...])`
+  reading other members with `restOf`; it is drawn again on each measure, and never reads its own box.
 - **Names** are the keys, unique across the cast; an item is `dust.3`. `on: ["land", ["rise", "fall"]]` shows a
   member only while one of its stretches runs, a beat or a pair from the first's start to the second's end, so
   `["rise", "fall"]` is two beats and `[["rise", "fall"]]` one stretch (a member without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
@@ -151,6 +153,9 @@ Glue that only this piece needs stays in the scene as a `mix`.
 3. `npm run motion:moves -- --check` until it prints no finding. It samples the move and refuses one that breaks its
    role's rest, jumps between frames, or lacks a description.
 4. Import it into the scene from `./moves/<id>` and use it like a built-in. Name it in your report.
+5. Name the parts your move is built from in `recipe: ["span", "squashFromSpeed"]` (ids from `--parts`); the catalog
+   shows it and the gate refuses an unknown id. A move two pieces import is listed by `motion:moves -- --candidates`,
+   and `motion:promote <id>` moves it into the library; a person decides when.
 
 ## Live
 

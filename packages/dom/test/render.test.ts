@@ -54,10 +54,16 @@ describe("applyValue", () => {
     expect(target.style.opacity).toBe("");
   });
 
-  it("anchors at the centre when the value names no anchor", () => {
+  it("leaves an HTML element's origin to the page when the value names no anchor, and centres an SVG one", () => {
     const target = element();
+    target.style.transformOrigin = "50% 80%";
     applyValue(target, { rotation: 90 });
-    expect(target.style.transformOrigin).toBe("50% 50%");
+    expect(target.style.transformOrigin).toBe("");
+    applyValue(target, { rotation: 90, anchor: "top" });
+    expect(target.style.transformOrigin).toBe("50% 0%");
+    const shape = element({ ownerSVGElement: {} });
+    applyValue(shape, { rotation: 90 });
+    expect(shape.style.transformOrigin).toBe("50% 50%");
   });
 
   it("measures an SVG element's anchor against its own box, as HTML does", () => {

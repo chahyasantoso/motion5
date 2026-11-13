@@ -72,6 +72,24 @@ describe("motion:moves", () => {
     expect(json.lines[0]).toContain('"input":"(time');
   });
 
+  it("prints a recipe on the line and the full entry, and refuses an unknown part", async () => {
+    const dir = app();
+    writeFileSync(
+      join(dir, "src/moves/made.ts"),
+      move("made", "").replace(
+        '  role: "enter",',
+        '  role: "enter",\n  recipe: ["span", "nonsense"],',
+      ),
+    );
+    const line = (await runCatalog(ok([]), dir)).lines.find((text) => text.startsWith("made "));
+    expect(line).toContain(" | recipe: span + nonsense | ");
+    const full = await runCatalog(ok(["made"]), dir);
+    expect(full.lines).toContain("recipe: span + nonsense");
+    const checked = await runCatalog(ok(["made", "--check"]), dir);
+    expect(checked.code).toBe(1);
+    expect(checked.lines[0]).toContain('recipe names "nonsense"');
+  });
+
   it("reports an app file that exports no move", async () => {
     const dir = app();
     writeFileSync(join(dir, "src/moves/plain.ts"), "export const plain = () => ({ x: 0 });");

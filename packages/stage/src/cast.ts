@@ -1,5 +1,10 @@
 import type { Cubic2d } from "@gerak/moves";
+import type { Rest } from "./rest";
 import { unreachable } from "./unreachable";
+
+/** A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the
+ * other members rest; the stage places the member at the stroke's box. */
+export type ActorPath = readonly Cubic2d[] | ((rest: Rest) => readonly Cubic2d[]);
 
 /** A stretch of the story: one beat, or a pair from the first beat's start to the second's end. */
 export type Stretch = string | readonly [string, string];
@@ -20,8 +25,9 @@ export interface Actor extends Behaviour {
   readonly kind: "actor";
   /** What it says, on any renderer. */
   readonly text?: string;
-  /** The stroke it is, as joined cubic segments made by `toCubics`; its length is what `drawn` reads. */
-  readonly path?: readonly Cubic2d[];
+  /** The stroke it is, as cubics made by `toCubics` or a function of `Rest` answering them; its
+   * length is what `drawn` reads. */
+  readonly path?: ActorPath;
 }
 
 /** A list of things; the scene answers one value per item. To move the whole list, put it in a `group`. */
@@ -44,12 +50,12 @@ export type Cast = Readonly<Record<string, Member>>;
 
 /** One thing on stage, saying `text` or drawing the stroke `path` when given one. */
 export function actor(
-  options: Behaviour & { readonly text?: string; readonly path?: readonly Cubic2d[] } = {},
+  options: Behaviour & { readonly text?: string; readonly path?: ActorPath } = {},
 ): Actor {
   const path = options.path;
   return Object.freeze({
     ...options,
-    ...(path === undefined
+    ...(path === undefined || typeof path === "function"
       ? {}
       : { path: Object.freeze(path.map((cubic) => Object.freeze({ ...cubic }))) }),
     kind: "actor",
@@ -116,7 +122,34 @@ export interface CastName {
   readonly watch: boolean;
   readonly still: boolean;
   readonly text?: string;
-  readonly path?: readonly Cubic2d[];
+  readonly path?: ActorPath;
+}
+
+const CUBIC_NUMBERS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"] as const;
+
+/** Whether `value` is a non-empty list of cubics, each with an id and eight finite numbers. */
+export function isCubics(value: unknown): value is readonly Cubic2d[] {
+  return (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every(
+      (cubic: unknown) =>
+        typeof cubic === "object" &&
+        cubic !== null &&
+        typeof Reflect.get(cubic, "id") === "string" &&
+        CUBIC_NUMBERS.every((key) => Number.isFinite(Reflect.get(cubic, key))),
+    )
+  );
+}
+
+/** A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and
+ * frozen; throws when the function throws or answers no cubics. */
+export function pathOf(path: ActorPath, rest: Rest): readonly Cubic2d[] {
+  if (typeof path !== "function") return path;
+  const answer: unknown = path(rest);
+  if (!isCubics(answer))
+    throw new TypeError("A path function must answer cubics made by `toCubics`, at least one.");
+  return Object.freeze(answer.map((cubic) => Object.freeze({ ...cubic })));
 }
 
 /** A member's own `on` as from-to pairs, or its group's when it states none; refuses an unknown beat. */

@@ -117,8 +117,12 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   const style = target.style;
   style.transform = cssTransform(value);
   style.opacity = value.opacity === undefined ? "" : String(value.opacity);
-  if ("ownerSVGElement" in target) style.transformBox = "fill-box";
-  style.transformOrigin = cssOrigin(value.anchor ?? "center");
+  // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
+  // an SVG element's default is its top-left, so it keeps the centre.
+  const svg = "ownerSVGElement" in target;
+  if (svg) style.transformBox = "fill-box";
+  style.transformOrigin =
+    value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "";
   const blur = value.blur ?? 0;
   style.filter = blur > 0 ? `blur(${blur}px)` : "";
   style.clipPath =

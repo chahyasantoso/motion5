@@ -11,6 +11,8 @@ import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   castNames,
   DEFAULT_FRAME,
+  pathOf,
+  type ActorPath,
   type Box,
   type Cast,
   type CastName,
@@ -69,6 +71,9 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> 
   textContent: string | null;
   tabIndex: number;
   readonly offsetLeft: number;
+  /** Its left and top border widths: offsets inside it start past them. */
+  readonly clientLeft: number;
+  readonly clientTop: number;
   readonly offsetTop: number;
   readonly offsetWidth: number;
   readonly offsetHeight: number;
@@ -163,7 +168,7 @@ const DEFAULT_SKIN = `
 }
 :where([data-skin="default"]:not([data-text]))::before { content: attr(data-cast); }
 :where([data-skin="default"][data-text]) {
-  min-width: 0; min-height: 0; padding: 0; background: none; color: inherit; font-size: 48px;
+  min-width: 0; min-height: 0; padding: 0; background: none; color: inherit; font-size: inherit;
   white-space: pre;
 }
 `;
@@ -201,17 +206,31 @@ function boxOf(cubics: readonly Cubic2d[]): Box {
   return { x, y, width, height };
 }
 
-/** Each stroke member sized to its path's own box, at no specificity so a skin overrides it. */
-function strokeSizes(infos: Iterable<CastName>): string {
-  return [...infos]
-    .flatMap(({ name, path }) => {
-      if (path === undefined) return [];
-      const { width, height } = boxOf(path);
-      return [
-        `:where([data-cast=${JSON.stringify(name)}]) { width: ${width}px; height: ${height}px; }`,
-      ];
-    })
-    .join("\n");
+/** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it;
+ * with no box it is only taken out of the flow. */
+function strokePlace(name: string, box: Box | undefined): string {
+  const at =
+    box === undefined
+      ? ""
+      : ` left: ${box.x}px; top: ${box.y}px; width: ${box.width}px; height: ${box.height}px;`;
+  return `:where([data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
+}
+
+/** A stroke member's drawing: its svg and path, the path it is given, and its last good cubics. */
+interface Stroke<S> {
+  readonly svg: S;
+  readonly path: S;
+  readonly source: ActorPath;
+  cubics: readonly Cubic2d[] | undefined;
+}
+
+/** Reports an error the way an uncaught one in a frame is, without stopping the caller. */
+function report(error: unknown): void {
+  if (typeof reportError === "function") reportError(error);
+  else
+    setTimeout(() => {
+      throw error;
+    }, 0);
 }
 
 interface Placed<E> {
@@ -277,7 +296,13 @@ export function mountStage<
   });
   const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
-  style.textContent = `${DEFAULT_SKIN}\n${strokeSizes(infos.values())}\n${module.skins.dom?.css ?? ""}`;
+  const styleWith = (places: readonly string[]): string =>
+    `${DEFAULT_SKIN}\n${places.join("\n")}\n${module.skins.dom?.css ?? ""}`;
+  style.textContent = styleWith(
+    [...infos.values()].flatMap(({ name, path }) =>
+      path === undefined ? [] : [strokePlace(name, undefined)],
+    ),
+  );
   const frame = document.createElement("div");
   frame.setAttribute("data-stage", "frame");
   Object.assign(frame.style, {
@@ -293,27 +318,24 @@ export function mountStage<
   root.append(style, frame);
 
   const placed = new Map<string, Placed<E>>();
-  const strokes = new Map<E, S>();
+  const strokes = new Map<E, Stroke<S>>();
   const leaf = (element: E, info: CastName, list?: string): void => {
     if (info.text !== undefined) {
       element.textContent = info.text;
       element.setAttribute("data-text", "");
     }
     if (info.path !== undefined) {
-      const box = boxOf(info.path);
       const svg = document.createElementNS(SVG, "svg");
-      svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
       const path = document.createElementNS(SVG, "path");
-      path.setAttribute("d", pathData(info.path));
       path.setAttribute("data-path", info.name);
       svg.append(path);
       element.append(svg);
       element.setAttribute("data-stroke", "");
-      strokes.set(element, path);
+      strokes.set(element, { svg, path, source: info.path, cubics: undefined });
     } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
   };
   const write = (element: E, value: Pose2d): void => {
-    const path = strokes.get(element);
+    const path = strokes.get(element)?.path;
     if (path === undefined) {
       applyValue(element, value);
       return;
@@ -321,6 +343,38 @@ export function mountStage<
     const { stroke, body } = splitStroke(value);
     applyValue(element, body);
     applyValue(path, stroke);
+  };
+  const sameCubics = (next: readonly Cubic2d[], last: readonly Cubic2d[] | undefined): boolean =>
+    last !== undefined &&
+    next.length === last.length &&
+    next.every((cubic, index) => {
+      const was = last[index];
+      return (
+        was !== undefined &&
+        cubic.x0 === was.x0 &&
+        cubic.y0 === was.y0 &&
+        cubic.x1 === was.x1 &&
+        cubic.y1 === was.y1 &&
+        cubic.x2 === was.x2 &&
+        cubic.y2 === was.y2 &&
+        cubic.x3 === was.x3 &&
+        cubic.y3 === was.y3
+      );
+    });
+  // Draws a stroke where things rest; a path function that throws is reported and its last good path kept.
+  const draw = (name: string, stroke: Stroke<S>, laid: Rest): readonly Cubic2d[] | undefined => {
+    let cubics = stroke.cubics;
+    try {
+      cubics = pathOf(stroke.source, laid);
+    } catch (error) {
+      report(new Error(`The path of "${name}" failed: ${String(error)}`, { cause: error }));
+    }
+    if (cubics === undefined || sameCubics(cubics, stroke.cubics)) return stroke.cubics ?? cubics;
+    const box = boxOf(cubics);
+    stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
+    stroke.path.setAttribute("d", pathData(cubics));
+    stroke.cubics = cubics;
+    return cubics;
   };
   const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
@@ -381,18 +435,51 @@ export function mountStage<
     // At scale 1 the frame carries no transform, so its content is rasterised as a plain page would be.
     frame.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
+  // Strokes sit out of the flow, so every other member is measured first and each path drawn from that.
   const measure = (): Rest => {
-    const rest: Record<string, Box> = {};
+    const boxes: Record<string, Box> = {};
     for (const [name, { element: own, parent }] of placed) {
+      if (strokes.has(own)) continue;
       let left = own.offsetLeft;
       let top = own.offsetTop;
       for (let up = parent; up !== undefined; up = up.parent) {
-        left += up.element.offsetLeft;
-        top += up.element.offsetTop;
+        left += up.element.offsetLeft + up.element.clientLeft;
+        top += up.element.offsetTop + up.element.clientTop;
       }
       const width = own.offsetWidth;
       const height = own.offsetHeight;
-      rest[name] = { x: left + width / 2, y: top + height / 2, width, height };
+      boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
+    }
+    const laid: Rest = Object.freeze({ ...boxes });
+    const places: string[] = [];
+    for (const [name, { element: own, parent }] of placed) {
+      const stroke = strokes.get(own);
+      if (stroke === undefined) continue;
+      const cubics = draw(name, stroke, laid);
+      if (cubics === undefined) {
+        places.push(strokePlace(name, undefined));
+        boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
+        continue;
+      }
+      const box = boxOf(cubics);
+      const home = parent === undefined ? undefined : laid[parent.info.name];
+      const left =
+        home === undefined || parent === undefined
+          ? 0
+          : home.x - home.width / 2 + parent.element.clientLeft;
+      const top =
+        home === undefined || parent === undefined
+          ? 0
+          : home.y - home.height / 2 + parent.element.clientTop;
+      places.push(strokePlace(name, { ...box, x: box.x - left, y: box.y - top }));
+      boxes[name] = { ...box, x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    }
+    const text = styleWith(places);
+    if (style.textContent !== text) style.textContent = text;
+    const rest: Record<string, Box> = {};
+    for (const name of placed.keys()) {
+      const box = boxes[name];
+      if (box !== undefined) rest[name] = box;
     }
     return Object.freeze(rest);
   };
@@ -497,7 +584,9 @@ export function mountStage<
       : undefined;
   if (observer !== undefined && isElement(container)) {
     observer.observe(container);
-    for (const { element: own } of placed.values()) if (isElement(own)) observer.observe(own);
+    // A stroke's size is set from its path, so watching it would measure again on its own redraw.
+    for (const { element: own } of placed.values())
+      if (isElement(own) && !strokes.has(own)) observer.observe(own);
   }
   // A web font that lands after mount changes text sizes, so the boxes are measured again.
   let live = true;

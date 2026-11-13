@@ -1,5 +1,5 @@
 import type { Events, Time } from "@gerak/moves";
-import { castNames, type Cast, type Member } from "./cast";
+import { castNames, isCubics, type Cast, type Member } from "./cast";
 import type { Box, Rest } from "./rest";
 import { frame, story, type Frame, type Story } from "./story";
 
@@ -41,19 +41,9 @@ function isStretch(value: unknown): boolean {
   return isString(value) || (Array.isArray(value) && value.length === 2 && value.every(isString));
 }
 
-const CUBIC_NUMBERS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"];
-
+/** A fixed list of cubics, or a function answering them once the stage has measured. */
 function isPath(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every(
-      (cubic) =>
-        isRecord(cubic) &&
-        isString(cubic["id"]) &&
-        CUBIC_NUMBERS.every((key) => isNumber(cubic[key])),
-    )
-  );
+  return typeof value === "function" || isCubics(value);
 }
 
 function isMember(value: unknown): value is Member {
@@ -128,7 +118,7 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
     const cast = value["cast"];
     if (!isCast(cast))
       return reason(
-        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
+        "`cast` must be made by `actor`, `many` and `group`, with `text` a string, `path` cubics made by `toCubics` or a function of `rest` answering them, and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
       );
     for (const { name, on } of castNames(cast, beats.order))
       for (const [from, to] of on ?? []) {

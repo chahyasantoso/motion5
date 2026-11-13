@@ -196,4 +196,24 @@ describe("the move gate", () => {
     });
     expect(checkMove(fading).map((finding) => finding.kind)).toEqual(["not-shown"]);
   });
+
+  it("refuses a recipe naming a part the parts list lacks", () => {
+    const base = {
+      role: "enter",
+      description: "Slides in.",
+      options: {},
+      example: { options: {} },
+      moments: () => ({}),
+      run: (_options: object, { progress }: { readonly progress: number }): Pose2d => ({
+        x: -10 * (1 - progress),
+      }),
+    } as const;
+    const good = defineMove({ ...base, id: "good-recipe", recipe: ["span", "squashFromSpeed"] });
+    expect(checkMove(good)).toEqual([]);
+    const bad = defineMove({ ...base, id: "bad-recipe", recipe: ["span", "nonsense"] });
+    expect(checkMove(bad)).toEqual([{ kind: "unknown-part", part: "nonsense" }]);
+    expect(describeFinding("bad-recipe", { kind: "unknown-part", part: "nonsense" })).toContain(
+      '"nonsense"',
+    );
+  });
 });

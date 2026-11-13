@@ -1,5 +1,5 @@
-import { existsSync, readdirSync } from "node:fs";
-import { basename, join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
@@ -20,13 +20,14 @@ export interface MoveRecord {
   readonly exportName: string;
   readonly options: Readonly<Record<string, OptionField>>;
   readonly moments: readonly string[];
+  readonly recipe: readonly string[];
   readonly example: { readonly options: object; readonly input?: unknown };
   readonly source: MoveSource;
 }
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--parts] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--parts] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
@@ -42,6 +43,7 @@ export type CatalogArgs =
       readonly check: boolean;
       readonly json: boolean;
       readonly parts: boolean;
+      readonly candidates: boolean;
       readonly root: string | undefined;
     };
 
@@ -52,6 +54,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   let check = false;
   let json = false;
   let parts = false;
+  let candidates = false;
   let role: string | undefined;
   let root: string | undefined;
   for (let i = 0; i < argv.length; i += 1) {
@@ -60,6 +63,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     if (arg === "--check") check = true;
     else if (arg === "--json") json = true;
     else if (arg === "--parts") parts = true;
+    else if (arg === "--candidates") candidates = true;
     else if (arg === "--role" || arg === "--root") {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
@@ -74,7 +78,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const known = MOVE_ROLES.find((candidate) => candidate === role);
   if (role !== undefined && known === undefined)
     return usage(`Unknown role "${role}". Roles: ${MOVE_ROLES.join(", ")}.`);
-  return { kind: "ok", id: ids[0], role: known, check, json, parts, root };
+  return { kind: "ok", id: ids[0], role: known, check, json, parts, candidates, root };
 }
 
 function momentNames(move: CheckedMove): readonly string[] {
@@ -109,6 +113,7 @@ function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveReco
     exportName: name,
     options: move.options,
     moments: momentNames(move),
+    recipe: move.recipe ?? [],
     example: move.example,
     source,
   };
@@ -165,6 +170,7 @@ export function formatLine(record: MoveRecord): string {
     `${record.id} [${record.role}] ${record.description}`,
     `options: ${options.length === 0 ? "none" : options.join("; ")}`,
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
+    ...(record.recipe.length === 0 ? [] : [`recipe: ${record.recipe.join(" + ")}`]),
     ...(record.source.kind === "app"
       ? [`import from ./moves/${basename(record.source.file, ".ts")}`]
       : []),
@@ -191,6 +197,7 @@ export function formatFull(record: MoveRecord): readonly string[] {
     "options:",
     ...(options.length === 0 ? ["  none"] : options),
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
+    ...(record.recipe.length === 0 ? [] : [`recipe: ${record.recipe.join(" + ")}`]),
     `example: ${exampleCall(record)}`,
     record.source.kind === "app" ? `file: ${record.source.file}` : "from: @gerak/moves",
   ];
@@ -246,6 +253,59 @@ export async function loadAppModules(root: string): Promise<{
   return { modules, problems };
 }
 
+/** A local move that passes the gate and is imported by two or more files of the app. */
+export interface Candidate {
+  readonly id: string;
+  readonly file: string;
+  readonly importers: readonly string[];
+}
+
+/** One line of `--candidates`: the id, its file and how many files import it. */
+export function formatCandidate(candidate: Candidate): string {
+  return `${candidate.id} | ${basename(candidate.file)} | importers: ${candidate.importers.length}`;
+}
+
+/** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
+export function sourceFiles(folder: string): readonly string[] {
+  if (!existsSync(folder)) return [];
+  return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(folder, entry.name);
+    if (entry.isDirectory())
+      return entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")
+        ? []
+        : sourceFiles(path);
+    return /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts") ? [path] : [];
+  });
+}
+
+/** The files of `<root>/src`, outside `src/moves`, whose text imports `src/moves/<name>`. */
+export function importersOf(root: string, file: string): readonly string[] {
+  const target = resolve(file).replace(/\.ts$/, "");
+  const imports = /\bfrom\s*["'](\.[^"']*)["']/g;
+  return sourceFiles(join(root, "src")).filter((path) => {
+    if (dirname(resolve(path)) === dirname(target)) return false;
+    return [...readFileSync(path, "utf8").matchAll(imports)].some(
+      ([, spec = ""]) => resolve(dirname(path), spec).replace(/\.(js|ts)$/, "") === target,
+    );
+  });
+}
+
+/** The app's moves that pass the gate and are imported by two or more files, by id. */
+export function candidatesOf(
+  root: string,
+  all: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
+): readonly Candidate[] {
+  const found: Candidate[] = [];
+  for (const entry of all) {
+    const { record, move } = entry;
+    if (record.source.kind !== "app") continue;
+    if (checkCatalog(all, [entry]).length > 0 || checkMove(move).length > 0) continue;
+    const importers = importersOf(root, record.source.file);
+    if (importers.length >= 2) found.push({ id: record.id, file: record.source.file, importers });
+  }
+  return found.sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
+}
+
 /** What `motion:moves` prints: the `lines`, and the exit `code`, 1 on a finding. */
 export interface CatalogRun {
   readonly lines: readonly string[];
@@ -260,6 +320,13 @@ export async function runCatalog(
   if (args.parts) return { lines: formatParts(), code: 0 };
   const { modules, problems } = await loadAppModules(root);
   const all = collectRecords(modules);
+  if (args.candidates) {
+    const found = candidatesOf(root, all);
+    return {
+      lines: found.length === 0 ? ["No candidates."] : found.map(formatCandidate),
+      code: problems.length === 0 ? 0 : 1,
+    };
+  }
   const byRole = all.filter(({ record }) => args.role === undefined || record.role === args.role);
   const selected =
     args.id === undefined ? byRole : byRole.filter(({ record }) => record.id === args.id);

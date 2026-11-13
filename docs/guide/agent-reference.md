@@ -220,6 +220,8 @@ const slide = defineMove({
 - **`along`** `(cubics: readonly Cubic2d[], share: number, options?: { readonly turn?: boolean; }): Pose2d`: The `{ x, y }` pose `share` of the way along a path by distance, from the target's rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
 - **`velocity`** `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; }`: The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`; zero with no clock.
 - **`smear`** `(velocity: { readonly vx: number; readonly vy: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: P…`: Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90]. Content that must not turn goes in an inner element posed `{ rotation: -heading }`.
+- **`squashFromSpeed`** `(speed: { readonly vx: number; readonly vy: number; }, options: SquashFromSpeedOptions): Pose2d`: A pose stretched along the heading of a px/s `speed` and squashed across it, `amount` per px/s up to `most`; empty at zero speed. Rotation is the heading in (-90, 90].
+- **`SquashFromSpeedOptions`** `type SquashFromSpeedOptions`: Settings of `squashFromSpeed`: `amount` of squash per px/s, and the `most` it may reach, 0 to 0.9.
 - **`toCubics3d`** `(anchors: readonly Anchor3d[]): readonly Cubic3d[]`: One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
 - **`along3d`** `(cubics: readonly Cubic3d[], share: number, options?: { readonly face?: boolean; }): Pose3d`: The pose `share` of the way along a 3D path by distance; `face` adds the turn of local +x onto the tangent, no roll.
 - **`velocity3d`** `(signal: (time: Time, events: Events) => Pose3d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; …`: Units per second a signal's `x`, `y` and `z` move at the scene's `time`, never an eased one; zero with no clock.
@@ -436,13 +438,15 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: readonly Cubic2d[]; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: string; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
 - **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
+- **`pathOf`** `(path: ActorPath, rest: Readonly<Record<string, Box>>): readonly Cubic2d[]`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
 - **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
+- **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
 - **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
 - **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
@@ -552,11 +556,18 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
-- **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--root dir]`**: lists every move of `@gerak/moves`, then of
-  `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments. `<id>` prints
+- **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
+  `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
+  `recipe` a move names. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
-  an id declared twice) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
-  moves, by group, each with its call shape and what it is for.
+  an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
+  moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
+  and are imported by two or more files of `<root>/src`, one line each: id, file, importers.
+- **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
+  `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
+  index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and
+  changes nothing, for a move that is not a candidate, one whose file exports a helper or a name the library has, or
+  one some file names in a form it cannot rewrite (a re-export, `import *`, a dynamic import). Run `npm run format` and `npm run reference -- --write` after it.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.

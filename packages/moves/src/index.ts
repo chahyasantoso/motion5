@@ -50,6 +50,7 @@ export { toCubics } from "./path";
 export { along } from "./along";
 export { velocity } from "./velocity";
 export { smear } from "./smear";
+export { squashFromSpeed, type SquashFromSpeedOptions } from "./squash-speed";
 export { toCubics3d, along3d } from "./along3d";
 export { velocity3d } from "./velocity3d";
 export { smear3d } from "./smear3d";
