@@ -35,10 +35,10 @@ The decision record is ADR-181 (ADR-180 is the last). Slice I1 touches these, ch
 
 ## Open items
 
-- The `penguin` piece predates `--margin`, so its flipper is clipped by the frame for a few frames; re-importing with
-  `--margin 40` and moving its pivots and joints by 40 px fixes it. The live-inputs measure builds `penguin-talk` on
-  it, so decide in the brief whether that worker re-imports.
-- Recorded from the artwork review, not scheduled: a 1 px horizontal line lands half a pixel off; a dropped `use` of a
-  symbol scores in no member; defs in a shadow root are checked in Chromium only; no test holds a pose's `anchor` over
-  a `pivot`.
+- The plan grew after approval, by the owner's choice: slice I5 fixes the artwork review's four open findings, slice
+  I6 imports a drawing `--into` a bigger scene, and the measure is now `penguin-scene`, the penguin talking on an ice
+  floe with snow, which also ends the clipped flipper of the old `penguin` piece (made before `--margin`). The plan's
+  team table splits I5 by owner so one worker holds `packages/dom/src/stage.ts`.
+- Per-part gradients copy a shared gradient once per part that uses it; the owner asked for a note, which is in the
+  plan's risks. Revisit it if a scene has hundreds of parts on one gradient.
 - Deferred: the `trail` cache (ADR-176), a clip that grows.

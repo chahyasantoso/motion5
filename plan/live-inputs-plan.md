@@ -41,6 +41,15 @@ member's outline is fixed, so a mouth cannot change shape.
   to run the same way round, then each pair is split at its longest cubics until both have as many, so the geometry
   of each is exact. Outlines whose counts of separate pieces differ are refused, naming the member. A member's box
   stays its `path`'s, and the review reports `shape` given to a member with no `shapes`.
+- **Imported art goes into a bigger scene.** `motion:import-svg <file> --into <piece> --at x,y [--scale s] --prefix
+  <word>` adds the drawing's parts to an existing piece, placed and scaled in its frame, every name prefixed in camel
+  case (`penguinBody`) so two imports never collide, and its defs' ids prefixed too. Pivots and joints are then set in
+  the piece's own frame px. It stays one stage module; there is no composition layer.
+- **Four findings from the artwork review are fixed.** A path member's box is never thinner than 1 px, so a flat line
+  draws where its SVG draws it. A `use` of a `symbol` is imported through the symbol's viewBox as ordinary parts, and
+  `motion:compare` adds an `outside` entry for differences no member's box covers. Each part's gradients are written
+  inside its own `<svg>` with ids unique to the part, so no `url(#id)` crosses a shadow root in any engine. A browser
+  test holds a pose's `anchor` over a `pivot`.
 - **Switching needs nothing new.** Mouth parts drawn apart switch with `opacity` from the scene; a morph is for the
   steps switching makes too visible.
 
@@ -73,19 +82,43 @@ member's outline is fixed, so a mouth cannot change shape.
 - A section of `docs/guide/agent-motion.md`, "Driving a rig": samples as events, `follow` on `"value"`, `send` for a
   live source, a recording as `cues` inside the story's length, no story loop for a live piece, switching mouth parts
   and morphing them, and what to check.
+- "Rigging artwork" gains `--into`, `--at`, `--scale` and `--prefix`: importing a drawing into a bigger scene, with
+  room round it, instead of as a piece of its own.
 - "Rigging artwork" gains its first step for a character with no SVG: draw it as an SVG file in
   `apps/pieces/references/`, each part its own shape with a clear id, then import it, so a drawn character and a
   supplied one take one path.
+
+### I5. The artwork review's findings
+
+- **Invariant:** as decided above.
+- **Owner:** `packages/dom/src/stage.ts` (the 1 px floor, per-part defs), `packages/tools/src/scene/svg-extract.ts`
+  and `import-svg.ts` (`symbol`), `packages/tools/src/page/compare.ts` (`outside`).
+- **Test:** a 1 px horizontal line compares near 0 against its SVG; a `use` of a symbol becomes parts that compare
+  near 0; a part dropped from a piece shows in `outside`; two parts filled by one gradient each carry their own copy
+  and draw as before; the `compare` fixture runs in Firefox and WebKit where Playwright has them, and skips otherwise;
+  a part with an off-centre pivot squashed with `anchor: "bottom"` keeps its bottom edge, and turns about the pivot
+  without one.
+
+### I6. Importing into a scene
+
+- **Invariant:** as decided above; importing the penguin twice into one piece under two prefixes gives two sets of
+  parts and defs that never collide, each drawn where `--at` and `--scale` put it.
+- **Owner:** `packages/tools/src/scene/import-svg.ts` and its bin.
+- **Test:** a fixture imported `--into` a piece at an offset and a scale: its points move and scale as asked, its
+  stroke widths scale, and the piece's existing members and skin are kept; a clash of names is refused, naming it.
 
 ### I4. Proof
 
 - **A recording:** a script writes `apps/pieces/references/talk.json`, eight seconds of samples at 30 a second:
   `mouthOpen` from a speech-like envelope and `blink` 0 to 1 and back every three to five seconds, fixed by a seed.
   It is made, not tracked, and says so.
-- **Measure, alone, fresh:** an Opus worker at medium effort makes `penguin-talk` from the rigged `penguin`: it adds a
-  beak that opens and eyelids that close, drawn as parts in the penguin's style, and drives them from `talk.json`
-  through `follow`, switching or morphing the beak as the brief asks. It passes when the scene reads samples only
-  through `follow`, scrubbing to any moment gives the frame playing reached, and the review is clean.
+- **Measure, alone, fresh:** an Opus worker at medium effort makes `penguin-scene`, a 1280 by 720 scene: the penguin,
+  imported `--into` it with room around it, stands on an ice floe in the sea while snow falls, and talks to the
+  viewer from `talk.json`, its beak and eyelids drawn as parts in its style and driven through `follow`, switching or
+  morphing the beak as the brief asks. It draws the floe and at least one other element as SVGs of its own and
+  imports them the same way. It passes when the scene reads samples only through `follow`, no part is cut by the
+  frame, scrubbing to any moment gives the frame playing reached, `motion:compare` holds each import to its SVG at
+  rest, and the review is clean.
 - **By hand, for the owner:** a page `talk.html?piece=penguin-talk` feeds `send` from the microphone's level, so the
   beak moves as a person talks. It needs a person and a microphone; nothing tests it.
 - **Cold review:** a Sonnet agent reviews the diff and runs what it claims.
@@ -95,13 +128,15 @@ member's outline is fixed, so a mouth cannot change shape.
 | Wave | Who | Slices | Why |
 | --- | --- | --- | --- |
 | 1 | Conductor | I0, I1 | the decisions and the event change every slice reads |
-| 2 | Sonnet, medium | I2 | stage and render, the morph |
+| 2 | Sonnet, medium | I2, and I5's stage parts (1 px floor, per-part defs, the anchor test) | one worker owns `stage.ts` and `render.ts` |
+| 2 | Sonnet, medium | I5's tools parts (`symbol`, `outside`) | import and compare |
 | 2 | Sonnet, medium | I4 recording and the microphone page | a script and one page |
-| 3 | Conductor | I3 | what the measure reads |
-| 3 | Opus, medium, fresh | I4 measure | |
-| 3 | Sonnet, medium | cold review | |
+| 3 | Sonnet, medium | I6 | the import again, after wave 2, so one worker owns `import-svg.ts` at a time |
+| 4 | Conductor | I3 | what the measure reads |
+| 4 | Opus, medium, fresh | I4 measure | |
+| 4 | Sonnet, medium | cold review | |
 
-One pull request, after wave 3.
+One pull request, after wave 4.
 
 ## 5. Risks
 
@@ -111,6 +146,9 @@ One pull request, after wave 3.
 - **Matching outlines by splitting** keeps each outline exact but can pair a corner with a curve, so a blend may twist
   midway. The measure looks at the midway frames; a better pairing waits for a brief that needs it.
 - **The microphone page** is the only part no test reaches.
+- **Per-part gradients copy a shared gradient once for each part that uses it.** It is markup made once at mount,
+  never per frame, so a character costs a few kilobytes; a scene where hundreds of parts share one gradient would
+  pay for each copy, and is the case to look at again.
 
 ## 6. Done when
 
