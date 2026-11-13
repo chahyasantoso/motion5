@@ -23,6 +23,7 @@ const OFFSET: ValueField = { rest: 0, combines: "add", smooth: true, shows: fals
 const SIZE: ValueField = { rest: 1, combines: "multiply", smooth: false, shows: false };
 const SHOWN: ValueField = { combines: "replace", smooth: true, shows: true };
 const PLACED: ValueField = { combines: "replace", smooth: true, shows: false };
+const ORDER: ValueField = { combines: "replace", smooth: false, shows: false };
 
 /** Every field a value can carry, one row each; nothing else states a field's rest or how it combines. */
 export const VALUE_FIELDS = Object.freeze({
@@ -45,6 +46,7 @@ export const VALUE_FIELDS = Object.freeze({
   clipRadius: SHOWN,
   clipWidth: PLACED,
   clipHeight: PLACED,
+  layer: ORDER,
 }) satisfies Readonly<Record<string, ValueField>>;
 
 /** A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes. */
@@ -74,6 +76,7 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "clipRadius",
   "clipWidth",
   "clipHeight",
+  "layer",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 
 /** A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`,

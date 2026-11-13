@@ -184,3 +184,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-177 — Strokes that combine, presence the review reads, and text over time — Accepted, 2026-11-13
 - ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13
 - ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13
+- ADR-180 — Rigging vector artwork — Accepted, 2026-11-13

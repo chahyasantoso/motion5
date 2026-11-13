@@ -5,8 +5,9 @@ import { frame, story, type Frame, type Story } from "./story";
 
 /** How the cast looks on each renderer; a member a skin leaves out gets the renderer's default. */
 export interface Skins {
-  /** CSS scoped to the stage, styling each member by `[data-cast="<name>"]`. */
-  readonly dom?: { readonly css?: string };
+  /** CSS scoped to the stage, styling each member by `[data-cast="<name>"]`, and SVG paint servers
+   * (gradients, patterns) its `fill: url(#id)` reaches. */
+  readonly dom?: { readonly css?: string; readonly defs?: string };
 }
 
 /** What a stage module exports: its story, its cast, their skins and a scene answering `V`. */
@@ -64,10 +65,15 @@ function isPath(value: unknown): boolean {
   return typeof value === "function" || isCubics(value);
 }
 
+function isPoint(value: unknown): boolean {
+  return isRecord(value) && isNumber(value["x"]) && isNumber(value["y"]);
+}
+
 function isMember(value: unknown): value is Member {
   if (!isRecord(value) || "enters" in value || "leaves" in value) return false;
   const on = value["on"];
   if (!isOptional(on, (given) => Array.isArray(given) && given.every(isStretch))) return false;
+  if (!isOptional(value["pivot"], isPoint)) return false;
   switch (value["kind"]) {
     case "actor":
       return isOptional(value["text"], isText) && isOptional(value["path"], isPath);
@@ -118,14 +124,20 @@ function readStory(value: unknown): Story<string> | string {
 }
 
 function readSkins(value: unknown): Skins | string {
-  const fail = "`skins` must be an object, with `dom.css` a string when given.";
+  const fail = "`skins` must be an object, with `dom.css` and `dom.defs` strings when given.";
   if (!isRecord(value)) return fail;
   const dom = value["dom"];
   if (dom === undefined) return {};
   if (!isRecord(dom)) return fail;
   const css = dom["css"];
-  if (css === undefined) return { dom: {} };
-  return typeof css === "string" ? { dom: { css } } : fail;
+  const defs = dom["defs"];
+  if (!isOptional(css, isString) || !isOptional(defs, isString)) return fail;
+  return {
+    dom: {
+      ...(typeof css === "string" ? { css } : {}),
+      ...(typeof defs === "string" ? { defs } : {}),
+    },
+  };
 }
 
 interface ReadLayouts {
@@ -196,7 +208,7 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
     const cast = value["cast"];
     if (!isCast(cast))
       return reason(
-        "`cast` must be made by `actor`, `many` and `group`, with `text` a string or a function of time, `path` cubics made by `toCubics` or a function of `rest` answering them, and `on` a list of beats or pairs of beats (`enters` and `leaves` are gone).",
+        "`cast` must be made by `actor`, `many` and `group`, with `text` a string or a function of time, `path` cubics made by `toCubics` or a function of `rest` answering them, `on` a list of beats or pairs of beats, and `pivot` an `{ x, y }` point (`enters` and `leaves` are gone).",
       );
     for (const { name, on, kind, text } of castNames(cast, beats.order)) {
       if (kind === "item" && typeof text === "function")

@@ -28,12 +28,13 @@ describe("cssTransform", () => {
 });
 
 describe("applyValue", () => {
-  it("writes the transform, opacity and the anchor as transform origin, and clears filter and clip", () => {
+  it("writes the transform, opacity and the anchor as transform origin, and clears filter, clip and layer", () => {
     const target = element();
     applyValue(target, { x: 5, y: -20, scaleX: 1.2, opacity: 0.5, anchor: "bottom" });
     expect(target.style).toEqual({
       transform: "translate3d(5px, -20px, 0px) scaleX(1.2)",
       opacity: "0.5",
+      zIndex: "",
       filter: "",
       clipPath: "",
       transformOrigin: "50% 100%",
@@ -97,6 +98,14 @@ describe("applyValue", () => {
     expect(target.style.clipPath).toBe("xywh(30px 15px 40px 10px round 4px)");
     applyValue(target, { clipX: 50, clipY: 20, clipWidth: 40 });
     expect(target.style.clipPath).toBe("");
+  });
+
+  it("writes a layer as the nearest whole z-index, and clears it when a later value has none", () => {
+    const target = element();
+    applyValue(target, { layer: 2.6 });
+    expect(target.style.zIndex).toBe("3");
+    applyValue(target, { x: 1 });
+    expect(target.style.zIndex).toBe("");
   });
 
   it("dashes the stroke so exactly the stretch from drawnFrom to drawn shows", () => {
@@ -176,6 +185,13 @@ describe("pathData", () => {
   it("writes cubic segments as SVG path data", () => {
     expect(pathData(cubics)).toBe("M 0 0 C 10 0, 90 5, 100 0 C 100 0, 100 100, 100 100");
     expect(pathData([])).toBe("");
+  });
+
+  it("starts another outline where a cubic does not begin where the last one ended", () => {
+    const hole = { id: "c", x0: 40, y0: 40, x1: 50, y1: 40, x2: 60, y2: 50, x3: 40, y3: 40 };
+    expect(pathData([...cubics, hole])).toBe(
+      "M 0 0 C 10 0, 90 5, 100 0 C 100 0, 100 100, 100 100 M 40 40 C 50 40, 60 50, 40 40",
+    );
   });
 
   it("sets a path element's d attribute", () => {

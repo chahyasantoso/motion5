@@ -47,6 +47,7 @@ class FakeElement implements StageElement<FakeElement, FakeElement> {
   parent: FakeElement | undefined;
   shadowRoot: FakeElement | undefined;
   textContent: string | null = null;
+  innerHTML?: string;
   tabIndex = -1;
   offsetLeft = 0;
   offsetTop = 0;
@@ -775,6 +776,32 @@ describe("mountStage", () => {
       });
       expect(frame.attributes.has("data-layout")).toBe(false);
       expect(seen.rest?.card?.x).toBe(200);
+    });
+
+    it("turns a member about its pivot, from where its box rests in each layout", () => {
+      const seen: Laid = {};
+      const { root } = layered(seen, {
+        cast: { card: actor({ watch: true, pivot: { x: 150, y: 60 } }), dot: actor() },
+      });
+      const css = root.children[0]?.textContent ?? "";
+      expect(css).toContain(
+        ':where([data-layout="list"] [data-cast="card"]) { transform-origin: 50px 60px; }',
+      );
+      expect(css).toContain(
+        ':where([data-layout="detail"] [data-cast="card"]) { transform-origin: -550px 60px; }',
+      );
+      expect(css).not.toContain('[data-cast="dot"]) { transform-origin');
+    });
+
+    it("mounts a skin's defs once inside the frame, where a fill's url reaches them", () => {
+      const seen: Laid = {};
+      const { frame } = layered(seen, {
+        skins: { dom: { css: "", defs: '<radialGradient id="belly"></radialGradient>' } },
+      });
+      const defs = frame.children.filter((child) => child.innerHTML !== undefined);
+      expect(defs).toHaveLength(1);
+      expect(defs[0]?.innerHTML).toBe('<defs><radialGradient id="belly"></radialGradient></defs>');
+      expect(defs[0]?.attributes.get("aria-hidden")).toBe("true");
     });
 
     it("leaves a module without layouts unlabelled, handing the scene no layouts", () => {

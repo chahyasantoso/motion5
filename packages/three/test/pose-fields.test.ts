@@ -23,6 +23,7 @@ const MOVED: Required<Pick<Pose2d, Field>> = {
   clipRadius: 7,
   clipWidth: 8,
   clipHeight: 4,
+  layer: 3,
   anchor: "bottom",
 };
 
@@ -49,6 +50,7 @@ function baseFor(field: Field): Pose2d {
     case "drawn":
     case "drawnFrom":
     case "clipRadius":
+    case "layer":
       return {};
     default: {
       const unknown: never = field;

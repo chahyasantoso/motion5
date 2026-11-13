@@ -1,6 +1,6 @@
 # Artwork plan: rigging vector artwork
 
-**Status:** Proposed, 2026-11-13.
+**Status:** Approved by the owner, 2026-11-13.
 **Base:** `main` at `8b157254`, the merge of pull request 589.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` section 5 (stage 6), `docs/ADR-174` to
 `docs/ADR-179`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -44,6 +44,9 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
   The stage sets the member's transform origin there from its measured box, on mount and on every re-measure. A pose's
   `anchor`, the named side a squash keeps still, wins on the frames that give one. Without either, an HTML member
   keeps its skin's origin and an SVG member its centre, as today.
+- **Paint order is a value.** `layer` is a field of a value, a number written as `z-index`, that replaces rather than
+  adds and may step, so a scene puts a part behind another while it moves, such as a leg crossing behind in a walk.
+  Without it a part keeps its skin's order.
 - **Parts stay flat; a chain carries them.** Grouping changes paint order, since a transformed group paints as one
   layer, so a rigged piece keeps every part at the top level in the SVG's paint order. What carries what is a chain
   from `@gerak/rig`: `chainFromRest(chain, rest, options)` answers, for each bone, the pose that moves its part from
@@ -64,9 +67,11 @@ And a skin is CSS only, so an SVG's gradients have nowhere to live.
 ### H1. Outlines, defs and pivots on the stage
 
 - **Invariant:** a path member with two separate outlines draws two; `skins.dom.defs` gradients fill members; a
-  member with `pivot` turns about it, a pose `anchor` overrides it on that frame, and a resize keeps it right.
-- **Owner:** `packages/dom/src/render.ts` (`pathData`, no inline centre over a pivot), `packages/dom/src/stage.ts`
-  (defs, the origin from the measured box), `packages/stage/src/cast.ts` and `module.ts` (`pivot`, `defs`).
+  member with `pivot` turns about it, a pose `anchor` overrides it on that frame, and a resize keeps it right; a
+  value's `layer` is written as `z-index` and cleared when a later value leaves it out.
+- **Owner:** `packages/dom/src/render.ts` (`pathData`, `layer`), `packages/dom/src/stage.ts` (defs, the origin from
+  the measured box), `packages/stage/src/cast.ts` and `module.ts` (`pivot`, `defs`), `VALUE_FIELDS` in
+  `packages/moves/src/pose.ts` (`layer`).
 - **Test:** a two-outline path's data has two `M`; a gradient id in `defs` resolves inside the stage's root; an SVG
   path member and an HTML member, each with an off-centre pivot, rotated 90: the pivot stays where it rests.
 
@@ -127,8 +132,8 @@ One pull request, after wave 3, with the roadmap's reorder and the motion-atlas 
 
 ## 5. Risks
 
-- **Paint order against carrying:** flat parts keep the SVG's order, and a chain carries them. A part that must pass
-  behind another while it moves cannot yet: the order is fixed by the skin, and a paint-order value waits for a brief.
+- **Paint order against carrying:** flat parts keep the SVG's order, and a chain carries them; `layer` changes the
+  order where a motion needs it, and only among siblings, since a group paints as one layer.
 - **Two owners of an origin:** `pivot` and a pose's `anchor` both set it. The rule is fixed above, a pose's `anchor`
   wins on its frames, and the test holds it.
 - **SVG is wide:** CSS classes in a `<style>` element, `use` references and nested `svg` elements are common in

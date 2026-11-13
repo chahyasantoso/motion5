@@ -4,6 +4,7 @@ import { unreachable } from "./unreachable";
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
 export interface RenderStyle {
   transform?: string;
+  zIndex?: string;
   transformOrigin?: string;
   transformBox?: string;
   opacity?: string;
@@ -101,12 +102,15 @@ export function cssDash(
 
 /** SVG path data for joined cubic segments. */
 export function pathData(cubics: readonly Cubic2d[]): string {
-  const [first] = cubics;
-  if (first === undefined) return "";
-  return [
-    `M ${first.x0} ${first.y0}`,
-    ...cubics.map((c) => `C ${c.x1} ${c.y1}, ${c.x2} ${c.y2}, ${c.x3} ${c.y3}`),
-  ].join(" ");
+  const parts: string[] = [];
+  let last: Cubic2d | undefined;
+  for (const c of cubics) {
+    // A cubic that does not start where the last one ended starts another outline.
+    if (last === undefined || last.x3 !== c.x0 || last.y3 !== c.y0) parts.push(`M ${c.x0} ${c.y0}`);
+    parts.push(`C ${c.x1} ${c.y1}, ${c.x2} ${c.y2}, ${c.x3} ${c.y3}`);
+    last = c;
+  }
+  return parts.join(" ");
 }
 
 /** A value split into the fields `applyValue` writes as a stroke's dash and the rest, for a
@@ -132,6 +136,8 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   const style = target.style;
   style.transform = cssTransform(value);
   style.opacity = value.opacity === undefined ? "" : String(value.opacity);
+  // Paint order steps, so a layer between two whole numbers paints as the nearer one.
+  style.zIndex = value.layer === undefined ? "" : String(Math.round(value.layer));
   // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;

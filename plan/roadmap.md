@@ -106,8 +106,9 @@ Three things follow from it:
 7. **Driving a rig from live inputs.** A small plan after stage 6, no plan yet. Tracking stays outside; the base takes
    its numbers: each sample a named value in the event log, such as `mouthOpen` 0.6 at 1234 ms, read smoothed by a
    helper, so a scene stays pure and a recorded session replays, scrubs and renders. Proof: the rigged penguin blinks
-   and talks from a recorded input file. Mouth shapes that switch or morph between outlines, the blend shapes of
-   section 6, wait for their own plan.
+   and talks from a recorded input file. Mouth shapes switch between drawn parts with a quick fade, and morph from
+   one outline into another where switching looks too stepped: each outline resampled to the same cubics, then
+   blended: blend shapes in 2D.
 8. **3D.** Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
    example.
 9. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
@@ -182,7 +183,7 @@ Two improvements the owner asked to keep, each its own small plan:
   the same `buildChain`.
 - Particles from a seed, as a move over a list of targets.
 - Vue and Svelte bindings.
-- Retargeting, blend shapes, and matching a reference site's motion.
+- Retargeting, 3D blend shapes, and matching a reference site's motion.
 
 ## 7. Out
 
