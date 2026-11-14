@@ -30,11 +30,11 @@ beforeAll(() => {
 
 afterAll(removeScratch);
 
-const MOVING_BOX = `const along = Math.min(Math.max(time / 1000, 0), 1);
-  const box: Pose3d = { x: 0.6 * along, y: -0.4 * along, rotation: 90 * along, rotationY: 30 * along };`;
+const MOVING_BOX = `const along = time.progress;
+  const box: Pose3d = { x: 3 * along, y: -1.5 * along, scale: 0.15, rotation: 90 * along, rotationY: 30 * along };`;
 
 describe("a scaffolded 3D page pins a label on the box", () => {
-  it("keeps the label's corner on the box's drawn centre at 0, 500 and 1000 ms", async () => {
+  it("keeps the label's corner on the box's drawn centre at 0, 400 and 800 ms", async () => {
     const { value, pageErrors } = await withPage(
       {
         page: `${NAME}.html`,
@@ -44,7 +44,7 @@ describe("a scaffolded 3D page pins a label on the box", () => {
       },
       async ({ page, advanceTo }) => {
         const found: { label: [number, number]; centre: [number, number] }[] = [];
-        for (const ms of [0, 500, 1000]) {
+        for (const ms of [0, 400, 800]) {
           await advanceTo(ms);
           const corner = await page.evaluate(() => {
             const label = document.querySelector(".label");
@@ -93,6 +93,10 @@ describe("a scaffolded 3D page pins a label on the box", () => {
       },
     );
     expect(pageErrors).toEqual([]);
+    const last = value[value.length - 1];
+    expect(
+      Math.hypot((last?.label[0] ?? 640) - 640, (last?.label[1] ?? 360) - 360),
+    ).toBeGreaterThan(30);
     for (const { label, centre } of value) {
       expect(Math.abs(label[0] - centre[0])).toBeLessThan(1.5);
       expect(Math.abs(label[1] - centre[1])).toBeLessThan(1.5);

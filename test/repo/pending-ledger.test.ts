@@ -22,12 +22,16 @@ const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const MARKER = "// @ts-nocheck";
 const PHASES = new Set([3, 4, 5, 6, 7]);
 
+/** A file's first line; "" for a file another test removed between listing and reading. */
 function firstLine(path: string): string {
-  return (
-    readFileSync(path, "utf8")
-      .replace(/^\uFEFF/, "")
-      .split(/\r?\n/)[0] ?? ""
-  );
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (error) {
+    if (error instanceof Error && Reflect.get(error, "code") === "ENOENT") return "";
+    throw error;
+  }
+  return text.replace(/^\uFEFF/, "").split(/\r?\n/)[0] ?? "";
 }
 
 function typescriptFiles(directory: string): string[] {
