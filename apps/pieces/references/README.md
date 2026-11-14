@@ -9,5 +9,6 @@ Vector artwork that pieces rig and animate. Each file keeps its source and licen
 | `ice-floe.svg` | Made here: an ice floe the penguin stands on | the repository | The repository's own |
 | `iceberg.svg` | Made here: a distant iceberg | the repository | The repository's own |
 | `talk.json` | Made by `make-talk.mjs` from a fixed seed, not tracked from a person | the repository | The repository's own |
+| `RobotExpressive.glb` | [three.js examples / Quaternius](https://github.com/mrdoob/three.js/tree/dev/examples/models/gltf/RobotExpressive) | Tomás Laulhé | CC0 1.0 Public Domain |
 
 Only artwork whose licence allows changing and keeping it goes in this folder.

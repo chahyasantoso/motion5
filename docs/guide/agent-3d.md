@@ -51,6 +51,40 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - **Staging:** move the camera or the subject, rarely both at once. A camera that drifts while the subject leaps hides
   the leap.
 
+## A rigged character
+
+- **Loading a `.glb` model:** load rigged assets placed in `apps/pieces/references/` with Three.js's
+  `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`) and resolve the asset URL from the component with
+  `new URL("../references/RobotExpressive.glb", import.meta.url).href` (or another file in that folder).
+- **Capturing the skeleton:** call `captureSkeleton(gltf.scene)` from `"@gerak/three/skeleton"` once
+  after loading. It records parent-before-child bone order, rest local positions/quaternions, and
+  `skeleton.joints` in world coordinates.
+- **Posing chains in 3D:** build a typed bone chain from `skeleton.joints` or hand-authored `Joint3d`
+  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArm: goal }, { pole })`,
+  and convert to per-bone delta poses with `bonesOf3d(arm, solved)` (or compute FK frames with `fk3d` /
+  `chainFromRest3d` for separate rigid objects bound via `useTarget3d`).
+- **Writing bones:** call `applyBones(skeleton, poses)` from `"@gerak/three/skeleton"` inside
+  `player.subscribe(...)` on each frame. Every named bone takes a `Pose3d` turn/offset relative to its own rest,
+  and omitted bones return to rest (`{}`). Keep hierarchy parent bones and child chains consistent: if a
+  parent bone rotates, solve child IK from the parent's updated world frame (`fk3d`) and omit redundant
+  translation fields on child bones inside Three.js's tree.
+- **Morph targets (blend shapes):** create `const writer = morphTargets(gltf.scene)` from `"@gerak/three"`
+  once, author blend weights under `pose.custom` (`{ custom: { smile: 0.8 } }`, clamped to `[0, 1]`), and
+  pass `writer` as the fourth argument to `applyPose3d(gltf.scene, pose, rest, writer)`.
+
+## Bodies in depth
+
+- **Booting 3D Rapier once:** at scene module top level, call `const rapier3d = await rapierEngine3d()` from
+  `"@gerak/rapier"` so the WASM engine loads before the first frame.
+- **Building the deterministic world:** pass `rapier3d()` to `simulate` from `"@gerak/physics"` just like 2D
+  physics (`world.setGravity(0, -9.81, 0)`, `world.addCollider(...)`, `world.addBody(...)`). Supported 3D body
+  shapes (`Shape3d`) are `"sphere"` and `"box"`, and static colliders (`Collider3d`) are `"floor"`, `"wall"`,
+  and `"box"`. Coordinates are world units with `y` up; orientations are unit quaternions `{ w, x, y, z }`;
+  velocities (`wx`, `wy`, `wz`) are degrees per second.
+- **Reading poses:** convert `sim.at(time).ball` with `bodyPose3d(...)` from `"@gerak/rig"` into a `Pose3d`.
+  Bind the matching Three.js mesh at origin `(0, 0, 0)` with `useTarget3d` so its rest position is zero and
+  the physics world coordinates drive it directly.
+
 ## Limits
 
 - No skew and no anchors in `Pose3d`; nest groups instead.
@@ -59,4 +93,4 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - `trailTurn` and `velocity3d` take the scene's time, never `span.of(time, ease)`.
 - `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
   few units a second.
-- Not yet for code scenes: 3D rigs, a skinned mesh's bones, 3D physics.
+- Not yet scaffolded: React Three Fiber (`--r3f`).
