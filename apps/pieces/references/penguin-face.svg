@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 454.57015 455.39407">
+  <defs>
+    <radialGradient id="beakRed" gradientUnits="userSpaceOnUse" cx="200" cy="190" r="125">
+      <stop offset="0" stop-color="#e42f29"/>
+      <stop offset="1" stop-color="#801418"/>
+    </radialGradient>
+    <radialGradient id="mouthDark" gradientUnits="userSpaceOnUse" cx="221.8" cy="250" r="50">
+      <stop offset="0" stop-color="#6e1418"/>
+      <stop offset="1" stop-color="#2a0406"/>
+    </radialGradient>
+    <linearGradient id="lidGrey" gradientUnits="userSpaceOnUse" x1="0" y1="89" x2="0" y2="181">
+      <stop offset="0" stop-color="#8f8f8e"/>
+      <stop offset="1" stop-color="#2b2b2b"/>
+    </linearGradient>
+  </defs>
+  <path id="beakMouth" fill="url(#mouthDark)"
+    d="M144.56 220 C163.67 230 193.67 234 221.835 234 C250 234 280 230 299.11 220 C280 238 250 244 221.835 244 C193.67 244 163.67 238 144.56 220 Z"/>
+  <path id="beakTongue" fill="#c9434c" stroke="#3a0507" stroke-width="2.5"
+    d="M184 266 C188 252 202 246 221.835 246 C241.67 246 255.67 252 259.67 266 C246 270 197.67 270 184 266 Z"/>
+  <path id="beakLower" fill="url(#beakRed)" stroke="#000000" stroke-width="5.9943" stroke-linecap="round" stroke-linejoin="round"
+    d="M299.11 220 C299.11 251.5 264.56 279 221.835 279 C179.11 279 144.56 251.5 144.56 220 C163.67 230 193.67 234 221.835 234 C250 234 280 230 299.11 220 Z"/>
+  <path id="beakUpper" fill="url(#beakRed)" stroke="#000000" stroke-width="5.9943" stroke-linecap="round" stroke-linejoin="round"
+    d="M144.56 220 C144.56 185.5 179.11 155.08 221.835 155.08 C264.56 155.08 299.11 185.5 299.11 220 C280 230 250 234 221.835 234 C193.67 234 163.67 230 144.56 220 Z"/>
+  <path id="eyelidLeft" fill="url(#lidGrey)" stroke="#000000" stroke-width="3.3413" stroke-linejoin="round"
+    d="M191.21 134.05 C195.057 115.321 199.226 88.83 133.727 89.141 C56.446 89.507 70.848 118.618 75.201 134.148 C70.848 118.618 56.446 89.507 133.727 89.141 C199.226 88.83 195.057 115.321 191.21 134.05 Z"/>
+  <path id="eyelidRight" fill="url(#lidGrey)" stroke="#000000" stroke-width="3.3413" stroke-linejoin="round"
+    d="M256.69 134.05 C252.847 115.321 248.674 88.83 314.173 89.141 C391.455 89.507 377.055 118.618 372.702 134.148 C377.055 118.618 391.455 89.507 314.173 89.141 C248.674 88.83 252.847 115.321 256.69 134.05 Z"/>
+  <path id="beakMouthOpen" opacity="0" fill="url(#mouthDark)"
+    d="M144.56 220 C163.67 230 193.67 234 221.835 234 C250 234 280 230 299.11 220 C273.67 274 247.67 300 221.835 300 C196 300 170 274 144.56 220 Z"/>
+  <path id="beakTongueOpen" opacity="0" fill="#c9434c" stroke="#3a0507" stroke-width="2.5"
+    d="M180 300 C184 280 200 270 221.835 270 C243.67 270 259.67 280 263.67 300 C250 306 193.67 306 180 300 Z"/>
+  <path id="beakLowerOpen" opacity="0" fill="url(#beakRed)" stroke="#000000" stroke-width="5.9943"
+    d="M299.11 220 C303 272 268 330 221.835 330 C175.67 330 140.67 272 144.56 220 C170 262 196 288 221.835 288 C247.67 288 273.67 262 299.11 220 Z"/>
+  <path id="eyelidLeftShut" opacity="0" fill="url(#lidGrey)" stroke="#000000" stroke-width="3.3413"
+    d="M191.21 134.05 C185.773 160.491 167.916 180.695 134.202 180.695 C100.489 180.695 82.524 160.277 75.201 134.148 C70.848 118.618 56.446 89.507 133.727 89.141 C199.226 88.83 195.057 115.321 191.21 134.05 Z"/>
+  <path id="eyelidRightShut" opacity="0" fill="url(#lidGrey)" stroke="#000000" stroke-width="3.3413"
+    d="M256.69 134.05 C262.128 160.491 279.987 180.695 313.697 180.695 C347.411 180.695 365.377 160.277 372.702 134.148 C377.055 118.618 391.455 89.507 314.173 89.141 C248.674 88.83 252.847 115.321 256.69 134.05 Z"/>
+</svg>

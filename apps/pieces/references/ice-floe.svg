@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180">
+  <defs>
+    <linearGradient id="floeSideFill" gradientUnits="userSpaceOnUse" x1="0" y1="66" x2="0" y2="140">
+      <stop offset="0" stop-color="#c6ecf6"/>
+      <stop offset="1" stop-color="#4f9dbb"/>
+    </linearGradient>
+    <radialGradient id="floeTopFill" gradientUnits="userSpaceOnUse" cx="330" cy="40" r="380">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.7" stop-color="#e6f6fb"/>
+      <stop offset="1" stop-color="#b9e0ee"/>
+    </radialGradient>
+  </defs>
+  <path id="floeUnder" fill="#86cadb" opacity="0.45"
+    d="M44 122 C70 156 200 174 360 176 C520 178 650 156 686 120 Z"/>
+  <path id="floeSide" fill="url(#floeSideFill)" stroke="#000000" stroke-width="4.57" stroke-linejoin="round"
+    d="M16 72 C14 92 22 112 38 124 C110 136 230 144 360 142 C480 142 600 136 690 122 C702 104 708 86 706 66 C690 78 650 84 600 94 C570 100 530 102 480 104 C440 106 410 100 360 98 C320 96 290 99 250 100 C210 101 170 95 120 92 C80 90 40 84 16 72 Z"/>
+  <path id="floeTop" fill="url(#floeTopFill)" stroke="#000000" stroke-width="4.57" stroke-linejoin="round"
+    d="M16 72 C40 84 80 90 120 92 C170 95 210 101 250 100 C290 99 320 96 360 98 C410 100 440 106 480 104 C530 102 570 100 600 94 C650 84 690 78 706 66 C700 46 660 34 610 28 C570 22 540 14 490 14 C430 14 400 8 340 10 C280 12 250 18 200 18 C140 20 70 34 36 50 C22 58 16 64 16 72 Z"/>
+  <path id="floeShadow" fill="#8fc2d6" opacity="0.6"
+    d="M190 60 C190 49 275 44 360 44 C445 44 530 49 530 60 C530 71 445 76 360 76 C275 76 190 71 190 60 Z"/>
+  <path id="floeCrack" fill="none" stroke="#7ab8cf" stroke-width="3" stroke-linecap="round"
+    d="M90 62 C110 70 128 60 150 68 C162 72 170 70 182 74"/>
+  <path id="floeCrackFar" fill="none" stroke="#7ab8cf" stroke-width="3" stroke-linecap="round"
+    d="M560 34 C580 40 600 34 622 42"/>
+  <path id="floeShine" fill="#ffffff" opacity="0.75"
+    d="M54 106 C92 114 136 118 182 120 C136 114 92 110 54 106 Z"/>
+</svg>
