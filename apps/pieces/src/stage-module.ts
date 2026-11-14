@@ -42,10 +42,11 @@ export function stageFileOf(name: string): PieceFile {
   return pickPieceFile(Object.keys(pieceFiles), `${name}.ts`);
 }
 
-/** The scene file of a piece as the live server reads it, relative to the app: `<brief>/src/<name>-scene.ts`. */
-export function sceneFileOf(name: string): string {
+/** The scene file of a piece as the live server reads it, relative to the app (`<brief>/src/<name>-scene.ts`),
+ * or `undefined` when no brief holds exactly one. */
+export function sceneFileOf(name: string): string | undefined {
   const scene = pickPieceFile(Object.keys(pieceFiles), `${name}-scene.ts`);
-  return scene.kind === "found" ? scene.path.slice(1) : `src/${name}-scene.ts`;
+  return scene.kind === "found" ? scene.path.slice(1) : undefined;
 }
 
 /** The component file `<brief>/src/<name>.tsx`, with the loader of its module. */

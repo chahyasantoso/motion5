@@ -189,20 +189,22 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
     if (dragRef.current !== null || inFlightRef.current || pendingNewTextRef.current !== null) {
       return;
     }
+    const file = sceneFileOf(sceneName);
     let cancelled = false;
-    fetch(`/__motion/source?file=${sceneFileOf(sceneName)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: unknown) => {
-        if (cancelled) return;
-        if (isSourceResponse(data)) {
-          setSource(data.source);
-          setLiterals(data.literals);
-        }
-      })
-      .catch(() => {});
+    if (file !== undefined)
+      fetch(`/__motion/source?file=${file}`)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data: unknown) => {
+          if (cancelled) return;
+          if (isSourceResponse(data)) {
+            setSource(data.source);
+            setLiterals(data.literals);
+          }
+        })
+        .catch(() => {});
     importAppMoves()
       .then((modules) => {
         if (!cancelled) setAppModules(modules);
@@ -215,9 +217,11 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
   }, [sceneName, version]);
 
   const sendEdit = (start: number, oldText: string, newText: string): void => {
+    const file = sceneFileOf(sceneName);
+    if (file === undefined) return;
     inFlightRef.current = true;
     const body = JSON.stringify({
-      file: sceneFileOf(sceneName),
+      file,
       start,
       end: start + oldText.length,
       oldText,
