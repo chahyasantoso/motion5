@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { mergeEvents } from "@gerak/moves";
+import { mergeEvents, valueField } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
@@ -109,9 +109,7 @@ type FieldKind = "position" | "turn" | "ratio";
 
 function kindOf(path: string): FieldKind {
   if (/(^|\.)custom(\.|\[|$)/.test(path)) return "ratio";
-  if (/(^|\.)rotation[XYZ]?$/.test(path)) return "turn";
-  if (/(^|\.)(scale\w*|opacity)$/.test(path)) return "ratio";
-  return "position";
+  return valueField(path.slice(path.lastIndexOf(".") + 1))?.judged ?? "position";
 }
 
 type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio">;

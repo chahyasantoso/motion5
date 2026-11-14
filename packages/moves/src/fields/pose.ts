@@ -17,36 +17,69 @@ export interface ValueField {
   readonly shows: boolean;
   /** The least it can be; a modifier that pushes it past that stops there. */
   readonly least?: number;
+  /** The limit the review holds its step to: a distance, a turn in degrees, or a ratio. */
+  readonly judged: "position" | "turn" | "ratio";
 }
 
-const OFFSET: ValueField = { rest: 0, combines: "add", smooth: true, shows: false };
-const SIZE: ValueField = { rest: 1, combines: "multiply", smooth: false, shows: false };
-const SHOWN: ValueField = { combines: "replace", smooth: true, shows: true };
-const PLACED: ValueField = { combines: "replace", smooth: true, shows: false };
-const ORDER: ValueField = { combines: "replace", smooth: false, shows: false };
+const OFFSET: ValueField = {
+  rest: 0,
+  combines: "add",
+  smooth: true,
+  shows: false,
+  judged: "position",
+};
+const TURN: ValueField = { ...OFFSET, judged: "turn" };
+const SIZE: ValueField = {
+  rest: 1,
+  combines: "multiply",
+  smooth: false,
+  shows: false,
+  judged: "ratio",
+};
+const SHOWN: ValueField = { combines: "replace", smooth: true, shows: true, judged: "position" };
+const PLACED: ValueField = {
+  combines: "replace",
+  smooth: true,
+  shows: false,
+  judged: "position",
+};
+const ORDER: ValueField = {
+  combines: "replace",
+  smooth: false,
+  shows: false,
+  judged: "position",
+};
 
 /** Every field a value can carry, one row each; nothing else states a field's rest or how it combines. */
 export const VALUE_FIELDS = Object.freeze({
   x: OFFSET,
   y: OFFSET,
   z: OFFSET,
-  rotation: OFFSET,
-  rotationX: OFFSET,
-  rotationY: OFFSET,
+  rotation: TURN,
+  rotationX: TURN,
+  rotationY: TURN,
+  skewX: TURN,
+  skewY: TURN,
   scale: SIZE,
   scaleX: SIZE,
   scaleY: SIZE,
   scaleZ: SIZE,
-  opacity: { rest: 1, combines: "multiply", smooth: true, shows: false },
+  opacity: { rest: 1, combines: "multiply", smooth: true, shows: false, judged: "ratio" },
   blur: { ...OFFSET, least: 0 },
-  drawn: { rest: 1, combines: "multiply", smooth: true, shows: true },
-  drawnFrom: { rest: 0, combines: "add", smooth: true, shows: false },
+  shadowX: OFFSET,
+  shadowY: OFFSET,
+  shadowBlur: { ...OFFSET, least: 0 },
+  hue: TURN,
+  lightness: { ...OFFSET, judged: "ratio" },
+  tint: { ...OFFSET, least: 0, judged: "ratio" },
+  drawn: { rest: 1, combines: "multiply", smooth: true, shows: true, judged: "position" },
+  drawnFrom: OFFSET,
   clipX: PLACED,
   clipY: PLACED,
   clipRadius: SHOWN,
   clipWidth: PLACED,
   clipHeight: PLACED,
-  shape: { rest: 0, combines: "replace", smooth: true, shows: false },
+  shape: { rest: 0, combines: "replace", smooth: true, shows: false, judged: "position" },
   layer: ORDER,
 }) satisfies Readonly<Record<string, ValueField>>;
 
@@ -65,11 +98,19 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "x",
   "y",
   "rotation",
+  "skewX",
+  "skewY",
   "scale",
   "scaleX",
   "scaleY",
   "opacity",
   "blur",
+  "shadowX",
+  "shadowY",
+  "shadowBlur",
+  "hue",
+  "lightness",
+  "tint",
   "drawn",
   "drawnFrom",
   "clipX",

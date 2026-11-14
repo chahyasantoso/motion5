@@ -11,11 +11,19 @@ const MOVED: Required<Pick<Pose2d, Field>> = {
   x: 7,
   y: 9,
   rotation: 30,
+  skewX: 10,
+  skewY: 12,
   scale: 2,
   scaleX: 0.5,
   scaleY: 0.25,
   opacity: 0.5,
   blur: 3,
+  shadowX: 4,
+  shadowY: 5,
+  shadowBlur: 6,
+  hue: 30,
+  lightness: 0.2,
+  tint: 0.5,
   drawn: 0.5,
   drawnFrom: 0.25,
   clipX: 5,
@@ -43,11 +51,19 @@ function baseFor(field: Field): Pose2d {
     case "x":
     case "y":
     case "rotation":
+    case "skewX":
+    case "skewY":
     case "scale":
     case "scaleX":
     case "scaleY":
     case "opacity":
     case "blur":
+    case "shadowX":
+    case "shadowY":
+    case "shadowBlur":
+    case "hue":
+    case "lightness":
+    case "tint":
     case "drawn":
     case "drawnFrom":
     case "clipRadius":
@@ -62,9 +78,17 @@ function baseFor(field: Field): Pose2d {
 }
 
 function domWrite(pose: Pose2d): string {
-  const target: RenderTarget = { style: {}, getTotalLength: () => 100 };
+  const properties: Record<string, string> = {};
+  const target: RenderTarget = {
+    style: {
+      setProperty: (name, value) => {
+        properties[name] = value;
+      },
+    },
+    getTotalLength: () => 100,
+  };
   applyValue(target, pose);
-  return JSON.stringify(target.style);
+  return JSON.stringify([target.style, properties]);
 }
 
 function threeWrite(pose: Pose2d): string {

@@ -100,6 +100,19 @@ describe("motion:review on a scene file", () => {
     }));
     expect(reviewValues(flipped, limits).some((line) => line.includes("jumps"))).toBe(true);
   });
+  it("reads hue and skew as turns and lightness as a ratio", () => {
+    const jumps = (key: string, from: number, to: number) =>
+      reviewValues(
+        [from, to].map((value, index) => ({ at: index * 16, targets: { a: { [key]: value } } })),
+        limits,
+      ).filter((line) => line.includes("jumps"));
+    expect(jumps("hue", 179, -179)).toEqual([]);
+    expect(jumps("hue", 0, 160)).toEqual(["a.hue jumps 160 at 16 ms"]);
+    expect(jumps("skewX", 179, -179)).toEqual([]);
+    expect(jumps("skewX", 0, 160)).toEqual(["a.skewX jumps 160 at 16 ms"]);
+    expect(jumps("lightness", 0, 1.4)).toEqual([]);
+    expect(jumps("lightness", 0, 1.6)).toEqual(["a.lightness jumps 1.6 at 16 ms"]);
+  });
   it("reads a 3D turn as one rotation, so the same turn written two ways is no jump", () => {
     const same = [
       { rotation: 10, rotationX: 20, rotationY: 30 },
