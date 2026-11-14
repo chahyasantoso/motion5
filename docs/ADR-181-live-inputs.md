@@ -32,6 +32,12 @@ not change shape. Tracking itself (a face tracker, a microphone's level, a slide
 - **Imported art goes into a bigger scene:** `motion:import-svg <file> --into <piece> --at x,y [--scale s] --prefix
   <word>` adds a drawing's parts, placed and scaled in the piece's frame, every name and defs id prefixed. It stays
   one stage module; there is no composition layer.
+- **Outlines to morph to are drawn in the SVG:** a shape with id `<part>-shape<N>` is not imported as a part but as
+  the `N`th of `<part>`'s `shapes`; a gap in the numbers, a missing part or outlines that cannot match are listed.
+- **The scene review seeks as well as plays:** it samples a quarter of its times again in a seeded order back and
+  forth, and reports a target whose value differs, since a scene keeping state between frames scrubs wrong.
+- **`ongoing: true` on a member** says it moves through the story's end on purpose, such as falling snow; the review
+  does not ask it to rest, and groups and lists pass it to their members.
 - **Switching needs nothing new.** Mouth parts drawn apart switch with `opacity`; a morph is for steps switching makes
   too visible.
 

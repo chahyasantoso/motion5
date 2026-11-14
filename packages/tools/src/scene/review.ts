@@ -159,11 +159,13 @@ function fingerprint(value: unknown): string {
   );
 }
 
-/** Findings over a scene's values sampled every 16 ms: jumps, a short final hold, targets still moving; a hidden target counts as still. */
+/** Findings over a scene's values sampled every 16 ms: jumps, a short final hold, targets still moving; a hidden
+ * target counts as still, and an `ongoing` one is never asked to rest. */
 export function reviewValues(
   samples: readonly { readonly at: number; readonly targets: Readonly<Record<string, unknown>> }[],
   limits: Limits,
   hidden: (path: string, ms: number) => boolean = () => false,
+  ongoing: (name: string) => boolean = () => false,
 ): readonly string[] {
   const jumps: string[] = [];
   const numbers = samples.map(({ targets }) => {
@@ -199,7 +201,9 @@ export function reviewValues(
         );
     }
   });
-  const names = [...new Set(samples.flatMap(({ targets }) => Object.keys(targets)))];
+  const names = [...new Set(samples.flatMap(({ targets }) => Object.keys(targets)))].filter(
+    (name) => !ongoing(name),
+  );
   const prints = samples.map(({ targets }) =>
     Object.fromEntries(Object.entries(targets).map(([name, value]) => [name, fingerprint(value)])),
   );
@@ -448,6 +452,41 @@ function labelled(beats: readonly Beat[], finding: string): string {
   );
 }
 
+/** Every fourth sampled ms, in an order fixed by a seed that seeks back and forth. */
+function soughtOrder(ms: readonly number[]): readonly number[] {
+  const order = ms.filter((_, index) => index % 4 === 0);
+  let seed = 7;
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    seed = (seed * 16807) % 2147483647;
+    const other = seed % (index + 1);
+    const here = order[index];
+    const there = order[other];
+    if (here === undefined || there === undefined) continue;
+    order[index] = there;
+    order[other] = here;
+  }
+  return order;
+}
+
+/** One finding per target whose value at some ms differs when sought out of order from when played to in
+ * order: the scene keeps state between frames, so scrubbing shows what playing never did. */
+function seekFindings(module: SceneModule, played: Samples): readonly string[] {
+  const byMs = new Map(played.map((sample) => [sample.at, sample.targets] as const));
+  const sought = sampleScene(module, { kind: "time", ms: soughtOrder(played.map(({ at }) => at)) });
+  const found = new Map<string, number>();
+  for (const { at, targets } of sought) {
+    const reached = byMs.get(at);
+    if (reached === undefined) continue;
+    for (const [name, value] of Object.entries(targets))
+      if (!found.has(name) && fingerprint(value) !== fingerprint(reached[name]))
+        found.set(name, at);
+  }
+  return [...found].map(
+    ([name, at]) =>
+      `${name} at ${at} ms differs when sought from when played to; the scene keeps state between frames.`,
+  );
+}
+
 /** One finding when cues fall after the module's end, which no clock reaches: how many, and the first. */
 function lateCueFindings(module: SceneModule): readonly string[] {
   const late = module.cues.filter(({ at }) => at > module.durationMs);
@@ -492,7 +531,12 @@ export function reviewSceneModule(
     const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
     return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
   };
-  const findings = [...reviewValues(samples, request, hidden), ...lateCueFindings(module)];
+  const ongoing = (name: string) => byName.get(name)?.ongoing === true;
+  const findings = [
+    ...reviewValues(samples, request, hidden, ongoing),
+    ...seekFindings(module, samples),
+    ...lateCueFindings(module),
+  ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
     kind: "reviewed",

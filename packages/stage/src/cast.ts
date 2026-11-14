@@ -22,6 +22,8 @@ export interface Behaviour {
   readonly watch?: boolean;
   /** The scene never moves it; the review does not report it as unused. */
   readonly still?: boolean;
+  /** It moves through the story's end on purpose, such as falling snow; the review does not ask it to rest. */
+  readonly ongoing?: boolean;
   /** Where it turns and scales, in frame px, usually its joint; a pose's `anchor` wins on the frames that give one. */
   readonly pivot?: Pivot;
 }
@@ -150,6 +152,7 @@ export interface CastName {
   readonly on?: readonly (readonly [string, string])[];
   readonly watch: boolean;
   readonly still: boolean;
+  readonly ongoing: boolean;
   readonly text?: ActorText;
   readonly path?: ActorPath;
   /** Its `path` and then its `shapes`, matched piece by piece so they blend; absent without shapes. */
@@ -227,7 +230,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
   const visit = (
     members: Cast,
     groups: readonly string[],
-    inherited: Pick<CastName, "on" | "watch" | "still">,
+    inherited: Pick<CastName, "on" | "watch" | "still" | "ongoing">,
   ): void => {
     for (const [key, member] of Object.entries(members)) {
       if (key.includes("."))
@@ -241,6 +244,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
         ...(on === undefined ? {} : { on }),
         watch: member.watch ?? inherited.watch,
         still: member.still ?? false,
+        ongoing: member.ongoing ?? inherited.ongoing,
         ...(member.pivot === undefined ? {} : { pivot: member.pivot }),
       };
       switch (member.kind) {
@@ -265,6 +269,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
               kind: "item",
               watch: item.watch ?? base.watch,
               still: item.still ?? base.still,
+              ongoing: item.ongoing ?? base.ongoing,
               ...(item.pivot === undefined ? {} : { pivot: item.pivot }),
               ...(item.text === undefined ? {} : { text: item.text }),
               ...(item.path === undefined ? {} : { path: item.path }),
@@ -281,7 +286,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
       }
     }
   };
-  visit(cast, [], { watch: false, still: false });
+  visit(cast, [], { watch: false, still: false, ongoing: false });
   return names;
 }
 

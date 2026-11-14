@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100" viewBox="0 0 200 100">
+  <path id="beak" d="M10 10 L50 10 L30 30 Z" fill="#f90"/>
+  <path id="beak-shape2" d="M10 10 L50 10 L30 60 Z" fill="#f90" opacity="0"/>
+  <path id="beak-shape1" d="M10 10 L50 10 L30 45 Z" fill="#f90" opacity="0"/>
+  <path id="lid" d="M100 10 L140 10 L120 20 Z" fill="#333"/>
+  <path id="lid-shape2" d="M100 10 L140 10 L120 30 Z" fill="#333" opacity="0"/>
+  <path id="eye" d="M150 10 L190 10 L170 30 Z" fill="#fff"/>
+  <path id="eye-shape1" d="M150 10 L160 10 L155 20 Z M180 10 L190 10 L185 20 Z" fill="#fff" opacity="0"/>
+  <path id="ghost-shape1" d="M10 70 L30 70 L20 90 Z" fill="#000" opacity="0"/>
+</svg>
