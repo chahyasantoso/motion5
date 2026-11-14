@@ -3,11 +3,13 @@ import { pathToFileURL } from "node:url";
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { parseSampleArgs, readSceneModule, sampleScene } = await import("../src/scene/scene.ts");
+const { parseSampleArgs, readSceneModule, sampleScene, watchScene } = await import(
+  "../src/scene/scene.ts"
+);
 
 function print(result) {
   console.log(JSON.stringify(result));
-  if (result.kind !== "accepted") process.exitCode = 1;
+  if (result.kind !== "accepted" && result.kind !== "watched") process.exitCode = 1;
 }
 
 const args = parseSampleArgs(process.argv.slice(2));
@@ -18,6 +20,7 @@ if (args.kind === "usage") {
 } else {
   const module = readSceneModule(await import(pathToFileURL(resolve(args.file)).href));
   if ("reason" in module) print({ kind: "usage", message: module.reason });
+  else if (args.kind === "watch") print(watchScene(module, args, args.events));
   else
     print({
       kind: "accepted",

@@ -1,6 +1,7 @@
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Page } from "playwright-core";
 import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 import { decodePng } from "./png";
@@ -13,6 +14,10 @@ export interface FramesRequest extends PageTarget {
   readonly out?: string;
   /** A folder of earlier frames to compare these against once they are written. */
   readonly compare?: string;
+  /** Capture only this region of the stage, in the stage's px. */
+  readonly crop?: Box;
+  /** How many times a cropped frame is scaled up, with no smoothing; 1 when absent. */
+  readonly zoom?: number;
 }
 
 /** An onion capture: the element `select` drawn at each step from `from` to `to` ms every `every` ms
@@ -95,8 +100,19 @@ export interface OnionResult {
 }
 
 const USAGE =
-  "usage: motion:frames <page> (--at ms,ms [--compare dir] | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]; or motion:frames --compare dirA dirB";
-const FLAGS = ["--at", "--out", "--onion", "--from", "--to", "--every", "--compare"];
+  "usage: motion:frames <page> (--at ms,ms [--compare dir] [--crop x,y,w,h [--zoom 1-8]] | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]; or motion:frames --compare dirA dirB";
+const FLAGS = [
+  "--at",
+  "--out",
+  "--onion",
+  "--from",
+  "--to",
+  "--every",
+  "--compare",
+  "--crop",
+  "--zoom",
+];
+const ZOOM_MAX = 8;
 const OVER_LEVEL = 32;
 const FRAME_NAME = /^frame-(\d+)\.png$/;
 const SHEET_COLUMNS = 4;
@@ -108,6 +124,33 @@ function nonNegative(text: string | undefined): number | undefined {
   return text !== undefined && text !== "" && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
+}
+
+/** The region `--crop x,y,width,height` names, or why it is not one inside a `width` by `height` stage. */
+function parseCrop(
+  text: string | undefined,
+  stage: { readonly width: number; readonly height: number },
+): Box | string {
+  const parts = text === undefined ? [] : text.split(",").map((part) => Number(part.trim()));
+  const [x, y, width, height] = parts;
+  if (
+    parts.length !== 4 ||
+    x === undefined ||
+    y === undefined ||
+    width === undefined ||
+    height === undefined ||
+    !parts.every(Number.isFinite)
+  )
+    return "--crop needs x,y,width,height, four numbers.";
+  if (width <= 0) return `--crop needs a width above 0, not ${width}.`;
+  if (height <= 0) return `--crop needs a height above 0, not ${height}.`;
+  if (x < 0) return `--crop runs past the left edge: x is ${x}.`;
+  if (y < 0) return `--crop runs past the top edge: y is ${y}.`;
+  if (x + width > stage.width)
+    return `--crop runs past the right edge: x + width is ${x + width}, the stage is ${stage.width} wide.`;
+  if (y + height > stage.height)
+    return `--crop runs past the bottom edge: y + height is ${y + height}, the stage is ${stage.height} tall.`;
+  return { x, y, width, height };
 }
 
 /** Reads `<page>` with `--at ms,ms` or `--onion sel --from ms --to ms --every ms`, and `--out dir`; or
@@ -134,13 +177,23 @@ export function parseFramesArgs(argv: readonly string[]): FramesArgs {
     return usage("--compare needs a folder.");
   if (flags.has("--compare") && flags.has("--onion"))
     return usage("--compare goes with --at, not --onion.");
+  if (flags.has("--zoom") && !flags.has("--crop")) return usage("--zoom goes with --crop.");
+  if (flags.has("--crop") && (flags.has("--onion") || flags.has("--compare")))
+    return usage("--crop goes with --at only, not --onion or --compare.");
+  const crop = flags.has("--crop") ? parseCrop(flags.get("--crop"), target) : undefined;
+  if (typeof crop === "string") return usage(crop);
+  const zoomText = flags.get("--zoom");
+  const zoom = zoomText === undefined ? 1 : Number(zoomText);
+  if (flags.has("--zoom") && !(zoomText !== "" && zoom >= 1 && zoom <= ZOOM_MAX))
+    return usage(`--zoom needs a number from 1 to ${ZOOM_MAX}.`);
+  const cropField = crop === undefined ? {} : { crop, zoom };
   const compareField = compareFlag === undefined ? {} : { compare: fromCaller(compareFlag) };
   if (flags.has("--onion") === flags.has("--at"))
     return usage("Pass exactly one of --at and --onion.");
   if (flags.has("--at")) {
     const at = parseNumbers(flags.get("--at"));
     if (at === undefined) return usage("--at needs ascending non-negative numbers.");
-    return { kind: "frames", ...target, at, ...outField, ...compareField };
+    return { kind: "frames", ...target, at, ...outField, ...compareField, ...cropField };
   }
   const select = flags.get("--onion");
   const from = nonNegative(flags.get("--from"));
@@ -180,17 +233,45 @@ function sheetHtml(
   </style>${cells.join("")}`;
 }
 
+/** A PNG drawn `zoom` times larger on a canvas in `scaler`, each source pixel a plain square. */
+async function enlarge(scaler: Page, png: Buffer, zoom: number): Promise<Buffer> {
+  const url = await scaler.evaluate(
+    async ({ src, zoom }) => {
+      const image = new Image();
+      image.src = src;
+      await image.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(image.width * zoom);
+      canvas.height = Math.round(image.height * zoom);
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("The zoom canvas has no 2D context.");
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/png");
+    },
+    { src: `data:image/png;base64,${png.toString("base64")}`, zoom },
+  );
+  return Buffer.from(url.split(",")[1] ?? "", "base64");
+}
+
 /** Captures the page at each named time, plus one labelled sheet of every frame. */
 export async function captureFrames(request: FramesRequest): Promise<FramesResult> {
   const out = outDir(request.out);
   const { value, pageErrors } = await withPage(request, async ({ page, browser, advanceTo }) => {
     const frames: { at: number; path: string }[] = [];
+    const zoom = request.zoom ?? 1;
+    const scaler = request.crop !== undefined && zoom > 1 ? await browser.newPage() : undefined;
     for (const at of request.at) {
       await advanceTo(at);
       const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
-      await page.screenshot({ path });
+      if (request.crop === undefined) await page.screenshot({ path });
+      else {
+        const clip = await page.screenshot({ clip: request.crop });
+        writeFileSync(path, scaler === undefined ? clip : await enlarge(scaler, clip, zoom));
+      }
       frames.push({ at, path });
     }
+    await scaler?.close();
     const sheetPage = await browser.newPage({
       viewport: { width: SHEET_COLUMNS * (SHEET_CELL_WIDTH + 4), height: 100 },
     });

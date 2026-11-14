@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { parseSampleArgs } from "../src/scene/scene";
+import { parseSampleArgs, readSceneModule, sampleScene, watchScene } from "../src/scene/scene";
+import * as moving from "./fixtures/review-clean-scene";
 
 describe("parseSampleArgs", () => {
   it("parses a valid time request with nodes", () => {
@@ -63,5 +64,93 @@ describe("motion:sample entry", () => {
     const out = run("project.json", "--at", "0");
     expect(out.status).toBe(1);
     expect(JSON.parse(out.stdout).kind).toBe("usage");
+  });
+});
+
+describe("--watch", () => {
+  const module = (() => {
+    const read = readSceneModule(moving);
+    if ("reason" in read) throw new Error(read.reason);
+    return read;
+  })();
+
+  it("parses with the defaults and with every option", () => {
+    expect(parseSampleArgs(["s.ts", "--watch", "ball.x"])).toEqual({
+      kind: "watch",
+      file: "s.ts",
+      path: "ball.x",
+      from: 0,
+      every: 16,
+    });
+    expect(
+      parseSampleArgs([
+        "s.ts",
+        "--watch",
+        "letters[1].x",
+        "--from",
+        "100",
+        "--to",
+        "500",
+        "--every",
+        "50",
+      ]),
+    ).toMatchObject({ kind: "watch", path: "letters[1].x", from: 100, to: 500, every: 50 });
+  });
+
+  it.each([
+    ["--at", "0"],
+    ["--progress", "0"],
+    ["--nodes", "ball"],
+    ["--fields", "x"],
+  ])("refuses --watch with %s", (flag, value) => {
+    expect(parseSampleArgs(["s.ts", "--watch", "ball.x", flag, value]).kind).toBe("usage");
+  });
+
+  it("refuses a malformed watch", () => {
+    expect(parseSampleArgs(["s.ts", "--watch"]).kind).toBe("usage");
+    expect(parseSampleArgs(["s.ts", "--watch", "ball..x"]).kind).toBe("usage");
+    expect(parseSampleArgs(["s.ts", "--watch", "ball.x", "--every", "0"]).kind).toBe("usage");
+    expect(parseSampleArgs(["s.ts", "--watch", "ball.x", "--from", "9", "--to", "3"]).kind).toBe(
+      "usage",
+    );
+    expect(parseSampleArgs(["s.ts", "--at", "0", "--every", "5"]).kind).toBe("usage");
+  });
+
+  it("answers the values sampleScene gives, by a dotted or bracketed path", () => {
+    const ms = [0, 500, 1000, 1500];
+    const sampled = sampleScene(module, { kind: "time", ms });
+    const watched = watchScene(module, { path: "ball.x", from: 0, to: 1500, every: 500 });
+    expect(watched).toEqual({
+      kind: "watched",
+      path: "ball.x",
+      samples: sampled.map(({ at, targets }) => ({
+        at,
+        value: Reflect.get(Object(targets.ball), "x"),
+      })),
+    });
+    const bracket = watchScene(module, { path: "letters[1].x", from: 0, to: 1500, every: 500 });
+    const dotted = watchScene(module, { path: "letters.1.x", from: 0, to: 1500, every: 500 });
+    expect(bracket).toMatchObject({ kind: "watched" });
+    expect(bracket.kind === "watched" ? bracket.samples : []).toEqual(
+      dotted.kind === "watched" ? dotted.samples : null,
+    );
+    expect(bracket.kind === "watched" ? bracket.samples[2]?.value : 0).toBe(140);
+  });
+
+  it("runs to the scene's end when --to is absent", () => {
+    const watched = watchScene(module, { path: "ball.x", from: 0, every: 1000 });
+    expect(watched.kind === "watched" ? watched.samples.map(({ at }) => at) : []).toEqual([
+      0, 1000, 2000,
+    ]);
+  });
+
+  it("refuses an unknown field and an unknown target, listing what the scene returns", () => {
+    const field = watchScene(module, { path: "ball.z", from: 0, every: 500 });
+    expect(field).toMatchObject({ kind: "usage" });
+    expect(field.kind === "usage" ? field.message : "").toMatch(
+      /ball\.z.*ball\.x, ball\.y, ball\.rotationY, ball\.scale/,
+    );
+    const target = watchScene(module, { path: "nope.x", from: 0, every: 500 });
+    expect(target.kind === "usage" ? target.message : "").toMatch(/"nope".*ball, letters/);
   });
 });
