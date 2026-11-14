@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>dragon-intro</title>
+    <style>
+      body {
+        margin: 0;
+        background: #05060f;
+      }
+      .stage {
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(ellipse at 50% 60%, #1a2040 0%, #070913 70%);
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      }
+      .stage canvas {
+        display: block;
+        position: absolute;
+        inset: 0;
+      }
+      .title {
+        position: absolute;
+        left: 90px;
+        top: 34px;
+        width: 940px;
+        height: 120px;
+        display: flex;
+        gap: 30px;
+        pointer-events: none;
+      }
+      .word {
+        font-size: 92px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        color: #ffd9a0;
+        text-shadow:
+          0 6px 0 #b4411a,
+          0 0 28px rgba(255, 140, 60, 0.45);
+        line-height: 120px;
+      }
+      .plus {
+        position: absolute;
+        left: 0;
+        top: 0;
+        margin: -12px 0 0 -18px;
+        font-size: 30px;
+        font-weight: 900;
+        color: #6df2d3;
+        text-shadow: 0 2px 0 #06352f;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .bubble {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 390px;
+        height: 132px;
+        margin: -104px 0 0 24px;
+        box-sizing: border-box;
+        padding: 14px 18px;
+        border-radius: 22px;
+        background: #fff6e4;
+        color: #2a1710;
+        font-size: 22px;
+        line-height: 1.25;
+        font-weight: 700;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .bubble::after {
+        content: "";
+        position: absolute;
+        left: -24px;
+        top: 92px;
+        border: 12px solid transparent;
+        border-right: 24px solid #fff6e4;
+        border-left: 0;
+      }
+      .card {
+        position: absolute;
+        right: 44px;
+        bottom: 50px;
+        width: 280px;
+        padding: 18px 22px;
+        border-radius: 14px;
+        background: #0f1c2e;
+        border: 2px solid #4fd1c5;
+        color: #d8fff6;
+        font-size: 19px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .card b {
+        color: #6df2d3;
+        letter-spacing: 3px;
+        font-size: 17px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/dragon-intro-main.tsx"></script>
+  </body>
+</html>
