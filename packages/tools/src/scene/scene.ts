@@ -261,9 +261,22 @@ export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): 
   return { kind: "timeline", step: STEP_MS, end, rows };
 }
 
+/** What `--watch` asks: one value by `path`, from `from` to `to` ms (the scene's end when absent) every `every` ms. */
+export interface WatchRequest {
+  readonly path: string;
+  readonly from: number;
+  readonly to?: number;
+  readonly every: number;
+}
+
 /** Parsed `motion:sample` arguments: the scene file, `--at` ms or `--progress` shares, `--nodes`,
- * `--fields` and `--events`; or the usage text. */
+ * `--fields` and `--events`, or a `--watch` of one path; or the usage text. */
 export type SampleArgs =
+  | ({
+      readonly kind: "watch";
+      readonly file: string;
+      readonly events?: Events;
+    } & WatchRequest)
   | {
       readonly kind: "ok";
       readonly file: string;
@@ -275,7 +288,124 @@ export type SampleArgs =
   | { readonly kind: "usage"; readonly message: string };
 
 const SAMPLE_USAGE =
-  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
+  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
+
+/** The `--watch` request in `flags`, or the usage text when it is mixed with another way to sample or malformed. */
+function parseWatch(file: string, flags: ReadonlyMap<string, string | undefined>): SampleArgs {
+  const usage = (message: string): SampleArgs => ({
+    kind: "usage",
+    message: `${message} ${SAMPLE_USAGE}`,
+  });
+  for (const other of ["--at", "--progress", "--nodes", "--fields"])
+    if (flags.has(other)) return usage(`--watch cannot go with ${other}.`);
+  const path = flags.get("--watch");
+  if (path === undefined || pathSegments(path) === undefined)
+    return usage("--watch needs a path like ball.x or props[2].y.");
+  const number = (flag: string, fallback: number | undefined): number | undefined | "bad" => {
+    if (!flags.has(flag)) return fallback;
+    const text = flags.get(flag);
+    const value = Number(text);
+    return text !== undefined && text !== "" && Number.isFinite(value) && value >= 0
+      ? value
+      : "bad";
+  };
+  const from = number("--from", 0);
+  const to = number("--to", undefined);
+  const every = number("--every", STEP_MS);
+  if (from === "bad" || to === "bad" || every === "bad" || every === 0 || from === undefined)
+    return usage("--from and --to need non-negative ms, and --every a positive number of ms.");
+  if (every === undefined || (to !== undefined && to < from))
+    return usage("--to cannot come before --from.");
+  const eventText = flags.get("--events");
+  const events = eventText === undefined ? undefined : parseEvents(eventText);
+  if (events !== undefined && "reason" in events) return usage(events.reason);
+  return {
+    kind: "watch",
+    file,
+    path,
+    from,
+    every,
+    ...(to === undefined ? {} : { to }),
+    ...(events === undefined ? {} : { events }),
+  };
+}
+
+/** A path's segments: `props[2].y` and `props.2.y` are both `props`, `2`, `y`; none when it has an empty one. */
+function pathSegments(path: string): readonly string[] | undefined {
+  const segments = path.replace(/\[(\d+)\]/g, ".$1").split(".");
+  return segments.every((segment) => segment !== "") ? segments : undefined;
+}
+
+function valueAtPath(value: unknown, segments: readonly string[]): unknown {
+  let here = value;
+  for (const segment of segments) {
+    if (typeof here !== "object" || here === null) return undefined;
+    here = Reflect.get(here, segment);
+  }
+  return here;
+}
+
+const LISTED_PATHS = 24;
+
+/** Every path under `value`, as `a.b[2].c`, leaves only. */
+function leafPaths(value: unknown, path: string, into: Set<string>): void {
+  if (Array.isArray(value))
+    value.forEach((item, index) => leafPaths(item, `${path}[${index}]`, into));
+  else if (typeof value === "object" && value !== null)
+    for (const [key, item] of Object.entries(value)) leafPaths(item, `${path}.${key}`, into);
+  else into.add(path);
+}
+
+/** Result of `--watch`: one path's value at each step, or why it cannot be watched. */
+export type WatchResult =
+  | {
+      readonly kind: "watched";
+      readonly path: string;
+      readonly samples: readonly { readonly at: number; readonly value: unknown }[];
+    }
+  | { readonly kind: "usage"; readonly message: string };
+
+/** The most samples one `--watch` takes. */
+const WATCH_MOST = 10000;
+
+/** One path's value every `every` ms; a path the scene never returns is refused with the paths it does. */
+export function watchScene(
+  module: SceneModule,
+  request: WatchRequest,
+  events: Events = NO_EVENTS,
+): WatchResult {
+  const segments = pathSegments(request.path) ?? [];
+  const end = request.to ?? module.durationMs;
+  const count = Math.floor((end - request.from) / request.every + 1e-9) + 1;
+  if (count > WATCH_MOST)
+    return {
+      kind: "usage",
+      message: `--watch would take ${count} samples, over ${WATCH_MOST}; raise --every or narrow --from and --to.`,
+    };
+  const ms: number[] = [];
+  for (let step = 0; request.from + step * request.every <= end + 1e-9; step += 1)
+    ms.push(request.from + step * request.every);
+  const sampled = sampleScene(module, { kind: "time", ms }, undefined, undefined, events);
+  const samples = sampled.map(({ at, targets }) => ({
+    at,
+    value: valueAtPath(targets, segments) ?? null,
+  }));
+  if (samples.some(({ value }) => value !== null))
+    return { kind: "watched", path: request.path, samples };
+  const target = segments[0] ?? "";
+  const names = new Set(sampled.flatMap(({ targets }) => Object.keys(targets)));
+  const paths = new Set<string>();
+  for (const { targets } of sampled) leafPaths(targets[target], target, paths);
+  const listed = names.has(target) ? [...paths] : [...names];
+  const shown = listed.slice(0, LISTED_PATHS).join(", ");
+  const more = listed.length > LISTED_PATHS ? `, and ${listed.length - LISTED_PATHS} more` : "";
+  return {
+    kind: "usage",
+    message: names.has(target)
+      ? `--watch ${request.path} is never returned by the scene; under "${target}" it returns ${shown}${more}.`
+      : `--watch ${request.path} names the target "${target}", which the scene never returns; its targets are ${shown}${more}.`,
+  };
+}
 
 /** The scene file, what to sample and which targets and fields to print, or the usage text. */
 export function parseSampleArgs(argv: readonly string[]): SampleArgs {
@@ -289,7 +419,19 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
       files.push(arg);
       continue;
     }
-    if (!["--at", "--progress", "--nodes", "--fields", "--events"].includes(arg))
+    if (
+      ![
+        "--at",
+        "--progress",
+        "--nodes",
+        "--fields",
+        "--events",
+        "--watch",
+        "--from",
+        "--to",
+        "--every",
+      ].includes(arg)
+    )
       return usage(`Unknown flag ${arg}. ${SAMPLE_USAGE}`);
     if (flags.has(arg)) return usage(`Repeated flag ${arg}. ${SAMPLE_USAGE}`);
     flags.set(arg, argv[i + 1]);
@@ -298,6 +440,9 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const file = files[0];
   if (file === undefined || files.length !== 1)
     return usage(`Expected one scene file. ${SAMPLE_USAGE}`);
+  if (flags.has("--watch")) return parseWatch(file, flags);
+  for (const flag of ["--from", "--to", "--every"])
+    if (flags.has(flag)) return usage(`${flag} goes with --watch. ${SAMPLE_USAGE}`);
   const hasAt = flags.has("--at");
   if (hasAt === flags.has("--progress"))
     return usage(`Pass exactly one of --at and --progress. ${SAMPLE_USAGE}`);

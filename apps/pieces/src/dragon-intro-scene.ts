@@ -4,437 +4,308 @@ import {
   combine,
   drop,
   ease,
-  elapsedOf,
   fade,
   follow,
   lane,
-  liveAt,
   lanes,
   mergeEvents,
   mix,
+  mixPose3d,
   orbit,
-  overshoot,
-  pop,
   project3d,
   reversed,
+  rise,
   seeded,
+  sequence,
   slide,
   span,
   springEase,
-  timeAt,
+  tally,
   wipe,
   type Events,
   type Lens3d,
+  type Pose2d,
   type Pose3d,
   type Time,
 } from "@gerak/moves";
-import { simulate } from "@gerak/physics";
+import { simulate, type BodyState3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, posedJoints3d } from "@gerak/rig";
 import rig from "../references/dragonling.joints.json" with { type: "json" };
 import talk from "../references/talk.json" with { type: "json" };
 
-/** The piece is 10 s: the title, the pushed-in camera, the falling hoard, the talk and the card. */
+/** How long the scene runs, in ms. */
 export const durationMs = 10000;
 
 /** The page's size in px; the page sizes its renderer and stage from it. */
 export const stage = { width: 1280, height: 720 } as const;
 
-const FOV = 40;
-const FOCUS = { x: 0.1, y: 0.3, z: 0 };
+const FOV = 38;
+const FOCUS = { x: 0, y: 0.24, z: 0.02 };
 
-/** Where the talk recording starts on the clock; the recording is 8 s long. */
-const TALK_AT = 1100;
-/** Mouth movement, summed in ms, of the whole recording: the caption's last word shows as it ends. */
-const TALK_TOTAL = 2312;
-const TALK_STEP = 48;
+const cameraAt = (push: number): Pose3d => {
+  const eye = orbit({
+    target: FOCUS,
+    radius: mix(2.2, 1.38, push),
+    azimuth: mix(22, 0, push),
+    elevation: mix(14, 8, push),
+  });
+  return { ...eye, ...aim(eye, FOCUS) };
+};
 
-export const WORDS = [
-  "Hello!",
-  "I",
-  "am",
-  "small,",
-  "but",
-  "I",
-  "collect",
-  "shiny",
-  "things.",
-  "Gems,",
-  "gold,",
-  "whatever",
-  "falls.",
-  "Mind",
-  "my",
-  "head,",
-  "please.",
-  "Oh!",
-  "A",
-  "card",
-  "has",
-  "come",
-  "for",
-  "me.",
-] as const;
+/** The camera as the page first draws it. */
+export const lens: Lens3d = { ...cameraAt(0), fov: FOV };
 
-export const PROP_TARGETS = [
-  "prop0",
-  "prop1",
-  "prop2",
-  "prop3",
-  "prop4",
-  "prop5",
-  "prop6",
-] as const;
-export const PLUS_TARGETS = [
-  "plus0",
-  "plus1",
-  "plus2",
-  "plus3",
-  "plus4",
-  "plus5",
-  "plus6",
-] as const;
-export const WORD_TARGETS = ["word0", "word1", "word2", "word3"] as const;
+/* The story's beats, in ms. */
+const TITLE_AT = 200;
+const PUSH = span(0, 6600);
+const TURN = span(1700, 2800);
+const TALK_AT = 2800;
+const TALK_MS = 4300;
+const TALK_END = TALK_AT + TALK_MS;
+const CARD_IN = span(5500, 6300);
+const LOOK = span(5750, 6700);
+const TITLE_OUT = span(8000, 8800);
 
-export const TITLE = ["TINY", "DRAGON,", "BIG", "HOARD"] as const;
-
-const BEATS = {
-  titleFirst: 300,
-  titleStagger: 0.17,
-  turn: [700, 1900],
-  bubbleIn: [1500, 1900],
-  card: [5700, 6500],
-  look: [6100, 7100],
-  lookBack: [8200, 8900],
-  wipeOut: [8300, 9100],
-  push: [150, 4800],
-} as const;
-
-/** The samples the dragon talks from, moved to start at `TALK_AT`, and when each prop is tossed in. */
-interface Prop {
-  readonly shape:
-    | { readonly kind: "sphere"; readonly radius: number }
-    | {
-        readonly kind: "box";
-        readonly width: number;
-        readonly height: number;
-        readonly depth: number;
-      };
-  readonly x: number;
-  readonly z: number;
-  readonly at: number;
-  readonly spin: number;
-  readonly color: number;
-}
-
-export const PROPS: readonly Prop[] = [
-  {
-    shape: { kind: "sphere", radius: 0.045 },
-    x: -0.3,
-    z: 0.1,
-    at: 1050,
-    spin: 120,
-    color: 0x2fd6a0,
-  },
-  {
-    shape: { kind: "box", width: 0.1, height: 0.05, depth: 0.06 },
-    x: 0.34,
-    z: 0.05,
-    at: 1500,
-    spin: 90,
-    color: 0xffc233,
-  },
-  {
-    shape: { kind: "sphere", radius: 0.04 },
-    x: -0.22,
-    z: -0.12,
-    at: 2100,
-    spin: -100,
-    color: 0xff4a6b,
-  },
-  {
-    shape: { kind: "box", width: 0.09, height: 0.05, depth: 0.06 },
-    x: 0.26,
-    z: 0.2,
-    at: 2900,
-    spin: -80,
-    color: 0xffc233,
-  },
-  {
-    shape: { kind: "sphere", radius: 0.05 },
-    x: 0.4,
-    z: -0.1,
-    at: 3700,
-    spin: 140,
-    color: 0x5aa8ff,
-  },
-  {
-    shape: { kind: "box", width: 0.1, height: 0.05, depth: 0.06 },
-    x: -0.34,
-    z: 0.22,
-    at: 4600,
-    spin: 70,
-    color: 0xffc233,
-  },
-  {
-    shape: { kind: "sphere", radius: 0.04 },
-    x: 0.18,
-    z: 0.3,
-    at: 5300,
-    spin: -110,
-    color: 0xb36bff,
-  },
+/* The recorded talk shifted onto the story. */
+const talkCues: Events = [
+  ...talk
+    .filter((sample) => sample.name === "mouthOpen" && sample.at <= TALK_MS)
+    .map((sample) => ({
+      name: "mouthOpen",
+      at: sample.at + TALK_AT,
+      target: "dragon",
+      value: sample.value,
+    })),
+  { name: "mouthOpen", at: TALK_END, target: "dragon", value: 0 },
 ];
+export const speech =
+  "Hello, visitor! I keep this little hoard. Everything that lands here is counted, and everything counted is mine.".split(
+    " ",
+  );
+const mouth = follow({
+  start: 0,
+  on: { mouthOpen: "value" },
+  target: "dragon",
+  stiffness: 420,
+  damping: 40,
+});
+const said = tally({ start: 0, on: { mouthOpen: "value" }, target: "dragon" });
+const SAID_TOTAL = said.total(talkCues);
 
-const tosses: Events = PROPS.map((prop, index) => ({ name: "toss", at: prop.at, value: index }));
-const shifted: Events = talk.map((cue) => ({ ...cue, at: cue.at + TALK_AT }));
+/* Blinks: a few on beats of the story, the rest drawn once from a seed. */
+const BLINK_MS = 170;
+const BEATS = [TURN.at(1), 4200, LOOK.at(0.1)];
+const blinkTimes = (() => {
+  const random = seeded(11);
+  const times = [...BEATS];
+  let at = 600;
+  while (at < 9000) {
+    at += 1000 + random() * 1500;
+    if (BEATS.every((beat) => Math.abs(beat - at) > 400)) times.push(at);
+  }
+  return times.sort((a, b) => a - b);
+})();
+const shutAt = (time: Time): number => {
+  let shut = 0;
+  for (const start of blinkTimes) {
+    const p = span(start, start + BLINK_MS).of(time).progress;
+    if (p > 0 && p < 1) shut = Math.max(shut, p < 0.35 ? p / 0.35 : (1 - p) / 0.65);
+  }
+  return shut;
+};
 
-/** Talk samples and tosses, played beside the page's own events. */
-export const cues: Events = mergeEvents(shifted, tosses);
+/* Props spawned from cues, falling through 3D physics. */
+const PROP_COUNT = 8;
+const SPAWN_Y = 1.15;
+const scatter = seeded(5);
+const PROPS = Array.from({ length: PROP_COUNT }, (_, i) => {
+  const side = i % 2 === 0 ? 1 : -1;
+  return {
+    id: `p${i}`,
+    at: 700 + i * 520,
+    x: side * (0.17 + scatter() * 0.16),
+    z: -0.05 + scatter() * 0.32,
+    box: i % 3 === 0,
+    size: 0.024 + scatter() * 0.014,
+    spin: (scatter() - 0.5) * 240,
+  };
+});
+export const cues: Events = [
+  ...PROPS.map((prop) => ({ name: "prop", at: prop.at, target: prop.id })),
+  ...talkCues,
+];
+export const propSpecs = PROPS;
 
-const SPAWN_Y = 1.3;
 const rapier3d = await rapierEngine3d();
-
 const sim = simulate(
   rapier3d(),
   (world) => {
-    world.setGravity(0, -9.81, 0);
-    world.addCollider("floor", { kind: "floor", y: 0 }, { restitution: 0.4, friction: 0.7 });
-    world.addCollider(
-      "body",
-      { kind: "box", x: 0, y: 0.15, z: 0, width: 0.2, height: 0.22, depth: 0.34 },
-      { restitution: 0.2, friction: 0.7 },
-    );
-    world.addCollider(
-      "head",
-      { kind: "box", x: 0, y: 0.4, z: 0.14, width: 0.14, height: 0.16, depth: 0.16 },
-      { restitution: 0.2, friction: 0.7 },
-    );
+    world.setGravity(0, -2.6, 0);
+    world.addCollider("floor", { kind: "floor", y: 0 }, { restitution: 0.45, friction: 0.7 });
+    world.addCollider("torso", {
+      kind: "box",
+      x: 0,
+      y: 0.15,
+      z: -0.02,
+      width: 0.2,
+      height: 0.3,
+      depth: 0.3,
+    });
+    world.addCollider("head", {
+      kind: "box",
+      x: 0,
+      y: 0.37,
+      z: 0.14,
+      width: 0.11,
+      height: 0.14,
+      depth: 0.14,
+    });
   },
   {
+    durationMs,
+    dt: 1 / 60,
+    checkpointMs: 100,
+    maxCheckpoints: 100,
     spawn: (event, world) => {
-      if (event.name !== "toss") return;
-      const prop = PROPS[event.value ?? 0];
-      if (prop === undefined) return;
+      const prop = PROPS.find((entry) => entry.id === event.target);
+      if (event.name !== "prop" || prop === undefined) return;
       world.addBody({
-        id: `prop${event.value ?? 0}`,
-        shape: prop.shape,
+        id: prop.id,
+        shape: prop.box
+          ? { kind: "box", width: prop.size * 1.7, height: prop.size * 1.7, depth: prop.size * 1.7 }
+          : { kind: "sphere", radius: prop.size },
         x: prop.x,
         y: SPAWN_Y,
         z: prop.z,
-        vy: -0.4,
-        wy: prop.spin,
-        wx: prop.spin * 0.4,
-        drag: 0.35,
-        restitution: 0.4,
-        friction: 0.7,
+        wx: prop.spin,
+        wz: prop.spin * 0.6,
+        restitution: 0.5,
+        friction: 0.6,
+        drag: 2,
       });
     },
   },
 );
 
-const jaw = follow({
-  start: 0,
-  on: { mouthOpen: "value" },
-  stiffness: 240,
-  damping: 30,
-  rest: 0.01,
-});
-const spokenLevel = follow({
-  start: 0,
-  on: { mouthOpen: "value" },
-  stiffness: 240,
-  damping: 30,
-  rest: 0.01,
-});
+/* The dragonling. */
+const AWAY: Pose3d = { rotationY: -75 };
+const TO_VIEWER: Pose3d = { rotationY: 0 };
 
-const ms = (time: Time): number => elapsedOf(time.clock) ?? 0;
-
-const clamp = (value: number, low: number, high: number): number =>
-  Math.min(high, Math.max(low, value));
-
-/** Blinks: a few on beats of the story, and between them times drawn once from a seed. */
-const BEAT_BLINKS = [1900, 4300, 6250, 9000];
-const BLINK_LENGTH = 170;
-const blinkTimes = ((): readonly number[] => {
-  const random = seeded(11);
-  const drawn: number[] = [];
-  let at = 600;
-  while (at < durationMs - 400) {
-    at += 1100 + random() * 1700;
-    const near = [...BEAT_BLINKS, ...drawn].some((other) => Math.abs(other - at) < 700);
-    if (!near && at < durationMs - 400) drawn.push(at);
-  }
-  return [...BEAT_BLINKS, ...drawn].sort((a, b) => a - b);
-})();
-
-const blinkShut = (now: number): number => {
-  let shut = 0;
-  for (const start of blinkTimes) {
-    const share = (now - start) / BLINK_LENGTH;
-    if (share <= 0 || share >= 1) continue;
-    shut = Math.max(shut, share < 0.4 ? share / 0.4 : 1 - (share - 0.4) / 0.6);
-  }
-  return shut;
+const bonesAt = (time: Time, events: Events): Readonly<Record<string, Pose3d>> => {
+  const open = mouth(time, events);
+  const look = LOOK.of(time, springEase({ stiffness: 90, damping: 13 })).progress;
+  const settle = TURN.of(time, springEase({ stiffness: 110, damping: 12 })).progress;
+  return {
+    Jaw: { rotationX: open * 18 },
+    Head: { rotationY: look * 34 + open * 1.5, rotationX: -open * 2 },
+    Neck: { rotationY: look * 12, rotationX: (1 - settle) * 6 },
+  };
 };
 
-const MOUTH_JOINTS = {
-  ...rig.joints,
-  Mouth: { x: 0, y: 0.36, z: 0.215, parent: "Head" },
+const rootAt = (time: Time): Pose3d =>
+  mixPose3d(AWAY, TO_VIEWER, TURN.of(time, springEase({ stiffness: 90, damping: 11 })).progress);
+
+/* 2D over 3D. */
+const TITLE_WORDS = 3;
+const titleWord = (time: Time, i: number): Pose2d => {
+  const mine = lane(span(TITLE_AT, TITLE_AT + 1600).of(time), i, lanes([1, 1, 1], 0.45));
+  return combine([drop({ distance: 300, squash: 0.2 }, mine), fade({}, mine)]);
+};
+const titleWipe = (time: Time): Pose2d =>
+  sequence(time, [
+    [span(0, TITLE_OUT.at(0)), (): Pose2d => ({})],
+    [TITLE_OUT, (t): Pose2d => wipe({ radius: 620, x: 470, y: 60 }, reversed(t))],
+  ]);
+
+const plusAt = (all: Events, time: Time, id: string, lensNow: Lens3d): Pose2d => {
+  const landing = all.find(
+    (event) => event.name === "contact" && event.target === id && event.other === "floor",
+  );
+  if (landing === undefined || landing.point === undefined) return { opacity: 0 };
+  const here = project3d(
+    { x: landing.point.x, y: landing.point.y, z: landing.point.z ?? 0 },
+    lensNow,
+    stage,
+  );
+  const life = span(landing.at, landing.at + 900).of(time);
+  const lift = rise({ distance: 46 }, life);
+  const gone = fade({}, reversed(life));
+  return {
+    x: here.x,
+    y: here.y - 14 + (lift.y ?? 0),
+    opacity: here.visible ? (gone.opacity ?? 0) : 0,
+  };
 };
 
-const turnSpan = span(BEATS.turn[0], BEATS.turn[1]);
-const lookSpan = span(BEATS.look[0], BEATS.look[1]);
-const lookBackSpan = span(BEATS.lookBack[0], BEATS.lookBack[1]);
-const pushSpan = span(BEATS.push[0], BEATS.push[1]);
-
-const spoken = (time: Time, events: Events): number => {
-  const now = ms(time);
-  let sum = 0;
-  for (let at = TALK_AT; at < now; at += TALK_STEP)
-    sum += spokenLevel(timeAt(time, at), events) * TALK_STEP;
-  return clamp(sum / TALK_TOTAL, 0, 1);
-};
-
-const lensAt = (time: Time): Lens3d => {
-  const share = pushSpan.of(time, ease.sineInOut).progress;
-  const eye = orbit({
-    target: FOCUS,
-    radius: mix(3.4, 1.75, share),
-    azimuth: mix(9, 0, share),
-    elevation: mix(11, 7, share),
-  });
-  return { ...eye, ...aim(eye, FOCUS), fov: FOV };
-};
-
-const spotOf = (
-  id: string,
+const MOUTH_REACH = 0.07;
+const bubbleAt = (
   time: Time,
   events: Events,
-  index: number,
-): { x: number; y: number; z: number } => {
-  const hit = hitOf(id, time, events);
-  const at = hit === undefined ? time : timeAt(time, hit);
-  const now = sim.at(at, events)[id];
-  const prop = PROPS[index];
-  return now ?? { x: prop?.x ?? 0, y: SPAWN_Y, z: prop?.z ?? 0 };
-};
-
-const hitOf = (id: string, time: Time, events: Events): number | undefined =>
-  sim.events(time, events).find((event) => event.name === "contact" && event.target === id)?.at;
-
-const TITLE_LANES = lanes([1, 1, 1, 1], BEATS.titleStagger);
-
-/** Every target's value at `time`. 3D targets are in world units (y up, degrees); labels are in stage px. */
-export const scene = (time: Time, events: Events) => {
-  const now = ms(time);
-  const lens = lensAt(time);
-  const level = jaw(time, events);
-
-  const turn = mix(-80, 0, turnSpan.of(time, springEase({ stiffness: 90, damping: 11 })).progress);
-  const dragon: Pose3d = { rotationY: turn };
-
-  const look =
-    lookSpan.of(time, springEase({ stiffness: 120, damping: 14 })).progress *
-    (1 - lookBackSpan.of(time, springEase({ stiffness: 110, damping: 16 })).progress);
-  const idle = 1 - ease.sineInOut(clamp((now - 8200) / 800, 0, 1));
-  const sway = Math.sin(now / 430);
-  const bones: Record<string, Pose3d> = {
-    Jaw: { rotationX: level * 18 },
-    Head: { rotationY: 30 * look, rotationX: -3 * look - level * 1.5 },
-    Neck: { rotationY: 12 * look },
-    Chest: { rotationX: 1.2 * idle * Math.sin(now / 650) },
-    Tail: { rotationY: 7 * idle * sway },
-    TailMid: { rotationY: 10 * idle * Math.sin(now / 430 - 0.9) },
-    TailTip: { rotationY: 12 * idle * Math.sin(now / 430 - 1.8) },
-  };
-
-  const mouth = posedJoints3d(MOUTH_JOINTS, bones, dragon).Mouth;
-  const mouthAt = project3d(mouth, lens, stage);
-  const centreAt = project3d({ x: 0, y: 0.2, z: 0 }, lens, stage);
-  const facing = clamp((centreAt.depth - mouthAt.depth) / 0.04 + 0.5, 0, 1);
-  const bubbleIn = span(BEATS.bubbleIn[0], BEATS.bubbleIn[1]).of(time).progress;
-  const bubble = { x: mouthAt.x, y: mouthAt.y, opacity: mouthAt.visible ? facing * bubbleIn : 0 };
-
-  const titleWipe = reversed(span(BEATS.wipeOut[0], BEATS.wipeOut[1]).of(time, ease.sineInOut));
-  const titleWords = TITLE.map((_, index) => {
-    const own = lane(span(BEATS.titleFirst, BEATS.titleFirst + 1100).of(time), index, TITLE_LANES);
-    return combine([drop({ distance: 260, squash: 0.12 }, own), fade({}, own)]);
-  });
-
-  const cardTime = span(BEATS.card[0], BEATS.card[1]).of(time);
-  const card = overshoot({ amount: 0.06 }, cardTime, (t) =>
-    slide({ distance: 560, from: "right" }, t),
+  bones: Readonly<Record<string, Pose3d>>,
+  root: Pose3d,
+  lensNow: Lens3d,
+): Pose2d => {
+  const joints = posedJoints3d(rig.joints, bones, root);
+  const turn = (root.rotationY ?? 0) + (bones.Neck?.rotationY ?? 0) + (bones.Head?.rotationY ?? 0);
+  const yaw = turn * (Math.PI / 180);
+  const jaw = joints.Jaw;
+  const point = project3d(
+    {
+      x: jaw.x + Math.sin(yaw) * MOUTH_REACH,
+      y: jaw.y - 0.008,
+      z: jaw.z + Math.cos(yaw) * MOUTH_REACH,
+    },
+    lensNow,
+    stage,
   );
-
-  const props = PROPS.map((_, index) => {
-    const id = `prop${index}`;
-    const exists = sim.bodies(time, events).includes(id);
-    return exists ? bodyPose3d(sim.pose(id, time, events)) : { scale: 0 };
-  });
-
-  const plus = PROPS.map((_, index) => {
-    const id = `prop${index}`;
-    const hit = hitOf(id, time, events);
-    const spot = spotOf(id, time, events, index);
-    const at = project3d({ x: spot.x, y: spot.y + 0.05, z: spot.z }, lens, stage);
-    if (hit === undefined) return { x: at.x, y: at.y, scale: 0, opacity: 0 };
-    const age = now - hit;
-    const popped = pop({ overshoot: 0.6 }, span(hit, hit + 280).of(time)).scale ?? 1;
-    const float = ease.quadOut(clamp(age / 1100, 0, 1)) * 46;
-    const fadeOut = 1 - clamp((age - 650) / 450, 0, 1);
-    return { x: at.x, y: at.y - float, scale: popped, opacity: Math.min(1, age / 90) * fadeOut };
-  });
-
+  const share = Math.min(1, said(time, events) / SAID_TOTAL);
+  const show = span(TALK_AT - 200, TALK_AT + 250).of(time).progress;
+  const hide = span(TALK_END + 600, TALK_END + 1000).of(time).progress;
   return {
-    lens,
-    dragon,
-    bones,
-    blink: { custom: { shut: blinkShut(now) } },
-    caption: { custom: { share: spoken(time, events) } },
-    bubble,
-    title: wipe({ radius: 760, x: stage.width / 2, y: 45 }, titleWipe),
-    word0: titleWords[0] ?? {},
-    word1: titleWords[1] ?? {},
-    word2: titleWords[2] ?? {},
-    word3: titleWords[3] ?? {},
-    card,
-    prop0: props[0] ?? {},
-    prop1: props[1] ?? {},
-    prop2: props[2] ?? {},
-    prop3: props[3] ?? {},
-    prop4: props[4] ?? {},
-    prop5: props[5] ?? {},
-    prop6: props[6] ?? {},
-    plus0: plus[0] ?? {},
-    plus1: plus[1] ?? {},
-    plus2: plus[2] ?? {},
-    plus3: plus[3] ?? {},
-    plus4: plus[4] ?? {},
-    plus5: plus[5] ?? {},
-    plus6: plus[6] ?? {},
+    x: point.x,
+    y: point.y,
+    opacity: point.visible ? show * (1 - hide) : 0,
+    custom: { spoken: share },
   };
 };
 
-/** The camera at its first frame: the page builds its camera from this and its field of view. */
-export const lens: Lens3d = lensAt(liveAt(0));
-
-const propLimit = { jump: 0.12, turn: 40 };
-/** Per-target limits for the review: world units for the 3D targets, px for the labels. */
-export const limits = {
-  lens: { jump: 0.1, turn: 30 },
-  dragon: { jump: 0.05, turn: 30 },
-  bones: { jump: 0.05, turn: 30 },
-  prop0: propLimit,
-  prop1: propLimit,
-  prop2: propLimit,
-  prop3: propLimit,
-  prop4: propLimit,
-  prop5: propLimit,
-  prop6: propLimit,
-  caption: { ratio: 30 },
-  blink: { ratio: 30 },
+const offsetFrom = (prop: { x: number; z: number }, state: BodyState3d | undefined): Pose3d => {
+  const pose = bodyPose3d(state);
+  return {
+    ...pose,
+    x: (pose.x ?? 0) - prop.x,
+    y: (pose.y ?? 0) - SPAWN_Y,
+    z: (pose.z ?? 0) - prop.z,
+  };
 };
 
-/** The scene's clock on the page's frames. */
+/** Every target's pose at `time`. */
+export const scene = (time: Time, events: Events) => {
+  const push = PUSH.of(time, ease.cubicInOut).progress;
+  const lensNow: Lens3d = { ...cameraAt(push), fov: FOV };
+  const root = rootAt(time);
+  const bones = bonesAt(time, events);
+  const all = mergeEvents(events, sim.events(time, events));
+  const states = sim.at(time, events);
+  const present = Object.keys(states);
+  return {
+    camera: cameraAt(push),
+    dragon: root,
+    bones,
+    face: { custom: { shut: shutAt(time) } } satisfies Pose3d,
+    props: PROPS.map((prop): Pose3d => {
+      return present.includes(prop.id) ? offsetFrom(prop, states[prop.id]) : { scale: 0 };
+    }),
+    title: Array.from({ length: TITLE_WORDS }, (_, i) => titleWord(time, i)),
+    titleWipe: titleWipe(time),
+    plus: PROPS.map((prop) => plusAt(all, time, prop.id, lensNow)),
+    bubble: bubbleAt(time, events, bones, root, lensNow),
+    card: combine([
+      slide({ distance: 560, from: "right" }, CARD_IN.of(time)),
+      fade({}, CARD_IN.of(time)),
+    ]),
+  };
+};
+
 export const clock = () => clockDriver({ duration: durationMs });

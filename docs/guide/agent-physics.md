@@ -27,8 +27,14 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
   move each with `sim.place(id, time, events)`, which is at opacity 0 until its body exists; `sim.bodies` lists ids.
 - Contacts are events: `sim.events(time, events)` holds a `contact` per body. Merge them with
   `mergeEvents(events, sim.events(time, events))` and answer with `react`, since rigid bodies never squash. A
-  `contact` names only the body (`target`) and its time (`at`), not the point or what it hit; read where the body was
-  then with `sim.at(timeAt(time, hit.at), events)`. Its first contact may be with anything, not only the floor.
+  `contact` names the body (`target`), its time (`at`), where it touched (`point`, `{ x, y }` in px, with `z` in 3D
+  in world units) and what it hit (`other`, a body or collider id). Place a mark at a landing from the event itself;
+  never seek the simulation back to learn where a body was. Its first contact may be with anything, so pick the one
+  whose `other` you mean.
+- `sim.pose(id, time)` throws for a body not spawned yet at `time`: check `sim.bodies(time, events)` first, or in 2D
+  use `sim.place`, which answers opacity 0. `sim.at` answers every body in one call, cheaper than many `pose` calls.
+- A seek back replays the world from its last snapshot, and a spawn event the seek passes rewinds further. When the
+  review reports a seek over budget, a coarser `dt` (`1 / 60`) halves the steps each seek replays.
 - A body that stays within 1 px for half a second sleeps, so a heap comes to rest. Mark bodies that rest on each other
   `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.

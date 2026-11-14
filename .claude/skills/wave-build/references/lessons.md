@@ -15,7 +15,7 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 Measured over 40 waves, 2026-11-11 to 11-14; the rows are in git history. The lead's own cost is never shown.
 
 - A Sonnet builder slice: 70k to 260k tokens, most near 90k to 130k, 5 to 15 minutes.
-- A measure: on Opus 110k to 250k; on Sonnet 84k (one run).
+- A measure: on Opus 110k to 250k; on Sonnet 84k to 214k (three runs).
 - A Sonnet cold review: 90k to 135k, 15 to 30 calls; it finds about ten things, and five to eight are worth fixing.
 - Fixed on combining: 0 to 3 per wave once briefs follow the template.
 

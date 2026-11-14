@@ -31,6 +31,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - In React, `useTarget3d(player, "name")` gives a ref for any `Object3D`, plain Three.js or React Three Fiber. The
   object's position when it binds is its rest, as an element's layout is in 2D; turns and scales are written whole.
   With `frameloop="demand"` pass R3F's `invalidate`.
+- Many like objects are one target: return a list of `Pose3d` as `props`, and bind each mesh with
+  `useTarget3d(player, "props", { at: i })`, which writes only its `i`th pose.
 
 ## The principles in 3D
 
@@ -131,17 +133,20 @@ sample, review and scrub with everything else.
 - **Drawing on the step:** the page renders once when built, then whenever a target it binds is written: pass a
   render function as `useTarget3d`'s `invalidate`, or render inside `player.subscribe`. A free-running
   `requestAnimationFrame` loop can show the canvas a step behind the labels.
-- **Text from samples:** reveal a caption's words from a sample through `follow`, and let the component turn the
-  number into words shown.
+- **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, events) /
+  total`, from `"@gerak/moves"`, and let the component turn the share into words shown.
 - **Reviewing a mixed scene:** export `limits`, target name to `{ jump?, turn?, ratio? }`: the 3D targets get a jump
   about a fifth of the subject's size and `turn: 30`, the px labels keep the command's defaults. A `custom` number
   is judged as a ratio.
 - **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a target and
   read them on the page in `player.subscribe`; the review judges them as ratios.
-- **A model without eyelids:** add a lid per eye on the page, a mesh in the skin colour attached to the eye's bone,
-  placed from the model's eye file in `apps/pieces/references/` (each iris's box in model units). The box's centre
-  lies inside the head: the eye's front surface is near `z + depth / 2`. Attach the lids before the model joins a
-  group the scene poses, since `worldToLocal` reads the parents' current matrices. Drive them from a custom number (0
+- **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/three/skeleton"` makes
+  `object` ride the bone, placed at `at`, a `Vector3` in the model's space (the space of the joint table and the eye
+  file), and turned by `turn`, a `Quaternion` in that space. It reads only the captured rest, so it is right
+  whatever the model's groups are posed to. Lids, hats, held props and glasses are each one call.
+- **A model without eyelids:** attach a lid per eye, a mesh in the skin colour, to the eye's bone at a point from the
+  model's eye file in `apps/pieces/references/` (each iris's box in model units). The box's centre lies inside the
+  head: the eye's front surface is near `z + depth / 2`. Drive them from a custom number (0
   open, 1 shut) and hide them when open. Random blinks come from `seeded(n)` from `"@gerak/moves"`, drawn once at the
   top of the scene module so every play and seek blinks at the same times.
 - **Ending at rest:** the review asks every target to hold still before the end. A `follow` keeps settling after its

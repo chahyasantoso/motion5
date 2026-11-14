@@ -203,3 +203,37 @@ describe("replace", () => {
     expect(heard).toEqual([500, 1500]);
   });
 });
+
+describe("step timing", () => {
+  const clean = (): void => {
+    performance.clearMarks();
+    performance.clearMeasures();
+    Reflect.deleteProperty(globalThis, "__gerakTiming");
+  };
+
+  it("leaves no measure behind while the flag is unset", () => {
+    clean();
+    const driver = manualDriver();
+    play(scene, driver);
+    driver.seek(0.3);
+    driver.seek(0.6);
+    expect(performance.getEntriesByName("gerak:scene")).toEqual([]);
+    expect(performance.getEntriesByName("gerak:write")).toEqual([]);
+  });
+
+  it("adds one scene and one write measure per step while the flag is set", () => {
+    clean();
+    Reflect.set(globalThis, "__gerakTiming", true);
+    const driver = manualDriver();
+    const player = play(scene, driver);
+    player.subscribe("ball", () => undefined);
+    const before = performance.getEntriesByName("gerak:scene").length;
+    driver.seek(0.3);
+    driver.seek(0.6);
+    const scenes = performance.getEntriesByName("gerak:scene").length - before;
+    const writes = performance.getEntriesByName("gerak:write").length;
+    clean();
+    expect(scenes).toBe(2);
+    expect(writes).toBe(2);
+  });
+});

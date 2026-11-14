@@ -20,7 +20,8 @@ A piece starts from its brief, not from a piece that already exists.
    follow-through, events, randomness.
 4. Do not open any other piece in `apps/pieces/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
-5. Read a part the guide lists (events, physics, rigs, principles, 3D) only when the brief needs it.
+5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
+   when the brief needs it.
 6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
    do not read the reference whole, and do not read package source.
 7. Review with `motion:review`; dig with the other tools only into what a review showed. Read the sheet before

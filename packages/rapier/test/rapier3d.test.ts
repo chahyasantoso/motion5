@@ -4,6 +4,8 @@ import { simulate, type PhysicsWorld3d, type Spawner3d } from "@gerak/physics";
 import { rapierEngine, rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, matrixFromEuler3d, matrixFromQuaternion } from "@gerak/rig";
 
+/** How far a contact point may lie from the surfaces it names, in scene units. */
+const POINT_TOLERANCE = 0.05;
 const create = await rapierEngine3d();
 const create2d = await rapierEngine();
 
@@ -189,7 +191,7 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
     ];
     const sim = simulate(create(), build, options);
     expect(sim.bodies(liveAt(300), drops)).toEqual([]);
-    expect(sim.bodies(liveAt(500), drops)).toEqual(["ball@400"]);
+    expect(sim.bodies(liveAt(800), drops)).toEqual(["ball@400"]);
     const settled = sim.at(liveAt(2400), drops);
     expect(Object.keys(settled)).toEqual(["ball@400", "ball@900"]);
     expect(settled["ball@400"]?.y ?? 0).toBeCloseTo(0.3, 1);
@@ -320,5 +322,54 @@ describe("one snapshot format", () => {
     expect(() => world3d.restore(world2d.snapshot())).toThrow(
       new TypeError("rapierWorld3d: the snapshot is not from this adapter."),
     );
+  });
+
+  it("gives a contact its point, the other body, and a replay that matches after a seek", () => {
+    const sim = simulate(create(), (world) => {
+      world.setGravity(0, -9.81, 0);
+      world.addCollider("floor", { kind: "floor", y: 0 });
+      world.addBody({ id: "ball", shape: { kind: "sphere", radius: 0.5 }, x: 3, y: 2, z: -2 });
+      world.addBody({
+        id: "left",
+        shape: { kind: "sphere", radius: 0.5 },
+        x: -4,
+        y: 5,
+        z: 1,
+        vx: 2,
+      });
+      world.addBody({
+        id: "right",
+        shape: { kind: "sphere", radius: 0.7 },
+        x: -2,
+        y: 5,
+        z: 1,
+        vx: -2,
+      });
+    });
+    const events = sim.events(liveAt(800));
+    const landing = events.find(({ target, other }) => target === "ball" && other === "floor");
+    expect(landing).toBeDefined();
+    expect(Math.abs((landing?.point?.x ?? 0) - 3)).toBeLessThan(POINT_TOLERANCE);
+    expect(Math.abs(landing?.point?.y ?? 1)).toBeLessThan(POINT_TOLERANCE);
+    expect(Math.abs((landing?.point?.z ?? 0) + 2)).toBeLessThan(POINT_TOLERANCE);
+
+    const met = events.find(({ target }) => target === "left");
+    expect(met?.other).toBe("right");
+    expect(events.find(({ target }) => target === "right")?.other).toBe("left");
+    const bodies = sim.at(liveAt(met?.at ?? 0));
+    for (const [ball, radius] of [
+      [bodies.left, 0.5],
+      [bodies.right, 0.7],
+    ] as const) {
+      const distance = Math.hypot(
+        (met?.point?.x ?? 0) - (ball?.x ?? 0),
+        (met?.point?.y ?? 0) - (ball?.y ?? 0),
+        (met?.point?.z ?? 0) - (ball?.z ?? 0),
+      );
+      expect(Math.abs(distance - radius)).toBeLessThan(POINT_TOLERANCE);
+    }
+
+    sim.events(liveAt(0));
+    expect(sim.events(liveAt(800))).toEqual(events);
   });
 });

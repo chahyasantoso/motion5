@@ -25,11 +25,15 @@ export {
   isMotionEvent,
   mergeEvents,
   react,
+  tally,
+  type EventPoint,
   type Events,
   type FollowOptions,
   type MotionEvent,
   type ReactionKind,
   type ReactOptions,
+  type Tally,
+  type TallyOptions,
 } from "./events";
 export { lane, laneTime, lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./lanes";
 export { createLoopCycle, type LoopCycle, type LoopCycleOptions, type LoopCycleStep } from "./loop";

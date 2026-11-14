@@ -45,9 +45,11 @@ Every brief tells the builder to:
 - write text holding backticks or backslashes with the file tool, never in a shell string or heredoc;
 - run every script that reads paths after a move, not only the check;
 - run git as plain single commands from its worktree, never behind `cd`, `&&`, a pipe or `-C`, which isolation refuses;
+- commit a regenerated shared file (a generated reference) alone and last, so the lead drops it and regenerates once;
 - report what the brief got wrong and a "not verified" list.
 
-Launch a wave's builders in one message, each in its own worktree. Do not poll.
+Launch a wave's builders in one message, each in its own worktree. Do not poll. Push a lead change before telling a
+running builder about it: a builder told to wait for origin stalls.
 
 ## Combine
 

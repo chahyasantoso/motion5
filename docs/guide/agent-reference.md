@@ -179,14 +179,18 @@ const slide = defineMove({
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with no jump; pure in time and events, a later call goes on from the last.
-- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y` and a `value`.
+- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a `value`, a `point` of numbers and an `other`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
+- **`tally`** `(options: TallyOptions): Tally`: The area under held samples up to any time, each held until the next, from a table built once per list and extended when a live list grows by appending; events oldest first.
+- **`EventPoint`** `type EventPoint`: A point an event happened at, in the scene's units; `z` only in 3D.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
 - **`FollowOptions`** `type FollowOptions`: Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own), `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001).
 - **`MotionEvent`** `type MotionEvent`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.
 - **`ReactionKind`** `type ReactionKind`: How a response to one event moves: from a full start, from rest, as a fade, or as a shake.
 - **`ReactOptions`** `type ReactOptions`: Settings of a `react`: event names `on`, `target`, `kind`, `amplitude`, `decay` (default 6 a second) and `frequency` (4 a second).
+- **`Tally`** `type Tally`: The area under held samples so far, in value-seconds: `total(events)` is the whole stream's, up to its last counted event, so `tally / total` is how far through it the stream is.
+- **`TallyOptions`** `type TallyOptions`: Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own) and `target`.
 - **`lane`** `(time: Time, index: number, of: Lanes): Time`: Lane `index` run inside `time`: its progress, and a timed clock split among the lanes.
 - **`laneTime`** `(position: number, index: number, of: Lanes, durationMs?: number): Time`: Lane `index` at overall `position`; with `durationMs` its clock is that lane's own window, in ms.
 - **`lanes`** `(lengths: readonly number[], stagger: number, options?: LanesOptions): Lanes`: Lanes of these relative lengths, each starting `stagger` after the one before it in the order `from` gives.
@@ -548,7 +552,8 @@ sim.place(`bit${click.at}`, time, events);
 - **`BodyState3d`** `type BodyState3d`: A 3D body's world position, orientation quaternion, linear velocity, and angular velocity (deg/s).
 - **`Collider`** `type Collider`: A collider that never moves: the line bodies rest on, a side that keeps them in, or a ramp.
 - **`Collider3d`** `type Collider3d`: A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box.
-- **`Contact`** `type Contact`: Two things that started touching during a step: body ids, or a body id and a collider id.
+- **`Contact`** `type Contact`: Two things that started touching during a step, and where: body ids, or a body id and a collider id, and the point in stage px.
+- **`Contact3d`** `type Contact3d`: A 3D contact: the pair that started touching and the point where they met, in scene units.
 - **`PhysicsWorld`** `type PhysicsWorld`: What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise.
 - **`PhysicsWorld3d`** `type PhysicsWorld3d`: What a 3D physics engine gives a scene: world units, y up, quaternions and degrees a second.
 - **`Quaternion3d`** `type Quaternion3d`: A unit quaternion `{ w, x, y, z }` representing a 3D orientation.
@@ -595,7 +600,7 @@ return <mesh ref={ball} />;
 ## @gerak/three/react
 
 <!-- generated:reference:start -->
-- **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<…`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest.
+- **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<… (+1 overloads)`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest. With `at`, binds only the `at`th pose of a list target; a missing index writes nothing, a bad one throws.
 <!-- generated:reference:end -->
 
 ## @gerak/three/skeleton
@@ -603,6 +608,7 @@ return <mesh ref={ball} />;
 <!-- generated:reference:start -->
 - **`captureSkeleton`** `(source: Object3D<Object3DEventMap> | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
 - **`applyBones`** `(skeleton: CapturedSkeleton, poses: Readonly<Record<string, Pose3d>>): void`: Applies per-bone `Pose3d` deltas (from `bonesOf3d` or hand-keyed) relative to rest, resetting omitted bones.
+- **`attach`** `(skeleton: CapturedSkeleton, bone: string, object: Object3D<Object3DEventMap>, options: { readonly at: Vector3; readonly turn?: Quaternion;…`: Parents `object` to a bone at model-space `at`, turned by model-space `turn`, from captured rest only.
 - **`CapturedBone`** `type CapturedBone`: A captured Three.js bone with its rest local and world transforms and its world rest joint.
 - **`CapturedSkeleton`** `type CapturedSkeleton`: A Three.js skeleton captured at rest: bones parent-before-child, lookup by name, and world rest joints.
 <!-- generated:reference:end -->
@@ -670,6 +676,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
+- **`motion:fps <page> [--to ms] [--size WxH] [--show]`**: runs the page on the machine's real clock for `--to` ms
+  (default 10000) and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
+  second per 500 ms window, frame gaps over 16.7 and 33.4 ms, the five slowest frames split into `scene`, `write` and
+  `rest` ms, and the WebGL renderer. Headless frames run uncapped (`vsync: false`); `--show` opens a window with a counter.
 - **`motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
   its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
   that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing

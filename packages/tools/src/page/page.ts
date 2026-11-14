@@ -17,6 +17,12 @@ export interface PageTarget {
   readonly source: PageSource;
   /** What a person does to the page, and when; done with the real mouse at those exact ms. */
   readonly actions?: readonly PageAction[];
+  /** "paused" (default) runs a fake clock the tool steps; "real" lets the page run on the machine's own clock. */
+  readonly clock?: "paused" | "real";
+  /** Opens a visible browser window instead of a headless one; false by default. */
+  readonly show?: boolean;
+  /** Runs on the new page before it loads, for init scripts. */
+  readonly prepare?: (page: Page) => Promise<void>;
 }
 
 /** The demo app, served when no `--root` or `--url` is given. */
@@ -143,7 +149,8 @@ export async function withPage<T>(
   let browser: Browser | undefined;
   for (const channel of CHANNELS) {
     try {
-      browser = await chromium.launch(channel === undefined ? {} : { channel });
+      const headless = target.show !== true;
+      browser = await chromium.launch(channel === undefined ? { headless } : { channel, headless });
       break;
     } catch (error) {
       failures.push(`${channel ?? "playwright"}: ${String(error).split("\n")[0]}`);
@@ -162,9 +169,13 @@ export async function withPage<T>(
     const pageErrors: string[] = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.addInitScript(seedRandom);
-    await page.clock.install({ time: 0 });
-    // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
-    await page.clock.pauseAt(1000);
+    const real = target.clock === "real";
+    if (target.prepare !== undefined) await target.prepare(page);
+    if (!real) {
+      await page.clock.install({ time: 0 });
+      // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
+      await page.clock.pauseAt(1000);
+    }
     await page.goto(new URL(target.page, base).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
@@ -172,8 +183,11 @@ export async function withPage<T>(
       Promise.resolve(Reflect.get(window, "__motionReady")).then(() => undefined),
     );
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
-    await page.clock.runFor(FIRST_FRAME_MS);
-    await page.evaluate(holdAnimations, 0);
+    if (!real) {
+      await page.clock.runFor(FIRST_FRAME_MS);
+      await page.evaluate(holdAnimations, 0);
+    }
+    const began = Date.now();
     let now = 0;
     const pending = [...(target.actions ?? [])];
     const session: PageSession = {
@@ -181,6 +195,20 @@ export async function withPage<T>(
       browser,
       async advanceTo(ms) {
         if (ms < now) throw new Error(`Time ${ms} is before ${now}; times must ascend.`);
+        if (real) {
+          for (
+            let action = pending[0];
+            action !== undefined && action.at <= ms;
+            action = pending[0]
+          ) {
+            pending.shift();
+            await waitUntil(began + action.at);
+            await perform(page, action);
+          }
+          await waitUntil(began + ms);
+          now = ms;
+          return;
+        }
         for (
           let action = pending[0];
           action !== undefined && action.at <= ms;
@@ -203,6 +231,12 @@ export async function withPage<T>(
     await browser.close();
     await site.close();
   }
+}
+
+/** Waits in real time until the machine's clock reads `at` ms. */
+async function waitUntil(at: number): Promise<void> {
+  const left = at - Date.now();
+  if (left > 0) await new Promise<void>((done) => setTimeout(done, left));
 }
 
 /** A base address for the source, and how to release whatever was started for it. */

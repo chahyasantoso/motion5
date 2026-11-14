@@ -49,10 +49,17 @@ export interface BodyState {
   readonly spin: number;
 }
 
-/** Two things that started touching during a step: body ids, or a body id and a collider id. */
+/** Two things that started touching during a step, and where: body ids, or a body id and a collider id, and the point in stage px. */
 export interface Contact {
   readonly a: string;
   readonly b: string;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A 3D contact: the pair that started touching and the point where they met, in scene units. */
+export interface Contact3d extends Contact {
+  readonly z: number;
 }
 
 /** What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise. */
@@ -153,7 +160,7 @@ export interface PhysicsWorld3d {
   step(seconds: number): void;
   body(id: string): BodyState3d;
   /** Contacts that started since the last drain, in the order the engine found them. */
-  drainContacts(): readonly Contact[];
+  drainContacts(): readonly Contact3d[];
   snapshot(): Uint8Array;
   restore(snapshot: Uint8Array): void;
 }

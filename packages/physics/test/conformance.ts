@@ -4,6 +4,8 @@ import { simulate, type PhysicsWorld, type Spawner } from "@gerak/physics";
 
 const G = 2000;
 const FLOOR = 600;
+/** How far a contact point may lie from the surfaces it names, in stage px. */
+const POINT_TOLERANCE = 8;
 
 /** A ball of radius 20 dropped from 200 px above the floor, with walls either side. */
 function dropBall(world: PhysicsWorld, restitution = 0): void {
@@ -257,6 +259,61 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
       const fresh = simulate(create(), build, options);
       expect(sim.at(liveAt(2500), earlier)).toEqual(fresh.at(liveAt(2500), earlier));
       expect(sim.events(liveAt(2500), earlier)).toEqual(fresh.events(liveAt(2500), earlier));
+    });
+
+    it("gives a contact the point where the shapes met and names the other one", () => {
+      const sim = simulate(create(), (world) => dropBall(world));
+      const [contact] = sim.events(liveAt(2000));
+      expect(contact?.other).toBe("floor");
+      expect(Math.abs((contact?.point?.x ?? 0) - 640)).toBeLessThan(POINT_TOLERANCE);
+      expect(Math.abs((contact?.point?.y ?? 0) - FLOOR)).toBeLessThan(POINT_TOLERANCE);
+      expect(contact?.point?.z).toBeUndefined();
+    });
+
+    it("gives two balls rolled into each other one contact each, naming the other, on both surfaces", () => {
+      const sim = simulate(create(), (world) => {
+        world.addBody({
+          id: "left",
+          shape: { kind: "circle", radius: 20 },
+          x: 300,
+          y: 300,
+          vx: 200,
+        });
+        world.addBody({
+          id: "right",
+          shape: { kind: "circle", radius: 30 },
+          x: 500,
+          y: 300,
+          vx: -200,
+        });
+      });
+      const contacts = sim.events(liveAt(1200));
+      expect(contacts).toHaveLength(2);
+      const left = contacts.find(({ target }) => target === "left");
+      const right = contacts.find(({ target }) => target === "right");
+      expect(left?.other).toBe("right");
+      expect(right?.other).toBe("left");
+      const at = sim.at(liveAt(left?.at ?? 0));
+      for (const [point, ball, radius] of [
+        [left, at.left, 20],
+        [left, at.right, 30],
+      ] as const) {
+        const distance = Math.hypot(
+          (point?.point?.x ?? 0) - (ball?.x ?? 0),
+          (point?.point?.y ?? 0) - (ball?.y ?? 0),
+        );
+        expect(Math.abs(distance - radius)).toBeLessThan(POINT_TOLERANCE);
+      }
+      expect(right?.point?.x).toBe(left?.point?.x);
+      expect(right?.point?.y).toBe(left?.point?.y);
+    });
+
+    it("replays contact events the same after a seek back and forth", () => {
+      const sim = simulate(create(), (world) => dropBall(world, 0.7));
+      const first = sim.events(liveAt(2000));
+      expect(first.length).toBeGreaterThan(1);
+      sim.events(liveAt(0));
+      expect(sim.events(liveAt(2000))).toEqual(first);
     });
   });
 }

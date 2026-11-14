@@ -87,3 +87,60 @@ describe("parseFramesArgs", () => {
     expect(parseFramesArgs(argv).kind).toBe("usage");
   });
 });
+
+describe("parseFramesArgs --crop and --zoom", () => {
+  const frames = (...more: string[]) => parseFramesArgs(["a.html", "--at", "500", ...more]);
+
+  it("reads a crop, and a zoom that defaults to 1", () => {
+    expect(frames("--crop", "100,100,200,120")).toMatchObject({
+      kind: "frames",
+      crop: { x: 100, y: 100, width: 200, height: 120 },
+      zoom: 1,
+    });
+    expect(frames("--crop", "0,0,1280,720", "--zoom", "4")).toMatchObject({ zoom: 4 });
+    expect(frames()).not.toHaveProperty("crop");
+  });
+
+  it.each([
+    ["left", "-5,0,10,10", "--crop runs past the left edge: x is -5"],
+    ["top", "0,-2,10,10", "--crop runs past the top edge: y is -2"],
+    [
+      "right",
+      "1200,0,200,10",
+      "--crop runs past the right edge: x + width is 1400, the stage is 1280 wide",
+    ],
+    [
+      "bottom",
+      "0,700,10,40",
+      "--crop runs past the bottom edge: y + height is 740, the stage is 720 tall",
+    ],
+    ["zero width", "0,0,0,10", "--crop needs a width above 0"],
+  ])("refuses a crop past the %s", (_edge, crop, message) => {
+    const parsed = frames("--crop", crop);
+    expect(parsed).toMatchObject({ kind: "usage" });
+    expect(parsed.kind === "usage" ? parsed.message : "").toContain(message);
+  });
+
+  it("refuses a zoom with no crop, a zoom over 8, and a crop with --onion or --compare", () => {
+    expect(frames("--zoom", "2").kind).toBe("usage");
+    expect(frames("--crop", "0,0,10,10", "--zoom", "9").kind).toBe("usage");
+    expect(frames("--crop", "0,0,10,10", "--zoom", "0.5").kind).toBe("usage");
+    expect(frames("--crop", "0,0,10,10", "--zoom", "2.5").kind).toBe("usage");
+    expect(frames("--crop", "0,0,10,10", "--compare", "dir").kind).toBe("usage");
+    expect(
+      parseFramesArgs([
+        "a.html",
+        "--onion",
+        ".x",
+        "--from",
+        "0",
+        "--to",
+        "9",
+        "--every",
+        "3",
+        "--crop",
+        "0,0,10,10",
+      ]).kind,
+    ).toBe("usage");
+  });
+});

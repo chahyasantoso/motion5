@@ -129,7 +129,28 @@ function rapierWorld(): RapierWorld {
       queue.drainCollisionEvents((one, two, began) => {
         const a = owners.get(one);
         const b = owners.get(two);
-        if (began && a !== undefined && b !== undefined) started.push({ a, b });
+        if (!began || a === undefined || b === undefined) return;
+        const first = world.getCollider(one);
+        const second = world.getCollider(two);
+        let x = 0;
+        let y = 0;
+        let found = 0;
+        world.contactPair(first, second, (manifold) => {
+          for (let i = 0; i < manifold.numSolverContacts(); i += 1) {
+            const point = manifold.solverContactPoint(i);
+            if (point === null) continue;
+            x += point.x;
+            y += point.y;
+            found += 1;
+          }
+        });
+        if (found === 0) {
+          const at = first.translation();
+          x = at.x;
+          y = at.y;
+          found = 1;
+        }
+        started.push({ a, b, x: (x / found) * SCALE, y: (y / found) * SCALE });
       });
       return started;
     },

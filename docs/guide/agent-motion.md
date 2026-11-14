@@ -12,6 +12,12 @@ not by reading package source. Read a part below only when the brief needs it:
 | An arm, a leg, a figure: bones that reach | [rigs](./agent-rigs.md) |
 | Weight, life, character or polish: anticipation, arcs, follow-through, settle | [principles](./agent-principles.md) |
 | Depth, turns about several axes, a moving camera: a Three.js scene | [3D](./agent-3d.md) |
+| A motion with a name that no catalogued move gives | [writing a move](./agent-moves.md) |
+| A value from where the layout puts a member; a route change, a card that opens, a list that reorders | [layout](./agent-layout.md) |
+| A supplied drawing or SVG to animate, or a character to draw and rig | [artwork](./agent-artwork.md) |
+| Numbers arriving while it plays: a microphone, a slider, a recorded session | [live inputs](./agent-inputs.md) |
+| A person watching edits land as you save | [live editing](./live.md) |
+| A page outside this repository, or a real site's own elements | [outside the stage](./agent-outside.md) |
 
 ## The loop
 
@@ -33,7 +39,7 @@ not by reading package source. Read a part below only when the brief needs it:
    `-- --parts` lists the building blocks moves are made from (`trail`, `sequence`, `springEase`, `along`, ...).
 6. **Compose.** Place each move on a span, reshape it with a modifier, add moves together on one target (see
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
-7. **Where nothing fits, write a move** (see [Writing a move](#writing-a-move)) and use it like any other. A
+7. **Where nothing fits, write a move** (see [writing a move](./agent-moves.md)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
 8. `npm run motion:review -- apps/pieces/src/<name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
    "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does,
@@ -48,7 +54,7 @@ picture is wrong, so read the sheet before calling anything finished.
 ## The stage module
 
 A piece is one file that exports `beats`, `cast`, `skins` and `scene`, and optionally `frame` (default 1280 by 720)
-and `rest`; a piece that changes place adds `layouts` and `layout` ([Changing place](#changing-place)).
+and `rest`; a piece that changes place adds `layouts` and `layout` ([layout](./agent-layout.md)).
 
 ```ts
 import type { Events, Time } from "@gerak/moves";
@@ -143,213 +149,26 @@ the quality asks.
 
 Two pieces with the same moves and the same numbers have the same character, so a different brief changes one of them.
 
-## Writing a move
+## A step's cost
 
-Write one when the motion in your three lines has a name and no catalogued move, modified or combined, gives it.
-`keyframes` and `mix` in a scene are for a value this piece alone needs; a tick, a flip, a wave or any motion you
-can name goes in `src/moves`, where the next piece finds it.
-Glue that only this piece needs stays in the scene as a `mix`.
+A scene runs whole on every frame, about sixty times a second, and a 60 fps frame has 16.7 ms for everything. So a
+step reads the present, never all of the past.
 
-1. `npm run motion:new -- --move <id>` writes `apps/pieces/src/moves/<id>.ts`, a declaration the gate refuses.
-2. Fill it in: the `role`, a `description` the next agent will choose it by, each option with its range and a
-   description, an `example`, and `run`, which answers a pose from the options and `progress` alone. Make an option of
-   what another brief would change, not of this piece's numbers. [`defineMove`](./agent-reference.md#writing-a-move)
-   lists the roles and what each must hold.
-3. `npm run motion:moves -- --check` until it prints no finding. It samples the move and refuses one that breaks its
-   role's rest, jumps between frames, or lacks a description.
-4. Import it into the scene from `./moves/<id>` and use it like a built-in. Name it in your report.
-5. Name the parts your move is built from in `recipe: ["span", "squashFromSpeed"]` (ids from `--parts`); the catalog
-   shows it and the gate refuses an unknown id. A move used by pieces from two briefs is listed by `motion:moves -- --candidates`
-   (a piece names its brief with `export const brief = "<name>"`; a piece with none is its own), and
-   `motion:promote <id>` moves it into the library; a person decides when.
-
-## Live
-
-When a person is watching, `npm run motion:live -- <name>` prints the address of `live.html?scene=<name>` (see
-[the live guide](./live.md)): each save of `src/<name>.ts` lands on their stage in place, keeping the time.
-
-## Layout
-
-- An entrance ends at its rest pose, the member's layout position, and starts away from it by its options. Start far
-  enough out to be off the stage; the frame clips what leaves it.
-- A value the layout decides, such as the point a reveal grows from, is `restOf(rest, "dot")`, not a number you guess.
-
-## Changing place
-
-A route change, a card opening and a reordering list move a member from one place the layout decides to another.
-Never compute those places: name the layouts, let the stage measure them, and carry the member with `carried`.
-
-```ts
-import { ease, type Events, type Time } from "@gerak/moves";
-import { carried, restOf, type Layouts, type Rest } from "@gerak/stage";
-
-export const layouts = ["list", "detail"] as const;
-type Layout = (typeof layouts)[number];
-export const layout = (events: Events): Layout =>
-  events.findLast((event) => event.name === "click")?.target === "card" ? "detail" : "list";
-export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layout>) => ({
-  card: carried({
-    own: restOf(rest, "card"),
-    at: (past) => restOf(all[layout(past)], "card"),
-    events, time, ms: 450, ease: ease.cubicOut,
-  }),
-});
-```
-
-- **Layouts.** `layouts` names them; `skins.dom.css` styles each under `[data-layout="<name>"] [data-cast="…"]`. The
-  stage measures every layout and passes them all as the scene's fourth argument; `rest`, the third, is the layout in
-  force. `layout(events)` answers which one is in force from the events alone, never the time, so the moment of a
-  change is its event's. Without `layout`, the first layout is in force.
-- **A route is a layout.** A member one route does not show is `display: none` under that layout; its box there is
-  zero, and nothing is carried from or to it: it stays put, so let it enter or exit instead.
-- **`carried`** carries the member from where it is drawn to the box `at` names after each event, over `ms`, so a
-  second click mid-flight sets off from where the member is, never from its old rest. `size` is `"scale"` (default),
-  `"clip"` or `"keep"`. `"clip"` crops and never draws larger than the member's own box, so it suits only a member
-  that rests at the larger box both ways; a card that opens and closes is carried by `"scale"`, its text in members of
-  their own, sized to their text, so each comes to rest at scale 1.
-- **Scripted clicks.** Export `cues`, events at known ms such as `{ name: "click", at: 1500, target: "card" }`; the
-  stage plays them beside the page's own, so the tools and `stage.html` show each change without a hand on the mouse.
-- **A reorder needs no layout.** The items stay where the page put them; `at` answers the slot box each item takes
-  after the events, `(past) => restOf(rest, \`list.${slotOf(past, index)}\`)`. The page's own order, and so its tab
-  order, stays the first one until the site reorders its data.
-- **One layout per view, never per order.** A grid that sorts and opens is two layouts, `grid` and `detail`, not one
-  per order and view: the slot an item takes is `restOf(all[layout(past)], \`card.${slotOf(past, index)}\`)`, the box
-  the page puts the item of that index at in that layout.
-
-## Rigging artwork
-
-To animate a drawing someone else made, start from its SVG, not from shapes you draw. With no SVG, draw one first:
-write `apps/pieces/references/<file>.svg` by hand, each part that moves its own shape with a clear `id` (`beak`,
-`eyelidLeft`), then import it like any other, so a drawn character and a supplied one take one path.
-
-1. `npm run motion:import-svg -- apps/pieces/references/<file>.svg --name <name> --margin 40` writes
-   `apps/pieces/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
-   the skin. The frame is the `viewBox` with `--margin` px of room on every side; a drawing that touches its edges
-   needs that room, or a part that turns outward is cut off by the frame. It prints what it could not carry; nothing
-   else is left out.
-2. **Name the parts by what moves.** Rename `path3806` to `flipperLeft` with one whole-word find-and-replace: the name
-   is the cast key and the skin's `[data-cast]` and `[data-path]` selectors. A rename that misses the skin is a
-   review finding.
-3. **Set a pivot at each joint,** in frame px: `actor({ path, pivot: { x: 214, y: 188 } })`. The part turns and
-   scales about it. Drop `still: true` from every part you move; the import marks them all still.
-4. **Keep parts flat.** What carries what is a chain, not a group: a group paints as one layer, so grouping changes
-   what is in front. Group only a rigid piece whose parts sit next to each other in paint order, such as an eye's
-   white and pupil. `layer` in a value changes paint order while a part moves, such as a leg crossing behind; it does not add, so of two moves giving it the later one wins.
-5. **Check the rig still looks like the drawing:** `npm run motion:compare -- "stage.html?piece=<name>" --reference
-   apps/pieces/references/<file>.svg --margin 40`, with the margin the import was given, at rest. Its mean stays under
-   2 out of 255 and no part over 15; read `difference.png` for the worst part.
-6. **Animate the chain's joints and the free parts.**
-
-```ts
-import type { Time } from "@gerak/moves";
-import { chainFromRest, chainThrough } from "@gerak/rig";
-
-const arm = chainThrough([
-  { id: "shoulder", x: 214, y: 188 },
-  { id: "elbow", x: 262, y: 230 },
-  { id: "tip", x: 290, y: 286 },
-]);
-const shoulderAtRest = arm.rest.rotations?.["shoulder"] ?? 0;
-
-export const scene = (time: Time) => {
-  const lift = -40 * Math.sin(Math.PI * Math.min(1, time.progress * 2));
-  const now = { ...arm.rest, rotations: { ...arm.rest.rotations, shoulder: shoulderAtRest + lift } };
-  const pose = chainFromRest(arm.chain, arm.rest, now);
-  return { flipperUpper: pose.shoulder, flipperLower: pose.elbow };
-};
-```
-
-`chainThrough` builds a chain through the joints as drawn, each bone named by the joint it starts at; `chainFromRest`
-answers the pose that carries each part from where it was drawn, so a part whose `pivot` is its bone's start joint
-follows it. A chain's pose is `{ rotations, base }`: `rotations` by bone id in degrees, `base` the root joint's
-`{ x, y, rotation }`. Move the `base` to carry the whole arm with the body.
-
-### Into a bigger scene
-
-A drawing that is one thing in a scene goes into the scene's piece, not a piece of its own:
-
-```sh
-npm run motion:import-svg -- apps/pieces/references/<file>.svg --into <piece> --at 420,180 --scale 0.8 --prefix bird
-```
-
-It adds the drawing's parts to `apps/pieces/src/<piece>.ts`, its `viewBox` top left at `--at` in the piece's frame px
-and scaled by `--scale`, strokes too. Every part is named with the prefix (`birdBody`), and every gradient id too, so
-two drawings, or one drawing twice, never collide; the new parts paint above what the piece has. Leave room round the
-drawing inside the frame for what turns outward: the result lists in `outside` each new part that already crosses the
-frame's edge. Pivots and joints are then set in the piece's frame px, where the parts now are. Compare each drawing
-at rest against its own SVG on a page of its own (`--name`, `--margin`) before placing it.
-
-## Driving a rig
-
-A rig can follow numbers that arrive while it plays: how far a mouth is open, whether an eye is shut, a slider. Each
-number is a sample, an event with a value: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. A scene stays a function of
-time and events, so a session of samples replays, scrubs and renders like any other piece.
-
-- **Read samples through `follow`.** `follow({ start: 0, on: { mouthOpen: "value" } })` springs to each sample's own
-  value, which smooths a jittery source and turns back with no jump; `stiffness` and `damping` set how fast. Give each
-  stream its own `follow`, made once outside the scene, and map its answer to the parts: a beak's `rotation`, an
-  eyelid's `scaleY`. Never read `events` by hand to find the latest sample.
-- **A recording is `cues`.** A JSON list of samples is a session: `import talk from "../references/<file>.json" with
-  { type: "json" }` (the tools run in Node, which needs the attribute) and `export const cues = talk`. Make the story at least as long as the recording; the review reports cues after its end,
-  which no clock reaches.
-- **A live source calls `send`.** `mountStage(...).send("mouthOpen", level)` logs a sample at the clock's time and
-  keeps the clock running past the story's end until it settles; `events()` hands back the log, ready to save as
-  `cues`. `talk.html?piece=<name>` does this from the microphone. A loop of the story would clear the log each pass,
-  so a live piece does not loop its story: an idle motion such as breathing loops inside the scene, on `time`'s
-  elapsed ms, while the clock runs on.
-- **Switch or morph a mouth.** Parts drawn apart (`beakShut`, `beakOpen`) switch with `opacity` from the scene. Where
-  the step shows, morph: `actor({ path, shapes: [open, wide] })` and the value field `shape` blends them, 0 being
-  `path`, 1 `shapes[0]` and 1.5 halfway to `shapes[1]`. Each outline must have as many separate pieces as `path`;
-  the member's box stays its `path`'s. Look at the midway frames: a blend pairs cubics by order, and can twist.
-  Draw the outlines in the SVG beside the part, with ids `<part>-shape1`, `<part>-shape2` (hidden with
-  `opacity="0"` if you like): the import makes them the part's `shapes` instead of parts, and lists any it cannot.
-- **Test a sample by hand** with `motion:sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
-  (`name:target=value@ms` for a target).
-- **Check** that no part is cut by the frame with the mouth at its widest, and that the review is clean with the
-  recording as `cues`: it also seeks the scene back and forth and reports a value that differs from playing to it,
-  which a scene keeping state between frames shows.
-
-## Outside this repository
-
-The `motion:*` npm scripts and `stage.html` live in this repository. In your own project, install the
-packages (see the README) and mount the module on a page yourself:
-
-```ts
-import { mountStage, stageModuleOf } from "@gerak/dom";
-import { readStageModule } from "@gerak/stage";
-import * as piece from "./piece";
-
-const read = readStageModule(piece);
-if ("reason" in read) throw new Error(read.reason);
-const container = document.querySelector<HTMLElement>("#stage");
-if (container === null) throw new Error("No #stage element.");
-const stage = mountStage(container, stageModuleOf(read));
-```
-
-- The stage builds inside a shadow root, so `document.querySelector` does not find its members; read them through
-  `container.firstElementChild?.shadowRoot`.
-- To check a moment by hand, pause and seek: `stage.driver.pause()`, then `stage.driver.seek(progress)`, where
-  progress runs from 0 to 1 over the story, not in ms.
-- A move's options, with their ranges, are in its entry in [the reference](./agent-reference.md#gerakmoves); the
-  catalog command prints the same in this repository.
-
-## On a real site's elements
-
-A stage module needs none of this. To bind a page's own elements, define `scene` and `clock` outside the component,
-or `usePlayer` restarts:
-
-```tsx
-const playing = usePlayer(scene, clock);
-const title = useTarget(playing?.player, "title");
-return <div ref={title} onClick={() => playing?.driver.replay()} />;
-```
-
-`useTarget` writes a pose every step with no render; its third argument writes anything else, such as one pose out of
-a list (the reference's `useTarget` entry shows it). To pass the player to a child, type the prop
-`Player<ReturnType<typeof scene>> | undefined`, `Player` from `"@gerak/player"`. Target names are typed by literal, so
-bind a list of targets (`prop0`, `prop1`, ...) through one target holding a list, not names built from a template
-string. On a plain page, `play(scene, clock())` and
-`player.subscribe("title", (pose) => applyValue(element, pose))`.
+- **Ask what has passed, do not replay it.** How much of a stream has passed is `tally`; where a body touched is
+  the contact event's own `point`, with `other` naming what it hit, so never seek a simulation back
+  to learn where something was. A loop from 0 to the time, a `follow` summed in small steps, or a sample at an
+  earlier time on every frame makes a step that costs more the longer the piece plays.
+- **`motion:review` times every step.** It reports `cost grows with time: a step reads all of the past` when the
+  last fifth of the run costs over four times the first, and a step over `--budget` ms (default 8). Fix the first
+  by reading the present; the second can be a busy machine, so review again before chasing it.
+- **`motion:fps` measures a running page.** `npm run motion:fps -- <page> --to 10000` plays the page on its real
+  clock and prints frames a second per 500 ms window and the worst frames, split into the scene, the writes and the
+  rest (drawing and the browser). It names the renderer: headless Chrome draws on the GPU where there is one but
+  has no vsync, so it can pass 60; on SwiftShader compare windows with each other only. `--show` opens a visible
+  window, locked to the screen, with a live counter.
+- **Look closer before guessing.** `motion:frames <page> --at <ms> --crop x,y,width,height --zoom 4` captures one
+  region scaled up; `motion:sample <file>.ts --watch <target>.<field> --from 0 --to 2000 --every 16` prints one value
+  over time.
 
 ## Traps
 

@@ -4,9 +4,9 @@ import { DragonIntro } from "./dragon-intro";
 const container = document.getElementById("root");
 if (!container) throw new Error("#root not found");
 
-// The page tools wait for this before they start the clock; it rejects when the model fails to load.
+// The page tools wait for this before they start the clock.
 let ready: () => void = () => undefined;
-let failed: (reason: unknown) => void = () => undefined;
+let failed: (error: unknown) => void = () => undefined;
 Reflect.set(
   window,
   "__motionReady",
@@ -16,5 +16,5 @@ Reflect.set(
   }),
 );
 createRoot(container).render(
-  <DragonIntro onReady={() => ready()} onError={(reason) => failed(reason)} />,
+  <DragonIntro onReady={() => ready()} onError={(error) => failed(error)} />,
 );

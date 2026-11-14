@@ -75,8 +75,18 @@ export function play<T extends object>(
   const step = (): void => {
     time = driver.now();
     const all = events();
-    values = current(time, all);
-    for (const notify of [...listeners]) notify();
+    if (Reflect.get(globalThis, "__gerakTiming") === true) {
+      const started = performance.now();
+      values = current(time, all);
+      const scened = performance.now();
+      for (const notify of [...listeners]) notify();
+      const written = performance.now();
+      performance.measure("gerak:scene", { start: started, end: scened });
+      performance.measure("gerak:write", { start: scened, end: written });
+    } else {
+      values = current(time, all);
+      for (const notify of [...listeners]) notify();
+    }
     announce(all);
   };
   const leave = driver.subscribe(step);

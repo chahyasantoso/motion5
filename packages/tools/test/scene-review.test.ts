@@ -12,6 +12,9 @@ import {
 import * as clean from "./fixtures/review-clean-scene";
 import * as flawed from "./fixtures/review-flawed-scene";
 import * as moving from "./fixtures/review-moving-scene";
+import * as growing from "./fixtures/review-growing-scene";
+import * as constant from "./fixtures/review-constant-scene";
+import * as stageClean from "./fixtures/stage-clean";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
@@ -32,6 +35,7 @@ describe("motion:review on a scene file", () => {
       jump: 150,
       turn: 150,
       ratio: 1.5,
+      budget: 8,
     });
     expect(parseSceneReviewArgs(["s.ts", "--to", "900", "--hold", "100", "--jump", "9"])).toEqual({
       kind: "ok",
@@ -41,6 +45,7 @@ describe("motion:review on a scene file", () => {
       jump: 9,
       turn: 150,
       ratio: 1.5,
+      budget: 8,
     });
     expect(parseSceneReviewArgs(["s.ts", "--jump", "-1"]).kind).toBe("usage");
   });
@@ -260,5 +265,44 @@ describe("review limits per target", () => {
       limits: { ghost: { jump: 1 } },
     }).findings;
     expect(found).toContain('limits names "ghost", which the scene never returns');
+  });
+});
+
+describe("motion:review costs", () => {
+  const growth = (found: SceneReviewResult) =>
+    found.findings.filter((line) =>
+      line.startsWith("cost grows with time: a step reads all of the past"),
+    );
+
+  it("parses --budget and refuses zero, negative and missing", () => {
+    expect(parseSceneReviewArgs(["s.ts", "--budget", "2.5"])).toMatchObject({ budget: 2.5 });
+    for (const bad of [["--budget", "0"], ["--budget", "-1"], ["--budget"], ["--budget", "x"]])
+      expect(parseSceneReviewArgs(["s.ts", ...bad]).kind).toBe("usage");
+  });
+
+  it("flags a step whose cost grows with time, once, and not a constant one", () => {
+    const found = growth(review(growing));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(
+      /averages \d+\.\d{2} ms, the last fifth \d+\.\d{2} ms, from \d+ ms on/,
+    );
+    expect(growth(review(constant))).toEqual([]);
+    expect(growth(review(clean))).toEqual([]);
+  });
+
+  it("flags a step over --budget, with or without limits, and a stage module", () => {
+    const tiny = { ...limits, budget: 0.0001 };
+    const over = (module: unknown) => {
+      const read = readSceneModule(module);
+      if ("reason" in read) throw new Error(read.reason);
+      return reviewSceneModule(read, tiny).findings.filter((line) => line.includes("budget"));
+    };
+    expect(over(constant)).toHaveLength(1);
+    expect(over(constant)[0]).toMatch(
+      /0\.0001 ms: the worst is \d+\.\d{2} ms (seeking|stepping) to \d+ ms, and \d+ of \d+ steps/,
+    );
+    expect(over({ ...constant, limits: { ball: { jump: 1000 } } })).toHaveLength(1);
+    expect(over(stageClean)).toHaveLength(1);
+    expect(review(constant).findings.filter((line) => line.includes("budget"))).toEqual([]);
   });
 });
