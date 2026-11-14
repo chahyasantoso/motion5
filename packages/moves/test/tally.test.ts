@@ -102,9 +102,13 @@ describe("tally", () => {
 });
 
 describe("isMotionEvent", () => {
-  it("accepts a contact's z and other, and refuses them of the wrong kind", () => {
-    expect(isMotionEvent({ name: "contact", at: 0, x: 1, y: 2, z: 3, other: "floor" })).toBe(true);
-    expect(isMotionEvent({ name: "contact", at: 0, z: "3" })).toBe(false);
+  it("accepts a contact's point and other, and refuses them of the wrong kind", () => {
+    const point = { x: 1, y: 2, z: 3 };
+    expect(isMotionEvent({ name: "contact", at: 0, point, other: "floor" })).toBe(true);
+    expect(isMotionEvent({ name: "contact", at: 0, point: { x: 1, y: 2 } })).toBe(true);
+    expect(isMotionEvent({ name: "contact", at: 0, point: { x: 1, y: 2, z: "3" } })).toBe(false);
+    expect(isMotionEvent({ name: "contact", at: 0, point: { x: 1 } })).toBe(false);
+    expect(isMotionEvent({ name: "contact", at: 0, point: 4 })).toBe(false);
     expect(isMotionEvent({ name: "contact", at: 0, other: 4 })).toBe(false);
   });
 });

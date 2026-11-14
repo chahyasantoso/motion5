@@ -26,6 +26,7 @@ export {
   mergeEvents,
   react,
   tally,
+  type EventPoint,
   type Events,
   type FollowOptions,
   type MotionEvent,

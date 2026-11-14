@@ -38,19 +38,18 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
   writes, and the rest of the frame (drawing and the browser). The player times its steps with the User Timing API
   (`gerak:scene`, `gerak:write`) only when a reader turns it on (`globalThis.__gerakTiming`, which the command sets
   before the page loads), so a page in use keeps no growing buffer of marks. `--show` opens a visible window with a
-  live counter the command injects; no page carries code for it. A headless number is relative, since its renderer
-  is software; `--show` uses the GPU.
+  live counter the command injects; no page carries code for it. The output names the WebGL renderer: headless
+  Chrome draws on the GPU where there is one, uncapped by vsync; on SwiftShader a number is relative only.
 - **How much of a sample stream has passed is `tally`.** `tally({ start, on: { mouthOpen: "value" } })` in
   `@gerak/moves` answers, at any time, the area under the samples so far (each held until the next), and
   `.total(events)` the whole stream's area, so `tally / total` is how far through it the speech, a progress bar or a
   score is. It reads a prefix table built once per events list and extended, not rebuilt, when a live list grows by
   appending, so a step costs the same at 9 s as at 1 s, recorded or live. It tallies the raw samples, not `follow`'s
   spring, so it is exact and seeks for free. A caption reveals its words by that share.
-- **A contact says where and with what.** A physics contact event carries the contact point in the scene's units
-  (`x`, `y`, and `z` in 3D; px in 2D, converted from the engine's metres as body positions are) and the other body or
-  collider (`other`). `MotionEvent` gains optional `z` and `other`; `x` and `y` mean a pointer's px for pointer
-  events and a point in the scene's units for physics ones, as each event's name says. A scene never seeks a
-  simulation backwards to learn where something was.
+- **A contact says where and with what.** A physics contact event carries `point`, `{ x, y, z? }` in the scene's
+  units (px in 2D, converted from the engine's metres as body positions are; `z` only in 3D), and `other`, the other
+  body or collider. `MotionEvent` gains optional `point` and `other`; its `x` and `y` stay a pointer's px only. A
+  scene never seeks a simulation backwards to learn where something was.
 - **An object rides a bone from a point in the model's space.** `attach(skeleton, bone, object, { at, turn })` in
   `@gerak/three/skeleton` makes `object` a child of the named bone, placed at a point and turn given in the model's
   space at capture, the space of the joint table, computed from the captured rest, so it is right whatever the
@@ -65,8 +64,8 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
 ### K1. `tally` and the event fields (planner)
 
 - **Invariant:** as decided; `tally` at any time equals the area summed by hand over the samples; its cost per call
-  does not grow with the number of samples before it (a test counts table builds); `isMotionEvent` accepts `z` and
-  `with`.
+  does not grow with the number of samples before it (a test counts table builds); `isMotionEvent` accepts `point`
+  and `other`.
 - **Owner:** `packages/moves/src/events.ts`, exported from `packages/moves/src/index.ts`.
 
 ### K2. Cost in the review
@@ -145,10 +144,9 @@ One pull request, after wave 3.
 
 - **Timing noise:** a busy machine slows a sample. The review takes the median of three and flags growth by a ratio,
   not a time; `motion:fps` reports windows, not a single number.
-- **Headless rendering is software:** a 3D page's headless rate is lower than on a GPU; the measure's absolute bar is
-  read with `--show`, the headless bar only as a ratio within one run.
-- **A wider `MotionEvent`:** pointer `x`/`y` in px and contact `x`/`y`/`z` in world units share fields; the event's
-  name says which, and the guide shows both.
+- **Headless rendering varies:** headless Chrome uses the GPU where there is one but has no vsync; Playwright's own
+  Chromium and GPU-less machines use SwiftShader. The output names the renderer; the measure's absolute bar is read
+  with `--show`, the headless bar only as a ratio within one run.
 
 ## 6. Done when
 
