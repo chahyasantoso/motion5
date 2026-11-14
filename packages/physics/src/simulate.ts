@@ -7,6 +7,7 @@ import type {
   Collider,
   Collider3d,
   Contact,
+  Contact3d,
   PhysicsWorld,
   PhysicsWorld3d,
   Quaternion3d,
@@ -167,6 +168,7 @@ export function simulate<
   Col extends Collider | Collider3d,
   Grav extends readonly [number, number] | readonly [number, number, number],
   State extends BodyState | BodyState3d,
+  Found extends Contact | Contact3d,
 >(
   world: {
     addBody(body: Spec): void;
@@ -174,7 +176,7 @@ export function simulate<
     setGravity(...gravity: Grav): void;
     step(seconds: number): void;
     body(id: string): State;
-    drainContacts(): readonly Contact[];
+    drainContacts(): readonly Found[];
     snapshot(): Uint8Array;
     restore(snapshot: Uint8Array): void;
   },
@@ -184,7 +186,7 @@ export function simulate<
     setGravity(...gravity: Grav): void;
     step(seconds: number): void;
     body(id: string): State;
-    drainContacts(): readonly Contact[];
+    drainContacts(): readonly Found[];
     snapshot(): Uint8Array;
     restore(snapshot: Uint8Array): void;
   }) => void,
@@ -282,9 +284,23 @@ export function simulate<
       const contacts = world.drainContacts();
       if (head > reached) {
         const at = head * stepMs;
-        for (const { a, b } of contacts)
-          for (const target of [a, b])
-            if (starts.has(target)) recorded.push({ name: "contact", at, target });
+        for (const contact of contacts) {
+          const z = "z" in contact && typeof contact.z === "number" ? { z: contact.z } : {};
+          for (const [target, other] of [
+            [contact.a, contact.b],
+            [contact.b, contact.a],
+          ] as const)
+            if (starts.has(target))
+              recorded.push({
+                name: "contact",
+                at,
+                target,
+                other,
+                x: contact.x,
+                y: contact.y,
+                ...z,
+              });
+        }
         reached = head;
       }
       if (head % every === 0 && !checkpoints.has(head)) {

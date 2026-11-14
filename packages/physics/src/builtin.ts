@@ -535,7 +535,17 @@ export function builtinWorld(): PhysicsWorld {
         }
       }
       const now = new Set([...resting, ...found.map(({ key }) => key)]);
-      for (const { key, a, b } of found) if (!touching.has(key)) started.push({ a: a.id, b: b.id });
+      for (const { key, a, b, points } of found)
+        if (!touching.has(key)) {
+          const n = points.length || 1;
+          let x = 0;
+          let y = 0;
+          for (const { p } of points) {
+            x += p.x / n;
+            y += p.y / n;
+          }
+          started.push({ a: a.id, b: b.id, x, y });
+        }
       touching = now;
     },
     body(id): BodyState {

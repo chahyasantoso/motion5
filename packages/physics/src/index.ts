@@ -17,6 +17,7 @@ export type {
   Collider,
   Collider3d,
   Contact,
+  Contact3d,
   PhysicsWorld,
   PhysicsWorld3d,
   Quaternion3d,
