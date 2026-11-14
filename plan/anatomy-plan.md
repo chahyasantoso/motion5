@@ -149,15 +149,32 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
     (oscillating) until the offset stays within 2% of its greatest.
   The move's **primary field** is the one with the greatest offset over its judged kind's default review limit
   (`jump` 30 px, `turn` 150, `ratio` 1.5); its descriptors are the move's.
-- **The catalog searches by them.** `motion:moves` prints one compact line per move (id, role, fields, the first
-  sentence of its description) and the full entry with `-- <id>`, and gains `--like <quality>`, `--near <id>`,
-  `--far <id>` (for the loop's step 1, ideas that differ) and `--fields x,scale`. `--like` takes the qualities of the
-  guide's table, each a range of descriptors in one table in `packages/tools/src/scene/catalog.ts` that the guide
-  quotes. Distance is the sum of squared differences of `peak`, `overshoot`, `rings / 4`, `windup` and `settle`,
-  plus 1 when the primary fields differ.
+- **One search over every move.** `motion:moves` reads the library (`@gerak/moves`) and every brief's
+  `src/moves/`, and tags each move with where it lives: `library`, `own` (the brief named by `--in <brief>`) or the
+  other brief's name. A move from another brief is offered like any other; importing it is how a move earns
+  promotion, and moves are code meant for reuse, unlike pieces.
+- **A query, not a dump.** With no query, `motion:moves` prints a summary of at most 20 lines: how many moves per
+  role and per source, the qualities `--like` knows, and three example queries. A query prints at most 10 compact
+  lines (`--all` lifts the cap), each: id, source, role, fields moved, the first sentence of its description, and
+  its import, a path relative to `--in`'s `src/` when given (`import { jolt } from "../../showreel/src/moves/jolt"`)
+  or `@gerak/moves` for the library. `-- <id>` prints the full entry: options with ranges, moments, the building
+  blocks it imports, its descriptors, its example call and the briefs that import it.
+- **Queries, combinable:** `--role <role>`; `--find <words>` (every word in its id, description or option names);
+  `--fields x,scale` (moves every one of them); `--like <quality>` (the guide's qualities, each a range of
+  descriptors in one table in `packages/tools/src/scene/catalog.ts` the guide quotes); `--near <id>` and
+  `--far <id>` (by descriptor distance: the sum of squared differences of `peak`, `overshoot`, `rings / 4`,
+  `windup` and `settle`, plus 1 when the primary fields differ).
+- **Ranked by fit, never by use.** Matches order by how well they fit the query (distance for `--like`, `--near`
+  and `--far`; words matched for `--find`), then by id with the source as no factor, so a library move is not
+  preferred because it is a library move. How often a move is used shows only in its full entry and in
+  `--candidates`, since ranking by use makes every brief pick the same few.
+- **Reuse found at writing time.** When `motion:new -- --move` or the gate meets a new move within the duplicate
+  distance of an existing one, library or any brief's, its finding says which and how to import it: "close to `jolt`
+  (showreel): import it instead, or change what makes yours differ".
 - **Near-duplicates are found.** Two moves with one role and one primary field within distance 0.02 of each other
-  are a gate finding naming both. Pairs found today go in `scripts/duplicate-baseline.json`, which may only shrink.
-  `motion:promote` refuses a move with a finding; there is no override.
+  are a gate finding naming both, whichever sources they come from. Pairs found today go in
+  `scripts/duplicate-baseline.json`, which may only shrink. `motion:promote` refuses a move with a finding; there is
+  no override.
 
 ## 4. Slices
 
@@ -230,20 +247,27 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 - **Test:** sample comparison per move; a repo test that no file in a `moves/` folder calls `Math.sin`, `Math.cos`
   or `Math.exp`.
 
-### A7. Descriptors and the catalog (executor, after A6)
+### A7. Descriptors and the catalog (executor, after A1b and A6)
 
-- **Invariant:** as decided; the default catalog is shorter in bytes than today's for the same moves. **Owner:**
-  `packages/tools/src/scene/moves.ts` (descriptors), `catalog.ts` (search, the quality table), `promote.ts` (the
-  refusal), `scripts/duplicate-baseline.json`.
-- **Test:** hand-built moves with known peak, overshoot, rings, wind-up and settle; a travelling and an oscillating
-  field; `--like`, `--near`, `--far`, `--fields` on hand-built moves whose descriptors the test sets; a copy of a
-  move under a new id is a finding; a pair in the baseline is not, and the baseline cannot gain one. The quality
-  table's ranges are the builder's choice, recorded in that one table.
+- **Invariant:** as decided. **Owner:** `packages/tools/src/scene/moves.ts` (descriptors), `catalog.ts` (sources,
+  queries, ranking, the summary, the quality table), `new.ts` and the gate (the duplicate finding at writing time),
+  `promote.ts` (the refusal), `scripts/duplicate-baseline.json`, `packages/tools/bin/motion-moves.mjs`.
+- **Test:**
+  - descriptors of hand-built moves with known peak, overshoot, rings, wind-up and settle, one travelling field and
+    one oscillating;
+  - a scratch library move, own move and other brief's move are each found by `--find`, `--role`, `--fields`,
+    `--like`, `--near` and `--far`, tagged with their source, with an import that compiles from `--in`'s brief;
+  - two moves fitting a query equally come in id order whatever their sources, and use never changes the order;
+  - the summary has at most 20 lines and a query at most 10 without `--all`;
+  - a copy of another brief's move under a new id is a finding naming that brief's move and its import; a pair in
+    the baseline is not, and the baseline cannot gain one.
+  - The quality table's ranges are the builder's choice, recorded in that one table.
 
 ### A8. Guide (planner)
 
-- `agent-motion.md` "The loop": step 1 uses `--far` from the obvious move, step 5 searches by `--like` and
-  `--fields`, and work stays in `apps/pieces/<brief>/`; `agent-moves.md` writes a move from parts with the coupling rule
+- `agent-motion.md` "The loop": step 1 uses `--far` from the obvious move; step 5 asks the catalog by role,
+  quality, fields and words with `--in <brief>`, and reads an entry in full before using it; work stays in
+  `apps/pieces/<brief>/`; `agent-moves.md` writes a move from parts with the coupling rule
   and no `Math.sin`; a skin section gives the colour and shadow rule; the reference regenerated.
 
 ### A9. Proof
@@ -264,7 +288,7 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 | 2 | Executor | A3 | A1 |
 | 2 | Executor | A5 | A1 |
 | 3 | Executor | A4 | A1b, A3, A5 |
-| 3 | Executor | A7 | A6 |
+| 3 | Executor | A7 | A1b, A6 |
 | 4 | Planner | A8 | all |
 | 4 | Executor model, fresh | A9 | A8 |
 
