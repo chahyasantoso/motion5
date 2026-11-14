@@ -112,6 +112,9 @@ Three things follow from it:
    joint table for scene modules (`motion:joints`), morph targets (`morphTargets`), 3D physics on Rapier
    (`rapierEngine3d`, `simulate`), and the worked example `character3d`. Proof: `avatar-3d`, a skinned glTF
    dragonling greeting, waving a paw, nodding and talking from recorded cues, with props settling in 3D physics.
+   2D over 3D on one clock (`plan/overlay-plan.md`): `project3d`, `posedJoints3d`, review `limits` per target, pages
+   that draw on the player's step, and the worked example `overlay3d`. Proof: `dragon-intro`, a 10 s intro with a
+   speech bubble pinned to the dragonling's head, "+1" labels on landing props and eyelid blinks, built by Sonnet.
 9. **Motion atlas, a brainstorm.** Next. Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
 10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
