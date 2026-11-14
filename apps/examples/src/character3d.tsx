@@ -24,6 +24,7 @@ import { useTarget3d } from "@gerak/three/react";
 import { applyBones, captureSkeleton, type CapturedSkeleton } from "@gerak/three/skeleton";
 import {
   BALL_RADIUS,
+  BALL_SPAWN,
   PEDESTAL,
   REACH_TARGET,
   SKELETON_JOINTS,
@@ -273,6 +274,7 @@ export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onRead
     renderRef.current = render;
     setRig({ root: characterRoot, skeleton, writer, render });
 
+    ballMesh.position.set(BALL_SPAWN.x, BALL_SPAWN.y, BALL_SPAWN.z);
     ball(ballMesh);
     camera(lens);
 

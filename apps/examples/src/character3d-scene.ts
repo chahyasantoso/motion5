@@ -29,6 +29,9 @@ export const PEDESTAL = {
 /** Radius of the physics ball dropped onto the pedestal. */
 export const BALL_RADIUS = 0.18;
 
+/** Where the ball is spawned; its mesh is placed here, and the scene answers its movement from here. */
+export const BALL_SPAWN = { x: 0.95, y: 2.1, z: 0.35 } as const;
+
 /** World point the character's right hand reaches toward. */
 export const REACH_TARGET = { x: 0.85, y: 1.32, z: 0.3 } as const;
 
@@ -59,9 +62,7 @@ const ballSim = simulate(rapier3d(), (world) => {
   world.addBody({
     id: "ball",
     shape: { kind: "sphere", radius: BALL_RADIUS },
-    x: PEDESTAL.x,
-    y: 2.1,
-    z: PEDESTAL.z,
+    ...BALL_SPAWN,
     wx: 90,
     wy: 120,
     wz: 45,
@@ -117,7 +118,7 @@ export const scene = (time: Time) => {
   return {
     character,
     bones,
-    ball: bodyPose3d(ballSim.at(time).ball) satisfies Pose3d,
+    ball: bodyPose3d(ballSim.pose("ball", time)) satisfies Pose3d,
     camera: { ...eye, ...aim(eye, CHARACTER_FOCUS) } satisfies Pose3d,
   };
 };

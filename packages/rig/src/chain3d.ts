@@ -427,8 +427,8 @@ function untwistable<Id extends string>(chain: Chain3d<Id>): boolean {
   });
 }
 
-/** Each bone turned from its rest by the least swing that points it where the solve did, so no bone twists about
- * its own length: a goal at rest answers the rest. Bones with an `orient` goal keep the solved turn. */
+/** Each bone turned from rest by the least swing that points it where the solve did, never twisting about its length;
+ * a bone with an `orient` goal keeps the solved turn. */
 function untwisted<Id extends string>(
   chain: Chain3d<Id>,
   goals: Readonly<Partial<Record<Id, Goal3d>>>,

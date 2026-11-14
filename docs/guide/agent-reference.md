@@ -680,3 +680,5 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   values with no browser; reads the module's `cues`.
 - **`motion:timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
 - **`motion:points <points.json> --spacing px`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
+- **`motion:joints <model.glb> [--out file]`**: writes `<model>.joints.json` beside a skinned glTF: every bone's world rest
+  point and parent, for `jointOf(table.joints, name)` in a scene module.

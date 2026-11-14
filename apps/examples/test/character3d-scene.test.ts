@@ -13,6 +13,7 @@ import { applyPose3d, morphTargets } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
 import {
   BALL_RADIUS,
+  BALL_SPAWN,
   CHARACTER_FOCUS,
   PEDESTAL,
   REACH_TARGET,
@@ -102,7 +103,8 @@ describe("the 3D character example scene", () => {
     expect(start.bones).toEqual({ spine: {}, shoulder: {}, elbow: {} });
     expect(start.character.custom?.smile ?? 0).toBe(0);
     expect(start.character.custom?.blink ?? 0).toBe(0);
-    expect(start.ball.y ?? 0).toBeGreaterThan(PEDESTAL.y + PEDESTAL.height / 2 + 0.5);
+    expect(start.ball).toEqual({});
+    expect(BALL_SPAWN.y).toBeGreaterThan(PEDESTAL.y + PEDESTAL.height / 2 + 0.5);
     const originalRaf = globalThis.requestAnimationFrame;
     const originalCancel = globalThis.cancelAnimationFrame;
     globalThis.requestAnimationFrame = () => 1;
@@ -134,7 +136,8 @@ describe("the 3D character example scene", () => {
   it("drops and settles the 3D ball onto the pedestal and aims the orbiting camera", () => {
     const end = at(durationMs);
     const pedestalTop = PEDESTAL.y + PEDESTAL.height / 2;
-    expect(Math.abs((end.ball.y ?? 0) - (pedestalTop + BALL_RADIUS))).toBeLessThan(0.05);
+    const settledY = BALL_SPAWN.y + (end.ball.y ?? 0);
+    expect(Math.abs(settledY - (pedestalTop + BALL_RADIUS))).toBeLessThan(0.05);
 
     const lens = new PerspectiveCamera();
     applyPose3d(lens, end.camera);

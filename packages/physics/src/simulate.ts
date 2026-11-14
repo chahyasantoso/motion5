@@ -131,18 +131,18 @@ type Moved =
     };
 
 function moved(
-  spec: { readonly x: number; readonly y: number; readonly z?: number },
+  origin: { readonly x: number; readonly y: number; readonly z?: number },
   now: { readonly x: number; readonly y: number; readonly z?: number },
   rotation: number | Quaternion3d,
 ): Moved {
   switch (typeof rotation) {
     case "number":
-      return { x: now.x - spec.x, y: now.y - spec.y, rotation };
+      return { x: now.x - origin.x, y: now.y - origin.y, rotation };
     case "object":
       return {
-        x: now.x - spec.x,
-        y: now.y - spec.y,
-        z: (now.z ?? 0) - (spec.z ?? 0),
+        x: now.x - origin.x,
+        y: now.y - origin.y,
+        z: (now.z ?? 0) - (origin.z ?? 0),
         rotation,
       };
     default:
@@ -207,13 +207,13 @@ export function simulate<
   let every = Math.max(1, Math.round((options.checkpointMs ?? 250) / stepMs));
   const most = Math.max(2, options.maxCheckpoints ?? 32);
   if (!(dt > 0)) throw new RangeError("simulate: dt must be above 0.");
-  /** Every body by id, with the step it was added at: 0 for the built world. */
-  const starts = new Map<string, { readonly spec: Spec; readonly step: number }>();
+  /** Every body by id, where the engine put it when added, and the step it was added at: 0 for the built world. */
+  const starts = new Map<string, { readonly origin: State; readonly step: number }>();
   let adding = 0;
   const addBody = (body: Spec): void => {
     if (starts.has(body.id)) throw new RangeError(`simulate: body "${body.id}" is added twice.`);
-    starts.set(body.id, { spec: body, step: adding });
     world.addBody(body);
+    starts.set(body.id, { origin: world.body(body.id), step: adding });
   };
   build({
     addBody,
@@ -311,7 +311,7 @@ export function simulate<
       const now = at(time, events)[id];
       if (start === undefined || now === undefined)
         throw new RangeError(`simulate: no body "${id}" at that time.`);
-      return moved(start.spec, now, now.rotation);
+      return moved(start.origin, now, now.rotation);
     },
     place(id, time, events) {
       const now = at(time, events)[id];

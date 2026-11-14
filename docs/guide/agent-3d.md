@@ -12,8 +12,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
    scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
 3. `npm run motion:review -- apps/pieces/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
    a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
-   units, and its default of 150 is for px, so give a 3D scene its own; `--turn` (degrees) and `--ratio` (scale and
-   opacity) keep their defaults.
+   units, and its default of 150 is for px, so give a 3D scene its own. Give `--turn` (degrees a step) one too, about
+   30: its default of 150 lets a bone flip in one step. `--ratio` (scale and opacity) keeps its default.
 4. `npm run motion:review -- <name>.html --watch canvas --to <ms>` gives the frame sheet. Read it: the page tools see
    no element inside a canvas, so the sheet is how you see framing, silhouettes and whether the motion reads.
 
@@ -53,51 +53,46 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 ## A rigged character
 
-- **Loading a `.glb` model:** load rigged assets placed in `apps/pieces/references/` with Three.js's
-  `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`) and resolve the asset URL from the component with
-  `new URL("../references/RobotExpressive.glb", import.meta.url).href` (or another file in that folder).
-- **Capturing the skeleton:** call `captureSkeleton(gltf.scene)` from `"@gerak/three/skeleton"` once
-  after loading. It records parent-before-child bone order, rest local positions/quaternions (supporting
-  uniform positive scale on ancestor container nodes), and `skeleton.joints` in world coordinates. Look up
-  specific bones with `skeleton.joint("UpperArmR")`: it returns a typed `Joint3d<"UpperArmR">` even under
-  `noUncheckedIndexedAccess` and throws a `RangeError` if the bone is missing.
-- **Posing chains in 3D:** build a typed bone chain from `skeleton.joint(...)` or hand-authored `Joint3d`
-  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArmR: goal }, { pole })`
-  where `pole` is a `Vec3` tuple `[x, y, z]` (or `{ kind: "point", point: [x, y, z] }`),
-  and convert to per-bone delta poses with `bonesOf3d(arm, solved)` (or compute FK frames with `fk3d` /
-  `chainFromRest3d` for separate rigid objects bound via `useTarget3d`).
-- **Writing bones:** call `applyBones(skeleton, poses)` from `"@gerak/three/skeleton"` inside
-  `player.subscribe(...)` on each frame. Every named bone takes a `Pose3d` turn/offset relative to its own rest,
-  and omitted bones return to rest (`{}`). Keep hierarchy parent bones and child chains consistent: if a
-  parent bone rotates, place the child chain's `base` at the parent tip's `(x, y, z)` from `fk3d` with the
-  parent's world turn delta, and omit redundant translation fields on child bones inside Three.js's tree.
-- **Morph targets (blend shapes):** create `const writer = morphTargets(gltf.scene)` from `"@gerak/three"`
-  once, author blend weights under `pose.custom` (`{ custom: { smile: 0.8 } }`, clamped to `[0, 1]`), and
-  pass `writer` as the fourth argument to `applyPose3d(gltf.scene, pose, rest, writer)`.
-- **Speech and sampled cues:** import speech samples (such as `apps/pieces/references/talk.json` via
-  `with { type: "json" }`) and export them as `cues` alongside `clock` (and pass them into
-  `usePlayer(scene, clock, cues)` or `play(scene, clock(), { cues })`). Drive morph weights (`pose.custom`) or a
-  jaw/head bone from `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)` so the character
-  articulates smoothly from live or recorded samples.
-- **Readiness before 0 ms capture:** set `window.__motionReady` to a `Promise` at module top level before any
-  `await`, and resolve it only after every `.glb` asset has loaded, `useTarget3d` and `player.subscribe(...)` have
-  written initial poses and bones, and `renderer.render(stage, lens)` has drawn the first frame. Headless tools
-  (`motion:frames`, `motion:review`) await `window.__motionReady` before capturing `0 ms`, preventing blank frames
-  when using `GLTFLoader` or top-level `await rapierEngine3d()`.
+- **The model:** a skinned `.glb` in `apps/pieces/references/`, listed in its README with source, creator and licence
+  (CC0, or CC BY with its credit line), under 2 MB. Bone names are the model's own; read them from its joint table.
+- **Its joint table:** `npm run motion:joints -- apps/pieces/references/<model>.glb` writes `<model>.joints.json`
+  beside it: every bone's world rest point and parent. The scene imports it
+  (`import rig from "../references/<model>.joints.json" with { type: "json" }`) and reads joints with
+  `jointOf(rig.joints, "Jaw")` from `"@gerak/rig"`, typed by name, throwing on a name the model lacks. The scene runs
+  before any page loads the model, so this table is how it rigs one; never copy coordinates by hand.
+- **Chains:** `const arm = chainThrough3d([jointOf(...), jointOf(...), jointOf(...)])` answers `{ chain, rest }`;
+  each joint but the last starts a bone named after it. `ik3d(arm.chain, { <bone>: goal }, { pole })` reaches a goal
+  with the named bone's tip; `pole` is `[x, y, z]` and sets which way the middle joint bends.
+  `bonesOf3d(arm.chain, solved)` answers each bone's turn for `applyBones`, `{}` at rest, turns only.
+- **A chain under a posed chain:** a chain's base is its first bone's parent, and moves with it. To hang an arm from a
+  torso you also pose, solve the torso first and pass `{ base: childBase3d(torso.chain, torsoNow, "<bone>") }` to the
+  arm's `ik3d` and use the same base in `bonesOf3d`; nothing else is needed.
+- **Bones by hand:** a bone's `Pose3d` turns it about the model's own axes as they were at capture, carried by its
+  parents: `{ rotationX: 20 }` on a jaw or a head turns it about the model's x axis whatever way the exporter rolled
+  the bone. Return a `bones` target `{ <bone>: Pose3d }`; a bone left out goes back to rest.
+- **Writing bones on the page:** after loading with `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`, URL from
+  `new URL("../references/<model>.glb", import.meta.url).href`), call `captureSkeleton(gltf.scene)` from
+  `"@gerak/three/skeleton"` once, then `player.subscribe("bones", (poses) => applyBones(skeleton, poses))`. Capture
+  before moving or turning the model; place the model by a parent group instead.
+- **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
+  `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
+  `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
+  `"@gerak/three"` is the fourth argument to `applyPose3d`, and `pose.custom` names the targets, clamped to `[0, 1]`.
+- **Readiness:** the page entry (`<name>-main.tsx`), not the scene, sets `window.__motionReady` to a promise before
+  anything awaits, resolves it once the model has loaded and the first frame has drawn, and rejects it from the
+  loader's error callback, so the frame tools fail at once on a missing model instead of timing out.
 
 ## Bodies in depth
 
-- **Booting 3D Rapier once:** at scene module top level, call `const rapier3d = await rapierEngine3d()` from
-  `"@gerak/rapier"` so the WASM engine loads before the first frame.
-- **Building the deterministic world:** pass `rapier3d()` to `simulate` from `"@gerak/physics"` just like 2D
-  physics (`world.setGravity(0, -9.81, 0)`, `world.addCollider(...)`, `world.addBody(...)`). Supported 3D body
-  shapes (`Shape3d`) are `"sphere"` and `"box"`, and static colliders (`Collider3d`) are `"floor"`, `"wall"`,
-  and `"box"`. Coordinates are world units with `y` up; orientations are unit quaternions `{ w, x, y, z }`;
-  velocities (`wx`, `wy`, `wz`) are degrees per second. Set `drag` (such as `drag: 1.5`) on `world.addBody(...)` for
-  rolling spheres or boxes on a flat floor so they settle before the scene's final hold.
-- **Reading poses:** convert `sim.at(time).ball` with `bodyPose3d(...)` from `"@gerak/rig"` into a `Pose3d`.
-  Bind the matching Three.js mesh at origin `(0, 0, 0)` with `useTarget3d` so its rest position is zero and
-  the physics world coordinates drive it directly.
+- **The engine:** `const rapier3d = await rapierEngine3d()` from `"@gerak/rapier"` at the scene module's top level,
+  then `simulate(rapier3d(), (world) => { ... })` from `"@gerak/physics"`, as in 2D: `world.setGravity(0, -9.81, 0)`,
+  `world.addCollider(...)`, `world.addBody(...)`. Bodies (`Shape3d`) are `"sphere"` or `"box"`; fixed colliders
+  (`Collider3d`) are `"floor"`, `"wall"` and `"box"`. World units, y up; spins in degrees a second. `drag` lets a body
+  settle before the final hold.
+- **A character among bodies:** a character has no collider of its own. Give it fixed `"box"` colliders where its
+  feet, legs and body stand, or props settle inside it.
+- **Reading a body:** `bodyPose3d(sim.pose("<id>", time))` from `"@gerak/rig"` answers its movement from where it
+  was spawned and its turn, as a `Pose3d`. Place its mesh at the body's spawn point and bind it with `useTarget3d`.
 
 ## Limits
 
