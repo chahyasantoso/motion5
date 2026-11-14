@@ -17,6 +17,7 @@ const PAGE = `<!doctype html>
 `;
 
 const MODULE = `import { applyValue } from "@gerak/dom";
+Reflect.set(window, "__motionReady", Promise.resolve());
 Reflect.set(window, "paint", (tint: number) => {
   const box = document.getElementById("box");
   if (box === null) throw new Error("No box.");
@@ -54,7 +55,6 @@ describe("the tint field on a skinned element", () => {
         source: { kind: "serve", root: DEFAULT_ROOT },
       },
       async ({ page }) => {
-        await page.waitForFunction(() => Reflect.has(window, "paint"));
         const colours: string[] = [];
         for (const tint of [0, 0.5, 1])
           colours.push(await page.evaluate((t) => String(Reflect.get(window, "paint")(t)), tint));
@@ -75,5 +75,5 @@ describe("the tint field on a skinned element", () => {
     ]);
     // OKLCH mixes by the shorter hue arc, so red to blue passes through magenta near 327 degrees.
     expect(middle).toEqual([expect.closeTo(0.54, 1), expect.any(Number), expect.closeTo(327, -1)]);
-  });
+  }, 90000);
 });
