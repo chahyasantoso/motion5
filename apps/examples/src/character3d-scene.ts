@@ -2,34 +2,7 @@ import { clockDriver } from "@gerak/dom";
 import { ease, mix, mixPoint3d, orbit, aim, span, type Pose3d, type Time } from "@gerak/moves";
 import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
-import {
-  bodyPose3d,
-  bonesOf3d,
-  chainThrough3d,
-  eulerFromMatrix3d,
-  fk3d,
-  ik3d,
-  matrixFromEuler3d,
-  multiplyMatrix3,
-} from "@gerak/rig";
-
-declare global {
-  interface Window {
-    __motionReady?: Promise<void>;
-  }
-}
-
-let resolveReady: (() => void) | undefined;
-if (typeof window !== "undefined" && !window.__motionReady) {
-  window.__motionReady = new Promise<void>((resolve) => {
-    resolveReady = resolve;
-  });
-}
-
-/** Resolves `window.__motionReady` once the 3D stage has rendered its initial frame. */
-export function signalMotionReady(): void {
-  resolveReady?.();
-}
+import { bodyPose3d, bonesOf3d, childBase3d, chainThrough3d, ik3d } from "@gerak/rig";
 
 /** How long the scene runs, in ms; `motion:sample` and `motion:review` read it. */
 export const durationMs = 4200;
@@ -71,6 +44,9 @@ const HAND_REST = {
 // Lies in the rest (shoulder, elbow, hand) half-plane so the elbow never flips mid-reach.
 const ELBOW_POLE = [0.535, 1.014, 0.422] as const;
 
+// The shoulder joint after the torso leans about 6 degrees forward and 10 degrees round.
+const LEAN_GOAL = { x: 0.2462, y: 1.4947, z: 0.0589 } as const;
+
 const torso = chainThrough3d([SKELETON_JOINTS.spine, SKELETON_JOINTS.shoulder]);
 const arm = chainThrough3d([SKELETON_JOINTS.shoulder, SKELETON_JOINTS.elbow, SKELETON_JOINTS.hand]);
 
@@ -101,57 +77,24 @@ const blinkWindow = span(1150, 1550);
 const smileWindow = span(1500, 2600);
 const cameraPan = span(0, 3400);
 
-const REST_SPINE_MATRIX = matrixFromEuler3d(torso.rest.rotations.spine);
-
 /** Character morphs, skeleton bone turns, physics ball pose, and orbiting camera at `time`. */
 export const scene = (time: Time) => {
   const leanProgress = torsoLean.of(time, ease.sineInOut).progress;
-  const spineDelta =
-    leanProgress === 0
-      ? undefined
-      : {
-          rotation: 0,
-          rotationX: mix(0, 6, leanProgress),
-          rotationY: mix(0, -10, leanProgress),
-        };
-  const torsoNow =
-    spineDelta === undefined
-      ? undefined
-      : {
-          rotations: {
-            spine: eulerFromMatrix3d(
-              multiplyMatrix3(matrixFromEuler3d(spineDelta), REST_SPINE_MATRIX),
-            ),
-          },
-        };
-  const torsoPoses = bonesOf3d(torso.chain, torsoNow);
-  const shoulderTip = torsoNow === undefined ? undefined : fk3d(torso.chain, torsoNow).spine;
-  const shoulderBase =
-    shoulderTip === undefined || spineDelta === undefined
-      ? undefined
-      : {
-          x: shoulderTip.x,
-          y: shoulderTip.y,
-          z: shoulderTip.z,
-          ...spineDelta,
-        };
+  const torsoNow = ik3d(torso.chain, {
+    spine: mixPoint3d(SKELETON_JOINTS.shoulder, LEAN_GOAL, leanProgress),
+  });
+  const armBase = childBase3d(torso.chain, torsoNow, "spine");
 
   const reachProgress = reach.of(time, ease.cubicInOut).progress;
-  const solvedArm =
-    reachProgress === 0 && shoulderBase === undefined
+  const armNow =
+    reachProgress === 0 && leanProgress === 0
       ? arm.rest
       : ik3d(
           arm.chain,
           { elbow: mixPoint3d(HAND_REST, REACH_TARGET, reachProgress) },
-          { ...(shoulderBase === undefined ? {} : { base: shoulderBase }), pole: ELBOW_POLE },
+          { base: armBase, pole: ELBOW_POLE },
         );
-  const armPoses = bonesOf3d(
-    arm.chain,
-    shoulderBase === undefined ? solvedArm : { base: shoulderBase, rotations: solvedArm.rotations },
-  );
-
-  // Spine already translates the shoulder bone in the skeleton hierarchy; apply shoulder orientation only.
-  const { x: _x, y: _y, z: _z, ...shoulderPose } = armPoses.shoulder;
+  const poses = { ...bonesOf3d(torso.chain, torsoNow), ...bonesOf3d(arm.chain, armNow) };
 
   const blinkPhase = blinkWindow.of(time).progress;
   const blink = blinkPhase > 0 && blinkPhase < 1 ? Math.sin(Math.PI * blinkPhase) : 0;
@@ -165,9 +108,9 @@ export const scene = (time: Time) => {
   });
 
   const bones: Record<"spine" | "shoulder" | "elbow", Pose3d> = {
-    spine: torsoPoses.spine,
-    shoulder: shoulderPose,
-    elbow: armPoses.elbow,
+    spine: poses.spine,
+    shoulder: poses.shoulder,
+    elbow: poses.elbow,
   };
   const character: Pose3d = { custom: { smile, blink } };
 

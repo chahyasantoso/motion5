@@ -29,7 +29,6 @@ import {
   SKELETON_JOINTS,
   clock,
   scene,
-  signalMotionReady,
 } from "./character3d-scene";
 
 const WIDTH = 1280;
@@ -91,7 +90,7 @@ function addMorphBox(
 }
 
 /** A rigged character reaching in 3D for a target while blinking, smiling, and watching a physics ball settle. */
-export const Character3d: React.FC = () => {
+export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onReady }) => {
   const playing = usePlayer(scene, clock);
   const player = playing?.player;
   const renderRef = useRef<() => void>(() => undefined);
@@ -305,12 +304,12 @@ export const Character3d: React.FC = () => {
       rig.render();
     });
     rig.render();
-    signalMotionReady();
+    onReady();
     return () => {
       stopBones();
       stopChar();
     };
-  }, [player, rig]);
+  }, [player, rig, onReady]);
 
   return <div ref={host} className="stage" onClick={() => playing?.driver.replay()} />;
 };
