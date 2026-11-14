@@ -234,13 +234,20 @@ export function jointTable(gltf: Gltf, modelName: string): JointTableResult {
   const labelOf = (index: number) => `node "${gltf.nodes[index]?.name ?? `#${index}`}"`;
 
   const names = new Map<number, string>();
-  const taken = new Set<string>();
+  const nodesNamed = new Map<string, number>();
+  for (const node of gltf.nodes) {
+    const name = loadedName(node.name ?? "");
+    nodesNamed.set(name, (nodesNamed.get(name) ?? 0) + 1);
+  }
   for (const index of [...jointNodes].sort((a, b) => a - b)) {
-    const name = gltf.nodes[index]!.name;
-    if (name === undefined || name === "")
+    const raw = gltf.nodes[index]!.name;
+    if (raw === undefined || raw === "")
       return refuse(`${labelOf(index)} is a joint with no name.`);
-    if (taken.has(name)) return refuse(`Two joints are named "${name}".`);
-    taken.add(name);
+    const name = loadedName(raw);
+    if ((nodesNamed.get(name) ?? 0) > 1)
+      return refuse(
+        `Two nodes load as "${name}", so a loader renames one of them; rename them apart.`,
+      );
     names.set(index, name);
   }
 
@@ -263,7 +270,7 @@ export function jointTable(gltf: Gltf, modelName: string): JointTableResult {
 
   const roots =
     gltf.roots ?? gltf.nodes.map((_, index) => index).filter((index) => !parentOf.has(index));
-  const joints: Record<string, JointEntry> = {};
+  const joints = new Map<string, JointEntry>();
   const visit = (index: number, ancestor: string | null, seen: Set<number>): string | undefined => {
     if (seen.has(index)) return `${labelOf(index)} is its own ancestor.`;
     seen.add(index);
@@ -271,7 +278,7 @@ export function jointTable(gltf: Gltf, modelName: string): JointTableResult {
     if (name !== undefined) {
       const at = worldOf(index);
       if (typeof at === "string") return at;
-      joints[name] = { x: at.t[0], y: at.t[1], z: at.t[2], parent: ancestor };
+      joints.set(name, { x: at.t[0], y: at.t[1], z: at.t[2], parent: ancestor });
     }
     for (const child of gltf.nodes[index]!.children) {
       const problem = visit(child, name ?? ancestor, seen);
@@ -284,9 +291,13 @@ export function jointTable(gltf: Gltf, modelName: string): JointTableResult {
     const problem = visit(root, null, seen);
     if (problem !== undefined) return refuse(problem);
   }
-  if (Object.keys(joints).length !== names.size)
-    return refuse("A joint is not under the default scene's roots.");
-  return { kind: "table", table: { model: modelName, joints } };
+  if (joints.size !== names.size) return refuse("A joint is not under the default scene's roots.");
+  return { kind: "table", table: { model: modelName, joints: Object.fromEntries(joints) } };
+}
+
+/** A node's name as Three.js's loader gives it: whitespace becomes `_`, and `[ ] . : /` are dropped. */
+function loadedName(name: string): string {
+  return name.replace(/\s/g, "_").replace(/[[\].:/]/g, "");
 }
 
 /** The file text: two-space indented JSON with a trailing newline. */

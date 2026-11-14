@@ -199,6 +199,38 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
     expect(sim.at(liveAt(2400), earlier)).toEqual(fresh.at(liveAt(2400), earlier));
   });
 
+  it("answers a spawned body's pose from where the engine put it, exactly 0 when spawned, across seeks", () => {
+    const options = {
+      spawn: (event: MotionEvent, world: Spawner3d) => {
+        world.addBody({
+          id: `box@${event.at}`,
+          shape: { kind: "box", width: 0.2, height: 0.2, depth: 0.2 },
+          x: 0.95,
+          y: 2.1,
+          z: 0.35,
+        });
+      },
+    };
+    const build = (world: PhysicsWorld3d) => {
+      world.setGravity(0, -9.81, 0);
+      world.addCollider("floor", { kind: "floor", y: 0 });
+    };
+    const drops: Events = [{ name: "drop", at: 400 }];
+    const sim = simulate(create(), build, options);
+    const spawned = sim.pose("box@400", liveAt(420), drops);
+    expect([spawned.x, spawned.z]).toEqual([0, 0]);
+    expect(Object.keys(bodyPose3d(spawned))).toEqual(["y"]);
+
+    const fell = sim.pose("box@400", liveAt(1500), drops);
+    const earlier: Events = [{ name: "drop", at: 100 }, ...drops];
+    sim.pose("box@100", liveAt(2000), earlier);
+    expect(sim.pose("box@400", liveAt(1500), drops)).toEqual(fell);
+    const fresh = simulate(create(), build, options);
+    expect(sim.pose("box@400", liveAt(1500), earlier)).toEqual(
+      fresh.pose("box@400", liveAt(1500), earlier),
+    );
+  });
+
   it("throws RangeError on duplicate or unknown body ids", () => {
     const world = create();
     world.addBody({

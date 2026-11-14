@@ -307,8 +307,8 @@ export function simulate<
     at,
     bodies: (time, events) => Object.keys(at(time, events)),
     pose(id, time, events) {
-      const start = starts.get(id);
       const now = at(time, events)[id];
+      const start = starts.get(id);
       if (start === undefined || now === undefined)
         throw new RangeError(`simulate: no body "${id}" at that time.`);
       return moved(start.origin, now, now.rotation);

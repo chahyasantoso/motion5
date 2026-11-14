@@ -67,7 +67,9 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   each joint but the last starts a bone named after it. `ik3d(arm.chain, { <bone>: goal }, { pole })` reaches a goal
   with the named bone's tip. A goal is `{ x, y, z }`, with `influence` (0 to 1) to pull it only partly; options are
   `{ pole, base }`. `pole` is `[x, y, z]`, a point on the side the middle joint bends towards; without one, the chain
-  bends in its rest plane, and a goal at rest answers the rest exactly. Keep goals within reach: an arm at full
+  bends in its rest plane (a chain straight at rest has none), and a goal at rest answers the rest exactly. No bone
+  twists about its own length, except in a chain with joint limits or a bone offset from its parent's tip, solved as
+  is, and a bone given an `orient` goal. Keep goals within reach: an arm at full
   stretch snaps when its goal comes back in reach, and a pole on the far side flips the elbow on the first solve.
   `bonesOf3d(arm.chain, solved)` answers each bone's turn for `applyBones`, `{}` at rest, turns only.
 - **A chain under a posed chain:** a chain's base is its first bone's parent, and moves with it. To hang an arm from a

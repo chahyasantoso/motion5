@@ -101,6 +101,22 @@ describe("motion:joints", () => {
     expect(skinless.kind === "refused" ? skinless.reason : "").toContain("skin");
   });
 
+  it("names joints as Three.js's loader does, refusing names it would rename apart", () => {
+    const blender = structuredClone(TWO_BONES) as { nodes: Json[] };
+    blender.nodes[1] = { name: "Upper Leg.L", translation: [1, 0, 0], children: [2] };
+    blender.nodes[2] = { name: "__proto__", translation: [0, 1, 0] };
+    const named = table(blender);
+    if (named.kind !== "table") throw new Error(named.reason);
+    expect(Object.keys(named.table.joints)).toEqual(["Upper_LegL", "__proto__"]);
+    expect(named.table.joints["__proto__"]?.parent).toBe("Upper_LegL");
+
+    const clash = structuredClone(TWO_BONES) as { nodes: Json[] };
+    clash.nodes[0] = { ...clash.nodes[0], name: "Hip.L" };
+    clash.nodes[1] = { name: "HipL", translation: [1, 0, 0], children: [2] };
+    const refused = table(clash);
+    expect(refused.kind === "refused" ? refused.reason : "").toMatch(/"HipL"/);
+  });
+
   it("refuses duplicate and empty joint names", () => {
     const duplicate = structuredClone(TWO_BONES) as { nodes: Json[] };
     duplicate.nodes[2] = { name: "Hip", translation: [0, 1, 0] };

@@ -11,6 +11,7 @@ import {
   matrixFromEuler3d,
   quaternionFromEuler3d,
   solveChain3d,
+  UNBOUND_POLE3D,
 } from "../src/index";
 import { composeWorld3d, multiplyVector3 } from "../src/frame/frame3d";
 
@@ -268,6 +269,20 @@ describe("ik3d twist", () => {
     expect(turnOf(turns.elbow)).toBeLessThan(0.5);
     const tip = fk3d(chain, solved).elbow;
     expect(Math.hypot(tip.x - 1.1499, tip.y - 1.1501, tip.z - 0.1501)).toBeLessThan(1e-6);
+  });
+});
+
+describe("ik3d's rest plane", () => {
+  it("has none for a chain straight at rest, so it bends as with no pole at all", () => {
+    const { chain } = chainThrough3d([
+      { id: "hip", x: 0, y: 2, z: 0 },
+      { id: "knee", x: 0, y: 1, z: 0 },
+      { id: "foot", x: 0, y: 0, z: 0 },
+    ]);
+    const goal = { knee: { x: 0, y: 0.5, z: 0 } };
+    expect(ik3d(chain, goal).rotations).toEqual(
+      ik3d(chain, goal, { pole: UNBOUND_POLE3D }).rotations,
+    );
   });
 });
 

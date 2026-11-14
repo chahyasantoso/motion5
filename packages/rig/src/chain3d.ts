@@ -413,9 +413,21 @@ export function ik3d<Id extends string>(
 /** Where the first bone's tip sits at rest, carried by the base: the plane a two-bone chain bends in when no pole is given. */
 function restBend<Id extends string>(chain: Chain3d<Id>, base: WorldFrame3d): Vec3 | undefined {
   const [first] = chain.order;
-  if (first === undefined || chain.order.length < 2) return undefined;
-  const tip = evaluateFrames3d(chain, { base, rotations: chain.rest.rotations }).tips.get(first)!;
-  return [tip.x, tip.y, tip.z];
+  const last = chain.order[chain.order.length - 1];
+  if (first === undefined || last === undefined || first === last) return undefined;
+  const frames = evaluateFrames3d(chain, { base, rotations: chain.rest.rotations });
+  const start = frames.pivots.get(first)!;
+  const bend = frames.tips.get(first)!;
+  const end = frames.tips.get(last)!;
+  const along: Vec3 = [end.x - start.x, end.y - start.y, end.z - start.z];
+  const out: Vec3 = [bend.x - start.x, bend.y - start.y, bend.z - start.z];
+  const cross = Math.hypot(
+    along[1] * out[2] - along[2] * out[1],
+    along[2] * out[0] - along[0] * out[2],
+    along[0] * out[1] - along[1] * out[0],
+  );
+  const scale = Math.hypot(...along) * Math.hypot(...out);
+  return cross > EPSILON * Math.max(1, scale) ? [bend.x, bend.y, bend.z] : undefined;
 }
 
 function untwistable<Id extends string>(chain: Chain3d<Id>): boolean {
