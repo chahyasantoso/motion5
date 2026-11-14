@@ -41,6 +41,9 @@ plan. The branch `feat/3d` holds `plan/3d-plan.md`, proposed and not yet approve
 2. Ask the owner to choose the measure's model: a CC0 rigged glTF character with a jaw bone or mouth morph targets.
    Downloading it needs the owner's yes, with the file's name, source and size.
 3. Wave 1 is the planner's: ADR-182 (ADR-181 is the last; add it to `docs/ADR-INDEX.md`) and slice T1.
+4. When the plan is built and its pull request open, the owner asks Claude Code, in a session of its own, to review
+   the work. Leave the pull request's description complete for that: invariants and tests, review findings and what
+   was left, which checks ran on which commit, the measure's results and tokens, and what was not verified.
 
 ## Lessons that bind this work
 
@@ -62,8 +65,9 @@ plan. The branch `feat/3d` holds `plan/3d-plan.md`, proposed and not yet approve
 
 ## Open items
 
-- `talk.html?piece=<name>` works with a microphone (the owner tried it); it sends `mouthOpen` only, so a 3D avatar
-  driven live needs no new page, only a piece that follows `mouthOpen`.
+- `talk.html?piece=<name>` works with a microphone (the owner tried it) for stage modules only; it sends `mouthOpen`.
+  A 3D page is not a stage module, so a live 3D avatar calls its clock driver's `send` itself (the plan's guide
+  shows how).
 - A morph blends cubics paired by order: outlines drawn with the same point count, start and direction never twist.
 - Deferred: the `trail` cache (ADR-176), a clip that grows, and a gate that holds the `!` non-null assertion
   (about 170 lines carry one).

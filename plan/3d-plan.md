@@ -1,6 +1,7 @@
 # 3D plan: rigged characters and bodies in depth
 
-**Status:** Proposed, 2026-11-14. Not approved: critique it once, then ask the owner.
+**Status:** Proposed, 2026-11-14, after one round of critique. Not approved: check it against the tree, then ask the
+owner.
 **Base:** `main` at `bb8a828b`, the merge of pull request 592.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `plan/roadmap.md` (stage 8), `docs/ADR-169`, `docs/ADR-180`,
 `docs/ADR-181`, `docs/guide/agent-3d.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -20,45 +21,61 @@ ADR-141); it is read for its lessons, not restored.
 
 ## 2. Decisions to record (D0, ADR-182)
 
-- **A skinned character's bones take poses in their own rest space.** `@gerak/three/skeleton` captures a skeleton's
-  rest once (bone names, parent order, rest quaternions and positions), and `applyBones(skeleton, poses)` writes each
-  named bone's `Pose3d` as a turn and offset from its rest, parent-local, parents before children. A pose of `{}`
-  is the rest. Bind matrices are never touched. An unknown bone name throws, naming it.
-- **A 3D chain is built through joints, as in 2D.** `chainThrough3d(joints)` and `chainFromRest3d(chain, rest, now)`
-  mirror `chainThrough` and `chainFromRest`, typed by joint id, on top of the existing 3D FK and solver; their
-  answers are `Pose3d` per bone, ready for `applyBones` or `useTarget3d`. No second 3D solver.
+- **A skinned character's bones take turns local to their parents.** `@gerak/three/skeleton` captures a skeleton's
+  rest once (bone names, parent order, rest quaternions, positions and world joint points), and
+  `applyBones(skeleton, poses)` writes each named bone's `Pose3d` as a turn and offset from its own rest, in its
+  parent's space, parents before children. A pose of `{}` is the rest; bind matrices are never touched; an unknown
+  bone name throws, naming it. World-space poses never go to bones: writing them onto nested bones applies every
+  ancestor twice.
+- **A 3D chain is built through joints, as in 2D, and answers two ways.** `chainThrough3d(joints)` builds a chain
+  typed by joint id, from points given by hand or read from a captured skeleton (`skeleton.joints`). Its turns are
+  local, as `solveChain3d`'s `rotations3d` already are, so `bonesOf3d(chain, now)` hands them to `applyBones`
+  directly; `chainFromRest3d(chain, rest, now)` answers the world `Pose3d` that carries a separate rigid part, as
+  `chainFromRest` does in 2D, for `useTarget3d`. Rig gains a public 3D forward kinematics for the second; no second
+  solver.
 - **Morph targets are custom numbers.** A mesh's named morph targets (a glTF avatar's `jawOpen`, `eyeBlinkLeft`) are
   written from `custom` numbers by a `morphTargets` writer in `@gerak/three`, so `follow` on `mouthOpen` drives a 3D
   mouth exactly as it drives the 2D beak. Authoring blend shapes stays out.
-- **3D physics is a second world, same contract.** `@gerak/physics` gains 3D body and world types beside the 2D ones
-  (z, quaternion-free turns as `Pose3d` fields), and `@gerak/rapier` a `rapierEngine3d` on the deterministic 3D
-  build; `simulate` stays the one owner of seeking, snapshots and events, now over either world.
-- **The scaffold writes React Three Fiber.** `motion:new <name> --r3f` writes a page with a `Canvas`, a camera, a
-  light, and one mesh per target bound by `useTarget3d`; `--three` stays for plain Three.js. It sets no look.
+- **3D physics is a second world, same contract.** `@gerak/physics` gains 3D body and world types beside the 2D ones,
+  a body's turn as a plain quaternion `{ w, x, y, z }` (physics depends on `@gerak/moves` alone and does no
+  orientation math), and `@gerak/rapier` a `rapierEngine3d` on `@dimforge/rapier3d-deterministic-compat@0.21.0`,
+  the 2D build's version. `simulate` stays the one owner of seeking, snapshots and events, over either world. Rig's
+  `bodyPose3d(state)` turns a body's state into a `Pose3d`, since rig owns 3D orientation (ADR-169).
+- **The scaffold writes React Three Fiber.** `motion:new <name> --r3f` writes a page, a component with a `Canvas`, a
+  camera, a light and one mesh per target bound by `useTarget3d`, and a scene, as `--three` does today for plain
+  Three.js (`page.three.html.template` and its siblings). It sets no look. `@react-three/fiber` joins
+  `apps/pieces` and `apps/examples` only, never a package; a glTF loads through three's own `GLTFLoader`, with no
+  `drei`.
 - **A 3D piece stays a code scene with its page** (ADR-169), not a stage module: the stage owns DOM layout and boxes,
   which a canvas does not have. A stage module with a Three.js skin waits for a brief that needs both.
 - **Models live in `apps/pieces/references/`** with their source and licence, as SVGs do; only CC0 or similarly free
-  models go there, and a model file over 2 MB is refused by review of the pull request, not by a gate.
+  models go there, under 2 MB unless the owner agrees to more.
+- **A live 3D avatar needs its own few lines.** `talk.html` mounts stage modules only; a 3D page drives its clock with
+  `clockDriver` and calls its `send`, which this plan's guide shows and no page of its own provides.
 
 ## 3. Slices
 
 ### T1. Typed 3D chains
 
-- **Invariant:** `chainThrough3d` builds a chain through 3D joints; `chainFromRest3d` answers, per bone, the
-  `Pose3d` that carries a part from where it was modelled to where the chain now holds it; a chain at rest answers
-  `{}` for every bone.
-- **Owner:** `packages/rig/src/chain3d.ts` (new), exported from `packages/rig/src/index.ts`.
-- **Test:** a three-joint arm bent 90 degrees at its elbow carries its forearm's tip to the expected point; rest is
-  `{}`; ids are typed (a wrong id does not compile, held by a type test); answers equal `solveChain3d`'s frames.
+- **Invariant:** `chainThrough3d` builds a chain through 3D joints, typed by id; `bonesOf3d(chain, now)` answers each
+  bone's local turn from its rest, `{}` at rest; `chainFromRest3d` answers each bone's world `Pose3d` from where it
+  was modelled, `{}` at rest; a public `fk3d` answers each joint's world frame, and agrees with the frames
+  `solveChain3d` reaches for the same turns.
+- **Owner:** `packages/rig/src/chain3d.ts` (new) and the 3D FK it exports; `bodyPose3d` in the same package.
+- **Test:** a three-joint arm bent 90 degrees at its elbow puts its tip at the expected point by `fk3d`; rest gives
+  `{}` both ways; a wrong id does not compile (a type test); `bodyPose3d` of a quarter turn about y is
+  `{ rotationY: 90 }` to 1e-9.
 
 ### T2. Skinned bones
 
-- **Invariant:** as decided; `captureSkeleton(root)` and `applyBones(skeleton, poses)`; writing then writing `{}`
-  returns every bone to its captured rest exactly; a child keeps its world place when only its parent turns about
-  the child's own origin.
-- **Owner:** `packages/three/src/skeleton.ts` (new), entry `@gerak/three/skeleton`.
-- **Test:** a skeleton built in code (no file): a turn on the upper arm moves the hand's world position as FK says;
-  rest restores; unknown names throw; parents are written before children whatever order the poses come in.
+- **Invariant:** as decided; `captureSkeleton(root)` and `applyBones(skeleton, poses)`; writing a pose and then `{}`
+  returns every bone to its captured rest exactly; a turn on a parent carries its children as `fk3d` says; a rest
+  with a non-unit scale on any bone is reported by `captureSkeleton`, not fixed.
+- **Owner:** `packages/three/src/skeleton.ts` (new), entry `@gerak/three/skeleton` in the package's `exports`, which
+  `npm run pack:check` then installs.
+- **Test:** a skeleton built in code (no file): `bonesOf3d` of a bent arm through `applyBones` puts the hand bone's
+  world position where `fk3d` puts the tip; rest restores; unknown names throw; parents are written before children
+  whatever order the poses come in.
 
 ### T3. Morph targets
 
@@ -71,15 +88,14 @@ ADR-141); it is read for its lessons, not restored.
 
 - **Invariant:** `rapierEngine3d` on the deterministic 3D build gives a `PhysicsWorld3d`; `simulate` over it seeks
   backwards and forwards to the same state at the same time and events, as in 2D.
-- **Owner:** `packages/physics/src/world.ts` (types), `packages/rapier/src/world3d.ts` (new); the dependency
-  `@dimforge/rapier3d-deterministic-compat` pinned to the version the 2D build uses.
+- **Owner:** `packages/physics/src/world.ts` (types) and `simulate.ts`, `packages/rapier/src/world3d.ts` (new).
 - **Test:** boxes dropped on a plane settle; a seek to 2 s from 0, from 5 s and from 1 s gives the same positions to
   1e-9; an event that pushes a box replays on a seek back.
 
 ### T5. The R3F scaffold and a worked example
 
-- **Invariant:** `motion:new <name> --r3f` writes a scene and a page that typecheck and render; an example in
-  `apps/examples` binds a skinned character built in code through `applyBones` and its tests read it.
+- **Invariant:** `motion:new <name> --r3f` writes a page, a component and a scene that typecheck and render; an
+  example in `apps/examples` binds a skinned character built in code through `applyBones`, and its tests read it.
 - **Owner:** `packages/tools/src/scene/new.ts` and its templates; `apps/examples`.
 - **Test:** the scaffold's files typecheck and the page mounts in Chromium with no page error; the example's scene
   is sampled by its test.
@@ -110,7 +126,7 @@ short briefs, each in its own isolated workspace. The handoff maps them to the h
 | --- | --- | --- | --- |
 | 1 | Planner | D0, T1 | the decisions, and the chain type T2 and T5 read |
 | 2 | Executor | T2 and T3 | one worker owns `packages/three` |
-| 2 | Executor | T4 | physics and rapier only |
+| 2 | Executor | T4 | physics and rapier only; `bodyPose3d` is the planner's, in T1 |
 | 3 | Executor | T5 | after T2, so the example uses `applyBones` |
 | 4 | Planner | T6 | what the measure reads |
 | 4 | Planner model, fresh | T7 measure | |
@@ -121,7 +137,9 @@ One pull request, after wave 4.
 ## 5. Risks
 
 - **Bone conventions differ by exporter** (axes, roll, scale on the armature): the measure's model is the test; a
-  model whose rest is not identity-scaled is reported by `captureSkeleton`, not silently fixed.
+  model whose rest is not unit-scaled is reported by `captureSkeleton`, not silently fixed.
+- **A canvas in the headless browser:** the frame sheet needs WebGL in headless Chromium, which `principles3d` in
+  `apps/examples` already shows working; a page that renders black there is a finding, not a pass.
 - **The 3D deterministic Rapier build** may differ in API from the 2D one; T4 reads both packages' types first.
 - **Bundle weight:** Rapier 3D's wasm is large; it stays in `@gerak/rapier`, never pulled in by `@gerak/three`.
 - **A new harness:** the wave-build skill was written for Claude Code; the handoff names what maps and what does not.
