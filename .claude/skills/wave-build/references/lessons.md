@@ -7,9 +7,6 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - A lenient reader hides a bad export: a malformed `rest` fell back to none in silence. Readers refuse with a reason.
   (A code rule, not a workflow one; kept here until the repository's conventions take it.)
 
-- Two of three builders wrote code before tests and said so; a test never seen red may guard nothing, as wave 1's
-  cost test did. Briefs could ask for the failing output of each new test in the report.
-
 - A review limit set for one unit hides a defect in another: `--turn 150` passed a 133 degree bone flip, and blink,
   a 0-1 custom number, is judged by the position `--jump`. The review could take limits per field kind or per target.
 

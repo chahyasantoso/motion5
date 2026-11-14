@@ -55,10 +55,12 @@ Launch a wave's builders in one message, each in its own worktree. Do not poll.
 2. Cherry-pick its commits, then remove its worktree at once. Grep the diff for control characters: an escape lost
    in a shell or script edit leaves a backspace where `\b` was meant, and no gate sees it.
 3. Drop any option no test drives; it is a feature nobody chose.
-4. For a change that should not show, compare samples and frames before and after.
-5. Look at a tool's output on a real page, not only its tests, and sample the values behind any frame a worker
+4. Break the code once for each new test whose failure the builder did not show, and see it fail: a browser test
+   that measured nothing passed until the lead broke the camera.
+5. For a change that should not show, compare samples and frames before and after.
+6. Look at a tool's output on a real page, not only its tests, and sample the values behind any frame a worker
    names as proof: a worker may name the wrong frame.
-6. Run the full check once, from a clean state when the change adds a build: no `dist` the check could lean on. One purpose per shell call; never move git state in a call that runs tests.
+7. Run the full check once, from a clean state when the change adds a build: no `dist` the check could lean on. One purpose per shell call; never move git state in a call that runs tests.
 
 ## Review cold
 
