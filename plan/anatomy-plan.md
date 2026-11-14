@@ -25,7 +25,8 @@ What the code lacks today, measured on `feat/toolkit`:
   `MOVE_PARTS` in `@gerak/tools` is a second, hand-kept list of which of them are parts. `apps/pieces/src` holds
   about 50 files of every piece, the app's players and one shared `moves/` folder, and `export const brief` is a
   second owner of which brief a piece answers. 18 of the 20 local moves serve the showreel brief alone, 2 the
-  penguin.
+  penguin. `apps/examples` is a second app of content: nine worked examples that agents are kept from reading and
+  tests and `npm run test:frames` read, with dependencies `apps/pieces` already has.
 
 Not planned: the motion atlas (`plan/motion-atlas-plan.md`, deferred until the sameness score below shows the need),
 a mask of any shape, a new package.
@@ -40,7 +41,7 @@ Five layers. Each uses only those below it, and each has one folder.
 | Parts | how a number changes over time, knowing nothing of fields, roles or rest | `packages/moves/src/parts/<group>/` |
 | Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/briefs/<brief>/moves/` |
 | Composition | moves placed in time and across targets: spans, phases, lanes, joining two answers on one target | `packages/moves/src/compose/`; the piece format (cast, story, layouts, carrying) in `@gerak/stage` |
-| Pieces | one brief's motion, as content | `apps/pieces/briefs/<brief>/` (pieces), `apps/examples/src/` (worked examples the tests read) |
+| Pieces | one brief's motion, as content | `apps/pieces/briefs/<brief>/`, the worked examples included |
 
 - **A part** takes progress or time and answers a number or a point. It has no role, no rest and no option gate.
 - **A move** exists where parts couple inside one progress (a squash because of the landing, at the landing) and an
@@ -88,6 +89,10 @@ stage.html live.html talk.html index.html
 - **A brief's moves live with it.** A piece importing a move from another brief's `moves/` is what
   `motion:moves -- --candidates` lists for promotion into `@gerak/moves`; nothing else is shared between briefs.
 - **An agent works in one folder.** "Do not open other pieces" becomes "work in `briefs/<brief>/`".
+- **One app of content.** The worked examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`,
+  `principles3d`, `character3d`, `overlay3d`) become briefs of their own, their tests beside the others in
+  `apps/pieces/test`; `apps/examples` and the `@gerak/examples` workspace go. The guide test still refuses naming
+  them, and `npm run test:frames` opens them in `apps/pieces`.
 
 ## 3. Decisions to record (ADR-185)
 
@@ -151,8 +156,10 @@ stage.html live.html talk.html index.html
   (local moves and `--candidates`), the Vite plugin's move list and `stage.html?piece=` find them there; two pieces
   with one name are refused naming both; `export const brief` is gone and its readers use the folder. Every piece's
   `motion:review` findings are the same before and after.
-- **Owner:** `apps/pieces`, `packages/tools/src/scene/{new,catalog,import-svg}.ts`, `packages/tools/src/page/live.ts`,
-  `packages/tools/src/vite/index.ts`; tests and guide paths that name `apps/pieces/src/<piece>`.
+- **Owner:** `apps/pieces`, `apps/examples` (removed), `packages/tools/src/scene/{new,catalog,import-svg}.ts`,
+  `packages/tools/src/page/live.ts`, `packages/tools/src/vite/index.ts`, `packages/tools/bin/motion-frames-check.mjs`;
+  the root `package.json` workspaces; tests and documents that name `apps/pieces/src/<piece>` or `apps/examples`
+  (`README.md`, `docs/MAP.md`, `scripts/repo-map.mjs`, the tools' and repo tests).
 - **Test:** a scratch brief scaffolded by `motion:new` plays on `stage.html` and lists its move in `motion:moves`; a
   piece importing another brief's move is a candidate; a duplicate name is refused.
 
