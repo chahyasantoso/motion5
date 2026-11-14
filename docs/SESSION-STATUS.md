@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-14, Asia/Jakarta.
-- **Read against:** `main` at `60095729`, after the merge of pull request 591, with the live-inputs follow-ups on `feat/live-inputs-follow-ups`.
+- **Read against:** `main` at `bb8a828b`, after the merge of pull request 592.
 
 ## Now
 
@@ -30,8 +30,8 @@ byte ceiling.
 
 ## Next in line
 
-- **3D (roadmap stage 8):** typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading the archive),
-  3D physics on Rapier and an R3F scaffold; not planned yet. A motion-atlas brainstorm follows.
+- **3D (roadmap stage 8):** a rigged glTF character posed bone by bone, typed 3D chains, morph targets from samples,
+  3D physics on Rapier and an R3F scaffold; `plan/3d-plan.md`, proposed, on `feat/3d`; start from `plan/handoff.md`.
 
 ## Open, and not scheduled
 
