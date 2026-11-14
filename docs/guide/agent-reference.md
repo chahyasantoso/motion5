@@ -215,7 +215,7 @@ const slide = defineMove({
 - **`aim`** `(from: Point3, to: Point3, up?: Point3): Pose3d`: The turn that points local -z (a camera's forward) from `from` at `to`, `up` +y when absent, no roll; `{}` when they meet.
 - **`orbit`** `(options: { readonly target: Point3; readonly radius: number; readonly azimuth: number; readonly elevation: number; }): { readonly x: numbe…`: A point `radius` from `target`: azimuth about +y from +z toward +x, elevation up from the xz plane, degrees.
 - **`project3d`** `(point: Point3, lens: Lens3d, stage: { readonly width: number; readonly height: number; }): { readonly x: number; readonly y: number; reado…`: Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs along the view, and `visible` is false behind the lens.
-- **`Lens3d`** `type Lens3d`: A camera for `project3d`: where it is and how it turns, as a `Pose3d`, and its vertical field of view in degrees.
+- **`Lens3d`** `type Lens3d`: A camera for `project3d`: where it is and how it turns, as a `Pose3d` whose scale is ignored, and its vertical field of view in degrees.
 - **`Anchor2d`** `type Anchor2d`: A named path point with the handles of a smooth cubic through it, relative to the point.
 - **`Cubic2d`** `type Cubic2d`: One cubic Bézier segment from `(x0, y0)` to `(x3, y3)`, named by the anchor it leaves.
 - **`Point2d`** `type Point2d`: A named point in px.
@@ -439,7 +439,7 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 - **`fk3d`** `<Id extends string>(chain: Chain3d<Id>, options?: ChainPose3d<Id>): Readonly<Record<Id, WorldFrame3d>>`: Each bone's tip as a 3D world frame `{ x, y, z, rotation, rotationX, rotationY }`.
 - **`ik3d`** `<Id extends string>(chain: Chain3d<Id>, goals: Readonly<Partial<Record<Id, Goal3d>>>, options?: { readonly base?: Partial<WorldFrame3d>; re…`: Solves a 3D chain towards per-bone goals within limits and returns its solved pose and quality.
 - **`jointOf`** `<const Name extends string>(joints: Readonly<Record<string, { readonly x: number; readonly y: number; readonly z: number; readonly parent?:…`: The joint `name` from a joint table, typed by its name; throws a RangeError naming a joint the table lacks.
-- **`posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<…`: Every joint's world point under `bones`, posed as `applyBones` poses them; `root` places and turns the model's parent group. Throws on a bone the table lacks.
+- **`posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<…`: Every joint's world point under `bones`, posed as `applyBones` poses them; `root` moves and turns the model's parent group, its scale ignored. Throws on a bone the table lacks.
 - **`Bone3d`** `type Bone3d`: One 3D bone: length along local +x, rest Euler3d in degrees, and optional offset and limit.
 - **`BoneIdsOf3d`** `type BoneIdsOf3d`: Bone ids for a joint tuple: every joint except the final tip starts a bone.
 - **`BonePose3d`** `type BonePose3d`: A 3D translation and CSS Z-X-Y Euler turn in degrees, structurally compatible with Pose3d.

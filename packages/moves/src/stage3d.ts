@@ -64,7 +64,8 @@ export function orbit(options: {
   };
 }
 
-/** A camera for `project3d`: where it is and how it turns, as a `Pose3d`, and its vertical field of view in degrees. */
+/** A camera for `project3d`: where it is and how it turns, as a `Pose3d` whose scale is ignored, and its vertical
+ * field of view in degrees. */
 export type Lens3d = Pose3d & { readonly fov: number };
 
 /** Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs
@@ -76,6 +77,8 @@ export function project3d(
 ): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean } {
   if (!(lens.fov > 0 && lens.fov < 180))
     throw new RangeError("project3d: fov must be above 0 and below 180.");
+  if (![point.x, point.y, point.z].every(Number.isFinite))
+    throw new RangeError("project3d: the point must be finite.");
   if (!(stage.width > 0 && stage.height > 0))
     throw new RangeError("project3d: the stage needs a size.");
   const turn = matrixFromEuler3d({

@@ -566,8 +566,8 @@ export function jointOf<const Name extends string>(
   return Object.freeze({ id: name, x: joint.x, y: joint.y, z: joint.z });
 }
 
-/** Every joint's world point under `bones`, posed as `applyBones` poses them; `root` places and turns the
- * model's parent group. Throws on a bone the table lacks. */
+/** Every joint's world point under `bones`, posed as `applyBones` poses them; `root` moves and turns the
+ * model's parent group, its scale ignored. Throws on a bone the table lacks. */
 export function posedJoints3d<const Table extends JointTable3d>(
   table: Table,
   bones: Readonly<Partial<Record<string, BonePose3d>>>,

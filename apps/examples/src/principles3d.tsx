@@ -29,7 +29,16 @@ export const Principles3d: React.FC = () => {
   const playing = usePlayer(scene, clock);
   const player = playing?.player;
   const renderRef = useRef<() => void>(() => undefined);
-  const invalidate = useCallback(() => renderRef.current(), []);
+  const pending = useRef(false);
+  // One render per step however many targets it writes: the first write queues it, the rest join it.
+  const invalidate = useCallback(() => {
+    if (pending.current) return;
+    pending.current = true;
+    queueMicrotask(() => {
+      pending.current = false;
+      renderRef.current();
+    });
+  }, []);
   const body = useTarget3d(player, "body", { invalidate });
   const stretch = useTarget3d(player, "stretch", { invalidate });
   const face = useTarget3d(player, "face", { invalidate });

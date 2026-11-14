@@ -144,6 +144,16 @@ export const DragonIntro: React.FC<{
     const lids: Group[] = [];
     let skeleton: ReturnType<typeof captureSkeleton> | undefined;
     let cancelled = false;
+    // Kept so a model that loads after the first steps still takes their poses.
+    let lastBones: Parameters<typeof applyBones>[1] = {};
+    let lastShut = 0;
+    const shutLids = (shut: number) => {
+      lastShut = shut;
+      for (const lid of lids) {
+        lid.visible = shut > 0.001;
+        lid.scale.y = Math.max(shut, 0.0001);
+      }
+    };
 
     const stops = [
       player.subscribe("lens", (pose) => {
@@ -155,15 +165,12 @@ export const DragonIntro: React.FC<{
         invalidate();
       }),
       player.subscribe("bones", (poses) => {
+        lastBones = poses;
         if (skeleton !== undefined) applyBones(skeleton, poses);
         invalidate();
       }),
       player.subscribe("blink", (pose) => {
-        const shut = pose.custom?.["shut"] ?? 0;
-        for (const lid of lids) {
-          lid.visible = shut > 0.001;
-          lid.scale.y = Math.max(shut, 0.0001);
-        }
+        shutLids(pose.custom?.["shut"] ?? 0);
         invalidate();
       }),
       player.subscribe("caption", (pose) => {
@@ -220,6 +227,8 @@ export const DragonIntro: React.FC<{
           lids.push(lid);
         }
         root.add(gltf.scene);
+        applyBones(skeleton, lastBones);
+        shutLids(lastShut);
         drawn = true;
         draw();
         onReady?.();

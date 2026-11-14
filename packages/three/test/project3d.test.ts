@@ -49,5 +49,6 @@ describe("project3d", () => {
     const behind = { x: 2 * eye.x - target.x, y: 2 * eye.y - target.y, z: 2 * eye.z - target.z };
     expect(project3d(behind, lens, STAGE).visible).toBe(false);
     expect(() => project3d(target, { ...lens, fov: 0 }, STAGE)).toThrow(RangeError);
+    expect(() => project3d({ ...target, x: Number.NaN }, lens, STAGE)).toThrow(/finite/);
   });
 });
