@@ -127,8 +127,8 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   - `ballistic(progress, { dx, dy, apex })`: the point of a throw from `(dx, dy)` to `(0, 0)` under constant gravity
     at even time steps, its highest point `apex` px above the higher end.
   - `radial(angle, distance)`: the polar offset `{ x, y }`, angle in degrees clockwise from right.
-  - `noise1d(seed)`: a function of time in ms answering -1 to 1, smooth (no step over 0.05 between ms 16 apart at the
-    default `scale` of 400 ms), the same for the same seed.
+  - `noise1d(seed)`: a function of time in ms answering -1 to 1, smooth (no step over 0.12, a smoothstep's steepest across
+    the range, between ms 16 apart at the default `scale` of 400 ms), the same for the same seed.
 - **New 2D fields, each a row of `VALUE_FIELDS` and of `POSE_2D_NUMBERS`:**
   - `skewX`, `skewY`: degrees, rest 0, add, judged as a turn. The transform is translate, then rotation, then skew,
     then scale.
