@@ -5,7 +5,14 @@ import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { briefFolders, movesFolders } from "./briefs";
-import { checkMove, describeFinding, isMove, type CheckedMove } from "./moves";
+import {
+  checkMove,
+  describeFinding,
+  descriptorsOf,
+  isMove,
+  type CheckedMove,
+  type Descriptors,
+} from "./moves";
 import { formatParts, partsImportedBy } from "./parts";
 
 /** Where a catalog entry was declared: the built-in package, or a file of the app. */
@@ -24,6 +31,11 @@ export interface MoveRecord {
   readonly parts: readonly string[];
   readonly example: { readonly options: object; readonly input?: unknown };
   readonly source: MoveSource;
+  /** The fields the move moves, in its pose's order. */
+  readonly fields: readonly string[];
+  /** The field that moves most against its review limit; the descriptors are its. */
+  readonly primary: string | undefined;
+  readonly descriptors: Descriptors | undefined;
 }
 
 /** The usage line of `motion:moves`. */
@@ -134,6 +146,7 @@ function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveReco
     parts: partsOf(name, source),
     example: move.example,
     source,
+    ...descriptorsOf(move),
   };
 }
 
