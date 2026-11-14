@@ -5,6 +5,7 @@ import {
   Euler,
   Float32BufferAttribute,
   Group,
+  Object3D,
   Quaternion,
   Skeleton,
   SkinnedMesh,
@@ -13,7 +14,7 @@ import {
 } from "three";
 import { MeshBasicMaterial } from "three";
 import { bonesOf3d, chainThrough3d, childBase3d, fk3d, ik3d } from "@gerak/rig";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, attach, captureSkeleton } from "@gerak/three/skeleton";
 
 const DEG = Math.PI / 180;
 
@@ -274,5 +275,48 @@ describe("skeleton capture and posing", () => {
     const uneven = makeArmRig(false);
     uneven.root.scale.set(1, 2, 1);
     expect(() => captureSkeleton(uneven.root)).toThrow(TypeError);
+  });
+});
+
+describe("attach", () => {
+  it("sits at the model-space point through a posed parent group and follows the bone", () => {
+    const { root, elbow } = makeArmRig(true);
+    const outer = new Group();
+    outer.add(root);
+    const skeleton = captureSkeleton(root);
+    const at = new Vector3(0.3, 1.1, 0.2);
+    const marker = new Object3D();
+    attach(skeleton, "elbow", marker, { at });
+
+    outer.rotation.y = Math.PI / 2;
+    outer.position.set(2, -1, 3);
+    outer.updateWorldMatrix(true, true);
+    const expected = at.clone().applyMatrix4(outer.matrixWorld);
+    expect(marker.getWorldPosition(new Vector3()).distanceTo(expected)).toBeLessThan(1e-9);
+
+    const before = marker.getWorldPosition(new Vector3()).distanceTo(worldPosition(elbow));
+    applyBones(skeleton, { elbow: { rotation: 50, rotationX: 20 } });
+    outer.updateWorldMatrix(true, true);
+    const after = marker.getWorldPosition(new Vector3());
+    expect(after.distanceTo(expected)).toBeGreaterThan(0.05);
+    expect(after.distanceTo(worldPosition(elbow))).toBeCloseTo(before, 9);
+  });
+
+  it("turns the object by the given model-space rotation", () => {
+    const { root } = makeArmRig(true);
+    const skeleton = captureSkeleton(root);
+    const marker = new Object3D();
+    const turn = new Quaternion().setFromEuler(new Euler(0.4, -0.7, 0.2));
+    attach(skeleton, "hand", marker, { at: new Vector3(0, 1, 0), turn });
+    root.updateWorldMatrix(true, true);
+    expect(marker.getWorldQuaternion(new Quaternion()).angleTo(turn)).toBeLessThan(1e-9);
+  });
+
+  it("throws on an unknown bone, naming it and listing known ones", () => {
+    const { root } = makeArmRig(false);
+    const skeleton = captureSkeleton(root);
+    expect(() => attach(skeleton, "tail", new Object3D(), { at: new Vector3() })).toThrow(
+      /"tail".*hips/,
+    );
   });
 });

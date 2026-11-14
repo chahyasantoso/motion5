@@ -242,3 +242,30 @@ export function applyBones(
     if (entry.parent === undefined) entry.bone.updateWorldMatrix(true, true);
   }
 }
+
+/** Parents `object` to a bone at model-space `at`, turned by model-space `turn`, from captured rest only. */
+export function attach(
+  skeleton: CapturedSkeleton,
+  bone: string,
+  object: Object3D,
+  options: { readonly at: Vector3; readonly turn?: Quaternion },
+): void {
+  const entry = skeleton.byName.get(bone);
+  if (entry === undefined) {
+    const known = skeleton.bones.slice(0, 5).map((b) => b.name);
+    const more = skeleton.bones.length > known.length ? ", ..." : "";
+    throw new RangeError(
+      `attach: unknown bone "${bone}"; known bones include ${known.join(", ")}${more}.`,
+    );
+  }
+  const inverse = scratchInvParent.copy(entry.restWorldQuaternion).invert();
+  object.position
+    .copy(options.at)
+    .sub(scratchOffset.set(entry.joint.x, entry.joint.y, entry.joint.z))
+    .applyQuaternion(inverse)
+    .divide(entry.restParentWorldScale);
+  object.quaternion.copy(inverse);
+  if (options.turn !== undefined) object.quaternion.multiply(options.turn);
+  object.quaternion.normalize();
+  entry.bone.add(object);
+}
