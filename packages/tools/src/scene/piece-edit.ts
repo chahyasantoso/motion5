@@ -1,3 +1,4 @@
+import { DEFAULT_FRAME } from "@gerak/stage";
 import ts from "typescript";
 
 /** What to add to a piece: cast members as source lines, skin rules, and paint-server markup. */
@@ -112,15 +113,20 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   );
   const refuse = (message: string): PieceEdit => ({ kind: "refused", message });
 
+  // A piece with no `frame` plays in the stage's default one.
   const frameNode = exportedConst(file, "frame");
   const width =
-    frameNode !== undefined && ts.isObjectLiteralExpression(frameNode)
-      ? numberIn(frameNode, "width")
-      : undefined;
+    frameNode === undefined
+      ? DEFAULT_FRAME.width
+      : ts.isObjectLiteralExpression(frameNode)
+        ? numberIn(frameNode, "width")
+        : undefined;
   const height =
-    frameNode !== undefined && ts.isObjectLiteralExpression(frameNode)
-      ? numberIn(frameNode, "height")
-      : undefined;
+    frameNode === undefined
+      ? DEFAULT_FRAME.height
+      : ts.isObjectLiteralExpression(frameNode)
+        ? numberIn(frameNode, "height")
+        : undefined;
   if (width === undefined || height === undefined)
     return refuse("The piece's `frame` is not an object literal with a numeric width and height.");
 

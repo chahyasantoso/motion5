@@ -3,11 +3,16 @@ import { addToPiece, type PieceAddition } from "../src/scene/piece-edit";
 
 const css = (rules: string): string => `\`\n${rules}\n\``;
 
-function piece(parts: { cast?: string; css?: string; defs?: string; frame?: string }): string {
+function piece(parts: {
+  cast?: string;
+  css?: string;
+  defs?: string;
+  frame?: string | null;
+}): string {
   const defs = parts.defs === undefined ? "" : `\n    defs: \`${parts.defs}\`,`;
   return `import { actor, story } from "@gerak/stage";
 
-export const frame = ${parts.frame ?? "{ width: 100, height: 80 }"};
+${parts.frame === null ? "" : `export const frame = ${parts.frame ?? "{ width: 100, height: 80 }"};`}
 
 export const cast = ${parts.cast ?? `{\n  "a": actor({ still: true }),\n}`};
 
@@ -76,5 +81,11 @@ describe("addToPiece", () => {
     );
     expect(refused(piece({ css: "style()" }))).toMatch(/css/);
     expect(refused(piece({ frame: "size()" }))).toMatch(/frame/);
+  });
+
+  it("reads a piece with no frame as the stage's default 1280 by 720", () => {
+    const result = addToPiece(piece({ frame: null }), added);
+    if (result.kind !== "edited") throw new Error(result.message);
+    expect(result.frame).toEqual({ width: 1280, height: 720 });
   });
 });

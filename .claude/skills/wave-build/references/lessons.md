@@ -45,3 +45,5 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-14 | live-inputs 1 | Conductor | not shown | 1 (a cost test that passed without the cache it guards) |
 | 2026-11-14 | live-inputs 2 | 3 Sonnet | 192k + 93k + 77k, 170 calls, 14 min | 1 (a sliced symbol's lost clip, noted and tested) |
 | 2026-11-14 | live-inputs 3 | Sonnet | 121k, 55 calls, 7 min | 1 (imported parts painted under the piece's own) |
+| 2026-11-14 | live-inputs 4 measure | Opus | 213k, 136 calls, 22 min | 1 (`--into` refused a piece with no frame) |
+| 2026-11-14 | live-inputs 4 cold review | Sonnet | 98k, 13 calls, 2 min | 2 of 9 fixed (follow cache, data-id) |
