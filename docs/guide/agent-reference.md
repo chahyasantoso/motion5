@@ -599,7 +599,7 @@ return <mesh ref={ball} />;
 ## @gerak/three/react
 
 <!-- generated:reference:start -->
-- **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<…`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest.
+- **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<… (+1 overloads)`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest. With `at`, binds only the `at`th pose of a list target; a missing index writes nothing, a bad one throws.
 <!-- generated:reference:end -->
 
 ## @gerak/three/skeleton
@@ -607,6 +607,7 @@ return <mesh ref={ball} />;
 <!-- generated:reference:start -->
 - **`captureSkeleton`** `(source: Object3D<Object3DEventMap> | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
 - **`applyBones`** `(skeleton: CapturedSkeleton, poses: Readonly<Record<string, Pose3d>>): void`: Applies per-bone `Pose3d` deltas (from `bonesOf3d` or hand-keyed) relative to rest, resetting omitted bones.
+- **`attach`** `(skeleton: CapturedSkeleton, bone: string, object: Object3D<Object3DEventMap>, options: { readonly at: Vector3; readonly turn?: Quaternion;…`: Parents `object` to a bone at model-space `at`, turned by model-space `turn`, from captured rest only.
 - **`CapturedBone`** `type CapturedBone`: A captured Three.js bone with its rest local and world transforms and its world rest joint.
 - **`CapturedSkeleton`** `type CapturedSkeleton`: A Three.js skeleton captured at rest: bones parent-before-child, lookup by name, and world rest joints.
 <!-- generated:reference:end -->
@@ -674,6 +675,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
+- **`motion:fps <page> [--to ms] [--size WxH] [--show]`**: runs the page on the machine's real clock for `--to` ms
+  (default 10000) and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
+  second per 500 ms window, frame gaps over 16.7 and 33.4 ms, the five slowest frames split into `scene`, `write` and
+  `rest` ms, and the WebGL renderer. Headless frames run uncapped (`vsync: false`); `--show` opens a window with a counter.
 - **`motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
   its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
   that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing
