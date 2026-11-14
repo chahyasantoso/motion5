@@ -7,6 +7,7 @@ const SCALE_TOLERANCE = 1e-3;
 
 const scratchPos = new Vector3();
 const scratchScale = new Vector3();
+const scratchParentScale = new Vector3();
 const scratchWorldQuat = new Quaternion();
 const scratchParentQuat = new Quaternion();
 const scratchInvParent = new Quaternion();
@@ -23,6 +24,7 @@ export type CapturedBone = {
   readonly restQuaternion: Readonly<Quaternion>;
   readonly restWorldQuaternion: Readonly<Quaternion>;
   readonly restParentWorldQuaternion: Readonly<Quaternion>;
+  readonly restParentWorldScale: Readonly<Vector3>;
   readonly joint: Joint3d;
 };
 
@@ -31,6 +33,7 @@ export type CapturedSkeleton = {
   readonly bones: readonly CapturedBone[];
   readonly byName: ReadonlyMap<string, CapturedBone>;
   readonly joints: Readonly<Record<string, Joint3d>>;
+  joint<Name extends string>(name: Name): Joint3d<Name>;
 };
 
 function isFiniteVec3(v: Vector3): boolean {
@@ -42,6 +45,17 @@ function isUnitScale(v: Vector3): boolean {
     Math.abs(v.x - 1) <= SCALE_TOLERANCE &&
     Math.abs(v.y - 1) <= SCALE_TOLERANCE &&
     Math.abs(v.z - 1) <= SCALE_TOLERANCE
+  );
+}
+
+function isUniformPositiveScale(v: Vector3): boolean {
+  return (
+    Number.isFinite(v.x) &&
+    Number.isFinite(v.y) &&
+    Number.isFinite(v.z) &&
+    v.x > SCALE_TOLERANCE &&
+    Math.abs(v.x - v.y) <= SCALE_TOLERANCE * v.x &&
+    Math.abs(v.x - v.z) <= SCALE_TOLERANCE * v.x
   );
 }
 
@@ -125,16 +139,23 @@ export function captureSkeleton(source: Object3D | Skeleton): CapturedSkeleton {
     if (!isFiniteVec3(bone.position) || !isFiniteVec3(scratchPos)) {
       throw new TypeError(`captureSkeleton: bone "${bone.name}" has non-finite position.`);
     }
-    if (!isUnitScale(scratchScale)) {
+    if (!isUniformPositiveScale(scratchScale)) {
       throw new TypeError(
-        `captureSkeleton: bone "${bone.name}" has non-unit world scale (${scratchScale.toArray().join(", ")}).`,
+        `captureSkeleton: bone "${bone.name}" has non-uniform or non-positive world scale (${scratchScale.toArray().join(", ")}).`,
       );
     }
 
-    if (bone.parent === null) scratchParentQuat.identity();
-    else {
-      bone.parent.matrixWorld.decompose(scratchOffset, scratchParentQuat, scratchScale);
+    if (bone.parent === null) {
+      scratchParentQuat.identity();
+      scratchParentScale.set(1, 1, 1);
+    } else {
+      bone.parent.matrixWorld.decompose(scratchOffset, scratchParentQuat, scratchParentScale);
       scratchParentQuat.normalize();
+      if (!isUniformPositiveScale(scratchParentScale)) {
+        throw new TypeError(
+          `captureSkeleton: parent of bone "${bone.name}" has non-uniform or non-positive world scale (${scratchParentScale.toArray().join(", ")}).`,
+        );
+      }
     }
 
     const parentBone = parentBoneOf(bone, memberSet);
@@ -153,6 +174,7 @@ export function captureSkeleton(source: Object3D | Skeleton): CapturedSkeleton {
       restQuaternion: bone.quaternion.clone(),
       restWorldQuaternion: scratchWorldQuat.clone().normalize(),
       restParentWorldQuaternion: scratchParentQuat.clone(),
+      restParentWorldScale: scratchParentScale.clone(),
       joint,
     });
     bones.push(entry);
@@ -165,6 +187,18 @@ export function captureSkeleton(source: Object3D | Skeleton): CapturedSkeleton {
     bones: Object.freeze(bones),
     byName,
     joints: Object.freeze(joints),
+    joint<Name extends string>(name: Name): Joint3d<Name> {
+      const entry = byName.get(name);
+      if (entry === undefined) {
+        throw new RangeError(`captureSkeleton: unknown bone "${name}".`);
+      }
+      return Object.freeze({
+        id: name,
+        x: entry.joint.x,
+        y: entry.joint.y,
+        z: entry.joint.z,
+      });
+    },
   });
 }
 
@@ -188,7 +222,10 @@ export function applyBones(
       entry.bone.position.copy(entry.restPosition);
     } else {
       scratchInvParent.copy(entry.restParentWorldQuaternion).invert();
-      scratchOffset.set(dx, dy, dz).applyQuaternion(scratchInvParent);
+      scratchOffset
+        .set(dx, dy, dz)
+        .applyQuaternion(scratchInvParent)
+        .divide(entry.restParentWorldScale);
       entry.bone.position.copy(entry.restPosition).add(scratchOffset);
     }
 

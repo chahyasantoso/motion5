@@ -57,10 +57,12 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`) and resolve the asset URL from the component with
   `new URL("../references/RobotExpressive.glb", import.meta.url).href` (or another file in that folder).
 - **Capturing the skeleton:** call `captureSkeleton(gltf.scene)` from `"@gerak/three/skeleton"` once
-  after loading. It records parent-before-child bone order, rest local positions/quaternions, and
-  `skeleton.joints` in world coordinates.
-- **Posing chains in 3D:** build a typed bone chain from `skeleton.joints` or hand-authored `Joint3d`
-  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArm: goal }, { pole })`,
+  after loading. It records parent-before-child bone order, rest local positions/quaternions (supporting
+  uniform positive scale on ancestor container nodes), and `skeleton.joints` in world coordinates. Look up
+  specific bones with `skeleton.joint("UpperArmR")`: it returns a typed `Joint3d<"UpperArmR">` even under
+  `noUncheckedIndexedAccess` and throws a `RangeError` if the bone is missing.
+- **Posing chains in 3D:** build a typed bone chain from `skeleton.joint(...)` or hand-authored `Joint3d`
+  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArmR: goal }, { pole })`,
   and convert to per-bone delta poses with `bonesOf3d(arm, solved)` (or compute FK frames with `fk3d` /
   `chainFromRest3d` for separate rigid objects bound via `useTarget3d`).
 - **Writing bones:** call `applyBones(skeleton, poses)` from `"@gerak/three/skeleton"` inside
@@ -71,6 +73,16 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - **Morph targets (blend shapes):** create `const writer = morphTargets(gltf.scene)` from `"@gerak/three"`
   once, author blend weights under `pose.custom` (`{ custom: { smile: 0.8 } }`, clamped to `[0, 1]`), and
   pass `writer` as the fourth argument to `applyPose3d(gltf.scene, pose, rest, writer)`.
+- **Speech and sampled cues:** import speech samples (such as `apps/pieces/references/talk.json` via
+  `with { type: "json" }`) and export them as `cues` alongside `clock` (and pass them into
+  `usePlayer(scene, clock, cues)` or `play(scene, clock(), { cues })`). Drive morph weights (`pose.custom`) or a
+  jaw/head bone from `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)` so the character
+  articulates smoothly from live or recorded samples.
+- **Readiness before 0 ms capture:** set `window.__motionReady` to a `Promise` at module top level before any
+  `await`, and resolve it only after every `.glb` asset has loaded, `useTarget3d` and `player.subscribe(...)` have
+  written initial poses and bones, and `renderer.render(stage, lens)` has drawn the first frame. Headless tools
+  (`motion:frames`, `motion:review`) await `window.__motionReady` before capturing `0 ms`, preventing blank frames
+  when using `GLTFLoader` or top-level `await rapierEngine3d()`.
 
 ## Bodies in depth
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   AmbientLight,
   Bone,
@@ -35,10 +35,22 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const UP = new Vector3(0, 1, 0);
 
+let markReady: () => void = () => undefined;
+if (typeof window !== "undefined") {
+  Reflect.set(
+    window,
+    "__motionReady",
+    new Promise<void>((resolve) => {
+      markReady = resolve;
+    }),
+  );
+}
+
 interface CharacterRig {
   readonly root: Group;
   readonly skeleton: CapturedSkeleton;
   readonly writer: CustomWriter;
+  readonly render: () => void;
 }
 
 function linkMesh(
@@ -92,8 +104,10 @@ function addMorphBox(
 export const Character3d: React.FC = () => {
   const playing = usePlayer(scene, clock);
   const player = playing?.player;
-  const ball = useTarget3d(player, "ball");
-  const camera = useTarget3d(player, "camera");
+  const renderRef = useRef<() => void>(() => undefined);
+  const invalidate = useCallback(() => renderRef.current(), []);
+  const ball = useTarget3d(player, "ball", { invalidate });
+  const camera = useTarget3d(player, "camera", { invalidate });
   const host = useRef<HTMLDivElement>(null);
   const [rig, setRig] = useState<CharacterRig | null>(null);
 
@@ -266,17 +280,20 @@ export const Character3d: React.FC = () => {
 
     const skeleton = captureSkeleton(characterRoot);
     const writer = morphTargets(characterRoot);
-    setRig({ root: characterRoot, skeleton, writer });
+    const render = () => renderer.render(stage, lens);
+    renderRef.current = render;
+    setRig({ root: characterRoot, skeleton, writer, render });
 
     ball(ballMesh);
     camera(lens);
 
     let frame = requestAnimationFrame(function draw() {
-      renderer.render(stage, lens);
+      render();
       frame = requestAnimationFrame(draw);
     });
     return () => {
       cancelAnimationFrame(frame);
+      renderRef.current = () => undefined;
       setRig(null);
       ball(null);
       camera(null);
@@ -289,10 +306,16 @@ export const Character3d: React.FC = () => {
 
   useEffect(() => {
     if (player === undefined || rig === null) return undefined;
-    const stopBones = player.subscribe("bones", (poses) => applyBones(rig.skeleton, poses));
-    const stopChar = player.subscribe("character", (pose) =>
-      applyPose3d(rig.root, pose, undefined, rig.writer),
-    );
+    const stopBones = player.subscribe("bones", (poses) => {
+      applyBones(rig.skeleton, poses);
+      rig.render();
+    });
+    const stopChar = player.subscribe("character", (pose) => {
+      applyPose3d(rig.root, pose, undefined, rig.writer);
+      rig.render();
+    });
+    rig.render();
+    markReady();
     return () => {
       stopBones();
       stopChar();

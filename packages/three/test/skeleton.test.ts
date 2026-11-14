@@ -197,4 +197,52 @@ describe("skeleton capture and posing", () => {
     expect(() => applyBones(skeleton, { unknownBone: { rotation: 10 } })).toThrow(RangeError);
     expect(() => applyBones(skeleton, { unknownBone: { rotation: 10 } })).toThrow(/unknownBone/);
   });
+
+  it("supports uniform positive ancestor scale and typed skeleton.joint lookups while refusing non-uniform scale", () => {
+    const scaledParent = makeArmRig(true);
+    const armature = new Group();
+    armature.rotation.x = -Math.PI / 2;
+    armature.scale.setScalar(100);
+    scaledParent.hips.position.multiplyScalar(0.01);
+    scaledParent.spine.position.multiplyScalar(0.01);
+    scaledParent.shoulder.position.multiplyScalar(0.01);
+    scaledParent.elbow.position.multiplyScalar(0.01);
+    scaledParent.hand.position.multiplyScalar(0.01);
+    scaledParent.root.remove(scaledParent.hips);
+    armature.add(scaledParent.hips);
+    scaledParent.root.add(armature);
+
+    const skeleton = captureSkeleton(scaledParent.root);
+    const shoulderJoint = skeleton.joint("shoulder");
+    const elbowJoint = skeleton.joint("elbow");
+    const handJoint = skeleton.joint("hand");
+    expect(shoulderJoint.id).toBe("shoulder");
+
+    const arm = chainThrough3d([shoulderJoint, elbowJoint, handJoint]);
+    const solved = ik3d(arm, { elbow: { x: 0.4, y: 0.5, z: -1.2 } });
+    const fkFrames = fk3d(arm, solved);
+
+    const beforeHips = worldPosition(scaledParent.hips);
+    applyBones(skeleton, {
+      ...bonesOf3d(arm, solved),
+      hips: { x: 0.5, y: -0.25, z: 0.4 },
+    });
+    const afterHips = worldPosition(scaledParent.hips);
+    expect(afterHips.x - beforeHips.x).toBeCloseTo(0.5, 5);
+    expect(afterHips.y - beforeHips.y).toBeCloseTo(-0.25, 5);
+    expect(afterHips.z - beforeHips.z).toBeCloseTo(0.4, 5);
+
+    applyBones(skeleton, bonesOf3d(arm, solved));
+    const handPos = worldPosition(scaledParent.hand);
+    expect(handPos.x).toBeCloseTo(fkFrames.elbow.x, 4);
+    expect(handPos.y).toBeCloseTo(fkFrames.elbow.y, 4);
+    expect(handPos.z).toBeCloseTo(fkFrames.elbow.z, 4);
+
+    expect(() => skeleton.joint("missing")).toThrow(RangeError);
+    expect(() => skeleton.joint("missing")).toThrow(/missing/);
+
+    const uneven = makeArmRig(false);
+    uneven.root.scale.set(1, 2, 1);
+    expect(() => captureSkeleton(uneven.root)).toThrow(TypeError);
+  });
 });
