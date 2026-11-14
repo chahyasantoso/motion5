@@ -552,7 +552,8 @@ sim.place(`bit${click.at}`, time, events);
 - **`BodyState3d`** `type BodyState3d`: A 3D body's world position, orientation quaternion, linear velocity, and angular velocity (deg/s).
 - **`Collider`** `type Collider`: A collider that never moves: the line bodies rest on, a side that keeps them in, or a ramp.
 - **`Collider3d`** `type Collider3d`: A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box.
-- **`Contact`** `type Contact`: Two things that started touching during a step: body ids, or a body id and a collider id.
+- **`Contact`** `type Contact`: Two things that started touching during a step, and where: body ids, or a body id and a collider id, and the point in stage px.
+- **`Contact3d`** `type Contact3d`: A 3D contact: the pair that started touching and the point where they met, in scene units.
 - **`PhysicsWorld`** `type PhysicsWorld`: What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise.
 - **`PhysicsWorld3d`** `type PhysicsWorld3d`: What a 3D physics engine gives a scene: world units, y up, quaternions and degrees a second.
 - **`Quaternion3d`** `type Quaternion3d`: A unit quaternion `{ w, x, y, z }` representing a 3D orientation.

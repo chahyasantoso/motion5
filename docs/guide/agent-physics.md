@@ -27,8 +27,10 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
   move each with `sim.place(id, time, events)`, which is at opacity 0 until its body exists; `sim.bodies` lists ids.
 - Contacts are events: `sim.events(time, events)` holds a `contact` per body. Merge them with
   `mergeEvents(events, sim.events(time, events))` and answer with `react`, since rigid bodies never squash. A
-  `contact` names only the body (`target`) and its time (`at`), not the point or what it hit; read where the body was
-  then with `sim.at(timeAt(time, hit.at), events)`. Its first contact may be with anything, not only the floor.
+  `contact` names the body (`target`), its time (`at`), where it touched (`point`, `{ x, y }` in px, with `z` in 3D
+  in world units) and what it hit (`other`, a body or collider id). Place a mark at a landing from the event itself;
+  never seek the simulation back to learn where a body was. Its first contact may be with anything, so pick the one
+  whose `other` you mean.
 - A body that stays within 1 px for half a second sleeps, so a heap comes to rest. Mark bodies that rest on each other
   `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.

@@ -11,7 +11,9 @@ not listed here, treat it as internal even when a workspace checkout lets you im
 2. [Live editing](./live.md): `motion:live`, hot-swapping scenes in place, the timeline, and dragging numbers in code.
 3. [Making motion as an agent](./agent-motion.md): code scenes of moves on a player, and the review loop.
 4. [Events](./agent-events.md), [physics](./agent-physics.md), [rigs](./agent-rigs.md),
-   [motion principles](./agent-principles.md) and [3D scenes](./agent-3d.md): the parts a brief may need.
+   [motion principles](./agent-principles.md), [3D scenes](./agent-3d.md), [writing a move](./agent-moves.md),
+   [layout](./agent-layout.md), [artwork](./agent-artwork.md), [live inputs](./agent-inputs.md) and
+   [outside the stage](./agent-outside.md): the parts a brief may need.
 5. [Agent reference](./agent-reference.md): every function, type and command a scene uses, each with a short example.
 
 ## Status of this guide
