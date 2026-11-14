@@ -45,7 +45,7 @@ export {
   type ValueField,
 } from "./pose";
 export { combine3d, lift2d, mixPoint3d, mixPose3d, squashed3d, type Pose3d } from "./pose3d";
-export { aim, orbit } from "./stage3d";
+export { aim, orbit, project3d, type Lens3d } from "./stage3d";
 export type { Anchor2d, Cubic2d, Point2d } from "./shapes";
 export { toCubics } from "./path";
 export { along } from "./along";
