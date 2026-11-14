@@ -179,14 +179,17 @@ const slide = defineMove({
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with no jump; pure in time and events, a later call goes on from the last.
-- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y` and a `value`.
+- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, `z`, a `value` and an `other`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
+- **`tally`** `(options: TallyOptions): Tally`: The area under held samples up to any time: each counted event holds its value until the next, read from a table built once per list and extended when a live list grows by appending.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
 - **`FollowOptions`** `type FollowOptions`: Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own), `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001).
 - **`MotionEvent`** `type MotionEvent`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.
 - **`ReactionKind`** `type ReactionKind`: How a response to one event moves: from a full start, from rest, as a fade, or as a shake.
 - **`ReactOptions`** `type ReactOptions`: Settings of a `react`: event names `on`, `target`, `kind`, `amplitude`, `decay` (default 6 a second) and `frequency` (4 a second).
+- **`Tally`** `type Tally`: The area under held samples so far, in value-seconds: `total(events)` is the whole stream's, up to its last counted event, so `tally / total` is how far through it the stream is.
+- **`TallyOptions`** `type TallyOptions`: Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own) and `target`.
 - **`lane`** `(time: Time, index: number, of: Lanes): Time`: Lane `index` run inside `time`: its progress, and a timed clock split among the lanes.
 - **`laneTime`** `(position: number, index: number, of: Lanes, durationMs?: number): Time`: Lane `index` at overall `position`; with `durationMs` its clock is that lane's own window, in ms.
 - **`lanes`** `(lengths: readonly number[], stagger: number, options?: LanesOptions): Lanes`: Lanes of these relative lengths, each starting `stagger` after the one before it in the order `from` gives.

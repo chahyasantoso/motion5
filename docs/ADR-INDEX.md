@@ -188,3 +188,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-181 — Live inputs — Accepted, 2026-11-14
 - ADR-182 — Rigged 3D characters and bodies in depth — Accepted, 2026-11-14
 - ADR-183 — 2D over 3D on one clock — Accepted, 2026-11-14
+- ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
