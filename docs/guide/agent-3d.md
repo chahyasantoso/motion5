@@ -136,10 +136,17 @@ sample, review and scrub with everything else.
 - **Reviewing a mixed scene:** export `limits`, target name to `{ jump?, turn?, ratio? }`: the 3D targets get a jump
   about a fifth of the subject's size and `turn: 30`, the px labels keep the command's defaults. A `custom` number
   is judged as a ratio.
+- **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a target and
+  read them on the page in `player.subscribe`; the review judges them as ratios.
 - **A model without eyelids:** add a lid per eye on the page, a mesh in the skin colour attached to the eye's bone,
-  placed from the model's eye file in `apps/pieces/references/` (each iris's box in model units). Drive it from a
-  custom number (0 open, 1 shut). Random blinks come from `seeded(n)` from `"@gerak/moves"`, drawn once at the top of
-  the scene module so every play and seek blinks at the same times.
+  placed from the model's eye file in `apps/pieces/references/` (each iris's box in model units). The box's centre
+  lies inside the head: the eye's front surface is near `z + depth / 2`. Attach the lids before the model joins a
+  group the scene poses, since `worldToLocal` reads the parents' current matrices. Drive them from a custom number (0
+  open, 1 shut) and hide them when open. Random blinks come from `seeded(n)` from `"@gerak/moves"`, drawn once at the
+  top of the scene module so every play and seek blinks at the same times.
+- **Ending at rest:** the review asks every target to hold still before the end. A `follow` keeps settling after its
+  last sample, and an idle sway never stops by itself: end the samples early, raise `follow`'s stiffness or give it a
+  `rest`, and fade idle loops out before the final hold.
 
 ## Limits
 

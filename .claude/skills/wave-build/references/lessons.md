@@ -20,3 +20,6 @@ Measured over 40 waves, 2026-11-11 to 11-14; the rows are in git history. The le
 - Fixed on combining: 0 to 3 per wave once briefs follow the template.
 
 Add a line here only when a wave falls outside these ranges, or a new kind of worker or model is tried.
+
+- 2026-11-14, overlay measure `dragon-intro` on Sonnet at medium effort: 214k, 106 calls, 22 min. It passed; a
+  10 s piece with five beats costs a cheap worker an Opus-sized budget, mostly in render rounds for eyelids and holds.

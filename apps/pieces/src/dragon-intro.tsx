@@ -67,8 +67,8 @@ const Mark: React.FC<MarkProps> = ({ player, name, className, children }) => {
   );
 };
 
-/** Builds the Three.js stage, loads the dragonling, binds each target, and draws after a step writes any of them.
- * `onReady` runs once the model has loaded and one frame has drawn; `onError` when it fails to load. */
+/** Builds the stage, loads the dragonling, binds each target and draws after each write; `onReady` runs once the
+ * model has loaded and one frame has drawn, `onError` when it fails to load. */
 export const DragonIntro: React.FC<{
   readonly onReady?: () => void;
   readonly onError?: (reason: unknown) => void;

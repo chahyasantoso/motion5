@@ -26,7 +26,9 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
   Every event's bodies share one world. Render a fixed pool of elements centred on the stage's top left corner, and
   move each with `sim.place(id, time, events)`, which is at opacity 0 until its body exists; `sim.bodies` lists ids.
 - Contacts are events: `sim.events(time, events)` holds a `contact` per body. Merge them with
-  `mergeEvents(events, sim.events(time, events))` and answer with `react`, since rigid bodies never squash.
+  `mergeEvents(events, sim.events(time, events))` and answer with `react`, since rigid bodies never squash. A
+  `contact` names only the body (`target`) and its time (`at`), not the point or what it hit; read where the body was
+  then with `sim.at(timeAt(time, hit.at), events)`. Its first contact may be with anything, not only the floor.
 - A body that stays within 1 px for half a second sleeps, so a heap comes to rest. Mark bodies that rest on each other
   `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.
