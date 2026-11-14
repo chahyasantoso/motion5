@@ -164,6 +164,13 @@ const slide = defineMove({
 - **`spring`** `(offset: number, speed: number, seconds: number, options: SpringOptions): SpringState`: Where a spring is, `seconds` after it left `offset` from its goal at `speed`, and how fast it goes.
 - **`SpringOptions`** `type SpringOptions`: A unit-mass spring: pull towards its goal per second squared, and drag on its speed per second.
 - **`SpringState`** `type SpringState`: Where a spring is from its goal, and how fast it moves, in units and units a second.
+- **`wave`** `(progress: number, count: number, phase?: number): number`: How far along a sine swing is: the sine of `count` full cycles over progress 0 to 1, shifted by `phase` in turns.
+- **`arch`** `(progress: number): number`: How strong a swing is when it rises then falls: 0 at progress 0, 1 at the middle, 0 at 1.
+- **`attack`** `(progress: number, rate: number): number`: How much of a swing has built up when it rises exponentially: 0 at progress 0, approaching 1 at `rate`.
+- **`decay`** `(progress: number, rate: number): number`: How much of a swing is left when it dies away exponentially: 1 at progress 0, falling at `rate`.
+- **`taper`** `(progress: number, power: number): number`: How much of a swing is left when it shrinks to nothing: 1 at progress 0 down to 0 at 1, shaped by `power`.
+- **`ballistic`** `(progress: number, options: BallisticOptions): { x: number; y: number; }`: Where a thrown thing is at progress 0 to 1: from (dx, dy) to (0, 0) under constant gravity, peaking `apex` px above the higher end.
+- **`BallisticOptions`** `type BallisticOptions`: The throw's shape: start offset `dx` and `dy`, and how many px above the higher end it peaks.
 - **`trail`** `(signal: (time: Time, events: Events) => number, options: TrailOptions): (time: Time, events: Events) => number`: A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's time: the signal applies its own spans and eases.
 - **`TrailOptions`** `type TrailOptions`: Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and `rest`, the distance under which it sits on the signal.
 - **`trailTurn`** `(signal: (time: Time, events: Events) => Pose3d, options: TrailOptions): (time: Time, events: Events) => Pose3d`: A turn chasing a `Pose3d` signal's turn on a spring, the short way round, resting exactly on it; pass the scene's time. Trail a position with three `trail` calls.
@@ -177,6 +184,7 @@ const slide = defineMove({
 - **`sequence`** `<R>(time: Time, phases: readonly Phase<R>[]): R`: Answers the last phase that started, given its own time: an ended phase holds its end, before the first the first holds its start. An empty list throws.
 - **`Phase`** `type Phase`: One phase of a sequence: the span it runs in, and what it answers given its own time there.
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
+- **`noise1d`** `(seed: number, scale?: number): (ms: number) => number`: A smooth wandering value from -1 to 1 over time in ms, easing to a fresh seeded target every `scale` ms; the same seed wanders the same.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with no jump; pure in time and events, a later call goes on from the last.
 - **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a `value`, a `point` of numbers and an `other`.
@@ -225,6 +233,7 @@ const slide = defineMove({
 - **`Point2d`** `type Point2d`: A named point in px.
 - **`toCubics`** `(anchors: readonly Anchor2d[]): readonly Cubic2d[]`: One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
 - **`along`** `(cubics: readonly Cubic2d[], share: number, options?: { readonly turn?: boolean; }): Pose2d`: The `{ x, y }` pose `share` of the way along a path by distance, from the target's rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
+- **`radial`** `(angle: number, distance: number): { x: number; y: number; }`: Where a point `distance` away sits at `angle` degrees clockwise from the right, with y pointing down.
 - **`velocity`** `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; }`: The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`; zero with no clock.
 - **`smear`** `(velocity: { readonly vx: number; readonly vy: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: P…`: Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90]. Content that must not turn goes in an inner element posed `{ rotation: -heading }`.
 - **`squashFromSpeed`** `(speed: { readonly vx: number; readonly vy: number; }, options: SquashFromSpeedOptions): Pose2d`: A pose stretched along the heading of a px/s `speed` and squashed across it, `amount` per px/s up to `most`; empty at zero speed. Rotation is the heading in (-90, 90].
@@ -638,10 +647,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
   `<root>/*/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
-  `recipe` a move names. `<id>` prints
+  building blocks its file imports. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
-  an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
-  moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
+  an id declared twice) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
+  moves, by the folder that declares them, each with its call shape and the first sentence of its doc comment; `--candidates` lists the local moves that pass the gate
   and are used by two or more briefs of `<root>` (the folders holding a `src`), one line each: id, file, briefs.
 - **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/<brief>/src/moves` into
   `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
