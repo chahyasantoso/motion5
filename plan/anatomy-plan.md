@@ -157,13 +157,15 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   - `windup`: travelling, the greatest move away from rest before the main move, as a share; oscillating, 0;
   - `settle`: the share of the run from the first crossing of rest (travelling) or the greatest offset
     (oscillating) until the offset stays within 2% of its greatest.
-  The move's **primary field** is the one with the greatest offset over its judged kind's default review limit
-  (`jump` 30 px, `turn` 150, `ratio` 1.5); its descriptors are the move's.
+  The move's **primary field** is the one with the greatest offset over its judged kind's default review limit, read
+  from the review's own defaults (`DEFAULT_LIMITS.jump`, `SCENE_LIMITS.turn`, `SCENE_LIMITS.ratio`); its descriptors
+  are the move's.
 - **One search over every declared source.** A project names its sources of moves, in order, in its app's
   `package.json`: `"gerak": { "moves": ["@gerak/moves", "./*/src/moves"], "promoteTo": "<folder or package>" }`.
   A source is a package that exports moves or a folder glob; with none declared, the list above is the default. In
   this repository `apps/pieces/package.json` declares that list and `promoteTo` is `packages/moves/src/moves`; a
-  project elsewhere starts with only `@gerak/moves` and promotes into a folder of its own. Each move is tagged with
+  project elsewhere starts with only `@gerak/moves` and promotes into a folder it names, and with no `promoteTo`
+  `motion:promote` refuses, naming the setting. Each move is tagged with
   its source: the package's name, `own` for the brief named by `--in <brief>`, or the other brief's folder name. Ids
   are unique within a source; two sources with one id are told apart as `<source>/<id>`. Moves are code meant for
   reuse, unlike pieces, so other briefs' and installed packs' moves are offered like any other; importing a move
@@ -189,8 +191,8 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   and `--far`; words matched for `--find`), then by id with the source as no factor, so a library move is not
   preferred because it is a library move. How often a move is used shows only in its full entry and in
   `--candidates`, since ranking by use makes every brief pick the same few.
-- **Reuse found at writing time.** When `motion:new -- --move` or the gate meets a new move within the duplicate
-  distance of an existing one, library or any brief's, its finding says which and how to import it: "close to `jolt`
+- **Reuse found at writing time.** When the gate (`motion:moves -- --check`, which writing a move ends with) meets a
+  move within the duplicate distance of an existing one, library or any brief's, its finding says which and how to import it: "close to `jolt`
   (showreel): import it instead, or change what makes yours differ".
 - **Near-duplicates are found.** Two moves with one role and one primary field within distance 0.02 of each other
   are a gate finding naming both, whichever sources they come from. Pairs found today go in
@@ -264,18 +266,20 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 - **Invariant:** `anticipate`, `overshoot`, `nod`, `pulse`, `swing` and the showreel's and penguin's `bump`,
   `hand-wave`, `jolt`, `launch`, `spring-settle`, `squish` and `waddle` call `wave` and the envelopes in place of
   `Math.sin`, `Math.cos` and `Math.exp`, matching their samples at every example and option set within 1e-9; `lob`
-  and `ballistic` call `ballistic`, matching within 1e-6 or named with every piece using them reviewed clean; the
-  local `tint` moves the `tint` field; then a `custom` name equal to a field's name is refused.
-- **Owner:** `packages/moves/src/moves/`, `apps/pieces/{showreel,penguin}/src/moves/`, `fields/pose.ts` (the
-  refusal).
+  and `ballistic` call `ballistic`, converting their `apex` (a Bézier control height) to the
+  part's true peak so their samples match within 1e-9; the local `tint` stays a ramp of a named custom number, since
+  five showreel pieces mix their own named colours with it, and its description points to the `tint` field for new
+  colour work; a `custom` name equal to a field's name is refused where `applyValue` checks custom names.
+- **Owner:** `packages/moves/src/moves/`, `apps/pieces/{showreel,penguin}/src/moves/`, `packages/dom/src/render.ts`
+  (the refusal).
 - **Test:** sample comparison per move; a repo test that no file in a `moves/` folder calls `Math.sin`, `Math.cos`
   or `Math.exp`.
 
 ### A7. Descriptors and the catalog (executor, after A1b and A6)
 
 - **Invariant:** as decided. **Owner:** `packages/tools/src/scene/moves.ts` (descriptors), `catalog.ts` (sources
-  from `package.json`, the index, `query`, ranking, the summary, the quality table), `new.ts` and the gate (the
-  duplicate finding at writing time), `promote.ts` (`promoteTo` and the refusal), `scripts/duplicate-baseline.json`,
+  from `package.json`, the index, `query`, ranking, the summary, the quality table), the gate (the duplicate
+  finding), `promote.ts` (`promoteTo` and the refusal), `scripts/duplicate-baseline.json`,
   `packages/tools/bin/motion-moves.mjs`, `apps/pieces/package.json` (its `gerak` entry).
 - **Test:**
   - descriptors of hand-built moves with known peak, overshoot, rings, wind-up and settle, one travelling field and
