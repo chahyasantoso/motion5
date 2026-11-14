@@ -111,6 +111,36 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - **The camera's rest:** `useTarget3d` takes an object's position when it binds as its rest, so a camera posed by
   `orbit`, which answers absolute points, binds at the origin.
 
+## 2D over 3D
+
+Words, captions and callouts over a 3D scene are DOM targets in the same scene, pinned by the scene itself, so they
+sample, review and scrub with everything else.
+
+- **The lens is the scene's.** Export `stage = { width, height }` and `lens: Lens3d` (a camera `Pose3d` plus `fov`,
+  vertical degrees), or a `lens` target if the camera moves. The page builds its `PerspectiveCamera` from them and
+  sizes its renderer and stage from `stage`; it holds no number of its own. A page with its own `fov` drifts every
+  label.
+- **A point to pixels:** `project3d(point, lens, stage)` from `"@gerak/moves"` answers `{ x, y, depth, visible }`,
+  px from the stage's top left. Return `{ x, y, opacity }` for the label; the element's top-left corner lands there,
+  so offset it in CSS to centre a bubble or put its tail on the point.
+- **A point on a moving object:** turn and move the point with the object's pose in the scene before projecting. A
+  joint of a posed model: `posedJoints3d(rig.joints, bones, root)` from `"@gerak/rig"` answers every joint's world
+  point under the same `bones` the scene returns, `root` being the pose of the model's parent group.
+- **Hiding:** a label whose point is behind the lens (`visible: false`) or turned to the far side of its object
+  (`depth` greater than the object centre's) fades out over a few frames; never pop it.
+- **Drawing on the step:** the page renders once when built, then whenever a target it binds is written: pass a
+  render function as `useTarget3d`'s `invalidate`, or render inside `player.subscribe`. A free-running
+  `requestAnimationFrame` loop can show the canvas a step behind the labels.
+- **Text from samples:** reveal a caption's words from a sample through `follow`, and let the component turn the
+  number into words shown.
+- **Reviewing a mixed scene:** export `limits`, target name to `{ jump?, turn?, ratio? }`: the 3D targets get a jump
+  about a fifth of the subject's size and `turn: 30`, the px labels keep the command's defaults. A `custom` number
+  is judged as a ratio.
+- **A model without eyelids:** add a lid per eye on the page, a mesh in the skin colour attached to the eye's bone,
+  placed from the model's eye file in `apps/pieces/references/` (each iris's box in model units). Drive it from a
+  custom number (0 open, 1 shut). Random blinks come from `seeded(n)` from `"@gerak/moves"`, drawn once at the top of
+  the scene module so every play and seek blinks at the same times.
+
 ## Limits
 
 - No skew and no anchors in `Pose3d`; nest groups instead.
