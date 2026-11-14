@@ -85,7 +85,8 @@ every agent shares. Before acting on a plan's fallback, read what the agents say
 
 At the end of every wave:
 
-1. Add one row to the cost table in `references/lessons.md`. The lead's cost is not shown to it: write "not shown".
+1. Compare the workers' costs with "What a wave costs" in `references/lessons.md`; add a line only for a wave
+   outside its ranges or a new kind of worker.
 2. Turn each lesson into one line in the step above it applies to, or drop it. Change a line a lesson contradicts.
    The inbox in `references/lessons.md` holds at most five lessons not yet placed; history stays in git.
 3. Tell the user in a few lines what the wave cost and whether the workflow paid for itself.

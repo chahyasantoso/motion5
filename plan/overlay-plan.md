@@ -1,7 +1,7 @@
 # Overlay plan: 2D over 3D, one clock
 
-**Status:** Proposed, 2026-11-14.
-**Base:** `feat/3d` at `ee641b41`, pull request 593; rebased onto `main` once 593 merges.
+**Status:** Approved, 2026-11-14.
+**Base:** `main` at `4a02b34c`, the merge of pull request 593.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-169-a-3d-pose-for-code-scenes.md`,
 `docs/ADR-182-rigged-3d-characters-and-bodies-in-depth.md`, `docs/ADR-166-motion-review-and-a-one-call-loop.md`, `docs/guide/agent-3d.md`,
 `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -93,12 +93,15 @@ player. What is missing is the bridge and the checks:
 
 ### O7. Proof
 
-- **Measure, alone, fresh:** a planner-model worker makes `dragon-intro`, at most 10 seconds:
+- **Measure, alone, fresh:** a cheap executor-model worker (Sonnet at medium effort) makes `dragon-intro`, at most
+  10 seconds:
   - a 2D title drops in word by word over a dark stage while the camera pushes in on the dragonling;
   - props fall around it through 3D physics, and each landing pops a 2D "+1" at the prop's point on screen, from the
     contact events;
   - the dragonling turns to the viewer and talks: a DOM speech bubble pinned to its head, its tail at the mouth,
     reveals the words as the jaw moves from `talk.json` through `follow`;
+  - it blinks: a few scripted blinks on beats of the story, and between them blinks at times drawn from `seeded`,
+    so every play and every seek blinks at the same moments;
   - a 2D card slides in from the side and the dragonling turns its head to look at it;
   - the title wipes out and everything settles before the end.
 - **It passes when:** samples are read only through `follow`; `motion:review` with the scene's own `limits` is clean
@@ -119,7 +122,7 @@ short briefs, each in its own isolated workspace. When combining a wave that add
 | 2 | Executor | O4 | the scaffold and its browser test |
 | 3 | Executor | O5 | after O4, so the example draws on the step |
 | 4 | Planner | O6 | what the measure reads |
-| 4 | Planner model, fresh | O7 measure | |
+| 4 | Executor model, medium effort, fresh | O7 measure | the guide must carry a cheap worker |
 | 4 | Executor | cold review | |
 
 One pull request, after wave 4.
@@ -132,6 +135,10 @@ One pull request, after wave 4.
   scaffold puts canvas and overlay in the same stage element.
 - **Text in headless Chromium:** labels wait for `document.fonts.ready`, which the page tools already await.
 - **A label behind the model** stays drawn; occlusion is out of scope, and the measure's story keeps labels clear.
+- **The dragonling cannot blink:** it has no eyelid bone and no blink shape. The owner decides before wave 4 how the
+  measure blinks: another model with eyelids, or an eyelid added to the dragonling.
+- **A cheap measure may stall** where an Opus one would not; a stall is a finding about the guide, recorded, and the
+  measure is not rerun on a stronger model to pass.
 
 ## 6. Done when
 
