@@ -1,6 +1,6 @@
 # Anatomy plan: parts, fields and a catalog that measures
 
-**Status:** Proposed, 2026-11-14, revised after one round of critique.
+**Status:** Approved, 2026-11-14, after one round of critique.
 **Base:** `feat/toolkit` at `bad02ccf` (pull request 595, not merged); rebase on `main` once it merges.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-172-*.md`,
 `docs/ADR-173-*.md`, `docs/ADR-176-*.md`, `docs/ADR-184-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -38,12 +38,12 @@ in one shape a style card can reuse.
 
 Not planned here: the style kit itself; publishing a move pack; a shared registry; the motion atlas
 (`plan/motion-atlas-plan.md`, deferred); a sameness score over agents' pieces (its own plan, about 600k tokens, the
-owner's call); colour in 3D (a 3D piece keeps `custom` numbers); `chroma`; a
-mask of any shape; a new package.
+owner's call); colour in 3D (a 3D piece keeps `custom` numbers); `chroma`; a mask of any shape; a new package.
 
 ## 2. Architecture
 
-Five layers. Each uses only those below it, and each has one folder.
+Five layers. Each uses only those below it, and each has one folder; a repo test refuses a file that imports from
+a folder of a higher layer.
 
 | Layer | Answers | Lives in |
 | --- | --- | --- |
@@ -64,11 +64,11 @@ Five layers. Each uses only those below it, and each has one folder.
 ### `packages/moves/src`
 
 ```text
-fields/       pose.ts pose3d.ts combine.ts           (the table, the pose types, combine, lift2d)
+fields/       pose.ts pose3d.ts combine.ts           (the table, the pose types, combine, combine3d, lift2d)
 parts/
   time/           time.ts time-at.ts
   laws/           ease.ts spring.ts keyframes.ts wave.ts envelopes.ts ballistic.ts
-  blends/         mix.ts squashed.ts
+  blends/         mix.ts mix3d.ts squashed.ts
   paths/          shapes.ts path.ts along.ts along3d.ts arc-length.ts radial.ts
   follow-through/ trail.ts trail-turn.ts velocity.ts velocity3d.ts speed-of.ts smear.ts smear3d.ts
                   squash-speed.ts shaken.ts
@@ -80,8 +80,9 @@ compose/      sequence.ts lanes.ts reversed.ts repeated.ts loop.ts
 index.ts      the one entry; no subpath exports
 ```
 
-`squashed` leaves `pose.ts` for `parts/blends/`. The group `eases` becomes `laws`; `camera` and `compose` are new
-groups, `fields` lists `combine` and `lift2d`.
+`squashed` leaves `pose.ts` and `squashed3d` leaves `pose3d.ts` for `parts/blends/squashed.ts`; `mixPose3d` and
+`mixPoint3d` leave `pose3d.ts` for `parts/blends/mix3d.ts`, so no file in `fields/` imports a part. The group
+`eases` becomes `laws`; `camera` and `compose` are new groups; `fields` lists `combine`, `combine3d` and `lift2d`.
 
 ### `apps/pieces`
 
@@ -205,18 +206,20 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 
 ### A1. Folders of `@gerak/moves` (planner, by script)
 
-- **Invariant:** every file moves to its folder with `git mv` and no other change; `squashed` moves to
-  `parts/blends/squashed.ts`; `index.ts`'s export list, the generated reference's entries and every sample are
-  unchanged; the cycle and comment baselines take the new paths and do not grow; `promote.ts` writes to
-  `src/moves/`.
-- **Owner:** `packages/moves/src`, `packages/tools/src/scene/promote.ts`.
+- **Invariant:** every file moves to its folder with `git mv`, changing only import paths; `squashed`,
+  `squashed3d`, `mixPose3d` and `mixPoint3d` are cut into `parts/blends/` with their bodies unchanged; `index.ts`
+  exports the same names in the same order, so the generated reference is unchanged; every sample is unchanged; the
+  cycle and comment baselines take the new paths and do not grow; `promote.ts` writes a promoted move to
+  `src/moves/`; a repo test refuses an import from a higher layer's folder (fields, then parts, then moves and
+  compose), and fails if `mix3d.ts` is put back in `fields/`.
+- **Owner:** `packages/moves/src`, `packages/tools/src/scene/promote.ts`, `test/repo/` (the layer test).
 - **Check:** the full check, and the lead samples every built-in move's example before and after and compares them
   (a one-off check named in the pull request, since nothing behaves differently to test).
 
 ### A1b. Pieces by brief (executor)
 
 - **Invariant:** the files of §2's `apps/pieces` layout are where it says, by `git mv`, in one commit; tools and
-  tests follow in another. `motion:new`, `motion:new --move <id> --brief <brief>`, `motion:import-svg`,
+  tests follow in another. `motion:new`, `motion:new --move <id> --in <brief>`, `motion:import-svg`,
   `motion:live`, `motion:moves` (local moves and `--candidates`), the Vite plugin's move list, `loadStageModule`,
   `stage.html?piece=` and `npm run test:frames` find pieces and moves in brief folders. `export const brief` and its
   reader are gone. Every piece's `motion:review` findings and every test's outcome are the same before and after.
@@ -312,9 +315,9 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 | --- | --- | --- | --- |
 | 1 | Planner | A0, A1 | nothing |
 | 1b | Executor | A1b | A1 |
-| 2 | Executor | A2 then A6 | A1 |
-| 2 | Executor | A3 | A1 |
-| 2 | Executor | A5 | A1 |
+| 2 | Executor | A2 then A6 | A1b (both edit `catalog.ts`) |
+| 2 | Executor | A3 | A1b |
+| 2 | Executor | A5 | A1b |
 | 3 | Executor | A4 | A1b, A3, A5 |
 | 3 | Executor | A7 | A1b, A6 |
 | 4 | Planner | A8 | all |
