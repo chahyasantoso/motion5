@@ -48,8 +48,8 @@ const arm = chainThrough3d([
   jointOf(rig.joints, "LeftFrontFoot"),
 ]);
 const paw = jointOf(rig.joints, "LeftFrontFoot");
-const PAW_UP = { x: 0.15, y: 0.33, z: 0.17 };
-const ELBOW_POLE: readonly [number, number, number] = [0.2, 0.08, -0.3];
+const PAW_UP = { x: 0.2, y: 0.35, z: 0.15 };
+const ELBOW_POLE: readonly [number, number, number] = [0.35, 0.05, -0.2];
 
 export interface Prop {
   readonly id: string;
@@ -122,9 +122,9 @@ const sim = simulate(
     });
     world.addCollider("dragonPaw", {
       kind: "box",
-      x: 0.17,
+      x: 0.2,
       y: 0.25,
-      z: 0.18,
+      z: 0.14,
       width: 0.16,
       height: 0.5,
       depth: 0.16,
@@ -156,11 +156,11 @@ const pulse = (progress: number, count: number) =>
 function pawBones(time: Time) {
   const up = raise.of(time, ease.cubicOut).progress * (1 - lower.of(time, ease.sineInOut).progress);
   if (up <= 0) return {};
-  const swing = wave3(wave.of(time).progress) * 0.045;
+  const swing = wave3(wave.of(time).progress) * 0.04;
   const goal = {
-    x: mix(paw.x, PAW_UP.x, up) + swing * 0.4,
-    y: mix(paw.y, PAW_UP.y, up) + Math.abs(swing) * 0.3,
-    z: mix(paw.z, PAW_UP.z, up) + swing,
+    x: mix(paw.x, PAW_UP.x, up) + swing,
+    y: mix(paw.y, PAW_UP.y, up) - Math.abs(swing) * 0.25,
+    z: mix(paw.z, PAW_UP.z, up) + swing * 0.3,
   };
   const solved = ik3d(arm.chain, { LeftFrontLeg: goal }, { pole: ELBOW_POLE });
   return bonesOf3d(arm.chain, solved);
