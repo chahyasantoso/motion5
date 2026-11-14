@@ -1,10 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
-import { briefFolders, movesFolders } from "./briefs";
+import { briefFolders } from "./briefs";
 import {
   checkMove,
   describeFinding,
@@ -12,13 +13,12 @@ import {
   isMove,
   type CheckedMove,
   type Descriptors,
+  type MoveDescriptors,
 } from "./moves";
 import { formatParts, partsImportedBy } from "./parts";
 
-/** Where a catalog entry was declared: the built-in package, or a file of the app. */
-export type MoveSource =
-  | { readonly kind: "built-in" }
-  | { readonly kind: "app"; readonly file: string };
+/** The source name of the moves package this repository ships. */
+export const BUILT_IN_SOURCE = "@gerak/moves";
 
 /** One move as the catalog lists it. */
 export interface MoveRecord {
@@ -30,29 +30,41 @@ export interface MoveRecord {
   readonly moments: readonly string[];
   readonly parts: readonly string[];
   readonly example: { readonly options: object; readonly input?: unknown };
-  readonly source: MoveSource;
+  /** The call the example makes, as a scene would write it. */
+  readonly call: string;
+  /** The package a move comes from, or the brief folder that declares it. */
+  readonly source: string;
+  /** The move's file, for a move declared in a folder. */
+  readonly file?: string;
   /** The fields the move moves, in its pose's order. */
   readonly fields: readonly string[];
   /** The field that moves most against its review limit; the descriptors are its. */
-  readonly primary: string | undefined;
-  readonly descriptors: Descriptors | undefined;
+  readonly primary?: string;
+  readonly descriptors?: Descriptors;
 }
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--check] [--json] [--parts] [--candidates] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
   "npm run motion:moves -- --parts lists the building blocks moves are made from: fields, time, laws, blends, paths, follow-through, events, randomness, camera, compose.";
 
-/** Parsed `motion:moves` arguments: `id`, `--role`, `--check`, `--json`, `--parts` and `--root`; or the usage text. */
+/** Parsed `motion:moves` arguments; or the usage text. */
 export type CatalogArgs =
   | { readonly kind: "usage"; readonly message: string }
   | {
       readonly kind: "ok";
       readonly id: string | undefined;
       readonly role: MoveRole | undefined;
+      readonly find: readonly string[] | undefined;
+      readonly fields: readonly string[] | undefined;
+      readonly like: string | undefined;
+      readonly near: string | undefined;
+      readonly far: string | undefined;
+      readonly in: string | undefined;
+      readonly all: boolean;
       readonly check: boolean;
       readonly json: boolean;
       readonly parts: boolean;
@@ -60,38 +72,88 @@ export type CatalogArgs =
       readonly root: string | undefined;
     };
 
-/** The id, role filter, mode flags and app root typed on the command line, or the usage text. */
+const VALUE_FLAGS = ["--role", "--root", "--find", "--fields", "--like", "--near", "--far", "--in"];
+
+/** The id, query flags, mode flags and app root typed on the command line, or the usage text. */
 export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const usage = (message: string): CatalogArgs => ({ kind: "usage", message });
   const ids: string[] = [];
-  let check = false;
-  let json = false;
-  let parts = false;
-  let candidates = false;
-  let role: string | undefined;
-  let root: string | undefined;
+  const values = new Map<string, string>();
+  const on = new Set<string>();
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === undefined) break;
-    if (arg === "--check") check = true;
-    else if (arg === "--json") json = true;
-    else if (arg === "--parts") parts = true;
-    else if (arg === "--candidates") candidates = true;
-    else if (arg === "--role" || arg === "--root") {
+    if (["--check", "--json", "--parts", "--candidates", "--all"].includes(arg)) on.add(arg);
+    else if (VALUE_FLAGS.includes(arg)) {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
         return usage(`${arg} needs a value. ${CATALOG_USAGE}`);
-      if (arg === "--role") role = value;
-      else root = value;
+      values.set(arg, value);
       i += 1;
     } else if (arg.startsWith("--")) return usage(`Unknown flag ${arg}. ${CATALOG_USAGE}`);
     else ids.push(arg);
   }
   if (ids.length > 1) return usage(`Expected at most one move id. ${CATALOG_USAGE}`);
+  const role = values.get("--role");
   const known = MOVE_ROLES.find((candidate) => candidate === role);
   if (role !== undefined && known === undefined)
     return usage(`Unknown role "${role}". Roles: ${MOVE_ROLES.join(", ")}.`);
-  return { kind: "ok", id: ids[0], role: known, check, json, parts, candidates, root };
+  const list = (flag: string): readonly string[] | undefined =>
+    values
+      .get(flag)
+      ?.split(/[\s,]+/)
+      .filter((word) => word.length > 0);
+  return {
+    kind: "ok",
+    id: ids[0],
+    role: known,
+    find: list("--find"),
+    fields: list("--fields"),
+    like: values.get("--like"),
+    near: values.get("--near"),
+    far: values.get("--far"),
+    in: values.get("--in"),
+    all: on.has("--all"),
+    check: on.has("--check"),
+    json: on.has("--json"),
+    parts: on.has("--parts"),
+    candidates: on.has("--candidates"),
+    root: values.get("--root"),
+  };
+}
+
+/** Where a root says its moves come from, and where promotion writes. */
+export interface GerakConfig {
+  readonly moves: readonly string[];
+  readonly promoteTo?: string;
+}
+
+/** The sources a root with no `gerak.moves` setting reads. */
+export const DEFAULT_SOURCES: readonly string[] = [BUILT_IN_SOURCE, "./*/src/moves"];
+
+function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value))
+    : undefined;
+}
+
+function readJson(file: string): Readonly<Record<string, unknown>> | undefined {
+  try {
+    return recordOf(JSON.parse(readFileSync(file, "utf8")));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `gerak` setting of `<root>/package.json`: its moves list (or the default) and its `promoteTo`. */
+export function readConfig(root: string): GerakConfig {
+  const setting = recordOf(readJson(join(root, "package.json"))?.gerak);
+  const list = setting?.moves;
+  const moves = Array.isArray(list)
+    ? list.filter((entry): entry is string => typeof entry === "string")
+    : DEFAULT_SOURCES;
+  const promoteTo = setting?.promoteTo;
+  return { moves, ...(typeof promoteTo === "string" ? { promoteTo } : {}) };
 }
 
 function momentNames(move: CheckedMove): readonly string[] {
@@ -103,7 +165,8 @@ function momentNames(move: CheckedMove): readonly string[] {
 }
 
 function byId(left: MoveRecord, right: MoveRecord): number {
-  return left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+  if (left.id !== right.id) return left.id < right.id ? -1 : 1;
+  return left.source < right.source ? -1 : left.source > right.source ? 1 : 0;
 }
 
 /** The moves among a module's exports, with the name each was exported under. */
@@ -119,23 +182,78 @@ function movesOf(module: Readonly<Record<string, unknown>>): readonly [string, C
 }
 
 const BUILT_IN_MOVES = fileURLToPath(new URL("../../../moves/src/moves/", import.meta.url));
+const BUILT_IN_MANIFEST = fileURLToPath(new URL("../../../moves/package.json", import.meta.url));
+
+let builtInTexts: readonly string[] | undefined;
 
 /** The text of the file in the built-in moves folder that exports `name`; undefined where that folder is not on disk. */
 function builtInText(name: string): string | undefined {
   if (!existsSync(BUILT_IN_MOVES)) return undefined;
-  const exported = new RegExp(`export (?:const|function) ${name}\\b`);
-  return readdirSync(BUILT_IN_MOVES)
+  builtInTexts ??= readdirSync(BUILT_IN_MOVES)
     .filter((file) => file.endsWith(".ts"))
-    .map((file) => readFileSync(join(BUILT_IN_MOVES, file), "utf8"))
-    .find((text) => exported.test(text));
+    .map((file) => readFileSync(join(BUILT_IN_MOVES, file), "utf8"));
+  const exported = new RegExp(`export (?:const|function) ${name}\\b`);
+  return builtInTexts.find((text) => exported.test(text));
 }
 
-function partsOf(name: string, source: MoveSource): readonly string[] {
-  const text = source.kind === "app" ? readFileSync(source.file, "utf8") : builtInText(name);
+/** A module the catalog reads moves from: its source, and its file (for a folder) or version (for a package). */
+export interface LoadedModule {
+  readonly module: Readonly<Record<string, unknown>>;
+  readonly source?: string;
+  readonly file?: string;
+  readonly version?: string;
+}
+
+/** The brief folder a move file sits in: the folder above its `src`. */
+function briefOf(file: string): string {
+  const names = resolve(file).split(sep);
+  const at = names.lastIndexOf("src");
+  return names[at > 0 ? at - 1 : names.length - 2] ?? "";
+}
+
+function inputText(given: unknown): string {
+  return typeof given === "function" ? String(given).replace(/\s+/g, " ") : JSON.stringify(given);
+}
+
+function callOf(name: string, example: MoveRecord["example"]): string {
+  const input = example.input === undefined ? "" : `, ${inputText(example.input)}`;
+  return `${name}(${JSON.stringify(example.options)}, time${input})`;
+}
+
+const digest = (text: string): string => createHash("sha1").update(text).digest("hex");
+
+/** What a move's cached record is keyed by: its file's text, or its package's version. */
+function hashOf(name: string, loaded: LoadedModule): string {
+  if (loaded.file !== undefined) return digest(readFileSync(loaded.file, "utf8"));
+  const text = loaded.source === BUILT_IN_SOURCE ? builtInText(name) : undefined;
+  return text === undefined ? `version ${loaded.version ?? ""}` : digest(text);
+}
+
+function partsOf(name: string, loaded: LoadedModule): readonly string[] {
+  const text =
+    loaded.file !== undefined
+      ? readFileSync(loaded.file, "utf8")
+      : loaded.source === BUILT_IN_SOURCE
+        ? builtInText(name)
+        : undefined;
   return text === undefined ? [] : partsImportedBy(text);
 }
 
-function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveRecord {
+/** What the catalog may ask of the build of records: the sampler, and the index to read and fill. */
+export interface CollectHooks {
+  readonly sampler?: (move: CheckedMove) => MoveDescriptors;
+  readonly cached?: (key: string, hash: string) => MoveRecord | undefined;
+  readonly keep?: (key: string, hash: string, record: MoveRecord) => void;
+}
+
+function freshRecord(
+  name: string,
+  move: CheckedMove,
+  loaded: LoadedModule,
+  source: string,
+  sampler: (move: CheckedMove) => MoveDescriptors,
+): MoveRecord {
+  const { fields, primary, descriptors } = sampler(move);
   return {
     id: move.id,
     role: move.role,
@@ -143,32 +261,463 @@ function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveReco
     exportName: name,
     options: move.options,
     moments: momentNames(move),
-    parts: partsOf(name, source),
+    parts: partsOf(name, loaded),
     example: move.example,
+    call: callOf(name, move.example),
     source,
-    ...descriptorsOf(move),
+    ...(loaded.file === undefined ? {} : { file: loaded.file }),
+    fields,
+    ...(primary === undefined ? {} : { primary }),
+    ...(descriptors === undefined ? {} : { descriptors }),
   };
 }
 
-/** The built-in moves, then each app file's, each group sorted by id; the checked moves ride along. */
+let builtInVersion: string | undefined;
+
+function versionOfBuiltIns(): string {
+  builtInVersion ??= String(readJson(BUILT_IN_MANIFEST)?.version ?? "");
+  return builtInVersion;
+}
+
+/** The moves of the built-in package and of each loaded module, by id; the checked moves ride along. */
 export function collectRecords(
-  appModules: readonly {
-    readonly file: string;
-    readonly module: Readonly<Record<string, unknown>>;
-  }[],
+  modules: readonly LoadedModule[],
   builtin: Readonly<Record<string, unknown>> = builtIns,
+  hooks: CollectHooks = {},
 ): readonly { readonly record: MoveRecord; readonly move: CheckedMove }[] {
-  const entries = (module: Readonly<Record<string, unknown>>, source: MoveSource) =>
-    movesOf(module)
-      .map(([name, move]) => ({ record: recordOf(name, move, source), move }))
-      .sort((left, right) => byId(left.record, right.record));
-  return [
-    ...entries(builtin, { kind: "built-in" }),
-    ...appModules.flatMap(({ file, module }) => entries(module, { kind: "app", file })),
-  ].sort((left, right) => {
-    const rank = (record: MoveRecord) => (record.source.kind === "built-in" ? 0 : 1);
-    return rank(left.record) - rank(right.record) || byId(left.record, right.record);
+  const sampler = hooks.sampler ?? descriptorsOf;
+  const loadedModules: readonly LoadedModule[] = [
+    { module: builtin, source: BUILT_IN_SOURCE, version: versionOfBuiltIns() },
+    ...modules,
+  ];
+  const found = loadedModules.flatMap((loaded) => {
+    const source = loaded.source ?? (loaded.file === undefined ? "" : briefOf(loaded.file));
+    return movesOf(loaded.module).map(([name, move]) => {
+      const key = [source, loaded.file ?? "", name].join("\u0000");
+      const hash = hashOf(name, loaded);
+      const record = hooks.cached?.(key, hash) ?? freshRecord(name, move, loaded, source, sampler);
+      hooks.keep?.(key, hash, record);
+      return { record, move };
+    });
   });
+  return found.sort((left, right) => byId(left.record, right.record));
+}
+
+function isDescriptors(value: unknown): value is Descriptors {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof Reflect.get(value, "travelling") === "boolean" &&
+    ["peak", "overshoot", "rings", "windup", "settle"].every(
+      (key) => typeof Reflect.get(value, key) === "number",
+    )
+  );
+}
+
+function isRecord(value: unknown): value is MoveRecord {
+  if (typeof value !== "object" || value === null) return false;
+  const text = (key: string) => typeof Reflect.get(value, key) === "string";
+  const optional = (key: string) => Reflect.get(value, key) === undefined || text(key);
+  const descriptors: unknown = Reflect.get(value, "descriptors");
+  return (
+    ["id", "description", "exportName", "call", "source"].every(text) &&
+    MOVE_ROLES.some((role) => role === Reflect.get(value, "role")) &&
+    optional("file") &&
+    optional("primary") &&
+    (descriptors === undefined || isDescriptors(descriptors)) &&
+    ["moments", "parts", "fields"].every((key) => Array.isArray(Reflect.get(value, key))) &&
+    typeof Reflect.get(value, "options") === "object" &&
+    typeof Reflect.get(value, "example") === "object"
+  );
+}
+
+const INDEX_VERSION = 1;
+
+/** Where a root keeps its index of records. */
+export function indexPath(root: string): string {
+  return join(root, "node_modules", ".cache", "gerak", "moves.json");
+}
+
+interface IndexEntry {
+  readonly hash: string;
+  readonly record: MoveRecord;
+}
+
+function readIndex(text: string | undefined): ReadonlyMap<string, IndexEntry> {
+  const entries = new Map<string, IndexEntry>();
+  if (text === undefined) return entries;
+  try {
+    const parsed = recordOf(JSON.parse(text));
+    const moves = recordOf(parsed?.moves);
+    if (parsed?.version !== INDEX_VERSION || moves === undefined) return entries;
+    for (const [key, entry] of Object.entries(moves)) {
+      const hash = recordOf(entry)?.hash;
+      const record = recordOf(entry)?.record;
+      if (typeof hash === "string" && isRecord(record)) entries.set(key, { hash, record });
+    }
+  } catch {
+    entries.clear();
+  }
+  return entries;
+}
+
+function readText(file: string): string | undefined {
+  try {
+    return readFileSync(file, "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/** Folders matching a pattern such as `./*\/src/moves`, relative to the root; `*` is any folder. */
+function expandFolders(root: string, pattern: string): readonly string[] {
+  let folders = [resolve(root)];
+  for (const segment of pattern.split("/").filter((part) => part !== "" && part !== ".")) {
+    folders = folders
+      .flatMap((folder) =>
+        segment === "*"
+          ? existsSync(folder)
+            ? readdirSync(folder, { withFileTypes: true })
+                .filter(
+                  (entry) =>
+                    entry.isDirectory() &&
+                    entry.name !== "node_modules" &&
+                    !entry.name.startsWith("."),
+                )
+                .map((entry) => join(folder, entry.name))
+                .sort()
+            : []
+          : [join(folder, segment)],
+      )
+      .filter((folder) => existsSync(folder));
+  }
+  return folders;
+}
+
+const isFolderSource = (entry: string): boolean => entry.startsWith(".");
+
+/** Imports each `.ts` file of every folder source, folder by folder; a file that will not import is reported. */
+export async function loadAppModules(
+  root: string,
+  config: GerakConfig = readConfig(root),
+): Promise<{
+  readonly modules: readonly (LoadedModule & { readonly file: string })[];
+  readonly problems: readonly string[];
+}> {
+  const modules: (LoadedModule & { readonly file: string })[] = [];
+  const problems: string[] = [];
+  const folders = [
+    ...new Set(config.moves.filter(isFolderSource).flatMap((entry) => expandFolders(root, entry))),
+  ];
+  for (const folder of folders) {
+    const source = relative(root, folder).split(sep)[0] ?? "";
+    const files = readdirSync(folder)
+      .filter((name) => /\.ts$/.test(name) && !name.endsWith(".d.ts"))
+      .sort()
+      .map((name) => join(folder, name));
+    for (const file of files) {
+      try {
+        const module: Readonly<Record<string, unknown>> = await import(pathToFileURL(file).href);
+        if (!Object.values(module).some(isMove))
+          problems.push(`${file}: exports no move made by defineMove with a role and an example.`);
+        modules.push({ file, module, source });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        problems.push(`${file}: could not be imported: ${message}`);
+      }
+    }
+  }
+  return { modules, problems };
+}
+
+/** The folder of package `name` as `root` would resolve it, looking in each `node_modules` up the tree. */
+function packageFolder(root: string, name: string): string | undefined {
+  for (let folder = resolve(root); ; folder = dirname(folder)) {
+    const candidate = join(folder, "node_modules", ...name.split("/"));
+    if (existsSync(join(candidate, "package.json"))) return candidate;
+    if (dirname(folder) === folder) return undefined;
+  }
+}
+
+function entryFrom(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  const fields = recordOf(value);
+  if (fields === undefined) return undefined;
+  for (const key of [".", "import", "default", "node", "module"]) {
+    const found = entryFrom(fields[key]);
+    if (found !== undefined) return found;
+  }
+  return undefined;
+}
+
+async function loadPackage(
+  root: string,
+  name: string,
+): Promise<LoadedModule | { readonly problem: string }> {
+  if (name === BUILT_IN_SOURCE)
+    return { module: builtIns, source: name, version: versionOfBuiltIns() };
+  const folder = packageFolder(root, name);
+  if (folder === undefined) return { problem: `${name}: not found from ${root}.` };
+  const manifest = readJson(join(folder, "package.json"));
+  const entry =
+    entryFrom(manifest?.exports) ??
+    (typeof manifest?.module === "string" ? manifest.module : undefined) ??
+    (typeof manifest?.main === "string" ? manifest.main : "index.js");
+  try {
+    const module: Readonly<Record<string, unknown>> = await import(
+      pathToFileURL(join(folder, entry)).href
+    );
+    return { module, source: name, version: String(manifest?.version ?? "") };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { problem: `${name}: could not be imported: ${message}` };
+  }
+}
+
+/** The records of every source a root declares, and a live move beside each. */
+export interface Catalog {
+  readonly entries: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[];
+  readonly problems: readonly string[];
+  readonly config: GerakConfig;
+}
+
+/** What a run may replace: the sampler that measures a move. */
+export interface CatalogOptions {
+  readonly sampler?: (move: CheckedMove) => MoveDescriptors;
+}
+
+/** Reads every source the root declares, reusing the index for any move whose file or package has not changed. */
+export async function loadCatalog(root: string, options: CatalogOptions = {}): Promise<Catalog> {
+  const config = readConfig(root);
+  const packages: LoadedModule[] = [];
+  const problems: string[] = [];
+  for (const name of config.moves.filter((entry) => !isFolderSource(entry))) {
+    const loaded = await loadPackage(root, name);
+    if ("problem" in loaded) problems.push(loaded.problem);
+    else packages.push(loaded);
+  }
+  const folders = await loadAppModules(root, config);
+  const before = readText(indexPath(root));
+  const previous = readIndex(before);
+  const next = new Map<string, IndexEntry>();
+  const entries = collectRecords(
+    [...packages, ...folders.modules],
+    {},
+    {
+      ...(options.sampler === undefined ? {} : { sampler: options.sampler }),
+      cached: (key, hash) => {
+        const found = previous.get(key);
+        return found?.hash === hash ? found.record : undefined;
+      },
+      keep: (key, hash, record) => next.set(key, { hash, record }),
+    },
+  );
+  const text = JSON.stringify(
+    { version: INDEX_VERSION, moves: Object.fromEntries(next) },
+    (_key, value: unknown) => (typeof value === "function" ? inputText(value) : value),
+  );
+  if (text !== before)
+    try {
+      mkdirSync(dirname(indexPath(root)), { recursive: true });
+      writeFileSync(indexPath(root), text);
+    } catch {
+      // A root that cannot hold an index is read afresh each time.
+    }
+  return { entries, problems: [...problems, ...folders.problems], config };
+}
+
+/** The qualities `--like` knows, as a range per descriptor: `rings` counts, the others are shares or ratios. */
+export interface DescriptorRanges {
+  readonly peak?: readonly [number, number];
+  readonly overshoot?: readonly [number, number];
+  readonly rings?: readonly [number, number];
+  readonly windup?: readonly [number, number];
+  readonly settle?: readonly [number, number];
+}
+
+/** The words `--like` understands, each as the ranges of descriptors a move with that quality sits in. */
+export const QUALITIES: Readonly<Record<string, DescriptorRanges>> = Object.freeze({
+  heavy: { peak: [0.5, 1], overshoot: [0, 0.1], rings: [0, 1], settle: [0.3, 1] },
+  light: { peak: [0, 0.4], settle: [0, 0.3] },
+  quick: { peak: [0, 0.35], overshoot: [0, 0.1] },
+  calm: { rings: [0, 0], overshoot: [0, 0.05] },
+  playful: { overshoot: [0.1, 0.6], windup: [0.05, 0.4] },
+  stiff: { rings: [0, 0], overshoot: [0, 0.02] },
+  loose: { rings: [2, 6] },
+});
+
+const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
+
+/** A descriptor as distances weigh it: rings count in quarters. */
+const weighed = (key: (typeof DESCRIPTOR_KEYS)[number], value: number): number =>
+  key === "rings" ? value / 4 : value;
+
+/** How far two moves are apart: squared differences of their descriptors, and 1 for differing primary fields. */
+export function distance(left: MoveRecord, right: MoveRecord): number | undefined {
+  if (left.descriptors === undefined || right.descriptors === undefined) return undefined;
+  const sum = DESCRIPTOR_KEYS.reduce(
+    (total, key) =>
+      total +
+      (weighed(key, left.descriptors?.[key] ?? 0) - weighed(key, right.descriptors?.[key] ?? 0)) **
+        2,
+    0,
+  );
+  return sum + (left.primary === right.primary ? 0 : 1);
+}
+
+function distanceToMiddle(record: MoveRecord, ranges: DescriptorRanges): number | undefined {
+  const { descriptors } = record;
+  if (descriptors === undefined) return undefined;
+  return DESCRIPTOR_KEYS.reduce((total, key) => {
+    const range = ranges[key];
+    return range === undefined
+      ? total
+      : total + (weighed(key, descriptors[key]) - weighed(key, (range[0] + range[1]) / 2)) ** 2;
+  }, 0);
+}
+
+/** What one search asks of the records; every field given must hold. */
+export interface CatalogQuery {
+  readonly role?: MoveRole;
+  readonly find?: readonly string[];
+  readonly fields?: readonly string[];
+  readonly like?: string;
+  readonly near?: string;
+  readonly far?: string;
+  readonly in?: string;
+  readonly all?: boolean;
+}
+
+/** One move a search found. */
+export interface QueryRow {
+  readonly record: MoveRecord;
+  /** Whether the move is declared in the brief the search was made from. */
+  readonly own: boolean;
+  /** The id, or `source/id` where two sources share the id. */
+  readonly label: string;
+  /** How well it fits, least first; undefined when the search ranks by nothing. */
+  readonly fit: number | undefined;
+}
+
+/** What a search returned, or why it could not be made. */
+export type QueryResult =
+  | { readonly kind: "rows"; readonly rows: readonly QueryRow[] }
+  | { readonly kind: "refused"; readonly message: string };
+
+/** Whether a request asks anything: a filter, a ranking or `--all`. */
+export function isQuery(request: CatalogQuery): boolean {
+  return (
+    request.role !== undefined ||
+    request.find !== undefined ||
+    request.fields !== undefined ||
+    request.like !== undefined ||
+    request.near !== undefined ||
+    request.far !== undefined ||
+    request.all === true
+  );
+}
+
+/** The records an id names, or `source/id` for one source's. */
+export function lookup(records: readonly MoveRecord[], text: string): readonly MoveRecord[] {
+  return records.filter((record) => record.id === text || `${record.source}/${record.id}` === text);
+}
+
+function matchesWords(record: MoveRecord, words: readonly string[]): number | undefined {
+  const places = [record.id, record.description, Object.keys(record.options).join(" ")].map(
+    (place) => place.toLowerCase(),
+  );
+  let hits = 0;
+  for (const word of words.map((candidate) => candidate.toLowerCase())) {
+    const found = places.filter((place) => place.includes(word)).length;
+    if (found === 0) return undefined;
+    hits += found;
+  }
+  return hits;
+}
+
+/** Every record that fits the request, best first; equal fits come out by id, never by source. */
+export function query(records: readonly MoveRecord[], request: CatalogQuery): QueryResult {
+  const refused = (message: string): QueryResult => ({ kind: "refused", message });
+  const pick = (flag: string, text: string): MoveRecord | string => {
+    const found = lookup(records, text);
+    const [only] = found;
+    if (only === undefined) return `${flag}: no move "${text}".`;
+    if (found.length > 1)
+      return `${flag}: "${text}" is declared in ${found.map(({ source }) => `${source}/${text}`).join(" and ")}; ask with source/id.`;
+    return only;
+  };
+  const near = request.near === undefined ? undefined : pick("--near", request.near);
+  const far = request.far === undefined ? undefined : pick("--far", request.far);
+  if (typeof near === "string") return refused(near);
+  if (typeof far === "string") return refused(far);
+  const ranges = request.like === undefined ? undefined : QUALITIES[request.like];
+  if (request.like !== undefined && ranges === undefined)
+    return refused(
+      `--like: unknown quality "${request.like}". Qualities: ${Object.keys(QUALITIES).join(", ")}.`,
+    );
+  const ranked = near !== undefined || far !== undefined || ranges !== undefined;
+  const shared = new Set(
+    records.filter((record) => lookup(records, record.id).length > 1).map(({ id }) => id),
+  );
+  const rows: { row: QueryRow; hits: number }[] = [];
+  for (const record of records) {
+    if (request.role !== undefined && record.role !== request.role) continue;
+    if (request.fields?.some((field) => !record.fields.includes(field)) === true) continue;
+    const hits = request.find === undefined ? 0 : matchesWords(record, request.find);
+    if (hits === undefined) continue;
+    let fit: number | undefined;
+    if (ranked) {
+      const parts = [
+        near === undefined || near === record ? 0 : distance(record, near),
+        far === undefined || far === record ? 0 : distance(record, far),
+        ranges === undefined ? 0 : distanceToMiddle(record, ranges),
+      ];
+      if (record === near || record === far || parts.some((part) => part === undefined)) continue;
+      fit = (parts[0] ?? 0) - (far === undefined ? 0 : (parts[1] ?? 0)) + (parts[2] ?? 0);
+    }
+    rows.push({
+      hits,
+      row: {
+        record,
+        own: request.in !== undefined && record.file !== undefined && record.source === request.in,
+        label: shared.has(record.id) ? `${record.source}/${record.id}` : record.id,
+        fit,
+      },
+    });
+  }
+  rows.sort(
+    (left, right) =>
+      (left.row.fit ?? 0) - (right.row.fit ?? 0) ||
+      right.hits - left.hits ||
+      byId(left.row.record, right.row.record),
+  );
+  return { kind: "rows", rows: rows.map(({ row }) => row) };
+}
+
+/** The import a scene writes for a move: the package's name, or the file as `from` (a brief) or the root sees it. */
+export function importLine(record: MoveRecord, root: string, from: string | undefined): string {
+  const names = `{ ${record.exportName} }`;
+  if (record.file === undefined) return `import ${names} from "${record.source}"`;
+  const target = record.file.replace(/\.ts$/, "");
+  const path =
+    from === undefined ? relative(root, target) : relative(join(root, from, "src"), target);
+  const posix = path.split(sep).join("/");
+  return `import ${names} from "${posix.startsWith(".") ? posix : `./${posix}`}"`;
+}
+
+const firstSentence = (text: string): string => /^.*?[.!?](?=\s|$)/s.exec(text)?.[0] ?? text;
+
+/** One line of a search: label, source, role, fields moved, the description's first sentence, the import. */
+export function formatRow(row: QueryRow, root: string, from: string | undefined): string {
+  const { record } = row;
+  return [
+    row.label,
+    row.own ? "own" : record.source,
+    record.role,
+    record.fields.length === 0 ? "none" : record.fields.join(","),
+    firstSentence(record.description),
+    importLine(record, root, from),
+  ].join(" | ");
 }
 
 function rangeOf(field: OptionField): string {
@@ -194,47 +743,41 @@ function optionLabel(name: string, field: OptionField): string {
   return `${name} ${rangeOf(field)}, ${fallback}`;
 }
 
-/** The one line a listing prints for a move. */
-export function formatLine(record: MoveRecord): string {
-  const options = Object.entries(record.options).map(([name, field]) => optionLabel(name, field));
-  return [
-    `${record.id} [${record.role}] ${record.description}`,
-    `options: ${options.length === 0 ? "none" : options.join("; ")}`,
-    `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
-    ...(record.parts.length === 0 ? [] : [`parts: ${record.parts.join(" + ")}`]),
-    ...(record.source.kind === "app"
-      ? [`import from ./moves/${basename(record.source.file, ".ts")}`]
-      : []),
-  ].join(" | ");
-}
-
 /** A call the reader could paste into a scene. */
 export function exampleCall(record: MoveRecord): string {
-  const given = record.example.input;
-  const shown =
-    typeof given === "function" ? String(given).replace(/\s+/g, " ") : JSON.stringify(given);
-  const input = given === undefined ? "" : `, ${shown}`;
-  return `${record.exportName}(${JSON.stringify(record.example.options)}, time${input})`;
+  return record.call;
 }
 
+const shown = (value: number): number => Math.round(value * 100) / 100;
+
 /** Everything the catalog knows of one move, a line to a fact. */
-export function formatFull(record: MoveRecord): readonly string[] {
+export function formatFull(
+  record: MoveRecord,
+  context: { readonly importedBy: readonly string[]; readonly importText: string },
+): readonly string[] {
   const options = Object.entries(record.options).map(
     ([name, field]) => `  ${optionLabel(name, field)}: ${field.description}`,
   );
+  const { descriptors } = record;
   return [
     `${record.id} [${record.role}]`,
     record.description,
     "options:",
     ...(options.length === 0 ? ["  none"] : options),
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
-    ...(record.parts.length === 0 ? [] : [`parts: ${record.parts.join(" + ")}`]),
+    `fields: ${record.fields.length === 0 ? "none" : `${record.fields.join(", ")} (primary ${record.primary ?? "none"})`}`,
+    descriptors === undefined
+      ? "descriptors: none"
+      : `descriptors: peak ${shown(descriptors.peak)}, overshoot ${shown(descriptors.overshoot)}, rings ${descriptors.rings}, windup ${shown(descriptors.windup)}, settle ${shown(descriptors.settle)} (${descriptors.travelling ? "travelling" : "oscillating"})`,
+    `parts: ${record.parts.length === 0 ? "none" : record.parts.join(" + ")}`,
+    `imported by: ${context.importedBy.length === 0 ? "none" : context.importedBy.join(", ")}`,
     `example: ${exampleCall(record)}`,
-    record.source.kind === "app" ? `file: ${record.source.file}` : "from: @gerak/moves",
+    `import: ${context.importText}`,
+    record.file === undefined ? `from: ${record.source}` : `file: ${record.file}`,
   ];
 }
 
-/** Every finding on the given moves, and on any id declared twice among all of them. */
+/** Every finding on the given moves, and on any id declared twice within one source. */
 export function checkCatalog(
   all: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
   selected: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
@@ -242,46 +785,17 @@ export function checkCatalog(
   const lines: string[] = [];
   for (const { record, move } of selected)
     for (const finding of checkMove(move)) lines.push(describeFinding(record.id, finding));
-  const where = (record: MoveRecord) =>
-    record.source.kind === "app" ? record.source.file : "@gerak/moves";
-  for (const { id } of new Set(selected.map(({ record }) => record))) {
-    const same = all.filter(({ record }) => record.id === id);
+  const where = (record: MoveRecord) => record.file ?? record.source;
+  for (const { record: chosen } of selected) {
+    const same = all.filter(
+      ({ record }) => record.id === chosen.id && record.source === chosen.source,
+    );
     if (same.length > 1)
       lines.push(
-        `${id}: declared ${same.length} times, in ${same.map(({ record }) => where(record)).join(" and ")}.`,
+        `${chosen.id}: declared ${same.length} times, in ${same.map(({ record }) => where(record)).join(" and ")}.`,
       );
   }
   return [...new Set(lines)];
-}
-
-/** Imports each `.ts` file in every brief's `src/moves`, brief by brief; a file that will not import is reported. */
-export async function loadAppModules(root: string): Promise<{
-  readonly modules: readonly {
-    readonly file: string;
-    readonly module: Readonly<Record<string, unknown>>;
-  }[];
-  readonly problems: readonly string[];
-}> {
-  const modules: { file: string; module: Readonly<Record<string, unknown>> }[] = [];
-  const problems: string[] = [];
-  const files = movesFolders(root).flatMap((folder) =>
-    readdirSync(folder)
-      .filter((name) => /\.ts$/.test(name) && !name.endsWith(".d.ts"))
-      .sort()
-      .map((name) => join(folder, name)),
-  );
-  for (const file of files) {
-    try {
-      const module: Readonly<Record<string, unknown>> = await import(pathToFileURL(file).href);
-      if (!Object.values(module).some(isMove))
-        problems.push(`${file}: exports no move made by defineMove with a role and an example.`);
-      modules.push({ file, module });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      problems.push(`${file}: could not be imported: ${message}`);
-    }
-  }
-  return { modules, problems };
 }
 
 /** A local move that passes the gate and is used by two or more briefs of the app. */
@@ -325,6 +839,20 @@ export function importersOf(root: string, file: string): readonly string[] {
     });
 }
 
+/** The briefs of the root whose files import a move: by path for a folder move, by name for a package's. */
+function briefsImporting(root: string, record: MoveRecord): readonly string[] {
+  if (record.file !== undefined) {
+    const found = importersOf(root, record.file).map((path) => relative(root, path).split(sep)[0]);
+    return [...new Set(found.filter((brief): brief is string => brief !== undefined))].sort();
+  }
+  const named = new RegExp(
+    `import\\s*(?:type\\s*)?\\{[^}]*\\b${record.exportName}\\b[^}]*\\}\\s*from\\s*["']${record.source}["']`,
+  );
+  return briefFolders(root).filter((brief) =>
+    sourceFiles(join(root, brief, "src")).some((path) => named.test(readFileSync(path, "utf8"))),
+  );
+}
+
 /** The app's moves that pass the gate and are used by two or more briefs, by id. */
 export function candidatesOf(
   root: string,
@@ -333,12 +861,12 @@ export function candidatesOf(
   const found: Candidate[] = [];
   for (const entry of all) {
     const { record, move } = entry;
-    if (record.source.kind !== "app") continue;
+    const { file } = record;
+    if (file === undefined) continue;
     if (checkCatalog(all, [entry]).length > 0 || checkMove(move).length > 0) continue;
-    const importers = importersOf(root, record.source.file);
+    const importers = importersOf(root, file);
     const briefs = [...new Set(importers.map((path) => relative(root, path).split(sep)[0] ?? ""))];
-    if (briefs.length >= 2)
-      found.push({ id: record.id, file: record.source.file, importers, briefs });
+    if (briefs.length >= 2) found.push({ id: record.id, file, importers, briefs });
   }
   return found.sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }
@@ -349,29 +877,85 @@ export interface CatalogRun {
   readonly code: 0 | 1;
 }
 
+const MOST_ROWS = 10;
+
+/** The few lines a bare `motion:moves` prints: how many moves, from where, and what to ask. */
+export function summarize(records: readonly MoveRecord[]): readonly string[] {
+  const count = (names: readonly string[]) =>
+    names.map((name) => `${name} ${records.filter((record) => record.source === name).length}`);
+  const sources = [...new Set(records.map(({ source }) => source))].sort();
+  const roles = MOVE_ROLES.map(
+    (role) => `${role} ${records.filter((record) => record.role === role).length}`,
+  );
+  const sample = records[0]?.id ?? "drop";
+  return [
+    `${records.length} moves from ${sources.length} sources. Ask for the few you need; nothing here lists them all.`,
+    `roles: ${roles.join(", ")}`,
+    `sources: ${count(sources).join(", ")}`,
+    `qualities for --like: ${Object.keys(QUALITIES).join(", ")}`,
+    "npm run motion:moves -- --role enter --like heavy      (the entrances that feel heavy)",
+    "npm run motion:moves -- --find squash --fields scale    (words in an id, a description or an option)",
+    `npm run motion:moves -- --near ${sample}      (moves that move like one; --far for the opposite)`,
+    "npm run motion:moves -- <id>                  (one move in full: options, descriptors, importers)",
+    "add --in <brief> for imports that resolve from that brief, --all to lift the 10-row cap.",
+    PARTS_HINT,
+  ];
+}
+
 /** Runs the command for parsed arguments and an app root: the lines to print and the exit code. */
 export async function runCatalog(
   args: Extract<CatalogArgs, { kind: "ok" }>,
   root: string,
+  options: CatalogOptions = {},
 ): Promise<CatalogRun> {
   if (args.parts) return { lines: formatParts(), code: 0 };
-  const { modules, problems } = await loadAppModules(root);
-  const all = collectRecords(modules);
+  const { entries, problems } = await loadCatalog(root, options);
+  const all = entries;
+  const records = all.map(({ record }) => record);
+  const problemCode = problems.length === 0 ? 0 : 1;
   if (args.candidates) {
     const found = candidatesOf(root, all);
     return {
       lines: found.length === 0 ? ["No candidates."] : found.map(formatCandidate),
-      code: problems.length === 0 ? 0 : 1,
+      code: problemCode,
     };
   }
-  const byRole = all.filter(({ record }) => args.role === undefined || record.role === args.role);
-  const selected =
-    args.id === undefined ? byRole : byRole.filter(({ record }) => record.id === args.id);
-  if (args.id !== undefined && selected.length === 0)
-    return {
-      lines: [`No move "${args.id}". Known: ${all.map(({ record }) => record.id).join(", ")}.`],
-      code: 1,
-    };
+  const request: CatalogQuery = {
+    ...(args.role === undefined ? {} : { role: args.role }),
+    ...(args.find === undefined ? {} : { find: args.find }),
+    ...(args.fields === undefined ? {} : { fields: args.fields }),
+    ...(args.like === undefined ? {} : { like: args.like }),
+    ...(args.near === undefined ? {} : { near: args.near }),
+    ...(args.far === undefined ? {} : { far: args.far }),
+    ...(args.in === undefined ? {} : { in: args.in }),
+    ...(args.all ? { all: true } : {}),
+  };
+  let selected = all;
+  let rows: readonly QueryRow[] = [];
+  if (args.id !== undefined) {
+    const named = lookup(records, args.id).filter(
+      (record) => args.role === undefined || record.role === args.role,
+    );
+    const sources = new Set(named.map(({ source }) => source));
+    if (named.length === 0)
+      return {
+        lines: [`No move "${args.id}". Known: ${records.map(({ id }) => id).join(", ")}.`],
+        code: 1,
+      };
+    if (sources.size > 1 && !args.check)
+      return {
+        lines: [
+          `${args.id} is declared in ${[...sources].map((source) => `${source}/${args.id}`).join(" and ")}. Ask with source/id.`,
+        ],
+        code: 1,
+      };
+    selected = all.filter(({ record }) => named.includes(record));
+  } else if (isQuery(request)) {
+    const found = query(records, request);
+    if (found.kind === "refused") return { lines: [found.message], code: 1 };
+    rows = found.rows;
+    selected = rows.flatMap(({ record }) => all.filter((entry) => entry.record === record));
+  }
   if (args.check) {
     const findings = [...problems, ...checkCatalog(all, selected)];
     const lines = args.json
@@ -381,13 +965,37 @@ export async function runCatalog(
         : findings;
     return { lines, code: findings.length === 0 ? 0 : 1 };
   }
-  const records = selected.map(({ record }) => record);
-  // A modifier's example input is a function, which JSON drops; its source is what a reader can use.
-  const printable = (_key: string, value: unknown): unknown =>
-    typeof value === "function" ? String(value).replace(/s+/g, " ") : value;
   if (args.json)
-    return { lines: [JSON.stringify(records, printable)], code: problems.length === 0 ? 0 : 1 };
-  const body = args.id === undefined ? records.map(formatLine) : records.flatMap(formatFull);
-  const hint = args.id === undefined ? [PARTS_HINT] : [];
-  return { lines: [...body, ...problems, ...hint], code: problems.length === 0 ? 0 : 1 };
+    return {
+      lines: [
+        JSON.stringify(
+          selected.map(({ record }) => record),
+          (_key, value: unknown) => (typeof value === "function" ? inputText(value) : value),
+        ),
+      ],
+      code: problemCode,
+    };
+  if (args.id !== undefined)
+    return {
+      lines: [
+        ...selected.flatMap(({ record }) =>
+          formatFull(record, {
+            importedBy: briefsImporting(root, record),
+            importText: importLine(record, root, args.in),
+          }),
+        ),
+        ...problems,
+      ],
+      code: problemCode,
+    };
+  if (!isQuery(request)) return { lines: [...summarize(records), ...problems], code: problemCode };
+  const shownRows = args.all || rows.length <= MOST_ROWS ? rows : rows.slice(0, MOST_ROWS - 1);
+  const more =
+    shownRows.length < rows.length
+      ? [`${rows.length - shownRows.length} more; --all lists them.`]
+      : [];
+  return {
+    lines: [...shownRows.map((row) => formatRow(row, root, args.in)), ...more, ...problems],
+    code: problemCode,
+  };
 }

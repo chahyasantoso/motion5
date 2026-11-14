@@ -78,7 +78,7 @@ describe("motion:new", () => {
       if (args.kind !== "ok") throw new Error(args.message);
       return runCatalog(args, dir);
     };
-    const listed = await catalog([]);
+    const listed = await catalog(["--all"]);
     expect(listed.lines.map((line) => line.split(" ")[0])).toContain("rope-in");
     const checked = await catalog(["--check"]);
     expect(checked.code).toBe(1);

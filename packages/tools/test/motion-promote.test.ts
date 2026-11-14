@@ -154,9 +154,9 @@ describe("motion:promote", () => {
     expect(moves.map((found) => found.id)).toEqual(["slide-in"]);
     for (const found of moves) expect(checkMove(found)).toEqual([]);
     const { modules } = await loadAppModules(root);
-    expect(
-      collectRecords(modules, {}).filter(({ record }) => record.source.kind === "app"),
-    ).toEqual([]);
+    expect(collectRecords(modules, {}).filter(({ record }) => record.file !== undefined)).toEqual(
+      [],
+    );
   });
 
   it("refuses a move that is not a candidate and changes nothing", async () => {

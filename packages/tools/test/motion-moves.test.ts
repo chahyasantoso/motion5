@@ -52,16 +52,24 @@ const builtInIds = collectRecords([])
   .sort();
 
 describe("motion:moves", () => {
-  it("lists the built-ins first and then the app's moves, each group by id", async () => {
-    const run = await runCatalog(ok([]), app());
-    const listed = run.lines.slice(0, -1);
-    const ids = listed.map((line) => line.split(" ")[0]);
-    expect(ids).toEqual([...builtInIds, "bad", "good"]);
+  it("lists every move by id with its source, fields and import under --all", async () => {
+    const run = await runCatalog(ok(["--all"]), app());
+    const ids = run.lines.map((line) => line.split(" | ")[0]);
+    expect(ids).toEqual([...builtInIds, "bad", "good"].sort());
     expect(run.code).toBe(0);
-    expect(run.lines.at(-1)).toBe(PARTS_HINT);
-    expect(listed.at(-1)).toBe(
-      "good [enter] Slides in from the left. | options: distance number 0..500, default 100 | moments: arrive | import from ./moves/good",
+    expect(run.lines).toContain(
+      'good | reel | enter | x | Slides in from the left. | import { good } from "./reel/src/moves/good"',
     );
+    const drop = run.lines.find((line) => line.startsWith("drop | ")) ?? "";
+    expect(drop).toContain("| @gerak/moves | enter | ");
+    expect(drop.endsWith('import { drop } from "@gerak/moves"')).toBe(true);
+  });
+
+  it("prints the summary, not the moves, when asked for nothing", async () => {
+    const run = await runCatalog(ok([]), app());
+    expect(run.lines.length).toBeLessThanOrEqual(20);
+    expect(run.lines.at(-1)).toBe(PARTS_HINT);
+    expect(run.lines.some((line) => line.startsWith("good |"))).toBe(false);
   });
 
   it("applies the role filter to a named move, and prints a modifier's input in JSON", async () => {
@@ -82,8 +90,6 @@ describe("motion:moves", () => {
         'import { defineMove, span, squashed, type Pose2d, type Time } from "@gerak/moves";',
       ),
     );
-    const line = (await runCatalog(ok([]), dir)).lines.find((text) => text.startsWith("made "));
-    expect(line).toContain(" | parts: span + squashed | ");
     const full = await runCatalog(ok(["made"]), dir);
     expect(full.lines).toContain("parts: span + squashed");
     const json = await runCatalog(ok(["made", "--json"]), dir);
@@ -112,8 +118,8 @@ describe("motion:moves", () => {
   it("lists the built-ins alone when the app has no moves folder", async () => {
     const dir = mkdtempSync(join(tmpdir(), "motion-moves-"));
     roots.push(dir);
-    const run = await runCatalog(ok([]), dir);
-    expect(run.lines.slice(0, -1).map((line) => line.split(" ")[0])).toEqual(builtInIds);
+    const run = await runCatalog(ok(["--all"]), dir);
+    expect(run.lines.map((line) => line.split(" | ")[0])).toEqual(builtInIds);
     expect(run.code).toBe(0);
   });
 
@@ -131,7 +137,7 @@ describe("motion:moves", () => {
     expect(run.code).toBe(0);
   });
 
-  it("reports an id declared twice, in the app or against a built-in", async () => {
+  it("reports an id declared twice within a source, and lets two sources share one", async () => {
     const dir = app();
     writeFileSync(join(dir, "reel/src/moves/again.ts"), move("good", ""));
     writeFileSync(join(dir, "reel/src/moves/clash.ts"), move("drop", ""));
@@ -140,14 +146,12 @@ describe("motion:moves", () => {
     expect(run.lines).toContainEqual(
       expect.stringMatching(/^good: declared 2 times, in .*again\.ts and .*good\.ts\.$/),
     );
-    expect(run.lines).toContainEqual(
-      expect.stringMatching(/^drop: declared 2 times, in @gerak\/moves and .*clash\.ts\.$/),
-    );
+    expect(run.lines.some((line) => line.startsWith("drop: declared"))).toBe(false);
   });
 
   it("filters by role, and refuses an unknown role with the known ones", async () => {
     const reveals = await runCatalog(ok(["--role", "reveal"]), app());
-    expect(reveals.lines.map((line) => line.split(" ")[0])).toEqual(["trace", "wipe", "npm"]);
+    expect(reveals.lines.map((line) => line.split(" | ")[0])).toEqual(["trace", "wipe"]);
     const usage = parseCatalogArgs(["--role", "dance"]);
     expect(usage.kind).toBe("usage");
     if (usage.kind === "usage")

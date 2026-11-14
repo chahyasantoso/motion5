@@ -1,13 +1,6 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import {
-  candidatesOf,
-  collectRecords,
-  formatCandidate,
-  loadAppModules,
-  sourceFiles,
-} from "./catalog";
+import { candidatesOf, formatCandidate, loadCatalog, sourceFiles } from "./catalog";
 
 /** The usage line of `motion:promote`. */
 export const PROMOTE_USAGE = "usage: motion:promote <id> [--root dir]";
@@ -46,13 +39,10 @@ export interface PromoteRun {
   readonly code: 0 | 1;
 }
 
-/** Where promotion writes: the moves package, a folder holding `src/index.ts`. */
+/** Where promotion writes when the root names no `promoteTo`: a moves package, a folder holding `src/index.ts`. */
 export interface PromoteOptions {
-  readonly movesPackage: string;
+  readonly movesPackage?: string;
 }
-
-/** The moves package of this repository. */
-export const DEFAULT_MOVES_PACKAGE = fileURLToPath(new URL("../../../moves/", import.meta.url));
 
 const refuse = (...lines: string[]): PromoteRun => ({ lines, code: 1 });
 
@@ -179,10 +169,19 @@ function documented(
 export async function promoteMove(
   id: string,
   root: string,
-  options: PromoteOptions = { movesPackage: DEFAULT_MOVES_PACKAGE },
+  options: PromoteOptions = {},
 ): Promise<PromoteRun> {
-  const { modules } = await loadAppModules(root);
-  const all = collectRecords(modules);
+  const { entries: all, config } = await loadCatalog(root);
+  const movesFolder =
+    options.movesPackage !== undefined
+      ? join(options.movesPackage, "src", "moves")
+      : config.promoteTo === undefined
+        ? undefined
+        : resolve(root, config.promoteTo);
+  if (movesFolder === undefined)
+    return refuse(
+      `${join(root, "package.json")} has no "gerak.promoteTo": set it to the folder promoted moves are written to, such as "../../packages/moves/src/moves".`,
+    );
   const candidates = candidatesOf(root, all);
   const candidate = candidates.find((found) => found.id === id);
   if (candidate === undefined)
@@ -193,14 +192,14 @@ export async function promoteMove(
         : `Candidates: ${candidates.map(formatCandidate).join("; ")}.`,
     );
   const base = basename(candidate.file, ".ts");
-  const destination = join(options.movesPackage, "src", "moves", `${base}.ts`);
+  const destination = join(movesFolder, `${base}.ts`);
   if (existsSync(destination)) return refuse(`${destination} already exists.`);
   const source = readFileSync(candidate.file, "utf8");
   if (/from\s*["']\.{1,2}\//.test(source))
     return refuse(
       `${candidate.file} imports other local files; promote those first or inline them.`,
     );
-  const indexPath = join(options.movesPackage, "src", "index.ts");
+  const indexPath = join(dirname(movesFolder), "index.ts");
   const index = readFileSync(indexPath, "utf8");
   const relativeText = relativeImports(source, moduleOfNames(index));
   if ("missing" in relativeText)
@@ -216,11 +215,7 @@ export async function promoteMove(
       `${candidate.file} exports in a form promotion does not carry; export each move as a const.`,
     );
   const moves = new Set(
-    all.flatMap(({ record }) =>
-      record.source.kind === "app" && record.source.file === candidate.file
-        ? [record.exportName]
-        : [],
-    ),
+    all.flatMap(({ record }) => (record.file === candidate.file ? [record.exportName] : [])),
   );
   const own = [...source.matchAll(OWN_EXPORT)].map(([, kind = "", name = ""]) => ({
     name,
@@ -249,9 +244,7 @@ export async function promoteMove(
     return refuse(
       `${stuck.map(({ importer }) => importer).join(", ")} refer to ${candidate.file} in a form promotion does not rewrite (a re-export, import *, or a dynamic import); make them named imports first.`,
     );
-  const here = all.flatMap(({ record }) =>
-    record.source.kind === "app" && record.source.file === candidate.file ? [record] : [],
-  );
+  const here = all.flatMap(({ record }) => (record.file === candidate.file ? [record] : []));
   writeFileSync(destination, documented(relativeText.text, here));
   unlinkSync(candidate.file);
   const separator = index.endsWith("\n") ? "" : "\n";
