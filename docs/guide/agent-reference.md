@@ -654,7 +654,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   the scene answers that is not cast, a member whose value changes outside its `on` stretches (before the first, in a
   gap, or after the last), a path that reads its own box, paths that read each other in a loop, and a text function
   that throws or answers something other than a string. A step while a member, its group or its list is hidden by
-  `on` is not a jump.
+  `on` is not a jump. A module may export `limits`, `{ target: { jump?, turn?, ratio? } }`, to judge one target by its own
+  limits instead of the flags; a `custom` value is judged as a ratio.
 - **`motion:check <page> --watch sel,sel --to ms`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's

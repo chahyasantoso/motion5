@@ -219,3 +219,46 @@ describe("motion:review on time itself", () => {
     expect(review(drifting(true)).findings.filter((line) => line.includes("sought"))).toEqual([]);
   });
 });
+
+describe("review limits per target", () => {
+  const step = (time: Time): number => Math.floor((elapsedOf(time.clock) ?? 0) / 16);
+  const moved = (module: object) =>
+    review({ durationMs: 64, ...module }).findings.filter((line) => /jumps|turns/.test(line));
+
+  it("judges a target by its own limit and the rest by the flag", () => {
+    const found = moved({
+      scene: (time: Time) => ({
+        label: { x: step(time) * 40, y: 0 },
+        body: { x: step(time) * 0.3 },
+      }),
+      limits: { body: { jump: 0.1 } },
+    });
+    expect(found.some((line) => line.startsWith("body.x jumps"))).toBe(true);
+    expect(found.some((line) => line.startsWith("label."))).toBe(false);
+  });
+
+  it("judges a custom number as a ratio, never a position", () => {
+    const blink = (value: (time: Time) => number) => ({
+      scene: (time: Time) => ({ character: { custom: { blink: value(time) } } }),
+    });
+    expect(moved(blink((time) => Math.min(1, step(time) * 0.5)))).toEqual([]);
+    const found = moved(blink((time) => (step(time) === 2 ? 2 : 0)));
+    expect(found[0]).toBe("character.custom.blink jumps 2 at 32 ms");
+  });
+
+  it("measures a 3D turn owner by its target's turn limit", () => {
+    const head = { scene: (time: Time) => ({ bones: { Head: { rotationX: step(time) * 20 } } }) };
+    expect(moved(head)).toEqual([]);
+    const found = moved({ ...head, limits: { bones: { turn: 10 } } });
+    expect(found[0]).toBe("bones.Head turns 20 at 16 ms");
+  });
+
+  it("reports a limit for a target the scene never returns", () => {
+    const found = review({
+      durationMs: 64,
+      scene: () => ({ a: { x: 0 } }),
+      limits: { ghost: { jump: 1 } },
+    }).findings;
+    expect(found).toContain('limits names "ghost", which the scene never returns');
+  });
+});

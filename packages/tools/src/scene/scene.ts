@@ -27,12 +27,54 @@ export interface Beat {
   readonly to: number;
 }
 
+/** A target's own review limits, in the units its fields use; a field left out takes the command's flag. */
+export interface TargetLimits {
+  readonly jump?: number;
+  readonly turn?: number;
+  readonly ratio?: number;
+}
+
+const LIMIT_FIELDS = ["jump", "turn", "ratio"] as const;
+
+/** Target name to its review limits, or why a module's `limits` is malformed. */
+function readLimits(
+  value: unknown,
+): { readonly limits: Readonly<Record<string, TargetLimits>> } | { readonly reason: string } {
+  if (value === undefined) return { limits: {} };
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return { reason: "The module's `limits` must be a record of target name to limits." };
+  const read: Record<string, TargetLimits> = {};
+  for (const [target, entry] of Object.entries(value)) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry))
+      return {
+        reason: `The module's \`limits.${target}\` must be { jump?, turn?, ratio? }.`,
+      };
+    const own: { jump?: number; turn?: number; ratio?: number } = {};
+    for (const [field, limit] of Object.entries(entry)) {
+      const known = LIMIT_FIELDS.find((name) => name === field);
+      if (known === undefined)
+        return {
+          reason: `The module's \`limits.${target}.${field}\` is not a limit; use jump, turn or ratio.`,
+        };
+      if (typeof limit !== "number" || !Number.isFinite(limit) || limit < 0)
+        return {
+          reason: `The module's \`limits.${target}.${field}\` must be a finite number at or above 0.`,
+        };
+      own[known] = limit;
+    }
+    read[target] = own;
+  }
+  return { limits: read };
+}
+
 /** What a scene module exports for the tools: its scene, how long it runs in ms, and its own cues;
  * a stage module also carries its beats and the names its cast makes. */
 export interface SceneModule {
   readonly scene: (time: Time, events: Events) => object;
   readonly durationMs: number;
   readonly cues: Events;
+  /** Review limits by target name, the first segment of a path; empty when the module gives none. */
+  readonly limits: Readonly<Record<string, TargetLimits>>;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
   /** A stage module's `skins.dom.css`, which the review reads for the members it names. */
@@ -102,6 +144,9 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   const cues: unknown = Reflect.get(Object(value), "cues");
   if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
+  const readLimit = readLimits(Reflect.get(Object(value), "limits"));
+  if ("reason" in readLimit) return readLimit;
+  const { limits } = readLimit;
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
   if (Reflect.get(Object(value), "beats") !== undefined) {
@@ -126,6 +171,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
     return {
       ...(unmeasured ? { unmeasured } : {}),
       cues: ownCues,
+      limits,
       scene: (time, events) => scene(time, events, restFor(events), layouts),
       durationMs: beats.durationMs,
       beats: beats.order.flatMap((name) => {
@@ -144,6 +190,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
     return { reason: "The module exports no `durationMs`, a positive number." };
   return {
     cues: ownCues,
+    limits,
     scene: (time, events) => {
       const values: unknown = Reflect.apply(scene, undefined, [time, events, NO_REST]);
       if (typeof values !== "object" || values === null)
