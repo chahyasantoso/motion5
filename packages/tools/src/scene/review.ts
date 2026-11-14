@@ -97,12 +97,29 @@ function numbersOf(value: unknown, path: string, into: Map<string, number>): voi
 type FieldKind = "position" | "turn" | "ratio";
 
 function kindOf(path: string): FieldKind {
+  if (/(^|\.)custom(\.|\[|$)/.test(path)) return "ratio";
   if (/(^|\.)rotation[XYZ]?$/.test(path)) return "turn";
   if (/(^|\.)(scale\w*|opacity)$/.test(path)) return "ratio";
   return "position";
 }
 
 type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio">;
+
+/** The target a path belongs to: its first segment. */
+function targetOf(path: string): string {
+  return path.split(/[.[]/)[0] ?? "";
+}
+
+/** The flag's limits with a target's own given in their place. */
+function limitsFor(flags: Limits, perTarget: SceneModule["limits"], target: string): Limits {
+  const own = perTarget[target];
+  return {
+    hold: flags.hold,
+    jump: own?.jump ?? flags.jump,
+    turn: own?.turn ?? flags.turn,
+    ratio: own?.ratio ?? flags.ratio,
+  };
+}
 
 /** How far a field moved in one step, and how far it may: turns wrap at a full turn, so 179 to -179 is 2. */
 function stepAndLimit(
@@ -166,6 +183,7 @@ export function reviewValues(
   limits: Limits,
   hidden: (path: string, ms: number) => boolean = () => false,
   ongoing: (name: string) => boolean = () => false,
+  perTarget: SceneModule["limits"] = {},
 ): readonly string[] {
   const jumps: string[] = [];
   const numbers = samples.map(({ targets }) => {
@@ -178,12 +196,12 @@ export function reviewValues(
     if (before === undefined) return;
     const turned3d = new Set(
       [...now.keys(), ...before.keys()]
-        .filter((path) => /(^|.)rotation[XY]$/.test(path))
+        .filter((path) => /(^|.)rotation[XY]$/.test(path) && kindOf(path) === "turn")
         .map(ownerOf),
     );
     for (const owner of turned3d) {
       const step = turnBetween(before, now, owner);
-      if (step > limits.turn)
+      if (step > limitsFor(limits, perTarget, targetOf(owner)).turn)
         jumps.push(
           `${owner} turns ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
         );
@@ -192,7 +210,12 @@ export function reviewValues(
       const earlier = before.get(path);
       if (earlier === undefined) continue;
       if (kindOf(path) === "turn" && turned3d.has(ownerOf(path))) continue;
-      const [step, limit] = stepAndLimit(path, earlier, value, limits);
+      const [step, limit] = stepAndLimit(
+        path,
+        earlier,
+        value,
+        limitsFor(limits, perTarget, targetOf(path)),
+      );
       const from = samples[index - 1]?.at ?? 0;
       const at = samples[index]?.at ?? 0;
       if (step > limit && !hidden(path, from) && !hidden(path, at))
@@ -216,7 +239,11 @@ export function reviewValues(
       prints[before]?.[name] === prints[after]?.[name],
     limits.hold,
   );
-  return [...jumps, ...rest.map(describeFinding)];
+  const returned = new Set(samples.flatMap(({ targets }) => Object.keys(targets)));
+  const ghosts = Object.keys(perTarget)
+    .filter((name) => !returned.has(name))
+    .map((name) => `limits names "${name}", which the scene never returns`);
+  return [...jumps, ...rest.map(describeFinding), ...ghosts];
 }
 
 type Samples = Parameters<typeof reviewValues>[0];
@@ -533,7 +560,7 @@ export function reviewSceneModule(
   };
   const ongoing = (name: string) => byName.get(name)?.ongoing === true;
   const findings = [
-    ...reviewValues(samples, request, hidden, ongoing),
+    ...reviewValues(samples, request, hidden, ongoing, module.limits),
     ...seekFindings(module, samples),
     ...lateCueFindings(module),
   ];

@@ -126,6 +126,33 @@ describe("samples as events", () => {
   });
 });
 
+describe("a module's limits", () => {
+  const base = { durationMs: 10, scene: () => ({}) };
+
+  it("reads per-target limits, empty when absent", () => {
+    expect(moduleOf(base).limits).toEqual({});
+    expect(moduleOf({ ...base, limits: { body: { jump: 0.1, turn: 0 } } }).limits).toEqual({
+      body: { jump: 0.1, turn: 0 },
+    });
+  });
+
+  it("refuses a malformed limit, naming the target and field", () => {
+    for (const bad of [-1, "1", Number.NaN, Infinity])
+      expect(readSceneModule({ ...base, limits: { body: { jump: bad } } })).toEqual({
+        reason: expect.stringContaining("`limits.body.jump`"),
+      });
+    expect(readSceneModule({ ...base, limits: { body: { speed: 1 } } })).toEqual({
+      reason: expect.stringContaining("`limits.body.speed`"),
+    });
+    expect(readSceneModule({ ...base, limits: { body: 3 } })).toEqual({
+      reason: expect.stringContaining("`limits.body`"),
+    });
+    expect(readSceneModule({ ...base, limits: [] })).toEqual({
+      reason: expect.stringContaining("`limits`"),
+    });
+  });
+});
+
 describe("events with a point", () => {
   it("parse a point after the time, and keep commas inside it", () => {
     expect(parseEvents("click:stage@300(640,360),go@500")).toEqual([

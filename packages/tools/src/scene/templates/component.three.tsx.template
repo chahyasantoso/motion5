@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   AmbientLight,
   BoxGeometry,
@@ -9,43 +9,41 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { usePlayer } from "@gerak/react";
+import { usePlayer, useTarget } from "@gerak/react";
+import { applyPose3d } from "@gerak/three";
 import { useTarget3d } from "@gerak/three/react";
-import { clock, scene } from "./__NAME__-scene";
+import { clock, lens, scene, stage } from "./__NAME__-scene";
 
-const WIDTH = 1280;
-const HEIGHT = 720;
-
-/** Builds the Three.js stage, binds each target to its mesh, and renders every frame; click replays.
+/** Builds the Three.js stage, binds each target, and draws when a target is written; click replays.
  * `onReady` runs once the first frame has drawn. */
 export const __COMPONENT__: React.FC<{ readonly onReady?: () => void }> = ({ onReady }) => {
   const playing = usePlayer(scene, clock);
-  const box = useTarget3d(playing?.player, "box");
+  const draw = useRef<() => void>(() => undefined);
+  const invalidate = useCallback(() => draw.current(), []);
+  const box = useTarget3d(playing?.player, "box", { invalidate });
+  const label = useTarget(playing?.player, "label");
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const parent = host.current;
     if (parent === null) return undefined;
     const renderer = new WebGLRenderer({ preserveDrawingBuffer: true });
-    renderer.setSize(WIDTH, HEIGHT);
+    renderer.setSize(stage.width, stage.height);
     parent.appendChild(renderer.domElement);
-    const stage = new Scene();
-    const camera = new PerspectiveCamera(50, WIDTH / HEIGHT, 0.1, 100);
-    camera.position.set(0, 0, 10);
+    const world = new Scene();
+    const camera = new PerspectiveCamera(lens.fov, stage.width / stage.height, 0.1, 100);
+    applyPose3d(camera, lens);
     const light = new DirectionalLight(0xffffff, 2);
     light.position.set(3, 5, 6);
     const geometry = new BoxGeometry(2, 2, 2);
     const material = new MeshStandardMaterial();
     const mesh = new Mesh(geometry, material);
-    stage.add(new AmbientLight(0xffffff, 0.5), light, mesh);
+    world.add(new AmbientLight(0xffffff, 0.5), light, mesh);
     box(mesh);
-    renderer.render(stage, camera);
+    draw.current = () => renderer.render(world, camera);
+    draw.current();
     onReady?.();
-    let frame = requestAnimationFrame(function draw() {
-      renderer.render(stage, camera);
-      frame = requestAnimationFrame(draw);
-    });
     return () => {
-      cancelAnimationFrame(frame);
+      draw.current = () => undefined;
       box(null);
       geometry.dispose();
       material.dispose();
@@ -53,5 +51,16 @@ export const __COMPONENT__: React.FC<{ readonly onReady?: () => void }> = ({ onR
       renderer.domElement.remove();
     };
   }, [box, onReady]);
-  return <div ref={host} className="stage" onClick={() => playing?.driver.replay()} />;
+  return (
+    <div
+      ref={host}
+      className="stage"
+      style={{ width: stage.width, height: stage.height }}
+      onClick={() => playing?.driver.replay()}
+    >
+      <div ref={label} className="label">
+        box
+      </div>
+    </div>
+  );
 };

@@ -49,6 +49,7 @@ export {
   fk3d,
   ik3d,
   jointOf,
+  posedJoints3d,
   type Bone3d,
   type BoneIdsOf3d,
   type BonePose3d,

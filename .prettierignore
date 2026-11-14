@@ -10,6 +10,7 @@ plan
 
 # Generated and machine-written data nobody edits by hand.
 apps/pose-gap-filler/test/fixtures/phase5-legacy-trace.json
+apps/pieces/references/*.json
 
 # A hand-made piece kept exactly as it was written.
 packages/tools/test/fixtures/showreel-original

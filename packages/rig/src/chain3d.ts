@@ -8,6 +8,7 @@ import {
   matrixFromEuler3d,
   matrixFromQuaternion,
   multiplyMatrix3,
+  multiplyVector3,
   readPivotOffset3d,
   swingFrame3d,
   transposeMatrix3,
@@ -103,7 +104,15 @@ export type Goal3d = {
 
 /** Where each joint of a model sits at rest, by name, as `motion:joints` writes it. */
 export type JointTable3d = Readonly<
-  Record<string, { readonly x: number; readonly y: number; readonly z: number }>
+  Record<
+    string,
+    {
+      readonly x: number;
+      readonly y: number;
+      readonly z: number;
+      readonly parent?: string | null;
+    }
+  >
 >;
 
 /** Bone ids for a joint tuple: every joint except the final tip starts a bone. */
@@ -555,6 +564,81 @@ export function jointOf<const Name extends string>(
   const joint = Object.hasOwn(joints, name) ? joints[name] : undefined;
   if (joint === undefined) throw new RangeError(`jointOf: no joint "${name}".`);
   return Object.freeze({ id: name, x: joint.x, y: joint.y, z: joint.z });
+}
+
+/** Every joint's world point under `bones`, posed as `applyBones` poses them; `root` moves and turns the
+ * model's parent group, its scale ignored. Throws on a bone the table lacks. */
+export function posedJoints3d<const Table extends JointTable3d>(
+  table: Table,
+  bones: Readonly<Partial<Record<string, BonePose3d>>>,
+  root: BonePose3d = {},
+): Readonly<
+  Record<keyof Table & string, { readonly x: number; readonly y: number; readonly z: number }>
+> {
+  for (const name of Object.keys(bones)) {
+    if (!Object.hasOwn(table, name)) throw new RangeError(`posedJoints3d: no joint "${name}".`);
+  }
+  const placed = new Map<string, { readonly at: Vec3; readonly turn: Matrix3 }>();
+  const place = (
+    name: string,
+    path: ReadonlySet<string>,
+  ): { readonly at: Vec3; readonly turn: Matrix3 } => {
+    const known = placed.get(name);
+    if (known !== undefined) return known;
+    if (path.has(name)) throw new RangeError(`posedJoints3d: joint "${name}" is its own ancestor.`);
+    const joint = table[name];
+    if (joint === undefined) throw new RangeError(`posedJoints3d: no joint "${name}".`);
+    const pose = bones[name] ?? {};
+    const own = matrixFromEuler3d({
+      rotation: readNumber(pose.rotation),
+      rotationX: readNumber(pose.rotationX),
+      rotationY: readNumber(pose.rotationY),
+    });
+    const shift: Vec3 = [readNumber(pose.x), readNumber(pose.y), readNumber(pose.z)];
+    const parentName = joint.parent ?? null;
+    const parentJoint = parentName === null ? undefined : table[parentName];
+    if (parentName !== null && parentJoint === undefined) {
+      throw new RangeError(`posedJoints3d: joint "${name}" names unknown parent "${parentName}".`);
+    }
+    let result: { readonly at: Vec3; readonly turn: Matrix3 };
+    if (parentName === null || parentJoint === undefined) {
+      result = {
+        at: [joint.x + shift[0], joint.y + shift[1], joint.z + shift[2]],
+        turn: own,
+      };
+    } else {
+      const parent = place(parentName, new Set([...path, name]));
+      const offset = multiplyVector3(parent.turn, [
+        joint.x - parentJoint.x + shift[0],
+        joint.y - parentJoint.y + shift[1],
+        joint.z - parentJoint.z + shift[2],
+      ]);
+      result = {
+        at: [parent.at[0] + offset[0], parent.at[1] + offset[1], parent.at[2] + offset[2]],
+        turn: multiplyMatrix3(parent.turn, own),
+      };
+    }
+    placed.set(name, result);
+    return result;
+  };
+  const rootTurn = matrixFromEuler3d({
+    rotation: readNumber(root.rotation),
+    rotationX: readNumber(root.rotationX),
+    rotationY: readNumber(root.rotationY),
+  });
+  const points: Record<string, { readonly x: number; readonly y: number; readonly z: number }> = {};
+  for (const name of Object.keys(table)) {
+    const at = multiplyVector3(rootTurn, place(name, new Set()).at);
+    points[name] = Object.freeze({
+      x: at[0] + readNumber(root.x),
+      y: at[1] + readNumber(root.y),
+      z: at[2] + readNumber(root.z),
+    });
+  }
+  return byId(
+    Object.keys(table).filter((name): name is keyof Table & string => Object.hasOwn(table, name)),
+    points,
+  );
 }
 
 /** Converts a 3D physics body's position and quaternion into a Pose3d-compatible object. */

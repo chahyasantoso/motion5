@@ -1,4 +1,4 @@
-import { eulerFromMatrix3d, type Matrix3, type Vec3 } from "@gerak/rig";
+import { eulerFromMatrix3d, matrixFromEuler3d, type Matrix3, type Vec3 } from "@gerak/rig";
 import type { Pose3d } from "./pose3d";
 
 type Point3 = { readonly x: number; readonly y: number; readonly z: number };
@@ -61,5 +61,45 @@ export function orbit(options: {
     x: options.target.x + flat * Math.sin(azimuth),
     y: options.target.y + options.radius * Math.sin(elevation),
     z: options.target.z + flat * Math.cos(azimuth),
+  };
+}
+
+/** A camera for `project3d`: where it is and how it turns, as a `Pose3d` whose scale is ignored, and its vertical
+ * field of view in degrees. */
+export type Lens3d = Pose3d & { readonly fov: number };
+
+/** Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs
+ * along the view, and `visible` is false behind the lens. */
+export function project3d(
+  point: Point3,
+  lens: Lens3d,
+  stage: { readonly width: number; readonly height: number },
+): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean } {
+  if (!(lens.fov > 0 && lens.fov < 180))
+    throw new RangeError("project3d: fov must be above 0 and below 180.");
+  if (![point.x, point.y, point.z].every(Number.isFinite))
+    throw new RangeError("project3d: the point must be finite.");
+  if (!(stage.width > 0 && stage.height > 0))
+    throw new RangeError("project3d: the stage needs a size.");
+  const turn = matrixFromEuler3d({
+    rotation: lens.rotation ?? 0,
+    rotationX: lens.rotationX ?? 0,
+    rotationY: lens.rotationY ?? 0,
+  });
+  const dx = point.x - (lens.x ?? 0);
+  const dy = point.y - (lens.y ?? 0);
+  const dz = point.z - (lens.z ?? 0);
+  const right = turn[0] * dx + turn[3] * dy + turn[6] * dz;
+  const up = turn[1] * dx + turn[4] * dy + turn[7] * dz;
+  const depth = -(turn[2] * dx + turn[5] * dy + turn[8] * dz);
+  const focal = 1 / Math.tan((lens.fov * Math.PI) / 360);
+  const aspect = stage.width / stage.height;
+  const across = depth > EPSILON ? (right * focal) / (aspect * depth) : 0;
+  const down = depth > EPSILON ? (up * focal) / depth : 0;
+  return {
+    x: ((across + 1) / 2) * stage.width + 0,
+    y: ((1 - down) / 2) * stage.height + 0,
+    depth,
+    visible: depth > EPSILON,
   };
 }

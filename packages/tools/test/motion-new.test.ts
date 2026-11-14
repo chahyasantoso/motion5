@@ -108,7 +108,7 @@ describe("motion:new", () => {
       'import { RopeWord } from "./rope-word";',
     );
     expect(readFileSync(join(dir, "src/rope-word.tsx"), "utf8")).toContain(
-      'import { clock, scene } from "./rope-word-scene";',
+      'import { clock, lens, scene, stage } from "./rope-word-scene";',
     );
   });
 
@@ -146,12 +146,15 @@ describe("motion:new", () => {
     const component = readFileSync(join(dir, "src/rope-word.tsx"), "utf8");
     expect(component).toContain('from "@gerak/three/react"');
     expect(component).toContain("preserveDrawingBuffer: true");
-    const module = readSceneModule(
-      await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href),
-    );
+    const loaded: unknown = await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href);
+    const module = readSceneModule(loaded);
     if ("reason" in module) throw new Error(module.reason);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
-    expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({ box: {} }));
+    expect(Reflect.get(Object(loaded), "stage")).toEqual({ width: 1280, height: 720 });
+    expect(Reflect.get(Object(Reflect.get(Object(loaded), "lens")), "fov")).toBe(50);
+    expect(samples.map((sample) => sample.targets)).toEqual(
+      Array(3).fill({ box: {}, label: { x: 640, y: 360, opacity: 1 } }),
+    );
     const config = ts.readConfigFile(join(process.cwd(), "tsconfig.json"), ts.sys.readFile);
     const options = ts.parseJsonConfigFileContent(config.config, ts.sys, process.cwd()).options;
     const program = ts.createProgram(
@@ -223,6 +226,7 @@ describe("motion:new", () => {
       "principles",
       "principles3d",
       "character3d",
+      "overlay3d",
     ] as const;
     for (const name of examples) {
       const scenePath = join(process.cwd(), "apps/examples/src", `${name}-scene.ts`);

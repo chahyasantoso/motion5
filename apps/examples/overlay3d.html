@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>overlay3d</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      .stage {
+        position: relative;
+        overflow: hidden;
+      }
+      .callout {
+        position: absolute;
+        left: 0;
+        top: 0;
+        padding: 3px 10px 3px 14px;
+        font:
+          600 15px/1.2 system-ui,
+          sans-serif;
+        color: #f6efe0;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+      .callout::before {
+        content: "";
+        position: absolute;
+        left: -4px;
+        top: -4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #7ccfb4;
+      }
+      .callout-tip::before {
+        background: #ff5fd2;
+      }
+      .callout-caption {
+        font-size: 22px;
+        padding-left: 0;
+      }
+      .callout-caption::before {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/overlay3d-main.tsx"></script>
+  </body>
+</html>
