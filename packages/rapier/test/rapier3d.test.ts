@@ -349,9 +349,9 @@ describe("one snapshot format", () => {
     const events = sim.events(liveAt(800));
     const landing = events.find(({ target, other }) => target === "ball" && other === "floor");
     expect(landing).toBeDefined();
-    expect(Math.abs((landing?.x ?? 0) - 3)).toBeLessThan(POINT_TOLERANCE);
-    expect(Math.abs(landing?.y ?? 1)).toBeLessThan(POINT_TOLERANCE);
-    expect(Math.abs((landing?.z ?? 0) + 2)).toBeLessThan(POINT_TOLERANCE);
+    expect(Math.abs((landing?.point?.x ?? 0) - 3)).toBeLessThan(POINT_TOLERANCE);
+    expect(Math.abs(landing?.point?.y ?? 1)).toBeLessThan(POINT_TOLERANCE);
+    expect(Math.abs((landing?.point?.z ?? 0) + 2)).toBeLessThan(POINT_TOLERANCE);
 
     const met = events.find(({ target }) => target === "left");
     expect(met?.other).toBe("right");
@@ -362,9 +362,9 @@ describe("one snapshot format", () => {
       [bodies.right, 0.7],
     ] as const) {
       const distance = Math.hypot(
-        (met?.x ?? 0) - (ball?.x ?? 0),
-        (met?.y ?? 0) - (ball?.y ?? 0),
-        (met?.z ?? 0) - (ball?.z ?? 0),
+        (met?.point?.x ?? 0) - (ball?.x ?? 0),
+        (met?.point?.y ?? 0) - (ball?.y ?? 0),
+        (met?.point?.z ?? 0) - (ball?.z ?? 0),
       );
       expect(Math.abs(distance - radius)).toBeLessThan(POINT_TOLERANCE);
     }

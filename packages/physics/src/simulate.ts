@@ -112,7 +112,11 @@ function sameEvent(a: MotionEvent | undefined, b: MotionEvent | undefined): bool
     a.target === b.target &&
     a.x === b.x &&
     a.y === b.y &&
-    a.value === b.value
+    a.value === b.value &&
+    a.other === b.other &&
+    a.point?.x === b.point?.x &&
+    a.point?.y === b.point?.y &&
+    a.point?.z === b.point?.z
   );
 }
 
@@ -296,9 +300,7 @@ export function simulate<
                 at,
                 target,
                 other,
-                x: contact.x,
-                y: contact.y,
-                ...z,
+                point: { x: contact.x, y: contact.y, ...z },
               });
         }
         reached = head;

@@ -265,9 +265,9 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
       const sim = simulate(create(), (world) => dropBall(world));
       const [contact] = sim.events(liveAt(2000));
       expect(contact?.other).toBe("floor");
-      expect(Math.abs((contact?.x ?? 0) - 640)).toBeLessThan(POINT_TOLERANCE);
-      expect(Math.abs((contact?.y ?? 0) - FLOOR)).toBeLessThan(POINT_TOLERANCE);
-      expect(contact?.z).toBeUndefined();
+      expect(Math.abs((contact?.point?.x ?? 0) - 640)).toBeLessThan(POINT_TOLERANCE);
+      expect(Math.abs((contact?.point?.y ?? 0) - FLOOR)).toBeLessThan(POINT_TOLERANCE);
+      expect(contact?.point?.z).toBeUndefined();
     });
 
     it("gives two balls rolled into each other one contact each, naming the other, on both surfaces", () => {
@@ -299,13 +299,13 @@ export function conformance(engine: string, create: () => PhysicsWorld): void {
         [left, at.right, 30],
       ] as const) {
         const distance = Math.hypot(
-          (point?.x ?? 0) - (ball?.x ?? 0),
-          (point?.y ?? 0) - (ball?.y ?? 0),
+          (point?.point?.x ?? 0) - (ball?.x ?? 0),
+          (point?.point?.y ?? 0) - (ball?.y ?? 0),
         );
         expect(Math.abs(distance - radius)).toBeLessThan(POINT_TOLERANCE);
       }
-      expect(right?.x).toBe(left?.x);
-      expect(right?.y).toBe(left?.y);
+      expect(right?.point?.x).toBe(left?.point?.x);
+      expect(right?.point?.y).toBe(left?.point?.y);
     });
 
     it("replays contact events the same after a seek back and forth", () => {
