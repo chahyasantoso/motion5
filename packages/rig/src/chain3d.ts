@@ -396,13 +396,66 @@ export function ik3d<Id extends string>(
           }),
     };
   });
-  const solved = solveChain3d(baseFrame, members, readPole(options.pole));
-  const rotations = byId(chain.order, solved.rotations3d);
+  const solved = solveChain3d(
+    baseFrame,
+    members,
+    readPole(options.pole ?? restBend(chain, baseFrame)),
+  );
+  const rotations = untwisted(chain, goals, baseFrame, byId(chain.order, solved.rotations3d));
   return {
     ...solved,
+    rotations3d: rotations,
     base: baseFrame,
     rotations,
   };
+}
+
+/** Where the first bone's tip sits at rest, carried by the base: the plane a two-bone chain bends in when no pole is given. */
+function restBend<Id extends string>(chain: Chain3d<Id>, base: WorldFrame3d): Vec3 | undefined {
+  const [first] = chain.order;
+  if (first === undefined || chain.order.length < 2) return undefined;
+  const tip = evaluateFrames3d(chain, { base, rotations: chain.rest.rotations }).tips.get(first)!;
+  return [tip.x, tip.y, tip.z];
+}
+
+function untwistable<Id extends string>(chain: Chain3d<Id>): boolean {
+  return chain.order.every((id) => {
+    const bone = boneOf3d(chain, id);
+    const offset = readPivotOffset3d(bone);
+    const limited = bone.limit !== undefined && bone.limit.kind !== FREE_JOINT3D.kind;
+    return !limited && offset.x === 0 && offset.y === 0 && offset.z === 0;
+  });
+}
+
+/** Each bone turned from its rest by the least swing that points it where the solve did, so no bone twists about
+ * its own length: a goal at rest answers the rest. Bones with an `orient` goal keep the solved turn. */
+function untwisted<Id extends string>(
+  chain: Chain3d<Id>,
+  goals: Readonly<Partial<Record<Id, Goal3d>>>,
+  baseFrame: WorldFrame3d,
+  solved: Readonly<Record<Id, Euler3d>>,
+): Readonly<Record<Id, Euler3d>> {
+  if (!untwistable(chain)) return solved;
+  const frames = evaluateFrames3d(chain, { base: baseFrame, rotations: solved });
+  const worlds = new Map<string, Matrix3>();
+  const rotations: Record<string, Euler3d> = {};
+  for (const id of chain.order) {
+    const parent = chain.structure.parentById.get(id);
+    const parentWorld = parent === undefined ? matrixFromEuler3d(baseFrame) : worlds.get(parent)!;
+    const pivot = frames.pivots.get(id)!;
+    const tip = frames.tips.get(id)!;
+    const orient = goals[id]?.orient;
+    const world =
+      typeof orient === "number" && orient > 0
+        ? matrixFromEuler3d(pivot)
+        : swingFrame3d(
+            multiplyMatrix3(parentWorld, matrixFromEuler3d(restEulerOf(boneOf3d(chain, id)))),
+            [tip.x - pivot.x, tip.y - pivot.y, tip.z - pivot.z],
+          );
+    worlds.set(id, world);
+    rotations[id] = eulerFromMatrix3d(multiplyMatrix3(transposeMatrix3(parentWorld), world));
+  }
+  return byId(chain.order, rotations);
 }
 
 /** Each bone's turn from its rest, for `applyBones`: turns only, `{}` at rest; the base is the bone's parent, so a moved base moves nothing here. */

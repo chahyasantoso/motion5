@@ -236,6 +236,41 @@ describe("bonesOf3d and chainFromRest3d", () => {
   });
 });
 
+describe("ik3d twist", () => {
+  const ARM = [
+    { id: "shoulder", x: 0.25, y: 1.5, z: 0 },
+    { id: "elbow", x: 0.7, y: 1.3, z: 0.1 },
+    { id: "hand", x: 1.15, y: 1.15, z: 0.15 },
+  ] as const;
+  const pole = [0.535, 1.014, 0.422] as const;
+  const turnOf = (pose: { rotation?: number; rotationX?: number; rotationY?: number }) => {
+    const q = quaternionFromEuler3d({
+      rotation: pose.rotation ?? 0,
+      rotationX: pose.rotationX ?? 0,
+      rotationY: pose.rotationY ?? 0,
+    });
+    return (2 * Math.acos(Math.min(1, Math.abs(q.w))) * 180) / Math.PI;
+  };
+
+  it.each([{ pole }, {}])("answers the rest pose for a goal at the rest tip (%o)", (options) => {
+    const { chain } = chainThrough3d(ARM);
+    const solved = ik3d(chain, { elbow: { x: 1.15, y: 1.15, z: 0.15 } }, options);
+    const turns = bonesOf3d(chain, solved);
+    expect(turnOf(turns.shoulder)).toBeLessThan(0.01);
+    expect(turnOf(turns.elbow)).toBeLessThan(0.02);
+  });
+
+  it.each([{ pole }, {}])("turns each bone a little for a goal moved a little (%o)", (options) => {
+    const { chain } = chainThrough3d(ARM);
+    const solved = ik3d(chain, { elbow: { x: 1.1499, y: 1.1501, z: 0.1501 } }, options);
+    const turns = bonesOf3d(chain, solved);
+    expect(turnOf(turns.shoulder)).toBeLessThan(0.5);
+    expect(turnOf(turns.elbow)).toBeLessThan(0.5);
+    const tip = fk3d(chain, solved).elbow;
+    expect(Math.hypot(tip.x - 1.1499, tip.y - 1.1501, tip.z - 0.1501)).toBeLessThan(1e-6);
+  });
+});
+
 describe("jointOf", () => {
   it("reads a joint typed by its name and refuses a missing one by name", () => {
     const table = { Jaw: { x: 0, y: 0.3, z: 0.1 } };
