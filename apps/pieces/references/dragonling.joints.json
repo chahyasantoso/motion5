@@ -1,0 +1,191 @@
+{
+  "model": "dragonling.glb",
+  "joints": {
+    "Hips": {
+      "x": 0,
+      "y": 0.198,
+      "z": -0.065165303170681,
+      "parent": null
+    },
+    "Spine": {
+      "x": 0,
+      "y": 0.201,
+      "z": 0.018834696829319,
+      "parent": "Hips"
+    },
+    "Chest": {
+      "x": 0,
+      "y": 0.216,
+      "z": 0.084834696829319,
+      "parent": "Spine"
+    },
+    "Neck": {
+      "x": 0,
+      "y": 0.282,
+      "z": 0.10583469682931901,
+      "parent": "Chest"
+    },
+    "Head": {
+      "x": 0,
+      "y": 0.345,
+      "z": 0.114834696829319,
+      "parent": "Neck"
+    },
+    "Jaw": {
+      "x": 0,
+      "y": 0.37696799999999997,
+      "z": 0.145074696829319,
+      "parent": "Head"
+    },
+    "LeftFrontUpLeg": {
+      "x": 0.09269999999999999,
+      "y": 0.222,
+      "z": 0.10883469682931901,
+      "parent": "Chest"
+    },
+    "LeftFrontElbow": {
+      "x": 0.09525,
+      "y": 0.12,
+      "z": 0.07583469682931901,
+      "parent": "LeftFrontUpLeg"
+    },
+    "LeftFrontLeg": {
+      "x": 0.09705,
+      "y": 0.048,
+      "z": 0.10883469682931901,
+      "parent": "LeftFrontElbow"
+    },
+    "LeftFrontFoot": {
+      "x": 0.0978,
+      "y": 0.018,
+      "z": 0.129834696829319,
+      "parent": "LeftFrontLeg"
+    },
+    "RightFrontUpLeg": {
+      "x": -0.09269999999999999,
+      "y": 0.222,
+      "z": 0.10883469682931901,
+      "parent": "Chest"
+    },
+    "RightFrontElbow": {
+      "x": -0.09525,
+      "y": 0.12,
+      "z": 0.07583469682931901,
+      "parent": "RightFrontUpLeg"
+    },
+    "RightFrontLeg": {
+      "x": -0.09705,
+      "y": 0.048,
+      "z": 0.10883469682931901,
+      "parent": "RightFrontElbow"
+    },
+    "RightFrontFoot": {
+      "x": -0.0978,
+      "y": 0.018,
+      "z": 0.129834696829319,
+      "parent": "RightFrontLeg"
+    },
+    "LeftWing": {
+      "x": 0.051000000000000004,
+      "y": 0.294,
+      "z": 0.024834696829319006,
+      "parent": "Chest"
+    },
+    "LeftWingFore": {
+      "x": 0.072,
+      "y": 0.3282,
+      "z": 0.012834696829318995,
+      "parent": "LeftWing"
+    },
+    "LeftWingHand": {
+      "x": 0.09119999999999999,
+      "y": 0.34679999999999994,
+      "z": -0.0009653031706809978,
+      "parent": "LeftWingFore"
+    },
+    "RightWing": {
+      "x": -0.051000000000000004,
+      "y": 0.294,
+      "z": 0.024834696829319006,
+      "parent": "Chest"
+    },
+    "RightWingFore": {
+      "x": -0.072,
+      "y": 0.3282,
+      "z": 0.012834696829318995,
+      "parent": "RightWing"
+    },
+    "RightWingHand": {
+      "x": -0.09119999999999999,
+      "y": 0.34679999999999994,
+      "z": -0.0009653031706809978,
+      "parent": "RightWingFore"
+    },
+    "Tail": {
+      "x": 0,
+      "y": 0.198,
+      "z": -0.13716530317068099,
+      "parent": "Hips"
+    },
+    "TailMid": {
+      "x": 0,
+      "y": 0.195,
+      "z": -0.203165303170681,
+      "parent": "Tail"
+    },
+    "TailTip": {
+      "x": 0,
+      "y": 0.222,
+      "z": -0.263165303170681,
+      "parent": "TailMid"
+    },
+    "LeftHindUpLeg": {
+      "x": 0.07445999999999998,
+      "y": 0.20400000000000001,
+      "z": -0.062165303170681,
+      "parent": "Hips"
+    },
+    "LeftHindLeg": {
+      "x": 0.08202,
+      "y": 0.12,
+      "z": -0.023165303170680995,
+      "parent": "LeftHindUpLeg"
+    },
+    "LeftHindHock": {
+      "x": 0.08742,
+      "y": 0.06,
+      "z": -0.10116530317068101,
+      "parent": "LeftHindLeg"
+    },
+    "LeftHindFoot": {
+      "x": 0.09119999999999999,
+      "y": 0.018000000000000002,
+      "z": -0.083165303170681,
+      "parent": "LeftHindHock"
+    },
+    "RightHindUpLeg": {
+      "x": -0.07445999999999998,
+      "y": 0.20400000000000001,
+      "z": -0.062165303170681,
+      "parent": "Hips"
+    },
+    "RightHindLeg": {
+      "x": -0.08202,
+      "y": 0.12,
+      "z": -0.023165303170680995,
+      "parent": "RightHindUpLeg"
+    },
+    "RightHindHock": {
+      "x": -0.08742,
+      "y": 0.06,
+      "z": -0.10116530317068101,
+      "parent": "RightHindLeg"
+    },
+    "RightHindFoot": {
+      "x": -0.09119999999999999,
+      "y": 0.018000000000000002,
+      "z": -0.083165303170681,
+      "parent": "RightHindHock"
+    }
+  }
+}
