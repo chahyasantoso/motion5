@@ -48,6 +48,17 @@ function colliderForShape(shape: Shape3d): RAPIER.ColliderDesc {
   }
 }
 
+function wallSideOffset(side: "min" | "max"): number {
+  switch (side) {
+    case "min":
+      return -THICK;
+    case "max":
+      return THICK;
+    default:
+      return unreachable(side);
+  }
+}
+
 function colliderForStatic(collider: Collider3d): RAPIER.ColliderDesc {
   switch (collider.kind) {
     case "floor":
@@ -57,8 +68,7 @@ function colliderForStatic(collider: Collider3d): RAPIER.ColliderDesc {
         0,
       );
     case "wall": {
-      const offset =
-        assertFinite(collider.at, "collider.at") + (collider.side === "min" ? -THICK : THICK);
+      const offset = assertFinite(collider.at, "collider.at") + wallSideOffset(collider.side);
       switch (collider.axis) {
         case "x":
           return RAPIER.ColliderDesc.cuboid(THICK, LONG, LONG).setTranslation(offset, 0, 0);

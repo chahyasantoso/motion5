@@ -29,22 +29,12 @@ import {
   SKELETON_JOINTS,
   clock,
   scene,
+  signalMotionReady,
 } from "./character3d-scene";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
 const UP = new Vector3(0, 1, 0);
-
-let markReady: () => void = () => undefined;
-if (typeof window !== "undefined") {
-  Reflect.set(
-    window,
-    "__motionReady",
-    new Promise<void>((resolve) => {
-      markReady = resolve;
-    }),
-  );
-}
 
 interface CharacterRig {
   readonly root: Group;
@@ -315,7 +305,7 @@ export const Character3d: React.FC = () => {
       rig.render();
     });
     rig.render();
-    markReady();
+    signalMotionReady();
     return () => {
       stopBones();
       stopChar();

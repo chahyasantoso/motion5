@@ -107,9 +107,12 @@ Three things follow from it:
    its numbers as samples, events with a value, read through `follow`, so a recorded session replays, scrubs and
    renders, and `send` feeds a live one. A path member morphs between outlines, and a drawing imports into a bigger
    scene. Proof: `penguin-scene`, the penguin talking and blinking from a recording on an ice floe.
-8. **3D.** Next. Typed 3D chains, a skinned mesh's bones, morph targets, 3D physics on Rapier, and a worked 3D character
-   example.
-9. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
+8. **3D.** Done (`plan/3d-plan.md`). Typed 3D chains (`chainThrough3d`, `fk3d`, `ik3d`, `bonesOf3d`,
+   `chainFromRest3d`, `bodyPose3d`), a skinned mesh's bones (`captureSkeleton`, `applyBones`), morph targets
+   (`morphTargets`), 3D physics on Rapier (`rapierEngine3d`, `simulate`), and the worked 3D character example
+   `character3d`. Proof: `avatar-3d`, a rigged glTF character greeting, waving, and talking from recorded cues on a
+   stage with 3D physics props.
+9. **Motion atlas, a brainstorm.** Next. Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
 10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
@@ -127,9 +130,9 @@ Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
 | Moves | a library by role with modifiers, a gate, a catalog, local moves and promotion by brief | particles from a seed |
 | Values | position, turn, scale, opacity, blur, strokes, circle and box clips, a piece's own numbers as CSS variables | colour and shadow as fields of their own, a mask of any shape |
 | Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues | a camera, joining two stage modules |
-| Bones | 2D chains, 3D FK and IK solvers with constraints | typed 3D chains, a skinned mesh's bones, retargeting |
-| Bodies | 2D physics, built in or on Rapier, seekable | 3D physics |
-| Bindings | DOM, React, Three.js poses | a React Three Fiber scaffold, Vue, Svelte |
+| Bones | 2D and typed 3D chains, 3D FK and IK solvers with constraints, a skinned mesh's bones | retargeting |
+| Bodies | 2D and 3D physics on Rapier, seekable | |
+| Bindings | DOM, React, Three.js poses, skeletons and morph targets | a React Three Fiber scaffold, Vue, Svelte |
 | Artwork | | importing an SVG as a stage module, pivots at joints, the command that compares the rig with its SVG |
 | Tools | the `motion:*` commands, the live page, frames and their comparison | the live kit as a package |
 | Getting it | installable outside the repository, checked by installing | on npm |
@@ -182,7 +185,7 @@ Two improvements the owner asked to keep, each its own small plan:
 - Particles from a seed, as a move over a list of targets.
 - A React Three Fiber scaffold and integration (a future feature that must work alongside the clock and frame tools),
   and Vue and Svelte bindings.
-- Retargeting, 3D blend shapes, and matching a reference site's motion.
+- Retargeting, and matching a reference site's motion.
 
 ## 7. Out
 

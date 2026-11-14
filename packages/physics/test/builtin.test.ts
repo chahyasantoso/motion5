@@ -41,6 +41,29 @@ describe("simulate's checkpoints", () => {
     for (const ms of [2900, 120, 1777, 3000])
       expect(capped.at(liveAt(ms))).toEqual(plain.at(liveAt(ms)));
   });
+
+  it("rewinds when a past event's value changes", () => {
+    const sim = simulate(
+      builtinWorld(),
+      (world) => {
+        world.setGravity(0, 0);
+      },
+      {
+        spawn(event, world) {
+          if (event.name === "drop") {
+            world.addBody({
+              id: "ball",
+              shape: { kind: "circle", radius: 10 },
+              x: event.value ?? 0,
+              y: 0,
+            });
+          }
+        },
+      },
+    );
+    expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 10 }]).ball?.x).toBe(10);
+    expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 40 }]).ball?.x).toBe(40);
+  });
 });
 
 describe("a confetti heap on the built-in engine", () => {

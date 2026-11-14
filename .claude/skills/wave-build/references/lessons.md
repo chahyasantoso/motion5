@@ -47,4 +47,8 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-14 | live-inputs 3 | Sonnet | 121k, 55 calls, 7 min | 1 (imported parts painted under the piece's own) |
 | 2026-11-14 | live-inputs 4 measure | Opus | 213k, 136 calls, 22 min | 1 (`--into` refused a piece with no frame) |
 | 2026-11-14 | live-inputs 4 cold review | Sonnet | 98k, 13 calls, 2 min | 2 of 9 fixed (follow cache, data-id) |
-| 2026-11-14 | 3d 1 (D0, T1) | Argon + Hydrogen | — | 0 |
+| 2026-11-14 | 3d 1 (D0, T1) | Argon + Hydrogen | not shown | 0 |
+| 2026-11-14 | 3d 2 (T2+T3, T4) | 2 Hydrogen | not shown | 0 |
+| 2026-11-14 | 3d 3 (T5) | Hydrogen | not shown | 1 (`window.__motionReady` needed for 0 ms WebGL capture) |
+| 2026-11-14 | 3d 4 measure (T7) | Argon | not shown | 1 (`Pole3d` tuple in guide; uniform ancestor scale on `.glb`) |
+| 2026-11-14 | 3d 4 cold review | Hydrogen | not shown | 6 of 7 fixed (`world3d` switch, `sameEvent` value, 2D `pose` guard, `character3d` ready order, ADR-182 names) |

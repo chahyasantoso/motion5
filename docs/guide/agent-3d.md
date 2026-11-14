@@ -62,14 +62,15 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   specific bones with `skeleton.joint("UpperArmR")`: it returns a typed `Joint3d<"UpperArmR">` even under
   `noUncheckedIndexedAccess` and throws a `RangeError` if the bone is missing.
 - **Posing chains in 3D:** build a typed bone chain from `skeleton.joint(...)` or hand-authored `Joint3d`
-  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArmR: goal }, { pole })`,
+  points with `chainThrough3d` from `"@gerak/rig"`, solve toward a goal with `ik3d(arm, { LowerArmR: goal }, { pole })`
+  where `pole` is a `Vec3` tuple `[x, y, z]` (or `{ kind: "point", point: [x, y, z] }`),
   and convert to per-bone delta poses with `bonesOf3d(arm, solved)` (or compute FK frames with `fk3d` /
   `chainFromRest3d` for separate rigid objects bound via `useTarget3d`).
 - **Writing bones:** call `applyBones(skeleton, poses)` from `"@gerak/three/skeleton"` inside
   `player.subscribe(...)` on each frame. Every named bone takes a `Pose3d` turn/offset relative to its own rest,
   and omitted bones return to rest (`{}`). Keep hierarchy parent bones and child chains consistent: if a
-  parent bone rotates, solve child IK from the parent's updated world frame (`fk3d`) and omit redundant
-  translation fields on child bones inside Three.js's tree.
+  parent bone rotates, place the child chain's `base` at the parent tip's `(x, y, z)` from `fk3d` with the
+  parent's world turn delta, and omit redundant translation fields on child bones inside Three.js's tree.
 - **Morph targets (blend shapes):** create `const writer = morphTargets(gltf.scene)` from `"@gerak/three"`
   once, author blend weights under `pose.custom` (`{ custom: { smile: 0.8 } }`, clamped to `[0, 1]`), and
   pass `writer` as the fourth argument to `applyPose3d(gltf.scene, pose, rest, writer)`.
@@ -92,7 +93,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   physics (`world.setGravity(0, -9.81, 0)`, `world.addCollider(...)`, `world.addBody(...)`). Supported 3D body
   shapes (`Shape3d`) are `"sphere"` and `"box"`, and static colliders (`Collider3d`) are `"floor"`, `"wall"`,
   and `"box"`. Coordinates are world units with `y` up; orientations are unit quaternions `{ w, x, y, z }`;
-  velocities (`wx`, `wy`, `wz`) are degrees per second.
+  velocities (`wx`, `wy`, `wz`) are degrees per second. Set `drag` (such as `drag: 1.5`) on `world.addBody(...)` for
+  rolling spheres or boxes on a flat floor so they settle before the scene's final hold.
 - **Reading poses:** convert `sim.at(time).ball` with `bodyPose3d(...)` from `"@gerak/rig"` into a `Pose3d`.
   Bind the matching Three.js mesh at origin `(0, 0, 0)` with `useTarget3d` so its rest position is zero and
   the physics world coordinates drive it directly.

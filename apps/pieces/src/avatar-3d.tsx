@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   AmbientLight,
   BoxGeometry,
@@ -28,9 +28,11 @@ const HEIGHT = 720;
 /** Builds the 3D stage, loads the rigged avatar, binds physics props, and renders each frame. */
 export const Avatar3d: React.FC = () => {
   const playing = usePlayer(scene, clock, cues);
-  const prop1 = useTarget3d(playing?.player, "prop1");
-  const prop2 = useTarget3d(playing?.player, "prop2");
-  const prop3 = useTarget3d(playing?.player, "prop3");
+  const renderRef = useRef<() => void>(() => undefined);
+  const invalidate = useCallback(() => renderRef.current(), []);
+  const prop1 = useTarget3d(playing?.player, "prop1", { invalidate });
+  const prop2 = useTarget3d(playing?.player, "prop2", { invalidate });
+  const prop3 = useTarget3d(playing?.player, "prop3", { invalidate });
   const host = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export const Avatar3d: React.FC = () => {
     const camera = new PerspectiveCamera(42, WIDTH / HEIGHT, 0.1, 100);
     camera.position.set(0, 2.4, 7.4);
     camera.lookAt(0, 2.0, 0);
+    renderRef.current = () => renderer.render(stage, camera);
 
     const ambient = new AmbientLight(0xffffff, 1.2);
     const keyLight = new DirectionalLight(0xffffff, 2.5);
@@ -114,9 +117,11 @@ export const Avatar3d: React.FC = () => {
 
       unsubChar = player.subscribe("character", (pose) => {
         applyPose3d(robot, pose, undefined, writer);
+        renderer.render(stage, camera);
       });
       unsubBones = player.subscribe("bones", (poses) => {
         applyBones(skeleton, poses);
+        renderer.render(stage, camera);
       });
 
       renderer.render(stage, camera);
@@ -130,6 +135,7 @@ export const Avatar3d: React.FC = () => {
 
     return () => {
       isDisposed = true;
+      renderRef.current = () => undefined;
       cancelAnimationFrame(frame);
       unsubChar?.();
       unsubBones?.();

@@ -98,8 +98,15 @@ function sameEvent(a: MotionEvent | undefined, b: MotionEvent | undefined): bool
     a.at === b.at &&
     a.target === b.target &&
     a.x === b.x &&
-    a.y === b.y
+    a.y === b.y &&
+    a.value === b.value
   );
+}
+
+function rotation2d(rotation: number | { readonly w: number }): number {
+  if (typeof rotation !== "number")
+    throw new TypeError("simulate: pose and place are for 2D bodies; use bodyPose3d on at(time).");
+  return rotation;
 }
 
 /** Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. */
@@ -267,13 +274,13 @@ export function simulate<
       const now = at(time, events)[id];
       if (start === undefined || now === undefined)
         throw new RangeError(`simulate: no body "${id}" at that time.`);
-      const rotation = typeof now.rotation === "number" ? now.rotation : 0;
+      const rotation = rotation2d(now.rotation);
       return { x: now.x - start.spec.x, y: now.y - start.spec.y, rotation };
     },
     place(id, time, events) {
       const now = at(time, events)[id];
       if (now === undefined) return NOWHERE;
-      const rotation = typeof now.rotation === "number" ? now.rotation : 0;
+      const rotation = rotation2d(now.rotation);
       return { x: now.x, y: now.y, rotation, opacity: 1 };
     },
     events(time, events) {

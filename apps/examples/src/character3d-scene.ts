@@ -13,6 +13,24 @@ import {
   multiplyMatrix3,
 } from "@gerak/rig";
 
+declare global {
+  interface Window {
+    __motionReady?: Promise<void>;
+  }
+}
+
+let resolveReady: (() => void) | undefined;
+if (typeof window !== "undefined" && !window.__motionReady) {
+  window.__motionReady = new Promise<void>((resolve) => {
+    resolveReady = resolve;
+  });
+}
+
+/** Resolves `window.__motionReady` once the 3D stage has rendered its initial frame. */
+export function signalMotionReady(): void {
+  resolveReady?.();
+}
+
 /** How long the scene runs, in ms; `motion:sample` and `motion:review` read it. */
 export const durationMs = 4200;
 
@@ -107,11 +125,14 @@ export const scene = (time: Time) => {
           },
         };
   const torsoPoses = bonesOf3d(torso, torsoNow);
+  const shoulderTip = torsoNow === undefined ? undefined : fk3d(torso, torsoNow).spine;
   const shoulderBase =
-    torsoNow === undefined || spineDelta === undefined
+    shoulderTip === undefined || spineDelta === undefined
       ? undefined
       : {
-          ...fk3d(torso, torsoNow).spine,
+          x: shoulderTip.x,
+          y: shoulderTip.y,
+          z: shoulderTip.z,
           ...spineDelta,
         };
 
