@@ -5,13 +5,14 @@ import {
   Euler,
   Float32BufferAttribute,
   Group,
+  Quaternion,
   Skeleton,
   SkinnedMesh,
   Uint16BufferAttribute,
   Vector3,
 } from "three";
 import { MeshBasicMaterial } from "three";
-import { bonesOf3d, chainThrough3d, fk3d, ik3d } from "@gerak/rig";
+import { bonesOf3d, chainThrough3d, childBase3d, fk3d, ik3d } from "@gerak/rig";
 import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
 
 const DEG = Math.PI / 180;
@@ -138,10 +139,10 @@ describe("skeleton capture and posing", () => {
         { ...skeleton.joints.elbow!, id: "elbow" as const },
         { ...skeleton.joints.hand!, id: "hand" as const },
       ]);
-      const solved = ik3d(arm, { elbow: { x: 0.4, y: 1.5, z: 0.5 } });
-      const fkFrames = fk3d(arm, solved);
+      const solved = ik3d(arm.chain, { elbow: { x: 0.4, y: 1.5, z: 0.5 } });
+      const fkFrames = fk3d(arm.chain, solved);
 
-      applyBones(skeleton, bonesOf3d(arm, solved));
+      applyBones(skeleton, bonesOf3d(arm.chain, solved));
 
       const elbowPos = worldPosition(elbow);
       const handPos = worldPosition(hand);
@@ -153,6 +154,35 @@ describe("skeleton capture and posing", () => {
       expect(handPos.z).toBeCloseTo(fkFrames.elbow!.z, 5);
     },
   );
+
+  it("turns a bone about the model's axes, not its own rolled ones", () => {
+    const { root, elbow } = makeArmRig(true);
+    const skeleton = captureSkeleton(root);
+    const rest = elbow.getWorldQuaternion(new Quaternion());
+    applyBones(skeleton, { elbow: { rotation: 30 } });
+    const turned = elbow.getWorldQuaternion(new Quaternion());
+    const aboutZ = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 6);
+    expect(turned.angleTo(aboutZ.multiply(rest))).toBeLessThan(1e-9);
+  });
+
+  it("hangs an arm chain from a leaning torso chain with childBase3d, no caller maths", () => {
+    const { root, hand } = makeArmRig(true);
+    const skeleton = captureSkeleton(root);
+    const torso = chainThrough3d([skeleton.joint("spine"), skeleton.joint("shoulder")]);
+    const arm = chainThrough3d([
+      skeleton.joint("shoulder"),
+      skeleton.joint("elbow"),
+      skeleton.joint("hand"),
+    ]);
+    const lean = skeleton.joint("shoulder");
+    const torsoNow = ik3d(torso.chain, { spine: { x: lean.x + 0.1, y: lean.y, z: lean.z + 0.1 } });
+    const base = childBase3d(torso.chain, torsoNow, "spine");
+    const armNow = ik3d(arm.chain, { elbow: { x: 0.4, y: 1.5, z: 0.5 } }, { base });
+
+    applyBones(skeleton, { ...bonesOf3d(torso.chain, torsoNow), ...bonesOf3d(arm.chain, armNow) });
+    const tip = fk3d(arm.chain, armNow).elbow;
+    expect(worldPosition(hand).distanceTo(new Vector3(tip.x, tip.y, tip.z))).toBeLessThan(1e-6);
+  });
 
   it("writes bones parents-first regardless of pose key order", () => {
     const a = makeArmRig(true);
@@ -219,12 +249,12 @@ describe("skeleton capture and posing", () => {
     expect(shoulderJoint.id).toBe("shoulder");
 
     const arm = chainThrough3d([shoulderJoint, elbowJoint, handJoint]);
-    const solved = ik3d(arm, { elbow: { x: 0.4, y: 0.5, z: -1.2 } });
-    const fkFrames = fk3d(arm, solved);
+    const solved = ik3d(arm.chain, { elbow: { x: 0.4, y: 0.5, z: -1.2 } });
+    const fkFrames = fk3d(arm.chain, solved);
 
     const beforeHips = worldPosition(scaledParent.hips);
     applyBones(skeleton, {
-      ...bonesOf3d(arm, solved),
+      ...bonesOf3d(arm.chain, solved),
       hips: { x: 0.5, y: -0.25, z: 0.4 },
     });
     const afterHips = worldPosition(scaledParent.hips);
@@ -232,7 +262,7 @@ describe("skeleton capture and posing", () => {
     expect(afterHips.y - beforeHips.y).toBeCloseTo(-0.25, 5);
     expect(afterHips.z - beforeHips.z).toBeCloseTo(0.4, 5);
 
-    applyBones(skeleton, bonesOf3d(arm, solved));
+    applyBones(skeleton, bonesOf3d(arm.chain, solved));
     const handPos = worldPosition(scaledParent.hand);
     expect(handPos.x).toBeCloseTo(fkFrames.elbow.x, 4);
     expect(handPos.y).toBeCloseTo(fkFrames.elbow.y, 4);

@@ -124,8 +124,8 @@ export const scene = (time: Time) => {
             ),
           },
         };
-  const torsoPoses = bonesOf3d(torso, torsoNow);
-  const shoulderTip = torsoNow === undefined ? undefined : fk3d(torso, torsoNow).spine;
+  const torsoPoses = bonesOf3d(torso.chain, torsoNow);
+  const shoulderTip = torsoNow === undefined ? undefined : fk3d(torso.chain, torsoNow).spine;
   const shoulderBase =
     shoulderTip === undefined || spineDelta === undefined
       ? undefined
@@ -141,12 +141,12 @@ export const scene = (time: Time) => {
     reachProgress === 0 && shoulderBase === undefined
       ? arm.rest
       : ik3d(
-          arm,
+          arm.chain,
           { elbow: mixPoint3d(HAND_REST, REACH_TARGET, reachProgress) },
           { ...(shoulderBase === undefined ? {} : { base: shoulderBase }), pole: ELBOW_POLE },
         );
   const armPoses = bonesOf3d(
-    arm,
+    arm.chain,
     shoulderBase === undefined ? solvedArm : { base: shoulderBase, rotations: solvedArm.rotations },
   );
 

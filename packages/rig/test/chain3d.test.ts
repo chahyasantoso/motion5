@@ -7,6 +7,7 @@ import {
   chainThrough3d,
   fk3d,
   ik3d,
+  jointOf,
   matrixFromEuler3d,
   quaternionFromEuler3d,
   solveChain3d,
@@ -54,6 +55,15 @@ describe("chainThrough3d and fk3d", () => {
     // @ts-expect-error ankle is not a bone of JOINTS
     const bad = fk3d(chain, { rotations: { ankle: { rotation: 15 } } });
     expect(bad.shoulder.x).toBeCloseTo(1, 9);
+  });
+
+  it("answers { chain, rest } as in 2D, and only the chain is solved", () => {
+    const built = chainThrough3d(JOINTS);
+    expect(Object.keys(built).sort()).toEqual(["chain", "rest"]);
+    // @ts-expect-error the pair is not a chain
+    expect(() => ik3d(built, { elbow: { x: 1, y: 3, z: 0 } })).toThrow();
+    // @ts-expect-error a chain's world pose needs rest and now, as chainFromRest does
+    expect(() => chainFromRest3d(built.chain, built.rest)).toThrow();
   });
 
   it("agrees with the frames solveChain3d reaches for the same turns", () => {
@@ -134,7 +144,6 @@ describe("bonesOf3d and chainFromRest3d", () => {
     expect(bonesOf3d(chain)).toEqual({ shoulder: {}, elbow: {} });
     expect(bonesOf3d(chain, rest)).toEqual({ shoulder: {}, elbow: {} });
     expect(chainFromRest3d(chain, rest, rest)).toEqual({ shoulder: {}, elbow: {} });
-    expect(chainFromRest3d(chain)).toEqual({ shoulder: {}, elbow: {} });
   });
 
   it("lands the wrist on fk3d's tip when each world pose from chainFromRest3d is applied to its drawn joint", () => {
@@ -196,6 +205,25 @@ describe("bonesOf3d and chainFromRest3d", () => {
     expect(0 + elbowOffset[2] + wristOffset[2]).toBeCloseTo(tips.elbow.z, 9);
   });
 
+  it("answers turns only, and leaves a moved and turned base to the bone's parent", () => {
+    const { chain, rest } = chainThrough3d([
+      { id: "shoulder", x: 0, y: 2, z: 0 },
+      { id: "elbow", x: 1, y: 2, z: 0 },
+      { id: "wrist", x: 2, y: 2, z: 0 },
+    ]);
+    const base = { ...rest.base, x: 0.5, y: 2.5, rotation: 30 };
+    expect(bonesOf3d(chain, { base, rotations: rest.rotations })).toEqual({
+      shoulder: {},
+      elbow: {},
+    });
+    const bent = bonesOf3d(chain, {
+      base,
+      rotations: { ...rest.rotations, elbow: { rotation: 40 } },
+    });
+    expect(Object.keys(bent.elbow)).toEqual(["rotation"]);
+    expect(bent.elbow.rotation).toBeCloseTo(40, 9);
+  });
+
   it("builds a tree chain with buildChain3d", () => {
     const chain = buildChain3d([
       { id: "root", length: 2 },
@@ -205,6 +233,17 @@ describe("bonesOf3d and chainFromRest3d", () => {
     expect(tips.root.x).toBeCloseTo(2, 9);
     expect(tips.child.x).toBeCloseTo(2, 9);
     expect(tips.child.y).toBeCloseTo(1, 9);
+  });
+});
+
+describe("jointOf", () => {
+  it("reads a joint typed by its name and refuses a missing one by name", () => {
+    const table = { Jaw: { x: 0, y: 0.3, z: 0.1 } };
+    const jaw = jointOf(table, "Jaw");
+    const id: "Jaw" = jaw.id;
+    expect({ ...jaw, id }).toEqual({ id: "Jaw", x: 0, y: 0.3, z: 0.1 });
+    expect(() => jointOf(table, "Tail")).toThrow(/no joint "Tail"/);
+    expect(() => jointOf(table, "toString")).toThrow(RangeError);
   });
 });
 

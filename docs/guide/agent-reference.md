@@ -429,12 +429,14 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 - **`solveChain3d`** `(root: WorldFrame3d, members: readonly ChainMember3d[], bend?: Pole3d): SolveResult3d`: Solves one 3D chain: position by shape, then each oriented leaf toward its goal. Orientation turns leaves without moving the tip, so position keeps priority.
 - **`ChainShape3d`** `type ChainShape3d`: Strategy answering one 3D chain; derived at solve time, never authored. `two-bone` carries pair + goal, `tree` members, `constrained` members with a limiting joint.
 - **`bodyPose3d`** `(state: RigidBodyLike3d): BonePose3d`: Converts a 3D physics body's position and quaternion into a Pose3d-compatible object.
-- **`bonesOf3d`** `<Id extends string>(chain: Chain3d<Id>, now?: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>>`: Returns each bone's local turn from its rest for `applyBones`, `{}` at rest.
+- **`bonesOf3d`** `<Id extends string>(chain: Chain3d<Id>, now?: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>>`: Each bone's turn from its rest, for `applyBones`: turns only, `{}` at rest; the base is the bone's parent, so a moved base moves nothing here.
 - **`buildChain3d`** `<const B extends readonly Bone3d[]>(bones: B, base?: WorldFrame3d): Chain3d<B[number]["id"]>`: Builds a checked 3D bone tree from `Bone3d` rows, parent first; ids type every later answer.
-- **`chainFromRest3d`** `<Id extends string>(chain: Chain3d<Id>, now?: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>> (+1 overloads)`: Returns each bone's world pose delta from rest for rigid parts bound with `useTarget3d`.
-- **`chainThrough3d`** `<const Joints extends readonly Joint3d[]>(joints: Joints): ThroughChain3d<BoneIdsOf3d<Joints>>`: Builds a 3D chain through ordered joints: each bone from joint to next, with its rest pose.
+- **`chainFromRest3d`** `<Id extends string>(chain: Chain3d<Id>, rest: ChainPose3d<Id>, now: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>>`: Each bone's world pose against the chain at rest, for a rigid part bound with `useTarget3d`; `{}` at rest.
+- **`chainThrough3d`** `<const Joints extends readonly Joint3d[]>(joints: Joints): { readonly chain: Chain3d<BoneIdsOf3d<Joints>>; readonly rest: RestPose3d<BoneId…`: Builds a 3D chain through ordered joints: each bone from joint to next, with its rest pose.
+- **`childBase3d`** `<Id extends string>(chain: Chain3d<Id>, now: ChainPose3d<Id>, id: Id): WorldFrame3d`: The base for a chain hung from bone `id`'s tip when `chain` is posed `now`: that tip, turned as the bone turned from rest.
 - **`fk3d`** `<Id extends string>(chain: Chain3d<Id>, options?: ChainPose3d<Id>): Readonly<Record<Id, WorldFrame3d>>`: Each bone's tip as a 3D world frame `{ x, y, z, rotation, rotationX, rotationY }`.
 - **`ik3d`** `<Id extends string>(chain: Chain3d<Id>, goals: Readonly<Partial<Record<Id, Goal3d>>>, options?: { readonly base?: Partial<WorldFrame3d>; re…`: Solves a 3D chain towards per-bone goals within limits and returns its solved pose and quality.
+- **`jointOf`** `<const Name extends string>(joints: Readonly<Record<string, { readonly x: number; readonly y: number; readonly z: number; }>>, name: Name):…`: The joint `name` from a joint table, typed by its name; throws a RangeError naming a joint the table lacks.
 - **`Bone3d`** `type Bone3d`: One 3D bone: length along local +x, rest Euler3d in degrees, and optional offset and limit.
 - **`BoneIdsOf3d`** `type BoneIdsOf3d`: Bone ids for a joint tuple: every joint except the final tip starts a bone.
 - **`BonePose3d`** `type BonePose3d`: A 3D translation and CSS Z-X-Y Euler turn in degrees, structurally compatible with Pose3d.
@@ -444,7 +446,7 @@ const { bones, tips } = chainPoses(arm, { rotations, base });
 - **`Joint3d`** `type Joint3d`: A 3D joint at its rest world position.
 - **`RestPose3d`** `type RestPose3d`: Resolved rest pose of a 3D chain: its full base frame and per-bone local Euler triples.
 - **`RigidBodyLike3d`** `type RigidBodyLike3d`: A 3D rigid body's world position and orientation quaternion.
-- **`ThroughChain3d`** `type ThroughChain3d`: A 3D chain measured through joints, paired with its rest pose.
+- **`JointTable3d`** `type JointTable3d`: Where each joint of a model sits at rest, by name, as `motion:joints` writes it.
 <!-- generated:reference:end -->
 
 ## @gerak/stage

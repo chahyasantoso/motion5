@@ -19,19 +19,16 @@ restored.
 
 ## 2. Decisions to record (D0, ADR-182)
 
-- **A skinned character's bones take turns local to their parents.** `@gerak/three/skeleton` captures a skeleton's
-  rest once (bone names, parent order, rest quaternions, positions and world joint frames), and
-  `applyBones(skeleton, poses)` writes each named bone's `Pose3d` as a turn and offset from its own rest, in its
-  parent's space, parents before children. A pose of `{}` is the rest; bind matrices are never touched; an unknown
-  bone name throws, naming it. World-space poses never go to bones: writing them onto nested bones applies every
-  ancestor twice.
-- **A 3D chain is built through joints, as in 2D, and answers two ways.** `chainThrough3d(joints)` builds a chain
-  typed by joint id, from points given by hand or read from a captured skeleton (`skeleton.joints`), and `ik3d`
-  solves it through `solveChain3d`. Its turns are local, as `solveChain3d`'s `rotations3d` already are, so
-  `bonesOf3d(chain, now)` hands them to `applyBones` directly; `chainFromRest3d(chain, rest, now)` answers the world
-  pose that carries a separate rigid part, as `chainFromRest` does in 2D, for `useTarget3d`. Because `@gerak/moves`
-  depends on `@gerak/rig`, rig stays dependency-free and answers plain `{ x?, y?, z?, rotation?, rotationX?, rotationY? }`
-  objects structurally assignable to `Pose3d`. Rig gains a public `fk3d` for the second; no second solver.
+- **A skinned character's bones turn about the model's axes.** `@gerak/three/skeleton` captures a skeleton's rest
+  once, and `applyBones(skeleton, poses)` writes each named bone's `Pose3d` as a turn and offset from its own rest
+  about the axes the model had when captured, carried by its parents, parents before children. A pose of `{}` is
+  the rest; bind matrices are never touched; an unknown bone name throws, naming it.
+- **A 3D chain is built through joints, as in 2D.** `chainThrough3d(joints)` answers `{ chain, rest }`, typed by
+  joint id, from points given by hand, from `skeleton.joint(name)`, or from `jointOf(table, name)` over the joint
+  table `motion:joints <model.glb>` writes beside a model, which is how a scene module rigs a model it never loads.
+  `ik3d` solves it; `bonesOf3d(chain, now)` answers turns only, for `applyBones`; `childBase3d(parent, now, id)`
+  hangs a chain from a posed parent chain; `chainFromRest3d(chain, rest, now)` answers the world pose that carries
+  a separate rigid part, for `useTarget3d`. Rig stays dependency-free.
 - **Morph targets are custom numbers.** A mesh's named morph targets (a glTF avatar's `jawOpen`, `eyeBlinkLeft`,
   `Surprised`) are written from `custom` numbers by a `morphTargets` writer in `@gerak/three`, so `follow` on
   `mouthOpen` drives a 3D mouth or face expression exactly as it drives the 2D beak. Authoring blend shapes stays out.
@@ -39,16 +36,17 @@ restored.
   a body's turn as a plain quaternion `{ w, x, y, z }` (physics depends on `@gerak/moves` alone and does no
   orientation math), and `@gerak/rapier` a `rapierEngine3d` on `@dimforge/rapier3d-deterministic-compat@0.21.0`,
   the 2D build's version. `simulate` is overloaded over `PhysicsWorld` and `PhysicsWorld3d` and stays the one owner
-  of seeking, snapshots and events, over either world. Rig's `bodyPose3d(state)` turns a 3D body's state into a
-  `Pose3d`-compatible object, since rig owns 3D orientation (ADR-169).
+  of seeking, snapshots and events, over either world. A 3D simulation's `pose(id, time)` answers movement from the spawn point
+  and the turn, as in 2D; rig's `bodyPose3d` turns it into a `Pose3d`-compatible object, since rig owns 3D orientation.
 - **One 3D scaffold for now; React Three Fiber is a future feature.** `motion:new <name> --three` remains the single
   3D scaffold so there are not two owners for mounting a 3D scene; a glTF loads through three's own `GLTFLoader`.
   React Three Fiber (`--r3f` and `<Canvas>` integration that scrubs deterministically with the scene clock and frame
   tools) is recorded as a future feature that needs to be working.
 - **A 3D piece stays a code scene with its page** (ADR-169), not a stage module: the stage owns DOM layout and boxes,
   which a canvas does not have. A stage module with a Three.js skin waits for a brief that needs both.
-- **Models live in `apps/pieces/references/`** with their source and licence, as SVGs do; only CC0 or similarly free
-  models go there, under 2 MB unless the owner agrees to more.
+- **Models live in `apps/pieces/references/`** with their source and licence, as SVGs do; only models whose licence
+  allows changing and keeping them (CC0, or CC BY with its credit line beside the file), under 2 MB unless the owner
+  agrees to more. The page entry, not the scene, owns `window.__motionReady` and rejects it when a model fails to load.
 - **A live 3D avatar needs its own few lines.** `talk.html` mounts stage modules only; a 3D page drives its clock with
   `clockDriver` and calls its `send`, which this plan's guide shows and no page of its own provides.
 
@@ -111,13 +109,14 @@ restored.
 
 ### T7. Proof
 
-- **Model:** `RobotExpressive.glb` (by Tomás Laulhé / Quaternius, CC0 1.0, ~454 KB, from Three.js examples), approved
-  by the owner, in `apps/pieces/references/` with its source and licence.
+- **Model:** `dragonling.glb`, Polyfork's "Red fire dragonling" (CC BY 4.0, 1.7 MB, skinned, 31 bones with a `Jaw`),
+  chosen by the owner, in `apps/pieces/references/` with its source, licence and credit line.
 - **Measure, alone, fresh:** a planner-model worker makes `avatar-3d`: the character on a small stage greets the
-  viewer, waves through a chain, nods, and talks from `apps/pieces/references/talk.json` through `follow`; a few
+  viewer, waves a front paw through a chain built from the model's joint table, nods, and talks, its jaw opening
+  from `apps/pieces/references/talk.json` through `follow`; a few
   props fall onto the stage at the start and settle through 3D physics. It passes when the scene reads samples only
   through `follow`, the scene review is clean (it seeks as well as plays), the frame sheet shows the character in
-  frame throughout, and scrubbing gives the frame playing reached.
+  frame throughout, props never settle inside the character, and scrubbing gives the frame playing reached.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
 ## 4. Team and order

@@ -45,8 +45,10 @@ export {
   buildChain3d,
   chainFromRest3d,
   chainThrough3d,
+  childBase3d,
   fk3d,
   ik3d,
+  jointOf,
   type Bone3d,
   type BoneIdsOf3d,
   type BonePose3d,
@@ -56,5 +58,5 @@ export {
   type Joint3d,
   type RestPose3d,
   type RigidBodyLike3d,
-  type ThroughChain3d,
+  type JointTable3d,
 } from "./chain3d";

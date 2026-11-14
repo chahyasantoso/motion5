@@ -1,5 +1,5 @@
 import type { Pose3d } from "@gerak/moves";
-import type { Joint3d } from "@gerak/rig";
+import { jointOf, type Joint3d } from "@gerak/rig";
 import { Bone, Euler, Quaternion, Skeleton, SkinnedMesh, Vector3, type Object3D } from "three";
 import { setEulerDegrees } from "./pose3d";
 
@@ -188,16 +188,7 @@ export function captureSkeleton(source: Object3D | Skeleton): CapturedSkeleton {
     byName,
     joints: Object.freeze(joints),
     joint<Name extends string>(name: Name): Joint3d<Name> {
-      const entry = byName.get(name);
-      if (entry === undefined) {
-        throw new RangeError(`captureSkeleton: unknown bone "${name}".`);
-      }
-      return Object.freeze({
-        id: name,
-        x: entry.joint.x,
-        y: entry.joint.y,
-        z: entry.joint.z,
-      });
+      return jointOf(joints, name);
     },
   });
 }

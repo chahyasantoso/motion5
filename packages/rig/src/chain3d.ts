@@ -101,11 +101,10 @@ export type Goal3d = {
   readonly orient?: number;
 };
 
-/** A 3D chain measured through joints, paired with its rest pose. */
-export type ThroughChain3d<Id extends string = string> = Chain3d<Id> & {
-  readonly chain: Chain3d<Id>;
-  readonly rest: RestPose3d<Id>;
-};
+/** Where each joint of a model sits at rest, by name, as `motion:joints` writes it. */
+export type JointTable3d = Readonly<
+  Record<string, { readonly x: number; readonly y: number; readonly z: number }>
+>;
 
 /** Bone ids for a joint tuple: every joint except the final tip starts a bone. */
 export type BoneIdsOf3d<Joints extends readonly Joint3d[]> = Joints extends readonly [
@@ -290,7 +289,10 @@ export function buildChain3d<const B extends readonly Bone3d[]>(
 /** Builds a 3D chain through ordered joints: each bone from joint to next, with its rest pose. */
 export function chainThrough3d<const Joints extends readonly Joint3d[]>(
   joints: Joints,
-): ThroughChain3d<BoneIdsOf3d<Joints>> {
+): {
+  readonly chain: Chain3d<BoneIdsOf3d<Joints>>;
+  readonly rest: RestPose3d<BoneIdsOf3d<Joints>>;
+} {
   if (joints.length < 2) {
     throw new RangeError(`chainThrough3d: needs at least two joints, got ${joints.length}.`);
   }
@@ -342,7 +344,7 @@ export function chainThrough3d<const Joints extends readonly Joint3d[]>(
     base,
     rest,
   };
-  return { ...chain, chain, rest };
+  return { chain, rest };
 }
 
 /** Each bone's tip as a 3D world frame `{ x, y, z, rotation, rotationX, rotationY }`. */
@@ -403,7 +405,7 @@ export function ik3d<Id extends string>(
   };
 }
 
-/** Returns each bone's local turn from its rest for `applyBones`, `{}` at rest. */
+/** Each bone's turn from its rest, for `applyBones`: turns only, `{}` at rest; the base is the bone's parent, so a moved base moves nothing here. */
 export function bonesOf3d<Id extends string>(
   chain: Chain3d<Id>,
   now: ChainPose3d<Id> = {},
@@ -429,32 +431,35 @@ export function bonesOf3d<Id extends string>(
       transposeMatrix3(matrixFromEuler3d(restEval.pivots.get(id)!)),
     );
     const localTurn = multiplyMatrix3(transposeMatrix3(parentDelta), ownDelta);
-    const euler = eulerFromMatrix3d(localTurn);
-    const dx = parent === undefined ? nowEval.baseFrame.x - restEval.baseFrame.x : 0;
-    const dy = parent === undefined ? nowEval.baseFrame.y - restEval.baseFrame.y : 0;
-    const dz = parent === undefined ? nowEval.baseFrame.z - restEval.baseFrame.z : 0;
-    poses[id] = toBonePose3d(dx, dy, dz, euler);
+    poses[id] = toBonePose3d(0, 0, 0, eulerFromMatrix3d(localTurn));
   }
   return byId(chain.order, poses);
 }
 
-/** Returns each bone's world pose delta from rest for rigid parts bound with `useTarget3d`. */
-export function chainFromRest3d<Id extends string>(
+/** The base for a chain hung from bone `id`'s tip when `chain` is posed `now`: that tip, turned as the bone turned from rest. */
+export function childBase3d<Id extends string>(
   chain: Chain3d<Id>,
-  now?: ChainPose3d<Id>,
-): Readonly<Record<Id, BonePose3d>>;
+  now: ChainPose3d<Id>,
+  id: Id,
+): WorldFrame3d {
+  const restTip = evaluateFrames3d(chain, chain.rest).tips.get(id);
+  const nowTip = evaluateFrames3d(chain, now).tips.get(id);
+  if (restTip === undefined || nowTip === undefined) {
+    throw new RangeError(`childBase3d: no bone "${id}".`);
+  }
+  const turn = multiplyMatrix3(
+    matrixFromEuler3d(nowTip),
+    transposeMatrix3(matrixFromEuler3d(restTip)),
+  );
+  return { x: nowTip.x, y: nowTip.y, z: nowTip.z, ...eulerFromMatrix3d(turn) };
+}
+
+/** Each bone's world pose against the chain at rest, for a rigid part bound with `useTarget3d`; `{}` at rest. */
 export function chainFromRest3d<Id extends string>(
   chain: Chain3d<Id>,
   rest: ChainPose3d<Id>,
   now: ChainPose3d<Id>,
-): Readonly<Record<Id, BonePose3d>>;
-export function chainFromRest3d<Id extends string>(
-  chain: Chain3d<Id>,
-  restOrNow: ChainPose3d<Id> = {},
-  maybeNow?: ChainPose3d<Id>,
 ): Readonly<Record<Id, BonePose3d>> {
-  const rest = maybeNow === undefined ? chain.rest : restOrNow;
-  const now = maybeNow === undefined ? restOrNow : maybeNow;
   const before = evaluateFrames3d(chain, rest).pivots;
   const after = evaluateFrames3d(chain, now).pivots;
   const poses: Record<string, BonePose3d> = {};
@@ -475,6 +480,16 @@ export function chainFromRest3d<Id extends string>(
     );
   }
   return byId(chain.order, poses);
+}
+
+/** The joint `name` from a joint table, typed by its name; throws a RangeError naming a joint the table lacks. */
+export function jointOf<const Name extends string>(
+  joints: JointTable3d,
+  name: Name,
+): Joint3d<Name> {
+  const joint = Object.hasOwn(joints, name) ? joints[name] : undefined;
+  if (joint === undefined) throw new RangeError(`jointOf: no joint "${name}".`);
+  return Object.freeze({ id: name, x: joint.x, y: joint.y, z: joint.z });
 }
 
 /** Converts a 3D physics body's position and quaternion into a Pose3d-compatible object. */
