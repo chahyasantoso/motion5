@@ -210,7 +210,7 @@ const slide = defineMove({
 - **`LoopCycleOptions`** `type LoopCycleOptions`: Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver.
 - **`LoopCycleStep`** `type LoopCycleStep`: The progress a single `advance` produces.
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
-- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly ("rotation" | "x" | "y" | "scale" | "scaleX" | "scaleY" | "opacity" | "blur" | "drawn" | "drawnFrom" | "clip…`: Every field a renderer must write for a pose: its numbers and its anchor.
+- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly ("rotation" | "x" | "y" | "skewX" | "skewY" | "scale" | "scaleX" | "scaleY" | "opacity" | "blur" | "shadowX"…`: Every field a renderer must write for a pose: its numbers and its anchor.
 - **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: ValueField; y: ValueField; z: ValueField; rotation: ValueField; rotationX: ValueField; rotationY: ValueFi…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
 - **`squashed`** `(squash: number, weight: number, anchor?: Anchor): Pose2d`: A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"` and `"right"` squash sideways.
 - **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
@@ -322,7 +322,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`cssClip`** `(x: number, y: number, radius: number): string`: A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left.
 - **`cssDash`** `(from: number, to: number, length: number): { readonly strokeDasharray: string; readonly strokeDashoffset: number; }`: The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long.
 - **`cssOrigin`** `(anchor: Anchor): string`: The CSS transform origin an anchor names.
-- **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves.
+- **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then skews, then scales; empty when nothing moves.
 - **`pathData`** `(cubics: readonly Cubic2d[]): string`: SVG path data for joined cubic segments.
 - **`TRANSFORM_KEYS`** `const TRANSFORM_KEYS: readonly string[]`: The value keys a CSS transform carries; every other key writes as its own property.
 - **`RenderStyle`** `type RenderStyle`: The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all.
