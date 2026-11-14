@@ -11,7 +11,6 @@ import {
 import { actor, carried, many, restOf, story, type Layouts, type Rest } from "@gerak/stage";
 
 /** A small shop: six products, a price sort, and a detail view that the grid folds into a rail beside. */
-export const brief = "shop";
 
 const products = [
   {

@@ -1,4 +1,4 @@
-import { readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Page } from "playwright-core";
@@ -6,7 +6,6 @@ import { createServer, type ViteDevServer } from "vite";
 import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
 
 const PREFIX = "stage-paint-scratch-";
-const SRC = join(DEFAULT_ROOT, "src");
 const STEP_TIMEOUT_MS = 8000;
 
 /** Helpers every scratch piece writes first: a closed rectangle as four straight cubics. */
@@ -52,8 +51,9 @@ export const scene = () => ({ part: { rotation: 90 } });
 };
 
 function removeLeftovers(): void {
-  for (const file of readdirSync(SRC))
-    if (file.startsWith(PREFIX)) rmSync(join(SRC, file), { force: true });
+  for (const folder of readdirSync(DEFAULT_ROOT))
+    if (folder.startsWith(PREFIX))
+      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
 }
 
 let server: ViteDevServer | undefined;
@@ -61,8 +61,11 @@ let base = "";
 
 beforeAll(async () => {
   removeLeftovers();
-  for (const [name, source] of Object.entries(PIECES))
-    writeFileSync(join(SRC, `${PREFIX}${name}.ts`), source, "utf8");
+  for (const [name, source] of Object.entries(PIECES)) {
+    const folder = join(DEFAULT_ROOT, `${PREFIX}${name}`, "src");
+    mkdirSync(folder, { recursive: true });
+    writeFileSync(join(folder, `${PREFIX}${name}.ts`), source, "utf8");
+  }
   server = await createServer({ root: DEFAULT_ROOT, logLevel: "silent", server: { port: 5290 } });
   await server.listen();
   base = server.resolvedUrls?.local[0] ?? "";

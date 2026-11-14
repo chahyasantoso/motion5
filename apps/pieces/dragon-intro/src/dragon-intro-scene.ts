@@ -31,8 +31,8 @@ import {
 import { simulate, type BodyState3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, posedJoints3d } from "@gerak/rig";
-import rig from "../references/dragonling.joints.json" with { type: "json" };
-import talk from "../references/talk.json" with { type: "json" };
+import rig from "../../references/dragonling.joints.json" with { type: "json" };
+import talk from "../../references/talk.json" with { type: "json" };
 
 /** How long the scene runs, in ms. */
 export const durationMs = 10000;

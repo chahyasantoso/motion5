@@ -15,7 +15,7 @@ import {
   scene,
   stage,
   wordsShown,
-} from "../src/overlay3d-scene";
+} from "../overlay3d/src/overlay3d-scene";
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });

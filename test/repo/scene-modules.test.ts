@@ -4,18 +4,13 @@ import { describe, expect, it } from "vitest";
 
 const APPS = join(import.meta.dirname, "..", "..", "apps");
 
-function sceneModules(): string[] {
+function sceneModules(folder: string = APPS): string[] {
   const found: string[] = [];
-  for (const app of readdirSync(APPS, { withFileTypes: true })) {
-    if (!app.isDirectory()) continue;
-    const src = join(APPS, app.name, "src");
-    let names: string[] = [];
-    try {
-      names = readdirSync(src);
-    } catch {
-      continue;
-    }
-    for (const name of names) if (name.endsWith("-scene.ts")) found.push(join(src, name));
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === "dist") continue;
+    const path = join(folder, entry.name);
+    if (entry.isDirectory()) found.push(...sceneModules(path));
+    else if (entry.name.endsWith("-scene.ts")) found.push(path);
   }
   return found;
 }

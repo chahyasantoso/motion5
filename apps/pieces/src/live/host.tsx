@@ -2,7 +2,14 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import type { ClockDriver } from "@gerak/dom";
 import type { Driver, Scene } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
-import { loadStageModule, stageOf, type LoadedStage } from "../stage-module";
+import {
+  componentFileOf,
+  loadComponentModule,
+  loadStageModule,
+  stageFileOf,
+  stageOf,
+  type LoadedStage,
+} from "../stage-module";
 import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
@@ -80,11 +87,11 @@ export function extractErrorMessage(payload: unknown): string {
   return typeof payload === "string" ? payload : "Vite error";
 }
 
-/** Injects all style tags from the scene HTML page into a dedicated head style element. */
-export async function applySceneStyles(name: string): Promise<void> {
+/** Injects all style tags from the scene HTML page at `page` (`/<brief>/<name>.html`) into a dedicated head style element. */
+export async function applySceneStyles(page: string): Promise<void> {
   if (typeof fetch !== "function" || typeof document === "undefined") return;
   try {
-    const response = await fetch(`/${name}.html`);
+    const response = await fetch(page);
     if (!response.ok) return;
     const html = await response.text();
     const matches = html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi);
@@ -123,26 +130,27 @@ export interface StageBundle {
 
 export type SceneBundle = ComponentBundle | StageBundle;
 
-/** Whether `src/<name>.ts` exists; a name that is not a piece's has none. */
-async function hasStageFile(name: string): Promise<boolean> {
-  if (typeof fetch !== "function") return false;
-  const response = await fetch(`/src/${name}.ts`).catch(() => undefined);
-  return (
-    response?.ok === true && (response.headers.get("content-type") ?? "").includes("javascript")
-  );
-}
-
-/** Loads a named scene: the stage module `src/<name>.ts` when there is one, else its component and styles. */
+/** Loads a named scene: the stage module `<brief>/src/<name>.ts` when there is one, else its component and styles. */
 export async function loadSceneBundle(name: string): Promise<SceneBundle> {
-  if (await hasStageFile(name)) {
+  if (stageFileOf(name).kind !== "none") {
     const piece = await loadStageModule(name);
     if (typeof piece === "string") throw new Error(piece);
     return { kind: "stage", name, ...piece };
   }
-  await applySceneStyles(name);
   const file = COMPONENT_FILES[name] ?? name;
-  const url = `/src/${file}.tsx`;
-  const mod: unknown = await import(/* @vite-ignore */ url);
+  const component = componentFileOf(file);
+  switch (component.kind) {
+    case "none":
+      throw new Error(`No piece named "${name}": no ${name}.ts or ${file}.tsx in any brief's src.`);
+    case "ambiguous":
+      throw new Error(`Two pieces are named "${name}", ${component.paths.join(" and ")}.`);
+    case "found":
+      break;
+  }
+  const url = component.path;
+  const brief = url.split("/")[1] ?? "";
+  await applySceneStyles(`/${brief}/${name}.html`);
+  const mod = await loadComponentModule(url);
   if (!isRecord(mod)) throw new Error(`Module ${url} did not export an object.`);
   const Component = extractComponent(mod);
   if (Component === undefined) throw new Error(`No React component found in ${url}.`);

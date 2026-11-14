@@ -195,7 +195,7 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
   it("transforms scene imports by attaching HMR code", () => {
     const plugin = motionLivePlugin();
     const code = `import { TimingScene } from "./timing-scene";`;
-    const transformed = plugin.transform(code, resolve("apps/pieces/src/TimingBeat.tsx"));
+    const transformed = plugin.transform(code, resolve("apps/pieces/timing/src/TimingBeat.tsx"));
     expect(transformed).not.toBeNull();
     if (transformed !== null) {
       expect(transformed.code).toContain('export * as __motionScene from "./timing-scene";');
@@ -206,10 +206,10 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
   it("hands a stage module's update to the page, and leaves other modules alone", () => {
     const plugin = motionLivePlugin();
     const stage = `export const beats = story(1000, {});\nexport const cast = {};`;
-    const id = resolve("apps/pieces/src/saved.ts");
+    const id = resolve("apps/pieces/saved/src/saved.ts");
     expect(plugin.transform(stage, id)?.code).toContain("import.meta.hot.accept");
     expect(plugin.transform(`export const beats = 1;`, id)).toBeNull();
-    expect(plugin.transform(stage, resolve("apps/pieces/lib/saved.ts"))).toBeNull();
+    expect(plugin.transform(stage, resolve("apps/pieces/saved/lib/saved.ts"))).toBeNull();
   });
 
   it("runs only on a dev server, and hands an update no page took back to Vite", () => {
@@ -217,7 +217,7 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     expect(plugin.apply).toBe("serve");
     const transformed = plugin.transform(
       `import { scene } from "./timing-scene";`,
-      resolve("apps/pieces/src/TimingBeat.tsx"),
+      resolve("apps/pieces/timing/src/TimingBeat.tsx"),
     );
     expect(transformed?.code).toContain("cancelable: true");
     expect(transformed?.code).toContain(
@@ -301,11 +301,14 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
   it("lists the app's move files, sorted, and refuses another site", () => {
     const demoDir = makeTempDir();
     const empty = makeTempDir();
-    const movesDir = join(demoDir, "src", "moves");
+    const movesDir = join(demoDir, "reel", "src", "moves");
+    const otherDir = join(demoDir, "title", "src", "moves");
     mkdirSync(movesDir, { recursive: true });
+    mkdirSync(otherDir, { recursive: true });
     for (const name of ["b.ts", "a.ts", "a.d.ts", "notes.md"]) {
       writeFileSync(join(movesDir, name), "", "utf8");
     }
+    writeFileSync(join(otherDir, "c.ts"), "", "utf8");
     const answer = (
       root: string,
       headers?: Record<string, string>,
@@ -335,7 +338,9 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
 
     const listed = answer(demoDir);
     expect(listed.status).toBe(200);
-    expect(JSON.parse(listed.body)).toEqual({ files: ["/src/moves/a.ts", "/src/moves/b.ts"] });
+    expect(JSON.parse(listed.body)).toEqual({
+      files: ["/reel/src/moves/a.ts", "/reel/src/moves/b.ts", "/title/src/moves/c.ts"],
+    });
     expect(JSON.parse(answer(empty).body)).toEqual({ files: [] });
     expect(answer(demoDir, { "sec-fetch-site": "cross-site" }).status).toBe(403);
   });

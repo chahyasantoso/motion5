@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
-import { DROPLETS, IMPACT_MS, durationMs, scene } from "../src/splash-scene";
+import { DROPLETS, IMPACT_MS, durationMs, scene } from "../splash/src/splash-scene";
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });

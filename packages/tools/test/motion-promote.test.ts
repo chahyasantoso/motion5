@@ -15,6 +15,7 @@ import {
   checkMove,
   collectRecords,
   isMove,
+  candidatesOf,
   loadAppModules,
   parseCatalogArgs,
   parsePromoteArgs,
@@ -44,16 +45,16 @@ function fixture(): { readonly root: string; readonly movesPackage: string } {
   const base = mkdtempSync(join(tmpdir(), "motion-promote-"));
   dirs.push(base);
   const root = join(base, "app");
-  mkdirSync(join(root, "src", "moves"), { recursive: true });
-  mkdirSync(join(root, "src", "deep"), { recursive: true });
-  writeFileSync(join(root, "src", "moves", "x.ts"), MOVE);
+  mkdirSync(join(root, "reel", "src", "moves"), { recursive: true });
+  mkdirSync(join(root, "title", "src"), { recursive: true });
+  writeFileSync(join(root, "reel", "src", "moves", "x.ts"), MOVE);
   writeFileSync(
-    join(root, "src", "one.ts"),
+    join(root, "reel", "src", "one.ts"),
     `import { fade } from "@gerak/moves";\nimport { slideIn } from "./moves/x";\nexport const a = [fade, slideIn];\n`,
   );
   writeFileSync(
-    join(root, "src", "deep", "two.ts"),
-    `import { slideIn } from "../moves/x";\nexport const b = slideIn;\n`,
+    join(root, "title", "src", "two.ts"),
+    `import { slideIn } from "../../reel/src/moves/x";\nexport const b = slideIn;\n`,
   );
   const movesPackage = join(base, "moves");
   mkdirSync(movesPackage);
@@ -70,51 +71,36 @@ function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
 }
 
 describe("motion:moves --candidates", () => {
-  it("lists a local move imported by two files", async () => {
+  it("lists a local move imported from two briefs", async () => {
     const { root } = fixture();
     const run = await runCatalog(ok(["--candidates"]), root);
     expect(run.lines).toEqual(["slide-in | x.ts | briefs: 2"]);
     expect(run.code).toBe(0);
   });
 
-  it("counts files of one brief once, files of two briefs twice, and a file with no brief as its own", async () => {
+  it("counts files of one brief once, and a file of another brief's folder as a second brief", async () => {
     const { root } = fixture();
-    const one = join(root, "src", "one.ts");
-    const two = join(root, "src", "deep", "two.ts");
-    const text = (file: string) => readFileSync(file, "utf8");
-    const oneText = text(one);
-    const twoText = text(two);
-    writeFileSync(
-      one,
-      `${oneText}export const brief = "reel";
-`,
-    );
-    writeFileSync(
-      two,
-      `${twoText}export const brief = "reel";
-`,
-    );
+    const sameBrief = join(root, "reel", "src", "deep", "two.ts");
+    mkdirSync(join(root, "reel", "src", "deep"), { recursive: true });
+    writeFileSync(sameBrief, `import { slideIn } from "../moves/x";\nexport const b = slideIn;\n`);
+    rmSync(join(root, "title", "src", "two.ts"));
     expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual(["No candidates."]);
+    const { modules } = await loadAppModules(root);
+    expect(candidatesOf(root, collectRecords(modules))).toEqual([]);
     writeFileSync(
-      two,
-      `${twoText}export const brief = "title";
-`,
+      join(root, "title", "src", "two.ts"),
+      `import { slideIn } from "../../reel/src/moves/x";\nexport const c = slideIn;\n`,
     );
     expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual([
       "slide-in | x.ts | briefs: 2",
     ]);
-    writeFileSync(two, twoText);
-    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual([
-      "slide-in | x.ts | briefs: 2",
-    ]);
-    writeFileSync(one, `${oneText}export const brief = "reel's cut";\n`);
-    writeFileSync(two, `${twoText}export const brief = \`reel's cut\`;\n`);
-    expect((await runCatalog(ok(["--candidates"]), root)).lines).toEqual(["No candidates."]);
+    const [candidate] = candidatesOf(root, collectRecords((await loadAppModules(root)).modules));
+    expect(candidate?.briefs).toEqual(["reel", "title"]);
   });
 
   it("leaves out a move imported by one file", async () => {
     const { root } = fixture();
-    rmSync(join(root, "src", "deep", "two.ts"));
+    rmSync(join(root, "title", "src", "two.ts"));
     const run = await runCatalog(ok(["--candidates"]), root);
     expect(run.lines).toEqual(["No candidates."]);
   });
@@ -125,7 +111,7 @@ describe("motion:promote", () => {
     const { root, movesPackage } = fixture();
     const run = await promoteMove("slide-in", root, { movesPackage });
     expect(run.code).toBe(0);
-    expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(false);
+    expect(existsSync(join(root, "reel", "src", "moves", "x.ts"))).toBe(false);
     const moved = readFileSync(join(movesPackage, "src", "moves", "x.ts"), "utf8");
     expect(moved).not.toContain("@gerak/moves");
     expect(moved).toContain('import { defineMove } from "./declare";');
@@ -134,10 +120,10 @@ describe("motion:promote", () => {
     expect(readFileSync(join(movesPackage, "src", "index.ts"), "utf8")).toContain(
       'export { slideIn } from "./moves/x";',
     );
-    expect(readFileSync(join(root, "src", "one.ts"), "utf8")).toBe(
+    expect(readFileSync(join(root, "reel", "src", "one.ts"), "utf8")).toBe(
       `import { fade, slideIn } from "@gerak/moves";\nexport const a = [fade, slideIn];\n`,
     );
-    expect(readFileSync(join(root, "src", "deep", "two.ts"), "utf8")).toBe(
+    expect(readFileSync(join(root, "title", "src", "two.ts"), "utf8")).toBe(
       `import { slideIn } from "@gerak/moves";\nexport const b = slideIn;\n`,
     );
     expect(run.lines.some((line) => line.includes("two.ts"))).toBe(true);
@@ -150,7 +136,7 @@ describe("motion:promote", () => {
       "/** Slides in from the left. */\nexport const slideIn = defineMove(",
     );
     const again = fixture();
-    const file = join(again.root, "src", "moves", "x.ts");
+    const file = join(again.root, "reel", "src", "moves", "x.ts");
     writeFileSync(file, MOVE.replace("export const", "/** Mine. */\nexport const"));
     await promoteMove("slide-in", again.root, { movesPackage: again.movesPackage });
     const kept = readFileSync(join(again.movesPackage, "src", "moves", "x.ts"), "utf8");
@@ -175,11 +161,11 @@ describe("motion:promote", () => {
 
   it("refuses a move that is not a candidate and changes nothing", async () => {
     const { root, movesPackage } = fixture();
-    rmSync(join(root, "src", "deep", "two.ts"));
+    rmSync(join(root, "title", "src", "two.ts"));
     const run = await promoteMove("slide-in", root, { movesPackage });
     expect(run.code).toBe(1);
     expect(run.lines[0]).toContain("not a candidate");
-    expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(true);
+    expect(existsSync(join(root, "reel", "src", "moves", "x.ts"))).toBe(true);
     expect(existsSync(join(movesPackage, "src", "moves", "x.ts"))).toBe(false);
   });
 
@@ -205,7 +191,10 @@ describe("motion:promote refuses what it cannot rewrite whole", () => {
     const { root, movesPackage } = fixture();
     mkdirSync(join(root, "test"));
     const spec = join(root, "test", "x.test.ts");
-    writeFileSync(spec, `import { slideIn } from "../src/moves/x";\nexport const t = slideIn;\n`);
+    writeFileSync(
+      spec,
+      `import { slideIn } from "../reel/src/moves/x";\nexport const t = slideIn;\n`,
+    );
     const run = await promoteMove("slide-in", root, { movesPackage });
     expect(run.code).toBe(0);
     expect(readFileSync(spec, "utf8")).toContain('from "@gerak/moves"');
@@ -213,16 +202,16 @@ describe("motion:promote refuses what it cannot rewrite whole", () => {
 
   it("refuses a re-export it cannot rewrite, and changes nothing", async () => {
     const { root, movesPackage } = fixture();
-    writeFileSync(join(root, "src", "three.ts"), `export { slideIn } from "./moves/x";\n`);
+    writeFileSync(join(root, "reel", "src", "three.ts"), `export { slideIn } from "./moves/x";\n`);
     const run = await promoteMove("slide-in", root, { movesPackage });
     expect(run.code).toBe(1);
     expect(run.lines.join(" ")).toMatch(/three\.ts/);
-    expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(true);
+    expect(existsSync(join(root, "reel", "src", "moves", "x.ts"))).toBe(true);
   });
 
   it("refuses a helper exported beside the move, and a name the library has", async () => {
     const { root, movesPackage } = fixture();
-    const file = join(root, "src", "moves", "x.ts");
+    const file = join(root, "reel", "src", "moves", "x.ts");
     writeFileSync(file, `${MOVE}export const clamp = (n: number) => n;\n`);
     expect((await promoteMove("slide-in", root, { movesPackage })).lines.join(" ")).toMatch(
       /clamp/,
@@ -235,7 +224,7 @@ describe("motion:promote refuses what it cannot rewrite whole", () => {
 
   it("refuses a class or a default export beside the move, and changes nothing", async () => {
     const { root, movesPackage } = fixture();
-    const file = join(root, "src", "moves", "x.ts");
+    const file = join(root, "reel", "src", "moves", "x.ts");
     for (const extra of ["export class Helper {}\n", "export default 1;\n"]) {
       writeFileSync(file, `${MOVE}${extra}`);
       const run = await promoteMove("slide-in", root, { movesPackage });

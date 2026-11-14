@@ -51,8 +51,6 @@ import { squish } from "./moves/squish";
 import { streak } from "./moves/streak";
 import { tint } from "./moves/tint";
 
-export const brief = "showreel";
-
 /** The reel's beats, one per line of its timeline, with the chapters the corner label names. */
 export const beats = story(15000, {
   origin: [0, 1000],

@@ -14,7 +14,7 @@ import {
   durationMs,
   scene,
   subject,
-} from "../src/principles3d-scene";
+} from "../principles3d/src/principles3d-scene";
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });

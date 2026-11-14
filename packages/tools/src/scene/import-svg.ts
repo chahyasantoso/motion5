@@ -8,10 +8,11 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, join, sep } from "node:path";
 import type { Cubic2d } from "@gerak/moves";
 import { matchOutlines } from "@gerak/stage";
 import { withPage } from "../page/page";
+import { pieceFiles } from "./briefs";
 import { addToPiece } from "./piece-edit";
 import {
   extractSvg,
@@ -515,7 +516,6 @@ function cssSource(parts: readonly Part[]): string {
 /** The module's source text. */
 function moduleSource(
   source: string,
-  piece: string,
   frame: { readonly width: number; readonly height: number },
   built: ReturnType<typeof build>,
 ): string {
@@ -526,8 +526,6 @@ function moduleSource(
   return `// Imported from ${basename(source)} by motion:import-svg: flat parts in paint order; rename a part by replacing its quoted name.
 import type { Time } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
-
-export const brief = ${JSON.stringify(piece)};
 
 export const beats = story(1000, { show: [0, 1000] });
 
@@ -564,7 +562,7 @@ async function readSvg(file: string): Promise<Extracted> {
   }
 }
 
-/** Writes `<root>/src/<name>.ts`, the SVG's shapes as flat parts in frame px with `margin` px of room
+/** Writes `<root>/<name>/src/<name>.ts`, the SVG's shapes as flat parts in frame px with `margin` px of room
  * round them, or nothing; an existing file is overwritten only with `force`. */
 export async function importSvg(
   file: string,
@@ -578,7 +576,13 @@ export async function importSvg(
   if (!NAME.test(name))
     return { kind: "refused", message: `Name "${name}" must be lowercase words joined by "-".` };
   if (!existsSync(file)) return { kind: "refused", message: `No file at ${file}.` };
-  const target = join(root, "src", `${name}.ts`);
+  const target = join(root, name, "src", `${name}.ts`);
+  const elsewhere = pieceFiles(root, name).filter((path) => path !== target);
+  if (elsewhere.length > 0)
+    return {
+      kind: "refused",
+      message: `"${name}" already exists in another place, nothing written: ${elsewhere.join(", ")}`,
+    };
   if (existsSync(target) && options.force !== true)
     return {
       kind: "refused",
@@ -594,7 +598,7 @@ export async function importSvg(
     height: thousandth(extracted.viewBox.height + 2 * margin),
   };
   mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, moduleSource(file, name, frame, built));
+  writeFileSync(target, moduleSource(file, frame, built));
   return written(target, built, frame);
 }
 
@@ -645,8 +649,15 @@ export async function importSvgInto(
     return refuse(`Prefix "${prefix}" must be a word of letters and digits starting lowercase.`);
   if (!NAME.test(piece)) return refuse(`Piece "${piece}" must be lowercase words joined by "-".`);
   if (!existsSync(file)) return refuse(`No file at ${file}.`);
-  const target = join(root, "src", `${piece}.ts`);
-  if (!existsSync(target)) return refuse(`No piece at ${target}; nothing written.`);
+  const [target, ...others] = pieceFiles(root, piece).filter((path) =>
+    path.endsWith(`${sep}${piece}.ts`),
+  );
+  if (target === undefined)
+    return refuse(`No piece named ${piece} under ${root}; nothing written.`);
+  if (others.length > 0)
+    return refuse(
+      `Two pieces are named ${piece}, ${[target, ...others].join(" and ")}; nothing written.`,
+    );
   const extracted = await readSvg(file);
   if (extracted.kind === "error") return refuse(extracted.message);
   const source = readFileSync(target, "utf8");

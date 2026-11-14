@@ -10,7 +10,7 @@ import {
   drag,
   durationMs,
   scene,
-} from "../src/principles-scene";
+} from "../principles/src/principles-scene";
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });

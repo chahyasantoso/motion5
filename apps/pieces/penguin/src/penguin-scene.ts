@@ -10,7 +10,7 @@ import {
   type Time,
 } from "@gerak/moves";
 import { actor, group, many, story } from "@gerak/stage";
-import talk from "../references/talk.json" with { type: "json" };
+import talk from "../../references/talk.json" with { type: "json" };
 
 export const frame = { width: 1280, height: 720 };
 

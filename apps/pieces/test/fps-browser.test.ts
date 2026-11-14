@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, measureFps } from "@gerak/tools/page";
@@ -6,14 +6,10 @@ import { scaffold } from "@gerak/tools/scene";
 
 const PLAIN = "fps-scratch-plain";
 const SLOW = "fps-scratch-slow";
-const SRC = join(DEFAULT_ROOT, "src");
 
 function removeScratch(): void {
-  for (const name of [PLAIN, SLOW]) {
-    rmSync(join(DEFAULT_ROOT, `${name}.html`), { force: true });
-    for (const file of readdirSync(SRC))
-      if (file.startsWith(name)) rmSync(join(SRC, file), { force: true });
-  }
+  for (const name of [PLAIN, SLOW])
+    rmSync(join(DEFAULT_ROOT, name), { recursive: true, force: true });
 }
 
 beforeAll(() => {
@@ -23,7 +19,7 @@ beforeAll(() => {
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
   }
   for (const name of [PLAIN, SLOW]) {
-    const path = join(SRC, `${name}-scene.ts`);
+    const path = join(DEFAULT_ROOT, name, "src", `${name}-scene.ts`);
     const text = readFileSync(path, "utf8");
     const looping = text.replace(
       "clockDriver({ duration: durationMs })",
@@ -32,7 +28,7 @@ beforeAll(() => {
     if (looping === text) throw new Error("The scaffolded scene no longer has the clock line.");
     writeFileSync(path, looping, "utf8");
   }
-  const file = join(SRC, `${SLOW}-scene.ts`);
+  const file = join(DEFAULT_ROOT, SLOW, "src", `${SLOW}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const slowed = source.replace(
     "const box: Pose3d = {};",
@@ -46,7 +42,7 @@ afterAll(removeScratch);
 
 const request = (name: string, to: number) => ({
   kind: "fps" as const,
-  page: `${name}.html`,
+  page: `${name}/${name}.html`,
   width: 1280,
   height: 720,
   source: { kind: "serve" as const, root: DEFAULT_ROOT },

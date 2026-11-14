@@ -21,7 +21,7 @@ import {
   clock,
   durationMs,
   scene,
-} from "../src/character3d-scene";
+} from "../character3d/src/character3d-scene";
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });

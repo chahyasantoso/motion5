@@ -20,11 +20,11 @@ import { usePlayer } from "@gerak/react";
 import { applyValue } from "@gerak/dom";
 import { applyPose3d } from "@gerak/three";
 import { applyBones, attach, captureSkeleton } from "@gerak/three/skeleton";
-import eyes from "../references/dragonling.eyes.json" with { type: "json" };
+import eyes from "../../references/dragonling.eyes.json" with { type: "json" };
 import { clock, cues, lens, propSpecs, scene, speech, stage } from "./dragon-intro-scene";
 
 const TITLE = ["LITTLE", "EMBER", "TALKS"] as const;
-const MODEL = new URL("../references/dragonling.glb", import.meta.url).href;
+const MODEL = new URL("../../references/dragonling.glb", import.meta.url).href;
 
 /** Builds the Three.js stage, binds each target, and draws once per step; click replays.
  * `onReady` runs once the model has loaded and one frame has drawn; `onError` if it could not. */

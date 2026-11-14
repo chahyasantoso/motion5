@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as builtIn from "@gerak/moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
+import { sceneFileOf } from "../stage-module";
 
 export type { NumericLiteralSpan };
 
@@ -189,7 +190,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
       return;
     }
     let cancelled = false;
-    fetch(`/__motion/source?file=src/${sceneName}-scene.ts`)
+    fetch(`/__motion/source?file=${sceneFileOf(sceneName)}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -216,7 +217,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
   const sendEdit = (start: number, oldText: string, newText: string): void => {
     inFlightRef.current = true;
     const body = JSON.stringify({
-      file: `src/${sceneName}-scene.ts`,
+      file: sceneFileOf(sceneName),
       start,
       end: start + oldText.length,
       oldText,

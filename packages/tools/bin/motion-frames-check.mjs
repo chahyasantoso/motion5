@@ -22,10 +22,10 @@ const { withPage } = await import("../src/page/page.ts");
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];
 const CREAM = [244, 237, 223];
-// The worked examples this check opens live in their own app.
-const examples = fileURLToPath(new URL("../../../apps/examples/", import.meta.url));
+// The worked examples this check opens are briefs of the pieces app.
+const examples = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const stage = { width: 1280, height: 720, source: { kind: "serve", root: examples } };
-const request = { page: "timing.html", at: [0, 500, 3000], ...stage };
+const request = { page: "timing/timing.html", at: [0, 500, 3000], ...stage };
 
 const first = await captureFrames(request);
 const second = await captureFrames(request);
@@ -68,7 +68,7 @@ const renders = mkdtempSync(join(tmpdir(), "motion-render-check-"));
 try {
   const render = (name) =>
     renderPage({
-      page: "timing.html",
+      page: "timing/timing.html",
       ...stage,
       to: 1000,
       format: "mp4",
@@ -108,7 +108,7 @@ await browser.close();
 
 // The dot's measured rest centre, taken by hand from the live page.
 const probe = await probeElements({
-  page: "timing.html",
+  page: "timing/timing.html",
   ...stage,
   at: [2300],
   select: ".beat-dot",
@@ -120,7 +120,7 @@ assert.ok(
 );
 
 const onion = await captureOnion({
-  page: "timing.html",
+  page: "timing/timing.html",
   ...stage,
   select: ".beat-dot",
   from: 900,
@@ -135,7 +135,7 @@ assert.ok(
 assert.ok(readFileSync(onion.path).length > 1000, "onion image written");
 // The dot passes behind each letter for a few frames: counted when nothing is tolerated, clean by default.
 const watch = {
-  page: "timing.html",
+  page: "timing/timing.html",
   ...stage,
   watch: [".beat-dot", ".beat-glyph"],
   to: 3000,
@@ -158,7 +158,7 @@ const relaxed = await checkMotion({ ...watch, limits: DEFAULT_LIMITS });
 assert.deepEqual(relaxed.findings, []);
 // The page anchors the wipe on the dot's measured centre, not on a number in the project.
 const { value: clip } = await withPage(
-  { page: "timing.html", ...stage },
+  { page: "timing/timing.html", ...stage },
   async ({ page, advanceTo }) => {
     await advanceTo(2500);
     return page.$eval(".beat-cover", (element) => getComputedStyle(element).clipPath);
@@ -168,7 +168,7 @@ assert.match(clip, /at 974(.d+)?px 415(.d+)?px/, clip);
 
 // A click replays the beat from its start rather than breaking the page.
 const { value: replayed, pageErrors: replayErrors } = await withPage(
-  { page: "timing.html", ...stage },
+  { page: "timing/timing.html", ...stage },
   async ({ page, advanceTo }) => {
     await advanceTo(3200);
     await page.mouse.click(640, 360);
@@ -261,7 +261,7 @@ ${box("hand", "top:300px;left:200px")}<div data-motion-touch="#hand" id="cup" st
   // A scripted hover reaches the page as real pointer events: the card lifts, turns back after the leave
   // with no jump, and a CSS hover transition on a plain page follows the same clock.
   const pointer = {
-    page: "card.html",
+    page: "card/card.html",
     ...stage,
     actions: [
       { kind: "hover", selector: ".card-hit", at: 1000 },
@@ -334,7 +334,7 @@ animation:slide 640ms cubic-bezier(0.33,1,0.68,1) 160ms both}
 }
 // One review call gives the check's findings, the moves read, and a sheet, for a clean page.
 const review = await reviewPage({
-  page: "timing.html",
+  page: "timing/timing.html",
   ...stage,
   watch: [".beat-dot", ".beat-glyph"],
   to: 3000,
@@ -349,11 +349,13 @@ assert.ok(
 assert.ok(readFileSync(review.sheet).length > 1000, "review sheet written");
 
 // An action on something the page does not have fails at once, by name.
-const { value: missing } = await withPage({ page: "timing.html", ...stage }, async ({ page }) =>
-  perform(page, { kind: "click", selector: ".nothing-here", at: 0 }).then(
-    () => "clicked",
-    (error) => error.message,
-  ),
+const { value: missing } = await withPage(
+  { page: "timing/timing.html", ...stage },
+  async ({ page }) =>
+    perform(page, { kind: "click", selector: ".nothing-here", at: 0 }).then(
+      () => "clicked",
+      (error) => error.message,
+    ),
 );
 assert.match(missing, /nothing on the page matches \.nothing-here/);
 console.log("motion:frames ok");

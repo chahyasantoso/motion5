@@ -11,7 +11,7 @@ import { reviewSceneModule } from "../src/scene/review";
 import { renderTimeline } from "../src/timeline/timeline";
 
 const SCENE_REVIEW = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
-import * as timing from "../../../apps/examples/src/timing-scene";
+import * as timing from "../../../apps/pieces/timing/src/timing-scene";
 
 function moduleOf(value: unknown): SceneModule {
   const read = readSceneModule(value);
@@ -67,7 +67,7 @@ describe("scene tools", () => {
 
 describe("scene tools and events", () => {
   it("read a module's own cues and refuse ones that are not events", async () => {
-    const catcher = moduleOf(await import("../../../apps/examples/src/catch-scene"));
+    const catcher = moduleOf(await import("../../../apps/pieces/catch/src/catch-scene"));
     expect(catcher.cues.map(({ name }) => name)).toEqual(["catch"]);
     expect(readSceneModule({ scene: () => ({}), durationMs: 10, cues: [{ at: 1 }] })).toEqual({
       reason: "The module's `cues` must be a list of { name, at, target } events.",
@@ -85,7 +85,7 @@ describe("scene tools and events", () => {
   });
 
   it("play the events given beside the scene's own", async () => {
-    const card = moduleOf(await import("../../../apps/examples/src/card-scene"));
+    const card = moduleOf(await import("../../../apps/pieces/card/src/card-scene"));
     const lifted = sampleScene(
       card,
       { kind: "time", ms: [1400] },

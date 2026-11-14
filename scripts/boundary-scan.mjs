@@ -386,16 +386,19 @@ function packageOf(specifier) {
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Page tools work on any page, so they import node, a browser driver and a dev server, never gerak. */
+/** Page tools work on any page, so they import node, a browser driver and a dev server, never gerak; the one other file they read is the brief folders' owner. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
     specifier.startsWith(".")
-      ? posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(PAGE_TOOLS)
+      ? [PAGE_TOOLS, BRIEFS].some((allowedPath) =>
+          posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(allowedPath),
+        )
       : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
   );
   if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
+const BRIEFS = "packages/tools/src/scene/briefs";
 /** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
 function checkPureSource(workspace, file, specifiers, violations, pure) {
   const inside = specifiers.every((specifier) =>
@@ -412,8 +415,13 @@ export async function scan(scanRoot = root) {
   const pure = await pureLayer(scanRoot, workspaces);
   const apps = await appNames(scanRoot, workspaces);
   for (const workspace of workspaces) {
-    for (const path of await walk(join(scanRoot, workspace, "src"))) {
-      const source = await readFile(path, "utf8");
+    const briefs = workspace.startsWith("apps/")
+      ? await briefSources(join(scanRoot, workspace))
+      : [];
+    const sourceFolders = [join(scanRoot, workspace, "src"), ...briefs];
+    for (const path of (await Promise.all(sourceFolders.map(walk))).flat()) {
+      const source = await readSource(path);
+      if (source === undefined) continue;
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
@@ -426,8 +434,9 @@ export async function scan(scanRoot = root) {
     // An app's tests, configs and scripts beside `src` hold the app boundary too; a package's tests
     // may read an app's files, since they ship nothing.
     if (!workspace.startsWith("apps/")) continue;
-    for (const path of await walkOutsideSource(join(scanRoot, workspace))) {
-      const source = await readFile(path, "utf8");
+    for (const path of await walkOutsideSource(join(scanRoot, workspace), new Set(briefs))) {
+      const source = await readSource(path);
+      if (source === undefined) continue;
       const file = relative(path, scanRoot);
       checkAppBoundary(workspace, file, [...importSpecifiers(source)], violations, apps);
     }
@@ -437,8 +446,36 @@ export async function scan(scanRoot = root) {
 
 const LEFT_OUT = new Set(["src", "node_modules", "dist"]);
 
-/** Every scanned file of a workspace outside `src`, `node_modules`, `dist` and hidden folders. */
-async function walkOutsideSource(directory) {
+/** A file's text, or `undefined` when it was removed after the walk listed it. */
+async function readSource(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return undefined;
+    throw error;
+  }
+}
+
+/** The `src` folders of an app's brief folders: each top-level folder, not left out, that holds one. */
+async function briefSources(directory) {
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  const found = [];
+  for (const entry of entries) {
+    if (!entry.isDirectory() || LEFT_OUT.has(entry.name) || entry.name.startsWith(".")) continue;
+    const src = join(directory, entry.name, "src");
+    if ((await readdir(src).catch(() => undefined)) !== undefined) found.push(src);
+  }
+  return found;
+}
+
+/** Every scanned file of a workspace outside `src`, `node_modules`, `dist`, hidden folders and the brief `src` folders in `skipped`. */
+async function walkOutsideSource(directory, skipped, top = true) {
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
@@ -450,8 +487,9 @@ async function walkOutsideSource(directory) {
   for (const entry of entries) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (!LEFT_OUT.has(entry.name) && !entry.name.startsWith("."))
-        files.push(...(await walk(path)));
+      const left = top && (LEFT_OUT.has(entry.name) || entry.name.startsWith("."));
+      if (!left && !skipped.has(path))
+        files.push(...(await walkOutsideSource(path, skipped, false)));
     } else if (scannedExtensions.includes(extname(entry.name))) files.push(path);
   }
   return files;

@@ -66,6 +66,17 @@ describe("boundary scan", () => {
     expect(violations).toEqual([]);
   });
 
+  it("holds a brief folder's src to the same rules as the app's own src", async () => {
+    const violations = await withTree(
+      { "apps/demo/reel/src/main.ts": undeclaredSubpathFixture },
+      (tree) => scan(tree),
+      WORKSPACES,
+    );
+    expect(violations).toEqual([
+      "apps/demo/reel/src/main.ts: undeclared workspace subpath @gerak/rig/fabrik",
+    ]);
+  });
+
   it("takes the workspace roots from the root manifest", async () => {
     const files = { "apps/demo/src/main.ts": undeclaredSubpathFixture };
     const declared = await withTree(files, (tree) => scan(tree), WORKSPACES);
@@ -133,7 +144,7 @@ describe("boundary scan: pure packages", () => {
 });
 
 describe("boundary scan: page tools", () => {
-  it("keeps page tools to node, playwright-core and vite", async () => {
+  it("keeps page tools to node, playwright-core, vite and the brief folders' owner", async () => {
     const violations = await withTree(
       {
         "packages/tools/package.json": JSON.stringify({ name: "@gerak/tools", exports: {} }),
@@ -145,6 +156,8 @@ describe("boundary scan: page tools", () => {
           'import { hop } from "@gerak/moves";\nexport const e = hop;',
         "packages/tools/src/page/reach.ts":
           'import { s } from "../scene/scene";\nexport const r = s;',
+        "packages/tools/src/page/live.ts":
+          'import { pieceFiles } from "../scene/briefs";\nexport const l = pieceFiles;',
       },
       (tree) => scan(tree),
     );

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, type Dirent } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -6,8 +6,16 @@ import { describe, expect, it } from "vitest";
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const RETIRED = /\b(capabilityOf|dedicatedMembers|PluginCapability|UNJUDGED|NO_PLUGIN)\b/;
 
+function entriesOf(dir: string): Dirent[] {
+  try {
+    return readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
 function sources(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+  for (const entry of entriesOf(dir)) {
     if (entry.name === "node_modules" || entry.name === ".git") continue;
     const path = join(dir, entry.name);
     if (entry.isDirectory()) sources(path, out);
@@ -21,12 +29,23 @@ function roots(): readonly string[] {
   for (const group of ["packages", "apps"]) {
     for (const entry of readdirSync(join(ROOT, group), { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
-      const src = join(ROOT, group, entry.name, "src");
-      try {
-        readdirSync(src);
-        roots.push(src);
-      } catch {
-        continue;
+      const folder = join(ROOT, group, entry.name);
+      const folders = [
+        folder,
+        ...(group === "apps"
+          ? readdirSync(folder, { withFileTypes: true })
+              .filter((brief) => brief.isDirectory() && brief.name !== "node_modules")
+              .map((brief) => join(folder, brief.name))
+          : []),
+      ];
+      for (const base of folders) {
+        const src = join(base, "src");
+        try {
+          readdirSync(src);
+          roots.push(src);
+        } catch {
+          continue;
+        }
       }
     }
   }

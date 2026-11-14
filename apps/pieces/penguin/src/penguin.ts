@@ -15,8 +15,6 @@ import { actor, story, type Pivot } from "@gerak/stage";
 import { handWave } from "./moves/hand-wave";
 import { waddle } from "./moves/waddle";
 
-export const brief = "penguin";
-
 export const beats = story(4300, {
   waddle: [200, 1900],
   lean: [1850, 2200],

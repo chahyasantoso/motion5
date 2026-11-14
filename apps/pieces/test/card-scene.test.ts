@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { liveAt, type Events } from "@gerak/moves";
-import { scene } from "../src/card-scene";
+import { scene } from "../card/src/card-scene";
 
 const pointer = (...steps: readonly [string, number][]): Events =>
   steps.map(([name, at]) => ({ name, at, target: "card" }));

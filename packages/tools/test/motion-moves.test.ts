@@ -33,9 +33,9 @@ export const ${id.replace("-", "")} = defineMove({
 function app(): string {
   const dir = mkdtempSync(join(tmpdir(), "motion-moves-"));
   roots.push(dir);
-  mkdirSync(join(dir, "src/moves"), { recursive: true });
-  writeFileSync(join(dir, "src/moves/good.ts"), move("good", ""));
-  writeFileSync(join(dir, "src/moves/bad.ts"), move("bad", " - 4"));
+  mkdirSync(join(dir, "reel/src/moves"), { recursive: true });
+  writeFileSync(join(dir, "reel/src/moves/good.ts"), move("good", ""));
+  writeFileSync(join(dir, "reel/src/moves/bad.ts"), move("bad", " - 4"));
   return dir;
 }
 
@@ -75,7 +75,7 @@ describe("motion:moves", () => {
   it("prints a recipe on the line and the full entry, and refuses an unknown part", async () => {
     const dir = app();
     writeFileSync(
-      join(dir, "src/moves/made.ts"),
+      join(dir, "reel/src/moves/made.ts"),
       move("made", "").replace(
         '  role: "enter",',
         '  role: "enter",\n  recipe: ["span", "nonsense"],',
@@ -92,7 +92,7 @@ describe("motion:moves", () => {
 
   it("reports an app file that exports no move", async () => {
     const dir = app();
-    writeFileSync(join(dir, "src/moves/plain.ts"), "export const plain = () => ({ x: 0 });");
+    writeFileSync(join(dir, "reel/src/moves/plain.ts"), "export const plain = () => ({ x: 0 });");
     const run = await runCatalog(ok(["--check"]), dir);
     expect(run.code).toBe(1);
     expect(run.lines.some((line) => line.includes("plain.ts: exports no move"))).toBe(true);
@@ -115,15 +115,15 @@ describe("motion:moves", () => {
 
   it("passes --check when the app's moves are sound", async () => {
     const dir = app();
-    rmSync(join(dir, "src/moves/bad.ts"));
+    rmSync(join(dir, "reel/src/moves/bad.ts"));
     const run = await runCatalog(ok(["--check"]), dir);
     expect(run.code).toBe(0);
   });
 
   it("reports an id declared twice, in the app or against a built-in", async () => {
     const dir = app();
-    writeFileSync(join(dir, "src/moves/again.ts"), move("good", ""));
-    writeFileSync(join(dir, "src/moves/clash.ts"), move("drop", ""));
+    writeFileSync(join(dir, "reel/src/moves/again.ts"), move("good", ""));
+    writeFileSync(join(dir, "reel/src/moves/clash.ts"), move("drop", ""));
     const run = await runCatalog(ok(["--check"]), dir);
     expect(run.code).toBe(1);
     expect(run.lines).toContainEqual(
@@ -149,7 +149,7 @@ describe("motion:moves", () => {
     expect(run.code).toBe(0);
     expect(run.lines).toContain("  distance number 0..500, default 100: Start offset, in px.");
     expect(run.lines).toContain('example: good({"distance":100}, time)');
-    expect(run.lines).toContain(`file: ${join(dir, "src/moves/good.ts")}`);
+    expect(run.lines).toContain(`file: ${join(dir, "reel/src/moves/good.ts")}`);
     expect((await runCatalog(ok(["nothing"]), dir)).code).toBe(1);
   });
 

@@ -9,7 +9,7 @@ describe("the 3D character page in Chromium", () => {
   it("becomes ready without page errors and paints the character over the background", async () => {
     const { value, pageErrors } = await withPage(
       {
-        page: "character3d.html",
+        page: "character3d/character3d.html",
         width: 1280,
         height: 720,
         source: { kind: "serve", root: ROOT },

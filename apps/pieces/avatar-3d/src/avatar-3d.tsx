@@ -25,7 +25,7 @@ import { clock, cues, props, scene } from "./avatar-3d-scene";
 
 const WIDTH = 1280;
 const HEIGHT = 720;
-const MODEL_URL = new URL("../references/dragonling.glb", import.meta.url).href;
+const MODEL_URL = new URL("../../references/dragonling.glb", import.meta.url).href;
 const PROP_COLOURS: Readonly<Record<string, number>> = {
   block: 0x8fd3b6,
   ball: 0xf2c94c,

@@ -1,9 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
+import { briefFolders, movesFolders } from "./briefs";
 import { checkMove, describeFinding, isMove, type CheckedMove } from "./moves";
 import { formatParts } from "./parts";
 
@@ -223,7 +224,7 @@ export function checkCatalog(
   return [...new Set(lines)];
 }
 
-/** Imports each `.ts` file in `<root>/src/moves`, in name order; a file that will not import is reported. */
+/** Imports each `.ts` file in every brief's `src/moves`, brief by brief; a file that will not import is reported. */
 export async function loadAppModules(root: string): Promise<{
   readonly modules: readonly {
     readonly file: string;
@@ -231,15 +232,15 @@ export async function loadAppModules(root: string): Promise<{
   }[];
   readonly problems: readonly string[];
 }> {
-  const folder = join(root, "src", "moves");
   const modules: { file: string; module: Readonly<Record<string, unknown>> }[] = [];
   const problems: string[] = [];
-  if (!existsSync(folder)) return { modules, problems };
-  const files = readdirSync(folder)
-    .filter((name) => /\.ts$/.test(name) && !name.endsWith(".d.ts"))
-    .sort();
-  for (const name of files) {
-    const file = join(folder, name);
+  const files = movesFolders(root).flatMap((folder) =>
+    readdirSync(folder)
+      .filter((name) => /\.ts$/.test(name) && !name.endsWith(".d.ts"))
+      .sort()
+      .map((name) => join(folder, name)),
+  );
+  for (const file of files) {
     try {
       const module: Readonly<Record<string, unknown>> = await import(pathToFileURL(file).href);
       if (!Object.values(module).some(isMove))
@@ -258,25 +259,13 @@ export interface Candidate {
   readonly id: string;
   readonly file: string;
   readonly importers: readonly string[];
-  /** The distinct briefs among the importers: a file's `brief`, else the file itself. */
+  /** The distinct brief folders among the importers. */
   readonly briefs: readonly string[];
 }
 
 /** One line of `--candidates`: the id, its file and how many briefs use it. */
 export function formatCandidate(candidate: Candidate): string {
   return `${candidate.id} | ${basename(candidate.file)} | briefs: ${candidate.briefs.length}`;
-}
-
-const BRIEF = /^export\s+const\s+brief\s*(?::\s*string\s*)?=\s*(["'`])(.+?)\1/m;
-
-/** The brief a piece file names with a top-level `export const brief = "..."`, read from its text. */
-export function briefOf(path: string): string | undefined {
-  return BRIEF.exec(readFileSync(path, "utf8"))?.[2];
-}
-
-/** The distinct briefs among `paths`; a file with no brief is a brief of its own. */
-export function briefsOf(paths: readonly string[]): readonly string[] {
-  return [...new Set(paths.map((path) => briefOf(path) ?? `file:${path}`))];
 }
 
 /** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
@@ -292,16 +281,18 @@ export function sourceFiles(folder: string): readonly string[] {
   });
 }
 
-/** The files of `<root>/src`, outside `src/moves`, whose text imports `src/moves/<name>`. */
+/** The files of every brief's `src` whose text imports the move `file`, leaving out the move's own folder. */
 export function importersOf(root: string, file: string): readonly string[] {
   const target = resolve(file).replace(/\.ts$/, "");
   const imports = /\bfrom\s*["'](\.[^"']*)["']/g;
-  return sourceFiles(join(root, "src")).filter((path) => {
-    if (dirname(resolve(path)) === dirname(target)) return false;
-    return [...readFileSync(path, "utf8").matchAll(imports)].some(
-      ([, spec = ""]) => resolve(dirname(path), spec).replace(/\.(js|ts)$/, "") === target,
-    );
-  });
+  return briefFolders(root)
+    .flatMap((brief) => sourceFiles(join(root, brief, "src")))
+    .filter((path) => {
+      if (dirname(resolve(path)) === dirname(target)) return false;
+      return [...readFileSync(path, "utf8").matchAll(imports)].some(
+        ([, spec = ""]) => resolve(dirname(path), spec).replace(/\.(js|ts)$/, "") === target,
+      );
+    });
 }
 
 /** The app's moves that pass the gate and are used by two or more briefs, by id. */
@@ -315,7 +306,7 @@ export function candidatesOf(
     if (record.source.kind !== "app") continue;
     if (checkCatalog(all, [entry]).length > 0 || checkMove(move).length > 0) continue;
     const importers = importersOf(root, record.source.file);
-    const briefs = briefsOf(importers);
+    const briefs = [...new Set(importers.map((path) => relative(root, path).split(sep)[0] ?? ""))];
     if (briefs.length >= 2)
       found.push({ id: record.id, file: record.source.file, importers, briefs });
   }

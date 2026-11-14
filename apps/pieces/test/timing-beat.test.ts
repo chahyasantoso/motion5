@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
 import { code } from "../../../test/repo/helpers/source-region";
-import { BEAT_MS, timingScene } from "../src/timing-scene";
+import { BEAT_MS, timingScene } from "../timing/src/timing-scene";
 
-const COMPONENT_URL = new URL("../src/TimingBeat.tsx", import.meta.url);
+const COMPONENT_URL = new URL("../timing/src/TimingBeat.tsx", import.meta.url);
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs: BEAT_MS });

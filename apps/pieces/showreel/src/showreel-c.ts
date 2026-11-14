@@ -49,8 +49,6 @@ import { springSettle } from "./moves/spring-settle";
 import { squish } from "./moves/squish";
 import { tint } from "./moves/tint";
 
-export const brief = "showreel";
-
 /** The WEIGHT letters land one by one, the last one late. */
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;
 

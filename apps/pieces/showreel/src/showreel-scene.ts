@@ -40,8 +40,6 @@ import { launch } from "./moves/launch";
 import { shockwave } from "./moves/shockwave";
 import { springSettle } from "./moves/spring-settle";
 
-export const brief = "showreel";
-
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 15000;
 

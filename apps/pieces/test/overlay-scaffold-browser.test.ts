@@ -1,23 +1,20 @@
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
 import { scaffold } from "@gerak/tools/scene";
 
 const NAME = "overlay-scratch-box";
-const SRC = join(DEFAULT_ROOT, "src");
 
 function removeScratch(): void {
-  rmSync(join(DEFAULT_ROOT, `${NAME}.html`), { force: true });
-  for (const file of readdirSync(SRC))
-    if (file.startsWith(NAME)) rmSync(join(SRC, file), { force: true });
+  rmSync(join(DEFAULT_ROOT, NAME), { recursive: true, force: true });
 }
 
 beforeAll(() => {
   removeScratch();
   const result = scaffold(NAME, DEFAULT_ROOT, { three: true });
   if (result.kind !== "written") throw new Error(JSON.stringify(result));
-  const file = join(SRC, `${NAME}-scene.ts`);
+  const file = join(DEFAULT_ROOT, NAME, "src", `${NAME}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const moving = source
     .replace("const box: Pose3d = {};", MOVING_BOX)
@@ -37,7 +34,7 @@ describe("a scaffolded 3D page pins a label on the box", () => {
   it("keeps the label's corner on the box's drawn centre at 0, 400 and 800 ms", async () => {
     const { value, pageErrors } = await withPage(
       {
-        page: `${NAME}.html`,
+        page: `${NAME}/${NAME}.html`,
         width: 1280,
         height: 720,
         source: { kind: "serve", root: DEFAULT_ROOT },

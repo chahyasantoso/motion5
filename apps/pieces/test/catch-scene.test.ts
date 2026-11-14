@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
 import { NO_EVENTS } from "@gerak/moves";
-import { BALL, CATCH, LAND_MS, SHOULDER, cues, durationMs, scene } from "../src/catch-scene";
+import { BALL, CATCH, LAND_MS, SHOULDER, cues, durationMs, scene } from "../catch/src/catch-scene";
 
 function at(ms: number, events = cues) {
   const driver = manualDriver({ durationMs });

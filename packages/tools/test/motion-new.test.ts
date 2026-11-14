@@ -6,7 +6,9 @@ import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
 import {
+  NEW_USAGE,
   parseCatalogArgs,
+  parseNewArgs,
   readSceneModule,
   runCatalog,
   sampleScene,
@@ -34,12 +36,12 @@ function appRoot(): string {
   return dir;
 }
 
-const STAGE_FILES = ["src/rope-word.ts"];
+const STAGE_FILES = ["rope-word/src/rope-word.ts"];
 const FILES = [
-  "rope-word.html",
-  "src/rope-word-main.tsx",
-  "src/rope-word.tsx",
-  "src/rope-word-scene.ts",
+  "rope-word/rope-word.html",
+  "rope-word/src/rope-word-main.tsx",
+  "rope-word/src/rope-word.tsx",
+  "rope-word/src/rope-word-scene.ts",
 ];
 
 describe("motion:new", () => {
@@ -48,7 +50,7 @@ describe("motion:new", () => {
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(STAGE_FILES.map((file) => join(dir, file)));
-    const imported = await import(pathToFileURL(join(dir, "src/rope-word.ts")).href);
+    const imported = await import(pathToFileURL(join(dir, "rope-word/src/rope-word.ts")).href);
     const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
     expect(module.beats?.map(({ name }) => name)).toEqual(["show"]);
@@ -62,15 +64,15 @@ describe("motion:new", () => {
     const dir = root();
     scaffold("rope-word", dir);
     scaffold("rope-box", dir, { three: true });
-    for (const file of ["src/rope-word.ts", "src/rope-box-scene.ts"])
+    for (const file of ["rope-word/src/rope-word.ts", "rope-box/src/rope-box-scene.ts"])
       expect(readFileSync(join(dir, file), "utf8")).not.toMatch(/drop|lift2d/);
   });
 
   it("writes a move the catalog finds and the gate refuses until it is filled in", async () => {
     const dir = appRoot();
-    const result = scaffoldMove("rope-in", dir);
+    const result = scaffoldMove("rope-in", dir, "rope");
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
-    expect(result.files).toEqual([join(dir, "src/moves/rope-in.ts")]);
+    expect(result.files).toEqual([join(dir, "rope/src/moves/rope-in.ts")]);
     const catalog = (argv: readonly string[]) => {
       const args = parseCatalogArgs(argv);
       if (args.kind !== "ok") throw new Error(args.message);
@@ -82,32 +84,38 @@ describe("motion:new", () => {
     expect(checked.code).toBe(1);
     expect(checked.lines).toContain("rope-in: the move has no description.");
     expect(checked.lines.some((line) => line.includes('"x" is 1 at progress 1'))).toBe(true);
-    const source = readFileSync(join(dir, "src/moves/rope-in.ts"), "utf8");
-    const config = await resolveConfig(join(process.cwd(), "apps/pieces/src/moves/rope-in.ts"));
+    const source = readFileSync(join(dir, "rope/src/moves/rope-in.ts"), "utf8");
+    const config = await resolveConfig(
+      join(process.cwd(), "apps/pieces/rope/src/moves/rope-in.ts"),
+    );
     expect(await format(source, { ...config, filepath: "rope-in.ts" })).toBe(source);
   });
 
   it("refuses a move id that is not kebab-case or whose file exists", () => {
     const dir = root();
     for (const id of ["", "Rope", "rope_in", "../rope"])
-      expect(scaffoldMove(id, dir).kind).toBe("refused");
-    expect(scaffoldMove("rope-in", dir).kind).toBe("written");
-    expect(scaffoldMove("new", dir).kind).toBe("written");
-    expect(readFileSync(join(dir, "src/moves/new.ts"), "utf8")).toContain("export const newMove =");
-    writeFileSync(join(dir, "src/moves/keep.ts"), "keep");
-    expect(scaffoldMove("rope-in", dir).kind).toBe("refused");
-    expect(scaffoldMove("keep", dir).kind).toBe("refused");
-    expect(readFileSync(join(dir, "src/moves/keep.ts"), "utf8")).toBe("keep");
+      expect(scaffoldMove(id, dir, "rope").kind).toBe("refused");
+    expect(scaffoldMove("rope-in", dir, "rope").kind).toBe("written");
+    expect(scaffoldMove("new", dir, "rope").kind).toBe("written");
+    expect(readFileSync(join(dir, "rope/src/moves/new.ts"), "utf8")).toContain(
+      "export const newMove =",
+    );
+    writeFileSync(join(dir, "rope/src/moves/keep.ts"), "keep");
+    expect(scaffoldMove("rope-in", dir, "rope").kind).toBe("refused");
+    expect(scaffoldMove("keep", dir, "rope").kind).toBe("refused");
+    expect(readFileSync(join(dir, "rope/src/moves/keep.ts"), "utf8")).toBe("keep");
   });
 
   it("with --three names the component after the page and points each file at the next", () => {
     const dir = root();
     scaffold("rope-word", dir, { three: true });
-    expect(readFileSync(join(dir, "rope-word.html"), "utf8")).toContain("/src/rope-word-main.tsx");
-    expect(readFileSync(join(dir, "src/rope-word-main.tsx"), "utf8")).toContain(
+    expect(readFileSync(join(dir, "rope-word/rope-word.html"), "utf8")).toContain(
+      "/src/rope-word-main.tsx",
+    );
+    expect(readFileSync(join(dir, "rope-word/src/rope-word-main.tsx"), "utf8")).toContain(
       'import { RopeWord } from "./rope-word";',
     );
-    expect(readFileSync(join(dir, "src/rope-word.tsx"), "utf8")).toContain(
+    expect(readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8")).toContain(
       'import { clock, lens, scene, stage } from "./rope-word-scene";',
     );
   });
@@ -124,11 +132,60 @@ describe("motion:new", () => {
 
   it("refuses a name whose files exist, and writes nothing", () => {
     const dir = root();
-    mkdirSync(join(dir, "src"));
-    writeFileSync(join(dir, "src/rope-word.ts"), "keep");
+    mkdirSync(join(dir, "rope-word/src"), { recursive: true });
+    writeFileSync(join(dir, "rope-word/src/rope-word.ts"), "keep");
     expect(scaffold("rope-word", dir)).toMatchObject({ kind: "refused" });
-    expect(readFileSync(join(dir, "src/rope-word.ts"), "utf8")).toBe("keep");
-    expect(existsSync(join(dir, "rope-word.html"))).toBe(false);
+    expect(readFileSync(join(dir, "rope-word/src/rope-word.ts"), "utf8")).toBe("keep");
+    expect(existsSync(join(dir, "rope-word/rope-word.html"))).toBe(false);
+  });
+
+  it("refuses --move without --in and prints the usage line", () => {
+    for (const argv of [["--move", "rope-in"], ["--move"], ["--move", "rope-in", "--three"]]) {
+      expect(parseNewArgs(argv)).toEqual({ kind: "usage", message: NEW_USAGE });
+    }
+    expect(parseNewArgs(["--move", "rope-in", "--in", "rope"])).toEqual({
+      kind: "move",
+      id: "rope-in",
+      brief: "rope",
+      root: undefined,
+    });
+    expect(NEW_USAGE).toContain("motion:new --move <id> --in <brief>");
+  });
+
+  it("with --in writes the piece and its move into that brief's folder", () => {
+    const dir = root();
+    const piece = scaffold("rope-word", dir, { brief: "ropes" });
+    if (piece.kind !== "written") throw new Error(piece.message);
+    expect(piece.files).toEqual([join(dir, "ropes/src/rope-word.ts")]);
+    const three = scaffold("rope-box", dir, { three: true, brief: "ropes" });
+    if (three.kind !== "written") throw new Error(three.message);
+    expect(three.files).toEqual([
+      join(dir, "ropes/rope-box.html"),
+      join(dir, "ropes/src/rope-box-main.tsx"),
+      join(dir, "ropes/src/rope-box.tsx"),
+      join(dir, "ropes/src/rope-box-scene.ts"),
+    ]);
+    expect(readFileSync(join(dir, "ropes/rope-box.html"), "utf8")).toContain(
+      "/ropes/src/rope-box-main.tsx",
+    );
+    const move = scaffoldMove("rope-in", dir, "ropes");
+    if (move.kind !== "written") throw new Error(move.message);
+    expect(move.files).toEqual([join(dir, "ropes/src/moves/rope-in.ts")]);
+    expect(scaffold("rope-x", dir, { brief: "src" }).kind).toBe("refused");
+    expect(scaffoldMove("rope-y", dir, "Ropes").kind).toBe("refused");
+  });
+
+  it("refuses a name that already exists in any brief, and writes nothing", () => {
+    const dir = root();
+    scaffold("rope-word", dir, { brief: "ropes" });
+    const again = scaffold("rope-word", dir, { brief: "other" });
+    expect(again).toMatchObject({ kind: "refused" });
+    expect(again.kind === "refused" ? again.message : "").toContain(
+      join(dir, "ropes/src/rope-word.ts"),
+    );
+    expect(existsSync(join(dir, "other"))).toBe(false);
+    scaffold("rope-box", dir, { three: true, brief: "ropes" });
+    expect(scaffold("rope-box", dir, { brief: "other" }).kind).toBe("refused");
   });
 
   it.each(["", "Rope", "rope_word", "-rope", "../rope", "rope/word"])(
@@ -143,10 +200,12 @@ describe("motion:new", () => {
     const result = scaffold("rope-word", dir, { three: true });
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
-    const component = readFileSync(join(dir, "src/rope-word.tsx"), "utf8");
+    const component = readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8");
     expect(component).toContain('from "@gerak/three/react"');
     expect(component).toContain("preserveDrawingBuffer: true");
-    const loaded: unknown = await import(pathToFileURL(join(dir, "src/rope-word-scene.ts")).href);
+    const loaded: unknown = await import(
+      pathToFileURL(join(dir, "rope-word/src/rope-word-scene.ts")).href
+    );
     const module = readSceneModule(loaded);
     if ("reason" in module) throw new Error(module.reason);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
@@ -186,8 +245,8 @@ describe("motion:new", () => {
     });
 
     const dir = root();
-    mkdirSync(join(dir, "src"), { recursive: true });
-    writeFileSync(join(dir, "src/custom-scene.ts"), "export const scene = () => ({});");
+    mkdirSync(join(dir, "custom/src"), { recursive: true });
+    writeFileSync(join(dir, "custom/src/custom-scene.ts"), "export const scene = () => ({});");
     expect(parseLiveArgs(["custom", "--root", dir, "--port", "4321"])).toEqual({
       kind: "ok",
       scene: "custom",
@@ -229,7 +288,7 @@ describe("motion:new", () => {
       "overlay3d",
     ] as const;
     for (const name of examples) {
-      const scenePath = join(process.cwd(), "apps/examples/src", `${name}-scene.ts`);
+      const scenePath = join(process.cwd(), "apps/pieces", name, "src", `${name}-scene.ts`);
       const imported = await import(pathToFileURL(scenePath).href);
       const module = readSceneModule(imported);
       if ("reason" in module) throw new Error(`${name}: ${module.reason}`);

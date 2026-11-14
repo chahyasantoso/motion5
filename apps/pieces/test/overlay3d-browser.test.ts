@@ -8,7 +8,7 @@ describe("the overlay3d page in Chromium", () => {
   it("keeps the arm-tip callout's corner on the tip as drawn at 600, 2200 and 4000 ms", async () => {
     const { value, pageErrors } = await withPage(
       {
-        page: "overlay3d.html",
+        page: "overlay3d/overlay3d.html",
         width: 1280,
         height: 720,
         source: { kind: "serve", root: ROOT },

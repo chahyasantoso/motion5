@@ -47,8 +47,6 @@ import { squish } from "./moves/squish";
 import { streak } from "./moves/streak";
 import { tint } from "./moves/tint";
 
-export const brief = "showreel";
-
 const LENGTH = 15000;
 const ANT_IN = 1000;
 const ANT_CROUCH = 2250;
