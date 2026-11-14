@@ -23,7 +23,18 @@ Public: `.`
 
 Public: `.`
 
-- `src/`: moves, time, pose
+- `src/`: the one entry point and shared helpers
+- `src/compose/`: sequence, lanes, reversed, repeated, loops
+- `src/fields/`: what can change: the value table, poses, combine
+- `src/moves/`: defineMove and the built-in moves and modifiers
+- `src/parts/blends/`: mixes and squashes
+- `src/parts/camera/`: orbit, aim, project3d
+- `src/parts/events/`: follow, react, tally
+- `src/parts/follow-through/`: trails, speed, smears, shakes
+- `src/parts/laws/`: eases, springs, keyframes
+- `src/parts/paths/`: cubic paths and travel along them
+- `src/parts/randomness/`: seeded numbers
+- `src/parts/time/`: time, spans, windows
 
 ## packages/physics
 

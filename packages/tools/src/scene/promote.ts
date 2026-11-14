@@ -85,6 +85,10 @@ function moduleOfNames(index: string): ReadonlyMap<string, string> {
   return owner;
 }
 
+/** A module of the package as a promoted move in `src/moves/` imports it. */
+const fromMoves = (module: string): string =>
+  module.startsWith("moves/") ? `./${module.slice("moves/".length)}` : `../${module}`;
+
 const clause = (specifier: Specifier) =>
   specifier.type ? `type ${specifier.name}` : specifier.name;
 
@@ -106,8 +110,8 @@ function relativeImports(
     return [...byModule]
       .map(([module, found]) =>
         found.every((specifier) => specifier.type)
-          ? `import type { ${found.map(({ name }) => name).join(", ")} } from "./${module}";`
-          : `import { ${found.map(clause).join(", ")} } from "./${module}";`,
+          ? `import type { ${found.map(({ name }) => name).join(", ")} } from "${fromMoves(module)}";`
+          : `import { ${found.map(clause).join(", ")} } from "${fromMoves(module)}";`,
       )
       .join("\n");
   });
@@ -189,7 +193,7 @@ export async function promoteMove(
         : `Candidates: ${candidates.map(formatCandidate).join("; ")}.`,
     );
   const base = basename(candidate.file, ".ts");
-  const destination = join(options.movesPackage, "src", `${base}.ts`);
+  const destination = join(options.movesPackage, "src", "moves", `${base}.ts`);
   if (existsSync(destination)) return refuse(`${destination} already exists.`);
   const source = readFileSync(candidate.file, "utf8");
   if (/from\s*["']\.{1,2}\//.test(source))
@@ -253,7 +257,7 @@ export async function promoteMove(
   const separator = index.endsWith("\n") ? "" : "\n";
   writeFileSync(
     indexPath,
-    `${index}${separator}export { ${exported.join(", ")} } from "./${base}";\n`,
+    `${index}${separator}export { ${exported.join(", ")} } from "./moves/${base}";\n`,
   );
   for (const { importer, text } of rewrites) writeFileSync(importer, text);
   const shown = (path: string) => relative(process.cwd(), path).replaceAll("\\", "/");

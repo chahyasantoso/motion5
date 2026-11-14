@@ -126,13 +126,13 @@ describe("motion:promote", () => {
     const run = await promoteMove("slide-in", root, { movesPackage });
     expect(run.code).toBe(0);
     expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(false);
-    const moved = readFileSync(join(movesPackage, "src", "x.ts"), "utf8");
+    const moved = readFileSync(join(movesPackage, "src", "moves", "x.ts"), "utf8");
     expect(moved).not.toContain("@gerak/moves");
     expect(moved).toContain('import { defineMove } from "./declare";');
-    expect(moved).toContain('import type { Pose2d } from "./pose";');
-    expect(moved).toContain('import { mix } from "./mix";');
+    expect(moved).toContain('import type { Pose2d } from "../fields/pose";');
+    expect(moved).toContain('import { mix } from "../parts/blends/mix";');
     expect(readFileSync(join(movesPackage, "src", "index.ts"), "utf8")).toContain(
-      'export { slideIn } from "./x";',
+      'export { slideIn } from "./moves/x";',
     );
     expect(readFileSync(join(root, "src", "one.ts"), "utf8")).toBe(
       `import { fade, slideIn } from "@gerak/moves";\nexport const a = [fade, slideIn];\n`,
@@ -146,14 +146,14 @@ describe("motion:promote", () => {
   it("writes the description above a moved move that has no doc comment, and keeps one it has", async () => {
     const { root, movesPackage } = fixture();
     await promoteMove("slide-in", root, { movesPackage });
-    expect(readFileSync(join(movesPackage, "src", "x.ts"), "utf8")).toContain(
+    expect(readFileSync(join(movesPackage, "src", "moves", "x.ts"), "utf8")).toContain(
       "/** Slides in from the left. */\nexport const slideIn = defineMove(",
     );
     const again = fixture();
     const file = join(again.root, "src", "moves", "x.ts");
     writeFileSync(file, MOVE.replace("export const", "/** Mine. */\nexport const"));
     await promoteMove("slide-in", again.root, { movesPackage: again.movesPackage });
-    const kept = readFileSync(join(again.movesPackage, "src", "x.ts"), "utf8");
+    const kept = readFileSync(join(again.movesPackage, "src", "moves", "x.ts"), "utf8");
     expect(kept).toContain("/** Mine. */\nexport const slideIn");
     expect(kept).not.toContain("Slides in from the left. */");
   });
@@ -162,7 +162,7 @@ describe("motion:promote", () => {
     const { root, movesPackage } = fixture();
     await promoteMove("slide-in", root, { movesPackage });
     const module: Readonly<Record<string, unknown>> = await import(
-      pathToFileURL(join(movesPackage, "src", "x.ts")).href
+      pathToFileURL(join(movesPackage, "src", "moves", "x.ts")).href
     );
     const moves = Object.values(module).filter(isMove);
     expect(moves.map((found) => found.id)).toEqual(["slide-in"]);
@@ -180,7 +180,7 @@ describe("motion:promote", () => {
     expect(run.code).toBe(1);
     expect(run.lines[0]).toContain("not a candidate");
     expect(existsSync(join(root, "src", "moves", "x.ts"))).toBe(true);
-    expect(existsSync(join(movesPackage, "src", "x.ts"))).toBe(false);
+    expect(existsSync(join(movesPackage, "src", "moves", "x.ts"))).toBe(false);
   });
 
   it("refuses an unknown id", async () => {
