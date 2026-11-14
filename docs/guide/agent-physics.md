@@ -31,6 +31,10 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
   in world units) and what it hit (`other`, a body or collider id). Place a mark at a landing from the event itself;
   never seek the simulation back to learn where a body was. Its first contact may be with anything, so pick the one
   whose `other` you mean.
+- `sim.pose(id, time)` throws for a body not spawned yet at `time`: check `sim.bodies(time, events)` first, or in 2D
+  use `sim.place`, which answers opacity 0. `sim.at` answers every body in one call, cheaper than many `pose` calls.
+- A seek back replays the world from its last snapshot, and a spawn event the seek passes rewinds further. When the
+  review reports a seek over budget, a coarser `dt` (`1 / 60`) halves the steps each seek replays.
 - A body that stays within 1 px for half a second sleeps, so a heap comes to rest. Mark bodies that rest on each other
   `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.
