@@ -1,6 +1,7 @@
 export * from "./args";
 export * from "./check";
 export * from "./compare";
+export * from "./fps";
 export * from "./frames";
 export * from "./live";
 export * from "./page";
