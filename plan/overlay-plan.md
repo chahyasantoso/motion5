@@ -135,8 +135,10 @@ One pull request, after wave 4.
   scaffold puts canvas and overlay in the same stage element.
 - **Text in headless Chromium:** labels wait for `document.fonts.ready`, which the page tools already await.
 - **A label behind the model** stays drawn; occlusion is out of scope, and the measure's story keeps labels clear.
-- **The dragonling cannot blink:** it has no eyelid bone and no blink shape. The owner decides before wave 4 how the
-  measure blinks: another model with eyelids, or an eyelid added to the dragonling.
+- **The dragonling has no eyelids of its own:** the page adds one lid per eye, a mesh in the skin colour riding the
+  `Head` bone, placed from `apps/pieces/references/dragonling.eyes.json` (each iris's box, measured from the model and
+  held to it by a test); the scene drives the lids as a custom number. A lid that clips the brow or shows a seam at
+  rest is a finding of the measure.
 - **A cheap measure may stall** where an Opus one would not; a stall is a finding about the guide, recorded, and the
   measure is not rerun on a stronger model to pass.
 
