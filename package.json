@@ -43,6 +43,7 @@
     "motion:promote": "node packages/tools/bin/motion-promote.mjs",
     "motion:check": "node packages/tools/bin/motion-check.mjs",
     "motion:points": "node packages/tools/bin/motion-points.mjs",
+    "motion:joints": "node packages/tools/bin/motion-joints.mjs",
     "motion:probe": "node packages/tools/bin/motion-probe.mjs",
     "motion:read": "node packages/tools/bin/motion-read.mjs",
     "motion:render": "node packages/tools/bin/motion-render.mjs",

@@ -56,7 +56,8 @@ Launch a wave's builders in one message, each in its own worktree. Do not poll.
    in a shell or script edit leaves a backspace where `\b` was meant, and no gate sees it.
 3. Drop any option no test drives; it is a feature nobody chose.
 4. For a change that should not show, compare samples and frames before and after.
-5. Look at a tool's output on a real page, not only its tests.
+5. Look at a tool's output on a real page, not only its tests, and sample the values behind any frame a worker
+   names as proof: a worker may name the wrong frame.
 6. Run the full check once, from a clean state when the change adds a build: no `dist` the check could lean on. One purpose per shell call; never move git state in a call that runs tests.
 
 ## Review cold

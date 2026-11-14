@@ -68,7 +68,7 @@ Public: `.`
 
 ## packages/three
 
-Public: `.`, `./react`
+Public: `.`, `./react`, `./skeleton`
 
 - `src/`: Three.js adapter
 

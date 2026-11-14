@@ -39,3 +39,24 @@ export { UNBOUND_POLE3D, type Pole3d } from "./ik/solve3d/analytic";
 export type { ChainMember3d } from "./ik/solve3d/chain";
 export { FREE_JOINT3D, type JointLimit3d } from "./ik/solve3d/constraint";
 export { chainShape3d, solveChain3d, type ChainShape3d } from "./ik/solve3d/solve";
+export {
+  bodyPose3d,
+  bonesOf3d,
+  buildChain3d,
+  chainFromRest3d,
+  chainThrough3d,
+  childBase3d,
+  fk3d,
+  ik3d,
+  jointOf,
+  type Bone3d,
+  type BoneIdsOf3d,
+  type BonePose3d,
+  type Chain3d,
+  type ChainPose3d,
+  type Goal3d,
+  type Joint3d,
+  type RestPose3d,
+  type RigidBodyLike3d,
+  type JointTable3d,
+} from "./chain3d";

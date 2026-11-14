@@ -92,6 +92,7 @@ describe("agent guide", () => {
       "pile-scene",
       "principles-scene",
       "principles3d-scene",
+      "character3d-scene",
     ];
     expect(examples.filter((example) => read.includes(example))).toEqual([]);
   });

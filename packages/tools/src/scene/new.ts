@@ -18,7 +18,7 @@ function plan(
   if (!three) return [{ template: "stage.ts.template", path: `src/${name}.ts` }];
   return [
     { template: "page.three.html.template", path: `${name}.html` },
-    { template: "main.tsx.template", path: `src/${name}-main.tsx` },
+    { template: "main.three.tsx.template", path: `src/${name}-main.tsx` },
     { template: "component.three.tsx.template", path: `src/${name}.tsx` },
     { template: "scene.three.ts.template", path: `src/${name}-scene.ts` },
   ];

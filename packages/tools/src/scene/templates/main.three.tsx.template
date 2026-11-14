@@ -1,0 +1,16 @@
+import { createRoot } from "react-dom/client";
+import { __COMPONENT__ } from "./__NAME__";
+
+const container = document.getElementById("root");
+if (!container) throw new Error("#root not found");
+
+// The page tools wait for this before they start the clock.
+let ready: () => void = () => undefined;
+Reflect.set(
+  window,
+  "__motionReady",
+  new Promise<void>((resolve) => {
+    ready = resolve;
+  }),
+);
+createRoot(container).render(<__COMPONENT__ onReady={() => ready()} />);

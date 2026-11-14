@@ -222,6 +222,7 @@ describe("motion:new", () => {
       "pile",
       "principles",
       "principles3d",
+      "character3d",
     ] as const;
     for (const name of examples) {
       const scenePath = join(process.cwd(), "apps/examples/src", `${name}-scene.ts`);

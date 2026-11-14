@@ -1,6 +1,6 @@
 # References
 
-Vector artwork that pieces rig and animate. Each file keeps its source and licence here.
+Artwork and models that pieces rig and animate. Each file keeps its source and licence here.
 
 | File | Source | Creator | Licence |
 | --- | --- | --- | --- |
@@ -9,5 +9,6 @@ Vector artwork that pieces rig and animate. Each file keeps its source and licen
 | `ice-floe.svg` | Made here: an ice floe the penguin stands on | the repository | The repository's own |
 | `iceberg.svg` | Made here: a distant iceberg | the repository | The repository's own |
 | `talk.json` | Made by `make-talk.mjs` from a fixed seed, not tracked from a person | the repository | The repository's own |
+| `dragonling.glb` | [polyfork.dev, "Red fire dragonling"](https://polyfork.dev/asset/red-fire-dragonling-base), skinned, 31 named bones with a `Jaw` | [Polyfork](https://polyfork.dev) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): keep this credit line with the file |
 
 Only artwork whose licence allows changing and keeping it goes in this folder.

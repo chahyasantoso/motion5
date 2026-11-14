@@ -10,6 +10,9 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - Two of three builders wrote code before tests and said so; a test never seen red may guard nothing, as wave 1's
   cost test did. Briefs could ask for the failing output of each new test in the report.
 
+- A review limit set for one unit hides a defect in another: `--turn 150` passed a 133 degree bone flip, and blink,
+  a 0-1 custom number, is judged by the position `--jump`. The review could take limits per field kind or per target.
+
 ## Cost per wave
 
 | Date | Plan, wave | Workers | Tokens | Fixed on combining |
@@ -47,3 +50,12 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-14 | live-inputs 3 | Sonnet | 121k, 55 calls, 7 min | 1 (imported parts painted under the piece's own) |
 | 2026-11-14 | live-inputs 4 measure | Opus | 213k, 136 calls, 22 min | 1 (`--into` refused a piece with no frame) |
 | 2026-11-14 | live-inputs 4 cold review | Sonnet | 98k, 13 calls, 2 min | 2 of 9 fixed (follow cache, data-id) |
+| 2026-11-14 | 3d 1 (D0, T1) | Argon + Hydrogen | not shown | 0 |
+| 2026-11-14 | 3d 2 (T2+T3, T4) | 2 Hydrogen | not shown | 0 |
+| 2026-11-14 | 3d 3 (T5) | Hydrogen | not shown | 1 (`window.__motionReady` needed for 0 ms WebGL capture) |
+| 2026-11-14 | 3d 4 measure (T7) | Argon | not shown | 1 (`Pole3d` tuple in guide; uniform ancestor scale on `.glb`) |
+| 2026-11-14 | 3d 4 cold review | Hydrogen | not shown | 6 of 7 fixed (`world3d` switch, `sameEvent` value, 2D `pose` guard, `character3d` ready order, ADR-182 names) |
+| 2026-11-14 | 3d-fix 1 | Conductor | not shown | 1 (a bone twisting about its own length moves no joint, so position tests miss it) |
+| 2026-11-14 | 3d-fix 2 | 3 Sonnet | 85k + 91k + 89k, 90 calls, 5 min | 2 (single-precision spawn read-back; `ik3d` not answering rest at a rest goal) |
+| 2026-11-14 | 3d-fix 4 measure | Opus | 158k, 51 calls, 7 min | 6 guide gaps; named shut-jaw frames as open |
+| 2026-11-14 | 3d-fix 4 cold review | Sonnet | 111k, 25 calls, 3 min | 5 of 9 fixed (loader names, `__proto__`, straight rest chain, spawn origin test, guide); its test found `pose` before `at` threw |

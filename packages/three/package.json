@@ -10,7 +10,8 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@gerak/moves": "0.1.0",
-    "@gerak/player": "0.1.0"
+    "@gerak/player": "0.1.0",
+    "@gerak/rig": "0.1.0"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",
@@ -29,6 +30,10 @@
     "./react": {
       "types": "./dist/react.d.ts",
       "default": "./dist/react.js"
+    },
+    "./skeleton": {
+      "types": "./dist/skeleton.d.ts",
+      "default": "./dist/skeleton.js"
     }
   }
 }
