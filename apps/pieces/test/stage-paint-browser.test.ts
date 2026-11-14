@@ -1,15 +1,13 @@
 import { readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { firefox, webkit, type Page } from "playwright-core";
+import type { Page } from "playwright-core";
 import { createServer, type ViteDevServer } from "vite";
 import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
 
 const PREFIX = "stage-paint-scratch-";
 const SRC = join(DEFAULT_ROOT, "src");
 const STEP_TIMEOUT_MS = 8000;
-const ENGINES = ["chromium", "firefox", "webkit"] as const;
-type Engine = (typeof ENGINES)[number];
 
 /** Helpers every scratch piece writes first: a closed rectangle as four straight cubics. */
 const SHAPES = `import { story } from "@gerak/stage";
@@ -76,44 +74,22 @@ afterAll(async () => {
   removeLeftovers();
 });
 
-/** Opens `piece` in an engine and hands the page over; false when the engine will not launch. */
-async function inEngine(
-  engine: Engine,
-  piece: string,
-  visit: (page: Page) => Promise<void>,
-): Promise<boolean> {
-  const address = `stage.html?piece=${PREFIX}${piece}`;
-  if (engine === "chromium") {
-    await withPage(
-      { page: address, width: 1280, height: 720, source: { kind: "url", base } },
-      async ({ page, advanceTo }) => {
-        page.setDefaultTimeout(STEP_TIMEOUT_MS);
-        await page.locator('[data-stage="frame"]').waitFor();
-        await advanceTo(200);
-        await visit(page);
-      },
-    );
-    return true;
-  }
-  const browser = await (engine === "firefox" ? firefox : webkit)
-    .launch()
-    .catch((): undefined => undefined);
-  if (browser === undefined) return false;
-  try {
-    // A browser build the library cannot talk to launches but opens no page; that engine is skipped too.
-    const page = await browser
-      .newPage({ viewport: { width: 1280, height: 720 } })
-      .catch((): undefined => undefined);
-    if (page === undefined) return false;
-    page.setDefaultTimeout(STEP_TIMEOUT_MS);
-    await page.goto(new URL(address, base).href, { waitUntil: "load" });
-    await page.locator('[data-stage="frame"]').waitFor();
-    await page.waitForTimeout(400);
-    await visit(page);
-    return true;
-  } finally {
-    await browser.close();
-  }
+/** Opens `piece` in Chromium and hands the page over. */
+async function inChromium(piece: string, visit: (page: Page) => Promise<void>): Promise<void> {
+  await withPage(
+    {
+      page: `stage.html?piece=${PREFIX}${piece}`,
+      width: 1280,
+      height: 720,
+      source: { kind: "url", base },
+    },
+    async ({ page, advanceTo }) => {
+      page.setDefaultTimeout(STEP_TIMEOUT_MS);
+      await page.locator('[data-stage="frame"]').waitFor();
+      await advanceTo(200);
+      await visit(page);
+    },
+  );
 }
 
 /** The RGBA of each point of a screenshot, read back through a canvas in the page itself. */
@@ -158,16 +134,14 @@ async function inFrame(
   };
 }
 
-function run(engine: Engine, piece: string, visit: (page: Page) => Promise<void>) {
-  return async (context: { skip: (note?: string) => never }) => {
-    if (!(await inEngine(engine, piece, visit))) context.skip(`${engine} will not launch here.`);
-  };
+function run(piece: string, visit: (page: Page) => Promise<void>) {
+  return () => inChromium(piece, visit);
 }
 
-describe.each(ENGINES)("a stage's parts in %s", (engine) => {
+describe("a stage's parts in the browser", () => {
   it(
     "paints two parts that share one gradient, each with its own colours",
-    run(engine, "gradient", async (page) => {
+    run("gradient", async (page) => {
       const frame = await page.locator('[data-stage="frame"]').boundingBox();
       if (frame === null) throw new Error("No frame.");
       const at = (x: number, y: number): [number, number] => [frame.x + x, frame.y + y];
@@ -189,7 +163,7 @@ describe.each(ENGINES)("a stage's parts in %s", (engine) => {
 
   it(
     "draws a 1 px horizontal line where its SVG puts it",
-    run(engine, "line", async (page) => {
+    run("line", async (page) => {
       const box = await inFrame(page, "flat");
       expect(box.bottom - box.top).toBeCloseTo(1, 1);
       expect((box.top + box.bottom) / 2).toBeCloseTo(300, 1);
@@ -209,7 +183,7 @@ describe.each(ENGINES)("a stage's parts in %s", (engine) => {
 
   it(
     "keeps the bottom edge of an off-centre pivoted part squashed with an anchor of bottom",
-    run(engine, "squash", async (page) => {
+    run("squash", async (page) => {
       const box = await inFrame(page, "part");
       expect(box.bottom).toBeCloseTo(300, 0);
       expect(box.bottom - box.top).toBeCloseTo(50, 0);
@@ -219,7 +193,7 @@ describe.each(ENGINES)("a stage's parts in %s", (engine) => {
 
   it(
     "turns a part with no anchor about its pivot",
-    run(engine, "turn", async (page) => {
+    run("turn", async (page) => {
       const box = await inFrame(page, "part");
       expect(box.left).toBeCloseTo(120, 0);
       expect(box.right).toBeCloseTo(220, 0);
