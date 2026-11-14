@@ -23,3 +23,6 @@ Add a line here only when a wave falls outside these ranges, or a new kind of wo
 
 - 2026-11-14, overlay measure `dragon-intro` on Sonnet at medium effort: 214k, 106 calls, 22 min. It passed; a
   10 s piece with five beats costs a cheap worker an Opus-sized budget, mostly in render rounds for eyelids and holds.
+- 2026-11-15, anatomy A1b (pieces into brief folders, examples merged) on Sonnet at medium effort: 323k, 216 calls,
+  34 min, for 178 files, 30 reviews before and after and several full checks; one fix on combining. The lead's
+  scripted folder move of `@gerak/moves` (A1) cost a fraction of that.
