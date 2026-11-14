@@ -1,5 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
+import { arch } from "../parts/laws/envelopes";
 import { withProgress, type Time } from "../parts/time/time";
 import { carried, pushed, whole } from "./whole";
 
@@ -36,7 +37,7 @@ export const anticipate = defineMove({
       const played = at((time.progress - share) / (1 - share));
       return whole(played, carried(first, last, played));
     }
-    const wind = amount * Math.sin(Math.PI * (time.progress / share));
+    const wind = amount * arch(time.progress / share);
     return pushed(first, last, wind, carried(first, last));
   },
   moments: ({ share }) => ({ windUp: share / 2 }),

@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { arch, defineMove, type Pose2d } from "@gerak/moves";
 
 export const bump = defineMove({
   id: "bump",
@@ -21,7 +21,7 @@ export const bump = defineMove({
   example: { options: { dy: -40, turn: 1 } },
   moments: () => ({ peak: 0.5 }),
   run: ({ dx, dy, turn }, { progress }): Pose2d => {
-    const s = Math.sin(Math.PI * progress) ** 2;
+    const s = arch(progress) ** 2;
     return { x: dx * s, y: dy * s, rotation: turn * s };
   },
 });

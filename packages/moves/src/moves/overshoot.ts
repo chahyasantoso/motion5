@@ -1,5 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
+import { arch, taper } from "../parts/laws/envelopes";
 import { withProgress, type Time } from "../parts/time/time";
 import { carried, pushed, whole } from "./whole";
 
@@ -38,7 +39,7 @@ export const overshoot = defineMove({
       return whole(played, carried(first, last, played));
     }
     const v = (time.progress - playing) / share;
-    return pushed(last, first, amount * Math.sin(Math.PI * v) * (1 - v), carried(first, last));
+    return pushed(last, first, amount * arch(v) * taper(v, 1), carried(first, last));
   },
   moments: ({ share }) => ({ settle: 1 - share }),
 });

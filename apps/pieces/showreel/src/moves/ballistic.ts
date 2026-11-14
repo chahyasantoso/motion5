@@ -1,4 +1,12 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { ballistic as thrown, defineMove, type Pose2d } from "@gerak/moves";
+
+/** The parabola's true peak above the higher end, for a curve whose control point sits `apex` above it. */
+function peakAbove(dy: number, apex: number): number {
+  const higher = Math.min(dy, 0);
+  const control = higher - apex;
+  const span = dy - 2 * control;
+  return span > 0 ? Math.max(0, higher - (dy - (control - dy) ** 2 / span)) : 0;
+}
 
 export const ballistic = defineMove({
   id: "ballistic",
@@ -17,10 +25,6 @@ export const ballistic = defineMove({
   },
   example: { options: { dx: -300, dy: 10, apex: 300 } },
   moments: () => ({ top: 0.5 }),
-  run: ({ dx, dy, apex }, { progress: s }): Pose2d => {
-    const cx = dx / 2;
-    const cy = Math.min(dy, 0) - apex;
-    const u = 1 - s;
-    return { x: u * u * dx + 2 * u * s * cx, y: u * u * dy + 2 * u * s * cy };
-  },
+  run: ({ dx, dy, apex }, { progress }): Pose2d =>
+    thrown(progress, { dx, dy, apex: peakAbove(dy, apex) }),
 });

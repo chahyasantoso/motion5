@@ -1,5 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
+import { arch } from "../parts/laws/envelopes";
 
 /** Grows to `1 + amount` times its size and returns. */
 export const pulse = defineMove({
@@ -17,7 +18,7 @@ export const pulse = defineMove({
   },
   example: { options: { amount: 0.15 } },
   run({ amount }, { progress }): Pose2d {
-    return { scale: 1 + (amount * (1 - Math.cos(2 * Math.PI * progress))) / 2 };
+    return { scale: 1 + amount * arch(progress) ** 2 };
   },
   moments: () => ({ peak: 0.5 }),
 });

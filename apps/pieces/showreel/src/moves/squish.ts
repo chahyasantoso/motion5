@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { attack, decay, defineMove, taper, wave, type Pose2d } from "@gerak/moves";
 
 export const squish = defineMove({
   id: "squish",
@@ -30,8 +30,8 @@ export const squish = defineMove({
   example: { options: { squash: 0.3, bulge: 0.7, wobbles: 2 } },
   moments: () => ({ deepest: 0.04 }),
   run: ({ squash, bulge, wobbles }, { progress: p }): Pose2d => {
-    const envelope = (1 - Math.exp(-p * 60)) * Math.exp(-4 * p) * (1 - p);
-    const h = squash * envelope * Math.cos(2 * Math.PI * wobbles * p);
+    const envelope = attack(p, 60) * decay(p, 4) * taper(p, 1);
+    const h = squash * envelope * wave(p, wobbles, 0.25);
     return { scaleY: 1 - h, scaleX: 1 + bulge * h, anchor: "bottom" };
   },
 });

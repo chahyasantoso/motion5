@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { defineMove, wave, type Pose2d } from "@gerak/moves";
 
 const cubicInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
 const cubicOut = (p: number) => 1 - (1 - p) ** 3;
@@ -60,7 +60,7 @@ export const launch = defineMove({
       const q = progress / crouch;
       const k = cubicInOut(clamp01(q / 0.65));
       return {
-        x: tremble * k * k * Math.sin(2 * Math.PI * 6 * crouch * q),
+        x: tremble * k * k * wave(q, 6 * crouch),
         scaleY: 1 - squash * k,
         scaleX: 1 + squash * bulge * k,
         anchor: "bottom",

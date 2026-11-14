@@ -1,5 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
+import { arch } from "../parts/laws/envelopes";
 
 /** Dips `distance` px down and comes back up, once. */
 export const nod = defineMove({
@@ -11,7 +12,7 @@ export const nod = defineMove({
   },
   example: { options: { distance: 16 } },
   run({ distance }, { progress }): Pose2d {
-    return { y: (distance * (1 - Math.cos(2 * Math.PI * progress))) / 2 };
+    return { y: distance * arch(progress) ** 2 };
   },
   moments: () => ({ bottom: 0.5 }),
 });

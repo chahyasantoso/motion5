@@ -11,7 +11,7 @@ export const tint = defineMove({
   id: "tint",
   role: "exit",
   description:
-    "Turns a named custom number from 0 to an amount, for a colour charging, flipping or flashing that the page's CSS reads as --<name>; reversed, it turns back.",
+    "Turns a named custom number from 0 to an amount, for a colour charging, flipping or flashing that the page's CSS reads as --<name>; reversed, it turns back; for new colour work use the `tint` field of `@gerak/moves`.",
   options: {
     name: {
       kind: "string",

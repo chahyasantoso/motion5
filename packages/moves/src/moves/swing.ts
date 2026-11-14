@@ -1,5 +1,7 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
+import { taper } from "../parts/laws/envelopes";
+import { wave } from "../parts/laws/wave";
 
 /** Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge. */
 export const swing = defineMove({
@@ -24,8 +26,8 @@ export const swing = defineMove({
   },
   example: { options: { angle: 35, swings: 2, anchor: "top" } },
   run({ angle, swings, anchor }, { progress }): Pose2d {
-    const turn = Math.cos(Math.PI * (swings + 0.5) * progress);
-    return { rotation: angle * (1 - progress) * turn, anchor };
+    const turn = wave(progress, (swings + 0.5) / 2, 0.25);
+    return { rotation: angle * taper(progress, 1) * turn, anchor };
   },
   moments: () => ({}),
 });

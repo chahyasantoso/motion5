@@ -1,6 +1,6 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { arch, defineMove, wave, type Pose2d } from "@gerak/moves";
 
-const inOut = (u: number): number => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, u)));
+const inOut = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 const LIFT_SHARE = 0.28;
 const LOWER_SHARE = 0.24;
 
@@ -59,8 +59,8 @@ export const handWave = defineMove({
       1,
       Math.max(0, (progress - LIFT_SHARE) / (1 - LIFT_SHARE - LOWER_SHARE)),
     );
-    const sway = Math.sin(2 * Math.PI * count * waving) * Math.sin(Math.PI * waving) ** 0.5;
-    const turned = Math.sin(Math.PI * up);
+    const sway = wave(waving, count) * arch(waving) ** 0.5;
+    const turned = arch(up);
     const along = 1 + (reach - 1) * up - fold * turned;
     return {
       rotation: lift * up + Math.sign(lift || 1) * swing * sway,

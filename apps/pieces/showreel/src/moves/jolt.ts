@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { attack, decay, defineMove, taper, wave, type Pose2d } from "@gerak/moves";
 
 export const jolt = defineMove({
   id: "jolt",
@@ -25,10 +25,10 @@ export const jolt = defineMove({
   example: { options: { distance: 10, count: 5, sideways: 0.35 } },
   moments: () => ({}),
   run: ({ distance, count, sideways }, { progress: p }): Pose2d => {
-    const envelope = (1 - p) ** 2 * Math.exp(-3 * p) * (1 - Math.exp(-p * 25));
+    const envelope = taper(p, 2) * decay(p, 3) * attack(p, 25);
     return {
-      y: distance * envelope * Math.sin(2 * Math.PI * count * p),
-      x: distance * sideways * envelope * Math.sin(2 * Math.PI * count * 0.64 * p),
+      y: distance * envelope * wave(p, count),
+      x: distance * sideways * envelope * wave(p, count * 0.64),
     };
   },
 });

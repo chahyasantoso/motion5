@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { arch, decay, defineMove, wave, type Pose2d } from "@gerak/moves";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
@@ -59,13 +59,13 @@ export const springSettle = defineMove({
   example: { options: { dx: -200, dy: 80, lift: 60, turn: 40, scale: 0.2, rings: 2, damping: 4 } },
   moments: () => ({}),
   run: ({ dx, dy, lift, turn, scale, squash, rings, damping }, { progress: p }): Pose2d => {
-    const wave = (q: number) => Math.exp(-damping * q) * Math.cos(2 * Math.PI * rings * q);
-    const r = 1 - (wave(p) - p * wave(1));
+    const ring = (q: number) => decay(q, damping) * wave(q, rings, 0.25);
+    const r = 1 - (ring(p) - p * ring(1));
     const left = 1 - r;
     const s = scale + (1 - scale) * r;
     return {
       x: dx * left,
-      y: dy * left - lift * Math.sin(Math.PI * clamp01(r)),
+      y: dy * left - lift * arch(clamp01(r)),
       rotation: turn * left,
       scaleX: s * (1 + squash * 0.8 * left),
       scaleY: s * (1 - squash * left),

@@ -1,6 +1,6 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { arch, defineMove, wave, type Pose2d } from "@gerak/moves";
 
-const easeSine = (u: number): number => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, u)));
+const easeSine = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 
 export const waddle = defineMove({
   id: "waddle",
@@ -41,8 +41,8 @@ export const waddle = defineMove({
   run: ({ angle, count, sink, linger }, { progress }): Pose2d => {
     const cycles = progress * count;
     const ramp = easeSine(Math.min(cycles * 2, (count - cycles) * 2));
-    const wave = Math.sin(2 * Math.PI * cycles);
-    const lean = Math.sign(wave) * Math.abs(wave) ** (1 - linger);
-    return { rotation: -angle * lean * ramp, y: sink * ramp * (1 - wave * wave) ** 3 };
+    const side = wave(cycles, 1);
+    const lean = Math.sign(side) * Math.abs(side) ** (1 - linger);
+    return { rotation: -angle * lean * ramp, y: sink * ramp * (1 - side * side) ** 3 };
   },
 });
