@@ -278,12 +278,8 @@ export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onRead
     ball(ballMesh);
     camera(lens);
 
-    let frame = requestAnimationFrame(function draw() {
-      render();
-      frame = requestAnimationFrame(draw);
-    });
+    render();
     return () => {
-      cancelAnimationFrame(frame);
       renderRef.current = () => undefined;
       setRig(null);
       ball(null);

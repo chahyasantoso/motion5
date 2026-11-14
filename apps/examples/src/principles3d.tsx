@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import {
   AmbientLight,
   CircleGeometry,
@@ -28,17 +28,19 @@ const HEIGHT = 720;
 export const Principles3d: React.FC = () => {
   const playing = usePlayer(scene, clock);
   const player = playing?.player;
-  const body = useTarget3d(player, "body");
-  const stretch = useTarget3d(player, "stretch");
-  const face = useTarget3d(player, "face");
-  const antenna = useTarget3d(player, "antenna");
-  const pad = useTarget3d(player, "pad");
-  const bit0 = useTarget3d(player, "bit0");
-  const bit1 = useTarget3d(player, "bit1");
-  const bit2 = useTarget3d(player, "bit2");
-  const bit3 = useTarget3d(player, "bit3");
-  const bit4 = useTarget3d(player, "bit4");
-  const camera = useTarget3d(player, "camera");
+  const renderRef = useRef<() => void>(() => undefined);
+  const invalidate = useCallback(() => renderRef.current(), []);
+  const body = useTarget3d(player, "body", { invalidate });
+  const stretch = useTarget3d(player, "stretch", { invalidate });
+  const face = useTarget3d(player, "face", { invalidate });
+  const antenna = useTarget3d(player, "antenna", { invalidate });
+  const pad = useTarget3d(player, "pad", { invalidate });
+  const bit0 = useTarget3d(player, "bit0", { invalidate });
+  const bit1 = useTarget3d(player, "bit1", { invalidate });
+  const bit2 = useTarget3d(player, "bit2", { invalidate });
+  const bit3 = useTarget3d(player, "bit3", { invalidate });
+  const bit4 = useTarget3d(player, "bit4", { invalidate });
+  const camera = useTarget3d(player, "camera", { invalidate });
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const parent = host.current;
@@ -100,12 +102,10 @@ export const Principles3d: React.FC = () => {
     pad(padGroup);
     bitRefs.forEach((ref, index) => ref(bits[index] ?? null));
     camera(lens);
-    let frame = requestAnimationFrame(function draw() {
-      renderer.render(stage, lens);
-      frame = requestAnimationFrame(draw);
-    });
+    renderRef.current = () => renderer.render(stage, lens);
+    renderRef.current();
     return () => {
-      cancelAnimationFrame(frame);
+      renderRef.current = () => undefined;
       for (const ref of [body, stretch, face, antenna, pad, camera, ...bitRefs]) ref(null);
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();

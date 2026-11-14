@@ -1,13 +1,28 @@
 import { clockDriver } from "@gerak/dom";
-import type { Pose3d, Time } from "@gerak/moves";
+import { aim, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
 export const durationMs = 800;
 
-/** Every target's 3D pose at `time` (y up, turns in degrees); `motion:sample` reads it. */
-export const scene = (_time: Time) => ({
-  box: {} satisfies Pose3d,
-});
+/** The page's size in px; the page sizes its renderer and stage from it. */
+export const stage = { width: 1280, height: 720 } as const;
+
+const centre = { x: 0, y: 0, z: 0 };
+const eye = { x: 0, y: 0, z: 10 };
+
+/** The fixed camera: the page draws through it and `project3d` pins the label by it. */
+export const lens: Lens3d = { ...eye, ...aim(eye, centre), fov: 50 };
+
+/** Every target's pose at `time`: `box` in 3D (y up, turns in degrees), `label` in stage px. */
+export const scene = (time: Time) => {
+  const box: Pose3d = {};
+  const at = project3d(
+    { x: centre.x + (box.x ?? 0), y: centre.y + (box.y ?? 0), z: centre.z + (box.z ?? 0) },
+    lens,
+    stage,
+  );
+  return { box, label: { x: at.x, y: at.y, opacity: at.visible ? 1 : 0 } };
+};
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });

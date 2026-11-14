@@ -52,7 +52,7 @@ function geometryOf(shape: Shape3d): BufferGeometry {
   }
 }
 
-/** Builds the stage, loads the dragonling, binds every target, and renders each frame; click replays. */
+/** Builds the stage, loads the dragonling, binds every target, and renders when a target is written; click replays. */
 export const Avatar3d: React.FC = () => {
   const playing = usePlayer(scene, clock, cues);
   const host = useRef<HTMLDivElement>(null);
@@ -94,8 +94,14 @@ export const Avatar3d: React.FC = () => {
     platform.receiveShadow = true;
     stage.add(platform);
 
+    const render = () => renderer.render(stage, camera);
     const unsubscribe: (() => void)[] = [];
-    unsubscribe.push(player.subscribe("camera", (pose) => applyPose3d(camera, pose)));
+    unsubscribe.push(
+      player.subscribe("camera", (pose) => {
+        applyPose3d(camera, pose);
+        render();
+      }),
+    );
     for (const prop of props) {
       const geometry = geometryOf(prop.spec.shape);
       const material = new MeshStandardMaterial({
@@ -116,7 +122,12 @@ export const Avatar3d: React.FC = () => {
         case "cube":
         case "marble":
         case "tile":
-          unsubscribe.push(player.subscribe(id, (pose) => applyPose3d(mesh, pose, spawn)));
+          unsubscribe.push(
+            player.subscribe(id, (pose) => {
+              applyPose3d(mesh, pose, spawn);
+              render();
+            }),
+          );
           break;
         default:
           throw new Error(`No target for prop "${id}".`);
@@ -125,7 +136,12 @@ export const Avatar3d: React.FC = () => {
 
     const dragon = new Group();
     stage.add(dragon);
-    unsubscribe.push(player.subscribe("dragon", (pose) => applyPose3d(dragon, pose)));
+    unsubscribe.push(
+      player.subscribe("dragon", (pose) => {
+        applyPose3d(dragon, pose);
+        render();
+      }),
+    );
 
     let live = true;
     new GLTFLoader().load(
@@ -140,21 +156,22 @@ export const Avatar3d: React.FC = () => {
           }
         });
         dragon.add(gltf.scene);
-        unsubscribe.push(player.subscribe("bones", (poses) => applyBones(skeleton, poses)));
-        renderer.render(stage, camera);
+        unsubscribe.push(
+          player.subscribe("bones", (poses) => {
+            applyBones(skeleton, poses);
+            render();
+          }),
+        );
+        render();
         markReady();
       },
       undefined,
       (error) => markFailed(error),
     );
 
-    let frame = requestAnimationFrame(function draw() {
-      renderer.render(stage, camera);
-      frame = requestAnimationFrame(draw);
-    });
+    render();
     return () => {
       live = false;
-      cancelAnimationFrame(frame);
       for (const stop of unsubscribe) stop();
       for (const item of disposables) item.dispose();
       renderer.dispose();

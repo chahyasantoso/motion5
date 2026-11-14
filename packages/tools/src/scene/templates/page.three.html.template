@@ -10,9 +10,19 @@
       }
       .stage {
         position: relative;
-        width: 1280px;
-        height: 720px;
         overflow: hidden;
+      }
+      .stage canvas {
+        display: block;
+      }
+      .label {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: #fff;
+        font: 16px sans-serif;
+        white-space: nowrap;
+        pointer-events: none;
       }
     </style>
   </head>
