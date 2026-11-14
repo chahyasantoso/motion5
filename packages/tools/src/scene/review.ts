@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
-import { manualDriver } from "@gerak/player";
+import { mergeEvents } from "@gerak/moves";
+import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
@@ -27,7 +28,12 @@ export interface SceneReviewRequest {
   readonly turn: number;
   /** Largest step of a scale or opacity in one frame. */
   readonly ratio: number;
+  /** Most a step may cost, in ms: one seek and the scene call it causes. */
+  readonly budget: number;
 }
+
+/** The most one step of a scene may cost, in ms, when no flag gives it. */
+export const DEFAULT_BUDGET_MS = 8;
 
 /** Turn and ratio limits when no flag gives them. */
 export const SCENE_LIMITS = Object.freeze({ turn: 150, ratio: 1.5 });
@@ -43,7 +49,7 @@ export interface SceneReviewResult {
 }
 
 const USAGE =
-  "usage: motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n]";
+  "usage: motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
 
 /** A path ending in .ts or .tsx is a scene file, reviewed from its values with no page. */
 export function isSceneFile(argv: readonly string[]): boolean {
@@ -62,7 +68,10 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
   for (let index = 0; index < rest.length; index += 2) {
     const flag = rest[index];
     const value = rest[index + 1];
-    if (flag === undefined || !["--to", "--hold", "--jump", "--turn", "--ratio"].includes(flag))
+    if (
+      flag === undefined ||
+      !["--to", "--hold", "--jump", "--turn", "--ratio", "--budget"].includes(flag)
+    )
       return usage(`Unknown argument ${flag ?? ""}.`);
     if (value === undefined) return usage(`${flag} needs a value.`);
     flags.set(flag, value);
@@ -78,10 +87,12 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
   const jump = number("--jump", DEFAULT_LIMITS.jump);
   const turn = number("--turn", SCENE_LIMITS.turn);
   const ratio = number("--ratio", SCENE_LIMITS.ratio);
+  const budget = number("--budget", DEFAULT_BUDGET_MS);
+  if (budget === undefined || budget === 0) return usage("--budget needs a positive number of ms.");
   if (flags.has("--to") && to === undefined) return usage("--to needs the run's end, in ms.");
   if (hold === undefined || jump === undefined || turn === undefined || ratio === undefined)
     return usage("--hold, --jump, --turn and --ratio need non-negative numbers.");
-  return { kind: "ok", file, hold, jump, turn, ratio, ...(to === undefined ? {} : { to }) };
+  return { kind: "ok", file, hold, jump, turn, ratio, budget, ...(to === undefined ? {} : { to }) };
 }
 
 /** Every number in a value, by path: `ball.x`, `letters[2].rotationY`. */
@@ -525,9 +536,84 @@ function lateCueFindings(module: SceneModule): readonly string[] {
   ];
 }
 
+/** The ms each of `ms` costs: a seek, which runs the scene once,, on one fresh player, in the order given. */
+function timedSteps(module: SceneModule, ms: readonly number[]): readonly number[] {
+  const driver = manualDriver({ durationMs: module.durationMs });
+  play(module.scene, driver, { cues: mergeEvents(module.cues) });
+  return ms.map((at) => {
+    const start = performance.now();
+    driver.seekMs(at);
+    return performance.now() - start;
+  });
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)] ?? 0;
+}
+
+function mean(values: readonly number[]): number {
+  return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
+}
+
+const GROWTH_RATIO = 4;
+const GROWTH_FLOOR_MS = 1;
+
+/** One finding when the last fifth of the in-order steps costs over 4 times the first fifth and over 1 ms. */
+function growthFindings(inOrder: readonly number[], ms: readonly number[]): readonly string[] {
+  const fifth = Math.floor(inOrder.length / 5);
+  if (fifth === 0) return [];
+  const first = mean(inOrder.slice(0, fifth));
+  const last = mean(inOrder.slice(inOrder.length - fifth));
+  if (!(last > GROWTH_RATIO * first && last > GROWTH_FLOOR_MS)) return [];
+  const from = ms[inOrder.length - fifth] ?? 0;
+  return [
+    `cost grows with time: a step reads all of the past; the first fifth of the steps averages ${first.toFixed(2)} ms, the last fifth ${last.toFixed(2)} ms, from ${from} ms on.`,
+  ];
+}
+
+/** One finding when any timed step, in order or a seek, costs more than the budget. */
+function budgetFindings(
+  steps: readonly { readonly at: number; readonly cost: number; readonly seek: boolean }[],
+  budget: number,
+): readonly string[] {
+  const over = steps.filter(({ cost }) => cost > budget);
+  const worst = over.reduce<(typeof over)[number] | undefined>(
+    (found, step) => (found === undefined || step.cost > found.cost ? step : found),
+    undefined,
+  );
+  if (worst === undefined) return [];
+  return [
+    `a step costs over the budget of ${budget} ms: the worst is ${worst.cost.toFixed(2)} ms ${worst.seek ? "seeking to" : "stepping to"} ${worst.at} ms, and ${over.length} of ${steps.length} steps are over.`,
+  ];
+}
+
+/** Times the scene: each in-order step as the median of three runs on fresh players, each seek of the
+ * shuffled pass once. */
+function costFindings(
+  module: SceneModule,
+  ms: readonly number[],
+  budget: number,
+): readonly string[] {
+  const runs = [0, 1, 2].map(() => timedSteps(module, ms));
+  const inOrder = ms.map((_, index) => median(runs.map((run) => run[index] ?? 0)));
+  const order = soughtOrder(ms);
+  const seeks = timedSteps(module, order);
+  return [
+    ...growthFindings(inOrder, ms),
+    ...budgetFindings(
+      [
+        ...ms.map((at, index) => ({ at, cost: inOrder[index] ?? 0, seek: false })),
+        ...order.map((at, index) => ({ at, cost: seeks[index] ?? 0, seek: true })),
+      ],
+      budget,
+    ),
+  ];
+}
+
 export function reviewSceneModule(
   module: SceneModule,
-  request: Pick<SceneReviewRequest, "to"> & Limits,
+  request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
 ): SceneReviewResult {
   const end = request.to ?? module.durationMs;
   const ms: number[] = [];
@@ -563,6 +649,7 @@ export function reviewSceneModule(
     ...reviewValues(samples, request, hidden, ongoing, module.limits),
     ...seekFindings(module, samples),
     ...lateCueFindings(module),
+    ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
