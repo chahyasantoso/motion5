@@ -9,7 +9,7 @@ import {
   type ValueField,
 } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
-import { MOVE_PARTS } from "./parts";
+import { moveParts } from "./parts";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */
 export interface CheckedMove {
@@ -192,7 +192,7 @@ export function checkMove(move: CheckedMove): readonly MoveFinding[] {
   for (const [option, field] of Object.entries(move.options))
     if (field.description.trim().length === 0) findings.push({ kind: "no-description", option });
   for (const part of move.recipe ?? [])
-    if (!MOVE_PARTS.some(({ name }) => name === part))
+    if (!moveParts().some(({ name }) => name === part))
       findings.push({ kind: "unknown-part", part });
   for (const [index, options] of optionSets(move).entries())
     findings.push(...checkRun(move, options, index === 0));

@@ -32,7 +32,7 @@ export const CATALOG_USAGE =
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
-  "npm run motion:moves -- --parts lists the building blocks moves are made from: time, eases, blends, paths, follow-through, events, randomness.";
+  "npm run motion:moves -- --parts lists the building blocks moves are made from: fields, time, laws, blends, paths, follow-through, events, randomness, camera, compose.";
 
 /** Parsed `motion:moves` arguments: `id`, `--role`, `--check`, `--json`, `--parts` and `--root`; or the usage text. */
 export type CatalogArgs =

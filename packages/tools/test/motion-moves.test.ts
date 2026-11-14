@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { MOVE_ROLES } from "@gerak/moves";
 import {
-  MOVE_PARTS,
   PARTS_HINT,
   PART_GROUPS,
+  moveParts,
   collectRecords,
   parseCatalogArgs,
   runCatalog,
@@ -167,7 +167,7 @@ describe("motion:moves", () => {
     expect(run.lines.filter((line) => !line.startsWith("  "))).toEqual(
       PART_GROUPS.map((group) => `${group}:`),
     );
-    expect(run.lines.filter((line) => line.startsWith("  "))).toHaveLength(MOVE_PARTS.length);
+    expect(run.lines.filter((line) => line.startsWith("  "))).toHaveLength(moveParts().length);
     expect(run.lines).toContainEqual(expect.stringMatching(/^ {2}trail\(/));
   });
 
