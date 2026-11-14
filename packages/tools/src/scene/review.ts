@@ -536,7 +536,7 @@ function lateCueFindings(module: SceneModule): readonly string[] {
   ];
 }
 
-/** The ms each of `ms` costs: a seek, which runs the scene once,, on one fresh player, in the order given. */
+/** The ms each of `ms` costs: a seek, which runs the scene once, on one fresh player, in the order given. */
 function timedSteps(module: SceneModule, ms: readonly number[]): readonly number[] {
   const driver = manualDriver({ durationMs: module.durationMs });
   play(module.scene, driver, { cues: mergeEvents(module.cues) });
