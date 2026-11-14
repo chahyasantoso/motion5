@@ -107,7 +107,7 @@ Three things follow from it:
    its numbers as samples, events with a value, read through `follow`, so a recorded session replays, scrubs and
    renders, and `send` feeds a live one. A path member morphs between outlines, and a drawing imports into a bigger
    scene. Proof: `penguin-scene`, the penguin talking and blinking from a recording on an ice floe.
-8. **3D.** Next. Typed 3D chains, a skinned mesh's bones, 3D physics on Rapier, and a React Three Fiber scaffold and worked
+8. **3D.** Next. Typed 3D chains, a skinned mesh's bones, morph targets, 3D physics on Rapier, and a worked 3D character
    example.
 9. **Motion atlas, a brainstorm.** Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
@@ -180,7 +180,8 @@ Two improvements the owner asked to keep, each its own small plan:
 - A chain API (`word("CATCH").drop(700).stagger(0.25)`) and a chain builder for rigs: sugar over the same scene and
   the same `buildChain`.
 - Particles from a seed, as a move over a list of targets.
-- Vue and Svelte bindings.
+- A React Three Fiber scaffold and integration (a future feature that must work alongside the clock and frame tools),
+  and Vue and Svelte bindings.
 - Retargeting, 3D blend shapes, and matching a reference site's motion.
 
 ## 7. Out
