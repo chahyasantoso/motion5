@@ -12,6 +12,9 @@ export {
 } from "./parts/time/time";
 export { backEase, ease, springEase, type Ease, type EaseDirection } from "./parts/laws/ease";
 export { spring, type SpringOptions, type SpringState } from "./parts/laws/spring";
+export { wave } from "./parts/laws/wave";
+export { arch, attack, decay, taper } from "./parts/laws/envelopes";
+export { ballistic, type BallisticOptions } from "./parts/laws/ballistic";
 export { trail, type TrailOptions } from "./parts/follow-through/trail";
 export { trailTurn } from "./parts/follow-through/trail-turn";
 export { timeAt } from "./parts/time/time-at";
@@ -19,6 +22,7 @@ export { mix, mixAngle, mixPoint, mixPose } from "./parts/blends/mix";
 export { keyframes, type Key } from "./parts/laws/keyframes";
 export { sequence, type Phase } from "./compose/sequence";
 export { seeded } from "./parts/randomness/random";
+export { noise1d } from "./parts/randomness/noise";
 export {
   NO_EVENTS,
   follow,
@@ -66,6 +70,7 @@ export { aim, orbit, project3d, type Lens3d } from "./parts/camera/stage3d";
 export type { Anchor2d, Cubic2d, Point2d } from "./parts/paths/shapes";
 export { toCubics } from "./parts/paths/path";
 export { along } from "./parts/paths/along";
+export { radial } from "./parts/paths/radial";
 export { velocity } from "./parts/follow-through/velocity";
 export { smear } from "./parts/follow-through/smear";
 export { squashFromSpeed, type SquashFromSpeedOptions } from "./parts/follow-through/squash-speed";
