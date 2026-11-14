@@ -22,15 +22,18 @@ function byHand(events: Events, now: number): number {
   return total;
 }
 
-/** `list` behind a proxy that counts how many of its events are read. */
+/** `list` with each event behind a proxy that counts how many of its fields are read. */
 function counted(list: readonly MotionEvent[]): { events: Events; reads: () => number } {
   let reads = 0;
-  const events = new Proxy(list, {
-    get(target, key, receiver) {
-      if (typeof key === "string" && /^\d+$/.test(key)) reads += 1;
-      return Reflect.get(target, key, receiver);
-    },
-  });
+  const events = list.map(
+    (event) =>
+      new Proxy(event, {
+        get(target, key, receiver) {
+          reads += 1;
+          return Reflect.get(target, key, receiver);
+        },
+      }),
+  );
   return { events, reads: () => reads };
 }
 
@@ -72,7 +75,7 @@ describe("tally", () => {
     expect(said.total([])).toBe(0);
   });
 
-  it("reads each event once however often it is asked, seeking or playing", () => {
+  it("reads each event's fields once however often it is asked, seeking or playing", () => {
     const { events, reads } = counted(stream(400));
     const sampler = tally({ start: 0, on: { mouth: "value" } });
     sampler(liveAt(100), events);
@@ -80,17 +83,35 @@ describe("tally", () => {
     for (let ms = 0; ms < 20000; ms += 16) sampler(liveAt(ms), events);
     sampler(liveAt(50), events);
     sampler.total(events);
-    expect(reads() - first).toBeLessThanOrEqual(2 * 1300);
-    expect(first).toBeLessThanOrEqual(400 + 4);
+    expect(reads()).toBe(first);
+    expect(first).toBeLessThanOrEqual(400 * 6);
   });
 
   it("extends its table when a live list grows by appending, rather than rebuilding it", () => {
     const sampler = tally({ start: 0, on: { mouth: "value" } });
-    const all = stream(800);
-    sampler(liveAt(0), all.slice(0, 400));
-    const { events, reads } = counted(all);
-    expect(sampler(liveAt(30000), events)).toBeCloseTo(byHand(all, 30000), 6);
-    expect(reads()).toBeLessThanOrEqual(400 + 8);
+    const { events, reads } = counted(stream(800));
+    sampler(liveAt(0), events.slice(0, 400));
+    const before = reads();
+    expect(sampler(liveAt(30000), [...events])).toBeCloseTo(byHand(stream(800), 30000), 6);
+    expect(reads() - before).toBeLessThanOrEqual(400 * 6);
+    expect(reads() - before).toBeGreaterThan(0);
+  });
+
+  it("rebuilds for a list that differs inside what it read, even with the same ends", () => {
+    const sampler = tally({ start: 0, on: { a: 1, b: 0 } });
+    const first: MotionEvent = { name: "a", at: 0 };
+    const last: MotionEvent = { name: "a", at: 2000 };
+    expect(sampler(liveAt(3000), [first, { name: "b", at: 1000 }, last])).toBeCloseTo(2, 9);
+    expect(sampler(liveAt(3000), [first, { name: "a", at: 1000 }, last])).toBeCloseTo(3, 9);
+  });
+
+  it("refuses events out of time order", () => {
+    const sampler = tally({ start: 0, on: { a: 1 } });
+    const late: Events = [
+      { name: "a", at: 2000 },
+      { name: "a", at: 1000 },
+    ];
+    expect(() => sampler(liveAt(3000), late)).toThrow(/tally: events must be oldest first/);
   });
 
   it("builds a fresh table for a list that is not an extension of the last", () => {

@@ -182,16 +182,14 @@ export interface Tally {
 /** Counted events of one list: their times, held values, and the area before each, oldest first. */
 interface TallyTable {
   list: Events;
-  read: number;
-  first: MotionEvent | undefined;
-  last: MotionEvent | undefined;
+  readonly taken: MotionEvent[];
   readonly times: number[];
   readonly values: number[];
   readonly areas: number[];
 }
 
-/** The area under held samples up to any time: each counted event holds its value until the next, read
- * from a table built once per list and extended when a live list grows by appending. */
+/** The area under held samples up to any time, each held until the next, from a table built once per
+ * list and extended when a live list grows by appending; events oldest first. */
 export function tally(options: TallyOptions): Tally {
   const valueOf = (event: MotionEvent): number | undefined => {
     if (options.target !== undefined && event.target !== options.target) return undefined;
@@ -200,10 +198,13 @@ export function tally(options: TallyOptions): Tally {
     return held;
   };
   let table: TallyTable | undefined;
+  // A list grows when it holds every event the table took, by identity, at the same places.
   const grows = (kept: TallyTable, events: Events): boolean => {
-    if (kept.list === events) return events.length >= kept.read;
-    if (events.length < kept.read || kept.read === 0) return false;
-    return events[0] === kept.first && events[kept.read - 1] === kept.last;
+    if (events.length < kept.taken.length) return false;
+    if (kept.list === events) return true;
+    for (let index = 0; index < kept.taken.length; index += 1)
+      if (events[index] !== kept.taken[index]) return false;
+    return true;
   };
   const tableOf = (events: Events): TallyTable => {
     const kept =
@@ -211,29 +212,31 @@ export function tally(options: TallyOptions): Tally {
         ? table
         : {
             list: events,
-            read: 0,
-            first: undefined,
-            last: undefined,
+            taken: [],
             times: [],
             values: [],
             areas: [],
           };
-    for (let index = kept.read; index < events.length; index += 1) {
+    for (let index = kept.taken.length; index < events.length; index += 1) {
       const event = events[index];
-      if (event === undefined) continue;
-      if (index === 0) kept.first = event;
-      kept.last = event;
+      if (event === undefined) break;
+      kept.taken.push(event);
       const held = valueOf(event);
       if (held === undefined) continue;
       const count = kept.times.length;
       const since = count === 0 ? 0 : (kept.times[count - 1] ?? 0);
+      if (event.at < since) {
+        table = undefined;
+        throw new RangeError(
+          `tally: events must be oldest first; one at ${event.at} ms follows ${since} ms.`,
+        );
+      }
       const before = count === 0 ? options.start : (kept.values[count - 1] ?? 0);
       const area = count === 0 ? 0 : (kept.areas[count - 1] ?? 0);
       kept.times.push(event.at);
       kept.values.push(held);
       kept.areas.push(area + (before * (event.at - since)) / 1000);
     }
-    kept.read = events.length;
     kept.list = events;
     table = kept;
     return kept;

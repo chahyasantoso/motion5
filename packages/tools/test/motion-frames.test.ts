@@ -125,6 +125,7 @@ describe("parseFramesArgs --crop and --zoom", () => {
     expect(frames("--zoom", "2").kind).toBe("usage");
     expect(frames("--crop", "0,0,10,10", "--zoom", "9").kind).toBe("usage");
     expect(frames("--crop", "0,0,10,10", "--zoom", "0.5").kind).toBe("usage");
+    expect(frames("--crop", "0,0,10,10", "--zoom", "2.5").kind).toBe("usage");
     expect(frames("--crop", "0,0,10,10", "--compare", "dir").kind).toBe("usage");
     expect(
       parseFramesArgs([

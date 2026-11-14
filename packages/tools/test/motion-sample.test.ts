@@ -153,4 +153,11 @@ describe("--watch", () => {
     const target = watchScene(module, { path: "nope.x", from: 0, every: 500 });
     expect(target.kind === "usage" ? target.message : "").toMatch(/"nope".*ball, letters/);
   });
+
+  it("keeps the last sample of a fractional step, and refuses too many samples", () => {
+    const watched = watchScene(module, { path: "ball.x", from: 0, to: 1, every: 0.1 });
+    expect(watched.kind === "watched" ? watched.samples.length : 0).toBe(11);
+    const many = watchScene(module, { path: "ball.x", from: 0, to: 100000, every: 1 });
+    expect(many.kind === "usage" ? many.message : "").toMatch(/100001 samples/);
+  });
 });

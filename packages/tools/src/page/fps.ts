@@ -173,25 +173,28 @@ export function summarize(
   const begun = data.scene[0]?.[0];
   const first = data.frames.find((stamp) => begun === undefined || stamp >= begun) ?? 0;
   const frames = data.frames.map((stamp) => stamp - first).filter((at) => at >= 0 && at <= to);
+  // Each gap between frames belongs to the window it ends in, so a stall lowers the rate where it ends.
   const windows: FpsWindow[] = [];
   for (let from = 0; from < to; from += WINDOW_MS) {
     const end = Math.min(from + WINDOW_MS, to);
-    const inside = frames.filter((at) => at >= from && at < end);
-    const edge = inside[0] ?? 0;
-    const last = inside[inside.length - 1] ?? 0;
-    // Frames per second over the span the window's frames cover, so a window edge does not add or drop one.
-    const rate =
-      inside.length > 1
-        ? ((inside.length - 1) / (last - edge)) * 1000
-        : (inside.length / (end - from)) * 1000;
+    let count = 0;
+    let span = 0;
+    for (let i = 1; i < frames.length; i += 1) {
+      const high = frames[i] ?? 0;
+      if (high < from || high >= end) continue;
+      count += 1;
+      span += high - (frames[i - 1] ?? 0);
+    }
+    const rate = span > 0 ? (count / span) * 1000 : 0;
     windows.push({ from, to: end, fps: Math.round(rate * 10) / 10 });
   }
+  // A measure counts only for its part inside the gap, so a scene that outruns its frame is split.
   const sum = (list: readonly [number, number][], low: number, high: number): number =>
-    list.reduce(
-      (total, [start, took]) =>
-        start - first >= low && start - first < high ? total + took : total,
-      0,
-    );
+    list.reduce((total, [start, took]) => {
+      const begin = Math.max(start - first, low);
+      const finish = Math.min(start - first + took, high);
+      return finish > begin ? total + finish - begin : total;
+    }, 0);
   const gaps: SlowFrame[] = [];
   for (let i = 1; i < frames.length; i += 1) {
     const low = frames[i - 1] ?? 0;
@@ -204,7 +207,7 @@ export function summarize(
       ms: round(ms),
       scene: round(scene),
       write: round(write),
-      rest: round(ms - scene - write),
+      rest: round(Math.max(0, ms - scene - write)),
     });
   }
   return {

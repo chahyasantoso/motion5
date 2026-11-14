@@ -182,7 +182,7 @@ const slide = defineMove({
 - **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a `value`, a `point` of numbers and an `other`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
-- **`tally`** `(options: TallyOptions): Tally`: The area under held samples up to any time: each counted event holds its value until the next, read from a table built once per list and extended when a live list grows by appending.
+- **`tally`** `(options: TallyOptions): Tally`: The area under held samples up to any time, each held until the next, from a table built once per list and extended when a live list grows by appending; events oldest first.
 - **`EventPoint`** `type EventPoint`: A point an event happened at, in the scene's units; `z` only in 3D.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
 - **`FollowOptions`** `type FollowOptions`: Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own), `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001).

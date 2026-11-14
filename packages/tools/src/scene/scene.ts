@@ -365,6 +365,9 @@ export type WatchResult =
     }
   | { readonly kind: "usage"; readonly message: string };
 
+/** The most samples one `--watch` takes. */
+const WATCH_MOST = 10000;
+
 /** One path's value every `every` ms; a path the scene never returns is refused with the paths it does. */
 export function watchScene(
   module: SceneModule,
@@ -373,8 +376,15 @@ export function watchScene(
 ): WatchResult {
   const segments = pathSegments(request.path) ?? [];
   const end = request.to ?? module.durationMs;
+  const count = Math.floor((end - request.from) / request.every + 1e-9) + 1;
+  if (count > WATCH_MOST)
+    return {
+      kind: "usage",
+      message: `--watch would take ${count} samples, over ${WATCH_MOST}; raise --every or narrow --from and --to.`,
+    };
   const ms: number[] = [];
-  for (let at = request.from; at <= end; at += request.every) ms.push(at);
+  for (let step = 0; request.from + step * request.every <= end + 1e-9; step += 1)
+    ms.push(request.from + step * request.every);
   const sampled = sampleScene(module, { kind: "time", ms }, undefined, undefined, events);
   const samples = sampled.map(({ at, targets }) => ({
     at,

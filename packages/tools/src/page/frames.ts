@@ -184,8 +184,11 @@ export function parseFramesArgs(argv: readonly string[]): FramesArgs {
   if (typeof crop === "string") return usage(crop);
   const zoomText = flags.get("--zoom");
   const zoom = zoomText === undefined ? 1 : Number(zoomText);
-  if (flags.has("--zoom") && !(zoomText !== "" && zoom >= 1 && zoom <= ZOOM_MAX))
-    return usage(`--zoom needs a number from 1 to ${ZOOM_MAX}.`);
+  if (
+    flags.has("--zoom") &&
+    !(zoomText !== "" && Number.isInteger(zoom) && zoom >= 1 && zoom <= ZOOM_MAX)
+  )
+    return usage(`--zoom needs a whole number from 1 to ${ZOOM_MAX}.`);
   const cropField = crop === undefined ? {} : { crop, zoom };
   const compareField = compareFlag === undefined ? {} : { compare: fromCaller(compareFlag) };
   if (flags.has("--onion") === flags.has("--at"))
@@ -251,7 +254,12 @@ async function enlarge(scaler: Page, png: Buffer, zoom: number): Promise<Buffer>
     },
     { src: `data:image/png;base64,${png.toString("base64")}`, zoom },
   );
-  return Buffer.from(url.split(",")[1] ?? "", "base64");
+  const data = url.split(",")[1] ?? "";
+  if (data === "")
+    throw new Error(
+      `The zoomed frame is too large to draw at --zoom ${zoom}; crop less or zoom less.`,
+    );
+  return Buffer.from(data, "base64");
 }
 
 /** Captures the page at each named time, plus one labelled sheet of every frame. */
