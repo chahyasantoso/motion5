@@ -199,8 +199,8 @@ describe("applyValue", () => {
     const written: [string, string][] = [];
     const target = element();
     target.style.setProperty = (name, value) => written.push([name, value]);
-    applyValue(target, { custom: { tint: 0.4 } });
-    expect(written).toEqual([["--tint", "0.4"]]);
+    applyValue(target, { custom: { charge: 0.4 } });
+    expect(written).toEqual([["--charge", "0.4"]]);
   });
 
   it("removes a custom name a later value leaves out, and refuses one CSS could not carry", () => {
@@ -208,12 +208,18 @@ describe("applyValue", () => {
     const target = element();
     target.style.setProperty = () => undefined;
     target.style.removeProperty = (name) => removed.push(name);
-    applyValue(target, { custom: { tint: 0.4, glow: 1 } });
+    applyValue(target, { custom: { charge: 0.4, glow: 1 } });
     applyValue(target, { custom: { glow: 2 } });
-    expect(removed).toEqual(["--tint"]);
+    expect(removed).toEqual(["--charge"]);
     applyValue(target, {});
-    expect(removed).toEqual(["--tint", "--glow"]);
+    expect(removed).toEqual(["--charge", "--glow"]);
     expect(() => applyValue(target, { custom: { "bad name": 1 } })).toThrow(/bad name/);
+  });
+
+  it("refuses a custom number named like a field, and says to use the field", () => {
+    const target = element();
+    target.style.setProperty = () => undefined;
+    expect(() => applyValue(target, { custom: { hue: 1 } })).toThrow(/hue.*field/);
   });
 
   it("leaves a stroke undashed when there is no length to measure", () => {

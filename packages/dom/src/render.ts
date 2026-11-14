@@ -231,6 +231,10 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
       throw new RangeError(
         `applyValue: custom name "${name}" must be letters, digits, "-" or "_".`,
       );
+    if (valueField(name) !== undefined)
+      throw new RangeError(
+        `applyValue: custom name "${name}" is a field's name; set the "${name}" field instead.`,
+      );
     style.setProperty?.(`--${name}`, String(number));
   }
   WRITTEN.set(style, new Set(Object.keys(custom)));
