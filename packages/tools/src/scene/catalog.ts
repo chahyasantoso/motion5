@@ -1,12 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { briefFolders, movesFolders } from "./briefs";
 import { checkMove, describeFinding, isMove, type CheckedMove } from "./moves";
-import { formatParts } from "./parts";
+import { formatParts, partsImportedBy } from "./parts";
 
 /** Where a catalog entry was declared: the built-in package, or a file of the app. */
 export type MoveSource =
@@ -21,7 +21,7 @@ export interface MoveRecord {
   readonly exportName: string;
   readonly options: Readonly<Record<string, OptionField>>;
   readonly moments: readonly string[];
-  readonly recipe: readonly string[];
+  readonly parts: readonly string[];
   readonly example: { readonly options: object; readonly input?: unknown };
   readonly source: MoveSource;
 }
@@ -106,6 +106,23 @@ function movesOf(module: Readonly<Record<string, unknown>>): readonly [string, C
   return found;
 }
 
+const BUILT_IN_MOVES = fileURLToPath(new URL("../../../moves/src/moves/", import.meta.url));
+
+/** The text of the file in the built-in moves folder that exports `name`; undefined where that folder is not on disk. */
+function builtInText(name: string): string | undefined {
+  if (!existsSync(BUILT_IN_MOVES)) return undefined;
+  const exported = new RegExp(`export (?:const|function) ${name}\\b`);
+  return readdirSync(BUILT_IN_MOVES)
+    .filter((file) => file.endsWith(".ts"))
+    .map((file) => readFileSync(join(BUILT_IN_MOVES, file), "utf8"))
+    .find((text) => exported.test(text));
+}
+
+function partsOf(name: string, source: MoveSource): readonly string[] {
+  const text = source.kind === "app" ? readFileSync(source.file, "utf8") : builtInText(name);
+  return text === undefined ? [] : partsImportedBy(text);
+}
+
 function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveRecord {
   return {
     id: move.id,
@@ -114,7 +131,7 @@ function recordOf(name: string, move: CheckedMove, source: MoveSource): MoveReco
     exportName: name,
     options: move.options,
     moments: momentNames(move),
-    recipe: move.recipe ?? [],
+    parts: partsOf(name, source),
     example: move.example,
     source,
   };
@@ -171,7 +188,7 @@ export function formatLine(record: MoveRecord): string {
     `${record.id} [${record.role}] ${record.description}`,
     `options: ${options.length === 0 ? "none" : options.join("; ")}`,
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
-    ...(record.recipe.length === 0 ? [] : [`recipe: ${record.recipe.join(" + ")}`]),
+    ...(record.parts.length === 0 ? [] : [`parts: ${record.parts.join(" + ")}`]),
     ...(record.source.kind === "app"
       ? [`import from ./moves/${basename(record.source.file, ".ts")}`]
       : []),
@@ -198,7 +215,7 @@ export function formatFull(record: MoveRecord): readonly string[] {
     "options:",
     ...(options.length === 0 ? ["  none"] : options),
     `moments: ${record.moments.length === 0 ? "none" : record.moments.join(", ")}`,
-    ...(record.recipe.length === 0 ? [] : [`recipe: ${record.recipe.join(" + ")}`]),
+    ...(record.parts.length === 0 ? [] : [`parts: ${record.parts.join(" + ")}`]),
     `example: ${exampleCall(record)}`,
     record.source.kind === "app" ? `file: ${record.source.file}` : "from: @gerak/moves",
   ];

@@ -34,7 +34,6 @@ export const lob = defineMove({
     },
   },
   example: { options: { dx: -300, dy: 10, apex: 300, stretch: 0.4, facing: "heading" } },
-  recipe: ["squashed"],
   moments: () => ({ top: 0.5 }),
   run: ({ dx, dy, apex, stretch, facing }, { progress: s }): Pose2d => {
     const cx = dx / 2;

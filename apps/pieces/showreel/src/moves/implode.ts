@@ -42,7 +42,6 @@ export const implode = defineMove({
     },
   },
   example: { options: { dx: -200, dy: 120, lean: 2.2, scale: 0.05, turn: -24, vanish: 0.15 } },
-  recipe: ["backEase"],
   moments: () => ({}),
   run: ({ dx, dy, lean, scale, turn, vanish }, { progress: p }): Pose2d => {
     const q = backEase({ amount: lean, direction: "in" })(p);

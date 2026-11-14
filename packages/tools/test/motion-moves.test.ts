@@ -12,6 +12,7 @@ import {
   runCatalog,
   type CatalogArgs,
 } from "@gerak/tools/scene";
+import { DEFAULT_ROOT } from "../src/page/page";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -72,22 +73,32 @@ describe("motion:moves", () => {
     expect(json.lines[0]).toContain('"input":"(time');
   });
 
-  it("prints a recipe on the line and the full entry, and refuses an unknown part", async () => {
+  it("lists the building blocks a move file imports, in source order, on the line and in full", async () => {
     const dir = app();
     writeFileSync(
       join(dir, "reel/src/moves/made.ts"),
       move("made", "").replace(
-        '  role: "enter",',
-        '  role: "enter",\n  recipe: ["span", "nonsense"],',
+        'import { defineMove, type Pose2d } from "@gerak/moves";',
+        'import { defineMove, span, squashed, type Pose2d, type Time } from "@gerak/moves";',
       ),
     );
     const line = (await runCatalog(ok([]), dir)).lines.find((text) => text.startsWith("made "));
-    expect(line).toContain(" | recipe: span + nonsense | ");
+    expect(line).toContain(" | parts: span + squashed | ");
     const full = await runCatalog(ok(["made"]), dir);
-    expect(full.lines).toContain("recipe: span + nonsense");
-    const checked = await runCatalog(ok(["made", "--check"]), dir);
-    expect(checked.code).toBe(1);
-    expect(checked.lines[0]).toContain('recipe names "nonsense"');
+    expect(full.lines).toContain("parts: span + squashed");
+    const json = await runCatalog(ok(["made", "--json"]), dir);
+    expect(JSON.parse(json.lines.join("\n"))).toMatchObject([{ parts: ["span", "squashed"] }]);
+  });
+
+  it("reads the parts of the showreel's moves and of a built-in move from their source", async () => {
+    const run = await runCatalog(ok(["--json"]), DEFAULT_ROOT);
+    expect(JSON.parse(run.lines.join("\n"))).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "lob", parts: expect.arrayContaining(["squashed"]) }),
+        expect.objectContaining({ id: "implode", parts: expect.arrayContaining(["backEase"]) }),
+        expect.objectContaining({ id: "drop", parts: expect.arrayContaining(["squashed"]) }),
+      ]),
+    );
   });
 
   it("reports an app file that exports no move", async () => {

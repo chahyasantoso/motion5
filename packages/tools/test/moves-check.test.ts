@@ -198,23 +198,18 @@ describe("the move gate", () => {
     expect(checkMove(fading).map((finding) => finding.kind)).toEqual(["not-shown"]);
   });
 
-  it("refuses a recipe naming a part the parts list lacks", () => {
-    const base = {
+  it("takes no recipe on a declaration", () => {
+    const declared = defineMove({
+      id: "no-recipe",
       role: "enter",
       description: "Slides in.",
       options: {},
       example: { options: {} },
+      // @ts-expect-error a move's parts are read from its source, not declared.
+      recipe: ["span"],
       moments: () => ({}),
-      run: (_options: object, { progress }: { readonly progress: number }): Pose2d => ({
-        x: -10 * (1 - progress),
-      }),
-    } as const;
-    const good = defineMove({ ...base, id: "good-recipe", recipe: ["span", "squashFromSpeed"] });
-    expect(checkMove(good)).toEqual([]);
-    const bad = defineMove({ ...base, id: "bad-recipe", recipe: ["span", "nonsense"] });
-    expect(checkMove(bad)).toEqual([{ kind: "unknown-part", part: "nonsense" }]);
-    expect(describeFinding("bad-recipe", { kind: "unknown-part", part: "nonsense" })).toContain(
-      '"nonsense"',
-    );
+      run: (_options, { progress }): Pose2d => ({ x: -10 * (1 - progress) }),
+    });
+    expect(Object.keys(declared)).not.toContain("recipe");
   });
 });

@@ -174,15 +174,36 @@ function listParts(entry: string): readonly MovePart[] {
   return PART_GROUPS.flatMap((group) => parts.filter((part) => part.group === group));
 }
 
-/** Every function `@gerak/moves` exports from its fields, parts and compose folders, and the `ease`
- * object of functions, each with its group, call shape and the first sentence of its doc comment;
- * `entry` names another package's entry file. */
+/** The building blocks `@gerak/moves` exports from its fields, parts and compose folders, each with its
+ * group, call and doc sentence; `entry` names another entry file. */
 export function moveParts(entry: string = entryPath()): readonly MovePart[] {
   const cached = cache.get(entry);
   if (cached !== undefined) return cached;
   const parts = listParts(entry);
   cache.set(entry, parts);
   return parts;
+}
+
+/** The building blocks a source file imports by name, in the order it imports them; a type-only import
+ * and a name that is not a building block are left out. */
+export function partsImportedBy(
+  text: string,
+  parts: readonly MovePart[] = moveParts(),
+): readonly string[] {
+  const known = new Set(parts.map(({ name }) => name));
+  const source = ts.createSourceFile("move.ts", text, ts.ScriptTarget.ES2022);
+  const found: string[] = [];
+  for (const statement of source.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (statement.importClause?.isTypeOnly === true) continue;
+    if (bindings === undefined || !ts.isNamedImports(bindings)) continue;
+    for (const element of bindings.elements) {
+      const name = (element.propertyName ?? element.name).text;
+      if (!element.isTypeOnly && known.has(name) && !found.includes(name)) found.push(name);
+    }
+  }
+  return found;
 }
 
 /** The parts as printed lines: a heading per group, then one line per part. */

@@ -9,7 +9,6 @@ import {
   type ValueField,
 } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
-import { moveParts } from "./parts";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */
 export interface CheckedMove {
@@ -18,7 +17,6 @@ export interface CheckedMove {
   readonly description: string;
   readonly options: Readonly<Record<string, OptionField>>;
   readonly example: { readonly options: object; readonly input?: unknown };
-  readonly recipe?: readonly string[];
   moments(options: never): Readonly<Record<string, number | readonly number[]>>;
 }
 
@@ -50,8 +48,7 @@ export type MoveFinding =
       readonly from: number;
       readonly to: number;
     }
-  | { readonly kind: "moment-out-of-range"; readonly name: string; readonly value: number }
-  | { readonly kind: "unknown-part"; readonly part: string };
+  | { readonly kind: "moment-out-of-range"; readonly name: string; readonly value: number };
 
 const ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 /** Samples per run: one every 16 ms of a second. */
@@ -191,9 +188,6 @@ export function checkMove(move: CheckedMove): readonly MoveFinding[] {
   if (move.description.trim().length === 0) findings.push({ kind: "no-description" });
   for (const [option, field] of Object.entries(move.options))
     if (field.description.trim().length === 0) findings.push({ kind: "no-description", option });
-  for (const part of move.recipe ?? [])
-    if (!moveParts().some(({ name }) => name === part))
-      findings.push({ kind: "unknown-part", part });
   for (const [index, options] of optionSets(move).entries())
     findings.push(...checkRun(move, options, index === 0));
   try {
@@ -232,8 +226,6 @@ export function describeFinding(id: string, finding: MoveFinding): string {
       return `${id}: "${finding.field}" jumps from ${round(finding.from)} to ${round(finding.to)} at progress ${round(finding.progress)} with ${finding.options}.`;
     case "moment-out-of-range":
       return `${id}: moment "${finding.name}" is ${finding.value}, outside 0 to 1.`;
-    case "unknown-part":
-      return `${id}: recipe names "${finding.part}", which is not a part; npm run motion:moves -- --parts lists them.`;
     default:
       return unreachable(finding);
   }
