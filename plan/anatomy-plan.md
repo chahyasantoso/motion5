@@ -42,9 +42,9 @@ Five layers. Each uses only those below it, and each has one folder.
 | --- | --- | --- |
 | Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/moves/src/fields/` |
 | Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/moves/src/parts/<group>/` |
-| Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/briefs/<brief>/moves/` |
+| Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
 | Composition | moves placed in time and across targets: phases, lanes, reshaped time | `packages/moves/src/compose/`; the piece format (cast, story, layouts, carrying) in `@gerak/stage` |
-| Pieces | one brief's motion, as content | `apps/pieces/briefs/<brief>/`, the worked examples included |
+| Pieces | one brief's motion, as content | `apps/pieces/<brief>/`, the worked examples included |
 
 - **A move** exists where parts couple inside one progress (a squash because of the landing, at the landing) and an
   option is worth turning in another brief. Parts merely side by side are composition.
@@ -79,23 +79,29 @@ groups, `fields` lists `combine` and `lift2d`.
 ### `apps/pieces`
 
 ```text
-briefs/<brief>/   the brief's pieces, their pages, components, moves/ and references/
-src/              the players every brief uses: stage, live, talk
-references/       assets more than one brief uses (the dragonling, talk.json)
+<brief>/
+  src/              the brief's pieces and components; src/moves/ its own moves
+  references/       its own assets: models, recordings, drawings
+  <name>.html       a piece's own page, when it has one
+src/                the players every brief uses: stage, live, talk
+references/         assets more than one brief uses (the dragonling, talk.json)
 stage.html live.html talk.html index.html
-test/             every test of the app, the worked examples' included
+test/               every test of the app, the worked examples' included
 ```
+
+A brief is any folder at the top of `apps/pieces` that holds a `src/`, except the app's own `src/`; the names
+`src`, `references`, `test`, `dist` and `node_modules` are not briefs. A piece's page is served at
+`/<brief>/<name>.html`.
 
 The briefs: `showreel` (`showreel`, `showreel-b` to `showreel-f`), `night` (`night-a` to `night-f`), and one each
 for `penguin`, `shop`, `kelvin`, `avatar-3d`, `dragon-intro`, `saved`, `nowplaying`, `tempo`, and the nine worked
-examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles3d`, `character3d`, `overlay3d`). A
-piece's own page (`kelvin.html`) moves into its brief and is served at `/briefs/<brief>/<name>.html`.
+examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles3d`, `character3d`, `overlay3d`).
 
 - **The folder is the brief.** `export const brief` goes; piece names stay unique across briefs, so
   `stage.html?piece=<name>` is unchanged, and two pieces with one name are refused naming both.
-- **A brief's moves live with it.** A piece importing a move from another brief's `moves/` is what
+- **A brief's moves live with it.** A piece importing a move from another brief's `src/moves/` is what
   `motion:moves -- --candidates` lists for promotion into `@gerak/moves`.
-- **An agent works in one folder,** `briefs/<brief>/`; the guide test still refuses naming a worked example.
+- **An agent works in one folder,** `apps/pieces/<brief>/`; the guide test still refuses naming a worked example.
 
 ## 3. Decisions to record (ADR-185)
 
@@ -175,7 +181,7 @@ piece's own page (`kelvin.html`) moves into its brief and is served at `/briefs/
 - **Invariant:** the files of §2's `apps/pieces` layout are where it says, by `git mv`, in one commit; tools and
   tests follow in another. `motion:new`, `motion:new --move <id> --brief <brief>`, `motion:import-svg`,
   `motion:live`, `motion:moves` (local moves and `--candidates`), the Vite plugin's move list, `loadStageModule`,
-  `stage.html?piece=` and `npm run test:frames` find pieces and moves in `briefs/`. `export const brief` and its
+  `stage.html?piece=` and `npm run test:frames` find pieces and moves in brief folders. `export const brief` and its
   reader are gone. Every piece's `motion:review` findings and every test's outcome are the same before and after.
 - **Owner:** `apps/pieces` (with `vite.config.ts`), `apps/examples` (removed), the root `package.json` workspaces
   and `package-lock.json`, `packages/tools/src/scene/{new,catalog,import-svg}.ts`, `packages/tools/src/page/live.ts`,
@@ -219,7 +225,7 @@ piece's own page (`kelvin.html`) moves into its brief and is served at `/briefs/
   `Math.sin`, `Math.cos` and `Math.exp`, matching their samples at every example and option set within 1e-9; `lob`
   and `ballistic` call `ballistic`, matching within 1e-6 or named with every piece using them reviewed clean; the
   local `tint` moves the `tint` field; then a `custom` name equal to a field's name is refused.
-- **Owner:** `packages/moves/src/moves/`, `apps/pieces/briefs/{showreel,penguin}/moves/`, `fields/pose.ts` (the
+- **Owner:** `packages/moves/src/moves/`, `apps/pieces/{showreel,penguin}/src/moves/`, `fields/pose.ts` (the
   refusal).
 - **Test:** sample comparison per move; a repo test that no file in a `moves/` folder calls `Math.sin`, `Math.cos`
   or `Math.exp`.
@@ -237,7 +243,7 @@ piece's own page (`kelvin.html`) moves into its brief and is served at `/briefs/
 ### A8. Guide (planner)
 
 - `agent-motion.md` "The loop": step 1 uses `--far` from the obvious move, step 5 searches by `--like` and
-  `--fields`, and work stays in `briefs/<brief>/`; `agent-moves.md` writes a move from parts with the coupling rule
+  `--fields`, and work stays in `apps/pieces/<brief>/`; `agent-moves.md` writes a move from parts with the coupling rule
   and no `Math.sin`; a skin section gives the colour and shadow rule; the reference regenerated.
 
 ### A9. Proof
