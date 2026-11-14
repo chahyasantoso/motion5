@@ -30,8 +30,15 @@ What the code lacks today, on `feat/toolkit`:
   owner of which brief a piece answers. `apps/examples` is a second app of content: nine worked examples that tests
   and `npm run test:frames` read, with no dependency `apps/pieces` lacks.
 
-Not planned here: the motion atlas (`plan/motion-atlas-plan.md`, deferred); a sameness score over agents' pieces
-(its own plan, about 600k tokens, the owner's call); colour in 3D (a 3D piece keeps `custom` numbers); `chroma`; a
+This plan also lays the ground for **installable style kits**, the next plan: a kit carries a style's moves, its
+skin tokens and a style card (its qualities as descriptor ranges and its habits), so a person installs it, writes a
+new brief with new references, and an agent makes a new piece in that style, which the review checks against the
+card. Here: moves that are portable files, a catalog that reads any declared source of moves, and descriptor ranges
+in one shape a style card can reuse.
+
+Not planned here: the style kit itself; publishing a move pack; a shared registry; the motion atlas
+(`plan/motion-atlas-plan.md`, deferred); a sameness score over agents' pieces (its own plan, about 600k tokens, the
+owner's call); colour in 3D (a 3D piece keeps `custom` numbers); `chroma`; a
 mask of any shape; a new package.
 
 ## 2. Architecture
@@ -102,6 +109,8 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 - **A brief's moves live with it.** A piece importing a move from another brief's `src/moves/` is what
   `motion:moves -- --candidates` lists for promotion into `@gerak/moves`.
 - **An agent works in one folder,** `apps/pieces/<brief>/`; the guide test still refuses naming a worked example.
+- **A move is a portable file.** A move outside `@gerak/moves` imports only `@gerak/moves` (all 20 local moves do
+  today), so it can be copied into another project or published in a pack as it is.
 
 ## 3. Decisions to record (ADR-185)
 
@@ -149,10 +158,20 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
     (oscillating) until the offset stays within 2% of its greatest.
   The move's **primary field** is the one with the greatest offset over its judged kind's default review limit
   (`jump` 30 px, `turn` 150, `ratio` 1.5); its descriptors are the move's.
-- **One search over every move.** `motion:moves` reads the library (`@gerak/moves`) and every brief's
-  `src/moves/`, and tags each move with where it lives: `library`, `own` (the brief named by `--in <brief>`) or the
-  other brief's name. A move from another brief is offered like any other; importing it is how a move earns
-  promotion, and moves are code meant for reuse, unlike pieces.
+- **One search over every declared source.** A project names its sources of moves, in order, in its app's
+  `package.json`: `"gerak": { "moves": ["@gerak/moves", "./*/src/moves"], "promoteTo": "<folder or package>" }`.
+  A source is a package that exports moves or a folder glob; with none declared, the list above is the default. In
+  this repository `apps/pieces/package.json` declares that list and `promoteTo` is `packages/moves/src/moves`; a
+  project elsewhere starts with only `@gerak/moves` and promotes into a folder of its own. Each move is tagged with
+  its source: the package's name, `own` for the brief named by `--in <brief>`, or the other brief's folder name. Ids
+  are unique within a source; two sources with one id are told apart as `<source>/<id>`. Moves are code meant for
+  reuse, unlike pieces, so other briefs' and installed packs' moves are offered like any other; importing a move
+  from another source is how it earns promotion.
+- **An index is a cache, and one function answers queries.** The catalog writes each move's record (id, source,
+  role, fields, descriptors, the building blocks it imports, description, import) to a generated file, keyed by a
+  hash of the move's source file so only a changed move is sampled again; the file is not committed and is rebuilt
+  when missing. Every flag goes through one `query(records, request)`, so a database could later answer behind it
+  with no change to the commands.
 - **A query, not a dump.** With no query, `motion:moves` prints a summary of at most 20 lines: how many moves per
   role and per source, the qualities `--like` knows, and three example queries. A query prints at most 10 compact
   lines (`--all` lifts the cap), each: id, source, role, fields moved, the first sentence of its description, and
@@ -160,8 +179,9 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   or `@gerak/moves` for the library. `-- <id>` prints the full entry: options with ranges, moments, the building
   blocks it imports, its descriptors, its example call and the briefs that import it.
 - **Queries, combinable:** `--role <role>`; `--find <words>` (every word in its id, description or option names);
-  `--fields x,scale` (moves every one of them); `--like <quality>` (the guide's qualities, each a range of
-  descriptors in one table in `packages/tools/src/scene/catalog.ts` the guide quotes); `--near <id>` and
+  `--fields x,scale` (moves every one of them); `--like <quality>` (the guide's qualities, each a
+  `DescriptorRanges` record, a range per descriptor, in one table in `packages/tools/src/scene/catalog.ts` the guide
+  quotes; a style card will use the same shape); `--near <id>` and
   `--far <id>` (by descriptor distance: the sum of squared differences of `peak`, `overshoot`, `rings / 4`,
   `windup` and `settle`, plus 1 when the primary fields differ).
 - **Ranked by fit, never by use.** Matches order by how well they fit the query (distance for `--like`, `--near`
@@ -207,7 +227,8 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   (`packages/tools/test/{scene,motion-new}.test.ts`, `test/repo/{agent-guide,source-region-anchors,
   workspace-source-aliases}.test.ts`).
 - **Test:** a scratch brief scaffolded by `motion:new` plays on `stage.html` and its move is listed; a piece
-  importing another brief's move is a candidate; a duplicate piece name is refused naming both paths.
+  importing another brief's move is a candidate; a duplicate piece name is refused naming both paths; a repo test
+  refuses a file in any brief's `src/moves/` that imports anything but `@gerak/moves`.
 
 ### A2 then A6. Building blocks from folders; no recipe (one executor, in that order)
 
@@ -249,12 +270,18 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 
 ### A7. Descriptors and the catalog (executor, after A1b and A6)
 
-- **Invariant:** as decided. **Owner:** `packages/tools/src/scene/moves.ts` (descriptors), `catalog.ts` (sources,
-  queries, ranking, the summary, the quality table), `new.ts` and the gate (the duplicate finding at writing time),
-  `promote.ts` (the refusal), `scripts/duplicate-baseline.json`, `packages/tools/bin/motion-moves.mjs`.
+- **Invariant:** as decided. **Owner:** `packages/tools/src/scene/moves.ts` (descriptors), `catalog.ts` (sources
+  from `package.json`, the index, `query`, ranking, the summary, the quality table), `new.ts` and the gate (the
+  duplicate finding at writing time), `promote.ts` (`promoteTo` and the refusal), `scripts/duplicate-baseline.json`,
+  `packages/tools/bin/motion-moves.mjs`, `apps/pieces/package.json` (its `gerak` entry).
 - **Test:**
   - descriptors of hand-built moves with known peak, overshoot, rings, wind-up and settle, one travelling field and
     one oscillating;
+  - sources: a scratch project declaring a package source and a folder source finds moves from both, tagged; with no
+    `gerak` entry it reads the default list; two sources sharing an id are listed as `<source>/<id>`; `promoteTo`
+    is where `motion:promote` writes;
+  - the index: a second query samples nothing; editing one move resamples that move alone; a deleted index is
+    rebuilt;
   - a scratch library move, own move and other brief's move are each found by `--find`, `--role`, `--fields`,
     `--like`, `--near` and `--far`, tagged with their source, with an import that compiles from `--in`'s brief;
   - two moves fitting a query equally come in id order whatever their sources, and use never changes the order;
@@ -274,8 +301,9 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 
 - **Measure:** a fresh Sonnet worker at medium effort builds one brief from the guide alone: a colour change, a cast
   shadow, a jiggle and a heavy landing. It passes when it moves the fields rather than `custom` numbers, calls no
-  `Math.sin`, `Math.cos` or `Math.exp` in a move, its review is clean, and its interview names what it searched the
-  catalog for.
+  `Math.sin`, `Math.cos` or `Math.exp` in a move, writes no move the duplicate gate finds close to an existing one,
+  its review is clean, and its interview names what it searched the catalog for and any move it found only after
+  writing its own.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
 ## 5. Team and order
