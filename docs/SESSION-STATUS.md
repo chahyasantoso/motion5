@@ -30,7 +30,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Motion atlas, a brainstorm (roadmap stage 9):** whether a library-agnostic map of motion, with gerak as one port, serves the objective; `plan/motion-atlas-plan.md` holds its starting notes, ending in a decision, not code.
+- **Anatomy (`plan/anatomy-plan.md`, proposed):** the layers as folders, new laws and fields (skew, shadow, colour), no recipes, and a catalog searched by measured descriptors; the motion atlas is deferred behind it.
 
 ## Open, and not scheduled
 
