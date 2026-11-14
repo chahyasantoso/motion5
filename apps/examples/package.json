@@ -8,7 +8,13 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@gerak/dom": "*",
+    "@gerak/moves": "*",
+    "@gerak/physics": "*",
+    "@gerak/player": "*",
+    "@gerak/rapier": "*",
     "@gerak/react": "*",
+    "@gerak/rig": "*",
     "@gerak/three": "*",
     "react": "19.2.8",
     "react-dom": "19.2.8",
