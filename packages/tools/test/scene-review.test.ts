@@ -1,3 +1,4 @@
+import { elapsedOf, type Time } from "@gerak/moves";
 import { actor, many, story } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import { readSceneModule } from "../src/scene/scene";
@@ -186,5 +187,35 @@ describe("motion:review on a value's shape", () => {
       shapes: [line.map((c) => ({ ...c, y0: c.y0 + 4, y3: c.y3 + 4 }))],
     });
     expect(review(stage({ mouth: shaped })).findings).toEqual([]);
+  });
+});
+
+describe("motion:review on time itself", () => {
+  const ms = (time: Time): number => elapsedOf(time.clock) ?? 0;
+  const drifting = (ongoing: boolean) => ({
+    beats: story(1000, { all: [0, 1000] }),
+    cast: { snow: actor({ ongoing }) },
+    skins: {},
+    scene: (time: Time) => ({ snow: { y: ms(time) / 10 } }),
+  });
+
+  it("asks a member to rest at the end unless it is ongoing", () => {
+    expect(review(drifting(false)).findings).toContain("snow is still moving on the last frame");
+    expect(review(drifting(true)).findings).not.toContain("snow is still moving on the last frame");
+  });
+
+  it("reports a value that differs when sought from when played to", () => {
+    let peak = 0;
+    const remembering = {
+      ...drifting(true),
+      scene: (time: Time) => {
+        peak = Math.max(peak, ms(time));
+        return { snow: { y: peak / 10 } };
+      },
+    };
+    const found = review(remembering).findings.filter((line) => line.includes("sought"));
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(/^snow at \d+ ms .*differs when sought from when played to/);
+    expect(review(drifting(true)).findings.filter((line) => line.includes("sought"))).toEqual([]);
   });
 });

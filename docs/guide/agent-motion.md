@@ -76,6 +76,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   member only while one of its stretches runs, a beat or a pair from the first's start to the second's end, so
   `["rise", "fall"]` is two beats and `[["rise", "fall"]]` one stretch (a member without `on` takes its group's); `watch: true` sends its hover and click to the scene's events under its name;
   `still: true` says the scene never moves that member; on a group it says nothing of the group's members.
+  `ongoing: true` says it moves through the story's end on purpose, such as falling snow, so the review does not ask
+  it to rest; a group's members and a list's items take it from the group or list.
 - **Story.** `beats.enter.of(time)` is the beat's own time; beats may overlap, and the story is the piece's length.
 - **Skin.** `skins.dom.css` styles members by `[data-cast="<name>"]`, an item by `[data-cast="dust.3"]` or all of a
   list's by `[data-cast^="dust."]`, scoped to the stage. A member it leaves out is a grey box with its name, or its
@@ -299,10 +301,13 @@ time and events, so a session of samples replays, scrubs and renders like any ot
   the step shows, morph: `actor({ path, shapes: [open, wide] })` and the value field `shape` blends them, 0 being
   `path`, 1 `shapes[0]` and 1.5 halfway to `shapes[1]`. Each outline must have as many separate pieces as `path`;
   the member's box stays its `path`'s. Look at the midway frames: a blend pairs cubics by order, and can twist.
+  Draw the outlines in the SVG beside the part, with ids `<part>-shape1`, `<part>-shape2` (hidden with
+  `opacity="0"` if you like): the import makes them the part's `shapes` instead of parts, and lists any it cannot.
 - **Test a sample by hand** with `motion:sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
   (`name:target=value@ms` for a target).
-- **Check** that scrubbing to any moment gives the frame playing reached, that no part is cut by the frame with the
-  mouth at its widest, and that the review is clean with the recording as `cues`.
+- **Check** that no part is cut by the frame with the mouth at its widest, and that the review is clean with the
+  recording as `cues`: it also seeks the scene back and forth and reports a value that differs from playing to it,
+  which a scene keeping state between frames shows.
 
 ## Outside this repository
 

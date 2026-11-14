@@ -169,6 +169,27 @@ describe("motion:import-svg geometry", () => {
   }, 60000);
 });
 
+describe("motion:import-svg outlines to morph to", () => {
+  it("makes <part>-shape<N> the Nth of its part's shapes, and lists what it cannot", async () => {
+    const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
+    expect(imported.result.members).toEqual(["beak", "lid", "eye"]);
+    const beak = stageOf(imported.module).cast["beak"];
+    if (beak === undefined || beak.kind !== "actor") throw new Error("no beak");
+    const tips = (beak.shapes ?? []).map((outline) =>
+      Math.max(...along(outline).map(([, y]) => y)),
+    );
+    expect(tips).toEqual([expect.closeTo(45, 3), expect.closeTo(60, 3)]);
+    for (const name of ["lid", "eye"]) {
+      const member = stageOf(imported.module).cast[name];
+      expect(member?.kind === "actor" ? member.shapes : "missing").toBeUndefined();
+    }
+    const reasons = imported.result.leftOut.map(({ reason }) => reason).join("\n");
+    expect(reasons).toMatch(/the shapes of "lid" must be numbered 1, 2, 3 in turn/);
+    expect(reasons).toMatch(/"eye" cannot morph: its outlines have different numbers of pieces/);
+    expect(reasons).toMatch(/an outline of "ghost", which no part is named/);
+  }, 60000);
+});
+
 describe("motion:import-svg use of a symbol", () => {
   const extent = (imported: Imported, name: string) => {
     const points = along(cubicsOf(imported, name));

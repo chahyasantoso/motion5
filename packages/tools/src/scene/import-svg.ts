@@ -9,6 +9,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
+import type { Cubic2d } from "@gerak/moves";
+import { matchOutlines } from "@gerak/stage";
 import { withPage } from "../page/page";
 import { addToPiece } from "./piece-edit";
 import {
@@ -254,6 +256,8 @@ class Defs {
 interface Part {
   readonly name: string;
   readonly cubics: readonly string[];
+  /** Outlines it morphs to, each as cubic lines, from shapes drawn as `<part>-shape<N>`. */
+  readonly shapes?: readonly (readonly string[])[];
   readonly box: string;
   readonly path: string;
   readonly bounds: {
@@ -324,6 +328,9 @@ function build(
   const used = new Set<string>();
   let unnamed = 0;
   const parts: Part[] = [];
+  // Outlines named `<part>-shape<N>` are not parts: each becomes the `N`th of `<part>`'s shapes.
+  const outlines = new Map<string, { n: number; cubics: number[][]; element: string }[]>();
+  const partCubics = new Map<string, number[][]>();
 
   for (const shape of extracted.shapes) {
     const matrix = multiply(toFrame, shape.matrix);
@@ -335,6 +342,14 @@ function build(
     );
     if (cubics.length === 0) {
       leftOut.push({ element: shape.element, reason: "no outline to draw" });
+      continue;
+    }
+    const outline = SHAPE_OF.exec(shape.label ?? shape.id ?? "");
+    if (outline !== null) {
+      const of = identifier(outline[1] ?? "");
+      const list = outlines.get(of) ?? [];
+      list.push({ n: Number(outline[2]), cubics, element: shape.element });
+      outlines.set(of, list);
       continue;
     }
     const scale = lengthScale(matrix);
@@ -403,28 +418,93 @@ function build(
       ...(shape.opacity === 1 ? [] : [`opacity: ${precise(shape.opacity)}`]),
     ];
     const written = prefixed(placement.prefix, name);
+    partCubics.set(name, cubics);
     parts.push({
       name: written,
       bounds: boundsOf(cubics),
-      cubics: cubics.map(
-        ([x0, y0, x1, y1, x2, y2, x3, y3], index) =>
-          `{ id: "c${index}", x0: ${x0}, y0: ${y0}, x1: ${x1}, y1: ${y1}, x2: ${x2}, y2: ${y2}, x3: ${x3}, y3: ${y3} },`,
-      ),
+      cubics: cubicLines(cubics),
       box: `[data-cast="${written}"] { ${box.join("; ")}; }`,
       path: `[data-path="${written}"] { ${rule.join("; ")}; }`,
     });
   }
-  return { parts, defs: [...defs.markup.values()], leftOut };
+  const names = [...partCubics.keys()];
+  const morphing = new Map<string, readonly (readonly string[])[]>();
+  for (const [of, list] of outlines) {
+    const own = partCubics.get(of);
+    const sorted = [...list].sort((a, b) => a.n - b.n);
+    const first = sorted[0];
+    if (own === undefined || first === undefined) {
+      for (const { element } of list)
+        leftOut.push({ element, reason: `an outline of "${of}", which no part is named` });
+      continue;
+    }
+    const gap = sorted.findIndex(({ n }, index) => n !== index + 1);
+    if (gap >= 0) {
+      leftOut.push({
+        element: sorted[gap]?.element ?? first.element,
+        reason: `the shapes of "${of}" must be numbered 1, 2, 3 in turn`,
+      });
+      continue;
+    }
+    const matched = matchOutlines([own, ...sorted.map(({ cubics }) => cubics)].map(asCubics));
+    if ("reason" in matched) {
+      leftOut.push({ element: first.element, reason: `"${of}" cannot morph: ${matched.reason}` });
+      continue;
+    }
+    morphing.set(
+      of,
+      sorted.map(({ cubics }) => cubicLines(cubics)),
+    );
+  }
+  const withShapes = parts.map((part, index) => {
+    const own = names[index];
+    const shapes = own === undefined ? undefined : morphing.get(own);
+    return shapes === undefined ? part : { ...part, shapes };
+  });
+  return { parts: withShapes, defs: [...defs.markup.values()], leftOut };
+}
+
+const SHAPE_OF = /^(.+)-shape(\d+)$/;
+
+/** Cubics as eight numbers each, written as the lines of a member's `path`. */
+function cubicLines(cubics: readonly (readonly number[])[]): readonly string[] {
+  return cubics.map(
+    ([x0, y0, x1, y1, x2, y2, x3, y3], index) =>
+      `{ id: "c${index}", x0: ${x0}, y0: ${y0}, x1: ${x1}, y1: ${y1}, x2: ${x2}, y2: ${y2}, x3: ${x3}, y3: ${y3} },`,
+  );
+}
+
+/** Cubics as eight numbers each, as the stage reads them. */
+function asCubics(cubics: readonly (readonly number[])[]): readonly Cubic2d[] {
+  return cubics.map(([x0 = 0, y0 = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0, x3 = 0, y3 = 0], index) => ({
+    id: `c${index}`,
+    x0,
+    y0,
+    x1,
+    y1,
+    x2,
+    y2,
+    x3,
+    y3,
+  }));
 }
 
 /** The parts as members of a `cast` object, one `actor` each. */
 function castSource(parts: readonly Part[]): string {
   return parts
     .map(
-      ({ name, cubics }) =>
-        `  "${name}": actor({\n    still: true,\n    path: [\n${cubics.map((line) => `      ${line}`).join("\n")}\n    ],\n  }),`,
+      ({ name, cubics, shapes }) =>
+        `  "${name}": actor({\n    still: true,\n    path: [\n${cubics.map((line) => `      ${line}`).join("\n")}\n    ],${shapesSource(shapes)}\n  }),`,
     )
     .join("\n");
+}
+
+/** A member's `shapes` option as source, or nothing when it has none. */
+function shapesSource(shapes: Part["shapes"]): string {
+  if (shapes === undefined) return "";
+  const outline = (lines: readonly string[]) =>
+    `      [\n${lines.map((line) => `        ${line}`).join("\n")}\n      ],`;
+  return `\n    shapes: [\n${shapes.map(outline).join("\n")}\n    ],`;
 }
 
 /** The parts' two skin rules each, as the text of a template literal. */
