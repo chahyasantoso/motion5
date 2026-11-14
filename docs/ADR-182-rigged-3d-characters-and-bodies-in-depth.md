@@ -28,7 +28,7 @@ writer from custom numbers, and physics was 2D only (`@dimforge/rapier2d-determi
   `morphTargetInfluences` by name, clamped to `[0, 1]`, reporting an unknown morph target name once rather than
   throwing so one scene can drive meshes with different blend shapes.
 - **3D physics is a second world, same contract.** `@gerak/physics` adds `PhysicsWorld3d`, `BodySpec3d`,
-  `BodyState3d`, `Shape3d`, `Collider3d`, `Quat3d`, `Simulation3d` and `SimulateOptions3d` beside the 2D types, with
+  `BodyState3d`, `Shape3d`, `Collider3d`, `Quaternion3d`, `Simulation3d` and `SimulateOptions3d` beside the 2D types, with
   a body's orientation as a plain quaternion `{ w, x, y, z }`. `@gerak/rapier` adds `rapierEngine3d` on
   `@dimforge/rapier3d-deterministic-compat@0.21.0`. `simulate` is overloaded over `PhysicsWorld` and `PhysicsWorld3d`
   as the single owner of seeking, snapshots and contact events. `@gerak/rig`'s `bodyPose3d(state)` converts a 3D
