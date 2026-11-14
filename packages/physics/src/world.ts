@@ -68,3 +68,92 @@ export interface PhysicsWorld {
   snapshot(): Uint8Array;
   restore(snapshot: Uint8Array): void;
 }
+
+/** A unit quaternion `{ w, x, y, z }` representing a 3D orientation. */
+export interface Quaternion3d {
+  readonly w: number;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+/** A 3D body's shape: a sphere by radius, or a box by width, height and depth, centred on the body. */
+export type Shape3d =
+  | { readonly kind: "sphere"; readonly radius: number }
+  | {
+      readonly kind: "box";
+      readonly width: number;
+      readonly height: number;
+      readonly depth: number;
+    };
+
+/** A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box. */
+export type Collider3d =
+  | { readonly kind: "floor"; readonly y: number }
+  | {
+      readonly kind: "wall";
+      readonly axis: "x" | "z";
+      readonly at: number;
+      readonly side: "min" | "max";
+    }
+  | {
+      readonly kind: "box";
+      readonly x: number;
+      readonly y: number;
+      readonly z: number;
+      readonly width: number;
+      readonly height: number;
+      readonly depth: number;
+    };
+
+/** A 3D body to add: starting position in world units, initial quaternion, and velocities (degrees/s). */
+export interface BodySpec3d extends Surface {
+  readonly id: string;
+  readonly shape: Shape3d;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly vx?: number;
+  readonly vy?: number;
+  readonly vz?: number;
+  /** Starting orientation quaternion; identity when absent. */
+  readonly rotation?: Quaternion3d;
+  /** Angular velocity in degrees a second around X, Y and Z; default 0. */
+  readonly wx?: number;
+  readonly wy?: number;
+  readonly wz?: number;
+  /** A body that never rotates, however it is hit; default false. */
+  readonly fixedRotation?: boolean;
+  /** Linear and angular damping factor; default 0. */
+  readonly drag?: number;
+  /** Explicit body mass in kilograms; derived from collider volume when absent. */
+  readonly mass?: number;
+}
+
+/** A 3D body's world position, orientation quaternion, linear velocity, and angular velocity (deg/s). */
+export interface BodyState3d {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly rotation: Quaternion3d;
+  readonly vx: number;
+  readonly vy: number;
+  readonly vz: number;
+  readonly wx: number;
+  readonly wy: number;
+  readonly wz: number;
+}
+
+/** What a 3D physics engine gives a scene: world units, y up, quaternions and degrees a second. */
+export interface PhysicsWorld3d {
+  addBody(body: BodySpec3d): void;
+  addCollider(id: string, collider: Collider3d, surface?: Surface): void;
+  /** Gravity in world units a second squared; default `(0, 0, 0)`. */
+  setGravity(x: number, y: number, z: number): void;
+  step(seconds: number): void;
+  body(id: string): BodyState3d;
+  /** Contacts that started since the last drain, in the order the engine found them. */
+  drainContacts(): readonly Contact[];
+  snapshot(): Uint8Array;
+  restore(snapshot: Uint8Array): void;
+}

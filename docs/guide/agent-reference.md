@@ -529,17 +529,26 @@ sim.place(`bit${click.at}`, time, events);
 
 <!-- generated:reference:start -->
 - **`builtinWorld`** `(): PhysicsWorld`: The built-in engine: circles and boxes that turn, on floors, walls and segments; pure and synchronous.
-- **`simulate`** `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions): Simulation`: Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
+- **`simulate`** `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions): Simulation (+1 overloads)`: Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. Builds a 3D world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
 - **`Placed`** `type Placed`: Where a body is for an element laid out centred on the stage's top left corner, and whether it exists yet.
 - **`SimulateOptions`** `type SimulateOptions`: Settings of `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.
+- **`SimulateOptions3d`** `type SimulateOptions3d`: Settings of 3D `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.
 - **`Simulation`** `type Simulation`: A world played from time 0, seekable to any time, the same at the same time and events whatever came before.
+- **`Simulation3d`** `type Simulation3d`: A 3D world played from time 0, seekable to any time, deterministic across seeks.
 - **`Spawner`** `type Spawner`: What a spawn may do to the world: add bodies, nothing else.
+- **`Spawner3d`** `type Spawner3d`: What a 3D spawn may do to the world: add 3D bodies, nothing else.
 - **`BodySpec`** `type BodySpec`: A body to add: where its centre starts in stage px, its turn in degrees, and how fast both change.
+- **`BodySpec3d`** `type BodySpec3d`: A 3D body to add: starting position in world units, initial quaternion, and velocities (degrees/s).
 - **`BodyState`** `type BodyState`: Where a body's centre is in stage px and how it is turned in degrees, and how fast each changes a second.
+- **`BodyState3d`** `type BodyState3d`: A 3D body's world position, orientation quaternion, linear velocity, and angular velocity (deg/s).
 - **`Collider`** `type Collider`: A collider that never moves: the line bodies rest on, a side that keeps them in, or a ramp.
+- **`Collider3d`** `type Collider3d`: A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box.
 - **`Contact`** `type Contact`: Two things that started touching during a step: body ids, or a body id and a collider id.
 - **`PhysicsWorld`** `type PhysicsWorld`: What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise.
+- **`PhysicsWorld3d`** `type PhysicsWorld3d`: What a 3D physics engine gives a scene: world units, y up, quaternions and degrees a second.
+- **`Quaternion3d`** `type Quaternion3d`: A unit quaternion `{ w, x, y, z }` representing a 3D orientation.
 - **`Shape`** `type Shape`: A body's outline: a circle by its radius, or a box by its size, centred on the body.
+- **`Shape3d`** `type Shape3d`: A 3D body's shape: a sphere by radius, or a box by width, height and depth, centred on the body.
 - **`Surface`** `type Surface`: How a surface answers a hit: bounce kept, from 0 to 1, and grip, from 0 up; the two sides' values average.
 <!-- generated:reference:end -->
 
@@ -555,6 +564,8 @@ const sim = simulate(rapier(), build);
 <!-- generated:reference:start -->
 - **`rapierEngine`** `(): Promise<() => RapierWorld>`: Loads Rapier's WASM once; the factory it gives makes worlds synchronously after that.
 - **`RapierWorld`** `type RapierWorld`: A Rapier world behind the port, with Rapier's own world for what the port leaves out.
+- **`rapierEngine3d`** `(): Promise<() => RapierWorld3d>`: Loads Rapier 3D's WASM once; the factory it gives makes 3D worlds synchronously after that.
+- **`RapierWorld3d`** `type RapierWorld3d`: A 3D Rapier world behind `PhysicsWorld3d`, exposing Rapier's native world and rigid bodies.
 <!-- generated:reference:end -->
 
 ## @gerak/three
@@ -569,8 +580,10 @@ return <mesh ref={ball} />;
 ```
 
 <!-- generated:reference:start -->
+- **`morphTargets`** `(root: Object3D<Object3DEventMap>): CustomWriter`: Builds a `CustomWriter` that writes `[0, 1]`-clamped values into matching `morphTargetInfluences` under `root`.
 - **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke, clip and layer alone.
 - **`THREE_POSE_FIELDS`** `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone.
+- **`CustomWriter`** `type CustomWriter`: Where a piece puts a custom number on an object; the renderer knows no meaning for it.
 - **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
 <!-- generated:reference:end -->
 
@@ -578,6 +591,15 @@ return <mesh ref={ball} />;
 
 <!-- generated:reference:start -->
 - **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<…`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest.
+<!-- generated:reference:end -->
+
+## @gerak/three/skeleton
+
+<!-- generated:reference:start -->
+- **`captureSkeleton`** `(source: Object3D<Object3DEventMap> | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
+- **`applyBones`** `(skeleton: CapturedSkeleton, poses: Readonly<Record<string, Pose3d>>): void`: Applies per-bone `Pose3d` deltas (from `bonesOf3d` or hand-keyed) relative to rest, resetting omitted bones.
+- **`CapturedBone`** `type CapturedBone`: A captured Three.js bone with its rest local and world transforms and its world rest joint.
+- **`CapturedSkeleton`** `type CapturedSkeleton`: A Three.js skeleton captured at rest: bones parent-before-child, lookup by name, and world rest joints.
 <!-- generated:reference:end -->
 
 ## Commands
