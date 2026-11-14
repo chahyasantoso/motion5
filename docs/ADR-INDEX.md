@@ -180,7 +180,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-173 — One value, and one table of its fields — Accepted, 2026-11-11
 - ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12
 - ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12
-- ADR-176 — Strokes from the layout, skins that keep their own, and a library that grows — Accepted, 2026-11-13
+- ADR-176 — Strokes from the layout, skins that keep their own, and a library that grows — Accepted, 2026-11-13 — superseded in part
 - ADR-177 — Strokes that combine, presence the review reads, and text over time — Accepted, 2026-11-13
 - ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13
 - ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13
@@ -189,3 +189,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-182 — Rigged 3D characters and bodies in depth — Accepted, 2026-11-14
 - ADR-183 — 2D over 3D on one clock — Accepted, 2026-11-14
 - ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
+- ADR-185 — Layers as folders, laws and fields, and a measured catalog — Accepted, 2026-11-14

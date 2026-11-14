@@ -30,7 +30,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Anatomy (`plan/anatomy-plan.md`, proposed):** the layers as folders, new laws and fields (skew, shadow, colour), no recipes, and a catalog searched by measured descriptors; the motion atlas is deferred behind it.
+- **Anatomy (`plan/anatomy-plan.md`, approved, wave 1 on `feat/anatomy`):** the layers as folders, new laws and fields (skew, shadow, colour), no recipes, and a catalog searched by measured descriptors; the motion atlas is deferred behind it.
 
 ## Open, and not scheduled
 

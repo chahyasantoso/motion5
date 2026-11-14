@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-11-13
 
+**Superseded in part by [ADR-185](./ADR-185-layers-as-folders-laws-fields-and-a-measured-catalog.md), 2026-11-14.** A move no longer names its recipe; what it is made of is read from its source.
+
 ## Context
 
 The fourth rebuild of the hand-made showreel drew its strokes as path members, but a path was fixed when the cast

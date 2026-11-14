@@ -33,24 +33,28 @@ driver owns only time, a player owns only playback, and a renderer owns only wri
 
 ## 2a. What a piece is built from
 
-Five layers, each using only the ones below it. A piece stops at the highest layer it needs; an explainer stops at
-the scene.
+Layers, each using only the ones below it and each in its own folder. A piece stops at the highest layer it needs.
 
-| Layer | Answers | In gerak |
+| Layer | Answers | Lives in |
 | --- | --- | --- |
-| 1. Parts | how a value changes over time | `span`, `sequence`, `spring`, `trail`, `mix`, `along`, eases: `npm run motion:moves -- --parts` |
-| 2. Moves | what the common motions are | `defineMove` with a role, held by the gate, listed by `motion:moves`; an app's own in `src/moves` |
-| 3. Scene | what happens, and when | a scene function of time and events; `sequence` for beats; the cast and text are written by hand today |
-| 4. Logic | what happens because of what a person did | the event log, `react` and `follow` today; rules, score and state wait for a brief |
-| 5. App | the thing that ships | the web overlay, the instrument, video, and later a game or a quiz |
+| 1. Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/moves/src/fields/` |
+| 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/moves/src/parts/<group>/`, listed by `npm run motion:moves -- --parts` |
+| 3. Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
+| 4. Composition | moves placed in time and across targets: phases, lanes, reshaped time; the piece format | `packages/moves/src/compose/`; `@gerak/stage` |
+| 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |
+| 6. Logic | what happens because of what a person did | the event log, `react`, `follow` and `tally` today; rules, score and state wait for a brief |
+| 7. App | the thing that ships | the web overlay, the instrument, video, and later a game or a quiz |
 
-- A lower layer never knows a higher one: a spring does not know it is in a game. The boundary scan's pure layer
-  enforces it for layers 1 to 3.
+- A lower layer never knows a higher one: a spring does not know it is in a game. A repo test refuses a file in
+  `packages/moves/src` that imports from a higher layer's folder, and the boundary scan's pure layer holds layers 1
+  to 4.
+- A move exists where parts couple inside one progress; parts merely side by side are composition.
+- A move outside `@gerak/moves` imports only `@gerak/moves`, so it can travel to another project as it is.
 - Logic is a fold over the event log, never state changed in place. Score, position and collisions are worked out
   from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,
   edited live and rendered frame-exact.
-- A move written for one piece lives in that app's `src/moves` and moves down into `@gerak/moves` when a second
-  piece uses it. Any agent may write a part or a move; promotion is the review step, not a separate author.
+- A move written for one brief lives in that brief's `src/moves/` and moves into `@gerak/moves` when a second brief
+  imports it. Any agent may write a part or a move; promotion is the review step, not a separate author.
 
 ## 3. Ownership
 
