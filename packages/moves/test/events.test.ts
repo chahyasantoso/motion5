@@ -92,20 +92,37 @@ describe("follow on a stream of samples", () => {
     expect(kept(liveAt(900), other)).toBe(fresh()(liveAt(900), other));
   });
 
-  it("costs about the same per frame over 10 000 samples as over the last 100", () => {
+  it("starts again on a log that shares its last event but differs before it", () => {
+    const last = { name: "mouthOpen", at: 1000, value: 0 };
+    const kept = fresh();
+    const up: Events = [{ name: "mouthOpen", at: 0, value: 5 }, last];
+    const down: Events = [{ name: "mouthOpen", at: 0, value: -5 }, last];
+    kept(liveAt(1100), up);
+    expect(kept(liveAt(1100), down)).toBe(fresh()(liveAt(1100), down));
+    const edited = [...up];
+    kept(liveAt(1100), edited);
+    edited[0] = { name: "mouthOpen", at: 0, value: 2 };
+    expect(kept(liveAt(1100), edited)).toBe(fresh()(liveAt(1100), edited));
+  });
+
+  it("over 10 000 samples costs a frame a small share of springing through them from the start", () => {
     const long = stream(10_000);
-    const short = long.slice(-100);
-    const frameCost = (log: Events) => {
-      const kept = fresh();
-      const from = (log.at(-1)?.at ?? 0) - 3300;
-      kept(liveAt(from), log);
+    const frameCost = (follower: () => ReturnType<typeof fresh>) => {
+      const kept = follower();
+      const from = (long.at(-1)?.at ?? 0) - 3300;
+      kept(liveAt(from), long);
       const start = performance.now();
-      for (let ms = from; ms < from + 3300; ms += 16) kept(liveAt(ms), log);
+      for (let ms = from; ms < from + 3300; ms += 16) kept(liveAt(ms), long);
       return performance.now() - start;
     };
-    const best = (log: Events) => Math.min(...[0, 1, 2, 3, 4].map(() => frameCost(log)));
-    const [longest, shortest] = [best(long), best(short)];
-    expect(longest).toBeLessThan(4 * shortest + 1);
+    const best = (follower: () => ReturnType<typeof fresh>) =>
+      Math.min(...[0, 1, 2].map(() => frameCost(follower)));
+    const fromStart = () => {
+      const each = (time: Parameters<ReturnType<typeof fresh>>[0], events: Events) =>
+        fresh()(time, events);
+      return each;
+    };
+    expect(best(fresh)).toBeLessThan(best(fromStart) / 10);
   });
 });
 

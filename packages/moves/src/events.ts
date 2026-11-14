@@ -60,7 +60,6 @@ export interface FollowOptions {
 /** The spring of a `follow` just after the event at `index - 1` set its goal at `since` ms. */
 interface FollowState {
   readonly index: number;
-  readonly last: MotionEvent;
   readonly goal: number;
   readonly value: number;
   readonly speed: number;
@@ -82,14 +81,22 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
     return goal;
   };
   let kept: FollowState | undefined;
+  // The events before `kept.index` it was built from, by identity; a log that differs there starts again.
+  let taken: MotionEvent[] = [];
+  const sameStart = (events: Events, count: number): boolean => {
+    if (events.length < count) return false;
+    for (let index = 0; index < count; index += 1) if (events[index] !== taken[index]) return false;
+    return true;
+  };
   return (time, events) => {
     const now = elapsedOf(time.clock);
-    // The kept spring holds when the event it last took is still where it was, and is not in the future.
+    // The kept spring holds when every event it took is still where it was, and none is in the future.
     const resumes =
       kept !== undefined &&
-      events[kept.index - 1] === kept.last &&
-      (now === undefined || kept.since <= now);
+      (now === undefined || kept.since <= now) &&
+      sameStart(events, kept.index);
     let state = resumes ? kept : undefined;
+    const from = state?.index ?? 0;
     for (let index = state?.index ?? 0; index < events.length; index += 1) {
       const event = events[index];
       if (event === undefined) continue;
@@ -111,8 +118,11 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
         value = state.goal + moved.offset;
         speed = moved.speed;
       }
-      state = { index: index + 1, last: event, goal: next, value, speed, since: event.at };
+      state = { index: index + 1, goal: next, value, speed, since: event.at };
     }
+    if (state === undefined) taken = [];
+    else if (from === 0) taken = events.slice(0, state.index);
+    else taken.push(...events.slice(from, state.index));
     kept = state;
     if (state === undefined) return options.start;
     if (now === undefined) return state.goal;

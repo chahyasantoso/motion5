@@ -21,8 +21,8 @@ not change shape. Tracking itself (a face tracker, a microphone's level, a slide
   reports cues after the story's end, which no clock reaches.
 - **`follow` follows a stream.** An entry of its `on` may be `"value"`: the event's own value is the goal, and an
   event with none is skipped. There is no second spring helper. Each follow keeps the spring as the last event it took
-  left it; a later call goes on from there while that event is still at its place in the log and not after the time
-  asked, and starts again otherwise. Its answers are exactly what a run from the start gives.
+  left it; a later call goes on from there while every event it took is still at its place in the log and none is
+  after the time asked, and starts again otherwise. Its answers are exactly what a run from the start gives.
 - **A recorded session is `cues`:** a JSON list of events a piece imports as its `cues`; there is no record command.
 - **A path member may morph.** An actor gives `shapes`, outlines after its `path`; the value field `shape` blends
   them, 0 being `path` and 1.5 halfway between `shapes[0]` and `shapes[1]`. Outlines are matched once when the cast is
@@ -37,7 +37,7 @@ not change shape. Tracking itself (a face tracker, a microphone's level, a slide
 
 ## Consequences
 
-- A session of thousands of samples costs each frame about what its newest samples do, while seeking backwards
-  replays the log once.
+- A session of thousands of samples costs each frame a check of the log by identity, a small share of springing
+  through it again, while seeking backwards or a log that differs before the last event replays it once.
 - Matching outlines by splitting keeps each exact but may pair a corner with a curve, so a blend can twist midway.
 - A page that feeds `send` from a microphone needs a person; no test reaches it.

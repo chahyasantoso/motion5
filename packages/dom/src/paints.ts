@@ -13,8 +13,8 @@ interface Def {
 
 const TAG =
   /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<\?[\s\S]*?\?>|<(\/?)([^\s/>]+)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
-const ID = /\bid\s*=\s*(["'])(.*?)\1/;
-const ID_ATTRIBUTE = /(\bid\s*=\s*)(["'])(.*?)\2/g;
+const ID = /(?<![\w:-])id\s*=\s*(["'])(.*?)\1/;
+const ID_ATTRIBUTE = /((?<![\w:-])id\s*=\s*)(["'])(.*?)\2/g;
 const HREF = /(href\s*=\s*)(["'])#(.*?)\2/g;
 const URL_REFERENCE = /url\(\s*(["']?)#([^)"'\s]*)\1\s*\)/g;
 const COMMENT = /\/\*[\s\S]*?\*\//g;

@@ -917,7 +917,7 @@ describe("mountStage", () => {
 
     it("gives each part its own copy of a shared paint, and its rules the copy's id", () => {
       const defs =
-        '<linearGradient id="g" xlink:href="#h"></linearGradient><linearGradient id="h"><stop offset="0"></stop></linearGradient><radialGradient id="other"></radialGradient>';
+        '<linearGradient id="g" xlink:href="#h"></linearGradient><linearGradient id="h"><stop data-id="s" offset="0"></stop></linearGradient><radialGradient id="other"></radialGradient>';
       const css =
         '[data-path="a"] { fill: url(#g); } [data-cast=\'b\'] { fill: url(#g); } .both, [data-path="a"] { stroke: url(#other); } /* [data-path="a"] { fill: url(#h); } */';
       const { root } = mountedPaths(
@@ -932,7 +932,7 @@ describe("mountStage", () => {
       expect(style).toContain('/* [data-path="a"] { fill: url(#h); } */');
       const copy = (name: string) => root.find(name).children[0]?.innerHTML ?? "";
       expect(copy("a")).toBe(
-        '<defs><linearGradient id="g--a" xlink:href="#h--a"></linearGradient><linearGradient id="h--a"><stop offset="0"></stop></linearGradient></defs>',
+        '<defs><linearGradient id="g--a" xlink:href="#h--a"></linearGradient><linearGradient id="h--a"><stop data-id="s" offset="0"></stop></linearGradient></defs>',
       );
       expect(copy("b")).toContain('id="g--b"');
       expect(copy("b")).toContain('href="#h--b"');
