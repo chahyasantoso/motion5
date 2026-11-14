@@ -7,6 +7,9 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - A lenient reader hides a bad export: a malformed `rest` fell back to none in silence. Readers refuse with a reason.
   (A code rule, not a workflow one; kept here until the repository's conventions take it.)
 
+- Two of three builders wrote code before tests and said so; a test never seen red may guard nothing, as wave 1's
+  cost test did. Briefs could ask for the failing output of each new test in the report.
+
 ## Cost per wave
 
 | Date | Plan, wave | Workers | Tokens | Fixed on combining |
@@ -39,3 +42,8 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 | 2026-11-13 | artwork 2 | 3 Sonnet | 70k + 115k + 194k, 118 calls, 15 min | 2 (moving-base test, compare within one pixel) |
 | 2026-11-13 | artwork 3 cold review | Sonnet | 121k, 32 calls, 4 min | 6 of 10 fixed; bar moved to 15 |
 | 2026-11-13 | artwork 3 measure | Opus | 180k, 60 calls, 14 min | — |
+| 2026-11-14 | live-inputs 1 | Conductor | not shown | 1 (a cost test that passed without the cache it guards) |
+| 2026-11-14 | live-inputs 2 | 3 Sonnet | 192k + 93k + 77k, 170 calls, 14 min | 1 (a sliced symbol's lost clip, noted and tested) |
+| 2026-11-14 | live-inputs 3 | Sonnet | 121k, 55 calls, 7 min | 1 (imported parts painted under the piece's own) |
+| 2026-11-14 | live-inputs 4 measure | Opus | 213k, 136 calls, 22 min | 1 (`--into` refused a piece with no frame) |
+| 2026-11-14 | live-inputs 4 cold review | Sonnet | 98k, 13 calls, 2 min | 2 of 9 fixed (follow cache, data-id) |

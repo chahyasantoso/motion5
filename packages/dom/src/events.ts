@@ -31,6 +31,8 @@ export interface EventRecorder {
   readonly log: Events;
   /** Logs an event by hand at the ms `now` gives, and tells `onRecord` that ms. */
   record(name: string, target?: string, point?: { readonly x: number; readonly y: number }): void;
+  /** Logs a sample of a live number by hand at the ms `now` gives, and tells `onRecord` that ms. */
+  sample(name: string, value: number, target?: string): void;
   /** Logs `WATCHED` events on `element` for `target`; the returned function stops it. */
   watch(target: string, element: EventSource): () => void;
   /** Forgets every event logged. */
@@ -46,25 +48,26 @@ export function eventRecorder(
 ): EventRecorder {
   const log: MotionEvent[] = [];
   const unwatch = new Set<() => void>();
+  const add = (event: Omit<MotionEvent, "at">): void => {
+    const at = now();
+    let index = log.length;
+    while (index > 0 && (log[index - 1]?.at ?? 0) > at) index -= 1;
+    log.splice(index, 0, { ...event, at });
+    onRecord(at);
+  };
   const record = (
     name: string,
     target?: string,
     point?: { readonly x: number; readonly y: number },
-  ): void => {
-    const at = now();
-    let index = log.length;
-    while (index > 0 && (log[index - 1]?.at ?? 0) > at) index -= 1;
-    log.splice(index, 0, {
-      name,
-      at,
-      ...(target === undefined ? {} : { target }),
-      ...(point ?? {}),
-    });
-    onRecord(at);
-  };
+  ): void => add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
   return {
     log,
     record,
+    sample(name, value, target) {
+      if (!Number.isFinite(value))
+        throw new RangeError(`sample "${name}": the value must be a finite number, not ${value}.`);
+      add({ name, ...(target === undefined ? {} : { target }), value });
+    },
     watch(target, element) {
       const removers = Object.entries(WATCHED).map(([type, name]) => {
         const listener = (event: PointerLike) => {

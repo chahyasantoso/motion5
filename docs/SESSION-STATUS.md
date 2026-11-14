@@ -5,8 +5,8 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-13, Asia/Jakarta.
-- **Read against:** `feat/artwork` after the full check gate.
+- **Captured:** 2026-11-14, Asia/Jakarta.
+- **Read against:** `feat/live-inputs`, the live-inputs plan built, before its pull request merges into `main` at `42a22c4a`.
 
 ## Now
 
@@ -26,18 +26,19 @@ byte ceiling.
   code panel straight back into `src/<name>-scene.ts`. Twenty-one moves by role, four of them modifiers, are listed
   by `motion:moves`, which also reads an app's `src/moves`. The agent guide and the `make-motion` skill start a piece from its
   brief and the catalog and name no worked example; a test under `test/repo/` refuses one that does. Seven worked examples live in `apps/examples`, which tests read; the proof pieces, the showreels, the app's
-  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; the nine runtime packages build to `dist` and `npm run pack:check` installs and type-checks them outside the repository, with nothing on npm (ADR-179); and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
+  own moves and the live page live in `apps/pieces`, the tools' default root, a stage module may name `layouts` the stage measures, a `layout` from events and `cues` it plays, and `carried` in `@gerak/stage` carries a member between boxes (ADR-178), measured by the site piece `shop`; an SVG imports as a stage module of flat parts that `pivot` about their joints and ride `chainFromRest` chains, checked by `motion:compare` (ADR-180), and imports `--into` a bigger piece, placed, scaled and prefixed; an event may carry a `value`, a sample that `follow` springs to with `"value"`, that `MountedStage.send` logs live and a recording plays as `cues`, and a path member's `shapes` morph by the value field `shape` (ADR-181), measured by `penguin-scene`; the nine runtime packages build to `dist` and `npm run pack:check` installs and type-checks them outside the repository, with nothing on npm (ADR-179); and `docs/guide/agent-reference.md`'s entries are generated from the doc comments by `npm run reference` and held current by a test.
 
 ## Next in line
 
-- **Rigging vector artwork (roadmap stage 6):** built on `feat/artwork` (`plan/artwork-plan.md`) and waiting for the
-  owner's merge. Driving that rig from live inputs follows, then 3D, then a motion-atlas brainstorm.
+- **3D (roadmap stage 8):** typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading the archive),
+  3D physics on Rapier and an R3F scaffold; not planned yet. A motion-atlas brainstorm follows.
 
 ## Open, and not scheduled
 
 - Retargeting remains a proposed design only.
-- 3D (roadmap stage 8, after the artwork and live inputs): typed 3D chains, a skinned mesh's bones (rebuilt on the code path, reading
-  the archive), 3D physics (Rapier is 2D today) and an R3F scaffold: not started.
+- Live inputs left: no tool brings an SVG's outlines into `shapes`; a scene moving to its last frame, such as falling
+  snow, is a review finding; nothing checks that scrubbing gives the frame playing reached; `talk.html` is untried
+  with a microphone; browser tests run in Chromium only.
 - The instrument (roadmap, deferred) waits for the live kit and a person who asks to live-code.
 
 ## Where the rest of it lives

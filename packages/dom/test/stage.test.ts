@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { follow, toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
 import {
   actor,
+  blendShapes,
+  castNames,
   group,
   letters,
   many,
@@ -365,6 +367,42 @@ describe("mountStage", () => {
     root.find("card").fire("pointerenter");
     at(10);
     expect(seen.events?.map((event) => [event.name, event.target])).toEqual([["enter", "card"]]);
+  });
+
+  it("takes a sample past the story's end into the scene's next frame, and hands back its log", () => {
+    const module: StageModule<"all", StageValues> = {
+      beats: story(1000, { all: [0, 1000] }),
+      cast: { beak: actor() },
+      skins: {},
+      scene: (time, events) => ({
+        beak: { scaleY: follow({ start: 0, on: { mouthOpen: "value" } })(time, events) },
+      }),
+    };
+    let queued: ((at: number) => void)[] = [];
+    const run = (ms: number) => {
+      const due = queued;
+      queued = [];
+      for (const frame of due) frame(ms);
+    };
+    const container = new FakeElement("div");
+    const stage = mountStage(container, module, {
+      frames: {
+        requestFrame: (frame) => queued.push(frame),
+        cancelFrame: () => undefined,
+      },
+    });
+    const beak = container.children[0]?.shadowRoot?.find("beak");
+    run(0);
+    run(1200);
+    expect(stage.driver.playing()).toBe(false);
+    expect(beak?.style.transform).toBe("scaleY(0)");
+    stage.send("mouthOpen", 1);
+    expect(stage.events()).toEqual([{ name: "mouthOpen", at: 1000, value: 1 }]);
+    run(1300);
+    run(1500);
+    expect(beak?.style.transform).not.toBe("scaleY(0)");
+    stage.replay();
+    expect(stage.events()).toEqual([]);
   });
 
   it("replays on R and on a click on the background, never on a watched member", () => {
@@ -819,6 +857,87 @@ describe("mountStage", () => {
       const frame = root.children.find((child) => child.tagName === "div");
       expect(frame?.attributes.has("data-layout")).toBe(false);
       expect(handed).toBe(NO_LAYOUTS);
+    });
+  });
+
+  describe("a path member that morphs, is thin, or paints", () => {
+    const whole = story(1000, { all: [0, 1000] });
+    const level = (from: number, to: number, y: number, rise = 0) =>
+      toCubics([
+        { id: "a", x: from, y, inX: 0, inY: 0, outX: 10, outY: 0 },
+        { id: "b", x: to, y: y + rise, inX: -10, inY: 0, outX: 0, outY: 0 },
+      ]);
+    const mountedPaths = (
+      cast: Record<string, ReturnType<typeof actor>>,
+      scene: StageModule<"all", StageValues>["scene"],
+      skins: StageModule["skins"] = {},
+    ) => mounted({}, undefined, { beats: whole, cast, skins, scene });
+
+    it("writes the blended outline when its shape changes, and nothing when it does not", () => {
+      const open = level(0, 100, 20);
+      const wide = level(0, 100, 20, 30);
+      const matchedAll = castNames({ mouth: actor({ path: open, shapes: [wide] }) })[0]?.shapes;
+      if (matchedAll === undefined) throw new Error("No matched outlines.");
+      const { root, at } = mountedPaths(
+        { mouth: actor({ path: open, shapes: [wide] }) },
+        (time) => ({ mouth: { shape: Math.min(1, whole.all.of(time).progress * 2) } }),
+      );
+      const path = root.find("mouth").children[0]?.children[0];
+      if (path === undefined) throw new Error("No path.");
+      const written: string[] = [];
+      const set = path.setAttribute.bind(path);
+      path.setAttribute = (name, value) => {
+        if (name === "d") written.push(value);
+        set(name, value);
+      };
+      at(250);
+      expect(written).toEqual([pathData(blendShapes(matchedAll, 0.5))]);
+      expect(path.attributes.get("d")).toBe(pathData(blendShapes(matchedAll, 0.5)));
+      at(250);
+      expect(written).toHaveLength(1);
+      at(900);
+      expect(written).toHaveLength(2);
+      expect(path.attributes.get("d")).toBe(pathData(wide));
+      expect(root.find("mouth").children[0]?.attributes.get("viewBox")).toBe("0 19.5 100 1");
+    });
+
+    it("views a horizontal line as a 1 px strip centred on it, and grows a thinner one to 1 px", () => {
+      const { root } = mountedPaths(
+        {
+          flat: actor({ path: level(10, 110, 50) }),
+          faint: actor({ path: level(10, 110, 50, 0.2) }),
+        },
+        () => ({}),
+      );
+      expect(root.find("flat").children[0]?.attributes.get("viewBox")).toBe("10 49.5 100 1");
+      const faint = (root.find("faint").children[0]?.attributes.get("viewBox") ?? "").split(" ");
+      expect(Number(faint[1])).toBeCloseTo(49.6, 9);
+      expect(Number(faint[3])).toBe(1);
+    });
+
+    it("gives each part its own copy of a shared paint, and its rules the copy's id", () => {
+      const defs =
+        '<linearGradient id="g" xlink:href="#h"></linearGradient><linearGradient id="h"><stop data-id="s" offset="0"></stop></linearGradient><radialGradient id="other"></radialGradient>';
+      const css =
+        '[data-path="a"] { fill: url(#g); } [data-cast=\'b\'] { fill: url(#g); } .both, [data-path="a"] { stroke: url(#other); } /* [data-path="a"] { fill: url(#h); } */';
+      const { root } = mountedPaths(
+        { a: actor({ path: level(0, 10, 0) }), b: actor({ path: level(0, 10, 5) }) },
+        () => ({}),
+        { dom: { css, defs } },
+      );
+      const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
+      expect(style).toContain('[data-path="a"] { fill: url(#g--a); }');
+      expect(style).toContain("[data-cast='b'] { fill: url(#g--b); }");
+      expect(style).toContain('.both, [data-path="a"] { stroke: url(#other); }');
+      expect(style).toContain('/* [data-path="a"] { fill: url(#h); } */');
+      const copy = (name: string) => root.find(name).children[0]?.innerHTML ?? "";
+      expect(copy("a")).toBe(
+        '<defs><linearGradient id="g--a" xlink:href="#h--a"></linearGradient><linearGradient id="h--a"><stop data-id="s" offset="0"></stop></linearGradient></defs>',
+      );
+      expect(copy("b")).toContain('id="g--b"');
+      expect(copy("b")).toContain('href="#h--b"');
+      const shared = root.all().filter((element) => element.innerHTML?.includes('id="other"'));
+      expect(shared).toHaveLength(1);
     });
   });
 

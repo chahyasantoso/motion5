@@ -48,6 +48,84 @@ describe("follow", () => {
   });
 });
 
+describe("follow on a stream of samples", () => {
+  const stream = (count: number, step = 33): Events =>
+    Array.from({ length: count }, (_, index) => ({
+      name: "mouthOpen",
+      at: index * step,
+      value: (Math.sin(index * 0.7) + 1) / 2,
+    }));
+  const fresh = () => follow({ start: 0, on: { mouthOpen: "value" } });
+
+  it("springs to each sample's own value, and skips a sample with none", () => {
+    const mouth = fresh();
+    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0, value: 0.6 }])).toBeCloseTo(0.6, 4);
+    expect(mouth(liveAt(4000), [{ name: "mouthOpen", at: 0 }])).toBe(0);
+    const near = mouth(liveAt(66), stream(3));
+    expect(near).toBeGreaterThan(0);
+    expect(near).toBeLessThan(1);
+  });
+
+  it("answers what a run from the start gives, forwards, backwards and at random", () => {
+    const log = stream(300);
+    const kept = fresh();
+    let seed = 7;
+    const random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647) * 10_000;
+    const times = [
+      ...Array.from({ length: 200 }, (_, index) => index * 16),
+      3000,
+      1200,
+      ...Array.from({ length: 200 }, random),
+    ];
+    for (const ms of times) expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
+  });
+
+  it("goes on from its last answer as the log grows, and starts again on another log", () => {
+    const log = [...stream(200)];
+    const kept = fresh();
+    for (let ms = 0; ms < 6600; ms += 16) {
+      while (log.length < 400 && (log.at(-1)?.at ?? 0) < ms)
+        log.push({ name: "mouthOpen", at: (log.at(-1)?.at ?? 0) + 33, value: ms % 7 });
+      expect(kept(liveAt(ms), log)).toBe(fresh()(liveAt(ms), log));
+    }
+    const other = stream(50, 20);
+    expect(kept(liveAt(900), other)).toBe(fresh()(liveAt(900), other));
+  });
+
+  it("starts again on a log that shares its last event but differs before it", () => {
+    const last = { name: "mouthOpen", at: 1000, value: 0 };
+    const kept = fresh();
+    const up: Events = [{ name: "mouthOpen", at: 0, value: 5 }, last];
+    const down: Events = [{ name: "mouthOpen", at: 0, value: -5 }, last];
+    kept(liveAt(1100), up);
+    expect(kept(liveAt(1100), down)).toBe(fresh()(liveAt(1100), down));
+    const edited = [...up];
+    kept(liveAt(1100), edited);
+    edited[0] = { name: "mouthOpen", at: 0, value: 2 };
+    expect(kept(liveAt(1100), edited)).toBe(fresh()(liveAt(1100), edited));
+  });
+
+  it("over 10 000 samples costs a frame a small share of springing through them from the start", () => {
+    const long = stream(10_000);
+    const frameCost = (follower: () => ReturnType<typeof fresh>) => {
+      const kept = follower();
+      const from = (long.at(-1)?.at ?? 0) - 3300;
+      kept(liveAt(from), long);
+      const start = performance.now();
+      for (let ms = from; ms < from + 3300; ms += 16) kept(liveAt(ms), long);
+      return performance.now() - start;
+    };
+    const best = (follower: () => ReturnType<typeof fresh>) =>
+      Math.min(...[0, 1, 2].map(() => frameCost(follower)));
+    const fromStart = () => {
+      const each = (time: Parameters<ReturnType<typeof fresh>>[0], events: Events) =>
+        fresh()(time, events);
+      return each;
+    };
+    expect(best(fresh)).toBeLessThan(best(fromStart) / 10);
+  });
+});
+
 describe("a live clock", () => {
   it("places a span by its ms", () => {
     const intro = span(200, 600);

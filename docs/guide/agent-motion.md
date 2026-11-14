@@ -216,7 +216,9 @@ export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layou
 
 ## Rigging artwork
 
-To animate a drawing someone else made, start from its SVG, not from shapes you draw.
+To animate a drawing someone else made, start from its SVG, not from shapes you draw. With no SVG, draw one first:
+write `apps/pieces/references/<file>.svg` by hand, each part that moves its own shape with a clear `id` (`beak`,
+`eyelidLeft`), then import it like any other, so a drawn character and a supplied one take one path.
 
 1. `npm run motion:import-svg -- apps/pieces/references/<file>.svg --name <name> --margin 40` writes
    `apps/pieces/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
@@ -259,6 +261,48 @@ export const scene = (time: Time) => {
 answers the pose that carries each part from where it was drawn, so a part whose `pivot` is its bone's start joint
 follows it. A chain's pose is `{ rotations, base }`: `rotations` by bone id in degrees, `base` the root joint's
 `{ x, y, rotation }`. Move the `base` to carry the whole arm with the body.
+
+### Into a bigger scene
+
+A drawing that is one thing in a scene goes into the scene's piece, not a piece of its own:
+
+```sh
+npm run motion:import-svg -- apps/pieces/references/<file>.svg --into <piece> --at 420,180 --scale 0.8 --prefix bird
+```
+
+It adds the drawing's parts to `apps/pieces/src/<piece>.ts`, its `viewBox` top left at `--at` in the piece's frame px
+and scaled by `--scale`, strokes too. Every part is named with the prefix (`birdBody`), and every gradient id too, so
+two drawings, or one drawing twice, never collide; the new parts paint above what the piece has. Leave room round the
+drawing inside the frame for what turns outward: the result lists in `outside` each new part that already crosses the
+frame's edge. Pivots and joints are then set in the piece's frame px, where the parts now are. Compare each drawing
+at rest against its own SVG on a page of its own (`--name`, `--margin`) before placing it.
+
+## Driving a rig
+
+A rig can follow numbers that arrive while it plays: how far a mouth is open, whether an eye is shut, a slider. Each
+number is a sample, an event with a value: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. A scene stays a function of
+time and events, so a session of samples replays, scrubs and renders like any other piece.
+
+- **Read samples through `follow`.** `follow({ start: 0, on: { mouthOpen: "value" } })` springs to each sample's own
+  value, which smooths a jittery source and turns back with no jump; `stiffness` and `damping` set how fast. Give each
+  stream its own `follow`, made once outside the scene, and map its answer to the parts: a beak's `rotation`, an
+  eyelid's `scaleY`. Never read `events` by hand to find the latest sample.
+- **A recording is `cues`.** A JSON list of samples is a session: `import talk from "../references/<file>.json" with
+  { type: "json" }` (the tools run in Node, which needs the attribute) and `export const cues = talk`. Make the story at least as long as the recording; the review reports cues after its end,
+  which no clock reaches.
+- **A live source calls `send`.** `mountStage(...).send("mouthOpen", level)` logs a sample at the clock's time and
+  keeps the clock running past the story's end until it settles; `events()` hands back the log, ready to save as
+  `cues`. `talk.html?piece=<name>` does this from the microphone. A loop of the story would clear the log each pass,
+  so a live piece does not loop its story: an idle motion such as breathing loops inside the scene, on `time`'s
+  elapsed ms, while the clock runs on.
+- **Switch or morph a mouth.** Parts drawn apart (`beakShut`, `beakOpen`) switch with `opacity` from the scene. Where
+  the step shows, morph: `actor({ path, shapes: [open, wide] })` and the value field `shape` blends them, 0 being
+  `path`, 1 `shapes[0]` and 1.5 halfway to `shapes[1]`. Each outline must have as many separate pieces as `path`;
+  the member's box stays its `path`'s. Look at the midway frames: a blend pairs cubics by order, and can twist.
+- **Test a sample by hand** with `motion:sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
+  (`name:target=value@ms` for a target).
+- **Check** that scrubbing to any moment gives the frame playing reached, that no part is cut by the frame with the
+  mouth at its widest, and that the review is clean with the recording as `cues`.
 
 ## Outside this repository
 

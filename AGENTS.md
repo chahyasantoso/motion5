@@ -49,3 +49,4 @@ is one line, and a rule this file does not carry is not a rule.
 - Prettier formats code, not markdown: run `npm run format` before committing.
 - Never mix a formatting pass with a behavior change.
 - A plan holds current decisions only; git holds its revisions.
+- A plan's goal opens with who uses it and what they do with it, in one or two sentences, before what the code does.

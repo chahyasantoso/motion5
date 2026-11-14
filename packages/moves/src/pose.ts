@@ -46,6 +46,7 @@ export const VALUE_FIELDS = Object.freeze({
   clipRadius: SHOWN,
   clipWidth: PLACED,
   clipHeight: PLACED,
+  shape: { rest: 0, combines: "replace", smooth: true, shows: false },
   layer: ORDER,
 }) satisfies Readonly<Record<string, ValueField>>;
 
@@ -76,6 +77,7 @@ export const POSE_2D_NUMBERS = Object.freeze([
   "clipRadius",
   "clipWidth",
   "clipHeight",
+  "shape",
   "layer",
 ] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
 

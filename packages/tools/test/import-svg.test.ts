@@ -1,11 +1,11 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Cubic2d } from "@gerak/moves";
 import { readStageModule, type StageModule } from "@gerak/stage";
-import { importSvg, type ImportResult } from "../src/scene/import-svg";
+import { importSvg, importSvgInto, type ImportResult } from "../src/scene/import-svg";
 import { readSceneModule } from "../src/scene/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import { withPage } from "../src/page/page";
@@ -169,6 +169,31 @@ describe("motion:import-svg geometry", () => {
   }, 60000);
 });
 
+describe("motion:import-svg use of a symbol", () => {
+  const extent = (imported: Imported, name: string) => {
+    const points = along(cubicsOf(imported, name));
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+  };
+  const near = (corners: readonly number[]) => corners.map((value) => expect.closeTo(value, 3));
+
+  it("places each use's copy of the symbol by its box, viewBox and preserveAspectRatio", async () => {
+    const imported = await bring(join(fixtures, "svg-symbol.svg"), "fixture");
+    expect(imported.result.members).toEqual(["part1", "part2", "part3", "part4"]);
+    expect(imported.result.leftOut).toHaveLength(1);
+    expect(JSON.stringify(imported.result.leftOut)).toMatch(/slices into its box/);
+    // A 10x10 view in a 40x40 box at (20, 10) scales by 4: the 10x5 rect is 40x20.
+    expect(extent(imported, "part1")).toEqual(near([20, 10, 60, 30]));
+    // A 50x20 box meets at scale 2, centred across: x shifts by 15.
+    expect(extent(imported, "part2")).toEqual(near([115, 10, 135, 20]));
+    // preserveAspectRatio none stretches by 5 across and 3 down.
+    expect(extent(imported, "part3")).toEqual(near([10, 60, 60, 75]));
+    // A 40x20 box sliced at scale 4 and aligned to its bottom left lifts the rect by the 20 it overflows.
+    expect(extent(imported, "part4")).toEqual(near([120, 40, 160, 60]));
+  }, 60000);
+});
+
 describe("motion:import-svg strokes", () => {
   it("scales a stroke under a uniform scale and lists one under an uneven scale", async () => {
     const imported = await bring(join(fixtures, "svg-strokes.svg"), "fixture");
@@ -248,4 +273,160 @@ describe("motion:import-svg on the penguin", () => {
     expect((await importSvg(svg, "twice", root, { force: true })).kind).toBe("written");
     expect((await importSvg(svg, "Bad Name", root)).kind).toBe("refused");
   }, 120000);
+});
+
+describe("motion:import-svg --into a piece", () => {
+  const frameOf = (width: number, height: number): string =>
+    `{ width: ${width}, height: ${height} }`;
+
+  function scratch(frame = frameOf(300, 200)): string {
+    const root = mkdtempSync(join(tmpdir(), "import-svg-into-"));
+    folders.push(root);
+    mkdirSync(join(root, "src"));
+    writeFileSync(
+      join(root, "src", "scratch.ts"),
+      `import { actor, story } from "@gerak/stage";
+
+export const brief = "scratch";
+
+export const beats = story(1000, { show: [0, 1000] });
+
+export const frame = ${frame};
+
+export const cast = {
+  "base": actor({ still: true, path: [{ id: "c0", x0: 1, y0: 1, x1: 2, y1: 2, x2: 3, y2: 3, x3: 4, y3: 4 }] }),
+} as const;
+
+export const skins = {
+  dom: {
+    css: \`
+[data-cast="base"] { z-index: 1; }
+[data-path="base"] { fill: url(#keep); stroke: none; }
+\`,
+    defs: \`<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>\`,
+  },
+};
+
+export const scene = (_time: unknown) => ({});
+`,
+    );
+    return root;
+  }
+
+  async function into(
+    root: string,
+    svg: string,
+    options: { at?: { x: number; y: number }; scale?: number; prefix: string },
+  ): Promise<ImportResult> {
+    return importSvgInto(svg, "scratch", root, { at: options.at ?? { x: 0, y: 0 }, ...options });
+  }
+
+  async function read(root: string): Promise<Imported> {
+    const file = join(root, "src", "scratch.ts");
+    const module: Record<string, unknown> = await import(pathToFileURL(file).href);
+    const stage = stageOf(module);
+    return {
+      result: {
+        kind: "written",
+        file,
+        members: [],
+        defs: 0,
+        frame: { width: 0, height: 0 },
+        leftOut: [],
+        outside: [],
+      },
+      module,
+      css: stage.skins.dom?.css ?? "",
+      defs: stage.skins.dom?.defs ?? "",
+    };
+  }
+
+  it("moves and scales points and stroke widths, and keeps what the piece had", async () => {
+    const root = scratch();
+    const before = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    const result = await into(root, join(fixtures, "svg-strokes.svg"), {
+      at: { x: 10, y: 20 },
+      scale: 1.5,
+      prefix: "art",
+    });
+    if (result.kind !== "written") throw new Error(result.message);
+    expect(result.members).toEqual(["artEven", "artUneven"]);
+    expect(result.frame).toEqual({ width: 300, height: 200 });
+    expect(result.outside).toEqual([]);
+    const imported = await read(root);
+    // The drawing's (5, 5) is at (10 + 10 * 1.5, 20 + 10 * 1.5) and its (40, 40) at (130, 140).
+    const even = cubicsOf(imported, "artEven");
+    expect([even[0]?.x0, even[0]?.y0]).toEqual([25, 35]);
+    expect([even.at(-1)?.x3, even.at(-1)?.y3]).toEqual([130, 140]);
+    expect(imported.css).toContain(
+      '[data-path="artEven"] { fill: none; stroke: #000000; stroke-width: 9; }',
+    );
+    const after = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    expect(after.startsWith(before.slice(0, before.indexOf("} as const;")))).toBe(true);
+    expect(after).toContain('[data-path="base"] { fill: url(#keep); stroke: none; }');
+    expect(after).toContain(
+      '<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>',
+    );
+    expect(cubicsOf(imported, "base")).toHaveLength(1);
+  }, 60000);
+
+  it("keeps two imports of one drawing apart by their prefixes", async () => {
+    const root = scratch();
+    for (const prefix of ["one", "two"]) {
+      const result = await into(root, join(fixtures, "svg-paint.svg"), { prefix });
+      expect(result.kind).toBe("written");
+    }
+    const imported = await read(root);
+    expect(Object.keys(stageOf(imported.module).cast).sort()).toEqual(
+      ["base", "oneStrip", "onePlain", "oneSun", "twoStrip", "twoPlain", "twoSun"].sort(),
+    );
+    const ids = [...imported.defs.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(expect.arrayContaining(["one-glow", "two-glow", "one-ramp", "two-ramp"]));
+    const used = [...imported.css.matchAll(/url\(#([^)]+)\)/g)].map((match) => match[1]);
+    expect(used).toEqual(expect.arrayContaining(["one-glow", "two-glow", "keep"]));
+    for (const id of used) expect(ids.filter((known) => known === id)).toHaveLength(1);
+    expect(imported.defs).not.toContain('id="glow"');
+    const layer = (name: string) =>
+      Number(new RegExp(`\\[data-cast="${name}"\\] \\{ z-index: (\\d+)`).exec(imported.css)?.[1]);
+    const oneTop = Math.max(...["oneStrip", "onePlain", "oneSun"].map(layer));
+    for (const name of ["twoStrip", "twoPlain", "twoSun"])
+      expect(layer(name)).toBeGreaterThan(oneTop);
+  }, 60000);
+
+  it("refuses a clash of names, naming the member, and leaves the file as it was", async () => {
+    const root = scratch();
+    const svg = join(fixtures, "svg-strokes.svg");
+    expect((await into(root, svg, { prefix: "art" })).kind).toBe("written");
+    const before = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    expect(await into(root, svg, { prefix: "art" })).toEqual({
+      kind: "refused",
+      message: expect.stringContaining('"artEven"'),
+    });
+    expect(readFileSync(join(root, "src", "scratch.ts"), "utf8")).toBe(before);
+    const missing = await importSvgInto(svg, "nothing", root, {
+      at: { x: 0, y: 0 },
+      prefix: "art",
+    });
+    expect(missing.kind).toBe("refused");
+  }, 60000);
+
+  it("lists a part that falls partly outside the piece's frame", async () => {
+    const root = scratch(frameOf(140, 150));
+    const result = await into(root, join(fixtures, "svg-strokes.svg"), {
+      at: { x: 10, y: 20 },
+      scale: 1.5,
+      prefix: "art",
+    });
+    if (result.kind !== "written") throw new Error(result.message);
+    expect(result.outside).toEqual(["artUneven"]);
+    expect(result.frame).toEqual({ width: 140, height: 150 });
+  }, 60000);
+
+  it("refuses a scale that is not above 0 and a prefix that is not a word", async () => {
+    const root = scratch();
+    const svg = join(fixtures, "svg-strokes.svg");
+    expect((await into(root, svg, { scale: 0, prefix: "art" })).kind).toBe("refused");
+    expect((await into(root, svg, { prefix: "Art" })).kind).toBe("refused");
+  }, 60000);
 });

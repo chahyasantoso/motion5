@@ -65,6 +65,11 @@ function isPath(value: unknown): boolean {
   return typeof value === "function" || isCubics(value);
 }
 
+/** A list of fixed outlines, each a list of cubics. */
+function isOutlines(value: unknown): boolean {
+  return Array.isArray(value) && value.every(isCubics);
+}
+
 function isPoint(value: unknown): boolean {
   return isRecord(value) && isNumber(value["x"]) && isNumber(value["y"]);
 }
@@ -76,7 +81,11 @@ function isMember(value: unknown): value is Member {
   if (!isOptional(value["pivot"], isPoint)) return false;
   switch (value["kind"]) {
     case "actor":
-      return isOptional(value["text"], isText) && isOptional(value["path"], isPath);
+      return (
+        isOptional(value["text"], isText) &&
+        isOptional(value["path"], isPath) &&
+        isOptional(value["shapes"], isOutlines)
+      );
     case "many": {
       const items = value["items"];
       return Array.isArray(items) && items.every(isMember);

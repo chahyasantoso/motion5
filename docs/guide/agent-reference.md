@@ -178,13 +178,13 @@ const slide = defineMove({
 - **`Phase`** `type Phase`: One phase of a sequence: the span it runs in, and what it answers given its own time there.
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
-- **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, turning back with no jump; pure in time and events.
-- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target` and an `x`, `y`.
+- **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with no jump; pure in time and events, a later call goes on from the last.
+- **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y` and a `value`.
 - **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`react`** `(options: ReactOptions): (time: Time, events: Events) => number`: A damped answer to each past event by `kind` (`recoil`, `wobble`, `flash` or `shake`); 0 before the first and once all have died.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
-- **`FollowOptions`** `type FollowOptions`: Settings of a `follow`: `start`, `on` (goal by event name), `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001).
-- **`MotionEvent`** `type MotionEvent`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing; `target` names where.
+- **`FollowOptions`** `type FollowOptions`: Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own), `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001).
+- **`MotionEvent`** `type MotionEvent`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.
 - **`ReactionKind`** `type ReactionKind`: How a response to one event moves: from a full start, from rest, as a fade, or as a shake.
 - **`ReactOptions`** `type ReactOptions`: Settings of a `react`: event names `on`, `target`, `kind`, `amplitude`, `decay` (default 6 a second) and `frequency` (4 a second).
 - **`lane`** `(time: Time, index: number, of: Lanes): Time`: Lane `index` run inside `time`: its progress, and a timed clock split among the lanes.
@@ -442,7 +442,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 ```
 
 <!-- generated:reference:start -->
-- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
+- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; readonly shapes?: readonly (readonly Cubic2d[])[]; }): Actor`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
 - **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readonly from: number; readonly to: number; }, durationMs: number,…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
@@ -461,6 +461,11 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
 - **`Pivot`** `type Pivot`: A point in frame px from the frame's top-left.
 - **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
+- **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: The cubics `shape` asks of matched outlines: 0 is the first, 1 the second, between them each control point is blended; clamped to the first and the last.
+- **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (readonly Cubic2d[])[]; } | { readonly reason: string; }`: Outlines made to blend, the first being the path: the same pieces in the same order, each with as many cubics in every outline; or why they cannot.
+- **`meets`** `(x: number, y: number, toX: number, toY: number): boolean`: Whether the point `(x, y)` is within a seam of `(toX, toY)`.
+- **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: An outline split into its pieces: a cubic that does not start where the last ended starts another.
+- **`SEAM`** `const SEAM: 0.000001`: How near two ends must be to meet, in px: rounding apart, not a gap anyone draws.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.

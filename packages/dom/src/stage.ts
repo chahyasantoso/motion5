@@ -10,6 +10,7 @@ import {
 } from "@gerak/moves";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
+  blendShapes,
   boundsOf,
   castNames,
   DEFAULT_FRAME,
@@ -33,6 +34,7 @@ import {
 import { clockDriver, type ClockDriver } from "./drivers";
 import type { PointerLike } from "./events";
 import type { FrameSource } from "./frames";
+import { partPaints } from "./paints";
 import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
 import { unreachable } from "./unreachable";
 
@@ -159,6 +161,11 @@ export interface MountedStage<B extends string = string> {
   replay(): void;
   /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
   replace(next: StageModule<B, StageValues>): void;
+  /** Logs a sample of a live number at the clock's ms, such as a microphone's level; the clock runs on past
+   * the story's end until it settles. */
+  send(name: string, value: number, target?: string): void;
+  /** Everything logged so far, oldest first: hovers and samples, ready to save as a module's `cues`. */
+  events(): Events;
   dispose(): void;
 }
 
@@ -233,6 +240,20 @@ interface Stroke<S> {
   readonly source: ActorPath;
   readonly cubics: Map<string, readonly Cubic2d[]>;
   painted: readonly Cubic2d[] | undefined;
+  /** Its path and shapes matched, when it morphs. */
+  readonly shapes: CastName["shapes"];
+  /** The `shape` its `d` was last written for. */
+  shape: number;
+}
+
+/** The box a stroke is placed and viewed by: its bounds, grown about their centre to 1 px on a side thinner than that. */
+function strokeBox(cubics: readonly Cubic2d[]): Box {
+  const box = boundsOf(cubics);
+  const grown = (from: number, size: number): readonly [number, number] =>
+    size >= 1 ? [from, size] : [from + size / 2 - 0.5, 1];
+  const [x, width] = grown(box.x, box.width);
+  const [y, height] = grown(box.y, box.height);
+  return { x, y, width, height };
 }
 
 /** What one measure finds: the rest of a stage with no layouts, or every layout's rest. */
@@ -317,8 +338,14 @@ export function mountStage<
   });
   const root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
+  // A part painted by a def of its own reads its own copy, so no two parts share a paint server.
+  const parted = partPaints(
+    module.skins.dom?.css ?? "",
+    module.skins.dom?.defs,
+    [...infos.values()].flatMap(({ name, path }) => (path === undefined ? [] : [name])),
+  );
   const styleWith = (places: readonly string[]): string =>
-    `${DEFAULT_SKIN}\n${places.join("\n")}\n${module.skins.dom?.css ?? ""}`;
+    `${DEFAULT_SKIN}\n${places.join("\n")}\n${parted.css}`;
   style.textContent = styleWith(
     [...infos.values()].flatMap(({ name, path }) =>
       path === undefined ? [] : [strokePlace(name, undefined)],
@@ -383,6 +410,8 @@ export function mountStage<
       const svg = document.createElementNS(SVG, "svg");
       const path = document.createElementNS(SVG, "path");
       path.setAttribute("data-path", info.name);
+      const partDefs = parted.defs.get(info.name);
+      if (partDefs !== undefined) svg.innerHTML = `<defs>${partDefs}</defs>`;
       svg.append(path);
       element.append(svg);
       element.setAttribute("data-stroke", "");
@@ -392,18 +421,26 @@ export function mountStage<
         source: info.path,
         cubics: new Map(),
         painted: undefined,
+        shapes: info.shapes,
+        shape: 0,
       });
     } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
   };
   const write = (element: E, value: Pose2d): void => {
-    const path = strokes.get(element)?.path;
-    if (path === undefined) {
+    const drawing = strokes.get(element);
+    if (drawing === undefined) {
       applyValue(element, value);
       return;
     }
     const { stroke, body } = splitStroke(value);
     applyValue(element, body);
-    applyValue(path, stroke);
+    applyValue(drawing.path, stroke);
+    // The outline is rewritten on the frame its shape changes, and never otherwise.
+    const shape = value.shape ?? 0;
+    if (drawing.shapes !== undefined && shape !== drawing.shape) {
+      drawing.path.setAttribute("d", pathData(blendShapes(drawing.shapes, shape)));
+      drawing.shape = shape;
+    }
   };
   const sameCubics = (next: readonly Cubic2d[], last: readonly Cubic2d[] | undefined): boolean =>
     last !== undefined &&
@@ -450,10 +487,11 @@ export function mountStage<
     for (const stroke of strokes.values()) {
       const cubics = stroke.cubics.get(layout);
       if (cubics === undefined || sameCubics(cubics, stroke.painted)) continue;
-      const box = boundsOf(cubics);
+      const box = strokeBox(cubics);
       stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
       stroke.path.setAttribute("d", pathData(cubics));
       stroke.painted = cubics;
+      stroke.shape = 0;
     }
   };
   const element = (name: string, kind: string): E => {
@@ -559,7 +597,7 @@ export function mountStage<
         const { stroke, parent } = owner;
         const cubics = draw(name, stroke, answer, layout ?? UNLAID);
         if (cubics === undefined) return undefined;
-        const box = boundsOf(cubics);
+        const box = strokeBox(cubics);
         const home = parent === undefined ? undefined : laid[parent.info.name];
         const left =
           home === undefined || parent === undefined
@@ -772,6 +810,10 @@ export function mountStage<
       return run.driver;
     },
     replay,
+    send(name, value, target) {
+      run.driver.send(name, value, target);
+    },
+    events: () => [...run.driver.events()],
     replace(next) {
       scene = next.scene;
       pick = next.layout;

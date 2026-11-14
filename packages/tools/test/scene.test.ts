@@ -7,7 +7,10 @@ import {
   sceneTimeline,
   type SceneModule,
 } from "@gerak/tools/scene";
+import { reviewSceneModule } from "../src/scene/review";
 import { renderTimeline } from "../src/timeline/timeline";
+
+const SCENE_REVIEW = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 import * as timing from "../../../apps/examples/src/timing-scene";
 
 function moduleOf(value: unknown): SceneModule {
@@ -93,6 +96,32 @@ describe("scene tools and events", () => {
     expect(lifted[0]?.targets.card).toSatisfy(
       (card: unknown) =>
         typeof card === "object" && card !== null && Number(Reflect.get(card, "y")) < -10,
+    );
+  });
+});
+
+describe("samples as events", () => {
+  it("parse a value before the time, with or without a target", () => {
+    expect(parseEvents("mouthOpen=0.6@1234,blink:left=1@1300,go@1500")).toEqual([
+      { name: "mouthOpen", at: 1234, value: 0.6 },
+      { name: "blink", at: 1300, target: "left", value: 1 },
+      { name: "go", at: 1500 },
+    ]);
+    expect(parseEvents("mouthOpen=@1234")).toHaveProperty("reason");
+  });
+
+  it("are reviewed when a cue falls after the end, which no clock reaches", () => {
+    const late = moduleOf({
+      scene: () => ({ dot: { x: 0 } }),
+      durationMs: 1000,
+      cues: [
+        { name: "mouthOpen", at: 900, value: 0.2 },
+        { name: "mouthOpen", at: 1100, value: 0.4 },
+        { name: "mouthOpen", at: 1200, value: 0.1 },
+      ],
+    });
+    expect(reviewSceneModule(late, SCENE_REVIEW).findings).toContain(
+      '2 cues come after the end at 1000 ms, the first "mouthOpen" at 1100 ms; no clock reaches them, so lengthen the story or cut the recording.',
     );
   });
 });

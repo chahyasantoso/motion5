@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gerak talk</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        font:
+          14px/1.2 system-ui,
+          sans-serif;
+      }
+      #bar {
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+      }
+      #root {
+        flex: 1;
+        min-height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <button id="start" type="button">Start microphone</button>
+      <button id="save" type="button">Save session</button>
+      <span id="status"></span>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/talk-main.ts"></script>
+  </body>
+</html>

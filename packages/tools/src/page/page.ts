@@ -163,7 +163,8 @@ export async function withPage<T>(
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await page.addInitScript(seedRandom);
     await page.clock.install({ time: 0 });
-    await page.clock.pauseAt(1);
+    // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
+    await page.clock.pauseAt(1000);
     await page.goto(new URL(target.page, base).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // A page that loads its piece after the load event sets `window.__motionReady` to a promise.

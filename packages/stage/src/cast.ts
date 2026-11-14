@@ -1,4 +1,5 @@
 import type { Cubic2d, Time } from "@gerak/moves";
+import { matchOutlines } from "./outlines";
 import type { Rest } from "./rest";
 import { unreachable } from "./unreachable";
 
@@ -39,6 +40,9 @@ export interface Actor extends Behaviour {
   /** The stroke it is, as cubics made by `toCubics` or a function of `Rest` answering them; its
    * length is what `drawn` reads. */
   readonly path?: ActorPath;
+  /** Outlines after `path`, which the value field `shape` blends: 0 is `path`, 1 the first of these;
+   * a fixed `path` only. */
+  readonly shapes?: readonly (readonly Cubic2d[])[];
 }
 
 /** A list of things; the scene answers one value per item. To move the whole list, put it in a `group`. */
@@ -61,14 +65,28 @@ export type Cast = Readonly<Record<string, Member>>;
 
 /** One thing on stage, saying `text` or drawing the stroke `path` when given one. */
 export function actor(
-  options: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath } = {},
+  options: Behaviour & {
+    readonly text?: ActorText;
+    readonly path?: ActorPath;
+    readonly shapes?: readonly (readonly Cubic2d[])[];
+  } = {},
 ): Actor {
   const path = options.path;
+  const shapes = options.shapes;
   return Object.freeze({
     ...options,
     ...(path === undefined || typeof path === "function"
       ? {}
       : { path: Object.freeze(path.map((cubic) => Object.freeze({ ...cubic }))) }),
+    ...(shapes === undefined
+      ? {}
+      : {
+          shapes: Object.freeze(
+            shapes.map((outline) =>
+              Object.freeze(outline.map((cubic) => Object.freeze({ ...cubic }))),
+            ),
+          ),
+        }),
     kind: "actor",
   });
 }
@@ -134,6 +152,8 @@ export interface CastName {
   readonly still: boolean;
   readonly text?: ActorText;
   readonly path?: ActorPath;
+  /** Its `path` and then its `shapes`, matched piece by piece so they blend; absent without shapes. */
+  readonly shapes?: readonly (readonly Cubic2d[])[];
   readonly pivot?: Pivot;
 }
 
@@ -162,6 +182,23 @@ export function pathOf(path: ActorPath, rest: Rest): readonly Cubic2d[] {
   if (!isCubics(answer))
     throw new TypeError("A path function must answer cubics made by `toCubics`, at least one.");
   return Object.freeze(answer.map((cubic) => Object.freeze({ ...cubic })));
+}
+
+/** A member's path and shapes matched to blend, as a `CastName` part; throws naming the member when they cannot. */
+function shapesOf(
+  name: string,
+  path: ActorPath | undefined,
+  shapes: readonly (readonly Cubic2d[])[] | undefined,
+): Pick<CastName, "shapes"> {
+  if (shapes === undefined || shapes.length === 0) return {};
+  if (path === undefined) throw new RangeError(`cast: "${name}" gives shapes but no path.`);
+  if (typeof path === "function")
+    throw new RangeError(
+      `cast: "${name}" gives shapes with a path function; shapes need a fixed path.`,
+    );
+  const outcome = matchOutlines([path, ...shapes]);
+  if ("reason" in outcome) throw new RangeError(`cast: "${name}" cannot morph: ${outcome.reason}`);
+  return { shapes: outcome.matched };
 }
 
 /** A member's own `on` as from-to pairs, or its group's when it states none; refuses an unknown beat. */
@@ -213,6 +250,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
             kind: "actor",
             ...(member.text === undefined ? {} : { text: member.text }),
             ...(member.path === undefined ? {} : { path: member.path }),
+            ...shapesOf(key, member.path, member.shapes),
           });
           break;
         case "many":
@@ -230,6 +268,7 @@ export function castNames(cast: Cast, beats?: readonly string[]): readonly CastN
               ...(item.pivot === undefined ? {} : { pivot: item.pivot }),
               ...(item.text === undefined ? {} : { text: item.text }),
               ...(item.path === undefined ? {} : { path: item.path }),
+              ...shapesOf(name, item.path, item.shapes),
             });
           });
           break;

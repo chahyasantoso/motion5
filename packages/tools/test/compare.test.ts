@@ -9,6 +9,7 @@ import {
   comparePage,
   differencePicture,
   meanDifference,
+  meanOutside,
   parseCompareArgs,
   rankMembers,
   sideBySide,
@@ -35,6 +36,18 @@ describe("motion:compare pure parts", () => {
     const black = solid(8, 8, [0, 0, 0]);
     expect(meanDifference(black, wrong, { x: 0, y: 0, width: 3, height: 3 })).toBe(30);
     expect(meanDifference(black, wrong, { x: 5, y: 5, width: 3, height: 3 })).toBe(0);
+  });
+
+  it("takes the mean over the pixels no box covers, and 0 when all are covered", () => {
+    const black = solid(16, 4, [0, 0, 0]);
+    const marked = solid(16, 4, [0, 0, 0]);
+    for (let y = 0; y < 4; y += 1)
+      for (let x = 0; x < 6; x += 1) marked.rgb.set([90, 0, 0], (y * 16 + x) * 3);
+    const left = { x: 0, y: 0, width: 6, height: 4 };
+    const right = { x: 10, y: 0, width: 6, height: 4 };
+    expect(meanOutside(black, marked, [right])).toBe(18);
+    expect(meanOutside(black, marked, [left, right])).toBe(0);
+    expect(meanOutside(black, marked, [{ x: 0, y: 0, width: 16, height: 4 }])).toBe(0);
   });
 
   it("forgives an edge smoothed or set one pixel off", () => {
@@ -224,6 +237,32 @@ describe.skipIf(!hasBrowser)("motion:compare in the browser", () => {
     if (result.kind !== "compared") throw new Error(result.message);
     expect(result.mean).toBeLessThan(1);
     for (const member of result.members) expect(member.mean).toBeLessThan(1);
+  }, 60000);
+
+  it("scores a shape the page lacks as outside every box", async () => {
+    const result = await comparePage({
+      page: "stage.html",
+      width: 640,
+      height: 360,
+      source,
+      at: 0,
+      reference: join(fixtures, "extra.svg"),
+      out: out(),
+    });
+    if (result.kind !== "compared") throw new Error(result.message);
+    expect(result.outside).toBeGreaterThan(5);
+    for (const member of result.members) expect(member.mean).toBeLessThan(1);
+    const same = await comparePage({
+      page: "stage.html",
+      width: 640,
+      height: 360,
+      source,
+      at: 0,
+      reference: join(fixtures, "same.svg"),
+      out: out(),
+    });
+    if (same.kind !== "compared") throw new Error(same.message);
+    expect(same.outside).toBeLessThan(1);
   }, 60000);
 
   it("answers usage for a reference that is missing or not an SVG", async () => {

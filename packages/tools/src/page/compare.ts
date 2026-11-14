@@ -25,11 +25,12 @@ export interface MemberDifference {
   readonly mean: number;
 }
 
-/** The whole frame's mean difference, each cast member's (worst first), what to know, and the folder written. */
+/** The whole frame's mean difference, the mean over pixels no member's box covers, each cast member's (worst first), what to know, and the folder written. */
 export type CompareResult =
   | {
       readonly kind: "compared";
       readonly mean: number;
+      readonly outside: number;
       readonly members: readonly MemberDifference[];
       readonly notes: readonly string[];
       readonly out: string;
@@ -92,6 +93,31 @@ export function meanDifference(a: Picture, b: Picture, box?: Box): number {
   for (let y = y0; y < y1; y += 1)
     for (let x = x0; x < x1; x += 1) total += nearestDifference(a, b, x, y);
   return total / ((x1 - x0) * (y1 - y0) * 3);
+}
+
+/** The mean difference, as `meanDifference`, over the pixels inside the picture that none of `boxes` covers;
+ * 0 when every pixel is covered. */
+export function meanOutside(a: Picture, b: Picture, boxes: readonly Box[]): number {
+  if (a.width !== b.width || a.height !== b.height)
+    throw new Error(
+      `The pictures differ in size: ${a.width}x${a.height} and ${b.width}x${b.height}.`,
+    );
+  const covered = new Uint8Array(a.width * a.height);
+  for (const box of boxes) {
+    const x1 = Math.min(a.width, Math.ceil(box.x + box.width));
+    const y1 = Math.min(a.height, Math.ceil(box.y + box.height));
+    for (let y = Math.max(0, Math.floor(box.y)); y < y1; y += 1)
+      for (let x = Math.max(0, Math.floor(box.x)); x < x1; x += 1) covered[y * a.width + x] = 1;
+  }
+  let total = 0;
+  let count = 0;
+  for (let y = 0; y < a.height; y += 1)
+    for (let x = 0; x < a.width; x += 1) {
+      if (covered[y * a.width + x] === 1) continue;
+      total += nearestDifference(a, b, x, y);
+      count += 1;
+    }
+  return count === 0 ? 0 : total / (count * 3);
 }
 
 /** The summed RGB difference at (x, y), looked for both ways within one pixel: a pixel of either picture
@@ -333,6 +359,14 @@ export async function comparePage(request: CompareRequest): Promise<CompareResul
   return {
     kind: "compared",
     mean: Math.round(meanDifference(piece, reference) * 100) / 100,
+    outside:
+      Math.round(
+        meanOutside(
+          piece,
+          reference,
+          stage.members.map(({ box }) => box),
+        ) * 100,
+      ) / 100,
     members: rankMembers(
       stage.members.map(({ name, box }) => ({ name, mean: meanDifference(piece, reference, box) })),
     ),

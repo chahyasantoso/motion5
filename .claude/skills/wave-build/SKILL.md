@@ -44,6 +44,7 @@ Every brief tells the builder to:
 - save `npm run check` output to a file and test its exit code, never pipe it before a commit;
 - write text holding backticks or backslashes with the file tool, never in a shell string or heredoc;
 - run every script that reads paths after a move, not only the check;
+- run git as plain single commands from its worktree, never behind `cd`, `&&`, a pipe or `-C`, which isolation refuses;
 - report what the brief got wrong and a "not verified" list.
 
 Launch a wave's builders in one message, each in its own worktree. Do not poll.
