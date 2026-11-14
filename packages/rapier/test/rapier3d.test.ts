@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { liveAt, type Events, type MotionEvent } from "@gerak/moves";
 import { simulate, type PhysicsWorld3d, type Spawner3d } from "@gerak/physics";
-import { rapierEngine3d } from "@gerak/rapier";
+import { rapierEngine, rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, matrixFromEuler3d, matrixFromQuaternion } from "@gerak/rig";
 
 const create = await rapierEngine3d();
+const create2d = await rapierEngine();
 
 describe("Rapier 3D behind PhysicsWorld3d", () => {
   it("drops a sphere onto a 3D floor with bounce decay and collides in 3D", () => {
@@ -218,5 +219,74 @@ describe("Rapier 3D behind PhysicsWorld3d", () => {
     ).toThrow(RangeError);
     expect(() => world.body("missing")).toThrow(RangeError);
     expect(() => world.rigidBody("missing")).toThrow(RangeError);
+  });
+});
+
+describe("3D pose from spawn", () => {
+  const falling = () =>
+    simulate(create(), (world) => {
+      world.setGravity(0, -9.81, 0);
+      world.addCollider("floor", { kind: "floor", y: 0 });
+      world.addBody({
+        id: "box",
+        shape: { kind: "box", width: 1, height: 1, depth: 1 },
+        x: 2,
+        y: 3,
+        z: 1,
+      });
+    });
+
+  it("is zero movement and the spawn quaternion at time 0", () => {
+    const pose = falling().pose("box", liveAt(0));
+    expect([pose.x, pose.y, pose.z]).toEqual([0, 0, 0]);
+    expect(pose.rotation).toEqual({ w: 1, x: 0, y: 0, z: 0 });
+    expect(bodyPose3d(pose)).toEqual({});
+  });
+
+  it("moves from the spawn once it has fallen and settled", () => {
+    const sim = falling();
+    const time = liveAt(2000);
+    const pose = sim.pose("box", time);
+    expect(Math.abs(pose.x)).toBeLessThan(0.05);
+    expect(Math.abs(pose.z)).toBeLessThan(0.05);
+    expect(Math.abs(pose.y - (sim.at(time).box!.y - 3))).toBeLessThan(1e-9);
+    expect(pose.y).toBeLessThan(-2);
+  });
+
+  it("throws RangeError for an unknown id", () => {
+    expect(() => falling().pose("nope", liveAt(0))).toThrow(RangeError);
+  });
+
+  it("answers the same whatever the seek order", () => {
+    const fresh = falling().pose("box", liveAt(2000));
+    const sim = falling();
+    sim.pose("box", liveAt(5000));
+    const back = sim.pose("box", liveAt(2000));
+    sim.pose("box", liveAt(1000));
+    const forward = sim.pose("box", liveAt(2000));
+    for (const other of [back, forward]) {
+      expect(Math.abs(other.x - fresh.x)).toBeLessThan(1e-9);
+      expect(Math.abs(other.y - fresh.y)).toBeLessThan(1e-9);
+      expect(Math.abs(other.z - fresh.z)).toBeLessThan(1e-9);
+      expect(Math.abs(other.rotation.w - fresh.rotation.w)).toBeLessThan(1e-9);
+      expect(Math.abs(other.rotation.x - fresh.rotation.x)).toBeLessThan(1e-9);
+      expect(Math.abs(other.rotation.y - fresh.rotation.y)).toBeLessThan(1e-9);
+      expect(Math.abs(other.rotation.z - fresh.rotation.z)).toBeLessThan(1e-9);
+    }
+  });
+});
+
+describe("one snapshot format", () => {
+  it("refuses a snapshot of the other dimension", () => {
+    const world3d = create();
+    world3d.addBody({ id: "a", shape: { kind: "sphere", radius: 0.5 }, x: 0, y: 0, z: 0 });
+    const world2d = create2d();
+    world2d.addBody({ id: "a", shape: { kind: "circle", radius: 10 }, x: 0, y: 0 });
+    expect(() => world2d.restore(world3d.snapshot())).toThrow(
+      new TypeError("rapierWorld: the snapshot is not from this adapter."),
+    );
+    expect(() => world3d.restore(world2d.snapshot())).toThrow(
+      new TypeError("rapierWorld3d: the snapshot is not from this adapter."),
+    );
   });
 });

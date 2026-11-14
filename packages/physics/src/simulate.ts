@@ -9,6 +9,7 @@ import type {
   Contact,
   PhysicsWorld,
   PhysicsWorld3d,
+  Quaternion3d,
   Surface,
 } from "./world";
 
@@ -84,6 +85,17 @@ export interface Simulation3d {
   at(time: Time, events?: Events): Readonly<Record<string, BodyState3d>>;
   /** The ids of the 3D bodies present at `time`, in the order they were added. */
   bodies(time: Time, events?: Events): readonly string[];
+  /** How far a body has moved from where it spawned, and its absolute turn: the pose for an element laid out at its start. */
+  pose(
+    id: string,
+    time: Time,
+    events?: Events,
+  ): {
+    readonly x: number;
+    readonly y: number;
+    readonly z: number;
+    readonly rotation: Quaternion3d;
+  };
   /** A `contact` event per body for every contact that started up to `time`, oldest first. */
   events(time: Time, events?: Events): Events;
 }
@@ -103,10 +115,39 @@ function sameEvent(a: MotionEvent | undefined, b: MotionEvent | undefined): bool
   );
 }
 
-function rotation2d(rotation: number | { readonly w: number }): number {
+function rotation2d(rotation: number | Quaternion3d): number {
   if (typeof rotation !== "number")
-    throw new TypeError("simulate: pose and place are for 2D bodies; use bodyPose3d on at(time).");
+    throw new TypeError("simulate: place is for 2D bodies; use pose and bodyPose3d for 3D ones.");
   return rotation;
+}
+
+type Moved =
+  | { readonly x: number; readonly y: number; readonly rotation: number }
+  | {
+      readonly x: number;
+      readonly y: number;
+      readonly z: number;
+      readonly rotation: Quaternion3d;
+    };
+
+function moved(
+  spec: { readonly x: number; readonly y: number; readonly z?: number },
+  now: { readonly x: number; readonly y: number; readonly z?: number },
+  rotation: number | Quaternion3d,
+): Moved {
+  switch (typeof rotation) {
+    case "number":
+      return { x: now.x - spec.x, y: now.y - spec.y, rotation };
+    case "object":
+      return {
+        x: now.x - spec.x,
+        y: now.y - spec.y,
+        z: (now.z ?? 0) - (spec.z ?? 0),
+        rotation,
+      };
+    default:
+      throw new TypeError("simulate: a body's rotation is a number or a quaternion.");
+  }
 }
 
 /** Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. */
@@ -157,12 +198,8 @@ export function simulate<
 ): {
   at(time: Time, events?: Events): Readonly<Record<string, State>>;
   bodies(time: Time, events?: Events): readonly string[];
-  pose(
-    id: string,
-    time: Time,
-    events?: Events,
-  ): { readonly x: number; readonly y: number; readonly rotation: number };
-  place(id: string, time: Time, events?: Events): Placed;
+  pose(id: string, time: Time, events?: Events): Moved;
+  place?(id: string, time: Time, events?: Events): Placed;
   events(time: Time, events?: Events): Events;
 } {
   const dt = options.dt ?? 1 / 120;
@@ -274,8 +311,7 @@ export function simulate<
       const now = at(time, events)[id];
       if (start === undefined || now === undefined)
         throw new RangeError(`simulate: no body "${id}" at that time.`);
-      const rotation = rotation2d(now.rotation);
-      return { x: now.x - start.spec.x, y: now.y - start.spec.y, rotation };
+      return moved(start.spec, now, now.rotation);
     },
     place(id, time, events) {
       const now = at(time, events)[id];

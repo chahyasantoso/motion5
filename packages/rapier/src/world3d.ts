@@ -1,4 +1,6 @@
 import RAPIER from "@dimforge/rapier3d-deterministic-compat";
+import { packSnapshot, unpackSnapshot } from "./snapshot";
+import { unreachable } from "./unreachable";
 import type {
   BodySpec3d,
   BodyState3d,
@@ -14,10 +16,6 @@ const THICK = 10;
 const LONG = 10_000;
 const RADIANS = Math.PI / 180;
 const IDENTITY_QUATERNION: Quaternion3d = Object.freeze({ w: 1, x: 0, y: 0, z: 0 });
-
-function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
-}
 
 function assertPositive(value: number, label: string): number {
   if (!(Number.isFinite(value) && value > 0)) {
@@ -218,38 +216,18 @@ function rapierWorld3d(): RapierWorld3d {
       return started;
     },
     snapshot() {
-      const names = new TextEncoder().encode(
-        JSON.stringify({ bodies: [...bodies], owners: [...owners] }),
-      );
-      const native = world.takeSnapshot();
-      const bytes = new Uint8Array(4 + names.length + native.length);
-      new DataView(bytes.buffer).setUint32(0, names.length);
-      bytes.set(names, 4);
-      bytes.set(native, 4 + names.length);
-      return bytes;
+      return packSnapshot("3d", bodies, owners, world.takeSnapshot());
     },
     restore(snapshot) {
-      const length = new DataView(snapshot.buffer, snapshot.byteOffset).getUint32(0);
-      const names: unknown = JSON.parse(new TextDecoder().decode(snapshot.subarray(4, 4 + length)));
-      const listed: unknown = Reflect.get(Object(names), "bodies");
-      const owned: unknown = Reflect.get(Object(names), "owners");
-      if (!Array.isArray(listed) || !Array.isArray(owned)) {
-        throw new TypeError("rapierWorld3d: the snapshot is not from this adapter.");
-      }
-      const restored = RAPIER.World.restoreSnapshot(snapshot.subarray(4 + length));
-      if (restored === null) {
-        throw new TypeError("rapierWorld3d: the snapshot did not restore.");
-      }
+      const saved = unpackSnapshot("3d", snapshot, "rapierWorld3d");
+      const restored = RAPIER.World.restoreSnapshot(saved.native);
+      if (restored === null) throw new TypeError("rapierWorld3d: the snapshot did not restore.");
       world.free();
       world = restored;
       bodies.clear();
-      for (const pair of listed) {
-        if (Array.isArray(pair)) bodies.set(String(pair[0]), Number(pair[1]));
-      }
+      for (const [id, handle] of saved.bodies) bodies.set(id, handle);
       owners.clear();
-      for (const pair of owned) {
-        if (Array.isArray(pair)) owners.set(Number(pair[0]), String(pair[1]));
-      }
+      for (const [handle, id] of saved.owners) owners.set(handle, id);
       queue.drainCollisionEvents(() => undefined);
     },
   };
