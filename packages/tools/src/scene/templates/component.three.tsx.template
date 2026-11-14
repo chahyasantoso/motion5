@@ -16,8 +16,9 @@ import { clock, scene } from "./__NAME__-scene";
 const WIDTH = 1280;
 const HEIGHT = 720;
 
-/** Builds the Three.js stage, binds each target to its mesh, and renders every frame; click replays. */
-export const __COMPONENT__: React.FC = () => {
+/** Builds the Three.js stage, binds each target to its mesh, and renders every frame; click replays.
+ * `onReady` runs once the first frame has drawn. */
+export const __COMPONENT__: React.FC<{ readonly onReady?: () => void }> = ({ onReady }) => {
   const playing = usePlayer(scene, clock);
   const box = useTarget3d(playing?.player, "box");
   const host = useRef<HTMLDivElement>(null);
@@ -37,6 +38,8 @@ export const __COMPONENT__: React.FC = () => {
     const mesh = new Mesh(geometry, material);
     stage.add(new AmbientLight(0xffffff, 0.5), light, mesh);
     box(mesh);
+    renderer.render(stage, camera);
+    onReady?.();
     let frame = requestAnimationFrame(function draw() {
       renderer.render(stage, camera);
       frame = requestAnimationFrame(draw);
@@ -49,6 +52,6 @@ export const __COMPONENT__: React.FC = () => {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [box]);
+  }, [box, onReady]);
   return <div ref={host} className="stage" onClick={() => playing?.driver.replay()} />;
 };
