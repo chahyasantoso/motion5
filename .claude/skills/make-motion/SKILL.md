@@ -8,7 +8,7 @@ description: Make, change or polish an animation or motion piece for a web page 
 A piece starts from its brief, not from a piece that already exists.
 
 1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short. A
-   piece is one stage module: `npm run motion:new -- <name>` writes `apps/pieces/src/<name>.ts` with its cast, its
+   piece is one stage module: `npm run motion:new -- <name>` writes `apps/pieces/<name>/src/<name>.ts` with its cast, its
    story and its skin, and `stage.html?piece=<name>` shows it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
@@ -18,7 +18,7 @@ A piece starts from its brief, not from a piece that already exists.
    `npm run motion:moves -- --check`.
    `npm run motion:moves -- --parts` lists the building blocks a move is made from: time, eases, blends, paths,
    follow-through, events, randomness.
-4. Do not open any other piece in `apps/pieces/src`, whether a stage module, a scene file or a component. They are
+4. Do not open any other piece in `apps/pieces/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
    when the brief needs it.

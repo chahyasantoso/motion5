@@ -28,7 +28,7 @@ not by reading package source. Read a part below only when the brief needs it:
 2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
-3. `npm run motion:new -- <name>` writes `apps/pieces/src/<name>.ts`, one stage module: a story of one beat, one
+3. `npm run motion:new -- <name> [--in <brief>]` writes `apps/pieces/<brief>/src/<name>.ts` (the brief is the name unless `--in` names another), one stage module: a story of one beat, one
    actor at rest and an empty skin. Open it as `stage.html?piece=<name>`.
 4. **Cast, story, skin** (see [The stage module](#the-stage-module)). Name who is on stage in `cast`, the beats in
    `beats`, and give each member the look the brief calls for in `skins.dom.css`. Name the look most people would
@@ -41,13 +41,13 @@ not by reading package source. Read a part below only when the brief needs it:
    [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
 7. **Where nothing fits, write a move** (see [writing a move](./agent-moves.md)) and use it like any other. A
    motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
-8. `npm run motion:review -- apps/pieces/src/<name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
+8. `npm run motion:review -- apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
    "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does,
    gives the findings and a `sheet` of frames picked where the motion is fast; `--full` adds the moves with their eases.
 9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
-The other scene files in `apps/pieces/src` are other people's pieces. Do not open them: a piece begun from one
+The other scene files in `apps/pieces/*/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
 picture is wrong, so read the sheet before calling anything finished.
 
@@ -101,7 +101,7 @@ number goes.
 
 ```ts
 // Every helper below, and every built-in move, comes from this package; a move `motion:moves` lists from
-// `apps/pieces/src/moves` is imported from `./moves/<id>`.
+// `apps/pieces/<brief>/src/moves` is imported from `./moves/<id>`.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given

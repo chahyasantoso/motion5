@@ -624,26 +624,26 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 
 - **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
-- **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-  `apps/pieces`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
+- **`motion:new <name> [--in <brief>] [--three]`**: writes `<brief>/<name>.html`, its entry, a component and `<brief>/src/<name>-scene.ts` in
+  `apps/pieces` (the brief is the name unless `--in` names one); a name any brief already holds is refused; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.
-- **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
+- **`motion:new --move <id> --in <brief> [--root dir]`**: writes `<brief>/src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
-- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
+- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/<piece>/src/<piece>.ts`, a stage
   module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `actor({ still: true, path })`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
   `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
-  `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
+  `<root>/*/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
   `recipe` a move names. `<id>` prints
   that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
   an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
   moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
-  and are used by two or more briefs of `<root>/src` (a file's `export const brief = "<name>"`, else the file itself), one line each: id, file, briefs.
-- **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
+  and are used by two or more briefs of `<root>` (the folders holding a `src`), one line each: id, file, briefs.
+- **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/<brief>/src/moves` into
   `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
   index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and
   changes nothing, for a move that is not a candidate, one whose file exports a helper or a name the library has, or

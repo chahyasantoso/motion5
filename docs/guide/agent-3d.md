@@ -12,7 +12,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
    `usePlayer(scene, clock, cues)`.
 2. Write the scene. It returns `Pose3d` targets: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY,
    scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
-3. `npm run motion:review -- apps/pieces/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
+3. `npm run motion:review -- apps/pieces/<brief>/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
    a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
    units, and its default of 150 is for px, so give a 3D scene its own, about a fifth of the subject's height: 0.1
    for a character 0.5 units tall. Give `--turn` (degrees a step) one too, about 30: its default of 150 lets a bone
