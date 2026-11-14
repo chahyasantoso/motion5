@@ -22,7 +22,10 @@ What the code lacks today, measured on `feat/toolkit`:
 - **Catalog:** one flat list in one order; nothing measured to search by, so "heavy" or "near `lob`" cannot be
   asked, and `ballistic` and `lob` sit side by side unnoticed.
 - **Layout:** `packages/moves/src` holds 54 files in one folder: fields, laws, moves and composition mixed, while
-  `MOVE_PARTS` in `@gerak/tools` is a second, hand-kept list of which of them are parts.
+  `MOVE_PARTS` in `@gerak/tools` is a second, hand-kept list of which of them are parts. `apps/pieces/src` holds
+  about 50 files of every piece, the app's players and one shared `moves/` folder, and `export const brief` is a
+  second owner of which brief a piece answers. 18 of the 20 local moves serve the showreel brief alone, 2 the
+  penguin.
 
 Not planned: the motion atlas (`plan/motion-atlas-plan.md`, deferred until the sameness score below shows the need),
 a mask of any shape, a new package.
@@ -35,9 +38,9 @@ Five layers. Each uses only those below it, and each has one folder.
 | --- | --- | --- |
 | Fields | what can change on a target, where it rests, how two answers add, how the review judges it | `packages/moves/src/fields/` |
 | Parts | how a number changes over time, knowing nothing of fields, roles or rest | `packages/moves/src/parts/<group>/` |
-| Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; an app's own in `apps/<app>/src/moves/` |
+| Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/briefs/<brief>/moves/` |
 | Composition | moves placed in time and across targets: spans, phases, lanes, joining two answers on one target | `packages/moves/src/compose/`; the piece format (cast, story, layouts, carrying) in `@gerak/stage` |
-| Pieces | one brief's motion, as content | `apps/pieces/src/` (pieces), `apps/examples/src/` (worked examples the tests read) |
+| Pieces | one brief's motion, as content | `apps/pieces/briefs/<brief>/` (pieces), `apps/examples/src/` (worked examples the tests read) |
 
 - **A part** takes progress or time and answers a number or a point. It has no role, no rest and no option gate.
 - **A move** exists where parts couple inside one progress (a squash because of the landing, at the landing) and an
@@ -70,6 +73,21 @@ index.ts      the one entry; no subpath exports
 ```
 
 `eases` is renamed `laws`, since a wave or an arch is not an ease; `camera` is new.
+
+### Target layout of `apps/pieces`
+
+```text
+briefs/<brief>/   every piece answering one brief, its pages and components, its own moves/ and references/
+src/              the app's players and pages shared by every brief: stage, live, talk
+references/       assets more than one brief uses (the dragonling, talk.json)
+stage.html live.html talk.html index.html
+```
+
+- **The folder is the brief.** `export const brief` goes; versions of one brief (`showreel-b` to `showreel-f`)
+  are pieces in one folder. Piece names stay unique across briefs, so `stage.html?piece=<name>` is unchanged.
+- **A brief's moves live with it.** A piece importing a move from another brief's `moves/` is what
+  `motion:moves -- --candidates` lists for promotion into `@gerak/moves`; nothing else is shared between briefs.
+- **An agent works in one folder.** "Do not open other pieces" becomes "work in `briefs/<brief>/`".
 
 ## 3. Decisions to record (ADR-185)
 
@@ -123,8 +141,20 @@ index.ts      the one entry; no subpath exports
 - **Invariant:** every file moves to its folder in §2 with no change to behaviour or exports: `index.ts`'s export
   list, every sample and the generated reference's entries are unchanged; `scripts/cycle-baseline.json` and the
   comment baseline take the new paths and do not grow.
-- **Owner:** `packages/moves/src`.
+- **Owner:** `packages/moves/src`; `packages/tools/src/scene/promote.ts`'s destination becomes `src/moves/`.
 - **Test:** the full check; a script compares `motion:sample` of every built-in move's example before and after.
+
+### A1b. Pieces by brief
+
+- **Invariant:** every piece's files, pages and the moves only its brief uses sit in `briefs/<brief>/`; the app's
+  players stay in `src/`; `motion:new`, `motion:new --move`, `motion:import-svg`, `motion:live`, `motion:moves`
+  (local moves and `--candidates`), the Vite plugin's move list and `stage.html?piece=` find them there; two pieces
+  with one name are refused naming both; `export const brief` is gone and its readers use the folder. Every piece's
+  `motion:review` findings are the same before and after.
+- **Owner:** `apps/pieces`, `packages/tools/src/scene/{new,catalog,import-svg}.ts`, `packages/tools/src/page/live.ts`,
+  `packages/tools/src/vite/index.ts`; tests and guide paths that name `apps/pieces/src/<piece>`.
+- **Test:** a scratch brief scaffolded by `motion:new` plays on `stage.html` and lists its move in `motion:moves`; a
+  piece importing another brief's move is a candidate; a duplicate name is refused.
 
 ### A2. Parts from their folders
 
@@ -199,6 +229,7 @@ index.ts      the one entry; no subpath exports
 | Wave | Who | Slices | Why |
 | --- | --- | --- | --- |
 | 1 | Planner | A0, A1 | every later slice edits the moved files |
+| 1b | Executor | A1b | every later slice and the measure use the new piece paths |
 | 2 | Executor | A2 and A6 | tools' catalog and `declare.ts`, one owner for the record |
 | 2 | Executor | A3 | new parts, `index.ts` exports |
 | 2 | Executor | A5 | fields, both renderers, the review's read |
@@ -213,6 +244,8 @@ One pull request, after wave 4.
 
 - **A1 touches every import path inside `@gerak/moves`.** One scripted commit, with no other change, checked by
   samples before and after.
+- **A1b moves about 50 files and changes paths the guide and tests name.** File moves are one commit with `git mv`;
+  path changes in tools another; every piece's review compared before and after.
 - **Relative colour support:** Chromium 119 or later; other browsers are not tested here.
 - **Descriptor thresholds:** the quality ranges and the duplicate distance are guesses until the first measure; the
   table is one place to tune.
