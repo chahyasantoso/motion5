@@ -1,7 +1,7 @@
 # Toolkit plan: scenes that stay fast, tools that answer faster
 
-**Status:** Proposed, 2026-11-14.
-**Base:** `feat/overlay` at `aae7edbd`, pull request 594; rebased onto `main` once 594 merges.
+**Status:** Approved, 2026-11-14, after one round of critique.
+**Base:** `main` at `6079f613`, the merge of pull request 594.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-166-motion-review-and-a-one-call-loop.md`,
 `docs/ADR-181-live-inputs.md`, `docs/ADR-182-rigged-3d-characters-and-bodies-in-depth.md`,
 `docs/ADR-183-2d-over-3d-on-one-clock.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -27,30 +27,36 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
 
 ## 2. Decisions to record (D0, ADR-184)
 
-- **A scene step's cost is checked.** `motion:review` times every sample (the median of three runs) and reports a
-  sample over `--budget` ms (default 4, a quarter of a 60 fps frame), and a cost that grows with time (the last
-  fifth of the samples costing over four times the first fifth): "cost grows with time: a step reads all of the
-  past". Both are findings like any other.
+- **A scene step's cost is checked, by growth first.** `motion:review` times every sample as it plays (the median
+  of three runs) and every seek back it already makes, and reports a cost that grows with time (the last fifth of
+  the samples costing over four times the first fifth and over 1 ms): "cost grows with time: a step reads all of the
+  past". It also reports a step over `--budget` ms (default 8, half a 60 fps frame), a looser bar because a busy or
+  slow machine moves it. Tests drive the growth rule with a scene built to grow and never assert a time.
 - **Real frame rate is measured on a running page.** `motion:fps <page> [--to ms] [--show]` plays the page on its
-  real clock in Chromium and prints frames a second per 500 ms window, the frames over 16.7 and 33 ms, and the worst
-  frames with how their time split. The player marks each step with the User Timing API (`gerak:scene`,
-  `gerak:write`), which the command, DevTools and any profiler read; `--show` opens a visible window with a live
-  counter for a person to watch. A headless number is relative: its renderer is software; `--show` uses the GPU.
+  real clock in Chromium (the page tools' paused clock gains an opt-out for it) and prints frames a second per
+  500 ms window, the frames over 16.7 and 33 ms, and the worst frames with how their time split: the scene, the
+  writes, and the rest of the frame (drawing and the browser). The player times its steps with the User Timing API
+  (`gerak:scene`, `gerak:write`) only when a reader turns it on (`globalThis.__gerakTiming`, which the command sets
+  before the page loads), so a page in use keeps no growing buffer of marks. `--show` opens a visible window with a
+  live counter the command injects; no page carries code for it. A headless number is relative, since its renderer
+  is software; `--show` uses the GPU.
 - **How much of a sample stream has passed is `tally`.** `tally({ start, on: { mouthOpen: "value" } })` in
   `@gerak/moves` answers, at any time, the area under the samples so far (each held until the next), and
   `.total(events)` the whole stream's area, so `tally / total` is how far through it the speech, a progress bar or a
-  score is. It reads a prefix table built once per events list, so a step costs the same at 9 s as at 1 s. A caption
-  reveals its words by that share.
-- **A contact says where and with what.** A physics contact event carries the contact point (`x`, `y`, and `z` in
-  3D, world units) and the other body or collider (`with`). `MotionEvent` gains optional `z` and `with`; `x` and
-  `y` mean a pointer's px for pointer events and a point in the scene's units for physics ones, as each event's name
-  says. A scene never seeks a simulation backwards to learn where something was.
+  score is. It reads a prefix table built once per events list and extended, not rebuilt, when a live list grows by
+  appending, so a step costs the same at 9 s as at 1 s, recorded or live. It tallies the raw samples, not `follow`'s
+  spring, so it is exact and seeks for free. A caption reveals its words by that share.
+- **A contact says where and with what.** A physics contact event carries the contact point in the scene's units
+  (`x`, `y`, and `z` in 3D; px in 2D, converted from the engine's metres as body positions are) and the other body or
+  collider (`other`). `MotionEvent` gains optional `z` and `other`; `x` and `y` mean a pointer's px for pointer
+  events and a point in the scene's units for physics ones, as each event's name says. A scene never seeks a
+  simulation backwards to learn where something was.
 - **An object rides a bone from a point in the model's space.** `attach(skeleton, bone, object, { at, turn })` in
   `@gerak/three/skeleton` makes `object` a child of the named bone, placed at a point and turn given in the model's
   space at capture, the space of the joint table, computed from the captured rest, so it is right whatever the
   model's groups are doing. Eyelids, hats, held props and glasses are each one call.
 - **Many 3D targets bind from one list.** A scene may return a list of `Pose3d` as one target, and
-  `useTarget3d(player, "props", { at: i })` binds its `i`th pose, as `useTarget`'s third argument does in 2D.
+  `useTarget3d(player, "props", { at: i })` binds its `i`th pose; the review already walks a list target by index.
 - **Looking closer is a flag.** `motion:frames --crop x,y,width,height --zoom n` captures a region scaled up;
   `motion:sample --watch <path> --from ms --to ms --every ms` prints one value over time.
 
@@ -66,17 +72,18 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
 ### K2. Cost in the review
 
 - **Invariant:** as decided; a scene whose step loops over its past is flagged as growing; a flat scene is not; the
-  budget is a flag and a per-target `limits` field does not change it.
+  budget is a flag and a per-target `limits` field does not change it; a stage module is timed as a scene is.
 - **Owner:** `packages/tools/src/scene/review.ts` and its argument parser.
-- **Test:** two small scenes, one summing a loop from 0 to its time, one constant: only the first is flagged;
-  `--budget 0.001` flags the constant one.
+- **Test:** two small scenes, one summing a loop from 0 to its time (built to cost well over 1 ms by its end), one
+  constant: only the first is flagged as growing; `--budget 0.0001` flags a step of the constant one. The overlay
+  measure's `dragon-intro`, as merged, is flagged as growing before the lead removes it.
 
 ### K3. Frame rate on a running page
 
-- **Invariant:** as decided; the player's marks cost nothing measurable when no one reads them; `motion:fps` on a
-  page whose step sleeps 30 ms reports under 34 fps in every window, and on the scaffold above 50.
-- **Owner:** `packages/player/src` for the marks; `packages/tools/src/page/fps.ts`, `bin/motion-fps.mjs` and the root
-  `package.json` script.
+- **Invariant:** as decided; with timing off the player writes no mark; `motion:fps` on a scratch page whose step
+  busy-waits 30 ms reports under 34 fps in every window, and on the `--three` scaffold above 50 (headless).
+- **Owner:** `packages/player/src` for the timing switch; `packages/tools/src/page/page.ts` for the real-clock
+  opt-out; `packages/tools/src/page/fps.ts`, `bin/motion-fps.mjs` and the root `package.json` script.
 
 ### K4. Contacts with a point
 
@@ -85,7 +92,7 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
 - **Owner:** `packages/physics/src` (`Contact`, `simulate`'s events), `packages/rapier/src/world.ts` and
   `world3d.ts`.
 - **Test:** a ball dropped on a floor at a known x and z: its contact is at the floor's height under the ball, with
-  `with: "floor"`; 2D the same.
+  `other: "floor"`; 2D the same, in px; two balls meeting name each other.
 
 ### K5. Attach and list targets
 
@@ -111,9 +118,10 @@ through `@gerak/stage`'s `words`; what both lacked is general, and is planned be
 
 - **Measure, alone, fresh, cheap:** the lead removes `dragon-intro`; a Sonnet worker at medium effort builds it again
   from the same brief and the new guide.
-- **It passes when:** everything the overlay measure had to pass; `motion:review`'s budget is clean; `motion:fps
-  --to 10000` reports at least 55 fps in every window with `--show`, and no window below half its first window's
-  rate headless.
+- **It passes when:** everything the overlay measure had to pass; `motion:review` reports no growing cost and no step
+  over budget; headless `motion:fps --to 10000` has no window below half its first window's rate. The lead then
+  runs `motion:fps --show` once on the owner's machine and reports the windows; 55 fps or more in every window is
+  the bar, read by the lead, not the worker.
 - **It is compared with the first build:** tokens, calls and minutes against 214k, 106 and 22, and the render rounds
   it took. Its interview asks again what would have helped most.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.

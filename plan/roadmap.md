@@ -115,6 +115,8 @@ Three things follow from it:
    2D over 3D on one clock (`plan/overlay-plan.md`): `project3d`, `posedJoints3d`, review `limits` per target, pages
    that draw on the player's step, and the worked example `overlay3d`. Proof: `dragon-intro`, a 10 s intro with a
    speech bubble pinned to the dragonling's head, "+1" labels on landing props and eyelid blinks, built by Sonnet.
+   Next, before stage 9: the toolkit (`plan/toolkit-plan.md`, approved, on `feat/toolkit`): scene cost in the
+   review, `motion:fps`, `tally`, contacts with a point, `attach`, 3D list targets, and closer looks in the tools.
 9. **Motion atlas, a brainstorm.** Next. Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
 10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
