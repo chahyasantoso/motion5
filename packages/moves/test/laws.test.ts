@@ -70,12 +70,17 @@ describe("radial", () => {
 });
 
 describe("noise1d", () => {
-  it("stays within -1 to 1 and moves smoothly", () => {
+  it("stays within -1 to 1, reaches most of it, and moves no faster than a smoothstep across the range", () => {
     const noise = noise1d(7);
-    for (let ms = 0; ms <= 10000; ms += 16) {
+    // A smoothstep's steepest slope is 1.5 times its rise, and a rise is at most 2, over `scale` ms.
+    const steepest = (1.5 * 2 * 16) / 400;
+    let reach = 0;
+    for (let ms = 0; ms <= 60000; ms += 16) {
       expect(Math.abs(noise(ms))).toBeLessThanOrEqual(1);
-      expect(Math.abs(noise(ms + 16) - noise(ms))).toBeLessThan(0.05);
+      expect(Math.abs(noise(ms + 16) - noise(ms))).toBeLessThanOrEqual(steepest + 1e-12);
+      reach = Math.max(reach, Math.abs(noise(ms)));
     }
+    expect(reach).toBeGreaterThan(0.8);
   });
   it("is the same for one seed and differs for another", () => {
     const a = noise1d(1);
