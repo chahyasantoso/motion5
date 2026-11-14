@@ -107,11 +107,11 @@ Three things follow from it:
    its numbers as samples, events with a value, read through `follow`, so a recorded session replays, scrubs and
    renders, and `send` feeds a live one. A path member morphs between outlines, and a drawing imports into a bigger
    scene. Proof: `penguin-scene`, the penguin talking and blinking from a recording on an ice floe.
-8. **3D.** Done (`plan/3d-plan.md`). Typed 3D chains (`chainThrough3d`, `fk3d`, `ik3d`, `bonesOf3d`,
-   `chainFromRest3d`, `bodyPose3d`), a skinned mesh's bones (`captureSkeleton`, `applyBones`), morph targets
-   (`morphTargets`), 3D physics on Rapier (`rapierEngine3d`, `simulate`), and the worked 3D character example
-   `character3d`. Proof: `avatar-3d`, a rigged glTF character greeting, waving, and talking from recorded cues on a
-   stage with 3D physics props.
+8. **3D.** Done (`plan/3d-plan.md`). Typed 3D chains (`chainThrough3d`, `fk3d`, `ik3d`, `bonesOf3d`, `childBase3d`,
+   `chainFromRest3d`, `jointOf`, `bodyPose3d`), a skinned mesh's bones (`captureSkeleton`, `applyBones`), a model's
+   joint table for scene modules (`motion:joints`), morph targets (`morphTargets`), 3D physics on Rapier
+   (`rapierEngine3d`, `simulate`), and the worked example `character3d`. Proof: `avatar-3d`, a skinned glTF
+   dragonling greeting, waving a paw, nodding and talking from recorded cues, with props settling in 3D physics.
 9. **Motion atlas, a brainstorm.** Next. Whether a library-agnostic map of motion, with gerak as one port, serves the
    objective; `plan/motion-atlas-plan.md` is its starting notes. It ends in a decision, not code.
 10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
