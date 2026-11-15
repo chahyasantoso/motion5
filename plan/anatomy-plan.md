@@ -8,11 +8,17 @@ vocabulary (ADR-186), revised 2026-11-15 after one round of critique; proposed.
 
 ## 1. Goal
 
-**An agent making a piece designs the motion its brief needs in a vocabulary it can read and ask about (fields,
-and parts by kind), reuses a move only when the catalog shows one already does that design, and otherwise writes
-one from shared parts, never hand-written trigonometry.** A move is found by what it does and how it feels; a part
-by its kind; a field by what it changes. A person reading the code finds each layer, each kind of part and each
-brief in its own folder.
+**An agent knows gerak's primitives and how to use them; designs the brief's motion in them as a spec it writes
+into the piece; finds tested moves that meet that spec and decides to use, adjust, combine or write one; and the
+review checks the finished piece against its own spec.**
+
+- **Primitives:** fields (what can change) and parts by kind (how a change is shaped), each read from one card with
+  a sample of its use.
+- **Spec:** the piece exports `design`, each target's fields with the quality its motion should have.
+- **Moves:** the catalog answers the spec with gate-passing moves, each with what matched, at which options.
+- **Check:** `motion:review` measures each specified field and names where the motion misses its stated quality.
+
+A person reading the code finds each layer, each kind of part and each brief in its own folder.
 
 This plan also lays the ground for **installable style kits**, the next plan: a kit carries a style's moves, its
 skin tokens and a style card (its qualities as descriptor ranges and its habits), so a person installs it, writes a
@@ -162,8 +168,32 @@ The kinds a piece is assembled from, each with one owner:
   - **No move fits** when every move misses a requested field or has `fieldFit` above `NO_FIT` (one constant in
     `catalog.ts`, set so the tests below hold); the answer says so, lists the design's fields, qualities and uses,
     and gives `npm run motion:new -- --move <id> --in <brief>`.
+- **Usage on the card.** Each part's line in `--anatomy` adds one sample call and its values at progress 0, 0.5 and
+  1, from the first of its contract's `samples` (`taper(p, 2): 1, 0.25, 0`); each field's line adds what the DOM
+  renderer writes for a sample value (`hue: 30` writes `--gerak-hue: 30deg`), from the renderer's `WRITTEN` list. A
+  part with no sampled rule shows its call shape only.
+- **Tested moves only.** A search row shows `passes` or the count of gate findings; moves with findings are left out
+  of every query unless `--all`, and the summary says how many were left out.
+- **Fit at its options.** A move is scored at its example and at each option set the gate samples; the row reports
+  the best, naming the options when they are not the example's (`fits with squash 0.6`).
+- **The spec answers the query.** `--design <file> --target <name>` reads the piece's `design` and asks for that
+  target's fields and qualities, as the same `--move` flags would.
 - **The duplicate check** uses the per-field distance; `NEAR_DUPLICATE` is re-tuned so the pairs found are a subset
   of today's two baseline pairs, and the baseline only shrinks.
+
+### The design spec
+
+- **A piece may export `design`:** a record of target name to fields, each field to a quality name from `QUALITIES`;
+  a field's value may instead be a record of beat name to quality, measured in that beat's span. Types:
+  `Design = Readonly<Record<string, Readonly<Record<string, Quality | Readonly<Record<string, Quality>>>>>>`, where
+  `Quality` is a key of `QUALITIES`. `readStageModule` carries it through as plain names, refusing only a value that
+  is not that shape, since `@gerak/stage` sits below the tools; the review refuses an unknown target, field, beat or
+  quality, naming it.
+- **The review checks it.** For each specified target and field, `motion:review` samples the field over the piece's
+  run (or the named beat's span), keeps the stretch from its first change to its last, measures its shape as the
+  gate does, and reports a finding where a descriptor lies outside the quality's range: "`ball.y` (landing): peak
+  0.3, heavy wants 0.6 to 1; it falls like a light thing". A field the scene never moves is a finding too. The
+  shape measure and `QUALITIES` have one owner each, imported by the review.
 
 ## 5. Slices
 
@@ -196,27 +226,42 @@ The kinds a piece is assembled from, each with one owner:
 
 - **Invariant:** §4 The vocabulary and the design query. **Owner:** `packages/tools/src/scene/{catalog,moves}.ts`,
   `packages/tools/bin/motion-moves.mjs`, `scripts/duplicate-baseline.json`.
-- **Test:** `--anatomy` lists every field with meaning and unit and every part under its kind, and `--json` parses;
+- **Test:** `--anatomy` lists every field with meaning and unit and every part under its kind, each with its sample
+  use, and `--json` parses; a move with a gate finding is left out of a query and counted in the summary; a move
+  that fits only at another option set is found with those options named; `--design` on a scratch piece asks what
+  its `design` says;
   `hop` keeps a `y` shape with rings; `--move y:heavy` puts `drop` first and `--move scaleY:loose` puts `squish`
   first; a move that moves the field with the wrong quality ranks below one with the right quality; a design no move
   fits gives the no-fit answer with the `motion:new` line; `--uses` breaks a tie; the duplicate pairs are a subset of
   the baseline.
 
+### V4. The spec checked by the review (executor, beside V3)
+
+- **Invariant:** §4 The design spec. **Owner:** `packages/stage/src/module.ts` (the `design` export of a stage
+  module), `packages/tools/src/scene/{scene,review}.ts` (reading it in a scene module, and the check). It imports
+  the shape measure from `moves.ts` and `QUALITIES` from `catalog.ts` and edits neither.
+- **Test:** a scratch piece whose `ball.y` falls with a late peak passes `y: "heavy"` and fails `y: "light"` with a
+  finding naming the descriptor; a beat-scoped spec is measured in its beat only; a field the scene never moves, an
+  unknown target, field, beat and quality are each refused or reported by name.
+
 ### A8. Guide (planner)
 
-- `agent-motion.md` "The loop": after the three lines, read `--anatomy` once and write each line's motion as fields
-  with qualities and parts by kind, in the report; ask with `--move` and `--uses` (and `--far` from the obvious move
-  for ideas); reuse a move only when a row matches the design, else write one from the named parts.
+- `agent-motion.md` "The loop", in this order: the three lines; read `--anatomy` once; write the piece's `design`
+  (each target's fields and qualities, by beat where it changes) and, in the report, the parts by kind each line
+  needs; ask `--design <file> --target <name>` (and `--far` from the obvious move for ideas); decide per line, in
+  order: use a move as it is, use it at the options its row names, combine moves in the scene, or write a move from
+  the named parts; review until the spec's findings are gone and the sheet shows the three lines.
   `agent-moves.md`: a move from parts, the coupling rule, no `Math.sin`. A skin section gives the colour and shadow
   rule. Reference regenerated.
 
 ### A9. Proof
 
 - **Measure:** a fresh Sonnet worker at medium effort builds one brief from the guide alone: a colour change, a cast
-  shadow, a jiggle and a heavy landing. It passes when its report opens with its design in fields and parts written
-  before its first `motion:moves` query (the lead checks the transcript's order), it asked the catalog with
-  `--move`, it moves fields rather than `custom` numbers, it calls no `Math.sin`, `Math.cos` or `Math.exp` in a move,
-  the duplicate gate finds nothing new, and its review is clean. Compared with earlier measures on tokens, calls,
+  shadow, a jiggle and a heavy landing. It passes when each step of the goal shows: its piece exports `design`,
+  written before its first `motion:moves` query (the lead checks the transcript's order); it asked the catalog with
+  `--design` or `--move`; its report names, for each line, which of the four choices it made and why; it moves fields
+  rather than `custom` numbers and calls no `Math.sin`, `Math.cos` or `Math.exp` in a move; the duplicate gate finds
+  nothing new; and its review is clean, the spec's findings included. Compared with earlier measures on tokens, calls,
   minutes and render rounds.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
@@ -228,7 +273,8 @@ The kinds a piece is assembled from, each with one owner:
 | 4b | Executor | V1 | V0 |
 | 4b | Executor | V2 | V0 |
 | 5 | Executor | V3 | V1, V2 |
-| 6 | Planner | A8 | V3 |
+| 5 | Executor | V4 | V1, V2 |
+| 6 | Planner | A8 | V3, V4 |
 | 6 | Executor model, fresh | A9, then the cold review | A8 |
 
 V1 and V2 may both change exports; the lead regenerates the generated reference once on combining. One pull
@@ -240,8 +286,11 @@ request, after wave 6.
   reference test hold it.
 - **Sampled rules hold only over declared samples.** An envelope with a negative rate leaves 0; the samples state the
   domain a part promises.
-- **Shapes come from the example run.** A quality fit depends on a move's example options; options at their bounds
-  are not measured.
+- **A spec over a whole run mixes beats.** A target that enters, is stressed and leaves has one field shape per beat;
+  a spec without a beat measures them together, so the guide asks for beat-scoped specs where a target changes
+  character.
+- **The quality ranges were set for single moves.** A piece's field is often several moves combined; the spec check
+  may need wider ranges, tuned once in `QUALITIES` against the measure's piece.
 - **Thresholds are tuned once,** `NO_FIT` and `NEAR_DUPLICATE`, each one constant held by tests on today's moves.
 - **Relative colour** needs Chromium 119 or later; other browsers are not tested here.
 
