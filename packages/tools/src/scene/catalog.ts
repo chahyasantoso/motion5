@@ -3,7 +3,18 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
-import { MOVE_ROLES, valueField, type MoveRole, type OptionField } from "@gerak/moves";
+import {
+  DESCRIPTOR_KEYS,
+  MOVE_ROLES,
+  QUALITIES,
+  outsideRanges,
+  qualityOf,
+  valueField,
+  type DescriptorRanges,
+  type Descriptors,
+  type MoveRole,
+  type OptionField,
+} from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { briefFolders } from "./briefs";
 import {
@@ -12,7 +23,6 @@ import {
   descriptorsOf,
   isMove,
   type CheckedMove,
-  type Descriptors,
   type MoveDescriptors,
 } from "./moves";
 import { intentsOf, readDesign } from "./design";
@@ -617,53 +627,6 @@ export async function loadCatalog(root: string, options: CatalogOptions = {}): P
     }
   return { entries, problems: [...problems, ...folders.problems], config };
 }
-
-/** The qualities `--like` knows, as a range per descriptor: `rings` counts, the others are shares or ratios. */
-export interface DescriptorRanges {
-  readonly peak?: readonly [number, number];
-  readonly overshoot?: readonly [number, number];
-  readonly rings?: readonly [number, number];
-  readonly windup?: readonly [number, number];
-  readonly settle?: readonly [number, number];
-}
-
-/** The words `--like` understands, each as the ranges of descriptors a move with that quality sits in;
- * `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose. */
-export const QUALITIES: Readonly<Record<string, DescriptorRanges>> = Object.freeze({
-  heavy: { peak: [0.6, 1], overshoot: [0, 0.1], rings: [0, 1] },
-  light: { peak: [0, 0.35], settle: [0, 0.3] },
-  quick: { peak: [0, 0.35], overshoot: [0, 0.1], rings: [0, 0] },
-  calm: { peak: [0.35, 0.65], overshoot: [0, 0.05], rings: [0, 0] },
-  playful: { overshoot: [0.1, 1] },
-  stiff: { overshoot: [0, 0.02], rings: [0, 0], settle: [0, 0.05] },
-  loose: { rings: [2, 30] },
-});
-
-/** A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included). */
-export function qualityOf(name: string): DescriptorRanges | undefined {
-  return Object.hasOwn(QUALITIES, name) ? QUALITIES[name] : undefined;
-}
-
-/** The descriptors a quality names that lie outside its range, each with its value and range; none means
- * the shape has the quality. */
-export function outsideRanges(
-  descriptors: Descriptors,
-  ranges: DescriptorRanges,
-): readonly {
-  readonly key: (typeof DESCRIPTOR_KEYS)[number];
-  readonly value: number;
-  readonly range: readonly [number, number];
-}[] {
-  return DESCRIPTOR_KEYS.flatMap((key) => {
-    const range = ranges[key];
-    const value = descriptors[key];
-    return range === undefined || (value >= range[0] && value <= range[1])
-      ? []
-      : [{ key, value, range }];
-  });
-}
-
-const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
 
 /** A descriptor as distances weigh it: rings count in quarters. */
 const weighed = (key: (typeof DESCRIPTOR_KEYS)[number], value: number): number =>

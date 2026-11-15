@@ -59,7 +59,7 @@ function isGroup(name: string): name is PartGroup {
 function groupOf(file: string, entryDir: string): PartGroup | undefined {
   const [top, second] = relative(entryDir, file).split(sep);
   if (top === undefined || second === undefined) return undefined;
-  if (top === "moves") return undefined;
+  if (top === "moves" || top === "style") return undefined;
   if (top === "fields" || top === "compose") return top;
   if (top !== "parts") throw new Error(`moveParts: folder "${top}" is not a parts group`);
   if (relative(entryDir, file).split(sep).length < 3) return undefined;

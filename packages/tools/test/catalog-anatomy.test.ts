@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { VALUE_FIELDS } from "@gerak/moves";
+import { VALUE_FIELDS, QUALITIES } from "@gerak/moves";
 import {
   FIELD_GROUPS,
-  QUALITIES,
   moveParts,
   parseCatalogArgs,
   runCatalog,

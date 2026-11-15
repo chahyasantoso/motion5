@@ -10,9 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { defineMove, mix, type Pose2d } from "@gerak/moves";
+import { defineMove, mix, type Pose2d, QUALITIES } from "@gerak/moves";
 import {
-  QUALITIES,
   collectRecords,
   parseCatalogArgs,
   promoteMove,

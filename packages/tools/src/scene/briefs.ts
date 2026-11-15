@@ -5,6 +5,7 @@ import { join } from "node:path";
 export const RESERVED_FOLDERS: readonly string[] = [
   "src",
   "references",
+  "kits",
   "test",
   "dist",
   "node_modules",

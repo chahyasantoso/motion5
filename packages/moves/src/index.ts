@@ -113,3 +113,11 @@ export { anticipate } from "./moves/anticipate";
 export { overshoot } from "./moves/overshoot";
 export { repeated } from "./compose/repeated";
 export { smudge } from "./moves/smudge";
+export {
+  DESCRIPTOR_KEYS,
+  QUALITIES,
+  outsideRanges,
+  qualityOf,
+  type DescriptorRanges,
+  type Descriptors,
+} from "./style/qualities";

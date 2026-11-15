@@ -1,3 +1,4 @@
+import { type Descriptors } from "@gerak/moves";
 import {
   CUSTOM_FIELD,
   MOVE_ROLES,
@@ -231,22 +232,6 @@ export function describeFinding(id: string, finding: MoveFinding): string {
     default:
       return unreachable(finding);
   }
-}
-
-/** How one field's offset from rest moves over a move's progress. */
-export interface Descriptors {
-  /** Whether the offset is away from rest at progress 0 or at 1. */
-  readonly travelling: boolean;
-  /** The progress of its greatest step between samples. */
-  readonly peak: number;
-  /** The most it goes past where it is heading, over how far it had to go. */
-  readonly overshoot: number;
-  /** Crossings of rest after the first, or every crossing when it does not travel. */
-  readonly rings: number;
-  /** The most it pulls away from where it is heading before it first heads there, over how far it had to go. */
-  readonly windup: number;
-  /** The share of progress from its first arrival (or its greatest offset) until it stays near its end. */
-  readonly settle: number;
 }
 
 /** What sampling a move says of the fields it moves. */

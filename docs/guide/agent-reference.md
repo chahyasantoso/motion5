@@ -281,6 +281,12 @@ const slide = defineMove({
 - **`overshoot`** `(options, time, input)`: Plays its input, then passes its last pose and settles back onto it. Options: `share` number 0..0.9, default 0.3: Share of the progress spent past the end; default 0.3.; `amount` number 0..1, default 0.1: How far past the end, as a share of the input's whole travel; default 0.1.
 - **`repeated`** `(time: Time, count: number): Time`: A time with its progress running 0 to 1 `count` times (rounded down, at least 1); a function of time, not a move.
 - **`smudge`** `(options, time, input)`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. Options: `amount` number >=0, required: The blur it ends at, in px.; `build` number 0.05..1, default 1: Share of the span the blur takes to build, then holds; default 1.
+- **`DESCRIPTOR_KEYS`** `const DESCRIPTOR_KEYS: readonly ["peak", "overshoot", "rings", "windup", "settle"]`: The descriptors a quality may range over, in the order every report lists them.
+- **`QUALITIES`** `const QUALITIES: Readonly<Record<string, DescriptorRanges>>`: The words `--like` understands, each as the ranges of descriptors a move with that quality sits in; `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose.
+- **`outsideRanges`** `(descriptors: Descriptors, ranges: DescriptorRanges): readonly { readonly key: "overshoot" | "peak" | "settle" | "rings" | "windup"; readon…`: The descriptors a quality names that lie outside its range, each with its value and range; none means the shape has the quality.
+- **`qualityOf`** `(name: string): DescriptorRanges`: A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included).
+- **`DescriptorRanges`** `type DescriptorRanges`: The qualities `--like` knows, as a range per descriptor: `rings` counts, the others are shares or ratios.
+- **`Descriptors`** `type Descriptors`: How one field's offset from rest moves over a move's progress.
 <!-- generated:reference:end -->
 
 ## @gerak/player

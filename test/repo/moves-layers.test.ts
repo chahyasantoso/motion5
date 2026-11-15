@@ -10,6 +10,7 @@ const SRC = resolve(
 /** Each layer's folder and its height; a file imports only from its own height or lower. */
 const LAYERS: readonly (readonly [string, number])[] = [
   ["fields", 1],
+  ["style", 1],
   ["parts", 2],
   ["moves", 3],
   ["compose", 4],
@@ -60,7 +61,7 @@ function climbs(files: readonly string[], read: (file: string) => string): reado
 }
 
 describe("the layers of @gerak/moves", () => {
-  it("never import from a higher layer's folder: fields, then parts, then moves, then compose", () => {
+  it("never import from a higher layer's folder: fields and style, then parts, then moves, then compose", () => {
     expect(climbs(filesOf(SRC), (file) => code(file))).toEqual([]);
   });
 
@@ -68,6 +69,13 @@ describe("the layers of @gerak/moves", () => {
     const field = join(SRC, "fields", "mix3d.ts");
     expect(climbs([field], () => 'import { mix } from "../parts/blend/mix";')).toEqual([
       `${join("fields", "mix3d.ts")} imports ${join("parts", "blend", "mix.ts")}`,
+    ]);
+  });
+
+  it("refuses a style file that imports a part, as a quality built on an ease would", () => {
+    const style = join(SRC, "style", "qualities.ts");
+    expect(climbs([style], () => 'import { ease } from "../parts/ease/ease";')).toEqual([
+      `${join("style", "qualities.ts")} imports ${join("parts", "ease", "ease.ts")}`,
     ]);
   });
 

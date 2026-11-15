@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { mergeEvents, valueField } from "@gerak/moves";
+import { QUALITIES, mergeEvents, outsideRanges, valueField } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
@@ -16,7 +16,6 @@ import {
 } from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";
-import { QUALITIES, outsideRanges } from "./catalog";
 import { intentsOf, type Intent } from "./design";
 import { describeOffsets } from "./moves";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
