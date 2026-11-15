@@ -99,4 +99,25 @@ describe("a design checked by the review", () => {
       expect.stringContaining('"dust"'),
     ]);
   });
+
+  it("holds a list member's intent for each item, naming the item that misses, and checks one item by index", () => {
+    // Items 0 and 1 fall with their fastest step at the end (heavy); item 2 with it at the start.
+    const word = (time: Time) => {
+      const share = Math.min(1, ms(time) / 1000);
+      const late = { y: 300 * (1 - share ** 3) };
+      const early = { y: 300 * (1 - share) ** 3 };
+      return { word: [late, late, early] };
+    };
+    const module = { durationMs: 1000, scene: word };
+    const plain = review(module);
+    const found = review({
+      ...module,
+      design: { word: { y: "heavy" }, "word.0": { y: "heavy" } },
+    }).filter((line) => !plain.includes(line));
+    expect(found).toEqual([expect.stringMatching(/^word\.2\.y: peak/)]);
+    const one = review({ ...module, design: { "word.2": { y: "light" } } }).filter(
+      (line) => !plain.includes(line),
+    );
+    expect(one).toEqual([]);
+  });
 });

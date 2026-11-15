@@ -674,18 +674,38 @@ function offsetsOf(
   });
 }
 
+/** A target's value in one sample: a member by name, or one item of a list member as `<name>.<index>`. */
+function targetValue(found: Readonly<Record<string, unknown>>, target: string): unknown {
+  if (Object.hasOwn(found, target)) return found[target];
+  const dot = target.lastIndexOf(".");
+  const list = dot < 0 ? undefined : found[target.slice(0, dot)];
+  const index = Number(target.slice(dot + 1));
+  return Array.isArray(list) && Number.isInteger(index) && index >= 0 ? list[index] : undefined;
+}
+
+/** The targets one intent's target stands for: itself, or every item of a list member as `<name>.<index>`. */
+function unitsOf(samples: Samples, target: string): readonly string[] {
+  const count = Math.max(
+    0,
+    ...samples.map(({ targets: found }) => {
+      const value = Object.hasOwn(found, target) ? found[target] : undefined;
+      return Array.isArray(value) ? value.length : 0;
+    }),
+  );
+  return count === 0 ? [target] : Array.from({ length: count }, (_, index) => `${target}.${index}`);
+}
+
 /** One finding for each intent of the module's `design` that names what does not exist or whose field moves
- * outside its quality's ranges. */
+ * outside its quality's ranges; a list member's intent holds for each of its items. */
 function designFindings(module: SceneModule, samples: Samples): readonly string[] {
   if (module.design === undefined) return [];
-  const targets = new Set(samples.flatMap(({ targets: found }) => Object.keys(found)));
   const beats = module.beats ?? [];
-  const check = ({ target, field, beat, quality }: Intent): string | undefined => {
+  const exists = (target: string): boolean =>
+    samples.some(({ targets: found }) => targetValue(found, target) !== undefined);
+  const check = ({ field, beat, quality }: Intent, target: string): string | undefined => {
     const name = beat === undefined ? `${target}.${field}` : `${target}.${field} (${beat})`;
-    if (!targets.has(target))
-      return `design names the target "${target}", which the scene never returns.`;
     const carried = samples.some(
-      ({ targets: found }) => numberAt(found[target], field) !== undefined,
+      ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
     );
     if (!carried)
       return `design names the field "${field}" of "${target}", which its value never carries.`;
@@ -700,7 +720,7 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
     );
     const offsets = offsetsOf(
       inside.map(({ at }) => at),
-      inside.map(({ targets: found }) => numberAt(found[target], field) ?? 0),
+      inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
       restOfField(field),
     );
     if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
@@ -712,7 +732,11 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
     );
     return `${name}: ${wants.join("; ")}`;
   };
-  return intentsOf(module.design).flatMap((intent) => check(intent) ?? []);
+  return intentsOf(module.design).flatMap((intent) => {
+    if (!exists(intent.target))
+      return [`design names the target "${intent.target}", which the scene never returns.`];
+    return unitsOf(samples, intent.target).flatMap((target) => check(intent, target) ?? []);
+  });
 }
 
 export function reviewSceneModule(

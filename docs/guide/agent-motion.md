@@ -41,8 +41,8 @@ not by reading package source. Read a part below only when the brief needs it:
 5. **Write the design before choosing any move.** Turn your three lines into the piece's spec, in the module:
    `export const design = { ball: { y: { fall: "heavy" }, scaleY: { land: "loose" } } };`, each member's fields
    with the quality their motion should have, by beat where its character changes. A design names actors and
-   groups, not the items of a `many` or `letters`; name the beat in which the field actually moves, since the review
-   measures it there. In your report, write under each
+   groups; a list member (`letters`, `words`, `many`) holds its intent for every item, and `"word.3"` names one item.
+   Name the beat in which the field actually moves, since the review measures it there. In your report, write under each
    line the fields and the parts by kind it needs: "the fall: `y` heavy, a `ballistic` path; the landing: `scaleY`
    loose, an `envelope` times an `oscillation`".
 6. **Ask the catalog with the design.** `npm run motion:moves -- --design apps/pieces/<brief>/src/<name>.ts --target
