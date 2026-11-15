@@ -21,8 +21,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Style kits (`plan/style-kit-plan.md`, being built on `feat/style-kits`):** a style's moves, its own parts, skin
-  tokens and a card of qualities the review checks, installed into another project.
+- **Styles (`plan/style-plan.md`, being built on `feat/style-kits`):** a brief's optional style card of qualities,
+  field defaults and tokens the review checks, carried to a new brief by copying the folder; custom parts are built.
 
 ## Open, and not scheduled
 

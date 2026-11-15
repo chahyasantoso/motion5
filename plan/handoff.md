@@ -1,14 +1,14 @@
-# Handoff to the next session: the style-kit plan, in Claude Code
+# Handoff to the next session: the style plan, in Claude Code
 
 **Written:** 2026-11-15, after the anatomy plan was built (pull request 596, open; 595, the toolkit, merged). Delete
 this file in the pull request that builds the plan. The branch `feat/style-kits`, from `feat/anatomy` at `8b514ba5`,
-holds `plan/style-kit-plan.md`, revised after one round of critique and not yet approved, and nothing built.
+holds `plan/style-plan.md`, revised after one round of critique and not yet approved, and nothing built.
 
 ## Read first, in order
 
 1. `AGENTS.md`: the rules.
 2. `docs/SESSION-STATUS.md`: what has landed.
-3. `plan/style-kit-plan.md`: the plan. Ask the owner to approve it before wave 1; if 596 has merged by then, rebase
+3. `plan/style-plan.md`: the plan. Ask the owner to approve it before wave 1; if 596 has merged by then, rebase
    `feat/style-kits` on `main` first.
 4. `.claude/skills/wave-build/SKILL.md` and `references/brief-template.md`: how waves run. Use the skill.
 5. `docs/ADR-185-*.md` and `docs/ADR-186-*.md`: the layers, the part kinds and the vocabulary this plan builds on.
