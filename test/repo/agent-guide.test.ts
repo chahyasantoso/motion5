@@ -15,6 +15,7 @@ const guide = [
   "docs/guide/agent-artwork.md",
   "docs/guide/agent-inputs.md",
   "docs/guide/agent-outside.md",
+  "docs/guide/agent-style.md",
 ]
   .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
   .join("\n");
@@ -73,6 +74,7 @@ describe("agent guide", () => {
       "agent-artwork",
       "agent-inputs",
       "agent-outside",
+      "agent-style",
     ])
       expect(index, part).toContain(`./${part}.md`);
     for (const part of [
@@ -86,6 +88,7 @@ describe("agent guide", () => {
       "agent-artwork",
       "agent-inputs",
       "agent-outside",
+      "agent-style",
     ])
       expect(core, part).toContain(`./${part}.md`);
     expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(

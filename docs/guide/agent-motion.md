@@ -18,6 +18,7 @@ not by reading package source. Read a part below only when the brief needs it:
 | Numbers arriving while it plays: a microphone, a slider, a recorded session | [live inputs](./agent-inputs.md) |
 | A person watching edits land as you save | [live editing](./live.md) |
 | A page outside this repository, or a real site's own elements | [outside the stage](./agent-outside.md) |
+| A piece in another brief's style, or turning your brief into a style | [styles](./agent-style.md) |
 
 ## The loop
 
