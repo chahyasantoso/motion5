@@ -18,10 +18,10 @@ so a style could not name them without depending on the tools.
   imports only `@gerak/moves`. There is no separate kit folder: a style travels as its brief.
 - **Custom parts** a brief declares with `definePart` are listed and gated as library parts; one sampling as an
   existing part of its kind is a duplicate.
-- **A style is a brief's optional card**, `style.ts`, made by `defineStyle`: its own qualities as `<brief>/<name>`, a
-  default quality per field, skin tokens, habits in words. A piece names it with `export const style`. The design
-  decides a field's quality; otherwise the card's default does; the review checks either per member, list item and
-  beat.
+- **A style is a brief's optional card**, `style.ts`, made by `defineStyle`: per field, the range of the share of its motions that
+  are lively (overshooting, ringing or winding up), its own qualities as `<brief>/<name>`, skin tokens, habits in
+  words. A brief mixes springy and plain motion, so one shape per field cannot describe it; the lively share can. A piece names it with `export const style`; the review counts its
+  lively motions per field, leaving out fields its design names.
 - **A card is measured first, then narrowed:** `motion:style -- measure` measures a brief's pieces into a card a person
   narrows and gives habits.
 
