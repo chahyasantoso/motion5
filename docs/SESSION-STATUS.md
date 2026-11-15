@@ -23,7 +23,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Installable tools (`plan/installable-plan.md`, proposed):** one `gerak` command, the pages and the guide in
+- **Installable tools (`plan/installable-plan.md`, approved; handoff in `plan/handoff.md`):** one `gerak` command, the pages and the guide in
   `@gerak/tools`, and `gerak init`, so a person's own project makes and checks pieces; then the live kit and overlay.
 
 ## Open, and not scheduled
