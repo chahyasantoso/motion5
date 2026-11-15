@@ -14,9 +14,11 @@ import {
   type Descriptors,
   type MoveRole,
   type OptionField,
+  type StyleCard,
 } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { briefFolders, sourceFiles } from "./briefs";
+import { qualityNames, rangesOf, styleCards } from "./cards";
 import {
   checkMove,
   describeFinding,
@@ -69,7 +71,7 @@ export interface MoveRecord {
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--move <field>[:<quality>]]... [--uses <kind|part>,...] [--design <file> --target <name>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--move <field>[:<quality>]]... [--uses <kind|part>,...] [--design <file> --target <name>] [--style <brief>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
@@ -89,6 +91,7 @@ export type CatalogArgs =
       readonly move: readonly string[];
       readonly uses: readonly string[] | undefined;
       readonly design: string | undefined;
+      readonly style: string | undefined;
       readonly target: string | undefined;
       readonly near: string | undefined;
       readonly far: string | undefined;
@@ -118,6 +121,7 @@ const VALUE_FLAGS = [
   "--move",
   "--uses",
   "--design",
+  "--style",
   "--target",
   "--near",
   "--far",
@@ -157,6 +161,8 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     return usage(`Unknown renderer "${renderer}". Renderers: ${RENDERER_NAMES.join(", ")}.`);
   if (values.has("--design") !== values.has("--target"))
     return usage(`--design and --target go together: --design <file> --target <name>.`);
+  if (values.has("--style") && !on.has("--anatomy") && !values.has("--design"))
+    return usage(`--style goes with --anatomy or --design. ${CATALOG_USAGE}`);
   const list = (flag: string): readonly string[] | undefined =>
     values
       .get(flag)
@@ -173,6 +179,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     move: moves,
     uses: list("--uses"),
     design: values.get("--design"),
+    style: values.get("--style"),
     target: values.get("--target"),
     near: values.get("--near"),
     far: values.get("--far"),
@@ -710,6 +717,7 @@ const labelOf = (request: FieldRequest): string =>
 function fieldsFit(
   shapes: Readonly<Record<string, Descriptors>>,
   requests: readonly FieldRequest[],
+  cards: readonly StyleCard[],
 ): {
   readonly fit: number;
   readonly centred: number;
@@ -731,7 +739,7 @@ function fieldsFit(
       continue;
     }
     movesAny = true;
-    const ranges = request.quality === undefined ? undefined : qualityOf(request.quality);
+    const ranges = request.quality === undefined ? undefined : rangesOf(request.quality, cards);
     if (ranges === undefined) {
       notes.push(`✓ ${labelOf(request)} (moved)`);
       continue;
@@ -814,10 +822,10 @@ function designFit(
   // The example answers when it fits; another option set only when it fits more closely.
   let best: { readonly at: string; readonly found: ReturnType<typeof fieldsFit> } = {
     at: "",
-    found: fieldsFit(record.shapes, design.fields),
+    found: fieldsFit(record.shapes, design.fields, design.cards ?? []),
   };
   for (const set of sets) {
-    const found = fieldsFit(set.shapes, design.fields);
+    const found = fieldsFit(set.shapes, design.fields, design.cards ?? []);
     if (found.fit < best.found.fit) best = { at: changedOptions(record, set.options), found };
   }
   const { found } = best;
@@ -854,8 +862,11 @@ function refusalOf(design: DesignRequest): string | undefined {
       (request.field.startsWith("custom.") && request.field.length > "custom.".length);
     if (!known)
       return `design: unknown field "${request.field}". Fields: ${Object.values(FIELD_GROUPS).flat().join(", ")}, or custom.<name>.`;
-    if (request.quality !== undefined && !Object.hasOwn(QUALITIES, request.quality))
-      return `design: unknown quality "${request.quality}" for ${request.field}. Qualities: ${Object.keys(QUALITIES).join(", ")}.`;
+    if (
+      request.quality !== undefined &&
+      rangesOf(request.quality, design.cards ?? []) === undefined
+    )
+      return `design: unknown quality "${request.quality}" for ${request.field}. Qualities: ${qualityNames(design.cards ?? []).join(", ")}.`;
   }
   const parts = moveParts();
   for (const use of design.uses)
@@ -909,6 +920,10 @@ export interface FieldRequest {
 export interface DesignRequest {
   readonly fields: readonly FieldRequest[];
   readonly uses: readonly string[];
+  /** The style cards a quality may name as `<brief>/<name>`. */
+  readonly cards?: readonly StyleCard[];
+  /** The brief whose moves come first among equal fits. */
+  readonly style?: string;
 }
 
 /** How well a move answers a design, as its best option set shows. */
@@ -1056,6 +1071,8 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
   rows.sort(
     (left, right) =>
       (left.row.fit ?? 0) - (right.row.fit ?? 0) ||
+      Number(right.row.record.source === design?.style) -
+        Number(left.row.record.source === design?.style) ||
       (right.row.design?.usesFit ?? 0) - (left.row.design?.usesFit ?? 0) ||
       (left.row.design?.centred ?? 0) - (right.row.design?.centred ?? 0) ||
       right.hits - left.hits ||
@@ -1469,7 +1486,12 @@ interface AnatomyField {
 }
 
 /** The card an agent reads before it asks for moves: the fields, the parts, and the words the search uses. */
-async function anatomyLines(json: boolean, root: string): Promise<readonly string[]> {
+async function anatomyLines(
+  json: boolean,
+  root: string,
+  style: StyleCard | undefined,
+  moves: readonly string[],
+): Promise<readonly string[]> {
   const tables = await rendererTables();
   const fields: AnatomyField[] = Object.entries(FIELD_GROUPS).flatMap(([group, names]) =>
     names.flatMap((name) => {
@@ -1518,7 +1540,16 @@ async function anatomyLines(json: boolean, root: string): Promise<readonly strin
   const parts = [...library, ...local];
   const shapes = DESCRIPTOR_KEYS.map((name) => ({ name, meaning: SHAPE_WORDS[name] }));
   const qualities = Object.entries(QUALITIES).map(([name, ranges]) => ({ name, ranges }));
-  if (json) return [JSON.stringify({ fields, parts, shapes, qualities })];
+  if (json)
+    return [
+      JSON.stringify({
+        ...(style === undefined ? {} : { style }),
+        fields,
+        parts,
+        shapes,
+        qualities,
+      }),
+    ];
   const merged: AnatomyField[][] = [];
   for (const field of fields) {
     const last = merged.at(-1);
@@ -1562,7 +1593,29 @@ async function anatomyLines(json: boolean, root: string): Promise<readonly strin
       const range = ranges[key];
       return range === undefined ? [] : [`${key} ${range[0]}..${range[1]}`];
     }).join(", ");
+  const styleLines =
+    style === undefined
+      ? []
+      : [
+          `style ${style.name}: ${style.description}`,
+          `qualities: ${Object.entries(style.qualities)
+            .map(([name, ranges]) => `${name} (${rangeText(ranges)})`)
+            .join("; ")}`,
+          `defaults: ${Object.entries(style.defaults)
+            .map(([field, quality]) => `${field} ${quality}`)
+            .join(", ")}`,
+          `tokens: ${Object.entries(style.tokens)
+            .map(([name, value]) => `${name} ${value}`)
+            .join(", ")}`,
+          `habits: ${style.habits.join(" | ")}`,
+          `parts of ${style.name}: ${local
+            .filter((part) => part.source === style.name)
+            .map(({ name }) => name)
+            .join(", ")}`,
+          `moves of ${style.name}: ${moves.join(", ")}`,
+        ];
   return [
+    ...styleLines,
     ...fieldLines,
     ...library.map(partLine),
     ...localLines,
@@ -1575,6 +1628,7 @@ async function anatomyLines(json: boolean, root: string): Promise<readonly strin
 async function designOf(
   args: Extract<CatalogArgs, { kind: "ok" }>,
   root: string,
+  cards: readonly StyleCard[],
 ): Promise<
   | { readonly kind: "ok"; readonly design: DesignRequest | undefined }
   | { readonly kind: "refused"; readonly message: string }
@@ -1583,6 +1637,7 @@ async function designOf(
     const at = spec.indexOf(":");
     return at < 0 ? { field: spec } : { field: spec.slice(0, at), quality: spec.slice(at + 1) };
   });
+  let style = args.style;
   if (args.design !== undefined && args.target !== undefined) {
     const file = resolve(root, args.design);
     let module: unknown;
@@ -1596,6 +1651,9 @@ async function designOf(
       typeof module === "object" && module !== null ? Reflect.get(module, "design") : undefined,
     );
     if (read.kind === "refused") return { kind: "refused", message: `--design: ${read.reason}` };
+    const own: unknown =
+      typeof module === "object" && module !== null ? Reflect.get(module, "style") : undefined;
+    if (style === undefined && typeof own === "string") style = own;
     if (!Object.hasOwn(read.design, args.target))
       return {
         kind: "refused",
@@ -1611,7 +1669,10 @@ async function designOf(
   const uses = args.uses ?? [];
   return {
     kind: "ok",
-    design: fields.length === 0 && uses.length === 0 ? undefined : { fields, uses },
+    design:
+      fields.length === 0 && uses.length === 0
+        ? undefined
+        : { fields, uses, cards, ...(style === undefined ? {} : { style }) },
   };
 }
 
@@ -1647,7 +1708,23 @@ export async function runCatalog(
   options: CatalogOptions = {},
 ): Promise<CatalogRun> {
   if (args.parts) return { lines: formatParts(), code: 0 };
-  if (args.anatomy) return { lines: await anatomyLines(args.json, root), code: 0 };
+  const { cards } = await styleCards(root);
+  const style =
+    args.style === undefined ? undefined : cards.find((card) => card.name === args.style);
+  if (args.style !== undefined && style === undefined)
+    return {
+      lines: [
+        `--style: "${args.style}" has no style card. The cards are ${cards.map((card) => card.name).join(", ") || "none"}.`,
+      ],
+      code: 1,
+    };
+  if (args.anatomy) {
+    const made = style === undefined ? [] : (await loadCatalog(root, options)).entries;
+    const moves = made
+      .filter(({ record }) => record.source === style?.name)
+      .map(({ record }) => record.id);
+    return { lines: await anatomyLines(args.json, root, style, moves), code: 0 };
+  }
   const { entries, problems } = await loadCatalog(root, options);
   const all = entries;
   const records = all.map(({ record }) => record);
@@ -1659,7 +1736,7 @@ export async function runCatalog(
       code: problemCode,
     };
   }
-  const asked = await designOf(args, root);
+  const asked = await designOf(args, root, cards);
   if (asked.kind === "refused") return { lines: [asked.message], code: 1 };
   const tables = await rendererTables();
   const renderer = args.renderer === undefined ? undefined : tableOf(tables, args.renderer);

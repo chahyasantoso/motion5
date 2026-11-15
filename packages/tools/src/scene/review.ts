@@ -1,8 +1,14 @@
 import { pathToFileURL } from "node:url";
-import { QUALITIES, mergeEvents, outsideRanges, valueField } from "@gerak/moves";
+import {
+  mergeEvents,
+  outsideRanges,
+  valueField,
+  type DescriptorRanges,
+  type StyleCard,
+} from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {
   NO_REST,
@@ -16,6 +22,7 @@ import {
 } from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";
+import { qualityNames, rangesOf, styleCards } from "./cards";
 import { intentsOf, type Intent } from "./design";
 import { describeOffsets } from "./moves";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
@@ -694,9 +701,43 @@ function unitsOf(samples: Samples, target: string): readonly string[] {
   return count === 0 ? [target] : Array.from({ length: count }, (_, index) => `${target}.${index}`);
 }
 
+/** A target's field as offsets from rest over the samples inside `span` (all when none), or none when
+ * it never moves there. */
+function fieldOffsets(
+  samples: Samples,
+  target: string,
+  field: string,
+  span: Beat | undefined,
+): readonly number[] | undefined {
+  const inside = samples.filter(
+    ({ at }) => span === undefined || (at >= span.from && at <= span.to),
+  );
+  return offsetsOf(
+    inside.map(({ at }) => at),
+    inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
+    restOfField(field),
+  );
+}
+
+/** The descriptors of `offsets` that lie outside `ranges`, worded for `quality`; none when it fits. */
+function missesOf(
+  offsets: readonly number[],
+  quality: string,
+  ranges: DescriptorRanges,
+): readonly string[] {
+  return outsideRanges(describeOffsets(offsets), ranges).map(
+    ({ key, value, range }) =>
+      `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
+  );
+}
+
 /** One finding for each intent of the module's `design` that names what does not exist or whose field moves
  * outside its quality's ranges; a list member's intent holds for each of its items. */
-function designFindings(module: SceneModule, samples: Samples): readonly string[] {
+function designFindings(
+  module: SceneModule,
+  samples: Samples,
+  cards: readonly StyleCard[],
+): readonly string[] {
   if (module.design === undefined) return [];
   const beats = module.beats ?? [];
   const exists = (target: string): boolean =>
@@ -711,25 +752,13 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
     const span = beat === undefined ? undefined : beats.find((each) => each.name === beat);
     if (beat !== undefined && span === undefined)
       return `design names the beat "${beat}" for ${target}.${field}, which the module does not have.`;
-    const ranges = Object.hasOwn(QUALITIES, quality) ? QUALITIES[quality] : undefined;
+    const ranges = rangesOf(quality, cards);
     if (ranges === undefined)
-      return `design names the quality "${quality}" for ${name}; the qualities are ${Object.keys(QUALITIES).join(", ")}.`;
-    const inside = samples.filter(
-      ({ at }) => span === undefined || (at >= span.from && at <= span.to),
-    );
-    const offsets = offsetsOf(
-      inside.map(({ at }) => at),
-      inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
-      restOfField(field),
-    );
+      return `design names the quality "${quality}" for ${name}; the qualities are ${qualityNames(cards).join(", ")}.`;
+    const offsets = fieldOffsets(samples, target, field, span);
     if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
-    const outside = outsideRanges(describeOffsets(offsets), ranges);
-    if (outside.length === 0) return undefined;
-    const wants = outside.map(
-      ({ key, value, range }) =>
-        `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
-    );
-    return `${name}: ${wants.join("; ")}`;
+    const wants = missesOf(offsets, quality, ranges);
+    return wants.length === 0 ? undefined : `${name}: ${wants.join("; ")}`;
   };
   return intentsOf(module.design).flatMap((intent) => {
     if (!exists(intent.target))
@@ -738,10 +767,51 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
   });
 }
 
+/** For a styled module, one finding for each field a card gives a default quality that a unit moves in a
+ * beat outside it, unless the design names that field for that target. */
+function defaultFindings(
+  module: SceneModule,
+  samples: Samples,
+  cards: readonly StyleCard[],
+): readonly string[] {
+  const card = cards.find((each) => each.name === module.style);
+  if (card === undefined) return [];
+  const named = module.design === undefined ? [] : intentsOf(module.design);
+  const spans: readonly (Beat | undefined)[] =
+    module.beats === undefined || module.beats.length === 0 ? [undefined] : module.beats;
+  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))].flatMap(
+    (target) => unitsOf(samples, target),
+  );
+  return targets.flatMap((target) =>
+    Object.entries(card.defaults).flatMap(([field, quality]) => {
+      const ranges = rangesOf(quality, cards);
+      const designed = named.some(
+        (intent) =>
+          intent.field === field &&
+          (target === intent.target || target.startsWith(`${intent.target}.`)),
+      );
+      const carried = samples.some(
+        ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
+      );
+      if (ranges === undefined || designed || !carried) return [];
+      return spans.flatMap((span) => {
+        const offsets = fieldOffsets(samples, target, field, span);
+        if (offsets === undefined) return [];
+        const wants = missesOf(offsets, quality, ranges);
+        const name =
+          span === undefined ? `${target}.${field}` : `${target}.${field} (${span.name})`;
+        return wants.length === 0 ? [] : [`${name}: ${wants.join("; ")} (style default)`];
+      });
+    }),
+  );
+}
+
 export function reviewSceneModule(
   module: SceneModule,
-  request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
+  request: Pick<SceneReviewRequest, "to"> &
+    Limits & { readonly budget?: number; readonly cards?: readonly StyleCard[] },
 ): SceneReviewResult {
+  const cards = request.cards ?? [];
   const end = request.to ?? module.durationMs;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
@@ -777,7 +847,8 @@ export function reviewSceneModule(
     ...seekFindings(module, samples),
     ...lateCueFindings(module),
     ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
-    ...designFindings(module, samples),
+    ...designFindings(module, samples, cards),
+    ...defaultFindings(module, samples, cards),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
@@ -798,7 +869,16 @@ export function reviewSceneModule(
 export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {
-  const module = readSceneModule(await import(pathToFileURL(resolve(request.file)).href));
+  const file = resolve(request.file);
+  const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
-  return reviewSceneModule(module, request);
+  const { cards } = await styleCards(resolve(dirname(file), "..", ".."));
+  if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
+    const names = cards.map((card) => card.name).join(", ");
+    return {
+      kind: "usage",
+      message: `style "${module.style}" names no card; ${names === "" ? "there are none" : `the cards are ${names}`}`,
+    };
+  }
+  return reviewSceneModule(module, { ...request, cards });
 }
