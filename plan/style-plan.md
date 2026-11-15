@@ -46,7 +46,7 @@ apps/pieces/<brief>/
     `<brief>/<name>`) per field; `custom.*` numbers have none;
   - `tokens: Readonly<Record<string, string>>`: CSS custom properties, each name starting `--`;
   - `habits: readonly string[]`.
-- **Cards are found** by `styleCards(root)` in `packages/tools/src/scene/briefs.ts`: every brief's `style.ts`,
+- **Cards are found** by `styleCards(root)` in `packages/tools/src/scene/cards.ts`: every brief's `style.ts`,
   imported, its `card` export checked.
 - **A piece in a style** exports `style = "<brief>"`; `readStageModule` carries it as `StageModule.style?: string`;
   `readSceneModule` refuses a name no card holds, naming the cards. Then:
@@ -81,7 +81,7 @@ apps/pieces/<brief>/
 - **Invariant:** `defineStyle`, `StyleCard`, `styleCards`, `StageModule.style`, the refusal of an unknown style,
   `--anatomy --style`, the `--design` order, `cssVariables`, the review's default check. **Owner:**
   `packages/moves/src/style/card.ts`, `packages/stage/src/module.ts`, `packages/stage/src/` (`cssVariables`),
-  `packages/tools/src/scene/{briefs,catalog,scene,review}.ts`.
+  `packages/tools/src/scene/{cards,catalog,scene,review}.ts`.
 - **Test:** a card with an unknown field, unknown quality or a token not starting `--` is refused naming it;
   `--anatomy --style` prints the card first; of two moves with equal `fieldFit` the style brief's comes first; a
   scratch piece in a scratch style gets no finding when its undesigned fields meet the defaults, one naming the card
