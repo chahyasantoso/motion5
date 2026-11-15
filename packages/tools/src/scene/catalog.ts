@@ -537,16 +537,27 @@ export interface DescriptorRanges {
   readonly settle?: readonly [number, number];
 }
 
-/** The words `--like` understands, each as the ranges of descriptors a move with that quality sits in. */
+/** The words `--like` understands, each as the ranges of descriptors a move with that quality sits in;
+ * `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose. */
 export const QUALITIES: Readonly<Record<string, DescriptorRanges>> = Object.freeze({
-  heavy: { peak: [0.5, 1], overshoot: [0, 0.1], rings: [0, 1], settle: [0.3, 1] },
-  light: { peak: [0, 0.4], settle: [0, 0.3] },
-  quick: { peak: [0, 0.35], overshoot: [0, 0.1] },
-  calm: { rings: [0, 0], overshoot: [0, 0.05] },
-  playful: { overshoot: [0.1, 0.6], windup: [0.05, 0.4] },
-  stiff: { rings: [0, 0], overshoot: [0, 0.02] },
-  loose: { rings: [2, 6] },
+  heavy: { peak: [0.6, 1], overshoot: [0, 0.1], rings: [0, 1] },
+  light: { peak: [0, 0.35], settle: [0, 0.3] },
+  quick: { peak: [0, 0.35], overshoot: [0, 0.1], rings: [0, 0] },
+  calm: { peak: [0.35, 0.65], overshoot: [0, 0.05], rings: [0, 0] },
+  playful: { overshoot: [0.1, 1] },
+  stiff: { overshoot: [0, 0.02], rings: [0, 0], settle: [0, 0.05] },
+  loose: { rings: [2, 30] },
 });
+
+/** Whether every descriptor a quality names lies inside its range. */
+function within(record: MoveRecord, ranges: DescriptorRanges): boolean {
+  const { descriptors } = record;
+  if (descriptors === undefined) return false;
+  return DESCRIPTOR_KEYS.every((key) => {
+    const range = ranges[key];
+    return range === undefined || (descriptors[key] >= range[0] && descriptors[key] <= range[1]);
+  });
+}
 
 const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
 
@@ -667,6 +678,7 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     if (request.fields?.some((field) => !record.fields.includes(field)) === true) continue;
     const hits = request.find === undefined ? 0 : matchesWords(record, request.find);
     if (hits === undefined) continue;
+    if (ranges !== undefined && !within(record, ranges)) continue;
     let fit: number | undefined;
     if (ranked) {
       const parts = [

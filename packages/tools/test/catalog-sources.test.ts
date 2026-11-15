@@ -257,7 +257,7 @@ describe("one search", () => {
     ["--role", "enter"],
     ["--find", "BOUNCE"],
     ["--fields", "x"],
-    ["--like", "calm"],
+    ["--like", "heavy"],
   ];
 
   it.each(flags)(
@@ -316,9 +316,9 @@ describe("one search", () => {
 
   it("prints at most 10 lines for a query unless --all", async () => {
     const root = scratch();
-    const few = await runCatalog(ok(["--like", "calm"]), root);
+    const few = await runCatalog(ok(["--near", "fade"]), root);
     expect(few.lines.length).toBeLessThanOrEqual(10);
-    const every = await runCatalog(ok(["--like", "calm", "--all"]), root);
+    const every = await runCatalog(ok(["--near", "fade", "--all"]), root);
     expect(every.lines.length).toBeGreaterThan(10);
   });
 
@@ -372,9 +372,9 @@ describe("query", () => {
   const ids = (found: ReturnType<typeof query>) =>
     found.kind === "rows" ? found.rows.map(({ record }) => record.id) : found.message;
 
-  it("ranks by fit to a quality, and the qualities are ranges of descriptors", () => {
-    expect(ids(query(records, { like: "calm" }))).toEqual(["settle-calm", "rattle"]);
-    expect(ids(query(records, { like: "loose" }))).toEqual(["rattle", "settle-calm"]);
+  it("keeps only the moves inside a quality's ranges, and the qualities are ranges of descriptors", () => {
+    expect(ids(query(records, { like: "calm" }))).toEqual(["settle-calm"]);
+    expect(ids(query(records, { like: "loose" }))).toEqual(["rattle"]);
     for (const ranges of Object.values(QUALITIES))
       for (const [low = 0, high = 0] of Object.values(ranges))
         expect(low).toBeLessThanOrEqual(high);
