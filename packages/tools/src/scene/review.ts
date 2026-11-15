@@ -872,12 +872,15 @@ export async function reviewSceneFile(
   const file = resolve(request.file);
   const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
-  const { cards } = await styleCards(resolve(dirname(file), "..", ".."));
+  const { cards, problems } = await styleCards(resolve(dirname(file), "..", ".."));
   if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
     const names = cards.map((card) => card.name).join(", ");
     return {
       kind: "usage",
-      message: `style "${module.style}" names no card; ${names === "" ? "there are none" : `the cards are ${names}`}`,
+      message: [
+        `style "${module.style}" names no card; ${names === "" ? "there are none" : `the cards are ${names}`}`,
+        ...problems,
+      ].join("\n"),
     };
   }
   return reviewSceneModule(module, { ...request, cards });

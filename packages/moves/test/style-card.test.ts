@@ -12,7 +12,8 @@ const good: StyleCard = {
 
 describe("defineStyle", () => {
   it("refuses a default for an unknown field", () => {
-    expect(() => defineStyle({ ...good, defaults: { nope: "calm" } as never })).toThrow(/nope/);
+    const bad = { ...good, defaults: { nope: "calm" } };
+    expect(() => Reflect.apply(defineStyle, undefined, [bad])).toThrow(/nope/);
   });
   it("refuses an unknown default quality", () => {
     expect(() => defineStyle({ ...good, defaults: { y: "reel/missing" } })).toThrow(
