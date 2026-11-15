@@ -16,6 +16,9 @@ guide that ships with the tools.** Nothing needs this repository.
 - **The pages ship with the tools:** the stage, live and talk pages are served by `@gerak/tools` over any pieces
   folder, so page commands (`frames`, `render`, `fps`, page `review`) work in any project.
 - **`npx gerak init`** sets a project up: a pieces folder, `gerak.pieces`, the guide and the agent skill.
+- **A reel is made the way a reel is produced:** a guide page takes an agent from brief to script (hook, story, call
+  to action), to a storyboard of shots (time, framing, camera, transition, text), to beats named by those shots, with
+  a camera group for zooms and pans and transitions as moves, then reviewed shot by shot.
 
 Not planned here: publishing to npm (it waits for a project that needs it, ADR-179); the live kit as its own
 package; a `create-gerak` starter; Vue or Svelte.
@@ -28,6 +31,7 @@ package; a `create-gerak` starter; Vue or Svelte.
 | The pieces folder | where briefs live | `piecesRoot(cwd, flag?)` in `packages/tools/src/page/root.ts` | that function |
 | The pages | `stage.html`, `live.html`, `talk.html` and their entries | `packages/tools/pages/`, served by `gerakPages()` in `@gerak/tools/vite` | the plugin |
 | The shipped guide | the agent guide, reference and skill | copied into `@gerak/tools`' `guide/` at build | the build |
+| A reel's storyboard | the script and shot list, written before code | `<brief>/STORYBOARD.md` | the brief |
 
 - `@gerak/tools` builds to `dist` like the runtime packages and joins `INSTALLABLE_PACKAGES`; `pack:check` installs
   it from a tarball outside the repository and runs `npx gerak --help` and `npx gerak moves --anatomy` there.
@@ -78,13 +82,28 @@ its two uses. Commit and push before briefing S1.
 - **Test:** `init` in a scratch project writes each file and refuses a second run; the shipped guide's links
   resolve inside `guide/`.
 
+### S3b. Making a reel (planner, beside S3)
+
+- `docs/guide/agent-reel.md`, routed from `agent-motion.md`'s table: the production steps in order. Brief; script
+  (a hook in the first 3 s, the story, one call to action); `STORYBOARD.md` with one row per shot (start and end ms,
+  framing, camera move, transition in, on-screen text, what the viewer must notice); beats named by the shots; a
+  `world` group as the camera (zoom, push, pan, shake as moves on it); transitions as moves (a cut is a beat
+  boundary, a whip-pan a fast camera `x` with blur, a zoom-through a push into a member, a wipe a growing clip, a
+  match cut a member carried between layouts); b-roll as cutaway shots of the piece's own material; the review read
+  per shot and a frame sheet per transition. No footage: a clip as an object waits for the video stage.
+- A worked check before the measure: the lead builds a 10 s, three-shot scratch reel from the page and fixes what the
+  page lacked; the scratch reel is not kept.
+
 ### S4. Proof (fresh executor model, then the cold review)
 
 - **Measure:** in a scratch Vite project outside the repository, with every package installed from tarballs and
   `npx gerak init` run, the `showreel` brief folder copied in; a fresh Sonnet worker at medium effort, from the
-  shipped guide alone, makes `launch-night` (a band's tour-launch teaser) in the showreel style. It passes when
-  `npx gerak review` is clean, `npx gerak style check showreel` passes, `npx gerak frames` renders a frame, and it
-  read nothing from this repository.
+  shipped guide alone, makes `launch-night`: a 30 s product-launch reel in the showreel style (the product is its
+  own choice), with a hook, a story, b-roll cutaways, camera zooms and pans, at least four kinds of transition and a
+  call to action. It writes `STORYBOARD.md` and commits it before any scene code. It passes when `npx gerak review`
+  is clean, `npx gerak style check showreel` passes, `npx gerak frames` renders one frame per shot, the beats match
+  the storyboard's shots, and it read nothing from this repository. The lead reads the frames against the storyboard
+  and says, as a reading, whether the hook, the story and the call to action land.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
 ## 5. Team and order
@@ -94,8 +113,8 @@ its two uses. Commit and push before briefing S1.
 | 1 | Planner | S0 | nothing |
 | 2 | Executor | S1 | S0 |
 | 3 | Executor | S2 | S1 |
-| 4 | Executor | S3 | S2 |
-| 5 | Executor model, fresh | S4, then the cold review | S3 |
+| 4 | Executor; planner | S3; S3b beside it | S2 |
+| 5 | Executor model, fresh | S4, then the cold review | S3, S3b |
 
 Sequential: each needs the last one's build or pages. One pull request, after wave 5.
 
@@ -104,6 +123,11 @@ Sequential: each needs the last one's build or pages. One pull request, after wa
 - **Renaming every command mention** touches many docs and tests; S1 does it by script, in its own commit.
 - **The pages' entries import `apps/pieces` code** (`stage-module.ts`, the live panel); S2 moves them whole into the
   package, and the live kit later takes the panel from there.
+- **A 30 s reel is a large measure:** a 10 s piece of five beats cost a Sonnet worker 214k tokens; this one may cost
+  300k to 500k. The installability checks (`init`, `review`, `frames`) are read first, so a failed reel does not hide
+  whether the tools installed.
+- **A long piece's review cost:** a step that reads all of the past grows over 30 s; the guide's reel page says to
+  keep each shot's scene work local to its beat.
 - **Peer dependencies** (React, Vite, Playwright) must be in the scratch project; the measure installs them as a
   person would and the plan's guide page says which.
 
