@@ -32,7 +32,7 @@ export const card = defineStyle({
   name: "reel",
   description: "A reel of heavy drops.",
   qualities: { arrive: { overshoot: [0.05, 0.3] } },
-  defaults: { y: "reel/arrive" },
+  lively: { y: [0.5, 1], x: [0.4, 1] },
   tokens: { "--ink": "black" },
   habits: ["Land heavy."],
 });
@@ -65,7 +65,7 @@ describe("--style", () => {
     const field = run.lines.findIndex((line) => line.startsWith("place |"));
     expect(field).toBeGreaterThan(0);
     const text = run.lines.slice(0, field).join("\n");
-    expect(text).toContain("defaults: y reel/arrive");
+    expect(text).toContain("lively: y 0.5 to 1, x 0.4 to 1");
     expect(text).toContain("tokens: --ink black");
     expect(text).toContain("scratch-a");
     const json = await runCatalog(ok(["--anatomy", "--style", "reel", "--json"]), root);

@@ -14,6 +14,11 @@ export interface Descriptors {
   readonly settle: number;
 }
 
+/** Whether a shape is lively: it overshoots, rings or winds up. */
+export function isLively(shape: Descriptors): boolean {
+  return shape.overshoot > 0.02 || shape.rings > 0 || shape.windup > 0.02;
+}
+
 /** The descriptors a quality may range over, in the order every report lists them. */
 export const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
 

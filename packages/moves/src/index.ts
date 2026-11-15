@@ -117,6 +117,7 @@ export { defineStyle, isStyleCard, type StyleCard } from "./style/card";
 export {
   DESCRIPTOR_KEYS,
   QUALITIES,
+  isLively,
   outsideRanges,
   qualityOf,
   type DescriptorRanges,

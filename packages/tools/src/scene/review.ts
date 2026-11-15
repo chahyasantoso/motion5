@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import {
+  isLively,
   mergeEvents,
   outsideRanges,
   valueField,
@@ -768,9 +769,9 @@ function designFindings(
   });
 }
 
-/** For a styled module, one finding for each field a card gives a default quality that a unit moves in a
- * beat outside it, unless the design names that field for that target. */
-function defaultFindings(
+/** For a styled module, one finding for each field of its card whose share of lively motions (three or
+ * more, leaving out targets the design names for that field) lies outside the card's range. */
+function styleFindings(
   module: SceneModule,
   samples: Samples,
   cards: readonly StyleCard[],
@@ -778,22 +779,23 @@ function defaultFindings(
   const card = cards.find((each) => each.name === module.style);
   if (card === undefined) return [];
   const named = module.design === undefined ? [] : intentsOf(module.design);
-  return shapesOf(module, samples, Object.keys(card.defaults)).flatMap((shape) => {
-    const quality: unknown = Reflect.get(card.defaults, shape.field);
-    if (typeof quality !== "string") return [];
-    const ranges = rangesOf(quality, cards);
-    const designed = named.some(
-      (intent) =>
-        intent.field === shape.field &&
-        (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)),
+  const percent = (share: number): number => Math.round(share * 100);
+  return Object.entries(card.lively).flatMap(([field, range]) => {
+    const motions = shapesOf(module, samples, [field]).filter(
+      (shape) =>
+        !named.some(
+          (intent) =>
+            intent.field === field &&
+            (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)),
+        ),
     );
-    if (ranges === undefined || designed) return [];
-    const wants = missesOf(shape.descriptors, quality, ranges);
-    const name =
-      shape.beat === undefined
-        ? `${shape.target}.${shape.field}`
-        : `${shape.target}.${shape.field} (${shape.beat})`;
-    return wants.length === 0 ? [] : [`${name}: ${wants.join("; ")} (style default)`];
+    if (motions.length < 3) return [];
+    const lively = motions.filter((shape) => isLively(shape.descriptors)).length;
+    const share = lively / motions.length;
+    if (share >= range[0] && share <= range[1]) return [];
+    return [
+      `${field}: ${lively} of ${motions.length} motions lively (${percent(share)}%); ${card.name} wants ${percent(range[0])}% to ${percent(range[1])}% (style)`,
+    ];
   });
 }
 
@@ -903,7 +905,7 @@ export function reviewSceneModule(
     ...lateCueFindings(module),
     ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
     ...designFindings(module, samples, cards),
-    ...defaultFindings(module, samples, cards),
+    ...styleFindings(module, samples, cards),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {

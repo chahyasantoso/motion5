@@ -21,8 +21,8 @@ async function main(argv) {
     const made = await measureStyle(root, brief);
     if (made.kind === "refused") return fail(made.message);
     console.log(made.file);
-    for (const [field, quality] of Object.entries(made.card.defaults))
-      console.log(`${field}: ${quality}`);
+    for (const [field, [low, high]] of Object.entries(made.card.lively))
+      console.log(`${field}: ${low} to ${high}`);
     return;
   }
   const findings = await checkStyle(root, brief);

@@ -25,40 +25,45 @@ function localRoot(files: Readonly<Record<string, string>>): string {
 const BOUNCY = "300 * (1 - (1 + 2.70158 * (p - 1) ** 3 + 1.70158 * (p - 1) ** 2))";
 const LINEAR = "300 * (1 - p)";
 
-const piece = (fall: string, extra = "", span = 600): string => `
+const piece = (falls: readonly string[], extra = "", span = 600): string => `
 export const durationMs = 1500;
 ${extra}
 export const scene = (time: { progress: number; clock: { kind: string; elapsed?: number } }) => {
   const p = Math.min(1, (time.clock.elapsed ?? 0) / ${span});
-  return { ball: { y: ${fall}, x: 300 * p } };
+  return { ${falls.map((fall, index) => `b${index}: { y: ${fall}, x: 300 * p }`).join(", ")} };
 };
 `;
 
+const three = (...falls: string[]): readonly string[] => falls;
+
 const reel = (): string =>
   localRoot({
-    "reel/src/drop.ts": piece(BOUNCY),
-    "reel/src/slow.ts": piece(BOUNCY, "", 800),
+    "reel/src/drop.ts": piece(three(BOUNCY, BOUNCY, BOUNCY)),
+    "reel/src/mixed.ts": piece(three(BOUNCY, BOUNCY, LINEAR), "", 800),
   });
 
 describe("motion:style", () => {
-  it("measures a brief's pieces into a card file", async () => {
+  it("measures the range of the lively share per field into a card file", async () => {
     const root = reel();
     const made = await measureStyle(root, "reel");
     expect(made.kind).toBe("written");
     if (made.kind !== "written") return;
     expect(made.file).toBe(join(root, "reel", "style.ts"));
-    expect(Object.keys(made.card.qualities).sort()).toEqual(["x", "y"]);
-    expect(made.card.defaults).toEqual({ y: "reel/y", x: "reel/x" });
-    const shape = measureShapes(await moduleOf(join(root, "reel", "src", "drop.ts"))).find(
-      (each) => each.field === "y",
-    );
-    const range = made.card.qualities["y"]?.overshoot;
-    expect(shape?.descriptors.overshoot).toBeGreaterThan(0);
-    expect(range?.[0]).toBeLessThanOrEqual(shape?.descriptors.overshoot ?? NaN);
-    expect(range?.[1]).toBeGreaterThanOrEqual(shape?.descriptors.overshoot ?? NaN);
+    expect(made.card.qualities).toEqual({});
+    expect(made.card.lively["y"]).toEqual([0.55, 1]);
     const { cards, problems } = await styleCards(root);
     expect(problems).toEqual([]);
     expect(cards.map((card) => card.name)).toEqual(["reel"]);
+  });
+
+  it("leaves out a field whose shares are too far apart", async () => {
+    const root = localRoot({
+      "reel/src/all.ts": piece(three(BOUNCY, BOUNCY, BOUNCY)),
+      "reel/src/none.ts": piece(three(LINEAR, LINEAR, LINEAR)),
+    });
+    const made = await measureStyle(root, "reel");
+    expect(made.kind).toBe("written");
+    if (made.kind === "written") expect(made.card.lively["y"]).toBeUndefined();
   });
 
   it("passes a brief right after measuring it", async () => {
@@ -67,25 +72,28 @@ describe("motion:style", () => {
     expect(await checkStyle(root, "reel")).toEqual([]);
   });
 
-  it("finds a piece of another brief that follows the card and misses it", async () => {
+  it("finds a piece of another brief that follows the card and misses its share", async () => {
     const root = reel();
     await measureStyle(root, "reel");
     mkdirSync(join(root, "tour", "src"), { recursive: true });
     writeFileSync(
       join(root, "tour", "src", "flat.ts"),
-      piece(LINEAR, 'export const style = "reel";'),
+      piece(three(LINEAR, LINEAR, LINEAR), 'export const style = "reel";'),
     );
     const found = await checkStyle(root, "reel");
     expect(found).toHaveLength(1);
     expect(found[0]?.startsWith("tour/src/flat.ts: ")).toBe(true);
-    expect(found[0]?.endsWith("(style default)")).toBe(true);
+    expect(found[0]?.endsWith("(style)")).toBe(true);
   });
 
   it("leaves a piece's own review findings to the piece, counting only the card's", async () => {
     const root = reel();
     await measureStyle(root, "reel");
     mkdirSync(join(root, "tour", "src"), { recursive: true });
-    const short = piece(BOUNCY, 'export const style = "reel";').replace("1500", "700");
+    const short = piece(three(BOUNCY, BOUNCY, BOUNCY), 'export const style = "reel";').replace(
+      "1500",
+      "700",
+    );
     writeFileSync(join(root, "tour", "src", "short.ts"), short);
     expect(await checkStyle(root, "reel")).toEqual([]);
   });

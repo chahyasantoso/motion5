@@ -1,12 +1,13 @@
 import { VALUE_FIELDS } from "../fields/pose";
-import { DESCRIPTOR_KEYS, QUALITIES, type DescriptorRanges } from "./qualities";
+import { DESCRIPTOR_KEYS, type DescriptorRanges } from "./qualities";
 
-/** A brief's style: the qualities it names, the quality each field holds by default, and its tokens and habits. */
+/** A brief's style: the qualities it names, the share of lively motion each field holds, and its tokens and habits. */
 export interface StyleCard {
   readonly name: string;
   readonly description: string;
   readonly qualities: Readonly<Record<string, DescriptorRanges>>;
-  readonly defaults: Readonly<Partial<Record<keyof typeof VALUE_FIELDS, string>>>;
+  /** Per field, the share of that field's motions in a piece that must be lively, as [low, high]. */
+  readonly lively: Readonly<Partial<Record<keyof typeof VALUE_FIELDS, readonly [number, number]>>>;
   readonly tokens: Readonly<Record<string, string>>;
   readonly habits: readonly string[];
 }
@@ -31,14 +32,17 @@ function problemWith(card: StyleCard): string | undefined {
         return `quality "${quality}" has a reversed or malformed range for "${key}"`;
     }
   }
-  for (const [field, quality] of Object.entries(card.defaults)) {
+  for (const [field, range] of Object.entries(card.lively)) {
     if (!Object.hasOwn(VALUE_FIELDS, field))
-      return `default for "${field}", which is not a value field`;
-    const own = quality.startsWith(`${card.name}/`)
-      ? Object.hasOwn(card.qualities, quality.slice(card.name.length + 1))
-      : Object.hasOwn(QUALITIES, quality);
-    if (!own)
-      return `default quality "${quality}" for "${field}" is not a library quality or one of ${card.name}'s own`;
+      return `lively range for "${field}", which is not a value field`;
+    const ok =
+      Array.isArray(range) &&
+      range.length === 2 &&
+      range.every((end) => typeof end === "number") &&
+      range[0] >= 0 &&
+      range[0] <= range[1] &&
+      range[1] <= 1;
+    if (!ok) return `lively range for "${field}" is not two numbers with 0 <= low <= high <= 1`;
   }
   for (const token of Object.keys(card.tokens))
     if (!token.startsWith("--")) return `token "${token}" does not start with "--"`;

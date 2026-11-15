@@ -20,30 +20,31 @@ function localRoot(files: Readonly<Record<string, string>>): string {
   return root;
 }
 
-const card = (name: string): string => `
+const card = (name: string, lively = "[0.5, 1]"): string => `
 import { defineStyle } from "@gerak/moves";
 export const card = defineStyle({
   name: "${name}",
   description: "A reel.",
-  qualities: { arrive: { overshoot: [0.05, 0.3] } },
-  defaults: { y: "${name}/arrive" },
+  qualities: {},
+  lively: { y: ${lively} },
   tokens: {},
   habits: [],
 });
 `;
 
-const piece = (fall: string, extra = ""): string => `
+const BOUNCY = "300 * (1 - (1 + 2.70158 * (p - 1) ** 3 + 1.70158 * (p - 1) ** 2))";
+const LINEAR = "300 * (1 - p)";
+
+/** A piece whose balls fall as given; `null` keeps a ball still. */
+const piece = (falls: readonly (string | null)[], extra = ""): string => `
 export const durationMs = 1000;
 export const style = "reel";
 ${extra}
 export const scene = (time: { progress: number; clock: { kind: string; elapsed?: number } }) => {
   const p = Math.min(1, (time.clock.elapsed ?? 0) / 600);
-  return { ball: { y: ${fall}, x: 3 } };
+  return { ${falls.map((fall, index) => `b${index}: { y: ${fall ?? "0"}, x: 3 }`).join(", ")} };
 };
 `;
-
-const BOUNCY = "300 * (1 - (1 + 2.70158 * (p - 1) ** 3 + 1.70158 * (p - 1) ** 2))";
-const LINEAR = "300 * (1 - p)";
 
 const request = (file: string): SceneReviewRequest => ({
   file,
@@ -66,40 +67,52 @@ const root = (pieces: Readonly<Record<string, string>>): string =>
 async function findings(dir: string, name: string): Promise<readonly string[]> {
   const result = await reviewSceneFile(request(join(dir, "tour", "src", `${name}.ts`)));
   if (result.kind === "usage") return [result.message];
-  return result.findings.filter(
-    (line) => line.includes("style default") || !line.includes("ball.x"),
-  );
+  return result.findings.filter((line) => !line.includes(".x"));
 }
 
-describe("a piece's style default", () => {
-  it("gives no finding when y meets the default", async () => {
-    const dir = root({ good: piece(BOUNCY) });
+describe("a piece's style lively share", () => {
+  it("gives no finding when every y is lively", async () => {
+    const dir = root({ good: piece([BOUNCY, BOUNCY, BOUNCY]) });
     expect(await findings(dir, "good")).toEqual([]);
   });
 
-  it("names the card quality when y is linear", async () => {
-    const dir = root({ flat: piece(LINEAR) });
-    const found = await findings(dir, "flat");
-    expect(found).toHaveLength(1);
-    expect(found[0]).toMatch(
-      /^ball\.y: overshoot 0\.00, reel\/arrive wants 0\.05 to 0\.30 \(style default\)$/,
-    );
+  it("names the share when no y is lively", async () => {
+    const dir = root({ flat: piece([LINEAR, LINEAR, LINEAR]) });
+    expect(await findings(dir, "flat")).toEqual([
+      "y: 0 of 3 motions lively (0%); reel wants 50% to 100% (style)",
+    ]);
   });
 
-  it("lets a design that names y win", async () => {
-    const dir = root({ named: piece(LINEAR, 'export const design = { ball: { y: "calm" } };') });
-    expect((await findings(dir, "named")).filter((line) => line.includes("style default"))).toEqual(
-      [],
-    );
+  it("gives no finding for two lively of three", async () => {
+    const dir = root({ mixed: piece([BOUNCY, BOUNCY, LINEAR]) });
+    expect(await findings(dir, "mixed")).toEqual([]);
   });
 
-  it("gives nothing for a field that never moves", async () => {
-    const dir = root({ still: piece("0") });
-    expect(await findings(dir, "still")).toEqual([]);
+  it("lets a design that names y on every ball win", async () => {
+    const design =
+      'export const design = { b0: { y: "calm" }, b1: { y: "calm" }, b2: { y: "calm" } };';
+    const dir = root({ named: piece([LINEAR, LINEAR, LINEAR], design) });
+    expect((await findings(dir, "named")).filter((line) => line.endsWith("(style)"))).toEqual([]);
+  });
+
+  it("gives nothing when y moves on fewer than three balls", async () => {
+    const dir = root({ few: piece([LINEAR, LINEAR, null]) });
+    expect(await findings(dir, "few")).toEqual([]);
+  });
+
+  it("finds lively motion in a calm card", async () => {
+    const dir = localRoot({
+      "reel/style.ts": card("reel", "[0, 0.1]"),
+      "reel/src/.keep": "",
+      "tour/src/loud.ts": piece([BOUNCY, BOUNCY, BOUNCY]),
+    });
+    expect(await findings(dir, "loud")).toEqual([
+      "y: 3 of 3 motions lively (100%); reel wants 0% to 10% (style)",
+    ]);
   });
 
   it("is a usage message for a style no card names", async () => {
-    const dir = root({ lost: piece(BOUNCY).replace('"reel"', '"nope"') });
+    const dir = root({ lost: piece([BOUNCY]).replace('"reel"', '"nope"') });
     expect(await findings(dir, "lost")).toEqual(['style "nope" names no card; the cards are reel']);
   });
 

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { DESCRIPTOR_KEYS, VALUE_FIELDS, type StyleCard } from "@gerak/moves";
+import { VALUE_FIELDS, isLively, type StyleCard } from "@gerak/moves";
 import { briefFolders, portabilityFindings } from "./briefs";
 import { checkCatalog, loadCatalog } from "./catalog";
 import { styleCards } from "./cards";
@@ -13,9 +13,10 @@ export type MeasureResult =
   | { readonly kind: "written"; readonly file: string; readonly card: StyleCard }
   | { readonly kind: "refused"; readonly message: string };
 
-type DescriptorKey = (typeof DESCRIPTOR_KEYS)[number];
-
-const WIDEN = 0.05;
+const MOST_WIDTH = 0.5;
+const MARGIN = 0.1;
+const STEP = 0.05;
+const MIN_MOTIONS = 3;
 
 /** The `.ts` files directly in a brief's `src/`, by name. */
 function pieceFiles(root: string, brief: string): readonly string[] {
@@ -38,45 +39,23 @@ async function sceneModuleOf(file: string): Promise<SceneModule | undefined> {
   }
 }
 
-function kebab(field: string): string {
-  return field.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-}
-
-const down = (value: number): number => Math.floor(Number((value * 100).toFixed(6))) / 100;
-const up = (value: number): number => Math.ceil(Number((value * 100).toFixed(6))) / 100;
-
-function rangeOf(key: DescriptorKey, values: readonly number[]): readonly [number, number] {
-  const low = Math.min(...values);
-  const high = Math.max(...values);
-  if (key === "rings") return [Math.max(0, Math.floor(low) - 1), Math.ceil(high) + 1];
-  return [Math.max(0, down(low - WIDEN)), Math.min(1, up(high + WIDEN))];
-}
-
 const bare = (name: string): string =>
   /^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name);
 
-function cardText(
-  brief: string,
-  qualities: ReadonlyMap<string, readonly (readonly [DescriptorKey, readonly [number, number]])[]>,
-  defaults: ReadonlyMap<string, string>,
-): string {
-  const lines = [...qualities].map(
-    ([name, ranges]) =>
-      `    ${bare(name)}: { ${ranges.map(([key, [low, high]]) => `${key}: [${low}, ${high}]`).join(", ")} },`,
-  );
-  const picks = [...defaults].map(
-    ([field, quality]) => `${bare(field)}: ${JSON.stringify(quality)}`,
-  );
+const gridDown = (value: number): number => Math.floor(Number((value / STEP).toFixed(6))) * STEP;
+const gridUp = (value: number): number => Math.ceil(Number((value / STEP).toFixed(6))) * STEP;
+const tidy = (value: number): number => Number(value.toFixed(2));
+
+function cardText(brief: string, lively: ReadonlyMap<string, readonly [number, number]>): string {
+  const picks = [...lively].map(([field, [low, high]]) => `${bare(field)}: [${low}, ${high}]`);
   return [
     'import { defineStyle } from "@gerak/moves";',
     "",
     "export const card = defineStyle({",
     `  name: ${JSON.stringify(brief)},`,
     `  description: ${JSON.stringify(`Measured from ${brief}.`)},`,
-    "  qualities: {",
-    ...lines,
-    "  },",
-    `  defaults: { ${picks.join(", ")} },`,
+    "  qualities: {},",
+    `  lively: { ${picks.join(", ")} },`,
     "  tokens: {},",
     "  habits: [],",
     "});",
@@ -84,8 +63,16 @@ function cardText(
   ].join("\n");
 }
 
-/** Writes `<brief>/style.ts`, a card whose qualities are the ranges of every field the brief's pieces
- * move, one quality per field, and the default of each field is its own quality. */
+/** The range of the shares of lively motion a field has across pieces, widened and put on a grid, or none
+ * when too wide. */
+function livelyRange(shares: readonly number[]): readonly [number, number] | undefined {
+  const low = tidy(gridDown(Math.max(0, Math.min(...shares) - MARGIN)));
+  const high = tidy(gridUp(Math.min(1, Math.max(...shares) + MARGIN)));
+  return high - low > MOST_WIDTH ? undefined : [low, high];
+}
+
+/** Writes `<brief>/style.ts`, a card whose `lively` gives, for each field, the range of the share of lively
+ * motions across the brief's pieces that move it at least three times. */
 export async function measureStyle(root: string, brief: string): Promise<MeasureResult> {
   if (!briefFolders(root).includes(brief))
     return {
@@ -95,40 +82,31 @@ export async function measureStyle(root: string, brief: string): Promise<Measure
   const file = join(root, brief, "style.ts");
   if (existsSync(file))
     return { kind: "refused", message: `${file} already exists; it is never overwritten.` };
-  const shapes: Shape[] = [];
+  const perPiece: (readonly Shape[])[] = [];
   for (const piece of pieceFiles(root, brief)) {
     const module = await sceneModuleOf(piece);
-    if (module !== undefined) shapes.push(...measureShapes(module));
+    if (module !== undefined) perPiece.push(measureShapes(module));
   }
-  const fields = [...new Set(shapes.map((shape) => shape.field))].filter((field) =>
-    Object.hasOwn(VALUE_FIELDS, field),
+  const fields = [...new Set(perPiece.flat().map((shape) => shape.field))].filter(
+    (field) => field !== "custom" && Object.hasOwn(VALUE_FIELDS, field),
   );
   if (fields.length === 0)
     return {
       kind: "refused",
       message: `${brief}/src holds no scene module that moves a field; there is nothing to measure.`,
     };
-  const qualities = new Map<
-    string,
-    readonly (readonly [DescriptorKey, readonly [number, number]])[]
-  >();
-  const defaults = new Map<string, string>();
+  const lively = new Map<string, readonly [number, number]>();
   for (const field of fields) {
-    const own = shapes.filter((shape) => shape.field === field);
-    const name = kebab(field);
-    qualities.set(
-      name,
-      DESCRIPTOR_KEYS.map((key) => [
-        key,
-        rangeOf(
-          key,
-          own.map((shape) => shape.descriptors[key]),
-        ),
-      ]),
-    );
-    defaults.set(field, `${brief}/${name}`);
+    const shares = perPiece.flatMap((shapes) => {
+      const own = shapes.filter((shape) => shape.field === field);
+      return own.length < MIN_MOTIONS
+        ? []
+        : [own.filter((shape) => isLively(shape.descriptors)).length / own.length];
+    });
+    const range = shares.length === 0 ? undefined : livelyRange(shares);
+    if (range !== undefined) lively.set(field, range);
   }
-  writeFileSync(file, cardText(brief, qualities, defaults));
+  writeFileSync(file, cardText(brief, lively));
   const { cards, problems } = await styleCards(root);
   const card = cards.find((each) => each.name === brief);
   if (card === undefined) {
@@ -169,11 +147,11 @@ export async function checkStyle(root: string, brief: string): Promise<readonly 
     if (parsed.kind === "usage") continue;
     const result = await reviewSceneFile(parsed);
     const name = posix(relative(root, piece));
-    // A piece's other review findings are its own; the card answers only for its defaults.
+    // A piece's other review findings are its own; the card answers only for its lively share.
     const lines =
       result.kind === "usage"
         ? result.message.split("\n")
-        : result.findings.filter((line) => line.endsWith("(style default)"));
+        : result.findings.filter((line) => line.endsWith("(style)"));
     out.push(...lines.map((line) => `${name}: ${line}`));
   }
   return out;

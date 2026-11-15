@@ -1601,8 +1601,8 @@ async function anatomyLines(
           `qualities: ${Object.entries(style.qualities)
             .map(([name, ranges]) => `${name} (${rangeText(ranges)})`)
             .join("; ")}`,
-          `defaults: ${Object.entries(style.defaults)
-            .map(([field, quality]) => `${field} ${quality}`)
+          `lively: ${Object.entries(style.lively)
+            .map(([field, [low, high]]) => `${field} ${low} to ${high}`)
             .join(", ")}`,
           `tokens: ${Object.entries(style.tokens)
             .map(([name, value]) => `${name} ${value}`)
