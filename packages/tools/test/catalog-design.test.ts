@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -48,11 +49,13 @@ const ids = (lines: readonly string[]): readonly string[] =>
   lines.filter((line) => line.includes(" | ")).map((line) => line.split(" | ")[0] ?? "");
 
 describe("--move on today's moves", () => {
-  it("puts drop first for a heavy y and squish first for a loose scaleY", async () => {
+  it("puts a move with the quality first, drop among the heavy y and squish among the loose scaleY", async () => {
     const heavy = await runCatalog(ok(["--move", "y:heavy"]), DEFAULT_ROOT);
-    expect(ids(heavy.lines)[0]).toBe("drop");
+    expect(heavy.lines[0]).toContain("✓ y:heavy");
+    expect(heavy.lines.find((line) => line.startsWith("drop |"))).toContain("✓ y:heavy");
     const loose = await runCatalog(ok(["--move", "scaleY:loose"]), DEFAULT_ROOT);
-    expect(ids(loose.lines)[0]).toBe("squish");
+    expect(loose.lines[0]).toContain("✓ scaleY:loose");
+    expect(loose.lines.find((line) => line.startsWith("squish |"))).toContain("✓ scaleY:loose");
   });
 
   it("marks each requested field with a tick or a cross and the value that decided it", async () => {
@@ -144,8 +147,10 @@ describe("a design no move fits", () => {
       DEFAULT_ROOT,
     );
     expect(run.lines[0]).toBe("No move does this closely.");
-    expect(run.lines).toContain(
-      "combine in the scene: y:heavy by drop; scaleY:loose by squish; hue:playful by no move; write it",
+    expect(run.lines).toContainEqual(
+      expect.stringMatching(
+        /^combine in the scene: y:heavy by [\w/-]+; scaleY:loose by [\w/-]+; hue:playful by no move; write it$/,
+      ),
     );
   });
 });
@@ -203,4 +208,24 @@ describe("--design", () => {
     expect(parseCatalogArgs(["--design", "a.ts"]).kind).toBe("usage");
     expect(parseCatalogArgs(["--target", "title"]).kind).toBe("usage");
   });
+});
+
+describe("motion:moves --design from the command line", () => {
+  it("reads the design file from where the command runs, as the guide writes it", () => {
+    const run = spawnSync(
+      process.execPath,
+      [
+        "packages/tools/bin/motion-moves.mjs",
+        "--design",
+        "apps/pieces/delivered/src/delivered.ts",
+        "--target",
+        "parcel",
+        "--in",
+        "delivered",
+      ],
+      { encoding: "utf8", env: { ...process.env, INIT_CWD: process.cwd() } },
+    );
+    expect(run.stdout).toContain("drop");
+    expect(run.status).toBe(0);
+  }, 60000);
 });

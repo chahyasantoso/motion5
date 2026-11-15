@@ -9,8 +9,10 @@ if (args.kind === "usage") {
   console.log(args.message);
   process.exitCode = 1;
 } else {
+  // A design file is named from where the command runs, as every other path is.
+  const design = args.design === undefined ? undefined : fromCaller(args.design);
   const run = await runCatalog(
-    args,
+    { ...args, design },
     args.root === undefined ? DEFAULT_ROOT : fromCaller(args.root),
   );
   for (const line of run.lines) console.log(line);
