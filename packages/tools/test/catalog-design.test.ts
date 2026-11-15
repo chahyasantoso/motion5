@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { NO_FIT, parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
+import { parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
 import { DEFAULT_ROOT } from "../src/page/page";
 
 const roots: string[] = [];
@@ -129,7 +129,6 @@ describe("a design no move fits", () => {
     expect(run.lines).toContain("or write one: npm run motion:new -- --move <id> --in <brief>");
     const named = await runCatalog(ok([...argv, "--in", "reel"]), DEFAULT_ROOT);
     expect(named.lines).toContain("or write one: npm run motion:new -- --move <id> --in reel");
-    expect(NO_FIT).toBeGreaterThan(0);
   });
 
   it("names the move for each field alone, to combine in the scene, or says to write it", async () => {
@@ -237,5 +236,16 @@ describe("a quality's name", () => {
       expect(like.code, name).toBe(1);
       expect(like.lines[0]).toContain("unknown quality");
     }
+  });
+});
+
+describe("a fit", () => {
+  it("is every requested field moved and inside its quality, so a row marked ✗ never answers", async () => {
+    const run = await runCatalog(ok(["--move", "opacity:playful"]), DEFAULT_ROOT);
+    expect(run.lines[0]).toBe("No move does this closely.");
+    expect(run.lines).toContain("nearest, each missing something:");
+    const near = run.lines.slice(run.lines.indexOf("nearest, each missing something:") + 1);
+    expect(near.length).toBeGreaterThan(0);
+    for (const line of near) expect(line).toContain("✗");
   });
 });

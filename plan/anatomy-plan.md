@@ -167,9 +167,10 @@ The kinds a piece is assembled from, each with one owner:
   - `usesFit` = the share of `--uses` names the move imports (a kind counts when it imports any part of that kind);
   - rows order by `fieldFit`, then by `usesFit` descending, then by id; each row names, per requested field and use,
     whether it matched and the measured value that decided it.
-  - **No move fits** when every move misses a requested field or has `fieldFit` above `NO_FIT` (one constant in
-    `catalog.ts`, set so the tests below hold); the answer says so, lists the design's fields, qualities and uses,
-    and gives `npm run motion:new -- --move <id> --in <brief>`.
+  - **No move fits** when no move moves every requested field with each inside its quality (`fieldFit` 0, every
+    mark a tick); the answer says so, lists the design's fields, qualities and uses, names a move per field to
+    combine in the scene, gives `npm run motion:new -- --move <id> --in <brief>`, and shows the three nearest moves
+    with what each misses.
 - **Usage on the card.** Each part's line in `--anatomy` adds one sample call and its values at progress 0, 0.5 and
   1, from the first of its contract's `samples` (`taper(p, 2): 1, 0.25, 0`); each field's line adds what the DOM
   renderer writes for a sample value (`hue: 30` writes `--gerak-hue: 30deg`), from the renderer's `WRITTEN` list. A
@@ -295,7 +296,7 @@ request, after wave 6.
   character.
 - **The quality ranges were set for single moves.** A piece's field is often several moves combined; the spec check
   may need wider ranges, tuned once in `QUALITIES` against the measure's piece.
-- **Thresholds are tuned once,** `NO_FIT` and `NEAR_DUPLICATE`, each one constant held by tests on today's moves.
+- **The duplicate threshold is tuned once,** `NEAR_DUPLICATE`, one constant held by tests on today's moves.
 - **Relative colour** needs Chromium 119 or later; other browsers are not tested here.
 
 ## 8. Done when

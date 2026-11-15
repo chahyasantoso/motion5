@@ -752,7 +752,7 @@ function fieldsFit(
   return { fit: total / count, centred: centred / count, hasAll, movesAny, notes };
 }
 
-/** The label of the move that answers one requested field most closely within `NO_FIT`, or none. */
+/** The label of the move that answers one requested field, moved and inside its quality, or none. */
 function bestFor(
   records: readonly MoveRecord[],
   field: FieldRequest,
@@ -761,7 +761,7 @@ function bestFor(
   let best: { readonly record: MoveRecord; readonly fit: DesignFit } | undefined;
   for (const record of records) {
     const { fit } = designFit(record, { fields: [field], uses: [] });
-    if (!fit.hasAll || fit.fieldFit > NO_FIT) continue;
+    if (!fits(fit)) continue;
     if (
       best === undefined ||
       fit.fieldFit < best.fit.fieldFit ||
@@ -920,8 +920,10 @@ export interface DesignFit {
   readonly movesAny: boolean;
 }
 
-/** The `fieldFit` at or below which a move that has every requested field answers a design. */
-export const NO_FIT = 0.05;
+/** Whether a move answers a design: it moves every requested field, each inside its quality. */
+export function fits(fit: DesignFit): boolean {
+  return fit.hasAll && fit.fieldFit === 0;
+}
 
 /** What a search returned, or why it could not be made. */
 export type QueryResult =
@@ -1055,8 +1057,7 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
       byId(left.row.record, right.row.record),
   );
   const noFit =
-    design !== undefined &&
-    !rows.some(({ row }) => row.design?.hasAll === true && row.design.fieldFit <= NO_FIT);
+    design !== undefined && !rows.some(({ row }) => row.design !== undefined && fits(row.design));
   const combine =
     design === undefined || !noFit
       ? []
@@ -1739,7 +1740,14 @@ export async function runCatalog(
       ? [`${rows.length - shownRows.length} more; --all lists them.`]
       : [];
   if (noFit && asked.design !== undefined && !args.check && !args.json)
-    return { lines: noFitLines(asked.design, args.in, combine), code: problemCode };
+    return {
+      lines: [
+        ...noFitLines(asked.design, args.in, combine),
+        ...(rows.length === 0 ? [] : ["nearest, each missing something:"]),
+        ...rows.slice(0, 3).map((row) => formatRow(row, root, args.in)),
+      ],
+      code: problemCode,
+    };
   const left = held === 0 ? [] : [`${withFindings(held)} left out; --all lists them.`];
   return {
     lines: [
