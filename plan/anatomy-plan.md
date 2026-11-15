@@ -1,6 +1,7 @@
 # Anatomy plan: parts, fields and a catalog that measures
 
-**Status:** Approved, 2026-11-14, after one round of critique.
+**Status:** Approved, 2026-11-14, after one round of critique; waves 1 to 3 built. Revised 2026-11-15 with the
+motion vocabulary (ADR-186, waves 4 to 6), proposed.
 **Base:** `feat/toolkit` at `bad02ccf` (pull request 595, not merged); rebase on `main` once it merges.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-172-*.md`,
 `docs/ADR-173-*.md`, `docs/ADR-176-*.md`, `docs/ADR-184-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -10,6 +11,8 @@
 **An agent making a piece finds the building block it needs by what it does and how it feels, writes a new move
 from shared parts instead of hand-written trigonometry, and moves skew, shadow and colour with the same rules as
 position.** A person reading the code finds each layer in its own folder, and each brief's work in its own folder.
+**An agent designs the motion a brief needs in a vocabulary it can read and ask about (fields, and parts by kind),
+and reuses a move only when one already does that design;** the catalog answers a design, not only words.
 
 What the code lacks today, on `feat/toolkit`:
 - **Laws:** oscillations and envelopes are written by hand with `Math.sin`, `Math.cos` and `Math.exp` in the
@@ -199,6 +202,55 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
   `scripts/duplicate-baseline.json`, which may only shrink. `motion:promote` refuses a move with a finding; there is
   no override.
 
+## 3b. Decisions to record (ADR-186): the motion vocabulary
+
+The kinds of thing a piece is assembled from, each with a contract a gate checks and one owner:
+
+| Kind | What it is | Contract | Owner |
+| --- | --- | --- | --- |
+| Field | one named number a target can carry | meaning, unit, rest, how two answers join, least and most, how the review judges it, dimension (2D, 3D or both) | its row of `VALUE_FIELDS` |
+| Pose | the fields of one target at one instant | a partial record of fields, `anchor` and `custom` numbers, nothing else | `Pose2d`, `Pose3d` |
+| Part | a pure function that shapes change, knowing no target or role | its kind's rule, sampled by the part gate | `definePart`, in its kind's folder |
+| Move | parts coupled on fields inside one progress | its role, options with ranges, moments, example; measured shapes | `defineMove` |
+| Composition | moves placed in time and across targets | stateless; answers a time, or a pose from poses | `compose/` |
+| Shape, quality | a moved field's measured motion; a named range of shapes | measured, never declared | the gate; `QUALITIES` |
+
+- **A part's kind is its folder.** `packages/moves/src/parts/<kind>/`, one kind per file, replacing the topic
+  groups:
+
+  | Kind | Signature | Rule the part gate samples | Parts today |
+  | --- | --- | --- | --- |
+  | `time` | builds, reads or reshapes a `Time` | progress stays 0 to 1 | `span`, `window`, `windowed`, `atProgress`, `liveAt`, `elapsedOf`, `withProgress`, `timeAt` |
+  | `ease` | progress to progress | 0 at 0, 1 at 1 | `ease.*`, `backEase`, `springEase` |
+  | `envelope` | progress to an amount | never below 0; its declared values at 0 and 1 | `taper`, `decay`, `attack`, `arch` |
+  | `oscillation` | progress to a swing | within its declared bound; its declared crossings of 0 | `wave`, `shaken` |
+  | `dynamics` | a closed-form physical answer | finite; at rest when it starts at rest | `spring` |
+  | `path` | progress or share and geometry to a point or pose | at its declared ends | `ballistic`, `along`, `along3d` |
+  | `geometry` | points, curves and lenses to points or turns | finite for finite input | `toCubics`, `toCubics3d`, `radial`, `aim`, `orbit`, `project3d` |
+  | `blend` | a, b and a share to the type of a | a at share 0, b at 1 | `mix`, `mixAngle`, `mixPoint`, `mixPose`, `mixPose3d`, `mixPoint3d` |
+  | `coupling` | an amount or a speed to a pose | at rest when the amount or speed is 0 | `squashed`, `squashed3d`, `squashFromSpeed`, `smear`, `smear3d` |
+  | `signal` | time and events to a value | the same when sought out of order as when played to | `follow`, `react`, `tally`, `trail`, `trailTurn`, `velocity`, `velocity3d`, `keyframes`, `noise1d` |
+  | `utility` | anything else that is pure | none sampled | `seeded`, `mergeEvents`, `isMotionEvent` |
+
+- **`definePart(contract, fn)`** returns `fn` itself with its contract attached, as `defineMove` does, so no call
+  site changes; the contract holds the facts its kind's rule needs (an envelope's values at 0 and 1, an
+  oscillation's bound). The part gate samples every exported part against its folder's rule; a part outside a kind
+  folder is refused.
+- **A field row is its contract.** `VALUE_FIELDS` rows gain `meaning` (one sentence), `unit` (`px`, `deg`, `scale`,
+  `share`, `order` or `number`) and `dimension` (`2d`, `3d`, `both`). **Each renderer owns what it writes:** the DOM
+  renderer and `@gerak/three` each export the fields they write and the fields they leave unwritten with a reason; a
+  test refuses a field of a renderer's dimension that is in neither.
+- **The vocabulary is one readable thing.** `motion:moves -- --anatomy` prints the fields grouped by what they change
+  with their meanings, the parts grouped by kind with their call shapes and first sentences, and the shape words with
+  the qualities; `--json` gives the same data, which the design query and a later style card read.
+- **Shapes per field.** The gate keeps every moved field's shape, not only the primary field's; `--near`, `--far`,
+  `--like` and the duplicate check compare field by field, a field one move moves and the other does not counting as
+  far.
+- **The catalog answers a design.** `--move <field>[:<quality>]` (repeatable) and `--uses <kind or part>` describe
+  the motion an agent designed; every move is scored on the fields it shares, each shared field's fit to its quality,
+  and, weakest, the parts or kinds it uses. Each row says what matched and what did not; when no move scores well,
+  the answer says so, names the design's parts and kinds, and gives the `motion:new -- --move` line.
+
 ## 4. Slices
 
 ### A0. Decision and architecture (planner)
@@ -297,20 +349,57 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
     the baseline is not, and the baseline cannot gain one.
   - The quality table's ranges are the builder's choice, recorded in that one table.
 
+### V0. Parts by kind (planner, by script)
+
+- **Invariant:** every part moves with `git mv` into `parts/<kind>/` as the table says, a file holding two kinds cut
+  in two with bodies unchanged (`events.ts`: signals and utilities; `along3d.ts`: `toCubics3d` to geometry); only
+  import paths change; `index.ts` exports the same names in the same order; every move's samples are unchanged; the
+  layer test and `moveParts()` groups follow the new folders.
+- **Owner:** `packages/moves/src/parts/`, `packages/tools/src/scene/parts.ts` (`PART_GROUPS` becomes the kinds).
+
+### V1. Fields as contracts (executor)
+
+- **Invariant:** as decided; every row has `meaning`, `unit` and `dimension`; the DOM renderer and `@gerak/three`
+  each export what they write and what they leave unwritten, with a reason.
+- **Owner:** `packages/moves/src/fields/pose.ts`, `packages/dom/src/render.ts`, `packages/three/src/pose2d.ts`,
+  `pose3d.ts`, a repo test.
+- **Test:** a row without a meaning fails to type-check; the coverage test fails when a renderer drops a field from
+  both of its lists.
+
+### V2. Parts with contracts (executor)
+
+- **Invariant:** as decided; every exported part is declared with `definePart` in its kind's folder; the part gate
+  runs in `npm run check`.
+- **Owner:** `packages/moves/src/parts/**` (the declarations, no behaviour), `definePart` beside `defineMove`,
+  `packages/tools/src/scene/parts.ts` (the gate and the listing by kind).
+- **Test:** one test per kind with a part that breaks its rule (an envelope below 0, an ease missing 1, a blend not
+  at `b` at 1, a signal that differs when sought); every current part passes; listing order and samples unchanged.
+
+### V3. The vocabulary and the design query (executor, after V1 and V2)
+
+- **Invariant:** as decided. **Owner:** `packages/tools/src/scene/{catalog,moves}.ts`,
+  `packages/tools/bin/motion-moves.mjs`, `scripts/duplicate-baseline.json`.
+- **Test:** `--anatomy` lists every field with its meaning and every part under its kind, and `--json` parses;
+  `hop` keeps a `y` shape with rings; `--move y:heavy --move scaleY:loose` ranks a hand-built falling squash first
+  and says why each row matched; a design no move fits gives the "no move does this" answer with its parts and the
+  `motion:new` line; the duplicate check compares per field and the baseline is rebuilt for it.
+
 ### A8. Guide (planner)
 
-- `agent-motion.md` "The loop": step 1 uses `--far` from the obvious move; step 5 asks the catalog by role,
-  quality, fields and words with `--in <brief>`, and reads an entry in full before using it; work stays in
-  `apps/pieces/<brief>/`; `agent-moves.md` writes a move from parts with the coupling rule
-  and no `Math.sin`; a skin section gives the colour and shadow rule; the reference regenerated.
+- `agent-motion.md` "The loop": after the three lines, the agent reads `--anatomy` once and writes each line's
+  motion as fields and parts by kind; then asks the catalog with `--move` and `--uses` (and `--far` from the obvious
+  move for ideas); reuses a move only when a row matches the design, and otherwise writes one from the parts it
+  named. `agent-moves.md` writes a move from parts with the coupling rule and no `Math.sin`; a skin section gives the
+  colour and shadow rule; the reference regenerated.
 
 ### A9. Proof
 
-- **Measure:** a fresh Sonnet worker at medium effort builds one brief from the guide alone: a colour change, a cast
-  shadow, a jiggle and a heavy landing. It passes when it moves the fields rather than `custom` numbers, calls no
-  `Math.sin`, `Math.cos` or `Math.exp` in a move, writes no move the duplicate gate finds close to an existing one,
-  its review is clean, and its interview names what it searched the catalog for and any move it found only after
-  writing its own.
+- **Measure, two fresh Sonnet workers at medium effort, one brief:** a colour change, a cast shadow, a jiggle and a
+  heavy landing. One works from the whole guide and catalog; the other from the guide with the vocabulary only
+  (`--anatomy`, writing its own moves; the catalog's move search not offered). Each passes when it moves fields
+  rather than `custom` numbers, calls no `Math.sin`, `Math.cos` or `Math.exp` in a move, its review is clean, and
+  its report shows its design in fields and parts written before any move was chosen. They are compared on review
+  findings, render rounds, tokens and minutes, moves reused and written, and how different the two pieces are.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
 ## 5. Team and order
@@ -324,19 +413,23 @@ examples (`timing`, `catch`, `card`, `splash`, `pile`, `principles`, `principles
 | 2 | Executor | A5 | A1b |
 | 3 | Executor | A4 | A1b, A3, A5 |
 | 3 | Executor | A7 | A1b, A6 |
-| 4 | Planner | A8 | all |
-| 4 | Executor model, fresh | A9 | A8 |
+| 4 | Planner | ADR-186, V0 | waves 1 to 3 |
+| 4b | Executor | V1 | V0 |
+| 4b | Executor | V2 | V0 |
+| 5 | Executor | V3 | V1, V2 |
+| 6 | Planner | A8 | V3 |
+| 6 | Executor model, fresh, two workers | A9, then the cold review | A8 |
 
-One pull request, after wave 4.
+One pull request, after wave 6.
 
 ## 6. Risks
 
 - **A1 and A1b move many files.** Each is a `git mv` commit with no other change, then a commit of paths, checked
   by samples and reviews before and after.
 - **Relative colour** needs Chromium 119 or later; other browsers are not tested here.
-- **Descriptors read one primary field.** A move whose largest offset is a plain travel (`hop`'s and `ballistic`'s
-  `x`) is measured by that travel, not its bounce; `hop` measures calm. Measuring every moved field is the next step
-  if the measure shows agents misled by it.
+- **`definePart` changes every part's declared type** to the function and its contract; the generated reference's
+  signatures must read as before, which V2 checks.
+- **Signals need events to be sampled;** the part gate gives each signal a small fixed event list.
 - **Descriptors are new measures.** The quality table and the duplicate distance are tuned once, in one table, and
   the baseline keeps today's pairs from blocking the gate.
 
