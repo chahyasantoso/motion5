@@ -362,9 +362,8 @@ function findingsOf(part: MovePart, value: unknown): readonly string[] {
   }
 }
 
-/** The findings of the part gate: each exported part of a kind folder must carry a `definePart`
- * contract of its folder's kind, and its samples must keep that kind's rule. `values` names another
- * export table. */
+/** Findings of the part gate: a part of a kind folder with no `definePart` contract, one of another
+ * kind, or one whose samples break the kind's rule; `values` is the export table. */
 export function checkParts(
   parts: readonly MovePart[] = moveParts(),
   values: Readonly<Record<string, unknown>> = moves,

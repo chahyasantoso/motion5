@@ -24,6 +24,7 @@ Public: `.`
 - `src/compose/`: sequence, lanes, reversed, repeated, loops
 - `src/fields/`: what can change: the value table, poses, combine
 - `src/moves/`: defineMove and the built-in moves and modifiers
+- `src/parts/`: definePart: what each part promises
 - `src/parts/blend/`: mixes between two values
 - `src/parts/coupling/`: poses from an amount or a speed: squashes, smears
 - `src/parts/dynamics/`: springs
