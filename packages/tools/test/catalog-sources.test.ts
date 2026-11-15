@@ -234,6 +234,29 @@ describe("the index", () => {
     expect(sampled).toEqual(["bounce-m"]);
   });
 
+  it("samples every move again when the code that measures moves changes", async () => {
+    const root = library();
+    const { sampled, sampler } = counting();
+    await runCatalog(ok([]), root, { sampler, engine: "parts as they were" });
+    sampled.length = 0;
+    await runCatalog(ok([]), root, { sampler, engine: "parts as they were" });
+    expect(sampled).toEqual([]);
+    await runCatalog(ok([]), root, { sampler, engine: "a part changed" });
+    expect(sampled.sort()).toEqual(["bounce-a", "bounce-m", "bounce-z"]);
+  });
+
+  it("samples a move again when a helper beside it changes", async () => {
+    const root = library();
+    const helper = join(root, "title", "src", "moves", "helper.ts");
+    writeFileSync(helper, "export const lean = 2;\n");
+    const { sampled, sampler } = counting();
+    await runCatalog(ok([]), root, { sampler });
+    sampled.length = 0;
+    writeFileSync(helper, "export const lean = 3;\n");
+    await runCatalog(ok([]), root, { sampler });
+    expect(sampled).toEqual(["bounce-a"]);
+  });
+
   it("rebuilds an index that is missing or unreadable", async () => {
     const root = library();
     const { sampled, sampler } = counting();

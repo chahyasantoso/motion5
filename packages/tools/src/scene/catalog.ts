@@ -270,9 +270,40 @@ function callOf(name: string, example: MoveRecord["example"]): string {
 
 const digest = (text: string): string => createHash("sha1").update(text).digest("hex");
 
-/** What a move's cached record is keyed by: its file's text, or its package's version. */
+/** The text of every `.ts` file under a folder, in path order; nothing when there is no such folder. */
+function folderText(folder: string): string {
+  if (!existsSync(folder)) return "";
+  return readdirSync(folder, { withFileTypes: true })
+    .map((entry) => join(folder, entry.name))
+    .sort()
+    .map((path) =>
+      path.endsWith(".ts") ? `${path}\n${readFileSync(path, "utf8")}` : folderText(path),
+    )
+    .join("\n");
+}
+
+let engine: string | undefined;
+
+/** The code a record's measures come from: `@gerak/moves`'s source (its parts, fields and moves) and the
+ * catalog's own sampling; a change to either makes every cached record stale. */
+export function engineHash(): string {
+  engine ??= digest(
+    [
+      folderText(fileURLToPath(new URL("../../../moves/src/", import.meta.url))),
+      readText(BUILT_IN_MANIFEST) ?? "",
+      ...["catalog.ts", "moves.ts", "parts.ts", "limits.ts"].map(
+        (file) => readText(fileURLToPath(new URL(`./${file}`, import.meta.url))) ?? "",
+      ),
+    ].join("\n"),
+  );
+  return engine;
+}
+
+/** What a move's cached record is keyed by: its folder's files (a helper beside it included), or its package's
+ * version. */
 function hashOf(name: string, loaded: LoadedModule): string {
-  if (loaded.file !== undefined) return digest(readFileSync(loaded.file, "utf8"));
+  if (loaded.file !== undefined)
+    return digest(`${readFileSync(loaded.file, "utf8")}\n${folderText(dirname(loaded.file))}`);
   const text = loaded.source === BUILT_IN_SOURCE ? builtInText(name) : undefined;
   return text === undefined ? `version ${loaded.version ?? ""}` : digest(text);
 }
@@ -398,13 +429,14 @@ interface IndexEntry {
   readonly record: MoveRecord;
 }
 
-function readIndex(text: string | undefined): ReadonlyMap<string, IndexEntry> {
+function readIndex(text: string | undefined, engine: string): ReadonlyMap<string, IndexEntry> {
   const entries = new Map<string, IndexEntry>();
   if (text === undefined) return entries;
   try {
     const parsed = recordOf(JSON.parse(text));
     const moves = recordOf(parsed?.moves);
-    if (parsed?.version !== INDEX_VERSION || moves === undefined) return entries;
+    if (parsed?.version !== INDEX_VERSION || parsed.engine !== engine || moves === undefined)
+      return entries;
     for (const [key, entry] of Object.entries(moves)) {
       const hash = recordOf(entry)?.hash;
       const record = recordOf(entry)?.record;
@@ -541,6 +573,8 @@ export interface CatalogOptions {
   readonly sampler?: (move: CheckedMove) => MoveDescriptors;
   /** The near-duplicate pairs not to report; the repository's baseline when left out. */
   readonly baseline?: ReadonlySet<string>;
+  /** What the cached records were measured by; `engineHash()` when left out. */
+  readonly engine?: string;
 }
 
 /** Reads every source the root declares, reusing the index for any move whose file or package has not changed. */
@@ -555,7 +589,8 @@ export async function loadCatalog(root: string, options: CatalogOptions = {}): P
   }
   const folders = await loadAppModules(root, config);
   const before = readText(indexPath(root));
-  const previous = readIndex(before);
+  const measuredBy = options.engine ?? engineHash();
+  const previous = readIndex(before, measuredBy);
   const next = new Map<string, IndexEntry>();
   const entries = collectRecords(
     [...packages, ...folders.modules],
@@ -570,7 +605,7 @@ export async function loadCatalog(root: string, options: CatalogOptions = {}): P
     },
   );
   const text = JSON.stringify(
-    { version: INDEX_VERSION, moves: Object.fromEntries(next) },
+    { version: INDEX_VERSION, engine: measuredBy, moves: Object.fromEntries(next) },
     (_key, value: unknown) => (typeof value === "function" ? inputText(value) : value),
   );
   if (text !== before)
