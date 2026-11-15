@@ -281,6 +281,9 @@ const slide = defineMove({
 - **`overshoot`** `(options, time, input)`: Plays its input, then passes its last pose and settles back onto it. Options: `share` number 0..0.9, default 0.3: Share of the progress spent past the end; default 0.3.; `amount` number 0..1, default 0.1: How far past the end, as a share of the input's whole travel; default 0.1.
 - **`repeated`** `(time: Time, count: number): Time`: A time with its progress running 0 to 1 `count` times (rounded down, at least 1); a function of time, not a move.
 - **`smudge`** `(options, time, input)`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. Options: `amount` number >=0, required: The blur it ends at, in px.; `build` number 0.05..1, default 1: Share of the span the blur takes to build, then holds; default 1.
+- **`defineStyle`** `(card: StyleCard): StyleCard`: A frozen copy of the card, or an error naming its first problem.
+- **`isStyleCard`** `(value: unknown): value is StyleCard`: Whether `value` is a card `defineStyle` returned itself.
+- **`StyleCard`** `type StyleCard`: A brief's style: the qualities it names, the quality each field holds by default, and its tokens and habits.
 - **`DESCRIPTOR_KEYS`** `const DESCRIPTOR_KEYS: readonly ["peak", "overshoot", "rings", "windup", "settle"]`: The descriptors a quality may range over, in the order every report lists them.
 - **`QUALITIES`** `const QUALITIES: Readonly<Record<string, DescriptorRanges>>`: The words `--like` understands, each as the ranges of descriptors a move with that quality sits in; `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose.
 - **`outsideRanges`** `(descriptors: Descriptors, ranges: DescriptorRanges): readonly { readonly key: "overshoot" | "peak" | "settle" | "rings" | "windup"; readon…`: The descriptors a quality names that lie outside its range, each with its value and range; none means the shape has the quality.
@@ -517,6 +520,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
 - **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`cssVariables`** `(tokens: Readonly<Record<string, string>>): string`: A `:host` rule setting each token as a custom property, in the tokens' order; empty for none.
 - **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
 - **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: CarrySize): Pose2d`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`. Nothing is carried from or to a box with no size.
 - **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
