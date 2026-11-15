@@ -26,10 +26,12 @@ export interface RenderTarget {
   readonly ownerSVGElement?: unknown;
 }
 
-const TURNS_AND_SCALES = ["rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY"];
+const TURNS = ["rotation", "rotationX", "rotationY"];
+const SKEWS = ["skewX", "skewY"];
+const SCALES = ["scale", "scaleX", "scaleY"];
 
 /** The value keys a CSS transform carries; every other key writes as its own property. */
-export const TRANSFORM_KEYS: readonly string[] = ["x", "y", "z", ...TURNS_AND_SCALES];
+export const TRANSFORM_KEYS: readonly string[] = ["x", "y", "z", ...TURNS, ...SKEWS, ...SCALES];
 
 function turnOrScale(key: string, value: unknown): string {
   switch (key) {
@@ -39,12 +41,15 @@ function turnOrScale(key: string, value: unknown): string {
       return `rotateX(${String(value)}deg)`;
     case "rotationY":
       return `rotateY(${String(value)}deg)`;
+    case "skewX":
+    case "skewY":
+      return `${key}(${String(value)}deg)`;
     default:
       return `${key}(${String(value)})`;
   }
 }
 
-/** A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves. */
+/** A CSS transform from pose-like values: translate first, then turns, then skews, then scales; empty when nothing moves. */
 export function cssTransform(values: Readonly<Record<string, unknown>>): string {
   const parts: string[] = [];
   // A field at its rest writes nothing, so a pose that moves nothing draws exactly as the page does.
@@ -53,7 +58,8 @@ export function cssTransform(values: Readonly<Record<string, unknown>>): string 
     parts.push(
       `translate3d(${String(values.x ?? 0)}px, ${String(values.y ?? 0)}px, ${String(values.z ?? 0)}px)`,
     );
-  for (const key of TURNS_AND_SCALES) if (moved(key)) parts.push(turnOrScale(key, values[key]));
+  for (const key of [...TURNS, ...SKEWS, ...SCALES])
+    if (moved(key)) parts.push(turnOrScale(key, values[key]));
   return parts.join(" ");
 }
 
@@ -140,8 +146,62 @@ export function splitStroke(value: Pose2d): { readonly stroke: Pose2d; readonly 
   };
 }
 
+/** The CSS filter a pose writes: its blur, then a drop shadow when a shadow field is off rest; empty when neither. */
+function cssFilter(value: Pose2d): string {
+  const parts: string[] = [];
+  const blur = value.blur ?? 0;
+  if (blur > 0) parts.push(`blur(${blur}px)`);
+  const { shadowX = 0, shadowY = 0, shadowBlur = 0 } = value;
+  if (shadowX !== 0 || shadowY !== 0 || shadowBlur !== 0)
+    parts.push(
+      `drop-shadow(${shadowX}px ${shadowY}px ${shadowBlur}px var(--gerak-shadow, rgb(0 0 0 / 0.35)))`,
+    );
+  return parts.join(" ");
+}
+
+/** The pose fields `@gerak/dom` writes: `applyValue` to an element's style, and the stage a path member's `shape`
+ * as its outline; custom numbers are written apart, as `--<name>` properties. */
+export const WRITTEN: readonly (keyof Pose2d)[] = Object.freeze([
+  "x",
+  "y",
+  "rotation",
+  "skewX",
+  "skewY",
+  "scale",
+  "scaleX",
+  "scaleY",
+  "opacity",
+  "blur",
+  "shadowX",
+  "shadowY",
+  "shadowBlur",
+  "hue",
+  "lightness",
+  "tint",
+  "drawn",
+  "drawnFrom",
+  "clipX",
+  "clipY",
+  "clipRadius",
+  "clipWidth",
+  "clipHeight",
+  "shape",
+  "layer",
+  "anchor",
+]);
+
+/** The pose fields `@gerak/dom` leaves alone, each with the reason; it writes every one today. */
+export const UNWRITTEN: Readonly<Partial<Record<keyof Pose2d, string>>> = Object.freeze({});
+
+const COLOUR_PROPERTIES = [
+  ["hue", "--gerak-hue", "deg"],
+  ["lightness", "--gerak-lightness", ""],
+  ["tint", "--gerak-tint", ""],
+] as const;
+
 const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
-const WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
+const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
+const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const EMPTIED = new WeakSet<RenderStyle>();
 
 // A field or custom name the value leaves out is cleared, so the page's own style shows again.
@@ -158,8 +218,7 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   if (svg) style.transformBox = "fill-box";
   style.transformOrigin =
     value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "";
-  const blur = value.blur ?? 0;
-  style.filter = blur > 0 ? `blur(${blur}px)` : "";
+  style.filter = cssFilter(value);
   // A clip with a width and a height is a box, its radius rounding the corners; with a radius alone, a circle.
   style.clipPath =
     value.clipWidth !== undefined && value.clipHeight !== undefined
@@ -189,17 +248,30 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   else if (style.visibility === "hidden" && EMPTIED.has(style)) style.visibility = "";
   if (empty) EMPTIED.add(style);
   else EMPTIED.delete(style);
+  const coloured = new Set<string>();
+  for (const [field, property, unit] of COLOUR_PROPERTIES) {
+    const amount = value[field] ?? 0;
+    if (amount !== 0) {
+      style.setProperty?.(property, `${amount}${unit}`);
+      coloured.add(property);
+    } else if (COLOURED.get(style)?.has(property) === true) style.removeProperty?.(property);
+  }
+  COLOURED.set(style, coloured);
   const custom = value.custom ?? {};
-  for (const name of WRITTEN.get(style) ?? [])
+  for (const name of CUSTOM_WRITTEN.get(style) ?? [])
     if (!Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);
   for (const [name, number] of Object.entries(custom)) {
     if (!CUSTOM_NAME.test(name))
       throw new RangeError(
         `applyValue: custom name "${name}" must be letters, digits, "-" or "_".`,
       );
+    if (valueField(name) !== undefined)
+      throw new RangeError(
+        `applyValue: custom name "${name}" is a field's name; set the "${name}" field instead.`,
+      );
     style.setProperty?.(`--${name}`, String(number));
   }
-  WRITTEN.set(style, new Set(Object.keys(custom)));
+  CUSTOM_WRITTEN.set(style, new Set(Object.keys(custom)));
 }
 
 /** Sets a path element's `d` to the cubic segments. */

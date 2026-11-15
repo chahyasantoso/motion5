@@ -7,6 +7,8 @@ export {
   cssTransform,
   pathData,
   TRANSFORM_KEYS,
+  UNWRITTEN,
+  WRITTEN,
   type RenderStyle,
   type RenderTarget,
 } from "./render";

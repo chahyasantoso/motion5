@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { MOVE_PARTS } from "@gerak/tools/scene";
+import { moveParts } from "@gerak/tools/scene";
 import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
@@ -50,7 +50,7 @@ describe("agent reference", () => {
 
   it("names in its parts list only exports of @gerak/moves, each one named here", () => {
     const exported = new Set(exportsOf(["moves/src/index.ts"]).get("moves/src/index.ts"));
-    const names = MOVE_PARTS.map(({ name }) => name);
+    const names = moveParts().map(({ name }) => name);
     expect(new Set(names).size).toBe(names.length);
     expect(names.filter((name) => !exported.has(name))).toEqual([]);
     expect(names.filter((name) => !new RegExp(`\`${name}[\`(]`).test(reference))).toEqual([]);

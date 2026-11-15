@@ -31,7 +31,8 @@ in one session. Everything else runs on a cheaper model at medium effort. Before
 2. Give each file to one builder. When two slices read one record, name the package that owns its type.
 3. List every count, list or name a slice changes that another slice's tests read; have tests read it from source.
 4. Normalise a file with mixed line endings in its own commit first; `git ls-files --eol` must say `i/lf`.
-5. Commit and push the starting branch; the brief names its hash.
+5. A move of many files is the lead's script; a builder gets only the code and paths that follow it.
+6. Commit and push the starting branch; the brief names its hash.
 
 ## Brief a builder
 

@@ -6,7 +6,8 @@ import { searchablePaths } from "./repo-metrics.mjs";
 const root = fileURLToPath(new URL("..", import.meta.url));
 const MAP_PATH = "docs/MAP.md";
 const MAX_BYTES = 3072;
-const SOURCE_FOLDER = /^(?:packages|apps)\/[^/]+\/src(?:\/|$)/;
+const SOURCE_FOLDER = /^(?:packages|apps)\/[^/]+\/(?:\*\/)?src(?:\/|$)/;
+const BRIEF_FOLDER = /^(apps\/[^/]+)\/(?!src(?:\/|$))[^/]+\/(src(?:\/.*)?)$/;
 const WORKSPACE_DEPTH = 2;
 
 const HEADER = [
@@ -18,10 +19,10 @@ const HEADER = [
 ];
 
 export const OWNERS = {
-  "apps/examples/src": "worked examples that tests read",
-  "apps/pieces/src": "pieces agents and people make",
+  "apps/pieces/*/src": "one brief's pieces and components",
+  "apps/pieces/*/src/moves": "one brief's own moves",
+  "apps/pieces/src": "the players every brief shares",
   "apps/pieces/src/live": "live editor",
-  "apps/pieces/src/moves": "moves written for this app's pieces",
   "packages/rig/src": "joint vocabulary",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",
@@ -29,7 +30,22 @@ export const OWNERS = {
   "packages/rig/src/ik/solve2d": "2D solve",
   "packages/rig/src/ik/solve3d": "3D solve",
   "packages/dom/src": "DOM and SVG renderer",
-  "packages/moves/src": "moves, time, pose",
+  "packages/moves/src": "the one entry point and shared helpers",
+  "packages/moves/src/fields": "what can change: the value table, poses, combine",
+  "packages/moves/src/parts": "definePart: what each part promises",
+  "packages/moves/src/parts/time": "time, spans, windows",
+  "packages/moves/src/parts/ease": "eases: progress to progress, 0 to 1",
+  "packages/moves/src/parts/envelope": "envelopes: amounts that rise and die away",
+  "packages/moves/src/parts/oscillation": "swings: waves and shakes",
+  "packages/moves/src/parts/dynamics": "springs",
+  "packages/moves/src/parts/path": "travel along throws and curves",
+  "packages/moves/src/parts/geometry": "points, curves and lenses",
+  "packages/moves/src/parts/blend": "mixes between two values",
+  "packages/moves/src/parts/coupling": "poses from an amount or a speed: squashes, smears",
+  "packages/moves/src/parts/signal": "values from time and events: follow, trail, noise",
+  "packages/moves/src/parts/utility": "seeded numbers, the event list",
+  "packages/moves/src/moves": "defineMove and the built-in moves and modifiers",
+  "packages/moves/src/compose": "sequence, lanes, reversed, repeated, loops",
   "packages/player/src": "scene player, manual driver",
   "packages/stage/src": "the cast, the story and where things rest",
   "packages/physics/src": "physics",
@@ -77,6 +93,7 @@ export function sourceFolders(scanRoot = root) {
   const folders = searchablePaths(scanRoot)
     .filter((path) => existsSync(join(scanRoot, path)))
     .map((path) => dirname(path).replaceAll("\\", "/"))
+    .map((folder) => folder.replace(BRIEF_FOLDER, "$1/*/$2"))
     .filter((folder) => SOURCE_FOLDER.test(`${folder}/`));
   return [...new Set(folders)];
 }

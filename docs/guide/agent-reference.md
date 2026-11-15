@@ -156,6 +156,9 @@ const slide = defineMove({
 - **`Clock`** `type Clock`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Span`** `type Span`: A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on.
 - **`Time`** `type Time`: Where a move is: `progress` from 0 to 1, and the clock behind it.
+- **`definePart`** `<F extends object>(contract: PartContract, fn: F): F`: Declares what a part promises and returns the part itself, unchanged; the part gate refuses a part with no declaration, or one whose samples break the rule of its kind.
+- **`partContract`** `(fn: object): PartContract`: The contract `definePart` recorded for a part, or nothing when it was never declared.
+- **`PartContract`** `type PartContract`: What a part promises, by the folder it lives in; each sampled kind carries closures the part gate runs.
 - **`backEase`** `(options: { readonly amount: number; readonly direction: EaseDirection; }): Ease`: A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic.
 - **`ease`** `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ease; sineInOut: Ease; quadIn: Ease; quadOut: Ease; quadInOut:…`: The common eases under their usual names: `In` starts slow, `Out` ends slow, `InOut` does both.
 - **`springEase`** `(options: SpringOptions): Ease`: A spring from 0 settling on 1, fitted to the span; lower `damping` rings more. Feed it to values, not to a move's progress.
@@ -164,6 +167,13 @@ const slide = defineMove({
 - **`spring`** `(offset: number, speed: number, seconds: number, options: SpringOptions): SpringState`: Where a spring is, `seconds` after it left `offset` from its goal at `speed`, and how fast it goes.
 - **`SpringOptions`** `type SpringOptions`: A unit-mass spring: pull towards its goal per second squared, and drag on its speed per second.
 - **`SpringState`** `type SpringState`: Where a spring is from its goal, and how fast it moves, in units and units a second.
+- **`wave`** `(progress: number, count: number, phase?: number): number`: How far along a sine swing is: the sine of `count` full cycles over progress 0 to 1, shifted by `phase` in turns.
+- **`arch`** `(progress: number): number`: How strong a swing is when it rises then falls: 0 at progress 0, 1 at the middle, 0 at 1.
+- **`attack`** `(progress: number, rate: number): number`: How much of a swing has built up when it rises exponentially: 0 at progress 0, approaching 1 at `rate`.
+- **`decay`** `(progress: number, rate: number): number`: How much of a swing is left when it dies away exponentially: 1 at progress 0, falling at `rate`.
+- **`taper`** `(progress: number, power: number): number`: How much of a swing is left when it shrinks to nothing: 1 at progress 0 down to 0 at 1, shaped by `power`.
+- **`ballistic`** `(progress: number, options: BallisticOptions): { x: number; y: number; }`: Where a thrown thing is at progress 0 to 1: from (dx, dy) to (0, 0) under constant gravity, peaking `apex` px above the higher end.
+- **`BallisticOptions`** `type BallisticOptions`: The throw's shape: start offset `dx` and `dy`, and how many px above the higher end it peaks.
 - **`trail`** `(signal: (time: Time, events: Events) => number, options: TrailOptions): (time: Time, events: Events) => number`: A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's time: the signal applies its own spans and eases.
 - **`TrailOptions`** `type TrailOptions`: Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and `rest`, the distance under which it sits on the signal.
 - **`trailTurn`** `(signal: (time: Time, events: Events) => Pose3d, options: TrailOptions): (time: Time, events: Events) => Pose3d`: A turn chasing a `Pose3d` signal's turn on a spring, the short way round, resting exactly on it; pass the scene's time. Trail a position with three `trail` calls.
@@ -177,6 +187,7 @@ const slide = defineMove({
 - **`sequence`** `<R>(time: Time, phases: readonly Phase<R>[]): R`: Answers the last phase that started, given its own time: an ended phase holds its end, before the first the first holds its start. An empty list throws.
 - **`Phase`** `type Phase`: One phase of a sequence: the span it runs in, and what it answers given its own time there.
 - **`seeded`** `(seed: number): () => number`: Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use it, never `Math.random()`.
+- **`noise1d`** `(seed: number, scale?: number): (ms: number) => number`: A smooth wandering value from -1 to 1 over time in ms, easing to a fresh seeded target every `scale` ms; the same seed wanders the same.
 - **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
 - **`follow`** `(options: FollowOptions): (time: Time, events: Events) => number`: A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with no jump; pure in time and events, a later call goes on from the last.
 - **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a `value`, a `point` of numbers and an `other`.
@@ -202,14 +213,14 @@ const slide = defineMove({
 - **`LoopCycleOptions`** `type LoopCycleOptions`: Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver.
 - **`LoopCycleStep`** `type LoopCycleStep`: The progress a single `advance` produces.
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
-- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly ("rotation" | "x" | "y" | "scale" | "scaleX" | "scaleY" | "opacity" | "blur" | "drawn" | "drawnFrom" | "clip…`: Every field a renderer must write for a pose: its numbers and its anchor.
-- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: ValueField; y: ValueField; z: ValueField; rotation: ValueField; rotationX: ValueField; rotationY: ValueFi…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
+- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
+- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right of where the page puts it; px in 2D, world units in 3D."; rea…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
 - **`squashed`** `(squash: number, weight: number, anchor?: Anchor): Pose2d`: A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"` and `"right"` squash sideways.
 - **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
 - **`Combining`** `type Combining`: How two answers for one field on one target become one.
 - **`Pose2d`** `type Pose2d`: A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`, `anchor` and `custom` numbers. Stage px, y down, degrees clockwise.
-- **`ValueField`** `type ValueField`: What a field of a value is: where it rests, how it combines, and what the gate asks of it.
+- **`ValueField`** `type ValueField`: What a field of a value is: what it changes, its unit, which poses carry it, where it rests, how it combines, and what the gate asks of it.
 - **`combine3d`** `(poses: readonly Pose3d[]): Pose3d`: Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order.
 - **`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`: A 2D pose on the 3D xy plane: px scaled by `unitsPerPx`, y and the turn flipped, the anchor dropped; every 2D move reaches 3D through it.
 - **`mixPoint3d`** `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { readonly x: number; readonly y: number; readonly z: number; }…`: A 3D point `share` of the way from `from` to `to`.
@@ -225,6 +236,7 @@ const slide = defineMove({
 - **`Point2d`** `type Point2d`: A named point in px.
 - **`toCubics`** `(anchors: readonly Anchor2d[]): readonly Cubic2d[]`: One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
 - **`along`** `(cubics: readonly Cubic2d[], share: number, options?: { readonly turn?: boolean; }): Pose2d`: The `{ x, y }` pose `share` of the way along a path by distance, from the target's rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
+- **`radial`** `(angle: number, distance: number): { x: number; y: number; }`: Where a point `distance` away sits at `angle` degrees clockwise from the right, with y pointing down.
 - **`velocity`** `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: Events, stepMs?: number): { readonly vx: number; readonly vy: number; }`: The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`; zero with no clock.
 - **`smear`** `(velocity: { readonly vx: number; readonly vy: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: P…`: Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90]. Content that must not turn goes in an inner element posed `{ rotation: -heading }`.
 - **`squashFromSpeed`** `(speed: { readonly vx: number; readonly vy: number; }, options: SquashFromSpeedOptions): Pose2d`: A pose stretched along the heading of a px/s `speed` and squashed across it, `amount` per px/s up to `most`; empty at zero speed. Rotation is the heading in (-90, 90].
@@ -313,9 +325,11 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`cssClip`** `(x: number, y: number, radius: number): string`: A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left.
 - **`cssDash`** `(from: number, to: number, length: number): { readonly strokeDasharray: string; readonly strokeDashoffset: number; }`: The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long.
 - **`cssOrigin`** `(anchor: Anchor): string`: The CSS transform origin an anchor names.
-- **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then scales; empty when nothing moves.
+- **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then skews, then scales; empty when nothing moves.
 - **`pathData`** `(cubics: readonly Cubic2d[]): string`: SVG path data for joined cubic segments.
 - **`TRANSFORM_KEYS`** `const TRANSFORM_KEYS: readonly string[]`: The value keys a CSS transform carries; every other key writes as its own property.
+- **`UNWRITTEN`** `const UNWRITTEN: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The pose fields `@gerak/dom` leaves alone, each with the reason; it writes every one today.
+- **`WRITTEN`** `const WRITTEN: readonly (CarriedBy<"both" | "2d"> | "anchor" | "custom")[]`: The pose fields `@gerak/dom` writes: `applyValue` to an element's style, and the stage a path member's `shape` as its outline; custom numbers are written apart, as `--<name>` properties.
 - **`RenderStyle`** `type RenderStyle`: The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all.
 - **`RenderTarget`** `type RenderTarget`: An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has.
 - **`clockDriver`** `(options: ClockOptions): ClockDriver`: A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks until `.play()`; `reducedMotion: "play"` opts out.
@@ -592,9 +606,12 @@ return <mesh ref={ball} />;
 <!-- generated:reference:start -->
 - **`morphTargets`** `(root: Object3D<Object3DEventMap>): CustomWriter`: Builds a `CustomWriter` that writes `[0, 1]`-clamped values into matching `morphTargetInfluences` under `root`.
 - **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke, clip and layer alone.
-- **`THREE_POSE_FIELDS`** `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone.
+- **`UNWRITTEN_2D`** `const UNWRITTEN_2D: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The 2D pose fields `applyPose2d` leaves alone, each with the reason.
+- **`WRITTEN_2D`** `const WRITTEN_2D: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The 2D pose fields `applyPose2d` writes on an object; custom numbers go to the piece's own writer.
 - **`CustomWriter`** `type CustomWriter`: Where a piece puts a custom number on an object; the renderer knows no meaning for it.
 - **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
+- **`UNWRITTEN_3D`** `const UNWRITTEN_3D: Readonly<Partial<Record<"x" | "scale" | "y" | "z" | "scaleX" | "scaleY" | "scaleZ" | "opacity" | Turn3d | "anchor" | "c…`: The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one.
+- **`WRITTEN_3D`** `const WRITTEN_3D: readonly ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY", "scaleZ", "opacity"]`: The 3D pose fields `applyPose3d` writes on an object; custom numbers go to the piece's own writer.
 <!-- generated:reference:end -->
 
 ## @gerak/three/react
@@ -624,29 +641,34 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 
 - **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
-- **`motion:new <name> [--three]`**: writes `<name>.html`, its entry, a component and `src/<name>-scene.ts` in
-  `apps/pieces`; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
+- **`motion:new <name> [--in <brief>] [--three]`**: writes `<brief>/<name>.html`, its entry, a component and `<brief>/src/<name>-scene.ts` in
+  `apps/pieces` (the brief is the name unless `--in` names one); a name any brief already holds is refused; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.
-- **`motion:new --move <id> [--root dir]`**: writes `src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
+- **`motion:new --move <id> --in <brief> [--root dir]`**: writes `<brief>/src/moves/<id>.ts`, a `defineMove` declaration (role `"enter"`,
   empty description, one option) whose `run` is not at rest at progress 1, so `motion:moves --check` refuses it until
   you write the description and the `run`. The id is lower kebab-case; an existing file is never overwritten.
-- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/src/<piece>.ts`, a stage
+- **`motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`**: writes `<root>/<piece>/src/<piece>.ts`, a stage
   module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `actor({ still: true, path })`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
   `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
-- **`motion:moves [<id>] [--role role] [--check] [--json] [--parts] [--candidates] [--root dir]`**: lists every move of `@gerak/moves`, then of
-  `<root>/src/moves/*.ts`, one line each: id, role, description, options with range and default, moments, and the
-  `recipe` a move names. `<id>` prints
-  that move in full with a pasteable example and its file; `--role` filters; `--check` runs the move gate (and refuses
-  an id declared twice or a `recipe` id the parts list lacks) and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
-  moves, by group, each with its call shape and what it is for; `--candidates` lists the local moves that pass the gate
-  and are used by two or more briefs of `<root>/src` (a file's `export const brief = "<name>"`, else the file itself), one line each: id, file, briefs.
-- **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/src/moves` into
-  `packages/moves/src`, rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
-  index and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and
-  changes nothing, for a move that is not a candidate, one whose file exports a helper or a name the library has, or
+- **`motion:moves [<id>] [--role role] [--find words] [--fields a,b] [--like quality] [--renderer dom|three] [--move field[:quality]] [--uses kind,part] [--design file --target name] [--near id] [--far id] [--in brief] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]`**: one search over every source of moves the root declares
+  in `"gerak": { "moves": [...] }` of its `package.json` (a package name, or a folder glob such as `./*/src/moves`; absent, `["@gerak/moves", "./*/src/moves"]`).
+  With no query it prints a summary of at most 20 lines: moves per role and per source, the qualities `--like` knows, example queries. A query
+  prints at most 10 rows (`--all` lifts it), each: id (or `source/id` where two sources share an id), source (`own` for the `--in` brief's), role, fields moved,
+  the description's first sentence and the import, relative to `<root>/<in>/src` when `--in` names a brief. The filters combine: `--role`; `--find` (every word in the id,
+  description or an option name); `--fields x,scale` (moves all of them). The rankings order by fit, then by id, never by source: `--like heavy|light|quick|calm|playful|stiff|loose`
+  (descriptors in a range: peak, overshoot, rings, windup, settle), `--near id`, `--far id`. `<id>` (or `<source>/<id>`) prints one move in full: options, fields, descriptors, parts, the briefs that import it, a pasteable example, its import and file.
+  A search leaves out the moves the gate has findings on (a row says `passes` or `<n> findings`; the line after the rows says how many were left out) unless `--all`; `--renderer dom|three` keeps the moves all of whose fields that renderer writes (`three`: its 2D list), and a move in full lists, per renderer, the fields it leaves unwritten and why.
+  `--move field[:quality]` (repeatable; a custom number as `custom.name`), `--uses kind,part` and `--design file --target name` (the `design` export of a piece, one target) ask for the moves that answer a design: each move is scored at the example and at every option set, the best kept; rows order by how closely the requested fields have their qualities (`fieldFit`, least first), then by the share of `--uses` the move's file imports, then by id, and each row ticks or crosses every field and use with the value that decided it and names the option (`at option=value`) when not the example. A move answers when it moves every requested field and each is inside its quality (every mark a tick); when none does, it prints `No move does this closely.`, what was asked, the move for each field alone to combine in the scene, the `motion:new --move` command, and the three nearest moves with what each misses.
+  `--check` runs the move gate on the selected moves, refuses an id declared twice in one source and exits `1` on a finding; `--anatomy` prints the vocabulary card in at most 90 lines (`--json`: one object of `fields`, `parts`, `shapes`, `qualities`): each field with its group, meaning, unit, dimension and the renderers that write it, each part with its call, its first sentence and a sampled example, the shape words and the qualities' ranges; `--parts` prints the building blocks of `@gerak/moves` that are not
+  moves, by the folder that declares them, each with its call shape and the first sentence of its doc comment; `--candidates` lists the local moves that pass the gate
+  and are used by two or more briefs of `<root>` (the folders holding a `src`), one line each: id, file, briefs. Records are cached in `<root>/node_modules/.cache/gerak/moves.json`, a move sampled again only when its file (or its package's version) changes.
+- **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/<brief>/src/moves` into
+  the folder the root's `"gerak": { "promoteTo": "<path>" }` names (`apps/pieces`: `packages/moves/src/moves`), rewrites its own imports from `@gerak/moves` to relative ones, exports it from the package
+  index beside that folder and points every file of the app that imports it at `@gerak/moves`; prints each change. It refuses, and
+  changes nothing, with no `promoteTo` set, for a move that is not a candidate, one whose file exports a helper or a name the library has, or
   one some file names in a form it cannot rewrite (a re-export, `import *`, a dynamic import). Run `npm run format` and `npm run reference -- --write` after it.
 - **`motion:review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.

@@ -1,6 +1,6 @@
 # Motion atlas plan: standalone library-agnostic motion geometry with a `gerak` port
 
-**Status:** Brainstorm / exploratory proposal (2026-11-13). Not scheduled; records the target direction from researching Epicure ([arXiv:2605.22391](https://arxiv.org/abs/2605.22391)) and separating universal motion knowledge (`motion-atlas`) from execution runtimes (`gerak` and other ports).
+**Status:** Deferred, 2026-11-14: not built until a sameness score shows agents still converge; its measured, zero-ML part is `plan/anatomy-plan.md`. Brainstorm / exploratory proposal (2026-11-13). Not scheduled; records the target direction from researching Epicure ([arXiv:2605.22391](https://arxiv.org/abs/2605.22391)) and separating universal motion knowledge (`motion-atlas`) from execution runtimes (`gerak` and other ports).
 
 ## 1. Intent
 

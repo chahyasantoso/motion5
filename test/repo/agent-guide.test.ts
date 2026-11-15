@@ -115,7 +115,20 @@ describe("agent guide", () => {
 
   it("names no source file of the demo app, a worked example's component or entry included", () => {
     // Lists the folder's file names only; no source text is read.
-    const sources = new Set(readdirSync(new URL("src", new URL("apps/examples/", ROOT))));
+    const examples = [
+      "timing",
+      "catch",
+      "splash",
+      "card",
+      "pile",
+      "principles",
+      "principles3d",
+      "character3d",
+      "overlay3d",
+    ];
+    const sources = new Set(
+      examples.flatMap((name) => readdirSync(new URL(`apps/pieces/${name}/src`, ROOT))),
+    );
     const read = [
       guide,
       readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),

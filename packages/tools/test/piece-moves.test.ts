@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { atProgress } from "@gerak/moves";
 import { checkMove } from "../src/scene/moves";
-import { jolt } from "../../../apps/pieces/src/moves/jolt";
-import { push } from "../../../apps/pieces/src/moves/push";
+import { jolt } from "../../../apps/pieces/showreel/src/moves/jolt";
+import { push } from "../../../apps/pieces/showreel/src/moves/push";
 
 describe("the ranges a piece move declares", () => {
   it("jolt declares the cycles it can run and the gate probes both ends", () => {

@@ -8,7 +8,7 @@ write `apps/pieces/references/<file>.svg` by hand, each part that moves its own 
 `eyelidLeft`), then import it like any other, so a drawn character and a supplied one take one path.
 
 1. `npm run motion:import-svg -- apps/pieces/references/<file>.svg --name <name> --margin 40` writes
-   `apps/pieces/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
+   `apps/pieces/<name>/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
    the skin. The frame is the `viewBox` with `--margin` px of room on every side; a drawing that touches its edges
    needs that room, or a part that turns outward is cut off by the frame. It prints what it could not carry; nothing
    else is left out.
@@ -57,7 +57,7 @@ A drawing that is one thing in a scene goes into the scene's piece, not a piece 
 npm run motion:import-svg -- apps/pieces/references/<file>.svg --into <piece> --at 420,180 --scale 0.8 --prefix bird
 ```
 
-It adds the drawing's parts to `apps/pieces/src/<piece>.ts`, its `viewBox` top left at `--at` in the piece's frame px
+It adds the drawing's parts to `apps/pieces/<brief>/src/<piece>.ts`, its `viewBox` top left at `--at` in the piece's frame px
 and scaled by `--scale`, strokes too. Every part is named with the prefix (`birdBody`), and every gradient id too, so
 two drawings, or one drawing twice, never collide; the new parts paint above what the piece has. Leave room round the
 drawing inside the frame for what turns outward: the result lists in `outside` each new part that already crosses the

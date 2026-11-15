@@ -8,8 +8,9 @@ import {
   type Time,
   type ValueField,
 } from "@gerak/moves";
+import { DEFAULT_LIMITS } from "../page/check";
 import { unreachable } from "../page/unreachable";
-import { MOVE_PARTS } from "./parts";
+import { SCENE_LIMITS } from "./limits";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */
 export interface CheckedMove {
@@ -18,7 +19,6 @@ export interface CheckedMove {
   readonly description: string;
   readonly options: Readonly<Record<string, OptionField>>;
   readonly example: { readonly options: object; readonly input?: unknown };
-  readonly recipe?: readonly string[];
   moments(options: never): Readonly<Record<string, number | readonly number[]>>;
 }
 
@@ -50,8 +50,7 @@ export type MoveFinding =
       readonly from: number;
       readonly to: number;
     }
-  | { readonly kind: "moment-out-of-range"; readonly name: string; readonly value: number }
-  | { readonly kind: "unknown-part"; readonly part: string };
+  | { readonly kind: "moment-out-of-range"; readonly name: string; readonly value: number };
 
 const ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 /** Samples per run: one every 16 ms of a second. */
@@ -191,9 +190,6 @@ export function checkMove(move: CheckedMove): readonly MoveFinding[] {
   if (move.description.trim().length === 0) findings.push({ kind: "no-description" });
   for (const [option, field] of Object.entries(move.options))
     if (field.description.trim().length === 0) findings.push({ kind: "no-description", option });
-  for (const part of move.recipe ?? [])
-    if (!MOVE_PARTS.some(({ name }) => name === part))
-      findings.push({ kind: "unknown-part", part });
   for (const [index, options] of optionSets(move).entries())
     findings.push(...checkRun(move, options, index === 0));
   try {
@@ -232,11 +228,187 @@ export function describeFinding(id: string, finding: MoveFinding): string {
       return `${id}: "${finding.field}" jumps from ${round(finding.from)} to ${round(finding.to)} at progress ${round(finding.progress)} with ${finding.options}.`;
     case "moment-out-of-range":
       return `${id}: moment "${finding.name}" is ${finding.value}, outside 0 to 1.`;
-    case "unknown-part":
-      return `${id}: recipe names "${finding.part}", which is not a part; npm run motion:moves -- --parts lists them.`;
     default:
       return unreachable(finding);
   }
+}
+
+/** How one field's offset from rest moves over a move's progress. */
+export interface Descriptors {
+  /** Whether the offset is away from rest at progress 0 or at 1. */
+  readonly travelling: boolean;
+  /** The progress of its greatest step between samples. */
+  readonly peak: number;
+  /** The most it goes past where it is heading, over how far it had to go. */
+  readonly overshoot: number;
+  /** Crossings of rest after the first, or every crossing when it does not travel. */
+  readonly rings: number;
+  /** The most it pulls away from where it is heading before it first heads there, over how far it had to go. */
+  readonly windup: number;
+  /** The share of progress from its first arrival (or its greatest offset) until it stays near its end. */
+  readonly settle: number;
+}
+
+/** What sampling a move says of the fields it moves. */
+export interface MoveDescriptors {
+  /** Every field the example or an option bound moves, in the order the example's pose gives them. */
+  readonly fields: readonly string[];
+  /** The field whose offset is greatest against the limit its row is judged by. */
+  readonly primary: string | undefined;
+  /** The descriptors of the primary field at the example. */
+  readonly descriptors: Descriptors | undefined;
+  /** The shape of every moved field at the example, by field name. */
+  readonly shapes: Readonly<Record<string, Descriptors>>;
+  /** The same for each option set the gate samples, the example's first. */
+  readonly shapesAt: readonly {
+    readonly options: Readonly<Record<string, unknown>>;
+    readonly shapes: Readonly<Record<string, Descriptors>>;
+  }[];
+}
+
+const SETTLED_SHARE = 0.02;
+const TIE = 1 - 1e-9;
+
+const signOf = (value: number): number => (Math.abs(value) <= REST_SLACK ? 0 : Math.sign(value));
+
+function crossingsOf(offsets: readonly number[]): number {
+  let crossings = 0;
+  let last = 0;
+  for (const offset of offsets) {
+    const sign = signOf(offset);
+    if (sign === 0) continue;
+    if (last !== 0 && sign !== last) crossings += 1;
+    last = sign;
+  }
+  return crossings;
+}
+
+/** The index from which the offsets stay within a small share of their greatest of `end`. */
+function stayingFrom(offsets: readonly number[], end: number, greatest: number): number {
+  let from = offsets.length - 1;
+  while (from > 0 && Math.abs((offsets[from - 1] ?? 0) - end) <= greatest * SETTLED_SHARE)
+    from -= 1;
+  return from;
+}
+
+/** The descriptors of one field's offsets from rest, sampled evenly over progress 0 to 1. */
+export function describeOffsets(offsets: readonly number[]): Descriptors {
+  const last = offsets.length - 1;
+  const start = offsets[0] ?? 0;
+  const end = offsets[last] ?? 0;
+  const travelling = Math.abs(start) > REST_SLACK || Math.abs(end) > REST_SLACK;
+  const steps = offsets.slice(1).map((offset, i) => Math.abs(offset - (offsets[i] ?? 0)));
+  const greatestStep = Math.max(0, ...steps);
+  const tied = steps.flatMap((step, i) => (step >= greatestStep * TIE ? [i] : []));
+  const peak =
+    greatestStep <= REST_SLACK || last <= 0
+      ? 0
+      : ((tied[0] ?? 0) + (tied.at(-1) ?? 0) + 1) / 2 / last;
+  const greatest = Math.max(0, ...offsets.map(Math.abs));
+  const crossings = crossingsOf(offsets);
+  if (!travelling) {
+    const top = offsets.findIndex((offset) => Math.abs(offset) >= greatest * TIE);
+    const settled = stayingFrom(offsets, end, greatest);
+    return {
+      travelling,
+      peak,
+      overshoot: 0,
+      rings: crossings,
+      windup: 0,
+      settle: greatest <= REST_SLACK || last <= 0 ? 0 : Math.max(0, settled - top) / last,
+    };
+  }
+  const aim = Math.abs(start) > REST_SLACK ? 0 : end;
+  const far = start - aim;
+  const toward = -Math.sign(far);
+  let beyond = 0;
+  let pulled = 0;
+  let heading = false;
+  for (const offset of offsets) {
+    beyond = Math.max(beyond, toward * (offset - aim));
+    const gained = toward * (offset - start);
+    if (gained > REST_SLACK) heading = true;
+    if (!heading) pulled = Math.max(pulled, -gained);
+  }
+  const arrived = offsets.findIndex(
+    (offset) => Math.abs(offset - aim) <= REST_SLACK || signOf(offset - aim) === signOf(-far),
+  );
+  const settled = stayingFrom(offsets, end, greatest);
+  return {
+    travelling,
+    peak,
+    overshoot: beyond / Math.abs(far),
+    rings: Math.max(0, crossings - 1),
+    windup: pulled / Math.abs(far),
+    settle: Math.max(0, settled - (arrived < 0 ? last : arrived)) / last,
+  };
+}
+
+const LIMIT_OF = {
+  position: DEFAULT_LIMITS.jump,
+  turn: SCENE_LIMITS.turn,
+  ratio: SCENE_LIMITS.ratio,
+};
+
+/** A field's name as a move lists it: its row's name, or `custom.<name>` for a number a piece names. */
+function nameOf(path: string): string {
+  const names = path.split(".");
+  const last = names.at(-1) ?? path;
+  return names.at(-2) === "custom" ? `custom.${last}` : last;
+}
+
+/** Each moved field's offsets from rest over one run; a pose that leaves a field out rests on it. */
+function offsetsOf(move: CheckedMove, options: object): ReadonlyMap<string, readonly number[]> {
+  const samples: Map<string, number>[] = [];
+  try {
+    for (let step = 0; step <= STEPS; step += 1)
+      samples.push(numbers(run(move, options, step / STEPS)));
+  } catch {
+    return new Map();
+  }
+  const paths = new Set(samples.flatMap((sample) => [...sample.keys()]));
+  const found = new Map<string, readonly number[]>();
+  for (const path of paths) {
+    const rest = restOf(path);
+    if (rest === undefined) continue;
+    const offsets = samples.map((sample) => (sample.get(path) ?? rest) - rest);
+    if (offsets.every(Number.isFinite) && offsets.some((offset) => Math.abs(offset) > REST_SLACK))
+      found.set(path, offsets);
+  }
+  return found;
+}
+
+function shapesOf(
+  found: ReadonlyMap<string, readonly number[]>,
+): Readonly<Record<string, Descriptors>> {
+  return Object.fromEntries(
+    [...found].map(([path, offsets]) => [nameOf(path), describeOffsets(offsets)]),
+  );
+}
+
+/** The fields a move moves, how each moves and which moves most, sampled as the gate samples it. */
+export function descriptorsOf(move: CheckedMove): MoveDescriptors {
+  const sets = optionSets(move);
+  const sampled = sets.map((set) => offsetsOf(move, set));
+  const [example = new Map<string, readonly number[]>(), ...bounds] = sampled;
+  const names = [...example.keys(), ...bounds.flatMap((found) => [...found.keys()])].map(nameOf);
+  let primary: { readonly path: string; readonly share: number } | undefined;
+  for (const [path, offsets] of example) {
+    const share =
+      Math.max(...offsets.map(Math.abs)) / LIMIT_OF[fieldAt(path)?.judged ?? "position"];
+    if (primary === undefined || share > primary.share) primary = { path, share };
+  }
+  const offsets = primary === undefined ? undefined : example.get(primary.path);
+  return {
+    fields: [...new Set(names)],
+    primary: primary === undefined ? undefined : nameOf(primary.path),
+    descriptors: offsets === undefined ? undefined : describeOffsets(offsets),
+    shapes: shapesOf(example),
+    shapesAt: sets.map((options, index) => ({
+      options: Object.fromEntries(Object.entries(options)),
+      shapes: shapesOf(sampled[index] ?? new Map()),
+    })),
+  };
 }
 
 /** Whether a value is a move the gate can read. */

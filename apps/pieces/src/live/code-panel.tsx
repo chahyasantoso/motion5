@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as builtIn from "@gerak/moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
+import { sceneFileOf } from "../stage-module";
 
 export type { NumericLiteralSpan };
 
@@ -188,20 +189,22 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
     if (dragRef.current !== null || inFlightRef.current || pendingNewTextRef.current !== null) {
       return;
     }
+    const file = sceneFileOf(sceneName);
     let cancelled = false;
-    fetch(`/__motion/source?file=src/${sceneName}-scene.ts`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: unknown) => {
-        if (cancelled) return;
-        if (isSourceResponse(data)) {
-          setSource(data.source);
-          setLiterals(data.literals);
-        }
-      })
-      .catch(() => {});
+    if (file !== undefined)
+      fetch(`/__motion/source?file=${file}`)
+        .then((res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return res.json();
+        })
+        .then((data: unknown) => {
+          if (cancelled) return;
+          if (isSourceResponse(data)) {
+            setSource(data.source);
+            setLiterals(data.literals);
+          }
+        })
+        .catch(() => {});
     importAppMoves()
       .then((modules) => {
         if (!cancelled) setAppModules(modules);
@@ -214,9 +217,11 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves 
   }, [sceneName, version]);
 
   const sendEdit = (start: number, oldText: string, newText: string): void => {
+    const file = sceneFileOf(sceneName);
+    if (file === undefined) return;
     inFlightRef.current = true;
     const body = JSON.stringify({
-      file: `src/${sceneName}-scene.ts`,
+      file,
       start,
       end: start + oldText.length,
       oldText,

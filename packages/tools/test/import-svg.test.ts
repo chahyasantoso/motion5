@@ -149,7 +149,6 @@ describe("motion:import-svg geometry", () => {
     const imported = await bring(join(fixtures, "svg-transforms.svg"), "fixture");
     expect(imported.result.frame).toEqual({ width: 200, height: 120 });
     expect(imported.module["frame"]).toEqual({ width: 200, height: 120 });
-    expect(imported.module["brief"]).toBe("fixture");
     expect(imported.css).toContain('[data-cast="tile"] { z-index: 1; }');
     expect(imported.css).toContain('[data-cast="dot"] { z-index: 2; }');
     expect(imported.css).toContain(
@@ -264,7 +263,7 @@ describe("motion:import-svg paint", () => {
 describe("motion:import-svg on the penguin", () => {
   it("writes its 21 paths with their gradients and lists the Illustrator foreignObject", async () => {
     const imported = await bring(
-      join(import.meta.dirname, "../../../apps/pieces/references/penguin.svg"),
+      join(import.meta.dirname, "../../../apps/pieces/penguin/references/penguin.svg"),
       "penguin",
     );
     expect(imported.result.members).toHaveLength(21);
@@ -303,12 +302,10 @@ describe("motion:import-svg --into a piece", () => {
   function scratch(frame = frameOf(300, 200)): string {
     const root = mkdtempSync(join(tmpdir(), "import-svg-into-"));
     folders.push(root);
-    mkdirSync(join(root, "src"));
+    mkdirSync(join(root, "scratch", "src"), { recursive: true });
     writeFileSync(
-      join(root, "src", "scratch.ts"),
+      join(root, "scratch", "src", "scratch.ts"),
       `import { actor, story } from "@gerak/stage";
-
-export const brief = "scratch";
 
 export const beats = story(1000, { show: [0, 1000] });
 
@@ -343,7 +340,7 @@ export const scene = (_time: unknown) => ({});
   }
 
   async function read(root: string): Promise<Imported> {
-    const file = join(root, "src", "scratch.ts");
+    const file = join(root, "scratch", "src", "scratch.ts");
     const module: Record<string, unknown> = await import(pathToFileURL(file).href);
     const stage = stageOf(module);
     return {
@@ -364,7 +361,7 @@ export const scene = (_time: unknown) => ({});
 
   it("moves and scales points and stroke widths, and keeps what the piece had", async () => {
     const root = scratch();
-    const before = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    const before = readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8");
     const result = await into(root, join(fixtures, "svg-strokes.svg"), {
       at: { x: 10, y: 20 },
       scale: 1.5,
@@ -382,7 +379,7 @@ export const scene = (_time: unknown) => ({});
     expect(imported.css).toContain(
       '[data-path="artEven"] { fill: none; stroke: #000000; stroke-width: 9; }',
     );
-    const after = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    const after = readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8");
     expect(after.startsWith(before.slice(0, before.indexOf("} as const;")))).toBe(true);
     expect(after).toContain('[data-path="base"] { fill: url(#keep); stroke: none; }');
     expect(after).toContain(
@@ -419,12 +416,12 @@ export const scene = (_time: unknown) => ({});
     const root = scratch();
     const svg = join(fixtures, "svg-strokes.svg");
     expect((await into(root, svg, { prefix: "art" })).kind).toBe("written");
-    const before = readFileSync(join(root, "src", "scratch.ts"), "utf8");
+    const before = readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8");
     expect(await into(root, svg, { prefix: "art" })).toEqual({
       kind: "refused",
       message: expect.stringContaining('"artEven"'),
     });
-    expect(readFileSync(join(root, "src", "scratch.ts"), "utf8")).toBe(before);
+    expect(readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8")).toBe(before);
     const missing = await importSvgInto(svg, "nothing", root, {
       at: { x: 0, y: 0 },
       prefix: "art",

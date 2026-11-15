@@ -51,7 +51,7 @@ The code panel on the left reads `src/<name>-scene.ts` and underlines every nume
 
 - Drag horizontally on a number to scrub its value live: integers step by `1` per pixel (`700` to `760`), and decimals
   step by `0.01` per pixel (`0.18` to `0.28`).
-- When a literal sits inside a call of a move, built in, exported by the scene file, or in the app's `src/moves`, the drag clamps to the `min`
+- When a literal sits inside a call of a move, built in, exported by the scene file, or in a brief's `src/moves`, the drag clamps to the `min`
   and `max` declared on that move's option.
 - Each change writes straight back to `src/<name>-scene.ts` (refusing the write if the file changed underneath), and
   the stage updates through the normal hot swap. The dev server accepts only a number written over a number, in a

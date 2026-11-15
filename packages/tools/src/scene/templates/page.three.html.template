@@ -28,6 +28,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/__NAME__-main.tsx"></script>
+    <script type="module" src="/__BRIEF__/src/__NAME__-main.tsx"></script>
   </body>
 </html>

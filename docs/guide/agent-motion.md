@@ -28,26 +28,43 @@ not by reading package source. Read a part below only when the brief needs it:
 2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
-3. `npm run motion:new -- <name>` writes `apps/pieces/src/<name>.ts`, one stage module: a story of one beat, one
-   actor at rest and an empty skin. Open it as `stage.html?piece=<name>`.
-4. **Cast, story, skin** (see [The stage module](#the-stage-module)). Name who is on stage in `cast`, the beats in
-   `beats`, and give each member the look the brief calls for in `skins.dom.css`. Name the look most people would
-   give it, and choose another the brief supports as well. Lay the skin out as the final frame.
-5. **Read the catalog.** `npm run motion:moves` prints one line per move: id, role, what it does, its options with
-   their ranges, its moments. `-- --role enter` lists one role; `-- <id>` prints one move in full with its call.
-   Choose by role and by the character you wrote down.
-   `-- --parts` lists the building blocks moves are made from (`trail`, `sequence`, `springEase`, `along`, ...).
-6. **Compose.** Place each move on a span, reshape it with a modifier, add moves together on one target (see
-   [Composing](#composing)). Choose every number from your three lines and [what a quality asks](#what-a-quality-asks).
-7. **Where nothing fits, write a move** (see [writing a move](./agent-moves.md)) and use it like any other. A
-   motion with a name that another piece could use is a move, even when `keyframes` could draw it here.
-8. `npm run motion:review -- apps/pieces/src/<name>.ts` checks the cast against the scene with no browser. `npm run motion:review --
-   "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does,
-   gives the findings and a `sheet` of frames picked where the motion is fast; `--full` adds the moves with their eases.
-9. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
-   shows the three lines you wrote. Run `npm run typecheck` once at the end.
+3. `npm run motion:new -- <name> [--in <brief>]` writes `apps/pieces/<brief>/src/<name>.ts` (the brief is the name
+   unless `--in` names another), one stage module: a story of one beat, one actor at rest and an empty skin. Open it
+   as `stage.html?piece=<name>`. Name who is on stage in `cast`, the beats in `beats`, and give each member the look
+   the brief calls for in `skins.dom.css` (see [The stage module](#the-stage-module)). Name the look most people
+   would give it, and choose another the brief supports as well. Lay the skin out as the final frame.
+4. **Learn the primitives, once.** `npm run motion:moves -- --anatomy` is one card: every **field** a target can
+   change (place, turn, size, look, colour, reveal, order), with its meaning, unit and which renderers draw it; every
+   **part** by kind (ease, envelope, oscillation, path, blend, coupling, signal, ...) with its call and a worked
+   sample (`taper(p, 2): 1, 0.25, 0`); and the **qualities** (`heavy`, `light`, `quick`, `calm`, `playful`,
+   `stiff`, `loose`) as ranges of a motion's shape.
+5. **Write the design before choosing any move.** Turn your three lines into the piece's spec, in the module:
+   `export const design = { ball: { y: { fall: "heavy" }, scaleY: { land: "loose" } } };`, each member's fields
+   with the quality their motion should have, by beat where its character changes. A design names actors and
+   groups; a list member (`letters`, `words`, `many`) holds its intent for every item, and `"word.3"` names one item.
+   Name the beat in which the field actually moves, since the review measures it there. In your report, write under each
+   line the fields and the parts by kind it needs: "the fall: `y` heavy, a `ballistic` path; the landing: `scaleY`
+   loose, an `envelope` times an `oscillation`".
+6. **Ask the catalog with the design.** `npm run motion:moves -- --design apps/pieces/<brief>/src/<name>.ts --target
+   ball --in <brief>` scores every move that passes the gate against that member's design, says per field what
+   matched and at which options, and gives the import. `--move y:heavy --uses envelope` asks the same by hand;
+   `--far <the obvious move>` finds ideas unlike it; `--renderer three` keeps moves a 3D page draws. Read a move in
+   full (`-- <id>`) before using it.
+7. **Decide each line, in this order:** use a move as it is; use it at the options its row names; combine moves in
+   the scene, one per field (when no move does it all, the answer names the move for each field); drive the field in
+   the scene with parts (a `mix` on an ease, an envelope), when no move has it and only this piece needs it, as a
+   colour turning or a shadow following a height often is; or write a move from the parts you named ([writing a
+   move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
+   choose every number from your three lines. In your report, give each line's choice and why.
+8. `npm run motion:review -- apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
+   and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
+   does not yet have the quality you wrote. `npm run motion:review -- "stage.html?piece=<name>" --watch
+   '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does, adds a `sheet` of frames picked where
+   the motion is fast; `--full` adds the moves with their eases.
+9. Fix what it flags, the design's findings first, and what looks wrong on the sheet; review again. Stop when the
+   findings are empty and the sheet shows the three lines you wrote. Run `npm run typecheck` once at the end.
 
-The other scene files in `apps/pieces/src` are other people's pieces. Do not open them: a piece begun from one
+The other scene files in `apps/pieces/*/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
 picture is wrong, so read the sheet before calling anything finished.
 
@@ -90,6 +107,11 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   text. By default the frame and every group or `many` lay their members out in a centred, wrapping row (gaps 24 and
   8 px), each `position: relative`. To place one yourself, give it `position: absolute` with `left` and `top` from
   its parent's top-left. Never `position: static` or `display: contents`: its rest box would be wrong.
+- **Colour and shadow.** The fields `hue`, `lightness` and `tint` move a member's colour from the one its skin gives
+  it, and `shadowX`, `shadowY` and `shadowBlur` its drop shadow; the skin places them:
+  `background: oklch(from color-mix(in oklch, #f53, var(--gerak-tint-to, white) calc(var(--gerak-tint, 0) * 100%))
+  calc(l + var(--gerak-lightness, 0)) c calc(h + var(--gerak-hue, 0)))`, and `--gerak-shadow` the shadow's colour
+  (dark grey when absent). Never animate a colour through a `custom` number.
 - **Rest.** `restOf(rest, "dot")` is the measured box of a member after layout, `{ x, y, width, height }` from its
   centre in the frame; it is a zero box under a tool with no browser.
 - `R`, or a click on the background, replays.
@@ -101,7 +123,7 @@ number goes.
 
 ```ts
 // Every helper below, and every built-in move, comes from this package; a move `motion:moves` lists from
-// `apps/pieces/src/moves` is imported from `./moves/<id>`.
+// `apps/pieces/<brief>/src/moves` is imported from `./moves/<id>`.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given

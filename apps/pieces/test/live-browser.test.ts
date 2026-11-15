@@ -1,13 +1,13 @@
-import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 
-/** The worked examples the scratch copies are made from; they live in their own app. */
-const EXAMPLES = fileURLToPath(new URL("../../examples/", import.meta.url));
-const TIMING_SCENE = join(EXAMPLES, "src/timing-scene.ts");
-const PILE_SCENE = join(EXAMPLES, "src/pile-scene.ts");
+/** The worked examples the scratch copies are made from; each is a brief folder of this app. */
+const EXAMPLES = fileURLToPath(new URL("../", import.meta.url));
+const TIMING_SCENE = join(EXAMPLES, "timing/src/timing-scene.ts");
+const PILE_SCENE = join(EXAMPLES, "pile/src/pile-scene.ts");
 // Read once at load, so the last test can tell whether the suite changed them.
 const TIMING_BEFORE = readFileSync(TIMING_SCENE, "utf8");
 const PILE_BEFORE = readFileSync(PILE_SCENE, "utf8");
@@ -31,7 +31,7 @@ const TIMING: Piece = {
 const PILE: Piece = { page: "pile", component: "Pile", scene: "pile-scene" };
 
 interface Scratch {
-  /** Opened as `live.html?scene=<name>`, or as the page `<name>.html`. */
+  /** Opened as `live.html?scene=<name>`, or as the page `<name>/<name>.html`. */
   readonly name: string;
   readonly sceneFile: string;
   remove(): void;
@@ -42,16 +42,16 @@ let copies = 0;
 
 /** Removes whatever scratch copies a stopped run left behind. */
 function removeLeftovers(): void {
-  for (const dir of [DEFAULT_ROOT, join(DEFAULT_ROOT, "src")])
-    for (const file of readdirSync(dir))
-      if (file.startsWith(SCRATCH_PREFIX)) rmSync(join(dir, file), { force: true });
+  for (const folder of readdirSync(DEFAULT_ROOT))
+    if (folder.startsWith(SCRATCH_PREFIX))
+      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
 }
 
-function readApp(file: string): string {
-  return readFileSync(join(EXAMPLES, file), "utf8");
+function readApp(piece: Piece, file: string): string {
+  return readFileSync(join(EXAMPLES, piece.page, file), "utf8");
 }
 
-/** Copies a piece's page, component and scene to files named `scratch-*` that git ignores. */
+/** Copies a piece's page, component and scene into a folder named `scratch-*` that git ignores. */
 function scratchOf(piece: Piece): Scratch {
   copies += 1;
   const name = `${SCRATCH_PREFIX}${piece.page}${copies}`;
@@ -61,27 +61,33 @@ function scratchOf(piece: Piece): Scratch {
     return next;
   };
   const files = new Map<string, string>([
-    [`src/${name}-scene.ts`, readApp(`src/${piece.scene}.ts`)],
+    [`${name}/src/${name}-scene.ts`, readApp(piece, `src/${piece.scene}.ts`)],
     [
-      `src/${name}.tsx`,
-      pointed(readApp(`src/${piece.component}.tsx`), `./${piece.scene}`, `./${name}-scene`),
+      `${name}/src/${name}.tsx`,
+      pointed(readApp(piece, `src/${piece.component}.tsx`), `./${piece.scene}`, `./${name}-scene`),
     ],
   ]);
-  const page = readApp(`${piece.page}.html`);
-  if (piece.main === undefined) files.set(`${name}.html`, page);
+  const page = readApp(piece, `${piece.page}.html`);
+  if (piece.main === undefined) files.set(`${name}/${name}.html`, page);
   else {
-    files.set(`${name}.html`, page.replace(`/src/${piece.main}.tsx`, `/src/${name}-main.tsx`));
     files.set(
-      `src/${name}-main.tsx`,
-      pointed(readApp(`src/${piece.main}.tsx`), `./${piece.component}`, `./${name}`),
+      `${name}/${name}.html`,
+      page.replace(`/${piece.page}/src/${piece.main}.tsx`, `/${name}/src/${name}-main.tsx`),
+    );
+    files.set(
+      `${name}/src/${name}-main.tsx`,
+      pointed(readApp(piece, `src/${piece.main}.tsx`), `./${piece.component}`, `./${name}`),
     );
   }
-  for (const [file, text] of files) writeFileSync(join(DEFAULT_ROOT, file), text, "utf8");
+  for (const [file, text] of files) {
+    mkdirSync(dirname(join(DEFAULT_ROOT, file)), { recursive: true });
+    writeFileSync(join(DEFAULT_ROOT, file), text, "utf8");
+  }
   return {
     name,
-    sceneFile: join(DEFAULT_ROOT, `src/${name}-scene.ts`),
+    sceneFile: join(DEFAULT_ROOT, `${name}/src/${name}-scene.ts`),
     remove() {
-      for (const file of files.keys()) rmSync(join(DEFAULT_ROOT, file), { force: true });
+      rmSync(join(DEFAULT_ROOT, name), { recursive: true, force: true });
     },
   };
 }
@@ -164,7 +170,7 @@ describe("live editor in the browser", () => {
           const banners = () => page.locator("[data-live-error]").count();
           const finish = (stamp: number) =>
             page.evaluate(`(async () => {
-            const module = await import("/src/${scratch.name}.tsx");
+            const module = await import("/${scratch.name}/src/${scratch.name}.tsx");
             const detail = { ...module, __motionStamp: ${stamp} };
             window.dispatchEvent(new CustomEvent("motion:hot", { detail, cancelable: true }));
           })()`);
@@ -236,7 +242,12 @@ describe("live editor in the browser", () => {
     const original = readFileSync(scratch.sceneFile, "utf8");
     try {
       await withPage(
-        { page: `${scratch.name}.html`, width: 1280, height: 720, source: DEFAULT_SOURCE },
+        {
+          page: `${scratch.name}/${scratch.name}.html`,
+          width: 1280,
+          height: 720,
+          source: DEFAULT_SOURCE,
+        },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);
           await page.evaluate(() => Reflect.set(window, "motionMarker", "first load"));

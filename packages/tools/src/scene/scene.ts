@@ -16,6 +16,7 @@ import {
   type Layouts,
   type Rest,
 } from "@gerak/stage";
+import { readDesign, type Design } from "./design";
 import { parseNumbers } from "../page/args";
 import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
@@ -75,6 +76,8 @@ export interface SceneModule {
   readonly cues: Events;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
+  /** The module's `design`: the quality each target's field should have, checked by the review. */
+  readonly design?: Design;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
   /** A stage module's `skins.dom.css`, which the review reads for the members it names. */
@@ -147,6 +150,10 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   const readLimit = readLimits(Reflect.get(Object(value), "limits"));
   if ("reason" in readLimit) return readLimit;
   const { limits } = readLimit;
+  const givenDesign: unknown = Reflect.get(Object(value), "design");
+  const readIntent = givenDesign === undefined ? undefined : readDesign(givenDesign);
+  if (readIntent?.kind === "refused") return { reason: `The module's ${readIntent.reason}` };
+  const designed = readIntent === undefined ? {} : { design: readIntent.design };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
   if (Reflect.get(Object(value), "beats") !== undefined) {
@@ -169,6 +176,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
     const unmeasured =
       stage.layouts !== undefined && Reflect.get(Object(value), "rests") === undefined;
     return {
+      ...designed,
       ...(unmeasured ? { unmeasured } : {}),
       cues: ownCues,
       limits,
@@ -189,6 +197,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   if (typeof given !== "number" || !Number.isFinite(given) || given <= 0)
     return { reason: "The module exports no `durationMs`, a positive number." };
   return {
+    ...designed,
     cues: ownCues,
     limits,
     scene: (time, events) => {

@@ -22,6 +22,12 @@ describe("cssTransform", () => {
     );
   });
 
+  it("puts skew after the turns and before the scales, each only off rest", () => {
+    expect(cssTransform({ scaleX: 2, skewX: 10, rotation: 30, skewY: 0 })).toBe(
+      "rotate(30deg) skewX(10deg) scaleX(2)",
+    );
+  });
+
   it("is empty when nothing moves", () => {
     expect(cssTransform({ opacity: 1 })).toBe("");
   });
@@ -72,6 +78,40 @@ describe("applyValue", () => {
     applyValue(target, { y: 1, anchor: "top" });
     expect(target.style.transformBox).toBe("fill-box");
     expect(target.style.transformOrigin).toBe("50% 0%");
+  });
+
+  it("writes a drop shadow only when a shadow field is off rest, after any blur", () => {
+    const target = element();
+    applyValue(target, { shadowX: 4 });
+    expect(target.style.filter).toContain("drop-shadow(4px 0px 0px");
+    expect(target.style.filter).not.toContain("blur(");
+    applyValue(target, { blur: 2, shadowY: 3, shadowBlur: 6 });
+    expect(target.style.filter).toBe(
+      "blur(2px) drop-shadow(0px 3px 6px var(--gerak-shadow, rgb(0 0 0 / 0.35)))",
+    );
+    applyValue(target, { shadowX: 0 });
+    expect(target.style.filter).toBe("");
+  });
+
+  it("writes hue, lightness and tint as custom properties and removes them at rest", () => {
+    const set: Record<string, string> = {};
+    const target = element();
+    target.style.setProperty = (name, value) => {
+      set[name] = value;
+    };
+    target.style.removeProperty = (name) => {
+      Reflect.deleteProperty(set, name);
+    };
+    applyValue(target, { hue: 30, lightness: -0.2, tint: 0.5 });
+    expect(set).toEqual({
+      "--gerak-hue": "30deg",
+      "--gerak-lightness": "-0.2",
+      "--gerak-tint": "0.5",
+    });
+    applyValue(target, { lightness: 0, tint: 1 });
+    expect(set).toEqual({ "--gerak-tint": "1" });
+    applyValue(target, {});
+    expect(set).toEqual({});
   });
 
   it("blurs by the value's blur, and clears the filter when a later value has none", () => {
@@ -159,8 +199,8 @@ describe("applyValue", () => {
     const written: [string, string][] = [];
     const target = element();
     target.style.setProperty = (name, value) => written.push([name, value]);
-    applyValue(target, { custom: { tint: 0.4 } });
-    expect(written).toEqual([["--tint", "0.4"]]);
+    applyValue(target, { custom: { charge: 0.4 } });
+    expect(written).toEqual([["--charge", "0.4"]]);
   });
 
   it("removes a custom name a later value leaves out, and refuses one CSS could not carry", () => {
@@ -168,12 +208,18 @@ describe("applyValue", () => {
     const target = element();
     target.style.setProperty = () => undefined;
     target.style.removeProperty = (name) => removed.push(name);
-    applyValue(target, { custom: { tint: 0.4, glow: 1 } });
+    applyValue(target, { custom: { charge: 0.4, glow: 1 } });
     applyValue(target, { custom: { glow: 2 } });
-    expect(removed).toEqual(["--tint"]);
+    expect(removed).toEqual(["--charge"]);
     applyValue(target, {});
-    expect(removed).toEqual(["--tint", "--glow"]);
+    expect(removed).toEqual(["--charge", "--glow"]);
     expect(() => applyValue(target, { custom: { "bad name": 1 } })).toThrow(/bad name/);
+  });
+
+  it("refuses a custom number named like a field, and says to use the field", () => {
+    const target = element();
+    target.style.setProperty = () => undefined;
+    expect(() => applyValue(target, { custom: { hue: 1 } })).toThrow(/hue.*field/);
   });
 
   it("leaves a stroke undashed when there is no length to measure", () => {

@@ -1,11 +1,10 @@
-import { readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
 import { scaffold } from "@gerak/tools/scene";
 
 const PREFIX = "stage-scratch-";
-const SRC = join(DEFAULT_ROOT, "src");
 const STEP_TIMEOUT_MS = 5000;
 let copies = 0;
 
@@ -24,14 +23,16 @@ export const scene = (time: Time) => ({
 }
 
 function removeLeftovers(): void {
-  for (const file of readdirSync(SRC))
-    if (file.startsWith(PREFIX)) rmSync(join(SRC, file), { force: true });
+  for (const folder of readdirSync(DEFAULT_ROOT))
+    if (folder.startsWith(PREFIX))
+      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
 }
 
 function scratch(distance: number): { readonly name: string; readonly file: string } {
   copies += 1;
   const name = `${PREFIX}${copies}`;
-  const file = join(SRC, `${name}.ts`);
+  const file = join(DEFAULT_ROOT, name, "src", `${name}.ts`);
+  mkdirSync(join(DEFAULT_ROOT, name, "src"), { recursive: true });
   writeFileSync(file, fixture(distance), "utf8");
   return { name, file };
 }

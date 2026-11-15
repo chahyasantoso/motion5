@@ -1,4 +1,4 @@
-import type { Anchor, POSE_2D_FIELDS, Pose2d } from "@gerak/moves";
+import type { Anchor, Pose2d } from "@gerak/moves";
 import { BufferGeometry, Vector3, type Object3D } from "three";
 
 /** The anchor's point on the object's own geometry box, in its local space, y up; the origin without geometry. */
@@ -27,8 +27,8 @@ function pivotOf(object: Object3D, anchor: Anchor): Vector3 {
   }
 }
 
-/** The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone. */
-export const THREE_POSE_FIELDS = Object.freeze([
+/** The 2D pose fields `applyPose2d` writes on an object; custom numbers go to the piece's own writer. */
+export const WRITTEN_2D = Object.freeze([
   "x",
   "y",
   "rotation",
@@ -37,7 +37,31 @@ export const THREE_POSE_FIELDS = Object.freeze([
   "scaleY",
   "opacity",
   "anchor",
-] as const) satisfies readonly (typeof POSE_2D_FIELDS)[number][];
+] as const) satisfies readonly (keyof Pose2d)[];
+
+const NO_PLACE = "A Three.js object has no place for it.";
+
+/** The 2D pose fields `applyPose2d` leaves alone, each with the reason. */
+export const UNWRITTEN_2D: Readonly<Partial<Record<keyof Pose2d, string>>> = Object.freeze({
+  skewX: NO_PLACE,
+  skewY: NO_PLACE,
+  blur: NO_PLACE,
+  shadowX: NO_PLACE,
+  shadowY: NO_PLACE,
+  shadowBlur: NO_PLACE,
+  hue: NO_PLACE,
+  lightness: NO_PLACE,
+  tint: NO_PLACE,
+  drawn: "A stroke is drawn by the dash of a stylesheet, which an object does not have.",
+  drawnFrom: "A stroke is drawn by the dash of a stylesheet, which an object does not have.",
+  clipX: "An object is not clipped.",
+  clipY: "An object is not clipped.",
+  clipRadius: "An object is not clipped.",
+  clipWidth: "An object is not clipped.",
+  clipHeight: "An object is not clipped.",
+  shape: "A path's outline is a DOM attribute, which an object does not have.",
+  layer: "Paint order of an object follows the scene's depth, not a layer number.",
+});
 
 /** Where a piece puts a custom number on an object; the renderer knows no meaning for it. */
 export type CustomWriter = (name: string, value: number, object: Object3D) => void;

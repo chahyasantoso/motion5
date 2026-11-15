@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { mergeEvents } from "@gerak/moves";
+import { mergeEvents, valueField } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
 import { resolve } from "node:path";
@@ -15,6 +15,10 @@ import {
   type Rest,
 } from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
+import { SCENE_LIMITS } from "./limits";
+import { QUALITIES, outsideRanges } from "./catalog";
+import { intentsOf, type Intent } from "./design";
+import { describeOffsets } from "./moves";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
@@ -34,9 +38,6 @@ export interface SceneReviewRequest {
 
 /** The most one step of a scene may cost, in ms, when no flag gives it. */
 export const DEFAULT_BUDGET_MS = 8;
-
-/** Turn and ratio limits when no flag gives them. */
-export const SCENE_LIMITS = Object.freeze({ turn: 150, ratio: 1.5 });
 
 export type SceneReviewArgs =
   | ({ readonly kind: "ok" } & SceneReviewRequest)
@@ -109,9 +110,7 @@ type FieldKind = "position" | "turn" | "ratio";
 
 function kindOf(path: string): FieldKind {
   if (/(^|\.)custom(\.|\[|$)/.test(path)) return "ratio";
-  if (/(^|\.)rotation[XYZ]?$/.test(path)) return "turn";
-  if (/(^|\.)(scale\w*|opacity)$/.test(path)) return "ratio";
-  return "position";
+  return valueField(path.slice(path.lastIndexOf(".") + 1))?.judged ?? "position";
 }
 
 type Limits = Pick<SceneReviewRequest, "hold" | "jump" | "turn" | "ratio">;
@@ -611,6 +610,135 @@ function costFindings(
   ];
 }
 
+/** The number a target's value holds at a dotted field path, or none. */
+function numberAt(value: unknown, field: string): number | undefined {
+  let here = value;
+  for (const key of field.split(".")) {
+    if (typeof here !== "object" || here === null || Array.isArray(here)) return undefined;
+    here = Reflect.get(here, key);
+  }
+  return typeof here === "number" && Number.isFinite(here) ? here : undefined;
+}
+
+/** The amount a field rests at: its table row's, or 0 for a `custom` number and an unknown field. */
+function restOfField(field: string): number {
+  if (field.startsWith("custom.")) return 0;
+  return valueField(field.slice(field.lastIndexOf(".") + 1))?.rest ?? 0;
+}
+
+const SHAPE_POINTS = 62;
+const MOVED = 1e-4;
+
+/** A number to 2 places, a whole one plain. */
+function shown(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+/** The indexes of the first and last step at which `values` changes, or none when it never does. */
+function changeSpan(values: readonly number[]): readonly [number, number] | undefined {
+  const steps = values.flatMap((value, index) =>
+    index > 0 && Math.abs(value - (values[index - 1] ?? value)) > MOVED ? [index] : [],
+  );
+  const first = steps[0];
+  const last = steps.at(-1);
+  return first === undefined || last === undefined ? undefined : [first, last];
+}
+
+/** `values` at `at` ms, from its first change to its last, as offsets from `rest` at evenly spaced points;
+ * none when it never changes. */
+function offsetsOf(
+  at: readonly number[],
+  values: readonly number[],
+  rest: number,
+): readonly number[] | undefined {
+  const span = changeSpan(values);
+  if (span === undefined) return undefined;
+  const [first, last] = span;
+  const from = at[first - 1] ?? 0;
+  const to = at[last] ?? from;
+  return Array.from({ length: SHAPE_POINTS }, (_, point) => {
+    const when = from + ((to - from) * point) / (SHAPE_POINTS - 1);
+    const after = Math.min(
+      last,
+      Math.max(
+        first,
+        at.findIndex((time) => time >= when),
+      ),
+    );
+    const t0 = at[after - 1] ?? from;
+    const t1 = at[after] ?? to;
+    const v0 = values[after - 1] ?? 0;
+    const v1 = values[after] ?? v0;
+    const share = t1 === t0 ? 1 : Math.min(1, Math.max(0, (when - t0) / (t1 - t0)));
+    return v0 + (v1 - v0) * share - rest;
+  });
+}
+
+/** A target's value in one sample: a member by name, or one item of a list member as `<name>.<index>`. */
+function targetValue(found: Readonly<Record<string, unknown>>, target: string): unknown {
+  if (Object.hasOwn(found, target)) return found[target];
+  const dot = target.lastIndexOf(".");
+  const list = dot < 0 ? undefined : found[target.slice(0, dot)];
+  const index = Number(target.slice(dot + 1));
+  return Array.isArray(list) && Number.isInteger(index) && index >= 0 ? list[index] : undefined;
+}
+
+/** The targets one intent's target stands for: itself, or every item of a list member as `<name>.<index>`. */
+function unitsOf(samples: Samples, target: string): readonly string[] {
+  const count = Math.max(
+    0,
+    ...samples.map(({ targets: found }) => {
+      const value = Object.hasOwn(found, target) ? found[target] : undefined;
+      return Array.isArray(value) ? value.length : 0;
+    }),
+  );
+  return count === 0 ? [target] : Array.from({ length: count }, (_, index) => `${target}.${index}`);
+}
+
+/** One finding for each intent of the module's `design` that names what does not exist or whose field moves
+ * outside its quality's ranges; a list member's intent holds for each of its items. */
+function designFindings(module: SceneModule, samples: Samples): readonly string[] {
+  if (module.design === undefined) return [];
+  const beats = module.beats ?? [];
+  const exists = (target: string): boolean =>
+    samples.some(({ targets: found }) => targetValue(found, target) !== undefined);
+  const check = ({ field, beat, quality }: Intent, target: string): string | undefined => {
+    const name = beat === undefined ? `${target}.${field}` : `${target}.${field} (${beat})`;
+    const carried = samples.some(
+      ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
+    );
+    if (!carried)
+      return `design names the field "${field}" of "${target}", which its value never carries.`;
+    const span = beat === undefined ? undefined : beats.find((each) => each.name === beat);
+    if (beat !== undefined && span === undefined)
+      return `design names the beat "${beat}" for ${target}.${field}, which the module does not have.`;
+    const ranges = Object.hasOwn(QUALITIES, quality) ? QUALITIES[quality] : undefined;
+    if (ranges === undefined)
+      return `design names the quality "${quality}" for ${name}; the qualities are ${Object.keys(QUALITIES).join(", ")}.`;
+    const inside = samples.filter(
+      ({ at }) => span === undefined || (at >= span.from && at <= span.to),
+    );
+    const offsets = offsetsOf(
+      inside.map(({ at }) => at),
+      inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
+      restOfField(field),
+    );
+    if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
+    const outside = outsideRanges(describeOffsets(offsets), ranges);
+    if (outside.length === 0) return undefined;
+    const wants = outside.map(
+      ({ key, value, range }) =>
+        `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
+    );
+    return `${name}: ${wants.join("; ")}`;
+  };
+  return intentsOf(module.design).flatMap((intent) => {
+    if (!exists(intent.target))
+      return [`design names the target "${intent.target}", which the scene never returns.`];
+    return unitsOf(samples, intent.target).flatMap((target) => check(intent, target) ?? []);
+  });
+}
+
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
@@ -650,6 +778,7 @@ export function reviewSceneModule(
     ...seekFindings(module, samples),
     ...lateCueFindings(module),
     ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
+    ...designFindings(module, samples),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {

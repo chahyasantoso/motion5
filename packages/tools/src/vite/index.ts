@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
+import { briefFolders } from "../scene/briefs.ts";
 
 /** A single scanned numeric literal in source code. */
 export interface NumericLiteralSpan {
@@ -202,18 +203,23 @@ function firstHeader(value: string | readonly string[] | undefined): string | un
   return typeof value === "string" ? value : value?.[0];
 }
 
-/** The `.ts` files directly inside the app's `src/moves`, as paths the page can import, sorted. */
+/** The `.ts` files directly inside each brief's `src/moves`, as paths the page can import, sorted. */
 function listMoveFiles(appRoot: string): string[] {
-  try {
-    return readdirSync(resolve(appRoot, "src", "moves"), { withFileTypes: true })
-      .filter(
-        (entry) => entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts"),
-      )
-      .map((entry) => `/src/moves/${entry.name}`)
-      .sort();
-  } catch {
-    return [];
-  }
+  const root = resolve(appRoot);
+  return briefFolders(root)
+    .flatMap((brief) => {
+      try {
+        return readdirSync(resolve(root, brief, "src", "moves"), { withFileTypes: true })
+          .filter(
+            (entry) =>
+              entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts"),
+          )
+          .map((entry) => `/${brief}/src/moves/${entry.name}`);
+      } catch {
+        return [];
+      }
+    })
+    .sort();
 }
 
 /** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */

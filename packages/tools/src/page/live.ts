@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { relative } from "node:path";
+import { pieceFiles } from "../scene/briefs";
 import { DEFAULT_ROOT, fromCaller } from "./page";
 
 export { DEFAULT_ROOT } from "./page";
@@ -52,12 +52,16 @@ export function parseLiveArgs(argv: readonly string[]): LiveArgs {
   }
 
   const root = rootArg !== undefined ? fromCaller(rootArg) : DEFAULT_ROOT;
-  if (
-    !existsSync(join(root, `src/${scene}.ts`)) &&
-    !existsSync(join(root, `src/${scene}-scene.ts`))
-  ) {
-    return usage(`No stage module src/${scene}.ts or scene src/${scene}-scene.ts under ${root}.`);
+  const files = pieceFiles(root, scene);
+  if (files.length === 0) {
+    return usage(
+      `No stage module ${scene}.ts or scene ${scene}-scene.ts in any brief's src under ${root}.`,
+    );
   }
+  // The stage page refuses a name two briefs share, so live does too.
+  const briefs = [...new Set(files.map((file) => relative(root, file).split(/[\\/]/)[0] ?? ""))];
+  if (briefs.length > 1)
+    return usage(`Two briefs hold a piece named "${scene}" (${briefs.join(" and ")}): rename one.`);
 
   let port = DEFAULT_PORT;
   if (portArg !== undefined) {

@@ -20,6 +20,24 @@ export function setEulerDegrees(
   );
 }
 
+/** The 3D pose fields `applyPose3d` writes on an object; custom numbers go to the piece's own writer. */
+export const WRITTEN_3D = Object.freeze([
+  "x",
+  "y",
+  "z",
+  "rotation",
+  "rotationX",
+  "rotationY",
+  "scale",
+  "scaleX",
+  "scaleY",
+  "scaleZ",
+  "opacity",
+] as const) satisfies readonly (keyof Pose3d)[];
+
+/** The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one. */
+export const UNWRITTEN_3D: Readonly<Partial<Record<keyof Pose3d, string>>> = Object.freeze({});
+
 /** Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each
  * custom number goes to `custom(name, value, object)`. */
 export function applyPose3d(
