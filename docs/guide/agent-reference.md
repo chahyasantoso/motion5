@@ -283,6 +283,7 @@ const slide = defineMove({
 - **`smudge`** `(options, time, input)`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. Options: `amount` number >=0, required: The blur it ends at, in px.; `build` number 0.05..1, default 1: Share of the span the blur takes to build, then holds; default 1.
 - **`defineStyle`** `(card: StyleCard): StyleCard`: A frozen copy of the card, or an error naming its first problem.
 - **`isStyleCard`** `(value: unknown): value is StyleCard`: Whether `value` is a card `defineStyle` returned itself.
+- **`isTokenName`** `(name: string): boolean`: Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`.
 - **`StyleCard`** `type StyleCard`: A brief's style: the qualities it names, the share of lively motion each field holds, and its tokens and habits.
 - **`DESCRIPTOR_KEYS`** `const DESCRIPTOR_KEYS: readonly ["peak", "overshoot", "rings", "windup", "settle"]`: The descriptors a quality may range over, in the order every report lists them.
 - **`QUALITIES`** `const QUALITIES: Readonly<Record<string, DescriptorRanges>>`: The words `--like` understands, each as the ranges of descriptors a move with that quality sits in; `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose.
