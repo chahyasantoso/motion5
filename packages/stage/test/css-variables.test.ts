@@ -9,6 +9,7 @@ describe("cssVariables", () => {
   it("refuses a name without dashes and a value that breaks the rule", () => {
     expect(() => cssVariables({ x: "1" })).toThrow(/"x"/);
     expect(() => cssVariables({ "--a": "1; color: red" })).toThrow(/--a/);
+    expect(() => cssVariables({ "--a: red; } .x { color": "1" })).toThrow(/--a/);
   });
 });
 

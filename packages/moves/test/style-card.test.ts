@@ -25,6 +25,21 @@ describe("defineStyle", () => {
       /arrive.*peak/,
     );
   });
+  it("refuses values that are not what their types say", () => {
+    const refuse = (patch: Record<string, unknown>, pattern: RegExp): void => {
+      expect(() => Reflect.apply(defineStyle, undefined, [{ ...good, ...patch }])).toThrow(pattern);
+    };
+    refuse({ lively: { y: [Number.NaN, 1] } }, /y/);
+    refuse({ lively: { y: ["a", "b"] } }, /y/);
+    refuse({ lively: [] }, /lively/);
+    refuse({ qualities: { arrive: { rings: [0, Number.NaN] } } }, /arrive.*rings/);
+    refuse({ qualities: { arrive: { settle: [0, 2] } } }, /arrive.*settle/);
+    refuse({ tokens: { "--a: red; } .x { color": "red" } }, /--a/);
+    refuse({ tokens: { "--ink": 3 } }, /--ink/);
+    refuse({ tokens: { "--ink": "red; color: blue" } }, /--ink/);
+    refuse({ habits: ["fine", 3] }, /habit 1/);
+    expect(() => defineStyle({ ...good, qualities: { arrive: { rings: [0, 4] } } })).not.toThrow();
+  });
   it("refuses a token without dashes", () => {
     expect(() => defineStyle({ ...good, tokens: { ink: "black" } })).toThrow(/ink/);
   });
