@@ -281,6 +281,9 @@ export function describeOffsets(offsets: readonly number[]): Descriptors {
   const last = offsets.length - 1;
   const start = offsets[0] ?? 0;
   const end = offsets[last] ?? 0;
+  // A path that starts and ends away from rest is measured from where it ends, as one arriving at rest is.
+  if (Math.abs(start) > REST_SLACK && Math.abs(end) > REST_SLACK)
+    return describeOffsets(offsets.map((offset) => offset - end));
   const travelling = Math.abs(start) > REST_SLACK || Math.abs(end) > REST_SLACK;
   const steps = offsets.slice(1).map((offset, i) => Math.abs(offset - (offsets[i] ?? 0)));
   const greatestStep = Math.max(0, ...steps);
