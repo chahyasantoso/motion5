@@ -1,11 +1,11 @@
 import type { Page } from "playwright-core";
 import { readPageArgs, withPage, type PageSource } from "./page";
 
-const USAGE = "Usage: motion:fps <page> [--to ms] [--size WxH] [--show]";
+const USAGE = "Usage: gerak fps <page> [--to ms] [--size WxH] [--show]";
 const WINDOW_MS = 500;
 const DEFAULT_TO = 10000;
 
-/** What `motion:fps` measures: a page, how long to watch it in ms, and whether to show the window. */
+/** What `gerak fps` measures: a page, how long to watch it in ms, and whether to show the window. */
 export interface FpsRequest {
   readonly kind: "fps";
   readonly page: string;
@@ -64,7 +64,7 @@ export function parseFpsArgs(argv: readonly string[]): FpsArgs {
   );
   if (read.kind === "usage") return usage(read.message);
   const { target, flags } = read;
-  if (target.actions !== undefined) return usage("--action does not go with motion:fps.");
+  if (target.actions !== undefined) return usage("--action does not go with gerak fps.");
   let to = DEFAULT_TO;
   if (flags.has("--to")) {
     const text = flags.get("--to");

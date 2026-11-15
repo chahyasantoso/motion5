@@ -28,6 +28,6 @@ export function timingScene(centre: { readonly x: number; readonly y: number }) 
 /** The beat's clock on the page's frames. */
 export const beatClock = () => clockDriver({ duration: BEAT_MS });
 
-/** The beat for the motion tools: `motion:sample` and `motion:timeline` read these two exports. */
+/** The beat for the motion tools: `gerak sample` and `gerak timeline` read these two exports. */
 export const scene = timingScene({ x: 0, y: 0 });
 export const durationMs = BEAT_MS;

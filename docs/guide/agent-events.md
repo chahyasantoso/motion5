@@ -26,7 +26,7 @@ export const clock = () => eventDriver({ introMs: 900 });
 - Read what happened from `events`, never from a variable a click handler sets: the tools replay events and cannot see
   a variable.
 - Tools: page tools take `--action hover:.card-hit@1000,leave:.card-hit@1120,click:.stage@300(200,150)`, done with the
-  real mouse; `motion:sample` and `motion:timeline` take `--events enter:card@1000,click:stage@1200(640,360)`.
+  real mouse; `gerak sample` and `gerak timeline` take `--events enter:card@1000,click:stage@1200(640,360)`.
 
 ## Inside the scene
 

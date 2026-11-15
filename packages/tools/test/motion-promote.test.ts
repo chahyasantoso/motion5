@@ -70,7 +70,7 @@ function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
   return args;
 }
 
-describe("motion:moves --candidates", () => {
+describe("gerak moves --candidates", () => {
   it("lists a local move imported from two briefs", async () => {
     const { root } = fixture();
     const run = await runCatalog(ok(["--candidates"]), root);
@@ -106,7 +106,7 @@ describe("motion:moves --candidates", () => {
   });
 });
 
-describe("motion:promote", () => {
+describe("gerak promote", () => {
   it("moves the file, exports it and repoints the importers", async () => {
     const { root, movesPackage } = fixture();
     const run = await promoteMove("slide-in", root, { movesPackage });
@@ -186,7 +186,7 @@ describe("motion:promote", () => {
   });
 });
 
-describe("motion:promote refuses what it cannot rewrite whole", () => {
+describe("gerak promote refuses what it cannot rewrite whole", () => {
   it("also repoints a test outside src that imports the move", async () => {
     const { root, movesPackage } = fixture();
     mkdirSync(join(root, "test"));

@@ -2,7 +2,7 @@ import { tool } from "./load.mjs";
 const { callerDir, piecesRoot } = await import(tool("page/root"));
 const { checkStyle, measureStyle } = await import(tool("scene/style"));
 
-const USAGE = "usage: motion:style measure|check <brief> [--root dir]";
+const USAGE = "usage: gerak style measure|check <brief> [--root dir]";
 
 async function main(argv) {
   const [command, brief, ...rest] = argv;

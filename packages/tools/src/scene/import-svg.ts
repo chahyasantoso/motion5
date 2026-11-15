@@ -523,7 +523,7 @@ function moduleSource(
   const css = cssSource(built.parts);
   const defs =
     built.defs.length === 0 ? "" : `\n    defs: \`${templateText(built.defs.join("\n"))}\`,`;
-  return `// Imported from ${basename(source)} by motion:import-svg: flat parts in paint order; rename a part by replacing its quoted name.
+  return `// Imported from ${basename(source)} by gerak import-svg: flat parts in paint order; rename a part by replacing its quoted name.
 import type { Time } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
 

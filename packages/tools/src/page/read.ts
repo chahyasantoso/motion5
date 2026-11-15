@@ -2,9 +2,9 @@ import { parseNumbers } from "./args";
 import { fitCurve, type Fit } from "./curves";
 import { readPageArgs, withPage, type PageTarget } from "./page";
 
-/** What `motion:read` measures on each element: its own transform, decomposed, and its own opacity. */
+/** What `gerak read` measures on each element: its own transform, decomposed, and its own opacity. */
 export const CHANNELS = ["x", "y", "rotation", "scaleX", "scaleY", "opacity"] as const;
-/** What `motion:read` measures: `x`, `y`, `rotation`, `scaleX`, `scaleY` or `opacity`. */
+/** What `gerak read` measures: `x`, `y`, `rotation`, `scaleX`, `scaleY` or `opacity`. */
 export type Channel = (typeof CHANNELS)[number];
 
 /** The least change between two frames that counts as motion, per channel. */
@@ -37,13 +37,13 @@ export interface ElementMotion {
   readonly segments: readonly Segment[];
 }
 
-/** What `motion:read` runs: the page, the `select` selectors and the end `to` in ms. */
+/** What `gerak read` runs: the page, the `select` selectors and the end `to` in ms. */
 export interface ReadMotionRequest extends PageTarget {
   readonly select: readonly string[];
   readonly to: number;
 }
 
-/** Parsed `motion:read` arguments, or the usage text. */
+/** Parsed `gerak read` arguments, or the usage text. */
 export type ReadMotionArgs =
   | ({ readonly kind: "ok" } & ReadMotionRequest)
   | { readonly kind: "usage"; readonly message: string };
@@ -56,7 +56,7 @@ export interface ReadMotionResult {
 }
 
 const STEP_MS = 16;
-const USAGE = "usage: motion:read <page> --select selector,selector --to ms [--size WxH]";
+const USAGE = "usage: gerak read <page> --select selector,selector --to ms [--size WxH]";
 
 /** Reads `<page> --select sel,sel --to ms`, or answers the usage text. */
 export function parseReadArgs(argv: readonly string[]): ReadMotionArgs {

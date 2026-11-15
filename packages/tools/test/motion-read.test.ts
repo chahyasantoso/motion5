@@ -8,7 +8,7 @@ const times = (count: number) => Array.from({ length: count }, (_, index) => ind
 const sample = (curve: (u: number) => number, count = 30) =>
   Array.from({ length: count + 1 }, (_, index) => ({ u: index / count, p: curve(index / count) }));
 
-describe("motion:read curves", () => {
+describe("gerak read curves", () => {
   it("name each curve as @gerak/moves names its ease", () => {
     const eases: Readonly<Record<string, (u: number) => number>> = ease;
     for (const [name, curve] of Object.entries(NAMED_CURVES))
@@ -35,7 +35,7 @@ describe("motion:read curves", () => {
   });
 });
 
-describe("motion:read segments", () => {
+describe("gerak read segments", () => {
   it("read a still channel as no move", () => {
     expect(segmentsOf("x", times(20), Array(20).fill(5))).toEqual([]);
   });
@@ -70,7 +70,7 @@ describe("motion:read segments", () => {
   });
 });
 
-describe("motion:read arguments", () => {
+describe("gerak read arguments", () => {
   it("need selectors and an end time", () => {
     expect(parseReadArgs(["timing.html", "--to", "3000"]).kind).toBe("usage");
     expect(parseReadArgs(["timing.html", "--select", ".a, .b", "--to", "3000"])).toMatchObject({
@@ -91,7 +91,7 @@ describe("page actions with a point", () => {
   });
 });
 
-describe("motion:read turns", () => {
+describe("gerak read turns", () => {
   it("reads a turn across ±180 degrees as the small turn it is", async () => {
     const { unwrapTurns } = await import("../src/page/read");
     expect(unwrapTurns([179, -179, -175, 178])).toEqual([179, 181, 185, 178]);

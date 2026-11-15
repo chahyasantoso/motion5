@@ -5,7 +5,7 @@ import { parseProbeArgs } from "../src/page/probe";
 const PIECES_ROOT = callerPiecesRoot();
 const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
-describe("motion:probe arguments", () => {
+describe("gerak probe arguments", () => {
   it("reads a page, times and a selector", () => {
     expect(parseProbeArgs(["timing.html", "--at", "0,100", "--select", ".beat-dot"])).toEqual({
       kind: "ok",

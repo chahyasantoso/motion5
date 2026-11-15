@@ -22,7 +22,7 @@ function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
 
 const word = (name: string) => new RegExp(`(?<![\\w.])${name}(?![\\w])`);
 
-describe("motion:moves --anatomy", () => {
+describe("gerak moves --anatomy", () => {
   it("puts every field in exactly one group", () => {
     const named = Object.values(FIELD_GROUPS).flat();
     for (const field of Object.keys(VALUE_FIELDS))
@@ -81,7 +81,7 @@ describe("motion:moves --anatomy", () => {
   });
 });
 
-describe("motion:moves --anatomy with local parts", () => {
+describe("gerak moves --anatomy with local parts", () => {
   const PART = `import { definePart } from "@gerak/moves";
 /** A scratch envelope. */
 export const hump = definePart(

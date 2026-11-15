@@ -5,16 +5,16 @@ import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import type { Box } from "./frames";
 import { decodePng, encodePng, type Picture } from "./png";
 
-/** What `motion:compare` does: the page drawn at `at` ms against the SVG at `reference`, written to `out`. */
+/** What `gerak compare` does: the page drawn at `at` ms against the SVG at `reference`, written to `out`. */
 export interface CompareRequest extends PageTarget {
   readonly at: number;
   readonly reference: string;
   readonly out?: string;
-  /** Room around the drawing in px, as `motion:import-svg --margin` gave the piece. */
+  /** Room around the drawing in px, as `gerak import-svg --margin` gave the piece. */
   readonly margin?: number;
 }
 
-/** Parsed `motion:compare` arguments, or the usage text. */
+/** Parsed `gerak compare` arguments, or the usage text. */
 export type CompareArgs =
   | ({ readonly kind: "compare" } & CompareRequest)
   | { readonly kind: "usage"; readonly message: string };
@@ -38,7 +38,7 @@ export type CompareResult =
   | { readonly kind: "usage"; readonly message: string };
 
 const USAGE =
-  "usage: motion:compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]";
+  "usage: gerak compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]";
 const FLAGS = ["--reference", "--at", "--out", "--margin"];
 const ASPECT_TOLERANCE = 0.01;
 const GAP = 8;

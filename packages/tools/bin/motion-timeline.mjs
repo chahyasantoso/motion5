@@ -11,7 +11,7 @@ if (
   !/\.tsx?$/.test(file) ||
   (rest.length > 0 && !(rest[0] === "--events" && rest.length === 2))
 ) {
-  console.log("usage: motion:timeline <scene.ts> [--events name:target@ms,...]");
+  console.log("usage: gerak timeline <scene.ts> [--events name:target@ms,...]");
   process.exitCode = 1;
 } else if ("reason" in events) {
   console.log(events.reason);

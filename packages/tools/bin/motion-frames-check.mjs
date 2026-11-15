@@ -1,4 +1,4 @@
-// Proves motion:frames on a real browser: frames repeat byte for byte and pixels sit where the beat puts them.
+// Proves gerak frames on a real browser: frames repeat byte for byte and pixels sit where the beat puts them.
 // Needs a browser, so it runs from `npm run test:frames` and not from the default suite.
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -301,7 +301,7 @@ transition:transform 400ms linear}#tile:hover{transform:translateY(-40px)}</styl
     [["y", -40, 304, 704, "linear"]],
   );
 
-  // A CSS animation follows the paused clock, and motion:read gives back its delay, length and ease.
+  // A CSS animation follows the paused clock, and gerak read gives back its delay, length and ease.
   writeFileSync(
     join(site, "css.html"),
     `<style>#slide{position:absolute;width:40px;height:40px;background:red;
@@ -356,4 +356,4 @@ const { value: missing } = await withPage(
     ),
 );
 assert.match(missing, /nothing on the page matches \.nothing-here/);
-console.log("motion:frames ok");
+console.log("gerak frames ok");

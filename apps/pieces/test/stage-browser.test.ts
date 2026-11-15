@@ -65,7 +65,7 @@ describe("stage pages in the browser", () => {
     );
   }, 30000);
 
-  it("mounts the module motion:new writes, with its one actor at rest", async () => {
+  it("mounts the module gerak new writes, with its one actor at rest", async () => {
     const name = `${PREFIX}new`;
     const result = scaffold(name, PIECES_ROOT);
     if (result.kind !== "written") throw new Error(result.message);

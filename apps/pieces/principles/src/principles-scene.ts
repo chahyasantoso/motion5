@@ -21,7 +21,7 @@ import {
   type Time,
 } from "@gerak/moves";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
 
 export const WORD = "LANDED";
@@ -91,7 +91,7 @@ const word = span(WORD_MS, WORD_MS + 900);
 const settle = span(LAND_MS, LAND_MS + 1300);
 const pop = springEase({ stiffness: 170, damping: 9 });
 
-/** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time, events: Events) => {
   const travel = smear(velocity(flight, time, events), { stretch: 0.22, max: 1.8 });
   return {

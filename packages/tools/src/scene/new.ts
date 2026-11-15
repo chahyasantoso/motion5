@@ -11,11 +11,11 @@ export type ScaffoldResult =
 const TEMPLATES = fileURLToPath(new URL("./templates/", import.meta.url));
 const NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
-/** The usage line of `motion:new`. */
+/** The usage line of `gerak new`. */
 export const NEW_USAGE =
-  "usage: motion:new <name> [--in <brief>] [--three] [--root dir] | motion:new --move <id> --in <brief> [--root dir]";
+  "usage: gerak new <name> [--in <brief>] [--three] [--root dir] | gerak new --move <id> --in <brief> [--root dir]";
 
-/** Parsed `motion:new` arguments, or the usage text. */
+/** Parsed `gerak new` arguments, or the usage text. */
 export type NewArgs =
   | { readonly kind: "usage"; readonly message: string }
   | {

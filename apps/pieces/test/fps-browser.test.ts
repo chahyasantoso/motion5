@@ -52,7 +52,7 @@ const request = (name: string, to: number) => ({
   show: false,
 });
 
-describe("motion:fps on a scaffolded 3D page", () => {
+describe("gerak fps on a scaffolded 3D page", () => {
   it("reports under 34 fps in every window when each step takes 30 ms", async () => {
     const report = await measureFps(request(SLOW, 3000));
     expect(report.pageErrors).toEqual([]);

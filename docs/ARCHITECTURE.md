@@ -38,7 +38,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | Layer | Answers | Lives in |
 | --- | --- | --- |
 | 1. Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/moves/src/fields/` |
-| 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/moves/src/parts/<group>/`, listed by `npm run motion:moves -- --parts` |
+| 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/moves/src/parts/<group>/`, listed by `npx gerak moves --parts` |
 | 3. Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
 | 4. Composition | moves placed in time and across targets: phases, lanes, reshaped time; the piece format | `packages/moves/src/compose/`; `@gerak/stage` |
 | 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |

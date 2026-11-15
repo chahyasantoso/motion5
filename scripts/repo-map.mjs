@@ -53,7 +53,7 @@ export const OWNERS = {
   "packages/rapier/src": "Rapier",
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
-  "packages/tools/src/scene/templates": "motion:new templates",
+  "packages/tools/src/scene/templates": "gerak new templates",
   "packages/tools/src/page": "page tools",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",

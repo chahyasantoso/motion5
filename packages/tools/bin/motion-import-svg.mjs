@@ -4,7 +4,7 @@ const { fromCaller } = await import(tool("page/page"));
 const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const usage =
-  "usage: motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]\n   or: motion:import-svg <file.svg> --into <piece> --at x,y --prefix <word> [--scale s] [--root dir]";
+  "usage: gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]\n   or: gerak import-svg <file.svg> --into <piece> --at x,y --prefix <word> [--scale s] [--root dir]";
 const withValue = ["--name", "--into", "--root", "--margin", "--at", "--scale", "--prefix"];
 
 const all = process.argv.slice(2);

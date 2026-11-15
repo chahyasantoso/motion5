@@ -30,7 +30,7 @@ time and events, so a session of samples replays, scrubs and renders like any ot
   said.total(events)` runs 0 to 1 through the speech: reveal a caption's `words` by that share, or fill a progress
   bar. It is exact, seeks for free, and costs the same at the end as at the start. Never sum a `follow` from the
   start of the talk to find it.
-- **Test a sample by hand** with `motion:sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
+- **Test a sample by hand** with `gerak sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
   (`name:target=value@ms` for a target).
 - **Check** that no part is cut by the frame with the mouth at its widest, and that the review is clean with the
   recording as `cues`: it also seeks the scene back and forth and reports a value that differs from playing to it,

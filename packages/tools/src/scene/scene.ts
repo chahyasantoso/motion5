@@ -286,7 +286,7 @@ export interface WatchRequest {
   readonly every: number;
 }
 
-/** Parsed `motion:sample` arguments: the scene file, `--at` ms or `--progress` shares, `--nodes`,
+/** Parsed `gerak sample` arguments: the scene file, `--at` ms or `--progress` shares, `--nodes`,
  * `--fields` and `--events`, or a `--watch` of one path; or the usage text. */
 export type SampleArgs =
   | ({
@@ -305,7 +305,7 @@ export type SampleArgs =
   | { readonly kind: "usage"; readonly message: string };
 
 const SAMPLE_USAGE =
-  "usage: motion:sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
+  "usage: gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
 
 /** The `--watch` request in `flags`, or the usage text when it is mixed with another way to sample or malformed. */
 function parseWatch(file: string, flags: ReadonlyMap<string, string | undefined>): SampleArgs {

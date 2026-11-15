@@ -22,7 +22,7 @@ function frames(count: number, place: (index: number) => Readonly<Record<string,
 
 const STAGE = { width: 1280, height: 720 };
 
-describe("motion:check analysis", () => {
+describe("gerak check analysis", () => {
   it("reports nothing for a clean run that holds", () => {
     const run = frames(80, (i) => ({ a: { x: Math.min(i, 20) * 5, y: 0 }, b: { x: 500, y: 0 } }));
     expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([]);
@@ -73,7 +73,7 @@ describe("motion:check analysis", () => {
   });
 });
 
-describe("motion:check arguments", () => {
+describe("gerak check arguments", () => {
   it("reads a page, a watch list, an end and limits", () => {
     expect(
       parseCheckArgs(["a.html", "--watch", ".dot,.glyph", "--to", "3000", "--hold", "300"]),
@@ -98,7 +98,7 @@ describe("motion:check arguments", () => {
   });
 });
 
-describe("motion:check contacts the page marks as meant", () => {
+describe("gerak check contacts the page marks as meant", () => {
   it("skips an overlap between elements one marks as touching the other", () => {
     const touching = (touches?: readonly string[]): Frame[] =>
       Array.from({ length: 40 }, (_, index) => ({
@@ -117,7 +117,7 @@ describe("motion:check contacts the page marks as meant", () => {
   });
 });
 
-describe("motion:check text on the last frame", () => {
+describe("gerak check text on the last frame", () => {
   const BLACK = { r: 0, g: 0, b: 0, a: 1 };
   const text = {
     name: "p",
@@ -154,7 +154,7 @@ describe("motion:check text on the last frame", () => {
   });
 });
 
-describe("motion:check on elements that leave", () => {
+describe("gerak check on elements that leave", () => {
   it("does not call an element removed or faded out before the end still moving", () => {
     const run = frames(60, (i) => ({
       stay: { x: 0, y: 0 },

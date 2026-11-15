@@ -128,9 +128,9 @@ describe("a design no move fits", () => {
     expect(run.lines[0]).toBe("No move does this closely.");
     expect(run.lines.join("\n")).toContain("rotationX:heavy, clipRadius:loose");
     expect(run.lines.join("\n")).toContain("uses ease");
-    expect(run.lines).toContain("or write one: npm run motion:new -- --move <id> --in <brief>");
+    expect(run.lines).toContain("or write one: npx gerak new --move <id> --in <brief>");
     const named = await runCatalog(ok([...argv, "--in", "reel"]), PIECES_ROOT);
-    expect(named.lines).toContain("or write one: npm run motion:new -- --move <id> --in reel");
+    expect(named.lines).toContain("or write one: npx gerak new --move <id> --in reel");
   });
 
   it("names the move for each field alone, to combine in the scene, or says to write it", async () => {
@@ -211,7 +211,7 @@ describe("--design", () => {
   });
 });
 
-describe("motion:moves --design from the command line", () => {
+describe("gerak moves --design from the command line", () => {
   it("reads the design file from where the command runs, as the guide writes it", () => {
     const run = spawnSync(
       process.execPath,

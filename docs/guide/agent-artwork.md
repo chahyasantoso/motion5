@@ -7,7 +7,7 @@ To animate a drawing someone else made, start from its SVG, not from shapes you 
 write `apps/pieces/references/<file>.svg` by hand, each part that moves its own shape with a clear `id` (`beak`,
 `eyelidLeft`), then import it like any other, so a drawn character and a supplied one take one path.
 
-1. `npm run motion:import-svg -- apps/pieces/references/<file>.svg --name <name> --margin 40` writes
+1. `npx gerak import-svg apps/pieces/references/<file>.svg --name <name> --margin 40` writes
    `apps/pieces/<name>/src/<name>.ts`: every shape a flat path member in the SVG's paint order, its colours and gradients in
    the skin. The frame is the `viewBox` with `--margin` px of room on every side; a drawing that touches its edges
    needs that room, or a part that turns outward is cut off by the frame. It prints what it could not carry; nothing
@@ -20,7 +20,7 @@ write `apps/pieces/references/<file>.svg` by hand, each part that moves its own 
 4. **Keep parts flat.** What carries what is a chain, not a group: a group paints as one layer, so grouping changes
    what is in front. Group only a rigid piece whose parts sit next to each other in paint order, such as an eye's
    white and pupil. `layer` in a value changes paint order while a part moves, such as a leg crossing behind; it does not add, so of two moves giving it the later one wins.
-5. **Check the rig still looks like the drawing:** `npm run motion:compare -- "stage.html?piece=<name>" --reference
+5. **Check the rig still looks like the drawing:** `npx gerak compare "stage.html?piece=<name>" --reference
    apps/pieces/references/<file>.svg --margin 40`, with the margin the import was given, at rest. Its mean stays under
    2 out of 255 and no part over 15; read `difference.png` for the worst part.
 6. **Animate the chain's joints and the free parts.**
@@ -54,7 +54,7 @@ follows it. A chain's pose is `{ rotations, base }`: `rotations` by bone id in d
 A drawing that is one thing in a scene goes into the scene's piece, not a piece of its own:
 
 ```sh
-npm run motion:import-svg -- apps/pieces/references/<file>.svg --into <piece> --at 420,180 --scale 0.8 --prefix bird
+npx gerak import-svg apps/pieces/references/<file>.svg --into <piece> --at 420,180 --scale 0.8 --prefix bird
 ```
 
 It adds the drawing's parts to `apps/pieces/<brief>/src/<piece>.ts`, its `viewBox` top left at `--at` in the piece's frame px

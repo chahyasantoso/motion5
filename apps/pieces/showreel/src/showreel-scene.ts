@@ -40,7 +40,7 @@ import { launch } from "./moves/launch";
 import { shockwave } from "./moves/shockwave";
 import { springSettle } from "./moves/spring-settle";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 15000;
 
 const D = durationMs;
@@ -376,7 +376,7 @@ function erased(time: Time) {
   return trace({}, backwards(time));
 }
 
-/** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time, events: Events = NO_EVENTS) => {
   const ms = elapsedOf(time.clock) ?? 0;
   const leapShare = leap.of(time).progress;

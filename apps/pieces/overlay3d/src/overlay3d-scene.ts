@@ -14,7 +14,7 @@ import {
 } from "@gerak/moves";
 import { posedJoints3d, type BonePose3d, type JointTable3d } from "@gerak/rig";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:review` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */
 export const durationMs = 5200;
 
 /** The page's size in px; the page sizes its renderer and stage from it. */

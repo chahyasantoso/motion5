@@ -12,14 +12,14 @@ export const RENDER_STEP_MS = 16;
 /** `mp4` at 62.5 frames a second, the same bytes each run, or a 640 px `gif` at 25. */
 export type RenderFormat = "mp4" | "gif";
 
-/** What `motion:render` runs: the page, the end `to` in ms, the `format` and the `out` file. */
+/** What `gerak render` runs: the page, the end `to` in ms, the `format` and the `out` file. */
 export interface RenderRequest extends PageTarget {
   readonly to: number;
   readonly format: RenderFormat;
   readonly out?: string;
 }
 
-/** Parsed `motion:render` arguments, or the usage text. */
+/** Parsed `gerak render` arguments, or the usage text. */
 export type RenderArgs =
   | ({ readonly kind: "ok" } & RenderRequest)
   | { readonly kind: "usage"; readonly message: string };
@@ -35,7 +35,7 @@ export type RenderResult =
   | { readonly kind: "no-ffmpeg"; readonly message: string };
 
 const USAGE =
-  "usage: motion:render <page> --to ms [--format mp4|gif] [--out file] [--size WxH] [--root dir | --url address]";
+  "usage: gerak render <page> --to ms [--format mp4|gif] [--out file] [--size WxH] [--root dir | --url address]";
 
 /** Reads `<page> --to ms [--format mp4|gif] [--out file]`, or answers the usage text. */
 export function parseRenderArgs(argv: readonly string[]): RenderArgs {
@@ -115,7 +115,7 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
   if (spawnSync("ffmpeg", ["-version"]).status !== 0)
     return {
       kind: "no-ffmpeg",
-      message: "motion:render needs ffmpeg on the PATH: https://ffmpeg.org/download.html",
+      message: "gerak render needs ffmpeg on the PATH: https://ffmpeg.org/download.html",
     };
   const path =
     request.out ?? join(mkdtempSync(join(tmpdir(), "motion-render-")), `render.${request.format}`);

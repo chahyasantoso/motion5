@@ -6,12 +6,12 @@ the stage answers on the next frame without losing its place in time.
 ## Open a scene
 
 ```bash
-npm run motion:live -- saved
+npx gerak live saved
 ```
 
-`motion:live` starts the Vite dev server (or reuses one already listening on the port) and prints the URL for
+`gerak live` starts the Vite dev server (or reuses one already listening on the port) and prints the URL for
 `live.html?scene=saved`. Every piece in `apps/pieces` (`saved`, `kelvin`, `tempo`, the `night-*` cards,
-and the `showreel`s) and every scene made with `npm run motion:new` (DOM or `--three`) plays in it with no change to its
+and the `showreel`s) and every scene made with `npx gerak new` (DOM or `--three`) plays in it with no change to its
 files.
 
 A stage module, `src/<name>.ts`, opens the same way. A save that keeps its cast, skin and story swaps the scene on

@@ -1,9 +1,9 @@
-/** Parsed `motion:joints` arguments: the model file and an optional output file; or the usage text. */
+/** Parsed `gerak joints` arguments: the model file and an optional output file; or the usage text. */
 export type JointsArgs =
   | { readonly kind: "ok"; readonly model: string; readonly out: string | undefined }
   | { readonly kind: "usage"; readonly message: string };
 
-const USAGE = "usage: motion:joints <model.glb|model.gltf> [--out file]";
+const USAGE = "usage: gerak joints <model.glb|model.gltf> [--out file]";
 
 /** Reads `<model.glb|model.gltf> [--out file]`, or answers the usage text. */
 export function parseJointsArgs(argv: readonly string[]): JointsArgs {

@@ -10,7 +10,7 @@ export const cast = { title: actor() };
 /** How the cast looks on the page, by `[data-cast="<name>"]`; a member left out is drawn plain. */
 export const skins = { dom: { css: `` } };
 
-/** Every member's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every member's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (_time: Time) => ({
   title: {} satisfies Pose2d,
 });

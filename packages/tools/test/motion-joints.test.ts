@@ -29,7 +29,7 @@ const TWO_BONES: Json = {
   skins: [{ joints: [1, 2] }],
 };
 
-describe("motion:joints", () => {
+describe("gerak joints", () => {
   it("reads its arguments and refuses bad ones", () => {
     expect(parseJointsArgs(["a.glb"])).toEqual({ kind: "ok", model: "a.glb", out: undefined });
     expect(parseJointsArgs(["a.glb", "--out", "b.json"])).toEqual({

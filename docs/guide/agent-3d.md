@@ -6,18 +6,18 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 ## The loop
 
-1. `npm run motion:new -- <name> --three` writes a page whose component is a Three.js stage: a renderer, a camera, a
+1. `npx gerak new <name> --three` writes a page whose component is a Three.js stage: a renderer, a camera, a
    light and one mesh per target, each bound with `useTarget3d`, and an entry that owns the page's readiness. It
    sets no look. A scene that plays samples takes `(time, events)`, exports `cues`, and its component passes them as
    `usePlayer(scene, clock, cues)`.
 2. Write the scene. It returns `Pose3d` targets: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY,
    scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
-3. `npm run motion:review -- apps/pieces/<brief>/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
+3. `npx gerak review apps/pieces/<brief>/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
    a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
    units, and its default of 150 is for px, so give a 3D scene its own, about a fifth of the subject's height: 0.1
    for a character 0.5 units tall. Give `--turn` (degrees a step) one too, about 30: its default of 150 lets a bone
    flip in one step. `--ratio` (scale and opacity) keeps its default.
-4. `npm run motion:review -- <name>.html --watch canvas --to <ms>` gives the frame sheet. Read it: the page tools see
+4. `npx gerak review <name>.html --watch canvas --to <ms>` gives the frame sheet. Read it: the page tools see
    no element inside a canvas, so the sheet is how you see framing, silhouettes and whether the motion reads.
 
 ## Poses
@@ -60,7 +60,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 - **The model:** a skinned `.glb` in `apps/pieces/references/`, listed in its README with source, creator and licence
   (CC0, or CC BY with its credit line), under 2 MB. Bone names are the model's own; read them from its joint table.
-- **Its joint table:** `npm run motion:joints -- apps/pieces/references/<model>.glb` writes `<model>.joints.json`
+- **Its joint table:** `npx gerak joints apps/pieces/references/<model>.glb` writes `<model>.joints.json`
   beside it: every bone's world rest point and parent. The scene imports it
   (`import rig from "../references/<model>.joints.json" with { type: "json" }`) and reads joints with
   `jointOf(rig.joints, "Jaw")` from `"@gerak/rig"`, typed by name, throwing on a name the model lacks. The scene runs

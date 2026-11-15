@@ -69,15 +69,15 @@ export interface MoveRecord {
   readonly findings: number;
 }
 
-/** The usage line of `motion:moves`. */
+/** The usage line of `gerak moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--move <field>[:<quality>]]... [--uses <kind|part>,...] [--design <file> --target <name>] [--style <brief>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
+  "usage: gerak moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--move <field>[:<quality>]]... [--uses <kind|part>,...] [--design <file> --target <name>] [--style <brief>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
-  "npm run motion:moves -- --parts lists the building blocks moves are made from: fields, time, laws, blends, paths, follow-through, events, randomness, camera, compose.";
+  "npx gerak moves --parts lists the building blocks moves are made from: fields, time, laws, blends, paths, follow-through, events, randomness, camera, compose.";
 
-/** Parsed `motion:moves` arguments; or the usage text. */
+/** Parsed `gerak moves` arguments; or the usage text. */
 export type CatalogArgs =
   | { readonly kind: "usage"; readonly message: string }
   | {
@@ -1178,7 +1178,7 @@ export function formatFull(
       ? "descriptors: none"
       : `descriptors: peak ${shown(descriptors.peak)}, overshoot ${shown(descriptors.overshoot)}, rings ${descriptors.rings}, windup ${shown(descriptors.windup)}, settle ${shown(descriptors.settle)} (${descriptors.travelling ? "travelling" : "oscillating"})`,
     ...context.unwritten,
-    `gate: ${record.findings === 0 ? "passes" : `${record.findings} findings; motion:moves ${record.id} --check names them`}`,
+    `gate: ${record.findings === 0 ? "passes" : `${record.findings} findings; gerak moves ${record.id} --check names them`}`,
     `parts: ${record.parts.length === 0 ? "none" : record.parts.join(" + ")}`,
     `imported by: ${context.importedBy.length === 0 ? "none" : context.importedBy.join(", ")}`,
     `example: ${exampleCall(record)}`,
@@ -1340,7 +1340,7 @@ export function candidatesOf(
   return found.sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
 }
 
-/** What `motion:moves` prints: the `lines`, and the exit `code`, 1 on a finding. */
+/** What `gerak moves` prints: the `lines`, and the exit `code`, 1 on a finding. */
 export interface CatalogRun {
   readonly lines: readonly string[];
   readonly code: 0 | 1;
@@ -1351,7 +1351,7 @@ const MOST_ROWS = 10;
 const withFindings = (count: number): string =>
   `${count} move${count === 1 ? "" : "s"} with findings`;
 
-/** The few lines a bare `motion:moves` prints: how many moves, from where, and what to ask. */
+/** The few lines a bare `gerak moves` prints: how many moves, from where, and what to ask. */
 export function summarize(records: readonly MoveRecord[]): readonly string[] {
   const count = (names: readonly string[]) =>
     names.map((name) => `${name} ${records.filter((record) => record.source === name).length}`);
@@ -1366,12 +1366,12 @@ export function summarize(records: readonly MoveRecord[]): readonly string[] {
     `roles: ${roles.join(", ")}`,
     `sources: ${count(sources).join(", ")}`,
     `qualities for --like: ${Object.keys(QUALITIES).join(", ")}`,
-    "npm run motion:moves -- --role enter --like heavy      (the entrances that feel heavy)",
-    "npm run motion:moves -- --find squash --fields scale    (words in an id, a description or an option)",
-    `npm run motion:moves -- --near ${sample}      (moves that move like one; --far for the opposite)`,
-    "npm run motion:moves -- <id>                  (one move in full: options, descriptors, importers)",
-    "npm run motion:moves -- --move y:heavy --uses ease     (moves that answer a design; --design <file> --target <name> reads a piece's)",
-    "npm run motion:moves -- --anatomy             (the fields, parts and shape words a design is written in)",
+    "npx gerak moves --role enter --like heavy      (the entrances that feel heavy)",
+    "npx gerak moves --find squash --fields scale    (words in an id, a description or an option)",
+    `npx gerak moves --near ${sample}      (moves that move like one; --far for the opposite)`,
+    "npx gerak moves <id>                  (one move in full: options, descriptors, importers)",
+    "npx gerak moves --move y:heavy --uses ease     (moves that answer a design; --design <file> --target <name> reads a piece's)",
+    "npx gerak moves --anatomy             (the fields, parts and shape words a design is written in)",
     "add --in <brief> for imports that resolve from that brief, --all to lift the 10-row cap.",
     ...(held === 0 ? [] : [`${withFindings(held)}; every search leaves them out unless --all.`]),
     PARTS_HINT,
@@ -1697,7 +1697,7 @@ function noFitLines(
             .map(({ field, move }) => `${field} by ${move ?? "no move; write it"}`)
             .join("; ")}`,
         ]),
-    `or write one: npm run motion:new -- --move <id> --in ${brief ?? "<brief>"}`,
+    `or write one: npx gerak new --move <id> --in ${brief ?? "<brief>"}`,
   ];
 }
 

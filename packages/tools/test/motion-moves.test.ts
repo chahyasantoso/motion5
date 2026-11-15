@@ -53,7 +53,7 @@ const builtInIds = collectRecords([])
   .map(({ record }) => record.id)
   .sort();
 
-describe("motion:moves", () => {
+describe("gerak moves", () => {
   it("lists every move by id with its source, fields and import under --all", async () => {
     const run = await runCatalog(ok(["--all"]), app());
     const ids = run.lines.map((line) => line.split(" | ")[0]);

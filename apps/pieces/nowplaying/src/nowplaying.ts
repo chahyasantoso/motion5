@@ -79,7 +79,7 @@ const playScale = (time: Time, events: Events): number => {
   return 1 + from * (1 - Math.min(1, (now - left.at) / SETTLE_MS));
 };
 
-/** Every member's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every member's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time, events: Events, _rest: Rest) => ({
   card: {} satisfies Pose2d,
   heading: {} satisfies Pose2d,

@@ -29,12 +29,12 @@ not by reading package source. Read a part below only when the brief needs it:
 2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
-3. `npm run motion:new -- <name> [--in <brief>]` writes `apps/pieces/<brief>/src/<name>.ts` (the brief is the name
+3. `npx gerak new <name> [--in <brief>]` writes `apps/pieces/<brief>/src/<name>.ts` (the brief is the name
    unless `--in` names another), one stage module: a story of one beat, one actor at rest and an empty skin. Open it
    as `stage.html?piece=<name>`. Name who is on stage in `cast`, the beats in `beats`, and give each member the look
    the brief calls for in `skins.dom.css` (see [The stage module](#the-stage-module)). Name the look most people
    would give it, and choose another the brief supports as well. Lay the skin out as the final frame.
-4. **Learn the primitives, once.** `npm run motion:moves -- --anatomy` is one card: every **field** a target can
+4. **Learn the primitives, once.** `npx gerak moves --anatomy` is one card: every **field** a target can
    change (place, turn, size, look, colour, reveal, order), with its meaning, unit and which renderers draw it; every
    **part** by kind (ease, envelope, oscillation, path, blend, coupling, signal, ...) with its call and a worked
    sample (`taper(p, 2): 1, 0.25, 0`); and the **qualities** (`heavy`, `light`, `quick`, `calm`, `playful`,
@@ -46,7 +46,7 @@ not by reading package source. Read a part below only when the brief needs it:
    Name the beat in which the field actually moves, since the review measures it there. In your report, write under each
    line the fields and the parts by kind it needs: "the fall: `y` heavy, a `ballistic` path; the landing: `scaleY`
    loose, an `envelope` times an `oscillation`".
-6. **Ask the catalog with the design.** `npm run motion:moves -- --design apps/pieces/<brief>/src/<name>.ts --target
+6. **Ask the catalog with the design.** `npx gerak moves --design apps/pieces/<brief>/src/<name>.ts --target
    ball --in <brief>` scores every move that passes the gate against that member's design, says per field what
    matched and at which options, and gives the import. `--move y:heavy --uses envelope` asks the same by hand;
    `--far <the obvious move>` finds ideas unlike it; `--renderer three` keeps moves a 3D page draws. Read a move in
@@ -57,9 +57,9 @@ not by reading package source. Read a part below only when the brief needs it:
    colour turning or a shadow following a height often is; or write a move from the parts you named ([writing a
    move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
    choose every number from your three lines. In your report, give each line's choice and why.
-8. `npm run motion:review -- apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
+8. `npx gerak review apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
    and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
-   does not yet have the quality you wrote. `npm run motion:review -- "stage.html?piece=<name>" --watch
+   does not yet have the quality you wrote. `npx gerak review "stage.html?piece=<name>" --watch
    '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does, adds a `sheet` of frames picked where
    the motion is fast; on a page, `--full` adds the moves with their eases.
 9. Fix what it flags, the design's findings first, and what looks wrong on the sheet; review again. Stop when the
@@ -123,7 +123,7 @@ Each line shows one function on a plain target. A bare name such as `distance` o
 number goes.
 
 ```ts
-// Every helper below, and every built-in move, comes from this package; a move `motion:moves` lists from
+// Every helper below, and every built-in move, comes from this package; a move `gerak moves` lists from
 // `apps/pieces/<brief>/src/moves` is imported from `./moves/<id>`.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
@@ -181,16 +181,16 @@ step reads the present, never all of the past.
   the contact event's own `point`, with `other` naming what it hit, so never seek a simulation back
   to learn where something was. A loop from 0 to the time, a `follow` summed in small steps, or a sample at an
   earlier time on every frame makes a step that costs more the longer the piece plays.
-- **`motion:review` times every step.** It reports `cost grows with time: a step reads all of the past` when the
+- **`gerak review` times every step.** It reports `cost grows with time: a step reads all of the past` when the
   last fifth of the run costs over four times the first, and a step over `--budget` ms (default 8). Fix the first
   by reading the present; the second can be a busy machine, so review again before chasing it.
-- **`motion:fps` measures a running page.** `npm run motion:fps -- <page> --to 10000` plays the page on its real
+- **`gerak fps` measures a running page.** `npx gerak fps <page> --to 10000` plays the page on its real
   clock and prints frames a second per 500 ms window and the worst frames, split into the scene, the writes and the
   rest (drawing and the browser). It names the renderer: headless Chrome draws on the GPU where there is one but
   has no vsync, so it can pass 60; on SwiftShader compare windows with each other only. `--show` opens a visible
   window, locked to the screen, with a live counter.
-- **Look closer before guessing.** `motion:frames <page> --at <ms> --crop x,y,width,height --zoom 4` captures one
-  region scaled up; `motion:sample <file>.ts --watch <target>.<field> --from 0 --to 2000 --every 16` prints one value
+- **Look closer before guessing.** `gerak frames <page> --at <ms> --crop x,y,width,height --zoom 4` captures one
+  region scaled up; `gerak sample <file>.ts --watch <target>.<field> --from 0 --to 2000 --every 16` prints one value
   over time.
 
 ## Traps
@@ -203,7 +203,7 @@ step reads the present, never all of the past.
   ends. To overshoot a move, use the `overshoot` modifier.
 - A squash widens a letter into its neighbour; a shape drawn after another passes in front of it unless `z-index`
   sends it behind; a shape the colour of what it crosses merges with it. Check those frames.
-- Frames fall every 16 ms, so compare a page with `motion:sample` at multiples of 16.
+- Frames fall every 16 ms, so compare a page with `gerak sample` at multiples of 16.
 - A `many` or `group` sits in its parent's centred row; place its items with `position: absolute` and the container
   is still in the row, so pin the container too (`position: absolute; inset: 0`).
 - The page tools see elements, not pixels a `<canvas>` draws.

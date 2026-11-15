@@ -5,7 +5,7 @@ import { pickFrames, type PickReason } from "./pick";
 import { fromCaller, readPageArgs, type PageTarget } from "./page";
 import { describeMotion, readMotion } from "./read";
 
-/** What `motion:review` runs: `check` and `frames` at once on the `watch` selectors to `to` ms; `at`
+/** What `gerak review` runs: `check` and `frames` at once on the `watch` selectors to `to` ms; `at`
  * names frames, `full` adds the moves. */
 export interface ReviewRequest extends PageTarget {
   readonly watch: readonly string[];
@@ -17,14 +17,14 @@ export interface ReviewRequest extends PageTarget {
   readonly full: boolean;
 }
 
-/** Parsed `motion:review` arguments, or the usage text. */
+/** Parsed `gerak review` arguments, or the usage text. */
 export type ReviewArgs =
   | ({ readonly kind: "ok" } & ReviewRequest)
   | { readonly kind: "usage"; readonly message: string };
 
 interface ReviewBase {
   readonly kind: "reviewed";
-  /** What `motion:check` found, one line each; none means clean. */
+  /** What `gerak check` found, one line each; none means clean. */
   readonly findings: readonly string[];
   /** The frames photographed, each as its time and, when picked, why. */
   readonly frames: readonly string[];
@@ -38,14 +38,14 @@ export type ReviewResult =
   | (ReviewBase & { readonly full: false })
   | (ReviewBase & {
       readonly full: true;
-      /** What `motion:read` read, one line per move, cut to the first `MOTION_LINES`. */
+      /** What `gerak read` read, one line per move, cut to the first `MOTION_LINES`. */
       readonly motion: readonly string[];
     });
 
 /** A review lists at most this many moves; the rest are counted in one closing line. */
 const MOTION_LINES = 40;
 const USAGE =
-  "usage: motion:review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH] [--root dir | --url address]";
+  "usage: gerak review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH] [--root dir | --url address]";
 
 /** Reads `<page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`, or answers the usage text. */
 export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
@@ -119,7 +119,7 @@ export async function reviewPage(request: ReviewRequest): Promise<ReviewResult> 
       ? lines
       : [
           ...lines.slice(0, MOTION_LINES),
-          `… ${lines.length - MOTION_LINES} more moves; run motion:read for all`,
+          `… ${lines.length - MOTION_LINES} more moves; run gerak read for all`,
         ];
   return { ...base, full: true, motion };
 }

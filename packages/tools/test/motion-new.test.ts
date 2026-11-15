@@ -47,7 +47,7 @@ const FILES = [
   "rope-word/src/rope-word-scene.ts",
 ];
 
-describe("motion:new", () => {
+describe("gerak new", () => {
   it("writes one stage module of one beat and one actor, and it samples to rest", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
@@ -152,7 +152,7 @@ describe("motion:new", () => {
       brief: "rope",
       root: undefined,
     });
-    expect(NEW_USAGE).toContain("motion:new --move <id> --in <brief>");
+    expect(NEW_USAGE).toContain("gerak new --move <id> --in <brief>");
   });
 
   it("with --in writes the piece and its move into that brief's folder", () => {

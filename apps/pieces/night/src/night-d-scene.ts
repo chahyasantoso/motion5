@@ -11,7 +11,7 @@ import {
   type Time,
 } from "@gerak/moves";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
 
 const nightIn = span(250, 1150);
@@ -25,7 +25,7 @@ const ticks = [0, 1, 2, 3].map((i) =>
   span(tickStart + i * tickEvery, tickStart + i * tickEvery + 240),
 );
 
-/** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time) => {
   const hand = ticks.reduce(
     (sum, tick) =>

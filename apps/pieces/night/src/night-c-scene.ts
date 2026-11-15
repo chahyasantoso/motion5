@@ -12,7 +12,7 @@ import {
   type Time,
 } from "@gerak/moves";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
 
 const nightIn = span(200, 1200);
