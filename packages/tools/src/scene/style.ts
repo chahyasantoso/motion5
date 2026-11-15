@@ -6,7 +6,15 @@ import { briefFolders, portabilityFindings } from "./briefs";
 import { checkCatalog, loadCatalog } from "./catalog";
 import { styleCards } from "./cards";
 import { checkLocalParts } from "./parts";
-import { measureShapes, parseSceneReviewArgs, reviewSceneFile, type Shape } from "./review";
+import {
+  measureSamples,
+  measureShapes,
+  parseSceneReviewArgs,
+  reviewSceneFile,
+  reviewSceneModule,
+  styleMotions,
+  type Shape,
+} from "./review";
 import { readSceneModule, type SceneModule } from "./scene";
 
 export type MeasureResult =
@@ -29,13 +37,27 @@ function pieceFiles(root: string, brief: string): readonly string[] {
     .sort();
 }
 
-async function sceneModuleOf(file: string): Promise<SceneModule | undefined> {
+type Piece =
+  | { readonly kind: "module"; readonly module: SceneModule }
+  | { readonly kind: "failed"; readonly message: string }
+  | { readonly kind: "refused"; readonly reason: string; readonly styled: boolean };
+
+/** A file read as a scene module, or why it is not one. */
+async function loadPiece(file: string): Promise<Piece> {
+  let loaded: unknown;
   try {
-    const read = readSceneModule(await import(pathToFileURL(file).href));
-    return "reason" in read ? undefined : read;
-  } catch {
-    return undefined;
+    loaded = await import(pathToFileURL(file).href);
+  } catch (error) {
+    return { kind: "failed", message: error instanceof Error ? error.message : String(error) };
   }
+  const read = readSceneModule(loaded);
+  if ("reason" in read)
+    return {
+      kind: "refused",
+      reason: read.reason,
+      styled: Reflect.get(Object(loaded), "style") !== undefined,
+    };
+  return { kind: "module", module: read };
 }
 
 const bare = (name: string): string =>
@@ -81,14 +103,20 @@ export async function measureStyle(root: string, brief: string): Promise<Measure
   const file = join(root, brief, "style.ts");
   if (existsSync(file))
     return { kind: "refused", message: `${file} already exists; it is never overwritten.` };
-  const perPiece: (readonly Shape[])[] = [];
-  for (const piece of pieceFiles(root, brief)) {
-    const module = await sceneModuleOf(piece);
-    if (module !== undefined) perPiece.push(measureShapes(module));
+  const pieces: { readonly module: SceneModule; readonly shapes: readonly Shape[] }[] = [];
+  for (const path of pieceFiles(root, brief)) {
+    const piece = await loadPiece(path);
+    if (piece.kind === "failed")
+      return {
+        kind: "refused",
+        message: `${path} could not be imported: ${piece.message}`,
+      };
+    if (piece.kind === "module")
+      pieces.push({ module: piece.module, shapes: measureShapes(piece.module) });
   }
-  const fields = [...new Set(perPiece.flat().map((shape) => shape.field))].filter(
-    (field) => field !== "custom" && Object.hasOwn(VALUE_FIELDS, field),
-  );
+  const fields = [
+    ...new Set(pieces.flatMap(({ shapes }) => shapes).map((shape) => shape.field)),
+  ].filter((field) => field !== "custom" && Object.hasOwn(VALUE_FIELDS, field));
   if (fields.length === 0)
     return {
       kind: "refused",
@@ -96,8 +124,10 @@ export async function measureStyle(root: string, brief: string): Promise<Measure
     };
   const lively = new Map<string, readonly [number, number]>();
   for (const field of fields) {
-    const shares = perPiece.flatMap((shapes) => {
-      const own = shapes.filter((shape) => shape.field === field);
+    const shares = pieces.flatMap(({ module, shapes }) => {
+      const own = shapes.some((shape) => shape.field === field)
+        ? styleMotions(module, measureSamples(module), field)
+        : [];
       return own.length < MIN_MOTIONS
         ? []
         : [own.filter((shape) => isLively(shape.descriptors)).length / own.length];
@@ -121,7 +151,7 @@ export async function measureStyle(root: string, brief: string): Promise<Measure
 const posix = (path: string): string => path.split(sep).join("/");
 
 const inBrief = (line: string, brief: string): boolean =>
-  posix(line).startsWith(`${brief}/`) || posix(line).includes(`/${brief}/src/moves/`);
+  line.startsWith(`${brief}/`) || line.startsWith(`${brief}\\`);
 
 /** What stops a brief from passing as a style: its card's own problems, its imports, parts and moves,
  * and the review of each piece that is in it or follows its card; none means it passes. */
@@ -141,28 +171,47 @@ export async function checkStyle(root: string, brief: string): Promise<readonly 
   out.push(...catalog.problems.filter((line) => inBrief(line, brief)));
   const own = catalog.entries.filter(({ record }) => record.source === brief);
   out.push(...checkCatalog(catalog.entries, own, { root }));
-  for (const piece of await pieceFilesFollowing(root, brief)) {
-    const parsed = parseSceneReviewArgs([piece]);
-    if (parsed.kind === "usage") continue;
-    const result = await reviewSceneFile(parsed);
-    const name = posix(relative(root, piece));
-    // A piece's other review findings are its own; the card answers only for its lively share.
-    const lines =
-      result.kind === "usage"
-        ? result.message.split("\n")
-        : result.findings.filter((line) => line.endsWith("(style)"));
-    out.push(...lines.map((line) => `${name}: ${line}`));
+  for (const path of pieceFiles(root, brief)) {
+    const piece = await loadPiece(path);
+    const name = posix(relative(root, path));
+    if (piece.kind === "failed") out.push(`${name}: could not be imported: ${piece.message}`);
+    else if (piece.kind === "refused") {
+      if (piece.styled) out.push(`${name}: ${piece.reason}`);
+    } else out.push(...(await styleLines(root, path, name, piece.module, brief, cards)));
   }
+  for (const other of briefFolders(root).filter((each) => each !== brief))
+    for (const path of pieceFiles(root, other)) {
+      const piece = await loadPiece(path);
+      if (piece.kind !== "module" || piece.module.style !== brief) continue;
+      out.push(
+        ...(await styleLines(root, path, posix(relative(root, path)), piece.module, brief, cards)),
+      );
+    }
   return out;
 }
 
-/** The scene modules in the brief, and in any brief, that export `style = "<brief>"`. */
-async function pieceFilesFollowing(root: string, brief: string): Promise<readonly string[]> {
-  const found: string[] = [];
-  for (const other of briefFolders(root))
-    for (const piece of pieceFiles(root, other)) {
-      const module = await sceneModuleOf(piece);
-      if (module !== undefined && (other === brief || module.style === brief)) found.push(piece);
-    }
-  return found;
+/** The lines of a piece's review that the card answers for: its lively share, and a style that names no card. */
+async function styleLines(
+  root: string,
+  path: string,
+  name: string,
+  module: SceneModule,
+  brief: string,
+  cards: readonly StyleCard[],
+): Promise<readonly string[]> {
+  const parsed = parseSceneReviewArgs([path]);
+  if (parsed.kind === "usage") return [];
+  // A piece's other review findings are its own; the card answers only for its lively share.
+  if (module.style === undefined || module.style === brief) {
+    const result = reviewSceneModule({ ...module, style: brief }, { ...parsed, cards });
+    return result.findings
+      .filter((line) => line.endsWith("(style)"))
+      .map((line) => `${name}: ${line}`);
+  }
+  const result = await reviewSceneFile(parsed);
+  const lines =
+    result.kind === "usage"
+      ? result.message.split("\n")
+      : result.findings.filter((line) => line.endsWith("(style)"));
+  return lines.map((line) => `${name}: ${line}`);
 }

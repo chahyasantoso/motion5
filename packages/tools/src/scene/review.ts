@@ -769,6 +769,25 @@ function designFindings(
   });
 }
 
+/** The motions of `field` in the module, leaving out the targets (and, when the design names a beat, only
+ * that beat) that the design names for that field. */
+export function styleMotions(
+  module: SceneModule,
+  samples: Samples,
+  field: string,
+): readonly Shape[] {
+  const named = module.design === undefined ? [] : intentsOf(module.design);
+  return shapesOf(module, samples, [field]).filter(
+    (shape) =>
+      !named.some(
+        (intent) =>
+          intent.field === field &&
+          (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)) &&
+          (intent.beat === undefined || shape.beat === intent.beat),
+      ),
+  );
+}
+
 /** For a styled module, one finding for each field of its card whose share of lively motions (three or
  * more, leaving out targets the design names for that field) lies outside the card's range. */
 function styleFindings(
@@ -778,17 +797,9 @@ function styleFindings(
 ): readonly string[] {
   const card = cards.find((each) => each.name === module.style);
   if (card === undefined) return [];
-  const named = module.design === undefined ? [] : intentsOf(module.design);
   const percent = (share: number): number => Math.round(share * 100);
   return Object.entries(card.lively).flatMap(([field, range]) => {
-    const motions = shapesOf(module, samples, [field]).filter(
-      (shape) =>
-        !named.some(
-          (intent) =>
-            intent.field === field &&
-            (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)),
-        ),
-    );
+    const motions = styleMotions(module, samples, field);
     if (motions.length < 3) return [];
     const lively = motions.filter((shape) => isLively(shape.descriptors)).length;
     const share = lively / motions.length;
@@ -858,9 +869,14 @@ function shapesOf(
 /** The shape of each field each target of the module moves, in each beat (the whole run when it has
  * none), sampled every step over its run. */
 export function measureShapes(module: SceneModule): readonly Shape[] {
+  return shapesOf(module, measureSamples(module));
+}
+
+/** The module sampled every step over its whole run, as a review samples it. */
+export function measureSamples(module: SceneModule): Samples {
   const ms: number[] = [];
   for (let at = 0; at <= module.durationMs; at += STEP_MS) ms.push(at);
-  return shapesOf(module, sampleScene(module, { kind: "time", ms }));
+  return sampleScene(module, { kind: "time", ms });
 }
 
 export function reviewSceneModule(
@@ -929,6 +945,8 @@ export async function reviewSceneFile(
   const file = resolve(request.file);
   const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
+  if (module.style === undefined && module.design === undefined)
+    return reviewSceneModule(module, request);
   const { cards, problems } = await styleCards(resolve(dirname(file), "..", ".."));
   if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
     const names = cards.map((card) => card.name).join(", ");

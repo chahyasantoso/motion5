@@ -81,6 +81,59 @@ describe("motion:style", () => {
     expect(await checkStyle(root, "reel")).toEqual([]);
   });
 
+  it("reviews a soft piece of the brief itself under its card, with no style export", async () => {
+    const root = reel();
+    await measureStyle(root, "reel");
+    writeFileSync(join(root, "reel", "src", "soft.ts"), piece(three(LINEAR, LINEAR, LINEAR)));
+    const found = await checkStyle(root, "reel");
+    expect(found).toHaveLength(1);
+    expect(found[0]?.startsWith("reel/src/soft.ts: ")).toBe(true);
+    expect(found[0]?.endsWith("(style)")).toBe(true);
+  });
+
+  it("reports a piece that throws on import or that exports a style but no scene", async () => {
+    const root = reel();
+    await measureStyle(root, "reel");
+    writeFileSync(join(root, "reel", "src", "broken.ts"), 'throw new Error("boom");\n');
+    writeFileSync(join(root, "reel", "src", "stray.ts"), 'export const style = "reel";\n');
+    writeFileSync(join(root, "reel", "src", "helper.ts"), "export const x = 1;\n");
+    const found = await checkStyle(root, "reel");
+    expect(found).toHaveLength(2);
+    expect(found).toContain("reel/src/broken.ts: could not be imported: boom");
+    expect(
+      found.some((line) => line.startsWith("reel/src/stray.ts: ") && line.includes("scene")),
+    ).toBe(true);
+  });
+
+  it("refuses to measure a brief with a piece that throws on import", async () => {
+    const root = reel();
+    writeFileSync(join(root, "reel", "src", "broken.ts"), 'throw new Error("boom");\n');
+    const made = await measureStyle(root, "reel");
+    expect(made.kind).toBe("refused");
+    if (made.kind === "refused") expect(made.message).toContain("broken.ts");
+    expect(existsSync(join(root, "reel", "style.ts"))).toBe(false);
+  });
+
+  it("measures a field from the motions its design does not name", async () => {
+    const design = 'export const design = { b3: { y: "calm" }, b4: { y: "calm" } };';
+    const root = localRoot({
+      "reel/src/named.ts": piece(three(BOUNCY, BOUNCY, BOUNCY, LINEAR, LINEAR), design),
+    });
+    const made = await measureStyle(root, "reel");
+    expect(made.kind === "written" ? made.card.lively["y"] : undefined).toEqual([0.9, 1]);
+  });
+
+  it("does not count a finding that only mentions the brief as the brief's", async () => {
+    const root = reel();
+    await measureStyle(root, "reel");
+    mkdirSync(join(root, "other", "src", "moves"), { recursive: true });
+    writeFileSync(
+      join(root, "other", "src", "moves", "m.ts"),
+      'import { x } from "../../../reel/src/moves/x";\nexport const m = x;\n',
+    );
+    expect(await checkStyle(root, "reel")).toEqual([]);
+  });
+
   it("finds a piece of another brief that follows the card and misses its share", async () => {
     const root = reel();
     await measureStyle(root, "reel");

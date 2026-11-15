@@ -95,6 +95,47 @@ describe("a piece's style lively share", () => {
     expect((await findings(dir, "named")).filter((line) => line.endsWith("(style)"))).toEqual([]);
   });
 
+  it("leaves out only the beat a design names, and all beats when it names none", async () => {
+    const stage = (design: string): string => `
+import { story } from "@gerak/stage";
+export const style = "reel";
+export const beats = story(1000, { a: [0, 400], b: [600, 1000] });
+export const cast = {};
+export const skins = {};
+export const design = ${design};
+export const scene = (time: { clock: { kind: string; elapsed?: number } }) => {
+  const at = time.clock.elapsed ?? 0;
+  const t = at < 500 ? Math.min(1, at / 400) : Math.min(1, Math.max(0, (at - 600) / 400));
+  const y = 300 * (1 - t);
+  return { b0: { y }, b1: { y }, b2: { y } };
+};
+`;
+    const names = (beat: string): string =>
+      `{ b0: { y: ${beat} }, b1: { y: ${beat} }, b2: { y: ${beat} } }`;
+    const dir = root({
+      once: stage(names('{ a: "calm" }')),
+      always: stage(names('"calm"')),
+    });
+    const style = async (name: string): Promise<readonly string[]> =>
+      (await findings(dir, name)).filter((line) => line.includes("(style)"));
+    expect(await style("once")).toHaveLength(1);
+    expect((await style("once"))[0]).toContain("y: 0 of 3 motions lively");
+    expect(await style("always")).toEqual([]);
+  });
+
+  it("reviews a piece with no style though a style file beside it throws", async () => {
+    const dir = localRoot({
+      "reel/style.ts": 'throw new Error("bad card");\n',
+      "reel/src/.keep": "",
+      "tour/src/plain.ts": piece([BOUNCY, BOUNCY, BOUNCY]).replace(
+        'export const style = "reel";',
+        "",
+      ),
+    });
+    const result = await reviewSceneFile(request(join(dir, "tour", "src", "plain.ts")));
+    expect(result.kind).toBe("reviewed");
+  });
+
   it("gives nothing when y moves on fewer than three balls", async () => {
     const dir = root({ few: piece([LINEAR, LINEAR, null]) });
     expect(await findings(dir, "few")).toEqual([]);
