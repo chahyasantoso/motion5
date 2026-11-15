@@ -5,7 +5,6 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 export const RESERVED_FOLDERS: readonly string[] = [
   "src",
   "references",
-  "kits",
   "test",
   "dist",
   "node_modules",
@@ -41,16 +40,6 @@ export function movesFolders(root: string): readonly string[] {
     .filter((folder) => existsSync(folder));
 }
 
-/** The kit folders of the app at `root`: each folder of `kits/` holding a `src/`, by name. */
-export function kitFolders(root: string): readonly string[] {
-  const kits = join(root, "kits");
-  if (!existsSync(kits)) return [];
-  return readdirSync(kits, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && existsSync(join(kits, entry.name, "src")))
-    .map((entry) => entry.name)
-    .sort();
-}
-
 /** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
 export function sourceFiles(folder: string): readonly string[] {
   if (!existsSync(folder)) return [];
@@ -71,13 +60,10 @@ export function importSpecifiers(source: string): readonly string[] {
   return [...source.matchAll(SPECIFIER)].map(([, specifier = ""]) => specifier);
 }
 
-/** Findings for brief and kit files in src/moves and src/parts that import more than @gerak/moves or
+/** Findings for brief files in src/moves and src/parts that import more than @gerak/moves or
  * their own src/parts: one per import. */
 export function portabilityFindings(root: string): readonly string[] {
-  const homes = [
-    ...briefFolders(root).map((name) => join(root, name)),
-    ...kitFolders(root).map((name) => join(root, "kits", name)),
-  ];
+  const homes = briefFolders(root).map((name) => join(root, name));
   return homes.flatMap((home) => {
     const parts = resolve(home, "src", "parts");
     return ["moves", "parts"].flatMap((folder) =>

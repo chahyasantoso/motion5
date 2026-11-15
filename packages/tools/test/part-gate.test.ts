@@ -184,7 +184,7 @@ describe("local parts", () => {
 
   it("refuses a part whose samples are a library part's, naming it", async () => {
     const root = localRoot({
-      "kits/k/src/parts/envelope/x.ts": PART("(p: number) => (1 - p) ** 2", "taper(p, 2)"),
+      "k/src/parts/envelope/x.ts": PART("(p: number) => (1 - p) ** 2", "taper(p, 2)"),
     });
     expect(await checkLocalParts(root)).toEqual([
       "k/x: samples as taper (sample 0); use taper instead",

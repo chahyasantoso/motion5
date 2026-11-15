@@ -5,7 +5,7 @@ import ts from "typescript";
 import * as moves from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { partContract, valueField, type PartContract } from "@gerak/moves";
-import { briefFolders, kitFolders } from "./briefs";
+import { briefFolders } from "./briefs";
 
 /** The groups the parts list sorts its building blocks into, in print order. */
 export const PART_GROUPS = [
@@ -457,7 +457,7 @@ export function formatParts(parts: readonly MovePart[] = moveParts()): readonly 
   });
 }
 
-/** A building block a brief or kit declares in its own `src/parts/<kind>/`, with where it came from. */
+/** A building block a brief declares in its own `src/parts/<kind>/`, with where it came from. */
 export interface LocalPart extends MovePart {
   readonly source: string;
   readonly file: string;
@@ -474,10 +474,7 @@ function byText(a: string, b: string): number {
 }
 
 function localHomes(root: string): readonly { readonly source: string; readonly dir: string }[] {
-  return [
-    ...briefFolders(root).map((name) => ({ source: name, dir: join(root, name) })),
-    ...kitFolders(root).map((name) => ({ source: name, dir: join(root, "kits", name) })),
-  ].sort((a, b) => byText(a.source, b.source));
+  return briefFolders(root).map((name) => ({ source: name, dir: join(root, name) }));
 }
 
 function docBefore(text: string, name: string): string {
@@ -538,7 +535,7 @@ async function scanLocal(root: string): Promise<LocalScan> {
   return { parts: sorted, problems };
 }
 
-/** The building blocks the briefs and kits of the app at `root` declare under `src/parts/<kind>/`: every
+/** The building blocks the briefs of the app at `root` declare under `src/parts/<kind>/`: every
  * exported function, by source, then group, then name. */
 export async function localParts(root: string): Promise<readonly LocalPart[]> {
   return (await scanLocal(root)).parts;
@@ -611,7 +608,7 @@ function gridFor(value: unknown): Grid | undefined {
   }
 }
 
-/** Part-gate findings for the briefs and kits at root, each led by its source, plus a part whose
+/** Part-gate findings for the briefs at root, each led by its source, plus a part whose
  * samples repeat a library part or an earlier local part of the same kind. */
 export async function checkLocalParts(root: string): Promise<readonly string[]> {
   const { parts, problems } = await scanLocal(root);
