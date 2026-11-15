@@ -14,8 +14,8 @@ each, not which move to use, so your piece keeps its own story and borrows the f
 2. **Read the card, not the pieces.** `npm run motion:moves -- --anatomy --style <brief>` prints the card first: the
    lively share per field, the tokens, the habits, and the brief's moves and parts. Never open the style brief's
    pieces (`<brief>/src/*.ts`); its story is not yours. A move's options come from `npm run motion:moves -- <id>`.
-3. **Design with the shares in mind.** `y 0.4 to 1` means at least 40% of your piece's `y` motions must overshoot,
-   ring or wind up; `drawn 0 to 0.25` means strokes mostly draw plainly. Write your `design` as usual; a field the
+3. **Design with the shares in mind.** `rotation 0.5 to 1` means at least half of your piece's `rotation` motions must
+   overshoot, ring or wind up; `scale 0 to 0.25` means sizes mostly change plainly. Write your `design` as usual; a field the
    design names for a member is left out of that field's count, so name a field only when the brief truly wants it
    otherwise.
 4. **Ask for moves.** `npm run motion:moves -- --design <file> --target <name> --style <brief>` puts the style
@@ -31,7 +31,7 @@ each, not which move to use, so your piece keeps its own story and borrows the f
    ```
 
 6. **Review.** `npm run motion:review -- <piece>.ts` adds one line per field whose share falls outside the card:
-   `y: 1 of 8 motions lively (13%); showreel wants 40% to 100% (style)`. Make more of that field's motions lively
+   `rotation: 1 of 8 motions lively (13%); showreel wants 50% to 100% (style)`. Make more of that field's motions lively
    (a spring, an overshoot, a wind-up) or plainer, until the line is gone. A field with fewer than 3 motions is not
    judged.
 

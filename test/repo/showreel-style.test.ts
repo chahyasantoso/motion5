@@ -26,11 +26,10 @@ const soft = {
 };
 
 describe("the showreel's style card", () => {
-  it("refuses a piece made only of fade, slide and rise on every field they share with it", async () => {
+  it("refuses a piece made only of fade, slide and rise on its travel, where the showreel is lively", async () => {
     const { cards, problems } = await styleCards(PIECES);
     expect(problems).toEqual([]);
-    const card = cards.find((each) => each.name === "showreel");
-    expect(card).toBeDefined();
+    expect(cards.map((each) => each.name)).toContain("showreel");
     const module = readSceneModule(soft);
     if ("reason" in module) throw new Error(module.reason);
     const findings = reviewSceneModule(module, {
@@ -40,10 +39,6 @@ describe("the showreel's style card", () => {
       ratio: 1.5,
       cards,
     }).findings.filter((line) => line.endsWith("(style)"));
-    const shared = (["x", "y", "opacity"] as const).filter(
-      (field) => card?.lively[field] !== undefined,
-    );
-    expect(shared.length).toBeGreaterThan(1);
-    expect(findings.map((line) => line.split(":")[0])).toEqual(shared);
+    expect(findings.map((line) => line.split(":")[0])).toEqual(["x", "y"]);
   });
 });

@@ -16,7 +16,8 @@ moves, parts and tokens, never its pieces, so the style carries over and the con
 - **A style card** is an optional `style.ts` in a brief: per field, the share of its motions that must be lively
   (overshooting, ringing or winding up); its own qualities for designs; skin tokens; habits in words (unchecked).
   A brief mixes springy and plain motion, so a style is how much of it is lively, not one shape per field: every
-  showreel piece is at least 44% lively on each field it moves, and a piece of `fade`, `slide` and `rise` is at 0%.
+  showreel piece turns and squashes springily (at least half its `rotation`, `scaleX` and `scaleY` motions) while its
+  size and fades stay plain, and a piece of `fade`, `slide` and `rise` is at 0% on every field.
 - **A card is measured first, then narrowed:** `motion:style -- measure <brief>` measures the brief's pieces and
   writes the card; a person narrows its ranges and writes its habits.
 
