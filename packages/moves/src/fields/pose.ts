@@ -6,11 +6,26 @@ export type Anchor = "center" | "bottom" | "top" | "left" | "right";
 /** How two answers for one field on one target become one. */
 export type Combining = "add" | "multiply" | "replace";
 
+/** What a field's number is measured in; `length` is px in 2D and world units in 3D. */
+export const UNITS = Object.freeze([
+  "length",
+  "px",
+  "deg",
+  "scale",
+  "share",
+  "index",
+  "order",
+  "number",
+] as const);
+
 /** What a field's number is measured in. */
-export type Unit = "px" | "deg" | "scale" | "share" | "index" | "order" | "number";
+export type Unit = (typeof UNITS)[number];
 
 /** Which pose types carry a field: the 2D pose, the 3D pose, or both. */
-export type Dimension = "2d" | "3d" | "both";
+export const DIMENSIONS = Object.freeze(["2d", "3d", "both"] as const);
+
+/** Which pose types carry a field: the 2D pose, the 3D pose, or both. */
+export type Dimension = (typeof DIMENSIONS)[number];
 
 /** What a field of a value is: what it changes, its unit, which poses carry it, where it rests, how it combines, and what the gate asks of it. */
 export interface ValueField {
@@ -79,25 +94,27 @@ function row<const R extends ValueField>(field: R): R & ValueField {
 export const VALUE_FIELDS = Object.freeze({
   x: row({
     ...OFFSET,
-    meaning: "Moves the target right, from where the page puts it.",
-    unit: "px",
+    meaning: "Moves the target right of where the page puts it; px in 2D, world units in 3D.",
+    unit: "length",
     dimension: "both",
   }),
   y: row({
     ...OFFSET,
-    meaning: "Moves the target down in 2D and up in 3D, from where the page puts it.",
-    unit: "px",
+    meaning:
+      "Moves the target down of where the page puts it in 2D (px), and up in 3D (world units).",
+    unit: "length",
     dimension: "both",
   }),
   z: row({
     ...OFFSET,
-    meaning: "Moves the target toward the viewer in 3D.",
-    unit: "px",
+    meaning: "Moves the target toward the viewer in 3D, in world units.",
+    unit: "length",
     dimension: "3d",
   }),
   rotation: row({
     ...TURN,
-    meaning: "Turns the target about its anchor, clockwise on screen.",
+    meaning:
+      "Turns the target about its anchor: clockwise on screen in 2D, about the z axis in 3D.",
     unit: "deg",
     dimension: "both",
   }),
@@ -115,19 +132,19 @@ export const VALUE_FIELDS = Object.freeze({
   }),
   skewX: row({
     ...TURN,
-    meaning: "Shears the target sideways, leaning its top against its bottom.",
+    meaning: "Leans the target sideways, its top sliding against its bottom.",
     unit: "deg",
     dimension: "2d",
   }),
   skewY: row({
     ...TURN,
-    meaning: "Shears the target vertically, lifting one side against the other.",
+    meaning: "Leans the target vertically, one side rising against the other.",
     unit: "deg",
     dimension: "2d",
   }),
   scale: row({
     ...SIZE,
-    meaning: "Grows or shrinks the target evenly about its anchor.",
+    meaning: "Grows or shrinks the target evenly about its anchor; 1 is its own size.",
     unit: "scale",
     dimension: "both",
   }),
@@ -155,7 +172,7 @@ export const VALUE_FIELDS = Object.freeze({
     smooth: true,
     shows: false,
     judged: "ratio",
-    meaning: "How solid the target is, from clear to opaque.",
+    meaning: "Fades the target: 0 is clear, 1 fully opaque.",
     unit: "share",
     dimension: "both",
   }),
@@ -168,33 +185,34 @@ export const VALUE_FIELDS = Object.freeze({
   }),
   shadowX: row({
     ...OFFSET,
-    meaning: "Throws the drop shadow of the target sideways.",
+    meaning: "Moves the target's drop shadow right; its colour is the skin's `--gerak-shadow`.",
     unit: "px",
     dimension: "2d",
   }),
   shadowY: row({
     ...OFFSET,
-    meaning: "Throws the drop shadow of the target downward.",
+    meaning: "Moves the target's drop shadow down.",
     unit: "px",
     dimension: "2d",
   }),
   shadowBlur: row({
     ...OFFSET,
     least: 0,
-    meaning: "Softens the drop shadow of the target by a blur of this radius.",
+    meaning: "Softens the target's drop shadow by a blur of this radius.",
     unit: "px",
     dimension: "2d",
   }),
   hue: row({
     ...TURN,
-    meaning: "Turns the colour of the target round the colour wheel.",
+    meaning: "Turns the target's colour round the hue wheel, from the colour its skin gives it.",
     unit: "deg",
     dimension: "2d",
   }),
   lightness: row({
     ...OFFSET,
     judged: "ratio",
-    meaning: "Lightens the colour of the target when above rest and darkens it when below.",
+    meaning:
+      "Lightens the target's colour above 0 and darkens it below, from -1 to 1, from the colour its skin gives it.",
     unit: "number",
     dimension: "2d",
   }),
@@ -202,7 +220,8 @@ export const VALUE_FIELDS = Object.freeze({
     ...OFFSET,
     least: 0,
     judged: "ratio",
-    meaning: "Mixes the tint colour of the page into the target, from none to full.",
+    meaning:
+      "Mixes the target's colour toward its skin's `--gerak-tint-to`: 0 is none, 1 all of it.",
     unit: "share",
     dimension: "2d",
   }),
@@ -259,8 +278,9 @@ export const VALUE_FIELDS = Object.freeze({
     smooth: true,
     shows: false,
     judged: "position",
-    meaning: "Morphs the outline of a path from its first shape toward its next.",
-    unit: "share",
+    meaning:
+      "Morphs a path member's outline through its shapes: 0 is its path, 1 its first shape, 1.5 halfway on.",
+    unit: "index",
     dimension: "2d",
   }),
   layer: row({

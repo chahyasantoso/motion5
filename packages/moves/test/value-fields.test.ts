@@ -7,7 +7,7 @@ import {
   valueField,
   type ValueField,
 } from "@gerak/moves";
-import { POSE_2D_NUMBERS } from "../src/fields/pose";
+import { DIMENSIONS, POSE_2D_NUMBERS, UNITS } from "../src/fields/pose";
 import { NUMBERS, TURNS } from "../src/fields/pose3d";
 
 describe("the field table", () => {
@@ -112,8 +112,6 @@ describe("skew, shadow and colour fields", () => {
 
 describe("the field table states each field's contract", () => {
   const rows = Object.entries(VALUE_FIELDS);
-  const UNITS = ["px", "deg", "scale", "share", "index", "order", "number"];
-  const DIMENSIONS = ["2d", "3d", "both"];
 
   it("gives every row a meaning, a unit and a dimension", () => {
     for (const [name, row] of rows) {
