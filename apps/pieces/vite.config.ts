@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import { motionLivePlugin } from "@gerak/tools/vite";
+import { motionLivePlugin } from "../../scripts/source-plugins.mjs";
 import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
 
 export default defineConfig({
