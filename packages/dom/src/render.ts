@@ -159,7 +159,8 @@ function cssFilter(value: Pose2d): string {
   return parts.join(" ");
 }
 
-/** The pose fields `applyValue` writes to an element's style; custom numbers are written apart, as `--<name>` properties. */
+/** The pose fields `@gerak/dom` writes: `applyValue` to an element's style, and the stage a path member's `shape`
+ * as its outline; custom numbers are written apart, as `--<name>` properties. */
 export const WRITTEN: readonly (keyof Pose2d)[] = Object.freeze([
   "x",
   "y",
@@ -184,14 +185,13 @@ export const WRITTEN: readonly (keyof Pose2d)[] = Object.freeze([
   "clipRadius",
   "clipWidth",
   "clipHeight",
+  "shape",
   "layer",
   "anchor",
 ]);
 
-/** The pose fields `applyValue` leaves alone, each with the reason. */
-export const UNWRITTEN: Readonly<Partial<Record<keyof Pose2d, string>>> = Object.freeze({
-  shape: "A path's outline is written as its `d` attribute by `applyPath`, not as style.",
-});
+/** The pose fields `@gerak/dom` leaves alone, each with the reason; it writes every one today. */
+export const UNWRITTEN: Readonly<Partial<Record<keyof Pose2d, string>>> = Object.freeze({});
 
 const COLOUR_PROPERTIES = [
   ["hue", "--gerak-hue", "deg"],

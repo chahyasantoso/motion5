@@ -38,7 +38,7 @@ describe("every renderer says what it writes", () => {
   it("a field that is in neither list, or in both, is found", () => {
     const [first, ...rest] = WRITTEN;
     expect(placed(POSE_2D_FIELDS, rest, UNWRITTEN).neither).toEqual([first]);
-    expect(placed(POSE_2D_FIELDS, [...WRITTEN, "shape"], UNWRITTEN).both).toEqual(["shape"]);
+    expect(placed(POSE_2D_FIELDS, WRITTEN, { x: "written elsewhere" }).both).toEqual(["x"]);
   });
 
   it("gives every unwritten field a reason", () => {
