@@ -15,7 +15,8 @@ import {
   type Descriptors,
   type MoveDescriptors,
 } from "./moves";
-import { formatParts, moveParts, partSample, partsImportedBy } from "./parts";
+import { intentsOf, readDesign } from "./design";
+import { PART_GROUPS, formatParts, moveParts, partSample, partsImportedBy } from "./parts";
 
 /** The source name of the moves package this repository ships. */
 export const BUILT_IN_SOURCE = "@gerak/moves";
@@ -51,7 +52,7 @@ export interface MoveRecord {
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--move <field>[:<quality>]]... [--uses <kind|part>,...] [--design <file> --target <name>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
@@ -68,6 +69,10 @@ export type CatalogArgs =
       readonly fields: readonly string[] | undefined;
       readonly like: string | undefined;
       readonly renderer: RendererName | undefined;
+      readonly move: readonly string[];
+      readonly uses: readonly string[] | undefined;
+      readonly design: string | undefined;
+      readonly target: string | undefined;
       readonly near: string | undefined;
       readonly far: string | undefined;
       readonly in: string | undefined;
@@ -93,6 +98,10 @@ const VALUE_FLAGS = [
   "--fields",
   "--like",
   "--renderer",
+  "--move",
+  "--uses",
+  "--design",
+  "--target",
   "--near",
   "--far",
   "--in",
@@ -103,6 +112,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const usage = (message: string): CatalogArgs => ({ kind: "usage", message });
   const ids: string[] = [];
   const values = new Map<string, string>();
+  const moves: string[] = [];
   const on = new Set<string>();
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -113,7 +123,8 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
         return usage(`${arg} needs a value. ${CATALOG_USAGE}`);
-      values.set(arg, value);
+      if (arg === "--move") moves.push(value);
+      else values.set(arg, value);
       i += 1;
     } else if (arg.startsWith("--")) return usage(`Unknown flag ${arg}. ${CATALOG_USAGE}`);
     else ids.push(arg);
@@ -127,6 +138,8 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const knownRenderer = RENDERER_NAMES.find((candidate) => candidate === renderer);
   if (renderer !== undefined && knownRenderer === undefined)
     return usage(`Unknown renderer "${renderer}". Renderers: ${RENDERER_NAMES.join(", ")}.`);
+  if (values.has("--design") !== values.has("--target"))
+    return usage(`--design and --target go together: --design <file> --target <name>.`);
   const list = (flag: string): readonly string[] | undefined =>
     values
       .get(flag)
@@ -140,6 +153,10 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     fields: list("--fields"),
     like: values.get("--like"),
     renderer: knownRenderer,
+    move: moves,
+    uses: list("--uses"),
+    design: values.get("--design"),
+    target: values.get("--target"),
     near: values.get("--near"),
     far: values.get("--far"),
     in: values.get("--in"),
@@ -659,6 +676,137 @@ function fieldWith(
   return best;
 }
 
+const roundTo = (value: number): number => Math.round(value * 100) / 100;
+
+/** The mean squared distance of a shape's named descriptors to the middle of a quality's ranges. */
+function meanDistanceToMiddle(shape: Descriptors, ranges: DescriptorRanges): number {
+  const named = DESCRIPTOR_KEYS.filter((key) => ranges[key] !== undefined);
+  return named.length === 0 ? 0 : distanceToMiddle(shape, ranges) / named.length;
+}
+
+const labelOf = (request: FieldRequest): string =>
+  request.quality === undefined ? request.field : `${request.field}:${request.quality}`;
+
+/** The fit of each requested field to the shapes of one option set, with a note per field. */
+function fieldsFit(
+  shapes: Readonly<Record<string, Descriptors>>,
+  requests: readonly FieldRequest[],
+): {
+  readonly fit: number;
+  readonly hasAll: boolean;
+  readonly movesAny: boolean;
+  readonly notes: readonly string[];
+} {
+  const notes: string[] = [];
+  let total = 0;
+  let hasAll = true;
+  let movesAny = false;
+  for (const request of requests) {
+    const shape = new Map(Object.entries(shapes)).get(request.field);
+    if (shape === undefined) {
+      total += 1;
+      hasAll = false;
+      notes.push(`✗ ${labelOf(request)} (${request.field} not moved)`);
+      continue;
+    }
+    movesAny = true;
+    const ranges = request.quality === undefined ? undefined : QUALITIES[request.quality];
+    if (ranges === undefined) {
+      notes.push(`✓ ${labelOf(request)} (moved)`);
+      continue;
+    }
+    total += meanDistanceToMiddle(shape, ranges);
+    const outside = outsideRanges(shape, ranges);
+    notes.push(
+      outside.length === 0
+        ? `✓ ${labelOf(request)} (${DESCRIPTOR_KEYS.filter((key) => ranges[key] !== undefined)
+            .map((key) => `${key} ${roundTo(shape[key])}`)
+            .join(", ")})`
+        : `✗ ${labelOf(request)} (${outside
+            .map(
+              ({ key, value, range }) =>
+                `${key} ${roundTo(value)} outside ${range[0]}..${range[1]}`,
+            )
+            .join(", ")})`,
+    );
+  }
+  return { fit: requests.length === 0 ? 0 : total / requests.length, hasAll, movesAny, notes };
+}
+
+/** The options an option set changes from the example's, as `name=value` text. */
+function changedOptions(record: MoveRecord, options: Readonly<Record<string, unknown>>): string {
+  const example = new Map(Object.entries(record.example.options));
+  return Object.entries(options)
+    .filter(([name, value]) => example.get(name) !== value)
+    .map(([name, value]) => `${name}=${String(value)}`)
+    .join(", ");
+}
+
+/** The parts of a kind or by name that a move's file imports; none when the move imports no such part. */
+function importedFor(record: MoveRecord, use: string): readonly string[] {
+  return moveParts()
+    .filter((part) => (part.group === use || part.name === use) && record.parts.includes(part.name))
+    .map(({ name }) => name);
+}
+
+/** How a move answers a design at its best option set: the example, or the set that fits most closely. */
+function designFit(
+  record: MoveRecord,
+  design: DesignRequest,
+): { readonly fit: DesignFit; readonly notes: readonly string[] } {
+  const sets =
+    record.shapesAt.length > 0
+      ? record.shapesAt
+      : [
+          {
+            options: Object.fromEntries(Object.entries(record.example.options)),
+            shapes: record.shapes,
+          },
+        ];
+  let best: { readonly at: string; readonly found: ReturnType<typeof fieldsFit> } | undefined;
+  for (const set of sets) {
+    const found = fieldsFit(set.shapes, design.fields);
+    if (best === undefined || found.fit < best.found.fit)
+      best = { at: changedOptions(record, set.options), found };
+  }
+  const found = best?.found ?? fieldsFit({}, design.fields);
+  const used = design.uses.map((use) => ({ use, imports: importedFor(record, use) }));
+  const usesFit =
+    design.uses.length === 0
+      ? 0
+      : used.filter(({ imports }) => imports.length > 0).length / design.uses.length;
+  return {
+    fit: { fieldFit: found.fit, usesFit, hasAll: found.hasAll, movesAny: found.movesAny },
+    notes: [
+      ...found.notes,
+      ...used.map(({ use, imports }) =>
+        imports.length > 0
+          ? `✓ uses ${use} (${imports.join(", ")})`
+          : `✗ uses ${use} (imports none)`,
+      ),
+      ...(best === undefined || best.at === "" ? [] : [`at ${best.at}`]),
+    ],
+  };
+}
+
+/** The first thing wrong with a design request: an unknown quality, field or use, named; none when sound. */
+function refusalOf(design: DesignRequest): string | undefined {
+  for (const request of design.fields) {
+    const known =
+      valueField(request.field) !== undefined ||
+      (request.field.startsWith("custom.") && request.field.length > "custom.".length);
+    if (!known)
+      return `design: unknown field "${request.field}". Fields: ${Object.values(FIELD_GROUPS).flat().join(", ")}, or custom.<name>.`;
+    if (request.quality !== undefined && !Object.hasOwn(QUALITIES, request.quality))
+      return `design: unknown quality "${request.quality}" for ${request.field}. Qualities: ${Object.keys(QUALITIES).join(", ")}.`;
+  }
+  const parts = moveParts();
+  for (const use of design.uses)
+    if (!parts.some((part) => part.group === use || part.name === use))
+      return `--uses: "${use}" is neither a kind nor a part. Kinds: ${PART_GROUPS.join(", ")}.`;
+  return undefined;
+}
+
 /** What one search asks of the records; every field given must hold. */
 export interface CatalogQuery {
   readonly role?: MoveRole;
@@ -673,6 +821,8 @@ export interface CatalogQuery {
   readonly all?: boolean;
   /** Keeps the moves the gate has findings on, which a search leaves out unless `all` is set. */
   readonly withFindings?: boolean;
+  /** Ranks the moves by how well they answer a design. */
+  readonly design?: DesignRequest;
 }
 
 /** One move a search found. */
@@ -686,7 +836,38 @@ export interface QueryRow {
   readonly fit: number | undefined;
   /** The moved field that has the quality `--like` asked for. */
   readonly field?: string;
+  /** What a design asked of the move, each with a tick or a cross and the value that decided it. */
+  readonly notes: readonly string[];
+  /** How the move fits a design, when the search made one. */
+  readonly design?: DesignFit;
 }
+
+/** One field a design asks for, and the quality its motion should have. */
+export interface FieldRequest {
+  readonly field: string;
+  readonly quality?: string;
+}
+
+/** What a design asks of a move: fields with their qualities, and the kinds or parts it should use. */
+export interface DesignRequest {
+  readonly fields: readonly FieldRequest[];
+  readonly uses: readonly string[];
+}
+
+/** How well a move answers a design, as its best option set shows. */
+export interface DesignFit {
+  /** The mean over the requested fields of 0 to 1 (1 for a field not moved); least first. */
+  readonly fieldFit: number;
+  /** The share of the requested uses the move's file imports. */
+  readonly usesFit: number;
+  /** Whether the move moves every requested field in that option set. */
+  readonly hasAll: boolean;
+  /** Whether it moves at least one requested field in that option set. */
+  readonly movesAny: boolean;
+}
+
+/** The `fieldFit` at or below which a move that has every requested field answers a design. */
+export const NO_FIT = 0.05;
 
 /** What a search returned, or why it could not be made. */
 export type QueryResult =
@@ -695,6 +876,8 @@ export type QueryResult =
       readonly rows: readonly QueryRow[];
       /** How many moves that fit were left out for their findings. */
       readonly held: number;
+      /** Whether a design was asked and no move that has every field comes close to it. */
+      readonly noFit: boolean;
     }
   | { readonly kind: "refused"; readonly message: string };
 
@@ -706,6 +889,7 @@ export function isQuery(request: CatalogQuery): boolean {
     request.fields !== undefined ||
     request.like !== undefined ||
     request.writes !== undefined ||
+    request.design !== undefined ||
     request.near !== undefined ||
     request.far !== undefined ||
     request.all === true
@@ -750,7 +934,11 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     return refused(
       `--like: unknown quality "${request.like}". Qualities: ${Object.keys(QUALITIES).join(", ")}.`,
     );
-  const ranked = near !== undefined || far !== undefined || ranges !== undefined;
+  const { design } = request;
+  const problem = design === undefined ? undefined : refusalOf(design);
+  if (problem !== undefined) return refused(problem);
+  const ranked =
+    near !== undefined || far !== undefined || ranges !== undefined || design !== undefined;
   const shared = new Set(
     records.filter((record) => lookup(records, record.id).length > 1).map(({ id }) => id),
   );
@@ -765,6 +953,12 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     if (writes !== undefined && !record.fields.every((field) => writes(field))) continue;
     const matched = ranges === undefined ? undefined : fieldWith(record, ranges);
     if (ranges !== undefined && matched === undefined) continue;
+    const answer = design === undefined ? undefined : designFit(record, design);
+    if (design !== undefined && answer !== undefined) {
+      const moves = design.fields.length > 0 && answer.fit.movesAny;
+      const uses = design.uses.length > 0 && answer.fit.usesFit > 0;
+      if (!moves && !uses) continue;
+    }
     let fit: number | undefined;
     if (ranked) {
       const parts = [
@@ -773,7 +967,11 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
         matched?.fit ?? 0,
       ];
       if (record === near || record === far || parts.some((part) => part === undefined)) continue;
-      fit = (parts[0] ?? 0) - (far === undefined ? 0 : (parts[1] ?? 0)) + (parts[2] ?? 0);
+      fit =
+        (parts[0] ?? 0) -
+        (far === undefined ? 0 : (parts[1] ?? 0)) +
+        (parts[2] ?? 0) +
+        (answer?.fit.fieldFit ?? 0);
     }
     if (record.findings > 0 && request.all !== true && request.withFindings !== true) {
       held += 1;
@@ -787,16 +985,22 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
         label: shared.has(record.id) ? `${record.source}/${record.id}` : record.id,
         fit,
         ...(matched === undefined ? {} : { field: matched.field }),
+        notes: answer?.notes ?? [],
+        ...(answer === undefined ? {} : { design: answer.fit }),
       },
     });
   }
   rows.sort(
     (left, right) =>
       (left.row.fit ?? 0) - (right.row.fit ?? 0) ||
+      (right.row.design?.usesFit ?? 0) - (left.row.design?.usesFit ?? 0) ||
       right.hits - left.hits ||
       byId(left.row.record, right.row.record),
   );
-  return { kind: "rows", rows: rows.map(({ row }) => row), held };
+  const noFit =
+    design !== undefined &&
+    !rows.some(({ row }) => row.design?.hasAll === true && row.design.fieldFit <= NO_FIT);
+  return { kind: "rows", rows: rows.map(({ row }) => row), held, noFit };
 }
 
 /** The import a scene writes for a move: the package's name, or the file as `from` (a brief) or the root sees it. */
@@ -822,6 +1026,7 @@ export function formatRow(row: QueryRow, root: string, from: string | undefined)
     record.fields.length === 0 ? "none" : record.fields.join(","),
     record.findings === 0 ? "passes" : `${record.findings} findings`,
     ...(row.field === undefined ? [] : [`on ${row.field}`]),
+    ...(row.notes.length === 0 ? [] : [row.notes.join("; ")]),
     firstSentence(record.description),
     importLine(record, root, from),
   ].join(" | ");
@@ -1087,6 +1292,8 @@ export function summarize(records: readonly MoveRecord[]): readonly string[] {
     "npm run motion:moves -- --find squash --fields scale    (words in an id, a description or an option)",
     `npm run motion:moves -- --near ${sample}      (moves that move like one; --far for the opposite)`,
     "npm run motion:moves -- <id>                  (one move in full: options, descriptors, importers)",
+    "npm run motion:moves -- --move y:heavy --uses ease     (moves that answer a design; --design <file> --target <name> reads a piece's)",
+    "npm run motion:moves -- --anatomy             (the fields, parts and shape words a design is written in)",
     "add --in <brief> for imports that resolve from that brief, --all to lift the 10-row cap.",
     ...(held === 0 ? [] : [`${withFindings(held)}; every search leaves them out unless --all.`]),
     PARTS_HINT,
@@ -1281,6 +1488,63 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
   ];
 }
 
+/** The design a search asks, from `--move` and from the target of a `--design` file; or why it cannot. */
+async function designOf(
+  args: Extract<CatalogArgs, { kind: "ok" }>,
+  root: string,
+): Promise<
+  | { readonly kind: "ok"; readonly design: DesignRequest | undefined }
+  | { readonly kind: "refused"; readonly message: string }
+> {
+  const fields: FieldRequest[] = args.move.map((spec) => {
+    const at = spec.indexOf(":");
+    return at < 0 ? { field: spec } : { field: spec.slice(0, at), quality: spec.slice(at + 1) };
+  });
+  if (args.design !== undefined && args.target !== undefined) {
+    const file = resolve(root, args.design);
+    let module: unknown;
+    try {
+      module = await import(pathToFileURL(file).href);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { kind: "refused", message: `--design: ${file} could not be imported: ${message}` };
+    }
+    const read = readDesign(
+      typeof module === "object" && module !== null ? Reflect.get(module, "design") : undefined,
+    );
+    if (read.kind === "refused") return { kind: "refused", message: `--design: ${read.reason}` };
+    if (!Object.hasOwn(read.design, args.target))
+      return {
+        kind: "refused",
+        message: `--target: no target "${args.target}" in ${args.design}. Targets: ${Object.keys(read.design).join(", ")}.`,
+      };
+    for (const intent of intentsOf(read.design))
+      if (
+        intent.target === args.target &&
+        !fields.some(({ field, quality }) => field === intent.field && quality === intent.quality)
+      )
+        fields.push({ field: intent.field, quality: intent.quality });
+  }
+  const uses = args.uses ?? [];
+  return {
+    kind: "ok",
+    design: fields.length === 0 && uses.length === 0 ? undefined : { fields, uses },
+  };
+}
+
+/** The answer when no move comes close: what was asked, and the command that makes a move for it. */
+function noFitLines(design: DesignRequest, brief: string | undefined): readonly string[] {
+  const asked = [
+    design.fields.length === 0 ? "" : `fields ${design.fields.map(labelOf).join(", ")}`,
+    design.uses.length === 0 ? "" : `uses ${design.uses.join(", ")}`,
+  ].filter((part) => part !== "");
+  return [
+    "No move does this closely.",
+    `asked: ${asked.join("; ")}`,
+    `npm run motion:new -- --move <id> --in ${brief ?? "<brief>"}`,
+  ];
+}
+
 /** Runs the command for parsed arguments and an app root: the lines to print and the exit code. */
 export async function runCatalog(
   args: Extract<CatalogArgs, { kind: "ok" }>,
@@ -1300,6 +1564,8 @@ export async function runCatalog(
       code: problemCode,
     };
   }
+  const asked = await designOf(args, root);
+  if (asked.kind === "refused") return { lines: [asked.message], code: 1 };
   const tables = await rendererTables();
   const renderer = args.renderer === undefined ? undefined : tableOf(tables, args.renderer);
   const request: CatalogQuery = {
@@ -1308,12 +1574,14 @@ export async function runCatalog(
     ...(args.fields === undefined ? {} : { fields: args.fields }),
     ...(args.like === undefined ? {} : { like: args.like }),
     ...(renderer === undefined ? {} : { writes: (field: string) => writes(renderer, field) }),
+    ...(asked.design === undefined ? {} : { design: asked.design }),
     ...(args.near === undefined ? {} : { near: args.near }),
     ...(args.far === undefined ? {} : { far: args.far }),
     ...(args.in === undefined ? {} : { in: args.in }),
     ...(args.all ? { all: true } : {}),
     ...(args.check ? { withFindings: true } : {}),
   };
+  let noFit = false;
   let held = 0;
   let selected = all;
   let rows: readonly QueryRow[] = [];
@@ -1340,6 +1608,7 @@ export async function runCatalog(
     if (found.kind === "refused") return { lines: [found.message], code: 1 };
     rows = found.rows;
     held = found.held;
+    noFit = found.noFit;
     selected = rows.flatMap(({ record }) => all.filter((entry) => entry.record === record));
   }
   if (args.check) {
@@ -1387,6 +1656,8 @@ export async function runCatalog(
     shownRows.length < rows.length
       ? [`${rows.length - shownRows.length} more; --all lists them.`]
       : [];
+  if (noFit && asked.design !== undefined && !args.check && !args.json)
+    return { lines: noFitLines(asked.design, args.in), code: problemCode };
   const left = held === 0 ? [] : [`${withFindings(held)} left out; --all lists them.`];
   return {
     lines: [
