@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { candidatesOf, formatCandidate, loadCatalog, sourceFiles } from "./catalog";
+import { candidatesOf, duplicateLines, formatCandidate, loadCatalog, sourceFiles } from "./catalog";
 
 /** The usage line of `motion:promote`. */
 export const PROMOTE_USAGE = "usage: motion:promote <id> [--root dir]";
@@ -182,6 +182,11 @@ export async function promoteMove(
     return refuse(
       `${join(root, "package.json")} has no "gerak.promoteTo": set it to the folder promoted moves are written to, such as "../../packages/moves/src/moves".`,
     );
+  const records = all.map(({ record }) => record);
+  const twins = records
+    .filter((record) => record.id === id && record.file !== undefined)
+    .flatMap((record) => duplicateLines(records, record, { root }));
+  if (twins.length > 0) return refuse(...twins);
   const candidates = candidatesOf(root, all);
   const candidate = candidates.find((found) => found.id === id);
   if (candidate === undefined)

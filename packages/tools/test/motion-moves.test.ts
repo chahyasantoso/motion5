@@ -27,7 +27,7 @@ export const ${id.replace("-", "")} = defineMove({
   options: { distance: { kind: "number", min: 0, max: 500, default: 100, description: "Start offset, in px." } },
   example: { options: { distance: 100 } },
   moments: () => ({ arrive: 1 }),
-  run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress)${end} }),
+  run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) ** 0.3${end} }),
 });
 `;
 
@@ -124,7 +124,9 @@ describe("motion:moves", () => {
   });
 
   it("names the bad move under --check and fails", async () => {
-    const run = await runCatalog(ok(["--check"]), app());
+    const run = await runCatalog(ok(["--check"]), app(), {
+      baseline: new Set(["reel/bad reel/good"]),
+    });
     expect(run.code).toBe(1);
     expect(run.lines.every((line) => line.startsWith("bad:"))).toBe(true);
     expect(run.lines[0]).toContain('"x" is -4');

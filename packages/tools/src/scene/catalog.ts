@@ -484,6 +484,8 @@ export interface Catalog {
 /** What a run may replace: the sampler that measures a move. */
 export interface CatalogOptions {
   readonly sampler?: (move: CheckedMove) => MoveDescriptors;
+  /** The near-duplicate pairs not to report; the repository's baseline when left out. */
+  readonly baseline?: ReadonlySet<string>;
 }
 
 /** Reads every source the root declares, reusing the index for any move whose file or package has not changed. */
@@ -777,14 +779,86 @@ export function formatFull(
   ];
 }
 
+/** Two moves of one role and one primary field this close are the same motion under two ids. */
+const NEAR_DUPLICATE = 0.02;
+
+const BASELINE_FILE = fileURLToPath(
+  new URL("../../../../scripts/duplicate-baseline.json", import.meta.url),
+);
+
+const pairOf = (left: MoveRecord, right: MoveRecord): string =>
+  [`${left.source}/${left.id}`, `${right.source}/${right.id}`].sort().join(" ");
+
+/** The moves a record is a near-duplicate of: one role, one primary field, within the distance. */
+export function nearDuplicatesOf(
+  records: readonly MoveRecord[],
+  record: MoveRecord,
+): readonly MoveRecord[] {
+  if (record.primary === undefined) return [];
+  return records.filter((other) => {
+    if (other === record || other.role !== record.role) return false;
+    const apart = distance(record, other);
+    return apart !== undefined && apart <= NEAR_DUPLICATE;
+  });
+}
+
+/** Every near-duplicate pair among the records, each as sorted `source/id source/id`, sorted. */
+export function duplicatePairs(records: readonly MoveRecord[]): readonly string[] {
+  return [
+    ...new Set(
+      records.flatMap((record) =>
+        nearDuplicatesOf(records, record).map((other) => pairOf(record, other)),
+      ),
+    ),
+  ].sort();
+}
+
+/** The pairs `scripts/duplicate-baseline.json` lists as already found; none where the file is not on disk. */
+export function loadDuplicateBaseline(): ReadonlySet<string> {
+  const text = readText(BASELINE_FILE);
+  try {
+    const listed: unknown = text === undefined ? [] : JSON.parse(text);
+    return new Set(Array.isArray(listed) ? listed.filter((pair) => typeof pair === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+/** What the gate may be told: the pairs already found, and the root to write imports from. */
+export interface CheckOptions {
+  readonly baseline?: ReadonlySet<string>;
+  readonly root?: string;
+}
+
+/** One line for a move that is a near-duplicate of another, unless the baseline lists the pair. */
+export function duplicateLines(
+  records: readonly MoveRecord[],
+  record: MoveRecord,
+  options: CheckOptions = {},
+): readonly string[] {
+  const baseline = options.baseline ?? loadDuplicateBaseline();
+  return nearDuplicatesOf(records, record)
+    .filter((other) => !baseline.has(pairOf(record, other)))
+    .map((other) => {
+      const how =
+        options.root === undefined ? "" : ` (${importLine(other, options.root, undefined)})`;
+      return `${record.id}: close to \`${other.id}\` (${other.source}): import it instead${how}, or change what makes yours differ.`;
+    });
+}
+
 /** Every finding on the given moves, and on any id declared twice within one source. */
 export function checkCatalog(
   all: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
   selected: readonly { readonly record: MoveRecord; readonly move: CheckedMove }[],
+  options: CheckOptions = {},
 ): readonly string[] {
   const lines: string[] = [];
-  for (const { record, move } of selected)
+  const records = all.map(({ record }) => record);
+  const baseline = options.baseline ?? loadDuplicateBaseline();
+  for (const { record, move } of selected) {
     for (const finding of checkMove(move)) lines.push(describeFinding(record.id, finding));
+    lines.push(...duplicateLines(records, record, { ...options, baseline }));
+  }
   const where = (record: MoveRecord) => record.file ?? record.source;
   for (const { record: chosen } of selected) {
     const same = all.filter(
@@ -957,7 +1031,13 @@ export async function runCatalog(
     selected = rows.flatMap(({ record }) => all.filter((entry) => entry.record === record));
   }
   if (args.check) {
-    const findings = [...problems, ...checkCatalog(all, selected)];
+    const findings = [
+      ...problems,
+      ...checkCatalog(all, selected, {
+        root,
+        ...(options.baseline === undefined ? {} : { baseline: options.baseline }),
+      }),
+    ];
     const lines = args.json
       ? [JSON.stringify({ ok: findings.length === 0, findings })]
       : findings.length === 0

@@ -39,7 +39,7 @@ export const ${name} = defineMove({
   options: { distance: { kind: "number", min: 0, max: 500, default: 100, description: "Start offset, in px." } },
   example: { options: { distance: 100 } },
   moments: () => ({ arrive: 1 }),
-  run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress)${end} }),
+  run: ({ distance }, { progress }): Pose2d => ({ x: -distance * (1 - progress) ** 0.3${end} }),
 });
 `;
 
@@ -47,7 +47,7 @@ export const ${name} = defineMove({
 const PLAIN = (
   id: string,
   name: string,
-) => `const move = (options, time) => ({ x: -100 * (1 - time.progress) });
+) => `const move = (options, time) => ({ x: -100 * (1 - time.progress) ** 0.3 });
 export const ${name} = Object.assign(move, {
   id: "${id}",
   role: "enter",

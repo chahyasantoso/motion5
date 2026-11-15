@@ -37,7 +37,7 @@ export const slideIn = defineMove({
   options: { distance: { kind: "number", min: 0, max: 500, default: 100, description: "Start offset, in px." } },
   example: { options: { distance: 100 } },
   moments: () => ({ arrive: 1 }),
-  run: ({ distance }, { progress }): Pose2d => ({ x: mix(-distance, 0, progress) }),
+  run: ({ distance }, { progress }): Pose2d => ({ x: mix(-distance, 0, 1 - (1 - progress) ** 0.3) }),
 });
 `;
 
