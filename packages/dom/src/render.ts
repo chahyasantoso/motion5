@@ -159,6 +159,40 @@ function cssFilter(value: Pose2d): string {
   return parts.join(" ");
 }
 
+/** The pose fields `applyValue` writes to an element's style; custom numbers are written apart, as `--<name>` properties. */
+export const WRITTEN: readonly (keyof Pose2d)[] = Object.freeze([
+  "x",
+  "y",
+  "rotation",
+  "skewX",
+  "skewY",
+  "scale",
+  "scaleX",
+  "scaleY",
+  "opacity",
+  "blur",
+  "shadowX",
+  "shadowY",
+  "shadowBlur",
+  "hue",
+  "lightness",
+  "tint",
+  "drawn",
+  "drawnFrom",
+  "clipX",
+  "clipY",
+  "clipRadius",
+  "clipWidth",
+  "clipHeight",
+  "layer",
+  "anchor",
+]);
+
+/** The pose fields `applyValue` leaves alone, each with the reason. */
+export const UNWRITTEN: Readonly<Partial<Record<keyof Pose2d, string>>> = Object.freeze({
+  shape: "A path's outline is written as its `d` attribute by `applyPath`, not as style.",
+});
+
 const COLOUR_PROPERTIES = [
   ["hue", "--gerak-hue", "deg"],
   ["lightness", "--gerak-lightness", ""],
@@ -167,7 +201,7 @@ const COLOUR_PROPERTIES = [
 
 const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
-const WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
+const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const EMPTIED = new WeakSet<RenderStyle>();
 
 // A field or custom name the value leaves out is cleared, so the page's own style shows again.
@@ -224,7 +258,7 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   }
   COLOURED.set(style, coloured);
   const custom = value.custom ?? {};
-  for (const name of WRITTEN.get(style) ?? [])
+  for (const name of CUSTOM_WRITTEN.get(style) ?? [])
     if (!Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);
   for (const [name, number] of Object.entries(custom)) {
     if (!CUSTOM_NAME.test(name))
@@ -237,7 +271,7 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
       );
     style.setProperty?.(`--${name}`, String(number));
   }
-  WRITTEN.set(style, new Set(Object.keys(custom)));
+  CUSTOM_WRITTEN.set(style, new Set(Object.keys(custom)));
 }
 
 /** Sets a path element's `d` to the cubic segments. */

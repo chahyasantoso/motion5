@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { BoxGeometry, Mesh, MeshBasicMaterial } from "three";
 import { applyValue, type RenderTarget } from "@gerak/dom";
 import { POSE_2D_FIELDS, type Pose2d } from "@gerak/moves";
-import { applyPose2d, applyPose3d, THREE_POSE_FIELDS } from "../src/index";
+import { applyPose2d, applyPose3d, WRITTEN_2D } from "../src/index";
 
 type Field = (typeof POSE_2D_FIELDS)[number];
 
@@ -97,7 +97,7 @@ function threeWrite(pose: Pose2d): string {
   return JSON.stringify([mesh.position, mesh.rotation.z, mesh.scale, mesh.material.opacity]);
 }
 
-const written: ReadonlySet<Field> = new Set(THREE_POSE_FIELDS);
+const written: ReadonlySet<Field> = new Set(WRITTEN_2D);
 
 describe("every Pose2d field", () => {
   // `shape` is written by the stage as a path's outline, not by `applyValue` as style.
@@ -109,7 +109,7 @@ describe("every Pose2d field", () => {
     },
   );
 
-  it.each(THREE_POSE_FIELDS)("%s reaches the Three.js renderer", (field) => {
+  it.each(WRITTEN_2D)("%s reaches the Three.js renderer", (field) => {
     const base = baseFor(field);
     expect(threeWrite({ ...base, [field]: MOVED[field] })).not.toBe(threeWrite(base));
   });

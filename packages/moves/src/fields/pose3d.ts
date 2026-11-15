@@ -7,22 +7,37 @@ import {
   type Matrix3,
 } from "@gerak/rig";
 import { addCustom, join } from "./combine";
-import { VALUE_FIELDS, type Pose2d } from "./pose";
+import {
+  FIELD_NAMES,
+  VALUE_FIELDS,
+  type CarriedBy,
+  type Dimension,
+  type Pose2d,
+  type TurnsOf,
+} from "./pose";
 
-/** The turns a 3D pose carries; they compose as one rotation rather than by their rows. */
-export const TURNS = Object.freeze(["rotation", "rotationX", "rotationY"] as const);
+type In3d = CarriedBy<"3d" | "both">;
+type Turn3d = TurnsOf<"3d" | "both">;
 
-/** The other numbers a 3D pose carries, each a row of the table. */
-export const NUMBERS = Object.freeze([
-  "x",
-  "y",
-  "z",
-  "scale",
-  "scaleX",
-  "scaleY",
-  "scaleZ",
-  "opacity",
-] as const) satisfies readonly (keyof typeof VALUE_FIELDS)[];
+function carriedIn3d(dimension: Dimension): boolean {
+  return dimension === "3d" || dimension === "both";
+}
+
+/** The turns a 3D pose carries: the 3D rows judged as turns; they compose as one rotation rather than by their rows. */
+export const TURNS: readonly Turn3d[] = Object.freeze(
+  FIELD_NAMES.filter(
+    (name): name is Turn3d =>
+      carriedIn3d(VALUE_FIELDS[name].dimension) && VALUE_FIELDS[name].judged === "turn",
+  ),
+);
+
+/** The other numbers a 3D pose carries: the rest of the 3D rows, in table order. */
+export const NUMBERS: readonly Exclude<In3d, Turn3d>[] = Object.freeze(
+  FIELD_NAMES.filter(
+    (name): name is Exclude<In3d, Turn3d> =>
+      carriedIn3d(VALUE_FIELDS[name].dimension) && VALUE_FIELDS[name].judged !== "turn",
+  ),
+);
 
 /** A 3D pose, every field optional: `x`, `y`, `z`, `rotation` (about z), `rotationX`, `rotationY`,
  * scales, `opacity`. Y up, degrees on Z-X-Y; a `Pose2d` is refused. */

@@ -1,16 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { CUSTOM_FIELD, VALUE_FIELDS, combine, mixPose, valueField } from "@gerak/moves";
+import {
+  CUSTOM_FIELD,
+  VALUE_FIELDS,
+  combine,
+  mixPose,
+  valueField,
+  type ValueField,
+} from "@gerak/moves";
+import { POSE_2D_NUMBERS } from "../src/fields/pose";
+import { NUMBERS, TURNS } from "../src/fields/pose3d";
 
 describe("the field table", () => {
   it("gives every field one row: its rest, how it combines, and what the gate asks", () => {
-    expect(VALUE_FIELDS.x).toEqual({
+    expect(VALUE_FIELDS.x).toMatchObject({
       rest: 0,
       combines: "add",
       smooth: true,
       shows: false,
       judged: "position",
     });
-    expect(VALUE_FIELDS.scaleY).toEqual({
+    expect(VALUE_FIELDS.scaleY).toMatchObject({
       rest: 1,
       combines: "multiply",
       smooth: false,
@@ -18,20 +27,20 @@ describe("the field table", () => {
       judged: "ratio",
     });
     expect(VALUE_FIELDS.opacity.smooth).toBe(true);
-    expect(valueField("drawn")).toEqual({
+    expect(valueField("drawn")).toMatchObject({
       rest: 1,
       combines: "multiply",
       smooth: true,
       shows: true,
       judged: "position",
     });
-    expect(valueField("clipRadius")).toEqual({
+    expect(valueField("clipRadius")).toMatchObject({
       combines: "replace",
       smooth: true,
       shows: true,
       judged: "position",
     });
-    expect(valueField("blur")).toEqual({
+    expect(valueField("blur")).toMatchObject({
       rest: 0,
       combines: "add",
       smooth: true,
@@ -42,7 +51,9 @@ describe("the field table", () => {
     expect(valueField("drawnFrom")).toMatchObject({ rest: 0, combines: "add" });
     expect(valueField("radius")).toBeUndefined();
     expect(valueField("glow")).toBeUndefined();
-    expect(CUSTOM_FIELD).toEqual(VALUE_FIELDS.x);
+    const { meaning, unit, dimension, ...behaviour } = VALUE_FIELDS.x;
+    expect([meaning, unit, dimension]).toHaveLength(3);
+    expect(CUSTOM_FIELD).toMatchObject(behaviour);
   });
 
   it("combines each field as its row says, and adds custom numbers", () => {
@@ -96,5 +107,68 @@ describe("skew, shadow and colour fields", () => {
     expect(VALUE_FIELDS.blur.least).toBe(0);
     expect(VALUE_FIELDS.tint.least).toBe(0);
     expect(valueField("shadowX")).toMatchObject({ rest: 0, combines: "add", smooth: true });
+  });
+});
+
+describe("the field table states each field's contract", () => {
+  const rows = Object.entries(VALUE_FIELDS);
+  const UNITS = ["px", "deg", "scale", "share", "index", "order", "number"];
+  const DIMENSIONS = ["2d", "3d", "both"];
+
+  it("gives every row a meaning, a unit and a dimension", () => {
+    for (const [name, row] of rows) {
+      expect(row.meaning.length, name).toBeGreaterThan(0);
+      expect(UNITS, name).toContain(row.unit);
+      expect(DIMENSIONS, name).toContain(row.dimension);
+    }
+  });
+
+  it("gives no two rows the same meaning", () => {
+    const meanings = rows.map(([, row]) => row.meaning);
+    expect(new Set(meanings).size).toBe(meanings.length);
+  });
+
+  it("refuses a row that states no meaning", () => {
+    // @ts-expect-error a row must state its meaning, unit and dimension
+    const bare: ValueField = {
+      rest: 0,
+      combines: "add",
+      smooth: true,
+      shows: false,
+      judged: "position",
+    };
+    expect(bare.rest).toBe(0);
+  });
+
+  it("derives the 2D and 3D pose fields from the rows, in today's order", () => {
+    expect([...POSE_2D_NUMBERS]).toEqual([
+      "x",
+      "y",
+      "rotation",
+      "skewX",
+      "skewY",
+      "scale",
+      "scaleX",
+      "scaleY",
+      "opacity",
+      "blur",
+      "shadowX",
+      "shadowY",
+      "shadowBlur",
+      "hue",
+      "lightness",
+      "tint",
+      "drawn",
+      "drawnFrom",
+      "clipX",
+      "clipY",
+      "clipRadius",
+      "clipWidth",
+      "clipHeight",
+      "shape",
+      "layer",
+    ]);
+    expect([...TURNS]).toEqual(["rotation", "rotationX", "rotationY"]);
+    expect([...NUMBERS]).toEqual(["x", "y", "z", "scale", "scaleX", "scaleY", "scaleZ", "opacity"]);
   });
 });
