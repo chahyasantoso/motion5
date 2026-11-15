@@ -299,7 +299,7 @@ describe("one search", () => {
   it("prints id, source, role, fields moved, the first sentence and the import on a row", async () => {
     const run = await runCatalog(ok(["--role", "enter"]), library());
     expect(run.lines).toContain(
-      'bounce-z | reel | enter | x | Slides in from the left. | import { bounceZ } from "./reel/src/moves/z"',
+      'bounce-z | reel | enter | x | passes | Slides in from the left. | import { bounceZ } from "./reel/src/moves/z"',
     );
   });
 

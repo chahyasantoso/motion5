@@ -45,11 +45,13 @@ export interface MoveRecord {
   readonly shapes: Readonly<Record<string, Descriptors>>;
   /** The shapes of every field at each option set the gate samples, the example's first. */
   readonly shapesAt: MoveDescriptors["shapesAt"];
+  /** How many findings the move gate has on it; 0 passes. */
+  readonly findings: number;
 }
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--renderer <dom|three>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
@@ -65,6 +67,7 @@ export type CatalogArgs =
       readonly find: readonly string[] | undefined;
       readonly fields: readonly string[] | undefined;
       readonly like: string | undefined;
+      readonly renderer: RendererName | undefined;
       readonly near: string | undefined;
       readonly far: string | undefined;
       readonly in: string | undefined;
@@ -77,7 +80,23 @@ export type CatalogArgs =
       readonly root: string | undefined;
     };
 
-const VALUE_FLAGS = ["--role", "--root", "--find", "--fields", "--like", "--near", "--far", "--in"];
+/** The renderers `--renderer` names: the DOM, and Three.js at 2D. */
+export const RENDERER_NAMES = ["dom", "three"] as const;
+
+/** A renderer `--renderer` knows. */
+export type RendererName = (typeof RENDERER_NAMES)[number];
+
+const VALUE_FLAGS = [
+  "--role",
+  "--root",
+  "--find",
+  "--fields",
+  "--like",
+  "--renderer",
+  "--near",
+  "--far",
+  "--in",
+];
 
 /** The id, query flags, mode flags and app root typed on the command line, or the usage text. */
 export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
@@ -104,6 +123,10 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   const known = MOVE_ROLES.find((candidate) => candidate === role);
   if (role !== undefined && known === undefined)
     return usage(`Unknown role "${role}". Roles: ${MOVE_ROLES.join(", ")}.`);
+  const renderer = values.get("--renderer");
+  const knownRenderer = RENDERER_NAMES.find((candidate) => candidate === renderer);
+  if (renderer !== undefined && knownRenderer === undefined)
+    return usage(`Unknown renderer "${renderer}". Renderers: ${RENDERER_NAMES.join(", ")}.`);
   const list = (flag: string): readonly string[] | undefined =>
     values
       .get(flag)
@@ -116,6 +139,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     find: list("--find"),
     fields: list("--fields"),
     like: values.get("--like"),
+    renderer: knownRenderer,
     near: values.get("--near"),
     far: values.get("--far"),
     in: values.get("--in"),
@@ -278,6 +302,7 @@ function freshRecord(
     ...(descriptors === undefined ? {} : { descriptors }),
     shapes,
     shapesAt,
+    findings: checkMove(move).length,
   };
 }
 
@@ -338,12 +363,13 @@ function isRecord(value: unknown): value is MoveRecord {
       Array.isArray(Reflect.get(value, key)),
     ) &&
     typeof Reflect.get(value, "shapes") === "object" &&
+    typeof Reflect.get(value, "findings") === "number" &&
     typeof Reflect.get(value, "options") === "object" &&
     typeof Reflect.get(value, "example") === "object"
   );
 }
 
-const INDEX_VERSION = 2;
+const INDEX_VERSION = 3;
 
 /** Where a root keeps its index of records. */
 export function indexPath(root: string): string {
@@ -639,10 +665,14 @@ export interface CatalogQuery {
   readonly find?: readonly string[];
   readonly fields?: readonly string[];
   readonly like?: string;
+  /** Keeps a move whose every field this says a renderer writes. */
+  readonly writes?: (field: string) => boolean;
   readonly near?: string;
   readonly far?: string;
   readonly in?: string;
   readonly all?: boolean;
+  /** Keeps the moves the gate has findings on, which a search leaves out unless `all` is set. */
+  readonly withFindings?: boolean;
 }
 
 /** One move a search found. */
@@ -660,7 +690,12 @@ export interface QueryRow {
 
 /** What a search returned, or why it could not be made. */
 export type QueryResult =
-  | { readonly kind: "rows"; readonly rows: readonly QueryRow[] }
+  | {
+      readonly kind: "rows";
+      readonly rows: readonly QueryRow[];
+      /** How many moves that fit were left out for their findings. */
+      readonly held: number;
+    }
   | { readonly kind: "refused"; readonly message: string };
 
 /** Whether a request asks anything: a filter, a ranking or `--all`. */
@@ -670,6 +705,7 @@ export function isQuery(request: CatalogQuery): boolean {
     request.find !== undefined ||
     request.fields !== undefined ||
     request.like !== undefined ||
+    request.writes !== undefined ||
     request.near !== undefined ||
     request.far !== undefined ||
     request.all === true
@@ -719,11 +755,14 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     records.filter((record) => lookup(records, record.id).length > 1).map(({ id }) => id),
   );
   const rows: { row: QueryRow; hits: number }[] = [];
+  let held = 0;
   for (const record of records) {
     if (request.role !== undefined && record.role !== request.role) continue;
     if (request.fields?.some((field) => !record.fields.includes(field)) === true) continue;
     const hits = request.find === undefined ? 0 : matchesWords(record, request.find);
     if (hits === undefined) continue;
+    const { writes } = request;
+    if (writes !== undefined && !record.fields.every((field) => writes(field))) continue;
     const matched = ranges === undefined ? undefined : fieldWith(record, ranges);
     if (ranges !== undefined && matched === undefined) continue;
     let fit: number | undefined;
@@ -735,6 +774,10 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
       ];
       if (record === near || record === far || parts.some((part) => part === undefined)) continue;
       fit = (parts[0] ?? 0) - (far === undefined ? 0 : (parts[1] ?? 0)) + (parts[2] ?? 0);
+    }
+    if (record.findings > 0 && request.all !== true && request.withFindings !== true) {
+      held += 1;
+      continue;
     }
     rows.push({
       hits,
@@ -753,7 +796,7 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
       right.hits - left.hits ||
       byId(left.row.record, right.row.record),
   );
-  return { kind: "rows", rows: rows.map(({ row }) => row) };
+  return { kind: "rows", rows: rows.map(({ row }) => row), held };
 }
 
 /** The import a scene writes for a move: the package's name, or the file as `from` (a brief) or the root sees it. */
@@ -769,7 +812,7 @@ export function importLine(record: MoveRecord, root: string, from: string | unde
 
 const firstSentence = (text: string): string => /^.*?[.!?](?=\s|$)/s.exec(text)?.[0] ?? text;
 
-/** One line of a search: label, source, role, fields moved, the description's first sentence, the import. */
+/** One line of a search: label, source, role, fields moved, whether the gate passes it, the first sentence, the import. */
 export function formatRow(row: QueryRow, root: string, from: string | undefined): string {
   const { record } = row;
   return [
@@ -777,6 +820,7 @@ export function formatRow(row: QueryRow, root: string, from: string | undefined)
     row.own ? "own" : record.source,
     record.role,
     record.fields.length === 0 ? "none" : record.fields.join(","),
+    record.findings === 0 ? "passes" : `${record.findings} findings`,
     ...(row.field === undefined ? [] : [`on ${row.field}`]),
     firstSentence(record.description),
     importLine(record, root, from),
@@ -816,7 +860,12 @@ const shown = (value: number): number => Math.round(value * 100) / 100;
 /** Everything the catalog knows of one move, a line to a fact. */
 export function formatFull(
   record: MoveRecord,
-  context: { readonly importedBy: readonly string[]; readonly importText: string },
+  context: {
+    readonly importedBy: readonly string[];
+    readonly importText: string;
+    /** One line per renderer: the fields of the move it leaves unwritten, and why. */
+    readonly unwritten: readonly string[];
+  },
 ): readonly string[] {
   const options = Object.entries(record.options).map(
     ([name, field]) => `  ${optionLabel(name, field)}: ${field.description}`,
@@ -832,6 +881,8 @@ export function formatFull(
     descriptors === undefined
       ? "descriptors: none"
       : `descriptors: peak ${shown(descriptors.peak)}, overshoot ${shown(descriptors.overshoot)}, rings ${descriptors.rings}, windup ${shown(descriptors.windup)}, settle ${shown(descriptors.settle)} (${descriptors.travelling ? "travelling" : "oscillating"})`,
+    ...context.unwritten,
+    `gate: ${record.findings === 0 ? "passes" : `${record.findings} findings; motion:moves ${record.id} --check names them`}`,
     `parts: ${record.parts.length === 0 ? "none" : record.parts.join(" + ")}`,
     `imported by: ${context.importedBy.length === 0 ? "none" : context.importedBy.join(", ")}`,
     `example: ${exampleCall(record)}`,
@@ -1014,6 +1065,9 @@ export interface CatalogRun {
 
 const MOST_ROWS = 10;
 
+const withFindings = (count: number): string =>
+  `${count} move${count === 1 ? "" : "s"} with findings`;
+
 /** The few lines a bare `motion:moves` prints: how many moves, from where, and what to ask. */
 export function summarize(records: readonly MoveRecord[]): readonly string[] {
   const count = (names: readonly string[]) =>
@@ -1023,6 +1077,7 @@ export function summarize(records: readonly MoveRecord[]): readonly string[] {
     (role) => `${role} ${records.filter((record) => record.role === role).length}`,
   );
   const sample = records[0]?.id ?? "drop";
+  const held = records.filter((record) => record.findings > 0).length;
   return [
     `${records.length} moves from ${sources.length} sources. Ask for the few you need; nothing here lists them all.`,
     `roles: ${roles.join(", ")}`,
@@ -1033,6 +1088,7 @@ export function summarize(records: readonly MoveRecord[]): readonly string[] {
     `npm run motion:moves -- --near ${sample}      (moves that move like one; --far for the opposite)`,
     "npm run motion:moves -- <id>                  (one move in full: options, descriptors, importers)",
     "add --in <brief> for imports that resolve from that brief, --all to lift the 10-row cap.",
+    ...(held === 0 ? [] : [`${withFindings(held)}; every search leaves them out unless --all.`]),
     PARTS_HINT,
   ];
 }
@@ -1065,15 +1121,53 @@ const SHAPE_WORDS: Readonly<Record<(typeof DESCRIPTOR_KEYS)[number], string>> = 
   settle: "the share of the run from its first arrival until it stays near its end",
 });
 
-/** Where each renderer writes a field: `dom`, `three 2d` and `three 3d`, from the lists they export. */
-async function renderersOf(): Promise<(field: string) => readonly string[]> {
+/** What one renderer writes of a pose, and the fields it leaves alone with the reason for each. */
+interface RendererTable {
+  readonly name: string;
+  readonly written: readonly string[];
+  readonly unwritten: ReadonlyMap<string, string>;
+}
+
+function reasons(table: Readonly<Record<string, string | undefined>>): ReadonlyMap<string, string> {
+  return new Map(
+    Object.entries(table).flatMap(([field, why]) => (why === undefined ? [] : [[field, why]])),
+  );
+}
+
+/** The renderers' own lists of written and unwritten fields: `dom`, `three 2d` and `three 3d`. */
+async function rendererTables(): Promise<readonly RendererTable[]> {
   const [dom, three] = await Promise.all([import("@gerak/dom"), import("@gerak/three")]);
-  const lists: readonly (readonly [string, readonly string[]])[] = [
-    ["dom", dom.WRITTEN],
-    ["three 2d", three.WRITTEN_2D],
-    ["three 3d", three.WRITTEN_3D],
+  return [
+    { name: "dom", written: dom.WRITTEN, unwritten: reasons(dom.UNWRITTEN) },
+    { name: "three 2d", written: three.WRITTEN_2D, unwritten: reasons(three.UNWRITTEN_2D) },
+    { name: "three 3d", written: three.WRITTEN_3D, unwritten: reasons(three.UNWRITTEN_3D) },
   ];
-  return (field) => lists.filter(([, names]) => names.includes(field)).map(([name]) => name);
+}
+
+/** Whether a renderer writes a field; a number a piece names is written by the DOM, as a style property. */
+function writes(table: RendererTable, field: string): boolean {
+  return field.startsWith("custom.") ? table.name === "dom" : table.written.includes(field);
+}
+
+/** The table `--renderer` names: the DOM's, or Three.js at 2D. */
+function tableOf(
+  tables: readonly RendererTable[],
+  renderer: RendererName,
+): RendererTable | undefined {
+  return tables.find(({ name }) => name === (renderer === "dom" ? "dom" : "three 2d"));
+}
+
+/** One line per renderer: the fields of a move it leaves unwritten, each with the reason. */
+function unwrittenLines(
+  tables: readonly RendererTable[],
+  fields: readonly string[],
+): readonly string[] {
+  return tables.map((table) => {
+    const left = fields
+      .filter((field) => !writes(table, field))
+      .map((field) => `${field} (${table.unwritten.get(field) ?? "not written by this renderer"})`);
+    return `unwritten by ${table.name}: ${left.length === 0 ? "none" : left.join("; ")}`;
+  });
 }
 
 /** Numbers to 3 places, in any record or list. */
@@ -1108,7 +1202,7 @@ interface AnatomyField {
 
 /** The card an agent reads before it asks for moves: the fields, the parts, and the words the search uses. */
 async function anatomyLines(json: boolean): Promise<readonly string[]> {
-  const writers = await renderersOf();
+  const tables = await rendererTables();
   const fields: AnatomyField[] = Object.entries(FIELD_GROUPS).flatMap(([group, names]) =>
     names.flatMap((name) => {
       const row = valueField(name);
@@ -1120,7 +1214,9 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
           meaning: row.meaning,
           unit: row.unit,
           dimension: row.dimension,
-          renderers: writers(name),
+          renderers: tables
+            .filter((table) => writes(table, name))
+            .map(({ name: renderer }) => renderer),
         },
       ];
     }),
@@ -1204,16 +1300,21 @@ export async function runCatalog(
       code: problemCode,
     };
   }
+  const tables = await rendererTables();
+  const renderer = args.renderer === undefined ? undefined : tableOf(tables, args.renderer);
   const request: CatalogQuery = {
     ...(args.role === undefined ? {} : { role: args.role }),
     ...(args.find === undefined ? {} : { find: args.find }),
     ...(args.fields === undefined ? {} : { fields: args.fields }),
     ...(args.like === undefined ? {} : { like: args.like }),
+    ...(renderer === undefined ? {} : { writes: (field: string) => writes(renderer, field) }),
     ...(args.near === undefined ? {} : { near: args.near }),
     ...(args.far === undefined ? {} : { far: args.far }),
     ...(args.in === undefined ? {} : { in: args.in }),
     ...(args.all ? { all: true } : {}),
+    ...(args.check ? { withFindings: true } : {}),
   };
+  let held = 0;
   let selected = all;
   let rows: readonly QueryRow[] = [];
   if (args.id !== undefined) {
@@ -1238,6 +1339,7 @@ export async function runCatalog(
     const found = query(records, request);
     if (found.kind === "refused") return { lines: [found.message], code: 1 };
     rows = found.rows;
+    held = found.held;
     selected = rows.flatMap(({ record }) => all.filter((entry) => entry.record === record));
   }
   if (args.check) {
@@ -1272,6 +1374,7 @@ export async function runCatalog(
           formatFull(record, {
             importedBy: briefsImporting(root, record),
             importText: importLine(record, root, args.in),
+            unwritten: unwrittenLines(tables, record.fields),
           }),
         ),
         ...problems,
@@ -1284,8 +1387,14 @@ export async function runCatalog(
     shownRows.length < rows.length
       ? [`${rows.length - shownRows.length} more; --all lists them.`]
       : [];
+  const left = held === 0 ? [] : [`${withFindings(held)} left out; --all lists them.`];
   return {
-    lines: [...shownRows.map((row) => formatRow(row, root, args.in)), ...more, ...problems],
+    lines: [
+      ...shownRows.map((row) => formatRow(row, root, args.in)),
+      ...more,
+      ...left,
+      ...problems,
+    ],
     code: problemCode,
   };
 }

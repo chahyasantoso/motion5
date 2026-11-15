@@ -92,10 +92,10 @@ describe("the shape of every field", () => {
 
 describe("--like on any field", () => {
   const ringing = mover("ringer", (p) => ({
-    x: 5 * p,
-    y: -100 * (1 - p) * Math.cos(10 * p),
+    x: 5 * Math.sin(Math.PI * p),
+    y: -100 * Math.sin(Math.PI * p) * Math.cos(14 * p),
   }));
-  const quiet = mover("quiet", (p) => ({ x: 100 * p * p * (3 - 2 * p) }));
+  const quiet = mover("quiet", (p) => ({ x: arch(p) }));
 
   it("keeps a move when one of its fields has the quality, and names that field", () => {
     const found = query(records(ringing, quiet), { like: "loose" });

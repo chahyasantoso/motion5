@@ -58,7 +58,7 @@ describe("motion:moves", () => {
     expect(ids).toEqual([...builtInIds, "bad", "good"].sort());
     expect(run.code).toBe(0);
     expect(run.lines).toContain(
-      'good | reel | enter | x | Slides in from the left. | import { good } from "./reel/src/moves/good"',
+      'good | reel | enter | x | passes | Slides in from the left. | import { good } from "./reel/src/moves/good"',
     );
     const drop = run.lines.find((line) => line.startsWith("drop | ")) ?? "";
     expect(drop).toContain("| @gerak/moves | enter | ");
