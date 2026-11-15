@@ -1,5 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -76,15 +84,30 @@ function emitted(directory) {
   });
 }
 
+/** Copies each `.template` file under src/ to the same place under dist/, for the files read at runtime. */
+function copyTemplates(source, target) {
+  for (const entry of readdirSync(source, { withFileTypes: true })) {
+    if (entry.isDirectory()) copyTemplates(join(source, entry.name), join(target, entry.name));
+    else if (entry.name.endsWith(".template")) {
+      mkdirSync(target, { recursive: true });
+      copyFileSync(join(source, entry.name), join(target, entry.name));
+    }
+  }
+}
+
 /** Builds each installable package into its dist/ with its tsconfig.build.json, dependencies first. */
 export function build(directories = INSTALLABLE_PACKAGES, log = console.log) {
   for (const directory of directories) {
     const packageRoot = `${root}packages/${directory}`;
     rmSync(`${packageRoot}/dist`, { recursive: true, force: true });
-    const run = spawnSync(process.execPath, [tsc, "-p", `${packageRoot}/tsconfig.build.json`], {
-      cwd: root,
-      encoding: "utf8",
-    });
+    const run = spawnSync(
+      process.execPath,
+      [tsc, "-p", `${packageRoot}/tsconfig.build.json`, "--allowImportingTsExtensions", "false"],
+      {
+        cwd: root,
+        encoding: "utf8",
+      },
+    );
     if (run.status !== 0) {
       log(`FAIL build ${directory}`);
       log(`${run.stdout ?? ""}${run.stderr ?? ""}`);
@@ -101,6 +124,7 @@ export function build(directories = INSTALLABLE_PACKAGES, log = console.log) {
       log(error instanceof Error ? error.message : String(error));
       return 1;
     }
+    copyTemplates(`${packageRoot}/src`, `${packageRoot}/dist`);
     log(`PASS build ${directory}`);
   }
   return 0;

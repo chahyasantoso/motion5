@@ -1,8 +1,6 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
+import { tool } from "./load.mjs";
 const { captureFrames, captureOnion, compareFrames, comparisonLines, parseFramesArgs } =
-  await import("../src/page/frames.ts");
+  await import(tool("page/frames"));
 
 const args = parseFramesArgs(process.argv.slice(2));
 if (args.kind === "usage") {

@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { describeMotion, parseReadArgs, readMotion } = await import("../src/page/read.ts");
+import { tool } from "./load.mjs";
+const { describeMotion, parseReadArgs, readMotion } = await import(tool("page/read"));
 
 const args = parseReadArgs(process.argv.slice(2));
 if (args.kind === "usage") {

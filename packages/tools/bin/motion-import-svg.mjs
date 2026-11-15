@@ -1,9 +1,7 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { importSvg, importSvgInto } = await import("../src/scene/import-svg.ts");
-const { fromCaller } = await import("../src/page/page.ts");
-const { callerDir, piecesRoot } = await import("../src/page/root.ts");
+import { tool } from "./load.mjs";
+const { importSvg, importSvgInto } = await import(tool("scene/import-svg"));
+const { fromCaller } = await import(tool("page/page"));
+const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const usage =
   "usage: motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]\n   or: motion:import-svg <file.svg> --into <piece> --at x,y --prefix <word> [--scale s] [--root dir]";

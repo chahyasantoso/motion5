@@ -1,9 +1,7 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseCatalogArgs, runCatalog } = await import("../src/scene/catalog.ts");
-const { fromCaller } = await import("../src/page/page.ts");
-const { callerDir, piecesRoot } = await import("../src/page/root.ts");
+import { tool } from "./load.mjs";
+const { parseCatalogArgs, runCatalog } = await import(tool("scene/catalog"));
+const { fromCaller } = await import(tool("page/page"));
+const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const args = parseCatalogArgs(process.argv.slice(2));
 const found = args.kind === "usage" ? undefined : piecesRoot(callerDir(), args.root);

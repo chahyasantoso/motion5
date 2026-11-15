@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseProbeArgs, probeElements } = await import("../src/page/probe.ts");
+import { tool } from "./load.mjs";
+const { parseProbeArgs, probeElements } = await import(tool("page/probe"));
 
 const args = parseProbeArgs(process.argv.slice(2));
 if (args.kind === "usage") {

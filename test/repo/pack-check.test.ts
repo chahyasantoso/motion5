@@ -3,7 +3,9 @@ import {
   allSpecifiers,
   firstErrorLine,
   formatResult,
+  missingBinFiles,
   missingExportFiles,
+  missingFromHelp,
   peerVersions,
   typeCheckFiles,
 } from "../../scripts/pack-check.mjs";
@@ -54,6 +56,24 @@ describe("pack check", () => {
     ]);
   });
 
+  it("fails a bin target or a shipped folder that the installed package lacks", () => {
+    const tools = {
+      name: "@gerak/tools",
+      bin: { gerak: "./bin/gerak.mjs" },
+      files: ["dist", "bin", "LICENSE"],
+    };
+    const present = new Set(["./bin/gerak.mjs", "./dist"]);
+    expect(missingBinFiles(tools, (file) => present.has(file))).toEqual([
+      { specifier: "@gerak/tools files bin", error: "missing file ./bin" },
+    ]);
+    expect(missingBinFiles(manifest, () => false)).toEqual([]);
+  });
+
+  it("names the commands a help text leaves out", () => {
+    const help = ["usage: gerak <command>", "  moves  find", "  new  scaffold"].join("\n");
+    expect(missingFromHelp(help, ["moves", "new", "read"])).toEqual(["read"]);
+  });
+
   it("pins the peers to the versions the lockfile installed", () => {
     const lock = {
       packages: {
@@ -63,6 +83,9 @@ describe("pack check", () => {
         "node_modules/typescript": { version: "5.8.3" },
         "node_modules/@types/react": { version: "19.2.2" },
         "node_modules/@types/three": { version: "0.186.0" },
+        "node_modules/vite": { version: "7.1.0" },
+        "node_modules/playwright-core": { version: "1.55.0" },
+        "node_modules/@types/node": { version: "24.0.1" },
       },
     };
     expect(peerVersions(lock)).toEqual([
@@ -72,6 +95,9 @@ describe("pack check", () => {
       "typescript@5.8.3",
       "@types/react@19.2.2",
       "@types/three@0.186.0",
+      "vite@7.1.0",
+      "playwright-core@1.55.0",
+      "@types/node@24.0.1",
     ]);
     expect(() => peerVersions({ packages: {} })).toThrow("react");
   });

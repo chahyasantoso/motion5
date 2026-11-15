@@ -9,8 +9,8 @@ import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-pa
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
 describe("installable manifests", () => {
-  it("names the nine runtime packages", () => {
-    expect(INSTALLABLE_PACKAGES).toHaveLength(9);
+  it("names the nine runtime packages and the tools", () => {
+    expect(INSTALLABLE_PACKAGES).toHaveLength(10);
   });
 
   describe.each(INSTALLABLE_PACKAGES)("%s", (directory) => {
@@ -20,7 +20,9 @@ describe("installable manifests", () => {
       expect(manifest.version).toBe("0.1.0");
       expect(manifest.private).toBeUndefined();
       expect(manifest.license).toBe("MIT");
-      expect(manifest.files).toEqual(["dist", "LICENSE"]);
+      expect(manifest.files).toEqual(
+        directory === "tools" ? ["dist", "bin", "guide", "LICENSE"] : ["dist", "LICENSE"],
+      );
       for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
         if (name.startsWith("@gerak/")) expect(range).toBe("0.1.0");
       }

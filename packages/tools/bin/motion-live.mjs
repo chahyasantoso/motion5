@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseLiveArgs, startLiveServer } = await import("../src/page/live.ts");
+import { tool } from "./load.mjs";
+const { parseLiveArgs, startLiveServer } = await import(tool("page/live"));
 
 const parsed = parseLiveArgs(process.argv.slice(2));
 if (parsed.kind === "usage") {

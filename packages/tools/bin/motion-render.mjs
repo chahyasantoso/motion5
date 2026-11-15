@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseRenderArgs, renderPage } = await import("../src/page/render.ts");
+import { tool } from "./load.mjs";
+const { parseRenderArgs, renderPage } = await import(tool("page/render"));
 
 const args = parseRenderArgs(process.argv.slice(2));
 if (args.kind === "usage") {

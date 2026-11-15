@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { measureFps, parseFpsArgs } = await import("../src/page/fps.ts");
+import { tool } from "./load.mjs";
+const { measureFps, parseFpsArgs } = await import(tool("page/fps"));
 
 const args = parseFpsArgs(process.argv.slice(2));
 if (args.kind === "usage") {

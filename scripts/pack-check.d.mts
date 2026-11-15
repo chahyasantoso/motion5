@@ -16,3 +16,8 @@ export function peerVersions(
 ): string[];
 export function typeCheckFiles(specifiers: readonly string[]): Record<string, string>;
 export function packCheck(options?: { keep?: boolean; log?: (text: string) => void }): number;
+export function missingBinFiles(
+  manifest: Pick<InstallableManifest, "name" | "bin" | "files">,
+  exists: (file: string) => boolean,
+): { specifier: string; error: string }[];
+export function missingFromHelp(help: string, names: readonly string[]): string[];

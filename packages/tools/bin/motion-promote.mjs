@@ -1,8 +1,6 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parsePromoteArgs, promoteMove } = await import("../src/scene/promote.ts");
-const { callerDir, piecesRoot } = await import("../src/page/root.ts");
+import { tool } from "./load.mjs";
+const { parsePromoteArgs, promoteMove } = await import(tool("scene/promote"));
+const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const args = parsePromoteArgs(process.argv.slice(2));
 const found = args.kind === "usage" ? undefined : piecesRoot(callerDir(), args.root);

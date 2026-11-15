@@ -1,8 +1,6 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseNewArgs, scaffold, scaffoldMove } = await import("../src/scene/new.ts");
-const { callerDir, piecesRoot } = await import("../src/page/root.ts");
+import { tool } from "./load.mjs";
+const { parseNewArgs, scaffold, scaffoldMove } = await import(tool("scene/new"));
+const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const args = parseNewArgs(process.argv.slice(2));
 const found = args.kind === "usage" ? undefined : piecesRoot(callerDir(), args.root);

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
-import { briefFolders } from "../scene/briefs.ts";
+import { briefFolders } from "../scene/briefs";
 
 /** A single scanned numeric literal in source code. */
 export interface NumericLiteralSpan {

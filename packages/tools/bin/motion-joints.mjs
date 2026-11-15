@@ -1,12 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
+import { tool } from "./load.mjs";
 const { formatJointTable, jointTable, parseJointsArgs, readGltf } = await import(
-  "../src/scene/joints.ts"
+  tool("scene/joints")
 );
-const { fromCaller } = await import("../src/page/page.ts");
+const { fromCaller } = await import(tool("page/page"));
 
 const refuse = (reason) => {
   console.log(JSON.stringify({ kind: "refused", reason }));

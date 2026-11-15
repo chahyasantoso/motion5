@@ -1,8 +1,6 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { callerDir, piecesRoot } = await import("../src/page/root.ts");
-const { checkStyle, measureStyle } = await import("../src/scene/style.ts");
+import { tool } from "./load.mjs";
+const { callerDir, piecesRoot } = await import(tool("page/root"));
+const { checkStyle, measureStyle } = await import(tool("scene/style"));
 
 const USAGE = "usage: motion:style measure|check <brief> [--root dir]";
 

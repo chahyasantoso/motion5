@@ -1,11 +1,7 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
+import { tool } from "./load.mjs";
+const { parseReviewArgs, printReview, reviewPage } = await import(tool("page/review"));
 
-registerSourceLoader();
-const { parseReviewArgs, printReview, reviewPage } = await import("../src/page/review.ts");
-
-const { isSceneFile, parseSceneReviewArgs, reviewSceneFile } = await import(
-  "../src/scene/review.ts"
-);
+const { isSceneFile, parseSceneReviewArgs, reviewSceneFile } = await import(tool("scene/review"));
 
 const argv = process.argv.slice(2);
 if (isSceneFile(argv)) {

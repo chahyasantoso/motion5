@@ -7,17 +7,15 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { captureFrames, captureOnion } = await import("../src/page/frames.ts");
-const { probeElements } = await import("../src/page/probe.ts");
-const { DEFAULT_LIMITS, checkMotion } = await import("../src/page/check.ts");
-const { readMotion } = await import("../src/page/read.ts");
-const { renderPage } = await import("../src/page/render.ts");
-const { reviewPage } = await import("../src/page/review.ts");
-const { perform } = await import("../src/page/actions.ts");
-const { withPage } = await import("../src/page/page.ts");
+import { tool } from "./load.mjs";
+const { captureFrames, captureOnion } = await import(tool("page/frames"));
+const { probeElements } = await import(tool("page/probe"));
+const { DEFAULT_LIMITS, checkMotion } = await import(tool("page/check"));
+const { readMotion } = await import(tool("page/read"));
+const { renderPage } = await import(tool("page/render"));
+const { reviewPage } = await import(tool("page/review"));
+const { perform } = await import(tool("page/actions"));
+const { withPage } = await import(tool("page/page"));
 
 const ORANGE = [255, 85, 51];
 const DARK = [14, 14, 18];

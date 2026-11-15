@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { COMMANDS } from "../packages/tools/bin/commands.mjs";
 import { build } from "./build.mjs";
 import { INSTALLABLE_PACKAGES, exportSpecifiers, readManifest } from "./installable-packages.mjs";
 
@@ -37,10 +38,40 @@ export function missingExportFiles(manifest, exists) {
   });
 }
 
+/** The bin targets and the `dist` and `bin` folders a manifest ships that the package lacks. */
+export function missingBinFiles(manifest, exists) {
+  const targets = Object.entries(manifest.bin ?? {}).map(([name, file]) => ({
+    specifier: `${manifest.name} bin ${name}`,
+    file,
+  }));
+  const folders = (manifest.files ?? [])
+    .filter((entry) => entry === "dist" || entry === "bin")
+    .map((entry) => ({ specifier: `${manifest.name} files ${entry}`, file: `./${entry}` }));
+  return [...targets, ...folders]
+    .filter(({ file }) => !exists(file))
+    .map(({ specifier, file }) => ({ specifier, error: `missing file ${file}` }));
+}
+
+/** The names a help text has no line for. */
+export function missingFromHelp(help, names) {
+  const lines = help.split(/\r?\n/).map((line) => line.trim());
+  return names.filter((name) => !lines.some((line) => line.startsWith(`${name} `)));
+}
+
 /** The exact versions the lockfile installed for the peers a consumer must bring, and their types. */
 export function peerVersions(
   lock,
-  names = ["react", "react-dom", "three", "typescript", "@types/react", "@types/three"],
+  names = [
+    "react",
+    "react-dom",
+    "three",
+    "typescript",
+    "@types/react",
+    "@types/three",
+    "vite",
+    "playwright-core",
+    "@types/node",
+  ],
 ) {
   return names.map((name) => {
     const version = lock.packages?.[`node_modules/${name}`]?.version;
@@ -73,7 +104,7 @@ export function typeCheckFiles(specifiers) {
         moduleResolution: "nodenext",
         target: "es2022",
         lib: ["esnext", "dom", "dom.iterable"],
-        types: [],
+        types: ["node"],
       },
       files: ["consumer.ts"],
     }),
@@ -92,6 +123,7 @@ export function packCheck({ keep = false, log = console.log } = {}) {
   const project = join(work, "project");
   mkdirSync(tarballs);
   mkdirSync(project);
+  mkdirSync(join(project, "pieces"));
   try {
     const files = {};
     for (const directory of INSTALLABLE_PACKAGES) {
@@ -115,6 +147,7 @@ export function packCheck({ keep = false, log = console.log } = {}) {
         name: "gerak-pack-check",
         private: true,
         type: "module",
+        gerak: { pieces: "pieces" },
         dependencies: files,
       }),
     );
@@ -142,6 +175,33 @@ export function packCheck({ keep = false, log = console.log } = {}) {
     log(
       formatResult("types", types.code === 0 ? undefined : firstErrorLine(types.out || types.err)),
     );
+    const installed = join(project, "node_modules", "@gerak", "tools");
+    const absent = missingBinFiles(readManifest("tools"), (file) =>
+      existsSync(join(installed, file)),
+    );
+    for (const { specifier, error } of absent) log(formatResult(specifier, error));
+    failed += absent.length;
+    if (absent.length === 0) log(formatResult("bin and files"));
+    const names = Object.keys(COMMANDS);
+    const help = sh("npx --no-install gerak --help", project);
+    const left = missingFromHelp(help.out, names);
+    const helpError =
+      help.code !== 0
+        ? firstErrorLine(help.err)
+        : left.length > 0
+          ? `help leaves out ${left.join(", ")}`
+          : undefined;
+    if (helpError !== undefined) failed += 1;
+    log(formatResult("gerak --help", helpError));
+    const anatomy = sh("npx --no-install gerak moves --anatomy", project);
+    const anatomyError =
+      anatomy.code !== 0
+        ? firstErrorLine(anatomy.err || anatomy.out)
+        : anatomy.out.trim() === ""
+          ? "prints nothing"
+          : undefined;
+    if (anatomyError !== undefined) failed += 1;
+    log(formatResult("gerak moves --anatomy", anatomyError));
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);

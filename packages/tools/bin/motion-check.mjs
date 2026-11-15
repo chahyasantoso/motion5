@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { checkMotion, describeFinding, parseCheckArgs } = await import("../src/page/check.ts");
+import { tool } from "./load.mjs";
+const { checkMotion, describeFinding, parseCheckArgs } = await import(tool("page/check"));
 
 const args = parseCheckArgs(process.argv.slice(2));
 if (args.kind === "usage") {
