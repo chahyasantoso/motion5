@@ -68,24 +68,27 @@ a folder of a higher layer.
 
 ```text
 fields/       pose.ts pose3d.ts combine.ts           (the table, the pose types, combine, combine3d, lift2d)
-parts/
+parts/        one folder per kind (§3b)
   time/           time.ts time-at.ts
-  laws/           ease.ts spring.ts keyframes.ts wave.ts envelopes.ts ballistic.ts
-  blends/         mix.ts mix3d.ts squashed.ts
-  paths/          shapes.ts path.ts along.ts along3d.ts arc-length.ts radial.ts
-  follow-through/ trail.ts trail-turn.ts velocity.ts velocity3d.ts speed-of.ts smear.ts smear3d.ts
-                  squash-speed.ts shaken.ts
-  events/         events.ts
-  randomness/     random.ts noise.ts
-  camera/         stage3d.ts
+  ease/           ease.ts
+  envelope/       envelopes.ts
+  oscillation/    wave.ts shaken.ts
+  dynamics/       spring.ts
+  path/           ballistic.ts along.ts along3d.ts arc-length.ts
+  geometry/       shapes.ts path.ts cubics3d.ts radial.ts stage3d.ts
+  blend/          mix.ts mix3d.ts
+  coupling/       squashed.ts squash-speed.ts smear.ts smear3d.ts
+  signal/         events.ts trail.ts trail-turn.ts velocity.ts velocity3d.ts speed-of.ts keyframes.ts noise.ts
+  utility/        random.ts event-list.ts
 moves/        declare.ts, whole.ts and one file per move and modifier
 compose/      sequence.ts lanes.ts reversed.ts repeated.ts loop.ts
 index.ts      the one entry; no subpath exports
 ```
 
-`squashed` leaves `pose.ts` and `squashed3d` leaves `pose3d.ts` for `parts/blends/squashed.ts`; `mixPose3d` and
-`mixPoint3d` leave `pose3d.ts` for `parts/blends/mix3d.ts`, so no file in `fields/` imports a part. The group
-`eases` becomes `laws`; `camera` and `compose` are new groups; `fields` lists `combine`, `combine3d` and `lift2d`.
+Waves 1 to 3 built topic groups (`time`, `laws`, `blends`, `paths`, `follow-through`, `events`, `randomness`,
+`camera`); V0 moves them to the kinds above. `cubics3d.ts` takes `toCubics3d` out of `along3d.ts`, and
+`event-list.ts` takes `NO_EVENTS`, `mergeEvents` and `isMotionEvent` out of `events.ts`. No file in `fields/` imports
+a part; `fields` lists `combine`, `combine3d` and `lift2d`.
 
 ### `apps/pieces`
 
