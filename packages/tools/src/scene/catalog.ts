@@ -16,7 +16,7 @@ import {
   type OptionField,
 } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
-import { briefFolders } from "./briefs";
+import { briefFolders, sourceFiles } from "./briefs";
 import {
   checkMove,
   describeFinding,
@@ -26,7 +26,14 @@ import {
   type MoveDescriptors,
 } from "./moves";
 import { intentsOf, readDesign } from "./design";
-import { PART_GROUPS, formatParts, moveParts, partSample, partsImportedBy } from "./parts";
+import {
+  PART_GROUPS,
+  formatParts,
+  localParts,
+  moveParts,
+  partSample,
+  partsImportedBy,
+} from "./parts";
 
 /** The source name of the moves package this repository ships. */
 export const BUILT_IN_SOURCE = "@gerak/moves";
@@ -1270,19 +1277,6 @@ export function formatCandidate(candidate: Candidate): string {
   return `${candidate.id} | ${basename(candidate.file)} | briefs: ${candidate.briefs.length}`;
 }
 
-/** Every `.ts` and `.tsx` file under `folder`, leaving out `node_modules`, `dist` and hidden folders. */
-export function sourceFiles(folder: string): readonly string[] {
-  if (!existsSync(folder)) return [];
-  return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(folder, entry.name);
-    if (entry.isDirectory())
-      return entry.name === "node_modules" || entry.name === "dist" || entry.name.startsWith(".")
-        ? []
-        : sourceFiles(path);
-    return /\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".d.ts") ? [path] : [];
-  });
-}
-
 /** The files of every brief's `src` whose text imports the move `file`, leaving out the move's own folder. */
 export function importersOf(root: string, file: string): readonly string[] {
   const target = resolve(file).replace(/\.ts$/, "");
@@ -1475,7 +1469,7 @@ interface AnatomyField {
 }
 
 /** The card an agent reads before it asks for moves: the fields, the parts, and the words the search uses. */
-async function anatomyLines(json: boolean): Promise<readonly string[]> {
+async function anatomyLines(json: boolean, root: string): Promise<readonly string[]> {
   const tables = await rendererTables();
   const fields: AnatomyField[] = Object.entries(FIELD_GROUPS).flatMap(([group, names]) =>
     names.flatMap((name) => {
@@ -1495,15 +1489,33 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
       ];
     }),
   );
-  const parts = moveParts().map((part) => {
-    const sample = partSample(Reflect.get(builtIns, part.name));
+  const withSample = (
+    part: {
+      readonly name: string;
+      readonly group: string;
+      readonly call: string;
+      readonly use: string;
+    },
+    source: string,
+    value: unknown,
+  ) => {
+    const sample = partSample(value);
     return {
-      ...part,
+      name: part.name,
+      group: part.group,
+      call: part.call,
+      use: part.use,
+      source,
       ...(sample === undefined
         ? {}
         : { sample: { label: sample.label, values: plainList(sample.values) } }),
     };
-  });
+  };
+  const library = moveParts().map((part) =>
+    withSample(part, "@gerak/moves", Reflect.get(builtIns, part.name)),
+  );
+  const local = (await localParts(root)).map((part) => withSample(part, part.source, part.value));
+  const parts = [...library, ...local];
   const shapes = DESCRIPTOR_KEYS.map((name) => ({ name, meaning: SHAPE_WORDS[name] }));
   const qualities = Object.entries(QUALITIES).map(([name, ranges]) => ({ name, ranges }));
   if (json) return [JSON.stringify({ fields, parts, shapes, qualities })];
@@ -1532,7 +1544,7 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
       run.map(({ meaning }) => meaning).join(" / "),
     ].join(" | ");
   });
-  const partLines = parts.map((part) =>
+  const partLine = (part: (typeof parts)[number]): string =>
     [
       part.group,
       part.call,
@@ -1540,8 +1552,11 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
       ...("sample" in part
         ? [`${part.sample.label}: ${part.sample.values.map(showValue).join(", ")}`]
         : []),
-    ].join(" | "),
-  );
+    ].join(" | ");
+  const localLines = [...new Set(local.map(({ source }) => source))].flatMap((source) => [
+    `parts of ${source}:`,
+    ...local.filter((part) => part.source === source).map(partLine),
+  ]);
   const rangeText = (ranges: DescriptorRanges): string =>
     DESCRIPTOR_KEYS.flatMap((key) => {
       const range = ranges[key];
@@ -1549,7 +1564,8 @@ async function anatomyLines(json: boolean): Promise<readonly string[]> {
     }).join(", ");
   return [
     ...fieldLines,
-    ...partLines,
+    ...library.map(partLine),
+    ...localLines,
     ...shapes.map(({ name, meaning }) => `shape | ${name} | ${meaning}`),
     ...qualities.map(({ name, ranges }) => `quality | ${name} | ${rangeText(ranges)}`),
   ];
@@ -1631,7 +1647,7 @@ export async function runCatalog(
   options: CatalogOptions = {},
 ): Promise<CatalogRun> {
   if (args.parts) return { lines: formatParts(), code: 0 };
-  if (args.anatomy) return { lines: await anatomyLines(args.json), code: 0 };
+  if (args.anatomy) return { lines: await anatomyLines(args.json, root), code: 0 };
   const { entries, problems } = await loadCatalog(root, options);
   const all = entries;
   const records = all.map(({ record }) => record);

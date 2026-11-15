@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
 import { VALUE_FIELDS, QUALITIES } from "@gerak/moves";
 import {
   FIELD_GROUPS,
@@ -73,5 +76,48 @@ describe("motion:moves --anatomy", () => {
     expect(names("shapes")).toEqual(["peak", "overshoot", "rings", "windup", "settle"]);
     expect(names("qualities")).toEqual(Object.keys(QUALITIES));
     expect(text.lines.join("\n")).toContain("taper");
+  });
+});
+
+describe("motion:moves --anatomy with local parts", () => {
+  const PART = `import { definePart } from "@gerak/moves";
+/** A scratch envelope. */
+export const hump = definePart(
+  { kind: "envelope", samples: [{ run: (p: number) => 1 - p * p, at0: 1, at1: 0, label: "hump(p)" }] },
+  (p: number) => 1 - p * p,
+);
+`;
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+  function root(): string {
+    const dir = mkdtempSync(join(tmpdir(), "anatomy-local-"));
+    dirs.push(dir);
+    mkdirSync(join(dir, "reel", "src", "parts", "envelope"), { recursive: true });
+    writeFileSync(join(dir, "reel", "src", "parts", "envelope", "hump.ts"), PART);
+    return dir;
+  }
+
+  it("lists them after the library's parts under a heading naming the source", async () => {
+    const run = await runCatalog(ok(["--anatomy"]), root());
+    const at = run.lines.indexOf("parts of reel:");
+    expect(at).toBeGreaterThan(run.lines.findIndex((line) => line.includes("taper")));
+    expect(run.lines[at + 1]).toContain("hump");
+  });
+
+  it("gives each part a source under --json", async () => {
+    const run = await runCatalog(ok(["--anatomy", "--json"]), root());
+    const data: unknown = JSON.parse(run.lines.join("\n"));
+    const parts: unknown = Reflect.get(Object(data), "parts");
+    const source = (name: string): unknown =>
+      Array.isArray(parts)
+        ? Reflect.get(
+            Object(parts.find((part: unknown) => Reflect.get(Object(part), "name") === name)),
+            "source",
+          )
+        : undefined;
+    expect(source("hump")).toBe("reel");
+    expect(source("taper")).toBe("@gerak/moves");
   });
 });

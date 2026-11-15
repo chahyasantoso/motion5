@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { candidatesOf, duplicateLines, formatCandidate, loadCatalog, sourceFiles } from "./catalog";
+import { sourceFiles } from "./briefs";
+import { candidatesOf, duplicateLines, formatCandidate, loadCatalog } from "./catalog";
 
 /** The usage line of `motion:promote`. */
 export const PROMOTE_USAGE = "usage: motion:promote <id> [--root dir]";

@@ -1,10 +1,11 @@
-import { existsSync } from "node:fs";
-import { dirname, relative, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import * as moves from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { partContract, valueField, type PartContract } from "@gerak/moves";
+import { briefFolders, kitFolders } from "./briefs";
 
 /** The groups the parts list sorts its building blocks into, in print order. */
 export const PART_GROUPS = [
@@ -454,4 +455,188 @@ export function formatParts(parts: readonly MovePart[] = moveParts()): readonly 
       ? []
       : [`${group}:`, ...inGroup.map(({ call, use }) => `  ${call}  ${use}`)];
   });
+}
+
+/** A building block a brief or kit declares in its own `src/parts/<kind>/`, with where it came from. */
+export interface LocalPart extends MovePart {
+  readonly source: string;
+  readonly file: string;
+  readonly value: unknown;
+}
+
+interface LocalScan {
+  readonly parts: readonly LocalPart[];
+  readonly problems: readonly string[];
+}
+
+function byText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+function localHomes(root: string): readonly { readonly source: string; readonly dir: string }[] {
+  return [
+    ...briefFolders(root).map((name) => ({ source: name, dir: join(root, name) })),
+    ...kitFolders(root).map((name) => ({ source: name, dir: join(root, "kits", name) })),
+  ].sort((a, b) => byText(a.source, b.source));
+}
+
+function docBefore(text: string, name: string): string {
+  const found = new RegExp(
+    `/\\*\\*((?:(?!\\*/)[\\s\\S])*)\\*/\\s*export\\s+(?:async\\s+)?(?:const|function)\\s+${name}\\b`,
+  ).exec(text);
+  return firstSentence((found?.[1] ?? "").replace(/^\s*\*+ ?/gm, ""));
+}
+
+async function scanLocal(root: string): Promise<LocalScan> {
+  const parts: LocalPart[] = [];
+  const problems: string[] = [];
+  for (const { source, dir } of localHomes(root)) {
+    const base = join(dir, "src", "parts");
+    if (!existsSync(base)) continue;
+    const folders = readdirSync(base, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    for (const folder of folders) {
+      const group = FOLDER_KINDS.find((name) => name === folder);
+      if (group === undefined) {
+        problems.push(
+          `${source}/parts/${folder}: is not a parts folder; use one of ${FOLDER_KINDS.join(", ")}`,
+        );
+        continue;
+      }
+      const files = readdirSync(join(base, folder))
+        .filter((name) => /\.ts$/.test(name) && !name.endsWith(".d.ts"))
+        .sort();
+      for (const name of files) {
+        const file = join(base, folder, name);
+        try {
+          const module: Readonly<Record<string, unknown>> = await import(pathToFileURL(file).href);
+          const text = readFileSync(file, "utf8");
+          for (const [exported, value] of Object.entries(module))
+            if (typeof value === "function")
+              parts.push({
+                name: exported,
+                group,
+                call: `${exported}(...)`,
+                use: docBefore(text, exported),
+                source,
+                file,
+                value,
+              });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          problems.push(`${source}/${folder}/${name}: could not be imported: ${message}`);
+        }
+      }
+    }
+  }
+  const order = (part: LocalPart): number => PART_GROUPS.indexOf(part.group);
+  const sorted = [...parts].sort(
+    (a, b) => byText(a.source, b.source) || order(a) - order(b) || byText(a.name, b.name),
+  );
+  return { parts: sorted, problems };
+}
+
+/** The building blocks the briefs and kits of the app at `root` declare under `src/parts/<kind>/`: every
+ * exported function, by source, then group, then name. */
+export async function localParts(root: string): Promise<readonly LocalPart[]> {
+  return (await scanLocal(root)).parts;
+}
+
+const SAME = 1e-6;
+
+type Grid = readonly (readonly unknown[])[];
+
+function stepsOf(samples: readonly { readonly run: (at: number) => unknown }[]): Grid {
+  return samples.map(({ run }) =>
+    Array.from({ length: SAMPLE_STEPS + 1 }, (_, step) => run(step / SAMPLE_STEPS)),
+  );
+}
+
+/** What each sample of a sampled part answers at the 101 steps of progress (seconds for a spring), or
+ * once for a coupling; nothing for a kind that is not sampled. */
+function gridOf(contract: PartContract): Grid {
+  switch (contract.kind) {
+    case "time":
+    case "geometry":
+    case "signal":
+    case "utility":
+      return [];
+    case "ease":
+    case "envelope":
+    case "oscillation":
+    case "dynamics":
+    case "path":
+    case "blend":
+      return stepsOf(contract.samples);
+    case "coupling":
+      return contract.samples.map(({ run }) => [run()]);
+    default:
+      return unreachable(contract);
+  }
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (typeof a === "number" && typeof b === "number") return Math.abs(a - b) <= SAME;
+  if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
+    const keys = Object.keys(a);
+    return (
+      keys.length === Object.keys(b).length &&
+      keys.every((key) => key in b && sameValue(Reflect.get(a, key), Reflect.get(b, key)))
+    );
+  }
+  return a === b;
+}
+
+function sameSeries(a: readonly unknown[], b: readonly unknown[]): boolean {
+  return a.length === b.length && a.every((value, index) => sameValue(value, b[index]));
+}
+
+interface Known {
+  readonly name: string;
+  readonly kind: PartGroup;
+  readonly grid: Grid;
+}
+
+function gridFor(value: unknown): Grid | undefined {
+  if ((typeof value !== "function" && typeof value !== "object") || value === null)
+    return undefined;
+  const contract = partContract(value);
+  if (contract === undefined) return undefined;
+  try {
+    return gridOf(contract);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Part-gate findings for the briefs and kits at root, each led by its source, plus a part whose
+ * samples repeat a library part or an earlier local part of the same kind. */
+export async function checkLocalParts(root: string): Promise<readonly string[]> {
+  const { parts, problems } = await scanLocal(root);
+  const known: Known[] = moveParts().flatMap((part) => {
+    const grid = gridFor(Reflect.get(moves, part.name));
+    return grid === undefined ? [] : [{ name: part.name, kind: part.group, grid }];
+  });
+  const out: string[] = [...problems];
+  for (const part of parts) {
+    const own = findingsOf(part, part.value).map((finding) => `${part.source}/${finding}`);
+    out.push(...own);
+    const grid = own.length === 0 ? gridFor(part.value) : undefined;
+    const first = grid?.[0];
+    if (grid === undefined || first === undefined) continue;
+    const twin = known.find(
+      (other) =>
+        other.kind === part.group && other.grid.some((series) => sameSeries(first, series)),
+    );
+    if (twin !== undefined) {
+      const index = twin.grid.findIndex((series) => sameSeries(first, series));
+      out.push(
+        `${part.source}/${part.name}: samples as ${twin.name} (sample ${index}); use ${twin.name} instead`,
+      );
+    }
+    known.push({ name: `${part.source}/${part.name}`, kind: part.group, grid });
+  }
+  return out;
 }

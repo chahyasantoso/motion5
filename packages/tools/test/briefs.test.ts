@@ -2,7 +2,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { RESERVED_FOLDERS, briefFolders, movesFolders, pieceFiles } from "@gerak/tools/scene";
+import {
+  RESERVED_FOLDERS,
+  briefFolders,
+  kitFolders,
+  movesFolders,
+  pieceFiles,
+  portabilityFindings,
+} from "@gerak/tools/scene";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -62,6 +69,42 @@ describe("brief folders", () => {
     expect(movesFolders(root)).toEqual([
       join(root, "one/src/moves"),
       join(root, "three/src/moves"),
+    ]);
+  });
+});
+
+describe("kit folders", () => {
+  it("lists the kits that hold a src, and the brief list leaves kits out", () => {
+    const root = scratch(["kits/a/src/x.ts", "kits/b/notes.md", "reel/src/reel.ts"]);
+    expect(kitFolders(root)).toEqual(["a"]);
+    expect(briefFolders(root)).toEqual(["reel"]);
+    expect(kitFolders(scratch(["reel/src/reel.ts"]))).toEqual([]);
+  });
+});
+
+describe("portability findings", () => {
+  const MOVE = (from: string) => `import { x } from "${from}";\n`;
+
+  it("lets a move import its own folder's parts", () => {
+    const root = scratch([
+      "reel/src/parts/envelope/x.ts",
+      "kits/k/src/parts/envelope/z.ts",
+      "kits/k/src/moves/m.ts",
+      "reel/src/moves/m.ts",
+    ]);
+    writeFileSync(
+      join(root, "reel/src/moves/m.ts"),
+      MOVE("../parts/envelope/x") + MOVE("@gerak/moves"),
+    );
+    writeFileSync(join(root, "kits/k/src/moves/m.ts"), MOVE("../parts/envelope/z"));
+    expect(portabilityFindings(root)).toEqual([]);
+  });
+
+  it("refuses an import that leaves the folder's parts", () => {
+    const root = scratch(["reel/src/moves/m.ts", "other/src/parts/envelope/y.ts"]);
+    writeFileSync(join(root, "reel/src/moves/m.ts"), MOVE("../../../other/src/parts/envelope/y"));
+    expect(portabilityFindings(root)).toEqual([
+      `${join("reel", "src", "moves", "m.ts")} imports ../../../other/src/parts/envelope/y`,
     ]);
   });
 });
