@@ -1,7 +1,7 @@
 # Anatomy plan: parts, fields and a catalog that measures
 
 **Status:** Approved 2026-11-14; waves 1 to 3 built on `feat/anatomy` (ADR-185). Waves 4 to 6, the motion
-vocabulary (ADR-186), revised 2026-11-15 after one round of critique; proposed.
+vocabulary (ADR-186), approved 2026-11-15 after one round of critique.
 **Base:** `feat/toolkit` at `bad02ccf` (pull request 595, not merged); rebase on `main` once it merges.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-172-*.md`,
 `docs/ADR-173-*.md`, `docs/ADR-184-*.md`, `docs/ADR-185-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -176,6 +176,8 @@ The kinds a piece is assembled from, each with one owner:
   of every query unless `--all`, and the summary says how many were left out.
 - **Fit at its options.** A move is scored at its example and at each option set the gate samples; the row reports
   the best, naming the options when they are not the example's (`fits with squash 0.6`).
+- **Moves that play on a renderer.** `--renderer <dom|three>` keeps the moves whose every moved field is in that
+  renderer's `WRITTEN` list (V1), and the full entry names the fields a renderer leaves unwritten.
 - **The spec answers the query.** `--design <file> --target <name>` reads the piece's `design` and asks for that
   target's fields and qualities, as the same `--move` flags would.
 - **The duplicate check** uses the per-field distance; `NEAR_DUPLICATE` is re-tuned so the pairs found are a subset
@@ -229,7 +231,7 @@ The kinds a piece is assembled from, each with one owner:
 - **Test:** `--anatomy` lists every field with meaning and unit and every part under its kind, each with its sample
   use, and `--json` parses; a move with a gate finding is left out of a query and counted in the summary; a move
   that fits only at another option set is found with those options named; `--design` on a scratch piece asks what
-  its `design` says;
+  its `design` says; `--renderer three` leaves out a move that moves `hue`;
   `hop` keeps a `y` shape with rings; `--move y:heavy` puts `drop` first and `--move scaleY:loose` puts `squish`
   first; a move that moves the field with the wrong quality ranks below one with the right quality; a design no move
   fits gives the no-fit answer with the `motion:new` line; `--uses` breaks a tie; the duplicate pairs are a subset of
