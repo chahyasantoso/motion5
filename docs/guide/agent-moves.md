@@ -25,4 +25,4 @@ Glue that only this piece needs stays in the scene as a `mix`.
 5. Import it into the scene from `./moves/<id>` and use it like a built-in. Name it in your report. A move outside
    `@gerak/moves` imports only `@gerak/moves`, so it can travel to another brief or project as it is.
 6. A move used by pieces from two briefs (two folders under `apps/pieces`) is listed by
-   `gerak moves -- --candidates`, and `gerak promote <id>` moves it into the library; a person decides when.
+   `gerak moves --candidates`, and `gerak promote <id>` moves it into the library; a person decides when.

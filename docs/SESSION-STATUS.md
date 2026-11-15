@@ -13,8 +13,8 @@ byte ceiling.
 - **A scene is `(time, events) => targets`, and an agent designs before it chooses.** `@gerak/moves` holds fields,
   parts by kind, moves and compose in layer folders; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
   `@gerak/rapier`, `@gerak/dom`, `@gerak/react`, `@gerak/three` and `@gerak/stage` build, play and write it; the
-  `motion:*` commands in `@gerak/tools` make, review, sample and render pieces. Each brief is a folder of
-  `apps/pieces`, played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves -- --anatomy`
+  `gerak` commands in `@gerak/tools` make, review, sample and render pieces. Each brief is a folder of
+  `apps/pieces`, played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves --anatomy`
   is the card of primitives, the catalog answers a piece's `design`, and `gerak review` checks the design. A brief
   folder is portable with its own parts; its optional `style.ts` card holds the share of lively motion per field, which
   `gerak review` checks for any piece naming it and `gerak style` measures (the `showreel` card, measured by
