@@ -123,10 +123,50 @@ describe("a design no move fits", () => {
     expect(run.lines[0]).toBe("No move does this closely.");
     expect(run.lines.join("\n")).toContain("rotationX:heavy, clipRadius:loose");
     expect(run.lines.join("\n")).toContain("uses ease");
-    expect(run.lines).toContain("npm run motion:new -- --move <id> --in <brief>");
+    expect(run.lines).toContain("or write one: npm run motion:new -- --move <id> --in <brief>");
     const named = await runCatalog(ok([...argv, "--in", "reel"]), DEFAULT_ROOT);
-    expect(named.lines).toContain("npm run motion:new -- --move <id> --in reel");
+    expect(named.lines).toContain("or write one: npm run motion:new -- --move <id> --in reel");
     expect(NO_FIT).toBeGreaterThan(0);
+  });
+
+  it("names the move for each field alone, to combine in the scene, or says to write it", async () => {
+    const run = await runCatalog(
+      ok([
+        "--move",
+        "y:heavy",
+        "--move",
+        "scaleY:loose",
+        "--move",
+        "hue:playful",
+        "--role",
+        "enter",
+      ]),
+      DEFAULT_ROOT,
+    );
+    expect(run.lines[0]).toBe("No move does this closely.");
+    expect(run.lines).toContain(
+      "combine in the scene: y:heavy by drop; scaleY:loose by squish; hue:playful by no move; write it",
+    );
+  });
+});
+
+describe("a quality's range", () => {
+  it("scores every move inside the range alike, so rings 2 and rings 16 are both loose", async () => {
+    const run = await runCatalog(ok(["--move", "scaleY:loose", "--all"]), DEFAULT_ROOT);
+    const loose = run.lines.filter((line) => line.includes("✓ scaleY:loose"));
+    expect(loose.map((line) => line.split(" | ")[0])).toEqual(
+      expect.arrayContaining(["squish", "spring-settle", "hand-wave"]),
+    );
+    expect(run.lines.findIndex((line) => line.includes("✗ scaleY:loose"))).toBeGreaterThan(
+      run.lines.findLastIndex((line) => line.includes("✓ scaleY:loose")),
+    );
+  });
+
+  it("answers at the move's own example when it fits, naming no other options", async () => {
+    const run = await runCatalog(ok(["--move", "scaleY:loose"]), DEFAULT_ROOT);
+    const squish = run.lines.find((line) => line.startsWith("squish |")) ?? "";
+    expect(squish).toContain("✓ scaleY:loose");
+    expect(squish).not.toContain(" at ");
   });
 });
 

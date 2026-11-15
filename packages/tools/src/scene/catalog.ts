@@ -678,10 +678,19 @@ function fieldWith(
 
 const roundTo = (value: number): number => Math.round(value * 100) / 100;
 
-/** The mean squared distance of a shape's named descriptors to the middle of a quality's ranges. */
-function meanDistanceToMiddle(shape: Descriptors, ranges: DescriptorRanges): number {
+/** The mean squared distance of a shape's named descriptors outside a quality's ranges, rings weighed by a
+ * quarter: 0 when every one is inside. */
+function meanDistanceOutside(shape: Descriptors, ranges: DescriptorRanges): number {
   const named = DESCRIPTOR_KEYS.filter((key) => ranges[key] !== undefined);
-  return named.length === 0 ? 0 : distanceToMiddle(shape, ranges) / named.length;
+  const total = named.reduce((sum, key) => {
+    const range = ranges[key];
+    if (range === undefined) return sum;
+    const value = weighed(key, shape[key]);
+    const [low, high] = [weighed(key, range[0]), weighed(key, range[1])];
+    const off = value < low ? low - value : value > high ? value - high : 0;
+    return sum + off ** 2;
+  }, 0);
+  return named.length === 0 ? 0 : total / named.length;
 }
 
 const labelOf = (request: FieldRequest): string =>
@@ -693,12 +702,14 @@ function fieldsFit(
   requests: readonly FieldRequest[],
 ): {
   readonly fit: number;
+  readonly centred: number;
   readonly hasAll: boolean;
   readonly movesAny: boolean;
   readonly notes: readonly string[];
 } {
   const notes: string[] = [];
   let total = 0;
+  let centred = 0;
   let hasAll = true;
   let movesAny = false;
   for (const request of requests) {
@@ -715,7 +726,9 @@ function fieldsFit(
       notes.push(`✓ ${labelOf(request)} (moved)`);
       continue;
     }
-    total += meanDistanceToMiddle(shape, ranges);
+    total += meanDistanceOutside(shape, ranges);
+    const named = DESCRIPTOR_KEYS.filter((key) => ranges[key] !== undefined).length;
+    centred += named === 0 ? 0 : distanceToMiddle(shape, ranges) / named;
     const outside = outsideRanges(shape, ranges);
     notes.push(
       outside.length === 0
@@ -730,7 +743,32 @@ function fieldsFit(
             .join(", ")})`,
     );
   }
-  return { fit: requests.length === 0 ? 0 : total / requests.length, hasAll, movesAny, notes };
+  const count = Math.max(1, requests.length);
+  return { fit: total / count, centred: centred / count, hasAll, movesAny, notes };
+}
+
+/** The label of the move that answers one requested field most closely within `NO_FIT`, or none. */
+function bestFor(
+  records: readonly MoveRecord[],
+  field: FieldRequest,
+  shared: ReadonlySet<string>,
+): string | undefined {
+  let best: { readonly record: MoveRecord; readonly fit: DesignFit } | undefined;
+  for (const record of records) {
+    const { fit } = designFit(record, { fields: [field], uses: [] });
+    if (!fit.hasAll || fit.fieldFit > NO_FIT) continue;
+    if (
+      best === undefined ||
+      fit.fieldFit < best.fit.fieldFit ||
+      (fit.fieldFit === best.fit.fieldFit && fit.centred < best.fit.centred) ||
+      (fit.fieldFit === best.fit.fieldFit &&
+        fit.centred === best.fit.centred &&
+        byId(record, best.record) < 0)
+    )
+      best = { record, fit };
+  }
+  if (best === undefined) return undefined;
+  return shared.has(best.record.id) ? `${best.record.source}/${best.record.id}` : best.record.id;
 }
 
 /** The options an option set changes from the example's, as `name=value` text. */
@@ -763,20 +801,29 @@ function designFit(
             shapes: record.shapes,
           },
         ];
-  let best: { readonly at: string; readonly found: ReturnType<typeof fieldsFit> } | undefined;
+  // The example answers when it fits; another option set only when it fits more closely.
+  let best: { readonly at: string; readonly found: ReturnType<typeof fieldsFit> } = {
+    at: "",
+    found: fieldsFit(record.shapes, design.fields),
+  };
   for (const set of sets) {
     const found = fieldsFit(set.shapes, design.fields);
-    if (best === undefined || found.fit < best.found.fit)
-      best = { at: changedOptions(record, set.options), found };
+    if (found.fit < best.found.fit) best = { at: changedOptions(record, set.options), found };
   }
-  const found = best?.found ?? fieldsFit({}, design.fields);
+  const { found } = best;
   const used = design.uses.map((use) => ({ use, imports: importedFor(record, use) }));
   const usesFit =
     design.uses.length === 0
       ? 0
       : used.filter(({ imports }) => imports.length > 0).length / design.uses.length;
   return {
-    fit: { fieldFit: found.fit, usesFit, hasAll: found.hasAll, movesAny: found.movesAny },
+    fit: {
+      fieldFit: found.fit,
+      centred: found.centred,
+      usesFit,
+      hasAll: found.hasAll,
+      movesAny: found.movesAny,
+    },
     notes: [
       ...found.notes,
       ...used.map(({ use, imports }) =>
@@ -784,7 +831,7 @@ function designFit(
           ? `✓ uses ${use} (${imports.join(", ")})`
           : `✗ uses ${use} (imports none)`,
       ),
-      ...(best === undefined || best.at === "" ? [] : [`at ${best.at}`]),
+      ...(best.at === "" ? [] : [`at ${best.at}`]),
     ],
   };
 }
@@ -858,6 +905,8 @@ export interface DesignRequest {
 export interface DesignFit {
   /** The mean over the requested fields of 0 to 1 (1 for a field not moved); least first. */
   readonly fieldFit: number;
+  /** How near the middle of each quality its fields sit, for moves that fit equally; least first. */
+  readonly centred: number;
   /** The share of the requested uses the move's file imports. */
   readonly usesFit: number;
   /** Whether the move moves every requested field in that option set. */
@@ -878,6 +927,8 @@ export type QueryResult =
       readonly held: number;
       /** Whether a design was asked and no move that has every field comes close to it. */
       readonly noFit: boolean;
+      /** With no fit, the move that comes closest for each requested field alone, if any comes close. */
+      readonly combine: readonly { readonly field: string; readonly move: string | undefined }[];
     }
   | { readonly kind: "refused"; readonly message: string };
 
@@ -994,13 +1045,25 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     (left, right) =>
       (left.row.fit ?? 0) - (right.row.fit ?? 0) ||
       (right.row.design?.usesFit ?? 0) - (left.row.design?.usesFit ?? 0) ||
+      (left.row.design?.centred ?? 0) - (right.row.design?.centred ?? 0) ||
       right.hits - left.hits ||
       byId(left.row.record, right.row.record),
   );
   const noFit =
     design !== undefined &&
     !rows.some(({ row }) => row.design?.hasAll === true && row.design.fieldFit <= NO_FIT);
-  return { kind: "rows", rows: rows.map(({ row }) => row), held, noFit };
+  const combine =
+    design === undefined || !noFit
+      ? []
+      : design.fields.map((field) => ({
+          field: labelOf(field),
+          move: bestFor(
+            records.filter((record) => record.findings === 0 || request.all === true),
+            field,
+            shared,
+          ),
+        }));
+  return { kind: "rows", rows: rows.map(({ row }) => row), held, noFit, combine };
 }
 
 /** The import a scene writes for a move: the package's name, or the file as `from` (a brief) or the root sees it. */
@@ -1532,8 +1595,13 @@ async function designOf(
   };
 }
 
-/** The answer when no move comes close: what was asked, and the command that makes a move for it. */
-function noFitLines(design: DesignRequest, brief: string | undefined): readonly string[] {
+/** The answer when no move comes close: what was asked, the move for each field alone to combine in the
+ * scene, and the command that makes one move for it all. */
+function noFitLines(
+  design: DesignRequest,
+  brief: string | undefined,
+  combine: readonly { readonly field: string; readonly move: string | undefined }[],
+): readonly string[] {
   const asked = [
     design.fields.length === 0 ? "" : `fields ${design.fields.map(labelOf).join(", ")}`,
     design.uses.length === 0 ? "" : `uses ${design.uses.join(", ")}`,
@@ -1541,7 +1609,14 @@ function noFitLines(design: DesignRequest, brief: string | undefined): readonly 
   return [
     "No move does this closely.",
     `asked: ${asked.join("; ")}`,
-    `npm run motion:new -- --move <id> --in ${brief ?? "<brief>"}`,
+    ...(combine.length === 0
+      ? []
+      : [
+          `combine in the scene: ${combine
+            .map(({ field, move }) => `${field} by ${move ?? "no move; write it"}`)
+            .join("; ")}`,
+        ]),
+    `or write one: npm run motion:new -- --move <id> --in ${brief ?? "<brief>"}`,
   ];
 }
 
@@ -1582,6 +1657,7 @@ export async function runCatalog(
     ...(args.check ? { withFindings: true } : {}),
   };
   let noFit = false;
+  let combine: readonly { readonly field: string; readonly move: string | undefined }[] = [];
   let held = 0;
   let selected = all;
   let rows: readonly QueryRow[] = [];
@@ -1609,6 +1685,7 @@ export async function runCatalog(
     rows = found.rows;
     held = found.held;
     noFit = found.noFit;
+    combine = found.combine;
     selected = rows.flatMap(({ record }) => all.filter((entry) => entry.record === record));
   }
   if (args.check) {
@@ -1657,7 +1734,7 @@ export async function runCatalog(
       ? [`${rows.length - shownRows.length} more; --all lists them.`]
       : [];
   if (noFit && asked.design !== undefined && !args.check && !args.json)
-    return { lines: noFitLines(asked.design, args.in), code: problemCode };
+    return { lines: noFitLines(asked.design, args.in, combine), code: problemCode };
   const left = held === 0 ? [] : [`${withFindings(held)} left out; --all lists them.`];
   return {
     lines: [
