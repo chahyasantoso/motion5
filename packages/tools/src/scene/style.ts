@@ -169,7 +169,11 @@ export async function checkStyle(root: string, brief: string): Promise<readonly 
     if (parsed.kind === "usage") continue;
     const result = await reviewSceneFile(parsed);
     const name = posix(relative(root, piece));
-    const lines = result.kind === "usage" ? result.message.split("\n") : result.findings;
+    // A piece's other review findings are its own; the card answers only for its defaults.
+    const lines =
+      result.kind === "usage"
+        ? result.message.split("\n")
+        : result.findings.filter((line) => line.endsWith("(style default)"));
     out.push(...lines.map((line) => `${name}: ${line}`));
   }
   return out;

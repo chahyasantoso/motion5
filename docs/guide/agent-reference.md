@@ -655,7 +655,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   in `<brief>/src/*.ts`: one quality per field they move, its ranges the measured descriptors widened a little, and that quality
   the field's default. Prints the file and each default; an unknown brief or an existing `style.ts` is refused (exit `1`).
 - **`motion:style check <brief> [--root dir]`**: prints `ok`, or one finding per line and exits `1`: the card's load problems, imports
-  the brief's moves and parts may not make, the part and move gates on the brief, and the review of every piece of the brief and of any brief that exports `style = "<brief>"`.
+  the brief's moves and parts may not make, the part and move gates on the brief, and the style-default findings of the review of every piece of the brief and of any brief that exports `style = "<brief>"` (a piece's other findings are its own).
 - **`motion:new <name> [--in <brief>] [--three]`**: writes `<brief>/<name>.html`, its entry, a component and `<brief>/src/<name>-scene.ts` in
   `apps/pieces` (the brief is the name unless `--in` names one); a name any brief already holds is refused; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.

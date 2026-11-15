@@ -81,6 +81,15 @@ describe("motion:style", () => {
     expect(found[0]?.endsWith("(style default)")).toBe(true);
   });
 
+  it("leaves a piece's own review findings to the piece, counting only the card's", async () => {
+    const root = reel();
+    await measureStyle(root, "reel");
+    mkdirSync(join(root, "tour", "src"), { recursive: true });
+    const short = piece(BOUNCY, 'export const style = "reel";').replace("1500", "700");
+    writeFileSync(join(root, "tour", "src", "short.ts"), short);
+    expect(await checkStyle(root, "reel")).toEqual([]);
+  });
+
   it("refuses to measure twice and an unknown brief", async () => {
     const root = reel();
     await measureStyle(root, "reel");
