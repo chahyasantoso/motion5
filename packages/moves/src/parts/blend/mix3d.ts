@@ -4,6 +4,7 @@ import {
   quaternionFromEuler3d,
   slerpQuaternion,
 } from "@gerak/rig";
+import { definePart } from "../contract";
 import { VALUE_FIELDS } from "../../fields/pose";
 import {
   NUMBERS,
@@ -35,6 +36,15 @@ export function mixPose3d(from: Pose3d, to: Pose3d, share: number): Pose3d {
   }
   return out;
 }
+const POSE_FROM: Pose3d = { x: 0, y: 2, rotation: 10, scaleX: 1 };
+const POSE_TO: Pose3d = { x: 5, z: 9, rotation: 50, rotationX: 20 };
+definePart(
+  {
+    kind: "blend",
+    samples: [{ run: (share) => mixPose3d(POSE_FROM, POSE_TO, share), a: POSE_FROM, b: POSE_TO }],
+  },
+  mixPose3d,
+);
 
 /** A 3D point `share` of the way from `from` to `to`. */
 export function mixPoint3d(
@@ -44,3 +54,16 @@ export function mixPoint3d(
 ): { readonly x: number; readonly y: number; readonly z: number } {
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share), z: mix(from.z, to.z, share) };
 }
+definePart(
+  {
+    kind: "blend",
+    samples: [
+      {
+        run: (share) => mixPoint3d({ x: 0, y: 1, z: 2 }, { x: 9, y: -3, z: 5 }, share),
+        a: { x: 0, y: 1, z: 2 },
+        b: { x: 9, y: -3, z: 5 },
+      },
+    ],
+  },
+  mixPoint3d,
+);

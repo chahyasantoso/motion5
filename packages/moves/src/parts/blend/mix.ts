@@ -1,15 +1,37 @@
+import { definePart } from "../contract";
 import { CUSTOM_FIELD, POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d } from "../../fields/pose";
 
 /** The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates. */
 export function mix(from: number, to: number, share: number): number {
   return from + (to - from) * share;
 }
+definePart(
+  {
+    kind: "blend",
+    samples: [
+      { run: (share) => mix(2, 10, share), a: 2, b: 10 },
+      { run: (share) => mix(5, -3, share), a: 5, b: -3 },
+    ],
+  },
+  mix,
+);
 
 /** An angle in degrees `share` of the way from `from` to `to`, turning the short way round. */
 export function mixAngle(from: number, to: number, share: number): number {
   const turn = ((((to - from) % 360) + 540) % 360) - 180;
   return from + turn * share;
 }
+definePart(
+  {
+    kind: "blend",
+    samples: [
+      { run: (share) => mixAngle(350, 10, share), a: 350, b: 10, angle: true },
+      { run: (share) => mixAngle(10, 190, share), a: 10, b: 190, angle: true },
+      { run: (share) => mixAngle(-170, 170, share), a: -170, b: 170, angle: true },
+    ],
+  },
+  mixAngle,
+);
 
 /** A point `share` of the way from `from` to `to`. */
 export function mixPoint(
@@ -19,6 +41,19 @@ export function mixPoint(
 ): { readonly x: number; readonly y: number } {
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share) };
 }
+definePart(
+  {
+    kind: "blend",
+    samples: [
+      {
+        run: (share) => mixPoint({ x: 0, y: 4 }, { x: 10, y: -6 }, share),
+        a: { x: 0, y: 4 },
+        b: { x: 10, y: -6 },
+      },
+    ],
+  },
+  mixPoint,
+);
 
 type Customized = { readonly custom?: Readonly<Record<string, number>> };
 
@@ -57,3 +92,15 @@ export function mixPose(from: Pose2d, to: Pose2d, share: number): Pose2d {
   if (anchor !== undefined) out.anchor = anchor;
   return out;
 }
+const POSE_FROM: Pose2d = { x: 0, rotation: 10, opacity: 0, anchor: "bottom", custom: { wag: 1 } };
+const POSE_TO: Pose2d = { x: 50, rotation: 40, scaleX: 2, opacity: 1, custom: { wag: 3 } };
+definePart(
+  {
+    kind: "blend",
+    samples: [
+      { run: (share) => mixPose(POSE_FROM, POSE_TO, share), a: POSE_FROM, b: POSE_TO },
+      { run: (share) => mixPose({}, POSE_TO, share), a: {}, b: POSE_TO },
+    ],
+  },
+  mixPose,
+);

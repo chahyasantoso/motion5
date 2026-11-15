@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 /** Repeatable random numbers from 0 up to 1 for a seed, so a scattered scene is the same each run; use
  * it, never `Math.random()`. */
 export function seeded(seed: number): () => number {
@@ -9,3 +10,4 @@ export function seeded(seed: number): () => number {
     return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
   };
 }
+definePart({ kind: "utility" }, seeded);

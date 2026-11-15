@@ -10,6 +10,7 @@ export {
   type Span,
   type Time,
 } from "./parts/time/time";
+export { definePart, partContract, type PartContract } from "./parts/contract";
 export { backEase, ease, springEase, type Ease, type EaseDirection } from "./parts/ease/ease";
 export { spring, type SpringOptions, type SpringState } from "./parts/dynamics/spring";
 export { wave } from "./parts/oscillation/wave";

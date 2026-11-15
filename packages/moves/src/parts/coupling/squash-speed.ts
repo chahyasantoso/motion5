@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Pose2d } from "../../fields/pose";
 import { squashed } from "./squashed";
 
@@ -23,3 +24,14 @@ export function squashFromSpeed(
   const squash = squashed(Math.min(options.most, options.amount * pace), 1, "bottom");
   return { ...squash, rotation: heading, anchor: "center" };
 }
+definePart(
+  {
+    kind: "coupling",
+    samples: [
+      { run: () => squashFromSpeed({ vx: 0, vy: 0 }, { amount: 0.001, most: 0.5 }) },
+      { run: () => squashFromSpeed({ vx: 900, vy: 400 }, { amount: 0, most: 0.5 }) },
+      { run: () => squashFromSpeed({ vx: 900, vy: 400 }, { amount: 0.001, most: 0 }) },
+    ],
+  },
+  squashFromSpeed,
+);

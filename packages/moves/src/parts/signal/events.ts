@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import { spring } from "../dynamics/spring";
 import { elapsedOf, type Time } from "../time/time";
 import { unreachable } from "../../unreachable";
@@ -99,6 +100,7 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
       : state.goal + moved.offset;
   };
 }
+definePart({ kind: "signal" }, follow);
 
 /** Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own)
  * and `target`. */
@@ -203,6 +205,7 @@ export function tally(options: TallyOptions): Tally {
   };
   return Object.assign(at, { total });
 }
+definePart({ kind: "signal" }, tally);
 
 /** How a response to one event moves: from a full start, from rest, as a fade, or as a shake. */
 export type ReactionKind = "recoil" | "wobble" | "flash" | "shake";
@@ -269,3 +272,4 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     return total;
   };
 }
+definePart({ kind: "signal" }, react);

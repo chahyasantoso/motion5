@@ -1,3 +1,5 @@
+import { definePart } from "../contract";
+
 /** The throw's shape: start offset `dx` and `dy`, and how many px above the higher end it peaks. */
 export type BallisticOptions = { dx: number; dy: number; apex: number };
 
@@ -13,3 +15,18 @@ export function ballistic(progress: number, options: BallisticOptions): { x: num
     y: gravity * progress * progress + slope * progress + dy,
   };
 }
+definePart(
+  {
+    kind: "path",
+    samples: [
+      { dx: 120, dy: 0, apex: 80 },
+      { dx: -60, dy: 40, apex: 30 },
+      { dx: 0, dy: -50, apex: 0 },
+    ].map((options) => ({
+      run: (progress: number) => ballistic(progress, options),
+      from: { x: options.dx, y: options.dy },
+      to: { x: 0, y: 0 },
+    })),
+  },
+  ballistic,
+);

@@ -1,3 +1,5 @@
+import { definePart } from "../contract";
+
 /** A unit-mass spring: pull towards its goal per second squared, and drag on its speed per second. */
 export interface SpringOptions {
   readonly stiffness: number;
@@ -57,6 +59,18 @@ export function spring(
     speed: a * fast * Math.exp(fast * seconds) + b * slow * Math.exp(slow * seconds),
   };
 }
+definePart(
+  {
+    kind: "dynamics",
+    samples: [
+      { stiffness: 100, damping: 5 },
+      { stiffness: 100, damping: 20 },
+      { stiffness: 100, damping: 60 },
+      { stiffness: 400, damping: 0 },
+    ].map((options) => ({ run: (seconds: number) => spring(0, 0, seconds, options) })),
+  },
+  spring,
+);
 
 /** Seconds until what a spring was doing shrinks below `rest` of its size, at half its decay rate to cover ringing. */
 export function springMemory(options: SpringOptions, rest: number): number {

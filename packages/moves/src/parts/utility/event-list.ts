@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 /** Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a
  * live number; `target` names where. */
 export interface MotionEvent {
@@ -44,6 +45,7 @@ export function isMotionEvent(value: unknown): value is MotionEvent {
     optional("other", "string")
   );
 }
+definePart({ kind: "utility" }, isMotionEvent);
 
 function isOptionalPoint(point: unknown): boolean {
   if (point === undefined) return true;
@@ -63,3 +65,4 @@ export const NO_EVENTS: Events = Object.freeze([]);
 export function mergeEvents(...lists: readonly Events[]): Events {
   return lists.flat().sort((a, b) => a.at - b.at);
 }
+definePart({ kind: "utility" }, mergeEvents);

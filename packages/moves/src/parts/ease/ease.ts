@@ -1,5 +1,6 @@
 import { spring, springMemory, type SpringOptions } from "../dynamics/spring";
 import { unreachable } from "../../unreachable";
+import { definePart } from "../contract";
 
 /** A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot. */
 export type Ease = (progress: number) => number;
@@ -49,6 +50,17 @@ export function backEase(options: {
       return unreachable(direction);
   }
 }
+definePart(
+  {
+    kind: "ease",
+    samples: (["in", "out", "inOut"] as const).flatMap((direction) =>
+      [0, 1.70158, 4].map(
+        (amount) => (progress: number) => backEase({ amount, direction })(progress),
+      ),
+    ),
+  },
+  backEase,
+);
 
 const SETTLED = 0.001;
 
@@ -61,6 +73,17 @@ export function springEase(options: SpringOptions): Ease {
   return (u) =>
     u <= 0 ? 0 : u >= 1 ? 1 : 1 + spring(-1, 0, u * settle, options).offset - u * left;
 }
+definePart(
+  {
+    kind: "ease",
+    samples: [
+      { stiffness: 100, damping: 10 },
+      { stiffness: 200, damping: 8 },
+      { stiffness: 80, damping: 40 },
+    ].map((options) => (progress: number) => springEase(options)(progress)),
+  },
+  springEase,
+);
 
 const elasticOut: Ease = (u) =>
   u === 0 || u === 1 ? u : 2 ** (-10 * u) * Math.sin((u * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1;
@@ -90,3 +113,4 @@ export const ease = Object.freeze({
   bounceOut,
   bounceIn: out(bounceOut),
 } satisfies Readonly<Record<string, Ease>>);
+definePart({ kind: "ease", samples: Object.values(ease) }, ease);

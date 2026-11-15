@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Events } from "../utility/event-list";
 import { spring, springMemory } from "../dynamics/spring";
 import { elapsedOf, type Time } from "../time/time";
@@ -89,3 +90,4 @@ export function trail(
     return resting ? goal : value;
   };
 }
+definePart({ kind: "signal" }, trail);

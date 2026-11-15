@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Anchor3d, Cubic3d } from "./shapes";
 
 /** One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle. */
@@ -24,3 +25,4 @@ export function toCubics3d(anchors: readonly Anchor3d[]): readonly Cubic3d[] {
   });
   return cubics;
 }
+definePart({ kind: "geometry" }, toCubics3d);

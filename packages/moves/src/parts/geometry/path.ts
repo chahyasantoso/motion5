@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Anchor2d, Cubic2d } from "./shapes";
 
 /** One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle. */
@@ -20,3 +21,4 @@ export function toCubics(anchors: readonly Anchor2d[]): readonly Cubic2d[] {
   }
   return cubics;
 }
+definePart({ kind: "geometry" }, toCubics);

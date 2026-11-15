@@ -1,0 +1,44 @@
+import { describe, expect, expectTypeOf, it } from "vitest";
+import {
+  definePart,
+  ease,
+  keyframes,
+  mixPose,
+  partContract,
+  taper,
+  type Ease,
+  type Pose2d,
+  type Time,
+} from "../src";
+
+describe("definePart", () => {
+  it("returns the function itself and records its contract under it", () => {
+    const half = (progress: number): number => progress / 2;
+    const same = definePart({ kind: "envelope", samples: [{ run: half, at0: 0, at1: 0.5 }] }, half);
+    expect(same).toBe(half);
+    expect(partContract(half)?.kind).toBe("envelope");
+  });
+
+  it("answers nothing for a function that was never declared", () => {
+    expect(partContract(() => 0)).toBeUndefined();
+  });
+
+  it("holds the contracts of the built-in parts", () => {
+    expect(partContract(taper)?.kind).toBe("envelope");
+    expect(partContract(mixPose)?.kind).toBe("blend");
+    expect(partContract(keyframes)?.kind).toBe("signal");
+    expect(partContract(ease)?.kind).toBe("ease");
+  });
+});
+
+describe("a declared part keeps its type", () => {
+  it("taper, mixPose, keyframes and ease are as they were declared", () => {
+    expectTypeOf(taper).toEqualTypeOf<(progress: number, power: number) => number>();
+    expectTypeOf(mixPose).toEqualTypeOf<(from: Pose2d, to: Pose2d, share: number) => Pose2d>();
+    expectTypeOf(keyframes).toBeFunction();
+    const moved: (time: Time) => number = keyframes(0, [], (from) => from);
+    expect(moved).toBeTypeOf("function");
+    const curve: Ease = ease.cubicOut;
+    expect(curve(1)).toBe(1);
+  });
+});

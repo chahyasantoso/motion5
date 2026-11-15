@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Pose2d } from "../../fields/pose";
 
 /** Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90].
@@ -15,3 +16,13 @@ export function smear(
   const s = Math.min(options.max, 1 + (options.stretch * speed) / 1000);
   return { pose: { rotation: heading, scaleX: s, scaleY: 1 / s }, heading };
 }
+definePart(
+  {
+    kind: "coupling",
+    samples: [
+      { run: () => smear({ vx: 0, vy: 0 }, { stretch: 0.5, max: 3 }) },
+      { run: () => smear({ vx: 800, vy: -300 }, { stretch: 0, max: 3 }) },
+    ],
+  },
+  smear,
+);

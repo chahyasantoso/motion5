@@ -1,6 +1,7 @@
 import type { Anchor, Pose2d } from "../../fields/pose";
 import type { Pose3d } from "../../fields/pose3d";
 import { unreachable } from "../../unreachable";
+import { definePart } from "../contract";
 
 /** A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"`
  * and `"right"` squash sideways. */
@@ -19,6 +20,16 @@ export function squashed(squash: number, weight: number, anchor: Anchor = "botto
       return unreachable(anchor);
   }
 }
+definePart(
+  {
+    kind: "coupling",
+    samples: (["bottom", "top", "center", "left", "right"] as const).flatMap((anchor) => [
+      { run: () => squashed(0, 1, anchor) },
+      { run: () => squashed(0.4, 0, anchor) },
+    ]),
+  },
+  squashed,
+);
 
 /** A body `weight` of the way into its `squash` along `axis`, widened on the other two so its volume stays. */
 export function squashed3d(squash: number, weight: number, axis: "x" | "y" | "z" = "y"): Pose3d {
@@ -37,3 +48,13 @@ export function squashed3d(squash: number, weight: number, axis: "x" | "y" | "z"
       return unreachable(axis);
   }
 }
+definePart(
+  {
+    kind: "coupling",
+    samples: (["x", "y", "z"] as const).flatMap((axis) => [
+      { run: () => squashed3d(0, 1, axis) },
+      { run: () => squashed3d(0.4, 0, axis) },
+    ]),
+  },
+  squashed3d,
+);

@@ -1,4 +1,5 @@
 import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d, transposeMatrix3 } from "@gerak/rig";
+import { definePart } from "../contract";
 import type { Pose3d } from "../../fields/pose3d";
 
 /** Stretches along travel by `stretch` per unit a second up to `max`, volume kept; reversing never flips it; `turn` undoes it. */
@@ -20,3 +21,13 @@ export function smear3d(
     turn: { ...eulerFromMatrix3d(transposeMatrix3(frame)) },
   };
 }
+definePart(
+  {
+    kind: "coupling",
+    samples: [
+      { run: () => smear3d({ vx: 0, vy: 0, vz: 0 }, { stretch: 0.5, max: 3 }) },
+      { run: () => smear3d({ vx: 4, vy: -3, vz: 2 }, { stretch: 0, max: 3 }) },
+    ],
+  },
+  smear3d,
+);

@@ -1,5 +1,6 @@
 import type { Time } from "./time";
 import { unreachable } from "../../unreachable";
+import { definePart } from "../contract";
 
 /** `time` moved to `ms` on its own clock, for reading a signal a moment earlier or later; untimed stays as it is. */
 export function timeAt(time: Time, ms: number): Time {
@@ -18,3 +19,4 @@ export function timeAt(time: Time, ms: number): Time {
       return unreachable(clock);
   }
 }
+definePart({ kind: "time" }, timeAt);

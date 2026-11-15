@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import { eulerFromMatrix3d, matrixFromEuler3d, type Matrix3, type Vec3 } from "@gerak/rig";
 import type { Pose3d } from "../../fields/pose3d";
 
@@ -46,6 +47,7 @@ export function aim(from: Point3, to: Point3, up: Point3 = { x: 0, y: 1, z: 0 })
   const turn = eulerFromMatrix3d(matrix);
   return { rotation: turn.rotation, rotationX: turn.rotationX, rotationY: turn.rotationY };
 }
+definePart({ kind: "geometry" }, aim);
 
 /** A point `radius` from `target`: azimuth about +y from +z toward +x, elevation up from the xz plane, degrees. */
 export function orbit(options: {
@@ -63,6 +65,7 @@ export function orbit(options: {
     z: options.target.z + flat * Math.cos(azimuth),
   };
 }
+definePart({ kind: "geometry" }, orbit);
 
 /** A camera for `project3d`: where it is and how it turns, as a `Pose3d` whose scale is ignored, and its vertical
  * field of view in degrees. */
@@ -103,3 +106,4 @@ export function project3d(
     visible: depth > EPSILON,
   };
 }
+definePart({ kind: "geometry" }, project3d);

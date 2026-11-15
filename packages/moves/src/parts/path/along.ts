@@ -1,4 +1,5 @@
 import { arcLength } from "./arc-length";
+import { definePart } from "../contract";
 import type { Pose2d } from "../../fields/pose";
 import type { Cubic2d } from "../geometry/shapes";
 
@@ -51,3 +52,21 @@ export function along(
       : Math.atan2(slope.dy, slope.dx);
   return { x: point.x, y: point.y, rotation: (heading * 180) / Math.PI };
 }
+const BENT: readonly Cubic2d[] = [
+  { id: "a", x0: 0, y0: 0, x1: 30, y1: 0, x2: 70, y2: 50, x3: 100, y3: 50 },
+  { id: "b", x0: 100, y0: 50, x1: 130, y1: 50, x2: 140, y2: -20, x3: 160, y3: -20 },
+];
+definePart(
+  {
+    kind: "path",
+    samples: [false, true].map((turn) => ({
+      run: (progress: number) => {
+        const { x = Number.NaN, y = Number.NaN } = along(BENT, progress, { turn });
+        return { x, y };
+      },
+      from: { x: 0, y: 0 },
+      to: { x: 160, y: -20 },
+    })),
+  },
+  along,
+);

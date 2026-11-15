@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import { seeded } from "../utility/random";
 
 /** A smooth wandering value from -1 to 1 over time in ms, easing to a fresh seeded target every `scale` ms; the
@@ -19,3 +20,4 @@ export function noise1d(seed: number, scale = 400): (ms: number) => number {
     return from + (at(cell + 1) - from) * blend;
   };
 }
+definePart({ kind: "signal" }, noise1d);

@@ -1,5 +1,6 @@
 import type { Ease } from "../ease/ease";
 import { unreachable } from "../../unreachable";
+import { definePart } from "../contract";
 
 /** A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control. */
 export type Clock =
@@ -20,6 +21,7 @@ export const UNTIMED: Clock = Object.freeze({ kind: "untimed" });
 export function liveAt(elapsed: number): Time {
   return { progress: 0, clock: { kind: "live", elapsed } };
 }
+definePart({ kind: "time" }, liveAt);
 
 /** The ms a clock has run, or `undefined` for a clock that has none. */
 export function elapsedOf(clock: Clock): number | undefined {
@@ -33,11 +35,13 @@ export function elapsedOf(clock: Clock): number | undefined {
       return unreachable(clock);
   }
 }
+definePart({ kind: "time" }, elapsedOf);
 
 /** A `Time` at `progress` with no clock, for code that drives a move by hand. */
 export function atProgress(progress: number): Time {
   return { progress, clock: UNTIMED };
 }
+definePart({ kind: "time" }, atProgress);
 
 /** `time` moved to `progress`: a timed clock's elapsed follows it, so a move that reads the clock is moved too. */
 export function withProgress(time: Time, progress: number): Time {
@@ -58,6 +62,7 @@ export function windowed(progress: number, from: number, to: number): number {
   if (to <= from) return progress < from ? 0 : 1;
   return Math.max(0, Math.min(1, (progress - from) / (to - from)));
 }
+definePart({ kind: "time" }, windowed);
 
 /** `time` inside the shares `from` to `to`: progress mapped, a timed clock cut to it. Prefer `span`;
  * `windowed` does the same to a bare number. */
@@ -77,6 +82,7 @@ export function window(time: Time, from: number, to: number): Time {
       return unreachable(clock);
   }
 }
+definePart({ kind: "time" }, window);
 
 /** A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on. */
 export interface Span {
@@ -115,3 +121,4 @@ export function span(fromMs: number, toMs: number): Span {
     at: (share: number) => fromMs + (toMs - fromMs) * share,
   });
 }
+definePart({ kind: "time" }, span);

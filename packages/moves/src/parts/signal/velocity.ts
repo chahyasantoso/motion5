@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import type { Events } from "../utility/event-list";
 import type { Pose2d } from "../../fields/pose";
 import { speedOf } from "./speed-of";
@@ -14,3 +15,4 @@ export function velocity(
   const [vx = 0, vy = 0] = speedOf(signal, ["x", "y"], time, events, stepMs);
   return { vx, vy };
 }
+definePart({ kind: "signal" }, velocity);

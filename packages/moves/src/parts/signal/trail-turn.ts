@@ -1,3 +1,4 @@
+import { definePart } from "../contract";
 import {
   eulerFromMatrix3d,
   matrixFromQuaternion,
@@ -100,3 +101,4 @@ export function trailTurn(
     return eulerFromMatrix3d(matrixFromQuaternion(turn));
   };
 }
+definePart({ kind: "signal" }, trailTurn);
