@@ -1,4 +1,4 @@
-import type { Events } from "../events/events";
+import type { Events } from "../utility/event-list";
 import type { Pose3d } from "../../fields/pose3d";
 import { speedOf } from "./speed-of";
 import type { Time } from "../time/time";

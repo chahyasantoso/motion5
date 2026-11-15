@@ -5,7 +5,7 @@ import {
   type Quaternion,
   type Vec3,
 } from "@gerak/rig";
-import type { Events } from "../events/events";
+import type { Events } from "../utility/event-list";
 import type { Pose3d } from "../../fields/pose3d";
 import { elapsedOf, type Time } from "../time/time";
 import { timeAt } from "../time/time-at";

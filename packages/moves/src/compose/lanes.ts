@@ -1,5 +1,5 @@
-import type { Ease } from "../parts/laws/ease";
-import { seeded } from "../parts/randomness/random";
+import type { Ease } from "../parts/ease/ease";
+import { seeded } from "../parts/utility/random";
 import { UNTIMED, type Time } from "../parts/time/time";
 import { unreachable } from "../unreachable";
 

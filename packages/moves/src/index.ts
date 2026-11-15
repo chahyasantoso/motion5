@@ -10,35 +10,32 @@ export {
   type Span,
   type Time,
 } from "./parts/time/time";
-export { backEase, ease, springEase, type Ease, type EaseDirection } from "./parts/laws/ease";
-export { spring, type SpringOptions, type SpringState } from "./parts/laws/spring";
-export { wave } from "./parts/laws/wave";
-export { arch, attack, decay, taper } from "./parts/laws/envelopes";
-export { ballistic, type BallisticOptions } from "./parts/laws/ballistic";
-export { trail, type TrailOptions } from "./parts/follow-through/trail";
-export { trailTurn } from "./parts/follow-through/trail-turn";
+export { backEase, ease, springEase, type Ease, type EaseDirection } from "./parts/ease/ease";
+export { spring, type SpringOptions, type SpringState } from "./parts/dynamics/spring";
+export { wave } from "./parts/oscillation/wave";
+export { arch, attack, decay, taper } from "./parts/envelope/envelopes";
+export { ballistic, type BallisticOptions } from "./parts/path/ballistic";
+export { trail, type TrailOptions } from "./parts/signal/trail";
+export { trailTurn } from "./parts/signal/trail-turn";
 export { timeAt } from "./parts/time/time-at";
-export { mix, mixAngle, mixPoint, mixPose } from "./parts/blends/mix";
-export { keyframes, type Key } from "./parts/laws/keyframes";
+export { mix, mixAngle, mixPoint, mixPose } from "./parts/blend/mix";
+export { keyframes, type Key } from "./parts/signal/keyframes";
 export { sequence, type Phase } from "./compose/sequence";
-export { seeded } from "./parts/randomness/random";
-export { noise1d } from "./parts/randomness/noise";
+export { seeded } from "./parts/utility/random";
+export { noise1d } from "./parts/signal/noise";
+export { NO_EVENTS } from "./parts/utility/event-list";
+export { follow } from "./parts/signal/events";
+export { isMotionEvent, mergeEvents } from "./parts/utility/event-list";
+export { react, tally } from "./parts/signal/events";
+export { type EventPoint, type Events } from "./parts/utility/event-list";
+export { type FollowOptions } from "./parts/signal/events";
+export { type MotionEvent } from "./parts/utility/event-list";
 export {
-  NO_EVENTS,
-  follow,
-  isMotionEvent,
-  mergeEvents,
-  react,
-  tally,
-  type EventPoint,
-  type Events,
-  type FollowOptions,
-  type MotionEvent,
   type ReactionKind,
   type ReactOptions,
   type Tally,
   type TallyOptions,
-} from "./parts/events/events";
+} from "./parts/signal/events";
 export {
   lane,
   laneTime,
@@ -54,7 +51,7 @@ export {
   type LoopCycleStep,
 } from "./compose/loop";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";
-export { squashed } from "./parts/blends/squashed";
+export { squashed } from "./parts/coupling/squashed";
 export {
   valueField,
   type Anchor,
@@ -63,21 +60,22 @@ export {
   type ValueField,
 } from "./fields/pose";
 export { combine3d, lift2d } from "./fields/pose3d";
-export { mixPoint3d, mixPose3d } from "./parts/blends/mix3d";
-export { squashed3d } from "./parts/blends/squashed";
+export { mixPoint3d, mixPose3d } from "./parts/blend/mix3d";
+export { squashed3d } from "./parts/coupling/squashed";
 export { type Pose3d } from "./fields/pose3d";
-export { aim, orbit, project3d, type Lens3d } from "./parts/camera/stage3d";
-export type { Anchor2d, Cubic2d, Point2d } from "./parts/paths/shapes";
-export { toCubics } from "./parts/paths/path";
-export { along } from "./parts/paths/along";
-export { radial } from "./parts/paths/radial";
-export { velocity } from "./parts/follow-through/velocity";
-export { smear } from "./parts/follow-through/smear";
-export { squashFromSpeed, type SquashFromSpeedOptions } from "./parts/follow-through/squash-speed";
-export { toCubics3d, along3d } from "./parts/paths/along3d";
-export { velocity3d } from "./parts/follow-through/velocity3d";
-export { smear3d } from "./parts/follow-through/smear3d";
-export type { Anchor3d, Cubic3d } from "./parts/paths/shapes";
+export { aim, orbit, project3d, type Lens3d } from "./parts/geometry/stage3d";
+export type { Anchor2d, Cubic2d, Point2d } from "./parts/geometry/shapes";
+export { toCubics } from "./parts/geometry/path";
+export { along } from "./parts/path/along";
+export { radial } from "./parts/geometry/radial";
+export { velocity } from "./parts/signal/velocity";
+export { smear } from "./parts/coupling/smear";
+export { squashFromSpeed, type SquashFromSpeedOptions } from "./parts/coupling/squash-speed";
+export { toCubics3d } from "./parts/geometry/cubics3d";
+export { along3d } from "./parts/path/along3d";
+export { velocity3d } from "./parts/signal/velocity3d";
+export { smear3d } from "./parts/coupling/smear3d";
+export type { Anchor3d, Cubic3d } from "./parts/geometry/shapes";
 export { combine } from "./fields/combine";
 export {
   MOVE_ROLES,

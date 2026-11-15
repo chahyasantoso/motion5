@@ -1,6 +1,6 @@
 import { arcLength } from "./arc-length";
 import type { Pose2d } from "../../fields/pose";
-import type { Cubic2d } from "./shapes";
+import type { Cubic2d } from "../geometry/shapes";
 
 function pointOf(c: Cubic2d, t: number): { readonly x: number; readonly y: number } {
   const u = 1 - t;

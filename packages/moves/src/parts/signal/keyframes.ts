@@ -1,4 +1,4 @@
-import type { Ease } from "./ease";
+import type { Ease } from "../ease/ease";
 import { span, type Span, type Time } from "../time/time";
 
 /** One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear. */

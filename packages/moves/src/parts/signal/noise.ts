@@ -1,4 +1,4 @@
-import { seeded } from "./random";
+import { seeded } from "../utility/random";
 
 /** A smooth wandering value from -1 to 1 over time in ms, easing to a fresh seeded target every `scale` ms; the
  * same seed wanders the same. */

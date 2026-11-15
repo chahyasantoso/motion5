@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { shaken } from "../parts/follow-through/shaken";
+import { shaken } from "../parts/oscillation/shaken";
 
 /** Wobbles `count` times, a shake that turns instead of moving. */
 export const wobble = defineMove({

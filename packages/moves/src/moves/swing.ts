@@ -1,7 +1,7 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { taper } from "../parts/laws/envelopes";
-import { wave } from "../parts/laws/wave";
+import { taper } from "../parts/envelope/envelopes";
+import { wave } from "../parts/oscillation/wave";
 
 /** Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge. */
 export const swing = defineMove({

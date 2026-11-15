@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/laws/envelopes";
+import { arch } from "../parts/envelope/envelopes";
 
 /** Dips `distance` px down and comes back up, once. */
 export const nod = defineMove({

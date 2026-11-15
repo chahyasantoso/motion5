@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { squashed } from "../parts/blends/squashed";
+import { squashed } from "../parts/coupling/squashed";
 
 const FALL_SHARE = 0.75;
 

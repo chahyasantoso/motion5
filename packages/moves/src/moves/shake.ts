@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { shaken } from "../parts/follow-through/shaken";
+import { shaken } from "../parts/oscillation/shaken";
 
 /** Shakes sideways `count` times, starting hard and dying away. */
 export const shake = defineMove({

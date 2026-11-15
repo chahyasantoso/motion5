@@ -1,4 +1,4 @@
-import type { Ease } from "../laws/ease";
+import type { Ease } from "../ease/ease";
 import { unreachable } from "../../unreachable";
 
 /** A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control. */

@@ -1,4 +1,4 @@
-import type { Events } from "../events/events";
+import type { Events } from "../utility/event-list";
 import type { Time } from "../time/time";
 import { timeAt } from "../time/time-at";
 import { unreachable } from "../../unreachable";

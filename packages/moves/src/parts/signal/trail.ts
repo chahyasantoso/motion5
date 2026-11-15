@@ -1,5 +1,5 @@
-import type { Events } from "../events/events";
-import { spring, springMemory } from "../laws/spring";
+import type { Events } from "../utility/event-list";
+import { spring, springMemory } from "../dynamics/spring";
 import { elapsedOf, type Time } from "../time/time";
 import { timeAt } from "../time/time-at";
 

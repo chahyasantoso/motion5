@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/laws/envelopes";
+import { arch } from "../parts/envelope/envelopes";
 
 /** Grows to `1 + amount` times its size and returns. */
 export const pulse = defineMove({
