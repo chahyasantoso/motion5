@@ -549,14 +549,29 @@ export const QUALITIES: Readonly<Record<string, DescriptorRanges>> = Object.free
   loose: { rings: [2, 30] },
 });
 
+/** The descriptors a quality names that lie outside its range, each with its value and range; none means
+ * the shape has the quality. */
+export function outsideRanges(
+  descriptors: Descriptors,
+  ranges: DescriptorRanges,
+): readonly {
+  readonly key: (typeof DESCRIPTOR_KEYS)[number];
+  readonly value: number;
+  readonly range: readonly [number, number];
+}[] {
+  return DESCRIPTOR_KEYS.flatMap((key) => {
+    const range = ranges[key];
+    const value = descriptors[key];
+    return range === undefined || (value >= range[0] && value <= range[1])
+      ? []
+      : [{ key, value, range }];
+  });
+}
+
 /** Whether every descriptor a quality names lies inside its range. */
 function within(record: MoveRecord, ranges: DescriptorRanges): boolean {
   const { descriptors } = record;
-  if (descriptors === undefined) return false;
-  return DESCRIPTOR_KEYS.every((key) => {
-    const range = ranges[key];
-    return range === undefined || (descriptors[key] >= range[0] && descriptors[key] <= range[1]);
-  });
+  return descriptors !== undefined && outsideRanges(descriptors, ranges).length === 0;
 }
 
 const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
