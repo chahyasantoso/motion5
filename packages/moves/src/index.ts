@@ -113,6 +113,7 @@ export { anticipate } from "./moves/anticipate";
 export { overshoot } from "./moves/overshoot";
 export { repeated } from "./compose/repeated";
 export { smudge } from "./moves/smudge";
+export { defineStyle, isStyleCard, type StyleCard } from "./style/card";
 export {
   DESCRIPTOR_KEYS,
   QUALITIES,

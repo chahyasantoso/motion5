@@ -35,6 +35,8 @@ export interface StageModule<
   readonly cues?: Events;
   /** What the module's `design` export held, unread: the tools above the stage check its shape. */
   readonly design?: unknown;
+  /** The name of the style card the piece follows, as its brief spells it. */
+  readonly style?: string;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -246,6 +248,9 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
       return reason("`rest` must hold { x, y, width, height } boxes by name.");
     const layouts = readLayouts(value);
     if (typeof layouts === "string") return reason(layouts);
+    const style = value["style"];
+    if (style !== undefined && typeof style !== "string")
+      return reason("`style` must be the name of a style card, a string.");
     const cues = value["cues"];
     if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
       return reason("`cues` must be a list of { name, at, target } events.");
@@ -255,6 +260,7 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
       skins,
       ...layouts,
       ...(value["design"] === undefined ? {} : { design: value["design"] }),
+      ...(typeof style === "string" ? { style } : {}),
       ...(Array.isArray(cues) && cues.every(isMotionEvent) ? { cues: mergeEvents(cues) } : {}),
       scene: (time, events, at, measured) => {
         const values: unknown = Reflect.apply(scene, undefined, [time, events, at, measured]);
