@@ -19,6 +19,7 @@ not by reading package source. Read a part below only when the brief needs it:
 | A person watching edits land as you save | [live editing](./live.md) |
 | A page outside this repository, or a real site's own elements | [outside the stage](./agent-outside.md) |
 | A piece in another brief's style, or turning your brief into a style | [styles](./agent-style.md) |
+| A reel: several shots, a hook, a story and a call to action | [reels](./agent-reel.md) |
 
 ## The loop
 
