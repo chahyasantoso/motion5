@@ -214,7 +214,7 @@ const slide = defineMove({
 - **`LoopCycleStep`** `type LoopCycleStep`: The progress a single `advance` produces.
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
-- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right, from where the page puts it."; readonly unit: "px"; readonly…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
+- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right of where the page puts it; px in 2D, world units in 3D."; rea…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
 - **`squashed`** `(squash: number, weight: number, anchor?: Anchor): Pose2d`: A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"` and `"right"` squash sideways.
 - **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
@@ -328,8 +328,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then skews, then scales; empty when nothing moves.
 - **`pathData`** `(cubics: readonly Cubic2d[]): string`: SVG path data for joined cubic segments.
 - **`TRANSFORM_KEYS`** `const TRANSFORM_KEYS: readonly string[]`: The value keys a CSS transform carries; every other key writes as its own property.
-- **`UNWRITTEN`** `const UNWRITTEN: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The pose fields `applyValue` leaves alone, each with the reason.
-- **`WRITTEN`** `const WRITTEN: readonly (CarriedBy<"both" | "2d"> | "anchor" | "custom")[]`: The pose fields `applyValue` writes to an element's style; custom numbers are written apart, as `--<name>` properties.
+- **`UNWRITTEN`** `const UNWRITTEN: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The pose fields `@gerak/dom` leaves alone, each with the reason; it writes every one today.
+- **`WRITTEN`** `const WRITTEN: readonly (CarriedBy<"both" | "2d"> | "anchor" | "custom")[]`: The pose fields `@gerak/dom` writes: `applyValue` to an element's style, and the stage a path member's `shape` as its outline; custom numbers are written apart, as `--<name>` properties.
 - **`RenderStyle`** `type RenderStyle`: The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all.
 - **`RenderTarget`** `type RenderTarget`: An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has.
 - **`clockDriver`** `(options: ClockOptions): ClockDriver`: A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks until `.play()`; `reducedMotion: "play"` opts out.
