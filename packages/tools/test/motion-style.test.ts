@@ -110,7 +110,9 @@ describe("motion:style", () => {
       'import { x } from "../../../other/src/parts/envelope/x";\nexport const stray = x;\n',
     );
     const found = await checkStyle(root, "reel");
-    expect(found.join("\n")).toContain("../../../other/src/parts/envelope/x");
+    expect(found).toContain(
+      `${join("reel", "src", "moves", "stray.ts")} imports ../../../other/src/parts/envelope/x`,
+    );
   });
 
   it("measures one shape per beat for a field that moves in both", async () => {
