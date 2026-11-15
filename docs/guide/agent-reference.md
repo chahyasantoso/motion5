@@ -156,6 +156,9 @@ const slide = defineMove({
 - **`Clock`** `type Clock`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Span`** `type Span`: A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on.
 - **`Time`** `type Time`: Where a move is: `progress` from 0 to 1, and the clock behind it.
+- **`definePart`** `<F extends object>(contract: PartContract, fn: F): F`: Declares what a part promises and returns the part itself, unchanged; the part gate refuses a part with no declaration, or one whose samples break the rule of its kind.
+- **`partContract`** `(fn: object): PartContract`: The contract `definePart` recorded for a part, or nothing when it was never declared.
+- **`PartContract`** `type PartContract`: What a part promises, by the folder it lives in; each sampled kind carries closures the part gate runs.
 - **`backEase`** `(options: { readonly amount: number; readonly direction: EaseDirection; }): Ease`: A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic.
 - **`ease`** `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ease; sineInOut: Ease; quadIn: Ease; quadOut: Ease; quadInOut:…`: The common eases under their usual names: `In` starts slow, `Out` ends slow, `InOut` does both.
 - **`springEase`** `(options: SpringOptions): Ease`: A spring from 0 settling on 1, fitted to the span; lower `damping` rings more. Feed it to values, not to a move's progress.
@@ -210,14 +213,14 @@ const slide = defineMove({
 - **`LoopCycleOptions`** `type LoopCycleOptions`: Options for `createLoopCycle`; phase, direction and completion are owned here, not by the driver.
 - **`LoopCycleStep`** `type LoopCycleStep`: The progress a single `advance` produces.
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
-- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly ("rotation" | "x" | "y" | "skewX" | "skewY" | "scale" | "scaleX" | "scaleY" | "opacity" | "blur" | "shadowX"…`: Every field a renderer must write for a pose: its numbers and its anchor.
-- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: ValueField; y: ValueField; z: ValueField; rotation: ValueField; rotationX: ValueField; rotationY: ValueFi…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
+- **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
+- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right, from where the page puts it."; readonly unit: "px"; readonly…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
 - **`squashed`** `(squash: number, weight: number, anchor?: Anchor): Pose2d`: A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"` and `"right"` squash sideways.
 - **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
 - **`Combining`** `type Combining`: How two answers for one field on one target become one.
 - **`Pose2d`** `type Pose2d`: A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`, `anchor` and `custom` numbers. Stage px, y down, degrees clockwise.
-- **`ValueField`** `type ValueField`: What a field of a value is: where it rests, how it combines, and what the gate asks of it.
+- **`ValueField`** `type ValueField`: What a field of a value is: what it changes, its unit, which poses carry it, where it rests, how it combines, and what the gate asks of it.
 - **`combine3d`** `(poses: readonly Pose3d[]): Pose3d`: Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order.
 - **`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`: A 2D pose on the 3D xy plane: px scaled by `unitsPerPx`, y and the turn flipped, the anchor dropped; every 2D move reaches 3D through it.
 - **`mixPoint3d`** `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { readonly x: number; readonly y: number; readonly z: number; }…`: A 3D point `share` of the way from `from` to `to`.
@@ -325,6 +328,8 @@ export const clock = () => eventDriver({ introMs: 900 });
 - **`cssTransform`** `(values: Readonly<Record<string, unknown>>): string`: A CSS transform from pose-like values: translate first, then turns, then skews, then scales; empty when nothing moves.
 - **`pathData`** `(cubics: readonly Cubic2d[]): string`: SVG path data for joined cubic segments.
 - **`TRANSFORM_KEYS`** `const TRANSFORM_KEYS: readonly string[]`: The value keys a CSS transform carries; every other key writes as its own property.
+- **`UNWRITTEN`** `const UNWRITTEN: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The pose fields `applyValue` leaves alone, each with the reason.
+- **`WRITTEN`** `const WRITTEN: readonly (CarriedBy<"both" | "2d"> | "anchor" | "custom")[]`: The pose fields `applyValue` writes to an element's style; custom numbers are written apart, as `--<name>` properties.
 - **`RenderStyle`** `type RenderStyle`: The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all.
 - **`RenderTarget`** `type RenderTarget`: An element a renderer writes: its style, and the attribute and measuring hooks an SVG element has.
 - **`clockDriver`** `(options: ClockOptions): ClockDriver`: A timed clock on the page's frames. Under reduced motion it shows the last frame and never ticks until `.play()`; `reducedMotion: "play"` opts out.
@@ -601,9 +606,12 @@ return <mesh ref={ball} />;
 <!-- generated:reference:start -->
 - **`morphTargets`** `(root: Object3D<Object3DEventMap>): CustomWriter`: Builds a `CustomWriter` that writes `[0, 1]`-clamped values into matching `morphTargetInfluences` under `root`.
 - **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke, clip and layer alone.
-- **`THREE_POSE_FIELDS`** `const THREE_POSE_FIELDS: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The pose fields a Three.js object has a place for; it leaves blur, the stroke, the clip and the layer alone.
+- **`UNWRITTEN_2D`** `const UNWRITTEN_2D: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The 2D pose fields `applyPose2d` leaves alone, each with the reason.
+- **`WRITTEN_2D`** `const WRITTEN_2D: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The 2D pose fields `applyPose2d` writes on an object; custom numbers go to the piece's own writer.
 - **`CustomWriter`** `type CustomWriter`: Where a piece puts a custom number on an object; the renderer knows no meaning for it.
 - **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
+- **`UNWRITTEN_3D`** `const UNWRITTEN_3D: Readonly<Partial<Record<"x" | "scale" | "y" | "z" | "scaleX" | "scaleY" | "scaleZ" | "opacity" | Turn3d | "anchor" | "c…`: The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one.
+- **`WRITTEN_3D`** `const WRITTEN_3D: readonly ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY", "scaleZ", "opacity"]`: The 3D pose fields `applyPose3d` writes on an object; custom numbers go to the piece's own writer.
 <!-- generated:reference:end -->
 
 ## @gerak/three/react
