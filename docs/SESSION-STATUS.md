@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-15, Asia/Jakarta.
-- **Read against:** `feat/style-kits`, the style plan built on `main` at `02389bb1`.
+- **Read against:** `main` at `a249afe8`, with the style plan merged.
 
 ## Now
 
@@ -23,8 +23,8 @@ byte ceiling.
 
 ## Next in line
 
-- **Publishing (a plan to write):** `@gerak/tools` publishable with a `bin` and its pages, then the runtime
-  packages on npm, so a person outside this repository can make and check pieces.
+- **Installable tools (`plan/installable-plan.md`, proposed):** one `gerak` command, the pages and the guide in
+  `@gerak/tools`, and `gerak init`, so a person's own project makes and checks pieces; then the live kit and overlay.
 
 ## Open, and not scheduled
 
