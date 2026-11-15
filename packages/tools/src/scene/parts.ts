@@ -5,15 +5,18 @@ import ts from "typescript";
 
 /** The groups the parts list sorts its building blocks into, in print order. */
 export const PART_GROUPS = [
-  "fields",
   "time",
-  "laws",
-  "blends",
-  "paths",
-  "follow-through",
-  "events",
-  "randomness",
-  "camera",
+  "ease",
+  "envelope",
+  "oscillation",
+  "dynamics",
+  "path",
+  "geometry",
+  "blend",
+  "coupling",
+  "signal",
+  "utility",
+  "fields",
   "compose",
 ] as const;
 

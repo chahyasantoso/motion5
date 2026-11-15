@@ -116,7 +116,7 @@ describe("motion:promote", () => {
     expect(moved).not.toContain("@gerak/moves");
     expect(moved).toContain('import { defineMove } from "./declare";');
     expect(moved).toContain('import type { Pose2d } from "../fields/pose";');
-    expect(moved).toContain('import { mix } from "../parts/blends/mix";');
+    expect(moved).toContain('import { mix } from "../parts/blend/mix";');
     expect(readFileSync(join(movesPackage, "src", "index.ts"), "utf8")).toContain(
       'export { slideIn } from "./moves/x";',
     );

@@ -52,8 +52,8 @@ describe("the layers of @gerak/moves", () => {
 
   it("refuses a field that imports a part, as a 3D blend left in fields/ would", () => {
     const field = join(SRC, "fields", "mix3d.ts");
-    expect(climbs([field], () => 'import { mix } from "../parts/blends/mix";')).toEqual([
-      `${join("fields", "mix3d.ts")} imports ${join("parts", "blends", "mix.ts")}`,
+    expect(climbs([field], () => 'import { mix } from "../parts/blend/mix";')).toEqual([
+      `${join("fields", "mix3d.ts")} imports ${join("parts", "blend", "mix.ts")}`,
     ]);
   });
 });

@@ -24,14 +24,17 @@ Public: `.`
 - `src/compose/`: sequence, lanes, reversed, repeated, loops
 - `src/fields/`: what can change: the value table, poses, combine
 - `src/moves/`: defineMove and the built-in moves and modifiers
-- `src/parts/blends/`: mixes and squashes
-- `src/parts/camera/`: orbit, aim, project3d
-- `src/parts/events/`: follow, react, tally
-- `src/parts/follow-through/`: trails, speed, smears, shakes
-- `src/parts/laws/`: eases, springs, keyframes
-- `src/parts/paths/`: cubic paths and travel along them
-- `src/parts/randomness/`: seeded numbers
+- `src/parts/blend/`: mixes between two values
+- `src/parts/coupling/`: poses from an amount or a speed: squashes, smears
+- `src/parts/dynamics/`: springs
+- `src/parts/ease/`: eases: progress to progress, 0 to 1
+- `src/parts/envelope/`: envelopes: amounts that rise and die away
+- `src/parts/geometry/`: points, curves and lenses
+- `src/parts/oscillation/`: swings: waves and shakes
+- `src/parts/path/`: travel along throws and curves
+- `src/parts/signal/`: values from time and events: follow, trail, noise
 - `src/parts/time/`: time, spans, windows
+- `src/parts/utility/`: seeded numbers, the event list
 
 ## packages/physics
 

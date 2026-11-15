@@ -5,31 +5,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PART_GROUPS, formatParts, moveParts } from "@gerak/tools/scene";
 
 const CURRENT = {
-  fields: ["combine", "combine3d", "lift2d"],
   time: ["span", "timeAt", "elapsedOf"],
-  laws: ["ease", "backEase", "springEase", "keyframes", "spring"],
-  blends: [
-    "mix",
-    "mixPoint",
-    "mixAngle",
-    "mixPose",
-    "squashed",
-    "mixPose3d",
-    "mixPoint3d",
-    "squashed3d",
-  ],
-  paths: ["toCubics", "along", "toCubics3d", "along3d"],
-  "follow-through": [
-    "trail",
-    "trailTurn",
-    "velocity",
-    "smear",
-    "squashFromSpeed",
-    "velocity3d",
-    "smear3d",
-  ],
-  events: ["react", "follow", "mergeEvents"],
-  randomness: ["seeded"],
+  ease: ["ease", "backEase", "springEase"],
+  dynamics: ["spring"],
+  path: ["along", "along3d"],
+  geometry: ["toCubics", "toCubics3d"],
+  blend: ["mix", "mixPoint", "mixAngle", "mixPose", "mixPose3d", "mixPoint3d"],
+  coupling: ["squashed", "squashed3d", "squashFromSpeed", "smear", "smear3d"],
+  signal: ["trail", "trailTurn", "velocity", "velocity3d", "react", "follow", "keyframes"],
+  utility: ["mergeEvents", "seeded"],
+  fields: ["combine", "combine3d", "lift2d"],
   compose: ["sequence", "reversed", "repeated", "lanes", "lane"],
 } as const;
 
@@ -45,8 +30,8 @@ function fixture(laws: string): string {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), text);
   };
-  write("src/index.ts", 'export { half } from "./parts/laws/x";\nexport const LIMIT = 3;\n');
-  write("src/parts/laws/x.ts", laws);
+  write("src/index.ts", 'export { half } from "./parts/envelope/x";\nexport const LIMIT = 3;\n');
+  write("src/parts/envelope/x.ts", laws);
   return join(dir, "src/index.ts");
 }
 
@@ -87,7 +72,7 @@ describe("moveParts", () => {
       "/** Half of a number. Used for a midpoint. */\nexport function half(value: number, round?: boolean): number {\n  return round === true ? Math.round(value / 2) : value / 2;\n}\n",
     );
     expect(moveParts(entry)).toEqual([
-      { name: "half", group: "laws", call: "half(value, round?)", use: "Half of a number." },
+      { name: "half", group: "envelope", call: "half(value, round?)", use: "Half of a number." },
     ]);
   });
 
