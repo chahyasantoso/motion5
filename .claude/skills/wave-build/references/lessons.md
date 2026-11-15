@@ -26,3 +26,7 @@ Add a line here only when a wave falls outside these ranges, or a new kind of wo
 - 2026-11-15, anatomy A1b (pieces into brief folders, examples merged) on Sonnet at medium effort: 323k, 216 calls,
   34 min, for 178 files, 30 reviews before and after and several full checks; one fix on combining. The lead's
   scripted folder move of `@gerak/moves` (A1) cost a fraction of that.
+- 2026-11-15, anatomy V3 (the vocabulary card, per-field shapes, fit at options, tested and renderer filters and the
+  design query, one builder) on Sonnet at medium effort: 306k, 248 calls, 25 min, for four features in one file;
+  the lead then fixed its scoring, which the plan had specified wrongly. A slice of four features in one file is
+  better split into two waves.
