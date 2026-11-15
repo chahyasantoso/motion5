@@ -41,6 +41,10 @@ export interface MoveRecord {
   /** The field that moves most against its review limit; the descriptors are its. */
   readonly primary?: string;
   readonly descriptors?: Descriptors;
+  /** The shape of every moved field at the example. */
+  readonly shapes: Readonly<Record<string, Descriptors>>;
+  /** The shapes of every field at each option set the gate samples, the example's first. */
+  readonly shapesAt: MoveDescriptors["shapesAt"];
 }
 
 /** The usage line of `motion:moves`. */
@@ -253,7 +257,7 @@ function freshRecord(
   source: string,
   sampler: (move: CheckedMove) => MoveDescriptors,
 ): MoveRecord {
-  const { fields, primary, descriptors } = sampler(move);
+  const { fields, primary, descriptors, shapes, shapesAt } = sampler(move);
   return {
     id: move.id,
     role: move.role,
@@ -269,6 +273,8 @@ function freshRecord(
     fields,
     ...(primary === undefined ? {} : { primary }),
     ...(descriptors === undefined ? {} : { descriptors }),
+    shapes,
+    shapesAt,
   };
 }
 
@@ -325,13 +331,16 @@ function isRecord(value: unknown): value is MoveRecord {
     optional("file") &&
     optional("primary") &&
     (descriptors === undefined || isDescriptors(descriptors)) &&
-    ["moments", "parts", "fields"].every((key) => Array.isArray(Reflect.get(value, key))) &&
+    ["moments", "parts", "fields", "shapesAt"].every((key) =>
+      Array.isArray(Reflect.get(value, key)),
+    ) &&
+    typeof Reflect.get(value, "shapes") === "object" &&
     typeof Reflect.get(value, "options") === "object" &&
     typeof Reflect.get(value, "example") === "object"
   );
 }
 
-const INDEX_VERSION = 1;
+const INDEX_VERSION = 2;
 
 /** Where a root keeps its index of records. */
 export function indexPath(root: string): string {
@@ -568,40 +577,57 @@ export function outsideRanges(
   });
 }
 
-/** Whether every descriptor a quality names lies inside its range. */
-function within(record: MoveRecord, ranges: DescriptorRanges): boolean {
-  const { descriptors } = record;
-  return descriptors !== undefined && outsideRanges(descriptors, ranges).length === 0;
-}
-
 const DESCRIPTOR_KEYS = ["peak", "overshoot", "rings", "windup", "settle"] as const;
 
 /** A descriptor as distances weigh it: rings count in quarters. */
 const weighed = (key: (typeof DESCRIPTOR_KEYS)[number], value: number): number =>
   key === "rings" ? value / 4 : value;
 
-/** How far two moves are apart: squared differences of their descriptors, and 1 for differing primary fields. */
-export function distance(left: MoveRecord, right: MoveRecord): number | undefined {
-  if (left.descriptors === undefined || right.descriptors === undefined) return undefined;
-  const sum = DESCRIPTOR_KEYS.reduce(
-    (total, key) =>
-      total +
-      (weighed(key, left.descriptors?.[key] ?? 0) - weighed(key, right.descriptors?.[key] ?? 0)) **
-        2,
+function shapeDistance(left: Descriptors, right: Descriptors): number {
+  return DESCRIPTOR_KEYS.reduce(
+    (total, key) => total + (weighed(key, left[key]) - weighed(key, right[key])) ** 2,
     0,
   );
-  return sum + (left.primary === right.primary ? 0 : 1);
 }
 
-function distanceToMiddle(record: MoveRecord, ranges: DescriptorRanges): number | undefined {
-  const { descriptors } = record;
-  if (descriptors === undefined) return undefined;
+/** How far two moves are apart: over every field either moves, the squared differences of the field's
+ * shape where both move it, and 1 where only one does; the mean. Undefined when neither moves a field. */
+export function distance(left: MoveRecord, right: MoveRecord): number | undefined {
+  const lefts = new Map(Object.entries(left.shapes));
+  const rights = new Map(Object.entries(right.shapes));
+  const names = new Set([...lefts.keys(), ...rights.keys()]);
+  if (names.size === 0) return undefined;
+  let total = 0;
+  for (const name of names) {
+    const a = lefts.get(name);
+    const b = rights.get(name);
+    total += a !== undefined && b !== undefined ? shapeDistance(a, b) : 1;
+  }
+  return total / names.size;
+}
+
+/** How far a shape is from the middle of a quality's ranges, rings weighed by a quarter. */
+function distanceToMiddle(shape: Descriptors, ranges: DescriptorRanges): number {
   return DESCRIPTOR_KEYS.reduce((total, key) => {
     const range = ranges[key];
     return range === undefined
       ? total
-      : total + (weighed(key, descriptors[key]) - weighed(key, (range[0] + range[1]) / 2)) ** 2;
+      : total + (weighed(key, shape[key]) - weighed(key, (range[0] + range[1]) / 2)) ** 2;
   }, 0);
+}
+
+/** The moved field whose shape at the example has the quality and is nearest its middle, with that distance. */
+function fieldWith(
+  record: MoveRecord,
+  ranges: DescriptorRanges,
+): { readonly field: string; readonly fit: number } | undefined {
+  let best: { readonly field: string; readonly fit: number } | undefined;
+  for (const [field, shape] of Object.entries(record.shapes)) {
+    if (outsideRanges(shape, ranges).length > 0) continue;
+    const fit = distanceToMiddle(shape, ranges);
+    if (best === undefined || fit < best.fit) best = { field, fit };
+  }
+  return best;
 }
 
 /** What one search asks of the records; every field given must hold. */
@@ -625,6 +651,8 @@ export interface QueryRow {
   readonly label: string;
   /** How well it fits, least first; undefined when the search ranks by nothing. */
   readonly fit: number | undefined;
+  /** The moved field that has the quality `--like` asked for. */
+  readonly field?: string;
 }
 
 /** What a search returned, or why it could not be made. */
@@ -693,13 +721,14 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
     if (request.fields?.some((field) => !record.fields.includes(field)) === true) continue;
     const hits = request.find === undefined ? 0 : matchesWords(record, request.find);
     if (hits === undefined) continue;
-    if (ranges !== undefined && !within(record, ranges)) continue;
+    const matched = ranges === undefined ? undefined : fieldWith(record, ranges);
+    if (ranges !== undefined && matched === undefined) continue;
     let fit: number | undefined;
     if (ranked) {
       const parts = [
         near === undefined || near === record ? 0 : distance(record, near),
         far === undefined || far === record ? 0 : distance(record, far),
-        ranges === undefined ? 0 : distanceToMiddle(record, ranges),
+        matched?.fit ?? 0,
       ];
       if (record === near || record === far || parts.some((part) => part === undefined)) continue;
       fit = (parts[0] ?? 0) - (far === undefined ? 0 : (parts[1] ?? 0)) + (parts[2] ?? 0);
@@ -711,6 +740,7 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
         own: request.in !== undefined && record.file !== undefined && record.source === request.in,
         label: shared.has(record.id) ? `${record.source}/${record.id}` : record.id,
         fit,
+        ...(matched === undefined ? {} : { field: matched.field }),
       },
     });
   }
@@ -744,6 +774,7 @@ export function formatRow(row: QueryRow, root: string, from: string | undefined)
     row.own ? "own" : record.source,
     record.role,
     record.fields.length === 0 ? "none" : record.fields.join(","),
+    ...(row.field === undefined ? [] : [`on ${row.field}`]),
     firstSentence(record.description),
     importLine(record, root, from),
   ].join(" | ");

@@ -196,7 +196,7 @@ describe("the index", () => {
     const sampled: string[] = [];
     const sampler = (move: Parameters<typeof import("../src/scene/moves").descriptorsOf>[0]) => {
       sampled.push(move.id);
-      return { fields: ["x"], primary: "x", descriptors: undefined };
+      return { fields: ["x"], primary: "x", descriptors: undefined, shapes: {}, shapesAt: [] };
     };
     return { sampled, sampler };
   };

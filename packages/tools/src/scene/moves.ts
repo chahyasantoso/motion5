@@ -257,6 +257,13 @@ export interface MoveDescriptors {
   readonly primary: string | undefined;
   /** The descriptors of the primary field at the example. */
   readonly descriptors: Descriptors | undefined;
+  /** The shape of every moved field at the example, by field name. */
+  readonly shapes: Readonly<Record<string, Descriptors>>;
+  /** The same for each option set the gate samples, the example's first. */
+  readonly shapesAt: readonly {
+    readonly options: Readonly<Record<string, unknown>>;
+    readonly shapes: Readonly<Record<string, Descriptors>>;
+  }[];
 }
 
 const SETTLED_SHARE = 0.02;
@@ -371,11 +378,19 @@ function offsetsOf(move: CheckedMove, options: object): ReadonlyMap<string, read
   return found;
 }
 
-/** The fields a move moves and how its primary field moves, sampled as the gate samples it. */
-export function descriptorsOf(move: CheckedMove): MoveDescriptors {
-  const [example = new Map<string, readonly number[]>(), ...bounds] = optionSets(move).map((set) =>
-    offsetsOf(move, set),
+function shapesOf(
+  found: ReadonlyMap<string, readonly number[]>,
+): Readonly<Record<string, Descriptors>> {
+  return Object.fromEntries(
+    [...found].map(([path, offsets]) => [nameOf(path), describeOffsets(offsets)]),
   );
+}
+
+/** The fields a move moves, how each moves and which moves most, sampled as the gate samples it. */
+export function descriptorsOf(move: CheckedMove): MoveDescriptors {
+  const sets = optionSets(move);
+  const sampled = sets.map((set) => offsetsOf(move, set));
+  const [example = new Map<string, readonly number[]>(), ...bounds] = sampled;
   const names = [...example.keys(), ...bounds.flatMap((found) => [...found.keys()])].map(nameOf);
   let primary: { readonly path: string; readonly share: number } | undefined;
   for (const [path, offsets] of example) {
@@ -388,6 +403,11 @@ export function descriptorsOf(move: CheckedMove): MoveDescriptors {
     fields: [...new Set(names)],
     primary: primary === undefined ? undefined : nameOf(primary.path),
     descriptors: offsets === undefined ? undefined : describeOffsets(offsets),
+    shapes: shapesOf(example),
+    shapesAt: sets.map((options, index) => ({
+      options: Object.fromEntries(Object.entries(options)),
+      shapes: shapesOf(sampled[index] ?? new Map()),
+    })),
   };
 }
 

@@ -127,6 +127,8 @@ describe("descriptorsOf", () => {
       fields: [],
       primary: undefined,
       descriptors: undefined,
+      shapes: {},
+      shapesAt: [{ options: { amount: 1 }, shapes: {} }],
     });
   });
 });
