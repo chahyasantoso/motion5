@@ -10,7 +10,9 @@ import {
   runCatalog,
   type CatalogArgs,
 } from "@gerak/tools/scene";
-import { DEFAULT_ROOT } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
   const args = parseCatalogArgs(argv);
@@ -32,7 +34,7 @@ describe("motion:moves --anatomy", () => {
   });
 
   it("prints every field and every part in at most 90 lines", async () => {
-    const run = await runCatalog(ok(["--anatomy"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--anatomy"]), PIECES_ROOT);
     expect(run.code).toBe(0);
     expect(run.lines.length).toBeLessThanOrEqual(90);
     const text = run.lines.join("\n");
@@ -44,7 +46,7 @@ describe("motion:moves --anatomy", () => {
   });
 
   it("names the renderers that write a field", async () => {
-    const run = await runCatalog(ok(["--anatomy"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--anatomy"]), PIECES_ROOT);
     const line = (field: string) => run.lines.find((text) => word(field).test(text)) ?? "";
     expect(line("hue")).toContain("dom");
     expect(line("hue")).not.toContain("three");
@@ -53,14 +55,14 @@ describe("motion:moves --anatomy", () => {
   });
 
   it("shows taper with its label and its values at progress 0, 0.5 and 1", async () => {
-    const run = await runCatalog(ok(["--anatomy"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--anatomy"]), PIECES_ROOT);
     const line = run.lines.find((text) => text.includes("taper(p, 2)")) ?? "";
     expect(line).toContain("1, 0.25, 0");
   });
 
   it("prints the same names as one JSON object under --json", async () => {
-    const text = await runCatalog(ok(["--anatomy"]), DEFAULT_ROOT);
-    const run = await runCatalog(ok(["--anatomy", "--json"]), DEFAULT_ROOT);
+    const text = await runCatalog(ok(["--anatomy"]), PIECES_ROOT);
+    const run = await runCatalog(ok(["--anatomy", "--json"]), PIECES_ROOT);
     expect(run.lines).toHaveLength(1);
     const data: unknown = JSON.parse(run.lines.join("\n"));
     if (typeof data !== "object" || data === null) throw new Error("not an object");

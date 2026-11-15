@@ -1,7 +1,7 @@
 import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
-const { DEFAULT_ROOT, fromCaller } = await import("../src/page/page.ts");
+const { callerDir, piecesRoot } = await import("../src/page/root.ts");
 const { checkStyle, measureStyle } = await import("../src/scene/style.ts");
 
 const USAGE = "usage: motion:style measure|check <brief> [--root dir]";
@@ -14,9 +14,12 @@ async function main(argv) {
     brief.startsWith("--")
   )
     return fail(USAGE);
-  let root = DEFAULT_ROOT;
-  if (rest.length === 2 && rest[0] === "--root") root = fromCaller(rest[1]);
+  let flag;
+  if (rest.length === 2 && rest[0] === "--root") flag = rest[1];
   else if (rest.length > 0) return fail(USAGE);
+  const found = piecesRoot(callerDir(), flag);
+  if (found.kind === "missing") return fail(found.message);
+  const root = found.root;
   if (command === "measure") {
     const made = await measureStyle(root, brief);
     if (made.kind === "refused") return fail(made.message);

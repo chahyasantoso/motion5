@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
+import { callerPiecesRoot, withPage } from "@gerak/tools/page";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 // The page is set in place, so a dev server reloading for another test cannot replace it; that `applyValue`
 // writes `--gerak-tint` for `tint` is the DOM renderer's own test.
@@ -25,7 +27,7 @@ describe("the tint field on a skinned element", () => {
         page: "index.html",
         width: 200,
         height: 200,
-        source: { kind: "serve", root: DEFAULT_ROOT },
+        source: { kind: "serve", root: PIECES_ROOT },
         clock: "real",
       },
       async ({ page }) => {

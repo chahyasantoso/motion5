@@ -644,9 +644,9 @@ return <mesh ref={ball} />;
 
 ## Commands
 
-Run from the repository root. A page is a path inside the site with no leading `/`; the site is `apps/pieces`
-unless `--root <dir>` serves another folder or `--url <address>` names a running server, and `--root` and `--out` are
-read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
+Run from the repository root. A page is a path inside the site with no leading `/`; the site is the pieces folder,
+`--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one (`apps/pieces` here), unless
+`--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.

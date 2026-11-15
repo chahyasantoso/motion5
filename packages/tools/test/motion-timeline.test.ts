@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SOURCE } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
 import { parseProbeArgs } from "../src/page/probe";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 describe("motion:probe arguments", () => {
   it("reads a page, times and a selector", () => {
@@ -11,7 +14,7 @@ describe("motion:probe arguments", () => {
       height: 720,
       at: [0, 100],
       select: ".beat-dot",
-      source: DEFAULT_SOURCE,
+      source: PIECES_SOURCE,
     });
   });
 

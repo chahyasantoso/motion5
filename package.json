@@ -69,5 +69,8 @@
     "react-test-renderer": "19.2.8",
     "typescript": "5.8.3",
     "vitest": "^4.1.10"
+  },
+  "gerak": {
+    "pieces": "apps/pieces"
   }
 }

@@ -2,7 +2,10 @@ import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
+import { callerPiecesRoot, withPage } from "@gerak/tools/page";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 /** The worked examples the scratch copies are made from; each is a brief folder of this app. */
 const EXAMPLES = fileURLToPath(new URL("../", import.meta.url));
@@ -42,9 +45,9 @@ let copies = 0;
 
 /** Removes whatever scratch copies a stopped run left behind. */
 function removeLeftovers(): void {
-  for (const folder of readdirSync(DEFAULT_ROOT))
+  for (const folder of readdirSync(PIECES_ROOT))
     if (folder.startsWith(SCRATCH_PREFIX))
-      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
+      rmSync(join(PIECES_ROOT, folder), { recursive: true, force: true });
 }
 
 function readApp(piece: Piece, file: string): string {
@@ -80,14 +83,14 @@ function scratchOf(piece: Piece): Scratch {
     );
   }
   for (const [file, text] of files) {
-    mkdirSync(dirname(join(DEFAULT_ROOT, file)), { recursive: true });
-    writeFileSync(join(DEFAULT_ROOT, file), text, "utf8");
+    mkdirSync(dirname(join(PIECES_ROOT, file)), { recursive: true });
+    writeFileSync(join(PIECES_ROOT, file), text, "utf8");
   }
   return {
     name,
-    sceneFile: join(DEFAULT_ROOT, `${name}/src/${name}-scene.ts`),
+    sceneFile: join(PIECES_ROOT, `${name}/src/${name}-scene.ts`),
     remove() {
-      rmSync(join(DEFAULT_ROOT, name), { recursive: true, force: true });
+      rmSync(join(PIECES_ROOT, name), { recursive: true, force: true });
     },
   };
 }
@@ -105,7 +108,7 @@ describe("live editor in the browser", () => {
           page: `live.html?scene=${scratch.name}`,
           width: 1280,
           height: 720,
-          source: DEFAULT_SOURCE,
+          source: PIECES_SOURCE,
         },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);
@@ -162,7 +165,7 @@ describe("live editor in the browser", () => {
           page: `live.html?scene=${scratch.name}`,
           width: 1280,
           height: 720,
-          source: DEFAULT_SOURCE,
+          source: PIECES_SOURCE,
         },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);
@@ -199,7 +202,7 @@ describe("live editor in the browser", () => {
           page: `live.html?scene=${scratch.name}`,
           width: 1280,
           height: 720,
-          source: DEFAULT_SOURCE,
+          source: PIECES_SOURCE,
         },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);
@@ -246,7 +249,7 @@ describe("live editor in the browser", () => {
           page: `${scratch.name}/${scratch.name}.html`,
           width: 1280,
           height: 720,
-          source: DEFAULT_SOURCE,
+          source: PIECES_SOURCE,
         },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);
@@ -291,7 +294,7 @@ describe("live editor in the browser", () => {
           page: `live.html?scene=${scratch.name}`,
           width: 1280,
           height: 720,
-          source: DEFAULT_SOURCE,
+          source: PIECES_SOURCE,
         },
         async ({ page }) => {
           page.setDefaultTimeout(STEP_TIMEOUT_MS);

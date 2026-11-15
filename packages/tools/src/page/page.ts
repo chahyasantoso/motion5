@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { Browser, Page } from "playwright-core";
 import { parseActions, perform, type PageAction } from "./actions";
+import { callerDir, piecesRoot } from "./root";
 import { unreachable } from "./unreachable";
 
 /** Where a page comes from: a folder this tool serves, or a server already running. */
@@ -25,14 +25,9 @@ export interface PageTarget {
   readonly prepare?: (page: Page) => Promise<void>;
 }
 
-/** The demo app, served when no `--root` or `--url` is given. */
-export const DEFAULT_ROOT = fileURLToPath(new URL("../../../../apps/pieces/", import.meta.url));
-/** The page source when no `--root` or `--url` is given: the demo app folder, served. */
-export const DEFAULT_SOURCE: PageSource = Object.freeze({ kind: "serve", root: DEFAULT_ROOT });
-
-/** A path as the caller typed it, read from the folder they ran `npm run` in, not the repo root. */
+/** A path as the caller typed it, read from the folder they ran the command in, not the repo root. */
 export function fromCaller(path: string): string {
-  return resolve(process.env.INIT_CWD ?? process.cwd(), path);
+  return resolve(callerDir(), path);
 }
 
 /** An open page and its `browser`; `advanceTo(ms)` runs the paused clock forward and must not go back. */
@@ -92,12 +87,13 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   const actions = actionText === undefined ? [] : parseActions(actionText);
   if ("reason" in actions) return usage(actions.reason);
   if (flags.has("--action") && actions.length === 0) return usage("--action needs kind:target@ms.");
-  const source: PageSource =
-    url !== undefined
-      ? { kind: "url", base: url.endsWith("/") ? url : `${url}/` }
-      : root !== undefined
-        ? { kind: "serve", root: fromCaller(root) }
-        : DEFAULT_SOURCE;
+  let source: PageSource;
+  if (url !== undefined) source = { kind: "url", base: url.endsWith("/") ? url : `${url}/` };
+  else {
+    const found = piecesRoot(callerDir(), root);
+    if (found.kind === "missing") return usage(found.message);
+    source = { kind: "serve", root: found.root };
+  }
   return {
     kind: "ok",
     target: {

@@ -15,8 +15,11 @@ import {
   scaffold,
   scaffoldMove,
 } from "@gerak/tools/scene";
-import { DEFAULT_ROOT, parseLiveArgs, startLiveServer } from "../src/page/live";
+import { parseLiveArgs, startLiveServer } from "../src/page/live";
+import { callerPiecesRoot } from "../src/page/root";
 import { guard } from "../../../apps/pieces/src/live/guard";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 function root(): string {
@@ -240,7 +243,7 @@ describe("motion:new", () => {
     expect(parseLiveArgs(["saved"])).toEqual({
       kind: "ok",
       scene: "saved",
-      root: DEFAULT_ROOT,
+      root: PIECES_ROOT,
       port: 5173,
     });
 
@@ -268,14 +271,14 @@ describe("motion:new", () => {
   });
 
   it("starts a live server and reuses an already running server", async () => {
-    const first = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port: 0 });
+    const first = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port: 0 });
     try {
       expect(first.reused).toBe(false);
       expect(first.url).toContain("live.html?scene=timing");
       const port = Number(new URL(first.url).port);
       expect(port).toBeGreaterThan(0);
 
-      const second = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port });
+      const second = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port });
       expect(second.reused).toBe(true);
       expect(second.url).toBe(first.url);
     } finally {

@@ -1,8 +1,6 @@
 import { relative } from "node:path";
 import { pieceFiles } from "../scene/briefs";
-import { DEFAULT_ROOT, fromCaller } from "./page";
-
-export { DEFAULT_ROOT } from "./page";
+import { callerDir, piecesRoot } from "./root";
 
 /** Arguments parsed for the motion:live command. */
 export type LiveArgs =
@@ -51,7 +49,9 @@ export function parseLiveArgs(argv: readonly string[]): LiveArgs {
     return usage(`Scene name "${scene}" must be lower kebab-case, like "timing" or "rope-word".`);
   }
 
-  const root = rootArg !== undefined ? fromCaller(rootArg) : DEFAULT_ROOT;
+  const found = piecesRoot(callerDir(), rootArg);
+  if (found.kind === "missing") return usage(found.message);
+  const root = found.root;
   const files = pieceFiles(root, scene);
   if (files.length === 0) {
     return usage(

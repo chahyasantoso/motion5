@@ -4,7 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseCatalogArgs, runCatalog, type CatalogArgs } from "@gerak/tools/scene";
-import { DEFAULT_ROOT } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 afterEach(() => {
@@ -50,16 +52,16 @@ const ids = (lines: readonly string[]): readonly string[] =>
 
 describe("--move on today's moves", () => {
   it("puts a move with the quality first, drop among the heavy y and squish among the loose scaleY", async () => {
-    const heavy = await runCatalog(ok(["--move", "y:heavy"]), DEFAULT_ROOT);
+    const heavy = await runCatalog(ok(["--move", "y:heavy"]), PIECES_ROOT);
     expect(heavy.lines[0]).toContain("✓ y:heavy");
     expect(heavy.lines.find((line) => line.startsWith("drop |"))).toContain("✓ y:heavy");
-    const loose = await runCatalog(ok(["--move", "scaleY:loose"]), DEFAULT_ROOT);
+    const loose = await runCatalog(ok(["--move", "scaleY:loose"]), PIECES_ROOT);
     expect(loose.lines[0]).toContain("✓ scaleY:loose");
     expect(loose.lines.find((line) => line.startsWith("squish |"))).toContain("✓ scaleY:loose");
   });
 
   it("marks each requested field with a tick or a cross and the value that decided it", async () => {
-    const run = await runCatalog(ok(["--move", "y:heavy", "--move", "scaleY"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--move", "y:heavy", "--move", "scaleY"]), PIECES_ROOT);
     const row = run.lines.find((line) => line.startsWith("drop |")) ?? "";
     expect(row).toMatch(/✓ y:heavy \(peak [\d.]+/);
     expect(row).toMatch(/✓ scaleY|✗ scaleY/);
@@ -109,12 +111,12 @@ describe("fit", () => {
   });
 
   it("refuses an unknown quality, field or use, naming it", async () => {
-    const quality = await runCatalog(ok(["--move", "y:fluffy"]), DEFAULT_ROOT);
+    const quality = await runCatalog(ok(["--move", "y:fluffy"]), PIECES_ROOT);
     expect(quality.code).toBe(1);
     expect(quality.lines.join(" ")).toContain("fluffy");
-    const field = await runCatalog(ok(["--move", "sideways"]), DEFAULT_ROOT);
+    const field = await runCatalog(ok(["--move", "sideways"]), PIECES_ROOT);
     expect(field.lines.join(" ")).toContain("sideways");
-    const use = await runCatalog(ok(["--uses", "wobbly"]), DEFAULT_ROOT);
+    const use = await runCatalog(ok(["--uses", "wobbly"]), PIECES_ROOT);
     expect(use.lines.join(" ")).toContain("wobbly");
   });
 });
@@ -122,12 +124,12 @@ describe("fit", () => {
 describe("a design no move fits", () => {
   it("prints the answer, the design and the command that makes a new move", async () => {
     const argv = ["--move", "rotationX:heavy", "--move", "clipRadius:loose", "--uses", "ease"];
-    const run = await runCatalog(ok(argv), DEFAULT_ROOT);
+    const run = await runCatalog(ok(argv), PIECES_ROOT);
     expect(run.lines[0]).toBe("No move does this closely.");
     expect(run.lines.join("\n")).toContain("rotationX:heavy, clipRadius:loose");
     expect(run.lines.join("\n")).toContain("uses ease");
     expect(run.lines).toContain("or write one: npm run motion:new -- --move <id> --in <brief>");
-    const named = await runCatalog(ok([...argv, "--in", "reel"]), DEFAULT_ROOT);
+    const named = await runCatalog(ok([...argv, "--in", "reel"]), PIECES_ROOT);
     expect(named.lines).toContain("or write one: npm run motion:new -- --move <id> --in reel");
   });
 
@@ -143,7 +145,7 @@ describe("a design no move fits", () => {
         "--role",
         "enter",
       ]),
-      DEFAULT_ROOT,
+      PIECES_ROOT,
     );
     expect(run.lines[0]).toBe("No move does this closely.");
     expect(run.lines).toContainEqual(
@@ -156,7 +158,7 @@ describe("a design no move fits", () => {
 
 describe("a quality's range", () => {
   it("scores every move inside the range alike, so rings 2 and rings 16 are both loose", async () => {
-    const run = await runCatalog(ok(["--move", "scaleY:loose", "--all"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--move", "scaleY:loose", "--all"]), PIECES_ROOT);
     const loose = run.lines.filter((line) => line.includes("✓ scaleY:loose"));
     expect(loose.map((line) => line.split(" | ")[0])).toEqual(
       expect.arrayContaining(["squish", "spring-settle", "hand-wave"]),
@@ -167,7 +169,7 @@ describe("a quality's range", () => {
   });
 
   it("answers at the move's own example when it fits, naming no other options", async () => {
-    const run = await runCatalog(ok(["--move", "scaleY:loose"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--move", "scaleY:loose"]), PIECES_ROOT);
     const squish = run.lines.find((line) => line.startsWith("squish |")) ?? "";
     expect(squish).toContain("✓ scaleY:loose");
     expect(squish).not.toContain(" at ");
@@ -180,7 +182,7 @@ describe("--design", () => {
   it("asks what a piece's target says, a per-beat intent counting as its field", async () => {
     const root = piece(`{ title: { y: "heavy", opacity: { in: "calm" } }, other: { x: "quick" } }`);
     const file = join(root, "reel/src/piece.ts");
-    const run = await runCatalog(ok(["--design", file, "--target", "title"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--design", file, "--target", "title"]), PIECES_ROOT);
     expect(run.code).toBe(0);
     expect(["implode", "kick"]).toContain(ids(run.lines)[0]);
     expect(run.lines[0]).toContain("y:heavy");
@@ -232,7 +234,7 @@ describe("motion:moves --design from the command line", () => {
 describe("a quality's name", () => {
   it("is refused when it is only an inherited property name", async () => {
     for (const name of ["toString", "constructor", "__proto__"]) {
-      const like = await runCatalog(ok(["--like", name]), DEFAULT_ROOT);
+      const like = await runCatalog(ok(["--like", name]), PIECES_ROOT);
       expect(like.code, name).toBe(1);
       expect(like.lines[0]).toContain("unknown quality");
     }
@@ -241,7 +243,7 @@ describe("a quality's name", () => {
 
 describe("a fit", () => {
   it("is every requested field moved and inside its quality, so a row marked ✗ never answers", async () => {
-    const run = await runCatalog(ok(["--move", "opacity:playful"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--move", "opacity:playful"]), PIECES_ROOT);
     expect(run.lines[0]).toBe("No move does this closely.");
     expect(run.lines).toContain("nearest, each missing something:");
     const near = run.lines.slice(run.lines.indexOf("nearest, each missing something:") + 1);

@@ -2,7 +2,8 @@ import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
 
 registerSourceLoader();
 const { importSvg, importSvgInto } = await import("../src/scene/import-svg.ts");
-const { DEFAULT_ROOT, fromCaller } = await import("../src/page/page.ts");
+const { fromCaller } = await import("../src/page/page.ts");
+const { callerDir, piecesRoot } = await import("../src/page/root.ts");
 
 const usage =
   "usage: motion:import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]\n   or: motion:import-svg <file.svg> --into <piece> --at x,y --prefix <word> [--scale s] [--root dir]";
@@ -30,7 +31,9 @@ function run() {
   if (file === undefined || file.startsWith("--") || positional.length !== 1) return refuse(usage);
   for (const flag of flags.keys())
     if (flags.get(flag) === undefined || flags.get(flag).startsWith("--")) return refuse(usage);
-  const root = flags.has("--root") ? fromCaller(flags.get("--root")) : DEFAULT_ROOT;
+  const found = piecesRoot(callerDir(), flags.get("--root"));
+  if (found.kind === "missing") return refuse(found.message);
+  const root = found.root;
   const name = flags.get("--name");
   const into = flags.get("--into");
   if ((name === undefined) === (into === undefined))

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parseFramesArgs } from "../src/page/frames";
-import { DEFAULT_SOURCE, fromCaller } from "../src/page/page";
+import { fromCaller } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 describe("parseFramesArgs", () => {
   it("reads an onion request", () => {
@@ -25,7 +29,7 @@ describe("parseFramesArgs", () => {
       from: 100,
       to: 300,
       every: 50,
-      source: DEFAULT_SOURCE,
+      source: PIECES_SOURCE,
     });
   });
 
@@ -36,7 +40,7 @@ describe("parseFramesArgs", () => {
       at: [0, 500],
       width: 1280,
       height: 720,
-      source: DEFAULT_SOURCE,
+      source: PIECES_SOURCE,
     });
   });
 

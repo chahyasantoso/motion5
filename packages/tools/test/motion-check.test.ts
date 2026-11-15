@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_LIMITS, analyse, auditText, parseCheckArgs, type Frame } from "../src/page/check";
 import { blend, contrastNeeded, contrastRatio, parseColour } from "../src/page/contrast";
-import { DEFAULT_SOURCE } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 const STEP = 16;
 type Spot = { readonly x: number; readonly y: number };
@@ -82,7 +85,7 @@ describe("motion:check arguments", () => {
       watch: [".dot", ".glyph"],
       to: 3000,
       limits: { ...DEFAULT_LIMITS, hold: 300 },
-      source: DEFAULT_SOURCE,
+      source: PIECES_SOURCE,
     });
   });
 
