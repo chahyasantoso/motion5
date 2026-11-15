@@ -62,7 +62,7 @@ apps/pieces/<brief>/
   its skin.
 - **Measured cards.** `motion:style -- measure <brief>` reads each piece of the brief (every `src/*.ts` that
   `readSceneModule` accepts), samples it every `STEP_MS`, measures each field of each member and list item in each
-  beat it changes in, and writes `style.ts` with one quality `<brief>/<field>` per field that moved: per descriptor,
+  beat it changes in, and writes `style.ts` with one quality per field that moved, named by the field in kebab-case (`<brief>/scale-y`): per descriptor,
   the measured minimum to maximum, widened by 0.05 each side for shares (held to 0..1) and by 1 for `rings` (held at 0
   or more), that quality the field's default, tokens and habits empty, description "Measured from <brief>.". It
   refuses a brief that has a `style.ts`. `motion:style -- check <brief>` runs `defineStyle`, the move and part gates on
