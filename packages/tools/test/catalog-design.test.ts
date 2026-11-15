@@ -229,3 +229,13 @@ describe("motion:moves --design from the command line", () => {
     expect(run.status).toBe(0);
   }, 60000);
 });
+
+describe("a quality's name", () => {
+  it("is refused when it is only an inherited property name", async () => {
+    for (const name of ["toString", "constructor", "__proto__"]) {
+      const like = await runCatalog(ok(["--like", name]), DEFAULT_ROOT);
+      expect(like.code, name).toBe(1);
+      expect(like.lines[0]).toContain("unknown quality");
+    }
+  });
+});

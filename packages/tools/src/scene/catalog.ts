@@ -604,6 +604,11 @@ export const QUALITIES: Readonly<Record<string, DescriptorRanges>> = Object.free
   loose: { rings: [2, 30] },
 });
 
+/** A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included). */
+export function qualityOf(name: string): DescriptorRanges | undefined {
+  return Object.hasOwn(QUALITIES, name) ? QUALITIES[name] : undefined;
+}
+
 /** The descriptors a quality names that lie outside its range, each with its value and range; none means
  * the shape has the quality. */
 export function outsideRanges(
@@ -721,7 +726,7 @@ function fieldsFit(
       continue;
     }
     movesAny = true;
-    const ranges = request.quality === undefined ? undefined : QUALITIES[request.quality];
+    const ranges = request.quality === undefined ? undefined : qualityOf(request.quality);
     if (ranges === undefined) {
       notes.push(`✓ ${labelOf(request)} (moved)`);
       continue;
@@ -980,7 +985,7 @@ export function query(records: readonly MoveRecord[], request: CatalogQuery): Qu
   const far = request.far === undefined ? undefined : pick("--far", request.far);
   if (typeof near === "string") return refused(near);
   if (typeof far === "string") return refused(far);
-  const ranges = request.like === undefined ? undefined : QUALITIES[request.like];
+  const ranges = request.like === undefined ? undefined : qualityOf(request.like);
   if (request.like !== undefined && ranges === undefined)
     return refused(
       `--like: unknown quality "${request.like}". Qualities: ${Object.keys(QUALITIES).join(", ")}.`,
