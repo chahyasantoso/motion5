@@ -97,4 +97,23 @@ describe("portability findings", () => {
       `${join("reel", "src", "moves", "m.ts")} imports ../../../other/src/parts/envelope/y`,
     ]);
   });
+
+  it("reads require, import-equals and a plain template specifier", () => {
+    const root = scratch(["reel/src/moves/m.ts"]);
+    writeFileSync(
+      join(root, "reel/src/moves/m.ts"),
+      [
+        'const a = require("node:fs");',
+        'import b = require("node:path");',
+        "const c = import(`node:os`);",
+        "const d = import(`node:${name}`);",
+      ].join("\n"),
+    );
+    const file = join("reel", "src", "moves", "m.ts");
+    expect(portabilityFindings(root)).toEqual([
+      `${file} imports node:fs`,
+      `${file} imports node:path`,
+      `${file} imports node:os`,
+    ]);
+  });
 });

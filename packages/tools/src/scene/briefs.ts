@@ -53,11 +53,21 @@ export function sourceFiles(folder: string): readonly string[] {
   });
 }
 
-const SPECIFIER = /\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g;
+const SPECIFIERS: readonly RegExp[] = [
+  /\b(?:from|import)\s*\(?\s*["']([^"']+)["']/g,
+  /\brequire\s*\(\s*["']([^"']+)["']/g,
+  /\bimport\s*\(\s*`([^`]*)`/g,
+];
 
-/** The module specifier of every import, re-export and dynamic import in `source`, in order. */
+/** The module specifier of every import, re-export, dynamic import and `require` in `source`, in order;
+ * a template literal counts only when it has no `${`. */
 export function importSpecifiers(source: string): readonly string[] {
-  return [...source.matchAll(SPECIFIER)].map(([, specifier = ""]) => specifier);
+  return SPECIFIERS.flatMap((pattern) =>
+    [...source.matchAll(pattern)].map((found) => ({ at: found.index, specifier: found[1] ?? "" })),
+  )
+    .filter(({ specifier }) => !specifier.includes("${"))
+    .sort((left, right) => left.at - right.at)
+    .map(({ specifier }) => specifier);
 }
 
 /** Findings for brief files in src/moves and src/parts that import more than @gerak/moves or
