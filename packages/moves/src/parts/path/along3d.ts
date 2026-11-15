@@ -101,6 +101,7 @@ definePart(
       },
       from: { x: 0, y: 0, z: 0 },
       to: { x: 160, y: -20, z: -40 },
+      ...(face ? {} : { label: "along3d(curve, p)" }),
     })),
   },
   along3d,

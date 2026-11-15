@@ -8,7 +8,7 @@ definePart(
   {
     kind: "oscillation",
     samples: [
-      { run: (progress) => wave(progress, 1), bound: 1 },
+      { run: (progress) => wave(progress, 1), bound: 1, label: "wave(p, 1)" },
       { run: (progress) => wave(progress, 3.5, 0.25), bound: 1 },
     ],
   },

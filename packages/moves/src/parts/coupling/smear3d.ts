@@ -25,7 +25,10 @@ definePart(
   {
     kind: "coupling",
     samples: [
-      { run: () => smear3d({ vx: 0, vy: 0, vz: 0 }, { stretch: 0.5, max: 3 }) },
+      {
+        run: () => smear3d({ vx: 0, vy: 0, vz: 0 }, { stretch: 0.5, max: 3 }),
+        label: "smear3d({ vx: 0, vy: 0, vz: 0 }, { stretch: 0.5, max: 3 })",
+      },
       { run: () => smear3d({ vx: 4, vy: -3, vz: 2 }, { stretch: 0, max: 3 }) },
     ],
   },

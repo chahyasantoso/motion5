@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
-import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
+import { MOVE_ROLES, valueField, type MoveRole, type OptionField } from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
 import { briefFolders } from "./briefs";
 import {
@@ -15,7 +15,7 @@ import {
   type Descriptors,
   type MoveDescriptors,
 } from "./moves";
-import { formatParts, partsImportedBy } from "./parts";
+import { formatParts, moveParts, partSample, partsImportedBy } from "./parts";
 
 /** The source name of the moves package this repository ships. */
 export const BUILT_IN_SOURCE = "@gerak/moves";
@@ -49,7 +49,7 @@ export interface MoveRecord {
 
 /** The usage line of `motion:moves`. */
 export const CATALOG_USAGE =
-  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--candidates] [--root dir]";
+  "usage: motion:moves [<id>] [--role <role>] [--find <words>] [--fields a,b] [--like <quality>] [--near <id>] [--far <id>] [--in <brief>] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]";
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
@@ -72,6 +72,7 @@ export type CatalogArgs =
       readonly check: boolean;
       readonly json: boolean;
       readonly parts: boolean;
+      readonly anatomy: boolean;
       readonly candidates: boolean;
       readonly root: string | undefined;
     };
@@ -87,7 +88,8 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === undefined) break;
-    if (["--check", "--json", "--parts", "--candidates", "--all"].includes(arg)) on.add(arg);
+    if (["--check", "--json", "--parts", "--anatomy", "--candidates", "--all"].includes(arg))
+      on.add(arg);
     else if (VALUE_FLAGS.includes(arg)) {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
@@ -121,6 +123,7 @@ export function parseCatalogArgs(argv: readonly string[]): CatalogArgs {
     check: on.has("--check"),
     json: on.has("--json"),
     parts: on.has("--parts"),
+    anatomy: on.has("--anatomy"),
     candidates: on.has("--candidates"),
     root: values.get("--root"),
   };
@@ -590,8 +593,8 @@ function shapeDistance(left: Descriptors, right: Descriptors): number {
   );
 }
 
-/** How far two moves are apart: over every field either moves, the squared differences of the field's
- * shape where both move it, and 1 where only one does; the mean. Undefined when neither moves a field. */
+/** How far two moves are apart: the mean over the fields either moves of the squared shape difference,
+ * or 1 where only one moves the field. Undefined when neither moves a field. */
 export function distance(left: MoveRecord, right: MoveRecord): number | undefined {
   const lefts = new Map(Object.entries(left.shapes));
   const rights = new Map(Object.entries(right.shapes));
@@ -1034,6 +1037,154 @@ export function summarize(records: readonly MoveRecord[]): readonly string[] {
   ];
 }
 
+/** The fields grouped by what they change on the target; every field of the value table is in one group. */
+export const FIELD_GROUPS: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  place: ["x", "y", "z"],
+  turn: ["rotation", "rotationX", "rotationY", "skewX", "skewY"],
+  size: ["scale", "scaleX", "scaleY", "scaleZ"],
+  look: ["opacity", "blur", "shadowX", "shadowY", "shadowBlur"],
+  colour: ["hue", "lightness", "tint"],
+  reveal: [
+    "drawn",
+    "drawnFrom",
+    "clipX",
+    "clipY",
+    "clipRadius",
+    "clipWidth",
+    "clipHeight",
+    "shape",
+  ],
+  order: ["layer"],
+});
+
+const SHAPE_WORDS: Readonly<Record<(typeof DESCRIPTOR_KEYS)[number], string>> = Object.freeze({
+  peak: "where in the run (0 to 1) the field moves fastest",
+  overshoot: "how far it goes past where it is heading, as a share of the distance it had to go",
+  rings: "how many times it crosses rest after the first crossing; a count",
+  windup: "how far it first pulls away from where it is heading, as a share of the distance",
+  settle: "the share of the run from its first arrival until it stays near its end",
+});
+
+/** Where each renderer writes a field: `dom`, `three 2d` and `three 3d`, from the lists they export. */
+async function renderersOf(): Promise<(field: string) => readonly string[]> {
+  const [dom, three] = await Promise.all([import("@gerak/dom"), import("@gerak/three")]);
+  const lists: readonly (readonly [string, readonly string[]])[] = [
+    ["dom", dom.WRITTEN],
+    ["three 2d", three.WRITTEN_2D],
+    ["three 3d", three.WRITTEN_3D],
+  ];
+  return (field) => lists.filter(([, names]) => names.includes(field)).map(([name]) => name);
+}
+
+/** Numbers to 3 places, in any record or list. */
+function plain(value: unknown): unknown {
+  if (typeof value === "number") return Math.round(value * 1000) / 1000 || 0;
+  if (Array.isArray(value)) return value.map(plain);
+  if (typeof value === "object" && value !== null)
+    return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, plain(inner)]));
+  return value;
+}
+
+const plainList = (values: readonly unknown[]): readonly unknown[] => values.map(plain);
+
+function showValue(value: unknown): string {
+  if (typeof value === "string") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(showValue).join(", ")}]`;
+  if (typeof value === "object" && value !== null)
+    return `{${Object.entries(value)
+      .map(([key, inner]) => `${key}: ${showValue(inner)}`)
+      .join(", ")}}`;
+  return String(value);
+}
+
+interface AnatomyField {
+  readonly name: string;
+  readonly group: string;
+  readonly meaning: string;
+  readonly unit: string;
+  readonly dimension: string;
+  readonly renderers: readonly string[];
+}
+
+/** The card an agent reads before it asks for moves: the fields, the parts, and the words the search uses. */
+async function anatomyLines(json: boolean): Promise<readonly string[]> {
+  const writers = await renderersOf();
+  const fields: AnatomyField[] = Object.entries(FIELD_GROUPS).flatMap(([group, names]) =>
+    names.flatMap((name) => {
+      const row = valueField(name);
+      if (row === undefined) return [];
+      return [
+        {
+          name,
+          group,
+          meaning: row.meaning,
+          unit: row.unit,
+          dimension: row.dimension,
+          renderers: writers(name),
+        },
+      ];
+    }),
+  );
+  const parts = moveParts().map((part) => {
+    const sample = partSample(Reflect.get(builtIns, part.name));
+    return {
+      ...part,
+      ...(sample === undefined
+        ? {}
+        : { sample: { label: sample.label, values: plainList(sample.values) } }),
+    };
+  });
+  const shapes = DESCRIPTOR_KEYS.map((name) => ({ name, meaning: SHAPE_WORDS[name] }));
+  const qualities = Object.entries(QUALITIES).map(([name, ranges]) => ({ name, ranges }));
+  if (json) return [JSON.stringify({ fields, parts, shapes, qualities })];
+  const merged: AnatomyField[][] = [];
+  for (const field of fields) {
+    const last = merged.at(-1);
+    const head = last?.[0];
+    if (
+      last !== undefined &&
+      head !== undefined &&
+      head.group === field.group &&
+      head.unit === field.unit &&
+      head.dimension === field.dimension &&
+      head.renderers.join() === field.renderers.join()
+    )
+      last.push(field);
+    else merged.push([field]);
+  }
+  const fieldLines = merged.map((run) => {
+    const [head] = run;
+    return [
+      head?.group ?? "",
+      run.map(({ name }) => name).join(", "),
+      `${head?.unit ?? ""}, ${head?.dimension ?? ""}`,
+      (head?.renderers ?? []).join(", ") || "no renderer",
+      run.map(({ meaning }) => meaning).join(" / "),
+    ].join(" | ");
+  });
+  const partLines = parts.map((part) =>
+    [
+      part.group,
+      part.call,
+      part.use,
+      ...("sample" in part
+        ? [`${part.sample.label}: ${part.sample.values.map(showValue).join(", ")}`]
+        : []),
+    ].join(" | "),
+  );
+  const rangeText = (ranges: DescriptorRanges): string =>
+    DESCRIPTOR_KEYS.flatMap((key) => {
+      const range = ranges[key];
+      return range === undefined ? [] : [`${key} ${range[0]}..${range[1]}`];
+    }).join(", ");
+  return [
+    ...fieldLines,
+    ...partLines,
+    ...shapes.map(({ name, meaning }) => `shape | ${name} | ${meaning}`),
+    ...qualities.map(({ name, ranges }) => `quality | ${name} | ${rangeText(ranges)}`),
+  ];
+}
+
 /** Runs the command for parsed arguments and an app root: the lines to print and the exit code. */
 export async function runCatalog(
   args: Extract<CatalogArgs, { kind: "ok" }>,
@@ -1041,6 +1192,7 @@ export async function runCatalog(
   options: CatalogOptions = {},
 ): Promise<CatalogRun> {
   if (args.parts) return { lines: formatParts(), code: 0 };
+  if (args.anatomy) return { lines: await anatomyLines(args.json), code: 0 };
   const { entries, problems } = await loadCatalog(root, options);
   const all = entries;
   const records = all.map(({ record }) => record);

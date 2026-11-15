@@ -54,9 +54,12 @@ definePart(
   {
     kind: "ease",
     samples: (["in", "out", "inOut"] as const).flatMap((direction) =>
-      [0, 1.70158, 4].map(
-        (amount) => (progress: number) => backEase({ amount, direction })(progress),
-      ),
+      [1.70158, 0, 4].map((amount) => ({
+        run: (progress: number) => backEase({ amount, direction })(progress),
+        ...(direction === "in" && amount === 1.70158
+          ? { label: 'backEase({ amount: 1.70158, direction: "in" })(p)' }
+          : {}),
+      })),
     ),
   },
   backEase,
@@ -80,7 +83,10 @@ definePart(
       { stiffness: 100, damping: 10 },
       { stiffness: 200, damping: 8 },
       { stiffness: 80, damping: 40 },
-    ].map((options) => (progress: number) => springEase(options)(progress)),
+    ].map((options, index) => ({
+      run: (progress: number) => springEase(options)(progress),
+      ...(index === 0 ? { label: "springEase({ stiffness: 100, damping: 10 })(p)" } : {}),
+    })),
   },
   springEase,
 );
@@ -113,4 +119,13 @@ export const ease = Object.freeze({
   bounceOut,
   bounceIn: out(bounceOut),
 } satisfies Readonly<Record<string, Ease>>);
-definePart({ kind: "ease", samples: Object.values(ease) }, ease);
+definePart(
+  {
+    kind: "ease",
+    samples: Object.entries(ease).map(([name, run], index) => ({
+      run,
+      ...(index === 0 ? { label: `ease.${name}(p)` } : {}),
+    })),
+  },
+  ease,
+);

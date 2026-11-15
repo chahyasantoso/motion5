@@ -20,7 +20,10 @@ definePart(
   {
     kind: "coupling",
     samples: [
-      { run: () => smear({ vx: 0, vy: 0 }, { stretch: 0.5, max: 3 }) },
+      {
+        run: () => smear({ vx: 0, vy: 0 }, { stretch: 0.5, max: 3 }),
+        label: "smear({ vx: 0, vy: 0 }, { stretch: 0.5, max: 3 })",
+      },
       { run: () => smear({ vx: 800, vy: -300 }, { stretch: 0, max: 3 }) },
     ],
   },

@@ -43,7 +43,7 @@ describe("checkParts refuses a part that breaks its kind's rule", () => {
 
   it("an ease that ends at 0.9", () => {
     const short = (progress: number): number => progress * 0.9;
-    const out = findings("ease", { kind: "ease", samples: [short] }, short);
+    const out = findings("ease", { kind: "ease", samples: [{ run: short }] }, short);
     expect(out.join("\n")).toMatch(/scratch.*sample 0.*0\.9/);
   });
 
@@ -106,7 +106,7 @@ describe("checkParts refuses a part that breaks its kind's rule", () => {
 
   it("a part that keeps its rule is not refused", () => {
     const ramp = (progress: number): number => progress;
-    expect(findings("ease", { kind: "ease", samples: [ramp] }, ramp)).toEqual([]);
+    expect(findings("ease", { kind: "ease", samples: [{ run: ramp }] }, ramp)).toEqual([]);
   });
 });
 

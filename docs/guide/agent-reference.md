@@ -653,14 +653,14 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
   `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
-- **`motion:moves [<id>] [--role role] [--find words] [--fields a,b] [--like quality] [--near id] [--far id] [--in brief] [--all] [--check] [--json] [--parts] [--candidates] [--root dir]`**: one search over every source of moves the root declares
+- **`motion:moves [<id>] [--role role] [--find words] [--fields a,b] [--like quality] [--near id] [--far id] [--in brief] [--all] [--check] [--json] [--parts] [--anatomy] [--candidates] [--root dir]`**: one search over every source of moves the root declares
   in `"gerak": { "moves": [...] }` of its `package.json` (a package name, or a folder glob such as `./*/src/moves`; absent, `["@gerak/moves", "./*/src/moves"]`).
   With no query it prints a summary of at most 20 lines: moves per role and per source, the qualities `--like` knows, example queries. A query
   prints at most 10 rows (`--all` lifts it), each: id (or `source/id` where two sources share an id), source (`own` for the `--in` brief's), role, fields moved,
   the description's first sentence and the import, relative to `<root>/<in>/src` when `--in` names a brief. The filters combine: `--role`; `--find` (every word in the id,
   description or an option name); `--fields x,scale` (moves all of them). The rankings order by fit, then by id, never by source: `--like heavy|light|quick|calm|playful|stiff|loose`
   (descriptors in a range: peak, overshoot, rings, windup, settle), `--near id`, `--far id`. `<id>` (or `<source>/<id>`) prints one move in full: options, fields, descriptors, parts, the briefs that import it, a pasteable example, its import and file.
-  `--check` runs the move gate on the selected moves, refuses an id declared twice in one source and exits `1` on a finding; `--parts` prints the building blocks of `@gerak/moves` that are not
+  `--check` runs the move gate on the selected moves, refuses an id declared twice in one source and exits `1` on a finding; `--anatomy` prints the vocabulary card in at most 90 lines (`--json`: one object of `fields`, `parts`, `shapes`, `qualities`): each field with its group, meaning, unit, dimension and the renderers that write it, each part with its call, its first sentence and a sampled example, the shape words and the qualities' ranges; `--parts` prints the building blocks of `@gerak/moves` that are not
   moves, by the folder that declares them, each with its call shape and the first sentence of its doc comment; `--candidates` lists the local moves that pass the gate
   and are used by two or more briefs of `<root>` (the folders holding a `src`), one line each: id, file, briefs. Records are cached in `<root>/node_modules/.cache/gerak/moves.json`, a move sampled again only when its file (or its package's version) changes.
 - **`motion:promote <id> [--root dir]`**: moves a candidate move's file from `<root>/<brief>/src/moves` into

@@ -67,7 +67,10 @@ definePart(
       { stiffness: 100, damping: 20 },
       { stiffness: 100, damping: 60 },
       { stiffness: 400, damping: 0 },
-    ].map((options) => ({ run: (seconds: number) => spring(0, 0, seconds, options) })),
+    ].map((options, index) => ({
+      run: (seconds: number) => spring(0, 0, seconds, options),
+      ...(index === 0 ? { label: "spring(0, 0, seconds, { stiffness: 100, damping: 5 })" } : {}),
+    })),
   },
   spring,
 );

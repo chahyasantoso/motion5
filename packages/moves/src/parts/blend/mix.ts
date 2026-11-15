@@ -9,7 +9,7 @@ definePart(
   {
     kind: "blend",
     samples: [
-      { run: (share) => mix(2, 10, share), a: 2, b: 10 },
+      { run: (share) => mix(2, 10, share), a: 2, b: 10, label: "mix(2, 10, share)" },
       { run: (share) => mix(5, -3, share), a: 5, b: -3 },
     ],
   },
@@ -25,7 +25,13 @@ definePart(
   {
     kind: "blend",
     samples: [
-      { run: (share) => mixAngle(350, 10, share), a: 350, b: 10, angle: true },
+      {
+        run: (share) => mixAngle(350, 10, share),
+        a: 350,
+        b: 10,
+        angle: true,
+        label: "mixAngle(350, 10, share)",
+      },
       { run: (share) => mixAngle(10, 190, share), a: 10, b: 190, angle: true },
       { run: (share) => mixAngle(-170, 170, share), a: -170, b: 170, angle: true },
     ],
@@ -49,6 +55,7 @@ definePart(
         run: (share) => mixPoint({ x: 0, y: 4 }, { x: 10, y: -6 }, share),
         a: { x: 0, y: 4 },
         b: { x: 10, y: -6 },
+        label: "mixPoint({ x: 0, y: 4 }, { x: 10, y: -6 }, share)",
       },
     ],
   },
@@ -98,7 +105,12 @@ definePart(
   {
     kind: "blend",
     samples: [
-      { run: (share) => mixPose(POSE_FROM, POSE_TO, share), a: POSE_FROM, b: POSE_TO },
+      {
+        run: (share) => mixPose(POSE_FROM, POSE_TO, share),
+        a: POSE_FROM,
+        b: POSE_TO,
+        label: "mixPose(from, to, share)",
+      },
       { run: (share) => mixPose({}, POSE_TO, share), a: {}, b: POSE_TO },
     ],
   },

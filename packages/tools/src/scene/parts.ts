@@ -268,7 +268,7 @@ function sampleFindings(contract: PartContract, name: string): readonly string[]
     case "utility":
       break;
     case "ease":
-      contract.samples.forEach((run, index) => {
+      contract.samples.forEach(({ run }, index) => {
         const start = run(0);
         const end = run(1);
         if (!isNear(start, 0, NEAR)) refuse(index, `is ${show(start)} at progress 0, not 0`);
@@ -371,6 +371,58 @@ export function checkParts(
   return parts
     .filter((part) => FOLDER_KINDS.includes(part.group))
     .flatMap((part) => findingsOf(part, values[part.name]));
+}
+
+/** One labelled sample of a part: the call it makes, and what the call answers at the points it is read. */
+export interface PartSample {
+  readonly label: string;
+  readonly values: readonly unknown[];
+}
+
+const READ_AT = [0, 0.5, 1] as const;
+
+function firstLabelled<S extends { readonly label?: string }>(
+  samples: readonly S[],
+): (S & { readonly label: string }) | undefined {
+  for (const sample of samples)
+    if (sample.label !== undefined) return { ...sample, label: sample.label };
+  return undefined;
+}
+
+/** The first labelled sample of a sampled part, read at 0, 0.5 and 1 (seconds for a spring, once for a
+ * coupling); nothing for another kind or no label. */
+export function partSample(value: unknown): PartSample | undefined {
+  if ((typeof value !== "function" && typeof value !== "object") || value === null)
+    return undefined;
+  const contract = partContract(value);
+  if (contract === undefined) return undefined;
+  switch (contract.kind) {
+    case "time":
+    case "geometry":
+    case "signal":
+    case "utility":
+      return undefined;
+    case "ease":
+    case "envelope":
+    case "oscillation":
+    case "dynamics":
+    case "path":
+    case "blend": {
+      const sample = firstLabelled<{
+        readonly label?: string;
+        readonly run: (at: number) => unknown;
+      }>(contract.samples);
+      return sample === undefined
+        ? undefined
+        : { label: sample.label, values: READ_AT.map((at) => sample.run(at)) };
+    }
+    case "coupling": {
+      const sample = firstLabelled(contract.samples);
+      return sample === undefined ? undefined : { label: sample.label, values: [sample.run()] };
+    }
+    default:
+      return unreachable(contract);
+  }
 }
 
 /** The parts as printed lines: a heading per group, then one line per part. */

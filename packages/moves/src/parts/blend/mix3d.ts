@@ -41,7 +41,14 @@ const POSE_TO: Pose3d = { x: 5, z: 9, rotation: 50, rotationX: 20 };
 definePart(
   {
     kind: "blend",
-    samples: [{ run: (share) => mixPose3d(POSE_FROM, POSE_TO, share), a: POSE_FROM, b: POSE_TO }],
+    samples: [
+      {
+        run: (share) => mixPose3d(POSE_FROM, POSE_TO, share),
+        a: POSE_FROM,
+        b: POSE_TO,
+        label: "mixPose3d(from, to, share)",
+      },
+    ],
   },
   mixPose3d,
 );
@@ -62,6 +69,7 @@ definePart(
         run: (share) => mixPoint3d({ x: 0, y: 1, z: 2 }, { x: 9, y: -3, z: 5 }, share),
         a: { x: 0, y: 1, z: 2 },
         b: { x: 9, y: -3, z: 5 },
+        label: "mixPoint3d({ x: 0, y: 1, z: 2 }, { x: 9, y: -3, z: 5 }, share)",
       },
     ],
   },

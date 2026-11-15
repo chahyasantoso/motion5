@@ -22,10 +22,11 @@ definePart(
       { dx: 120, dy: 0, apex: 80 },
       { dx: -60, dy: 40, apex: 30 },
       { dx: 0, dy: -50, apex: 0 },
-    ].map((options) => ({
+    ].map((options, index) => ({
       run: (progress: number) => ballistic(progress, options),
       from: { x: options.dx, y: options.dy },
       to: { x: 0, y: 0 },
+      ...(index === 0 ? { label: "ballistic(p, { dx: 120, dy: 0, apex: 80 })" } : {}),
     })),
   },
   ballistic,

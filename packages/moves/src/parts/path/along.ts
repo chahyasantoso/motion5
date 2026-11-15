@@ -66,6 +66,7 @@ definePart(
       },
       from: { x: 0, y: 0 },
       to: { x: 160, y: -20 },
+      ...(turn ? {} : { label: "along(curve, p)" }),
     })),
   },
   along,

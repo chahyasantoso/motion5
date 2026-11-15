@@ -28,7 +28,10 @@ definePart(
   {
     kind: "coupling",
     samples: [
-      { run: () => squashFromSpeed({ vx: 0, vy: 0 }, { amount: 0.001, most: 0.5 }) },
+      {
+        run: () => squashFromSpeed({ vx: 0, vy: 0 }, { amount: 0.001, most: 0.5 }),
+        label: "squashFromSpeed({ vx: 0, vy: 0 }, { amount: 0.001, most: 0.5 })",
+      },
       { run: () => squashFromSpeed({ vx: 900, vy: 400 }, { amount: 0, most: 0.5 }) },
       { run: () => squashFromSpeed({ vx: 900, vy: 400 }, { amount: 0.001, most: 0 }) },
     ],

@@ -24,7 +24,10 @@ definePart(
   {
     kind: "coupling",
     samples: (["bottom", "top", "center", "left", "right"] as const).flatMap((anchor) => [
-      { run: () => squashed(0, 1, anchor) },
+      {
+        run: () => squashed(0, 1, anchor),
+        ...(anchor === "bottom" ? { label: 'squashed(0, 1, "bottom")' } : {}),
+      },
       { run: () => squashed(0.4, 0, anchor) },
     ]),
   },
@@ -52,7 +55,10 @@ definePart(
   {
     kind: "coupling",
     samples: (["x", "y", "z"] as const).flatMap((axis) => [
-      { run: () => squashed3d(0, 1, axis) },
+      {
+        run: () => squashed3d(0, 1, axis),
+        ...(axis === "x" ? { label: 'squashed3d(0, 1, "x")' } : {}),
+      },
       { run: () => squashed3d(0.4, 0, axis) },
     ]),
   },

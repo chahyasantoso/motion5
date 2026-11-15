@@ -7,10 +7,11 @@ export function taper(progress: number, power: number): number {
 definePart(
   {
     kind: "envelope",
-    samples: [0.5, 1, 2, 4].map((power) => ({
+    samples: [2, 0.5, 1, 4].map((power, index) => ({
       run: (progress: number) => taper(progress, power),
       at0: 1,
       at1: 0,
+      ...(index === 0 ? { label: "taper(p, 2)" } : {}),
     })),
   },
   taper,
@@ -23,10 +24,11 @@ export function decay(progress: number, rate: number): number {
 definePart(
   {
     kind: "envelope",
-    samples: [0, 1, 4].map((rate) => ({
+    samples: [1, 0, 4].map((rate, index) => ({
       run: (progress: number) => decay(progress, rate),
       at0: 1,
       at1: Math.exp(-rate),
+      ...(index === 0 ? { label: "decay(p, 1)" } : {}),
     })),
   },
   decay,
@@ -39,10 +41,11 @@ export function attack(progress: number, rate: number): number {
 definePart(
   {
     kind: "envelope",
-    samples: [0, 1, 4].map((rate) => ({
+    samples: [1, 0, 4].map((rate, index) => ({
       run: (progress: number) => attack(progress, rate),
       at0: 0,
       at1: 1 - Math.exp(-rate),
+      ...(index === 0 ? { label: "attack(p, 1)" } : {}),
     })),
   },
   attack,
@@ -52,4 +55,4 @@ definePart(
 export function arch(progress: number): number {
   return Math.sin(Math.PI * progress);
 }
-definePart({ kind: "envelope", samples: [{ run: arch, at0: 0, at1: 0 }] }, arch);
+definePart({ kind: "envelope", samples: [{ run: arch, at0: 0, at1: 0, label: "arch(p)" }] }, arch);
