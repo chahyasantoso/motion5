@@ -13,7 +13,6 @@ export type MeasureResult =
   | { readonly kind: "written"; readonly file: string; readonly card: StyleCard }
   | { readonly kind: "refused"; readonly message: string };
 
-const MOST_WIDTH = 0.5;
 const MARGIN = 0.1;
 const STEP = 0.05;
 const MIN_MOTIONS = 3;
@@ -64,11 +63,11 @@ function cardText(brief: string, lively: ReadonlyMap<string, readonly [number, n
 }
 
 /** The range of the shares of lively motion a field has across pieces, widened and put on a grid, or none
- * when too wide. */
+ * when it is 0 to 1 and so refuses nothing. */
 function livelyRange(shares: readonly number[]): readonly [number, number] | undefined {
   const low = tidy(gridDown(Math.max(0, Math.min(...shares) - MARGIN)));
   const high = tidy(gridUp(Math.min(1, Math.max(...shares) + MARGIN)));
-  return high - low > MOST_WIDTH ? undefined : [low, high];
+  return low === 0 && high === 1 ? undefined : [low, high];
 }
 
 /** Writes `<brief>/style.ts`, a card whose `lively` gives, for each field, the range of the share of lively

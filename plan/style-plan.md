@@ -63,7 +63,7 @@ apps/pieces/<brief>/
   its skin.
 - **Measured cards.** `motion:style -- measure <brief>` takes each piece of the brief with 3 or more motions of a
   field, its lively share, and writes the lowest to highest share widened by 0.1, in steps of 0.05; a field whose range
-  is wider than 0.5 carries no signal and is left out. It refuses a brief that has a `style.ts`. `motion:style -- check
+  comes out 0 to 1 refuses nothing and is left out. It refuses a brief that has a `style.ts`. `motion:style -- check
   <brief>` runs `defineStyle`, the move and part gates on the brief, the portability rule, and the style findings of
   the brief's pieces and of every piece naming the style (a piece's other findings are its own).
 
@@ -90,7 +90,7 @@ order, `cssVariables`.
   shares. **Owner:** `packages/moves/src/style/{qualities,card}.ts`, `packages/tools/src/scene/{review,style}.ts`.
 - **Test:** three bouncy motions pass a `[0.5, 1]` card and three linear ones fail it with one finding; a design
   naming the field, or fewer than 3 motions, gives none; a calm `[0, 0.1]` card fails three bouncy ones; `measure`
-  writes the widened range and leaves out a field whose shares span too wide.
+  writes the widened range and leaves out a field whose range comes out 0 to 1.
 
 ### S4. The showreel style and the guide (planner)
 

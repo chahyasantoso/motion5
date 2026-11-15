@@ -56,7 +56,7 @@ describe("motion:style", () => {
     expect(cards.map((card) => card.name)).toEqual(["reel"]);
   });
 
-  it("leaves out a field whose shares are too far apart", async () => {
+  it("leaves out a field whose range comes out 0 to 1", async () => {
     const root = localRoot({
       "reel/src/all.ts": piece(three(BOUNCY, BOUNCY, BOUNCY)),
       "reel/src/none.ts": piece(three(LINEAR, LINEAR, LINEAR)),
@@ -64,6 +64,15 @@ describe("motion:style", () => {
     const made = await measureStyle(root, "reel");
     expect(made.kind).toBe("written");
     if (made.kind === "written") expect(made.card.lively["y"]).toBeUndefined();
+  });
+
+  it("keeps a wide range that still refuses something", async () => {
+    const root = localRoot({
+      "reel/src/all.ts": piece(three(BOUNCY, BOUNCY, BOUNCY)),
+      "reel/src/half.ts": piece(three(BOUNCY, LINEAR, LINEAR)),
+    });
+    const made = await measureStyle(root, "reel");
+    expect(made.kind === "written" ? made.card.lively["y"] : undefined).toEqual([0.2, 1]);
   });
 
   it("passes a brief right after measuring it", async () => {
