@@ -4,6 +4,7 @@ import {
   outsideRanges,
   valueField,
   type DescriptorRanges,
+  type Descriptors,
   type StyleCard,
 } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
@@ -719,13 +720,13 @@ function fieldOffsets(
   );
 }
 
-/** The descriptors of `offsets` that lie outside `ranges`, worded for `quality`; none when it fits. */
+/** The descriptors that lie outside `ranges`, worded for `quality`; none when it fits. */
 function missesOf(
-  offsets: readonly number[],
+  descriptors: Descriptors,
   quality: string,
   ranges: DescriptorRanges,
 ): readonly string[] {
-  return outsideRanges(describeOffsets(offsets), ranges).map(
+  return outsideRanges(descriptors, ranges).map(
     ({ key, value, range }) =>
       `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
   );
@@ -757,7 +758,7 @@ function designFindings(
       return `design names the quality "${quality}" for ${name}; the qualities are ${qualityNames(cards).join(", ")}.`;
     const offsets = fieldOffsets(samples, target, field, span);
     if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
-    const wants = missesOf(offsets, quality, ranges);
+    const wants = missesOf(describeOffsets(offsets), quality, ranges);
     return wants.length === 0 ? undefined : `${name}: ${wants.join("; ")}`;
   };
   return intentsOf(module.design).flatMap((intent) => {
@@ -777,33 +778,87 @@ function defaultFindings(
   const card = cards.find((each) => each.name === module.style);
   if (card === undefined) return [];
   const named = module.design === undefined ? [] : intentsOf(module.design);
+  return shapesOf(module, samples, Object.keys(card.defaults)).flatMap((shape) => {
+    const quality: unknown = Reflect.get(card.defaults, shape.field);
+    if (typeof quality !== "string") return [];
+    const ranges = rangesOf(quality, cards);
+    const designed = named.some(
+      (intent) =>
+        intent.field === shape.field &&
+        (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)),
+    );
+    if (ranges === undefined || designed) return [];
+    const wants = missesOf(shape.descriptors, quality, ranges);
+    const name =
+      shape.beat === undefined
+        ? `${shape.target}.${shape.field}`
+        : `${shape.target}.${shape.field} (${shape.beat})`;
+    return wants.length === 0 ? [] : [`${name}: ${wants.join("; ")} (style default)`];
+  });
+}
+
+/** One field of one target (an item of a list member as `word.3`) moving in one beat, and how. */
+export interface Shape {
+  readonly target: string;
+  readonly field: string;
+  readonly beat?: string;
+  readonly descriptors: Descriptors;
+}
+
+/** The dotted paths of the numbers a target's value carries in any sample. */
+function numberFields(samples: Samples, target: string): readonly string[] {
+  const paths = new Set<string>();
+  const walk = (value: unknown, prefix: string): void => {
+    if (typeof value === "number") {
+      if (prefix !== "" && Number.isFinite(value)) paths.add(prefix);
+      return;
+    }
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return;
+    for (const [key, inner] of Object.entries(value))
+      walk(inner, prefix === "" ? key : `${prefix}.${key}`);
+  };
+  for (const { targets: found } of samples) walk(targetValue(found, target), "");
+  return [...paths];
+}
+
+/** The shape of every unit, field (the given ones, else every number it carries) and beat in which the
+ * field moves, over samples of the module. */
+function shapesOf(
+  module: SceneModule,
+  samples: Samples,
+  only?: readonly string[],
+): readonly Shape[] {
   const spans: readonly (Beat | undefined)[] =
     module.beats === undefined || module.beats.length === 0 ? [undefined] : module.beats;
   const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))].flatMap(
     (target) => unitsOf(samples, target),
   );
   return targets.flatMap((target) =>
-    Object.entries(card.defaults).flatMap(([field, quality]) => {
-      const ranges = rangesOf(quality, cards);
-      const designed = named.some(
-        (intent) =>
-          intent.field === field &&
-          (target === intent.target || target.startsWith(`${intent.target}.`)),
-      );
+    (only ?? numberFields(samples, target)).flatMap((field) => {
       const carried = samples.some(
         ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
       );
-      if (ranges === undefined || designed || !carried) return [];
+      if (!carried) return [];
       return spans.flatMap((span) => {
         const offsets = fieldOffsets(samples, target, field, span);
         if (offsets === undefined) return [];
-        const wants = missesOf(offsets, quality, ranges);
-        const name =
-          span === undefined ? `${target}.${field}` : `${target}.${field} (${span.name})`;
-        return wants.length === 0 ? [] : [`${name}: ${wants.join("; ")} (style default)`];
+        const descriptors = describeOffsets(offsets);
+        return [
+          span === undefined
+            ? { target, field, descriptors }
+            : { target, field, beat: span.name, descriptors },
+        ];
       });
     }),
   );
+}
+
+/** The shape of each field each target of the module moves, in each beat (the whole run when it has
+ * none), sampled every step over its run. */
+export function measureShapes(module: SceneModule): readonly Shape[] {
+  const ms: number[] = [];
+  for (let at = 0; at <= module.durationMs; at += STEP_MS) ms.push(at);
+  return shapesOf(module, sampleScene(module, { kind: "time", ms }));
 }
 
 export function reviewSceneModule(
