@@ -257,6 +257,14 @@ describe("motion:new", () => {
     expect(parseLiveArgs(["timing", "--bogus"]).kind).toBe("usage");
     expect(parseLiveArgs(["Timing"]).kind).toBe("usage");
     expect(parseLiveArgs(["missing-scene"]).kind).toBe("usage");
+
+    for (const brief of ["one", "two"]) {
+      mkdirSync(join(dir, `${brief}/src`), { recursive: true });
+      writeFileSync(join(dir, `${brief}/src/twice.ts`), "export const scene = () => ({});");
+    }
+    const twice = parseLiveArgs(["twice", "--root", dir]);
+    expect(twice.kind).toBe("usage");
+    expect(twice.kind === "usage" ? twice.message : "").toContain("one and two");
   });
 
   it("starts a live server and reuses an already running server", async () => {
