@@ -1,43 +1,16 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
 
-const NAME = "scratch-colour-tint";
-const DIR = join(DEFAULT_ROOT, NAME);
-
+// The page is set in place, so a dev server reloading for another test cannot replace it; that `applyValue`
+// writes `--gerak-tint` for `tint` is the DOM renderer's own test.
 const PAGE = `<!doctype html>
 <html>
-  <head><meta charset="UTF-8" /><title>scratch</title></head>
+  <head><meta charset="UTF-8" /><title>tint</title></head>
   <body>
     <div id="box" style="width: 40px; height: 40px; background: color-mix(in oklch, rgb(255 0 0), var(--gerak-tint-to, rgb(0 0 255)) calc(var(--gerak-tint, 0) * 100%))"></div>
-    <script type="module" src="./${NAME}.ts"></script>
   </body>
 </html>
 `;
-
-const MODULE = `import { applyValue } from "@gerak/dom";
-Reflect.set(window, "__motionReady", Promise.resolve());
-Reflect.set(window, "paint", (tint: number) => {
-  const box = document.getElementById("box");
-  if (box === null) throw new Error("No box.");
-  applyValue(box, { tint });
-  return getComputedStyle(box).backgroundColor;
-});
-`;
-
-function removeScratch(): void {
-  rmSync(DIR, { recursive: true, force: true });
-}
-
-beforeAll(() => {
-  removeScratch();
-  mkdirSync(DIR, { recursive: true });
-  writeFileSync(join(DIR, `${NAME}.html`), PAGE, "utf8");
-  writeFileSync(join(DIR, `${NAME}.ts`), MODULE, "utf8");
-});
-
-afterAll(removeScratch);
 
 function oklch(css: string): number[] {
   const found = /^oklch\(([\d.]+) ([\d.]+) ([\d.]+)\)$/.exec(css);
@@ -49,18 +22,24 @@ describe("the tint field on a skinned element", () => {
   it("mixes from red to blue through the OKLCH middle at tint 0, 0.5 and 1", async () => {
     const { value, pageErrors } = await withPage(
       {
-        page: `${NAME}/${NAME}.html`,
+        page: "index.html",
         width: 200,
         height: 200,
         source: { kind: "serve", root: DEFAULT_ROOT },
         clock: "real",
       },
       async ({ page }) => {
-        // The module defines `paint` after load; a dev server reloading for another test can delay it.
-        await page.waitForFunction(() => typeof Reflect.get(window, "paint") === "function");
+        await page.setContent(PAGE);
         const colours: string[] = [];
         for (const tint of [0, 0.5, 1])
-          colours.push(await page.evaluate((t) => String(Reflect.get(window, "paint")(t)), tint));
+          colours.push(
+            await page.evaluate((t) => {
+              const box = document.getElementById("box");
+              if (box === null) throw new Error("No box.");
+              box.style.setProperty("--gerak-tint", String(t));
+              return getComputedStyle(box).backgroundColor;
+            }, tint),
+          );
         return colours;
       },
     );
