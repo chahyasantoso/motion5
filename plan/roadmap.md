@@ -118,8 +118,11 @@ Three things follow from it:
    Then the toolkit (`plan/toolkit-plan.md`, built, pull request 595): scene cost in the review, `motion:fps`,
    `tally`, contacts with a point, `attach`, 3D list targets, and closer looks in the tools.
 9. **Motion atlas, decided: deferred.** A library-agnostic learned map of motion waits for a sameness score showing
-   agents still converge. Its measured, zero-ML part comes first as anatomy (`plan/anatomy-plan.md`, proposed): the
-   layers as folders, new laws and fields, no recipes, and a catalog searched by measured descriptors.
+   agents still converge. Its measured, zero-ML part comes first as anatomy (`plan/anatomy-plan.md`, built on
+   `feat/anatomy`): the layers and part kinds as folders, field and part contracts, new laws and fields, a catalog
+   that answers a design, and a review that checks a piece's design.
+   Next, **style kits:** a style's moves, its own parts (custom parts per brief, gated by the part gate and promoted
+   like moves), its skin tokens and a style card of qualities the review checks, installed into another project.
 10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.

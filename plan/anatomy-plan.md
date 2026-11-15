@@ -26,7 +26,9 @@ new brief with new references, and an agent makes a new piece in that style, whi
 card. Here: portable move files, a catalog that reads any declared source of moves, and descriptor ranges in one
 shape a style card can reuse.
 
-Not planned here: the style kit; publishing a move pack; a shared registry; the motion atlas
+Not planned here: the style kit, and with it custom parts per brief (declared with `definePart` in
+`<brief>/src/parts/<kind>/`, held by the part gate, listed on the card by brief, refused when they sample as an existing
+part, and promoted like moves); publishing a move pack; a shared registry; the motion atlas
 (`plan/motion-atlas-plan.md`, deferred); a sameness score over agents' pieces, including a comparison of agents with
 and without the move catalog (its own plan, with at least two runs per arm); colour in 3D (a 3D piece keeps
 `custom` numbers); `chroma`; a mask of any shape; a new package; a sampled rule for signals.
