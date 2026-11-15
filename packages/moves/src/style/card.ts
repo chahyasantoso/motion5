@@ -51,7 +51,7 @@ function problemWith(card: StyleCard): string | undefined {
 }
 
 /** Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`. */
-function isTokenName(name: string): boolean {
+export function isTokenName(name: string): boolean {
   return /^--[A-Za-z0-9_-]+$/.test(name);
 }
 
