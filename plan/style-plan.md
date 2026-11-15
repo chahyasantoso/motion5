@@ -1,6 +1,6 @@
 # Style plan: a brief's style, carried to a new piece
 
-**Status:** Approved, 2026-11-15. S0 and S1 built.
+**Status:** Built, 2026-11-15.
 **Base:** `main` at `02389bb1`.
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-187-styles-on-briefs.md`,
 `.claude/skills/wave-build/SKILL.md`, then this plan.

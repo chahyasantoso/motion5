@@ -34,7 +34,8 @@ each, not which move to use, so your piece keeps its own story and borrows the f
    `rotation: 1 of 8 motions lively (13%); showreel wants 50% to 100% (style)`. Make more of that field's motions lively
    (a spring, an overshoot, a wind-up) or plainer, until the line is gone. A field with fewer than 3 motions is not
    judged. Each item of a list member is its own motion, so a list of eight specks weighs eight times one card:
-   when a list's motion is a deliberate effect, name it in the design, and the card leaves it out.
+   when a list's motion is a deliberate effect, name it in the design, and the card leaves it out. A curved path
+   counts as lively on the axis it rises and falls in (a `lob` with an `apex`); a straight one does not.
 
 ## Making your brief a style
 
