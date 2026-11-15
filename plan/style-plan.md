@@ -131,6 +131,9 @@ One pull request, after wave 6.
 
 - **A measured card can be too loose.** The S4 test (the library's soft moves fail the defaults) makes it visible.
 - **Beats mix motions.** Defaults are checked per beat a field changes in; a design per beat overrides the default.
+- **A field that leaves rest and returns inside one beat** has almost no travel, so its `overshoot` and `windup`
+  shares explode (the `delivered` parcel's `scaleX` reads 1652 in `fall`); a measured card holds them to 1 and the
+  lead narrows them in S4.
 - **Content leaks when an agent opens the style brief's pieces.** Only the guide forbids it; the measure checks it.
 
 ## 7. Done when
