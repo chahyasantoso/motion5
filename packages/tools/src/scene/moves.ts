@@ -1,3 +1,4 @@
+import { type Descriptors } from "@gerak/moves";
 import {
   CUSTOM_FIELD,
   MOVE_ROLES,
@@ -233,22 +234,6 @@ export function describeFinding(id: string, finding: MoveFinding): string {
   }
 }
 
-/** How one field's offset from rest moves over a move's progress. */
-export interface Descriptors {
-  /** Whether the offset is away from rest at progress 0 or at 1. */
-  readonly travelling: boolean;
-  /** The progress of its greatest step between samples. */
-  readonly peak: number;
-  /** The most it goes past where it is heading, over how far it had to go. */
-  readonly overshoot: number;
-  /** Crossings of rest after the first, or every crossing when it does not travel. */
-  readonly rings: number;
-  /** The most it pulls away from where it is heading before it first heads there, over how far it had to go. */
-  readonly windup: number;
-  /** The share of progress from its first arrival (or its greatest offset) until it stays near its end. */
-  readonly settle: number;
-}
-
 /** What sampling a move says of the fields it moves. */
 export interface MoveDescriptors {
   /** Every field the example or an option bound moves, in the order the example's pose gives them. */
@@ -296,6 +281,9 @@ export function describeOffsets(offsets: readonly number[]): Descriptors {
   const last = offsets.length - 1;
   const start = offsets[0] ?? 0;
   const end = offsets[last] ?? 0;
+  // A path that starts and ends away from rest is measured from where it ends, as one arriving at rest is.
+  if (Math.abs(start) > REST_SLACK && Math.abs(end) > REST_SLACK)
+    return describeOffsets(offsets.map((offset) => offset - end));
   const travelling = Math.abs(start) > REST_SLACK || Math.abs(end) > REST_SLACK;
   const steps = offsets.slice(1).map((offset, i) => Math.abs(offset - (offsets[i] ?? 0)));
   const greatestStep = Math.max(0, ...steps);

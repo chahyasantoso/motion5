@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
 import { definePart, type PartContract } from "@gerak/moves";
-import { checkParts, type MovePart } from "@gerak/tools/scene";
+import { checkLocalParts, checkParts, localParts, type MovePart } from "@gerak/tools/scene";
 
 function findings(
   group: MovePart["group"],
@@ -138,5 +142,72 @@ describe("checkParts refuses a part without a proper contract", () => {
   it("a part declared with a kind that is not its folder", () => {
     const out = findings("time", { kind: "utility" }, () => 0);
     expect(out.join("\n")).toMatch(/scratch.*utility.*time/);
+  });
+});
+
+const scratchRoots: string[] = [];
+afterEach(() => {
+  for (const dir of scratchRoots.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+const PART = (body: string, label = "") => `import { definePart } from "@gerak/moves";
+/** A scratch envelope. Second sentence. */
+export const x = definePart(
+  { kind: "envelope", samples: [{ run: ${body}, at0: 1, at1: 0${label === "" ? "" : `, label: "${label}"`} }] },
+  ${body},
+);
+`;
+
+function localRoot(files: Readonly<Record<string, string>>): string {
+  const root = mkdtempSync(join(tmpdir(), "local-parts-"));
+  scratchRoots.push(root);
+  for (const [file, text] of Object.entries(files)) {
+    mkdirSync(join(root, file, ".."), { recursive: true });
+    writeFileSync(join(root, file), text);
+  }
+  return root;
+}
+
+describe("local parts", () => {
+  it("gives a good part no finding and lists it with its source and group", async () => {
+    const root = localRoot({ "reel/src/parts/envelope/x.ts": PART("(p: number) => 1 - p * p") });
+    expect(await checkLocalParts(root)).toEqual([]);
+    const [part] = await localParts(root);
+    expect(part).toMatchObject({ name: "x", group: "envelope", source: "reel" });
+    expect(part?.use).toBe("A scratch envelope.");
+  });
+
+  it("refuses a part that dips below 0, naming the brief and the part", async () => {
+    const root = localRoot({ "reel/src/parts/envelope/x.ts": PART("(p: number) => 0.5 - p") });
+    expect((await checkLocalParts(root)).join("\n")).toMatch(/^reel\/x: sample 0/m);
+  });
+
+  it("refuses a part whose samples are a library part's, naming it", async () => {
+    const root = localRoot({
+      "k/src/parts/envelope/x.ts": PART("(p: number) => (1 - p) ** 2", "taper(p, 2)"),
+    });
+    expect(await checkLocalParts(root)).toEqual([
+      "k/x: samples as taper (sample 0); use taper instead",
+    ]);
+  });
+
+  it("refuses a part that repeats an earlier local part of the same kind", async () => {
+    const root = localRoot({
+      "a/src/parts/envelope/x.ts": PART("(p: number) => 1 - p * p"),
+      "b/src/parts/envelope/x.ts": PART("(p: number) => 1 - p * p"),
+    });
+    expect(await checkLocalParts(root)).toEqual([
+      "b/x: samples as a/x (sample 0); use a/x instead",
+    ]);
+  });
+
+  it("gives a finding for a folder that is not a kind", async () => {
+    const root = localRoot({ "reel/src/parts/wobbly/x.ts": PART("(p: number) => 1 - p * p") });
+    expect((await checkLocalParts(root)).join("\n")).toMatch(/reel.*wobbly/);
+  });
+
+  it("finds none in the real briefs", async () => {
+    const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
+    expect(await checkLocalParts(pieces)).toEqual([]);
   });
 });

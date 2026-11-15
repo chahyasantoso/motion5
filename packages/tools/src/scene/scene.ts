@@ -78,6 +78,8 @@ export interface SceneModule {
   readonly limits: Readonly<Record<string, TargetLimits>>;
   /** The module's `design`: the quality each target's field should have, checked by the review. */
   readonly design?: Design;
+  /** The name of the brief style card the piece follows, as its `style` export spells it. */
+  readonly style?: string;
   readonly beats?: readonly Beat[];
   readonly cast?: readonly CastName[];
   /** A stage module's `skins.dom.css`, which the review reads for the members it names. */
@@ -153,7 +155,13 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   const givenDesign: unknown = Reflect.get(Object(value), "design");
   const readIntent = givenDesign === undefined ? undefined : readDesign(givenDesign);
   if (readIntent?.kind === "refused") return { reason: `The module's ${readIntent.reason}` };
-  const designed = readIntent === undefined ? {} : { design: readIntent.design };
+  const givenStyle: unknown = Reflect.get(Object(value), "style");
+  if (givenStyle !== undefined && typeof givenStyle !== "string")
+    return { reason: "The module's `style` must be the name of a style card, a string." };
+  const designed = {
+    ...(readIntent === undefined ? {} : { design: readIntent.design }),
+    ...(givenStyle === undefined ? {} : { style: givenStyle }),
+  };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
   if (Reflect.get(Object(value), "beats") !== undefined) {

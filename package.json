@@ -51,6 +51,7 @@
     "motion:review": "node packages/tools/bin/motion-review.mjs",
     "motion:timeline": "node packages/tools/bin/motion-timeline.mjs",
     "motion:live": "node packages/tools/bin/motion-live.mjs",
+    "motion:style": "node packages/tools/bin/motion-style.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
     "dev": "npm run dev --workspace=@gerak/pieces"

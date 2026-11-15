@@ -1,8 +1,16 @@
 import { pathToFileURL } from "node:url";
-import { mergeEvents, valueField } from "@gerak/moves";
+import {
+  isLively,
+  mergeEvents,
+  outsideRanges,
+  valueField,
+  type DescriptorRanges,
+  type Descriptors,
+  type StyleCard,
+} from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 import { quaternionFromEuler3d } from "@gerak/rig";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {
   NO_REST,
@@ -16,7 +24,7 @@ import {
 } from "@gerak/stage";
 import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";
-import { QUALITIES, outsideRanges } from "./catalog";
+import { qualityNames, rangesOf, styleCards } from "./cards";
 import { intentsOf, type Intent } from "./design";
 import { describeOffsets } from "./moves";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
@@ -695,9 +703,43 @@ function unitsOf(samples: Samples, target: string): readonly string[] {
   return count === 0 ? [target] : Array.from({ length: count }, (_, index) => `${target}.${index}`);
 }
 
+/** A target's field as offsets from rest over the samples inside `span` (all when none), or none when
+ * it never moves there. */
+function fieldOffsets(
+  samples: Samples,
+  target: string,
+  field: string,
+  span: Beat | undefined,
+): readonly number[] | undefined {
+  const inside = samples.filter(
+    ({ at }) => span === undefined || (at >= span.from && at <= span.to),
+  );
+  return offsetsOf(
+    inside.map(({ at }) => at),
+    inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
+    restOfField(field),
+  );
+}
+
+/** The descriptors that lie outside `ranges`, worded for `quality`; none when it fits. */
+function missesOf(
+  descriptors: Descriptors,
+  quality: string,
+  ranges: DescriptorRanges,
+): readonly string[] {
+  return outsideRanges(descriptors, ranges).map(
+    ({ key, value, range }) =>
+      `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
+  );
+}
+
 /** One finding for each intent of the module's `design` that names what does not exist or whose field moves
  * outside its quality's ranges; a list member's intent holds for each of its items. */
-function designFindings(module: SceneModule, samples: Samples): readonly string[] {
+function designFindings(
+  module: SceneModule,
+  samples: Samples,
+  cards: readonly StyleCard[],
+): readonly string[] {
   if (module.design === undefined) return [];
   const beats = module.beats ?? [];
   const exists = (target: string): boolean =>
@@ -712,25 +754,13 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
     const span = beat === undefined ? undefined : beats.find((each) => each.name === beat);
     if (beat !== undefined && span === undefined)
       return `design names the beat "${beat}" for ${target}.${field}, which the module does not have.`;
-    const ranges = Object.hasOwn(QUALITIES, quality) ? QUALITIES[quality] : undefined;
+    const ranges = rangesOf(quality, cards);
     if (ranges === undefined)
-      return `design names the quality "${quality}" for ${name}; the qualities are ${Object.keys(QUALITIES).join(", ")}.`;
-    const inside = samples.filter(
-      ({ at }) => span === undefined || (at >= span.from && at <= span.to),
-    );
-    const offsets = offsetsOf(
-      inside.map(({ at }) => at),
-      inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
-      restOfField(field),
-    );
+      return `design names the quality "${quality}" for ${name}; the qualities are ${qualityNames(cards).join(", ")}.`;
+    const offsets = fieldOffsets(samples, target, field, span);
     if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
-    const outside = outsideRanges(describeOffsets(offsets), ranges);
-    if (outside.length === 0) return undefined;
-    const wants = outside.map(
-      ({ key, value, range }) =>
-        `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
-    );
-    return `${name}: ${wants.join("; ")}`;
+    const wants = missesOf(describeOffsets(offsets), quality, ranges);
+    return wants.length === 0 ? undefined : `${name}: ${wants.join("; ")}`;
   };
   return intentsOf(module.design).flatMap((intent) => {
     if (!exists(intent.target))
@@ -739,10 +769,122 @@ function designFindings(module: SceneModule, samples: Samples): readonly string[
   });
 }
 
+/** The motions of `field` in the module, leaving out the targets (and, when the design names a beat, only
+ * that beat) that the design names for that field. */
+export function styleMotions(
+  module: SceneModule,
+  samples: Samples,
+  field: string,
+): readonly Shape[] {
+  const named = module.design === undefined ? [] : intentsOf(module.design);
+  return shapesOf(module, samples, [field]).filter(
+    (shape) =>
+      !named.some(
+        (intent) =>
+          intent.field === field &&
+          (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)) &&
+          (intent.beat === undefined || shape.beat === intent.beat),
+      ),
+  );
+}
+
+/** For a styled module, one finding for each field of its card whose share of lively motions (three or
+ * more, leaving out targets the design names for that field) lies outside the card's range. */
+function styleFindings(
+  module: SceneModule,
+  samples: Samples,
+  cards: readonly StyleCard[],
+): readonly string[] {
+  const card = cards.find((each) => each.name === module.style);
+  if (card === undefined) return [];
+  const percent = (share: number): number => Math.round(share * 100);
+  return Object.entries(card.lively).flatMap(([field, range]) => {
+    const motions = styleMotions(module, samples, field);
+    if (motions.length < 3) return [];
+    const lively = motions.filter((shape) => isLively(shape.descriptors)).length;
+    const share = lively / motions.length;
+    if (share >= range[0] && share <= range[1]) return [];
+    return [
+      `${field}: ${lively} of ${motions.length} motions lively (${percent(share)}%); ${card.name} wants ${percent(range[0])}% to ${percent(range[1])}% (style)`,
+    ];
+  });
+}
+
+/** One field of one target (an item of a list member as `word.3`) moving in one beat, and how. */
+export interface Shape {
+  readonly target: string;
+  readonly field: string;
+  readonly beat?: string;
+  readonly descriptors: Descriptors;
+}
+
+/** The dotted paths of the numbers a target's value carries in any sample. */
+function numberFields(samples: Samples, target: string): readonly string[] {
+  const paths = new Set<string>();
+  const walk = (value: unknown, prefix: string): void => {
+    if (typeof value === "number") {
+      if (prefix !== "" && Number.isFinite(value)) paths.add(prefix);
+      return;
+    }
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return;
+    for (const [key, inner] of Object.entries(value))
+      walk(inner, prefix === "" ? key : `${prefix}.${key}`);
+  };
+  for (const { targets: found } of samples) walk(targetValue(found, target), "");
+  return [...paths];
+}
+
+/** The shape of every unit, field (the given ones, else every number it carries) and beat in which the
+ * field moves, over samples of the module. */
+function shapesOf(
+  module: SceneModule,
+  samples: Samples,
+  only?: readonly string[],
+): readonly Shape[] {
+  const spans: readonly (Beat | undefined)[] =
+    module.beats === undefined || module.beats.length === 0 ? [undefined] : module.beats;
+  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))].flatMap(
+    (target) => unitsOf(samples, target),
+  );
+  return targets.flatMap((target) =>
+    (only ?? numberFields(samples, target)).flatMap((field) => {
+      const carried = samples.some(
+        ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
+      );
+      if (!carried) return [];
+      return spans.flatMap((span) => {
+        const offsets = fieldOffsets(samples, target, field, span);
+        if (offsets === undefined) return [];
+        const descriptors = describeOffsets(offsets);
+        return [
+          span === undefined
+            ? { target, field, descriptors }
+            : { target, field, beat: span.name, descriptors },
+        ];
+      });
+    }),
+  );
+}
+
+/** The shape of each field each target of the module moves, in each beat (the whole run when it has
+ * none), sampled every step over its run. */
+export function measureShapes(module: SceneModule): readonly Shape[] {
+  return shapesOf(module, measureSamples(module));
+}
+
+/** The module sampled every step over its whole run, as a review samples it. */
+export function measureSamples(module: SceneModule): Samples {
+  const ms: number[] = [];
+  for (let at = 0; at <= module.durationMs; at += STEP_MS) ms.push(at);
+  return sampleScene(module, { kind: "time", ms });
+}
+
 export function reviewSceneModule(
   module: SceneModule,
-  request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
+  request: Pick<SceneReviewRequest, "to"> &
+    Limits & { readonly budget?: number; readonly cards?: readonly StyleCard[] },
 ): SceneReviewResult {
+  const cards = request.cards ?? [];
   const end = request.to ?? module.durationMs;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
@@ -778,7 +920,8 @@ export function reviewSceneModule(
     ...seekFindings(module, samples),
     ...lateCueFindings(module),
     ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
-    ...designFindings(module, samples),
+    ...designFindings(module, samples, cards),
+    ...styleFindings(module, samples, cards),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
@@ -799,7 +942,21 @@ export function reviewSceneModule(
 export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {
-  const module = readSceneModule(await import(pathToFileURL(resolve(request.file)).href));
+  const file = resolve(request.file);
+  const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
-  return reviewSceneModule(module, request);
+  if (module.style === undefined && module.design === undefined)
+    return reviewSceneModule(module, request);
+  const { cards, problems } = await styleCards(resolve(dirname(file), "..", ".."));
+  if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
+    const names = cards.map((card) => card.name).join(", ");
+    return {
+      kind: "usage",
+      message: [
+        `style "${module.style}" names no card; ${names === "" ? "there are none" : `the cards are ${names}`}`,
+        ...problems,
+      ].join("\n"),
+    };
+  }
+  return reviewSceneModule(module, { ...request, cards });
 }

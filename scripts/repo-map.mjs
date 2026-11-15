@@ -32,6 +32,7 @@ export const OWNERS = {
   "packages/dom/src": "DOM and SVG renderer",
   "packages/moves/src": "the one entry point and shared helpers",
   "packages/moves/src/fields": "what can change: the value table, poses, combine",
+  "packages/moves/src/style": "how a shape is judged: descriptors, qualities, their ranges",
   "packages/moves/src/parts": "definePart: what each part promises",
   "packages/moves/src/parts/time": "time, spans, windows",
   "packages/moves/src/parts/ease": "eases: progress to progress, 0 to 1",

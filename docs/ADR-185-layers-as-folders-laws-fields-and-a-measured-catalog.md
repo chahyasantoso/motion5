@@ -1,6 +1,7 @@
 # ADR-185: Layers as folders, laws and fields, and a measured catalog
 
 **Status:** Accepted, 2026-11-14
+**Superseded in part by ADR-187:** a move outside `@gerak/moves` may also import its own folder's `src/parts/`.
 
 ## Context
 

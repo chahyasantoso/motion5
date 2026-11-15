@@ -18,6 +18,7 @@ not by reading package source. Read a part below only when the brief needs it:
 | Numbers arriving while it plays: a microphone, a slider, a recorded session | [live inputs](./agent-inputs.md) |
 | A person watching edits land as you save | [live editing](./live.md) |
 | A page outside this repository, or a real site's own elements | [outside the stage](./agent-outside.md) |
+| A piece in another brief's style, or turning your brief into a style | [styles](./agent-style.md) |
 
 ## The loop
 
@@ -60,7 +61,7 @@ not by reading package source. Read a part below only when the brief needs it:
    and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
    does not yet have the quality you wrote. `npm run motion:review -- "stage.html?piece=<name>" --watch
    '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does, adds a `sheet` of frames picked where
-   the motion is fast; `--full` adds the moves with their eases.
+   the motion is fast; on a page, `--full` adds the moves with their eases.
 9. Fix what it flags, the design's findings first, and what looks wrong on the sheet; review again. Stop when the
    findings are empty and the sheet shows the three lines you wrote. Run `npm run typecheck` once at the end.
 

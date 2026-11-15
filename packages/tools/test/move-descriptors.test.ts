@@ -37,6 +37,25 @@ describe("describeOffsets", () => {
     expect(d.settle).toBeCloseTo(0.35, 1);
   });
 
+  it("measures a path that starts and ends away from rest by where it ends, not by rest", () => {
+    const leave = describeOffsets(
+      along([
+        [0, 120],
+        [1, 180],
+      ]),
+    );
+    expect(leave).toMatchObject({ travelling: true, overshoot: 0, windup: 0, rings: 0 });
+    const bob = describeOffsets(
+      along([
+        [0, 120],
+        [0.25, 140],
+        [0.75, 100],
+        [1, 120],
+      ]),
+    );
+    expect(bob).toMatchObject({ travelling: false, overshoot: 0, windup: 0, rings: 1 });
+  });
+
   it("measures an oscillating path by every crossing and by the tail after its greatest offset", () => {
     const hump = describeOffsets(
       Array.from({ length: 63 }, (_, i) => 40 * Math.sin((Math.PI * i) / 62)),

@@ -36,6 +36,7 @@ Public: `.`
 - `src/parts/signal/`: values from time and events: follow, trail, noise
 - `src/parts/time/`: time, spans, windows
 - `src/parts/utility/`: seeded numbers, the event list
+- `src/style/`: how a shape is judged: descriptors, qualities, their ranges
 
 ## packages/physics
 

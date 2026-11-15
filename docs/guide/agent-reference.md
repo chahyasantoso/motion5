@@ -281,6 +281,17 @@ const slide = defineMove({
 - **`overshoot`** `(options, time, input)`: Plays its input, then passes its last pose and settles back onto it. Options: `share` number 0..0.9, default 0.3: Share of the progress spent past the end; default 0.3.; `amount` number 0..1, default 0.1: How far past the end, as a share of the input's whole travel; default 0.1.
 - **`repeated`** `(time: Time, count: number): Time`: A time with its progress running 0 to 1 `count` times (rounded down, at least 1); a function of time, not a move.
 - **`smudge`** `(options, time, input)`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. Options: `amount` number >=0, required: The blur it ends at, in px.; `build` number 0.05..1, default 1: Share of the span the blur takes to build, then holds; default 1.
+- **`defineStyle`** `(card: StyleCard): StyleCard`: A frozen copy of the card, or an error naming its first problem.
+- **`isStyleCard`** `(value: unknown): value is StyleCard`: Whether `value` is a card `defineStyle` returned itself.
+- **`isTokenName`** `(name: string): boolean`: Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`.
+- **`StyleCard`** `type StyleCard`: A brief's style: the qualities it names, the share of lively motion each field holds, and its tokens and habits.
+- **`DESCRIPTOR_KEYS`** `const DESCRIPTOR_KEYS: readonly ["peak", "overshoot", "rings", "windup", "settle"]`: The descriptors a quality may range over, in the order every report lists them.
+- **`QUALITIES`** `const QUALITIES: Readonly<Record<string, DescriptorRanges>>`: The words `--like` understands, each as the ranges of descriptors a move with that quality sits in; `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose.
+- **`isLively`** `(shape: Descriptors): boolean`: Whether a shape is lively: it overshoots, rings or winds up.
+- **`outsideRanges`** `(descriptors: Descriptors, ranges: DescriptorRanges): readonly { readonly key: "overshoot" | "peak" | "settle" | "rings" | "windup"; readon…`: The descriptors a quality names that lie outside its range, each with its value and range; none means the shape has the quality.
+- **`qualityOf`** `(name: string): DescriptorRanges`: A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included).
+- **`DescriptorRanges`** `type DescriptorRanges`: The qualities `--like` knows, as a range per descriptor: `rings` counts, the others are shares or ratios.
+- **`Descriptors`** `type Descriptors`: How one field's offset from rest moves over a move's progress.
 <!-- generated:reference:end -->
 
 ## @gerak/player
@@ -511,6 +522,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
 - **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`cssVariables`** `(tokens: Readonly<Record<string, string>>): string`: A `:host` rule setting each token as a custom property, in the tokens' order; empty for none.
 - **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
 - **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: CarrySize): Pose2d`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`. Nothing is carried from or to a box with no size.
 - **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
@@ -641,6 +653,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 
 - **`motion:live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
+- **`motion:style measure <brief> [--root dir]`**: writes `<brief>/style.ts`, a style card measured from the scene modules
+  in `<brief>/src/*.ts`: per field, the range of the share of lively motions (overshoot, rings or windup) across the pieces that move it at least three times, widened a little. Prints the file and each field's lively share; an unknown brief or an existing `style.ts` is refused (exit `1`).
+- **`motion:style check <brief> [--root dir]`**: prints `ok`, or one finding per line and exits `1`: the card's load problems, imports
+  the brief's moves and parts may not make, the part and move gates on the brief, and the lively-share findings of the review of every piece of the brief and of any brief that exports `style = "<brief>"` (a piece's other findings are its own).
 - **`motion:new <name> [--in <brief>] [--three]`**: writes `<brief>/<name>.html`, its entry, a component and `<brief>/src/<name>-scene.ts` in
   `apps/pieces` (the brief is the name unless `--in` names one); a name any brief already holds is refused; `--three` makes the component a Three.js stage, one mesh per target bound with `useTarget3d`, and
   the scene returns `Pose3d` targets. Every target rests (`{}`) and the scene imports no move.

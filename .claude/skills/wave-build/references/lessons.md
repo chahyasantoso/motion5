@@ -10,6 +10,9 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - A review limit set for one unit hides a defect in another: `--turn 150` passed a 133 degree bone flip, and blink,
   a 0-1 custom number, is judged by the position `--jump`. The review could take limits per field kind or per target.
 
+- A measure that passes against a defective rule proves nothing: the first `launch-day` passed a card measured with
+  a windup bug the measure itself exposed. Fix the rule, re-measure the card, and run the measure again.
+
 ## What a wave costs
 
 Measured over 40 waves, 2026-11-11 to 11-14; the rows are in git history. The lead's own cost is never shown.
