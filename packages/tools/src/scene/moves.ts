@@ -10,7 +10,7 @@ import {
 } from "@gerak/moves";
 import { DEFAULT_LIMITS } from "../page/check";
 import { unreachable } from "../page/unreachable";
-import { SCENE_LIMITS } from "./review";
+import { SCENE_LIMITS } from "./limits";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */
 export interface CheckedMove {

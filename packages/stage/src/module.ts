@@ -33,6 +33,8 @@ export interface StageModule<
   readonly rests?: Layouts<L>;
   /** The piece's own events at known ms, such as a scripted click; the stage plays them beside the page's. */
   readonly cues?: Events;
+  /** What the module's `design` export held, unread: the tools above the stage check its shape. */
+  readonly design?: unknown;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -252,6 +254,7 @@ export function readStageModule(value: unknown): StageModule | { readonly reason
       cast,
       skins,
       ...layouts,
+      ...(value["design"] === undefined ? {} : { design: value["design"] }),
       ...(Array.isArray(cues) && cues.every(isMotionEvent) ? { cues: mergeEvents(cues) } : {}),
       scene: (time, events, at, measured) => {
         const values: unknown = Reflect.apply(scene, undefined, [time, events, at, measured]);
