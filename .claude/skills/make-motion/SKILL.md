@@ -13,11 +13,11 @@ A piece starts from its brief, not from a piece that already exists.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
-3. Choose moves from the catalog, `npm run motion:moves`, and compose them with the modifiers and `combine`. Where
-   nothing fits, write a move with `npm run motion:new -- --move <id>` and pass it through
-   `npm run motion:moves -- --check`.
-   `npm run motion:moves -- --parts` lists the building blocks a move is made from: time, eases, blends, paths,
-   follow-through, events, randomness.
+3. Read the primitives once with `npm run motion:moves -- --anatomy` (fields by what they change, parts by kind,
+   qualities). Write the piece's `design` (each member's fields with the quality they should have) before choosing
+   any move, then ask `npm run motion:moves -- --design <file> --target <member> --in <brief>`. Per line: use a move
+   as it is, at the options its row names, combine moves in the scene, or write one from the parts you named with
+   `npm run motion:new -- --move <id> --in <brief>` and pass it through `npm run motion:moves -- --check`.
 4. Do not open any other piece in `apps/pieces/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
@@ -31,6 +31,8 @@ A piece starts from its brief, not from a piece that already exists.
 ## Report
 
 - The obvious answer you named, the ideas you dropped, your three lines, and whether the finished piece shows them.
+- Your design, each line's fields and parts by kind, and for each line which choice you made (use, adjust, combine
+  or write) and why.
 - Each move you used, and each move you wrote: its id, its role and why no catalogued move would do. Name any
   motion you built from `keyframes` in the scene and say why it is not a move.
 - Any package source you opened, which file and why: that is a gap in the reference.
