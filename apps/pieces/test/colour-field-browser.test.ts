@@ -53,8 +53,11 @@ describe("the tint field on a skinned element", () => {
         width: 200,
         height: 200,
         source: { kind: "serve", root: DEFAULT_ROOT },
+        clock: "real",
       },
       async ({ page }) => {
+        // The module defines `paint` after load; a dev server reloading for another test can delay it.
+        await page.waitForFunction(() => typeof Reflect.get(window, "paint") === "function");
         const colours: string[] = [];
         for (const tint of [0, 0.5, 1])
           colours.push(await page.evaluate((t) => String(Reflect.get(window, "paint")(t)), tint));
