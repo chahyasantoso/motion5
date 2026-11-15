@@ -2,6 +2,9 @@ import { existsSync } from "node:fs";
 import { dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import * as moves from "@gerak/moves";
+import { unreachable } from "../page/unreachable";
+import { partContract, valueField, type PartContract } from "@gerak/moves";
 
 /** The groups the parts list sorts its building blocks into, in print order. */
 export const PART_GROUPS = [
@@ -59,6 +62,7 @@ function groupOf(file: string, entryDir: string): PartGroup | undefined {
   if (top === "moves") return undefined;
   if (top === "fields" || top === "compose") return top;
   if (top !== "parts") throw new Error(`moveParts: folder "${top}" is not a parts group`);
+  if (relative(entryDir, file).split(sep).length < 3) return undefined;
   if (!isGroup(second)) throw new Error(`moveParts: folder "parts/${second}" is not a parts group`);
   return second;
 }
@@ -207,6 +211,167 @@ export function partsImportedBy(
     }
   }
   return found;
+}
+
+const SAMPLE_STEPS = 100;
+const NEAR = 1e-9;
+const NEAR_PATH = 1e-6;
+const SECONDS = [0, 0.5, 1, 3] as const;
+const FOLDER_KINDS: readonly PartGroup[] = PART_GROUPS.filter(
+  (group) => group !== "fields" && group !== "compose",
+);
+
+function show(value: unknown): string {
+  return typeof value === "object" ? JSON.stringify(value) : String(value);
+}
+
+function isNear(actual: unknown, expected: number, tolerance: number): boolean {
+  return typeof actual === "number" && Math.abs(actual - expected) <= tolerance;
+}
+
+function isNearTurn(actual: unknown, expected: number): boolean {
+  if (typeof actual !== "number") return false;
+  const turn = (((actual - expected) % 360) + 360) % 360;
+  return turn <= NEAR || 360 - turn <= NEAR;
+}
+
+/** Whether `actual` carries `expected` on every field `expected` names; numbers meet to 1e-9, and
+ * modulo 360 for an angle. */
+function matches(actual: unknown, expected: unknown, angle: boolean): boolean {
+  if (typeof expected === "number")
+    return angle ? isNearTurn(actual, expected) : isNear(actual, expected, NEAR);
+  if (typeof expected === "object" && expected !== null) {
+    if (typeof actual !== "object" || actual === null) return false;
+    return Object.entries(expected).every(([key, value]) =>
+      matches(Reflect.get(actual, key), value, angle),
+    );
+  }
+  return actual === expected;
+}
+
+function poseOf(answer: unknown): Readonly<Record<string, unknown>> {
+  if (typeof answer !== "object" || answer === null) return {};
+  const inner: unknown = Reflect.get(answer, "pose");
+  const pose = typeof inner === "object" && inner !== null ? inner : answer;
+  return Object.fromEntries(Object.entries(pose));
+}
+
+function sampleFindings(contract: PartContract, name: string): readonly string[] {
+  const out: string[] = [];
+  const refuse = (index: number, what: string): void => {
+    out.push(`${name}: sample ${index} ${what}`);
+  };
+  switch (contract.kind) {
+    case "time":
+    case "geometry":
+    case "signal":
+    case "utility":
+      break;
+    case "ease":
+      contract.samples.forEach((run, index) => {
+        const start = run(0);
+        const end = run(1);
+        if (!isNear(start, 0, NEAR)) refuse(index, `is ${show(start)} at progress 0, not 0`);
+        if (!isNear(end, 1, NEAR)) refuse(index, `is ${show(end)} at progress 1, not 1`);
+      });
+      break;
+    case "envelope":
+      contract.samples.forEach(({ run, at0, at1 }, index) => {
+        for (let step = 0; step <= SAMPLE_STEPS; step += 1) {
+          const value = run(step / SAMPLE_STEPS);
+          if (!(value >= 0))
+            refuse(index, `is ${show(value)} at progress ${step / SAMPLE_STEPS}, below 0`);
+        }
+        const start = run(0);
+        const end = run(1);
+        if (!isNear(start, at0, NEAR)) refuse(index, `is ${show(start)} at progress 0, not ${at0}`);
+        if (!isNear(end, at1, NEAR)) refuse(index, `is ${show(end)} at progress 1, not ${at1}`);
+      });
+      break;
+    case "oscillation":
+      contract.samples.forEach(({ run, bound }, index) => {
+        for (let step = 0; step <= SAMPLE_STEPS; step += 1) {
+          const value = run(step / SAMPLE_STEPS);
+          if (!(Math.abs(value) <= bound + NEAR))
+            refuse(index, `is ${show(value)} at progress ${step / SAMPLE_STEPS}, past ${bound}`);
+        }
+      });
+      break;
+    case "dynamics":
+      contract.samples.forEach(({ run }, index) => {
+        for (const seconds of SECONDS) {
+          const state = run(seconds);
+          if (!isNear(state.offset, 0, NEAR) || !isNear(state.speed, 0, NEAR))
+            refuse(index, `is ${show(state)} at ${seconds} s from rest, not 0`);
+        }
+      });
+      break;
+    case "path":
+      contract.samples.forEach(({ run, from, to }, index) => {
+        const start = run(0);
+        const end = run(1);
+        for (const [key, value] of Object.entries(from))
+          if (!isNear(start[key], value, NEAR_PATH))
+            refuse(index, `has ${key} ${show(start[key])} at progress 0, not ${value}`);
+        for (const [key, value] of Object.entries(to))
+          if (!isNear(end[key], value, NEAR_PATH))
+            refuse(index, `has ${key} ${show(end[key])} at progress 1, not ${value}`);
+      });
+      break;
+    case "blend":
+      contract.samples.forEach(({ run, a, b, angle }, index) => {
+        const start = run(0);
+        const end = run(1);
+        if (!matches(start, a, angle === true))
+          refuse(index, `is ${show(start)} at share 0, not ${show(a)}`);
+        if (!matches(end, b, angle === true))
+          refuse(index, `is ${show(end)} at share 1, not ${show(b)}`);
+      });
+      break;
+    case "coupling":
+      contract.samples.forEach(({ run }, index) => {
+        for (const [field, value] of Object.entries(poseOf(run()))) {
+          if (typeof value !== "number") continue;
+          const rest = valueField(field)?.rest;
+          if (rest === undefined) continue;
+          if (!isNear(value, rest, NEAR))
+            refuse(index, `has ${field} ${show(value)} at rest ${rest}`);
+        }
+      });
+      break;
+    default:
+      return unreachable(contract);
+  }
+  return out;
+}
+
+function findingsOf(part: MovePart, value: unknown): readonly string[] {
+  if ((typeof value !== "function" && typeof value !== "object") || value === null)
+    return [`${part.name}: is not exported as a function or an object of functions`];
+  const contract = partContract(value);
+  if (contract === undefined)
+    return [
+      `${part.name}: has no contract; declare it with definePart({ kind: "${part.group}" }, ${part.name})`,
+    ];
+  if (contract.kind !== part.group)
+    return [`${part.name}: is declared ${contract.kind} but lives in the ${part.group} folder`];
+  try {
+    return sampleFindings(contract, part.name);
+  } catch (error) {
+    return [`${part.name}: a sample threw ${error instanceof Error ? error.message : show(error)}`];
+  }
+}
+
+/** The findings of the part gate: each exported part of a kind folder must carry a `definePart`
+ * contract of its folder's kind, and its samples must keep that kind's rule. `values` names another
+ * export table. */
+export function checkParts(
+  parts: readonly MovePart[] = moveParts(),
+  values: Readonly<Record<string, unknown>> = moves,
+): readonly string[] {
+  return parts
+    .filter((part) => FOLDER_KINDS.includes(part.group))
+    .flatMap((part) => findingsOf(part, values[part.name]));
 }
 
 /** The parts as printed lines: a heading per group, then one line per part. */
