@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -22,6 +22,8 @@ describe("scene modules", () => {
 
   it("never touch window or own the page's readiness promise", () => {
     for (const file of sceneModules()) {
+      // A browser test's scratch piece can be removed between the listing and the read.
+      if (!existsSync(file)) continue;
       const source = readFileSync(file, "utf8");
       expect(source, file).not.toMatch(/\bwindow\b/);
       expect(source, file).not.toContain("__motionReady");
