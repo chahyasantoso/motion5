@@ -266,9 +266,28 @@ function sampleFindings(contract: PartContract, name: string): readonly string[]
     case "geometry":
     case "signal":
     case "utility":
+      return out;
+    case "ease":
+    case "envelope":
+    case "oscillation":
+    case "dynamics":
+    case "path":
+    case "blend":
+    case "coupling":
+      if (contract.samples.length === 0)
+        return [`${name}: has no samples, so its rule checks nothing`];
       break;
+    default:
+      return unreachable(contract);
+  }
+  switch (contract.kind) {
     case "ease":
       contract.samples.forEach(({ run }, index) => {
+        for (let step = 0; step <= SAMPLE_STEPS; step += 1) {
+          const value = run(step / SAMPLE_STEPS);
+          if (!Number.isFinite(value))
+            refuse(index, `is ${show(value)} at progress ${step / SAMPLE_STEPS}, not a number`);
+        }
         const start = run(0);
         const end = run(1);
         if (!isNear(start, 0, NEAR)) refuse(index, `is ${show(start)} at progress 0, not 0`);
@@ -308,6 +327,8 @@ function sampleFindings(contract: PartContract, name: string): readonly string[]
       break;
     case "path":
       contract.samples.forEach(({ run, from, to }, index) => {
+        if (Object.keys(from).length === 0 || Object.keys(to).length === 0)
+          refuse(index, "names no key in from or to, so its ends are not checked");
         const start = run(0);
         const end = run(1);
         for (const [key, value] of Object.entries(from))

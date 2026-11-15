@@ -41,6 +41,25 @@ describe("checkParts refuses a part that breaks its kind's rule", () => {
     expect(out.join("\n")).toMatch(/scratch.*sample 0/);
   });
 
+  it("a sampled kind with no samples, which would check nothing", () => {
+    const flat = (): number => 1;
+    const out = findings("envelope", { kind: "envelope", samples: [] }, flat);
+    expect(out.join("\n")).toMatch(/scratch: has no samples/);
+  });
+
+  it("an ease that is not a number in its middle, though right at its ends", () => {
+    const hole = (progress: number): number =>
+      progress > 0.4 && progress < 0.6 ? Number.NaN : progress;
+    const out = findings("ease", { kind: "ease", samples: [{ run: hole }] }, hole);
+    expect(out.join("\n")).toMatch(/scratch.*sample 0.*not a number/);
+  });
+
+  it("a path whose ends name no key", () => {
+    const go = (progress: number) => ({ x: progress });
+    const out = findings("path", { kind: "path", samples: [{ run: go, from: {}, to: {} }] }, go);
+    expect(out.join("\n")).toMatch(/scratch.*sample 0.*names no key/);
+  });
+
   it("an ease that ends at 0.9", () => {
     const short = (progress: number): number => progress * 0.9;
     const out = findings("ease", { kind: "ease", samples: [{ run: short }] }, short);
