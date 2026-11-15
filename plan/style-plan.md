@@ -99,7 +99,7 @@ apps/pieces/<brief>/
 ### S4. The showreel style and the guide (planner)
 
 - `npm run motion:style -- measure showreel`. The lead narrows the card until it is a style, not a spread: the
-  showreel's pieces still review clean, and the library's `fade`, `slide` and `rise` fail the defaults on every field
+  `motion:style -- check showreel` passes (it counts only the card's findings; the pieces already hold others), and the library's `fade`, `slide` and `rise` fail the defaults on every field
   they share with the card (recorded as a test). The lead writes the habits from the brief's moves, never its stories.
 - `docs/guide/agent-style.md`: working in a style in the loop's order (read `--anatomy --style`, design with its
   qualities, ask `--design`, prefer its moves, prepend `cssVariables(tokens)`, never open the style brief's pieces);
