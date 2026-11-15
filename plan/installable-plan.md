@@ -18,7 +18,9 @@ guide that ships with the tools.** Nothing needs this repository.
 - **`npx gerak init`** sets a project up: a pieces folder, `gerak.pieces`, the guide and the agent skill.
 - **A reel is made the way a reel is produced:** a guide page takes an agent from brief to script (hook, story, call
   to action), to a storyboard of shots (time, framing, camera, transition, text), to beats named by those shots, with
-  a camera group for zooms and pans and transitions as moves, then reviewed shot by shot.
+  a camera group for zooms and pans and transitions as moves, then reviewed shot by shot. **Transitions are
+  seamless:** no hard cut; at every shot change at least one object carries through into the next shot, moved,
+  morphed, or zoomed into until it becomes the next shot's ground.
 
 Not planned here: publishing to npm (it waits for a project that needs it, ADR-179); the live kit as its own
 package; a `create-gerak` starter; Vue or Svelte.
@@ -87,9 +89,11 @@ its two uses. Commit and push before briefing S1.
 - `docs/guide/agent-reel.md`, routed from `agent-motion.md`'s table: the production steps in order. Brief; script
   (a hook in the first 3 s, the story, one call to action); `STORYBOARD.md` with one row per shot (start and end ms,
   framing, camera move, transition in, on-screen text, what the viewer must notice); beats named by the shots; a
-  `world` group as the camera (zoom, push, pan, shake as moves on it); transitions as moves (a cut is a beat
-  boundary, a whip-pan a fast camera `x` with blur, a zoom-through a push into a member, a wipe a growing clip, a
-  match cut a member carried between layouts); b-roll as cutaway shots of the piece's own material; the review read
+  `world` group as the camera (zoom, push, pan, shake as moves on it); seamless transitions, where at every shot change
+  at least one member carries through and the storyboard names it per row (a carry: one member moved and resized into
+  its place in the next shot with `carried`; a morph: a path member's outline turning into the next shot's shape; a
+  zoom-through: the camera pushed into a member until it fills the frame as the next ground; a whip-pan with a member
+  riding through; a wipe grown from a member); b-roll as cutaway shots of the piece's own material; the review read
   per shot and a frame sheet per transition. No footage: a clip as an object waits for the video stage.
 - A worked check before the measure: the lead builds a 10 s, three-shot scratch reel from the page and fixes what the
   page lacked; the scratch reel is not kept.
@@ -99,10 +103,12 @@ its two uses. Commit and push before briefing S1.
 - **Measure:** in a scratch Vite project outside the repository, with every package installed from tarballs and
   `npx gerak init` run, the `showreel` brief folder copied in; a fresh Sonnet worker at medium effort, from the
   shipped guide alone, makes `launch-night`: a 30 s product-launch reel in the showreel style (the product is its
-  own choice), with a hook, a story, b-roll cutaways, camera zooms and pans, at least four kinds of transition and a
-  call to action. It writes `STORYBOARD.md` and commits it before any scene code. It passes when `npx gerak review`
+  own choice), with a hook, a story, b-roll cutaways, camera zooms and pans, at least four kinds of seamless transition
+  (no hard cut: each shot change carries a named member into the next shot) and a call to action. It writes
+  `STORYBOARD.md`, with the carried member for each shot change, and commits it before any scene code. It passes when `npx gerak review`
   is clean, `npx gerak style check showreel` passes, `npx gerak frames` renders one frame per shot, the beats match
-  the storyboard's shots, and it read nothing from this repository. The lead reads the frames against the storyboard
+  the storyboard's shots, every carried member the storyboard names is on stage across its shot change (it shows in
+  both beats, read from the cast's `on` lists and the sampled values), and it read nothing from this repository. The lead reads the frames against the storyboard
   and says, as a reading, whether the hook, the story and the call to action land.
 - **Cold review:** a fresh executor-model agent reviews the diff and runs what it claims.
 
