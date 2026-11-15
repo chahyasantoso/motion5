@@ -334,6 +334,9 @@ One pull request, after wave 4.
 - **A1 and A1b move many files.** Each is a `git mv` commit with no other change, then a commit of paths, checked
   by samples and reviews before and after.
 - **Relative colour** needs Chromium 119 or later; other browsers are not tested here.
+- **Descriptors read one primary field.** A move whose largest offset is a plain travel (`hop`'s and `ballistic`'s
+  `x`) is measured by that travel, not its bounce; `hop` measures calm. Measuring every moved field is the next step
+  if the measure shows agents misled by it.
 - **Descriptors are new measures.** The quality table and the duplicate distance are tuned once, in one table, and
   the baseline keeps today's pairs from blocking the gate.
 
