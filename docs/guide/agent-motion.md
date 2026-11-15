@@ -40,7 +40,9 @@ not by reading package source. Read a part below only when the brief needs it:
    `stiff`, `loose`) as ranges of a motion's shape.
 5. **Write the design before choosing any move.** Turn your three lines into the piece's spec, in the module:
    `export const design = { ball: { y: { fall: "heavy" }, scaleY: { land: "loose" } } };`, each member's fields
-   with the quality their motion should have, by beat where its character changes. In your report, write under each
+   with the quality their motion should have, by beat where its character changes. A design names actors and
+   groups, not the items of a `many` or `letters`; name the beat in which the field actually moves, since the review
+   measures it there. In your report, write under each
    line the fields and the parts by kind it needs: "the fall: `y` heavy, a `ballistic` path; the landing: `scaleY`
    loose, an `envelope` times an `oscillation`".
 6. **Ask the catalog with the design.** `npm run motion:moves -- --design apps/pieces/<brief>/src/<name>.ts --target
@@ -49,8 +51,10 @@ not by reading package source. Read a part below only when the brief needs it:
    `--far <the obvious move>` finds ideas unlike it; `--renderer three` keeps moves a 3D page draws. Read a move in
    full (`-- <id>`) before using it.
 7. **Decide each line, in this order:** use a move as it is; use it at the options its row names; combine moves in
-   the scene, one per field (when no move does it all, the answer names the move for each field); or write a move
-   from the parts you named ([writing a move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
+   the scene, one per field (when no move does it all, the answer names the move for each field); drive the field in
+   the scene with parts (a `mix` on an ease, an envelope), when no move has it and only this piece needs it, as a
+   colour turning or a shadow following a height often is; or write a move from the parts you named ([writing a
+   move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
    choose every number from your three lines. In your report, give each line's choice and why.
 8. `npm run motion:review -- apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
    and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
