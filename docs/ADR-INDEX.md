@@ -190,3 +190,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-183 — 2D over 3D on one clock — Accepted, 2026-11-14
 - ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
 - ADR-185 — Layers as folders, laws and fields, and a measured catalog — Accepted, 2026-11-14
+- ADR-186 — The motion vocabulary — Accepted, 2026-11-15
