@@ -97,6 +97,13 @@ packages/
   imports the rest from core. A symbol moves when core code uses it, and the S1a builder lists any the rule adds.
 - **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `compose`, `blend`, `ease`,
   `envelope`, `geometry`, `path`, `measure`, `events`, `utility`, and the stage's contract; a test reads `@gerak/core`'s index and refuses an export from anywhere else.
+- **Arranging time has two shapes:** a time in, a time out (`reversed`, `repeated`, `timeAt`, and a plan's
+  `.of(time)`), and `sequence`, which picks the phase playing. A helper with settings is a plan built once and read with
+  `.of`: `span(from, to).of(time, ease?)`, `lanes(lengths, stagger, options).of(time, index)`,
+  `loop(ms, { yoyo? }).of(time)`, `chain(lengths, { gap?, overlap? })` returning spans. `lanes` takes `by: number[]`,
+  one value per item (a distance, an x), and starts the items in its order, beside `from`. `window`, `windowed`, `lane`
+  and `laneTime` are removed; `createLoopCycle` is the player's frame-driven loop, moved beside its one user,
+  `@gerak/dom`'s drivers, and is no scene helper. `story` stays the stage's named beats, built on `span`.
 - **Private geometry becomes core,** moved, never copied: `pathFrom` (`parsePathData`), `rectPath`, `circlePath`,
   `ellipsePath`, `polygonPath` (`outlinesOf`), `arcPath` (`arcCubics`), `linePath`, `transformPath`, `resamplePath`,
   `reversePath` (the stage's `splitTo`, `reversed`), `pathBounds` (the dom's `strokeBox` and import-svg's `boundsOf`),
@@ -157,6 +164,13 @@ after, `gerak moves --json` and `gerak moves --parts` print the same records; th
 What the script could not do: re-exports `@gerak/moves` must stop making, cycles, the part gate reading only the library's
 parts, the core-export test of section 4. `npm run check` green.
 
+### S1d. Arranging time (executor, after S1c, beside S2 and S3)
+
+Section 4's two shapes in `@gerak/core`'s `time` and `compose`: `lanes(...).of`, `lanes`' `by`, `loop` with `yoyo`,
+`chain`; `window`, `windowed`, `lane`, `laneTime` removed and their uses in briefs, tests and guides rewritten;
+`createLoopCycle` moved to `@gerak/dom`. Tests sample each new helper at its edges (start, end, overlap, a zero-length
+lane, a yoyo turn) and each rewritten brief's frames compare equal before and after.
+
 ### S2. Modules clean (executor, after S1c)
 
 `@gerak/physics` and `@gerak/rapier` depend on core only; `@gerak/three/skeleton` becomes `@gerak/rig/three`; rig
@@ -166,7 +180,7 @@ depends on core only; `@gerak/moves` declares rig. The boundary baseline loses t
 
 Section 4's private geometry and one-owner moves, with their tests, and the duplicate scan.
 
-### S4. Tools split (executor, after S2 and S3)
+### S4. Tools split (executor, after S1d, S2 and S3)
 
 `@gerak/library-tools` with the catalog, `promote`, `style`, `new --move` and review's design and style finder;
 `@gerak/tools` with the core commands, the pages, `listCommands()` and the `ReviewFinder` call; rig's `joints`.
@@ -184,7 +198,7 @@ link test per package.
 ### S6. Install gates (planner)
 
 `pack:check` gains a core-only project: the core install set alone, `node_modules/@gerak/` holding nothing else,
-`gerak init`, `new`, a 3 s piece using `span`, `mix`, `ease` and `arcPath`, `review` clean, `frames` rendering, `--help`
+`gerak init`, `new`, a 3 s piece using `span`, `chain`, `lanes`, `mix`, `ease` and `arcPath`, `review` clean, `frames` rendering, `--help`
 with no library command. A second project with core and library: `gerak moves`, `style check`, review's design findings.
 
 ### S7. Proof (planner, fresh agents, cold review)
@@ -199,7 +213,7 @@ review of the diff.
 | --- | --- | --- | --- |
 | 1 | Planner | S0 | nothing |
 | 2 | Executor; lead; executor | S1a, then S1b, then S1c | S0 |
-| 3 | Executors | S2; S3 | S1c |
+| 3 | Executors | S1d; S2; S3 | S1c |
 | 4 | Executor | S4 | wave 3 |
 | 5 | Executors | S5a, then S5b | S4 |
 | 6 | Planner, fresh agents | S6, S7 | S5b |
