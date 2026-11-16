@@ -21,6 +21,7 @@ import {
   type CastName,
   type Rest,
 } from "@gerak/stage";
+import { installedPackages } from "../../bin/commands.mjs";
 import { SCENE_LIMITS } from "./limits";
 import { qualityNames, rangesOf, styleCards } from "./cards";
 import { intentsOf, type Intent } from "./design";
@@ -262,7 +263,22 @@ export function reviewValues(
   return [...jumps, ...rest.map(describeFinding), ...ghosts];
 }
 
-type Samples = Parameters<typeof reviewValues>[0];
+/** A scene module sampled over its run: each step's time and the value of each target. */
+export type Samples = Parameters<typeof reviewValues>[0];
+
+/** What an installed package's review finder reads: the module and its sampled values. */
+export interface ReviewInput {
+  readonly module: SceneModule;
+  readonly samples: Samples;
+}
+
+/** Findings, one line each, an installed package gives a scene module; none means clean. */
+export type ReviewFinder = (input: ReviewInput) => readonly string[];
+
+/** What a package's declared review module returns, for the pieces root a scene file sits under. */
+export type ReviewPreparation =
+  | { readonly kind: "ready"; readonly find: ReviewFinder }
+  | { readonly kind: "refused"; readonly message: string };
 
 /** A name's value in a sample: a target's own, or one item of a `many` target, as `dust.3`. */
 function valueOf(targets: Readonly<Record<string, unknown>>, name: CastName): unknown {
@@ -880,7 +896,11 @@ export function measureSamples(module: SceneModule): Samples {
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> &
-    Limits & { readonly budget?: number; readonly cards?: readonly StyleCard[] },
+    Limits & {
+      readonly budget?: number;
+      readonly cards?: readonly StyleCard[];
+      readonly finders?: readonly ReviewFinder[];
+    },
 ): SceneReviewResult {
   const cards = request.cards ?? [];
   const end = request.to ?? module.durationMs;
@@ -920,6 +940,7 @@ export function reviewSceneModule(
     ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
     ...designFindings(module, samples, cards),
     ...styleFindings(module, samples, cards),
+    ...(request.finders ?? []).flatMap((find) => find({ module, samples })),
   ];
   if (beats === undefined) return { kind: "reviewed", findings };
   return {
@@ -943,9 +964,13 @@ export async function reviewSceneFile(
   const file = resolve(request.file);
   const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
+  const root = resolve(dirname(file), "..", "..");
+  const prepared = await prepareFinders(root, module);
+  if (prepared.kind === "refused") return { kind: "usage", message: prepared.message };
+  const finders = prepared.finders;
   if (module.style === undefined && module.design === undefined)
-    return reviewSceneModule(module, request);
-  const { cards, problems } = await styleCards(resolve(dirname(file), "..", ".."));
+    return reviewSceneModule(module, { ...request, finders });
+  const { cards, problems } = await styleCards(root);
   if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
     const names = cards.map((card) => card.name).join(", ");
     return {
@@ -956,5 +981,39 @@ export async function reviewSceneFile(
       ].join("\n"),
     };
   }
-  return reviewSceneModule(module, { ...request, cards });
+  return reviewSceneModule(module, { ...request, cards, finders });
+}
+
+function isPreparation(value: unknown): value is ReviewPreparation {
+  const kind: unknown = Reflect.get(Object(value), "kind");
+  if (kind === "ready") return typeof Reflect.get(Object(value), "find") === "function";
+  return kind === "refused" && typeof Reflect.get(Object(value), "message") === "string";
+}
+
+/** The finders of each installed package that declares a review module, ready for the scene under `root`,
+ * or the first refusal. */
+async function prepareFinders(
+  root: string,
+  module: SceneModule,
+): Promise<
+  | { readonly kind: "ready"; readonly finders: readonly ReviewFinder[] }
+  | { readonly kind: "refused"; readonly message: string }
+> {
+  const finders: ReviewFinder[] = [];
+  for (const { name, folder, gerak } of installedPackages()) {
+    if (gerak.review === undefined) continue;
+    const loaded: unknown = await import(pathToFileURL(resolve(folder, gerak.review)).href);
+    const prepare: unknown = Reflect.get(Object(loaded), "prepare");
+    if (typeof prepare !== "function")
+      return { kind: "refused", message: `${name}: its review module exports no \`prepare\`.` };
+    const made: unknown = await Reflect.apply(prepare, undefined, [root, module]);
+    if (!isPreparation(made))
+      return {
+        kind: "refused",
+        message: `${name}: \`prepare\` returned neither ready nor refused.`,
+      };
+    if (made.kind === "refused") return made;
+    finders.push(made.find);
+  }
+  return { kind: "ready", finders };
 }
