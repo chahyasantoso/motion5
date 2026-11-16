@@ -11,7 +11,7 @@ Glue that only this piece needs stays in the scene as a `mix`.
 1. `npx gerak new-move <id> --in <brief>` writes `<pieces>/<brief>/src/moves/<id>.ts`, a declaration the gate refuses.
 2. Fill it in: the `role`, a `description` the next agent will choose it by, each option with its range and a
    description, an `example`, and `run`, which answers a pose from the options and `progress` alone. Make an option of
-   what another brief would change, not of this piece's numbers. [`defineMove`](./agent-reference.md#writing-a-move)
+   what another brief would change, not of this piece's numbers. [`defineMove`](./agent-calls.md)
    lists the roles and what each must hold.
 3. **Build `run` from the parts your design named,** imported from `@gerak/moves`: an `envelope` (`taper`, `decay`,
    `attack`, `arch`) times an `oscillation` (`wave`) for anything that swings and dies away, a `path` (`ballistic`,

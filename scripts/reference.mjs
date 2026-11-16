@@ -1,28 +1,46 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const REFERENCE_PATH = "docs/guide/agent-reference.md";
 const START = "<!-- generated:reference:start -->";
 const END = "<!-- generated:reference:end -->";
 const NO_DOC = "(no doc comment)";
 const MAX_SIGNATURE = 140;
+const MAX_COMPACT_SIGNATURE = 100;
 
+/** Packages with a scene-facing entry, each with the entry files a caller imports. */
 export const PACKAGES = [
-  "moves/src/index.ts",
-  "player/src/index.ts",
-  "dom/src/index.ts",
-  "react/src/index.ts",
-  "rig/src/index.ts",
-  "stage/src/index.ts",
-  "physics/src/index.ts",
-  "rapier/src/index.ts",
-  "three/src/index.ts",
-  "three/src/react.ts",
-  "rig-three/src/index.ts",
+  { dir: "core", entries: ["src/index.ts"] },
+  { dir: "stage", entries: ["src/index.ts"] },
+  { dir: "player", entries: ["src/index.ts"] },
+  { dir: "dom", entries: ["src/index.ts"] },
+  { dir: "react", entries: ["src/index.ts"] },
+  { dir: "three", entries: ["src/index.ts", "src/react.ts"] },
+  { dir: "rig", entries: ["src/index.ts"] },
+  { dir: "rig-three", entries: ["src/index.ts"] },
+  { dir: "physics", entries: ["src/index.ts"] },
+  { dir: "rapier", entries: ["src/index.ts"] },
+  { dir: "moves", entries: ["src/index.ts"] },
 ];
+
+/** Core's groups in the order a reader needs them; every other package lists its groups by name. */
+const CORE_GROUPS = [
+  "fields",
+  "time",
+  "blend",
+  "ease",
+  "envelope",
+  "geometry",
+  "path",
+  "measure",
+  "events",
+  "utility",
+];
+
+/** The read-whole pages: the package whose entries they carry, and the page. */
+export const READ_WHOLE = [];
 
 /** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */
 function workspacePaths() {
@@ -127,6 +145,12 @@ function optionsOf(symbol, checker) {
   return { call: `(${names.join(", ")})`, text: `Options: ${lines.join("; ")}` };
 }
 
+function firstSentence(text) {
+  const flat = text.replace(/\s*\n\s*/g, " ");
+  const end = /[.!?](?=\s|$)/.exec(flat);
+  return end === null ? flat : flat.slice(0, end.index + 1);
+}
+
 function entryOf(name, exportedSymbol, checker) {
   const symbol =
     (exportedSymbol.flags & ts.SymbolFlags.Alias) !== 0
@@ -138,33 +162,130 @@ function entryOf(name, exportedSymbol, checker) {
   // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
   const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
   const tail = options === undefined ? "" : ` ${options.text}`;
-  return { name, doc, text: `- **\`${name}\`** \`${signature}\`: ${meaning}${tail}` };
+  const short =
+    signature.length > MAX_COMPACT_SIGNATURE
+      ? `${signature.slice(0, MAX_COMPACT_SIGNATURE - 1)}…`
+      : signature;
+  const declaration = symbol.declarations?.[0];
+  return {
+    name,
+    doc,
+    file: declaration === undefined ? "" : declaration.getSourceFile().fileName,
+    text: `- **\`${name}\`** \`${signature}\`: ${meaning}${tail}`,
+    compact: `- **\`${name}\`** \`${short}\`: ${firstSentence(doc === "" ? NO_DOC : doc)}`,
+  };
 }
 
-/** One generated body per package, and the names with no doc comment. */
+/** The group a declaring file belongs to: its folder under `src`, or "index" for a file at the root of `src`. */
+function groupOf(file, srcFolder) {
+  if (!file.startsWith(srcFolder)) return undefined;
+  const parts = file.slice(srcFolder.length).split("/");
+  return parts.length > 1 ? parts[0] : "index";
+}
+
+function orderGroups(dir, names) {
+  const known = dir === "core" ? CORE_GROUPS.filter((name) => names.includes(name)) : [];
+  const rest = names.filter((name) => !known.includes(name)).sort();
+  return [...known, ...rest];
+}
+
+function introOf(scanRoot, dir, group) {
+  const file = join(scanRoot, "packages", dir, "docs", `${group}.intro.md`);
+  return existsSync(file) ? readFileSync(file, "utf8").trim() : "";
+}
+
+/** Every package's exports as groups, and the names with no doc comment. */
 export function generate(scanRoot = root, packages = PACKAGES) {
-  const files = packages.map((name) => join(scanRoot, "packages", name));
+  const files = packages.flatMap(({ dir, entries }) =>
+    entries.map((entry) => join(scanRoot, "packages", dir, entry)),
+  );
   const { program, checker } = createChecker(files);
-  const bodies = [];
   const undocumented = [];
-  packages.forEach((name, index) => {
-    const source = program.getSourceFile(files[index] ?? "");
-    const module = source === undefined ? undefined : checker.getSymbolAtLocation(source);
-    const exported = module === undefined ? [] : checker.getExportsOfModule(module);
-    const entries = (source === undefined ? [] : orderedNames(source, checker, exported)).flatMap(
-      (exportedName) => {
-        const symbol = exported.find(({ name: candidate }) => candidate === exportedName);
-        return symbol === undefined ? [] : [entryOf(exportedName, symbol, checker)];
-      },
-    );
-    for (const entry of entries)
-      if (entry.doc === "") undocumented.push(`${name.split("/")[0]}: ${entry.name}`);
-    bodies.push(entries.map(({ text }) => text).join("\n"));
+  const result = packages.map(({ dir, entries }) => {
+    const srcFolder = `${join(scanRoot, "packages", dir, "src").split("\\").join("/")}/`;
+    const seen = new Set();
+    const byGroup = new Map();
+    for (const entry of entries) {
+      const path = join(scanRoot, "packages", dir, entry);
+      const source = program.getSourceFile(path);
+      const module = source === undefined ? undefined : checker.getSymbolAtLocation(source);
+      const exported = module === undefined ? [] : checker.getExportsOfModule(module);
+      for (const name of source === undefined ? [] : orderedNames(source, checker, exported)) {
+        const symbol = exported.find(({ name: candidate }) => candidate === name);
+        if (symbol === undefined || seen.has(name)) continue;
+        seen.add(name);
+        const item = entryOf(name, symbol, checker);
+        const group = groupOf(item.file, srcFolder);
+        if (group === undefined) continue;
+        if (item.doc === "") undocumented.push(`${dir}: ${name}`);
+        byGroup.set(group, [...(byGroup.get(group) ?? []), item]);
+      }
+    }
+    const groups = orderGroups(dir, [...byGroup.keys()]).map((name) => ({
+      name,
+      intro: introOf(scanRoot, dir, name),
+      entries: byGroup.get(name) ?? [],
+    }));
+    return { dir, groups };
   });
-  return { bodies, undocumented };
+  return { packages: result, undocumented };
 }
 
-/** The reference with each marker pair's inside replaced; undefined when the pairs do not match. */
+function groupText(dir, group) {
+  const intro = group.intro === "" ? [] : [group.intro, ""];
+  return [
+    `# @gerak/${dir}: ${group.name}`,
+    "",
+    ...intro,
+    ...group.entries.map(({ text }) => text),
+    "",
+  ];
+}
+
+/** The generated reference files of every package, by path from the repository root. */
+export function referenceFiles(generated) {
+  const files = new Map();
+  for (const { dir, groups } of generated.packages) {
+    const base = `packages/${dir}/docs/reference`;
+    for (const group of groups)
+      files.set(`${base}/${group.name}.md`, groupText(dir, group).join("\n"));
+    const lines = groups.map(
+      (group) =>
+        `- [${group.name}](./${group.name}.md), ${group.entries.length} exports${
+          group.intro === "" ? "" : `: ${firstSentence(group.intro)}`
+        }`,
+    );
+    files.set(
+      `${base}/README.md`,
+      [
+        `# @gerak/${dir} reference`,
+        "",
+        "Generated from doc comments by `npm run reference -- --write`; one page per source folder.",
+        "",
+        ...lines,
+        "",
+      ].join("\n"),
+    );
+  }
+  return files;
+}
+
+/** The body between a read-whole page's markers: a table of contents, then every group in compact form. */
+export function readWholeBody(generated, dir) {
+  const found = generated.packages.find((candidate) => candidate.dir === dir);
+  const groups = found === undefined ? [] : found.groups;
+  const toc = groups.map((group) => `- [${group.name}](#${group.name}): ${group.entries.length}`);
+  const sections = groups.flatMap((group) => [
+    "",
+    `## ${group.name}`,
+    "",
+    ...(group.intro === "" ? [] : [group.intro, ""]),
+    ...group.entries.map(({ compact }) => compact),
+  ]);
+  return ["Groups:", ...toc, ...sections].join("\n");
+}
+
+/** The page with each marker pair's inside replaced; undefined when the pairs do not match. */
 export function fill(text, bodies) {
   const lines = text.split("\n");
   const out = [];
@@ -187,43 +308,63 @@ export function fill(text, bodies) {
   return inside || pair !== bodies.length ? undefined : out.join("\n");
 }
 
-/** The question this asks of the committed reference: is it what the code says now. */
+function readIf(file) {
+  return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+}
+
+function existingReferenceFiles(scanRoot, dirs) {
+  return dirs.flatMap((dir) => {
+    const folder = join(scanRoot, "packages", dir, "docs", "reference");
+    return existsSync(folder)
+      ? readdirSync(folder).map((name) => `packages/${dir}/docs/reference/${name}`)
+      : [];
+  });
+}
+
+/** What the committed docs must become: every file's text, and the problems that no write can fix. */
+function expectedDocs(scanRoot) {
+  const generated = generate(scanRoot);
+  const files = referenceFiles(generated);
+  const problems = generated.undocumented.map((name) => `${name} has no doc comment`);
+  for (const { dir, path } of READ_WHOLE) {
+    const committed = readIf(join(scanRoot, path));
+    const filled =
+      committed === undefined ? undefined : fill(committed, [readWholeBody(generated, dir)]);
+    if (filled === undefined) problems.push(`${path}: missing or its marker pair does not match`);
+    else files.set(path, filled);
+  }
+  return { files, problems, dirs: PACKAGES.map(({ dir }) => dir) };
+}
+
+/** The question this asks of the committed docs: is each generated file what the code says now. */
 export function checkReference(scanRoot = root) {
-  const target = join(scanRoot, REFERENCE_PATH);
-  const committed = readFileSync(target, "utf8");
-  const expected = fill(committed, generate(scanRoot).bodies);
-  if (expected === undefined)
-    return [`${REFERENCE_PATH}: marker pairs do not match the ${PACKAGES.length} packages`];
-  const undocumented = generate(scanRoot).undocumented.map((name) => `${name} has no doc comment`);
-  return expected === committed
-    ? undocumented
-    : [`${REFERENCE_PATH} is out of date: run npm run reference -- --write`, ...undocumented];
+  const { files, problems, dirs } = expectedDocs(scanRoot);
+  const stale = [...files]
+    .filter(([path, text]) => readIf(join(scanRoot, path)) !== text)
+    .map(([path]) => `${path} is out of date: run npm run reference -- --write`);
+  const extra = existingReferenceFiles(scanRoot, dirs)
+    .filter((path) => !files.has(path))
+    .map((path) => `${path} is no longer generated: run npm run reference -- --write`);
+  return [...problems, ...stale, ...extra];
 }
 
 export function main(argv = process.argv.slice(2), scanRoot = root) {
-  const { bodies, undocumented } = generate(scanRoot);
-  if (undocumented.length > 0)
-    console.error(
-      `${undocumented.length} exports with no doc comment:\n${undocumented.join("\n")}`,
-    );
-  const target = join(scanRoot, REFERENCE_PATH);
-  const committed = readFileSync(target, "utf8");
-  const expected = fill(committed, bodies);
-  if (expected === undefined) {
-    console.error(`${REFERENCE_PATH}: marker pairs do not match the ${PACKAGES.length} packages`);
-    return 1;
+  if (!argv.includes("--write")) {
+    const problems = checkReference(scanRoot);
+    for (const problem of problems) console.error(problem);
+    if (problems.length === 0) console.log(`reference current: ${PACKAGES.length} packages`);
+    return problems.length === 0 ? 0 : 1;
   }
-  if (argv.includes("--write")) {
-    writeFileSync(target, expected, "utf8");
-    console.log(`${REFERENCE_PATH} written`);
-    return 0;
+  const { files, problems, dirs } = expectedDocs(scanRoot);
+  for (const path of existingReferenceFiles(scanRoot, dirs))
+    if (!files.has(path)) rmSync(join(scanRoot, path));
+  for (const [path, text] of files) {
+    mkdirSync(join(scanRoot, path, ".."), { recursive: true });
+    writeFileSync(join(scanRoot, path), text, "utf8");
   }
-  if (expected !== committed) {
-    console.error(`${REFERENCE_PATH} is out of date: run npm run reference -- --write`);
-    return 1;
-  }
-  console.log(`${REFERENCE_PATH} current: ${bodies.length} packages`);
-  return 0;
+  for (const problem of problems) console.error(problem);
+  console.log(`reference written: ${files.size} files`);
+  return problems.some((problem) => !problem.includes("no doc comment")) ? 1 : 0;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) process.exitCode = main();

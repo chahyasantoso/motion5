@@ -22,7 +22,7 @@ A piece starts from its brief, not from a piece that already exists.
    tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
    when the brief needs it.
-6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
+6. Find any function or command by searching the package references (`packages/<package>/docs/reference/`) and [the call examples](../../../docs/guide/agent-calls.md) for its name;
    do not read the reference whole, and do not read package source.
 7. Review with `gerak review`; dig with the other tools only into what a review showed. Read the sheet before
    calling the piece finished.

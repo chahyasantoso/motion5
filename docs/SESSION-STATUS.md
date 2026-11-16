@@ -19,7 +19,7 @@ byte ceiling.
   is the card of primitives, the catalog answers a piece's `design`, and `gerak review` checks the design. A brief
   folder is portable with its own parts; its optional `style.ts` card holds the share of lively motion per field, which
   `gerak review` checks for any piece naming it and `gerak style` measures (the `showreel` card, measured by
-  `launch-day`). Decisions are ADR-170 to ADR-188; the agent guide and the generated `docs/guide/agent-reference.md` describe use. Every package installs
+  `launch-day`). Decisions are ADR-170 to ADR-188; the agent guide and the generated `packages/<package>/docs/reference` pages describe use. Every package installs
   from its tarball; nothing is on npm (ADR-179, ADR-188).
 
 ## Next in line

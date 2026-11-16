@@ -1,7 +1,7 @@
 # Physics
 
 Read this when motion should follow forces: many bodies, collisions, a pile. For a designed bounce or squash, a move is
-simpler. Names are in [the reference](./agent-reference.md#gerakphysics).
+simpler. Names are in [the reference](./agent-calls.md#gerakphysics).
 
 ```ts
 import { builtinWorld, simulate } from "@gerak/physics";

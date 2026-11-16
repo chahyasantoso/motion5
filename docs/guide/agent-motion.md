@@ -2,7 +2,7 @@
 
 A **scene** is a function from time, and the events so far, to one value per target. You build it from **moves**:
 named pieces of motion, each declared with what it is for. You write the scene in code; the repo plays it, renders it
-and checks it. Look up any function or command in [the reference](./agent-reference.md) by searching it for the name,
+and checks it. Look up any function or command in the package references (`packages/<package>/docs/reference/README.md`) and [the call examples](./agent-calls.md),
 not by reading package source. `<pieces>` is your pieces folder, the one `gerak.pieces` in your package.json names
 (`apps/pieces` in this repository). Read a part below only when the brief needs it:
 

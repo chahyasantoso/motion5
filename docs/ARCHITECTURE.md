@@ -85,8 +85,8 @@ One owner per question. A second place that answers one of these is the defect t
 
 ## 5. Public surface
 
-Each package declares its entries in its `exports` map, and the reference names every export
-([agent-reference.md](./guide/agent-reference.md), held complete by a test). The boundary scan refuses a workspace
+Each package declares its entries in its `exports` map, and each package's generated reference names every export
+(`packages/<package>/docs/reference`, held current by a test). The boundary scan refuses a workspace
 import of a subpath a package does not declare.
 
 ## 6. Deliberately excluded

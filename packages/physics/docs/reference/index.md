@@ -1,0 +1,25 @@
+# @gerak/physics: index
+
+- **`builtinWorld`** `(): PhysicsWorld`: The built-in engine: circles and boxes that turn, on floors, walls and segments; pure and synchronous.
+- **`simulate`** `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions): Simulation (+1 overloads)`: Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. Builds a 3D world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
+- **`Placed`** `type Placed`: Where a body is for an element laid out centred on the stage's top left corner, and whether it exists yet.
+- **`SimulateOptions`** `type SimulateOptions`: Settings of `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.
+- **`SimulateOptions3d`** `type SimulateOptions3d`: Settings of 3D `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.
+- **`Simulation`** `type Simulation`: A world played from time 0, seekable to any time, the same at the same time and events whatever came before.
+- **`Simulation3d`** `type Simulation3d`: A 3D world played from time 0, seekable to any time, deterministic across seeks.
+- **`Spawner`** `type Spawner`: What a spawn may do to the world: add bodies, nothing else.
+- **`Spawner3d`** `type Spawner3d`: What a 3D spawn may do to the world: add 3D bodies, nothing else.
+- **`BodySpec`** `type BodySpec`: A body to add: where its centre starts in stage px, its turn in degrees, and how fast both change.
+- **`BodySpec3d`** `type BodySpec3d`: A 3D body to add: starting position in world units, initial quaternion, and velocities (degrees/s).
+- **`BodyState`** `type BodyState`: Where a body's centre is in stage px and how it is turned in degrees, and how fast each changes a second.
+- **`BodyState3d`** `type BodyState3d`: A 3D body's world position, orientation quaternion, linear velocity, and angular velocity (deg/s).
+- **`Collider`** `type Collider`: A collider that never moves: the line bodies rest on, a side that keeps them in, or a ramp.
+- **`Collider3d`** `type Collider3d`: A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box.
+- **`Contact`** `type Contact`: Two things that started touching during a step, and where: body ids, or a body id and a collider id, and the point in stage px.
+- **`Contact3d`** `type Contact3d`: A 3D contact: the pair that started touching and the point where they met, in scene units.
+- **`PhysicsWorld`** `type PhysicsWorld`: What every physics engine gives a scene, in stage px, degrees and seconds, y down and turns clockwise.
+- **`PhysicsWorld3d`** `type PhysicsWorld3d`: What a 3D physics engine gives a scene: world units, y up, quaternions and degrees a second.
+- **`Quaternion3d`** `type Quaternion3d`: A unit quaternion `{ w, x, y, z }` representing a 3D orientation.
+- **`Shape`** `type Shape`: A body's outline: a circle by its radius, or a box by its size, centred on the body.
+- **`Shape3d`** `type Shape3d`: A 3D body's shape: a sphere by radius, or a box by width, height and depth, centred on the body.
+- **`Surface`** `type Surface`: How a surface answers a hit: bounce kept, from 0 to 1, and grip, from 0 up; the two sides' values average.

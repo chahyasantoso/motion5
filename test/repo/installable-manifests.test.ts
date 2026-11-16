@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
+import { PACKAGES } from "../../scripts/reference.mjs";
 import { withExtensions } from "../../scripts/build.mjs";
 import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-packages.mjs";
 
@@ -12,6 +13,9 @@ const SHIPPED: Readonly<Record<string, readonly string[]>> = {
   tools: ["dist", "bin", "guide", "LICENSE"],
   "moves-tools": ["dist", "bin", "LICENSE"],
 };
+
+/** Packages whose generated reference ships in `docs`. */
+const WITH_DOCS = new Set(PACKAGES.map(({ dir }) => dir));
 
 describe("installable manifests", () => {
   it("names every public package under packages/ once, the tools last but one", () => {
@@ -29,7 +33,10 @@ describe("installable manifests", () => {
       expect(manifest.version).toBe("0.1.0");
       expect(manifest.private).toBeUndefined();
       expect(manifest.license).toBe("MIT");
-      expect(manifest.files).toEqual(SHIPPED[directory] ?? ["dist", "LICENSE"]);
+      expect(manifest.files).toEqual(
+        SHIPPED[directory] ??
+          (WITH_DOCS.has(directory) ? ["dist", "docs", "LICENSE"] : ["dist", "LICENSE"]),
+      );
       for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
         if (name.startsWith("@gerak/")) expect(range).toBe("0.1.0");
       }

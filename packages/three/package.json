@@ -8,6 +8,7 @@
   "type": "module",
   "files": [
     "dist",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",

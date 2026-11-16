@@ -1,0 +1,12 @@
+# @gerak/three: index
+
+- **`morphTargets`** `(root: Object3D<Object3DEventMap>): CustomWriter`: Builds a `CustomWriter` that writes `[0, 1]`-clamped values into matching `morphTargetInfluences` under `root`.
+- **`applyPose2d`** `(object: Object3D<Object3DEventMap>, pose: Pose2d, rest?: { readonly x: number; readonly y: number; }, custom?: CustomWriter): void`: Writes a 2D pose on an object: y and rotation flip for its axes; calls `custom(name, value, object)` for each custom number; leaves blur, stroke, clip and layer alone.
+- **`UNWRITTEN_2D`** `const UNWRITTEN_2D: Readonly<Partial<Record<CarriedBy<"both" | "2d"> | "anchor" | "custom", string>>>`: The 2D pose fields `applyPose2d` leaves alone, each with the reason.
+- **`WRITTEN_2D`** `const WRITTEN_2D: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The 2D pose fields `applyPose2d` writes on an object; custom numbers go to the piece's own writer.
+- **`CustomWriter`** `type CustomWriter`: Where a piece puts a custom number on an object; the renderer knows no meaning for it.
+- **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
+- **`setEulerDegrees`** `(target: Euler, rotation: number, rotationX: number, rotationY: number): Euler`: Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360.
+- **`UNWRITTEN_3D`** `const UNWRITTEN_3D: Readonly<Partial<Record<"x" | "scale" | "y" | "z" | "scaleX" | "scaleY" | "scaleZ" | "opacity" | "anchor" | "custom" | …`: The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one.
+- **`WRITTEN_3D`** `const WRITTEN_3D: readonly ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY", "scaleZ", "opacity"]`: The 3D pose fields `applyPose3d` writes on an object; custom numbers go to the piece's own writer.
+- **`useTarget3d`** `<T extends object, K extends Pose3dTargets<T>>(player: Player<T>, target: K, options?: { readonly invalidate?: () => void; }): RefCallback<… (+1 overloads)`: Writes a 3D pose target on the object the ref lands on, every step, with no render; its position then is its rest. With `at`, binds only the `at`th pose of a list target; a missing index writes nothing, a bad one throws.

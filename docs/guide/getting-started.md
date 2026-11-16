@@ -62,6 +62,6 @@ with no browser.
 ## Where next
 
 - [Making motion as an agent](./agent-motion.md): the brief, the move catalog, composing and the review loop.
-- [Agent reference](./agent-reference.md): every function, type and command, each with a short example.
+- [Agent call examples](./agent-calls.md): short examples of the calls a scene uses; every export is in `packages/<package>/docs/reference/README.md`.
 - [3D scenes](./agent-3d.md), [rigs](./agent-rigs.md), [events](./agent-events.md), [physics](./agent-physics.md)
   and [motion principles](./agent-principles.md) when a brief needs them.

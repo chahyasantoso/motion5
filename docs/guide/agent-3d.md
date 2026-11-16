@@ -2,7 +2,7 @@
 
 Read this when the brief is three-dimensional: depth, turns about more than one axis, a camera that moves. A 3D scene
 is a code scene like any other; only its poses and its renderer change. Names are in
-[the reference](./agent-reference.md#3d-poses).
+[the reference](./agent-calls.md).
 
 ## The loop
 

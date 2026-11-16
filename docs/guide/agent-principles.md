@@ -1,7 +1,7 @@
 # Motion principles
 
 Read this when the brief asks for weight, life, character or polish. Each principle below is a tool with knobs, not a
-look: pick the amounts the brief's style calls for. Names are in [the reference](./agent-reference.md).
+look: pick the amounts the brief's style calls for. Names are in [the reference](./agent-calls.md).
 
 ## The tools
 

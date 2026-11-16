@@ -9,6 +9,7 @@ const ROOT = new URL("../../", import.meta.url);
 const guide = [
   "docs/guide/live.md",
   "docs/guide/agent-motion.md",
+  "docs/guide/agent-calls.md",
   "docs/guide/agent-events.md",
   "docs/guide/agent-physics.md",
   "docs/guide/agent-rigs.md",
@@ -114,7 +115,7 @@ describe("agent guide", () => {
   it("names no worked example's scene file, so a piece starts from its brief and not from a copy", () => {
     const read = [
       guide,
-      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
+      readFileSync(new URL("docs/guide/agent-calls.md", ROOT), "utf8"),
       readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
     ].join("\n");
     const examples = [
@@ -149,7 +150,7 @@ describe("agent guide", () => {
     );
     const read = [
       guide,
-      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
+      readFileSync(new URL("docs/guide/agent-calls.md", ROOT), "utf8"),
       readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
     ].join("\n");
     const named = [...read.matchAll(/[\w-]+\.tsx?\b/g)].map((match) => match[0]);

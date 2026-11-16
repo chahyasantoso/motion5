@@ -1,0 +1,9 @@
+# @gerak/player: index
+
+- **`manualDriver`** `(options?: { readonly durationMs?: number; }): ManualDriver`: A driver moved by hand: `.seek(progress)`, `.seekMs(ms)`. Timed when given `durationMs`, untimed otherwise.
+- **`play`** `<T extends object>(scene: Scene<T>, driver: Driver, options?: PlayOptions): Player<T>`: Runs `scene` against `driver`, telling each target's subscribers its value on every step.
+- **`Driver`** `type Driver`: What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves.
+- **`ManualDriver`** `type ManualDriver`: A driver moved by hand, timed when it knows its length in ms.
+- **`Player`** `type Player`: A scene's values by target, rerun whole on each step of its driver.
+- **`PlayOptions`** `type PlayOptions`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. The scene sees only events at or before the time's elapsed ms.
+- **`Scene`** `type Scene`: A scene: every target's value from the time and the events so far.

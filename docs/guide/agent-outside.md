@@ -25,7 +25,7 @@ const stage = mountStage(container, stageModuleOf(read));
   `container.firstElementChild?.shadowRoot`.
 - To check a moment by hand, pause and seek: `stage.driver.pause()`, then `stage.driver.seek(progress)`, where
   progress runs from 0 to 1 over the story, not in ms.
-- A move's options, with their ranges, are in its entry in [the reference](./agent-reference.md#gerakmoves); the
+- A move's options, with their ranges, are in its entry in [the reference](./agent-calls.md#gerakmoves); the
   catalog command prints the same in this repository.
 
 ## On a real site's elements

@@ -1,0 +1,1 @@
+A field is one named number of a pose, such as x, y or rotate; this group declares the fields, how contributions combine, and the 2D and 3D pose shapes. Reach for it when a scene defines its own fields or combines several contributions into one pose.
