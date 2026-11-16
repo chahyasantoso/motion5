@@ -1,0 +1,221 @@
+# Split plan: core, modules and library
+
+**Status:** Proposed, 2026-11-16, after one round of critique.
+**Base:** `main` at `2a2021c6` (installable tools merged).
+**Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`,
+`docs/ADR-188-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
+
+## 1. Goal
+
+**A person or agent installs gerak's core, reads one short reference whole, and makes, plays and checks a piece with
+nothing else; when a piece needs bones, bodies or a shared vocabulary of moves and styles, they install that module or
+the library and its own docs and commands arrive with it.** The code is split so that line is visible and enforced:
+core holds what cannot differ between projects, modules hold opt-in capabilities, the library holds what can.
+
+Why: today `@gerak/moves` mixes the kernel every package needs (fields, time, events) with parts, moves, compose and
+styles, `@gerak/tools` depends on every package, and one 88 KB reference covers all of it. On the NADI brief a gerak
+agent cost 187.5k tokens against a plain HTML/JS agent's 110.6k; it read 17 KB of guide, grepped the reference, opened
+package source, and still missed `lanes`, `trace`, `seeded` and `smudge`.
+
+**Done when:** a project with only the core install set (section 3) runs `gerak init`, `new`, `review` and `frames`
+from tarballs with no module or library package present; the boundary scan refuses any import across the line the wrong
+way; every package ships its own docs; `npm run check` is green; and a fresh agent builds NADI with core only, its
+tokens, time and defects reported against the 110.6k plain baseline. That measure informs the search plan; it does not
+gate this one.
+
+## 2. The rule
+
+| Group | Holds | Test |
+| --- | --- | --- |
+| **Core** | definitions and maths that cannot differ between projects, and the mechanisms that attach a look | a piece may need it, and no project would want it different |
+| **Modules** | opt-in capabilities that are still pure maths | only pieces with bones or bodies need it |
+| **Library** | vocabulary and taste: named moves, qualities, styles, and the tools for them | a project could want it different |
+
+Imports only go down: library may import modules and core; modules import core; core imports nothing of the other two.
+The boundary scan enforces it. `@gerak/stage`'s skins, layouts and outlines are core: they are how a look is attached
+and measured, not a look. Moves such as `trace` and `smudge` are library: a core-only piece gets the same effect from
+the core fields (`drawn`, `blur`) and writes its own motion, a trade-off taken on purpose.
+
+## 3. Layout, install sets and owners
+
+```text
+packages/
+  core/
+    core/     @gerak/core     fields, Pose2d/Pose3d, combine, rotation maths, Time, span, clocks, arranging time
+                              (sequence, lanes, loop, repeated, reversed), events, blend, the standard eases and
+                              springs, envelopes, oscillations, signals, coupling, geometry and paths, seeded random,
+                              clamp, unreachable, definePart and its closed set of part kinds
+    stage/    @gerak/stage    the piece contract: cast, beats, skins, scene, layouts, carried, outlines
+    player/   @gerak/player   the clock that plays a scene
+    dom/      @gerak/dom      the DOM renderer
+    react/    @gerak/react    the React renderer
+    three/    @gerak/three    the Three.js renderer (no rig)
+    tools/    @gerak/tools    the gerak command, the core commands, the pages
+  modules/
+    rig/      @gerak/rig      bones, chains, joints, IK; `@gerak/rig/three` binds a glTF skeleton (three an optional peer)
+    physics/  @gerak/physics  2D bodies and worlds
+    rapier/   @gerak/rapier   the Rapier engine
+  library/
+    moves/    @gerak/moves    defineMove, the named moves, qualities, descriptors, style cards; depends on rig (rope)
+    tools/    @gerak/library-tools   the catalog (gerak moves), promote, style, new --move, review's design and style
+```
+
+- **The core install set:** `@gerak/core`, `stage`, `player`, `dom`, `react`, `tools`, with peers `react`, `react-dom`,
+  `vite`, `playwright-core`. `@gerak/three` is core but optional, for 3D pieces.
+- **Paths:** each workspace is `packages/<group>/<name>`; the workspace globs are `packages/core/*`,
+  `packages/modules/*`, `packages/library/*`; `INSTALLABLE_PACKAGES` holds those two-part paths in dependency order; the
+  scripts that read a package join `packages/` with that path, and `allPackages` in the source aliases walks both levels.
+
+| Question | Owner |
+| --- | --- |
+| What a field is, how values combine, what time is | `@gerak/core` |
+| Euler, matrix and quaternion maths | `@gerak/core`, moved from rig |
+| What a part is, and the closed set of part kinds | `@gerak/core`; the library adds parts of those kinds, never a kind |
+| What a move is (`defineMove`), what a quality and a style are | `@gerak/moves` |
+| Which commands `gerak` runs | `listCommands()` in `@gerak/tools`: its own list plus each installed package's declared list |
+| Which findings `gerak review` reports | `@gerak/tools`'s review, which calls each installed package's declared finder through one `ReviewFinder` type |
+| A package's docs | that package, in its `docs/` |
+
+## 4. Decisions to record (ADR-189)
+
+- **Three groups, imports only downward,** as in section 2. Supersedes ADR-185's layers inside `@gerak/moves` and
+  ADR-187's "a brief imports `@gerak/moves`": a brief imports core, and a module or the library only if installed.
+- **`@gerak/core` is new** and takes from `@gerak/moves` its fields, time, compose, every part folder (blend, ease,
+  dynamics, envelope, oscillation, signal, coupling, geometry, path, utility), `definePart` and `unreachable`. From
+  `@gerak/rig/src/frame/frame3d.ts` it takes exactly what core uses: `Euler3d`, `Vec3`, `Matrix3`, `Quaternion`,
+  `ZERO_EULER`, `IDENTITY_MATRIX3`, `LOCAL_X3`, `matrixFromEuler3d`, `eulerFromMatrix3d`, `multiplyMatrix3`,
+  `multiplyVector3`, `transposeMatrix3`, `canonicalDegrees`, `rotationAboutAxis3d`, the `*3` vector functions,
+  `axisX3`, `quaternionFromEuler3d`, `matrixFromQuaternion`, `slerpQuaternion`, with `readNumber` and `isRecord` as
+  internals. Pivot offsets, effective links, world frames, swing and twist and `blendOrientation3d` stay in rig, which
+  imports the rest from core. A symbol moves when core code uses it, and the S1a builder lists any the rule adds.
+- **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `compose`, `parts/<kind>`,
+  `events`, and the stage's contract; a test reads `@gerak/core`'s index and refuses an export from anywhere else.
+- **Private geometry becomes core,** moved, never copied: `pathFrom` (`parsePathData`), `rectPath`, `circlePath`,
+  `ellipsePath`, `polygonPath` (`outlinesOf`), `arcPath` (`arcCubics`), `linePath`, `transformPath`, `resamplePath`,
+  `reversePath` (the stage's `splitTo`, `reversed`), `pathBounds` (the dom's `strokeBox` and import-svg's `boundsOf`),
+  `pathArea`, `isClosedPath`, `pathLength` (`arcLength`). `gerak import-svg` and the stage's outline matching import them.
+- **One owner for shared helpers:** `unreachable` and `clamp` from `@gerak/core`, every copy removed; the stage's `lerp`
+  becomes `mix`. A duplicate scan joins `npm run check`: two top-level functions of one name in two packages whose bodies,
+  with comments and whitespace removed, hash alike, are a finding; its baseline may only shrink.
+- **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig/three`. `@gerak/tools`
+  drops its `rig` and `three` dependencies; `gerak joints` moves to rig's declared commands.
+- **Commands plug in.** A package declares `"gerak": { "commands": "./bin/commands.mjs", "review": "<module>" }`;
+  `listCommands()` reads its own list and each installed package's; `gerak --help` is tested with and without the
+  library installed. A library command run without the library is "unknown command".
+- **Each package ships its own docs** in `docs/`, listed in `files`. Generated pages come from each export's doc comment,
+  grouped by source folder in a fixed order, each group opened by a hand-written `docs/<group>.intro.md`; the gate checks
+  them as it checks the reference today. `@gerak/core/docs/core.md` and `@gerak/stage/docs/stage.md` are the read-whole
+  pages: a table of contents, then every group, at most 20 KB each, a test holding the size. One page per group, with an
+  index, comes from the same generator for people.
+- **`gerak init` writes `AGENTS.md`** naming the two read-whole pages and, for each installed module or library
+  package, one line naming its page; nothing for one not installed. `@gerak/tools` ships no guide.
+
+## 5. Where today's guide goes
+
+| Today in `docs/guide/` | Goes to |
+| --- | --- |
+| `agent-motion.md` (the loop, the stage module, composing, traps) | `@gerak/stage/docs/` (loop, module, traps); `@gerak/core/docs/` (composing) |
+| `agent-reference.md` | generated per package |
+| `agent-events.md`, `agent-layout.md`, `agent-inputs.md` | `@gerak/stage/docs/` |
+| `agent-outside.md` | `@gerak/dom/docs/` |
+| `agent-3d.md` | `@gerak/three/docs/` |
+| `agent-artwork.md`, `live.md` | `@gerak/tools/docs/` |
+| `agent-rigs.md` | `@gerak/rig/docs/` |
+| `agent-physics.md` | `@gerak/physics/docs/` |
+| `agent-moves.md`, `agent-principles.md`, `agent-style.md`, `agent-reel.md` | `@gerak/moves/docs/` |
+
+`docs/guide/` keeps the human `README.md` and `getting-started.md`, pointing into the packages.
+
+## 6. Slices
+
+### S0. Decision and the layout (planner)
+
+ADR-189 and its index line. The package folders moved by `git mv` into `core/`, `modules/`, `library/` with no code
+change, and the scripts taught the path form of section 3: workspace globs, installable list, source aliases, build,
+pack check, boundary scan, cycle scan, repo map. The boundary rule added with today's violations as a baseline that may
+only shrink. `npm run check` and `pack:check` green on the moved tree.
+
+### S1a. Rotation maths into core (executor)
+
+`@gerak/core` created with the rotation maths of section 4; rig imports it; `scan:cycles` green.
+
+### S1b. Kernel and parts into core (lead script)
+
+`scripts/split-core.mjs`, run once and deleted in the same commit, moves the folders of section 4 with their tests and
+rewrites every import in packages, apps, briefs, docs and templates from `@gerak/moves` to `@gerak/core`. Before and
+after, `gerak moves --json` and `gerak moves --parts` print the same records; the commit holds the move alone.
+
+### S1c. Fix-up (executor, after S1b)
+
+What the script could not do: re-exports `@gerak/moves` must stop making, cycles, the part gate's folder rule over core,
+`definePart`'s kinds, the core-export test of section 4. `npm run check` green.
+
+### S2. Modules clean (executor, after S1c)
+
+`@gerak/physics` and `@gerak/rapier` depend on core only; `@gerak/three/skeleton` becomes `@gerak/rig/three`; rig
+depends on core only; `@gerak/moves` declares rig. The boundary baseline loses those lines.
+
+### S3. Geometry into core and one owner (executor, after S1c, beside S2)
+
+Section 4's private geometry and one-owner moves, with their tests, and the duplicate scan.
+
+### S4. Tools split (executor, after S2 and S3)
+
+`@gerak/library-tools` with the catalog, `promote`, `style`, `new --move` and review's design and style finder;
+`@gerak/tools` with the core commands, the pages, `listCommands()` and the `ReviewFinder` call; rig's `joints`.
+
+### S5a. Generated docs per package (executor, after S4)
+
+The reference generator run per package into its `docs/`, by source folder, with the intro files; the gate per package.
+
+### S5b. Guide moved, read-whole pages, init (executor, after S5a)
+
+The guide pages moved by script as in section 5 and their links rewritten; `core.md` and `stage.md` with their size
+tests; `gerak init`'s `AGENTS.md` with and without a module installed; `@gerak/tools`'s `guide/` removed; the shipped-docs
+link test per package.
+
+### S6. Install gates (planner)
+
+`pack:check` gains a core-only project: the core install set alone, `node_modules/@gerak/` holding nothing else,
+`gerak init`, `new`, a 3 s piece using `span`, `mix`, `ease` and `arcPath`, `review` clean, `frames` rendering, `--help`
+with no library command. A second project with core and library: `gerak moves`, `style check`, review's design findings.
+
+### S7. Proof (planner, fresh agents, cold review)
+
+A fresh Sonnet agent builds NADI from core-only tarballs, reading `AGENTS.md`; tokens, time, tool calls, files read and
+defects reported against the 110.6k plain HTML/JS baseline, and its interview read for what it rebuilt by hand. A cold
+review of the diff.
+
+## 7. Team and order
+
+| Wave | Who | Slices | Needs |
+| --- | --- | --- | --- |
+| 1 | Planner | S0 | nothing |
+| 2 | Executor; lead; executor | S1a, then S1b, then S1c | S0 |
+| 3 | Executors | S2; S3 | S1c |
+| 4 | Executor | S4 | wave 3 |
+| 5 | Executors | S5a, then S5b | S4 |
+| 6 | Planner, fresh agents | S6, S7 | S5b |
+
+One pull request, after wave 6. Executors are Sonnet at medium effort, in their own worktrees.
+
+## 8. Deferred
+
+- **Search** (`plan/search-plan.md`): `gerak find` over the library and the brief records, revised to sit on this split
+  as a library tool. Next.
+- **Harvest:** a library command that turns a piece's own helpers into declared parts and moves by type and by sampling,
+  matches them against existing records, and proves by sampling every member before and after that nothing changed.
+  After search.
+- Brief folders mirroring the library (`src/parts/<kind>/`, `compose/`, `fields/`): with search.
+
+## 9. Risks
+
+- **S1b rewrites imports across most of the repository;** it is one scripted commit, the catalog's records compared
+  before and after.
+- **Core grows past one read:** every part folder joins core, about 70 entries; if `core.md` will not fit 20 KB, the
+  size test fails and the lead reports which group to move rather than raising the cap.
+- **Plug-in commands and review finders are a second way things appear;** one function owns each list, tested with and
+  without the library.
+- **Briefs in `apps/pieces` import across the line;** the S1b script rewrites them and the boundary scan checks them.
+- **Core-only gerak may still cost more than plain code;** S7 reports it plainly, and the search plan decides from it.
+- **Cost:** about 8 executor slices (90k to 260k each), the S1b script, the proof build (about 190k) and the review.

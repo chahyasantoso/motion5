@@ -1,6 +1,6 @@
 # Search plan: find before you build
 
-**Status:** Proposed, 2026-11-16, after one round of critique.
+**Status:** Waiting for `plan/split-plan.md`; to be revised onto its library before it starts.
 **Base:** `feat/installable` at `2e1117a4` (pull request 598, not merged).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`, `docs/ADR-188-*.md`,
 `.claude/skills/wave-build/SKILL.md`, then this plan.
