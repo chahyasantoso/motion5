@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import * as builtIn from "@gerak/moves";
+import * as builtIn from "virtual:gerak/built-in-moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
 
 export type { NumericLiteralSpan };

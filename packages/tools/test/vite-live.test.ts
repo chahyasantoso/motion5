@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  BUILT_IN_MOVES_MODULE,
   applySourceEdit,
   canAttachLiveEndpoints,
   motionLivePlugin,
@@ -190,6 +191,29 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     expect(() => {
       plugin.configureServer({ config: { command: "serve", isProduction: true } });
     }).toThrow("motionLivePlugin refuses a production server.");
+  });
+
+  it("serves the built-in moves only when the project resolves @gerak/moves", async () => {
+    const plugin = motionLivePlugin({ appRoot: "/project" });
+    const id = plugin.resolveId(BUILT_IN_MOVES_MODULE);
+    expect(id).not.toBeNull();
+    expect(plugin.resolveId("react")).toBeNull();
+    const asked: string[] = [];
+    const resolvesFrom = (found: unknown) => ({
+      resolve: async (specifier: string, importer: string) => {
+        asked.push(`${specifier} from ${importer}`);
+        return found;
+      },
+    });
+    expect(await plugin.load.call(resolvesFrom({ id: "/project/moves.js" }), id ?? "")).toBe(
+      'export * from "@gerak/moves";',
+    );
+    expect(await plugin.load.call(resolvesFrom(null), id ?? "")).toBe("export {};");
+    expect(asked).toEqual([
+      `@gerak/moves from ${resolve("/project", "index.html")}`,
+      `@gerak/moves from ${resolve("/project", "index.html")}`,
+    ]);
+    expect(await plugin.load.call(resolvesFrom(null), "other")).toBeNull();
   });
 
   it("transforms scene imports by attaching HMR code", () => {

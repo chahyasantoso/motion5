@@ -275,9 +275,21 @@ export interface MotionLiveServer {
     | undefined;
 }
 
+/** The module the live page imports to find built-in moves by name. */
+export const BUILT_IN_MOVES_MODULE = "virtual:gerak/built-in-moves";
+
+const BUILT_IN_MOVES_ID = `\0${BUILT_IN_MOVES_MODULE}`;
+
+/** What a plugin hook may ask of the bundler: where a specifier resolves from an importer, or nothing. */
+export interface PluginResolver {
+  resolve(specifier: string, importer: string): Promise<unknown>;
+}
+
 export interface MotionLivePlugin {
   readonly name: string;
   readonly apply: "serve";
+  resolveId(id: string): string | null;
+  load(this: PluginResolver, id: string): Promise<string | null>;
   transform(code: string, id: string): { readonly code: string; readonly map: null } | null;
   configureServer(server: MotionLiveServer): void;
 }
@@ -312,9 +324,18 @@ export function motionLivePlugin(options?: {
   readonly appRoot?: string;
   readonly repoRoot?: string;
 }): MotionLivePlugin {
+  let projectRoot = options?.appRoot ?? process.cwd();
   return {
     name: "motion-live",
     apply: "serve",
+    resolveId(id: string) {
+      return id === BUILT_IN_MOVES_MODULE ? BUILT_IN_MOVES_ID : null;
+    },
+    async load(id: string) {
+      if (id !== BUILT_IN_MOVES_ID) return null;
+      const found = await this.resolve("@gerak/moves", resolve(projectRoot, "index.html"));
+      return found === null || found === undefined ? "export {};" : 'export * from "@gerak/moves";';
+    },
     transform(code: string, id: string) {
       const normalized = id.replace(/\\/g, "/");
       if (!normalized.includes("/src/") || normalized.endsWith("-main.tsx")) return null;
@@ -333,6 +354,7 @@ export function motionLivePlugin(options?: {
         throw new Error("motionLivePlugin refuses a production server.");
       }
       const appRoot = options?.appRoot ?? server.config.root ?? process.cwd();
+      projectRoot = appRoot;
       if (server.middlewares === undefined) {
         return;
       }

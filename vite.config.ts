@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
 import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 import { pendingPaths } from "./test/pending.mjs";
@@ -8,7 +9,13 @@ if (!process.stdout.isTTY) process.env.NO_COLOR ??= "1";
 
 export default defineConfig({
   resolve: {
-    alias: [...workspaceSourceAliases()],
+    alias: [
+      ...workspaceSourceAliases(),
+      {
+        find: /^virtual:gerak\/built-in-moves$/,
+        replacement: fileURLToPath(new URL("packages/moves/src/index.ts", import.meta.url)),
+      },
+    ],
   },
   optimizeDeps: {
     exclude: [
