@@ -1,6 +1,6 @@
 # Split plan: core, modules and library
 
-**Status:** In progress, 2026-11-16: waves 1 to 3 done (S0 to S3); wave 4 (S4) next.
+**Status:** In progress, 2026-11-16: waves 1 to 4 done (S0 to S4); wave 5 (S5a, then S5b) next.
 **Base:** `main` at `2a2021c6` (installable tools merged).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`,
 `docs/ADR-188-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.

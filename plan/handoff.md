@@ -17,7 +17,11 @@ then `AGENTS.md`, then `plan/split-plan.md` sections 4 to 7. Delete this file in
   not pure, so rig stays pure; three no longer imports rig), S3 (path geometry in core: `pathFrom`, shape paths,
   `arcPath`, `transformPath`, `resamplePath`, `reversePath`, `pathBounds`, `pathArea`, `isClosedPath`, `pathLength`;
   one owner for `unreachable` and `clamp`; `npm run scan:duplicates` with `scripts/function-duplicate-baseline.json`).
-- `scripts/group-baseline.json` holds one line, tools imports moves, which S4 removes.
+- Wave 4 is done and green: `@gerak/moves-tools` (library, not pure) holds the catalog, `promote`, `style`, `new-move`
+  and the library review finder; packages declare `"gerak": { "commands", "review" }` and `listCommands()` in tools
+  reads every installed one; the live editor loads built-in moves through `virtual:gerak/built-in-moves`, empty without
+  the library. `scripts/group-baseline.json` is empty. Risk: moves-tools finds tools' loader by the relative path
+  `../../tools/bin/load.mjs`, which assumes sibling folders (true for npm; unchecked for pnpm).
 
 ## How the work runs
 
@@ -41,7 +45,6 @@ short brief. Map them to whatever agents the harness has.
 
 | Wave | Slices | Notes |
 | --- | --- | --- |
-| 4 | S4 | the library's commands into a new `@gerak/moves-tools` (library, not pure, owner's choice: `@gerak/moves` stays pure); `joints` stays core; `@gerak/tools` stops importing moves (its baseline line goes, the group baseline is then empty); rig's `joints` command |
 | 5 | S5a, then S5b | docs per package, read-whole `core.md` and `stage.md` (≤20 KB), guide moved, `gerak init` writes `AGENTS.md` |
 | 6 | S6, S7 | core-only install gate; NADI proof against the 110.6k-token plain HTML/JS baseline; a cold review of the whole diff |
 
