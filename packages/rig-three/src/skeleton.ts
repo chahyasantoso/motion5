@@ -1,7 +1,7 @@
 import type { Pose3d } from "@gerak/core";
 import { jointOf, type Joint3d } from "@gerak/rig";
 import { Bone, Euler, Quaternion, Skeleton, SkinnedMesh, Vector3, type Object3D } from "three";
-import { setEulerDegrees } from "./pose3d";
+import { setEulerDegrees } from "@gerak/three";
 
 const SCALE_TOLERANCE = 1e-3;
 

@@ -19,7 +19,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { usePlayer } from "@gerak/react";
 import { applyValue } from "@gerak/dom";
 import { applyPose3d } from "@gerak/three";
-import { applyBones, attach, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, attach, captureSkeleton } from "@gerak/rig-three";
 import eyes from "../../references/dragonling.eyes.json" with { type: "json" };
 import { clock, cues, lens, propSpecs, scene, speech, stage } from "./dragon-intro-scene";
 

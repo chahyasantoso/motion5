@@ -3,7 +3,7 @@ import { describe, expect, it, expectTypeOf } from "vitest";
 import type { Group } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { jointOf, type Joint3d } from "@gerak/rig";
-import { captureSkeleton } from "@gerak/three/skeleton";
+import { captureSkeleton } from "@gerak/rig-three";
 import { jointTable, readGltf } from "@gerak/tools/scene";
 import file from "../references/dragonling.joints.json" with { type: "json" };
 

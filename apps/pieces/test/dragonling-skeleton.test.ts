@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Vector3, type Group } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { bonesOf3d, chainThrough3d, fk3d, ik3d } from "@gerak/rig";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
 
 const MODEL = new URL("../references/dragonling.glb", import.meta.url);
 

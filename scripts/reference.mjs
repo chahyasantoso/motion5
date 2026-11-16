@@ -21,7 +21,7 @@ export const PACKAGES = [
   "rapier/src/index.ts",
   "three/src/index.ts",
   "three/src/react.ts",
-  "three/src/skeleton.ts",
+  "rig-three/src/index.ts",
 ];
 
 /** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */

@@ -16,6 +16,7 @@ export default defineConfig({
       "@gerak/react",
       "@gerak/moves",
       "@gerak/rig",
+      "@gerak/rig-three",
       "@gerak/dom",
       "@gerak/player",
     ],

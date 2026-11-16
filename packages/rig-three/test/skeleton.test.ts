@@ -14,7 +14,7 @@ import {
 } from "three";
 import { MeshBasicMaterial } from "three";
 import { bonesOf3d, chainThrough3d, childBase3d, fk3d, ik3d } from "@gerak/rig";
-import { applyBones, attach, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, attach, captureSkeleton } from "@gerak/rig-three";
 
 const DEG = Math.PI / 180;
 

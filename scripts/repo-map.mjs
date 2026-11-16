@@ -33,6 +33,7 @@ export const OWNERS = {
   "packages/core/src/time": "time, spans, sequence, lanes, reversed, repeated",
   "packages/core/src/utility": "seeded numbers, clamp, unreachable",
   "packages/rig/src": "joint vocabulary",
+  "packages/rig-three/src": "glTF skeleton binding to rig joints",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",
   "packages/rig/src/ik/shared": "chains, goals, limits",

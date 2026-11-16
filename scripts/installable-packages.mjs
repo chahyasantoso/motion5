@@ -13,6 +13,7 @@ export const INSTALLABLE_PACKAGES = [
   "dom",
   "react",
   "three",
+  "rig-three",
   "rapier",
   "tools",
 ];

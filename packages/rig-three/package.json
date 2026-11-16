@@ -1,0 +1,38 @@
+{
+  "name": "@gerak/rig-three",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "gerak": {
+    "group": "modules"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@gerak/core": "0.1.0",
+    "@gerak/rig": "0.1.0",
+    "@gerak/three": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "three": "^0.186.1"
+  },
+  "peerDependencies": {
+    "three": ">=0.160.0"
+  },
+  "peerDependenciesMeta": {
+    "three": {
+      "optional": true
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

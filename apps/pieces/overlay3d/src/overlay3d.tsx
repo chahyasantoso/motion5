@@ -20,7 +20,7 @@ import {
 import { usePlayer, useTarget } from "@gerak/react";
 import { applyPose3d } from "@gerak/three";
 import { useTarget3d } from "@gerak/three/react";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import {
   ARM,
   CAPTION,

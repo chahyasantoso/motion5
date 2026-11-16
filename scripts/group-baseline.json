@@ -1,4 +1,1 @@
-[
-  "@gerak/three (core) imports @gerak/rig (modules)",
-  "@gerak/tools (core) imports @gerak/moves (library)"
-]
+["@gerak/tools (core) imports @gerak/moves (library)"]

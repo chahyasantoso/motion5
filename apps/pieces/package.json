@@ -22,6 +22,7 @@
     "@gerak/rapier": "*",
     "@gerak/react": "*",
     "@gerak/rig": "*",
+    "@gerak/rig-three": "*",
     "@gerak/three": "*",
     "react": "19.2.8",
     "react-dom": "19.2.8",

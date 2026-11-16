@@ -82,7 +82,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   the bone. Return a `bones` target `{ <bone>: Pose3d }`; a bone left out goes back to rest.
 - **Writing bones on the page:** after loading with `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`, URL from
   `new URL("../references/<model>.glb", import.meta.url).href`), call `captureSkeleton(gltf.scene)` from
-  `"@gerak/three/skeleton"` once, then `player.subscribe("bones", (poses) => applyBones(skeleton, poses))`. Capture
+  `"@gerak/rig-three"` once, then `player.subscribe("bones", (poses) => applyBones(skeleton, poses))`. Capture
   before moving or turning the model; place the model by a parent group instead.
 - **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
   `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
@@ -140,7 +140,7 @@ sample, review and scrub with everything else.
   is judged as a ratio.
 - **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a target and
   read them on the page in `player.subscribe`; the review judges them as ratios.
-- **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/three/skeleton"` makes
+- **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/rig-three"` makes
   `object` ride the bone, placed at `at`, a `Vector3` in the model's space (the space of the joint table and the eye
   file), and turned by `turn`, a `Quaternion` in that space. It reads only the captured rest, so it is right
   whatever the model's groups are posed to. Lids, hats, held props and glasses are each one call.
