@@ -37,7 +37,8 @@ in one session. Everything else runs on a cheaper model at medium effort. Before
 ## Brief a builder
 
 Fill in `references/brief-template.md`. Make the design choices: signatures, names, files, commit messages. Check
-every fact a brief states about existing code (a field's meaning, a declared range) against the tree first. Write
+every fact a brief states about existing code (a field's meaning, a declared range) against the tree first,
+and when code moves between packages, the rules the target's manifest declares (a pure layer, a group). Write
 constraints as constraints, never as advice. Say what not to read, and which gate a new folder will meet.
 
 Every brief tells the builder to:
