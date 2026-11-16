@@ -39,36 +39,41 @@ parts that carry a choice, so they are library; `cubicOut`, a sine wave and `vel
 
 ## 3. Layout, install sets and owners
 
+`packages/` stays flat, as in Remotion, TanStack and Babel; the group is a list, not a folder.
+
 ```text
-packages/
-  core/
-    core/     @gerak/core     primitives: fields, Pose2d/Pose3d, combine, rotation maths, Time, clocks, the time
-                              helpers in one `time` folder (span, chain, lanes, loop, sequence, repeated, reversed,
-                              timeAt), blend and keyframes, the
-                              standard eases and springs, basic envelopes and waves, geometry and paths, measures
-                              (velocity, speedOf, tally), events, seeded random, clamp, unreachable
-    stage/    @gerak/stage    the piece contract: cast, beats, skins, scene, layouts, carried, outlines
-    player/   @gerak/player   the clock that plays a scene
-    dom/      @gerak/dom      the DOM renderer
-    react/    @gerak/react    the React renderer
-    three/    @gerak/three    the Three.js renderer (no rig)
-    tools/    @gerak/tools    the gerak command, the core commands, the pages
-  modules/
-    rig/      @gerak/rig      bones, chains, joints, IK; `@gerak/rig/three` binds a glTF skeleton (three an optional peer)
-    physics/  @gerak/physics  2D bodies and worlds
-    rapier/   @gerak/rapier   the Rapier engine
-  library/
-    moves/    @gerak/moves    definePart and the part kinds, parts that carry a choice (coupling, follow, trail,
-                              react, noise1d), defineMove, the named moves, qualities, descriptors, style cards;
-                              depends on rig (rope)
-    tools/    @gerak/library-tools   the catalog (gerak moves), promote, style, new --move, review's design and style
+packages/                 group     holds
+  core/     @gerak/core     core      primitives: fields, Pose2d/Pose3d, combine, rotation maths, Time, clocks, the
+                                      time helpers in one `time` folder (span, chain, lanes, loop, sequence, repeated,
+                                      reversed, timeAt), blend and keyframes, the standard eases and springs, basic
+                                      envelopes and waves, geometry and paths, measures (velocity, speedOf, tally),
+                                      events, seeded random, clamp, unreachable
+  stage/    @gerak/stage    core      the piece contract: cast, beats, skins, scene, layouts, carried, outlines
+  player/   @gerak/player   core      the clock that plays a scene
+  dom/      @gerak/dom      core      the DOM renderer
+  react/    @gerak/react    core      the React renderer
+  three/    @gerak/three    core      the Three.js renderer (no rig)
+  tools/    @gerak/tools    core      the gerak command, the core commands, the pages
+  rig/      @gerak/rig      modules   bones, chains, joints, IK; `@gerak/rig/three` binds a glTF skeleton (three an
+                                      optional peer)
+  physics/  @gerak/physics  modules   2D bodies and worlds
+  rapier/   @gerak/rapier   modules   the Rapier engine
+  moves/    @gerak/moves    library   definePart and the part kinds, parts that carry a choice (coupling, follow,
+                                      trail, react, noise1d), defineMove, the named moves, qualities, descriptors,
+                                      style cards; depends on rig (rope); its commands in `@gerak/moves/cli`
 ```
 
+- **The groups:** the root `package.json` holds `"gerak": { "pieces": "apps/pieces", "groups": { "core": [...],
+  "modules": [...], "library": [...] } }`, naming every package under `packages/` once; a test refuses a package in no
+  group or in two. The boundary scan reads it. Each package's `README.md` opens with its group.
 - **The core install set:** `@gerak/core`, `stage`, `player`, `dom`, `react`, `tools`, with peers `react`, `react-dom`,
   `vite`, `playwright-core`. `@gerak/three` is core but optional, for 3D pieces.
-- **Paths:** each workspace is `packages/<group>/<name>`; the workspace globs are `packages/core/*`,
-  `packages/modules/*`, `packages/library/*`; `INSTALLABLE_PACKAGES` holds those two-part paths in dependency order; the
-  scripts that read a package join `packages/` with that path, and `allPackages` in the source aliases walks both levels.
+- **Paths do not change:** every workspace stays `packages/<name>`; scripts, aliases and globs keep their form, and
+  the new package `core` is one more name in them.
+- **The library's commands ship inside it:** `@gerak/moves/cli` (node only; `typescript` an optional peer) holds the
+  catalog (`gerak moves`), `promote`, `style`, `new --move` and review's design and style finder, and imports what it
+  shares with core commands (brief folders, reading a scene module) from `@gerak/tools`, a downward import. A test
+  refuses any `node:` import reachable from `@gerak/moves`' main entry.
 
 | Question | Owner |
 | --- | --- |
@@ -121,7 +126,10 @@ packages/
   with comments and whitespace removed, hash alike, are a finding; its baseline may only shrink.
 - **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig/three`. `@gerak/tools`
   drops its `rig` and `three` dependencies; `gerak joints` moves to rig's declared commands.
-- **Commands plug in.** A package declares `"gerak": { "commands": "./bin/commands.mjs", "review": "<module>" }`;
+- **Groups are a list, not folders.** `packages/` stays flat; the root `package.json`'s `gerak.groups` names each
+  package's group, a test holds every package in exactly one, and the boundary scan reads the list.
+- **Commands plug in.** A package declares `"gerak": { "commands": "<its cli module>", "review": "<module>" }` (for the
+  library, `@gerak/moves/cli`);
   `listCommands()` reads its own list and each installed package's; `gerak --help` is tested with and without the
   library installed. A library command run without the library is "unknown command".
 - **Each package ships its own docs** in `docs/`, listed in `files`. Generated pages come from each export's doc comment,
@@ -152,10 +160,12 @@ packages/
 
 ### S0. Decision and the layout (planner)
 
-ADR-189 and its index line. The package folders moved by `git mv` into `core/`, `modules/`, `library/` with no code
-change, and the scripts taught the path form of section 3: workspace globs, installable list, source aliases, build,
-pack check, boundary scan, cycle scan, repo map. The boundary rule added with today's violations as a baseline that may
-only shrink. `npm run check` and `pack:check` green on the moved tree.
+ADR-189 and its index line. `gerak.groups` in the root `package.json` naming today's packages (`@gerak/core` joins
+it in S1a), with the test that every folder under `packages/` sits in exactly one group and every listed name exists.
+The existing boundary scan (`scripts/boundary-scan.mjs`, `npm run scan:boundaries`, already in `npm run check`) gains
+one rule beside its pure-layer and app rules: it reads the groups and refuses a package import upward; today's
+violations are that rule's baseline, which may only shrink. No second scan. No package moves. `npm run
+check` green.
 
 ### S1a. Rotation maths into core (executor)
 
@@ -198,8 +208,10 @@ Section 4's private geometry and one-owner moves, with their tests, and the dupl
 
 ### S4. Tools split (executor, after S1d, S2 and S3)
 
-`@gerak/library-tools` with the catalog, `promote`, `style`, `new --move` and review's design and style finder;
-`@gerak/tools` with the core commands, the pages, `listCommands()` and the `ReviewFinder` call; rig's `joints`.
+`@gerak/moves/cli` with the catalog, `promote`, `style`, `new --move` and review's design and style finder, its own
+`exports` entry, and the test that `@gerak/moves`' main entry reaches no `node:` import; `@gerak/tools` with the core
+commands, the pages, `listCommands()` and the `ReviewFinder` call, and no dependency on `@gerak/moves`; rig's `joints`
+as rig's declared command.
 
 ### S5a. Generated docs per package (executor, after S4)
 
@@ -239,7 +251,7 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
 ## 8. Deferred
 
 - **Search** (`plan/search-plan.md`): `gerak find` over the library and the brief records, revised to sit on this split
-  as a library tool. Next.
+  as a library command in `@gerak/moves/cli`. Next.
 - **Harvest:** a library command that turns a piece's own helpers into declared parts and moves by type and by sampling,
   matches them against existing records, and proves by sampling every member before and after that nothing changed.
   After search.
@@ -254,6 +266,10 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
   size test fails and the lead reports which group to move rather than raising the cap.
 - **Plug-in commands and review finders are a second way things appear;** one function owns each list, tested with and
   without the library.
+- **The groups are not visible in the folder tree;** the list, each README's first line and the boundary scan carry
+  them instead.
+- **`@gerak/moves` carries node code for its commands;** it stays behind the `cli` entry, and a test refuses a `node:`
+  import reachable from the main entry, so a browser bundle never pulls it in.
 - **Briefs in `apps/pieces` import across the line;** the S1b script rewrites them and the boundary scan checks them.
 - **Core-only gerak may still cost more than plain code;** S7 reports it plainly, and the search plan decides from it.
 - **Cost:** about 8 executor slices (90k to 260k each), the S1b script, the proof build (about 190k) and the review.
