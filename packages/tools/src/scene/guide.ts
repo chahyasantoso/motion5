@@ -30,9 +30,9 @@ function readFolder(folder: string, prefix = ""): Record<string, string> {
   return files;
 }
 
-/** The guide this copy of the tools carries: the repository's docs from source, else the `guide` folder beside `dist`. */
+/** The guide this copy of the tools carries: in the repository (a `src` beside `dist`), its docs; installed, the `guide` folder. */
 export function shippedGuide(): Readonly<Record<string, string>> {
-  const repoRoot = fileURLToPath(new URL("../../../../", import.meta.url));
-  if (existsSync(join(repoRoot, REPO_GUIDE, "agent-motion.md"))) return guideFiles(repoRoot);
+  if (existsSync(fileURLToPath(new URL("../../src/", import.meta.url))))
+    return guideFiles(fileURLToPath(new URL("../../../../", import.meta.url)));
   return readFolder(fileURLToPath(new URL("../../guide/", import.meta.url)));
 }
