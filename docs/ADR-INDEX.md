@@ -191,5 +191,6 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
 - ADR-185 — Layers as folders, laws and fields, and a measured catalog — Accepted, 2026-11-14 — superseded in part
 - ADR-186 — The motion vocabulary — Accepted, 2026-11-15
-- ADR-187 — Styles on briefs — Accepted, 2026-11-15
+- ADR-187 — Styles on briefs — Accepted, 2026-11-15 — superseded in part
 - ADR-188 — Installable tools and one command — Accepted, 2026-11-16
+- ADR-189 — Core, modules and library — Accepted, 2026-11-16

@@ -2,6 +2,8 @@
 
 **Status:** Accepted, 2026-11-14
 **Superseded in part by ADR-187:** a move outside `@gerak/moves` may also import its own folder's `src/parts/`.
+**Superseded in part by ADR-189:** the kernel, primitives and time helpers leave `@gerak/moves` for `@gerak/core`,
+and there is no `compose/` layer.
 
 ## Context
 

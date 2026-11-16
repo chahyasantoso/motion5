@@ -1,6 +1,9 @@
 {
   "name": "@gerak/rapier",
   "version": "0.1.0",
+  "gerak": {
+    "group": "modules"
+  },
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

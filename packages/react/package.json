@@ -1,6 +1,9 @@
 {
   "name": "@gerak/react",
   "version": "0.1.0",
+  "gerak": {
+    "group": "core"
+  },
   "license": "MIT",
   "type": "module",
   "files": [

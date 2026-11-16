@@ -5,6 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "gerak": {
+    "group": "library",
     "layer": "pure"
   },
   "files": [

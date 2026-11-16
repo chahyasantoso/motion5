@@ -1,6 +1,7 @@
 # ADR-187: Styles on briefs
 
 **Status:** Accepted, 2026-11-15
+**Superseded in part by ADR-189:** a brief imports `@gerak/core`, and a module or `@gerak/moves` only when installed.
 
 ## Context
 

@@ -1,6 +1,6 @@
 # Split plan: core, modules and library
 
-**Status:** Proposed, 2026-11-16, after one round of critique.
+**Status:** In progress, 2026-11-16: S0 done; wave 2 (S1a, S1b, S1c) next.
 **Base:** `main` at `2a2021c6` (installable tools merged).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`,
 `docs/ADR-188-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -63,9 +63,9 @@ packages/                 group     holds
                                       style cards; depends on rig (rope); its commands in `@gerak/moves/cli`
 ```
 
-- **The groups:** the root `package.json` holds `"gerak": { "pieces": "apps/pieces", "groups": { "core": [...],
-  "modules": [...], "library": [...] } }`, naming every package under `packages/` once; a test refuses a package in no
-  group or in two. The boundary scan reads it. Each package's `README.md` opens with its group.
+- **The groups:** each package's manifest declares `"gerak": { "group" }`, beside the pure layer the same field
+  already declares, so the group ships with the package; the boundary scan refuses a package with none. Each
+  package's `README.md` opens with its group.
 - **The core install set:** `@gerak/core`, `stage`, `player`, `dom`, `react`, `tools`, with peers `react`, `react-dom`,
   `vite`, `playwright-core`. `@gerak/three` is core but optional, for 3D pieces.
 - **Paths do not change:** every workspace stays `packages/<name>`; scripts, aliases and globs keep their form, and
@@ -126,8 +126,8 @@ packages/                 group     holds
   with comments and whitespace removed, hash alike, are a finding; its baseline may only shrink.
 - **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig/three`. `@gerak/tools`
   drops its `rig` and `three` dependencies; `gerak joints` moves to rig's declared commands.
-- **Groups are a list, not folders.** `packages/` stays flat; the root `package.json`'s `gerak.groups` names each
-  package's group, a test holds every package in exactly one, and the boundary scan reads the list.
+- **Groups are a field, not folders.** `packages/` stays flat; each manifest's `gerak.group` names its group, and the
+  boundary scan refuses a package with none and an import upward, against `scripts/group-baseline.json`.
 - **Commands plug in.** A package declares `"gerak": { "commands": "<its cli module>", "review": "<module>" }` (for the
   library, `@gerak/moves/cli`);
   `listCommands()` reads its own list and each installed package's; `gerak --help` is tested with and without the
@@ -160,12 +160,11 @@ packages/                 group     holds
 
 ### S0. Decision and the layout (planner)
 
-ADR-189 and its index line. `gerak.groups` in the root `package.json` naming today's packages (`@gerak/core` joins
-it in S1a), with the test that every folder under `packages/` sits in exactly one group and every listed name exists.
-The existing boundary scan (`scripts/boundary-scan.mjs`, `npm run scan:boundaries`, already in `npm run check`) gains
-one rule beside its pure-layer and app rules: it reads the groups and refuses a package import upward; today's
-violations are that rule's baseline, which may only shrink. No second scan. No package moves. `npm run
-check` green.
+Done. ADR-189 and its index line; ADR-185 and ADR-187 marked superseded in part. `"gerak": { "group" }` in every
+package manifest (`@gerak/core` declares `core` when S1a creates it). The existing boundary scan
+(`scripts/boundary-scan.mjs`, in `npm run check`) refuses a package with no group and an import of a higher group;
+today's nine upward pairs are `scripts/group-baseline.json`, which may only shrink: a line the tree no longer holds is
+refused until removed. No package moves.
 
 ### S1a. Rotation maths into core (executor)
 
@@ -266,7 +265,7 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
   size test fails and the lead reports which group to move rather than raising the cap.
 - **Plug-in commands and review finders are a second way things appear;** one function owns each list, tested with and
   without the library.
-- **The groups are not visible in the folder tree;** the list, each README's first line and the boundary scan carry
+- **The groups are not visible in the folder tree;** each manifest's group, each README's first line and the boundary scan carry
   them instead.
 - **`@gerak/moves` carries node code for its commands;** it stays behind the `cli` entry, and a test refuses a `node:`
   import reachable from the main entry, so a browser bundle never pulls it in.
