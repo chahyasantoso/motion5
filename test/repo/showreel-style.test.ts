@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { span, type Time } from "@gerak/core";
 import { fade, rise, slide } from "@gerak/moves";
-import { styleCards } from "@gerak/tools/scene";
+import { libraryFinder, styleCards } from "@gerak/moves-tools";
 import { reviewSceneModule } from "../../packages/tools/src/scene/review";
 import { readSceneModule } from "../../packages/tools/src/scene/scene";
 
@@ -38,7 +38,7 @@ describe("the showreel's style card", () => {
       jump: 1000,
       turn: 150,
       ratio: 1.5,
-      cards,
+      finders: [libraryFinder(cards)],
     }).findings.filter((line) => line.endsWith("(style)"));
     expect(findings.map((line) => line.split(":")[0])).toEqual(["x", "y"]);
   });

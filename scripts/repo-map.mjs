@@ -34,6 +34,8 @@ export const OWNERS = {
   "packages/core/src/utility": "seeded numbers, clamp, unreachable",
   "packages/rig/src": "joint vocabulary",
   "packages/rig-three/src": "glTF skeleton binding to rig joints",
+  "packages/moves-tools/src":
+    "the library's commands: moves catalog, parts, promote, style, new-move",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",
   "packages/rig/src/ik/shared": "chains, goals, limits",

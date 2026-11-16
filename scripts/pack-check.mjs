@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { COMMANDS as LIBRARY_COMMANDS } from "../packages/moves-tools/bin/commands.mjs";
 import { COMMANDS } from "../packages/tools/bin/commands.mjs";
 import { build } from "./build.mjs";
 import { INSTALLABLE_PACKAGES, exportSpecifiers, readManifest } from "./installable-packages.mjs";
@@ -290,6 +291,11 @@ export function packCheck({ keep = false, log = console.log } = {}) {
           : undefined;
     if (helpError !== undefined) failed += 1;
     log(formatResult("gerak --help", helpError));
+    const leftOfLibrary = missingFromHelp(help.out, Object.keys(LIBRARY_COMMANDS));
+    const libraryError =
+      leftOfLibrary.length > 0 ? `help leaves out ${leftOfLibrary.join(", ")}` : undefined;
+    if (libraryError !== undefined) failed += 1;
+    log(formatResult("gerak --help lists moves", libraryError));
     const anatomy = sh("npx --no-install gerak moves --anatomy", project);
     const anatomyError =
       anatomy.code !== 0

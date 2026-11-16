@@ -17,7 +17,6 @@ import {
   type Layouts,
   type Rest,
 } from "@gerak/stage";
-import { readDesign, type Design } from "./design";
 import { parseNumbers } from "../page/args";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
@@ -76,8 +75,8 @@ export interface SceneModule {
   readonly cues: Events;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
-  /** The module's `design`: the quality each target's field should have, checked by the review. */
-  readonly design?: Design;
+  /** The module's `design` export as given; a package that reads one checks it in the review. */
+  readonly design?: unknown;
   /** The name of the brief style card the piece follows, as its `style` export spells it. */
   readonly style?: string;
   readonly beats?: readonly Beat[];
@@ -153,13 +152,11 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   if ("reason" in readLimit) return readLimit;
   const { limits } = readLimit;
   const givenDesign: unknown = Reflect.get(Object(value), "design");
-  const readIntent = givenDesign === undefined ? undefined : readDesign(givenDesign);
-  if (readIntent?.kind === "refused") return { reason: `The module's ${readIntent.reason}` };
   const givenStyle: unknown = Reflect.get(Object(value), "style");
   if (givenStyle !== undefined && typeof givenStyle !== "string")
     return { reason: "The module's `style` must be the name of a style card, a string." };
   const designed = {
-    ...(readIntent === undefined ? {} : { design: readIntent.design }),
+    ...(givenDesign === undefined ? {} : { design: givenDesign }),
     ...(givenStyle === undefined ? {} : { style: givenStyle }),
   };
   const given: unknown = Reflect.get(Object(value), "durationMs");

@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { moveParts } from "@gerak/tools/scene";
-import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
+import { moveParts } from "@gerak/moves-tools";
+import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mjs";
+import { COMMANDS as LIBRARY_COMMANDS } from "../../packages/moves-tools/bin/commands.mjs";
 import { PACKAGES } from "../../scripts/reference.mjs";
+
+const COMMANDS = { ...TOOLS_COMMANDS, ...LIBRARY_COMMANDS };
 
 const ROOT = new URL("../../", import.meta.url);
 const reference = readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8");

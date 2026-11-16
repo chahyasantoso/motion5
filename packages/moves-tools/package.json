@@ -1,0 +1,37 @@
+{
+  "name": "@gerak/moves-tools",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "gerak": {
+    "group": "library",
+    "commands": "./bin/commands.mjs",
+    "review": "./bin/review.mjs"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@gerak/core": "0.1.0",
+    "@gerak/moves": "0.1.0",
+    "@gerak/tools": "0.1.0"
+  },
+  "peerDependencies": {
+    "typescript": "*"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

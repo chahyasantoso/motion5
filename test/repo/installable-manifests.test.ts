@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,9 +8,18 @@ import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-pa
 
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
+const SHIPPED: Readonly<Record<string, readonly string[]>> = {
+  tools: ["dist", "bin", "guide", "LICENSE"],
+  "moves-tools": ["dist", "bin", "LICENSE"],
+};
+
 describe("installable manifests", () => {
-  it("names the eleven runtime packages and the tools", () => {
-    expect(INSTALLABLE_PACKAGES).toHaveLength(12);
+  it("names every public package under packages/ once, the tools last but one", () => {
+    const publics = readdirSync(packagesRoot)
+      .filter((directory) => readManifest(directory).private !== true)
+      .sort();
+    expect([...INSTALLABLE_PACKAGES].sort()).toEqual(publics);
+    expect(INSTALLABLE_PACKAGES.slice(-2)).toEqual(["tools", "moves-tools"]);
   });
 
   describe.each(INSTALLABLE_PACKAGES)("%s", (directory) => {
@@ -20,9 +29,7 @@ describe("installable manifests", () => {
       expect(manifest.version).toBe("0.1.0");
       expect(manifest.private).toBeUndefined();
       expect(manifest.license).toBe("MIT");
-      expect(manifest.files).toEqual(
-        directory === "tools" ? ["dist", "bin", "guide", "LICENSE"] : ["dist", "LICENSE"],
-      );
+      expect(manifest.files).toEqual(SHIPPED[directory] ?? ["dist", "LICENSE"]);
       for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
         if (name.startsWith("@gerak/")) expect(range).toBe("0.1.0");
       }

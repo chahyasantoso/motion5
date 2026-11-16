@@ -17,7 +17,7 @@ A piece starts from its brief, not from a piece that already exists.
    qualities). Write the piece's `design` (each member's fields with the quality they should have) before choosing
    any move, then ask `npx gerak moves --design <file> --target <member> --in <brief>`. Per line: use a move
    as it is, at the options its row names, combine moves in the scene, or write one from the parts you named with
-   `npx gerak new --move <id> --in <brief>` and pass it through `npx gerak moves --check`.
+   `npx gerak new-move <id> --in <brief>` and pass it through `npx gerak moves --check`.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only

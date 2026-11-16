@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
+import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mjs";
+import { COMMANDS as LIBRARY_COMMANDS } from "../../packages/moves-tools/bin/commands.mjs";
+
+const COMMANDS = { ...TOOLS_COMMANDS, ...LIBRARY_COMMANDS };
 
 const ROOT = new URL("../../", import.meta.url);
 const guide = [

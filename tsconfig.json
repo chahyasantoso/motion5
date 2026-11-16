@@ -32,7 +32,8 @@
       "@gerak/react": ["packages/react/src/index.ts"],
       "@gerak/three": ["packages/three/src/index.ts"],
       "@gerak/three/react": ["packages/three/src/react.ts"],
-      "@gerak/rig-three": ["packages/rig-three/src/index.ts"]
+      "@gerak/rig-three": ["packages/rig-three/src/index.ts"],
+      "@gerak/moves-tools": ["packages/moves-tools/src/index.ts"]
     },
     "jsx": "react-jsx"
   },

@@ -11,6 +11,7 @@ export default defineConfig({
       "@gerak/core",
       "@gerak/rig",
       "@gerak/rig-three",
+      "@gerak/moves-tools",
       "@gerak/dom",
       "@gerak/player",
       "@gerak/physics",

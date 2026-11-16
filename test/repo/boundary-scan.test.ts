@@ -227,7 +227,7 @@ describe("boundary scan: groups", () => {
     const baseline = JSON.parse(
       await readFile(join(root, "scripts", "group-baseline.json"), "utf8"),
     ) as string[];
-    expect(baseline.length).toBeLessThanOrEqual(1);
+    expect(baseline.length).toBeLessThanOrEqual(0);
   });
 });
 

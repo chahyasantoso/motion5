@@ -11,14 +11,10 @@
     "baseUrl": ".",
     "paths": {
       "@gerak/dom": ["../dom/dist/index.d.ts"],
-      "@gerak/moves": ["../moves/dist/index.d.ts"],
       "@gerak/player": ["../player/dist/index.d.ts"],
       "@gerak/react": ["../react/dist/index.d.ts"],
       "@gerak/core": ["../core/dist/index.d.ts"],
-      "@gerak/rig": ["../rig/dist/index.d.ts"],
-      "@gerak/stage": ["../stage/dist/index.d.ts"],
-      "@gerak/three": ["../three/dist/index.d.ts"],
-      "@gerak/three/react": ["../three/dist/react.d.ts"]
+      "@gerak/stage": ["../stage/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
