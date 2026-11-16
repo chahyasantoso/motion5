@@ -32,11 +32,13 @@ hop(options, flight.of(time, ease.quadOut));
 const landMs = flight.at(hop.moments(options).lastLanding);
 
 const card = (time: Time) => sequence(time, [[enter, (t) => rise(options, t)], [leave, (t) => fade({}, reversed(t))]]);
-window(time, 0.25, 0.5);
+const shots = chain([2000, 1500, 3000], { overlap: 300 });
+const drift = loop(4000, { yoyo: true }).of(time);
 
 const LETTERS = lanes([1, 1, 1, 1], 0.25);
 const BURST = lanes([1, 1, 1, 1, 1], 0.2, { from: "center", spacing: ease.quadOut });
-drop(options, lane(word.of(time), i, LETTERS));
+const RIPPLE = lanes([1, 1, 1, 1], 0.2, { by: distances });
+drop(options, LETTERS.of(word.of(time), i));
 ```
 
 Each move is `move(options, time)`. `move.options` lists its options with ranges; `move.moments(options)` gives named
@@ -414,9 +416,7 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
 - **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: The cubics `shape` asks of matched outlines: 0 is the first, 1 the second, between them each control point is blended; clamped to the first and the last.
 - **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (readonly Cubic2d[])[]; } | { readonly reason: string; }`: Outlines made to blend, the first being the path: the same pieces in the same order, each with as many cubics in every outline; or why they cannot.
-- **`meets`** `(x: number, y: number, toX: number, toY: number): boolean`: Whether the point `(x, y)` is within a seam of `(toX, toY)`.
 - **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: An outline split into its pieces: a cubic that does not start where the last ended starts another.
-- **`SEAM`** `const SEAM: 0.000001`: How near two ends must be to meet, in px: rounding apart, not a gap anyone draws.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
 - **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly [number, number]>>): Story<B>`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
@@ -437,10 +437,10 @@ export const cast = { word: letters("NIGHT", { on: [["arrive", "hold"]] }), dot:
 - **`readStageModule`** `(value: unknown): StageModule<string, object, string> | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
 - **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
-- **`boundsOf`** `(cubics: readonly Cubic2d[]): Box`: The box the control points of `cubics` span, from its top-left, never thinner than 1 so a straight line still shows.
 - **`describeLoop`** `({ loop, behind }: StrokeLoop): string`: The loop said in one line: `paths "a" and "b" read each other`, and any stroke reading them.
 - **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: Readonly<Record<string, Box>>, settle: (name: string, answer: PathAnswer, read: Re…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box. Answers the loop when a pass draws none.
 - **`restOfBounds`** `(bounds: Box): Box`: Where a stroke of these bounds rests: their centre and size, as a rest box is.
+- **`thickened`** `(box: Box): Box`: A box never thinner than 1 on a side, so a straight line still shows: a side with no size opens to 1 about where it was.
 - **`PathAnswer`** `type PathAnswer`: What a path answered in its pass: its cubics, or what it threw.
 - **`StrokeLoop`** `type StrokeLoop`: The strokes no pass could draw: those reading each other in a loop, and those reading one of them.
 <!-- generated:reference:end -->

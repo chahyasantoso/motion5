@@ -18,11 +18,11 @@ Public: `.`
 - `src/envelope/`: envelopes and waves
 - `src/events/`: the event list
 - `src/fields/`: what can change: the value table, poses, combine
-- `src/geometry/`: points, curves, lenses, rotation maths
+- `src/geometry/`: points, curves, path parsing and shapes, lenses, rotation maths
 - `src/measure/`: velocity, speed, tally
 - `src/path/`: travel along throws and curves
 - `src/time/`: time, spans, sequence, lanes, reversed, repeated
-- `src/utility/`: seeded numbers, unreachable
+- `src/utility/`: seeded numbers, clamp, unreachable
 
 ## packages/dom
 
