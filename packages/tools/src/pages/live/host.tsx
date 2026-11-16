@@ -2,14 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } fro
 import type { ClockDriver } from "@gerak/dom";
 import type { Driver, Scene } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
-import {
-  componentFileOf,
-  loadComponentModule,
-  loadStageModule,
-  stageFileOf,
-  stageOf,
-  type LoadedStage,
-} from "../stage-module";
+import { stageOf, type LoadedStage, type PieceLookup } from "../stage-module";
 import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
@@ -131,14 +124,14 @@ export interface StageBundle {
 export type SceneBundle = ComponentBundle | StageBundle;
 
 /** Loads a named scene: the stage module `<brief>/src/<name>.ts` when there is one, else its component and styles. */
-export async function loadSceneBundle(name: string): Promise<SceneBundle> {
-  if (stageFileOf(name).kind !== "none") {
-    const piece = await loadStageModule(name);
+export async function loadSceneBundle(lookup: PieceLookup, name: string): Promise<SceneBundle> {
+  if (lookup.stageFileOf(name).kind !== "none") {
+    const piece = await lookup.loadStageModule(name);
     if (typeof piece === "string") throw new Error(piece);
     return { kind: "stage", name, ...piece };
   }
   const file = COMPONENT_FILES[name] ?? name;
-  const component = componentFileOf(file);
+  const component = lookup.componentFileOf(file);
   switch (component.kind) {
     case "none":
       throw new Error(`No piece named "${name}": no ${name}.ts or ${file}.tsx in any brief's src.`);
@@ -150,7 +143,7 @@ export async function loadSceneBundle(name: string): Promise<SceneBundle> {
   const url = component.path;
   const brief = url.split("/")[1] ?? "";
   await applySceneStyles(`/${brief}/${name}.html`);
-  const mod = await loadComponentModule(url);
+  const mod = await lookup.loadComponentModule(url);
   if (!isRecord(mod)) throw new Error(`Module ${url} did not export an object.`);
   const Component = extractComponent(mod);
   if (Component === undefined) throw new Error(`No React component found in ${url}.`);
@@ -232,10 +225,11 @@ function shown(
 
 export interface LiveAppProps {
   readonly initial: SceneBundle;
+  readonly lookup: PieceLookup;
 }
 
 /** Renders the live stage and timeline under a host player context, handling hot updates and errors. */
-export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
+export const LiveApp: React.FC<LiveAppProps> = ({ initial, lookup }) => {
   const [bundle, setBundle] = useState<SceneBundle>(initial);
   const [error, setError] = useState<string | undefined>(undefined);
   const keeper = useMemo(() => driverKeeper(), []);
@@ -324,6 +318,7 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial }) => {
       {bundle.kind === "component" && (
         <CodePanel
           sceneName={bundle.name}
+          sceneFileOf={lookup.sceneFileOf}
           version={bundle.sceneModule}
           moves={bundle.sceneModule}
         />

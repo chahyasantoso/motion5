@@ -3,10 +3,10 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { sourceFiles } from "./briefs";
 import { candidatesOf, duplicateLines, formatCandidate, loadCatalog } from "./catalog";
 
-/** The usage line of `motion:promote`. */
-export const PROMOTE_USAGE = "usage: motion:promote <id> [--root dir]";
+/** The usage line of `gerak promote`. */
+export const PROMOTE_USAGE = "usage: gerak promote <id> [--root dir]";
 
-/** Parsed `motion:promote` arguments: the move `id` and `--root`; or the usage text. */
+/** Parsed `gerak promote` arguments: the move `id` and `--root`; or the usage text. */
 export type PromoteArgs =
   | { readonly kind: "usage"; readonly message: string }
   | { readonly kind: "ok"; readonly id: string; readonly root: string | undefined };
@@ -34,7 +34,7 @@ export function parsePromoteArgs(argv: readonly string[]): PromoteArgs {
   return { kind: "ok", id, root };
 }
 
-/** What `motion:promote` prints, and the exit `code`, 1 when it refused. */
+/** What `gerak promote` prints, and the exit `code`, 1 when it refused. */
 export interface PromoteRun {
   readonly lines: readonly string[];
   readonly code: 0 | 1;

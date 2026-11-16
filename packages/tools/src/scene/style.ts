@@ -162,7 +162,7 @@ export async function checkStyle(root: string, brief: string): Promise<readonly 
   const { cards, problems } = await styleCards(root);
   out.push(...problems.filter((line) => line.startsWith(`${brief}/style.ts`)));
   if (!existsSync(join(root, brief, "style.ts")))
-    out.push(`${brief}/style.ts does not exist; run motion:style measure ${brief}.`);
+    out.push(`${brief}/style.ts does not exist; run gerak style measure ${brief}.`);
   else if (!cards.some((card) => card.name === brief) && out.length === 0)
     out.push(`${brief}/style.ts holds no card.`);
   out.push(...portabilityFindings(root).filter((line) => inBrief(line, brief)));

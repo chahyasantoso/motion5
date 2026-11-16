@@ -36,7 +36,7 @@ export const scene = (time: Time, events: Events) => ({ ball: sim.pose("ball", t
 - A seek back replays the world from its last snapshot, and a spawn event the seek passes rewinds further. When the
   review reports a seek over budget, a coarser `dt` (`1 / 60`) halves the steps each seek replays.
 - A body that stays within 1 px for half a second sleeps, so a heap comes to rest. Mark bodies that rest on each other
-  `data-motion-touch` with their own selector so `motion:check` reads the heap as meant.
+  `data-motion-touch` with their own selector so `gerak check` reads the heap as meant.
 - Scatter with `seeded(seed)`, never `Math.random()`.
 - Engines: `builtinWorld()` has no dependency and suits a few hundred bodies. For more, or for joints, `const rapier =
   await rapierEngine()` from `@gerak/rapier` at the top of the module, then pass `rapier()` instead.

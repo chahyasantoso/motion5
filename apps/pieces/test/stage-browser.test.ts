@@ -1,8 +1,11 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEFAULT_ROOT, DEFAULT_SOURCE, withPage } from "@gerak/tools/page";
+import { callerPiecesRoot, withPage } from "@gerak/tools/page";
 import { scaffold } from "@gerak/tools/scene";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 const PREFIX = "stage-scratch-";
 const STEP_TIMEOUT_MS = 5000;
@@ -23,16 +26,16 @@ export const scene = (time: Time) => ({
 }
 
 function removeLeftovers(): void {
-  for (const folder of readdirSync(DEFAULT_ROOT))
+  for (const folder of readdirSync(PIECES_ROOT))
     if (folder.startsWith(PREFIX))
-      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
+      rmSync(join(PIECES_ROOT, folder), { recursive: true, force: true });
 }
 
 function scratch(distance: number): { readonly name: string; readonly file: string } {
   copies += 1;
   const name = `${PREFIX}${copies}`;
-  const file = join(DEFAULT_ROOT, name, "src", `${name}.ts`);
-  mkdirSync(join(DEFAULT_ROOT, name, "src"), { recursive: true });
+  const file = join(PIECES_ROOT, name, "src", `${name}.ts`);
+  mkdirSync(join(PIECES_ROOT, name, "src"), { recursive: true });
   writeFileSync(file, fixture(distance), "utf8");
   return { name, file };
 }
@@ -44,7 +47,7 @@ describe("stage pages in the browser", () => {
   it("shows a stage module on stage.html, and a plain message for a name it lacks", async () => {
     const piece = scratch(300);
     await withPage(
-      { page: `stage.html?piece=${piece.name}`, width: 640, height: 360, source: DEFAULT_SOURCE },
+      { page: `stage.html?piece=${piece.name}`, width: 640, height: 360, source: PIECES_SOURCE },
       async ({ page }) => {
         page.setDefaultTimeout(STEP_TIMEOUT_MS);
         await page.locator('[data-cast="box"]').waitFor();
@@ -52,7 +55,7 @@ describe("stage pages in the browser", () => {
       },
     );
     await withPage(
-      { page: "stage.html?piece=no-such-piece", width: 640, height: 360, source: DEFAULT_SOURCE },
+      { page: "stage.html?piece=no-such-piece", width: 640, height: 360, source: PIECES_SOURCE },
       async ({ page }) => {
         page.setDefaultTimeout(STEP_TIMEOUT_MS);
         await expect
@@ -62,12 +65,12 @@ describe("stage pages in the browser", () => {
     );
   }, 30000);
 
-  it("mounts the module motion:new writes, with its one actor at rest", async () => {
+  it("mounts the module gerak new writes, with its one actor at rest", async () => {
     const name = `${PREFIX}new`;
-    const result = scaffold(name, DEFAULT_ROOT);
+    const result = scaffold(name, PIECES_ROOT);
     if (result.kind !== "written") throw new Error(result.message);
     await withPage(
-      { page: `stage.html?piece=${name}`, width: 640, height: 360, source: DEFAULT_SOURCE },
+      { page: `stage.html?piece=${name}`, width: 640, height: 360, source: PIECES_SOURCE },
       async ({ page }) => {
         page.setDefaultTimeout(STEP_TIMEOUT_MS);
         const title = page.locator('[data-cast="title"]');
@@ -82,7 +85,7 @@ describe("stage pages in the browser", () => {
   it("swaps a stage module's scene in place on a save, keeping its elements and its time", async () => {
     const piece = scratch(300);
     await withPage(
-      { page: `live.html?scene=${piece.name}`, width: 1280, height: 720, source: DEFAULT_SOURCE },
+      { page: `live.html?scene=${piece.name}`, width: 1280, height: 720, source: PIECES_SOURCE },
       async ({ page }) => {
         page.setDefaultTimeout(STEP_TIMEOUT_MS);
         const scrubber = await page.locator("[data-live-scrubber]").boundingBox();

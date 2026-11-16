@@ -4,7 +4,7 @@ export interface Point {
   readonly y: number;
 }
 
-/** Parsed `motion:points` arguments: the file, the `spacing` in px and the id `prefix`; or the usage text. */
+/** Parsed `gerak points` arguments: the file, the `spacing` in px and the id `prefix`; or the usage text. */
 export type PointsArgs =
   | {
       readonly kind: "ok";
@@ -14,7 +14,7 @@ export type PointsArgs =
     }
   | { readonly kind: "usage"; readonly message: string };
 
-const USAGE = "usage: motion:points <points.json> --spacing px [--prefix p]";
+const USAGE = "usage: gerak points <points.json> --spacing px [--prefix p]";
 
 /** Reads `<points.json> --spacing px [--prefix p]`, or answers the usage text. */
 export function parsePointsArgs(argv: readonly string[]): PointsArgs {

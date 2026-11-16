@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { encoderArgs, parseRenderArgs } from "../src/page/render";
 
-describe("motion:render arguments", () => {
+describe("gerak render arguments", () => {
   it("need an end time and take mp4 by default", () => {
     expect(parseRenderArgs(["timing.html"]).kind).toBe("usage");
     expect(parseRenderArgs(["timing.html", "--to", "3000"])).toMatchObject({

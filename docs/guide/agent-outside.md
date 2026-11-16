@@ -5,8 +5,9 @@ The loop is in [the agent guide](./agent-motion.md).
 
 ## Outside this repository
 
-The `motion:*` npm scripts and `stage.html` live in this repository. In your own project, install the
-packages (see the README) and mount the module on a page yourself:
+`stage.html` lives in this repository, and the `npx gerak` commands come with the tools package. In your own project,
+install the packages (see the README), then run `npx gerak init` in your project: the pages and commands work there.
+To play a module on a page of your own, mount it yourself:
 
 ```ts
 import { mountStage, stageModuleOf } from "@gerak/dom";

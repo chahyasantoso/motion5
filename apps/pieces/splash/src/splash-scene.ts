@@ -12,7 +12,7 @@ import {
   type Time,
 } from "@gerak/moves";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4800;
 
 export const WORD = "SPLASH";
@@ -85,7 +85,7 @@ function ringPose(ring: (typeof RINGS)[number], index: number, time: Time): Pose
   };
 }
 
-/** Every target's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time) => ({
   drop: combine([
     drop(FALL, fall.of(time)),

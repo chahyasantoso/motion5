@@ -109,7 +109,7 @@ async function browserOutlines(folder: string, file: string): Promise<Record<str
   return value;
 }
 
-describe("motion:import-svg geometry", () => {
+describe("gerak import-svg geometry", () => {
   for (const [file, ids] of [
     ["svg-transforms.svg", ["tile", "dot"]],
     ["svg-paths.svg", ["curve", "arcs", "tri", "zig", "bar", "ring"]],
@@ -168,7 +168,7 @@ describe("motion:import-svg geometry", () => {
   }, 60000);
 });
 
-describe("motion:import-svg outlines to morph to", () => {
+describe("gerak import-svg outlines to morph to", () => {
   it("makes <part>-shape<N> the Nth of its part's shapes, and lists what it cannot", async () => {
     const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
     expect(imported.result.members).toEqual(["beak", "lid", "eye"]);
@@ -189,7 +189,7 @@ describe("motion:import-svg outlines to morph to", () => {
   }, 60000);
 });
 
-describe("motion:import-svg use of a symbol", () => {
+describe("gerak import-svg use of a symbol", () => {
   const extent = (imported: Imported, name: string) => {
     const points = along(cubicsOf(imported, name));
     const xs = points.map(([x]) => x);
@@ -214,7 +214,7 @@ describe("motion:import-svg use of a symbol", () => {
   }, 60000);
 });
 
-describe("motion:import-svg strokes", () => {
+describe("gerak import-svg strokes", () => {
   it("scales a stroke under a uniform scale and lists one under an uneven scale", async () => {
     const imported = await bring(join(fixtures, "svg-strokes.svg"), "fixture");
     expect(imported.css).toContain(
@@ -227,7 +227,7 @@ describe("motion:import-svg strokes", () => {
   }, 60000);
 });
 
-describe("motion:import-svg paint", () => {
+describe("gerak import-svg paint", () => {
   it("puts gradients in the defs in frame px and lists what it cannot carry", async () => {
     const imported = await bring(join(fixtures, "svg-paint.svg"), "fixture");
     expect(imported.result.defs).toBe(2);
@@ -260,7 +260,7 @@ describe("motion:import-svg paint", () => {
   }, 60000);
 });
 
-describe("motion:import-svg on the penguin", () => {
+describe("gerak import-svg on the penguin", () => {
   it("writes its 21 paths with their gradients and lists the Illustrator foreignObject", async () => {
     const imported = await bring(
       join(import.meta.dirname, "../../../apps/pieces/penguin/references/penguin.svg"),
@@ -295,7 +295,7 @@ describe("motion:import-svg on the penguin", () => {
   }, 120000);
 });
 
-describe("motion:import-svg --into a piece", () => {
+describe("gerak import-svg --into a piece", () => {
   const frameOf = (width: number, height: number): string =>
     `{ width: ${width}, height: ${height} }`;
 

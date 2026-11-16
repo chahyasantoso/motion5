@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { moveParts } from "@gerak/tools/scene";
+import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
 import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
@@ -56,12 +57,8 @@ describe("agent reference", () => {
     expect(names.filter((name) => !new RegExp(`\`${name}[\`(]`).test(reference))).toEqual([]);
   });
 
-  it("names every motion command the repository defines", () => {
-    const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.parse(
-      readFileSync(new URL("package.json", ROOT), "utf8"),
-    );
-    const commands = Object.keys(manifest.scripts).filter((script) => script.startsWith("motion:"));
-    const missing = commands.filter((command) => !reference.includes(`\`${command}`));
+  it("names every gerak command", () => {
+    const missing = Object.keys(COMMANDS).filter((name) => !reference.includes(`\`gerak ${name}`));
     expect(missing).toEqual([]);
   });
 

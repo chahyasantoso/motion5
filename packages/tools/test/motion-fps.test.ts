@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { parseFpsArgs, summarize } from "../src/page/fps";
-import { DEFAULT_SOURCE } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
+const PIECES_SOURCE = { kind: "serve", root: PIECES_ROOT } as const;
 
 describe("parseFpsArgs", () => {
   it("defaults to 10000 ms, 1280x720, hidden", () => {
@@ -9,7 +12,7 @@ describe("parseFpsArgs", () => {
       page: "a.html",
       width: 1280,
       height: 720,
-      source: DEFAULT_SOURCE,
+      source: PIECES_SOURCE,
       to: 10000,
       show: false,
     });

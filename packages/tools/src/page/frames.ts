@@ -6,7 +6,7 @@ import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 import { decodePng } from "./png";
 
-/** What `motion:frames` captures: the page, the times `at` in ms, a short `labels` entry per frame and the `out` folder. */
+/** What `gerak frames` captures: the page, the times `at` in ms, a short `labels` entry per frame and the `out` folder. */
 export interface FramesRequest extends PageTarget {
   readonly at: readonly number[];
   /** A short reason to print under each frame, in step with `at`. */
@@ -30,7 +30,7 @@ export interface OnionRequest extends PageTarget {
   readonly out?: string;
 }
 
-/** Parsed `motion:frames` arguments: frames at times, an onion, or the usage text. */
+/** Parsed `gerak frames` arguments: frames at times, an onion, or the usage text. */
 export type FramesArgs =
   | ({ readonly kind: "frames" } & FramesRequest)
   | ({ readonly kind: "onion" } & OnionRequest)
@@ -100,7 +100,7 @@ export interface OnionResult {
 }
 
 const USAGE =
-  "usage: motion:frames <page> (--at ms,ms [--compare dir] [--crop x,y,w,h [--zoom 1-8]] | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]; or motion:frames --compare dirA dirB";
+  "usage: gerak frames <page> (--at ms,ms [--compare dir] [--crop x,y,w,h [--zoom 1-8]] | --onion selector --from ms --to ms --every ms) [--size WxH] [--out dir]; or gerak frames --compare dirA dirB";
 const FLAGS = [
   "--at",
   "--out",

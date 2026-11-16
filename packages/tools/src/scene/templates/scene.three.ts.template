@@ -1,7 +1,7 @@
 import { clockDriver } from "@gerak/dom";
 import { aim, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/moves";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 800;
 
 /** The page's size in px; the page sizes its renderer and stage from it. */

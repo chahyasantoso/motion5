@@ -102,7 +102,7 @@ export type Goal3d = {
   readonly orient?: number;
 };
 
-/** Where each joint of a model sits at rest, by name, as `motion:joints` writes it. */
+/** Where each joint of a model sits at rest, by name, as `gerak joints` writes it. */
 export type JointTable3d = Readonly<
   Record<
     string,

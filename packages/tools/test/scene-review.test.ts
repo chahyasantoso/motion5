@@ -24,7 +24,7 @@ function review(module: unknown, options: { to?: number } = {}): SceneReviewResu
   return reviewSceneModule(read, { ...limits, ...options });
 }
 
-describe("motion:review on a scene file", () => {
+describe("gerak review on a scene file", () => {
   it("reads a path ending in .ts as a scene and takes the page check's flags and defaults", () => {
     expect(isSceneFile(["a/scene.ts"])).toBe(true);
     expect(isSceneFile(["page.html", "--watch", ".a"])).toBe(false);
@@ -137,7 +137,7 @@ describe("motion:review on a scene file", () => {
   });
 });
 
-describe("motion:review holds a skin to its cast", () => {
+describe("gerak review holds a skin to its cast", () => {
   const stage = (css: string) => ({
     beats: story(400, { show: [0, 400] }),
     cast: { box: actor({ still: true }), dust: many(2, { still: true }) },
@@ -182,7 +182,7 @@ describe("motion:review holds a skin to its cast", () => {
   });
 });
 
-describe("motion:review on a value's shape", () => {
+describe("gerak review on a value's shape", () => {
   const line = [
     { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
     { id: "b", x0: 20, y0: 0, x1: 25, y1: 5, x2: 30, y2: 5, x3: 40, y3: 0 },
@@ -208,7 +208,7 @@ describe("motion:review on a value's shape", () => {
   });
 });
 
-describe("motion:review on time itself", () => {
+describe("gerak review on time itself", () => {
   const ms = (time: Time): number => elapsedOf(time.clock) ?? 0;
   const drifting = (ongoing: boolean) => ({
     beats: story(1000, { all: [0, 1000] }),
@@ -281,7 +281,7 @@ describe("review limits per target", () => {
   });
 });
 
-describe("motion:review costs", () => {
+describe("gerak review costs", () => {
   const growth = (found: SceneReviewResult) =>
     found.findings.filter((line) =>
       line.startsWith("cost grows with time: a step reads all of the past"),

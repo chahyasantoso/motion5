@@ -15,8 +15,11 @@ import {
   scaffold,
   scaffoldMove,
 } from "@gerak/tools/scene";
-import { DEFAULT_ROOT, parseLiveArgs, startLiveServer } from "../src/page/live";
-import { guard } from "../../../apps/pieces/src/live/guard";
+import { parseLiveArgs, startLiveServer } from "../src/page/live";
+import { callerPiecesRoot } from "../src/page/root";
+import { guard } from "../src/pages/live/guard";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 function root(): string {
@@ -44,7 +47,7 @@ const FILES = [
   "rope-word/src/rope-word-scene.ts",
 ];
 
-describe("motion:new", () => {
+describe("gerak new", () => {
   it("writes one stage module of one beat and one actor, and it samples to rest", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
@@ -149,7 +152,7 @@ describe("motion:new", () => {
       brief: "rope",
       root: undefined,
     });
-    expect(NEW_USAGE).toContain("motion:new --move <id> --in <brief>");
+    expect(NEW_USAGE).toContain("gerak new --move <id> --in <brief>");
   });
 
   it("with --in writes the piece and its move into that brief's folder", () => {
@@ -240,7 +243,7 @@ describe("motion:new", () => {
     expect(parseLiveArgs(["saved"])).toEqual({
       kind: "ok",
       scene: "saved",
-      root: DEFAULT_ROOT,
+      root: PIECES_ROOT,
       port: 5173,
     });
 
@@ -268,14 +271,14 @@ describe("motion:new", () => {
   });
 
   it("starts a live server and reuses an already running server", async () => {
-    const first = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port: 0 });
+    const first = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port: 0 });
     try {
       expect(first.reused).toBe(false);
       expect(first.url).toContain("live.html?scene=timing");
       const port = Number(new URL(first.url).port);
       expect(port).toBeGreaterThan(0);
 
-      const second = await startLiveServer({ scene: "timing", root: DEFAULT_ROOT, port });
+      const second = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port });
       expect(second.reused).toBe(true);
       expect(second.url).toBe(first.url);
     } finally {

@@ -1,5 +1,5 @@
 import { mountStage } from "@gerak/dom";
-import { loadStageModule } from "./stage-module";
+import { pieceLookup, type ModuleGlob } from "./stage-module";
 import { levelOf } from "./talk-level";
 
 const MIN_STEP_MS = 1000 / 30;
@@ -10,19 +10,26 @@ function element(id: string): HTMLElement {
   return found;
 }
 
-const root = element("root");
-const startButton = element("start");
-const saveButton = element("save");
-const status = element("status");
+let started = false;
 
-const name = new URLSearchParams(window.location.search).get("piece") ?? "";
-const loaded = await loadStageModule(name);
+/** Plays the piece `?piece=` names, its mouth following the microphone; a second call, as when the entry reloads hot, does nothing. */
+export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Promise<void> {
+  if (started) return;
+  started = true;
+  const root = element("root");
+  const startButton = element("start");
+  const saveButton = element("save");
+  const status = element("status");
 
-if (typeof loaded === "string") {
-  root.textContent = loaded;
-  startButton.hidden = true;
-  saveButton.hidden = true;
-} else {
+  const name = new URLSearchParams(window.location.search).get("piece") ?? "";
+  const loaded = await pieceLookup(pieces, components).loadStageModule(name);
+
+  if (typeof loaded === "string") {
+    root.textContent = loaded;
+    startButton.hidden = true;
+    saveButton.hidden = true;
+    return;
+  }
   const stage = mountStage(root, loaded.module);
 
   saveButton.addEventListener("click", () => {

@@ -1,20 +1,22 @@
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
+import { callerPiecesRoot, withPage } from "@gerak/tools/page";
 import { scaffold } from "@gerak/tools/scene";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const NAME = "overlay-scratch-box";
 
 function removeScratch(): void {
-  rmSync(join(DEFAULT_ROOT, NAME), { recursive: true, force: true });
+  rmSync(join(PIECES_ROOT, NAME), { recursive: true, force: true });
 }
 
 beforeAll(() => {
   removeScratch();
-  const result = scaffold(NAME, DEFAULT_ROOT, { three: true });
+  const result = scaffold(NAME, PIECES_ROOT, { three: true });
   if (result.kind !== "written") throw new Error(JSON.stringify(result));
-  const file = join(DEFAULT_ROOT, NAME, "src", `${NAME}-scene.ts`);
+  const file = join(PIECES_ROOT, NAME, "src", `${NAME}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const moving = source
     .replace("const box: Pose3d = {};", MOVING_BOX)
@@ -37,7 +39,7 @@ describe("a scaffolded 3D page pins a label on the box", () => {
         page: `${NAME}/${NAME}.html`,
         width: 1280,
         height: 720,
-        source: { kind: "serve", root: DEFAULT_ROOT },
+        source: { kind: "serve", root: PIECES_ROOT },
       },
       async ({ page, advanceTo }) => {
         const found: { label: [number, number]; centre: [number, number] }[] = [];

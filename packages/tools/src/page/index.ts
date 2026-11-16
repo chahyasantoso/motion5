@@ -10,4 +10,6 @@ export * from "./probe";
 export * from "./read";
 export * from "./render";
 export * from "./review";
+export * from "./root";
+export * from "./server";
 export * from "./curves";

@@ -43,6 +43,7 @@ constraints as constraints, never as advice. Say what not to read, and which gat
 Every brief tells the builder to:
 - commit after its first working version, so a usage limit loses less (resume a stopped agent by message);
 - save `npm run check` output to a file and test its exit code, never pipe it before a commit;
+- delete every `packages/*/dist` before the final check, so no gate leans on a build;
 - write text holding backticks or backslashes with the file tool, never in a shell string or heredoc;
 - run every script that reads paths after a move, not only the check;
 - run git as plain single commands from its worktree, never behind `cd`, `&&`, a pipe or `-C`, which isolation refuses;

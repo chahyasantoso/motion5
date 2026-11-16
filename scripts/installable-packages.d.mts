@@ -3,6 +3,7 @@ export interface InstallableManifest {
   readonly version: string;
   readonly private?: boolean;
   readonly files?: readonly string[];
+  readonly bin?: Readonly<Record<string, string>>;
   readonly license?: string;
   readonly types?: string;
   readonly dependencies?: Readonly<Record<string, string>>;

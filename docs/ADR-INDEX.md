@@ -183,7 +183,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-176 — Strokes from the layout, skins that keep their own, and a library that grows — Accepted, 2026-11-13 — superseded in part
 - ADR-177 — Strokes that combine, presence the review reads, and text over time — Accepted, 2026-11-13
 - ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13
-- ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13
+- ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13 — superseded in part
 - ADR-180 — Rigging vector artwork — Accepted, 2026-11-13
 - ADR-181 — Live inputs — Accepted, 2026-11-14
 - ADR-182 — Rigged 3D characters and bodies in depth — Accepted, 2026-11-14
@@ -192,3 +192,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-185 — Layers as folders, laws and fields, and a measured catalog — Accepted, 2026-11-14 — superseded in part
 - ADR-186 — The motion vocabulary — Accepted, 2026-11-15
 - ADR-187 — Styles on briefs — Accepted, 2026-11-15
+- ADR-188 — Installable tools and one command — Accepted, 2026-11-16

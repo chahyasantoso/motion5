@@ -18,7 +18,7 @@ import { bodyPose3d, bonesOf3d, chainThrough3d, ik3d, jointOf } from "@gerak/rig
 import rig from "../../references/dragonling.joints.json" with { type: "json" };
 import talk from "../../references/talk.json" with { type: "json" };
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:timeline` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 15000;
 
 const TALK_FROM = 5600;
@@ -186,7 +186,7 @@ function wingPose(time: Time, side: 1 | -1): Pose3d {
   return { rotation: side * (18 * lift + 6 * flutter) };
 }
 
-/** Every target's 3D pose at `time` (y up, turns in degrees); `motion:sample` reads it. */
+/** Every target's 3D pose at `time` (y up, turns in degrees); `gerak sample` reads it. */
 export const scene = (time: Time, events: Events) => {
   const open = Math.max(0, Math.min(1, mouth(time, events))) * (1 - settle.of(time).progress);
   const eye = orbit({

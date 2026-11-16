@@ -19,17 +19,17 @@ Three lines:
 
 ## Commands run, in order
 
-1. `npm run motion:moves -- --anatomy`
-2. `npm run motion:moves -- --design apps/pieces/delivered/src/delivered.ts --target parcel --in delivered` (path error)
-3. `npm run motion:moves -- --design delivered/src/delivered.ts --target parcel --in delivered`
-4. `npm run motion:moves -- drop`
-5. `npm run motion:moves -- squish`
-6. `npm run motion:moves -- swing`
-7. `npm run motion:moves -- --move tint:calm`
-8. `npm run motion:moves -- --move shadowBlur:heavy`
-9. `npm run motion:moves -- --move opacity:calm --in delivered`
-10. `npm run motion:moves -- jolt`
-11. `npm run motion:moves -- --check` (after writing `thud`)
+1. `npx gerak moves --anatomy`
+2. `npx gerak moves --design apps/pieces/delivered/src/delivered.ts --target parcel --in delivered` (path error)
+3. `npx gerak moves --design delivered/src/delivered.ts --target parcel --in delivered`
+4. `npx gerak moves drop`
+5. `npx gerak moves squish`
+6. `npx gerak moves swing`
+7. `npx gerak moves --move tint:calm`
+8. `npx gerak moves --move shadowBlur:heavy`
+9. `npx gerak moves --move opacity:calm --in delivered`
+10. `npx gerak moves jolt`
+11. `npx gerak moves --check` (after writing `thud`)
 
 ## Choices
 

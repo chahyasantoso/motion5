@@ -121,9 +121,12 @@ Three things follow from it:
    agents still converge. Its measured, zero-ML part comes first as anatomy (`plan/anatomy-plan.md`, built on
    `feat/anatomy`): the layers and part kinds as folders, field and part contracts, new laws and fields, a catalog
    that answers a design, and a review that checks a piece's design.
-   Next, **style kits:** a style's moves, its own parts (custom parts per brief, gated by the part gate and promoted
-   like moves), its skin tokens and a style card of qualities the review checks, installed into another project.
-10. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
+   Then styles (`plan/style-plan.md`, built, pull request 597): a brief folder is portable with its own parts, and its
+   optional style card holds the share of lively motion per field, which the review checks.
+10. **Installable tools** (`plan/installable-plan.md`): one `gerak` command, the pages and the guide shipped with
+   `@gerak/tools`, and `gerak init`, so a person's own project makes and checks pieces with no clone. The live kit
+   and the overlay need it, since the overlay runs inside someone else's site.
+11. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 

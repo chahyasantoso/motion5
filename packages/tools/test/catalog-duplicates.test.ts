@@ -10,7 +10,9 @@ import {
   runCatalog,
   type CatalogArgs,
 } from "@gerak/tools/scene";
-import { DEFAULT_ROOT } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 afterEach(() => {
@@ -135,14 +137,14 @@ describe("the duplicate baseline", () => {
   it("lists sorted pairs the tree still has, and the tree has no pair it does not list", async () => {
     expect(Array.isArray(baseline)).toBe(true);
     const listed = Array.isArray(baseline) ? baseline.map(String) : [];
-    const { entries } = await loadCatalog(DEFAULT_ROOT);
+    const { entries } = await loadCatalog(PIECES_ROOT);
     const found = duplicatePairs(entries.map(({ record }) => record));
     expect(listed).toEqual([...listed].sort());
     expect(found).toEqual(listed);
   });
 
   it("lets the tree's own check pass", async () => {
-    const run = await runCatalog(ok(["--check"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--check"]), PIECES_ROOT);
     expect(run.lines.filter((line) => line.includes("close to"))).toEqual([]);
   });
 });

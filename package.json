@@ -34,27 +34,9 @@
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run test/repo/boundary-scan.test.ts",
     "test:comments": "node scripts/comment-scan.mjs && vitest run test/repo/comment-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
-    "motion:sample": "node packages/tools/bin/motion-sample.mjs",
-    "motion:frames": "node packages/tools/bin/motion-frames.mjs",
-    "motion:fps": "node packages/tools/bin/motion-fps.mjs",
-    "motion:compare": "node packages/tools/bin/motion-compare.mjs",
-    "motion:new": "node packages/tools/bin/motion-new.mjs",
-    "motion:import-svg": "node packages/tools/bin/motion-import-svg.mjs",
-    "motion:moves": "node packages/tools/bin/motion-moves.mjs",
-    "motion:promote": "node packages/tools/bin/motion-promote.mjs",
-    "motion:check": "node packages/tools/bin/motion-check.mjs",
-    "motion:points": "node packages/tools/bin/motion-points.mjs",
-    "motion:joints": "node packages/tools/bin/motion-joints.mjs",
-    "motion:probe": "node packages/tools/bin/motion-probe.mjs",
-    "motion:read": "node packages/tools/bin/motion-read.mjs",
-    "motion:render": "node packages/tools/bin/motion-render.mjs",
-    "motion:review": "node packages/tools/bin/motion-review.mjs",
-    "motion:timeline": "node packages/tools/bin/motion-timeline.mjs",
-    "motion:live": "node packages/tools/bin/motion-live.mjs",
-    "motion:style": "node packages/tools/bin/motion-style.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@gerak/pieces"
+    "dev": "node packages/tools/bin/gerak.mjs live saved --root apps/pieces"
   },
   "devDependencies": {
     "@types/node": "24.3.0",
@@ -69,5 +51,8 @@
     "react-test-renderer": "19.2.8",
     "typescript": "5.8.3",
     "vitest": "^4.1.10"
+  },
+  "gerak": {
+    "pieces": "apps/pieces"
   }
 }

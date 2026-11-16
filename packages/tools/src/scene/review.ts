@@ -58,7 +58,7 @@ export interface SceneReviewResult {
 }
 
 const USAGE =
-  "usage: motion:review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
+  "usage: gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
 
 /** A path ending in .ts or .tsx is a scene file, reviewed from its values with no page. */
 export function isSceneFile(argv: readonly string[]): boolean {
@@ -316,7 +316,7 @@ function stageFindings(
     .map((target) => `the scene answers "${target}", which is not in the cast.`);
   if (unmeasured)
     found.push(
-      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `motion:review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
+      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
     );
   const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
   for (const member of cast) {
@@ -938,7 +938,7 @@ export function reviewSceneModule(
   };
 }
 
-/** Loads a scene file as `motion:sample` does and reviews its values, with no page. */
+/** Loads a scene file as `gerak sample` does and reviews its values, with no page. */
 export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {

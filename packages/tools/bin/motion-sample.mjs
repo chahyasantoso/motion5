@@ -1,10 +1,8 @@
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
+import { tool } from "./load.mjs";
 const { parseSampleArgs, readSceneModule, sampleScene, watchScene } = await import(
-  "../src/scene/scene.ts"
+  tool("scene/scene")
 );
 
 function print(result) {

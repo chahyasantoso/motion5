@@ -43,7 +43,7 @@ describe("parseSampleArgs", () => {
   });
 });
 
-describe("motion:sample entry", () => {
+describe("gerak sample entry", () => {
   function run(...args: string[]) {
     return spawnSync(process.execPath, ["packages/tools/bin/motion-sample.mjs", ...args], {
       cwd: process.cwd(),

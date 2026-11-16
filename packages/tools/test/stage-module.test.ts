@@ -147,7 +147,7 @@ describe("a stage module with layouts in the scene tools", () => {
   });
 });
 
-describe("motion:review of a member still ringing", () => {
+describe("gerak review of a member still ringing", () => {
   const ringing = (on: readonly string[]) => ({
     ...clean,
     cast: {
@@ -180,7 +180,7 @@ describe("one reader of a stage module", () => {
   });
 });
 
-describe("motion:review on a stage module", () => {
+describe("gerak review on a stage module", () => {
   it("finds nothing in a clean one", () => {
     expect(findings(clean)).toEqual([]);
   });

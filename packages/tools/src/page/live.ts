@@ -1,10 +1,9 @@
 import { relative } from "node:path";
 import { pieceFiles } from "../scene/briefs";
-import { DEFAULT_ROOT, fromCaller } from "./page";
+import { callerDir, piecesRoot } from "./root";
+import { pageServerConfig } from "./server";
 
-export { DEFAULT_ROOT } from "./page";
-
-/** Arguments parsed for the motion:live command. */
+/** Arguments parsed for the gerak live command. */
 export type LiveArgs =
   | { readonly kind: "ok"; readonly scene: string; readonly root: string; readonly port: number }
   | { readonly kind: "usage"; readonly message: string };
@@ -12,7 +11,7 @@ export type LiveArgs =
 const SCENE_NAME = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const DEFAULT_PORT = 5173;
 
-/** Parses command-line arguments for the motion:live command. */
+/** Parses command-line arguments for the gerak live command. */
 export function parseLiveArgs(argv: readonly string[]): LiveArgs {
   const usage = (message: string): LiveArgs => ({ kind: "usage", message });
   const positional: string[] = [];
@@ -44,14 +43,16 @@ export function parseLiveArgs(argv: readonly string[]): LiveArgs {
 
   const scene = positional[0];
   if (scene === undefined || positional.length !== 1) {
-    return usage("Expected one scene name: motion:live <name> [--root dir] [--port number].");
+    return usage("Expected one scene name: gerak live <name> [--root dir] [--port number].");
   }
 
   if (!SCENE_NAME.test(scene)) {
     return usage(`Scene name "${scene}" must be lower kebab-case, like "timing" or "rope-word".`);
   }
 
-  const root = rootArg !== undefined ? fromCaller(rootArg) : DEFAULT_ROOT;
+  const found = piecesRoot(callerDir(), rootArg);
+  if (found.kind === "missing") return usage(found.message);
+  const root = found.root;
   const files = pieceFiles(root, scene);
   if (files.length === 0) {
     return usage(
@@ -103,10 +104,12 @@ export async function startLiveServer(options: {
   }
 
   const { createServer } = await import("vite");
+  const added = pageServerConfig(options.root);
   const server = await createServer({
     root: options.root,
     logLevel: "error",
-    server: { port: options.port },
+    plugins: added.plugins,
+    server: { ...added.server, port: options.port },
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0] ?? `http://localhost:${options.port}/`;

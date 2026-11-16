@@ -1,13 +1,12 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { parseNewArgs, scaffold, scaffoldMove } = await import("../src/scene/new.ts");
-const { DEFAULT_ROOT, fromCaller } = await import("../src/page/page.ts");
+import { tool } from "./load.mjs";
+const { parseNewArgs, scaffold, scaffoldMove } = await import(tool("scene/new"));
+const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const args = parseNewArgs(process.argv.slice(2));
-const root =
-  args.kind !== "usage" && args.root !== undefined ? fromCaller(args.root) : DEFAULT_ROOT;
+const found = args.kind === "usage" ? undefined : piecesRoot(callerDir(), args.root);
 const result = (() => {
+  if (found?.kind === "missing") return { kind: "refused", message: found.message };
+  const root = found?.root ?? "";
   switch (args.kind) {
     case "usage":
       return { kind: "refused", message: args.message };

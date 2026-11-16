@@ -2,7 +2,7 @@ import { createElement, useState, type FC } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clockDriver } from "@gerak/dom";
-import { clockLengthMs, LiveStage } from "../src/live/host";
+import { clockLengthMs, LiveStage } from "../src/pages/live/host";
 
 const One: FC = () => {
   const [label] = useState("one");

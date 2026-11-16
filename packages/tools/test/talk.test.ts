@@ -5,14 +5,16 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { isMotionEvent, type MotionEvent } from "@gerak/moves";
-import { levelOf } from "../src/talk-level";
+import { levelOf } from "../src/pages/talk-level";
 
 const SECONDS = 8;
 const FPS = 30;
 const FRAMES = SECONDS * FPS;
 const SILENT_MS = 300;
-const SCRIPT = fileURLToPath(new URL("../references/make-talk.mjs", import.meta.url));
-const TALK = fileURLToPath(new URL("../references/talk.json", import.meta.url));
+const SCRIPT = fileURLToPath(
+  new URL("../../../apps/pieces/references/make-talk.mjs", import.meta.url),
+);
+const TALK = fileURLToPath(new URL("../../../apps/pieces/references/talk.json", import.meta.url));
 
 function load(path: string): readonly MotionEvent[] {
   const parsed: unknown = JSON.parse(readFileSync(path, "utf8"));

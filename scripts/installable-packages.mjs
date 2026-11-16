@@ -13,6 +13,7 @@ export const INSTALLABLE_PACKAGES = [
   "react",
   "three",
   "rapier",
+  "tools",
 ];
 
 /** The parsed package.json of a package directory under packages/. */

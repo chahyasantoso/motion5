@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseReviewArgs, printReview, type ReviewResult } from "../src/page/review";
 
-describe("motion:review arguments", () => {
+describe("gerak review arguments", () => {
   it("need selectors and an end, and leave the frames to be picked unless --at is given", () => {
     expect(parseReviewArgs(["timing.html", "--to", "3000"]).kind).toBe("usage");
     expect(parseReviewArgs(["timing.html", "--watch", ".a", "--to", "3000"])).toMatchObject({
@@ -26,7 +26,7 @@ describe("motion:review arguments", () => {
   });
 });
 
-describe("motion:review result", () => {
+describe("gerak review result", () => {
   const clean = {
     kind: "reviewed",
     findings: [],

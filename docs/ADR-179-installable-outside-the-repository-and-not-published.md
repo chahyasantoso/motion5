@@ -1,6 +1,7 @@
 # ADR-179: Installable outside the repository, and not published
 
 **Status:** Accepted, 2026-11-13
+**Superseded in part by ADR-188:** `@gerak/tools` is installable too, built to `dist` with a `gerak` bin.
 
 ## Context
 
@@ -11,7 +12,8 @@ nothing; a project of the owner's own, or the web overlay on any page, will need
 ## Decision
 
 - **The runtime is made installable:** `@gerak/rig`, `moves`, `player`, `stage`, `dom`, `react`, `three`, `physics`
-  and `rapier`, one version for all, `0.1.0`. `@gerak/tools` stays source-only. There is no umbrella package.
+  and `rapier`, one version for all, `0.1.0`, and `@gerak/tools` with its `gerak` bin (ADR-188). There is no
+  umbrella package.
 - **Built, not source:** each ships ESM JavaScript and `.d.ts` built from `src` into `dist`, and `exports` point
   there; inside the repository `@gerak/*` still resolves to source, so no gate needs a build.
 - **Peers stay peers:** `react` and `three`.

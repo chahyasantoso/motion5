@@ -12,7 +12,9 @@ import {
   runCatalog,
   type CatalogArgs,
 } from "@gerak/tools/scene";
-import { DEFAULT_ROOT } from "../src/page/page";
+import { callerPiecesRoot } from "../src/page/root";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 afterEach(() => {
@@ -51,7 +53,7 @@ const builtInIds = collectRecords([])
   .map(({ record }) => record.id)
   .sort();
 
-describe("motion:moves", () => {
+describe("gerak moves", () => {
   it("lists every move by id with its source, fields and import under --all", async () => {
     const run = await runCatalog(ok(["--all"]), app());
     const ids = run.lines.map((line) => line.split(" | ")[0]);
@@ -97,7 +99,7 @@ describe("motion:moves", () => {
   });
 
   it("reads the parts of the showreel's moves and of a built-in move from their source", async () => {
-    const run = await runCatalog(ok(["--json"]), DEFAULT_ROOT);
+    const run = await runCatalog(ok(["--json"]), PIECES_ROOT);
     expect(JSON.parse(run.lines.join("\n"))).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: "lob", parts: expect.arrayContaining(["squashed"]) }),

@@ -3,7 +3,9 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Page } from "playwright-core";
 import { createServer, type ViteDevServer } from "vite";
-import { DEFAULT_ROOT, withPage } from "@gerak/tools/page";
+import { callerPiecesRoot, withPage } from "@gerak/tools/page";
+
+const PIECES_ROOT = callerPiecesRoot();
 
 const PREFIX = "stage-paint-scratch-";
 const STEP_TIMEOUT_MS = 8000;
@@ -51,9 +53,9 @@ export const scene = () => ({ part: { rotation: 90 } });
 };
 
 function removeLeftovers(): void {
-  for (const folder of readdirSync(DEFAULT_ROOT))
+  for (const folder of readdirSync(PIECES_ROOT))
     if (folder.startsWith(PREFIX))
-      rmSync(join(DEFAULT_ROOT, folder), { recursive: true, force: true });
+      rmSync(join(PIECES_ROOT, folder), { recursive: true, force: true });
 }
 
 let server: ViteDevServer | undefined;
@@ -62,11 +64,11 @@ let base = "";
 beforeAll(async () => {
   removeLeftovers();
   for (const [name, source] of Object.entries(PIECES)) {
-    const folder = join(DEFAULT_ROOT, `${PREFIX}${name}`, "src");
+    const folder = join(PIECES_ROOT, `${PREFIX}${name}`, "src");
     mkdirSync(folder, { recursive: true });
     writeFileSync(join(folder, `${PREFIX}${name}.ts`), source, "utf8");
   }
-  server = await createServer({ root: DEFAULT_ROOT, logLevel: "silent", server: { port: 5290 } });
+  server = await createServer({ root: PIECES_ROOT, logLevel: "silent", server: { port: 5290 } });
   await server.listen();
   base = server.resolvedUrls?.local[0] ?? "";
   if (base === "") throw new Error("The page server reported no local address.");

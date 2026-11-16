@@ -2391,7 +2391,7 @@ const frontFlakes = flakesOf({
 
 const STILL: Pose2d = {};
 
-/** Every member's value at `time`; `motion:sample` and `motion:timeline` read it. */
+/** Every member's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time, events: Events) => {
   const ms = elapsedOf(time.clock) ?? 0;
   const snowMs = snowClock(ms);

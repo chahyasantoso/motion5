@@ -24,7 +24,7 @@ function solid(width: number, height: number, rgb: readonly [number, number, num
   return { width, height, rgb: data };
 }
 
-describe("motion:compare pure parts", () => {
+describe("gerak compare pure parts", () => {
   it("takes the mean absolute difference over a box, out of 255 over RGB", () => {
     const a = solid(4, 4, [0, 0, 0]);
     const b = solid(4, 4, [255, 255, 255]);
@@ -190,7 +190,7 @@ afterAll(() => {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
 });
 
-describe.skipIf(!hasBrowser)("motion:compare in the browser", () => {
+describe.skipIf(!hasBrowser)("gerak compare in the browser", () => {
   const out = () => {
     const dir = mkdtempSync(join(tmpdir(), "compare-test-"));
     dirs.push(dir);

@@ -1,7 +1,5 @@
-import { registerSourceLoader } from "../../../scripts/source-loader.mjs";
-
-registerSourceLoader();
-const { comparePage, parseCompareArgs } = await import("../src/page/compare.ts");
+import { tool } from "./load.mjs";
+const { comparePage, parseCompareArgs } = await import(tool("page/compare"));
 
 const args = parseCompareArgs(process.argv.slice(2));
 if (args.kind === "usage") {

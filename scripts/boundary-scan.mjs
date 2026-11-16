@@ -386,11 +386,11 @@ function packageOf(specifier) {
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Page tools work on any page, so they import node, a browser driver and a dev server, never gerak; the one other file they read is the brief folders' owner. */
+/** Page tools import node, a browser driver and a dev server, never gerak; they read only the brief folders' owner and the live plugin. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
     specifier.startsWith(".")
-      ? [PAGE_TOOLS, BRIEFS].some((allowedPath) =>
+      ? [PAGE_TOOLS, BRIEFS, LIVE_PLUGIN].some((allowedPath) =>
           posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(allowedPath),
         )
       : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
@@ -399,6 +399,7 @@ function checkPageTools(file, specifiers, violations) {
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
 const BRIEFS = "packages/tools/src/scene/briefs";
+const LIVE_PLUGIN = "packages/tools/src/vite/index";
 /** A pure package imports its own files and other pure packages only, so code runs it with nothing loaded. */
 function checkPureSource(workspace, file, specifiers, violations, pure) {
   const inside = specifiers.every((specifier) =>

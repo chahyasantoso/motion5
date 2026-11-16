@@ -4,7 +4,7 @@ import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, bonesOf3d, childBase3d, chainThrough3d, ik3d } from "@gerak/rig";
 
-/** How long the scene runs, in ms; `motion:sample` and `motion:review` read it. */
+/** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */
 export const durationMs = 4200;
 
 /** Rest joints of the character hierarchy in world units. */

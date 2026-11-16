@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
 const guide = [
@@ -25,17 +26,28 @@ const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.pa
 
 describe("agent guide", () => {
   it("names only npm scripts that exist", () => {
-    const named = [...guide.matchAll(/npm run ([\w:-]+)|`(motion:[\w-]+)`/g)].map(
-      (match) => match[1] ?? match[2] ?? "",
-    );
-    expect(named.length).toBeGreaterThan(0);
+    const named = [...guide.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1] ?? "");
     for (const script of named) expect(Object.keys(manifest.scripts)).toContain(script);
   });
 
+  it("names only gerak commands that exist", () => {
+    const named = [...guide.matchAll(/npx gerak ([\w-]+)|`gerak ([\w-]+)/g)].map(
+      (match) => match[1] ?? match[2] ?? "",
+    );
+    expect(named.length).toBeGreaterThan(0);
+    for (const command of named) expect(Object.keys(COMMANDS)).toContain(command);
+  });
+
   it("points only at paths that exist", () => {
-    const paths = [...guide.matchAll(/`((?:apps|packages)\/[\w./-]+)`/g)].map((match) => match[1]);
+    const paths = [...guide.matchAll(/`((?:apps|packages|<pieces>)\/[\w./-]+)`/g)].map(
+      (match) => match[1],
+    );
     expect(paths.length).toBeGreaterThan(0);
-    for (const path of paths) expect(existsSync(new URL(path ?? "", ROOT)), path).toBe(true);
+    for (const path of paths)
+      expect(
+        existsSync(new URL((path ?? "").replace(/^<pieces>\//, "apps/pieces/"), ROOT)),
+        path,
+      ).toBe(true);
   });
 
   it("names only package import paths a workspace package exports", () => {

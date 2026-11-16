@@ -1,13 +1,13 @@
 import { readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 
-/** What `motion:probe` measures: the times `at` in ms and the elements `select` matches. */
+/** What `gerak probe` measures: the times `at` in ms and the elements `select` matches. */
 export interface ProbeRequest extends PageTarget {
   readonly at: readonly number[];
   readonly select: string;
 }
 
-/** Parsed `motion:probe` arguments, or the usage text. */
+/** Parsed `gerak probe` arguments, or the usage text. */
 export type ProbeArgs =
   | ({ readonly kind: "ok" } & ProbeRequest)
   | { readonly kind: "usage"; readonly message: string };
@@ -36,7 +36,7 @@ export interface ProbeResult {
   readonly pageErrors: readonly string[];
 }
 
-const USAGE = "usage: motion:probe <page> --at ms,ms --select selector [--size WxH]";
+const USAGE = "usage: gerak probe <page> --at ms,ms --select selector [--size WxH]";
 
 /** Reads `<page> --at ms,ms --select sel`, or answers the usage text. */
 export function parseProbeArgs(argv: readonly string[]): ProbeArgs {

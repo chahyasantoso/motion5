@@ -42,7 +42,7 @@ const reel = (): string =>
     "reel/src/mixed.ts": piece(three(BOUNCY, BOUNCY, LINEAR), "", 800),
   });
 
-describe("motion:style", () => {
+describe("gerak style", () => {
   it("measures the range of the lively share per field into a card file", async () => {
     const root = reel();
     const made = await measureStyle(root, "reel");
