@@ -27,7 +27,6 @@ const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.pa
 describe("agent guide", () => {
   it("names only npm scripts that exist", () => {
     const named = [...guide.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1] ?? "");
-    expect(named.length).toBeGreaterThan(0);
     for (const script of named) expect(Object.keys(manifest.scripts)).toContain(script);
   });
 
@@ -40,9 +39,15 @@ describe("agent guide", () => {
   });
 
   it("points only at paths that exist", () => {
-    const paths = [...guide.matchAll(/`((?:apps|packages)\/[\w./-]+)`/g)].map((match) => match[1]);
+    const paths = [...guide.matchAll(/`((?:apps|packages|<pieces>)\/[\w./-]+)`/g)].map(
+      (match) => match[1],
+    );
     expect(paths.length).toBeGreaterThan(0);
-    for (const path of paths) expect(existsSync(new URL(path ?? "", ROOT)), path).toBe(true);
+    for (const path of paths)
+      expect(
+        existsSync(new URL((path ?? "").replace(/^<pieces>\//, "apps/pieces/"), ROOT)),
+        path,
+      ).toBe(true);
   });
 
   it("names only package import paths a workspace package exports", () => {

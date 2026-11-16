@@ -8,6 +8,10 @@ export const COMMANDS = Object.freeze({
     file: "motion-import-svg.mjs",
     summary: "turn an SVG file into a piece or add it to one",
   },
+  init: {
+    file: "motion-init.mjs",
+    summary: "set up a project: pieces folder, pages, skill and AGENTS.md",
+  },
   joints: { file: "motion-joints.mjs", summary: "list the joints of a glTF model" },
   live: { file: "motion-live.mjs", summary: "serve a scene in the live editor" },
   moves: { file: "motion-moves.mjs", summary: "find moves, read their cards and the anatomy" },

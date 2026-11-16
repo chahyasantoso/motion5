@@ -17,3 +17,6 @@ apps/pieces/scratch-*/
 apps/pieces/stage-scratch-*/
 # Agent worktrees are other checkouts of this repository.
 .claude/worktrees/
+
+# The guide the tools ship, written by the build.
+packages/tools/guide/

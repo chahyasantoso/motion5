@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { COMMANDS } from "../packages/tools/bin/commands.mjs";
 import { build } from "./build.mjs";
@@ -177,6 +177,37 @@ function pageServerError(project) {
   }
 }
 
+/** The link targets of a markdown text that name a file, without their anchors. */
+function fileLinks(text) {
+  return [...text.matchAll(/\]\(([^)\s]+)\)/g)]
+    .map((match) => match[1])
+    .filter((link) => !/^[a-z][a-z0-9+.-]*:/i.test(link) && !link.startsWith("#"))
+    .map((link) => link.replace(/#.*$/, ""));
+}
+
+/** Runs `gerak init` in a project holding only a package.json and the installed tarballs; the first failure, or undefined. */
+function initError(project, exists = existsSync) {
+  const run = sh("npx --no-install gerak init", project);
+  if (run.code !== 0) return firstErrorLine(run.out || run.err);
+  const skill = ".claude/skills/make-motion/SKILL.md";
+  const expected = [
+    ...["stage.html", "stage.ts", "live.html", "live.ts", "talk.html", "talk.ts"].map(
+      (name) => `pieces/${name}`,
+    ),
+    skill,
+    "AGENTS.md",
+    "node_modules/@gerak/tools/guide/agent-motion.md",
+  ];
+  const absent = expected.filter((file) => !exists(join(project, file)));
+  if (absent.length > 0) return `missing ${absent.join(", ")}`;
+  const entry = JSON.parse(readFileSync(join(project, "package.json"), "utf8")).gerak?.pieces;
+  if (entry !== "pieces") return "package.json names no gerak.pieces";
+  const links = fileLinks(readFileSync(join(project, skill), "utf8"));
+  const broken = links.filter((link) => !exists(resolve(dirname(join(project, skill)), link)));
+  if (links.length === 0) return "the skill has no links";
+  return broken.length > 0 ? `skill links do not resolve: ${broken.join(", ")}` : undefined;
+}
+
 /** Packs every package, installs the tarballs into an empty project, imports each export and
  * type-checks a consumer of them all. */
 export function packCheck({ keep = false, log = console.log } = {}) {
@@ -268,6 +299,22 @@ export function packCheck({ keep = false, log = console.log } = {}) {
           : undefined;
     if (anatomyError !== undefined) failed += 1;
     log(formatResult("gerak moves --anatomy", anatomyError));
+    const second = join(work, "second");
+    mkdirSync(second);
+    writeFileSync(
+      join(second, "package.json"),
+      JSON.stringify({
+        name: "gerak-init-check",
+        private: true,
+        type: "module",
+        dependencies: files,
+      }),
+    );
+    const secondInstall = sh("npm install --no-audit --no-fund --legacy-peer-deps", second);
+    const initFailure =
+      secondInstall.code !== 0 ? firstErrorLine(secondInstall.err) : initError(second);
+    if (initFailure !== undefined) failed += 1;
+    log(formatResult("gerak init", initFailure));
     const pagesError = pageServerError(project);
     if (pagesError !== undefined) failed += 1;
     log(formatResult("pages served from pieces/", pagesError));

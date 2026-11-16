@@ -3,7 +3,8 @@
 A **scene** is a function from time, and the events so far, to one value per target. You build it from **moves**:
 named pieces of motion, each declared with what it is for. You write the scene in code; the repo plays it, renders it
 and checks it. Look up any function or command in [the reference](./agent-reference.md) by searching it for the name,
-not by reading package source. Read a part below only when the brief needs it:
+not by reading package source. `<pieces>` is your pieces folder, the one `gerak.pieces` in your package.json names
+(`apps/pieces` in this repository). Read a part below only when the brief needs it:
 
 | The brief has | Read |
 | --- | --- |
@@ -30,7 +31,7 @@ not by reading package source. Read a part below only when the brief needs it:
 2. **Write the chosen idea in three lines,** and keep them, with the obvious answer and the two you dropped, for
    your report: what moves, and in what order; its character (heavy or light, quick or slow, stiff or loose, playful
    or calm); the one moment the eye must not miss. Every choice after this answers to those lines.
-3. `npx gerak new <name> [--in <brief>]` writes `apps/pieces/<brief>/src/<name>.ts` (the brief is the name
+3. `npx gerak new <name> [--in <brief>]` writes `<pieces>/<brief>/src/<name>.ts` (the brief is the name
    unless `--in` names another), one stage module: a story of one beat, one actor at rest and an empty skin. Open it
    as `stage.html?piece=<name>`. Name who is on stage in `cast`, the beats in `beats`, and give each member the look
    the brief calls for in `skins.dom.css` (see [The stage module](#the-stage-module)). Name the look most people
@@ -47,7 +48,7 @@ not by reading package source. Read a part below only when the brief needs it:
    Name the beat in which the field actually moves, since the review measures it there. In your report, write under each
    line the fields and the parts by kind it needs: "the fall: `y` heavy, a `ballistic` path; the landing: `scaleY`
    loose, an `envelope` times an `oscillation`".
-6. **Ask the catalog with the design.** `npx gerak moves --design apps/pieces/<brief>/src/<name>.ts --target
+6. **Ask the catalog with the design.** `npx gerak moves --design <pieces>/<brief>/src/<name>.ts --target
    ball --in <brief>` scores every move that passes the gate against that member's design, says per field what
    matched and at which options, and gives the import. `--move y:heavy --uses envelope` asks the same by hand;
    `--far <the obvious move>` finds ideas unlike it; `--renderer three` keeps moves a 3D page draws. Read a move in
@@ -58,15 +59,15 @@ not by reading package source. Read a part below only when the brief needs it:
    colour turning or a shadow following a height often is; or write a move from the parts you named ([writing a
    move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
    choose every number from your three lines. In your report, give each line's choice and why.
-8. `npx gerak review apps/pieces/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
+8. `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
    and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
    does not yet have the quality you wrote. `npx gerak review "stage.html?piece=<name>" --watch
    '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does, adds a `sheet` of frames picked where
    the motion is fast; on a page, `--full` adds the moves with their eases.
 9. Fix what it flags, the design's findings first, and what looks wrong on the sheet; review again. Stop when the
-   findings are empty and the sheet shows the three lines you wrote. Run `npm run typecheck` once at the end.
+   findings are empty and the sheet shows the three lines you wrote. Run `npx tsc --noEmit` once at the end.
 
-The other scene files in `apps/pieces/*/src` are other people's pieces. Do not open them: a piece begun from one
+The other scene files in `<pieces>/*/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
 picture is wrong, so read the sheet before calling anything finished.
 
@@ -125,7 +126,7 @@ number goes.
 
 ```ts
 // Every helper below, and every built-in move, comes from this package; a move `gerak moves` lists from
-// `apps/pieces/<brief>/src/moves` is imported from `./moves/<id>`.
+// `<pieces>/<brief>/src/moves` is imported from `./moves/<id>`.
 import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
