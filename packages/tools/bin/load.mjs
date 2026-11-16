@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
+import { registerTsResolve } from "./ts-resolve.mjs";
 
 const source = new URL("../src/", import.meta.url);
 const fromSource = existsSync(source);
 
+registerTsResolve();
 if (fromSource) {
   const { registerSourceLoader } = await import("../../../scripts/source-loader.mjs");
   registerSourceLoader();
