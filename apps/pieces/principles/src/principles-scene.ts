@@ -5,7 +5,6 @@ import {
   combine,
   ease,
   keyframes,
-  lane,
   lanes,
   mix,
   span,
@@ -99,7 +98,7 @@ export const scene = (time: Time, events: Events) => {
     antenna: { rotation: tail(time, events), anchor: "bottom" } satisfies Pose2d,
     pad: { scale: mix(0, 1, settle.of(time, pop).progress) } satisfies Pose2d,
     letters: [...WORD].map((_, index): Pose2d => {
-      const share = lane(word.of(time), index, LETTERS).progress;
+      const share = LETTERS.of(word.of(time), index).progress;
       const rise = ease.cubicOut(share);
       return {
         y: mix(70, 0, rise),

@@ -5,7 +5,6 @@ import {
   ease,
   elapsedOf,
   keyframes,
-  lane,
   lanes,
   mix,
   NO_EVENTS,
@@ -262,7 +261,7 @@ function camera(time: Time): Pose2d {
 function anticipateLetter(i: number, time: Time): Pose2d {
   const c0 = ANT_CROUCH + i * 35;
   const l0 = ANT_LEAP + i * 38;
-  const rising = lane(antRise.of(time), i, ANT_RISE);
+  const rising = ANT_RISE.of(antRise.of(time), i);
   return combine([
     launch(
       {
@@ -437,7 +436,7 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => {
             backwards(span(SHRINK, MATCH).of(time, ease.cubicIn)),
           ),
     fin: [0, 1, 2].map((i) => {
-      const t = lane(finIn.of(time), i, FIN_LANES);
+      const t = FIN_LANES.of(finIn.of(time), i);
       return combine([
         overshoot({ amount: 0.12 }, t, (u) => rise({ distance: 115 }, u)),
         { rotation: mix(5, 0, ease.cubicOut(t.progress)) },

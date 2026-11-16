@@ -1,22 +1,26 @@
 import type { Ease } from "../ease/ease";
 import { seeded } from "../utility/random";
 import { UNTIMED, type Time } from "./time";
+import type { Timing } from "./timing";
 import { unreachable } from "../utility/unreachable";
 
 /** Which lanes start first: from one end, from the centre out, from both edges in, or shuffled by a seed. */
 export type LaneOrigin = "start" | "end" | "center" | "edges" | { readonly seed: number };
 
-/** Settings of `lanes`: `from` picks which start first (default `"start"`); `spacing`, an ease, bends
- * the start times (default even). */
+/** Settings of `lanes`: `from` or `by` picks which start first (default `"start"`); `spacing`, an ease,
+ * bends the start times (default even). */
 export interface LanesOptions {
-  /** Which lanes start first; default `"start"`. */
+  /** Which lanes start first; default `"start"`. Not with `by`. */
   readonly from?: LaneOrigin;
+  /** One value per lane: lanes start in ascending order of it, equal values together. Not with `from`. */
+  readonly by?: readonly number[];
   /** Bends the start times across the whole stagger, keeping the first and last; default even. */
   readonly spacing?: Ease;
 }
 
-/** Lanes started `stagger` lane-lengths apart in the order `from` gives; `span` reaches the last finish. */
-export interface Lanes {
+/** Lanes started `stagger` lane-lengths apart in the order `from` or `by` gives; `span` reaches the last
+ * finish; `.of(time, index)` is lane `index` run inside `time`. */
+export interface Lanes extends Timing<[index: number]> {
   readonly lengths: readonly number[];
   readonly stagger: number;
   /** Each lane's start, in lane lengths. */
@@ -56,27 +60,18 @@ function ranks(count: number, from: LaneOrigin): readonly number[] {
   }
 }
 
-/** Lanes of these relative lengths, each starting `stagger` after the one before it in the order `from` gives. */
-export function lanes(
-  lengths: readonly number[],
-  stagger: number,
-  options: LanesOptions = {},
-): Lanes {
-  const places = ranks(lengths.length, options.from ?? "start");
-  const last = Math.max(0, ...places);
-  const spacing = options.spacing;
-  const starts = places.map((place) =>
-    spacing === undefined || last === 0 ? place * stagger : spacing(place / last) * last * stagger,
-  );
-  const span = lengths.reduce(
-    (latest, length, index) => Math.max(latest, (starts[index] ?? 0) + length),
-    0,
-  );
-  return { lengths, stagger, starts, span };
+/** Each lane's place when ordered by `values`, lowest first; equal values share a place. */
+function ranksBy(values: readonly number[], count: number): readonly number[] {
+  if (values.length !== count)
+    throw new RangeError(`lanes: \`by\` has ${values.length} values for ${count} lanes.`);
+  if (values.some((value) => !Number.isFinite(value)))
+    throw new RangeError("lanes: every `by` value is a finite number.");
+  const distinct = [...new Set(values)].sort((a, b) => a - b);
+  return values.map((value) => distinct.indexOf(value));
 }
 
 /** Lane `index` at overall `position`; with `durationMs` its clock is that lane's own window, in ms. */
-export function laneTime(position: number, index: number, of: Lanes, durationMs?: number): Time {
+function laneTime(position: number, index: number, of: Lanes, durationMs?: number): Time {
   const length = of.lengths[index] ?? 0;
   const staggered = of.stagger !== 0 && length > 0;
   const progress = staggered
@@ -87,16 +82,45 @@ export function laneTime(position: number, index: number, of: Lanes, durationMs?
   return { progress, clock: { kind: "timed", elapsed: progress * lengthMs, length: lengthMs } };
 }
 
-/** Lane `index` run inside `time`: its progress, and a timed clock split among the lanes. */
-export function lane(time: Time, index: number, of: Lanes): Time {
-  const clock = time.clock;
-  switch (clock.kind) {
-    case "timed":
-      return laneTime(time.progress, index, of, clock.length);
-    case "untimed":
-    case "live":
-      return laneTime(time.progress, index, of);
-    default:
-      return unreachable(clock);
-  }
+/** Lanes of these relative lengths, each starting `stagger` after the last in the order `from` or `by`
+ * gives; `.of(time, index)` is lane `index` inside `time`, a timed clock split among lanes. */
+export function lanes(
+  lengths: readonly number[],
+  stagger: number,
+  options: LanesOptions = {},
+): Lanes {
+  if (options.by !== undefined && options.from !== undefined)
+    throw new RangeError("lanes: give `from` or `by`, not both.");
+  const places =
+    options.by === undefined
+      ? ranks(lengths.length, options.from ?? "start")
+      : ranksBy(options.by, lengths.length);
+  const last = Math.max(0, ...places);
+  const spacing = options.spacing;
+  const starts = places.map((place) =>
+    spacing === undefined || last === 0 ? place * stagger : spacing(place / last) * last * stagger,
+  );
+  const span = lengths.reduce(
+    (latest, length, index) => Math.max(latest, (starts[index] ?? 0) + length),
+    0,
+  );
+  const made: Lanes = {
+    lengths,
+    stagger,
+    starts,
+    span,
+    of(time: Time, index: number): Time {
+      const clock = time.clock;
+      switch (clock.kind) {
+        case "timed":
+          return laneTime(time.progress, index, made, clock.length);
+        case "untimed":
+        case "live":
+          return laneTime(time.progress, index, made);
+        default:
+          return unreachable(clock);
+      }
+    },
+  };
+  return Object.freeze(made);
 }

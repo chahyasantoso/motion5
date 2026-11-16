@@ -57,7 +57,7 @@ not by reading package source. `<pieces>` is your pieces folder, the one `gerak.
    the scene, one per field (when no move does it all, the answer names the move for each field); drive the field in
    the scene with parts (a `mix` on an ease, an envelope), when no move has it and only this piece needs it, as a
    colour turning or a shadow following a height often is; or write a move from the parts you named ([writing a
-   move](./agent-moves.md)). Then compose (see [Composing](#composing)) and
+   move](./agent-moves.md)). Then arrange time (see [Arranging time](#arranging-time)) and
    choose every number from your three lines. In your report, give each line's choice and why.
 8. `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the cast against the scene with no browser,
    and measures every field your design names: "`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall
@@ -121,7 +121,7 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   centre in the frame; it is a zero box under a tool with no browser.
 - `R`, or a click on the background, replays.
 
-## Composing
+## Arranging time
 
 Each line shows one function on a plain target. A bare name such as `distance` or `fromMs` stands where your own
 number goes.
@@ -129,7 +129,7 @@ number goes.
 ```ts
 // Every helper below, and every built-in move, comes from this package; a move `gerak moves` lists from
 // `<pieces>/<brief>/src/moves` is imported from `./moves/<id>`.
-import { combine, ease, lane, lanes, mix, repeated, reversed, span, type Time } from "@gerak/core";
+import { chain, combine, ease, lanes, loop, mix, repeated, reversed, span, type Time } from "@gerak/core";
 import { rise } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
@@ -139,7 +139,10 @@ overshoot({ amount }, enter.of(time), (t) => slide({ distance }, t)); // past it
 anticipate({ amount }, enter.of(time), (t) => slide({ distance }, t)); // the other way first
 nod({ distance }, repeated(beat.of(time), count)); // several times in one span
 combine([rise({ distance }, enter.of(time)), fade({}, enter.of(time))]); // two moves on one target
-lane(enter.of(time), i, lanes([1, 1, 1], stagger)); // target i's own time, each starting after the last
+lanes([1, 1, 1], stagger).of(enter.of(time), i); // target i's own time, each starting after the last
+lanes([1, 1, 1], stagger, { by: [d0, d1, d2] }); // the lane with the lowest value starts first, equal values together
+loop(periodMs, { yoyo: true }).of(time); // the time inside the current cycle; yoyo runs odd cycles backwards
+const [first, second] = chain([lengthA, lengthB], { gap }); // spans one after another from 0; `overlap` starts each early
 enter.at(drop.moments(options).landing); // the ms a move's moment falls on, to time something else to it
 mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, eased
 ```
@@ -202,7 +205,7 @@ step reads the present, never all of the past.
 
 - Never cast with `as` or assert with `!`: type a pose literal, `const carry: Pose2d = { x: 1 }`, and read a field a
   pose may lack as `pose.x ?? 0`.
-- A span is not a time: pass `span.of(time)` to a move or `lane`. It needs a clock in ms, so a scroll-driven scene
+- A span is not a time: pass `span.of(time)` to a move or `lanes(...).of`. It needs a clock in ms, so a scroll-driven scene
   gives `scrollDriver` a `length`.
 - An ease that overshoots goes on a value through `mix`, never into a move's time: a move is not defined past its
   ends. To overshoot a move, use the `overshoot` modifier.

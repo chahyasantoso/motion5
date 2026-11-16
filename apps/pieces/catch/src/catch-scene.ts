@@ -2,7 +2,6 @@ import { clockDriver } from "@gerak/dom";
 import {
   combine,
   ease,
-  lane,
   lanes,
   mixPoint,
   span,
@@ -73,7 +72,7 @@ export const scene = (time: Time, events: Events) => {
     hand: tips.lower,
     ball: combine([hop(BOUNCE, flight.of(time)), carry]),
     letters: [...WORD].map((_, index) => {
-      const letter = lane(word.of(time), index, LETTERS);
+      const letter = LETTERS.of(word.of(time), index);
       const fade: Pose2d = { opacity: ease.quadOut(Math.min(1, letter.progress * 3)) };
       return combine([drop({ distance: 80, squash: 0.2 }, letter), fade]);
     }),

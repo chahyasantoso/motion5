@@ -1,15 +1,5 @@
 import { clockDriver } from "@gerak/dom";
-import {
-  combine,
-  ease,
-  keyframes,
-  lane,
-  lanes,
-  mix,
-  span,
-  type Pose2d,
-  type Time,
-} from "@gerak/core";
+import { combine, ease, keyframes, lanes, mix, span, type Pose2d, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
@@ -117,7 +107,7 @@ export const scene = (time: Time) => ({
     return { scale: mix(0.05, 1, share), opacity: 0.7 * born * (1 - share) ** 1.5 };
   }),
   foam: [...WORD].map((_, index): Pose2d => {
-    const share = lane(word.of(time), index, LETTERS).progress;
+    const share = LETTERS.of(word.of(time), index).progress;
     const spread = ease.cubicOut(share);
     return {
       scale: mix(0.3, 1, spread),
@@ -125,7 +115,7 @@ export const scene = (time: Time) => ({
     };
   }),
   letters: [...WORD].map((_, index): Pose2d => {
-    const share = lane(word.of(time), index, LETTERS).progress;
+    const share = LETTERS.of(word.of(time), index).progress;
     const rise = ease.backOut(share);
     return {
       y: mix(230, 0, rise),

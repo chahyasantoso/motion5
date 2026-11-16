@@ -3,7 +3,6 @@ import {
   aim,
   combine,
   ease,
-  lane,
   lanes,
   mergeEvents,
   mix,
@@ -204,7 +203,7 @@ const rootAt = (time: Time): Pose3d =>
 /* 2D over 3D. */
 const TITLE_WORDS = 3;
 const titleWord = (time: Time, i: number): Pose2d => {
-  const mine = lane(span(TITLE_AT, TITLE_AT + 1600).of(time), i, lanes([1, 1, 1], 0.45));
+  const mine = lanes([1, 1, 1], 0.45).of(span(TITLE_AT, TITLE_AT + 1600).of(time), i);
   return combine([drop({ distance: 300, squash: 0.2 }, mine), fade({}, mine)]);
 };
 const titleWipe = (time: Time): Pose2d =>

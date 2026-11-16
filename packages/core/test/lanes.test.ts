@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { laneTime, lanes } from "@gerak/core";
+import { atProgress, lanes, type Time } from "@gerak/core";
+
+const timedAt = (progress: number, length: number): Time => ({
+  progress,
+  clock: { kind: "timed", elapsed: progress * length, length },
+});
 
 describe("lanes", () => {
   it("spans to the last finish", () => {
@@ -10,44 +15,44 @@ describe("lanes", () => {
   });
 });
 
-describe("laneTime", () => {
+describe("lanes.of", () => {
   const three = lanes([1, 1, 1], 0.25);
 
   it("finishes every lane when the position reaches 1", () => {
-    for (const index of [0, 1, 2]) expect(laneTime(1, index, three).progress).toBe(1);
+    for (const index of [0, 1, 2]) expect(three.of(atProgress(1), index).progress).toBe(1);
   });
 
   it("starts each lane one stagger after the last", () => {
     // Three lanes at 0.25 span 1.5, so at position 1/6 the first has run a quarter and the second starts.
-    expect(laneTime(1 / 6, 0, three).progress).toBeCloseTo(0.25, 12);
-    expect(laneTime(1 / 6, 1, three).progress).toBeCloseTo(0, 12);
-    expect(laneTime(1 / 6, 2, three).progress).toBe(0);
+    expect(three.of(atProgress(1 / 6), 0).progress).toBeCloseTo(0.25, 12);
+    expect(three.of(atProgress(1 / 6), 1).progress).toBeCloseTo(0, 12);
+    expect(three.of(atProgress(1 / 6), 2).progress).toBe(0);
   });
 
   it("keeps every lane on the position under no stagger, whatever its length", () => {
     const flat = lanes([1, 0.5], 0);
-    expect(laneTime(0.4, 0, flat).progress).toBe(0.4);
-    expect(laneTime(0.4, 1, flat).progress).toBe(0.4);
+    expect(flat.of(atProgress(0.4), 0).progress).toBe(0.4);
+    expect(flat.of(atProgress(0.4), 1).progress).toBe(0.4);
   });
 
   it("is untimed without a duration", () => {
-    expect(laneTime(0.5, 0, three).clock).toEqual({ kind: "untimed" });
+    expect(three.of(atProgress(0.5), 0).clock).toEqual({ kind: "untimed" });
   });
 
   it("gives each lane the milliseconds of its own window", () => {
     // A 1000 ms Motion over a span of 1.5 gives each lane 1000 / 1.5 ms.
     const length = 1000 / 1.5;
-    expect(laneTime(1 / 6, 0, three, 1000).clock).toEqual({
+    expect(three.of(timedAt(1 / 6, 1000), 0).clock).toEqual({
       kind: "timed",
       elapsed: expect.closeTo(length * 0.25, 9),
       length: expect.closeTo(length, 9),
     });
-    expect(laneTime(1 / 6, 2, three, 1000).clock).toEqual({
+    expect(three.of(timedAt(1 / 6, 1000), 2).clock).toEqual({
       kind: "timed",
       elapsed: 0,
       length: expect.closeTo(length, 9),
     });
-    expect(laneTime(1, 2, three, 1000).clock).toEqual({
+    expect(three.of(timedAt(1, 1000), 2).clock).toEqual({
       kind: "timed",
       elapsed: expect.closeTo(length, 9),
       length: expect.closeTo(length, 9),
@@ -55,7 +60,7 @@ describe("laneTime", () => {
   });
 
   it("gives every lane the whole duration under no stagger", () => {
-    expect(laneTime(0.5, 1, lanes([1, 1], 0), 800).clock).toEqual({
+    expect(lanes([1, 1], 0).of(timedAt(0.5, 800), 1).clock).toEqual({
       kind: "timed",
       elapsed: 400,
       length: 800,
@@ -68,7 +73,9 @@ describe("lanes order and spacing", () => {
 
   it("starts from the first lane by default, as before", () => {
     expect(starts(lanes([1, 1, 1, 1, 1], 0.25))).toEqual([0, 1, 2, 3, 4]);
-    expect(lanes([1, 1, 1, 1, 1], 0.25, { from: "start" })).toEqual(lanes([1, 1, 1, 1, 1], 0.25));
+    expect(lanes([1, 1, 1, 1, 1], 0.25, { from: "start" }).starts).toEqual(
+      lanes([1, 1, 1, 1, 1], 0.25).starts,
+    );
   });
 
   it("ranks lanes from the end, the centre or the edges", () => {
@@ -80,10 +87,10 @@ describe("lanes order and spacing", () => {
 
   it("starts the centre lane first, its neighbours together, and finishes every lane at 1", () => {
     const five = lanes([1, 1, 1, 1, 1], 0.25, { from: "center" });
-    expect(laneTime(0.1, 2, five).progress).toBeGreaterThan(0);
-    expect(laneTime(0.1, 1, five).progress).toBe(0);
-    expect(laneTime(0.3, 1, five).progress).toBe(laneTime(0.3, 3, five).progress);
-    for (const index of [0, 1, 2, 3, 4]) expect(laneTime(1, index, five).progress).toBe(1);
+    expect(five.of(atProgress(0.1), 2).progress).toBeGreaterThan(0);
+    expect(five.of(atProgress(0.1), 1).progress).toBe(0);
+    expect(five.of(atProgress(0.3), 1).progress).toBe(five.of(atProgress(0.3), 3).progress);
+    for (const index of [0, 1, 2, 3, 4]) expect(five.of(atProgress(1), index).progress).toBe(1);
   });
 
   it("shuffles by a seed, the same way every time", () => {

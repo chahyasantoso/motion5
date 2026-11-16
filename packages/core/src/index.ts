@@ -27,18 +27,11 @@ export {
   type Quaternion,
   type Vec3,
 } from "./geometry/rotation3d";
-export {
-  UNTIMED,
-  atProgress,
-  elapsedOf,
-  liveAt,
-  span,
-  window,
-  windowed,
-  type Clock,
-  type Span,
-  type Time,
-} from "./time/time";
+export { UNTIMED, atProgress, elapsedOf, liveAt, type Clock, type Time } from "./time/time";
+export { span, type Span } from "./time/span";
+export { type Timing } from "./time/timing";
+export { loop, type LoopOptions } from "./time/loop";
+export { chain, type ChainOptions } from "./time/chain";
 export { backEase, ease, springEase, type Ease, type EaseDirection } from "./ease/ease";
 export { spring, type SpringOptions, type SpringState } from "./ease/spring";
 export { wave } from "./envelope/wave";
@@ -53,14 +46,7 @@ export { NO_EVENTS } from "./events/event-list";
 export { isMotionEvent, mergeEvents } from "./events/event-list";
 export { type EventPoint, type Events } from "./events/event-list";
 export { type MotionEvent } from "./events/event-list";
-export {
-  lane,
-  laneTime,
-  lanes,
-  type LaneOrigin,
-  type Lanes,
-  type LanesOptions,
-} from "./time/lanes";
+export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";
 export {
   valueField,

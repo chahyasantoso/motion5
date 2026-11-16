@@ -6,7 +6,6 @@ import {
   combine3d,
   ease,
   keyframes,
-  lane,
   lanes,
   mix,
   mixPoint3d,
@@ -115,7 +114,7 @@ const STAGE_CENTER = { x: -0.5, y: 2, z: 0 };
 
 /** One small object's place, rising and growing in its turn. */
 export function bit(time: Time, index: number): Pose3d {
-  const share = lane(arrival.of(time), index, BITS).progress;
+  const share = BITS.of(arrival.of(time), index).progress;
   return {
     x: (index - (BIT_COUNT - 1) / 2) * BIT_ROW.gap,
     y: mix(1.6, 0, ease.cubicOut(share)),

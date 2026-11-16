@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, combine, lane, lanes, type Time } from "@gerak/core";
+import { atProgress, combine, lanes, type Time } from "@gerak/core";
 import { rope, trace, wipe } from "@gerak/moves";
 
 describe("wipe", () => {
@@ -78,13 +78,13 @@ describe("combine", () => {
   });
 });
 
-describe("lane", () => {
+describe("lanes.of", () => {
   it("runs a lane inside a time, splitting a timed clock among the lanes", () => {
     const time: Time = { progress: 1 / 6, clock: { kind: "timed", elapsed: 100, length: 600 } };
-    expect(lane(time, 0, lanes([1, 1, 1], 0.25))).toEqual({
+    expect(lanes([1, 1, 1], 0.25).of(time, 0)).toEqual({
       progress: expect.closeTo(0.25, 12),
       clock: { kind: "timed", elapsed: expect.closeTo(100, 9), length: expect.closeTo(400, 9) },
     });
-    expect(lane(atProgress(0.5), 1, lanes([1, 1], 0))).toEqual(atProgress(0.5));
+    expect(lanes([1, 1], 0).of(atProgress(0.5), 1)).toEqual(atProgress(0.5));
   });
 });

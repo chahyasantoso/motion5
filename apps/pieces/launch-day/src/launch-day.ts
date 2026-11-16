@@ -1,4 +1,4 @@
-import { combine, lane, lanes, span, type Pose2d, type Time } from "@gerak/core";
+import { combine, lanes, span, type Pose2d, type Time } from "@gerak/core";
 import { actor, cssVariables, group, many, story } from "@gerak/stage";
 import { card } from "../../showreel/style";
 import { kick } from "../../showreel/src/moves/kick";
@@ -60,7 +60,7 @@ export const scene = (time: Time) => {
   const burst = span(3500, 4300);
 
   const badge = (i: number, dx: number): Pose2d => {
-    const t = lane(badges.of(time), i, lanes([1, 1, 1], 0.45));
+    const t = lanes([1, 1, 1], 0.45).of(badges.of(time), i);
     return combine([
       lob({ dx, dy: -420, apex: 160, facing: "upright" }, t),
       squish({ squash: 0.28, wobbles: 2 }, t),

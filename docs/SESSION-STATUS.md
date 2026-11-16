@@ -11,7 +11,7 @@ byte ceiling.
 ## Now
 
 - **A scene is `(time, events) => targets`, and an agent designs before it chooses.** `@gerak/moves` holds fields,
-  parts by kind, moves and compose in layer folders; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
+  parts by kind and moves in layer folders, with the time helpers in `@gerak/core`; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
   `@gerak/rapier`, `@gerak/dom`, `@gerak/react`, `@gerak/three` and `@gerak/stage` build, play and write it; the
   one `npx gerak <command>` from `@gerak/tools` makes, reviews, samples and renders pieces, here and in a person's own
   project after `npx gerak init`, which writes the page files, the skill and an `AGENTS.md` pointing at the guide the

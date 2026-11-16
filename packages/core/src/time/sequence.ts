@@ -1,4 +1,5 @@
-import { elapsedOf, type Span, type Time } from "./time";
+import type { Span } from "./span";
+import { elapsedOf, type Time } from "./time";
 
 /** One phase of a sequence: the span it runs in, and what it answers given its own time there. */
 export type Phase<R> = readonly [Span, (time: Time) => R];

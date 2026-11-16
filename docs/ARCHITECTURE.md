@@ -40,7 +40,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | 1. Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/moves/src/fields/` |
 | 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/moves/src/parts/<group>/`, listed by `npx gerak moves --parts` |
 | 3. Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
-| 4. Composition | moves placed in time and across targets: phases, lanes, reshaped time; the piece format | `packages/moves/src/compose/`; `@gerak/stage` |
+| 4. Arranging time | moves placed in time and across targets: spans, phases, lanes, loops, chains, reshaped time; the piece format | `packages/core/src/time/`; `@gerak/stage` |
 | 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |
 | 6. Logic | what happens because of what a person did | the event log, `react`, `follow` and `tally` today; rules, score and state wait for a brief |
 | 7. App | the thing that ships | the web overlay, the instrument, video, and later a game or a quiz |
@@ -48,7 +48,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 - A lower layer never knows a higher one: a spring does not know it is in a game. A repo test refuses a file in
   `packages/moves/src` that imports from a higher layer's folder, and the boundary scan's pure layer holds layers 1
   to 4.
-- A move exists where parts couple inside one progress; parts merely side by side are composition.
+- A move exists where parts couple inside one progress; parts merely side by side are arranged in time, not a move.
 - A move outside `@gerak/moves` imports only `@gerak/moves`, so it can travel to another project as it is.
 - Logic is a fold over the event log, never state changed in place. Score, position and collisions are worked out
   from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,

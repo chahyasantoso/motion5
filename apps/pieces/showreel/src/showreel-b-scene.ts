@@ -5,7 +5,6 @@ import {
   ease,
   elapsedOf,
   keyframes,
-  lane,
   lanes,
   mix,
   reversed,
@@ -212,7 +211,7 @@ function anticipateLetter(time: Time, i: number): Pose2d {
   return combine([
     springSettle(
       { dy: 120, turn: 9, rings: 0.7, damping: 3 },
-      lane(span(1000, 1925).of(time), i, RISE),
+      RISE.of(span(1000, 1925).of(time), i),
     ),
     launch(
       {

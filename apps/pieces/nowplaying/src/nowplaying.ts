@@ -1,7 +1,6 @@
 import {
   combine,
   elapsedOf,
-  lane,
   lanes,
   mix,
   reversed,
@@ -83,7 +82,7 @@ export const scene = (time: Time, events: Events, _rest: Rest) => ({
   heading: {} satisfies Pose2d,
   line: { y: mix(0, -16, drift.of(time).progress) } satisfies Pose2d,
   title: Array.from(TITLE, (_c, i): Pose2d => {
-    const t = lane(arrive.of(time), i, LETTERS);
+    const t = LETTERS.of(arrive.of(time), i);
     return combine([
       fade({}, t),
       rise({ distance: 14 }, t),
