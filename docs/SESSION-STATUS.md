@@ -14,12 +14,12 @@ byte ceiling.
   parts by kind and moves in layer folders, with the time helpers in `@gerak/core`; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
   `@gerak/rapier`, `@gerak/dom`, `@gerak/react`, `@gerak/three` and `@gerak/stage` build, play and write it; the
   one `npx gerak <command>` from `@gerak/tools` makes, reviews, samples and renders pieces, here and in a person's own
-  project after `npx gerak init`, which writes the page files, the skill and an `AGENTS.md` pointing at the guide the
-  package ships; a fresh agent made the 30 s `launch-night` reel that way, from the shipped guide alone. Each brief is a folder of the pieces folder (`gerak.pieces`; `apps/pieces` here), played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves --anatomy`
+  project after `npx gerak init`, which writes the page files, the skill and an `AGENTS.md` naming the read-whole core and stage pages and each installed package's docs; the
+  packages ship their own docs; a fresh agent made the 30 s `launch-night` reel from the earlier shipped guide alone. Each brief is a folder of the pieces folder (`gerak.pieces`; `apps/pieces` here), played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves --anatomy`
   is the card of primitives, the catalog answers a piece's `design`, and `gerak review` checks the design. A brief
   folder is portable with its own parts; its optional `style.ts` card holds the share of lively motion per field, which
   `gerak review` checks for any piece naming it and `gerak style` measures (the `showreel` card, measured by
-  `launch-day`). Decisions are ADR-170 to ADR-188; the agent guide and the generated `packages/<package>/docs/reference` pages describe use. Every package installs
+  `launch-day`). Decisions are ADR-170 to ADR-188; each package's docs and its generated `packages/<package>/docs/reference` pages describe use. Every package installs
   from its tarball; nothing is on npm (ADR-179, ADR-188).
 
 ## Next in line

@@ -19,8 +19,8 @@ is one line, and a rule this file does not carry is not a rule.
 - Why a decision went one way: grep `docs/ADR-INDEX.md`, then open `docs/ADR-nnn-*.md`. Do it before
   proposing a flag, alias, facade, second owner, compatibility path or new public export.
 - How to use the runtime: [the user guide](docs/guide/README.md).
-- How to make motion as an agent: [the agent guide](docs/guide/agent-motion.md).
-- Every function and type a scene uses: `packages/<package>/docs/reference/README.md`; call examples: [the call examples](docs/guide/agent-calls.md).
+- How to make motion as an agent: read [core.md](packages/core/docs/core.md) and [stage.md](packages/stage/docs/stage.md) whole; each package's `docs/README.md` lists its other pages.
+- Every function and type a scene uses: `packages/<package>/docs/reference/README.md`; every command: [commands](packages/tools/docs/commands.md).
 - A human contributor: [README.md](README.md) and [the documentation map](docs/README.md).
 
 ## Commands

@@ -1,7 +1,7 @@
 # Motion principles
 
 Read this when the brief asks for weight, life, character or polish. Each principle below is a tool with knobs, not a
-look: pick the amounts the brief's style calls for. Names are in [the reference](./agent-calls.md).
+look: pick the amounts the brief's style calls for. Names are in [the reference](./reference/README.md).
 
 ## The tools
 
@@ -48,7 +48,7 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
 
 ## Limits
 
-- `Pose2d` here; for 3D read [3D scenes](./agent-3d.md). No skew: `smear` on content that must not turn needs the
+- `Pose2d` here; for 3D read [3D scenes](../../three/docs/agent-3d.md). No skew: `smear` on content that must not turn needs the
   inner element.
 - `trail` refuses a spring that rings past 4 s; raise damping.
 - `trail` and `velocity` take the scene's time, never `span.of(time, ease)`: they sample the signal at other ms, so

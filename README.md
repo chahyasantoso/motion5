@@ -40,7 +40,7 @@ Nothing is on npm yet. Pack the packages and install the tarballs:
 1. Run `npm run pack:check -- --keep`; it prints the folder that holds the tarballs.
 2. In your project, run `npm install <path>/*.tgz`, plus `react` or `three` when you use those packages, and
    `@types/react` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
-3. Point your agent at [the agent guide](https://github.com/chahyasantoso/motion5/blob/main/docs/guide/agent-motion.md).
+3. Point your agent at [the stage page](https://github.com/chahyasantoso/motion5/blob/main/packages/stage/docs/stage.md) and [the core page](https://github.com/chahyasantoso/motion5/blob/main/packages/core/docs/core.md); `gerak init` writes an `AGENTS.md` that names them.
    Its `npx gerak` commands install with `@gerak/tools`; the stage pages still live in this repository, so outside
    it check by seeking the stage.
 

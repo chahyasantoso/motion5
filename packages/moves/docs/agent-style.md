@@ -1,7 +1,7 @@
 # Working in a style
 
 Read this when the brief asks for a piece in another brief's style, or when you turn your own brief into a style
-others can use. The loop is in [the agent guide](./agent-motion.md); this page adds what a style changes.
+others can use. The loop is in [the agent guide](../../stage/docs/stage.md); this page adds what a style changes.
 
 A style is a brief's `style.ts` card: per field, the share of that field's motions that must be lively; skin tokens;
 and habits in words. A motion is one member or list item moving one field in one beat. It is lively when it

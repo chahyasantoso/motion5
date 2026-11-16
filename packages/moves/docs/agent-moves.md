@@ -1,7 +1,7 @@
 # Writing a move
 
 Read this when no catalogued move, modified or combined, gives the motion your three lines name. The loop is in [the
-agent guide](./agent-motion.md).
+agent guide](../../stage/docs/stage.md).
 
 Write one when the motion in your three lines has a name and no catalogued move, modified or combined, gives it.
 `keyframes` and `mix` in a scene are for a value this piece alone needs; a tick, a flip, a wave or any motion you
@@ -11,7 +11,7 @@ Glue that only this piece needs stays in the scene as a `mix`.
 1. `npx gerak new-move <id> --in <brief>` writes `<pieces>/<brief>/src/moves/<id>.ts`, a declaration the gate refuses.
 2. Fill it in: the `role`, a `description` the next agent will choose it by, each option with its range and a
    description, an `example`, and `run`, which answers a pose from the options and `progress` alone. Make an option of
-   what another brief would change, not of this piece's numbers. [`defineMove`](./agent-calls.md)
+   what another brief would change, not of this piece's numbers. [`defineMove`](./reference/README.md)
    lists the roles and what each must hold.
 3. **Build `run` from the parts your design named,** imported from `@gerak/moves`: an `envelope` (`taper`, `decay`,
    `attack`, `arch`) times an `oscillation` (`wave`) for anything that swings and dies away, a `path` (`ballistic`,

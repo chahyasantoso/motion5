@@ -1,6 +1,6 @@
 # Rigs
 
-Read this when bones reach: an arm, a leg, a figure. Names are in [the reference](./agent-calls.md#gerakrig).
+Read this when bones reach: an arm, a leg, a figure. Names are in [the reference](./reference/README.md#gerakrig).
 
 ```ts
 import { buildChain, chainPoses, ik } from "@gerak/rig";

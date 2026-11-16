@@ -1,7 +1,7 @@
 # Rigging artwork
 
 Read this to animate a drawing: an SVG someone supplied, or one you draw first. The loop is in [the agent
-guide](./agent-motion.md).
+guide](../../stage/docs/stage.md).
 
 To animate a drawing someone else made, start from its SVG, not from shapes you draw. With no SVG, draw one first:
 write `<pieces>/references/<file>.svg` by hand, each part that moves its own shape with a clear `id` (`beak`,

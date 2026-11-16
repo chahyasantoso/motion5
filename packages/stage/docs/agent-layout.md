@@ -1,7 +1,7 @@
 # Layout and changing place
 
 Read this when a value comes from where the layout puts a member, or a member moves between places the layout decides:
-a route change, a card opening, a list reordering. The loop is in [the agent guide](./agent-motion.md).
+a route change, a card opening, a list reordering. The loop is in [the agent guide](./stage.md).
 
 ## Where the layout puts a member
 

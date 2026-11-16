@@ -61,7 +61,7 @@ with no browser.
 
 ## Where next
 
-- [Making motion as an agent](./agent-motion.md): the brief, the move catalog, composing and the review loop.
-- [Agent call examples](./agent-calls.md): short examples of the calls a scene uses; every export is in `packages/<package>/docs/reference/README.md`.
-- [3D scenes](./agent-3d.md), [rigs](./agent-rigs.md), [events](./agent-events.md), [physics](./agent-physics.md)
-  and [motion principles](./agent-principles.md) when a brief needs them.
+- [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): read whole before making motion; the loop is in the second.
+- [3D scenes](../../packages/three/docs/agent-3d.md), [rigs](../../packages/rig/docs/agent-rigs.md), [events](../../packages/stage/docs/agent-events.md), [physics](../../packages/physics/docs/agent-physics.md)
+  and [motion principles](../../packages/moves/docs/agent-principles.md) when a brief needs them.
+- [Live editing](../../packages/tools/docs/live.md) and [every command](../../packages/tools/docs/commands.md).

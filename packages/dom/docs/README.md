@@ -1,0 +1,7 @@
+# @gerak/dom docs
+
+Writes a value onto an element, and the drivers that move a scene on the page.
+
+- [Outside the stage](./agent-outside.md): a page outside this repository, or a real site's own elements.
+- [Calls](./calls.md): examples of the calls a scene makes.
+- [Reference](./reference/README.md): every export with its signature, by source folder.

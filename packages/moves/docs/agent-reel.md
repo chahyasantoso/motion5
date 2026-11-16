@@ -1,7 +1,7 @@
 # Making a reel
 
 Read this when the brief asks for a reel: a piece of several shots, such as a launch, a promo or a showreel, that a
-viewer watches once from start to end. The loop is in [the agent guide](./agent-motion.md); a reel adds a script and a
+viewer watches once from start to end. The loop is in [the agent guide](../../stage/docs/stage.md); a reel adds a script and a
 storyboard before it, and shots in place of one idea.
 
 ## Before any code
@@ -61,7 +61,7 @@ At every shot change one named member carries the eye from one shot into the nex
 in the storyboard's "Carried in":
 
 - **Carry.** The member moves from its place in one shot to its place in the next: two layouts, one per shot, and
-  `carried` from [layout](./agent-layout.md), with cues at the change.
+  `carried` from [layout](../../stage/docs/agent-layout.md), with cues at the change.
 - **Morph.** A path member's outline becomes another: `actor({ path, shapes: [next] })` and the pose field `shape`
   from 0 to 1 over the change; the outlines must match (`matchOutlines` says why not).
 - **Zoom through.** The camera pushes into the member until it fills the whole frame, corners included; the change

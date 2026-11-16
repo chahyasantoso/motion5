@@ -1,7 +1,7 @@
 # Events
 
 Read this when the motion answers something: the page's pointer, scrolling into view, or one target's moment, such as
-a landing. Names are in [the reference](./agent-calls.md).
+a landing. Names are in [the reference](../../core/docs/reference/events.md).
 
 ## From the page
 

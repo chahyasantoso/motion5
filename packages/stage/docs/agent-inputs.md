@@ -1,7 +1,7 @@
 # Live inputs
 
 Read this when a piece follows numbers that arrive while it plays: a microphone's level, a slider, a recorded session.
-The loop is in [the agent guide](./agent-motion.md).
+The loop is in [the agent guide](./stage.md).
 
 A rig can follow numbers that arrive while it plays: how far a mouth is open, whether an eye is shut, a slider. Each
 number is a sample, an event with a value: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. A scene stays a function of

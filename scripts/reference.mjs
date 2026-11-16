@@ -8,7 +8,7 @@ const START = "<!-- generated:reference:start -->";
 const END = "<!-- generated:reference:end -->";
 const NO_DOC = "(no doc comment)";
 const MAX_SIGNATURE = 140;
-const MAX_COMPACT_SIGNATURE = 100;
+const MAX_COMPACT_SIGNATURE = 80;
 
 /** Packages with a scene-facing entry, each with the entry files a caller imports. */
 export const PACKAGES = [
@@ -40,7 +40,10 @@ const CORE_GROUPS = [
 ];
 
 /** The read-whole pages: the package whose entries they carry, and the page. */
-export const READ_WHOLE = [];
+export const READ_WHOLE = [
+  { dir: "core", path: "packages/core/docs/core.md", namesOnly: "geometry" },
+  { dir: "stage", path: "packages/stage/docs/stage.md", namesOnly: undefined },
+];
 
 /** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */
 function workspacePaths() {
@@ -270,19 +273,41 @@ export function referenceFiles(generated) {
   return files;
 }
 
-/** The body between a read-whole page's markers: a table of contents, then every group in compact form. */
-export function readWholeBody(generated, dir) {
+const DIMENSIONS = ["2D paths and shapes", "3D rotation and vectors"];
+
+function isThreeD(entry) {
+  return /(rotation3d|stage3d|cubics3d)\.ts$/.test(entry.file) || /3d$/i.test(entry.name);
+}
+
+/** A group's exports as names only, split by dimension, with a link to the page that has the signatures. */
+function namesOf(group) {
+  const names = (flag) =>
+    group.entries
+      .filter((entry) => isThreeD(entry) === flag)
+      .map(({ name }) => `\`${name}\``)
+      .join(", ");
+  return [
+    ...DIMENSIONS.map((label, index) => `- ${label}: ${names(index === 1)}`),
+    `Signatures: [reference/${group.name}.md](./reference/${group.name}.md).`,
+  ];
+}
+
+/** The body between a read-whole page's markers: a table of contents, then every group in compact form;
+ * `namesOnly` names one group by its exports alone. */
+export function readWholeBody(generated, dir, namesOnly = undefined) {
   const found = generated.packages.find((candidate) => candidate.dir === dir);
   const groups = found === undefined ? [] : found.groups;
-  const toc = groups.map((group) => `- [${group.name}](#${group.name}): ${group.entries.length}`);
+  const toc = groups
+    .map((group) => `[${group.name}](#${group.name}) ${group.entries.length}`)
+    .join(", ");
   const sections = groups.flatMap((group) => [
     "",
     `## ${group.name}`,
     "",
     ...(group.intro === "" ? [] : [group.intro, ""]),
-    ...group.entries.map(({ compact }) => compact),
+    ...(group.name === namesOnly ? namesOf(group) : group.entries.map(({ compact }) => compact)),
   ]);
-  return ["Groups:", ...toc, ...sections].join("\n");
+  return [`Groups: ${toc}.`, ...sections].join("\n");
 }
 
 /** The page with each marker pair's inside replaced; undefined when the pairs do not match. */
@@ -326,10 +351,12 @@ function expectedDocs(scanRoot) {
   const generated = generate(scanRoot);
   const files = referenceFiles(generated);
   const problems = generated.undocumented.map((name) => `${name} has no doc comment`);
-  for (const { dir, path } of READ_WHOLE) {
+  for (const { dir, path, namesOnly } of READ_WHOLE) {
     const committed = readIf(join(scanRoot, path));
     const filled =
-      committed === undefined ? undefined : fill(committed, [readWholeBody(generated, dir)]);
+      committed === undefined
+        ? undefined
+        : fill(committed, [readWholeBody(generated, dir, namesOnly)]);
     if (filled === undefined) problems.push(`${path}: missing or its marker pair does not match`);
     else files.set(path, filled);
   }

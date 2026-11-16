@@ -9,7 +9,8 @@ import { PACKAGES } from "../../scripts/reference.mjs";
 const COMMANDS = { ...TOOLS_COMMANDS, ...LIBRARY_COMMANDS };
 
 const ROOT = new URL("../../", import.meta.url);
-const calls = readFileSync(new URL("docs/guide/agent-calls.md", ROOT), "utf8");
+const calls = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
+const MAX_READ_WHOLE_BYTES = 20 * 1024;
 
 /** A package's generated reference pages, joined. */
 function referenceOf(dir: string): string {
@@ -108,4 +109,16 @@ describe("agent reference", () => {
       "utility",
     ]);
   });
+
+  it.each(["core", "stage"])(
+    "%s.md is held to 20 KB and names every export of its package",
+    (dir) => {
+      const page = readFileSync(new URL(`packages/${dir}/docs/${dir}.md`, ROOT), "utf8");
+      expect(Buffer.byteLength(page)).toBeLessThanOrEqual(MAX_READ_WHOLE_BYTES);
+      const entry = `${dir}/src/index.ts`;
+      const exported = exportsOf([entry]).get(entry) ?? [];
+      expect(exported.length).toBeGreaterThan(0);
+      expect(exported.filter((name) => !page.includes("`" + name + "`"))).toEqual([]);
+    },
+  );
 });

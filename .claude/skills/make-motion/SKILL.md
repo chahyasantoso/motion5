@@ -7,9 +7,9 @@ description: Make, change or polish an animation or motion piece for a web page 
 
 A piece starts from its brief, not from a piece that already exists.
 
-1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short. A
-   piece is one stage module: `npx gerak new <name>` writes `<pieces>/<name>/src/<name>.ts` with its cast, its
-   story and its skin, and `stage.html?piece=<name>` shows it.
+1. Read [`core.md`](../../../packages/core/docs/core.md) and [`stage.md`](../../../packages/stage/docs/stage.md) whole, and follow
+   the loop in `stage.md`. A piece is one stage module: `npx gerak new <name>` writes
+   `<pieces>/<name>/src/<name>.ts` with its cast, its story and its skin, and `stage.html?piece=<name>` shows it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
@@ -20,10 +20,10 @@ A piece starts from its brief, not from a piece that already exists.
    `npx gerak new-move <id> --in <brief>` and pass it through `npx gerak moves --check`.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
-5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
-   when the brief needs it.
-6. Find any function or command by searching the package references (`packages/<package>/docs/reference/`) and [the call examples](../../../docs/guide/agent-calls.md) for its name;
-   do not read the reference whole, and do not read package source.
+5. Read a page that `stage.md`'s table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
+   when the brief needs it; the pages of each installed package are listed in its `docs/README.md`.
+6. Find any function or type by searching `docs/reference/` of the package that exports it, and any command in
+   `docs/commands.md` of `@gerak/tools`, for its name; do not read package source.
 7. Review with `gerak review`; dig with the other tools only into what a review showed. Read the sheet before
    calling the piece finished.
 8. Change only your piece's files and the moves you wrote, and commit nothing unless asked.
