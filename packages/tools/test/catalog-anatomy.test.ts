@@ -55,10 +55,10 @@ describe("gerak moves --anatomy", () => {
     expect(line("rotationX")).not.toContain("dom");
   });
 
-  it("shows taper with its label and its values at progress 0, 0.5 and 1", async () => {
+  it("shows squashed with its label and the pose that label answers", async () => {
     const run = await runCatalog(ok(["--anatomy"]), PIECES_ROOT);
-    const line = run.lines.find((text) => text.includes("taper(p, 2)")) ?? "";
-    expect(line).toContain("1, 0.25, 0");
+    const line = run.lines.find((text) => text.includes('squashed(0, 1, "bottom")')) ?? "";
+    expect(line).toContain('{scaleX: 1, scaleY: 1, anchor: "bottom"}');
   });
 
   it("prints the same names as one JSON object under --json", async () => {
@@ -78,7 +78,7 @@ describe("gerak moves --anatomy", () => {
     expect(names("parts")).toEqual(moveParts().map(({ name }) => name));
     expect(names("shapes")).toEqual(["peak", "overshoot", "rings", "windup", "settle"]);
     expect(names("qualities")).toEqual(Object.keys(QUALITIES));
-    expect(text.lines.join("\n")).toContain("taper");
+    expect(text.lines.join("\n")).toContain("squashed");
   });
 });
 
@@ -105,7 +105,7 @@ export const hump = definePart(
   it("lists them after the library's parts under a heading naming the source", async () => {
     const run = await runCatalog(ok(["--anatomy"]), root());
     const at = run.lines.indexOf("parts of reel:");
-    expect(at).toBeGreaterThan(run.lines.findIndex((line) => line.includes("taper")));
+    expect(at).toBeGreaterThan(run.lines.findIndex((line) => line.includes("squashed")));
     expect(run.lines[at + 1]).toContain("hump");
   });
 
@@ -121,6 +121,6 @@ export const hump = definePart(
           )
         : undefined;
     expect(source("hump")).toBe("reel");
-    expect(source("taper")).toBe("@gerak/moves");
+    expect(source("squashed")).toBe("@gerak/moves");
   });
 });

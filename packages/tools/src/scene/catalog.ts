@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
-import { valueField } from "@gerak/core";
+import * as core from "@gerak/core";
 import {
   DESCRIPTOR_KEYS,
   MOVE_ROLES,
@@ -798,11 +798,13 @@ function changedOptions(record: MoveRecord, options: Readonly<Record<string, unk
     .join(", ");
 }
 
-/** The parts of a kind or by name that a move's file imports; none when the move imports no such part. */
+/** The parts of a kind or by name that a move's file imports, or the `@gerak/core` name it imports; none
+ * when the move imports no such part. */
 function importedFor(record: MoveRecord, use: string): readonly string[] {
-  return moveParts()
+  const own = moveParts()
     .filter((part) => (part.group === use || part.name === use) && record.parts.includes(part.name))
     .map(({ name }) => name);
+  return own.length === 0 && use in core && record.parts.includes(use) ? [use] : own;
 }
 
 /** How a move answers a design at its best option set: the example, or the set that fits most closely. */
@@ -858,7 +860,7 @@ function designFit(
 function refusalOf(design: DesignRequest): string | undefined {
   for (const request of design.fields) {
     const known =
-      valueField(request.field) !== undefined ||
+      core.valueField(request.field) !== undefined ||
       (request.field.startsWith("custom.") && request.field.length > "custom.".length);
     if (!known)
       return `design: unknown field "${request.field}". Fields: ${Object.values(FIELD_GROUPS).flat().join(", ")}, or custom.<name>.`;
@@ -870,8 +872,8 @@ function refusalOf(design: DesignRequest): string | undefined {
   }
   const parts = moveParts();
   for (const use of design.uses)
-    if (!parts.some((part) => part.group === use || part.name === use))
-      return `--uses: "${use}" is neither a kind nor a part. Kinds: ${PART_GROUPS.join(", ")}.`;
+    if (!parts.some((part) => part.group === use || part.name === use) && !(use in core))
+      return `--uses: "${use}" is neither a kind, a part nor a @gerak/core name. Kinds: ${PART_GROUPS.join(", ")}.`;
   return undefined;
 }
 
@@ -1495,7 +1497,7 @@ async function anatomyLines(
   const tables = await rendererTables();
   const fields: AnatomyField[] = Object.entries(FIELD_GROUPS).flatMap(([group, names]) =>
     names.flatMap((name) => {
-      const row = valueField(name);
+      const row = core.valueField(name);
       if (row === undefined) return [];
       return [
         {

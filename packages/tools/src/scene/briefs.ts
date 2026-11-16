@@ -70,7 +70,7 @@ export function importSpecifiers(source: string): readonly string[] {
     .map(({ specifier }) => specifier);
 }
 
-/** Findings for brief files in src/moves and src/parts that import more than @gerak/moves or
+/** Findings for brief files in src/moves and src/parts that import more than @gerak/core, @gerak/moves or
  * their own src/parts: one per import. */
 export function portabilityFindings(root: string): readonly string[] {
   const homes = briefFolders(root).map((name) => join(root, name));
@@ -80,7 +80,7 @@ export function portabilityFindings(root: string): readonly string[] {
       sourceFiles(join(home, "src", folder)).flatMap((file) =>
         importSpecifiers(readFileSync(file, "utf8"))
           .filter((specifier) => {
-            if (specifier === "@gerak/moves") return false;
+            if (specifier === "@gerak/core" || specifier === "@gerak/moves") return false;
             if (!specifier.startsWith(".")) return true;
             const target = resolve(dirname(file), specifier);
             return target !== parts && !target.startsWith(parts + sep);

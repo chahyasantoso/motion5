@@ -19,7 +19,7 @@ describe("a brief's own moves", () => {
     expect(moveFiles().length).toBeGreaterThan(0);
   });
 
-  it("import only @gerak/moves and their own folder's parts", () => {
+  it("import only @gerak/core, @gerak/moves and their own folder's parts", () => {
     expect(portabilityFindings(ROOT)).toEqual([]);
   });
 

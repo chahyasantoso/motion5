@@ -184,10 +184,16 @@ describe("local parts", () => {
 
   it("refuses a part whose samples are a library part's, naming it", async () => {
     const root = localRoot({
-      "k/src/parts/envelope/x.ts": PART("(p: number) => (1 - p) ** 2", "taper(p, 2)"),
+      "k/src/parts/coupling/x.ts": `import { definePart } from "@gerak/moves";
+/** A scratch coupling. */
+export const x = definePart(
+  { kind: "coupling", samples: [{ run: () => ({ scaleX: 1, scaleY: 1, anchor: "bottom" }) }] },
+  () => ({ scaleX: 1, scaleY: 1, anchor: "bottom" }),
+);
+`,
     });
     expect(await checkLocalParts(root)).toEqual([
-      "k/x: samples as taper (sample 0); use taper instead",
+      "k/x: samples as squashed (sample 0); use squashed instead",
     ]);
   });
 

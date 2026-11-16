@@ -26,7 +26,8 @@ const move = (
   id: string,
   pose: string,
   extra: { readonly imports?: string; readonly options?: string; readonly example?: string } = {},
-) => `import { defineMove, ${extra.imports ?? ""} type Pose2d } from "@gerak/moves";
+) => `import { ${extra.imports ?? ""} type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${id.replace(/-./g, (found) => found.slice(1).toUpperCase())} = defineMove({
   id: "${id}",
   role: "enter",
@@ -102,12 +103,12 @@ describe("fit", () => {
     const plain = await runCatalog(ok(["--move", "y", "--find", "scratch design"]), root);
     expect(ids(plain.lines)).toEqual(["scratch-aaa", "scratch-bbb"]);
     const uses = await runCatalog(
-      ok(["--move", "y", "--uses", "blend", "--find", "scratch design"]),
+      ok(["--move", "y", "--uses", "mix", "--find", "scratch design"]),
       root,
     );
     expect(ids(uses.lines)).toEqual(["scratch-bbb", "scratch-aaa"]);
-    expect(uses.lines[0]).toContain("✓ uses blend");
-    expect(uses.lines[1]).toContain("✗ uses blend");
+    expect(uses.lines[0]).toContain("✓ uses mix");
+    expect(uses.lines[1]).toContain("✗ uses mix");
   });
 
   it("refuses an unknown quality, field or use, naming it", async () => {

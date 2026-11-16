@@ -116,8 +116,7 @@ describe("gerak promote", () => {
     const moved = readFileSync(join(movesPackage, "src", "moves", "x.ts"), "utf8");
     expect(moved).not.toContain("@gerak/moves");
     expect(moved).toContain('import { defineMove } from "./declare";');
-    expect(moved).toContain('import type { Pose2d } from "../fields/pose";');
-    expect(moved).toContain('import { mix } from "../parts/blend/mix";');
+    expect(moved).toContain('import { mix, type Pose2d } from "@gerak/core";');
     expect(readFileSync(join(movesPackage, "src", "index.ts"), "utf8")).toContain(
       'export { slideIn } from "./moves/x";',
     );

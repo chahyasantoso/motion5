@@ -8,8 +8,9 @@ import { valueField } from "@gerak/core";
 import { partContract, type PartContract } from "@gerak/moves";
 import { briefFolders } from "./briefs";
 
-/** The groups the parts list sorts its building blocks into, in print order. */
-export const PART_GROUPS = [
+/** Every kind of building block a part can declare, in print order; a brief's own `src/parts/<kind>/`
+ * folders use all of them. */
+export const PART_KINDS = [
   "time",
   "ease",
   "envelope",
@@ -21,13 +22,13 @@ export const PART_GROUPS = [
   "coupling",
   "signal",
   "utility",
-  "fields",
-  "compose",
 ] as const;
 
-/** One group of `@gerak/moves` building blocks that are not moves, named by the folder that declares them;
- * groups print in this order. */
-export type PartGroup = (typeof PART_GROUPS)[number];
+/** One kind of building block. */
+export type PartGroup = (typeof PART_KINDS)[number];
+
+/** The part folders of `@gerak/moves` that export building blocks, in print order. */
+export const PART_GROUPS = ["coupling", "signal"] as const satisfies readonly PartGroup[];
 
 /** One building block of `@gerak/moves`: its export name, its call shape and what it is for. */
 export interface MovePart {
@@ -52,7 +53,7 @@ function entryPath(): string {
   return found.resolvedFileName;
 }
 
-function isGroup(name: string): name is PartGroup {
+function isGroup(name: string): name is (typeof PART_GROUPS)[number] {
   return PART_GROUPS.some((group) => group === name);
 }
 
@@ -62,7 +63,6 @@ function groupOf(file: string, entryDir: string): PartGroup | undefined {
   const [top, second] = relative(entryDir, file).split(sep);
   if (top === undefined || second === undefined) return undefined;
   if (top === "moves" || top === "style") return undefined;
-  if (top === "fields" || top === "compose") return top;
   if (top !== "parts") throw new Error(`moveParts: folder "${top}" is not a parts group`);
   if (relative(entryDir, file).split(sep).length < 3) return undefined;
   if (!isGroup(second)) throw new Error(`moveParts: folder "parts/${second}" is not a parts group`);
@@ -183,7 +183,7 @@ function listParts(entry: string): readonly MovePart[] {
   return PART_GROUPS.flatMap((group) => parts.filter((part) => part.group === group));
 }
 
-/** The building blocks `@gerak/moves` exports from its fields, parts and compose folders, each with its
+/** The building blocks `@gerak/moves` exports from its parts folders, each with its
  * group, call and doc sentence; `entry` names another entry file. */
 export function moveParts(entry: string = entryPath()): readonly MovePart[] {
   const cached = cache.get(entry);
@@ -193,8 +193,8 @@ export function moveParts(entry: string = entryPath()): readonly MovePart[] {
   return parts;
 }
 
-/** The building blocks a source file imports by name, in the order it imports them; a type-only import
- * and a name that is not a building block are left out. */
+/** The building blocks a source file imports by name, in import order: every value name from
+ * `@gerak/core` and each name `parts` lists; a type-only import is left out. */
 export function partsImportedBy(
   text: string,
   parts: readonly MovePart[] = moveParts(),
@@ -207,9 +207,13 @@ export function partsImportedBy(
     const bindings = statement.importClause?.namedBindings;
     if (statement.importClause?.isTypeOnly === true) continue;
     if (bindings === undefined || !ts.isNamedImports(bindings)) continue;
+    const fromCore =
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === "@gerak/core";
     for (const element of bindings.elements) {
       const name = (element.propertyName ?? element.name).text;
-      if (!element.isTypeOnly && known.has(name) && !found.includes(name)) found.push(name);
+      if (!element.isTypeOnly && (fromCore || known.has(name)) && !found.includes(name))
+        found.push(name);
     }
   }
   return found;
@@ -219,9 +223,6 @@ const SAMPLE_STEPS = 100;
 const NEAR = 1e-9;
 const NEAR_PATH = 1e-6;
 const SECONDS = [0, 0.5, 1, 3] as const;
-const FOLDER_KINDS: readonly PartGroup[] = PART_GROUPS.filter(
-  (group) => group !== "fields" && group !== "compose",
-);
 
 function show(value: unknown): string {
   return typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -391,9 +392,7 @@ export function checkParts(
   parts: readonly MovePart[] = moveParts(),
   values: Readonly<Record<string, unknown>> = moves,
 ): readonly string[] {
-  return parts
-    .filter((part) => FOLDER_KINDS.includes(part.group))
-    .flatMap((part) => findingsOf(part, values[part.name]));
+  return parts.flatMap((part) => findingsOf(part, values[part.name]));
 }
 
 /** One labelled sample of a part: the call it makes, and what the call answers at the points it is read. */
@@ -496,10 +495,10 @@ async function scanLocal(root: string): Promise<LocalScan> {
       .map((entry) => entry.name)
       .sort();
     for (const folder of folders) {
-      const group = FOLDER_KINDS.find((name) => name === folder);
+      const group = PART_KINDS.find((name) => name === folder);
       if (group === undefined) {
         problems.push(
-          `${source}/parts/${folder}: is not a parts folder; use one of ${FOLDER_KINDS.join(", ")}`,
+          `${source}/parts/${folder}: is not a parts folder; use one of ${PART_KINDS.join(", ")}`,
         );
         continue;
       }
@@ -529,7 +528,7 @@ async function scanLocal(root: string): Promise<LocalScan> {
       }
     }
   }
-  const order = (part: LocalPart): number => PART_GROUPS.indexOf(part.group);
+  const order = (part: LocalPart): number => PART_KINDS.indexOf(part.group);
   const sorted = [...parts].sort(
     (a, b) => byText(a.source, b.source) || order(a) - order(b) || byText(a.name, b.name),
   );

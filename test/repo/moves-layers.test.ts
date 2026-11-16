@@ -9,11 +9,9 @@ const SRC = resolve(
 
 /** Each layer's folder and its height; a file imports only from its own height or lower. */
 const LAYERS: readonly (readonly [string, number])[] = [
-  ["fields", 1],
   ["style", 1],
   ["parts", 2],
   ["moves", 3],
-  ["compose", 4],
 ];
 
 function filesOf(folder: string): readonly string[] {
@@ -61,15 +59,8 @@ function climbs(files: readonly string[], read: (file: string) => string): reado
 }
 
 describe("the layers of @gerak/moves", () => {
-  it("never import from a higher layer's folder: fields and style, then parts, then moves, then compose", () => {
+  it("never import from a higher layer's folder: style, then parts, then moves", () => {
     expect(climbs(filesOf(SRC), (file) => code(file))).toEqual([]);
-  });
-
-  it("refuses a field that imports a part, as a 3D blend left in fields/ would", () => {
-    const field = join(SRC, "fields", "mix3d.ts");
-    expect(climbs([field], () => 'import { mix } from "../parts/blend/mix";')).toEqual([
-      `${join("fields", "mix3d.ts")} imports ${join("parts", "blend", "mix.ts")}`,
-    ]);
   });
 
   it("refuses a style file that imports a part, as a quality built on an ease would", () => {
@@ -80,7 +71,7 @@ describe("the layers of @gerak/moves", () => {
   });
 
   it("reads a side-effect import, a dynamic import, a folder and a .js ending, and refuses the package's index", () => {
-    const field = join(SRC, "fields", "pose.ts");
+    const field = join(SRC, "style", "qualities.ts");
     const imports = [
       'import "../parts/blend/mix";',
       'const later = import("../moves/drop");',
@@ -90,11 +81,11 @@ describe("the layers of @gerak/moves", () => {
     ].join("\n");
     const found = climbs([field], () => imports);
     expect(found).toEqual([
-      `${join("fields", "pose.ts")} imports ${join("parts", "blend", "mix.ts")}`,
-      `${join("fields", "pose.ts")} imports ${join("moves", "drop.ts")}`,
-      `${join("fields", "pose.ts")} imports ${join("parts", "index.ts")}`,
-      `${join("fields", "pose.ts")} imports ${join("parts", "blend", "mix.ts")}`,
-      `${join("fields", "pose.ts")} imports index.ts, which re-exports every layer`,
+      `${join("style", "qualities.ts")} imports ${join("parts", "blend", "mix.ts")}`,
+      `${join("style", "qualities.ts")} imports ${join("moves", "drop.ts")}`,
+      `${join("style", "qualities.ts")} imports ${join("parts", "index.ts")}`,
+      `${join("style", "qualities.ts")} imports ${join("parts", "blend", "mix.ts")}`,
+      `${join("style", "qualities.ts")} imports index.ts, which re-exports every layer`,
     ]);
   });
 });

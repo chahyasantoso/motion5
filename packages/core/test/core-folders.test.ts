@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { code } from "../../../test/repo/helpers/source-region";
 
 const SRC = new URL("../src/", import.meta.url);
 
@@ -28,7 +29,7 @@ describe("core's fixed folders", () => {
   });
 
   it("exports only from its folders", () => {
-    const index = readFileSync(new URL("index.ts", SRC), "utf8");
+    const index = code(new URL("index.ts", SRC));
     const sources = [...index.matchAll(/from\s+"\.\/([^/"]+)\//g)].map((match) => match[1]);
     expect(sources.length).toBeGreaterThan(0);
     for (const folder of sources) expect(FOLDERS).toContain(folder);
