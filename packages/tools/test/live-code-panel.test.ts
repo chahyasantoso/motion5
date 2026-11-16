@@ -1,12 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { type Time } from "@gerak/core";
 import { defineMove } from "@gerak/moves";
 import {
+  builtInMovesLoaded,
   dragNumberValue,
   moveSourceFrom,
   rangeForLiteral,
   stepForLiteral,
 } from "../src/pages/live/code-panel";
+
+beforeAll(() => builtInMovesLoaded);
 
 describe("stepForLiteral", () => {
   it("uses step 1 for integer values and step 0.01 for decimal values", () => {

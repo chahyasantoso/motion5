@@ -1,11 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import * as builtIn from "virtual:gerak/built-in-moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
 
 export type { NumericLiteralSpan };
 
 /** Names a scene can call, each perhaps a move: the scene module's own exports, then the app's move modules, searched before the built-in moves. */
 export type MoveSource = Readonly<Record<string, unknown>>;
+
+let builtIn: object = {};
+
+/** Settles once the built-in moves are known: the library's when the project has it, none otherwise. */
+export const builtInMovesLoaded: Promise<void> = import("virtual:gerak/built-in-moves").then(
+  (loaded) => {
+    builtIn = loaded;
+  },
+  () => undefined,
+);
 
 const NO_MOVES: MoveSource = {};
 const NO_MODULES: readonly MoveSource[] = [];
