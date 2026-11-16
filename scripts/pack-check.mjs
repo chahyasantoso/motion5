@@ -145,7 +145,7 @@ try {
   await server.listen();
   const base = server.resolvedUrls.local[0];
   const problems = [];
-  for (const path of ["stage.html", "stage.ts"]) {
+  for (const path of ["stage.html", "stage.ts", "live.html", "live.ts", "talk.html", "talk.ts"]) {
     const response = await fetch(new URL(path, base));
     const body = await response.text();
     if (response.status !== 200) problems.push(path + " answered " + response.status);
