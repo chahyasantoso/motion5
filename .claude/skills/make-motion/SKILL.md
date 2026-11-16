@@ -13,13 +13,13 @@ A piece starts from its brief, not from a piece that already exists.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
-3. Read `@gerak/core`'s primitives in `core.md`. When `@gerak/moves` is installed, run `npx gerak moves --anatomy`,
+3. Read `@gerak/core`'s primitives in `core.md`. When `@gerak/moves` and `@gerak/moves-tools` are installed, run `npx gerak moves --anatomy`,
    write `design`, and query `npx gerak moves --design <file> --target <member> --in <brief>` (or
    `npx gerak new-move <id> --in <brief>` and `npx gerak moves --check`). With `@gerak/core` alone, write each member's
    motion directly from `@gerak/core`'s time, blend, ease, envelope and path helpers.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
-5. Read a page that `stage.md`'s table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
+5. Read a page that `@gerak/stage`'s `docs/README.md` table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
    when the brief needs it and that package is installed; the pages of each installed package are listed in its `docs/README.md`.
 6. Find any function or type by searching `docs/reference/` of the package that exports it, and any command in
    `docs/commands.md` of `@gerak/tools`, for its name; do not read package source.

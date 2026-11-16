@@ -7,6 +7,6 @@
 - **`QUALITIES`** `const QUALITIES: Readonly<Record<string, DescriptorRanges>>`: The words `--like` understands, each as the ranges of descriptors a move with that quality sits in; `drop` measures heavy, `fade` calm, `pop` playful and `jolt` loose.
 - **`isLively`** `(shape: Descriptors): boolean`: Whether a shape is lively: it overshoots, rings or winds up.
 - **`outsideRanges`** `(descriptors: Descriptors, ranges: DescriptorRanges): readonly { readonly key: "overshoot" | "peak" | "settle" | "rings" | "windup"; readon…`: The descriptors a quality names that lie outside its range, each with its value and range; none means the shape has the quality.
-- **`qualityOf`** `(name: string): DescriptorRanges`: A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included).
+- **`qualityOf`** `(name: string): DescriptorRanges | undefined`: A quality's ranges by name, or none for a name `QUALITIES` does not hold itself (`toString` included).
 - **`DescriptorRanges`** `type DescriptorRanges`: The qualities `--like` knows, as a range per descriptor: `rings` counts, the others are shares or ratios.
 - **`Descriptors`** `type Descriptors`: How one field's offset from rest moves over a move's progress.

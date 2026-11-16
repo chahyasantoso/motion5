@@ -14,7 +14,7 @@ A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
 - **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right o…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
-- **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
+- **`valueField`** `(name: string): ValueField | undefined`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
 - **`Combining`** `type Combining`: How two answers for one field on one target become one.
 - **`Pose2d`** `type Pose2d`: A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`, `anchor` and `custom` numbers.
@@ -31,7 +31,7 @@ Time is a number over a span; this group reads it, shapes it (loop, chain, rever
 
 - **`UNTIMED`** `const UNTIMED: Clock`: The untimed clock: no ms at all, as under scroll or manual control.
 - **`atProgress`** `(progress: number): Time`: A `Time` at `progress` with no clock, for code that drives a move by hand.
-- **`elapsedOf`** `(clock: Clock): number`: The ms a clock has run, or `undefined` for a clock that has none.
+- **`elapsedOf`** `(clock: Clock): number | undefined`: The ms a clock has run, or `undefined` for a clock that has none.
 - **`liveAt`** `(elapsed: number): Time`: A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0.
 - **`Clock`** `type Clock`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Time`** `type Time`: Where a move is: `progress` from 0 to 1, and the clock behind it.
@@ -172,7 +172,7 @@ mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, e
 const flight = span(400, 2400);
 const midMs = flight.at(0.5); // the ms a share of a span falls on
 const { offset } = spring(-1, 0, 0.2, { stiffness: 170, damping: 12 });
-const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
+const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix)(time);
 const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
 const { vx, vy } = velocity(ball, time, events); // takes the scene's time, never an eased one
 const ball3d = lift2d(ball(time, events), { unitsPerPx: 0.01 }); // a 2D pose in 3D

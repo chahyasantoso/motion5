@@ -14,7 +14,7 @@
 - **`Goal2d`** `type Goal2d`: Where a bone's tip should go, with an optional weight against other goals.
 - **`Link2d`** `type Link2d`: What composes one link: its length, its rotation against its parent, and its pivot offset.
 - **`TipPose`** `type TipPose`: An offset from the chain's base, for an element centred on the base, such as a hand on a tip.
-- **`bodyPose3d`** `(state: RigidBodyLike3d): BonePose3d`: Converts a 3D physics body's position and quaternion into a Pose3d-compatible object.
+- **`bodyPose3d`** `(state: RigidBodyLike3d | undefined): BonePose3d`: Converts a 3D physics body's position and quaternion into a Pose3d-compatible object.
 - **`bonesOf3d`** `<Id extends string>(chain: Chain3d<Id>, now?: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>>`: Each bone's turn from its rest, for `applyBones`: turns only, `{}` at rest; the base is the bone's parent, so a moved base moves nothing here.
 - **`buildChain3d`** `<const B extends readonly Bone3d[]>(bones: B, base?: WorldFrame3d): Chain3d<B[number]["id"]>`: Builds a checked 3D bone tree from `Bone3d` rows, parent first; ids type every later answer.
 - **`chainFromRest3d`** `<Id extends string>(chain: Chain3d<Id>, rest: ChainPose3d<Id>, now: ChainPose3d<Id>): Readonly<Record<Id, BonePose3d>>`: Each bone's world pose against the chain at rest, for a rigid part bound with `useTarget3d`; `{}` at rest.

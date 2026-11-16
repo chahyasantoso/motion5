@@ -43,7 +43,7 @@ each, not which move to use, so your piece keeps its own story and borrows the f
    to highest lively share across them, widened a little. A field whose range comes out 0 to 1 is left out.
 2. Write the description, the tokens and the habits yourself, from your moves, not your stories.
 3. `npx gerak style check <brief>` passes when the card loads, your moves and parts import only
-   `@gerak/moves` and your own `src/parts/`, the gates pass, and every piece of your brief, and every piece naming
+   `@gerak/core`, `@gerak/moves` and your own `src/parts/`, the gates pass, and every piece of your brief, and every piece naming
    your style, meets the shares. A piece's other review findings stay its own.
 
 To share a style, share the brief folder: unzipped into another app's pieces folder, its moves, parts and card work

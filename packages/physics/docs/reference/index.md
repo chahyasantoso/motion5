@@ -1,7 +1,7 @@
 # @gerak/physics: index
 
 - **`builtinWorld`** `(): PhysicsWorld`: The built-in engine: circles and boxes that turn, on floors, walls and segments; pure and synchronous.
-- **`simulate`** `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions): Simulation (+1 overloads)`: Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. Builds a 3D world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
+- **`simulate`** `(world: PhysicsWorld, build: (world: PhysicsWorld) => void, options?: SimulateOptions | undefined): Simulation (+1 overloads)`: Builds a world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks. Builds a 3D world once with `build`, then steps it at a fixed `dt`, spawning on events, as far as each question asks.
 - **`Placed`** `type Placed`: Where a body is for an element laid out centred on the stage's top left corner, and whether it exists yet.
 - **`SimulateOptions`** `type SimulateOptions`: Settings of `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.
 - **`SimulateOptions3d`** `type SimulateOptions3d`: Settings of 3D `simulate`: `dt` seconds a step (default 1/120), `checkpointMs` (250), `maxCheckpoints` (32), `durationMs` (0) and `spawn`.

@@ -5,7 +5,7 @@ A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
 - **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right of where the page puts it; px in 2D, world units in 3D."; rea…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
-- **`valueField`** `(name: string): ValueField`: The row a field name has in the table, or nothing when it has none.
+- **`valueField`** `(name: string): ValueField | undefined`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
 - **`Combining`** `type Combining`: How two answers for one field on one target become one.
 - **`Pose2d`** `type Pose2d`: A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`, `anchor` and `custom` numbers. Stage px, y down, degrees clockwise.

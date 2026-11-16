@@ -57,8 +57,10 @@ function createChecker(files) {
     ...workspacePaths(),
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
-    target: ts.ScriptTarget.ES2022,
+    target: ts.ScriptTarget.ES2023,
     jsx: ts.JsxEmit.ReactJSX,
+    strict: true,
+    exactOptionalPropertyTypes: true,
     skipLibCheck: true,
     noEmit: true,
   });

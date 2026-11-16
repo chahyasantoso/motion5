@@ -1,7 +1,7 @@
 # @gerak/moves: parts
 
 - **`definePart`** `<F extends object>(contract: PartContract, fn: F): F`: Declares what a part promises and returns the part itself, unchanged; the part gate refuses a part with no declaration, or one whose samples break the rule of its kind.
-- **`partContract`** `(fn: object): PartContract`: The contract `definePart` recorded for a part, or nothing when it was never declared.
+- **`partContract`** `(fn: object): PartContract | undefined`: The contract `definePart` recorded for a part, or nothing when it was never declared.
 - **`PartContract`** `type PartContract`: What a part promises, by the folder it lives in; each sampled kind carries closures the part gate runs.
 - **`trail`** `(signal: (time: Time, events: Events) => number, options: TrailOptions): (time: Time, events: Events) => number`: A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's time: the signal applies its own spans and eases.
 - **`TrailOptions`** `type TrailOptions`: Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and `rest`, the distance under which it sits on the signal.

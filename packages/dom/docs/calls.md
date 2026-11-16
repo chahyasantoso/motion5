@@ -5,10 +5,13 @@ Examples of the calls a scene makes; every export with its signature is in [the 
 Writes a value onto an element, and the drivers that move a scene on the page's frames, scroll or pointer events.
 
 ```ts
+import { ease, mix } from "@gerak/core";
+import { applyValue, clockDriver, eventDriver, scrollDriver } from "@gerak/dom";
+
 player.subscribe("title", (pose) => applyValue(title, pose));
-applyValue(cover, wipe({ radius: 1500, x: 640, y: 360 }, time));
+applyValue(cover, { clipRadius: mix(0, 1500, ease.cubicOut(time.progress)), clipX: 640, clipY: 360 });
 
 export const clock = () => clockDriver({ duration: durationMs });
 const scrolled = () => scrollDriver({ start: 0, end: 1200, length: durationMs });
-export const clock = () => eventDriver({ introMs: 900 });
+const interactive = () => eventDriver({ introMs: 900 });
 ```

@@ -12,13 +12,13 @@ Groups: [index](#index) 48.
 ## index
 
 - **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; …`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
-- **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[]): readonly C…`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[] | undefined)…`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readon…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
 - **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
-- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
-- **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
+- **`letters`** `(text: string, options?: Behaviour | undefined): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
+- **`many`** `(count: number, options?: Behaviour | undefined): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
 - **`pathOf`** `(path: ActorPath, rest: Readonly<Record<string, Box>>): readonly Cubic2d[]`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
-- **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
+- **`words`** `(text: string, options?: Behaviour | undefined): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
 - **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
 - **`ActorText`** `type ActorText`: What an actor says: fixed text, or a readout the renderer writes from the time on each frame.
@@ -75,17 +75,17 @@ Groups: [index](#index) 48.
    `beats`, and the look in `skins.dom.css`. Lay the skin out as the final frame.
 4. **Learn the primitives once.** With `@gerak/core` alone, use the primitives in [core.md](../../core/docs/core.md)
    (`span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `arch`, `attack`,
-   `decay`, `taper`, `ballistic`, `along`, `toCubics`). When `@gerak/moves` is installed, `npx gerak moves --anatomy`
+   `decay`, `taper`, `ballistic`, `along`, `toCubics`). When `@gerak/moves` and `@gerak/moves-tools` are installed, `npx gerak moves --anatomy`
    prints the fields, parts and qualities (`heavy`, `light`, `quick`, `calm`, `playful`, `stiff`, `loose`).
 5. **Plan each member's motion from your three lines.** Use [What a quality asks](#what-a-quality-asks) to choose spans,
-   eases and amplitudes. When `@gerak/moves` is installed, write `export const design = { ball: { y: { fall: "heavy" } } };`
+   eases and amplitudes. When `@gerak/moves` and `@gerak/moves-tools` are installed, write `export const design = { ball: { y: { fall: "heavy" } } };`
    so `gerak review` checks each field against its quality.
 6. **Build the motion.** With `@gerak/core` alone, write each member's pose directly in `scene` (or shared `(t) => Pose2d`
    helpers in your brief) from `@gerak/core` and arrange time with `span`, `chain`, `lanes`, `loop` and `sequence`. When
-   `@gerak/moves` is installed, query `npx gerak moves --design <pieces>/<brief>/src/<name>.ts --target <member> --in <brief>`
+   `@gerak/moves` and `@gerak/moves-tools` are installed, query `npx gerak moves --design <pieces>/<brief>/src/<name>.ts --target <member> --in <brief>`
    (`--move`, `--far`, `--renderer`, `gerak moves <id>`), then use, adjust, combine, drive with parts, or write a move (`gerak new-move`).
 7. `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the cast against the scene with no browser (and checks
-   `design` when `@gerak/moves` is installed). `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` adds a `sheet` of
+   `design` when `@gerak/moves-tools` is installed). `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` adds a `sheet` of
    frames picked where the motion is fast; `--action` says what a person does, `--full` adds the moves with their eases.
 8. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
    shows your three lines. Run `npx tsc --noEmit` once at the end where the project has a `tsconfig.json`.

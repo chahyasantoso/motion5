@@ -6,12 +6,11 @@ the stage answers on the next frame without losing its place in time.
 ## Open a scene
 
 ```bash
-npx gerak live saved
+npx gerak live <name>
 ```
 
 `gerak live` starts the Vite dev server (or reuses one already listening on the port) and prints the URL for
-`live.html?scene=saved`. Every piece in `apps/pieces` (`saved`, `kelvin`, `tempo`, the `night-*` cards,
-and the `showreel`s) and every scene made with `npx gerak new` (DOM or `--three`) plays in it with no change to its
+`live.html?scene=<name>`. Every stage module and every scene made with `npx gerak new` (DOM or `--three`) plays in it with no change to its
 files.
 
 A stage module, `src/<name>.ts`, opens the same way. A save that keeps its cast, skin and story swaps the scene on
@@ -31,7 +30,7 @@ The scene file (`src/<name>-scene.ts`) is the only source of truth. When you sav
   banner at the top reports the error until the next clean save.
 - If you edit the component file and it can no longer render, the banner reports it and the stage is empty until the
   next save that renders; the timeline and the code panel stay up.
-- Any other page of the app, such as `kelvin.html` or `stage.html?piece=<name>`, reloads on a save.
+- Any other page of the pieces folder, such as `<name>.html` or `stage.html?piece=<name>`, reloads on a save.
 
 ## Timeline and keys
 

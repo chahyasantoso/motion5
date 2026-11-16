@@ -1,7 +1,7 @@
 # @gerak/dom: index
 
 - **`applyPath`** `(target: RenderTarget, cubics: readonly Cubic2d[]): void`: Sets a path element's `d` to the cubic segments.
-- **`applyValue`** `(target: RenderTarget, value: Pose2d, length?: number): void`: Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed.
+- **`applyValue`** `(target: RenderTarget, value: Pose2d, length?: number | undefined): void`: Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed.
 - **`cssClip`** `(x: number, y: number, radius: number): string`: A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left.
 - **`cssDash`** `(from: number, to: number, length: number): { readonly strokeDasharray: string; readonly strokeDashoffset: number; }`: The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long.
 - **`cssOrigin`** `(anchor: Anchor): string`: The CSS transform origin an anchor names.
@@ -24,8 +24,8 @@
 - **`EventDriverOptions`** `type EventDriverOptions`: Settings of `eventDriver`: `settleMs` (default 2000 ms), `introMs` (0), `frames` and `clock`.
 - **`EventSource`** `type EventSource`: Something that sends DOM events: an element, or a stand-in in a test.
 - **`PointerLike`** `type PointerLike`: What a pointer event says about where it happened.
-- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>, options?: … (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
-- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object, string>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[]>>, string>`: A stage module whose scene answers any object, checked on every frame to be stage values.
+- **`mountStage`** `<B extends string>(container: HTMLElement, module: StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>, string>… (+1 overloads)`: Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures each rest box and binds the scene's values; `R` or a click on the background replays it.
+- **`stageModuleOf`** `<B extends string>(module: StageModule<B, object, string>): StageModule<B, Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>…`: A stage module whose scene answers any object, checked on every frame to be stage values.
 - **`MountedStage`** `type MountedStage`: A playing stage: its player and driver, which a replay swaps for fresh ones.
 - **`StageElement`** `type StageElement`: An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is the SVG element it draws a stroke member's path with.
 - **`StageEvent`** `type StageEvent`: What the stage reads of a page event: a key, where it landed, and the element it landed on.

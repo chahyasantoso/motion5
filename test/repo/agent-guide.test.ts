@@ -42,11 +42,38 @@ const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.pa
   readFileSync(new URL("package.json", ROOT), "utf8"),
 );
 
-function linksOf(text: string): string[] {
+function rawLinksOf(text: string): string[] {
   return [...text.matchAll(/\]\(([^)\s]+)\)/g)]
     .map((match) => match[1] ?? "")
-    .filter((link) => !/^[a-z][a-z0-9+.-]*:/i.test(link) && !link.startsWith("#"))
+    .filter((link) => !/^[a-z][a-z0-9+.-]*:/i.test(link));
+}
+
+function linksOf(text: string): string[] {
+  return rawLinksOf(text)
+    .filter((link) => !link.startsWith("#"))
     .map((link) => link.replace(/#.*$/, ""));
+}
+
+/** GitHub-style heading anchors of a markdown document. */
+function headingSlugs(text: string): Set<string> {
+  const counts = new Map<string, number>();
+  const slugs = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^#{1,6}\s+(.+?)\s*$/.exec(line);
+    if (match === null) continue;
+    const plain = (match[1] ?? "")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/[`*_~]/g, "")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s-]/gu, "")
+      .trim()
+      .replace(/\s+/g, "-");
+    if (plain === "") continue;
+    const seen = counts.get(plain) ?? 0;
+    counts.set(plain, seen + 1);
+    slugs.add(seen === 0 ? plain : `${plain}-${seen}`);
+  }
+  return slugs;
 }
 
 describe("package docs", () => {
@@ -71,6 +98,19 @@ describe("package docs", () => {
           if (sibling)
             expect(manifestOf(other ?? "")?.files, `${page} -> ${link}`).toContain("docs");
           expect(existsSync(new URL(target, ROOT)), `${page} -> ${link}`).toBe(true);
+        }
+        for (const raw of rawLinksOf(text)) {
+          const hash = raw.indexOf("#");
+          if (hash < 0) continue;
+          const anchor = raw.slice(hash + 1);
+          const targetPath =
+            hash === 0
+              ? page
+              : posix.normalize(posix.join(posix.dirname(page), raw.slice(0, hash)));
+          const targetUrl = new URL(targetPath, ROOT);
+          if (!existsSync(targetUrl)) continue;
+          const slugs = headingSlugs(readFileSync(targetUrl, "utf8"));
+          expect(slugs.has(anchor), `${page} -> ${raw}`).toBe(true);
         }
       }
     },

@@ -7,10 +7,9 @@ A rig can follow numbers that arrive while it plays: how far a mouth is open, wh
 number is a sample, an event with a value: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. A scene stays a function of
 time and events, so a session of samples replays, scrubs and renders like any other piece.
 
-- **Read samples through `follow`.** `follow({ start: 0, on: { mouthOpen: "value" } })` springs to each sample's own
-  value, which smooths a jittery source and turns back with no jump; `stiffness` and `damping` set how fast. Give each
-  stream its own `follow`, made once outside the scene, and map its answer to the parts: a beak's `rotation`, an
-  eyelid's `scaleY`. Never read `events` by hand to find the latest sample.
+- **Read samples through `follow` (when `@gerak/moves` is installed) or a deterministic spring over `events`.** `follow({ start: 0, on: { mouthOpen: "value" } })` from `@gerak/moves` springs to each sample's own
+  value, smoothing a jittery source cleanly; with `@gerak/core` alone, spring from the prior sample value using `spring` and `elapsedOf`. Either way, derive values functionally from `(time, events)` rather than keeping mutable state outside the scene, and map the answer to the parts: a beak's `rotation`, an
+  eyelid's `scaleY`.
 - **A recording is `cues`.** A JSON list of samples is a session: `import talk from "../references/<file>.json" with
   { type: "json" }` (the tools run in Node, which needs the attribute) and `export const cues = talk`. Make the story at least as long as the recording; the review reports cues after its end,
   which no clock reaches.

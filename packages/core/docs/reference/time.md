@@ -4,7 +4,7 @@ Time is a number over a span; this group reads it, shapes it (loop, chain, rever
 
 - **`UNTIMED`** `const UNTIMED: Clock`: The untimed clock: no ms at all, as under scroll or manual control.
 - **`atProgress`** `(progress: number): Time`: A `Time` at `progress` with no clock, for code that drives a move by hand.
-- **`elapsedOf`** `(clock: Clock): number`: The ms a clock has run, or `undefined` for a clock that has none.
+- **`elapsedOf`** `(clock: Clock): number | undefined`: The ms a clock has run, or `undefined` for a clock that has none.
 - **`liveAt`** `(elapsed: number): Time`: A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0.
 - **`Clock`** `type Clock`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Time`** `type Time`: Where a move is: `progress` from 0 to 1, and the clock behind it.
