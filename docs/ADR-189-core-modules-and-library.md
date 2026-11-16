@@ -39,8 +39,8 @@ and still missed public helpers. Nothing marks which code a project may replace 
   `@gerak/rig-three` (modules, not pure, so rig stays pure), and
   `@gerak/tools` drops `rig` and `three`.
 - **Commands plug in.** A package declares `"gerak": { "commands", "review" }`; `listCommands()` in `@gerak/tools`
-  reads its own list and each installed package's. The library's commands ship in `@gerak/moves/cli`, node only, and
-  nothing reachable from `@gerak/moves`' main entry imports `node:`.
+  reads its own list and each installed package's. The library's commands ship in `@gerak/moves-tools` (library, not pure,
+  so `@gerak/moves` stays pure); `gerak joints` reads a glTF file without rig and stays a core command.
 - **Each package ships its own docs** in `docs/`, generated from doc comments by source folder. `@gerak/core` and
   `@gerak/stage` each ship one read-whole page of at most 20 KB; `gerak init` writes an `AGENTS.md` naming them and one
   line per installed module or library package.

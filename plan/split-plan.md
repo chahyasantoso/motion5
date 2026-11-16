@@ -60,7 +60,8 @@ packages/                 group     holds
   rapier/   @gerak/rapier   modules   the Rapier engine
   moves/    @gerak/moves    library   definePart and the part kinds, parts that carry a choice (coupling, follow,
                                       trail, react, noise1d), defineMove, the named moves, qualities, descriptors,
-                                      style cards; depends on rig (rope); its commands in `@gerak/moves/cli`
+                                      style cards; depends on rig (rope); pure
+  moves-tools/ @gerak/moves-tools library the library's commands and review finder; not pure
 ```
 
 - **The groups:** each package's manifest declares `"gerak": { "group" }`, beside the pure layer the same field
@@ -70,10 +71,9 @@ packages/                 group     holds
   `vite`, `playwright-core`. `@gerak/three` is core but optional, for 3D pieces.
 - **Paths do not change:** every workspace stays `packages/<name>`; scripts, aliases and globs keep their form, and
   the new package `core` is one more name in them.
-- **The library's commands ship inside it:** `@gerak/moves/cli` (node only; `typescript` an optional peer) holds the
-  catalog (`gerak moves`), `promote`, `style`, `new --move` and review's design and style finder, and imports what it
-  shares with core commands (brief folders, reading a scene module) from `@gerak/tools`, a downward import. A test
-  refuses any `node:` import reachable from `@gerak/moves`' main entry.
+- **The library's commands ship beside it:** `@gerak/moves-tools` (library, not pure, so `@gerak/moves` stays pure)
+  holds the catalog (`gerak moves`), `promote`, `style`, `new-move` and review's design and style finder, and imports
+  what it shares with core commands (brief folders, reading a scene module) from `@gerak/tools`, a downward import.
 
 | Question | Owner |
 | --- | --- |
@@ -125,11 +125,11 @@ packages/                 group     holds
   becomes `mix`. A duplicate scan joins `npm run check`: two top-level functions of one name in two packages whose bodies,
   with comments and whitespace removed, hash alike, are a finding; its baseline may only shrink.
 - **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig-three`. `@gerak/tools`
-  drops its `rig` and `three` dependencies; `gerak joints` moves to rig's declared commands.
+  drops its `rig` and `three` dependencies; `gerak joints` reads a glTF file without rig and stays a core command.
 - **Groups are a field, not folders.** `packages/` stays flat; each manifest's `gerak.group` names its group, and the
   boundary scan refuses a package with none and an import upward, against `scripts/group-baseline.json`.
 - **Commands plug in.** A package declares `"gerak": { "commands": "<its cli module>", "review": "<module>" }` (for the
-  library, `@gerak/moves/cli`);
+  library, `@gerak/moves-tools`);
   `listCommands()` reads its own list and each installed package's; `gerak --help` is tested with and without the
   library installed. A library command run without the library is "unknown command".
 - **Each package ships its own docs** in `docs/`, listed in `files`. Generated pages come from each export's doc comment,
@@ -213,10 +213,10 @@ Section 4's private geometry and one-owner moves, with their tests, and the dupl
 
 ### S4. Tools split (executor, after S1d, S2 and S3)
 
-`@gerak/moves/cli` with the catalog, `promote`, `style`, `new --move` and review's design and style finder, its own
-`exports` entry, and the test that `@gerak/moves`' main entry reaches no `node:` import; `@gerak/tools` with the core
-commands, the pages, `listCommands()` and the `ReviewFinder` call, and no dependency on `@gerak/moves`; rig's `joints`
-as rig's declared command.
+`@gerak/moves-tools` with the catalog, `promote`, `style`, `new-move` and review's design and style finder;
+`@gerak/tools` with the core commands (`joints` among them), the pages, `listCommands()` and the `ReviewFinder` call, and
+no dependency on a library or module package; the live editor finds built-in moves through a virtual module that is
+empty without the library; the group baseline empty.
 
 ### S5a. Generated docs per package (executor, after S4)
 
@@ -256,7 +256,7 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
 ## 8. Deferred
 
 - **Search** (`plan/search-plan.md`): `gerak find` over the library and the brief records, revised to sit on this split
-  as a library command in `@gerak/moves/cli`. Next.
+  as a library command in `@gerak/moves-tools`. Next.
 - **Harvest:** a library command that turns a piece's own helpers into declared parts and moves by type and by sampling,
   matches them against existing records, and proves by sampling every member before and after that nothing changed.
   After search.

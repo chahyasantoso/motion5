@@ -41,7 +41,7 @@ short brief. Map them to whatever agents the harness has.
 
 | Wave | Slices | Notes |
 | --- | --- | --- |
-| 4 | S4 | the library's commands into `@gerak/moves/cli`; `@gerak/tools` stops importing moves (its baseline line goes, the group baseline is then empty); rig's `joints` command |
+| 4 | S4 | the library's commands into a new `@gerak/moves-tools` (library, not pure, owner's choice: `@gerak/moves` stays pure); `joints` stays core; `@gerak/tools` stops importing moves (its baseline line goes, the group baseline is then empty); rig's `joints` command |
 | 5 | S5a, then S5b | docs per package, read-whole `core.md` and `stage.md` (≤20 KB), guide moved, `gerak init` writes `AGENTS.md` |
 | 6 | S6, S7 | core-only install gate; NADI proof against the 110.6k-token plain HTML/JS baseline; a cold review of the whole diff |
 
