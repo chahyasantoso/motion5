@@ -22,9 +22,12 @@ A piece starts from its brief, not from a piece that already exists.
 5. Read a page that `@gerak/stage`'s `docs/README.md` table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
    when the brief needs it and that package is installed; the pages of each installed package are listed in its `docs/README.md`.
 6. Find any function or type by searching `docs/reference/` of the package that exports it, and any command in
-   `docs/commands.md` of `@gerak/tools`, for its name; do not read package source.
-7. Review with `gerak review`; dig with the other tools only into what a review showed. Read the sheet before
-   calling the piece finished.
+   `docs/commands.md` of `@gerak/tools`, for its name; do not read package source, and do not read a package's docs
+   folder wholesale or list it with a shell: `core.md` and `stage.md` carry what a piece needs, and a reference page
+   gives a signature in full.
+7. Review with `gerak review <file>.ts` until it has no finding, then run `gerak frames` once and read its
+   `sheet.png` only; open a single frame only for a panel on the sheet that looks cut or overlapped. Dig with the other
+   tools only into what a review showed. Read the sheet before calling the piece finished.
 8. Change only your piece's files and the moves you wrote, and commit nothing unless asked.
 
 ## Report

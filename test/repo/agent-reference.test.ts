@@ -71,6 +71,20 @@ describe("agent reference", () => {
     expect(missing).toEqual([]);
   });
 
+  it("writes every signature of a reference page in full: none cut short, no type left as a bare name", () => {
+    const cut: string[] = [];
+    for (const { dir } of PACKAGES) {
+      for (const line of referenceOf(dir).split("\n")) {
+        const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+        if (written === null) continue;
+        const [, name, signature = ""] = written;
+        if (signature.endsWith("…") || new RegExp(`^type ${name}(<.*>)?$`).test(signature))
+          cut.push(`${dir}: ${name}`);
+      }
+    }
+    expect(cut).toEqual([]);
+  });
+
   it("names in its parts list only exports of @gerak/moves, each one named in its reference", () => {
     const exported = new Set(exportsOf(["moves/src/index.ts"]).get("moves/src/index.ts"));
     const reference = referenceOf("moves");

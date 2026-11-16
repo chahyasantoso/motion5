@@ -13,38 +13,38 @@ A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `
 
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
-- **`VALUE_FIELDS`** `const VALUE_FIELDS: Readonly<{ x: { readonly meaning: "Moves the target right o…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
+- **`VALUE_FIELDS`** `const VALUE_FIELDS: { x, y, z, rotation, rotationX, rotationY, skewX, skewY, sc…`: Every field a value can carry, one row each; nothing else states a field's rest or how it combines.
 - **`valueField`** `(name: string): ValueField | undefined`: The row a field name has in the table, or nothing when it has none.
 - **`Anchor`** `type Anchor`: The point of a box that stays put while it scales and turns.
 - **`Combining`** `type Combining`: How two answers for one field on one target become one.
 - **`Pose2d`** `type Pose2d`: A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`, `anchor` and `custom` numbers.
 - **`ValueField`** `type ValueField`: What a field of a value is: what it changes, its unit, which poses carry it, where it rests, how it combines, and what the gate asks of it.
-- **`combine3d`** `(poses: readonly Pose3d[]): Pose3d`: Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order.
-- **`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`: A 2D pose on the 3D xy plane: px scaled by `unitsPerPx`, y and the turn flipped, the anchor dropped; every 2D move reaches 3D through it.
+- **`combine3d`** `(poses: readonly Pose3d[]): { readonly x?: number; readonly scale?: number; rea…`: Poses on one target as one: each field joins as its row says, custom numbers add, turns compose in order.
+- **`lift2d`** `(pose: { readonly x?: number; readonly scale?: number; readonly y?: number; rea…`: A 2D pose on the 3D xy plane: px scaled by `unitsPerPx`, y and the turn flipped, the anchor dropped; every 2D move reaches 3D through it.
 - **`Pose3d`** `type Pose3d`: A 3D pose, every field optional: `x`, `y`, `z`, `rotation` (about z), `rotationX`, `rotationY`, scales, `opacity`.
-- **`combine`** `(poses: readonly Pose2d[]): Pose2d`: Poses on one target as one: each field joins as its table row says, custom numbers add, the first anchor stays.
+- **`combine`** `(poses: readonly Pose2d[]): { readonly x?: number; readonly scale?: number; rea…`: Poses on one target as one: each field joins as its table row says, custom numbers add, the first anchor stays.
 - **`POSE_2D_NUMBERS`** `const POSE_2D_NUMBERS: readonly CarriedBy<"both" | "2d">[]`: The numbers a 2D pose carries: the rows whose dimension is `2d` or `both`, in table order.
 
 ## time
 
 Time is a number over a span; this group reads it, shapes it (loop, chain, reversed, repeated) and arranges phases or lanes into one timeline. Reach for it whenever a move starts late, repeats or follows another.
 
-- **`UNTIMED`** `const UNTIMED: Clock`: The untimed clock: no ms at all, as under scroll or manual control.
+- **`UNTIMED`** `const UNTIMED: { kind }`: The untimed clock: no ms at all, as under scroll or manual control.
 - **`atProgress`** `(progress: number): Time`: A `Time` at `progress` with no clock, for code that drives a move by hand.
-- **`elapsedOf`** `(clock: Clock): number | undefined`: The ms a clock has run, or `undefined` for a clock that has none.
+- **`elapsedOf`** `(clock: { readonly kind: "timed"; readonly elapsed: number; readonly length: nu…`: The ms a clock has run, or `undefined` for a clock that has none.
 - **`liveAt`** `(elapsed: number): Time`: A live `Time` `elapsed` ms after the page started; it has no length, so its progress stays 0.
 - **`Clock`** `type Clock`: A clock: ms of a known length when timed, ms with no end when live, none under scroll or manual control.
 - **`Time`** `type Time`: Where a move is: `progress` from 0 to 1, and the clock behind it.
 - **`span`** `(fromMs: number, toMs: number): Span`: A stretch in ms: `.of(time, ease?)` is a move's time inside it, counting from `fromMs`; `.at(share)` the ms a share falls on.
 - **`Span`** `type Span`: A stretch of the scene in ms: `of` gives a move's time inside it, `at` the ms a share of it falls on.
-- **`Timing`** `type Timing`: A time helper built once from its settings: `of` answers a move's time inside it.
+- **`Timing`** `type Timing<A>`: A time helper built once from its settings: `of` answers a move's time inside it.
 - **`loop`** `(periodMs: number, options?: LoopOptions): Timing<[]>`: A cycle repeating every `periodMs`: `.of(time)` is the time inside the current cycle, progress 0 to 1 each period, 1 to 0 on odd cycles with `yoyo`.
 - **`LoopOptions`** `type LoopOptions`: Settings of `loop`: `yoyo` runs every odd cycle backwards, so the motion turns instead of jumping.
 - **`chain`** `(lengths: readonly number[], options?: ChainOptions): readonly Span[]`: Spans of these lengths in ms, the first at 0, each starting where the last ends plus `gap` or minus `overlap`.
 - **`ChainOptions`** `type ChainOptions`: Settings of `chain`: `gap` ms of rest between spans, or `overlap` ms each starts before the last ends; not both.
 - **`timeAt`** `(time: Time, ms: number): Time`: `time` moved to `ms` on its own clock, for reading a signal a moment earlier or later; untimed stays as it is.
 - **`sequence`** `<R>(time: Time, phases: readonly Phase<R>[]): R`: Answers the last phase that started, given its own time: an ended phase holds its end, before the first the first holds its start.
-- **`Phase`** `type Phase`: One phase of a sequence: the span it runs in, and what it answers given its own time there.
+- **`Phase`** `type Phase<R>`: One phase of a sequence: the span it runs in, and what it answers given its own time there.
 - **`lanes`** `(lengths: readonly number[], stagger: number, options?: LanesOptions): Lanes`: Lanes of these relative lengths, each starting `stagger` after the last in the order `from` or `by` gives; `.of(time, index)` is lane `index` inside `time`, a timed clock split among lanes.
 - **`LaneOrigin`** `type LaneOrigin`: Which lanes start first: from one end, from the centre out, from both edges in, or shuffled by a seed.
 - **`Lanes`** `type Lanes`: Lanes started `stagger` lane-lengths apart in the order `from` or `by` gives; `span` reaches the last finish; `.of(time, index)` is lane `index` run inside `time`.
@@ -60,19 +60,19 @@ Blending turns two values or poses into the value between them, and keyframes tu
 - **`mix`** `(from: number, to: number, share: number): number`: The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates.
 - **`mixAngle`** `(from: number, to: number, share: number): number`: An angle in degrees `share` of the way from `from` to `to`, turning the short way round.
 - **`mixPoint`** `(from: { readonly x: number; readonly y: number; }, to: { readonly x: number; r…`: A point `share` of the way from `from` to `to`.
-- **`mixPose`** `(from: Pose2d, to: Pose2d, share: number): Pose2d`: A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0.
+- **`mixPose`** `(from: { readonly x?: number; readonly scale?: number; readonly y?: number; rea…`: A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0.
 - **`keyframes`** `<T>(start: T, keys: readonly Key<T>[], blend: (from: T, to: T, share: number) =…`: A value moving from `start` at 0 ms to each key in turn, then holding; `blend` is `mix`, `mixPoint`, `mixPose` or alike.
-- **`Key`** `type Key`: One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear.
+- **`Key`** `type Key<T>`: One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear.
 - **`mixPoint3d`** `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { r…`: A 3D point `share` of the way from `from` to `to`.
-- **`mixPose3d`** `(from: Pose3d, to: Pose3d, share: number): Pose3d`: A pose `share` of the way between two; turns take the short arc, past the ends too; a missing field rests.
+- **`mixPose3d`** `(from: { readonly x?: number; readonly scale?: number; readonly y?: number; rea…`: A pose `share` of the way between two; turns take the short arc, past the ends too; a missing field rests.
 
 ## ease
 
 Easing reshapes progress so motion accelerates or settles; spring and back are the eases with overshoot. Reach for it to give a move weight instead of a straight line.
 
-- **`backEase`** `(options: { readonly amount: number; readonly direction: EaseDirection; }): Ease`: A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic.
-- **`ease`** `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ea…`: `linear`, `sine*`, `quad*`, `cubic*`, `quart*`, `expo*`, `back*` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`.
-- **`springEase`** `(options: SpringOptions): Ease`: A spring from 0 settling on 1, fitted to the span; lower `damping` rings more.
+- **`backEase`** `(options: { readonly amount: number; readonly direction: EaseDirection; }): (pr…`: A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic.
+- **`ease`** `const ease: { linear, sineIn, sineOut, sineInOut, quadIn, quadOut, quadInOut, c…`: `linear`, `sine*`, `quad*`, `cubic*`, `quart*`, `expo*`, `back*` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`.
+- **`springEase`** `(options: SpringOptions): (progress: number) => number`: A spring from 0 settling on 1, fitted to the span; lower `damping` rings more.
 - **`Ease`** `type Ease`: A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot.
 - **`EaseDirection`** `type EaseDirection`: Which end of a curve is slow: `in` starts slow, `out` ends slow, `inOut` does both.
 - **`spring`** `(offset: number, speed: number, seconds: number, options: SpringOptions): Sprin…`: Where a spring is, `seconds` after it left `offset` from its goal at `speed`, and how fast it goes.
@@ -102,7 +102,7 @@ Signatures: [reference/geometry.md](./reference/geometry.md).
 
 Motion along a curve or through the air: a point and tangent along a path, its length, and a ballistic arc. Reach for it to send something along a line or to throw it.
 
-- **`ballistic`** `(progress: number, options: BallisticOptions): { x: number; y: number; }`: Where a thrown thing is at progress 0 to 1: from (dx, dy) to (0, 0) under constant gravity, peaking `apex` px above the higher end.
+- **`ballistic`** `(progress: number, options: { dx: number; dy: number; apex: number; }): { x: nu…`: Where a thrown thing is at progress 0 to 1: from (dx, dy) to (0, 0) under constant gravity, peaking `apex` px above the higher end.
 - **`BallisticOptions`** `type BallisticOptions`: The throw's shape: start offset `dx` and `dy`, and how many px above the higher end it peaks.
 - **`along`** `(cubics: readonly Cubic2d[], share: number, options?: { readonly turn?: boolean…`: The `{ x, y }` pose `share` of the way along a path by distance, from the target's rest; `turn: true` adds `rotation`, the heading in degrees (down is 90).
 - **`along3d`** `(cubics: readonly Cubic3d[], share: number, options?: { readonly face?: boolean…`: The pose `share` of the way along a 3D path by distance; `face` adds the turn of local +x onto the tangent, no roll.
@@ -112,8 +112,8 @@ Motion along a curve or through the air: a point and tangent along a path, its l
 
 Measures read a signal back: how fast it moves, and the area under a stream of samples. Reach for it to check a move's feel or to drive one value from another's speed.
 
-- **`velocity`** `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: Events, st…`: The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`; zero with no clock.
-- **`velocity3d`** `(signal: (time: Time, events: Events) => Pose3d, time: Time, events: Events, st…`: Units per second a signal's `x`, `y` and `z` move at the scene's `time`, never an eased one; zero with no clock.
+- **`velocity`** `(signal: (time: Time, events: Events) => Pose2d, time: Time, events: readonly M…`: The `{ vx, vy }` px a second a signal moves at the scene's `time` (not an eased one), over `stepMs`; zero with no clock.
+- **`velocity3d`** `(signal: (time: Time, events: Events) => Pose3d, time: Time, events: readonly M…`: Units per second a signal's `x`, `y` and `z` move at the scene's `time`, never an eased one; zero with no clock.
 - **`tally`** `(options: TallyOptions): Tally`: The area under held samples up to any time, each held until the next, from a table built once per list and extended when a live list grows by appending; events oldest first.
 - **`Tally`** `type Tally`: The area under held samples so far, in value-seconds: `total(events)` is the whole stream's, up to its last counted event, so `tally / total` is how far through it the stream is.
 - **`TallyOptions`** `type TallyOptions`: Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own) and `target`.
@@ -122,9 +122,9 @@ Measures read a signal back: how fast it moves, and the area under a stream of s
 
 An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time. Reach for it to react to the page or to mark moments for other moves.
 
-- **`NO_EVENTS`** `const NO_EVENTS: Events`: The empty event list; share it rather than allocating one.
+- **`NO_EVENTS`** `const NO_EVENTS: readonly MotionEvent[]`: The empty event list; share it rather than allocating one.
 - **`isMotionEvent`** `(value: unknown): value is MotionEvent`: Whether `value` is a `MotionEvent`: a `name`, an `at` and, when given, a `target`, an `x`, `y`, a `value`, a `point` of numbers and an `other`.
-- **`mergeEvents`** `(...lists: readonly Events[]): Events`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
+- **`mergeEvents`** `(...lists: readonly Events[]): readonly MotionEvent[]`: Several event lists as one, oldest first; a scene's own cues joined with the page's events.
 - **`EventPoint`** `type EventPoint`: A point an event happened at, in the scene's units; `z` only in 3D.
 - **`Events`** `type Events`: Every event so far, oldest first; a scene reads it beside its time.
 - **`MotionEvent`** `type MotionEvent`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.

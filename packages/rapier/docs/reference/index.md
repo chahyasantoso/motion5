@@ -1,6 +1,6 @@
 # @gerak/rapier: index
 
 - **`rapierEngine`** `(): Promise<() => RapierWorld>`: Loads Rapier's WASM once; the factory it gives makes worlds synchronously after that.
-- **`RapierWorld`** `type RapierWorld`: A Rapier world behind the port, with Rapier's own world for what the port leaves out.
+- **`RapierWorld`** `type RapierWorld = { native: World; rigidBody: (id: string) => RigidBody; addBody: (body: BodySpec) => void; addCollider: (id: string, collider: Collider, surface?: Surface | undefined) => void; setGravity: (x: number, y: number) => void; step: (seconds: number) => void; body: (id: string) => BodyState; drainContacts: () => readonly Contact[]; snapshot: () => Uint8Array<ArrayBufferLike>; restore: (snapshot: Uint8Array<ArrayBufferLike>) => void }`: A Rapier world behind the port, with Rapier's own world for what the port leaves out.
 - **`rapierEngine3d`** `(): Promise<() => RapierWorld3d>`: Loads Rapier 3D's WASM once; the factory it gives makes 3D worlds synchronously after that.
-- **`RapierWorld3d`** `type RapierWorld3d`: A 3D Rapier world behind `PhysicsWorld3d`, exposing Rapier's native world and rigid bodies.
+- **`RapierWorld3d`** `type RapierWorld3d = { native: World; rigidBody: (id: string) => RigidBody; addBody: (body: BodySpec3d) => void; addCollider: (id: string, collider: Collider3d, surface?: Surface | undefined) => void; setGravity: (x: number, y: number, z: number) => void; step: (seconds: number) => void; body: (id: string) => BodyState3d; drainContacts: () => readonly Contact3d[]; snapshot: () => Uint8Array<ArrayBufferLike>; restore: (snapshot: Uint8Array<ArrayBufferLike>) => void }`: A 3D Rapier world behind `PhysicsWorld3d`, exposing Rapier's native world and rigid bodies.

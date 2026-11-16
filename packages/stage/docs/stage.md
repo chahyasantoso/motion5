@@ -12,18 +12,18 @@ Groups: [index](#index) 48.
 ## index
 
 - **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; …`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
-- **`castNames`** `(cast: Readonly<Record<string, Member>>, beats?: readonly string[] | undefined)…`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
+- **`castNames`** `(cast: { readonly [x: string]: Member; }, beats?: readonly string[] | undefined…`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
 - **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readon…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
-- **`group`** `(members: Readonly<Record<string, Member>>, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
+- **`group`** `(members: { readonly [x: string]: Member; }, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
 - **`letters`** `(text: string, options?: Behaviour | undefined): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
 - **`many`** `(count: number, options?: Behaviour | undefined): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
-- **`pathOf`** `(path: ActorPath, rest: Readonly<Record<string, Box>>): readonly Cubic2d[]`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
+- **`pathOf`** `(path: readonly Cubic2d[] | ((rest: Readonly<Record<string, Box>>) => readonly …`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
 - **`words`** `(text: string, options?: Behaviour | undefined): Many`: A line split into its words at spaces, one text actor each, in order.
 - **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
 - **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
 - **`ActorText`** `type ActorText`: What an actor says: fixed text, or a readout the renderer writes from the time on each frame.
 - **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
-- **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
+- **`Cast`** `type Cast<Record<string, Member>>`: Who is on stage, by name; every key is unique across the whole cast, groups included.
 - **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
 - **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
 - **`Many`** `type Many`: A list of things; the scene answers one value per item.
@@ -35,26 +35,26 @@ Groups: [index](#index) 48.
 - **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: An outline split into its pieces: a cubic that does not start where the last ended starts another.
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
 - **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
-- **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly…`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
+- **`story`** `<const B extends string>(durationMs: number, beats: { readonly [P in keyof Reco…`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
 - **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
-- **`Story`** `type Story`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
-- **`cssVariables`** `(tokens: Readonly<Record<string, string>>): string`: A `:host` rule setting each token as a custom property, in the tokens' order; empty for none.
+- **`Story`** `type Story<B>`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
+- **`cssVariables`** `(tokens: { readonly [x: string]: string; }): string`: A `:host` rule setting each token as a custom property, in the tokens' order; empty for none.
 - **`isTokenName`** `(name: string): boolean`: Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`.
-- **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
-- **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: CarrySize): Pose2d`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`.
+- **`carried`** `(options: CarriedOptions): { readonly x?: number; readonly scale?: number; read…`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
+- **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: "scale" | "clip" |…`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`.
 - **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
 - **`CarrySize`** `type CarrySize`: How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"` leaves it and hides all outside the box.
-- **`NO_LAYOUTS`** `const NO_LAYOUTS: Readonly<Record<never, Readonly<Record<string, Box>>>>`: The layouts a module with none passes: no layout, no boxes.
-- **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
-- **`restOf`** `(rest: Readonly<Record<string, Box>>, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
+- **`NO_LAYOUTS`** `const NO_LAYOUTS: {}`: The layouts a module with none passes: no layout, no boxes.
+- **`NO_REST`** `const NO_REST: { readonly [x: string]: Box; }`: The rest a tool with no renderer passes: no boxes.
+- **`restOf`** `(rest: { readonly [x: string]: Box; }, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
 - **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
-- **`Layouts`** `type Layouts`: Each named layout's `Rest`, as a renderer measured every one.
-- **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
+- **`Layouts`** `type Layouts<Record<L, Readonly<Record<string, Box>>>>`: Each named layout's `Rest`, as a renderer measured every one.
+- **`Rest`** `type Rest<Record<string, Box>>`: Each member's rest box by its cast name, as a renderer measured it after layout.
 - **`readStageModule`** `(value: unknown): StageModule<string, object, string> | { readonly reason: stri…`: A stage module read from what a file exports, or why it is not one; it never throws.
 - **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
-- **`StageModule`** `type StageModule`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
+- **`StageModule`** `type StageModule<B, V, L>`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
 - **`describeLoop`** `({ loop, behind }: StrokeLoop): string`: The loop said in one line: `paths "a" and "b" read each other`, and any stroke reading them.
-- **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: Readonly<Record<string…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box.
+- **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: { readonly [x: string]…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box.
 - **`restOfBounds`** `(bounds: Box): Box`: Where a stroke of these bounds rests: their centre and size, as a rest box is.
 - **`thickened`** `(box: Box): Box`: A box never thinner than 1 on a side, so a straight line still shows: a side with no size opens to 1 about where it was.
 - **`PathAnswer`** `type PathAnswer`: What a path answered in its pass: its cubics, or what it threw.
@@ -114,7 +114,8 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   per item, `group({...})` one value that moves its members; a member's value is relative to its group. A `many`
   moves item by item: to move a whole row, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
 - **Readout.** `actor({ text: (time) => … })` is a readout written each frame (a timecode, a counter), not a value and
-  never eased. Only an `actor` takes one.
+  never eased. Only a top-level `actor` takes one: not an item of `many`, `letters` or `words`, and not a `group`'s
+  list. For several live numbers (bar labels, legend totals) make one named `actor` per number.
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn` and `drawnFrom` draw on; skin it
   by `[data-path="<name>"]` (`stroke`, `stroke-width`). Each anchor is `{ id, x, y, inX, inY, outX, outY }`, handles
   relative to the point; a closed outline repeats its first anchor last. Points are frame px from the frame's top-left.
@@ -172,3 +173,11 @@ A scene runs whole every frame, so a step reads the present, never all of the pa
   sends it behind; a shape the colour of what it crosses merges with it. Check those frames.
 - Frames fall every 16 ms, so compare a page with `gerak sample` at multiples of 16.
 - The page tools see elements, not pixels a `<canvas>` draws.
+- Transforms apply as CSS `translate`, then `rotate`, then `scale`, about the `anchor` (default the centre). For a 2D
+  camera, move one container holding the scene and counter-move its members for depth; a rotation turns about the
+  container's centre, so offset `x`, `y` by the amount that turn moves the point you want to keep still.
+- The stage draws inside a shadow root: put the surround colour on `:host { background: #000 }` in `skins.dom.css`. A
+  stroke's `<svg>` keeps `overflow: visible` and the `viewBox` of its first `path`, so a `shape` morph may leave it.
+- `gerak review` also judges a member while it is clear (`opacity: 0`) or hidden by `on`: a value it reads must stay
+  continuous, so do not reset `scale` or a position between two beats while hidden, and read a shared value only inside
+  the beats the member is shown in.

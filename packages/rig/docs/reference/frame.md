@@ -1,8 +1,8 @@
 # @gerak/rig: frame
 
-- **`PivotOffset`** `type PivotOffset`: Authored pivot offset, in base's rotated frame.
-- **`WorldFrame`** `type WorldFrame`: Pivot and direction in world space: keys a plugin publishes.
-- **`swingTwist3d`** `(local: Matrix3): SwingTwist3d`: Splits `local` into swing and twist about local +x; a pure swing reads no twist.
-- **`PivotOffset3d`** `type PivotOffset3d`: A pivot offset, read in its parent's rotated frame.
-- **`SwingTwist3d`** `type SwingTwist3d`: Local orientation as `swing * twist`; `twist` turns about local +x, applied first.
-- **`WorldFrame3d`** `type WorldFrame3d`: A 3D frame in world space: a position `x`, `y`, `z` and a turn `rotation`, `rotationX`, `rotationY` in degrees on the CSS Z-X-Y order.
+- **`PivotOffset`** `type PivotOffset = { x: number; y: number }`: Authored pivot offset, in base's rotated frame.
+- **`WorldFrame`** `type WorldFrame = { x: number; y: number; rotation: number }`: Pivot and direction in world space: keys a plugin publishes.
+- **`swingTwist3d`** `(local: readonly [number, number, number, number, number, number, number, number, number]): { readonly swing: Matrix3; readonly swingAxis: Vec3; readonly swingDegrees: number; readonly twistDegrees: number; }`: Splits `local` into swing and twist about local +x; a pure swing reads no twist.
+- **`PivotOffset3d`** `type PivotOffset3d = { x: number; y: number; z: number }`: A pivot offset, read in its parent's rotated frame.
+- **`SwingTwist3d`** `type SwingTwist3d = { swing: readonly [number, number, number, number, number, number, number, number, number]; swingAxis: readonly [number, number, number]; swingDegrees: number; twistDegrees: number }`: Local orientation as `swing * twist`; `twist` turns about local +x, applied first.
+- **`WorldFrame3d`** `type WorldFrame3d = { x: number; y: number; z: number; rotation: number; rotationX: number; rotationY: number }`: A 3D frame in world space: a position `x`, `y`, `z` and a turn `rotation`, `rotationX`, `rotationY` in degrees on the CSS Z-X-Y order.

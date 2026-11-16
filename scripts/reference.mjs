@@ -85,10 +85,36 @@ function orderedNames(source, checker, exported) {
   return [...new Set(names)].filter((name) => exported.some((symbol) => symbol.name === name));
 }
 
-function clip(text) {
-  return text.length > MAX_SIGNATURE ? `${text.slice(0, MAX_SIGNATURE - 1)}…` : text;
+const FULL = ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.InTypeAlias;
+
+/** A table type this long is shown by its keys; its row type is documented on its own entry. */
+function keysOrType(type, checker) {
+  const text = checker.typeToString(type, undefined, FULL);
+  const keys = checker.getPropertiesOfType(type).map(({ name }) => name);
+  return text.length > MAX_SIGNATURE && keys.length > 0 ? `{ ${keys.join(", ")} }` : text;
 }
 
+/** An object type's members, optional marks and types in full; other types as the compiler writes them. */
+function shapeOf(type, checker) {
+  const members = checker.getPropertiesOfType(type);
+  const plain =
+    (type.flags & ts.TypeFlags.Object) !== 0 &&
+    !checker.isArrayType(type) &&
+    !checker.isTupleType(type) &&
+    members.length > 0;
+  if (!plain) return checker.typeToString(type, undefined, FULL);
+  const calls = type
+    .getCallSignatures()
+    .map((call) => checker.signatureToString(call, undefined, FULL));
+  const fields = members.map((member) => {
+    const optional = (member.flags & ts.SymbolFlags.Optional) !== 0 ? "?" : "";
+    const written = checker.typeToString(checker.getTypeOfSymbol(member), undefined, FULL);
+    return `${member.name}${optional}: ${written}`;
+  });
+  return `{ ${[...calls, ...fields].join("; ")} }`;
+}
+
+/** The signature of an export in full, and whether it is a type, which a compact page names without its body. */
 function signatureOf(symbol, checker) {
   const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0];
   const flags = symbol.flags;
@@ -101,13 +127,18 @@ function signatureOf(symbol, checker) {
     const [first] = calls;
     if (first !== undefined) {
       const more = calls.length > 1 ? ` (+${calls.length - 1} overloads)` : "";
-      return `${clip(checker.signatureToString(first))}${more}`;
+      return { text: `${checker.signatureToString(first, undefined, FULL)}${more}`, isType: false };
     }
     if ((flags & ts.SymbolFlags.Variable) !== 0)
-      return clip(`const ${symbol.name}: ${checker.typeToString(type)}`);
+      return { text: `const ${symbol.name}: ${keysOrType(type, checker)}`, isType: false };
   }
-  if ((flags & ts.SymbolFlags.Class) !== 0) return `class ${symbol.name}`;
-  return `type ${symbol.name}`;
+  if ((flags & ts.SymbolFlags.Class) !== 0) return { text: `class ${symbol.name}`, isType: false };
+  const declared = checker.getDeclaredTypeOfSymbol(symbol);
+  const parameters = (declared.aliasTypeArguments ?? declared.typeParameters ?? []).map((each) =>
+    checker.typeToString(each),
+  );
+  const head = `type ${symbol.name}${parameters.length === 0 ? "" : `<${parameters.join(", ")}>`}`;
+  return { text: `${head} = ${shapeOf(declared, checker)}`, isType: true, head };
 }
 
 /** A literal field of an option's declared type, as written: `0`, `"in"`, or nothing when absent. */
@@ -163,14 +194,17 @@ function entryOf(name, exportedSymbol, checker) {
       : exportedSymbol;
   const doc = ts.displayPartsToString(symbol.getDocumentationComment(checker)).trim();
   const options = optionsOf(symbol, checker);
-  const signature = options === undefined ? signatureOf(symbol, checker) : options.call;
+  const written = options === undefined ? signatureOf(symbol, checker) : undefined;
+  const signature = written === undefined ? (options?.call ?? "") : written.text;
   // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
   const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
   const tail = options === undefined ? "" : ` ${options.text}`;
+  // A read-whole page stays short: a type is named, a long call is cut; the group page has every word.
+  const compact = written?.isType === true ? (written.head ?? signature) : signature;
   const short =
-    signature.length > MAX_COMPACT_SIGNATURE
-      ? `${signature.slice(0, MAX_COMPACT_SIGNATURE - 1)}…`
-      : signature;
+    compact.length > MAX_COMPACT_SIGNATURE
+      ? `${compact.slice(0, MAX_COMPACT_SIGNATURE - 1)}…`
+      : compact;
   const declaration = symbol.declarations?.[0];
   return {
     name,

@@ -72,6 +72,7 @@ function agentsText(folder: string, installed: readonly InstalledPackage[]): str
       ({ path }) => `- Read \`node_modules/@gerak/${path}\` whole before making motion.`,
     ),
     ...otherDocs(installed),
+    "- Open a package's `docs/reference` page only for a symbol whose fields you cannot see; do not list or read a docs folder wholesale.",
     `- The pieces folder is \`${folder}\`.`,
     "",
   ].join("\n");
