@@ -7,7 +7,7 @@ export interface ChainOptions {
 }
 
 /** Spans of these lengths in ms, the first at 0, each starting where the last ends plus `gap` or minus
- * `overlap`. Throws `RangeError` on a negative length, both options, or an overlap past a length. */
+ * `overlap`. Throws `RangeError` on a negative length, both options, or too long an overlap. */
 export function chain(lengths: readonly number[], options: ChainOptions = {}): readonly Span[] {
   const { gap, overlap } = options;
   if (gap !== undefined && overlap !== undefined)

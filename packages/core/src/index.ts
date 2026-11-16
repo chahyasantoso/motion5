@@ -81,4 +81,4 @@ export { arcPath, pathFrom, type ArcOptions, type PathRead } from "./geometry/pa
 export { circlePath, ellipsePath, linePath, polygonPath, rectPath } from "./geometry/shape-paths";
 export { resamplePath, reversePath, transformPath, type Matrix2d } from "./geometry/path-edit";
 export { isClosedPath, meets, pathArea, pathBounds, SEAM } from "./geometry/path-measure";
-export { pathLength, type ArcLength } from "./path/arc-length";
+export { pathLength } from "./path/arc-length";

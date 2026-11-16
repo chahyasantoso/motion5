@@ -161,11 +161,10 @@ describe("path measures", () => {
     expect(isClosedPath(linePath({ x1: 0, y1: 0, x2: 4, y2: 4 }))).toBe(false);
   });
 
-  it("reads a straight table's length and clamps a distance past it", () => {
-    const table = pathLength(1, (_, t) => [10 * t, 0]);
-    expect(table.total).toBeCloseTo(10);
-    expect(table.locate(99).t).toBeCloseTo(1);
-    expect(pathLength(0, () => [0]).total).toBe(0);
+  it("measures a straight path, a quarter circle and an empty path", () => {
+    expect(pathLength(linePath({ x1: 0, y1: 0, x2: 10, y2: 0 }))).toBeCloseTo(10);
+    expect(pathLength(circlePath({ cx: 0, cy: 0, r: 10 }))).toBeCloseTo(2 * Math.PI * 10, 1);
+    expect(pathLength([])).toBe(0);
   });
 });
 

@@ -7,8 +7,8 @@ export interface LoopOptions {
   readonly yoyo?: boolean;
 }
 
-/** A cycle that repeats every `periodMs`: `.of(time)` is the time inside the current cycle, progress 0 to 1
- * each period, and 1 to 0 on odd cycles with `yoyo`. Throws `RangeError` on an untimed time. */
+/** A cycle repeating every `periodMs`: `.of(time)` is the time inside the current cycle, progress 0 to 1
+ * each period, 1 to 0 on odd cycles with `yoyo`. Throws `RangeError` on an untimed time. */
 export function loop(periodMs: number, options: LoopOptions = {}): Timing {
   if (!Number.isFinite(periodMs) || periodMs <= 0)
     throw new RangeError(`loop: a period of ${periodMs} ms is not a stretch of time.`);

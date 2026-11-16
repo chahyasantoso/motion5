@@ -1,3 +1,5 @@
+import type { Cubic2d } from "../geometry/shapes";
+
 const SAMPLES = 32;
 
 type Sample = { readonly length: number; readonly segment: number; readonly t: number };
@@ -15,7 +17,7 @@ function distanceBetween(a: readonly number[], b: readonly number[]): number {
 }
 
 /** A sampled arc-length table over `segments` curves of any dimension, read back by distance. */
-export function pathLength(
+export function arcLength(
   segments: number,
   pointAt: (segment: number, t: number) => readonly number[],
 ): ArcLength {
@@ -50,4 +52,18 @@ export function pathLength(
     return { segment: to.segment, t: fromT + (to.t - fromT) * fraction };
   };
   return { total, locate };
+}
+
+/** The length of a path of cubics, sampled; 0 for an empty path. */
+export function pathLength(cubics: readonly Cubic2d[]): number {
+  return arcLength(cubics.length, (index, t) => {
+    const c = cubics[index];
+    if (c === undefined) return [0, 0];
+    const u = 1 - t;
+    const a = u * u * u;
+    const b = 3 * u * u * t;
+    const d = 3 * u * t * t;
+    const e = t * t * t;
+    return [a * c.x0 + b * c.x1 + d * c.x2 + e * c.x3, a * c.y0 + b * c.y1 + d * c.y2 + e * c.y3];
+  }).total;
 }

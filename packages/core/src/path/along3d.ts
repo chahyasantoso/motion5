@@ -1,5 +1,5 @@
 import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "../geometry/rotation3d";
-import { pathLength } from "./arc-length";
+import { arcLength } from "./arc-length";
 import type { Pose3d } from "../fields/pose3d";
 import type { Cubic3d } from "../geometry/shapes";
 
@@ -37,7 +37,7 @@ export function along3d(
   options: { readonly face?: boolean } = {},
 ): Pose3d {
   if (cubics.length === 0) throw new RangeError("along3d: the path has no segments.");
-  const arc = pathLength(cubics.length, (index, t) => {
+  const arc = arcLength(cubics.length, (index, t) => {
     const c = cubics[index];
     if (c === undefined) throw new RangeError("along3d: the path has no segments.");
     return pointOf(c, t);
