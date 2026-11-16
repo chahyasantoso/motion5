@@ -5,7 +5,7 @@ import {
   moveSourceFrom,
   rangeForLiteral,
   stepForLiteral,
-} from "../src/live/code-panel";
+} from "../src/pages/live/code-panel";
 
 describe("stepForLiteral", () => {
   it("uses step 1 for integer values and step 0.01 for decimal values", () => {

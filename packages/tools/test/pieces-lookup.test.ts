@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadStageModule, pickPieceFile } from "../src/stage-module";
+import { pickPieceFile, pieceLookup } from "../src/pages/stage-module";
 
 const KEYS = [
   "/showreel/src/showreel-c.ts",
@@ -35,11 +35,13 @@ describe("the stage module lookup", () => {
   });
 });
 
+const lookup = pieceLookup({}, {});
+
 describe("the stage module of a name", () => {
   it("says why there is none", async () => {
-    expect(await loadStageModule("no-such-piece")).toContain(
+    expect(await lookup.loadStageModule("no-such-piece")).toContain(
       'No stage piece named "no-such-piece"',
     );
-    expect(await loadStageModule("Bad Name")).toContain("is not a piece name");
+    expect(await lookup.loadStageModule("Bad Name")).toContain("is not a piece name");
   });
 });

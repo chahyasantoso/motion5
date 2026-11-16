@@ -34,6 +34,10 @@
       "types": "./dist/page/index.d.ts",
       "default": "./dist/page/index.js"
     },
+    "./pages": {
+      "types": "./dist/pages/index.d.ts",
+      "default": "./dist/pages/index.js"
+    },
     "./scene": {
       "types": "./dist/scene/index.d.ts",
       "default": "./dist/scene/index.js"

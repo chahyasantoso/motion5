@@ -36,7 +36,7 @@
     "benchmark": "node performance/graph-benchmark.mjs",
     "test:frames": "node packages/tools/bin/motion-frames-check.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@gerak/pieces"
+    "dev": "node packages/tools/bin/gerak.mjs live saved --root apps/pieces"
   },
   "devDependencies": {
     "@types/node": "24.3.0",

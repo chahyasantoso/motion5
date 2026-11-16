@@ -7,8 +7,6 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 
 - `*/src/`: one brief's pieces and components
 - `*/src/moves/`: one brief's own moves
-- `src/`: the players every brief shares
-- `src/live/`: live editor
 
 ## packages/dom
 
@@ -87,10 +85,13 @@ Public: `.`, `./react`, `./skeleton`
 
 ## packages/tools
 
-Public: `./page`, `./scene`, `./vite`
+Public: `./page`, `./pages`, `./scene`, `./vite`
 
 - `src/page/`: page tools
+- `src/pages/`: the stage, live and talk pages
+- `src/pages/live/`: live editor
 - `src/scene/`: scene sample, timeline
 - `src/scene/templates/`: gerak new templates
+- `src/scene/templates/pages/`: the page files of a pieces folder
 - `src/timeline/`: timeline bars
 - `src/vite/`: live editor Vite plugin

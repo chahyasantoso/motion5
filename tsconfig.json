@@ -23,6 +23,7 @@
       "@gerak/physics": ["packages/physics/src/index.ts"],
       "@gerak/rapier": ["packages/rapier/src/index.ts"],
       "@gerak/tools/page": ["packages/tools/src/page/index.ts"],
+      "@gerak/tools/pages": ["packages/tools/src/pages/index.ts"],
       "@gerak/tools/scene": ["packages/tools/src/scene/index.ts"],
       "@gerak/tools/vite": ["packages/tools/src/vite/index.ts"],
       "@gerak/rig": ["packages/rig/src/index.ts"],

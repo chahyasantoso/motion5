@@ -1,6 +1,7 @@
 import { relative } from "node:path";
 import { pieceFiles } from "../scene/briefs";
 import { callerDir, piecesRoot } from "./root";
+import { pageServerConfig } from "./server";
 
 /** Arguments parsed for the gerak live command. */
 export type LiveArgs =
@@ -103,10 +104,12 @@ export async function startLiveServer(options: {
   }
 
   const { createServer } = await import("vite");
+  const added = pageServerConfig(options.root);
   const server = await createServer({
     root: options.root,
     logLevel: "error",
-    server: { port: options.port },
+    plugins: added.plugins,
+    server: { ...added.server, port: options.port },
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0] ?? `http://localhost:${options.port}/`;

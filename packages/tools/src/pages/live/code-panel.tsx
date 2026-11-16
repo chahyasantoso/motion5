@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as builtIn from "@gerak/moves";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
-import { sceneFileOf } from "../stage-module";
 
 export type { NumericLiteralSpan };
 
@@ -166,13 +165,15 @@ interface ActiveDrag {
 
 export interface CodePanelProps {
   readonly sceneName: string;
+  /** The scene file of a piece name, as the live server reads it. */
+  readonly sceneFileOf: (name: string) => string | undefined;
   readonly version?: unknown;
   /** The scene module, whose exported moves give a dragged option its range. */
   readonly moves?: MoveSource | undefined;
 }
 
 /** Renders scene source code with interactive numeric literal spans. */
-export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, version, moves }) => {
+export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, version, moves }) => {
   const [source, setSource] = useState<string>("");
   const [literals, setLiterals] = useState<readonly NumericLiteralSpan[]>([]);
   const [appModules, setAppModules] = useState<readonly MoveSource[]>(NO_MODULES);

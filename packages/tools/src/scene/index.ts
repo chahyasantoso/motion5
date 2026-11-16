@@ -8,3 +8,4 @@ export * from "./import-svg";
 export * from "./joints";
 export * from "./briefs";
 export * from "./cards";
+export * from "./page-files";

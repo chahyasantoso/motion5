@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import type { Browser, Page } from "playwright-core";
 import { parseActions, perform, type PageAction } from "./actions";
 import { callerDir, piecesRoot } from "./root";
+import { pageServerConfig } from "./server";
 import { unreachable } from "./unreachable";
 
 /** Where a page comes from: a folder this tool serves, or a server already running. */
@@ -244,10 +245,12 @@ async function openSite(
       return { base: source.base, close: async () => undefined };
     case "serve": {
       const { createServer } = await import("vite");
+      const added = pageServerConfig(source.root);
       const server = await createServer({
         root: source.root,
         logLevel: "silent",
-        server: { port: 5280 },
+        plugins: added.plugins,
+        server: { ...added.server, port: 5280 },
       });
       await server.listen();
       const base = server.resolvedUrls?.local[0];

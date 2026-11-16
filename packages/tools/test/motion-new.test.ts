@@ -17,7 +17,7 @@ import {
 } from "@gerak/tools/scene";
 import { parseLiveArgs, startLiveServer } from "../src/page/live";
 import { callerPiecesRoot } from "../src/page/root";
-import { guard } from "../../../apps/pieces/src/live/guard";
+import { guard } from "../src/pages/live/guard";
 
 const PIECES_ROOT = callerPiecesRoot();
 

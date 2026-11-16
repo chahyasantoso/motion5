@@ -111,6 +111,72 @@ export function typeCheckFiles(specifiers) {
   };
 }
 
+/** A minimal stage module for the check's one brief. */
+const DEMO_PIECE = `import { slide } from "@gerak/moves";
+import { actor, story } from "@gerak/stage";
+
+export const beats = story(2000, { go: [0, 2000] });
+export const cast = { box: actor() };
+export const skins = { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } };
+export const scene = (time) => ({
+  box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
+});
+`;
+
+/** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the stage page. */
+const SERVE_PAGES = `import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { createServer } from "vite";
+import { pageServerConfig } from "@gerak/tools/page";
+import { pageFiles } from "@gerak/tools/scene";
+
+const root = resolve("pieces");
+for (const [name, text] of Object.entries(pageFiles())) writeFileSync(resolve(root, name), text);
+mkdirSync(resolve(root, "demo", "src"), { recursive: true });
+writeFileSync(resolve(root, "demo", "src", "demo.ts"), ${JSON.stringify(DEMO_PIECE)});
+const added = pageServerConfig(root);
+const server = await createServer({
+  root,
+  logLevel: "silent",
+  plugins: added.plugins,
+  server: { ...added.server, port: 0 },
+});
+try {
+  await server.listen();
+  const base = server.resolvedUrls.local[0];
+  const problems = [];
+  for (const path of ["stage.html", "stage.ts"]) {
+    const response = await fetch(new URL(path, base));
+    const body = await response.text();
+    if (response.status !== 200) problems.push(path + " answered " + response.status);
+    else if (/Failed to resolve|Pre-transform error/.test(body)) problems.push(path + " has a resolve error");
+  }
+  console.log(JSON.stringify(problems));
+} catch (error) {
+  console.error(String(error));
+  process.exitCode = 1;
+} finally {
+  // Closing waits on a dependency scan that may never settle, so it gets a few seconds, then the process ends.
+  await Promise.race([server.close(), new Promise((done) => setTimeout(done, 5000))]);
+  await new Promise((done) => process.stdout.write("", done));
+  process.exit(process.exitCode ?? 0);
+}
+`;
+
+/** The failure of serving the installed project's page files, or undefined when both pages answer cleanly. */
+function pageServerError(project) {
+  writeFileSync(join(project, "serve-pages.mjs"), SERVE_PAGES);
+  const run = spawnSync(process.execPath, ["serve-pages.mjs"], { cwd: project, encoding: "utf8" });
+  if (run.status !== 0) return firstErrorLine(run.stderr ?? "");
+  const lines = (run.stdout ?? "").trim().split(/\r?\n/);
+  try {
+    const problems = JSON.parse(lines[lines.length - 1] ?? "[]");
+    return problems.length === 0 ? undefined : problems.join("; ");
+  } catch {
+    return "prints no result";
+  }
+}
+
 /** Packs every package, installs the tarballs into an empty project, imports each export and
  * type-checks a consumer of them all. */
 export function packCheck({ keep = false, log = console.log } = {}) {
@@ -202,6 +268,9 @@ export function packCheck({ keep = false, log = console.log } = {}) {
           : undefined;
     if (anatomyError !== undefined) failed += 1;
     log(formatResult("gerak moves --anatomy", anatomyError));
+    const pagesError = pageServerError(project);
+    if (pagesError !== undefined) failed += 1;
+    log(formatResult("pages served from pieces/", pagesError));
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);
