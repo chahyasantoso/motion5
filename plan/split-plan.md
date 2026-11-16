@@ -27,24 +27,25 @@ gate this one.
 
 | Group | Holds | Test |
 | --- | --- | --- |
-| **Core** | definitions and maths that cannot differ between projects, and the mechanisms that attach a look | a piece may need it, and no project would want it different |
+| **Core** | primitives: definitions and maths that cannot differ between projects, and the mechanisms that attach a look | a piece may need it, and no project would want its own version |
 | **Modules** | opt-in capabilities that are still pure maths | only pieces with bones or bodies need it |
-| **Library** | vocabulary and taste: named moves, qualities, styles, and the tools for them | a project could want it different |
+| **Library** | parts and moves that carry a choice, qualities, styles, and the tools for them | a project could want its own version |
 
 Imports only go down: library may import modules and core; modules import core; core imports nothing of the other two.
 The boundary scan enforces it. `@gerak/stage`'s skins, layouts and outlines are core: they are how a look is attached
 and measured, not a look. Moves such as `trace` and `smudge` are library: a core-only piece gets the same effect from
-the core fields (`drawn`, `blur`) and writes its own motion, a trade-off taken on purpose.
+the core fields (`drawn`, `blur`) and writes its own motion, a trade-off taken on purpose. Squash and stretch, smear, follow-through (`follow`, `trail`) and wander (`noise1d`) are
+parts that carry a choice, so they are library; `cubicOut`, a sine wave and `velocity` are not, so they are core.
 
 ## 3. Layout, install sets and owners
 
 ```text
 packages/
   core/
-    core/     @gerak/core     fields, Pose2d/Pose3d, combine, rotation maths, Time, span, clocks, arranging time
-                              (sequence, lanes, loop, repeated, reversed), events, blend, the standard eases and
-                              springs, envelopes, oscillations, signals, coupling, geometry and paths, seeded random,
-                              clamp, unreachable, definePart and its closed set of part kinds
+    core/     @gerak/core     primitives: fields, Pose2d/Pose3d, combine, rotation maths, Time, span, clocks,
+                              arranging time (sequence, lanes, loop, repeated, reversed), blend and keyframes, the
+                              standard eases and springs, basic envelopes and waves, geometry and paths, measures
+                              (velocity, speedOf, tally), events, seeded random, clamp, unreachable
     stage/    @gerak/stage    the piece contract: cast, beats, skins, scene, layouts, carried, outlines
     player/   @gerak/player   the clock that plays a scene
     dom/      @gerak/dom      the DOM renderer
@@ -56,7 +57,9 @@ packages/
     physics/  @gerak/physics  2D bodies and worlds
     rapier/   @gerak/rapier   the Rapier engine
   library/
-    moves/    @gerak/moves    defineMove, the named moves, qualities, descriptors, style cards; depends on rig (rope)
+    moves/    @gerak/moves    definePart and the part kinds, parts that carry a choice (coupling, follow, trail,
+                              react, noise1d), defineMove, the named moves, qualities, descriptors, style cards;
+                              depends on rig (rope)
     tools/    @gerak/library-tools   the catalog (gerak moves), promote, style, new --move, review's design and style
 ```
 
@@ -70,7 +73,8 @@ packages/
 | --- | --- |
 | What a field is, how values combine, what time is | `@gerak/core` |
 | Euler, matrix and quaternion maths | `@gerak/core`, moved from rig |
-| What a part is, and the closed set of part kinds | `@gerak/core`; the library adds parts of those kinds, never a kind |
+| What a primitive is | `@gerak/core`: documented by its doc comment, read whole, never registered |
+| What a part is, and the closed set of part kinds | `@gerak/moves`; promoted brief parts land here, never in core |
 | What a move is (`defineMove`), what a quality and a style are | `@gerak/moves` |
 | Which commands `gerak` runs | `listCommands()` in `@gerak/tools`: its own list plus each installed package's declared list |
 | Which findings `gerak review` reports | `@gerak/tools`'s review, which calls each installed package's declared finder through one `ReviewFinder` type |
@@ -80,16 +84,19 @@ packages/
 
 - **Three groups, imports only downward,** as in section 2. Supersedes ADR-185's layers inside `@gerak/moves` and
   ADR-187's "a brief imports `@gerak/moves`": a brief imports core, and a module or the library only if installed.
-- **`@gerak/core` is new** and takes from `@gerak/moves` its fields, time, compose, every part folder (blend, ease,
-  dynamics, envelope, oscillation, signal, coupling, geometry, path, utility), `definePart` and `unreachable`. From
+- **`@gerak/core` is new** and takes from `@gerak/moves` its fields, time, compose and the primitives: `parts/blend`,
+  `parts/ease`, `parts/dynamics`, `parts/envelope`, `parts/oscillation`, `parts/geometry`, `parts/path`, `parts/utility`,
+  and from `parts/signal` only `keyframes`, `velocity`, `velocity3d`, `speedOf` and `tally`; plus `unreachable`. Core
+  drops their `definePart` registrations. `parts/coupling`, `follow`, `trail`, `trailTurn`, `react`, `noise1d` and
+  `definePart` stay in `@gerak/moves`. From
   `@gerak/rig/src/frame/frame3d.ts` it takes exactly what core uses: `Euler3d`, `Vec3`, `Matrix3`, `Quaternion`,
   `ZERO_EULER`, `IDENTITY_MATRIX3`, `LOCAL_X3`, `matrixFromEuler3d`, `eulerFromMatrix3d`, `multiplyMatrix3`,
   `multiplyVector3`, `transposeMatrix3`, `canonicalDegrees`, `rotationAboutAxis3d`, the `*3` vector functions,
   `axisX3`, `quaternionFromEuler3d`, `matrixFromQuaternion`, `slerpQuaternion`, with `readNumber` and `isRecord` as
   internals. Pivot offsets, effective links, world frames, swing and twist and `blendOrientation3d` stay in rig, which
   imports the rest from core. A symbol moves when core code uses it, and the S1a builder lists any the rule adds.
-- **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `compose`, `parts/<kind>`,
-  `events`, and the stage's contract; a test reads `@gerak/core`'s index and refuses an export from anywhere else.
+- **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `compose`, `blend`, `ease`,
+  `envelope`, `geometry`, `path`, `measure`, `events`, `utility`, and the stage's contract; a test reads `@gerak/core`'s index and refuses an export from anywhere else.
 - **Private geometry becomes core,** moved, never copied: `pathFrom` (`parsePathData`), `rectPath`, `circlePath`,
   `ellipsePath`, `polygonPath` (`outlinesOf`), `arcPath` (`arcCubics`), `linePath`, `transformPath`, `resamplePath`,
   `reversePath` (the stage's `splitTo`, `reversed`), `pathBounds` (the dom's `strokeBox` and import-svg's `boundsOf`),
@@ -147,8 +154,8 @@ after, `gerak moves --json` and `gerak moves --parts` print the same records; th
 
 ### S1c. Fix-up (executor, after S1b)
 
-What the script could not do: re-exports `@gerak/moves` must stop making, cycles, the part gate's folder rule over core,
-`definePart`'s kinds, the core-export test of section 4. `npm run check` green.
+What the script could not do: re-exports `@gerak/moves` must stop making, cycles, the part gate reading only the library's
+parts, the core-export test of section 4. `npm run check` green.
 
 ### S2. Modules clean (executor, after S1c)
 
@@ -212,7 +219,7 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
 
 - **S1b rewrites imports across most of the repository;** it is one scripted commit, the catalog's records compared
   before and after.
-- **Core grows past one read:** every part folder joins core, about 70 entries; if `core.md` will not fit 20 KB, the
+- **Core grows past one read:** about 45 primitives plus about 15 promoted geometry functions; if `core.md` will not fit 20 KB, the
   size test fails and the lead reports which group to move rather than raising the cap.
 - **Plug-in commands and review finders are a second way things appear;** one function owns each list, tested with and
   without the library.
