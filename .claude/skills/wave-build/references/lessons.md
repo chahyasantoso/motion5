@@ -13,6 +13,9 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - A measure that passes against a defective rule proves nothing: the first `launch-day` passed a card measured with
   a windup bug the measure itself exposed. Fix the rule, re-measure the card, and run the measure again.
 
+- The browser tests time out under full-suite load at the base too (1 run in 3 on 2026-11-16, a different test each
+  time). Rerun once, and run the base, before blaming a slice for a browser timeout.
+
 ## What a wave costs
 
 Measured over 40 waves, 2026-11-11 to 11-14; the rows are in git history. The lead's own cost is never shown.
