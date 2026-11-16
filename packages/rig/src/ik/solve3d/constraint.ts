@@ -12,13 +12,12 @@ import {
   multiplyVector3,
   norm3,
   rotationAboutAxis3d,
-  swingTwist3d,
   transposeMatrix3,
-  twistAbout3d,
   type Matrix3,
   type Euler3d,
   type Vec3,
-} from "../../frame/frame3d";
+} from "@gerak/core";
+import { swingTwist3d, twistAbout3d } from "../../frame/frame3d";
 import {
   atBound,
   JOINT_BOUND_TOLERANCE,

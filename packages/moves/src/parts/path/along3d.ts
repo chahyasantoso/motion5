@@ -1,4 +1,4 @@
-import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "@gerak/rig";
+import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "@gerak/core";
 import { arcLength } from "./arc-length";
 import { definePart } from "../contract";
 import type { Pose3d } from "../../fields/pose3d";

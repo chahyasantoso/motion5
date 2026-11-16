@@ -16,22 +16,9 @@ export {
 } from "./chain";
 export type { PivotOffset, WorldFrame } from "./frame/frame";
 export {
-  eulerFromMatrix3d,
-  IDENTITY_MATRIX3,
-  matrixFromEuler3d,
-  matrixFromQuaternion,
-  multiplyMatrix3,
-  quaternionFromEuler3d,
-  slerpQuaternion,
-  swingFrame3d,
   swingTwist3d,
-  transposeMatrix3,
-  type Euler3d,
-  type Matrix3,
   type PivotOffset3d,
-  type Quaternion,
   type SwingTwist3d,
-  type Vec3,
   type WorldFrame3d,
 } from "./frame/frame3d";
 export type { SolveQuality, SolveResult } from "./ik/shared/result";

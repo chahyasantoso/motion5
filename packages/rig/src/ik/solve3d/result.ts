@@ -1,6 +1,6 @@
 import type { SolveEvidence, SolveQuality } from "../shared/result";
 import { restoreDistance } from "../shared/scale";
-import type { Euler3d } from "../../frame/frame3d";
+import type { Euler3d } from "@gerak/core";
 
 /**
  * The internal 3D solver result. Its `quality` and `residuals` are the 2D result's own

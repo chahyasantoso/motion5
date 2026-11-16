@@ -13,6 +13,9 @@
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@gerak/core": "0.1.0"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

@@ -23,7 +23,7 @@ import {
   transposeMatrix3,
   type Matrix3,
   type Vec3,
-} from "../../frame/frame3d";
+} from "@gerak/core";
 import { bendBasis3d, type Pole3d } from "./analytic";
 import {
   constrains,

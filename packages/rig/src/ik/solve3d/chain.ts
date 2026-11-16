@@ -1,4 +1,5 @@
-import type { Euler3d, PivotOffset3d, WorldFrame3d } from "../../frame/frame3d";
+import type { Euler3d } from "@gerak/core";
+import type { PivotOffset3d, WorldFrame3d } from "../../frame/frame3d";
 import type { JointLimit3d } from "./constraint";
 
 /**

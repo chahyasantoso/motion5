@@ -14,6 +14,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@gerak/core": "*",
     "@gerak/dom": "*",
     "@gerak/moves": "*",
     "@gerak/physics": "*",

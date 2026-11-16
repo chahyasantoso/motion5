@@ -3,21 +3,19 @@ import { readNumber, segmentExtent } from "./frame/frame";
 import {
   IDENTITY_MATRIX3,
   ZERO_EULER,
-  composeWorld3d,
   eulerFromMatrix3d,
   matrixFromEuler3d,
   matrixFromQuaternion,
   multiplyMatrix3,
   multiplyVector3,
-  readPivotOffset3d,
   swingFrame3d,
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
   type Quaternion,
   type Vec3,
-  type WorldFrame3d,
-} from "./frame/frame3d";
+} from "@gerak/core";
+import { composeWorld3d, readPivotOffset3d, type WorldFrame3d } from "./frame/frame3d";
 import { readInfluence } from "./ik/shared/goal";
 import { UNBOUND_POLE3D, type Pole3d } from "./ik/solve3d/analytic";
 import type { ChainMember3d } from "./ik/solve3d/chain";

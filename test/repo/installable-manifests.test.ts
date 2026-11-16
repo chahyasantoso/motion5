@@ -9,8 +9,8 @@ import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-pa
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
 describe("installable manifests", () => {
-  it("names the nine runtime packages and the tools", () => {
-    expect(INSTALLABLE_PACKAGES).toHaveLength(10);
+  it("names the ten runtime packages and the tools", () => {
+    expect(INSTALLABLE_PACKAGES).toHaveLength(11);
   });
 
   describe.each(INSTALLABLE_PACKAGES)("%s", (directory) => {

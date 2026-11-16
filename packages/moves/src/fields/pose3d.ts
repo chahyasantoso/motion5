@@ -5,7 +5,7 @@ import {
   multiplyMatrix3,
   type Euler3d,
   type Matrix3,
-} from "@gerak/rig";
+} from "@gerak/core";
 import { addCustom, join } from "./combine";
 import {
   FIELD_NAMES,

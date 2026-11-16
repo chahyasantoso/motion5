@@ -21,6 +21,8 @@ const HEADER = [
 export const OWNERS = {
   "apps/pieces/*/src": "one brief's pieces and components",
   "apps/pieces/*/src/moves": "one brief's own moves",
+  "packages/core/src": "primitives",
+  "packages/core/src/geometry": "rotation maths",
   "packages/rig/src": "joint vocabulary",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",

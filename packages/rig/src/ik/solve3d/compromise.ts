@@ -1,4 +1,4 @@
-import { norm3, subtract3, type Vec3 } from "../../frame/frame3d";
+import { norm3, subtract3, type Vec3 } from "@gerak/core";
 import {
   compromiseIn,
   reachCircleOf,

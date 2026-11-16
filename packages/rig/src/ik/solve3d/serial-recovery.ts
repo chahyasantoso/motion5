@@ -17,8 +17,8 @@ import {
   type Euler3d,
   type Matrix3,
   type Vec3,
-  type WorldFrame3d,
-} from "../../frame/frame3d";
+} from "@gerak/core";
+import { type WorldFrame3d } from "../../frame/frame3d";
 import { bendBasis3d, rereadPole3d, UNBOUND_POLE3D, type Pole3d } from "./analytic";
 import type { ChainMember3d } from "./chain";
 import { nonPlanarHinge3d, renderedLegalHinge3d, type JointLimit3d } from "./constraint";

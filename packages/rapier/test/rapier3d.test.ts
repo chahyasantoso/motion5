@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { liveAt, type Events, type MotionEvent } from "@gerak/moves";
 import { simulate, type PhysicsWorld3d, type Spawner3d } from "@gerak/physics";
 import { rapierEngine, rapierEngine3d } from "@gerak/rapier";
-import { bodyPose3d, matrixFromEuler3d, matrixFromQuaternion } from "@gerak/rig";
+import { matrixFromEuler3d, matrixFromQuaternion } from "@gerak/core";
+import { bodyPose3d } from "@gerak/rig";
 
 /** How far a contact point may lie from the surfaces it names, in scene units. */
 const POINT_TOLERANCE = 0.05;

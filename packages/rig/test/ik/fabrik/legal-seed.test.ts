@@ -20,7 +20,8 @@ import {
   type LegalSeed,
 } from "../../../src/ik/fabrik/seed";
 import type { WorldFrame, WorldPoint } from "../../../src/frame/frame";
-import type { Euler3d, Vec3, WorldFrame3d } from "../../../src/frame/frame3d";
+import type { Euler3d, Vec3 } from "@gerak/core";
+import type { WorldFrame3d } from "../../../src/frame/frame3d";
 import { canonicalChain } from "../../../src/ik/shared/topology";
 import { legalRotation, limitRotation, type JointRange } from "../../../src/ik/shared/constraint";
 import type { SolveMember } from "../../../src/ik/shared/member";

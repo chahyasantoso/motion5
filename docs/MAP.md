@@ -8,6 +8,13 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 - `*/src/`: one brief's pieces and components
 - `*/src/moves/`: one brief's own moves
 
+## packages/core
+
+Public: `.`
+
+- `src/`: primitives
+- `src/geometry/`: rotation maths
+
 ## packages/dom
 
 Public: `.`

@@ -9,7 +9,7 @@ import {
   type StyleCard,
 } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
-import { quaternionFromEuler3d } from "@gerak/rig";
+import { quaternionFromEuler3d } from "@gerak/core";
 import { dirname, resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matrixFromEuler3d, multiplyMatrix3, type Euler3d, type Matrix3 } from "@gerak/rig";
+import { matrixFromEuler3d, multiplyMatrix3, type Euler3d, type Matrix3 } from "@gerak/core";
 import { elapsedOf, liveAt, smear3d, velocity3d, type Pose3d, type Time } from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;

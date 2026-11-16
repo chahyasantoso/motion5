@@ -3,7 +3,7 @@ import {
   matrixFromQuaternion,
   quaternionFromEuler3d,
   slerpQuaternion,
-} from "@gerak/rig";
+} from "@gerak/core";
 import { definePart } from "../contract";
 import { VALUE_FIELDS } from "../../fields/pose";
 import {

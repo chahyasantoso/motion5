@@ -8,6 +8,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: [
       "@gerak/moves",
+      "@gerak/core",
       "@gerak/rig",
       "@gerak/dom",
       "@gerak/player",

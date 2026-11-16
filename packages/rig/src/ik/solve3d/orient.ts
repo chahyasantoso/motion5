@@ -1,18 +1,16 @@
 import { unreachable } from "../../unreachable";
 import { readNumber, segmentExtent } from "../../frame/frame";
 import {
-  blendOrientation3d,
   eulerFromMatrix3d,
   LOCAL_X3,
   matrixFromEuler3d,
   multiplyMatrix3,
   rotationAboutAxis3d,
-  swingTwist3d,
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
-  type WorldFrame3d,
-} from "../../frame/frame3d";
+} from "@gerak/core";
+import { blendOrientation3d, swingTwist3d, type WorldFrame3d } from "../../frame/frame3d";
 import type { ChainMember3d } from "./chain";
 import { FREE_JOINT3D, limitLocal3d } from "./constraint";
 import type { SolveResult3d } from "./result";

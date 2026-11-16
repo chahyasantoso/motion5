@@ -11,7 +11,14 @@ export default defineConfig({
     alias: [...workspaceSourceAliases()],
   },
   optimizeDeps: {
-    exclude: ["@gerak/react", "@gerak/moves", "@gerak/rig", "@gerak/dom", "@gerak/player"],
+    exclude: [
+      "@gerak/core",
+      "@gerak/react",
+      "@gerak/moves",
+      "@gerak/rig",
+      "@gerak/dom",
+      "@gerak/player",
+    ],
   },
   test: {
     // The quiet reporter: a green run states its counts, and a red one still prints every

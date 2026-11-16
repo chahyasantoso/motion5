@@ -1,0 +1,22 @@
+{
+  "name": "@gerak/core",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "gerak": {
+    "group": "core",
+    "layer": "pure"
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}

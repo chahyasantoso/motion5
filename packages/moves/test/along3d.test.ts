@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matrixFromEuler3d } from "@gerak/rig";
+import { matrixFromEuler3d } from "@gerak/core";
 import {
   along3d,
   combine3d,
