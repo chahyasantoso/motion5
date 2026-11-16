@@ -1,25 +1,25 @@
-import { elapsedOf, type Ease, type Events, type Pose2d, type Time } from "@gerak/core";
+import {
+  clamp,
+  elapsedOf,
+  mix,
+  unreachable,
+  type Ease,
+  type Events,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import type { Box } from "./rest";
-import { unreachable } from "./unreachable";
 
 /** How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"`
  * leaves it and hides all outside the box. */
 export type CarrySize = "scale" | "clip" | "keep";
 
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function lerp(from: number, to: number, progress: number): number {
-  return from + (to - from) * progress;
-}
-
-function mix(from: Box, to: Box, progress: number): Box {
+function mixBox(from: Box, to: Box, progress: number): Box {
   return {
-    x: lerp(from.x, to.x, progress),
-    y: lerp(from.y, to.y, progress),
-    width: Math.max(0, lerp(from.width, to.width, progress)),
-    height: Math.max(0, lerp(from.height, to.height, progress)),
+    x: mix(from.x, to.x, progress),
+    y: mix(from.y, to.y, progress),
+    width: Math.max(0, mix(from.width, to.width, progress)),
+    height: Math.max(0, mix(from.height, to.height, progress)),
   };
 }
 
@@ -43,7 +43,7 @@ export function carry(
   if (absent(given) && absent(target)) return {};
   const from = absent(given) ? target : given;
   const to = absent(target) ? from : target;
-  const drawn = mix(from, to, progress);
+  const drawn = mixBox(from, to, progress);
   const moved: { x?: number; y?: number; scaleX?: number; scaleY?: number } = {};
   if (drawn.x !== own.x) moved.x = drawn.x - own.x;
   if (drawn.y !== own.y) moved.y = drawn.y - own.y;
@@ -125,13 +125,13 @@ export function carried(options: CarriedOptions): Pose2d {
   }
   changes.reverse();
   const share = (t: number, change: Change): number =>
-    t <= change.at ? 0 : ease(clamp01((t - change.at) / ms));
+    t <= change.at ? 0 : ease(clamp((t - change.at) / ms, 0, 1));
   let from = later;
   for (let index = 0; index + 1 < changes.length; index += 1) {
     const change = changes[index];
     const next = changes[index + 1];
     if (change === undefined || next === undefined) continue;
-    from = mix(from, change.box, share(next.at, change));
+    from = mixBox(from, change.box, share(next.at, change));
   }
   const change = changes[changes.length - 1];
   if (change === undefined || now - change.at >= ms) return carry(own, settled, settled, 1, size);

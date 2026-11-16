@@ -1,6 +1,6 @@
+import { unreachable } from "@gerak/core";
 import RAPIER from "@dimforge/rapier2d-deterministic-compat";
 import { packSnapshot, unpackSnapshot } from "./snapshot";
-import { unreachable } from "./unreachable";
 import type { BodySpec, BodyState, Collider, Contact, PhysicsWorld, Surface } from "@gerak/physics";
 
 /** Stage px per Rapier metre: Rapier's tolerances are tuned for bodies about a metre across. */

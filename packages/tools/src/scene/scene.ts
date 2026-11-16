@@ -5,6 +5,7 @@ import {
   type Events,
   type MotionEvent,
   type Time,
+  unreachable,
 } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
@@ -18,7 +19,6 @@ import {
 } from "@gerak/stage";
 import { readDesign, type Design } from "./design";
 import { parseNumbers } from "../page/args";
-import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
 /** One named beat of a stage module's story, in ms. */

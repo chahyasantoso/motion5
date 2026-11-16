@@ -1,4 +1,5 @@
-import type { Matrix, ShapeGeometry } from "./svg-geometry";
+import type { Matrix2d } from "@gerak/core";
+import type { ShapeGeometry } from "./svg-geometry";
 
 /** Something the import cannot carry, by element and why. */
 export interface LeftOut {
@@ -26,7 +27,7 @@ export interface RawGradient {
   readonly id: string;
   readonly units: "objectBoundingBox" | "userSpaceOnUse";
   readonly attributes: Readonly<Record<string, string>>;
-  readonly transform: Matrix;
+  readonly transform: Matrix2d;
   readonly spread: string | null;
   readonly stops: readonly RawStop[];
 }
@@ -38,7 +39,7 @@ export interface RawPattern {
   readonly units: "objectBoundingBox" | "userSpaceOnUse";
   readonly contentUnits: "objectBoundingBox" | "userSpaceOnUse";
   readonly attributes: Readonly<Record<string, string>>;
-  readonly transform: Matrix;
+  readonly transform: Matrix2d;
   readonly markup: string;
   readonly hasViewBox: boolean;
 }
@@ -60,7 +61,7 @@ export interface RawShape {
   readonly label: string | null;
   readonly geometry: ShapeGeometry;
   /** From the shape's own units to the root's user space (the viewBox's). */
-  readonly matrix: Matrix;
+  readonly matrix: Matrix2d;
   readonly fill: RawPaint;
   readonly stroke: RawPaint;
   readonly strokeWidth: number;
@@ -109,8 +110,8 @@ export function extractSvg(): Extracted {
     const value = Number.parseFloat(text);
     return Number.isFinite(value) ? value : fallback;
   };
-  const matrixOf = (m: DOMMatrixReadOnly): Matrix => [m.a, m.b, m.c, m.d, m.e, m.f];
-  const matrixAttribute = (element: Element, attribute: string): Matrix => {
+  const matrixOf = (m: DOMMatrixReadOnly): Matrix2d => [m.a, m.b, m.c, m.d, m.e, m.f];
+  const matrixAttribute = (element: Element, attribute: string): Matrix2d => {
     const list =
       attribute === "gradientTransform" &&
       (element instanceof SVGLinearGradientElement || element instanceof SVGRadialGradientElement)

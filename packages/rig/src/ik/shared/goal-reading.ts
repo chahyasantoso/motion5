@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 
 /**
  * One goal's coordinates, read as a point when finite and as a direction when any axis is infinite.

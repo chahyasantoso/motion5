@@ -1,5 +1,4 @@
-import { unreachable } from "../../unreachable";
-import { clamp, readNumber, segmentExtent } from "../../frame/frame";
+import { readNumber, segmentExtent } from "../../frame/frame";
 import {
   add3,
   cross3,
@@ -18,6 +17,8 @@ import {
   type Euler3d,
   type Matrix3,
   type Vec3,
+  unreachable,
+  clamp,
 } from "@gerak/core";
 import {
   effectiveLink3d,

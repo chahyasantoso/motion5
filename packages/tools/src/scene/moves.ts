@@ -1,8 +1,14 @@
 import { type Descriptors } from "@gerak/moves";
-import { CUSTOM_FIELD, atProgress, valueField, type Time, type ValueField } from "@gerak/core";
+import {
+  CUSTOM_FIELD,
+  atProgress,
+  valueField,
+  type Time,
+  type ValueField,
+  unreachable,
+} from "@gerak/core";
 import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { DEFAULT_LIMITS } from "../page/check";
-import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";
 
 /** What the gate reads of a move: its declaration's fields; the gate calls it as the function it is. */

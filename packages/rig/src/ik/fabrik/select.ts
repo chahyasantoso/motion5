@@ -1,9 +1,9 @@
+import { unreachable } from "@gerak/core";
 import { segmentExtent, type WorldFrame } from "../../frame/frame";
 import type { SolveMember } from "../shared/member";
 import type { FabrikSolution } from "./solution";
 import type { CompromiseRule } from "../shared/goal";
 import type { IterativeQuality } from "../shared/result";
-import { unreachable } from "../../unreachable";
 import { fabrikResidualOutranks } from "./cap";
 import { CENTRE_LEGAL_SEED, type FabrikSeed, type LegalSeed, type LegalSeedFraction } from "./seed";
 

@@ -7,11 +7,12 @@ import {
   type Pose2d,
   type Span,
   type Time,
+  pathBounds,
+  unreachable,
 } from "@gerak/core";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   blendShapes,
-  boundsOf,
   castNames,
   DEFAULT_FRAME,
   describeLoop,
@@ -36,7 +37,6 @@ import type { PointerLike } from "./events";
 import type { FrameSource } from "./frames";
 import { partPaints } from "./paints";
 import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
-import { unreachable } from "./unreachable";
 
 /** The style properties the stage writes beside a value's; a page element's style has them all. */
 export interface StageStyle extends RenderStyle {
@@ -248,7 +248,7 @@ interface Stroke<S> {
 
 /** The box a stroke is placed and viewed by: its bounds, grown about their centre to 1 px on a side thinner than that. */
 function strokeBox(cubics: readonly Cubic2d[]): Box {
-  const box = boundsOf(cubics);
+  const box = pathBounds(cubics);
   const grown = (from: number, size: number): readonly [number, number] =>
     size >= 1 ? [from, size] : [from + size / 2 - 0.5, 1];
   const [x, width] = grown(box.x, box.width);

@@ -3,8 +3,7 @@ import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import * as moves from "@gerak/moves";
-import { unreachable } from "../page/unreachable";
-import { valueField } from "@gerak/core";
+import { valueField, unreachable } from "@gerak/core";
 import { partContract, type PartContract } from "@gerak/moves";
 import { briefFolders } from "./briefs";
 

@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, sep } from "node:path";
-import type { Cubic2d } from "@gerak/core";
+import { pathBounds, transformPath, type Cubic2d, type Matrix2d } from "@gerak/core";
 import { matchOutlines } from "@gerak/stage";
 import { withPage } from "../page/page";
 import { pieceFiles } from "./briefs";
@@ -23,15 +23,7 @@ import {
   type RawPaint,
   type RawPattern,
 } from "./svg-extract";
-import {
-  isEven,
-  isIdentity,
-  lengthScale,
-  multiply,
-  outlinesOf,
-  transformed,
-  type Matrix,
-} from "./svg-geometry";
+import { isEven, isIdentity, lengthScale, multiply, outlinesOf } from "./svg-geometry";
 
 /** The module written and what it holds, or `refused` with why; nothing is written then. */
 export type ImportResult =
@@ -92,7 +84,7 @@ function colour(css: string): string {
 }
 
 /** ` name="matrix(...)"`, or nothing for a matrix that moves nothing. */
-function transformAttribute(name: string, matrix: Matrix): string {
+function transformAttribute(name: string, matrix: Matrix2d): string {
   const flat = matrix.every(
     (value, index) => Math.abs(value - (index === 0 || index === 3 ? 1 : 0)) < 1e-9,
   );
@@ -138,7 +130,7 @@ class Defs {
   /** `url(#id)` for a gradient or pattern as it lands on one shape, or why it cannot. */
   place(
     paint: Extract<RawPaint, { kind: "server" }>,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     const { server } = paint;
     switch (server.kind) {
@@ -157,7 +149,7 @@ class Defs {
   private gradient(
     server: RawGradient,
     box: Box,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     const boxed = server.units === "objectBoundingBox";
     if (boxed && !(box.width > 0 && box.height > 0))
@@ -225,7 +217,7 @@ class Defs {
 
   private pattern(
     server: RawPattern,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     if (
       server.units !== "userSpaceOnUse" ||
@@ -281,29 +273,8 @@ interface Placement {
 
 /** The extent of cubics given as eight numbers each, from points along every curve. */
 function boundsOf(cubics: readonly (readonly number[])[]): Part["bounds"] {
-  let x0 = Infinity;
-  let y0 = Infinity;
-  let x1 = -Infinity;
-  let y1 = -Infinity;
-  for (const cubic of cubics)
-    for (let step = 0; step <= 32; step += 1) {
-      const t = step / 32;
-      const u = 1 - t;
-      const at = (
-        a: number | undefined,
-        b: number | undefined,
-        c: number | undefined,
-        d: number | undefined,
-      ) =>
-        u ** 3 * (a ?? 0) + 3 * u * u * t * (b ?? 0) + 3 * u * t * t * (c ?? 0) + t ** 3 * (d ?? 0);
-      const x = at(cubic[0], cubic[2], cubic[4], cubic[6]);
-      const y = at(cubic[1], cubic[3], cubic[5], cubic[7]);
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-      y1 = Math.max(y1, y);
-    }
-  return { x0, y0, x1, y1 };
+  const box = pathBounds(asCubics(cubics), "curve");
+  return { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height };
 }
 
 /** The part's name under the piece's prefix: `penguin` and `body` make `penguinBody`. */
@@ -325,7 +296,14 @@ function build(
   const defs = new Defs(viewBox, placement.prefix);
   // A placement is a scale and a shift, so a part that turns outward from a margin still shows.
   const { at, scale: grown } = placement;
-  const toFrame: Matrix = [grown, 0, 0, grown, at.x - viewBox.x * grown, at.y - viewBox.y * grown];
+  const toFrame: Matrix2d = [
+    grown,
+    0,
+    0,
+    grown,
+    at.x - viewBox.x * grown,
+    at.y - viewBox.y * grown,
+  ];
   const used = new Set<string>();
   let unnamed = 0;
   const parts: Part[] = [];
@@ -339,7 +317,9 @@ function build(
     if (parsed.error !== undefined)
       leftOut.push({ element: shape.element, reason: `path data stops early: ${parsed.error}` });
     const cubics = parsed.outlines.flatMap((outline) =>
-      outline.cubics.map((cubic) => transformed(cubic, matrix).map(thousandth)),
+      transformPath(outline, matrix).map((c) =>
+        [c.x0, c.y0, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3].map(thousandth),
+      ),
     );
     if (cubics.length === 0) {
       leftOut.push({ element: shape.element, reason: "no outline to draw" });

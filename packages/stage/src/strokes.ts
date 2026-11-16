@@ -13,20 +13,12 @@ export interface StrokeLoop {
   readonly behind: readonly string[];
 }
 
-/** The box the control points of `cubics` span, from its top-left, never thinner than 1 so a
- * straight line still shows. */
-export function boundsOf(cubics: readonly Cubic2d[]): Box {
-  const xs = cubics.flatMap((c) => [c.x0, c.x1, c.x2, c.x3]);
-  const ys = cubics.flatMap((c) => [c.y0, c.y1, c.y2, c.y3]);
-  const span = (values: readonly number[]): readonly [number, number] => {
-    const low = values.reduce((least, value) => Math.min(least, value), Infinity);
-    const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
-    const size = values.length === 0 ? 0 : high - low;
-    const from = values.length === 0 ? 0 : low;
-    return size > 0 ? [from, size] : [from - 0.5, 1];
-  };
-  const [x, width] = span(xs);
-  const [y, height] = span(ys);
+/** A box never thinner than 1 on a side, so a straight line still shows: a side with no size opens to 1 about where it was. */
+export function thickened(box: Box): Box {
+  const side = (from: number, size: number): readonly [number, number] =>
+    size > 0 ? [from, size] : [from - 0.5, 1];
+  const [x, width] = side(box.x, box.width);
+  const [y, height] = side(box.y, box.height);
   return { x, y, width, height };
 }
 

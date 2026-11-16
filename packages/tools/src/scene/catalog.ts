@@ -1,3 +1,4 @@
+import { unreachable } from "@gerak/core";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -16,7 +17,6 @@ import {
   type OptionField,
   type StyleCard,
 } from "@gerak/moves";
-import { unreachable } from "../page/unreachable";
 import { briefFolders, sourceFiles } from "./briefs";
 import { qualityNames, rangesOf, styleCards } from "./cards";
 import {

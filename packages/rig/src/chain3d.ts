@@ -14,6 +14,7 @@ import {
   type Matrix3,
   type Quaternion,
   type Vec3,
+  unreachable,
 } from "@gerak/core";
 import { composeWorld3d, readPivotOffset3d, type WorldFrame3d } from "./frame/frame3d";
 import { readInfluence } from "./ik/shared/goal";
@@ -22,7 +23,6 @@ import type { ChainMember3d } from "./ik/solve3d/chain";
 import { FREE_JOINT3D, type JointLimit3d } from "./ik/solve3d/constraint";
 import type { SolveResult3d } from "./ik/solve3d/result";
 import { solveChain3d } from "./ik/solve3d/solve";
-import { unreachable } from "./unreachable";
 
 const EPSILON = 1e-9;
 

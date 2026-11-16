@@ -1,5 +1,4 @@
 import { jointConstrains } from "../../vocabulary";
-import { unreachable } from "../../unreachable";
 import {
   axisX3,
   canonicalDegrees,
@@ -16,6 +15,7 @@ import {
   type Matrix3,
   type Euler3d,
   type Vec3,
+  unreachable,
 } from "@gerak/core";
 import { swingTwist3d, twistAbout3d } from "../../frame/frame3d";
 import {

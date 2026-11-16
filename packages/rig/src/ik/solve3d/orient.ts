@@ -1,4 +1,3 @@
-import { unreachable } from "../../unreachable";
 import { readNumber, segmentExtent } from "../../frame/frame";
 import {
   eulerFromMatrix3d,
@@ -9,6 +8,7 @@ import {
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
+  unreachable,
 } from "@gerak/core";
 import { blendOrientation3d, swingTwist3d, type WorldFrame3d } from "../../frame/frame3d";
 import type { ChainMember3d } from "./chain";

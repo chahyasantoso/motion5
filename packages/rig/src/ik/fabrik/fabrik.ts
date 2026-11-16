@@ -1,3 +1,4 @@
+import { unreachable } from "@gerak/core";
 import {
   baseTipFromPivot,
   pivotFromBaseTip,
@@ -23,7 +24,6 @@ import {
   fabrikRelativeMove,
   type FabrikConstraint,
 } from "./cap";
-import { unreachable } from "../../unreachable";
 import { canonicalChain } from "../shared/topology";
 import {
   atBound,

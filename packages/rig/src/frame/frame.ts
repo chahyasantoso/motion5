@@ -35,11 +35,6 @@ export function readNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-/** `value` in `[min, max]`; `NaN` propagates, so `readNumber` first. */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 /** `from` toward `to` by `weight`, shorter arc; 0 or 1 returns that endpoint untouched. */
 export function lerpAngle(from: number, to: number, weight: number): number {
   if (weight <= 0) return from;

@@ -1,3 +1,4 @@
+import { unreachable } from "@gerak/core";
 import {
   LIMIT_CEILING,
   LIMIT_FLOOR,
@@ -5,7 +6,6 @@ import {
   MIN_ROTATION_KEY,
   readLimitDegree,
 } from "../../vocabulary";
-import { unreachable } from "../../unreachable";
 import type { DofBound } from "./descent";
 
 /** Sole runtime owner of joint-limit arithmetic and bend hint: FABRIK and `ik-chain.ts` clamp through it, never restate a bound. */

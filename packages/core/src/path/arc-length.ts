@@ -15,7 +15,7 @@ function distanceBetween(a: readonly number[], b: readonly number[]): number {
 }
 
 /** A sampled arc-length table over `segments` curves of any dimension, read back by distance. */
-export function arcLength(
+export function pathLength(
   segments: number,
   pointAt: (segment: number, t: number) => readonly number[],
 ): ArcLength {

@@ -1,4 +1,4 @@
-import { arcLength } from "./arc-length";
+import { pathLength } from "./arc-length";
 import type { Pose2d } from "../fields/pose";
 import type { Cubic2d } from "../geometry/shapes";
 
@@ -33,7 +33,7 @@ export function along(
   options: { readonly turn?: boolean } = {},
 ): Pose2d {
   if (cubics.length === 0) throw new RangeError("along: the path has no segments.");
-  const arc = arcLength(cubics.length, (index, t) => {
+  const arc = pathLength(cubics.length, (index, t) => {
     const c = cubics[index];
     if (c === undefined) throw new RangeError("along: the path has no segments.");
     const p = pointOf(c, t);

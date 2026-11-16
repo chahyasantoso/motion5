@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { mergeEvents, valueField } from "@gerak/core";
+import { mergeEvents, pathBounds, valueField, unreachable } from "@gerak/core";
 import {
   isLively,
   outsideRanges,
@@ -13,15 +13,14 @@ import { dirname, resolve } from "node:path";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {
   NO_REST,
-  boundsOf,
   describeLoop,
   drawInPasses,
   presentAt,
   restOfBounds,
+  thickened,
   type CastName,
   type Rest,
 } from "@gerak/stage";
-import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";
 import { qualityNames, rangesOf, styleCards } from "./cards";
 import { intentsOf, type Intent } from "./design";
@@ -396,7 +395,7 @@ function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] 
     if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
     switch (answer.kind) {
       case "drawn":
-        return restOfBounds(boundsOf(answer.cubics));
+        return restOfBounds(thickened(pathBounds(answer.cubics)));
       case "failed": {
         const { error } = answer;
         if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))

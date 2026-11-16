@@ -1,6 +1,11 @@
-import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/core";
-import { meets } from "@gerak/stage";
-import { unreachable } from "./unreachable";
+import {
+  valueField,
+  type Anchor,
+  type Cubic2d,
+  type Pose2d,
+  meets,
+  unreachable,
+} from "@gerak/core";
 
 /** The style properties a renderer writes; a real element's `CSSStyleDeclaration` has them all. */
 export interface RenderStyle {

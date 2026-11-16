@@ -1,3 +1,4 @@
+import { unreachable } from "@gerak/core";
 import type { BodySpec, BodyState, Collider, Contact, PhysicsWorld, Shape, Surface } from "./world";
 
 interface Vec {
@@ -80,10 +81,6 @@ const along = (a: Vec, b: Vec, t: number): Vec => ({
   x: a.x + (b.x - a.x) * t,
   y: a.y + (b.y - a.y) * t,
 });
-
-function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
-}
 
 function isBody(party: Body | Fixed): party is Body {
   return "inverseMass" in party;

@@ -1,4 +1,3 @@
-import { unreachable } from "../../unreachable";
 import { FABRIK_TOLERANCE } from "../fabrik/fabrik";
 import {
   add3,
@@ -17,6 +16,7 @@ import {
   type Euler3d,
   type Matrix3,
   type Vec3,
+  unreachable,
 } from "@gerak/core";
 import { type WorldFrame3d } from "../../frame/frame3d";
 import { bendBasis3d, rereadPole3d, UNBOUND_POLE3D, type Pole3d } from "./analytic";

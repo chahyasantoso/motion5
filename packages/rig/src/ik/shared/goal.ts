@@ -1,5 +1,5 @@
+import { unreachable } from "@gerak/core";
 import { INFLUENCE_KEY, readInfluenceValue } from "../../vocabulary";
-import { unreachable } from "../../unreachable";
 import type { WorldPoint } from "../../frame/frame";
 import type { SolveMember } from "./member";
 

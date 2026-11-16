@@ -1,7 +1,7 @@
+import { unreachable } from "@gerak/core";
 import type { Cubic2d, Time } from "@gerak/core";
 import { matchOutlines } from "./outlines";
 import type { Rest } from "./rest";
-import { unreachable } from "./unreachable";
 
 /** A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the
  * other members rest; the stage places the member at the stroke's box. */

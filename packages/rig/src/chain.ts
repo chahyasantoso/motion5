@@ -1,3 +1,4 @@
+import { unreachable } from "@gerak/core";
 import { parseBody, EXTERNAL_BASE, type BodyError, type BodyStructure } from "./body";
 import {
   ORIGIN,
@@ -14,7 +15,6 @@ import { readInfluence } from "./ik/shared/goal";
 import type { SolveMember } from "./ik/shared/member";
 import type { SolveResult } from "./ik/shared/result";
 import { solveChain } from "./ik/solve2d/solve";
-import { unreachable } from "./unreachable";
 
 /** One 2D bone: its length along its own x axis, a rest rotation in degrees, and an optional pivot offset. */
 export type Bone2d = {
