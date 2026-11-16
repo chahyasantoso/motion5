@@ -1,6 +1,6 @@
 # Split plan: core, modules and library
 
-**Status:** In progress, 2026-11-16: S0 done; wave 2 (S1a, S1b, S1c) next.
+**Status:** In progress, 2026-11-16: waves 1 and 2 done (S0, S1a, S1b, S1c); wave 3 (S1d, S2, S3) next.
 **Base:** `main` at `2a2021c6` (installable tools merged).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`,
 `docs/ADR-188-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -178,6 +178,12 @@ refused until removed. No package moves.
 every import in packages, apps, briefs, docs and templates from `@gerak/moves` to `@gerak/core`. Before and after,
 `gerak moves --json` prints the same records, and `gerak moves --parts` the same less exactly the moved primitives,
 which the commit message lists; the commit holds the move alone.
+
+Done as decided, with these placements: springs (`parts/dynamics`) in core `ease/`, `wave` in core `envelope/`,
+`keyframes` in `blend/`, the measures and `tally` (cut from `events.ts`, where `follow` and `react` stay) in `measure/`,
+the event list in `events/`; `shaken`, used only by library moves, stays in `@gerak/moves`; `isTokenName` moved to
+`@gerak/stage`, which owns tokens, and `@gerak/moves` imports it. The group baseline holds two lines: three imports
+rig (S2) and tools imports moves (S4).
 
 ### S1c. Fix-up (executor, after S1b)
 
