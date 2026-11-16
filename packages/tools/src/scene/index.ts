@@ -8,3 +8,4 @@ export * from "./guide";
 export * from "./init";
 export * from "./review";
 export * from "./limits";
+export * from "./installed";

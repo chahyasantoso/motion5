@@ -14,7 +14,7 @@ import {
   type CastName,
   type Rest,
 } from "@gerak/stage";
-import { installedPackages } from "../../bin/commands.mjs";
+import { installedPackages } from "./installed";
 import { SCENE_LIMITS } from "./limits";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
@@ -717,9 +717,9 @@ async function prepareFinders(
   | { readonly kind: "refused"; readonly message: string }
 > {
   const finders: ReviewFinder[] = [];
-  for (const { name, folder, gerak } of installedPackages()) {
-    if (gerak.review === undefined) continue;
-    const loaded: unknown = await import(pathToFileURL(resolve(folder, gerak.review)).href);
+  for (const { name, folder, review } of installedPackages()) {
+    if (review === undefined) continue;
+    const loaded: unknown = await import(pathToFileURL(resolve(folder, review)).href);
     const prepare: unknown = Reflect.get(Object(loaded), "prepare");
     if (typeof prepare !== "function")
       return { kind: "refused", message: `${name}: its review module exports no \`prepare\`.` };

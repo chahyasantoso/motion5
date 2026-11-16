@@ -1,8 +1,6 @@
-import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
 const SELF = "@gerak/tools";
 
 /** The commands this package runs itself: each name's script in this folder and a one-line summary. */
@@ -34,31 +32,6 @@ export const COMMANDS = Object.freeze({
   timeline: { file: "motion-timeline.mjs", summary: "draw a scene file's timeline" },
 });
 
-/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward, once by its real folder. */
-export function installedPackages(starts = [process.env.INIT_CWD ?? process.cwd(), HERE]) {
-  const seen = new Set();
-  const found = [];
-  for (const start of starts) {
-    for (let dir = resolve(start); ; dir = dirname(dir)) {
-      const scope = join(dir, "node_modules", "@gerak");
-      if (existsSync(scope)) {
-        for (const entry of readdirSync(scope).sort()) {
-          const folder = join(scope, entry);
-          const manifestFile = join(folder, "package.json");
-          if (!existsSync(manifestFile)) continue;
-          const real = realpathSync(folder);
-          if (seen.has(real)) continue;
-          seen.add(real);
-          const manifest = JSON.parse(readFileSync(manifestFile, "utf8"));
-          found.push({ name: manifest.name, folder: real, gerak: manifest.gerak ?? {} });
-        }
-      }
-      if (dirname(dir) === dir) break;
-    }
-  }
-  return found;
-}
-
 /** Every command `gerak` runs, name to `{ url, summary, from }`: this package's, then each installed package's declared list. A name declared twice is an error naming both. */
 export async function listCommands(options = {}) {
   const own = Object.entries(COMMANDS).map(([name, { file, summary }]) => [
@@ -66,9 +39,11 @@ export async function listCommands(options = {}) {
     { url: new URL(file, import.meta.url).href, summary, from: SELF },
   ]);
   const declared = [];
-  for (const { name: from, folder, gerak } of installedPackages(options.starts)) {
-    if (from === SELF || typeof gerak.commands !== "string") continue;
-    const module = pathToFileURL(resolve(folder, gerak.commands));
+  const { tool } = await import("./load.mjs");
+  const { installedPackages } = await import(tool("scene/installed"));
+  for (const { name: from, folder, commands } of installedPackages(options.starts)) {
+    if (from === SELF || commands === undefined) continue;
+    const module = pathToFileURL(resolve(folder, commands));
     const listed = (await import(module.href)).COMMANDS;
     for (const [name, { file, summary }] of Object.entries(listed))
       declared.push([name, { url: new URL(file, module).href, summary, from }]);

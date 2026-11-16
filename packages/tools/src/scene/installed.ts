@@ -1,0 +1,50 @@
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** An installed `@gerak/*` package: its name, real folder and the commands and review module it declares. */
+export interface InstalledPackage {
+  readonly name: string;
+  readonly folder: string;
+  readonly commands: string | undefined;
+  readonly review: string | undefined;
+}
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+function textOf(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward (the caller's folder, then this package's), once by its real folder. */
+export function installedPackages(
+  starts: readonly string[] = [process.env["INIT_CWD"] ?? process.cwd(), HERE],
+): readonly InstalledPackage[] {
+  const seen = new Set<string>();
+  const found: InstalledPackage[] = [];
+  for (const start of starts) {
+    for (let dir = resolve(start); ; dir = dirname(dir)) {
+      const scope = join(dir, "node_modules", "@gerak");
+      if (existsSync(scope)) {
+        for (const entry of readdirSync(scope).sort()) {
+          const folder = join(scope, entry);
+          const manifestFile = join(folder, "package.json");
+          if (!existsSync(manifestFile)) continue;
+          const real = realpathSync(folder);
+          if (seen.has(real)) continue;
+          seen.add(real);
+          const manifest: unknown = JSON.parse(readFileSync(manifestFile, "utf8"));
+          const gerak: unknown = Reflect.get(Object(manifest), "gerak");
+          found.push({
+            name: textOf(Reflect.get(Object(manifest), "name")) ?? entry,
+            folder: real,
+            commands: textOf(Reflect.get(Object(gerak), "commands")),
+            review: textOf(Reflect.get(Object(gerak), "review")),
+          });
+        }
+      }
+      if (dirname(dir) === dir) break;
+    }
+  }
+  return found;
+}
