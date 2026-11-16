@@ -12,7 +12,8 @@
   "files": [
     "dist",
     "bin",
-    "guide",
+    "skill",
+    "docs",
     "LICENSE"
   ],
   "dependencies": {

@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { INSTALLABLE_PACKAGES } from "./installable-packages.mjs";
 
@@ -95,22 +95,11 @@ function copyTemplates(source, target) {
   }
 }
 
-/** Writes the guide the tools ship into packages/tools/guide, from the built `guideFiles`; the folder is rebuilt each time. */
-function writeGuide(packageRoot) {
-  const guide = `${packageRoot}/guide`;
-  rmSync(guide, { recursive: true, force: true });
-  const module = pathToFileURL(`${packageRoot}/dist/scene/guide.js`).href;
-  const code = `const { guideFiles } = await import(${JSON.stringify(module)});
-console.log(JSON.stringify(guideFiles(process.argv[1])));`;
-  const run = spawnSync(process.execPath, ["--input-type=module", "-e", code, root], {
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (run.status !== 0) throw new Error(`build: the guide failed: ${run.stderr ?? ""}`);
-  for (const [name, text] of Object.entries(JSON.parse(run.stdout))) {
-    mkdirSync(dirname(`${guide}/${name}`), { recursive: true });
-    writeFileSync(`${guide}/${name}`, text);
-  }
+/** Copies the make-motion skill into packages/tools/skill, the copy `gerak init` writes when installed. */
+function writeSkill(packageRoot) {
+  rmSync(`${packageRoot}/skill`, { recursive: true, force: true });
+  mkdirSync(`${packageRoot}/skill`, { recursive: true });
+  copyFileSync(`${root}.claude/skills/make-motion/SKILL.md`, `${packageRoot}/skill/SKILL.md`);
 }
 
 /** Builds each installable package into its dist/ with its tsconfig.build.json, dependencies first. */
@@ -145,7 +134,7 @@ export function build(directories = INSTALLABLE_PACKAGES, log = console.log) {
     copyTemplates(`${packageRoot}/src`, `${packageRoot}/dist`);
     if (directory === "tools") {
       try {
-        writeGuide(packageRoot);
+        writeSkill(packageRoot);
       } catch (error) {
         log(`FAIL build ${directory}`);
         log(error instanceof Error ? error.message : String(error));

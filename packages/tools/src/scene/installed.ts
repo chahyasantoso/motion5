@@ -16,7 +16,7 @@ function textOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward (the caller's folder, then this package's), once by its real folder and name, the nearest first as node resolves. */
+/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward, once by folder and name, the nearest first as node resolves. */
 export function installedPackages(
   starts: readonly string[] = [process.env["INIT_CWD"] ?? process.cwd(), HERE],
 ): readonly InstalledPackage[] {

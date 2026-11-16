@@ -4,7 +4,7 @@ export * from "./import-svg";
 export * from "./joints";
 export * from "./briefs";
 export * from "./page-files";
-export * from "./guide";
+export * from "./skill";
 export * from "./init";
 export * from "./review";
 export * from "./limits";

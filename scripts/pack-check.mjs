@@ -1,5 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -186,6 +194,24 @@ function fileLinks(text) {
     .map((link) => link.replace(/#.*$/, ""));
 }
 
+const READ_WHOLE_BYTES = 20 * 1024;
+const READ_WHOLE_PAGES = [
+  "node_modules/@gerak/core/docs/core.md",
+  "node_modules/@gerak/stage/docs/stage.md",
+];
+
+/** The first problem with the installed read-whole pages or the AGENTS.md that names them, or undefined. */
+function readWholeError(project, exists = existsSync) {
+  for (const page of READ_WHOLE_PAGES) {
+    if (!exists(join(project, page))) return `missing ${page}`;
+    const size = statSync(join(project, page)).size;
+    if (size > READ_WHOLE_BYTES) return `${page} is ${size} bytes, over ${READ_WHOLE_BYTES}`;
+  }
+  const agents = readFileSync(join(project, "AGENTS.md"), "utf8");
+  const unnamed = READ_WHOLE_PAGES.filter((page) => !agents.includes(page));
+  return unnamed.length > 0 ? `AGENTS.md does not name ${unnamed.join(", ")}` : undefined;
+}
+
 /** Runs `gerak init` in a project holding only a package.json and the installed tarballs; the first failure, or undefined. */
 function initError(project, exists = existsSync) {
   const run = sh("npx --no-install gerak init", project);
@@ -197,12 +223,14 @@ function initError(project, exists = existsSync) {
     ),
     skill,
     "AGENTS.md",
-    "node_modules/@gerak/tools/guide/agent-motion.md",
+    ...READ_WHOLE_PAGES,
   ];
   const absent = expected.filter((file) => !exists(join(project, file)));
   if (absent.length > 0) return `missing ${absent.join(", ")}`;
   const entry = JSON.parse(readFileSync(join(project, "package.json"), "utf8")).gerak?.pieces;
   if (entry !== "pieces") return "package.json names no gerak.pieces";
+  const whole = readWholeError(project, exists);
+  if (whole !== undefined) return whole;
   const links = fileLinks(readFileSync(join(project, skill), "utf8"));
   const broken = links.filter((link) => !exists(resolve(dirname(join(project, skill)), link)));
   if (links.length === 0) return "the skill has no links";

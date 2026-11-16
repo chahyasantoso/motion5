@@ -1,12 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { guideFiles, pageFiles } from "@gerak/tools/scene";
+import { initProject, pageFiles, shippedSkill, type InstalledPackage } from "@gerak/tools/scene";
 
-const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const INIT = fileURLToPath(new URL("../bin/motion-init.mjs", import.meta.url));
 const SKILL = ".claude/skills/make-motion/SKILL.md";
 const scratch: string[] = [];
@@ -16,6 +15,17 @@ function project(manifest: string | undefined): string {
   scratch.push(dir);
   if (manifest !== undefined) writeFileSync(join(dir, "package.json"), manifest);
   return dir;
+}
+
+/** An installed package whose folder holds a docs index when `docs` is true. */
+function package_(name: string, docs: boolean): InstalledPackage {
+  const folder = mkdtempSync(join(tmpdir(), "gerak-pkg-"));
+  scratch.push(folder);
+  if (docs) {
+    mkdirSync(join(folder, "docs"));
+    writeFileSync(join(folder, "docs", "README.md"), "index\n");
+  }
+  return { name: `@gerak/${name}`, folder, commands: undefined, review: undefined };
 }
 
 function init(caller: string, args: string[] = []) {
@@ -63,7 +73,8 @@ describe("gerak init", () => {
       expect(readFileSync(join(dir, "pieces", name), "utf8")).toBe(pageFiles()[name]);
     expect(existsSync(join(dir, SKILL))).toBe(true);
     const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
-    expect(agents).toContain("node_modules/@gerak/tools/guide/agent-motion.md");
+    expect(agents).toContain("node_modules/@gerak/core/docs/core.md");
+    expect(agents).toContain("node_modules/@gerak/stage/docs/stage.md");
     expect(agents).toContain("pieces");
     const text = readFileSync(join(dir, "package.json"), "utf8");
     expect(text.endsWith("}\n")).toBe(true);
@@ -136,26 +147,46 @@ describe("gerak init", () => {
     expect(readFileSync(join(dir, "pieces", "demo", "brief.md"), "utf8")).toBe("brief\n");
   });
 
-  it("writes a skill whose links name files of the shipped guide", () => {
+  it("writes a skill whose links name the read-whole pages under node_modules", () => {
     const dir = project("{}");
     init(dir);
     const skill = readFileSync(join(dir, SKILL), "utf8");
     const links = [...skill.matchAll(/\]\(([^)\s]+)\)/g)].map((match) => match[1] ?? "");
-    const guided = links.filter((link) => link.includes("@gerak/tools/guide/"));
-    expect(guided.length).toBeGreaterThan(0);
-    const prefix = "../../../node_modules/@gerak/tools/guide/";
-    const names = Object.keys(guideFiles(REPO));
-    for (const link of guided) {
-      expect(link.startsWith(prefix), link).toBe(true);
-      expect(names, link).toContain(link.slice(prefix.length).replace(/#.*$/, ""));
-      expect(resolve(dirname(join(dir, SKILL)), link)).toBe(
-        resolve(
-          dir,
-          "node_modules/@gerak/tools/guide",
-          link.slice(prefix.length).replace(/#.*$/, ""),
-        ),
-      );
-    }
+    expect(links).toEqual([
+      "../../../node_modules/@gerak/core/docs/core.md",
+      "../../../node_modules/@gerak/stage/docs/stage.md",
+    ]);
+  });
+
+  it("names the two read-whole pages and nothing else with only the core packages installed", () => {
+    const dir = project("{}");
+    const installed = [package_("core", true), package_("stage", true), package_("tools", false)];
+    const result = initProject(dir, "pieces", shippedSkill(), installed);
+    expect(result.kind).toBe("written");
+    const lines = readFileSync(join(dir, "AGENTS.md"), "utf8")
+      .split("\n")
+      .filter((line) => line.includes("node_modules"));
+    expect(lines).toEqual([
+      "- Read `node_modules/@gerak/core/docs/core.md` whole before making motion.",
+      "- Read `node_modules/@gerak/stage/docs/stage.md` whole before making motion.",
+    ]);
+  });
+
+  it("adds one line for each installed module or library package that has docs", () => {
+    const dir = project("{}");
+    const installed = [
+      package_("core", true),
+      package_("stage", true),
+      package_("rig", true),
+      package_("moves", true),
+      package_("rapier", false),
+    ];
+    initProject(dir, "pieces", shippedSkill(), installed);
+    const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+    expect(agents).toContain("`node_modules/@gerak/rig/docs/README.md`");
+    expect(agents).toContain("`node_modules/@gerak/moves/docs/README.md`");
+    expect(agents).not.toContain("rapier");
+    expect(agents).not.toContain("core/docs/README.md");
   });
 
   it("refuses a gerak entry that is not an object, and a package.json that is not JSON, writing nothing", () => {

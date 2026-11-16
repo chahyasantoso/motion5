@@ -10,7 +10,7 @@ import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-pa
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
 const SHIPPED: Readonly<Record<string, readonly string[]>> = {
-  tools: ["dist", "bin", "guide", "LICENSE"],
+  tools: ["dist", "bin", "skill", "docs", "LICENSE"],
   "moves-tools": ["dist", "bin", "LICENSE"],
 };
 
