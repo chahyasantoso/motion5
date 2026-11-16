@@ -28,7 +28,7 @@ this plan built, the pull request says so and recommends narrowing gerak to its 
 
 | Thing | What it is | Lives in | Owner |
 | --- | --- | --- | --- |
-| A record | one usable thing: a field, part, move, compose helper or quality | its declaration | the declaring package or brief |
+| A record | one usable library thing: a part (a timing included, kind `time`), move or quality | its declaration | the declaring package or brief |
 | `does`, `tags` | a one-line purpose and at least three tag words, required on every record | the declaration | the declaration |
 | A row | a record as data, typed `Row` with `kind: RowKind` | `packages/tools/src/scene/rows.ts` | `rows.ts` |
 | Rows from source | every record read from declarations | `rowsFromSource(root)` | `rows.ts` |
@@ -39,15 +39,14 @@ this plan built, the pull request says so and recommends narrowing gerak to its 
 
 - **One reader, two producers.** `find` reads a `Row[]`; source-reading and the shipped JSON are two producers of it,
   and a test says they agree for every package.
-- `RowKind` is a closed union, `field | part | move | compose | quality`, with the part's kind and the move's role as
-  their own fields; `find` and the build read it with an exhaustive `switch`.
+- `RowKind` is a closed union, `part | move | quality`, with the part's kind and the move's role as their own fields;
+  core's fields and time helpers are read whole and are not rows; `find` and the build read it with an exhaustive `switch`.
 - A row: `id`, `kind`, `group` (part kind or move role), `does`, `tags`, `signature`, `import`, `sample`, `changes`,
   `renders`, `measured` and `uses` (both from the catalog's existing move records), `source`.
 
-## 3. Decisions to record (ADR-189)
+## 3. Decisions to record (ADR-190)
 
-- **One index, generated, never edited.** Every `defineMove`, `definePart`, field row, compose helper and quality
-  declares `does` and `tags` (a count of at least three; wording is the lead's review). The gates refuse a record
+- **One index, generated, never edited.** Every `defineMove`, `definePart` and quality declares `does` and `tags` (a count of at least three; wording is the lead's review). The gates refuse a record
   without them, as warnings until S2 lands and as refusals in S2's last commit.
 - **`gerak find` is the one lookup.** Score per word: 3 for a tag, 2 for the id, 1 for `does`; a word matches after a
   suffix stemmer in `find.ts` (lowercase; strips `ing`, `ed`, `es`, `s`); any word scores; ties by kind order then id.
@@ -56,14 +55,15 @@ this plan built, the pull request says so and recommends narrowing gerak to its 
   `--parts` and `--anatomy` are removed; `gerak moves <id>`, `--check`, `--design`, `--style` and the measured queries
   stay.
 - **A brief's parts sit in kind folders,** `src/parts/<kind>/`, refused elsewhere, as in `@gerak/moves`. This amends
-  ADR-187's "There is no separate kit folder" only in that. A brief's own `compose/` and `fields/` wait until two
-  briefs need them.
+  ADR-187's "There is no separate kit folder" only in that. A brief's own timings are parts of kind `time`; a brief's
+  own `fields/` waits until two briefs need it.
 - **Plan, needs, find, build.** Before scene code an agent commits `PLAN.md`: the storyboard, then
   `| need | plan line | query | result |`. A need is one capability the plan requires, written as what it does ("a
   number that counts up in Indonesian format"), not how and not a thing; one row per capability. `result` is a record
   id or the id of the record it built. `gerak new` writes the empty table beside a new brief. `gerak review` on a piece
   adds one finding when its brief has no `PLAN.md` or a need with an empty result; nothing more.
-- **Compose is records.** `lanes`, `loop`, `repeated`, `reversed`, `sequence` and `combine` get `kind: compose`.
+- **No compose rows.** The split merges composition into core's `time` folder, read whole; only library timings,
+  parts of kind `time`, are rows.
 - **Promotions move, never copy.** `gerak import-svg` and the stage's outline matching import the moved parts.
 - **One owner for shared helpers.** `clamp` stays in `@gerak/rig` and `@gerak/moves` registers that same function as
   a utility part; `unreachable` is exported by `@gerak/rig`, and every package that keeps a copy (dom, moves, rapier,
@@ -77,7 +77,7 @@ this plan built, the pull request says so and recommends narrowing gerak to its 
 
 ### S0. Decision, schema, the failing search test (planner)
 
-ADR-189 and its index line. `Row`, `RowKind`, and `does`/`tags` on `defineMove`, `definePart` and field rows, the gate
+ADR-190 and its index line. `Row`, `RowKind`, and `does`/`tags` on `defineMove`, `definePart` and qualities, the gate
 warning. `test/search/needs.json`: about 30 needs in agents' own words from the NADI and launch-night interviews and
 S1, each with the id it must find in the top 3, using the names this plan fixes (S3a, S5); a name changes only in the
 slice that changes it. A test reading it, failing while `find` does not exist.
@@ -89,9 +89,8 @@ project. Its needs, with NADI's, feed `needs.json` and S5's list.
 
 ### S2. Fill the records (executors, parallel by folder)
 
-`does` and `tags` on every field, part, move, compose helper and quality in `@gerak/moves`, and on the `@gerak/stage`
-exports a scene uses; compose registered; the gate turned to refusal last. Folders: `fields`+`style`, `parts`,
-`moves`+`compose`, `stage`.
+`does` and `tags` on every part, move and quality in `@gerak/moves`; the gate turned to refusal last. Folders:
+`style`, `parts`, `moves`.
 
 ### S3a. Promoted geometry (executor)
 

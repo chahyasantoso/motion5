@@ -42,8 +42,9 @@ parts that carry a choice, so they are library; `cubicOut`, a sine wave and `vel
 ```text
 packages/
   core/
-    core/     @gerak/core     primitives: fields, Pose2d/Pose3d, combine, rotation maths, Time, span, clocks,
-                              arranging time (sequence, lanes, loop, repeated, reversed), blend and keyframes, the
+    core/     @gerak/core     primitives: fields, Pose2d/Pose3d, combine, rotation maths, Time, clocks, the time
+                              helpers in one `time` folder (span, chain, lanes, loop, sequence, repeated, reversed,
+                              timeAt), blend and keyframes, the
                               standard eases and springs, basic envelopes and waves, geometry and paths, measures
                               (velocity, speedOf, tally), events, seeded random, clamp, unreachable
     stage/    @gerak/stage    the piece contract: cast, beats, skins, scene, layouts, carried, outlines
@@ -72,6 +73,7 @@ packages/
 | Question | Owner |
 | --- | --- |
 | What a field is, how values combine, what time is | `@gerak/core` |
+| How time is arranged: the `Timing` shape and the time helpers | `@gerak/core`'s `time` folder; a timing that carries a choice is a library part of kind `time` |
 | Euler, matrix and quaternion maths | `@gerak/core`, moved from rig |
 | What a primitive is | `@gerak/core`: documented by its doc comment, read whole, never registered |
 | What a part is, and the closed set of part kinds | `@gerak/moves`; promoted brief parts land here, never in core |
@@ -84,7 +86,7 @@ packages/
 
 - **Three groups, imports only downward,** as in section 2. Supersedes ADR-185's layers inside `@gerak/moves` and
   ADR-187's "a brief imports `@gerak/moves`": a brief imports core, and a module or the library only if installed.
-- **`@gerak/core` is new** and takes from `@gerak/moves` its fields, time, compose and the primitives: `parts/blend`,
+- **`@gerak/core` is new** and takes from `@gerak/moves` its fields, `parts/time` and `compose/` merged into one `time` folder, and the primitives: `parts/blend`,
   `parts/ease`, `parts/dynamics`, `parts/envelope`, `parts/oscillation`, `parts/geometry`, `parts/path`, `parts/utility`,
   and from `parts/signal` only `keyframes`, `velocity`, `velocity3d`, `speedOf` and `tally`; plus `unreachable`. Core
   drops their `definePart` registrations. `parts/coupling`, `follow`, `trail`, `trailTurn`, `react`, `noise1d` and
@@ -95,15 +97,21 @@ packages/
   `axisX3`, `quaternionFromEuler3d`, `matrixFromQuaternion`, `slerpQuaternion`, with `readNumber` and `isRecord` as
   internals. Pivot offsets, effective links, world frames, swing and twist and `blendOrientation3d` stay in rig, which
   imports the rest from core. A symbol moves when core code uses it, and the S1a builder lists any the rule adds.
-- **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `compose`, `blend`, `ease`,
+- **Core is fixed.** A core export must come from one of its folders: `fields`, `time`, `blend`, `ease`,
   `envelope`, `geometry`, `path`, `measure`, `events`, `utility`, and the stage's contract; a test reads `@gerak/core`'s index and refuses an export from anywhere else.
-- **Arranging time has two shapes:** a time in, a time out (`reversed`, `repeated`, `timeAt`, and a plan's
-  `.of(time)`), and `sequence`, which picks the phase playing. A helper with settings is a plan built once and read with
-  `.of`: `span(from, to).of(time, ease?)`, `lanes(lengths, stagger, options).of(time, index)`,
+- **There is no compose layer.** Composition and time parts are one thing, a time in and a time out, so `compose/`
+  joins core's `time` folder and the word leaves the code, the guide and the catalog. This ends ADR-185's fourth layer
+  (`compose/` above `moves/`). `anticipate` and `overshoot`, which take a move as a function of time, stay library
+  moves. A timing that carries a choice (a set feel, a set rhythm) is a library part of kind `time`, declared and
+  found like any part.
+- **Time helpers have two shapes,** held by one exported type, `Timing<A> { of(time: Time, ...args: A): Time }`: a
+  plain time in, time out (`reversed`, `repeated`, `timeAt`), or a `Timing` built once from its settings; and
+  `sequence`, the one picker, which answers the phase playing. A test reads core's `time` exports and refuses any
+  function or value of another shape. A helper with settings is a `Timing`: `span(from, to).of(time, ease?)`, `lanes(lengths, stagger, options).of(time, index)`,
   `loop(ms, { yoyo? }).of(time)`, `chain(lengths, { gap?, overlap? })` returning spans. `lanes` takes `by: number[]`,
   one value per item (a distance, an x), and starts the items in its order, beside `from`. `window`, `windowed`, `lane`
   and `laneTime` are removed; `createLoopCycle` is the player's frame-driven loop, moved beside its one user,
-  `@gerak/dom`'s drivers, and is no scene helper. `story` stays the stage's named beats, built on `span`.
+  `@gerak/dom`'s drivers, internal there and out of the reference, and is no scene helper. `story` stays the stage's named beats, built on `span`.
 - **Private geometry becomes core,** moved, never copied: `pathFrom` (`parsePathData`), `rectPath`, `circlePath`,
   `ellipsePath`, `polygonPath` (`outlinesOf`), `arcPath` (`arcCubics`), `linePath`, `transformPath`, `resamplePath`,
   `reversePath` (the stage's `splitTo`, `reversed`), `pathBounds` (the dom's `strokeBox` and import-svg's `boundsOf`),
@@ -128,7 +136,7 @@ packages/
 
 | Today in `docs/guide/` | Goes to |
 | --- | --- |
-| `agent-motion.md` (the loop, the stage module, composing, traps) | `@gerak/stage/docs/` (loop, module, traps); `@gerak/core/docs/` (composing) |
+| `agent-motion.md` (the loop, the stage module, composing, traps) | `@gerak/stage/docs/` (loop, module, traps); `@gerak/core/docs/` (composing, as the `time` group) |
 | `agent-reference.md` | generated per package |
 | `agent-events.md`, `agent-layout.md`, `agent-inputs.md` | `@gerak/stage/docs/` |
 | `agent-outside.md` | `@gerak/dom/docs/` |
@@ -155,21 +163,29 @@ only shrink. `npm run check` and `pack:check` green on the moved tree.
 
 ### S1b. Kernel and parts into core (lead script)
 
-`scripts/split-core.mjs`, run once and deleted in the same commit, moves the folders of section 4 with their tests and
-rewrites every import in packages, apps, briefs, docs and templates from `@gerak/moves` to `@gerak/core`. Before and
-after, `gerak moves --json` and `gerak moves --parts` print the same records; the commit holds the move alone.
+`scripts/split-core.mjs`, run once and deleted in the same commit, moves the folders of section 4 with their tests,
+`parts/time/` and `compose/` into the one `time` folder (`compose/loop.ts`, the player's frame-driven loop, into
+`@gerak/dom` beside its one user, the drivers), strips the `definePart` registrations from what it moves, and rewrites
+every import in packages, apps, briefs, docs and templates from `@gerak/moves` to `@gerak/core`. Before and after,
+`gerak moves --json` prints the same records, and `gerak moves --parts` the same less exactly the moved primitives,
+which the commit message lists; the commit holds the move alone.
 
 ### S1c. Fix-up (executor, after S1b)
 
 What the script could not do: re-exports `@gerak/moves` must stop making, cycles, the part gate reading only the library's
-parts, the core-export test of section 4. `npm run check` green.
+parts, the core-export test of section 4; the catalog's `compose` group (`packages/tools/src/scene/parts.ts` and its
+test) and the `compose` row of `test/repo/moves-layers.test.ts` removed, since the folder no longer exists. `npm run
+check` green.
 
 ### S1d. Arranging time (executor, after S1c, beside S2 and S3)
 
-Section 4's two shapes in `@gerak/core`'s `time` and `compose`: `lanes(...).of`, `lanes`' `by`, `loop` with `yoyo`,
-`chain`; `window`, `windowed`, `lane`, `laneTime` removed and their uses in briefs, tests and guides rewritten;
-`createLoopCycle` moved to `@gerak/dom`. Tests sample each new helper at its edges (start, end, overlap, a zero-length
-lane, a yoyo turn) and each rewritten brief's frames compare equal before and after.
+Section 4's `Timing` type and its shape test in `@gerak/core`'s `time` folder; `lanes(...).of`, `lanes`' `by`, a scene
+`loop(ms, { yoyo })`, `chain`; `window`, `windowed`, `lane`, `laneTime` removed and their uses rewritten (about 20 files:
+11 briefs, `packages/moves` tests, `agent-motion.md`, `agent-reference.md`). The word "compose" for this goes from
+`agent-motion.md` (its "Composing" section becomes "Arranging time"), `docs/ARCHITECTURE.md`'s layer table,
+`docs/MAP.md`, `scripts/repo-map.mjs` and `docs/SESSION-STATUS.md`; "compose" as the verb for rotations stays. Tests
+sample each new helper at its edges (start, end, gap, overlap, a zero-length lane, equal `by` values, a yoyo turn); each
+rewritten brief's frames compare equal before and after; the shape test is shown failing on a helper of a third shape.
 
 ### S2. Modules clean (executor, after S1c)
 
@@ -227,7 +243,8 @@ One pull request, after wave 6. Executors are Sonnet at medium effort, in their 
 - **Harvest:** a library command that turns a piece's own helpers into declared parts and moves by type and by sampling,
   matches them against existing records, and proves by sampling every member before and after that nothing changed.
   After search.
-- Brief folders mirroring the library (`src/parts/<kind>/`, `compose/`, `fields/`): with search.
+- Brief folders mirroring the library (`src/parts/<kind>/`, a brief's own timings in `src/parts/time/`, `fields/`): with
+  search.
 
 ## 9. Risks
 
