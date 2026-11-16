@@ -40,6 +40,7 @@ storyboard before it, and shots in place of one idea.
 - The camera is a group, `world: group({ ... })` skinned `position: absolute; inset: 0`, holding everything that sits
   in the scene. Moving `world` moves the view: its `x` and `y` pan, its `scale` zooms about the frame's centre,
   and a short decaying `rotation` or offset shakes. Write the camera as one `sequence<Pose2d>` of its moves by shot.
+  `x` and `y` are screen px, outside the zoom: to keep a pan of `x` on the same place at scale `s`, write `x * s`.
 - A push in is `scale` rising with an ease that settles; a pan is `x` with ease at both ends; a shake is an
   `oscillation` under an `envelope`, under 300 ms.
 - **Zoom into a member at the frame's centre.** Pan it there first, or place it there in its skin; then the zoom is

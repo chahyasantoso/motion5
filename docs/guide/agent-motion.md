@@ -52,7 +52,7 @@ not by reading package source. `<pieces>` is your pieces folder, the one `gerak.
    ball --in <brief>` scores every move that passes the gate against that member's design, says per field what
    matched and at which options, and gives the import. `--move y:heavy --uses envelope` asks the same by hand;
    `--far <the obvious move>` finds ideas unlike it; `--renderer three` keeps moves a 3D page draws. Read a move in
-   full (`-- <id>`) before using it.
+   full (`gerak moves <id>`) before using it.
 7. **Decide each line, in this order:** use a move as it is; use it at the options its row names; combine moves in
    the scene, one per field (when no move does it all, the answer names the move for each field); drive the field in
    the scene with parts (a `mix` on an ease, an envelope), when no move has it and only this piece needs it, as a
@@ -65,7 +65,7 @@ not by reading package source. `<pieces>` is your pieces folder, the one `gerak.
    '[data-cast="<member>"]' --to <ms>`, with `--action` for what a person does, adds a `sheet` of frames picked where
    the motion is fast; on a page, `--full` adds the moves with their eases.
 9. Fix what it flags, the design's findings first, and what looks wrong on the sheet; review again. Stop when the
-   findings are empty and the sheet shows the three lines you wrote. Run `npx tsc --noEmit` once at the end.
+   findings are empty and the sheet shows the three lines you wrote. Run `npx tsc --noEmit` once at the end where the project has a `tsconfig.json`.
 
 The other scene files in `<pieces>/*/src` are other people's pieces. Do not open them: a piece begun from one
 comes out as its copy. Use the other tools only to dig into what a review showed. Values can be right while the
@@ -94,7 +94,9 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
 - **Readout.** `actor({ text: (time) => … })` is a readout written each frame, for a timecode or a counter; it is
   not a value and does not ease. Only an `actor` takes one: the items of `letters` and `words` keep their text.
 - **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin
-  it by `[data-path="<name>"]` (`stroke`, `stroke-width`). Its points are frame px from the frame's top-left, in any
+  it by `[data-path="<name>"]` (`stroke`, `stroke-width`). `toCubics` comes from `@gerak/moves`; each anchor is
+  `{ id, x, y, inX, inY, outX, outY }`, its handles relative to the point, and a closed outline repeats its first
+  anchor last. Its points are frame px from the frame's top-left, in any
   group, and the stage places the member at the path's box. To follow the layout, pass `path: (rest) => toCubics([...])`
   reading other members by name with `restOf`, other strokes too, which are drawn first; it is drawn again on each measure,
   and never reads its own box. Two paths that read each other are a loop: neither is drawn, and both are reported.
