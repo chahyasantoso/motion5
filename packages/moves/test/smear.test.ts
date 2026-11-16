@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  atProgress,
-  elapsedOf,
-  liveAt,
-  smear,
-  velocity,
-  type Pose2d,
-  type Time,
-} from "@gerak/moves";
+import { atProgress, elapsedOf, liveAt, velocity, type Pose2d, type Time } from "@gerak/core";
+import { smear } from "@gerak/moves";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const falling = (time: Time): Pose2d => ({ x: 5, y: (ms(time) * 2000) / 1000 });

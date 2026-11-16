@@ -10,6 +10,7 @@
     "composite": false,
     "baseUrl": ".",
     "paths": {
+      "@gerak/core": ["../core/dist/index.d.ts"],
       "@gerak/dom": ["../dom/dist/index.d.ts"],
       "@gerak/moves": ["../moves/dist/index.d.ts"],
       "@gerak/rig": ["../rig/dist/index.d.ts"],

@@ -1,16 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import {
-  combine,
-  fade,
-  lane,
-  lanes,
-  pop,
-  pulse,
-  repeated,
-  slide,
-  span,
-  type Time,
-} from "@gerak/moves";
+import { combine, lane, lanes, repeated, span, type Time } from "@gerak/core";
+import { fade, pop, pulse, slide } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;

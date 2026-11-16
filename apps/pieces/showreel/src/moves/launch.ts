@@ -1,4 +1,5 @@
-import { defineMove, wave, type Pose2d } from "@gerak/moves";
+import { wave, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 const cubicInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
 const cubicOut = (p: number) => 1 - (1 - p) ** 3;

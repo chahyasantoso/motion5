@@ -21,7 +21,8 @@ afterEach(() => {
   for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-const move = (id: string, end: string) => `import { defineMove, type Pose2d } from "@gerak/moves";
+const move = (id: string, end: string) => `import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${id.replace("-", "")} = defineMove({
   id: "${id}",
   role: "enter",
@@ -88,8 +89,8 @@ describe("gerak moves", () => {
     writeFileSync(
       join(dir, "reel/src/moves/made.ts"),
       move("made", "").replace(
-        'import { defineMove, type Pose2d } from "@gerak/moves";',
-        'import { defineMove, span, squashed, type Pose2d, type Time } from "@gerak/moves";',
+        'import { type Pose2d } from "@gerak/core";\nimport { defineMove } from "@gerak/moves";',
+        'import { span, type Pose2d, type Time } from "@gerak/core";\nimport { defineMove, squashed } from "@gerak/moves";',
       ),
     );
     const full = await runCatalog(ok(["made"]), dir);

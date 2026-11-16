@@ -12,7 +12,7 @@
   ],
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@gerak/moves": "0.1.0",
+    "@gerak/core": "0.1.0",
     "@gerak/player": "0.1.0",
     "@gerak/rig": "0.1.0"
   },

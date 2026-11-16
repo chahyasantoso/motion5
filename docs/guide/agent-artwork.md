@@ -26,7 +26,7 @@ write `<pieces>/references/<file>.svg` by hand, each part that moves its own sha
 6. **Animate the chain's joints and the free parts.**
 
 ```ts
-import type { Time } from "@gerak/moves";
+import type { Time } from "@gerak/core";
 import { chainFromRest, chainThrough } from "@gerak/rig";
 
 const arm = chainThrough([

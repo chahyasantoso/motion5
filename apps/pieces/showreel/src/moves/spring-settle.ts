@@ -1,4 +1,5 @@
-import { arch, decay, defineMove, wave, type Pose2d } from "@gerak/moves";
+import { arch, decay, wave, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 

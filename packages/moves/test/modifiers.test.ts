@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  anticipate,
-  atProgress,
-  overshoot,
-  repeated,
-  reversed,
-  type Pose2d,
-  type Time,
-  wipe,
-} from "../src";
+import { atProgress, repeated, reversed, type Pose2d, type Time } from "@gerak/core";
+import { anticipate, overshoot, wipe } from "../src";
 
 const ramp = (time: Time): Pose2d => ({ x: time.progress });
 const slide = (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) });

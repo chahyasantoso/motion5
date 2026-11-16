@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Rises from `distance` px below its rest pose, decelerating. */
 export const rise = defineMove({

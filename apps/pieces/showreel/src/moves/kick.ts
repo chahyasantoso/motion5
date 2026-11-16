@@ -1,4 +1,5 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 export const kick = defineMove({
   id: "kick",

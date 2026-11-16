@@ -1,4 +1,5 @@
-import { arch, defineMove, type Pose2d } from "@gerak/moves";
+import { arch, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 export const bump = defineMove({
   id: "bump",

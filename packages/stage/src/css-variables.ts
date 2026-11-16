@@ -1,5 +1,3 @@
-import { isTokenName } from "@gerak/moves";
-
 /** A `:host` rule setting each token as a custom property, in the tokens' order; empty for none. */
 export function cssVariables(tokens: Readonly<Record<string, string>>): string {
   const entries = Object.entries(tokens);
@@ -11,4 +9,9 @@ export function cssVariables(tokens: Readonly<Record<string, string>>): string {
     return `${name}: ${value};`;
   });
   return `:host { ${lines.join(" ")} }`;
+}
+
+/** Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`. */
+export function isTokenName(name: string): boolean {
+  return /^--[A-Za-z0-9_-]+$/.test(name);
 }

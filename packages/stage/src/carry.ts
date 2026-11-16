@@ -1,4 +1,4 @@
-import { elapsedOf, type Ease, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { elapsedOf, type Ease, type Events, type Pose2d, type Time } from "@gerak/core";
 import type { Box } from "./rest";
 import { unreachable } from "./unreachable";
 

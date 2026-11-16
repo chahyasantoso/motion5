@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   atProgress,
   combine3d,
-  hop,
   lift2d,
   mixPoint3d,
   mixPose3d,
-  squashed3d,
   type Pose2d,
   type Pose3d,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { hop, squashed3d } from "@gerak/moves";
 
 describe("Pose3d", () => {
   it("refuses a 2D pose where a 3D one goes", () => {

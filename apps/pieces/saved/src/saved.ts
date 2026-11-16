@@ -1,4 +1,5 @@
-import { combine, fade, pop, reversed, slide, type Time } from "@gerak/moves";
+import { combine, reversed, type Time } from "@gerak/core";
+import { fade, pop, slide } from "@gerak/moves";
 import { actor, group, story } from "@gerak/stage";
 
 /** The mark pops in, the word slides in behind it, and both lift away to the top. */

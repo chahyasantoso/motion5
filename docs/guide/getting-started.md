@@ -8,7 +8,8 @@ onto an element or a Three.js object.
 
 ```ts
 import { applyValue, clockDriver } from "@gerak/dom";
-import { drop, span, type Time } from "@gerak/moves";
+import { span, type Time } from "@gerak/core";
+import { drop } from "@gerak/moves";
 import { play } from "@gerak/player";
 
 const durationMs = 1200;

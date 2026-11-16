@@ -1,4 +1,5 @@
-import { attack, defineMove, squashed, taper, wave, type Pose2d } from "@gerak/moves";
+import { attack, taper, wave, type Pose2d } from "@gerak/core";
+import { defineMove, squashed } from "@gerak/moves";
 
 export const thud = defineMove({
   id: "thud",

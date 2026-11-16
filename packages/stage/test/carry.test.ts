@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Events, Pose2d, Time } from "@gerak/moves";
+import type { Events, Pose2d, Time } from "@gerak/core";
 import { carried, carry, type Box, type CarrySize } from "@gerak/stage";
 
 const at = (elapsed: number): Time => ({

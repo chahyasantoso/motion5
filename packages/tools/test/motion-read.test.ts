@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ease } from "@gerak/moves";
+import { ease } from "@gerak/core";
 import { NAMED_CURVES, bezier, fitCurve } from "../src/page/curves";
 import { parseReadArgs, segmentsOf } from "../src/page/read";
 

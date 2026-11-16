@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, combine, lane, lanes, rope, trace, wipe, type Time } from "@gerak/moves";
+import { atProgress, combine, lane, lanes, type Time } from "@gerak/core";
+import { rope, trace, wipe } from "@gerak/moves";
 
 describe("wipe", () => {
   it("grows its clip circle from nothing to the radius, easing in and out", () => {

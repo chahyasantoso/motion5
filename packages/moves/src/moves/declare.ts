@@ -1,5 +1,5 @@
-import type { Time } from "../parts/time/time";
-import { unreachable } from "../unreachable";
+import type { Time } from "@gerak/core";
+import { unreachable } from "@gerak/core";
 
 /** One option of a move; an option with a `default` may be left out by the caller. */
 export type OptionField =

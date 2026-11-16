@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as moves from "@gerak/moves";
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 import { checkMove, describeFinding, isMove } from "../src/scene/moves";
 
 const number = (description: string) => ({ kind: "number", description }) as const;

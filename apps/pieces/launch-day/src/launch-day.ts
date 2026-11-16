@@ -1,4 +1,4 @@
-import { combine, lane, lanes, span, type Pose2d, type Time } from "@gerak/moves";
+import { combine, lane, lanes, span, type Pose2d, type Time } from "@gerak/core";
 import { actor, cssVariables, group, many, story } from "@gerak/stage";
 import { card } from "../../showreel/style";
 import { kick } from "../../showreel/src/moves/kick";

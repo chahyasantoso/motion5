@@ -1,4 +1,4 @@
-import { elapsedOf, type Time } from "@gerak/moves";
+import { elapsedOf, type Time } from "@gerak/core";
 import { actor, many, story } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import { readSceneModule } from "../src/scene/scene";

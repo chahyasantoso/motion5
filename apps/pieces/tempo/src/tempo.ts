@@ -1,14 +1,5 @@
-import {
-  combine,
-  ease,
-  fade,
-  keyframes,
-  mix,
-  rise,
-  type Key,
-  type Pose2d,
-  type Time,
-} from "@gerak/moves";
+import { combine, ease, keyframes, mix, type Key, type Pose2d, type Time } from "@gerak/core";
+import { fade, rise } from "@gerak/moves";
 import { actor, group, story } from "@gerak/stage";
 
 const BEAT_MS = 500; // 120 beats a minute

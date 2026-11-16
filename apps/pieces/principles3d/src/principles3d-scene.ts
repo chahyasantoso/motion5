@@ -11,18 +11,16 @@ import {
   mix,
   mixPoint3d,
   orbit,
-  smear3d,
   span,
   springEase,
-  squashed3d,
   toCubics3d,
-  trailTurn,
   velocity3d,
   type Anchor3d,
   type Events,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { smear3d, squashed3d, trailTurn } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4200;

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   atProgress,
   ease,
-  hop,
   keyframes,
   liveAt,
   seeded,
@@ -12,7 +11,8 @@ import {
   mixPose,
   span,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { hop } from "@gerak/moves";
 
 const timed = (elapsed: number): Time => ({
   progress: elapsed / 4000,

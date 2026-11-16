@@ -1,5 +1,5 @@
 import { definePart } from "../contract";
-import type { Pose2d } from "../../fields/pose";
+import type { Pose2d } from "@gerak/core";
 import { squashed } from "./squashed";
 
 /** Settings of `squashFromSpeed`: `amount` of squash per px/s, and the `most` it may reach, 0 to 0.9. */

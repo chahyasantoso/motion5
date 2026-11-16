@@ -15,7 +15,7 @@ A route change, a card opening and a reordering list move a member from one plac
 Never compute those places: name the layouts, let the stage measure them, and carry the member with `carried`.
 
 ```ts
-import { ease, type Events, type Time } from "@gerak/moves";
+import { ease, type Events, type Time } from "@gerak/core";
 import { carried, restOf, type Layouts, type Rest } from "@gerak/stage";
 
 export const layouts = ["list", "detail"] as const;

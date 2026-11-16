@@ -1,4 +1,5 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 const inOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);

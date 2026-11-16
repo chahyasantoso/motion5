@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d } from "@gerak/core";
 import { readStageModule, type StageModule } from "@gerak/stage";
 import { importSvg, importSvgInto, type ImportResult } from "../src/scene/import-svg";
 import { readSceneModule } from "../src/scene/scene";

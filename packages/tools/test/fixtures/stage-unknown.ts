@@ -1,4 +1,4 @@
-import { type Events, type Time } from "@gerak/moves";
+import { type Events, type Time } from "@gerak/core";
 import { actor, group, letters, story } from "@gerak/stage";
 
 export const beats = story(2000, { intro: [0, 400], go: [400, 1400], out: [1400, 2000] });

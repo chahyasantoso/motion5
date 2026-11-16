@@ -1,4 +1,4 @@
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d } from "@gerak/core";
 
 /** How near two ends must be to meet, in px: rounding apart, not a gap anyone draws. */
 export const SEAM = 1e-6;

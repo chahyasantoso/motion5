@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { mergeEvents, react, seeded, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { mergeEvents, seeded, type Events, type Pose2d, type Time } from "@gerak/core";
+import { react } from "@gerak/moves";
 import { builtinWorld, simulate } from "@gerak/physics";
 
 export const durationMs = 4200;

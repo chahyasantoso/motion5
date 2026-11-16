@@ -1,6 +1,6 @@
-import type { Anchor, Pose2d } from "../../fields/pose";
-import type { Pose3d } from "../../fields/pose3d";
-import { unreachable } from "../../unreachable";
+import type { Anchor, Pose2d } from "@gerak/core";
+import type { Pose3d } from "@gerak/core";
+import { unreachable } from "@gerak/core";
 import { definePart } from "../contract";
 
 /** A pose `weight` of the way into `squash` against the `anchor` side, `"bottom"` when absent; `"left"`

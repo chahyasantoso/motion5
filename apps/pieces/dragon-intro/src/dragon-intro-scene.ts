@@ -2,10 +2,7 @@ import { clockDriver } from "@gerak/dom";
 import {
   aim,
   combine,
-  drop,
   ease,
-  fade,
-  follow,
   lane,
   lanes,
   mergeEvents,
@@ -14,20 +11,18 @@ import {
   orbit,
   project3d,
   reversed,
-  rise,
   seeded,
   sequence,
-  slide,
   span,
   springEase,
-  tally,
-  wipe,
   type Events,
   type Lens3d,
   type Pose2d,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { tally } from "@gerak/core";
+import { drop, fade, follow, rise, slide, wipe } from "@gerak/moves";
 import { simulate, type BodyState3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, posedJoints3d } from "@gerak/rig";

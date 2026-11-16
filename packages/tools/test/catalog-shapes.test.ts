@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 import {
   collectRecords,
   distance,

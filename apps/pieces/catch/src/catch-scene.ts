@@ -1,18 +1,16 @@
 import { clockDriver } from "@gerak/dom";
 import {
   combine,
-  drop,
   ease,
-  hop,
   lane,
   lanes,
   mixPoint,
-  react,
   span,
   type Events,
   type Pose2d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { drop, hop, react } from "@gerak/moves";
 import { buildChain, chainPoses, ik } from "@gerak/rig";
 
 export const durationMs = 4800;

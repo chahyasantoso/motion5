@@ -1,6 +1,6 @@
 import { composeChain, type Link2d } from "@gerak/rig";
 import { defineMove } from "./declare";
-import type { Anchor2d, Point2d } from "../parts/geometry/shapes";
+import type { Anchor2d, Point2d } from "@gerak/core";
 
 const OVERSHOOT_SCALE = 2.5;
 const ORIGIN = { x: 0, y: 0 } as const;

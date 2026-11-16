@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { atProgress } from "@gerak/core";
 import {
   arc,
-  atProgress,
   fade,
   nod,
   pop,

@@ -1,4 +1,4 @@
-import type { Events, Time } from "@gerak/moves";
+import type { Events, Time } from "@gerak/core";
 
 /** Wraps a scene so a throw reports each distinct message once and falls back to the last good values.
  * It passes on any arguments after time and events, such as a stage scene's rest boxes. */

@@ -1,7 +1,8 @@
 import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { VALUE_FIELDS, isLively, type StyleCard } from "@gerak/moves";
+import { VALUE_FIELDS } from "@gerak/core";
+import { isLively, type StyleCard } from "@gerak/moves";
 import { briefFolders, portabilityFindings } from "./briefs";
 import { checkCatalog, loadCatalog } from "./catalog";
 import { styleCards } from "./cards";

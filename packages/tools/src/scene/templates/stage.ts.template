@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/moves";
+import type { Pose2d, Time } from "@gerak/core";
 import { actor, story } from "@gerak/stage";
 
 /** The piece's beats by name, in ms; its length is the story's. */

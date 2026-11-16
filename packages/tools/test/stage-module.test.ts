@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toCubics, type Events, type Time } from "@gerak/moves";
+import { toCubics, type Events, type Time } from "@gerak/core";
 import {
   actor,
   group,

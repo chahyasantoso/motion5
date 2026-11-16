@@ -1,4 +1,5 @@
-import { VALUE_FIELDS } from "../fields/pose";
+import { isTokenName } from "@gerak/stage";
+import { VALUE_FIELDS } from "@gerak/core";
 import { DESCRIPTOR_KEYS, type DescriptorRanges } from "./qualities";
 
 /** A brief's style: the qualities it names, the share of lively motion each field holds, and its tokens and habits. */
@@ -48,11 +49,6 @@ function problemWith(card: StyleCard): string | undefined {
   const habit = card.habits.findIndex((each) => typeof each !== "string");
   if (habit >= 0) return `habit ${habit} of style "${card.name}" is not a string`;
   return undefined;
-}
-
-/** Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`. */
-export function isTokenName(name: string): boolean {
-  return /^--[A-Za-z0-9_-]+$/.test(name);
 }
 
 function isRange(range: unknown, most: number): boolean {

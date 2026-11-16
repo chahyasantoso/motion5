@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress } from "@gerak/moves";
+import { atProgress } from "@gerak/core";
 import { checkMove } from "../src/scene/moves";
 import { jolt } from "../../../apps/pieces/showreel/src/moves/jolt";
 import { push } from "../../../apps/pieces/showreel/src/moves/push";

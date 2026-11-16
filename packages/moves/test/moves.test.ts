@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, drop, hop, type Time } from "@gerak/moves";
+import { atProgress, type Time } from "@gerak/core";
+import { drop, hop } from "@gerak/moves";
 
 function timed(progress: number): Time {
   return { progress, clock: { kind: "timed", elapsed: progress * 800, length: 800 } };

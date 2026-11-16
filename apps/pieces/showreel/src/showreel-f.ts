@@ -2,23 +2,16 @@ import {
   combine,
   ease,
   elapsedOf,
-  fade,
-  hop,
   mix,
-  pulse,
   reversed,
-  rise,
   sequence,
-  slide,
   span,
-  anticipate,
-  wipe,
   type Cubic2d,
   type Events,
   type Pose2d,
   type Time,
-  smudge,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { fade, hop, pulse, rise, slide, anticipate, wipe, smudge } from "@gerak/moves";
 import {
   actor,
   frame as stageFrame,

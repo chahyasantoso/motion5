@@ -1,4 +1,4 @@
-import type { Cubic2d, Time } from "@gerak/moves";
+import type { Cubic2d, Time } from "@gerak/core";
 import { matchOutlines } from "./outlines";
 import type { Rest } from "./rest";
 import { unreachable } from "./unreachable";

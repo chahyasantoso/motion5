@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events, type MotionEvent } from "@gerak/moves";
+import { liveAt, type Events, type MotionEvent } from "@gerak/core";
 import { simulate, type PhysicsWorld3d, type Spawner3d } from "@gerak/physics";
 import { rapierEngine, rapierEngine3d } from "@gerak/rapier";
 import { matrixFromEuler3d, matrixFromQuaternion } from "@gerak/core";

@@ -1,4 +1,5 @@
-import { attack, decay, defineMove, taper, wave, type Pose2d } from "@gerak/moves";
+import { attack, decay, taper, wave, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 export const jolt = defineMove({
   id: "jolt",

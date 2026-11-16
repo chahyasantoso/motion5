@@ -1,15 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import {
-  combine,
-  drop,
-  fade,
-  overshoot,
-  pop,
-  slide,
-  span,
-  type Pose2d,
-  type Time,
-} from "@gerak/moves";
+import { combine, span, type Pose2d, type Time } from "@gerak/core";
+import { drop, fade, overshoot, pop, slide } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;

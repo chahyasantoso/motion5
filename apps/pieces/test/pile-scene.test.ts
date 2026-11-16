@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt } from "@gerak/moves";
+import { liveAt } from "@gerak/core";
 import { FLOOR, SIZE, STARTS, durationMs, scene } from "../pile/src/pile-scene";
 
 describe("the tumble scene", () => {

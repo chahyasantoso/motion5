@@ -1,7 +1,7 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/envelope/envelopes";
-import { withProgress, type Time } from "../parts/time/time";
+import type { Pose2d } from "@gerak/core";
+import { arch } from "@gerak/core";
+import { withProgress, type Time } from "@gerak/core";
 import { carried, pushed, whole } from "./whole";
 
 /** Winds up the other way from its input's travel, then plays the input and ends where it ends. */

@@ -9,7 +9,8 @@ afterEach(() => {
   for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-const move = (id: string, pose: string) => `import { defineMove, type Pose2d } from "@gerak/moves";
+const move = (id: string, pose: string) => `import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${id.replace("-", "")} = defineMove({
   id: "${id}",
   role: "emphasis",

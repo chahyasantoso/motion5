@@ -23,7 +23,8 @@ const ENTER = (
   id: string,
   name: string,
   curve = "-distance * (1 - progress)",
-) => `import { defineMove, type Pose2d } from "@gerak/moves";
+) => `import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${name} = defineMove({
   id: "${id}",
   role: "enter",

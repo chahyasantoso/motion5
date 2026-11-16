@@ -1,7 +1,6 @@
 import { clockDriver } from "@gerak/dom";
 import {
   combine,
-  drop,
   ease,
   keyframes,
   lane,
@@ -10,7 +9,8 @@ import {
   span,
   type Pose2d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { drop } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4800;

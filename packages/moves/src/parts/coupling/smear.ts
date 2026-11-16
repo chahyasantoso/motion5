@@ -1,5 +1,5 @@
 import { definePart } from "../contract";
-import type { Pose2d } from "../../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90].
  * Content that must not turn goes in an inner element posed `{ rotation: -heading }`. */

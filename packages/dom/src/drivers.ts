@@ -1,4 +1,5 @@
-import { atProgress, createLoopCycle, type Events, type LoopCycle, type Time } from "@gerak/moves";
+import { atProgress, type Events, type Time } from "@gerak/core";
+import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import type { Driver } from "@gerak/player";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";

@@ -29,7 +29,8 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-const MOVE = `import { defineMove, mix, type Pose2d } from "@gerak/moves";
+const MOVE = `import { mix, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const slideIn = defineMove({
   id: "slide-in",
   role: "enter",

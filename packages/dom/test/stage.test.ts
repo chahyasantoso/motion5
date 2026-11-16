@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { follow, toCubics, trace, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { toCubics, type Events, type Pose2d, type Time } from "@gerak/core";
+import { follow, trace } from "@gerak/moves";
 import {
   actor,
   blendShapes,

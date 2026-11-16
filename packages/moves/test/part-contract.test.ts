@@ -1,15 +1,6 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import {
-  definePart,
-  ease,
-  keyframes,
-  mixPose,
-  partContract,
-  taper,
-  type Ease,
-  type Pose2d,
-  type Time,
-} from "../src";
+import { ease, keyframes, mixPose, taper, type Ease, type Pose2d, type Time } from "@gerak/core";
+import { definePart, noise1d, partContract, squashed, trail } from "../src";
 
 describe("definePart", () => {
   it("returns the function itself and records its contract under it", () => {
@@ -23,11 +14,15 @@ describe("definePart", () => {
     expect(partContract(() => 0)).toBeUndefined();
   });
 
-  it("holds the contracts of the built-in parts", () => {
-    expect(partContract(taper)?.kind).toBe("envelope");
-    expect(partContract(mixPose)?.kind).toBe("blend");
-    expect(partContract(keyframes)?.kind).toBe("signal");
-    expect(partContract(ease)?.kind).toBe("ease");
+  it("holds the contracts of the library's parts", () => {
+    expect(partContract(squashed)?.kind).toBe("coupling");
+    expect(partContract(noise1d)?.kind).toBe("signal");
+    expect(partContract(trail)?.kind).toBe("signal");
+  });
+
+  it("holds no contract for a core primitive", () => {
+    for (const primitive of [taper, mixPose, keyframes, ease])
+      expect(partContract(primitive)).toBeUndefined();
   });
 });
 

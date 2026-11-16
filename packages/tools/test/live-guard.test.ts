@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { elapsedOf, NO_EVENTS, type Time } from "@gerak/moves";
+import { elapsedOf, NO_EVENTS, type Time } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import { guard } from "../src/pages/live/guard";
 

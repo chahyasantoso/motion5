@@ -1,14 +1,6 @@
 import { type Descriptors } from "@gerak/moves";
-import {
-  CUSTOM_FIELD,
-  MOVE_ROLES,
-  atProgress,
-  valueField,
-  type MoveRole,
-  type OptionField,
-  type Time,
-  type ValueField,
-} from "@gerak/moves";
+import { CUSTOM_FIELD, atProgress, valueField, type Time, type ValueField } from "@gerak/core";
+import { MOVE_ROLES, type MoveRole, type OptionField } from "@gerak/moves";
 import { DEFAULT_LIMITS } from "../page/check";
 import { unreachable } from "../page/unreachable";
 import { SCENE_LIMITS } from "./limits";

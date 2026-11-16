@@ -1,8 +1,8 @@
 import { definePart } from "../contract";
-import type { Events } from "../utility/event-list";
-import { spring, springMemory } from "../dynamics/spring";
-import { elapsedOf, type Time } from "../time/time";
-import { timeAt } from "../time/time-at";
+import type { Events } from "@gerak/core";
+import { spring, springMemory } from "@gerak/core";
+import { elapsedOf, type Time } from "@gerak/core";
+import { timeAt } from "@gerak/core";
 
 /** Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and
  * `rest`, the distance under which it sits on the signal. */

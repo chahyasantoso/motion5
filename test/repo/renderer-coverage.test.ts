@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { UNWRITTEN, WRITTEN } from "@gerak/dom";
-import { POSE_2D_FIELDS } from "@gerak/moves";
+import { POSE_2D_FIELDS } from "@gerak/core";
 import { UNWRITTEN_2D, UNWRITTEN_3D, WRITTEN_2D, WRITTEN_3D } from "@gerak/three";
-import { NUMBERS, TURNS } from "../../packages/moves/src/fields/pose3d";
+import { NUMBERS, TURNS } from "../../packages/core/src/fields/pose3d";
 
 const POSE_3D_FIELDS: readonly string[] = [...TURNS, ...NUMBERS];
 

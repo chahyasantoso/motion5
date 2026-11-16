@@ -1,4 +1,4 @@
-import { span, type Span } from "@gerak/moves";
+import { span, type Span } from "@gerak/core";
 
 const RESERVED = new Set(["durationMs", "order"]);
 

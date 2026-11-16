@@ -1,4 +1,4 @@
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d } from "@gerak/core";
 import { pathOf, type ActorPath } from "./cast";
 import type { Box, Rest } from "./rest";
 

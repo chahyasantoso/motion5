@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Time } from "@gerak/moves";
+import type { Time } from "@gerak/core";
 import {
   parseEvents,
   readSceneModule,

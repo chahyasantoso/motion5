@@ -1,7 +1,7 @@
 import { Bone, Group, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
-import { project3d } from "@gerak/moves";
+import { project3d } from "@gerak/core";
 import { applyPose3d } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
 import {

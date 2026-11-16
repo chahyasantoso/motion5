@@ -1,6 +1,6 @@
 import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d, transposeMatrix3 } from "@gerak/core";
 import { definePart } from "../contract";
-import type { Pose3d } from "../../fields/pose3d";
+import type { Pose3d } from "@gerak/core";
 
 /** Stretches along travel by `stretch` per unit a second up to `max`, volume kept; reversing never flips it; `turn` undoes it. */
 export function smear3d(

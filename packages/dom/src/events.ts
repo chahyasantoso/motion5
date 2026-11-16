@@ -1,4 +1,4 @@
-import { liveAt, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import { liveAt, type Events, type MotionEvent, type Time } from "@gerak/core";
 import type { Driver } from "@gerak/player";
 import { pageFrames, type FrameSource } from "./frames";
 

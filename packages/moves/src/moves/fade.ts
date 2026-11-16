@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Fades in, opacity from 0 to 1. */
 export const fade = defineMove({

@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  anticipate,
-  mixPose,
-  overshoot,
-  repeated,
-  reversed,
-  type Pose2d,
-  type Time,
-} from "@gerak/moves";
+import { mixPose, repeated, reversed, type Pose2d, type Time } from "@gerak/core";
+import { anticipate, overshoot } from "@gerak/moves";
 
 const timed = (progress: number, length: number): Time => ({
   progress,

@@ -1,7 +1,7 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { taper } from "../parts/envelope/envelopes";
-import { wave } from "../parts/oscillation/wave";
+import type { Pose2d } from "@gerak/core";
+import { taper } from "@gerak/core";
+import { wave } from "@gerak/core";
 
 /** Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge. */
 export const swing = defineMove({

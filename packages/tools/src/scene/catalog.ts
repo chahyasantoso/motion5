@@ -3,13 +3,13 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as builtIns from "@gerak/moves";
+import { valueField } from "@gerak/core";
 import {
   DESCRIPTOR_KEYS,
   MOVE_ROLES,
   QUALITIES,
   outsideRanges,
   qualityOf,
-  valueField,
   type DescriptorRanges,
   type Descriptors,
   type MoveRole,

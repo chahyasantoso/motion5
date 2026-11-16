@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. */
 export const smudge = defineMove({

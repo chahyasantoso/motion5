@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { defineMove, type Time } from "@gerak/moves";
+import { type Time } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 import {
   dragNumberValue,
   moveSourceFrom,

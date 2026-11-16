@@ -4,7 +4,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import ts from "typescript";
 import * as moves from "@gerak/moves";
 import { unreachable } from "../page/unreachable";
-import { partContract, valueField, type PartContract } from "@gerak/moves";
+import { valueField } from "@gerak/core";
+import { partContract, type PartContract } from "@gerak/moves";
 import { briefFolders } from "./briefs";
 
 /** The groups the parts list sorts its building blocks into, in print order. */

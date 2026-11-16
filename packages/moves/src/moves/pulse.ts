@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/envelope/envelopes";
+import type { Pose2d } from "@gerak/core";
+import { arch } from "@gerak/core";
 
 /** Grows to `1 + amount` times its size and returns. */
 export const pulse = defineMove({

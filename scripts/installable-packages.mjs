@@ -6,9 +6,9 @@ const packagesRoot = new URL("../packages/", import.meta.url);
 export const INSTALLABLE_PACKAGES = [
   "core",
   "rig",
-  "moves",
   "player",
   "stage",
+  "moves",
   "physics",
   "dom",
   "react",

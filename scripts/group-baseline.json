@@ -1,10 +1,4 @@
 [
-  "@gerak/dom (core) imports @gerak/moves (library)",
-  "@gerak/physics (modules) imports @gerak/moves (library)",
-  "@gerak/player (core) imports @gerak/moves (library)",
-  "@gerak/react (core) imports @gerak/moves (library)",
-  "@gerak/stage (core) imports @gerak/moves (library)",
-  "@gerak/three (core) imports @gerak/moves (library)",
   "@gerak/three (core) imports @gerak/rig (modules)",
   "@gerak/tools (core) imports @gerak/moves (library)"
 ]

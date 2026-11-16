@@ -1,4 +1,4 @@
-import type { Pose3d } from "@gerak/moves";
+import type { Pose3d } from "@gerak/core";
 import { Euler, type EulerOrder, type Object3D } from "three";
 import { writeCustom, type CustomWriter } from "./pose2d";
 

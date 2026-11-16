@@ -10,7 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { defineMove, mix, type Pose2d, QUALITIES } from "@gerak/moves";
+import { mix, type Pose2d } from "@gerak/core";
+import { defineMove, QUALITIES } from "@gerak/moves";
 import {
   collectRecords,
   parseCatalogArgs,
@@ -26,11 +27,8 @@ afterEach(() => {
   for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-const ENTER = (
-  id: string,
-  name: string,
-  end = "",
-) => `import { defineMove, type Pose2d } from "@gerak/moves";
+const ENTER = (id: string, name: string, end = "") => `import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${name} = defineMove({
   id: "${id}",
   role: "enter",

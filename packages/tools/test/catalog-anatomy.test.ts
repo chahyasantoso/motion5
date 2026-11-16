@@ -2,7 +2,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { VALUE_FIELDS, QUALITIES } from "@gerak/moves";
+import { VALUE_FIELDS } from "@gerak/core";
+import { QUALITIES } from "@gerak/moves";
 import {
   FIELD_GROUPS,
   moveParts,

@@ -1,4 +1,5 @@
-import { ballistic as thrown, defineMove, type Pose2d } from "@gerak/moves";
+import { ballistic as thrown, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 /** The parabola's true peak above the higher end, for a curve whose control point sits `apex` above it. */
 function peakAbove(dy: number, apex: number): number {

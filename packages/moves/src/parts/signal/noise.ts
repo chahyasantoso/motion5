@@ -1,5 +1,5 @@
 import { definePart } from "../contract";
-import { seeded } from "../utility/random";
+import { seeded } from "@gerak/core";
 
 /** A smooth wandering value from -1 to 1 over time in ms, easing to a fresh seeded target every `scale` ms; the
  * same seed wanders the same. */

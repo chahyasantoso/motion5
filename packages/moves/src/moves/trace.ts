@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share
  * kept drawn behind the head. */

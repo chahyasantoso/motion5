@@ -2,7 +2,7 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { Object3D } from "three";
-import { type Time } from "@gerak/moves";
+import { type Time } from "@gerak/core";
 import { manualDriver, type ManualDriver } from "@gerak/player";
 import { usePlayer } from "@gerak/react";
 import { useTarget3d } from "../src/react";

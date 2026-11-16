@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 import { squashed } from "../parts/coupling/squashed";
 
 const CONTACT_WIDTH = 0.2;

@@ -1,4 +1,5 @@
-import { arch, defineMove, wave, type Pose2d } from "@gerak/moves";
+import { arch, wave, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 const inOut = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 const LIFT_SHARE = 0.28;

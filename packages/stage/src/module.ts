@@ -1,4 +1,4 @@
-import { isMotionEvent, mergeEvents, type Events, type Time } from "@gerak/moves";
+import { isMotionEvent, mergeEvents, type Events, type Time } from "@gerak/core";
 import { castNames, isCubics, type Cast, type Member } from "./cast";
 import { NO_REST, type Box, type Layouts, type Rest } from "./rest";
 import { frame, story, type Frame, type Story } from "./story";

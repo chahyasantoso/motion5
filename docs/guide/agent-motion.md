@@ -77,7 +77,7 @@ A piece is one file that exports `beats`, `cast`, `skins` and `scene`, and optio
 and `rest`; a piece that changes place adds `layouts` and `layout` ([layout](./agent-layout.md)).
 
 ```ts
-import type { Events, Time } from "@gerak/moves";
+import type { Events, Time } from "@gerak/core";
 import { actor, group, letters, many, story, type Rest } from "@gerak/stage";
 
 export const beats = story(3000, { enter: [0, 600], hold: [600, 2400], leave: [2400, 3000] });
@@ -129,7 +129,8 @@ number goes.
 ```ts
 // Every helper below, and every built-in move, comes from this package; a move `gerak moves` lists from
 // `<pieces>/<brief>/src/moves` is imported from `./moves/<id>`.
-import { combine, ease, lane, lanes, mix, repeated, reversed, rise, span, type Time } from "@gerak/moves";
+import { combine, ease, lane, lanes, mix, repeated, reversed, span, type Time } from "@gerak/core";
+import { rise } from "@gerak/moves";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
 rise({ distance }, enter.of(time)); // a move placed on it

@@ -7,7 +7,7 @@ import {
   type Pose2d,
   type Span,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 import {
   blendShapes,

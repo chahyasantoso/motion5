@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d } from "@gerak/core";
 import {
   NO_LAYOUTS,
   NO_REST,

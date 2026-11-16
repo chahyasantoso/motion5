@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 
 /** Grows a circle from `(x, y)` to `radius`, easing in and out, answering `clipX`, `clipY` and
  * `clipRadius` in px from the target's top left. */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { defineMove, mix, type Pose2d } from "@gerak/moves";
+import { mix, type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 import { collectRecords } from "../src/scene/catalog";
 import { describeOffsets, descriptorsOf } from "../src/scene/moves";
 

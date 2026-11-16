@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { span, toCubics, type Time } from "@gerak/moves";
+import { span, toCubics, type Time } from "@gerak/core";
 import {
   NO_LAYOUTS,
   NO_REST,

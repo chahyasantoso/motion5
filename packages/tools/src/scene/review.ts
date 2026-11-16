@@ -1,9 +1,8 @@
 import { pathToFileURL } from "node:url";
+import { mergeEvents, valueField } from "@gerak/core";
 import {
   isLively,
-  mergeEvents,
   outsideRanges,
-  valueField,
   type DescriptorRanges,
   type Descriptors,
   type StyleCard,

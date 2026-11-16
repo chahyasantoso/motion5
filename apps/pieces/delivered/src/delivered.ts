@@ -1,4 +1,5 @@
-import { combine, drop, ease, fade, mix, span, type Events, type Time } from "@gerak/moves";
+import { combine, ease, mix, span, type Events, type Time } from "@gerak/core";
+import { drop, fade } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
 import { thud } from "./moves/thud";
 

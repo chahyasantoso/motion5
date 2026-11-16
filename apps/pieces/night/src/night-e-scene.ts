@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { combine, fade, rise, slide, span, swing, type Time } from "@gerak/moves";
+import { combine, span, type Time } from "@gerak/core";
+import { fade, rise, slide, swing } from "@gerak/moves";
 
 /** How long the scene runs, in ms. */
 export const durationMs = 4000;

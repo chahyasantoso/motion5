@@ -9,7 +9,7 @@ import {
   type RefCallback,
 } from "react";
 import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
-import { NO_EVENTS, elapsedOf, type Events, type Pose2d } from "@gerak/moves";
+import { NO_EVENTS, elapsedOf, type Events, type Pose2d } from "@gerak/core";
 import { play, type Driver, type Player, type Scene } from "@gerak/player";
 
 /** A driver a component owns, released when the component leaves. */

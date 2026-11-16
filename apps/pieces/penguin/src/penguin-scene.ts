@@ -1,14 +1,14 @@
 import {
   elapsedOf,
   ease,
-  follow,
   mix,
   seeded,
   span,
   type Events,
   type Pose2d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { follow } from "@gerak/moves";
 import { actor, group, many, story } from "@gerak/stage";
 import talk from "../../references/talk.json" with { type: "json" };
 

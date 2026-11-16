@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { arch, attack, ballistic, decay, noise1d, radial, taper, wave } from "../src/index";
+import { arch, attack, ballistic, decay, radial, taper, wave } from "@gerak/core";
+import { noise1d } from "../src/index";
 
 describe("wave", () => {
   it("crosses zero 2 * count - 1 times strictly inside", () => {

@@ -5,7 +5,7 @@ import {
   type Events,
   type MotionEvent,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
   NO_LAYOUTS,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, defineMove, type Time } from "@gerak/moves";
+import { atProgress, type Time } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 const slide = defineMove({
   role: "enter",

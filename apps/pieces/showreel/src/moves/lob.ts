@@ -1,4 +1,5 @@
-import { ballistic, defineMove, squashed, type Pose2d } from "@gerak/moves";
+import { ballistic, type Pose2d } from "@gerak/core";
+import { defineMove, squashed } from "@gerak/moves";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 const TAPER = 0.1;

@@ -13,7 +13,8 @@ let copies = 0;
 
 /** A stage module of one actor that slides in from the left over the whole piece. */
 function fixture(distance: number): string {
-  return `import { slide, type Time } from "@gerak/moves";
+  return `import { type Time } from "@gerak/core";
+import { slide } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
 
 export const beats = story(2000, { go: [0, 2000] });

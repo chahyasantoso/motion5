@@ -15,7 +15,8 @@ function ok(argv: readonly string[]): Extract<CatalogArgs, { kind: "ok" }> {
   return args;
 }
 
-const move = (id: string) => `import { defineMove, type Pose2d } from "@gerak/moves";
+const move = (id: string) => `import { type Pose2d } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 export const ${id.replace(/-./g, (found) => found.slice(1).toUpperCase())} = defineMove({
   id: "${id}",
   role: "enter",

@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { unreachable } from "../unreachable";
+import type { Pose2d } from "@gerak/core";
+import { unreachable } from "@gerak/core";
 
 /** Grows from nothing along one axis to full size, held at an edge. */
 export const unfold = defineMove({

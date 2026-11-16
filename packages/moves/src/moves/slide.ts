@@ -1,6 +1,6 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { unreachable } from "../unreachable";
+import type { Pose2d } from "@gerak/core";
+import { unreachable } from "@gerak/core";
 
 /** Slides in from `distance` px away on one side, decelerating. */
 export const slide = defineMove({

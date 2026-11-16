@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { combine, drop, ease, fade, mix, span, swing, type Pose2d, type Time } from "@gerak/moves";
+import { combine, ease, mix, span, type Pose2d, type Time } from "@gerak/core";
+import { drop, fade, swing } from "@gerak/moves";
 
 export const durationMs = 5000;
 

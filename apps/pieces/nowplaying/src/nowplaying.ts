@@ -1,18 +1,16 @@
 import {
   combine,
   elapsedOf,
-  fade,
   lane,
   lanes,
   mix,
   reversed,
-  rise,
   span,
   type Events,
   type Pose2d,
   type Time,
-  smudge,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { fade, rise, smudge } from "@gerak/moves";
 import { actor, group, letters, story, type Rest } from "@gerak/stage";
 
 const TITLE = "Night Shift";

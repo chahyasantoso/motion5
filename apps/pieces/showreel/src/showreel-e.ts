@@ -1,22 +1,24 @@
 import {
-  anticipate,
   combine,
   ease,
-  fade,
-  overshoot,
-  pulse,
   reversed,
-  rise,
   sequence,
-  slide,
   span,
   toCubics,
-  wipe,
-  wobble,
   type Cubic2d,
   type Events,
   type Pose2d,
   type Time,
+} from "@gerak/core";
+import {
+  anticipate,
+  fade,
+  overshoot,
+  pulse,
+  rise,
+  slide,
+  wipe,
+  wobble,
   smudge,
 } from "@gerak/moves";
 import {

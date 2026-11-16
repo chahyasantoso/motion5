@@ -14,7 +14,8 @@ let root = "";
 let source: { readonly kind: "serve"; readonly root: string } = { kind: "serve", root: "" };
 
 /** A stage module of one actor that slides in from the left over the whole piece. */
-const FIXTURE = `import { slide, type Time } from "@gerak/moves";
+const FIXTURE = `import { type Time } from "@gerak/core";
+import { slide } from "@gerak/moves";
 import { actor, story } from "@gerak/stage";
 
 export const beats = story(2000, { go: [0, 2000] });

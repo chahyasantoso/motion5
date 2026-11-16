@@ -1,5 +1,5 @@
 import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import type { Pose2d } from "@gerak/core";
 import { shaken } from "../parts/oscillation/shaken";
 
 /** Shakes sideways `count` times, starting hard and dying away. */

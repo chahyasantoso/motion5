@@ -1,5 +1,5 @@
 import { clockDriver } from "@gerak/dom";
-import { ease, mix, mixPoint3d, orbit, aim, span, type Pose3d, type Time } from "@gerak/moves";
+import { ease, mix, mixPoint3d, orbit, aim, span, type Pose3d, type Time } from "@gerak/core";
 import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, bonesOf3d, childBase3d, chainThrough3d, ik3d } from "@gerak/rig";

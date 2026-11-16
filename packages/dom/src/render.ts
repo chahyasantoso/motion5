@@ -1,4 +1,4 @@
-import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/moves";
+import { valueField, type Anchor, type Cubic2d, type Pose2d } from "@gerak/core";
 import { meets } from "@gerak/stage";
 import { unreachable } from "./unreachable";
 

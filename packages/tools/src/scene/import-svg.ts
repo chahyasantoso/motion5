@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, sep } from "node:path";
-import type { Cubic2d } from "@gerak/moves";
+import type { Cubic2d } from "@gerak/core";
 import { matchOutlines } from "@gerak/stage";
 import { withPage } from "../page/page";
 import { pieceFiles } from "./briefs";
@@ -524,7 +524,7 @@ function moduleSource(
   const defs =
     built.defs.length === 0 ? "" : `\n    defs: \`${templateText(built.defs.join("\n"))}\`,`;
   return `// Imported from ${basename(source)} by gerak import-svg: flat parts in paint order; rename a part by replacing its quoted name.
-import type { Time } from "@gerak/moves";
+import type { Time } from "@gerak/core";
 import { actor, story } from "@gerak/stage";
 
 export const beats = story(1000, { show: [0, 1000] });

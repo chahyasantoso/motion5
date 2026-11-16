@@ -8,18 +8,16 @@ import {
   lane,
   lanes,
   mix,
-  smear,
   span,
   springEase,
-  squashed,
   toCubics,
-  trail,
   velocity,
   type Anchor2d,
   type Events,
   type Pose2d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { smear, squashed, trail } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;

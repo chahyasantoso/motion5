@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { fade, rise, slide, span, type Time } from "@gerak/moves";
+import { span, type Time } from "@gerak/core";
+import { fade, rise, slide } from "@gerak/moves";
 import { styleCards } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../../packages/tools/src/scene/review";
 import { readSceneModule } from "../../packages/tools/src/scene/scene";
