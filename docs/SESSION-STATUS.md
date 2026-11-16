@@ -5,27 +5,22 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-15, Asia/Jakarta.
-- **Read against:** `feat/installable`, the installable plan built on `main` at `a249afe8`.
+- **Captured:** 2026-11-16, Asia/Jakarta.
+- **Read against:** `feat/split`, the core, modules and library split built on `main` at `2a2021c6`.
 
 ## Now
 
-- **A scene is `(time, events) => targets`, and an agent designs before it chooses.** `@gerak/moves` holds fields,
-  parts by kind and moves in layer folders, with the time helpers in `@gerak/core`; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
-  `@gerak/rapier`, `@gerak/dom`, `@gerak/react`, `@gerak/three` and `@gerak/stage` build, play and write it; the
-  one `npx gerak <command>` from `@gerak/tools` makes, reviews, samples and renders pieces, here and in a person's own
-  project after `npx gerak init`, which writes the page files, the skill and an `AGENTS.md` naming the read-whole core and stage pages and each installed package's docs; the
-  packages ship their own docs; a fresh agent made the 30 s `launch-night` reel from the earlier shipped guide alone. Each brief is a folder of the pieces folder (`gerak.pieces`; `apps/pieces` here), played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves --anatomy`
-  is the card of primitives, the catalog answers a piece's `design`, and `gerak review` checks the design. A brief
-  folder is portable with its own parts; its optional `style.ts` card holds the share of lively motion per field, which
-  `gerak review` checks for any piece naming it and `gerak style` measures (the `showreel` card, measured by
-  `launch-day`). Decisions are ADR-170 to ADR-188; each package's docs and its generated `packages/<package>/docs/reference` pages describe use. Every package installs
-  from its tarball; nothing is on npm (ADR-179, ADR-188).
+- **A scene is `(time, events) => targets`, split across thirteen packages in three enforced groups (`core`, `modules`, `library`).**
+  `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`), eases, envelopes, blends, paths, geometry, 3D maths and measures;
+  `@gerak/stage` owns the cast, story, skins, layouts and `carried`; `@gerak/player`, `@gerak/dom`, `@gerak/react` and `@gerak/three` play and write it.
+  Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
+  the library (`@gerak/moves` and `@gerak/moves-tools`) adds named moves, couplings, signal parts, styles, `gerak moves`, `new-move`, `promote`, `style` and design review when installed.
+  `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`) cleanly with core alone, discovering library plugins via manifest `gerak.commands`/`gerak.review`; `npx gerak init` writes page files, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md` (under 20 KB each) and every installed package's docs.
+  Decisions are ADR-170 to ADR-189; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **The live kit and the web overlay** (`plan/roadmap.md`): the live editor's panel, timeline, swap and guard as their
-  own kit, then a dev-only overlay on a running site.
+- **Search and harvest** (`plan/search-plan.md`): `gerak find` over the library and brief records in `@gerak/moves-tools`, followed by the live kit and dev-only web overlay (`plan/roadmap.md`).
 
 ## Open, and not scheduled
 
