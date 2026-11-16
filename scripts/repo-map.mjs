@@ -56,6 +56,7 @@ export const OWNERS = {
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
   "packages/tools/src/scene/templates": "gerak new templates",
+  "packages/moves-tools/src/templates": "gerak new-move template",
   "packages/tools/src/scene/templates/pages": "the page files of a pieces folder",
   "packages/tools/src/page": "page tools",
   "packages/tools/src/pages": "the stage, live and talk pages",
