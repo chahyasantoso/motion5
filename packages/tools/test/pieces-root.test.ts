@@ -41,6 +41,13 @@ describe("piecesRoot", () => {
     });
   });
 
+  it("passes a package.json that is not JSON on the way up", () => {
+    writeJson(join(top, "package.json"), { gerak: { pieces: "pieces" } });
+    mkdirSync(join(top, "sub"), { recursive: true });
+    writeFileSync(join(top, "sub", "package.json"), "{bad", "utf8");
+    expect(piecesRoot(join(top, "sub"))).toEqual({ kind: "found", root: join(top, "pieces") });
+  });
+
   it("says both ways to name a folder when none is found", () => {
     const found = piecesRoot(top);
     expect(found.kind).toBe("missing");

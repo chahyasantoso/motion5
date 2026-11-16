@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { pageFiles } from "./page-files";
 
@@ -38,7 +38,12 @@ function manifestFolder(start: string): string | undefined {
 }
 
 function parseManifest(file: string): Record<string, unknown> | undefined {
-  const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return undefined;
+  }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
   return Object.fromEntries(Object.entries(parsed));
 }
@@ -73,9 +78,15 @@ export function initProject(
   const manifest = parseManifest(manifestFile);
   if (manifest === undefined)
     return { kind: "refused", message: "package.json is not a JSON object." };
+  const gerak = manifest.gerak;
+  if (gerak !== undefined && (typeof gerak !== "object" || gerak === null || Array.isArray(gerak)))
+    return { kind: "refused", message: 'package.json\'s "gerak" is not an object.' };
   const folder = relative(project, resolve(cwd, folderArg)).split("\\").join("/");
-  if (folder === "" || folder.startsWith("..") || isAbsolute(folder))
+  if (folder === "" || folder === ".." || folder.startsWith("../") || isAbsolute(folder))
     return { kind: "refused", message: "The pieces folder must be inside the project." };
+  const target = join(project, folder);
+  if (existsSync(target) && !statSync(target).isDirectory())
+    return { kind: "refused", message: `${folder} is a file, not a folder.` };
   const skill = guide[SKILL_IN_GUIDE];
   if (skill === undefined) return { kind: "refused", message: "The shipped guide has no skill." };
   const pages = pageFiles();
@@ -85,16 +96,14 @@ export function initProject(
     "AGENTS.md",
   ];
   const existing = targets.filter((target) => existsSync(join(project, target)));
-  const gerak = manifest.gerak;
-  const named =
-    typeof gerak === "object" && gerak !== null && Reflect.get(gerak, "pieces") !== undefined;
+  const named = gerak !== undefined && gerak !== null && Reflect.get(gerak, "pieces") !== undefined;
   const clash = [...existing, ...(named ? ["package.json (gerak.pieces)"] : [])];
   if (clash.length > 0)
     return { kind: "refused", message: `Already set up, nothing written: ${clash.join(", ")}.` };
   for (const [name, text] of Object.entries(pages)) write(join(project, folder, name), text);
   write(join(project, SKILL_FILE), skill.replaceAll("../../", GUIDE_LINK));
   write(join(project, "AGENTS.md"), agentsText(folder));
-  const kept = typeof gerak === "object" && gerak !== null ? Object.entries(gerak) : [];
+  const kept = gerak === undefined || gerak === null ? [] : Object.entries(gerak);
   const next = { ...manifest, gerak: { ...Object.fromEntries(kept), pieces: folder } };
   write(manifestFile, `${JSON.stringify(next, null, 2)}\n`);
   return { kind: "written", files: [...targets, "package.json"] };

@@ -9,9 +9,14 @@ export type PiecesRoot =
 const MISSING =
   'No pieces folder: pass --root <dir>, or add "gerak": { "pieces": "<dir>" } to your package.json.';
 
-/** The `gerak.pieces` folder of one package.json, resolved from it, or undefined when it names none. */
+/** The `gerak.pieces` folder of one package.json, resolved from it; undefined when it names none or is not JSON. */
 function namedIn(file: string): string | undefined {
-  const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return undefined;
+  }
   if (typeof parsed !== "object" || parsed === null) return undefined;
   const gerak: unknown = Reflect.get(parsed, "gerak");
   if (typeof gerak !== "object" || gerak === null) return undefined;

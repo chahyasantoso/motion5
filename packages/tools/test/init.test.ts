@@ -157,4 +157,26 @@ describe("gerak init", () => {
       );
     }
   });
+
+  it("refuses a gerak entry that is not an object, and a package.json that is not JSON, writing nothing", () => {
+    for (const manifest of ['{ "gerak": ["q"] }', '{ "gerak": "x" }', "{bad"]) {
+      const dir = project(manifest);
+      const { code, result } = init(dir);
+      expect(code, manifest).toBe(1);
+      expect(result.kind).toBe("refused");
+      expect(readFileSync(join(dir, "package.json"), "utf8")).toBe(manifest);
+      expect(existsSync(join(dir, "AGENTS.md"))).toBe(false);
+    }
+  });
+
+  it("takes a folder whose name starts with two dots, and refuses a folder that is a file", () => {
+    const dots = project("{}");
+    expect(init(dots, ["..motion"]).result.kind).toBe("written");
+    expect(existsSync(join(dots, "..motion", "stage.html"))).toBe(true);
+    const file = project("{}");
+    writeFileSync(join(file, "pieces"), "");
+    const { result } = init(file);
+    expect(result.kind).toBe("refused");
+    expect(existsSync(join(file, "AGENTS.md"))).toBe(false);
+  });
 });
