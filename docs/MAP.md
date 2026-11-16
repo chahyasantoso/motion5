@@ -66,6 +66,12 @@ Public: `.`
 
 - `src/`: React hooks
 
+## packages/rig-three
+
+Public: `.`
+
+- `src/`: glTF skeleton binding to rig joints
+
 ## packages/rig
 
 Public: `.`
@@ -85,7 +91,7 @@ Public: `.`
 
 ## packages/three
 
-Public: `.`, `./react`, `./skeleton`
+Public: `.`, `./react`
 
 - `src/`: Three.js adapter
 

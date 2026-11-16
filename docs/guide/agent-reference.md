@@ -523,6 +523,7 @@ return <mesh ref={ball} />;
 - **`WRITTEN_2D`** `const WRITTEN_2D: readonly ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity", "anchor"]`: The 2D pose fields `applyPose2d` writes on an object; custom numbers go to the piece's own writer.
 - **`CustomWriter`** `type CustomWriter`: Where a piece puts a custom number on an object; the renderer knows no meaning for it.
 - **`applyPose3d`** `(object: Object3D<Object3DEventMap>, pose: Pose3d, rest?: { readonly x: number; readonly y: number; readonly z: number; }, custom?: CustomW…`: Writes a `Pose3d` on an object: y up, degrees on Z-X-Y; a missing field writes its rest, and each custom number goes to `custom(name, value, object)`.
+- **`setEulerDegrees`** `(target: Euler, rotation: number, rotationX: number, rotationY: number): Euler`: Sole degrees-to-radians owner for `ZXY`; angles reduce mod 360.
 - **`UNWRITTEN_3D`** `const UNWRITTEN_3D: Readonly<Partial<Record<"x" | "scale" | "y" | "z" | "scaleX" | "scaleY" | "scaleZ" | "opacity" | Turn3d | "anchor" | "c…`: The 3D pose fields `applyPose3d` leaves alone, each with the reason; it writes every one.
 - **`WRITTEN_3D`** `const WRITTEN_3D: readonly ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale", "scaleX", "scaleY", "scaleZ", "opacity"]`: The 3D pose fields `applyPose3d` writes on an object; custom numbers go to the piece's own writer.
 <!-- generated:reference:end -->
@@ -536,9 +537,9 @@ return <mesh ref={ball} />;
 ## @gerak/three/skeleton
 
 <!-- generated:reference:start -->
-- **`captureSkeleton`** `(source: Object3D<Object3DEventMap> | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
 - **`applyBones`** `(skeleton: CapturedSkeleton, poses: Readonly<Record<string, Pose3d>>): void`: Applies per-bone `Pose3d` deltas (from `bonesOf3d` or hand-keyed) relative to rest, resetting omitted bones.
 - **`attach`** `(skeleton: CapturedSkeleton, bone: string, object: Object3D<Object3DEventMap>, options: { readonly at: Vector3; readonly turn?: Quaternion;…`: Parents `object` to a bone at model-space `at`, turned by model-space `turn`, from captured rest only.
+- **`captureSkeleton`** `(source: Object3D<Object3DEventMap> | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
 - **`CapturedBone`** `type CapturedBone`: A captured Three.js bone with its rest local and world transforms and its world rest joint.
 - **`CapturedSkeleton`** `type CapturedSkeleton`: A Three.js skeleton captured at rest: bones parent-before-child, lookup by name, and world rest joints.
 <!-- generated:reference:end -->

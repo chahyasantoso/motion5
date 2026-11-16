@@ -12,14 +12,12 @@ then `AGENTS.md`, then `plan/split-plan.md` sections 4 to 7. Delete this file in
     a higher group against `scripts/group-baseline.json`, which may only shrink. ADR-189 records the split.
   - S1a, S1b, S1c: `@gerak/core` (packages/core) owns the primitives (fields, time, blend, ease, envelope, events,
     geometry, measure, path, utility). Core primitives carry no part contract. The catalog lists library parts only.
-- Wave 3 (S1d, S2, S3) was started in parallel by three builders. If their work is not on `origin/feat/split`, it is
-  either on local branches `worktree-agent-*` in `.claude/worktrees/agent-*/` of the original machine, or lost. Check
-  `git log origin/feat/split` for these messages before redoing a slice:
-  - S1d: "feat(core): time helpers in two shapes, with loop, chain and lanes by"
-  - S2: "refactor(rig): the skeleton binding moves to @gerak/rig/three; three drops rig"
-  - S3: "feat(core): path geometry and one owner for unreachable and clamp", "feat(scan): duplicate functions across
-    packages"
-  A missing slice is rebuilt from its section in `plan/split-plan.md` (section 6) and ADR-189.
+- Wave 3 is done and green: S1d (time helpers in two shapes: `Timing` with `.of`, `loop`, `chain`, `lanes` with
+  `by`; `window`, `lane`, `laneTime` removed), S2 (the skeleton binding is its own package `@gerak/rig-three`, modules,
+  not pure, so rig stays pure; three no longer imports rig), S3 (path geometry in core: `pathFrom`, shape paths,
+  `arcPath`, `transformPath`, `resamplePath`, `reversePath`, `pathBounds`, `pathArea`, `isClosedPath`, `pathLength`;
+  one owner for `unreachable` and `clamp`; `npm run scan:duplicates` with `scripts/function-duplicate-baseline.json`).
+- `scripts/group-baseline.json` holds one line, tools imports moves, which S4 removes.
 
 ## How the work runs
 
@@ -43,7 +41,6 @@ short brief. Map them to whatever agents the harness has.
 
 | Wave | Slices | Notes |
 | --- | --- | --- |
-| 3 | S1d, S2, S3 | in flight or done; see above |
 | 4 | S4 | the library's commands into `@gerak/moves/cli`; `@gerak/tools` stops importing moves (its baseline line goes, the group baseline is then empty); rig's `joints` command |
 | 5 | S5a, then S5b | docs per package, read-whole `core.md` and `stage.md` (≤20 KB), guide moved, `gerak init` writes `AGENTS.md` |
 | 6 | S6, S7 | core-only install gate; NADI proof against the 110.6k-token plain HTML/JS baseline; a cold review of the whole diff |

@@ -35,7 +35,8 @@ and still missed public helpers. Nothing marks which code a project may replace 
   resampling, reversal, bounds, area, closure and length.
 - **One owner for shared helpers:** `unreachable` and `clamp` from `@gerak/core`, every copy removed; a duplicate scan
   joins `npm run check` with a baseline that may only shrink.
-- **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig/three`, and
+- **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes its own package,
+  `@gerak/rig-three` (modules, not pure, so rig stays pure), and
   `@gerak/tools` drops `rig` and `three`.
 - **Commands plug in.** A package declares `"gerak": { "commands", "review" }`; `listCommands()` in `@gerak/tools`
   reads its own list and each installed package's. The library's commands ship in `@gerak/moves/cli`, node only, and

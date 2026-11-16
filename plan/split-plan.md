@@ -1,6 +1,6 @@
 # Split plan: core, modules and library
 
-**Status:** In progress, 2026-11-16: waves 1 and 2 done (S0, S1a, S1b, S1c); wave 3 (S1d, S2, S3) next.
+**Status:** In progress, 2026-11-16: waves 1 to 3 done (S0 to S3); wave 4 (S4) next.
 **Base:** `main` at `2a2021c6` (installable tools merged).
 **Read first:** `AGENTS.md`, `docs/SESSION-STATUS.md`, `docs/ARCHITECTURE.md`, `docs/ADR-185-*.md`, `docs/ADR-187-*.md`,
 `docs/ADR-188-*.md`, `.claude/skills/wave-build/SKILL.md`, then this plan.
@@ -54,8 +54,8 @@ packages/                 group     holds
   react/    @gerak/react    core      the React renderer
   three/    @gerak/three    core      the Three.js renderer (no rig)
   tools/    @gerak/tools    core      the gerak command, the core commands, the pages
-  rig/      @gerak/rig      modules   bones, chains, joints, IK; `@gerak/rig/three` binds a glTF skeleton (three an
-                                      optional peer)
+  rig/      @gerak/rig      modules   bones, chains, joints, IK; pure
+  rig-three/ @gerak/rig-three modules the glTF skeleton binding (three an optional peer); not pure
   physics/  @gerak/physics  modules   2D bodies and worlds
   rapier/   @gerak/rapier   modules   the Rapier engine
   moves/    @gerak/moves    library   definePart and the part kinds, parts that carry a choice (coupling, follow,
@@ -124,7 +124,7 @@ packages/                 group     holds
 - **One owner for shared helpers:** `unreachable` and `clamp` from `@gerak/core`, every copy removed; the stage's `lerp`
   becomes `mix`. A duplicate scan joins `npm run check`: two top-level functions of one name in two packages whose bodies,
   with comments and whitespace removed, hash alike, are a finding; its baseline may only shrink.
-- **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig/three`. `@gerak/tools`
+- **The skeleton binding leaves the core renderer:** `@gerak/three/skeleton` becomes `@gerak/rig-three`. `@gerak/tools`
   drops its `rig` and `three` dependencies; `gerak joints` moves to rig's declared commands.
 - **Groups are a field, not folders.** `packages/` stays flat; each manifest's `gerak.group` names its group, and the
   boundary scan refuses a package with none and an import upward, against `scripts/group-baseline.json`.
@@ -204,7 +204,7 @@ rewritten brief's frames compare equal before and after; the shape test is shown
 
 ### S2. Modules clean (executor, after S1c)
 
-`@gerak/physics` and `@gerak/rapier` depend on core only; `@gerak/three/skeleton` becomes `@gerak/rig/three`; rig
+`@gerak/physics` and `@gerak/rapier` depend on core only; `@gerak/three/skeleton` becomes `@gerak/rig-three`; rig
 depends on core only; `@gerak/moves` declares rig. The boundary baseline loses those lines.
 
 ### S3. Geometry into core and one owner (executor, after S1c, beside S2)
