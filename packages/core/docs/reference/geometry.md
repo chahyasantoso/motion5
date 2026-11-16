@@ -43,7 +43,7 @@ Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and 
 - **`Cubic3d`** `type Cubic3d`: One 3D cubic Bézier segment from `(x0, y0, z0)` to `(x3, y3, z3)`, named by the anchor it leaves.
 - **`arcPath`** `(options: ArcOptions): readonly Cubic2d[]`: An elliptical arc as cubics of at most a quarter turn each, named `arc0`, `arc1`, …; nothing when it starts where it ends.
 - **`pathFrom`** `(data: string): PathRead`: The outlines of SVG path data in the path's own units: every command, absolute and relative, with arcs and quadratics made cubic and each closing line explicit.
-- **`ArcOptions`** `type ArcOptions`: The options of an elliptical arc between two points, as the SVG `A` command takes them.
+- **`ArcOptions`** `type ArcOptions`: Elliptical arc from `(x0, y0)` to `(x1, y1)` with radii `rx`, `ry`, optional `degrees`, `large`, `sweep`.
 - **`PathRead`** `type PathRead`: The outlines of path data: each outline is the cubics of one subpath, and `error` says why reading stopped early when the data is malformed.
 - **`circlePath`** `(options: { readonly cx: number; readonly cy: number; readonly r: number; }): readonly Cubic2d[]`: The closed outline of a circle of radius `r` about `(cx, cy)`; nothing when `r` is not above zero.
 - **`ellipsePath`** `(options: { readonly cx: number; readonly cy: number; readonly rx: number; readonly ry: number; }): readonly Cubic2d[]`: The closed outline of an ellipse, four quarter arcs from its right-hand point; nothing when a radius is not above zero.

@@ -1422,13 +1422,33 @@ function reasons(table: Readonly<Record<string, string | undefined>>): ReadonlyM
   );
 }
 
-/** The renderers' own lists of written and unwritten fields: `dom`, `three 2d` and `three 3d`. */
+async function tryImport<T>(load: () => Promise<T>): Promise<T | undefined> {
+  try {
+    return await load();
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null ? Reflect.get(error, "code") : undefined;
+    if (code === "ERR_MODULE_NOT_FOUND") return undefined;
+    throw error;
+  }
+}
+
+/** The renderers' own lists of written and unwritten fields: `dom`, and `three 2d`/`three 3d` when installed. */
 async function rendererTables(): Promise<readonly RendererTable[]> {
-  const [dom, three] = await Promise.all([import("@gerak/dom"), import("@gerak/three")]);
+  const [dom, three] = await Promise.all([
+    tryImport(() => import("@gerak/dom")),
+    tryImport(() => import("@gerak/three")),
+  ]);
   return [
-    { name: "dom", written: dom.WRITTEN, unwritten: reasons(dom.UNWRITTEN) },
-    { name: "three 2d", written: three.WRITTEN_2D, unwritten: reasons(three.UNWRITTEN_2D) },
-    { name: "three 3d", written: three.WRITTEN_3D, unwritten: reasons(three.UNWRITTEN_3D) },
+    ...(dom === undefined
+      ? []
+      : [{ name: "dom", written: dom.WRITTEN, unwritten: reasons(dom.UNWRITTEN) }]),
+    ...(three === undefined
+      ? []
+      : [
+          { name: "three 2d", written: three.WRITTEN_2D, unwritten: reasons(three.UNWRITTEN_2D) },
+          { name: "three 3d", written: three.WRITTEN_3D, unwritten: reasons(three.UNWRITTEN_3D) },
+        ]),
   ];
 }
 
@@ -1743,6 +1763,8 @@ export async function runCatalog(
   if (asked.kind === "refused") return { lines: [asked.message], code: 1 };
   const tables = await rendererTables();
   const renderer = args.renderer === undefined ? undefined : tableOf(tables, args.renderer);
+  if (args.renderer !== undefined && renderer === undefined)
+    return { lines: [`Renderer "${args.renderer}" is not installed.`], code: 1 };
   const request: CatalogQuery = {
     ...(args.role === undefined ? {} : { role: args.role }),
     ...(args.find === undefined ? {} : { find: args.find }),

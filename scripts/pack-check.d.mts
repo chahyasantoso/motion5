@@ -20,4 +20,6 @@ export function missingBinFiles(
   manifest: Pick<InstallableManifest, "name" | "bin" | "files">,
   exists: (file: string) => boolean,
 ): { specifier: string; error: string }[];
+export const CORE_INSTALL_SET: readonly string[];
 export function missingFromHelp(help: string, names: readonly string[]): string[];
+export function listedInHelp(help: string, names: readonly string[]): string[];

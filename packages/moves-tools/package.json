@@ -18,6 +18,7 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@gerak/core": "0.1.0",
+    "@gerak/dom": "0.1.0",
     "@gerak/moves": "0.1.0",
     "@gerak/tools": "0.1.0"
   },

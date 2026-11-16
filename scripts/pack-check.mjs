@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -17,6 +18,11 @@ import { build } from "./build.mjs";
 import { INSTALLABLE_PACKAGES, exportSpecifiers, readManifest } from "./installable-packages.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
+
+/** The core packages needed to make, play and check a 2D piece without modules or the library. */
+export const CORE_INSTALL_SET = ["core", "player", "stage", "dom", "react", "tools"];
+const CORE_PEERS = ["react", "react-dom", "vite", "playwright-core", "typescript"];
+const LIBRARY_INSTALL_SET = [...CORE_INSTALL_SET, "rig", "moves", "moves-tools"];
 
 /** Every import specifier the installable packages declare, in build order. */
 export function allSpecifiers(directories = INSTALLABLE_PACKAGES, read = readManifest) {
@@ -65,6 +71,12 @@ export function missingBinFiles(manifest, exists) {
 export function missingFromHelp(help, names) {
   const lines = help.split(/\r?\n/).map((line) => line.trim());
   return names.filter((name) => !lines.some((line) => line.startsWith(`${name} `)));
+}
+
+/** The names from `names` that appear as command lines in `help`. */
+export function listedInHelp(help, names) {
+  const lines = help.split(/\r?\n/).map((line) => line.trim());
+  return names.filter((name) => lines.some((line) => line.startsWith(`${name} `)));
 }
 
 /** The exact versions the lockfile installed for the peers a consumer must bring, and their types. */
@@ -237,6 +249,269 @@ function initError(project, exists = existsSync) {
   return broken.length > 0 ? `skill links do not resolve: ${broken.join(", ")}` : undefined;
 }
 
+/** Installs a subset of packed tarballs and peers into a fresh folder, returning any install error. */
+function installSubset(dir, packages, tarballs, lock, peers) {
+  mkdirSync(dir, { recursive: true });
+  const deps = Object.fromEntries(
+    packages.map((dirName) => [`@gerak/${dirName}`, tarballs[`@gerak/${dirName}`]]),
+  );
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({
+      name: "gerak-subset-check",
+      private: true,
+      type: "module",
+      dependencies: deps,
+    }),
+  );
+  const specs = peerVersions(lock, peers).map((spec) => `"${spec}"`);
+  const run = sh(`npm install --no-audit --no-fund ${specs.join(" ")}`, dir);
+  return run.code === 0 ? undefined : firstErrorLine(run.err);
+}
+
+const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, span, type Pose2d, type Time } from "@gerak/core";
+import { actor, many, story } from "@gerak/stage";
+
+export const beats = story(3000, { intro: [0, 1200], follow: [800, 2000], hold: [2000, 3000] });
+export const cast = {
+  dot: actor(),
+  bars: many(3),
+  arc: actor({
+    path: arcPath({
+      x0: 200,
+      y0: 360,
+      x1: 440,
+      y1: 360,
+      rx: 120,
+      ry: 120,
+      sweep: true,
+    }),
+  }),
+};
+export const skins = {
+  dom: {
+    css: [
+      '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
+      '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
+      '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
+    ].join("\\n"),
+  },
+};
+
+const [first, second] = chain([1000, 1000], { overlap: 200 });
+const row = lanes([1, 1, 1], 0.25);
+const tail = span(1400, 2200);
+
+export const scene = (time: Time) => {
+  const p = ease.cubicOut(first.of(time).progress);
+  const q = ease.quadOut(tail.of(time).progress);
+  return {
+    dot: { x: mix(-160, 0, p), opacity: mix(0, 1, p) } satisfies Pose2d,
+    bars: [0, 1, 2].map(
+      (i): Pose2d => ({
+        y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
+      }),
+    ),
+    arc: { drawn: mix(0, 1, q) } satisfies Pose2d,
+  };
+};
+`;
+
+const STYLED_CARD = `import { defineStyle } from "@gerak/moves";
+
+export const card = defineStyle({
+  name: "styled",
+  description: "Pack check style.",
+  qualities: {},
+  lively: { y: [0.5, 1] },
+  tokens: {},
+  habits: [],
+});
+`;
+
+const STYLED_PIECE = (styleName, quality) => `import type { Time } from "@gerak/core";
+import { drop } from "@gerak/moves";
+import { actor, story } from "@gerak/stage";
+
+${styleName === undefined ? "" : `export const style = ${JSON.stringify(styleName)};\n`}export const design = { box: { y: { fall: ${JSON.stringify(quality)} } } };
+export const beats = story(2000, { fall: [0, 1200], hold: [1200, 2000] });
+export const cast = { box: actor() };
+export const skins = { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } };
+export const scene = (time: Time) => ({
+  box: drop({ distance: 200, squash: 0.2 }, beats.fall.of(time)),
+});
+`;
+
+function jsonOf(run) {
+  try {
+    const lines = run.out.trim().split(/\r?\n/);
+    return JSON.parse(lines[lines.length - 1] ?? "");
+  } catch {
+    return undefined;
+  }
+}
+
+/** Verifies the core-only install set without modules or the library. */
+function coreOnlyChecks(dir, tarballs, lock, check) {
+  const installError = installSubset(dir, CORE_INSTALL_SET, tarballs, lock, CORE_PEERS);
+  check("core-only install", installError);
+  if (installError !== undefined) return;
+  const scope = join(dir, "node_modules", "@gerak");
+  const installed = existsSync(scope) ? readdirSync(scope).sort() : [];
+  const expected = [...CORE_INSTALL_SET].sort();
+  check(
+    "core-only node_modules/@gerak",
+    JSON.stringify(installed) === JSON.stringify(expected)
+      ? undefined
+      : `found ${installed.join(", ")} instead of ${expected.join(", ")}`,
+  );
+  check(
+    "core-only no three peer",
+    existsSync(join(dir, "node_modules", "three")) ? "three was installed" : undefined,
+  );
+  const help = sh("npx --no-install gerak --help", dir);
+  const missing = missingFromHelp(help.out, Object.keys(COMMANDS));
+  const extra = listedInHelp(help.out, Object.keys(LIBRARY_COMMANDS));
+  check(
+    "core-only gerak --help",
+    help.code !== 0
+      ? firstErrorLine(help.err)
+      : missing.length > 0
+        ? `leaves out ${missing.join(", ")}`
+        : extra.length > 0
+          ? `lists library commands: ${extra.join(", ")}`
+          : undefined,
+  );
+  const moves = sh("npx --no-install gerak moves", dir);
+  check(
+    "core-only gerak moves refused",
+    moves.code !== 0 && /Unknown command moves/.test(moves.out)
+      ? undefined
+      : `expected unknown command, got ${moves.code}: ${firstErrorLine(moves.out || moves.err)}`,
+  );
+  const init = initError(dir);
+  check("core-only gerak init", init);
+  if (init === undefined) {
+    const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+    const unmentioned = [
+      "moves",
+      "moves-tools",
+      "rig",
+      "rig-three",
+      "physics",
+      "rapier",
+      "three",
+    ].filter((name) => agents.includes(`@gerak/${name}`));
+    check(
+      "core-only AGENTS.md",
+      unmentioned.length > 0 ? `names uninstalled packages: ${unmentioned.join(", ")}` : undefined,
+    );
+  }
+  const created = sh("npx --no-install gerak new demo", dir);
+  const demoFile = join(dir, "pieces", "demo", "src", "demo.ts");
+  check(
+    "core-only gerak new",
+    created.code === 0 && existsSync(demoFile)
+      ? undefined
+      : firstErrorLine(created.out || created.err),
+  );
+  writeFileSync(demoFile, CORE_PIECE);
+  const reviewed = sh("npx --no-install gerak review pieces/demo/src/demo.ts", dir);
+  const reviewJson = jsonOf(reviewed);
+  check(
+    "core-only gerak review",
+    reviewed.code === 0 && reviewJson?.kind === "reviewed" && reviewJson.findings?.length === 0
+      ? undefined
+      : firstErrorLine(reviewed.out || reviewed.err),
+  );
+  const framesDir = join(dir, "frames-core");
+  const framed = sh(
+    'npx --no-install gerak frames "stage.html?piece=demo" --at 0,1200,3000 --out frames-core',
+    dir,
+  );
+  const frameJson = jsonOf(framed);
+  const renderedFiles = ["frame-000000.png", "frame-001200.png", "frame-003000.png", "sheet.png"];
+  const absent = renderedFiles.filter(
+    (file) => !existsSync(join(framesDir, file)) || statSync(join(framesDir, file)).size === 0,
+  );
+  check(
+    "core-only gerak frames",
+    framed.code === 0 &&
+      frameJson?.kind === "captured" &&
+      frameJson.pageErrors?.length === 0 &&
+      absent.length === 0
+      ? undefined
+      : absent.length > 0
+        ? `missing ${absent.join(", ")}`
+        : firstErrorLine(framed.out || framed.err),
+  );
+}
+
+/** Verifies core plus the library packages: moves catalog, style check, and review design findings. */
+function coreLibraryChecks(dir, tarballs, lock, check) {
+  const installError = installSubset(dir, LIBRARY_INSTALL_SET, tarballs, lock, CORE_PEERS);
+  check("core+library install", installError);
+  if (installError !== undefined) return;
+  const init = initError(dir);
+  check("core+library gerak init", init);
+  if (init === undefined) {
+    const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
+    const missingDocs = ["rig", "moves", "moves-tools"].filter(
+      (name) => !agents.includes(`node_modules/@gerak/${name}/docs/README.md`),
+    );
+    check(
+      "core+library AGENTS.md",
+      missingDocs.length > 0 ? `omits ${missingDocs.join(", ")}` : undefined,
+    );
+  }
+  const moves = sh("npx --no-install gerak moves --move y:heavy", dir);
+  check(
+    "core+library gerak moves",
+    moves.code === 0 && /\bdrop\b/.test(moves.out)
+      ? undefined
+      : firstErrorLine(moves.out || moves.err),
+  );
+  const missingThree = sh("npx --no-install gerak moves --renderer three", dir);
+  check(
+    "core+library missing renderer refused",
+    missingThree.code !== 0 && /not installed/.test(missingThree.out)
+      ? undefined
+      : firstErrorLine(missingThree.out || missingThree.err),
+  );
+  mkdirSync(join(dir, "pieces", "styled", "src"), { recursive: true });
+  mkdirSync(join(dir, "pieces", "bad", "src"), { recursive: true });
+  writeFileSync(join(dir, "pieces", "styled", "style.ts"), STYLED_CARD);
+  writeFileSync(join(dir, "pieces", "styled", "src", "styled.ts"), STYLED_PIECE("styled", "heavy"));
+  writeFileSync(join(dir, "pieces", "bad", "src", "bad.ts"), STYLED_PIECE(undefined, "light"));
+  const styled = sh("npx --no-install gerak style check styled", dir);
+  check(
+    "core+library gerak style check",
+    styled.code === 0 && styled.out.trim() === "ok"
+      ? undefined
+      : firstErrorLine(styled.out || styled.err),
+  );
+  const cleanReview = sh("npx --no-install gerak review pieces/styled/src/styled.ts", dir);
+  const cleanJson = jsonOf(cleanReview);
+  check(
+    "core+library gerak review clean",
+    cleanReview.code === 0 && cleanJson?.kind === "reviewed" && cleanJson.findings?.length === 0
+      ? undefined
+      : firstErrorLine(cleanReview.out || cleanReview.err),
+  );
+  const badReview = sh("npx --no-install gerak review pieces/bad/src/bad.ts", dir);
+  const badJson = jsonOf(badReview);
+  const hasDesignFinding =
+    badReview.code !== 0 &&
+    Array.isArray(badJson?.findings) &&
+    badJson.findings.some(
+      (finding) => finding.includes("box.y (fall)") && finding.includes("light wants"),
+    );
+  check(
+    "core+library gerak review design finding",
+    hasDesignFinding ? undefined : `expected design finding, got ${badReview.out || badReview.err}`,
+  );
+}
+
 /** Packs every package, installs the tarballs into an empty project, imports each export and
  * type-checks a consumer of them all. */
 export function packCheck({ keep = false, log = console.log } = {}) {
@@ -284,6 +559,10 @@ export function packCheck({ keep = false, log = console.log } = {}) {
       return 1;
     }
     let failed = 0;
+    const check = (label, failure) => {
+      if (failure !== undefined) failed += 1;
+      log(formatResult(label, failure));
+    };
     for (const specifier of allSpecifiers()) {
       const code = `await import(${JSON.stringify(specifier)})`;
       const run = spawnSync(process.execPath, ["--input-type=module", "-e", code], {
@@ -352,6 +631,8 @@ export function packCheck({ keep = false, log = console.log } = {}) {
     const pagesError = pageServerError(project);
     if (pagesError !== undefined) failed += 1;
     log(formatResult("pages served from pieces/", pagesError));
+    coreOnlyChecks(join(work, "core-only"), files, lock, check);
+    coreLibraryChecks(join(work, "core-library"), files, lock, check);
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);

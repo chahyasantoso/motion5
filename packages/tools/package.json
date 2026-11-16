@@ -27,7 +27,6 @@
     "playwright-core": "*",
     "react": "*",
     "react-dom": "*",
-    "three": "*",
     "typescript": "*",
     "vite": "*"
   },

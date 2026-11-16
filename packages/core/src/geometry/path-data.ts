@@ -8,7 +8,7 @@ export type PathRead = {
   readonly error?: string;
 };
 
-/** The options of an elliptical arc between two points, as the SVG `A` command takes them. */
+/** Elliptical arc from `(x0, y0)` to `(x1, y1)` with radii `rx`, `ry`, optional `degrees`, `large`, `sweep`. */
 export type ArcOptions = {
   readonly x0: number;
   readonly y0: number;
