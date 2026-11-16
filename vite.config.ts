@@ -1,6 +1,5 @@
-import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
-import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
+import { builtInMovesPlugin, workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 import { pendingPaths } from "./test/pending.mjs";
 
 // An agent, a pipe and a log viewer parse no escape sequences, and every one of them is a byte on
@@ -9,14 +8,9 @@ if (!process.stdout.isTTY) process.env.NO_COLOR ??= "1";
 
 export default defineConfig({
   resolve: {
-    alias: [
-      ...workspaceSourceAliases(),
-      {
-        find: /^virtual:gerak\/built-in-moves$/,
-        replacement: fileURLToPath(new URL("packages/moves/src/index.ts", import.meta.url)),
-      },
-    ],
+    alias: [...workspaceSourceAliases()],
   },
+  plugins: [builtInMovesPlugin()],
   optimizeDeps: {
     exclude: [
       "@gerak/core",

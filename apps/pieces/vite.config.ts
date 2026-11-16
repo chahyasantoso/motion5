@@ -1,7 +1,11 @@
 import { defineConfig } from "vite";
-import { workspaceSourceAliases } from "../../scripts/workspace-source-aliases.mjs";
+import {
+  builtInMovesPlugin,
+  workspaceSourceAliases,
+} from "../../scripts/workspace-source-aliases.mjs";
 
 export default defineConfig({
+  plugins: [builtInMovesPlugin()],
   resolve: {
     alias: [...workspaceSourceAliases()],
   },
