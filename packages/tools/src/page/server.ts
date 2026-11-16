@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { searchForWorkspaceRoot } from "vite";
 import { motionLivePlugin, type MotionLivePlugin } from "../vite/index";
 
 /** What a page server adds to the config of a pieces folder: the live plugin, and the folders it may serve. */
@@ -9,10 +10,10 @@ export interface PageServerConfig {
 
 const TOOLS_FOLDER = fileURLToPath(new URL("../../", import.meta.url));
 
-/** The config every page server adds: the live plugin, and the pieces folder and this package as readable. */
+/** The config every page server adds: the live plugin; readable, Vite's own workspace root, the pieces folder and this package. */
 export function pageServerConfig(root: string): PageServerConfig {
   return {
     plugins: [motionLivePlugin()],
-    server: { fs: { allow: [root, TOOLS_FOLDER] } },
+    server: { fs: { allow: [searchForWorkspaceRoot(root), root, TOOLS_FOLDER] } },
   };
 }
