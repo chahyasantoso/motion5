@@ -20,16 +20,18 @@ springs, rigs with FK and IK, and seekable physics. Drivers only report time and
 
 ## Packages
 
-| Package | Holds |
-| --- | --- |
-| `@gerak/moves` | time, spans, lanes, eases, poses (2D and 3D), events and the moves |
-| `@gerak/rig` | bones, chains, FK and IK, 2D and 3D |
-| `@gerak/player` | plays a scene on a driver |
-| `@gerak/physics`, `@gerak/rapier` | a seekable physics world, built in or on Rapier |
-| `@gerak/dom` | CSS writes and the page drivers: clock, scroll, events |
-| `@gerak/react` | `usePlayer`, `useTarget`, `useValue` |
-| `@gerak/three` | writes a pose on a Three.js object |
-| `@gerak/tools` | the `gerak` command: scaffold, sample, review, render |
+| Package | Group | Holds |
+| --- | --- | --- |
+| `@gerak/core` | core | fields, poses (2D and 3D), time, blends, eases, envelopes, geometry, paths, measures, events |
+| `@gerak/stage` | core | cast, story, skins, layouts, `carried` |
+| `@gerak/player` | core | plays a scene on a driver |
+| `@gerak/dom` | core | CSS writes and the page drivers: clock, scroll, events |
+| `@gerak/react` | core | `usePlayer`, `useTarget`, `useValue` |
+| `@gerak/three` | core | writes a pose on a Three.js object |
+| `@gerak/tools` | core | the `gerak` command: `init`, `new`, `sample`, `review`, `render` |
+| `@gerak/rig`, `@gerak/rig-three` | modules | bones, chains, FK and IK (2D and 3D), and Three.js skeleton binding |
+| `@gerak/physics`, `@gerak/rapier` | modules | a seekable physics world, built in or on Rapier |
+| `@gerak/moves`, `@gerak/moves-tools` | library | parts that carry a choice, named moves, qualities, styles, and their commands |
 
 The worked examples and the pieces made with gerak live in `apps/pieces`, one folder per brief.
 
@@ -38,11 +40,9 @@ The worked examples and the pieces made with gerak live in `apps/pieces`, one fo
 Nothing is on npm yet. Pack the packages and install the tarballs:
 
 1. Run `npm run pack:check -- --keep`; it prints the folder that holds the tarballs.
-2. In your project, run `npm install <path>/*.tgz`, plus `react` or `three` when you use those packages, and
-   `@types/react` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
-3. Point your agent at [the stage page](https://github.com/chahyasantoso/motion5/blob/main/packages/stage/docs/stage.md) and [the core page](https://github.com/chahyasantoso/motion5/blob/main/packages/core/docs/core.md); `gerak init` writes an `AGENTS.md` that names them.
-   Its `npx gerak` commands install with `@gerak/tools`; the stage pages still live in this repository, so outside
-   it check by seeking the stage.
+2. In your project, run `npm install <path>/*.tgz` (or install only the core set), plus `react` or `three` when you use
+   those packages, and `@types/react` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
+3. Run `npx gerak init`; it writes the page files, the skill and an `AGENTS.md` naming [core.md](packages/core/docs/core.md), [stage.md](packages/stage/docs/stage.md) and each installed package's docs.
 
 ## Toolchain and commands
 

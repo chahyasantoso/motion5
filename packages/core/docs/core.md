@@ -9,7 +9,7 @@ Groups: [fields](#fields) 13, [time](#time) 23, [blend](#blend) 8, [ease](#ease)
 
 ## fields
 
-A field is one named number of a pose, such as x, y or rotate; this group declares the fields, how contributions combine, and the 2D and 3D pose shapes. Reach for it when a scene defines its own fields or combines several contributions into one pose.
+A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `scale`, `scaleX`, `scaleY`, `opacity`, `blur`, `shadowX`, `shadowY`, `shadowBlur`, `hue`, `lightness`, `tint`, `drawn`, `drawnFrom`, `clipX`, `clipY`, `clipRadius`, `clipWidth`, `clipHeight`, `shape`, `layer`, `anchor`, `custom`; 3D adds `z`, `rotationX`, `rotationY`, `scaleZ`). Reach for this group when a scene defines fields or combines contributions into one pose.
 
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.
@@ -71,7 +71,7 @@ Blending turns two values or poses into the value between them, and keyframes tu
 Easing reshapes progress so motion accelerates or settles; spring and back are the eases with overshoot. Reach for it to give a move weight instead of a straight line.
 
 - **`backEase`** `(options: { readonly amount: number; readonly direction: EaseDirection; }): Ease`: A back curve that pulls back by `amount` before it goes (`"in"`), overshoots by it as it ends (`"out"`), or both (`"inOut"`); `amount: 0` is the cubic.
-- **`ease`** `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ea…`: The common eases under their usual names: `In` starts slow, `Out` ends slow, `InOut` does both.
+- **`ease`** `const ease: Readonly<{ linear: (u: number) => number; sineIn: Ease; sineOut: Ea…`: `linear`, `sine*`, `quad*`, `cubic*`, `quart*`, `expo*`, `back*` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`.
 - **`springEase`** `(options: SpringOptions): Ease`: A spring from 0 settling on 1, fitted to the span; lower `damping` rings more.
 - **`Ease`** `type Ease`: A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot.
 - **`EaseDirection`** `type EaseDirection`: Which end of a curve is slow: `in` starts slow, `out` ends slow, `inOut` does both.
@@ -141,13 +141,15 @@ Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard. R
 ## Arranging time
 
 ```ts
-import { chain, combine, ease, lanes, loop, mix, repeated, reversed, span } from "@gerak/core";
+import { arch, chain, combine, ease, lanes, loop, mix, repeated, reversed, span, type Pose2d, type Time } from "@gerak/core";
 
 const enter = span(fromMs, toMs); // a stretch in ms, placed by the clock of the time it is given
-rise({ distance }, enter.of(time)); // a move placed on it
-rise({ distance }, reversed(leave.of(time))); // the same move as an exit
-nod({ distance }, repeated(beat.of(time), count)); // several times in one span
-combine([rise({ distance }, enter.of(time)), fade({}, enter.of(time))]); // two moves on one target
+const dropIn = (t: Time): Pose2d => ({ y: mix(-distance, 0, ease.cubicOut(t.progress)) });
+dropIn(enter.of(time)); // motion placed on a span
+dropIn(reversed(leave.of(time))); // the same motion played backwards as an exit
+const pulse = (t: Time): Pose2d => ({ scale: 1 + 0.1 * arch(t.progress) });
+pulse(repeated(beat.of(time), count)); // repeated several times in one span
+combine([dropIn(enter.of(time)), { opacity: enter.of(time).progress }]); // two poses combined on one target
 lanes([1, 1, 1], stagger).of(enter.of(time), i); // target i's own time, each starting after the last
 loop(periodMs, { yoyo: true }).of(time); // the time inside the current cycle; odd cycles run backwards
 const [first, second] = chain([lengthA, lengthB], { gap }); // spans one after another; `overlap` starts each early
@@ -156,24 +158,23 @@ mix(from, to, turn.of(time, ease.sineInOut).progress); // a value of your own, e
 
 - `scene` returns one object with a key per cast member; every number of motion lives in the scene, none in the skin.
 - A span is not a time: pass `span.of(time)`. It needs a clock in ms, so a scroll-driven scene gives `scrollDriver` a `length`.
-- A move holds still outside its span: an `enter` waits at its start and stays at rest after, an `emphasis` rests on
-  both sides. A target that arrives, is stressed and leaves is a `combine` of three moves, each on its own span.
+- `span.of(time)` clamps progress to 0 before the span and 1 after it, so a pose built on it holds steady on both sides.
+  A target that arrives, pulses and leaves is a `combine` of its phases, each on its own span (or `@gerak/moves` when installed).
 - `sequence(time, [[span, (t) => answer], ...])` answers the last phase that has started, in its own time, for phases
   on one target that replace one another rather than add.
-- An ease that overshoots goes on a value through `mix`, never into a move's time: a move is not defined past its ends.
+- An ease that overshoots (`backOut`, `elasticOut`) goes on a value through `mix`, never into `span.of(time, ease)` when the target expects `0..1`.
 - `lanes(..., { by: [d0, d1] })` starts the lowest value first; `from: "center"` starts in the middle.
-- A pose is `{ x, y, rotation, scale, scaleX, scaleY, opacity, anchor }`, all optional; `anchor` stays still while it
-  turns or scales. A pose built with `mix`, `keyframes` or an `ease` goes into `combine` beside a move.
+- A pose is `{ x, y, ... }`, all optional (see `fields` above for all 25 fields, anchor and `custom`); `anchor` stays still while it turns or scales.
 
 ## Call examples
 
 ```ts
 const flight = span(400, 2400);
-const landMs = flight.at(hop.moments(options).lastLanding); // the ms a move's moment falls on
+const midMs = flight.at(0.5); // the ms a share of a span falls on
 const { offset } = spring(-1, 0, 0.2, { stiffness: 170, damping: 12 });
 const lean = keyframes(0, [{ at: 1700, to: -9, ease: ease.sineInOut }, { at: 2400, to: 0 }], mix);
 const pose = along(toCubics(anchors), ease.cubicInOut(time.progress), { turn: true });
 const { vx, vy } = velocity(ball, time, events); // takes the scene's time, never an eased one
-const ball3d = lift2d(hop({ height: 260, bounces: 2 }, time), { unitsPerPx: 0.01 }); // a 2D move in 3D
-const all = mergeEvents(events, sim.events(time)); // events are { name, at, target?, x?, y? }, `at` in ms
+const ball3d = lift2d(ball(time, events), { unitsPerPx: 0.01 }); // a 2D pose in 3D
+const all = mergeEvents(events, simEvents); // events are { name, at, target?, x?, y? }, `at` in ms
 ```

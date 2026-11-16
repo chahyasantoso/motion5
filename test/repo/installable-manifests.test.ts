@@ -11,7 +11,7 @@ const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
 const SHIPPED: Readonly<Record<string, readonly string[]>> = {
   tools: ["dist", "bin", "skill", "docs", "LICENSE"],
-  "moves-tools": ["dist", "bin", "LICENSE"],
+  "moves-tools": ["dist", "bin", "docs", "LICENSE"],
 };
 
 /** Packages whose generated reference ships in `docs`. */

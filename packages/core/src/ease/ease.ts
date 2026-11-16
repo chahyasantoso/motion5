@@ -65,7 +65,8 @@ export function springEase(options: SpringOptions): Ease {
 const elasticOut: Ease = (u) =>
   u === 0 || u === 1 ? u : 2 ** (-10 * u) * Math.sin((u * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1;
 
-/** The common eases under their usual names: `In` starts slow, `Out` ends slow, `InOut` does both. */
+/** `linear`, `sine*`, `quad*`, `cubic*`, `quart*`, `expo*`, `back*` (`In`/`Out`/`InOut`),
+ * `elasticOut`, `bounceIn`, `bounceOut`. `In` starts slow, `Out` ends slow, `InOut` does both. */
 export const ease = Object.freeze({
   linear: (u: number) => u,
   sineIn,

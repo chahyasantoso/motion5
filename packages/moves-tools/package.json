@@ -12,6 +12,7 @@
   "files": [
     "dist",
     "bin",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",

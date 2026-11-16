@@ -6,10 +6,12 @@ import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mj
 import { COMMANDS as LIBRARY_COMMANDS } from "../../packages/moves-tools/bin/commands.mjs";
 import { PACKAGES } from "../../scripts/reference.mjs";
 
-const COMMANDS = { ...TOOLS_COMMANDS, ...LIBRARY_COMMANDS };
-
 const ROOT = new URL("../../", import.meta.url);
-const calls = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
+const coreCommands = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
+const libraryCommands = readFileSync(
+  new URL("packages/moves-tools/docs/commands.md", ROOT),
+  "utf8",
+);
 const MAX_READ_WHOLE_BYTES = 20 * 1024;
 
 /** A package's generated reference pages, joined. */
@@ -79,8 +81,13 @@ describe("agent reference", () => {
   });
 
   it("names every gerak command", () => {
-    const missing = Object.keys(COMMANDS).filter((name) => !calls.includes(`\`gerak ${name}`));
-    expect(missing).toEqual([]);
+    const missingCore = Object.keys(TOOLS_COMMANDS).filter(
+      (name) => !coreCommands.includes(`\`gerak ${name}`),
+    );
+    const missingLibrary = Object.keys(LIBRARY_COMMANDS).filter(
+      (name) => !libraryCommands.includes(`\`gerak ${name}`),
+    );
+    expect([...missingCore, ...missingLibrary]).toEqual([]);
   });
 
   it("lists every reference page of a package in that package's reference README", () => {

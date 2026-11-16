@@ -73,28 +73,22 @@ Groups: [index](#index) 48.
 3. `npx gerak new <name> [--in <brief>]` writes `<pieces>/<brief>/src/<name>.ts`, one stage module (the brief is the
    name unless `--in` names another). Open it as `stage.html?piece=<name>`. Name who is on stage in `cast`, the beats in
    `beats`, and the look in `skins.dom.css`. Lay the skin out as the final frame.
-4. **Learn the primitives once.** `npx gerak moves --anatomy` prints one card: every field a target can change, every
-   part by kind with a worked sample, and the qualities (`heavy`, `light`, `quick`, `calm`, `playful`, `stiff`,
-   `loose`) as ranges of a motion's shape.
-5. **Write the design before any move.** In the module: `export const design = { ball: { y: { fall: "heavy" }, scaleY: { land: "loose" } } };`,
-   each member's fields with the quality their motion should have, by beat. A list member (`letters`, `words`,
-   `many`) holds its intent for every item, and `"word.3"` names one item. Name the beat in which the field moves,
-   since the review measures it there. In your report write under each line the fields and parts it needs.
-6. **Ask the catalog with the design.** `npx gerak moves --design <pieces>/<brief>/src/<name>.ts --target ball --in <brief>`
-   scores every move that passes the gate against that member's design and gives the import. `--move y:heavy --uses envelope`
-   asks by hand; `--far <the obvious move>` finds unlike ideas; `--renderer three` keeps moves a 3D page draws. Read a
-   move in full (`gerak moves <id>`) before using it.
-7. **Decide each line, in this order:** use a move as it is; use it at the options its row names; combine moves, one
-   per field; drive the field in the scene with parts (a `mix` on an ease, an envelope) when only this piece needs it;
-   or write a move from the parts you named. Arrange time, choose every number from your three lines, and give each
-   line's choice and why in your report.
-8. `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the cast against the scene with no browser and measures
-   every field your design names ("`ball.y` (fall): peak 0.30, heavy wants 0.60 to 1" means the fall lacks the
-   quality). `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` adds a `sheet` of
+4. **Learn the primitives once.** With `@gerak/core` alone, use the primitives in [core.md](../../core/docs/core.md)
+   (`span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `arch`, `attack`,
+   `decay`, `taper`, `ballistic`, `along`, `toCubics`). When `@gerak/moves` is installed, `npx gerak moves --anatomy`
+   prints the fields, parts and qualities (`heavy`, `light`, `quick`, `calm`, `playful`, `stiff`, `loose`).
+5. **Plan each member's motion from your three lines.** Use [What a quality asks](#what-a-quality-asks) to choose spans,
+   eases and amplitudes. When `@gerak/moves` is installed, write `export const design = { ball: { y: { fall: "heavy" } } };`
+   so `gerak review` checks each field against its quality.
+6. **Build the motion.** With `@gerak/core` alone, write each member's pose directly in `scene` (or shared `(t) => Pose2d`
+   helpers in your brief) from `@gerak/core` and arrange time with `span`, `chain`, `lanes`, `loop` and `sequence`. When
+   `@gerak/moves` is installed, query `npx gerak moves --design <pieces>/<brief>/src/<name>.ts --target <member> --in <brief>`
+   (`--move`, `--far`, `--renderer`, `gerak moves <id>`), then use, adjust, combine, drive with parts, or write a move (`gerak new-move`).
+7. `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the cast against the scene with no browser (and checks
+   `design` when `@gerak/moves` is installed). `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` adds a `sheet` of
    frames picked where the motion is fast; `--action` says what a person does, `--full` adds the moves with their eases.
-9. Fix what it flags, the design's findings first and what looks wrong on the sheet; review again. Stop when the
-   findings are empty and the sheet shows your three lines. Run `npx tsc --noEmit` once at the end where the project has
-   a `tsconfig.json`.
+8. Fix what it flags and what looks wrong on the sheet; review again. Stop when the findings are empty and the sheet
+   shows your three lines. Run `npx tsc --noEmit` once at the end where the project has a `tsconfig.json`.
 
 The other scene files in `<pieces>/*/src` are other people's pieces: do not open them, or yours comes out as a copy.
 Values can be right while the picture is wrong, so read the sheet before calling anything finished.
@@ -121,7 +115,7 @@ export const scene = (time: Time, events: Events, rest: Rest) => ({ card: {}, do
   moves item by item: to move a whole row, wrap it in a `group`. `letters(text)` and `words(text)` make a `many` of text.
 - **Readout.** `actor({ text: (time) => … })` is a readout written each frame (a timecode, a counter), not a value and
   never eased. Only an `actor` takes one.
-- **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn`, `trace` and the like draw on; skin it
+- **Stroke.** `actor({ path: toCubics([...anchors]) })` is a stroke that `drawn` and `drawnFrom` draw on; skin it
   by `[data-path="<name>"]` (`stroke`, `stroke-width`). Each anchor is `{ id, x, y, inX, inY, outX, outY }`, handles
   relative to the point; a closed outline repeats its first anchor last. Points are frame px from the frame's top-left.
   To follow the layout pass `path: (rest) => toCubics([...])` reading other members with `restOf`, other strokes too,
