@@ -16,11 +16,12 @@ function textOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
-/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward (the caller's folder, then this package's), once by its real folder. */
+/** Every installed `@gerak/*` package, found in `node_modules` from each start folder upward (the caller's folder, then this package's), once by its real folder and name, the nearest first as node resolves. */
 export function installedPackages(
   starts: readonly string[] = [process.env["INIT_CWD"] ?? process.cwd(), HERE],
 ): readonly InstalledPackage[] {
   const seen = new Set<string>();
+  const named = new Set<string>();
   const found: InstalledPackage[] = [];
   for (const start of starts) {
     for (let dir = resolve(start); ; dir = dirname(dir)) {
@@ -31,8 +32,9 @@ export function installedPackages(
           const manifestFile = join(folder, "package.json");
           if (!existsSync(manifestFile)) continue;
           const real = realpathSync(folder);
-          if (seen.has(real)) continue;
+          if (seen.has(real) || named.has(entry)) continue;
           seen.add(real);
+          named.add(entry);
           const manifest: unknown = JSON.parse(readFileSync(manifestFile, "utf8"));
           const gerak: unknown = Reflect.get(Object(manifest), "gerak");
           found.push({
