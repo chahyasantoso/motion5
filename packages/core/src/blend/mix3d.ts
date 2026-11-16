@@ -28,8 +28,6 @@ export function mixPose3d(from: Pose3d, to: Pose3d, share: number): Pose3d {
   }
   return out;
 }
-const POSE_FROM: Pose3d = { x: 0, y: 2, rotation: 10, scaleX: 1 };
-const POSE_TO: Pose3d = { x: 5, z: 9, rotation: 50, rotationX: 20 };
 
 /** A 3D point `share` of the way from `from` to `to`. */
 export function mixPoint3d(

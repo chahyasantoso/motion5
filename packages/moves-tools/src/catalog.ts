@@ -75,7 +75,7 @@ export const CATALOG_USAGE =
 
 /** The line a plain listing ends with, pointing at the building blocks. */
 export const PARTS_HINT =
-  "npx gerak moves --parts lists the building blocks moves are made from: fields, time, laws, blends, paths, follow-through, events, randomness, camera, compose.";
+  "npx gerak moves --parts lists the building blocks moves are made from: coupling, signal.";
 
 /** Parsed `gerak moves` arguments; or the usage text. */
 export type CatalogArgs =
@@ -1720,7 +1720,7 @@ function noFitLines(
             .map(({ field, move }) => `${field} by ${move ?? "no move; write it"}`)
             .join("; ")}`,
         ]),
-    `or write one: npx gerak new --move <id> --in ${brief ?? "<brief>"}`,
+    `or write one: npx gerak new-move <id> --in ${brief ?? "<brief>"}`,
   ];
 }
 

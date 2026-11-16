@@ -1,4 +1,7 @@
-import { toolsOf } from "../../tools/bin/load.mjs";
+import { existsSync } from "node:fs";
 
-/** The file URL of a tool module of this package, found as `@gerak/tools` finds its own. */
-export const tool = toolsOf(import.meta.url);
+const here = existsSync(new URL("../src/", import.meta.url));
+
+/** The file URL of a tool module of this package, TypeScript source in the repository, built file installed. */
+export const tool = (module) =>
+  new URL(here ? `../src/${module}.ts` : `../dist/${module}.js`, import.meta.url).href;

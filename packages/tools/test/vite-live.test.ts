@@ -118,6 +118,17 @@ describe("resolveSceneFile", () => {
     expect(resolveSceneFile("src/TimingBeat.tsx", demoDir, repo).kind).toBe("refused");
     expect(resolveSceneFile("src/timing-main.tsx", demoDir, repo).kind).toBe("refused");
   });
+
+  it("allows scene files inside an installed project's pieces folder when no repoRoot is given", () => {
+    const project = makeTempDir();
+    const pieces = join(project, "pieces");
+    mkdirSync(join(pieces, "demo", "src"), { recursive: true });
+    expect(resolveSceneFile("demo/src/demo-scene.ts", pieces)).toEqual({
+      kind: "ok",
+      path: resolve(pieces, "demo", "src", "demo-scene.ts"),
+    });
+    expect(resolveSceneFile("../outside-scene.ts", pieces).kind).toBe("refused");
+  });
 });
 
 describe("applySourceEdit", () => {

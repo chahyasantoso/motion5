@@ -194,4 +194,11 @@ describe("gerak moves", () => {
   it.each([["--bogus"], ["a", "b"], ["--role"]])("refuses the arguments %j", (...argv) => {
     expect(parseCatalogArgs(argv).kind).toBe("usage");
   });
+
+  it("points PARTS_HINT at the library groups and recommends new-move when nothing fits", async () => {
+    for (const group of PART_GROUPS) expect(PARTS_HINT).toContain(group);
+    expect(PARTS_HINT).not.toContain("compose");
+    const run = await runCatalog(ok(["--move", "custom.nonexistent:heavy", "--in", "reel"]), app());
+    expect(run.lines).toContain("or write one: npx gerak new-move <id> --in reel");
+  });
 });

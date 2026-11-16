@@ -250,6 +250,7 @@ async function openSite(
         root: source.root,
         logLevel: "silent",
         plugins: added.plugins,
+        optimizeDeps: added.optimizeDeps,
         server: { ...added.server, port: 5280 },
       });
       await server.listen();

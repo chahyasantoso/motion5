@@ -138,7 +138,7 @@ export function scanNumericLiterals(source: string): readonly NumericLiteralSpan
   return spans;
 }
 
-/** Resolves a scene file path relative to appRoot and verifies it stays inside apps. */
+/** Resolves a scene file path relative to appRoot and verifies it stays inside `appRoot` (and `apps/` when `repoRoot` is set). */
 export function resolveSceneFile(
   fileParam: string,
   appRoot: string,
@@ -150,14 +150,9 @@ export function resolveSceneFile(
   const fullAppRoot = resolve(appRoot);
   const fullPath = resolve(fullAppRoot, fileParam);
   if (!fullPath.startsWith(fullAppRoot + sep)) {
-    return { kind: "refused", message: "Path must stay inside apps/." };
+    return { kind: "refused", message: "Path must stay inside the pieces folder." };
   }
-  const normalized = fullPath.replace(/\\/g, "/");
-  const insideApps =
-    repoRoot !== undefined
-      ? fullPath.startsWith(resolve(repoRoot, "apps") + sep)
-      : normalized.includes("/apps/");
-  if (!insideApps) {
+  if (repoRoot !== undefined && !fullPath.startsWith(resolve(repoRoot, "apps") + sep)) {
     return { kind: "refused", message: "Path must stay inside apps/." };
   }
   return { kind: "ok", path: fullPath };

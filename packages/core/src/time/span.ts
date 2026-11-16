@@ -1,3 +1,4 @@
+import { unreachable } from "../utility/unreachable";
 import type { Ease } from "../ease/ease";
 import { elapsedOf, type Time } from "./time";
 import type { Timing } from "./timing";
@@ -14,13 +15,22 @@ export interface Span extends Timing<[ease?: Ease]> {
 
 /** The ms a time has run, from its progress when timed; an untimed time throws, naming `who`. */
 export function nowOf(time: Time, who: string): number {
-  const now =
-    time.clock.kind === "timed" ? time.progress * time.clock.length : elapsedOf(time.clock);
-  if (now === undefined)
-    throw new RangeError(
-      `${who}: this time has no clock in ms; give its driver a length, such as scrollDriver's \`length\`.`,
-    );
-  return now;
+  const clock = time.clock;
+  switch (clock.kind) {
+    case "timed":
+      return time.progress * clock.length;
+    case "live": {
+      const now = elapsedOf(clock);
+      if (now !== undefined) return now;
+      throw new RangeError(`${who}: the live clock had no elapsed ms.`);
+    }
+    case "untimed":
+      throw new RangeError(
+        `${who}: this time has no clock in ms; give its driver a length, such as scrollDriver's \`length\`.`,
+      );
+    default:
+      return unreachable(clock);
+  }
 }
 
 // A timed time is placed by its progress, so an ease or a reversal applied to it carries into a span taken inside.

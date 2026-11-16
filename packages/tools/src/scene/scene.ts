@@ -244,8 +244,16 @@ export function sampleScene(
     }
   };
   return points().map(({ at, progress }) => {
-    if (request.kind === "time") driver.seekMs(at);
-    else driver.seek(progress);
+    switch (request.kind) {
+      case "time":
+        driver.seekMs(at);
+        break;
+      case "progress":
+        driver.seek(progress);
+        break;
+      default:
+        return unreachable(request);
+    }
     const values = Object.entries(player.values).filter(
       ([target]) => targets === undefined || targets.includes(target),
     );

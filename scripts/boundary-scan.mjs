@@ -415,7 +415,7 @@ function folderOf(path) {
  * A package never reaches an app, an app never reaches another app, and an app reaches a package
  * only through its manifest, never by a relative path into `packages/`.
  */
-function checkAppBoundary(workspace, file, specifiers, violations, apps) {
+function checkAppBoundary(workspace, file, specifiers, violations, apps, crossPackagePaths = true) {
   const ownName = apps.get(workspace);
   for (const specifier of specifiers) {
     if (specifier.startsWith(".")) {
@@ -423,6 +423,12 @@ function checkAppBoundary(workspace, file, specifiers, violations, apps) {
       if (target === null || target === workspace) continue;
       if (workspace.startsWith("packages/") && target.startsWith("apps/"))
         violations.push(`${file}: package imports an app ${specifier}`);
+      else if (
+        crossPackagePaths &&
+        workspace.startsWith("packages/") &&
+        target.startsWith("packages/")
+      )
+        violations.push(`${file}: package imports another package by path ${specifier}`);
       else if (workspace.startsWith("apps/") && target.startsWith("packages/"))
         violations.push(`${file}: app imports a package by path ${specifier}`);
       else if (workspace.startsWith("apps/") && target.startsWith("apps/"))
@@ -477,16 +483,24 @@ export async function scan(scanRoot = root) {
     const briefs = workspace.startsWith("apps/")
       ? await briefSources(join(scanRoot, workspace))
       : [];
-    const sourceFolders = [join(scanRoot, workspace, "src"), ...briefs];
+    const binFolders = workspace.startsWith("packages/") ? [join(scanRoot, workspace, "bin")] : [];
+    const sourceFolders = [join(scanRoot, workspace, "src"), ...briefs, ...binFolders];
     for (const path of (await Promise.all(sourceFolders.map(walk))).flat()) {
       const source = await readSource(path);
       if (source === undefined) continue;
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
-      if (pure.folders.has(workspace))
-        checkPureSource(workspace, file, specifiers, violations, pure);
-      checkAppBoundary(workspace, file, specifiers, violations, apps);
+      const isPureSource = pure.folders.has(workspace);
+      if (isPureSource) checkPureSource(workspace, file, specifiers, violations, pure);
+      checkAppBoundary(
+        workspace,
+        file,
+        specifiers,
+        violations,
+        apps,
+        !(isPureSource && file.startsWith(`${workspace}/src/`)),
+      );
       const own = groups.byFolder.get(workspace);
       if (own !== undefined) upwardImports(own, specifiers, groups, upward);
       for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))

@@ -25,11 +25,6 @@
   "peerDependencies": {
     "typescript": "*"
   },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

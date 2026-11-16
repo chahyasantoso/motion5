@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { VALUE_FIELDS } from "@gerak/core";
+import { VALUE_FIELDS, unreachable } from "@gerak/core";
 import { isLively, type StyleCard } from "@gerak/moves";
 import { checkCatalog, loadCatalog } from "./catalog";
 import { styleCards } from "./cards";
@@ -175,10 +175,19 @@ export async function checkStyle(root: string, brief: string): Promise<readonly 
   for (const path of pieceFiles(root, brief)) {
     const piece = await loadPiece(path);
     const name = posix(relative(root, path));
-    if (piece.kind === "failed") out.push(`${name}: could not be imported: ${piece.message}`);
-    else if (piece.kind === "refused") {
-      if (piece.styled) out.push(`${name}: ${piece.reason}`);
-    } else out.push(...(await styleLines(root, path, name, piece.module, brief, cards)));
+    switch (piece.kind) {
+      case "failed":
+        out.push(`${name}: could not be imported: ${piece.message}`);
+        break;
+      case "refused":
+        if (piece.styled) out.push(`${name}: ${piece.reason}`);
+        break;
+      case "module":
+        out.push(...(await styleLines(root, path, name, piece.module, brief, cards)));
+        break;
+      default:
+        return unreachable(piece);
+    }
   }
   for (const other of briefFolders(root).filter((each) => each !== brief))
     for (const path of pieceFiles(root, other)) {

@@ -1,3 +1,13 @@
+import {
+  IDENTITY_MATRIX3,
+  add3,
+  matrixFromQuaternion,
+  multiplyMatrix3,
+  multiplyVector3,
+  type Matrix3,
+  type Vec3,
+} from "@gerak/core";
+
 /** Parsed `gerak joints` arguments: the model file and an optional output file; or the usage text. */
 export type JointsArgs =
   | { readonly kind: "ok"; readonly model: string; readonly out: string | undefined }
@@ -172,40 +182,31 @@ export function readGltf(bytes: Uint8Array): GltfRead {
 }
 
 interface Affine {
-  readonly m: readonly number[];
-  readonly t: readonly [number, number, number];
+  readonly m: Matrix3;
+  readonly t: Vec3;
 }
 
-const IDENTITY: Affine = { m: [1, 0, 0, 0, 1, 0, 0, 0, 1], t: [0, 0, 0] };
+const IDENTITY: Affine = { m: IDENTITY_MATRIX3, t: [0, 0, 0] };
 
-function rotationMatrix([x, y, z, w]: readonly number[]): readonly number[] {
-  const [qx, qy, qz, qw] = [x!, y!, z!, w!];
+function scaledMatrix3(matrix: Matrix3, scale: number): Matrix3 {
   return [
-    1 - 2 * (qy * qy + qz * qz),
-    2 * (qx * qy - qz * qw),
-    2 * (qx * qz + qy * qw),
-    2 * (qx * qy + qz * qw),
-    1 - 2 * (qx * qx + qz * qz),
-    2 * (qy * qz - qx * qw),
-    2 * (qx * qz - qy * qw),
-    2 * (qy * qz + qx * qw),
-    1 - 2 * (qx * qx + qy * qy),
+    matrix[0] * scale,
+    matrix[1] * scale,
+    matrix[2] * scale,
+    matrix[3] * scale,
+    matrix[4] * scale,
+    matrix[5] * scale,
+    matrix[6] * scale,
+    matrix[7] * scale,
+    matrix[8] * scale,
   ];
 }
 
 function compose(parent: Affine, local: Affine): Affine {
-  const a = parent.m;
-  const b = local.m;
-  const m: number[] = [];
-  for (let row = 0; row < 3; row += 1)
-    for (let col = 0; col < 3; col += 1)
-      m.push(a[row * 3]! * b[col]! + a[row * 3 + 1]! * b[3 + col]! + a[row * 3 + 2]! * b[6 + col]!);
-  const at = (row: number) =>
-    a[row * 3]! * local.t[0] +
-    a[row * 3 + 1]! * local.t[1] +
-    a[row * 3 + 2]! * local.t[2] +
-    parent.t[row]!;
-  return { m, t: [at(0), at(1), at(2)] };
+  return {
+    m: multiplyMatrix3(parent.m, local.m),
+    t: add3(multiplyVector3(parent.m, local.t), parent.t),
+  };
 }
 
 /** A node's local transform, or the reason it cannot be one: a matrix, or a scale that is not uniform and positive. */
@@ -215,7 +216,8 @@ function localOf(node: GltfNode, label: string): Affine | string {
   const spread = Math.max(Math.abs(sx - sy), Math.abs(sy - sz), Math.abs(sx - sz));
   if (!(sx > 0) || spread > 1e-9 * Math.max(sx, sy, sz))
     return `${label} has a non-uniform or non-positive scale (${sx}, ${sy}, ${sz}).`;
-  const rotation = rotationMatrix(node.rotation).map((value) => value * sx);
+  const [qx = 0, qy = 0, qz = 0, qw = 1] = node.rotation;
+  const rotation = scaledMatrix3(matrixFromQuaternion({ x: qx, y: qy, z: qz, w: qw }), sx);
   const [tx = 0, ty = 0, tz = 0] = node.translation;
   return { m: rotation, t: [tx, ty, tz] };
 }

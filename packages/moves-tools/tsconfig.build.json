@@ -11,7 +11,9 @@
     "baseUrl": ".",
     "paths": {
       "@gerak/core": ["../core/dist/index.d.ts"],
+      "@gerak/dom": ["../dom/dist/index.d.ts"],
       "@gerak/moves": ["../moves/dist/index.d.ts"],
+      "@gerak/three": ["../three/dist/index.d.ts"],
       "@gerak/tools/page": ["../tools/dist/page/index.d.ts"],
       "@gerak/tools/scene": ["../tools/dist/scene/index.d.ts"]
     }

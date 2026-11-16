@@ -145,7 +145,7 @@ export const scene = (time) => ({
 `;
 
 /** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the stage page. */
-const SERVE_PAGES = `import { mkdirSync, writeFileSync } from "node:fs";
+const SERVE_PAGES = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createServer } from "vite";
 import { pageServerConfig } from "@gerak/tools/page";
@@ -153,13 +153,14 @@ import { pageFiles } from "@gerak/tools/scene";
 
 const root = resolve("pieces");
 for (const [name, text] of Object.entries(pageFiles())) writeFileSync(resolve(root, name), text);
-mkdirSync(resolve(root, "demo", "src"), { recursive: true });
-writeFileSync(resolve(root, "demo", "src", "demo.ts"), ${JSON.stringify(DEMO_PIECE)});
+mkdirSync(resolve(root, "serveprobe", "src"), { recursive: true });
+writeFileSync(resolve(root, "serveprobe", "src", "serveprobe.ts"), ${JSON.stringify(DEMO_PIECE)});
 const added = pageServerConfig(root);
 const server = await createServer({
   root,
   logLevel: "silent",
   plugins: added.plugins,
+  optimizeDeps: added.optimizeDeps,
   server: { ...added.server, port: 0 },
 });
 try {
@@ -177,6 +178,7 @@ try {
   console.error(String(error));
   process.exitCode = 1;
 } finally {
+  rmSync(resolve(root, "serveprobe"), { recursive: true, force: true });
   // Closing waits on a dependency scan that may never settle, so it gets a few seconds, then the process ends.
   await Promise.race([server.close(), new Promise((done) => setTimeout(done, 5000))]);
   await new Promise((done) => process.stdout.write("", done));
@@ -196,6 +198,97 @@ function pageServerError(project) {
   } catch {
     return "prints no result";
   }
+}
+
+const LIVE_COMPONENT_SCENE = `import type { Time } from "@gerak/core";
+import { clockDriver } from "@gerak/dom";
+import { drop } from "@gerak/moves";
+
+export const durationMs = 2000;
+export const clock = () => clockDriver({ duration: durationMs });
+export const scene = (time: Time) => ({
+  box: drop({ distance: 200, squash: 0.2 }, time),
+});
+`;
+
+const LIVE_COMPONENT_TSX = `import { usePlayer, useTarget } from "@gerak/react";
+import { clock, scene } from "./livecheck-scene";
+
+export function Livecheck() {
+  const playing = usePlayer(scene, clock);
+  const box = useTarget(playing?.player, "box");
+  return (
+    <div style={{ position: "relative", width: 640, height: 360 }}>
+      <div ref={box} data-cast="box" style={{ width: 40, height: 40, background: "#36c" }} />
+    </div>
+  );
+}
+`;
+
+const CHECK_LIVE_MOVES = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { withPage } from "@gerak/tools/page";
+
+const root = resolve("pieces");
+const brief = join(root, "livecheck", "src");
+mkdirSync(brief, { recursive: true });
+writeFileSync(join(brief, "livecheck-scene.ts"), ${JSON.stringify(LIVE_COMPONENT_SCENE)});
+writeFileSync(join(brief, "livecheck.tsx"), ${JSON.stringify(LIVE_COMPONENT_TSX)});
+const errors = [];
+try {
+  await withPage(
+    { page: "live.html?scene=livecheck", width: 1280, height: 720, source: { kind: "serve", root }, clock: "real" },
+    async ({ page }) => {
+      page.setDefaultTimeout(10000);
+      page.on("pageerror", (error) => errors.push("pageerror: " + error.message));
+      page.on("response", async (res) => {
+        if (res.status() >= 400) {
+          const text = await res.text().catch(() => "");
+          errors.push("http " + res.status() + " " + res.url() + ": " + text);
+        }
+      });
+      page.on("console", (msg) => {
+        if (msg.type() === "error") errors.push("console: " + msg.text());
+      });
+      await page.locator('[data-cast="box"]').waitFor();
+      await page.waitForFunction(() =>
+        performance.getEntriesByType("resource").some((entry) => entry.name.includes("built-in-moves")),
+      );
+      const literal = page.locator('[data-live-number="0.2"]');
+      await literal.waitFor();
+      const index = await literal.getAttribute("data-live-index");
+      const box = await literal.boundingBox();
+      if (box === null) throw new Error("live number has no bounding box");
+      await page.waitForTimeout(200);
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2);
+      await page.mouse.up();
+      const dragged = await page.locator(\`[data-live-index="\${index}"]\`).textContent();
+      if (dragged !== "0") throw new Error("expected drop.squash drag to clamp at 0, got " + dragged);
+    },
+  );
+  if (errors.length > 0) throw new Error(errors.join("; "));
+  console.log("ok");
+} catch (error) {
+  const msg = (error instanceof Error ? error.message : String(error)).replace(/\\r?\\n+/g, " | ");
+  console.error("LIVECHECK Error:", msg + (errors.length > 0 ? " [" + errors.join("; ") + "]" : ""));
+  process.exitCode = 1;
+} finally {
+  rmSync(join(root, "livecheck"), { recursive: true, force: true });
+}
+`;
+
+/** Verifies live.html in an installed core+library project resolves `virtual:gerak/built-in-moves` in Chromium. */
+function liveMovesError(project) {
+  writeFileSync(join(project, "check-live-moves.mjs"), CHECK_LIVE_MOVES);
+  const run = spawnSync(process.execPath, ["check-live-moves.mjs"], {
+    cwd: project,
+    encoding: "utf8",
+  });
+  return run.status === 0 && run.stdout.trim() === "ok"
+    ? undefined
+    : firstErrorLine(run.stderr || run.stdout);
 }
 
 /** The link targets of a markdown text that name a file, without their anchors. */
@@ -382,13 +475,15 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
           ? `lists library commands: ${extra.join(", ")}`
           : undefined,
   );
-  const moves = sh("npx --no-install gerak moves", dir);
-  check(
-    "core-only gerak moves refused",
-    moves.code !== 0 && /Unknown command moves/.test(moves.out)
-      ? undefined
-      : `expected unknown command, got ${moves.code}: ${firstErrorLine(moves.out || moves.err)}`,
-  );
+  for (const command of Object.keys(LIBRARY_COMMANDS)) {
+    const run = sh(`npx --no-install gerak ${command}`, dir);
+    check(
+      `core-only gerak ${command} refused`,
+      run.code !== 0 && new RegExp(`Unknown command ${command}`).test(run.out)
+        ? undefined
+        : `expected unknown command, got ${run.code}: ${firstErrorLine(run.out || run.err)}`,
+    );
+  }
   const init = initError(dir);
   check("core-only gerak init", init);
   if (init === undefined) {
@@ -407,6 +502,7 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
       unmentioned.length > 0 ? `names uninstalled packages: ${unmentioned.join(", ")}` : undefined,
     );
   }
+  check("core-only pages served from pieces/", pageServerError(dir));
   const created = sh("npx --no-install gerak new demo", dir);
   const demoFile = join(dir, "pieces", "demo", "src", "demo.ts");
   check(
@@ -471,6 +567,13 @@ function coreLibraryChecks(dir, tarballs, lock, check) {
       ? undefined
       : firstErrorLine(moves.out || moves.err),
   );
+  const parts = sh("npx --no-install gerak moves --parts", dir);
+  check(
+    "core+library gerak moves --parts",
+    parts.code === 0 && /\bcoupling:/.test(parts.out) && /\bsignal:/.test(parts.out)
+      ? undefined
+      : firstErrorLine(parts.out || parts.err),
+  );
   const missingThree = sh("npx --no-install gerak moves --renderer three", dir);
   check(
     "core+library missing renderer refused",
@@ -490,6 +593,14 @@ function coreLibraryChecks(dir, tarballs, lock, check) {
       ? undefined
       : firstErrorLine(styled.out || styled.err),
   );
+  const newMove = sh("npx --no-install gerak new-move bounce-in --in fresh", dir);
+  check(
+    "core+library gerak new-move",
+    newMove.code === 0 && existsSync(join(dir, "pieces", "fresh", "src", "moves", "bounce-in.ts"))
+      ? undefined
+      : firstErrorLine(newMove.out || newMove.err),
+  );
+  rmSync(join(dir, "pieces", "fresh"), { recursive: true, force: true });
   const cleanReview = sh("npx --no-install gerak review pieces/styled/src/styled.ts", dir);
   const cleanJson = jsonOf(cleanReview);
   check(
@@ -510,6 +621,7 @@ function coreLibraryChecks(dir, tarballs, lock, check) {
     "core+library gerak review design finding",
     hasDesignFinding ? undefined : `expected design finding, got ${badReview.out || badReview.err}`,
   );
+  check("core+library live.html loads @gerak/moves", liveMovesError(dir));
 }
 
 /** Packs every package, installs the tarballs into an empty project, imports each export and

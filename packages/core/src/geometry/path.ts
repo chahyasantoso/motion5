@@ -4,8 +4,9 @@ import type { Anchor2d, Cubic2d } from "./shapes";
 export function toCubics(anchors: readonly Anchor2d[]): readonly Cubic2d[] {
   const cubics: Cubic2d[] = [];
   for (let index = 0; index < anchors.length - 1; index += 1) {
-    const p = anchors[index]!;
-    const q = anchors[index + 1]!;
+    const p = anchors[index];
+    const q = anchors[index + 1];
+    if (p === undefined || q === undefined) continue;
     cubics.push({
       id: p.id,
       x0: p.x,

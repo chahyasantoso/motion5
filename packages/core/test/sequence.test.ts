@@ -84,6 +84,11 @@ describe("sequence", () => {
       (x) => x * x,
     );
     expect(span(0, 3000).of(eased).progress).toBeCloseTo(0.25);
+    const chosen = sequence(eased, [
+      [span(0, 1000), (time) => `first:${Math.round(time.progress * 100)}`],
+      [span(1000, 3000), () => "second"],
+    ]);
+    expect(chosen).toBe("first:75");
     expect(() => span(300, 100)).toThrow(RangeError);
     expect(() => span(Number.NaN, 5)).toThrow(RangeError);
   });

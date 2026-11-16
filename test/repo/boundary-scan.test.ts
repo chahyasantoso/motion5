@@ -362,4 +362,18 @@ describe("boundary scan: app boundary", () => {
       "apps/demo/src/path.ts: app imports another app ../../other/src/main",
     );
   });
+
+  it("refuses a package reaching into another package by relative path, including bin scripts", async () => {
+    const violations = await withTree(
+      {
+        "packages/dom/bin/cli.mjs":
+          'import { hop } from "../../moves/src/index.ts";\nexport const x = hop;',
+        "packages/dom/src/ok.ts": 'import { a } from "./local";\nexport const y = a;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/dom/bin/cli.mjs: package imports another package by path ../../moves/src/index.ts",
+    ]);
+  });
 });
