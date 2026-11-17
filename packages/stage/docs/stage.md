@@ -2,63 +2,12 @@
 
 Read this page whole before making a piece. A scene is a function from time and the events so far to one value per
 target; you write it in code, and the tools play and check it. `import { actor, group, story } from "@gerak/stage"`.
-Look names up in the groups below, in [@gerak/core](../../core/docs/core.md), and in the other packages' docs, never in
-package source. `<pieces>` is the folder `gerak.pieces` in your package.json names. Which page to read for which brief
-is in [README.md](./README.md).
+Look export names up below ([reference/index.md](./reference/index.md)), primitives in [@gerak/core](../../core/docs/core.md),
+and brief-specific pages in [README.md](./README.md), never in package source. `<pieces>` is the folder `gerak.pieces`
+in your package.json names.
 
 <!-- generated:reference:start -->
-Groups: [index](#index) 48.
-
-## index
-
-- **`actor`** `(options?: Behaviour & { readonly text?: ActorText; readonly path?: ActorPath; …`: One thing on stage, saying `text` or drawing the stroke `path` when given one.
-- **`castNames`** `(cast: Cast, beats?: readonly string[]): readonly CastName[]`: Every name the cast makes, in order, with presence taken from the nearest group that states it.
-- **`presentAt`** `(on: readonly (readonly [string, string])[], spanOf: (beat: string) => { readon…`: Whether a member on these stretches shows at `ms`; a stretch reaching the story's end holds past it.
-- **`group`** `(members: Cast, options?: Behaviour): Group`: Members moved together; their keys join the cast's, so each must be unique across it.
-- **`letters`** `(text: string, options?: Behaviour): Many`: A word or line split into its letters, one text actor each, in order; a letter is a grapheme, so an accented letter or an emoji is one.
-- **`many`** `(count: number, options?: Behaviour): Many (+1 overloads)`: `count` things, or one per entry of `list` made by `make`; the scene answers one value per item.
-- **`pathOf`** `(path: ActorPath, rest: Rest): readonly Cubic2d[]`: A path's cubics where things `rest`: a fixed list as it is, a function's answer checked and frozen; throws when the function throws or answers no cubics.
-- **`words`** `(text: string, options?: Behaviour): Many`: A line split into its words at spaces, one text actor each, in order.
-- **`Actor`** `type Actor`: One thing on stage; the scene answers one value for it, and a renderer's skin decides what it looks like.
-- **`ActorPath`** `type ActorPath`: A stroke as joined cubics in frame px from the frame's top-left, fixed or answered from where the other members rest; the stage places the member at the stroke's box.
-- **`ActorText`** `type ActorText`: What an actor says: fixed text, or a readout the renderer writes from the time on each frame.
-- **`Behaviour`** `type Behaviour`: What a member does beside being moved: when it is shown, whether its pointer events reach the scene.
-- **`Cast`** `type Cast`: Who is on stage, by name; every key is unique across the whole cast, groups included.
-- **`CastName`** `type CastName`: One name the cast makes: a member's key, or a key and an index for an item of `many`.
-- **`Group`** `type Group`: Members moved together: the group's value applies to them, and each member's is relative to it.
-- **`Many`** `type Many`: A list of things; the scene answers one value per item.
-- **`Member`** `type Member`: A cast member: what the scene's motion depends on, and nothing of how it looks.
-- **`Pivot`** `type Pivot`: A point in frame px from the frame's top-left.
-- **`Stretch`** `type Stretch`: A stretch of the story: one beat, or a pair from the first beat's start to the second's end.
-- **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: The cubics `shape` asks of matched outlines: 0 is the first, 1 the second, between them each control point is blended; clamped to the first and the last.
-- **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (read…`: Outlines made to blend, the first being the path: the same pieces in the same order, each with as many cubics in every outline; or why they cannot.
-- **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: An outline split into its pieces: a cubic that does not start where the last ended starts another.
-- **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame a module gets when it names none.
-- **`frame`** `(size: Frame): Frame`: A stage `width` by `height` px.
-- **`story`** `<const B extends string>(durationMs: number, beats: Readonly<Record<B, readonly…`: Beats by name, each `[fromMs, toMs]` inside a piece `durationMs` long; beats may overlap.
-- **`Frame`** `type Frame`: The stage's size in px; a renderer fits it to its container.
-- **`Story`** `type Story<B>`: A piece's beats as named spans, its length, and the beats' names in the order they were given.
-- **`cssVariables`** `(tokens: Readonly<Record<string, string>>): string`: A `:host` rule setting each token as a custom property, in the tokens' order; empty for none.
-- **`isTokenName`** `(name: string): boolean`: Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`.
-- **`carried`** `(options: CarriedOptions): Pose2d`: The pose of a member carried to the box `at` names after each event, over `ms` each, setting off from where it is drawn; with no clock it has arrived.
-- **`carry`** `(own: Box, given: Box, target: Box, progress: number, size?: CarrySize): Pose2d`: The pose drawing a member resting at `own` on `from` at 0 and `to` at 1; `"clip"` only crops, never past `own`.
-- **`CarriedOptions`** `type CarriedOptions`: What `carried` is given: where the member rests now, and where `at` says it belongs after the events.
-- **`CarrySize`** `type CarrySize`: How a carried member takes a box's size: `"scale"` stretches it, `"keep"` leaves it, `"clip"` leaves it and hides all outside the box.
-- **`NO_LAYOUTS`** `const NO_LAYOUTS: Readonly<Record<never, Readonly<Record<string, Box>>>>`: The layouts a module with none passes: no layout, no boxes.
-- **`NO_REST`** `const NO_REST: Readonly<Record<string, Box>>`: The rest a tool with no renderer passes: no boxes.
-- **`restOf`** `(rest: Rest, name: string): Box`: The box `name` rests in, or a zero box when nothing measured it, so a scene never throws on a tool's run.
-- **`Box`** `type Box`: Where a member rests once laid out: its centre and size in px, in the frame's own space.
-- **`Layouts`** `type Layouts<L>`: Each named layout's `Rest`, as a renderer measured every one.
-- **`Rest`** `type Rest`: Each member's rest box by its cast name, as a renderer measured it after layout.
-- **`readStageModule`** `(value: unknown): StageModule | { readonly reason: string; }`: A stage module read from what a file exports, or why it is not one; it never throws.
-- **`Skins`** `type Skins`: How the cast looks on each renderer; a member a skin leaves out gets the renderer's default.
-- **`StageModule`** `type StageModule<B, V, L>`: What a stage module exports: its story, its cast, their skins and a scene answering `V`.
-- **`describeLoop`** `({ loop, behind }: StrokeLoop): string`: The loop said in one line: `paths "a" and "b" read each other`, and any stroke reading them.
-- **`drawInPasses`** `(paths: readonly (readonly [string, ActorPath])[], rest: Rest, settle: (name: s…`: Draws strokes in passes over `rest` and the strokes drawn so far; a path reading an undrawn stroke waits, and `settle` answers a drawn one's box.
-- **`restOfBounds`** `(bounds: Box): Box`: Where a stroke of these bounds rests: their centre and size, as a rest box is.
-- **`thickened`** `(box: Box): Box`: A box never thinner than 1 on a side, so a straight line still shows: a side with no size opens to 1 about where it was.
-- **`PathAnswer`** `type PathAnswer`: What a path answered in its pass: its cubics, or what it threw.
-- **`StrokeLoop`** `type StrokeLoop`: The strokes no pass could draw: those reading each other in a loop, and those reading one of them.
+- [index](./reference/index.md) (48): `actor`, `castNames`, `presentAt`, `group`, `letters`, `many`, `pathOf`, `words`, `Actor`, `ActorPath`, `ActorText`, `Behaviour`, `Cast`, `CastName`, `Group`, `Many`, `Member`, `Pivot`, `Stretch`, `blendShapes`, `matchOutlines`, `piecesOf`, `DEFAULT_FRAME`, `frame`, `story`, `Frame`, `Story`, `cssVariables`, `isTokenName`, `carried`, `carry`, `CarriedOptions`, `CarrySize`, `NO_LAYOUTS`, `NO_REST`, `restOf`, `Box`, `Layouts`, `Rest`, `readStageModule`, `Skins`, `StageModule`, `describeLoop`, `drawInPasses`, `restOfBounds`, `thickened`, `PathAnswer`, `StrokeLoop`
 <!-- generated:reference:end -->
 
 ## The loop

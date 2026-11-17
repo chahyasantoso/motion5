@@ -8,7 +8,6 @@ const START = "<!-- generated:reference:start -->";
 const END = "<!-- generated:reference:end -->";
 const NO_DOC = "(no doc comment)";
 const MAX_SIGNATURE = 140;
-const MAX_COMPACT_SIGNATURE = 80;
 
 /** Packages with a scene-facing entry, each with the entry files a caller imports. */
 export const PACKAGES = [
@@ -47,10 +46,10 @@ const CORE_INTROS = {
 };
 const CORE_GROUPS = Object.keys(CORE_INTROS);
 
-/** The read-whole pages: the package whose entries they carry, and the page. */
+/** The read-whole pages: the package whose export index they carry, and the page. */
 export const READ_WHOLE = [
-  { dir: "core", path: "packages/core/docs/core.md", namesOnly: true },
-  { dir: "stage", path: "packages/stage/docs/stage.md", namesOnly: undefined },
+  { dir: "core", path: "packages/core/docs/core.md" },
+  { dir: "stage", path: "packages/stage/docs/stage.md" },
 ];
 
 /** The root tsconfig's `paths`, so `@gerak/*` resolves to source whether or not a package was built. */
@@ -151,7 +150,7 @@ function typeParameterNames(symbol) {
   return [...new Set(names)];
 }
 
-/** The signature of an export in full, and whether it is a type, which a compact page names without its body. */
+/** The signature of an export in full. */
 function signatureOf(symbol, checker) {
   const declaration = symbol.valueDeclaration ?? symbol.declarations?.[0];
   const flags = symbol.flags;
@@ -164,22 +163,16 @@ function signatureOf(symbol, checker) {
     const [first] = calls;
     if (first !== undefined) {
       const more = calls.length > 1 ? ` (+${calls.length - 1} overloads)` : "";
-      return {
-        text: `${checker.signatureToString(first, declaration, NAMED)}${more}`,
-        isType: false,
-      };
+      return `${checker.signatureToString(first, declaration, NAMED)}${more}`;
     }
     if ((flags & ts.SymbolFlags.Variable) !== 0)
-      return {
-        text: `const ${symbol.name}: ${keysOrType(type, checker, declaration)}`,
-        isType: false,
-      };
+      return `const ${symbol.name}: ${keysOrType(type, checker, declaration)}`;
   }
-  if ((flags & ts.SymbolFlags.Class) !== 0) return { text: `class ${symbol.name}`, isType: false };
+  if ((flags & ts.SymbolFlags.Class) !== 0) return `class ${symbol.name}`;
   const declared = checker.getDeclaredTypeOfSymbol(symbol);
   const parameters = typeParameterNames(symbol);
   const head = `type ${symbol.name}${parameters.length === 0 ? "" : `<${parameters.join(", ")}>`}`;
-  return { text: `${head} = ${shapeOf(declared, checker, declaration)}`, isType: true, head };
+  return `${head} = ${shapeOf(declared, checker, declaration)}`;
 }
 
 /** A literal field of an option's declared type, as written: `0`, `"in"`, or nothing when absent. */
@@ -235,24 +228,16 @@ function entryOf(name, exportedSymbol, checker) {
       : exportedSymbol;
   const doc = ts.displayPartsToString(symbol.getDocumentationComment(checker)).trim();
   const options = optionsOf(symbol, checker);
-  const written = options === undefined ? signatureOf(symbol, checker) : undefined;
-  const signature = written === undefined ? (options?.call ?? "") : written.text;
+  const signature = options === undefined ? signatureOf(symbol, checker) : options.call;
   // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
   const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
   const tail = options === undefined ? "" : ` ${options.text}`;
-  // A read-whole page stays short: a type is named, a long call is cut; the group page has every word.
-  const compact = written?.isType === true ? (written.head ?? signature) : signature;
-  const short =
-    compact.length > MAX_COMPACT_SIGNATURE
-      ? `${compact.slice(0, MAX_COMPACT_SIGNATURE - 1)}…`
-      : compact;
   const declaration = symbol.declarations?.[0];
   return {
     name,
     doc,
     file: declaration === undefined ? "" : declaration.getSourceFile().fileName,
     text: `- **\`${name}\`** \`${signature}\`: ${meaning}${tail}`,
-    compact: `- **\`${name}\`** \`${short}\`: ${firstSentence(doc === "" ? NO_DOC : doc)}`,
   };
 }
 
@@ -349,23 +334,8 @@ export function referenceFiles(generated) {
   return files;
 }
 
-const DIMENSIONS = ["2D paths and shapes", "3D rotation and vectors"];
-
 function isThreeD(entry) {
   return /(rotation3d|stage3d|cubics3d)\.ts$/.test(entry.file) || /3d$/i.test(entry.name);
-}
-
-/** A group's exports as names only, split by dimension, with a link to the page that has the signatures. */
-function namesOf(group) {
-  const names = (flag) =>
-    group.entries
-      .filter((entry) => isThreeD(entry) === flag)
-      .map(({ name }) => `\`${name}\``)
-      .join(", ");
-  return [
-    ...DIMENSIONS.map((label, index) => `- ${label}: ${names(index === 1)}`),
-    `Signatures: [reference/${group.name}.md](./reference/${group.name}.md).`,
-  ];
 }
 
 /** One compact index line per group linking its reference page, splitting 2D and 3D for geometry. */
@@ -379,22 +349,11 @@ function indexLineOf(group) {
   return `- [${group.name}](./reference/${group.name}.md) (${group.entries.length}): ${names(group.entries)}`;
 }
 
-/** The body between a read-whole page's markers: names-only group index when `namesOnly === true`, else compact entries. */
-export function readWholeBody(generated, dir, namesOnly = undefined) {
+/** The body between a read-whole page's markers: one names-only link line per reference group. */
+export function readWholeBody(generated, dir) {
   const found = generated.packages.find((candidate) => candidate.dir === dir);
   const groups = found === undefined ? [] : found.groups;
-  if (namesOnly === true) return groups.map(indexLineOf).join("\n");
-  const toc = groups
-    .map((group) => `[${group.name}](#${group.name}) ${group.entries.length}`)
-    .join(", ");
-  const sections = groups.flatMap((group) => [
-    "",
-    `## ${group.name}`,
-    "",
-    ...(group.intro === "" ? [] : [group.intro, ""]),
-    ...(group.name === namesOnly ? namesOf(group) : group.entries.map(({ compact }) => compact)),
-  ]);
-  return [`Groups: ${toc}.`, ...sections].join("\n");
+  return groups.map(indexLineOf).join("\n");
 }
 
 /** The page with each marker pair's inside replaced; undefined when the pairs do not match. */
@@ -438,12 +397,10 @@ function expectedDocs(scanRoot) {
   const generated = generate(scanRoot);
   const files = referenceFiles(generated);
   const problems = generated.undocumented.map((name) => `${name} has no doc comment`);
-  for (const { dir, path, namesOnly } of READ_WHOLE) {
+  for (const { dir, path } of READ_WHOLE) {
     const committed = readIf(join(scanRoot, path));
     const filled =
-      committed === undefined
-        ? undefined
-        : fill(committed, [readWholeBody(generated, dir, namesOnly)]);
+      committed === undefined ? undefined : fill(committed, [readWholeBody(generated, dir)]);
     if (filled === undefined) problems.push(`${path}: missing or its marker pair does not match`);
     else files.set(path, filled);
   }

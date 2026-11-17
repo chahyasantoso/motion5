@@ -173,12 +173,17 @@ describe("agent reference", () => {
     },
   );
 
-  it("keeps core.md conceptual under 8 KB without repeating per-export reference entries", () => {
+  it("keeps core.md and stage.md compact without repeating per-export reference entries", () => {
     const core = readFileSync(new URL("packages/core/docs/core.md", ROOT), "utf8");
     expect(Buffer.byteLength(core)).toBeLessThanOrEqual(8 * 1024);
     expect(core).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
     for (const page of readdirSync(new URL("packages/core/docs/reference/", ROOT))) {
       if (page !== "README.md") expect(core).toContain(`./reference/${page}`);
     }
+
+    const stage = readFileSync(new URL("packages/stage/docs/stage.md", ROOT), "utf8");
+    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(14 * 1024);
+    expect(stage).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
+    expect(stage).toContain("./reference/index.md");
   });
 });
