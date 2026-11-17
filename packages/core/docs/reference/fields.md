@@ -1,6 +1,6 @@
 # @gerak/core: fields
 
-A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `scale`, `scaleX`, `scaleY`, `opacity`, `blur`, `shadowX`, `shadowY`, `shadowBlur`, `hue`, `lightness`, `tint`, `drawn`, `drawnFrom`, `clipX`, `clipY`, `clipRadius`, `clipWidth`, `clipHeight`, `shape`, `layer`, `anchor`, `custom`; 3D adds `z`, `rotationX`, `rotationY`, `scaleZ`). Reach for this group when a scene defines fields or combines contributions into one pose.
+Pose fields, rest values, combining rules, and lifting 2D poses to 3D. Reach for this group when defining fields or combining poses.
 
 - **`CUSTOM_FIELD`** `const CUSTOM_FIELD: ValueField`: A number a piece names itself, under `custom`: it rests at 0 and adds, and each renderer says where it goes.
 - **`POSE_2D_FIELDS`** `const POSE_2D_FIELDS: readonly (CarriedBy<"both" | "2d"> | "anchor")[]`: Every field a renderer must write for a pose: its numbers and its anchor.

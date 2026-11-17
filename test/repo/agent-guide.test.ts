@@ -119,10 +119,9 @@ describe("package docs", () => {
   it.each(DOC_PACKAGES)("%s: its README lists every page of its docs", (dir) => {
     const readme = `packages/${dir}/docs/README.md`;
     const text = readFileSync(new URL(readme, ROOT), "utf8");
-    const pages = markdownIn(join(PACKAGES, dir, "docs")).filter(
-      (page) =>
-        page !== readme && !page.includes("/docs/reference/") && !page.endsWith(".intro.md"),
-    );
+    const allPages = markdownIn(join(PACKAGES, dir, "docs"));
+    expect(allPages.filter((page) => page.endsWith(".intro.md"))).toEqual([]);
+    const pages = allPages.filter((page) => page !== readme && !page.includes("/docs/reference/"));
     for (const page of pages) {
       const name = page.slice(`packages/${dir}/docs/`.length);
       expect(text, `${dir}: ${name}`).toContain(`(./${name})`);

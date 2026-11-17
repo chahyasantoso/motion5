@@ -25,23 +25,31 @@ export const PACKAGES = [
   { dir: "moves", entries: ["src/index.ts"] },
 ];
 
-/** Core's groups in the order a reader needs them; every other package lists its groups by name. */
-const CORE_GROUPS = [
-  "fields",
-  "time",
-  "blend",
-  "ease",
-  "envelope",
-  "geometry",
-  "path",
-  "measure",
-  "events",
-  "utility",
-];
+/** Core's groups in learning order and their 1-line reference summaries. */
+const CORE_INTROS = {
+  fields:
+    "Pose fields, rest values, combining rules, and lifting 2D poses to 3D. Reach for this group when defining fields or combining poses.",
+  time: "Time is a number over a span; this group reads it, shapes it (loop, chain, reversed, repeated) and arranges phases or lanes into one timeline. Reach for it whenever a move starts late, repeats or follows another.",
+  blend:
+    "Blending turns two values or poses into the value between them, and keyframes turns a list of keys into a curve. Reach for it to interpolate a number, an angle, a point or a whole pose.",
+  ease: "Easing reshapes progress so motion accelerates or settles; spring and back are the eases with overshoot. Reach for it to give a move weight instead of a straight line.",
+  envelope:
+    "An envelope is an amount over time: an arch up and down, an attack, a decay, a taper or a wave. Reach for it to fade a quantity in or out or to pulse it.",
+  geometry:
+    "Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and the path tools: shape outlines, arcs, resampling, reversal, transforms, bounds and area. Reach for it when a scene needs a point, a rotation or an outline.",
+  path: "Motion along a curve or through the air: a point and tangent along a path, its length, and a ballistic arc. Reach for it to send something along a line or to throw it.",
+  measure:
+    "Measures read a signal back: how fast it moves, and the area under a stream of samples. Reach for it to check a move's feel or to drive one value from another's speed.",
+  events:
+    "An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time. Reach for it to react to the page or to mark moments for other moves.",
+  utility:
+    "Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard. Reach for them instead of writing your own.",
+};
+const CORE_GROUPS = Object.keys(CORE_INTROS);
 
 /** The read-whole pages: the package whose entries they carry, and the page. */
 export const READ_WHOLE = [
-  { dir: "core", path: "packages/core/docs/core.md", namesOnly: "geometry" },
+  { dir: "core", path: "packages/core/docs/core.md", namesOnly: true },
   { dir: "stage", path: "packages/stage/docs/stage.md", namesOnly: undefined },
 ];
 
@@ -261,9 +269,8 @@ function orderGroups(dir, names) {
   return [...known, ...rest];
 }
 
-function introOf(scanRoot, dir, group) {
-  const file = join(scanRoot, "packages", dir, "docs", `${group}.intro.md`);
-  return existsSync(file) ? readFileSync(file, "utf8").trim() : "";
+function introOf(dir, group) {
+  return dir === "core" ? (CORE_INTROS[group] ?? "") : "";
 }
 
 /** Every package's exports as groups, and the names with no doc comment. */
@@ -295,7 +302,7 @@ export function generate(scanRoot = root, packages = PACKAGES) {
     }
     const groups = orderGroups(dir, [...byGroup.keys()]).map((name) => ({
       name,
-      intro: introOf(scanRoot, dir, name),
+      intro: introOf(dir, name),
       entries: byGroup.get(name) ?? [],
     }));
     return { dir, groups };
@@ -361,11 +368,22 @@ function namesOf(group) {
   ];
 }
 
-/** The body between a read-whole page's markers: a table of contents, then every group in compact form;
- * `namesOnly` names one group by its exports alone. */
+/** One compact index line per group linking its reference page, splitting 2D and 3D for geometry. */
+function indexLineOf(group) {
+  const names = (entries) => entries.map(({ name }) => `\`${name}\``).join(", ");
+  if (group.name === "geometry") {
+    const twoD = group.entries.filter((entry) => !isThreeD(entry));
+    const threeD = group.entries.filter((entry) => isThreeD(entry));
+    return `- [${group.name}](./reference/${group.name}.md) (${group.entries.length}): 2D ${names(twoD)}; 3D ${names(threeD)}`;
+  }
+  return `- [${group.name}](./reference/${group.name}.md) (${group.entries.length}): ${names(group.entries)}`;
+}
+
+/** The body between a read-whole page's markers: names-only group index when `namesOnly === true`, else compact entries. */
 export function readWholeBody(generated, dir, namesOnly = undefined) {
   const found = generated.packages.find((candidate) => candidate.dir === dir);
   const groups = found === undefined ? [] : found.groups;
+  if (namesOnly === true) return groups.map(indexLineOf).join("\n");
   const toc = groups
     .map((group) => `[${group.name}](#${group.name}) ${group.entries.length}`)
     .join(", ");

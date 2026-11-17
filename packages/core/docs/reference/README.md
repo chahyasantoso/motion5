@@ -2,7 +2,7 @@
 
 Generated from doc comments by `npm run reference -- --write`; one page per source folder.
 
-- [fields](./fields.md), 13 exports: A field is one named number of a pose (`x`, `y`, `rotation`, `skewX`, `skewY`, `scale`, `scaleX`, `scaleY`, `opacity`, `blur`, `shadowX`, `shadowY`, `shadowBlur`, `hue`, `lightness`, `tint`, `drawn`, `drawnFrom`, `clipX`, `clipY`, `clipRadius`, `clipWidth`, `clipHeight`, `shape`, `layer`, `anchor`, `custom`; 3D adds `z`, `rotationX`, `rotationY`, `scaleZ`).
+- [fields](./fields.md), 13 exports: Pose fields, rest values, combining rules, and lifting 2D poses to 3D.
 - [time](./time.md), 23 exports: Time is a number over a span; this group reads it, shapes it (loop, chain, reversed, repeated) and arranges phases or lanes into one timeline.
 - [blend](./blend.md), 8 exports: Blending turns two values or poses into the value between them, and keyframes turns a list of keys into a curve.
 - [ease](./ease.md), 9 exports: Easing reshapes progress so motion accelerates or settles; spring and back are the eases with overshoot.

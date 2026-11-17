@@ -172,4 +172,13 @@ describe("agent reference", () => {
       expect(exported.filter((name) => !page.includes("`" + name + "`"))).toEqual([]);
     },
   );
+
+  it("keeps core.md conceptual under 8 KB without repeating per-export reference entries", () => {
+    const core = readFileSync(new URL("packages/core/docs/core.md", ROOT), "utf8");
+    expect(Buffer.byteLength(core)).toBeLessThanOrEqual(8 * 1024);
+    expect(core).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
+    for (const page of readdirSync(new URL("packages/core/docs/reference/", ROOT))) {
+      if (page !== "README.md") expect(core).toContain(`./reference/${page}`);
+    }
+  });
 });
