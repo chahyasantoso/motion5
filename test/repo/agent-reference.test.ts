@@ -108,6 +108,7 @@ describe("agent reference", () => {
     expect(core).toContain(
       "**`mixPoint3d`** `(from: Point3d, to: Point3d, share: number): Point3d`",
     );
+    expect(core).toContain("**`Lens3d`** `type Lens3d = Pose3d & { readonly fov: number; }`");
     expect(core).not.toContain("Point3`");
     const rigThree = referenceOf("rig-three");
     expect(rigThree).toContain("restPosition: Readonly<Vector3>");

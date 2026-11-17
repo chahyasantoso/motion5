@@ -96,8 +96,21 @@ function keysOrType(type, checker, declaration) {
   return text.length > MAX_SIGNATURE && keys.length > 0 ? `{ ${keys.join(", ")} }` : text;
 }
 
-/** An object type's members and call signatures in full; aliases expand only on the top-level non-object body. */
+/** Object members in full, or intersection arms formatted apart so nested aliases stay named. */
 function shapeOf(type, checker, declaration) {
+  if (
+    declaration !== undefined &&
+    ts.isTypeAliasDeclaration(declaration) &&
+    ts.isIntersectionTypeNode(declaration.type)
+  ) {
+    return declaration.type.types
+      .map((part) => {
+        const inner = ts.isParenthesizedTypeNode(part) ? part.type : part;
+        const text = checker.typeToString(checker.getTypeFromTypeNode(inner), declaration, NAMED);
+        return ts.isUnionTypeNode(inner) || ts.isFunctionTypeNode(inner) ? `(${text})` : text;
+      })
+      .join(" & ");
+  }
   const members = checker.getPropertiesOfType(type);
   const plain =
     (type.flags & ts.TypeFlags.Object) !== 0 &&
