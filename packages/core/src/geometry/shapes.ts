@@ -1,8 +1,12 @@
-/** A named point in px. */
-export type Point2d = { readonly id: string; readonly x: number; readonly y: number };
+/** A 2D point in px. */
+export type Point2d = { readonly x: number; readonly y: number };
+
+/** A 3D point in world units. */
+export type Point3d = { readonly x: number; readonly y: number; readonly z: number };
 
 /** A named path point with the handles of a smooth cubic through it, relative to the point. */
 export type Anchor2d = Point2d & {
+  readonly id: string;
   readonly inX: number;
   readonly inY: number;
   readonly outX: number;
@@ -23,11 +27,8 @@ export type Cubic2d = {
 };
 
 /** A named 3D path point with the handles of a smooth cubic through it, relative to the point. */
-export type Anchor3d = {
+export type Anchor3d = Point3d & {
   readonly id: string;
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
   readonly inX: number;
   readonly inY: number;
   readonly inZ: number;

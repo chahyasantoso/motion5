@@ -1,4 +1,5 @@
 import { CUSTOM_FIELD, POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d } from "../fields/pose";
+import type { Point2d } from "../geometry/shapes";
 
 /** The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates. */
 export function mix(from: number, to: number, share: number): number {
@@ -12,11 +13,7 @@ export function mixAngle(from: number, to: number, share: number): number {
 }
 
 /** A point `share` of the way from `from` to `to`. */
-export function mixPoint(
-  from: { readonly x: number; readonly y: number },
-  to: { readonly x: number; readonly y: number },
-  share: number,
-): { readonly x: number; readonly y: number } {
+export function mixPoint(from: Point2d, to: Point2d, share: number): Point2d {
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share) };
 }
 

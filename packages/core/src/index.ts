@@ -59,7 +59,7 @@ export { combine3d, lift2d } from "./fields/pose3d";
 export { mixPoint3d, mixPose3d } from "./blend/mix3d";
 export { type Pose3d } from "./fields/pose3d";
 export { aim, orbit, project3d, type Lens3d } from "./geometry/stage3d";
-export type { Anchor2d, Cubic2d, Point2d } from "./geometry/shapes";
+export type { Anchor2d, Cubic2d, Point2d, Point3d } from "./geometry/shapes";
 export { toCubics } from "./geometry/path";
 export { along } from "./path/along";
 export { radial } from "./geometry/radial";

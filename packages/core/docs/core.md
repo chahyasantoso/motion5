@@ -5,7 +5,7 @@ envelopes, geometry, paths, measures and events. `import { span, mix, ease } fro
 down, degrees clockwise, ms on clocks and events, 3D y up. A `Time` is `{ progress, clock }`, `progress` 0 to 1.
 
 <!-- generated:reference:start -->
-Groups: [fields](#fields) 13, [time](#time) 23, [blend](#blend) 8, [ease](#ease) 9, [envelope](#envelope) 5, [geometry](#geometry) 57, [path](#path) 5, [measure](#measure) 5, [events](#events) 6, [utility](#utility) 3.
+Groups: [fields](#fields) 13, [time](#time) 23, [blend](#blend) 8, [ease](#ease) 9, [envelope](#envelope) 5, [geometry](#geometry) 58, [path](#path) 5, [measure](#measure) 5, [events](#events) 6, [utility](#utility) 3.
 
 ## fields
 
@@ -59,11 +59,11 @@ Blending turns two values or poses into the value between them, and keyframes tu
 
 - **`mix`** `(from: number, to: number, share: number): number`: The number `share` of the way from `from` to `to`; a share past 0 or 1 extrapolates.
 - **`mixAngle`** `(from: number, to: number, share: number): number`: An angle in degrees `share` of the way from `from` to `to`, turning the short way round.
-- **`mixPoint`** `(from: { readonly x: number; readonly y: number; }, to: { readonly x: number; r…`: A point `share` of the way from `from` to `to`.
+- **`mixPoint`** `(from: Point2d, to: Point2d, share: number): Point2d`: A point `share` of the way from `from` to `to`.
 - **`mixPose`** `(from: Pose2d, to: Pose2d, share: number): Pose2d`: A pose `share` of the way between two; a field one pose lacks counts as its rest, and a custom number as 0.
 - **`keyframes`** `<T>(start: T, keys: readonly Key<T>[], blend: (from: T, to: T, share: number) =…`: A value moving from `start` at 0 ms to each key in turn, then holding; `blend` is `mix`, `mixPoint`, `mixPose` or alike.
 - **`Key`** `type Key<T>`: One keyframe: the value reached at `at` ms, eased from the key before; with no `ease` it is linear.
-- **`mixPoint3d`** `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { r…`: A 3D point `share` of the way from `from` to `to`.
+- **`mixPoint3d`** `(from: Point3d, to: Point3d, share: number): Point3d`: A 3D point `share` of the way from `from` to `to`.
 - **`mixPose3d`** `(from: Pose3d, to: Pose3d, share: number): Pose3d`: A pose `share` of the way between two; turns take the short arc, past the ends too; a missing field rests.
 
 ## ease
@@ -95,7 +95,7 @@ An envelope is an amount over time: an arch up and down, an attack, a decay, a t
 Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and the path tools: shape outlines, arcs, resampling, reversal, transforms, bounds and area. Reach for it when a scene needs a point, a rotation or an outline.
 
 - 2D paths and shapes: `Anchor2d`, `Cubic2d`, `Point2d`, `toCubics`, `radial`, `arcPath`, `pathFrom`, `ArcOptions`, `PathRead`, `circlePath`, `ellipsePath`, `linePath`, `polygonPath`, `rectPath`, `resamplePath`, `reversePath`, `transformPath`, `Matrix2d`, `isClosedPath`, `meets`, `pathArea`, `pathBounds`, `SEAM`
-- 3D rotation and vectors: `add3`, `axisX3`, `canonicalDegrees`, `cross3`, `divide3`, `dot3`, `eulerFromMatrix3d`, `IDENTITY_MATRIX3`, `LOCAL_X3`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `multiplyVector3`, `norm3`, `normalize3`, `quaternionFromEuler3d`, `rotationAboutAxis3d`, `scale3`, `slerpQuaternion`, `subtract3`, `swingFrame3d`, `transposeMatrix3`, `ZERO_EULER`, `Euler3d`, `Matrix3`, `Quaternion`, `Vec3`, `aim`, `orbit`, `project3d`, `Lens3d`, `toCubics3d`, `Anchor3d`, `Cubic3d`
+- 3D rotation and vectors: `add3`, `axisX3`, `canonicalDegrees`, `cross3`, `divide3`, `dot3`, `eulerFromMatrix3d`, `IDENTITY_MATRIX3`, `LOCAL_X3`, `matrixFromEuler3d`, `matrixFromQuaternion`, `multiplyMatrix3`, `multiplyVector3`, `norm3`, `normalize3`, `quaternionFromEuler3d`, `rotationAboutAxis3d`, `scale3`, `slerpQuaternion`, `subtract3`, `swingFrame3d`, `transposeMatrix3`, `ZERO_EULER`, `Euler3d`, `Matrix3`, `Quaternion`, `Vec3`, `aim`, `orbit`, `project3d`, `Lens3d`, `Point3d`, `toCubics3d`, `Anchor3d`, `Cubic3d`
 Signatures: [reference/geometry.md](./reference/geometry.md).
 
 ## path

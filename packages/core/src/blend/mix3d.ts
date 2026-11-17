@@ -4,6 +4,7 @@ import {
   quaternionFromEuler3d,
   slerpQuaternion,
 } from "../geometry/rotation3d";
+import type { Point3d } from "../geometry/shapes";
 import { VALUE_FIELDS } from "../fields/pose";
 import { NUMBERS, TURNS, eulerOf, writeEuler, type Mutable3d, type Pose3d } from "../fields/pose3d";
 import { mix, mixCustom } from "./mix";
@@ -30,10 +31,6 @@ export function mixPose3d(from: Pose3d, to: Pose3d, share: number): Pose3d {
 }
 
 /** A 3D point `share` of the way from `from` to `to`. */
-export function mixPoint3d(
-  from: { readonly x: number; readonly y: number; readonly z: number },
-  to: { readonly x: number; readonly y: number; readonly z: number },
-  share: number,
-): { readonly x: number; readonly y: number; readonly z: number } {
+export function mixPoint3d(from: Point3d, to: Point3d, share: number): Point3d {
   return { x: mix(from.x, to.x, share), y: mix(from.y, to.y, share), z: mix(from.z, to.z, share) };
 }

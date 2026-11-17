@@ -1,7 +1,6 @@
 import { eulerFromMatrix3d, matrixFromEuler3d, type Matrix3, type Vec3 } from "./rotation3d";
+import type { Point3d } from "./shapes";
 import type { Pose3d } from "../fields/pose3d";
-
-type Point3 = { readonly x: number; readonly y: number; readonly z: number };
 
 const EPSILON = 1e-9;
 
@@ -16,7 +15,7 @@ function unit(v: Vec3): Vec3 | undefined {
 
 /** The turn that points local -z (a camera's forward) from `from` at `to`, `up` +y when absent, no
  * roll; `{}` when they meet. */
-export function aim(from: Point3, to: Point3, up: Point3 = { x: 0, y: 1, z: 0 }): Pose3d {
+export function aim(from: Point3d, to: Point3d, up: Point3d = { x: 0, y: 1, z: 0 }): Pose3d {
   const forward = unit([to.x - from.x, to.y - from.y, to.z - from.z]);
   if (forward === undefined) return {};
   const back: Vec3 = [-forward[0], -forward[1], -forward[2]];
@@ -49,11 +48,11 @@ export function aim(from: Point3, to: Point3, up: Point3 = { x: 0, y: 1, z: 0 })
 
 /** A point `radius` from `target`: azimuth about +y from +z toward +x, elevation up from the xz plane, degrees. */
 export function orbit(options: {
-  readonly target: Point3;
+  readonly target: Point3d;
   readonly radius: number;
   readonly azimuth: number;
   readonly elevation: number;
-}): { readonly x: number; readonly y: number; readonly z: number } {
+}): Point3d {
   const azimuth = (options.azimuth * Math.PI) / 180;
   const elevation = (options.elevation * Math.PI) / 180;
   const flat = options.radius * Math.cos(elevation);
@@ -71,7 +70,7 @@ export type Lens3d = Pose3d & { readonly fov: number };
 /** Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs
  * along the view, and `visible` is false behind the lens. */
 export function project3d(
-  point: Point3,
+  point: Point3d,
   lens: Lens3d,
   stage: { readonly width: number; readonly height: number },
 ): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean } {

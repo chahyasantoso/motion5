@@ -102,6 +102,13 @@ describe("agent reference", () => {
       "**`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`",
     );
     expect(core).toContain("**`UNTIMED`** `const UNTIMED: Clock`");
+    expect(core).toContain("**`Point2d`** `type Point2d = { x: number; y: number }`");
+    expect(core).toContain("**`Point3d`** `type Point3d = { x: number; y: number; z: number }`");
+    expect(core).toContain("**`mixPoint`** `(from: Point2d, to: Point2d, share: number): Point2d`");
+    expect(core).toContain(
+      "**`mixPoint3d`** `(from: Point3d, to: Point3d, share: number): Point3d`",
+    );
+    expect(core).not.toContain("Point3`");
     const rigThree = referenceOf("rig-three");
     expect(rigThree).toContain("restPosition: Readonly<Vector3>");
     expect(rigThree).not.toContain("isVector3: true");

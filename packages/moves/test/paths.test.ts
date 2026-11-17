@@ -57,6 +57,16 @@ describe("rope", () => {
     );
   });
 
+  it("accepts plain points without ids and numbers them from p0", () => {
+    const start = rope({ angle: 0 }, atProgress(0), {
+      points: [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+      ],
+    });
+    expect(start.map(({ id }) => id)).toEqual(["p0", "p1"]);
+  });
+
   it("types its inputs from the declaration", () => {
     // @ts-expect-error `points` is a declared input.
     expect(() => rope({}, atProgress(0))).toThrow(/rope: input "points" is required/);

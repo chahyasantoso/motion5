@@ -77,7 +77,7 @@ export const rope = defineMove({
   run(
     { angle, pin, release, overshoot, ripple },
     { progress },
-    input: { readonly points: readonly Point2d[] },
+    input: { readonly points: readonly (Point2d & { readonly id?: string })[] },
   ): readonly Anchor2d[] {
     if (input === undefined) throw new TypeError(`rope: input "points" is required.`);
     const { points } = input;

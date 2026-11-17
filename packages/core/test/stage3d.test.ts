@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aim, orbit } from "@gerak/core";
+import { aim, mixPoint, mixPoint3d, orbit, type Point2d, type Point3d } from "@gerak/core";
 
 describe("aim", () => {
   it("gives no turn when looking down -z", () => {
@@ -34,5 +34,12 @@ describe("orbit", () => {
     expect(point.x).toBeCloseTo(2, 9);
     expect(point.y).toBeCloseTo(0, 9);
     expect(point.z).toBeCloseTo(0, 9);
+  });
+
+  it("accepts plain 2d and 3d points without ids", () => {
+    const a: Point2d = { x: 0, y: 0 };
+    const b: Point3d = { x: 1, y: 2, z: 3 };
+    expect(mixPoint(a, { x: 10, y: 20 }, 0.5)).toEqual({ x: 5, y: 10 });
+    expect(mixPoint3d(b, { x: 3, y: 6, z: 9 }, 0.5)).toEqual({ x: 2, y: 4, z: 6 });
   });
 });
