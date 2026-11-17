@@ -124,6 +124,14 @@ describe("agent reference", () => {
       "posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<keyof Table & string, Point3d>>`",
     );
     expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
+
+    const moves = referenceOf("moves");
+    expect(moves).toContain("**`drop`** `(options, time)`:");
+    expect(moves).toContain("**`fade`** `(options, time)`:");
+    expect(moves).toContain("**`anticipate`** `(options, time, input: (time: Time) => Pose2d)`:");
+    expect(moves).toContain(
+      "**`rope`** `(options, time, input: { readonly points: readonly (Point2d & { readonly id?: string; })[]; })`:",
+    );
   });
 
   it("names in its parts list only exports of @gerak/moves, each one named in its reference", () => {

@@ -210,9 +210,18 @@ function optionsOf(symbol, checker) {
     const needed = fallback === undefined ? "required" : `default ${fallback}`;
     return `\`${option.name}\` ${kind}${range}, ${needed}: ${said}`;
   });
-  if (lines.length === 0) return undefined;
-  const names = call?.getParameters().map(({ name }) => name) ?? [];
-  return { call: `(${names.join(", ")})`, text: `Options: ${lines.join("; ")}` };
+  const params = (call?.getParameters() ?? []).flatMap((param) => {
+    const decl = param.valueDeclaration;
+    const rest = decl !== undefined && ts.isParameter(decl) && decl.dotDotDotToken !== undefined;
+    if (!rest) return [param.name];
+    const type = checker.getTypeOfSymbolAtLocation(param, declaration);
+    const tuple = checker.typeToString(type, declaration, NAMED);
+    return tuple === "[]" ? [] : [tuple.replace(/^\[|\]$/g, "")];
+  });
+  return {
+    call: `(${params.join(", ")})`,
+    text: lines.length === 0 ? "" : `Options: ${lines.join("; ")}`,
+  };
 }
 
 function firstSentence(text) {
@@ -231,7 +240,7 @@ function entryOf(name, exportedSymbol, checker) {
   const signature = options === undefined ? signatureOf(symbol, checker) : options.call;
   // One line per export, so an agent that searches for a name gets its signature and meaning in one hit.
   const meaning = (doc === "" ? NO_DOC : doc).replace(/\s*\n\s*/g, " ");
-  const tail = options === undefined ? "" : ` ${options.text}`;
+  const tail = options === undefined || options.text === "" ? "" : ` ${options.text}`;
   const declaration = symbol.declarations?.[0];
   return {
     name,
