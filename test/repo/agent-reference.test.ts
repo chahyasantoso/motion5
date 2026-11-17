@@ -85,6 +85,28 @@ describe("agent reference", () => {
     expect(cut).toEqual([]);
   });
 
+  it("keeps type aliases named in signatures and own parameters on type heads", () => {
+    const leakedHeads: string[] = [];
+    for (const { dir } of PACKAGES) {
+      for (const line of referenceOf(dir).split("\n")) {
+        const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+        if (written === null) continue;
+        const [, name, signature = ""] = written;
+        if (/^type \w+<[^>]*[<{\[]/.test(signature)) leakedHeads.push(`${dir}: ${name}`);
+      }
+    }
+    expect(leakedHeads).toEqual([]);
+
+    const core = referenceOf("core");
+    expect(core).toContain(
+      "**`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`",
+    );
+    expect(core).toContain("**`UNTIMED`** `const UNTIMED: Clock`");
+    const rigThree = referenceOf("rig-three");
+    expect(rigThree).toContain("restPosition: Readonly<Vector3>");
+    expect(rigThree).not.toContain("isVector3: true");
+  });
+
   it("names in its parts list only exports of @gerak/moves, each one named in its reference", () => {
     const exported = new Set(exportsOf(["moves/src/index.ts"]).get("moves/src/index.ts"));
     const reference = referenceOf("moves");

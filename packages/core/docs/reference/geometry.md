@@ -2,36 +2,36 @@
 
 Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and the path tools: shape outlines, arcs, resampling, reversal, transforms, bounds and area. Reach for it when a scene needs a point, a rotation or an outline.
 
-- **`add3`** `(a: readonly [number, number, number], b: readonly [number, number, number]): readonly [number, number, number]`: `a + b`.
-- **`axisX3`** `(matrix: readonly [number, number, number, number, number, number, number, number, number]): readonly [number, number, number]`: First column: world direction of the frame's local +x.
+- **`add3`** `(a: Vec3, b: Vec3): Vec3`: `a + b`.
+- **`axisX3`** `(matrix: Matrix3): Vec3`: First column: world direction of the frame's local +x.
 - **`canonicalDegrees`** `(radians: number): number`: Radians to degrees, canonical in `(-180, 180]`, no negative zero.
-- **`cross3`** `(a: readonly [number, number, number], b: readonly [number, number, number]): readonly [number, number, number]`: Right-handed cross product `a × b`.
-- **`divide3`** `(a: readonly [number, number, number], amount: number): readonly [number, number, number]`: `a` / `amount` componentwise; a quotient: `1 / amount` overflows a subnormal length.
-- **`dot3`** `(a: readonly [number, number, number], b: readonly [number, number, number]): number`: Dot product of two vectors.
-- **`eulerFromMatrix3d`** `(matrix: readonly [number, number, number, number, number, number, number, number, number]): { readonly rotation: number; readonly rotationX: number; readonly rotationY: number; }`: Decomposes a CSS Z-X-Y matrix into angles canonical in `(-180, 180]`.
-- **`IDENTITY_MATRIX3`** `const IDENTITY_MATRIX3: readonly [number, number, number, number, number, number, number, number, number]`: Identity rotation: the frame a swing or twist is measured from.
-- **`LOCAL_X3`** `const LOCAL_X3: readonly [number, number, number]`: A member's long axis, local +x: what a twist turns about.
-- **`matrixFromEuler3d`** `(euler: { readonly rotation: number; readonly rotationX: number; readonly rotationY: number; }): readonly [number, number, number, number, number, number, number, number, number]`: CSS `Rz(rotation) * Rx(rotationX) * Ry(rotationY)`, in degrees.
-- **`matrixFromQuaternion`** `(q: { readonly w: number; readonly x: number; readonly y: number; readonly z: number; }): readonly [number, number, number, number, number, number, number, number, number]`: `q`'s row-major matrix; the `2 / |q|²` scale keeps a non-unit `q` a rotation.
-- **`multiplyMatrix3`** `(left: readonly [number, number, number, number, number, number, number, number, number], right: readonly [number, number, number, number, number, number, number, number, number]): readonly [number, number, number, number, number, number, number, number, number]`: Multiplies row-major 3x3 matrices.
-- **`multiplyVector3`** `(matrix: readonly [number, number, number, number, number, number, number, number, number], vector: readonly [number, number, number]): readonly [number, number, number]`: Multiplies a matrix by a column vector.
-- **`norm3`** `(a: readonly [number, number, number]): number`: Euclidean length of `a`.
-- **`normalize3`** `(a: readonly [number, number, number], fallback: readonly [number, number, number]): readonly [number, number, number]`: `a` at unit length, or `fallback` when its length is not finite nonzero.
-- **`quaternionFromEuler3d`** `(euler: { readonly rotation: number; readonly rotationX: number; readonly rotationY: number; }): { readonly w: number; readonly x: number; readonly y: number; readonly z: number; }`: Unit quaternion of a CSS Z-X-Y triple: `qz * qx * qy`, `matrixFromEuler3d`'s order.
-- **`rotationAboutAxis3d`** `(axis: readonly [number, number, number], degrees: number): readonly [number, number, number, number, number, number, number, number, number]`: Right-handed rotation by `degrees` about the unit `axis`, row-major.
-- **`scale3`** `(a: readonly [number, number, number], amount: number): readonly [number, number, number]`: `a` scaled by `amount`.
-- **`slerpQuaternion`** `(from: { readonly w: number; readonly x: number; readonly y: number; readonly z: number; }, to: { readonly w: number; readonly x: number; readonly y: number; readonly z: number; }, weight: number): { readonly w: number; readonly x: number; readonly y: number; readonly z: number; }`: Short-arc blend `weight` from `from` to `to`; a negative dot negates `to` first.
-- **`subtract3`** `(a: readonly [number, number, number], b: readonly [number, number, number]): readonly [number, number, number]`: `a - b`.
-- **`swingFrame3d`** `(frame: readonly [number, number, number, number, number, number, number, number, number], direction: readonly [number, number, number]): readonly [number, number, number, number, number, number, number, number, number]`: `frame` turned minimally to take local +x onto `direction`: a swing, no twist.
-- **`transposeMatrix3`** `(matrix: readonly [number, number, number, number, number, number, number, number, number]): readonly [number, number, number, number, number, number, number, number, number]`: The inverse of an orthonormal rotation matrix.
-- **`ZERO_EULER`** `const ZERO_EULER: { readonly rotation: number; readonly rotationX: number; readonly rotationY: number; }`: Identity orientation: what an unsolved member composes, and every exact degenerate arm.
+- **`cross3`** `(a: Vec3, b: Vec3): Vec3`: Right-handed cross product `a × b`.
+- **`divide3`** `(a: Vec3, amount: number): Vec3`: `a` / `amount` componentwise; a quotient: `1 / amount` overflows a subnormal length.
+- **`dot3`** `(a: Vec3, b: Vec3): number`: Dot product of two vectors.
+- **`eulerFromMatrix3d`** `(matrix: Matrix3): Euler3d`: Decomposes a CSS Z-X-Y matrix into angles canonical in `(-180, 180]`.
+- **`IDENTITY_MATRIX3`** `const IDENTITY_MATRIX3: Matrix3`: Identity rotation: the frame a swing or twist is measured from.
+- **`LOCAL_X3`** `const LOCAL_X3: Vec3`: A member's long axis, local +x: what a twist turns about.
+- **`matrixFromEuler3d`** `(euler: Euler3d): Matrix3`: CSS `Rz(rotation) * Rx(rotationX) * Ry(rotationY)`, in degrees.
+- **`matrixFromQuaternion`** `(q: Quaternion): Matrix3`: `q`'s row-major matrix; the `2 / |q|²` scale keeps a non-unit `q` a rotation.
+- **`multiplyMatrix3`** `(left: Matrix3, right: Matrix3): Matrix3`: Multiplies row-major 3x3 matrices.
+- **`multiplyVector3`** `(matrix: Matrix3, vector: Vec3): Vec3`: Multiplies a matrix by a column vector.
+- **`norm3`** `(a: Vec3): number`: Euclidean length of `a`.
+- **`normalize3`** `(a: Vec3, fallback: Vec3): Vec3`: `a` at unit length, or `fallback` when its length is not finite nonzero.
+- **`quaternionFromEuler3d`** `(euler: Euler3d): Quaternion`: Unit quaternion of a CSS Z-X-Y triple: `qz * qx * qy`, `matrixFromEuler3d`'s order.
+- **`rotationAboutAxis3d`** `(axis: Vec3, degrees: number): Matrix3`: Right-handed rotation by `degrees` about the unit `axis`, row-major.
+- **`scale3`** `(a: Vec3, amount: number): Vec3`: `a` scaled by `amount`.
+- **`slerpQuaternion`** `(from: Quaternion, to: Quaternion, weight: number): Quaternion`: Short-arc blend `weight` from `from` to `to`; a negative dot negates `to` first.
+- **`subtract3`** `(a: Vec3, b: Vec3): Vec3`: `a - b`.
+- **`swingFrame3d`** `(frame: Matrix3, direction: Vec3): Matrix3`: `frame` turned minimally to take local +x onto `direction`: a swing, no twist.
+- **`transposeMatrix3`** `(matrix: Matrix3): Matrix3`: The inverse of an orthonormal rotation matrix.
+- **`ZERO_EULER`** `const ZERO_EULER: Euler3d`: Identity orientation: what an unsolved member composes, and every exact degenerate arm.
 - **`Euler3d`** `type Euler3d = { rotation: number; rotationX: number; rotationY: number }`: 3D orientation convention, owned here: CSS Euler order Z-X-Y, degrees.
 - **`Matrix3`** `type Matrix3 = readonly [number, number, number, number, number, number, number, number, number]`: A row-major 3x3 rotation matrix, nine numbers.
 - **`Quaternion`** `type Quaternion = { w: number; x: number; y: number; z: number }`: `w + xi + yj + zk`; unit where produced here; never authored or published.
 - **`Vec3`** `type Vec3 = readonly [number, number, number]`: A 3D vector as `[x, y, z]`.
-- **`aim`** `(from: { readonly x: number; readonly y: number; readonly z: number; }, to: { readonly x: number; readonly y: number; readonly z: number; }, up?: { readonly x: number; readonly y: number; readonly z: number; }): { readonly x?: number; readonly scale?: number; readonly y?: number; readonly z?: number; readonly rotation?: number; readonly rotationX?: number; readonly rotationY?: number; readonly scaleX?: number; readonly scaleY?: number; readonly scaleZ?: number; readonly opacity?: number; } & { readonly anchor?: never; readonly custom?: Readonly<Record<string, number>>; }`: The turn that points local -z (a camera's forward) from `from` at `to`, `up` +y when absent, no roll; `{}` when they meet.
+- **`aim`** `(from: Point3, to: Point3, up?: Point3): Pose3d`: The turn that points local -z (a camera's forward) from `from` at `to`, `up` +y when absent, no roll; `{}` when they meet.
 - **`orbit`** `(options: { readonly target: Point3; readonly radius: number; readonly azimuth: number; readonly elevation: number; }): { readonly x: number; readonly y: number; readonly z: number; }`: A point `radius` from `target`: azimuth about +y from +z toward +x, elevation up from the xz plane, degrees.
-- **`project3d`** `(point: { readonly x: number; readonly y: number; readonly z: number; }, lens: { readonly x?: number; readonly scale?: number; readonly y?: number; readonly z?: number; readonly rotation?: number; readonly rotationX?: number; readonly rotationY?: number; readonly scaleX?: number; readonly scaleY?: number; readonly scaleZ?: number; readonly opacity?: number; } & { readonly anchor?: never; readonly custom?: Readonly<Record<string, number>>; } & { readonly fov: number; }, stage: { readonly width: number; readonly height: number; }): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean; }`: Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs along the view, and `visible` is false behind the lens.
+- **`project3d`** `(point: Point3, lens: Lens3d, stage: { readonly width: number; readonly height: number; }): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean; }`: Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs along the view, and `visible` is false behind the lens.
 - **`Lens3d`** `type Lens3d = { readonly x?: number; readonly scale?: number; readonly y?: number; readonly z?: number; readonly rotation?: number; readonly rotationX?: number; readonly rotationY?: number; readonly scaleX?: number; readonly scaleY?: number; readonly scaleZ?: number; readonly opacity?: number; } & { readonly anchor?: never; readonly custom?: Readonly<Record<string, number>>; } & { readonly fov: number; }`: A camera for `project3d`: where it is and how it turns, as a `Pose3d` whose scale is ignored, and its vertical field of view in degrees.
 - **`Anchor2d`** `type Anchor2d = Point2d & { readonly inX: number; readonly inY: number; readonly outX: number; readonly outY: number; }`: A named path point with the handles of a smooth cubic through it, relative to the point.
 - **`Cubic2d`** `type Cubic2d = { id: string; x0: number; y0: number; x1: number; y1: number; x2: number; y2: number; x3: number; y3: number }`: One cubic Bézier segment from `(x0, y0)` to `(x3, y3)`, named by the anchor it leaves.
@@ -41,10 +41,10 @@ Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and 
 - **`toCubics3d`** `(anchors: readonly Anchor3d[]): readonly Cubic3d[]`: One segment per pair of neighbouring anchors, leaving through one's out handle and arriving through the next's in handle.
 - **`Anchor3d`** `type Anchor3d = { id: string; x: number; y: number; z: number; inX: number; inY: number; inZ: number; outX: number; outY: number; outZ: number }`: A named 3D path point with the handles of a smooth cubic through it, relative to the point.
 - **`Cubic3d`** `type Cubic3d = { id: string; x0: number; y0: number; z0: number; x1: number; y1: number; z1: number; x2: number; y2: number; z2: number; x3: number; y3: number; z3: number }`: One 3D cubic Bézier segment from `(x0, y0, z0)` to `(x3, y3, z3)`, named by the anchor it leaves.
-- **`arcPath`** `(options: { readonly x0: number; readonly y0: number; readonly x1: number; readonly y1: number; readonly rx: number; readonly ry: number; readonly degrees?: number; readonly large?: boolean; readonly sweep?: boolean; }): readonly Cubic2d[]`: An elliptical arc as cubics of at most a quarter turn each, named `arc0`, `arc1`, …; nothing when it starts where it ends.
-- **`pathFrom`** `(data: string): { readonly outlines: readonly (readonly Cubic2d[])[]; readonly error?: string; }`: The outlines of SVG path data in the path's own units: every command, absolute and relative, with arcs and quadratics made cubic and each closing line explicit.
-- **`ArcOptions`** `type ArcOptions = { x0: number; y0: number; x1: number; y1: number; rx: number; ry: number; degrees?: number | undefined; large?: boolean | undefined; sweep?: boolean | undefined }`: Elliptical arc from `(x0, y0)` to `(x1, y1)` with radii `rx`, `ry`, optional `degrees`, `large`, `sweep`.
-- **`PathRead`** `type PathRead = { outlines: readonly (readonly Cubic2d[])[]; error?: string | undefined }`: The outlines of path data: each outline is the cubics of one subpath, and `error` says why reading stopped early when the data is malformed.
+- **`arcPath`** `(options: ArcOptions): readonly Cubic2d[]`: An elliptical arc as cubics of at most a quarter turn each, named `arc0`, `arc1`, …; nothing when it starts where it ends.
+- **`pathFrom`** `(data: string): PathRead`: The outlines of SVG path data in the path's own units: every command, absolute and relative, with arcs and quadratics made cubic and each closing line explicit.
+- **`ArcOptions`** `type ArcOptions = { x0: number; y0: number; x1: number; y1: number; rx: number; ry: number; degrees?: number; large?: boolean; sweep?: boolean }`: Elliptical arc from `(x0, y0)` to `(x1, y1)` with radii `rx`, `ry`, optional `degrees`, `large`, `sweep`.
+- **`PathRead`** `type PathRead = { outlines: readonly (readonly Cubic2d[])[]; error?: string }`: The outlines of path data: each outline is the cubics of one subpath, and `error` says why reading stopped early when the data is malformed.
 - **`circlePath`** `(options: { readonly cx: number; readonly cy: number; readonly r: number; }): readonly Cubic2d[]`: The closed outline of a circle of radius `r` about `(cx, cy)`; nothing when `r` is not above zero.
 - **`ellipsePath`** `(options: { readonly cx: number; readonly cy: number; readonly rx: number; readonly ry: number; }): readonly Cubic2d[]`: The closed outline of an ellipse, four quarter arcs from its right-hand point; nothing when a radius is not above zero.
 - **`linePath`** `(options: { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number; }): readonly Cubic2d[]`: The one straight cubic from `(x1, y1)` to `(x2, y2)`.
@@ -52,7 +52,7 @@ Geometry holds the vector, matrix and quaternion maths, the 3D camera lens, and 
 - **`rectPath`** `(options: { readonly x: number; readonly y: number; readonly width: number; readonly height: number; readonly rx?: number; readonly ry?: number; }): readonly Cubic2d[]`: The closed outline of a rectangle, its corners rounded by `rx` and `ry` (each defaulting to the other); nothing when it has no size.
 - **`resamplePath`** `(cubics: readonly Cubic2d[], count: number): readonly Cubic2d[]`: A path split at its longest cubic, again and again, until it has `count` cubics; the halves are named `<id>.1` and `<id>.2`, and a path already that long is returned as it is.
 - **`reversePath`** `(cubics: readonly Cubic2d[]): readonly Cubic2d[]`: A path run the other way round: its cubics in reverse order, each from its end to its start.
-- **`transformPath`** `(cubics: readonly Cubic2d[], matrix: readonly [number, number, number, number, number, number]): readonly Cubic2d[]`: A path carried through a matrix: every point moved, every id kept.
+- **`transformPath`** `(cubics: readonly Cubic2d[], matrix: Matrix2d): readonly Cubic2d[]`: A path carried through a matrix: every point moved, every id kept.
 - **`Matrix2d`** `type Matrix2d = readonly [number, number, number, number, number, number]`: An affine matrix `[a, b, c, d, e, f]`, as SVG writes `matrix(a b c d e f)`.
 - **`isClosedPath`** `(cubics: readonly Cubic2d[]): boolean`: Whether a path ends where it began; an empty path is not closed.
 - **`meets`** `(x: number, y: number, toX: number, toY: number): boolean`: Whether the point `(x, y)` is within a seam of `(toX, toY)`.

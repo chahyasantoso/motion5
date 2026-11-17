@@ -85,33 +85,49 @@ function orderedNames(source, checker, exported) {
   return [...new Set(names)].filter((name) => exported.some((symbol) => symbol.name === name));
 }
 
-const FULL = ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.InTypeAlias;
+const NAMED =
+  ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope;
+const ALIAS_BODY = NAMED | ts.TypeFormatFlags.InTypeAlias;
 
 /** A table type this long is shown by its keys; its row type is documented on its own entry. */
-function keysOrType(type, checker) {
-  const text = checker.typeToString(type, undefined, FULL);
+function keysOrType(type, checker, declaration) {
+  const text = checker.typeToString(type, declaration, NAMED);
   const keys = checker.getPropertiesOfType(type).map(({ name }) => name);
   return text.length > MAX_SIGNATURE && keys.length > 0 ? `{ ${keys.join(", ")} }` : text;
 }
 
-/** An object type's members, optional marks and types in full; other types as the compiler writes them. */
-function shapeOf(type, checker) {
+/** An object type's members and call signatures in full; aliases expand only on the top-level non-object body. */
+function shapeOf(type, checker, declaration) {
   const members = checker.getPropertiesOfType(type);
   const plain =
     (type.flags & ts.TypeFlags.Object) !== 0 &&
     !checker.isArrayType(type) &&
     !checker.isTupleType(type) &&
     members.length > 0;
-  if (!plain) return checker.typeToString(type, undefined, FULL);
+  if (!plain) return checker.typeToString(type, declaration, ALIAS_BODY);
   const calls = type
     .getCallSignatures()
-    .map((call) => checker.signatureToString(call, undefined, FULL));
+    .map((call) => checker.signatureToString(call, declaration, NAMED));
   const fields = members.map((member) => {
     const optional = (member.flags & ts.SymbolFlags.Optional) !== 0 ? "?" : "";
-    const written = checker.typeToString(checker.getTypeOfSymbol(member), undefined, FULL);
+    const memberType =
+      declaration === undefined
+        ? checker.getTypeOfSymbol(member)
+        : checker.getTypeOfSymbolAtLocation(member, declaration);
+    const written = checker.typeToString(memberType, declaration, NAMED);
     return `${member.name}${optional}: ${written}`;
   });
   return `{ ${[...calls, ...fields].join("; ")} }`;
+}
+
+/** Own type parameter names declared on the exported type or interface, never a target utility's type arguments. */
+function typeParameterNames(symbol) {
+  const names = (symbol.declarations ?? []).flatMap((item) =>
+    ts.isTypeAliasDeclaration(item) || ts.isInterfaceDeclaration(item)
+      ? (item.typeParameters ?? []).map((param) => param.name.text)
+      : [],
+  );
+  return [...new Set(names)];
 }
 
 /** The signature of an export in full, and whether it is a type, which a compact page names without its body. */
@@ -127,18 +143,22 @@ function signatureOf(symbol, checker) {
     const [first] = calls;
     if (first !== undefined) {
       const more = calls.length > 1 ? ` (+${calls.length - 1} overloads)` : "";
-      return { text: `${checker.signatureToString(first, undefined, FULL)}${more}`, isType: false };
+      return {
+        text: `${checker.signatureToString(first, declaration, NAMED)}${more}`,
+        isType: false,
+      };
     }
     if ((flags & ts.SymbolFlags.Variable) !== 0)
-      return { text: `const ${symbol.name}: ${keysOrType(type, checker)}`, isType: false };
+      return {
+        text: `const ${symbol.name}: ${keysOrType(type, checker, declaration)}`,
+        isType: false,
+      };
   }
   if ((flags & ts.SymbolFlags.Class) !== 0) return { text: `class ${symbol.name}`, isType: false };
   const declared = checker.getDeclaredTypeOfSymbol(symbol);
-  const parameters = (declared.aliasTypeArguments ?? declared.typeParameters ?? []).map((each) =>
-    checker.typeToString(each),
-  );
+  const parameters = typeParameterNames(symbol);
   const head = `type ${symbol.name}${parameters.length === 0 ? "" : `<${parameters.join(", ")}>`}`;
-  return { text: `${head} = ${shapeOf(declared, checker)}`, isType: true, head };
+  return { text: `${head} = ${shapeOf(declared, checker, declaration)}`, isType: true, head };
 }
 
 /** A literal field of an option's declared type, as written: `0`, `"in"`, or nothing when absent. */
