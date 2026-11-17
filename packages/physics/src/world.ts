@@ -1,3 +1,5 @@
+import type { Point2d } from "@gerak/core";
+
 /** A body's outline: a circle by its radius, or a box by its size, centred on the body. */
 export type Shape =
   | { readonly kind: "circle"; readonly radius: number }
@@ -7,11 +9,7 @@ export type Shape =
 export type Collider =
   | { readonly kind: "floor"; readonly y: number }
   | { readonly kind: "wall"; readonly x: number; readonly side: "left" | "right" }
-  | {
-      readonly kind: "segment";
-      readonly from: { readonly x: number; readonly y: number };
-      readonly to: { readonly x: number; readonly y: number };
-    };
+  | { readonly kind: "segment"; readonly from: Point2d; readonly to: Point2d };
 
 /** How a surface answers a hit: bounce kept, from 0 to 1, and grip, from 0 up; the two sides' values average. */
 export interface Surface {

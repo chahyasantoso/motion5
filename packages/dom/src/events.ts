@@ -1,4 +1,4 @@
-import { liveAt, type Events, type MotionEvent, type Time } from "@gerak/core";
+import { liveAt, type Events, type MotionEvent, type Point2d, type Time } from "@gerak/core";
 import type { Driver } from "@gerak/player";
 import { pageFrames, type FrameSource } from "./frames";
 
@@ -30,7 +30,7 @@ export const WATCHED: Readonly<Record<string, string>> = Object.freeze({
 export interface EventRecorder {
   readonly log: Events;
   /** Logs an event by hand at the ms `now` gives, and tells `onRecord` that ms. */
-  record(name: string, target?: string, point?: { readonly x: number; readonly y: number }): void;
+  record(name: string, target?: string, point?: Point2d): void;
   /** Logs a sample of a live number by hand at the ms `now` gives, and tells `onRecord` that ms. */
   sample(name: string, value: number, target?: string): void;
   /** Logs `WATCHED` events on `element` for `target`; the returned function stops it. */
@@ -55,11 +55,8 @@ export function eventRecorder(
     log.splice(index, 0, { ...event, at });
     onRecord(at);
   };
-  const record = (
-    name: string,
-    target?: string,
-    point?: { readonly x: number; readonly y: number },
-  ): void => add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
+  const record = (name: string, target?: string, point?: Point2d): void =>
+    add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
   return {
     log,
     record,
@@ -115,7 +112,7 @@ export interface EventDriver extends Driver {
   /** Logs `in-view` and `out-of-view` for `target` as `element` crosses `threshold` of itself in view. */
   watchView(target: string, element: Element, threshold?: number): () => void;
   /** Logs an event by hand, such as a key press the page handles itself, at a point when it has one. */
-  emit(name: string, target?: string, point?: { readonly x: number; readonly y: number }): void;
+  emit(name: string, target?: string, point?: Point2d): void;
   dispose(): void;
 }
 

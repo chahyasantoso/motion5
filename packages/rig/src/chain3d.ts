@@ -12,6 +12,7 @@ import {
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
+  type Point3d,
   type Quaternion,
   type Vec3,
   unreachable,
@@ -570,9 +571,7 @@ export function posedJoints3d<const Table extends JointTable3d>(
   table: Table,
   bones: Readonly<Partial<Record<string, BonePose3d>>>,
   root: BonePose3d = {},
-): Readonly<
-  Record<keyof Table & string, { readonly x: number; readonly y: number; readonly z: number }>
-> {
+): Readonly<Record<keyof Table & string, Point3d>> {
   for (const name of Object.keys(bones)) {
     if (!Object.hasOwn(table, name)) throw new RangeError(`posedJoints3d: no joint "${name}".`);
   }
@@ -624,7 +623,7 @@ export function posedJoints3d<const Table extends JointTable3d>(
     rotationX: readNumber(root.rotationX),
     rotationY: readNumber(root.rotationY),
   });
-  const points: Record<string, { readonly x: number; readonly y: number; readonly z: number }> = {};
+  const points: Record<string, Point3d> = {};
   for (const name of Object.keys(table)) {
     const at = multiplyVector3(rootTurn, place(name, new Set()).at);
     points[name] = Object.freeze({

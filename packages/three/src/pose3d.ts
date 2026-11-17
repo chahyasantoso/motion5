@@ -1,4 +1,4 @@
-import type { Pose3d } from "@gerak/core";
+import type { Point3d, Pose3d } from "@gerak/core";
 import { Euler, type EulerOrder, type Object3D } from "three";
 import { writeCustom, type CustomWriter } from "./pose2d";
 
@@ -43,7 +43,7 @@ export const UNWRITTEN_3D: Readonly<Partial<Record<keyof Pose3d, string>>> = Obj
 export function applyPose3d(
   object: Object3D,
   pose: Pose3d,
-  rest: { readonly x: number; readonly y: number; readonly z: number } = { x: 0, y: 0, z: 0 },
+  rest: Point3d = { x: 0, y: 0, z: 0 },
   custom?: CustomWriter,
 ): void {
   const all = pose.scale ?? 1;

@@ -113,6 +113,17 @@ describe("agent reference", () => {
     const rigThree = referenceOf("rig-three");
     expect(rigThree).toContain("restPosition: Readonly<Vector3>");
     expect(rigThree).not.toContain("isVector3: true");
+
+    const three = referenceOf("three");
+    expect(three).toContain("**`applyPose2d`** `(object: Object3D, pose: Pose2d, rest?: Point2d");
+    expect(three).toContain("**`applyPose3d`** `(object: Object3D, pose: Pose3d, rest?: Point3d");
+    expect(referenceOf("dom")).toContain(
+      "emit: (name: string, target?: string, point?: Point2d) => void",
+    );
+    expect(referenceOf("rig")).toContain(
+      "posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<keyof Table & string, Point3d>>`",
+    );
+    expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
   });
 
   it("names in its parts list only exports of @gerak/moves, each one named in its reference", () => {
