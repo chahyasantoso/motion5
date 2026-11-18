@@ -86,6 +86,7 @@ function tsconfigText(folder: string): string {
         module: "ESNext",
         moduleResolution: "Bundler",
         lib: ["ES2022", "DOM"],
+        jsx: "react-jsx",
         strict: true,
         noEmit: true,
         skipLibCheck: true,

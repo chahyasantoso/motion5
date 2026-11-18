@@ -41,7 +41,7 @@ Nothing is on npm yet. Pack the packages and install the tarballs:
 
 1. Run `npm run pack:check -- --keep`; it prints the folder that holds the tarballs.
 2. In your project, run `npm install <path>/*.tgz` (or install only the core set), plus `react` or `three` when you use
-   those packages, and `@types/react` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
+   those packages, and `@types/react`, `@types/react-dom` or `@types/three` with TypeScript. `@gerak/rapier`'s types need `"lib": ["esnext", "dom"]`.
 3. Run `npx gerak init`; it writes the page files, `tsconfig.json`, the skill and an `AGENTS.md` naming [core.md](packages/core/docs/core.md), [stage.md](packages/stage/docs/stage.md) and each installed package's docs.
 
 ## Toolchain and commands
