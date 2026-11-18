@@ -20,15 +20,14 @@ so the migration of pieces is mechanical; `packages/stage/src` is rewritten whol
 | Cost | PR 599 | v3 target |
 | --- | --- | --- |
 | `packages/stage/src` lines | 2989 | at most 1300 |
-| Root exports of `@gerak/stage` | about 95 | at most 15 |
+| Root value exports of `@gerak/stage` | about 40 | at most 15 |
 | `stage.md` plus author reference, bytes | 9.3 K + 29 K | at most 6 K + 8 K |
 | Stage work per frame, scene replayed, 12 pieces | 203 us total (`performance/stage-baseline.json`) | at most 100 us |
 | Representations of one member | 3 (`tree`, `entries`, `reviewMembers`) | 1 |
 
 `performance/stage-benchmark.mjs` times every stage piece headless, with its scene and with the scene
-replayed, so the stage's own cost is apart from the piece's. The stage is about 1% of a frame; the
-showreel scenes take 4 to 5 ms each, so the gain here is in tokens and code, and speed only must not
-regress. The agent measure runs a plain HTML/JS agent beside a gerak agent on one brief and
+replayed, so the stage's own cost is apart from the piece's. Under PR 599 the stage is about 1% of a frame and
+the showreel scenes take 4 to 5 ms each; skipping hidden members is where whole frames gain. The agent measure runs a plain HTML/JS agent beside a gerak agent on one brief and
 counts tokens read and review rounds; v3 must beat PR 599 and the plain agent.
 
 ## Decisions
@@ -56,6 +55,7 @@ export default defineStage({
 ```
 
 - A list's value is `(index, count) => Pose`. The cast owns the count; a wrong length cannot be written.
+  `each(items, (item, i) => pose)` makes that function from per-item data.
 - One builder type per member kind; modifiers return the same type. `.static()` no longer changes the
   scene's type to `never`; review reports a posed static member in one line.
 - The scene's return type maps cast entries with key remapping, without `UnionToIntersection`.
@@ -67,13 +67,13 @@ export default defineStage({
 
 ```ts
 type Member =
-  | { kind: "actor"; name; parent; content: Content; expect: Expect; watch; pivot?; show: ShowId }
-  | { kind: "list"; name; parent; items: readonly ItemContent[]; expect; watch; pivot?; show }
-  | { kind: "group"; name; parent; expect; watch; pivot?; show };
+  | { kind: "actor"; name; parent; content: Content; expect: Expect; watch; pivot?; on?: Window[] }
+  | { kind: "list"; name; parent; items: readonly ItemContent[]; expect; watch; pivot?; on? }
+  | { kind: "group"; name; parent; expect; watch; pivot?; on? };
 ```
 
 Renderers build their tree from `parent`; review reads `expect` from the same entry. `Content` is the
-existing closed union (`empty`, `text`, `readout`, `stroke`, `morph`); items exclude `readout`.
+closed union `box | text | readout | stroke | morph`; items exclude `readout`; `on` holds ms windows.
 `stage.signature`, computed once at compile, is the one answer to "same cast?" for `replace` and the
 live page, replacing `sameCast` and the `JSON.stringify` key.
 
@@ -87,14 +87,16 @@ costs nothing per frame and has one owner; review reads it too.
 
 - `frame(stage, { time, events, boxes })` returns `{ layout, visible, targets }`, where `targets` is the
   scene's output as returned. Readouts, morph blending (`morphAt`) and list poses are computed by the
-  renderer for the members it draws.
+  renderer for the members it draws; a hidden member is not written at all.
 - `check(stage, targets)` returns `readonly StageError[]` and is the one owner of shape rules. Review
-  calls it on every sample; `mountStage` calls it when `checks: true`, which the stage page sets.
+  calls it on every sample; `mountStage` calls it when `checks: true`, which the stage and live pages set.
+- Review expects a settling member to move, an ambient one to keep moving inside the frame, and a
+  static one to stay out of the scene.
 
 ### 5. Layouts are always named
 
 Single layout is the degenerate case: compiled stages always hold `layouts: { names, pick, rests }`,
-one name when the author gave `rest` or nothing. `boxes` is `Readonly<Record<name, RestReader>>`, so no
+one, `main`, when the author gave `rest` or nothing. `boxes` is `Readonly<Record<name, RestReader>>`, so no
 duck-typed union is left.
 
 ### 6. Identity is data
@@ -112,12 +114,12 @@ markers behave the same; `ready` resolves after the fetch and re-measure.
 
 | Entry | Reader | Exports |
 | --- | --- | --- |
-| `@gerak/stage` | authors | `defineStage`, `compileStage`, `formatStageError`, `frame`, `check` and their types |
+| `@gerak/stage` | authors, renderers, tools | `defineStage`, `each`, `compileStage`, `formatStageError`, `frame`, `check`, `listPose`, `poseOf` and their types |
 | `@gerak/stage/render` | renderers, tools | `morphAt`, stroke resolution, `strokeBox`, `drawInPasses`, outline helpers |
 | `@gerak/stage/dom` | skins | `cssVariables`, `isTokenName` |
 
-Source folders match the entries (`author/`, `render/`, `dom/`) so the reference generator writes one
-page per reader; an author reads `stage.md` and `reference/author.md` only.
+Source folders `author/`, `run/`, `render/` and `dom/` are the reference pages, one per reader; an
+author reads `stage.md` and `reference/author.md` only.
 
 ## Execution
 
