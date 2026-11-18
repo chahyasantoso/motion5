@@ -18,7 +18,7 @@ What renderers and tools run a piece with: `compileStage`, `frame` and `check`, 
 - **`poseOf`** `(value: unknown): Pose2d | undefined`: The pose a target holds, or undefined when it holds none.
 - **`FrameInput`** `type FrameInput = { time: Time; events?: Events | undefined; boxes?: Readonly<Record<string, RestReader>> | undefined }`: One frame's inputs; `boxes` holds each layout's measured rest, else the piece's own rests are read.
 - **`FrameOutput`** `type FrameOutput = { layout: string; visible: Readonly<Record<string, boolean>>; targets: Readonly<Record<string, unknown>> }`: One frame: the layout showing, who shows, and the scene's output as returned.
-- **`Window`** `type Window = readonly [from: number, to: number]`: Ms a member shows, both ends included; an end at the piece's last ms holds past it.
+- **`Window`** `type Window = readonly [from: number, to: number]`: Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it.
 - **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: Interpolates matched outlines at `shape` index (clamped to `[0, matched.length - 1]`).
 - **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (readonly Cubic2d[])[]; } | { readonly reason: string; }`: Matches outlines to blend smoothly by piece count, orientation, and cubic count.
 - **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: Splits cubics into continuous outlines wherever a cubic does not start where the last ended.

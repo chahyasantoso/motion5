@@ -1,4 +1,4 @@
-/** Ms a member shows, both ends included; an end at the piece's last ms holds past it. */
+/** Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it. */
 export type Window = readonly [from: number, to: number];
 
 /** What `visibleAt` needs of a member: its name, parent index and own windows. */
@@ -9,7 +9,7 @@ export interface Shown {
 }
 
 function inside(windows: readonly Window[] | undefined, ms: number): boolean {
-  return windows === undefined || windows.some(([from, to]) => ms >= from && ms <= to);
+  return windows === undefined || windows.some(([from, to]) => ms >= from && ms < to);
 }
 
 function recordAt(members: readonly Shown[], ms: number): Readonly<Record<string, boolean>> {
@@ -36,13 +36,11 @@ export function visibility(
     const always = recordAt(members, 0);
     return () => always;
   }
-  // Region 2i+1 is exactly points[i]; region 2i+2 lies between points[i] and points[i+1].
-  const regions: Readonly<Record<string, boolean>>[] = [recordAt(members, (points[0] ?? 0) - 1)];
-  points.forEach((point, index) => {
-    const next = points[index + 1];
-    regions.push(recordAt(members, point));
-    regions.push(recordAt(members, next === undefined ? point + 1 : (point + next) / 2));
-  });
+  // Region 0 precedes points[0]; region i+1 holds across [points[i], points[i+1]).
+  const regions: readonly Readonly<Record<string, boolean>>[] = [
+    recordAt(members, (points[0] ?? 0) - 1),
+    ...points.map((point) => recordAt(members, point)),
+  ];
   return (ms) => {
     let low = 0;
     let high = points.length - 1;
@@ -54,7 +52,6 @@ export function visibility(
         low = middle + 1;
       } else high = middle - 1;
     }
-    const region = found < 0 ? 0 : points[found] === ms ? 2 * found + 1 : 2 * found + 2;
-    return regions[region] ?? regions[0] ?? {};
+    return regions[found + 1] ?? regions[0] ?? {};
   };
 }

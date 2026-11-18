@@ -123,6 +123,18 @@ describe("compileStage", () => {
     expect(
       errorsOf({ beats: { a: [0, 900] }, durationMs: 500, cast: () => ({}), scene: () => ({}) }),
     ).toHaveLength(1);
+    const agree = errorsOf({
+      beats: { a: [0, 500], empty: [500, 500] },
+      cast: () => ({}),
+      scene: () => ({}),
+    });
+    expect(agree).toEqual([
+      {
+        kind: "invalid",
+        field: "beats",
+        reason: 'beat "empty" must be [from, to] ms with 0 <= from < to.',
+      },
+    ]);
     const pick = errorsOf({
       beats: { a: [0, 100] },
       cast: () => ({}),

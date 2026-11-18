@@ -151,9 +151,9 @@ function compileBeats(raw: unknown, rawDuration: unknown, errors: StageError[]):
       !finite(from) ||
       !finite(to) ||
       from < 0 ||
-      to < from
+      to <= from
     )
-      return fail("beats", `beat "${name}" must be [from, to] ms with 0 <= from <= to.`);
+      return fail("beats", `beat "${name}" must be [from, to] ms with 0 <= from < to.`);
     pairs.push([name, from, to]);
   }
   const last = pairs.reduce((most, [, , to]) => Math.max(most, to), 0);
@@ -212,7 +212,7 @@ function windowsOf(
     if (end === undefined && last !== first)
       errors.push({ kind: "unknown_beat", member: name, beat: last });
     if (start === undefined || end === undefined) continue;
-    if (end.to < start.from) {
+    if (end.to <= start.from) {
       errors.push({ kind: "reversed_stretch", member: name, from: first, to: last });
       continue;
     }

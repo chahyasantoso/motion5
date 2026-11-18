@@ -68,7 +68,7 @@ export default defineStage({
 | `m.group({ ... })` | container moving its children | `Pose2d` |
 
 - **Lists take a function of the index.** The cast owns the count; the renderer asks for each shown item. With per-item data, `each(items, (item, i) => pose)` gives that function.
-- `.on(beat, [from, to], ...)` shows a member only then, both ends included; a stretch reaching the end holds past it, and a group hides its children.
+- `.on(beat, [from, to], ...)` shows a member only then, start included and end excluded; a stretch reaching the end holds past it, and a group hides its children.
 - `.watch()` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`) on the member into `events`; `.pivot({ x, y })` turns and scales it about a frame point.
 - `.settle()` is the default: the member moves and holds its end. `.ambient()` keeps moving, like snow, passes to children and items, and must stay in the frame. `.static()` means the scene never poses it; on a group it marks the container only.
 
