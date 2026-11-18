@@ -99,8 +99,7 @@ function finite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
-/** Whether `value` is at least one cubic with an id and finite points. */
-export function isCubics(value: unknown): value is readonly Cubic2d[] {
+function isCubics(value: unknown): value is readonly Cubic2d[] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
@@ -113,8 +112,7 @@ export function isCubics(value: unknown): value is readonly Cubic2d[] {
   );
 }
 
-/** `cubics` copied and frozen. */
-export function frozenCubics(cubics: readonly Cubic2d[]): readonly Cubic2d[] {
+function frozenCubics(cubics: readonly Cubic2d[]): readonly Cubic2d[] {
   return Object.freeze(cubics.map((cubic) => Object.freeze({ ...cubic })));
 }
 

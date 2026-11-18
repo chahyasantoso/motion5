@@ -155,6 +155,19 @@ describe("frame", () => {
     expect(measured.targets["card"]).toEqual({ opacity: 0 });
   });
 
+  it("reads only the targets the scene gave, never a prototype's", () => {
+    const stage = compiled(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: (m) => ({ toString: m.box() }),
+        scene: () => ({}),
+      }),
+    );
+    expect(check(stage, {})).toEqual([]);
+    expect(restReader({}).has("toString")).toBe(false);
+    expect(restReader({}).get("toString")).toEqual(ZERO_BOX);
+  });
+
   it("refuses a scene that returns no object", () => {
     const stage = compiled({ beats: { a: [0, 100] }, cast: () => ({}), scene: () => 3 });
     expect(() => frame(stage, { time: at(0) })).toThrow(TypeError);

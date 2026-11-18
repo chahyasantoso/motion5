@@ -178,11 +178,11 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-171 — Live editing edits the scene file — Accepted, 2026-11-09
 - ADR-172 — A move declares its role, and a gate holds it to it — Accepted, 2026-11-11
 - ADR-173 — One value, and one table of its fields — Accepted, 2026-11-11
-- ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12
-- ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12
+- ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12 — superseded in part
+- ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12 — superseded in part
 - ADR-176 — Strokes from the layout, skins that keep their own, and a library that grows — Accepted, 2026-11-13 — superseded in part
 - ADR-177 — Strokes that combine, presence the review reads, and text over time — Accepted, 2026-11-13
-- ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13
+- ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13 — superseded in part
 - ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13 — superseded in part
 - ADR-180 — Rigging vector artwork — Accepted, 2026-11-13
 - ADR-181 — Live inputs — Accepted, 2026-11-14
@@ -194,3 +194,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-187 — Styles on briefs — Accepted, 2026-11-15 — superseded in part
 - ADR-188 — Installable tools and one command — Accepted, 2026-11-16
 - ADR-189 — Core, modules and library — Accepted, 2026-11-16
+- ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18

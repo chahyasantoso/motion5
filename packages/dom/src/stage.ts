@@ -939,7 +939,13 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
         target.member = member;
         const stroke = strokes.get(target.element);
         const source = sourceOf(contentOf(target));
-        if (stroke !== undefined && source !== undefined && stroke.source !== source) {
+        const same =
+          stroke !== undefined &&
+          (stroke.source === source ||
+            (typeof source === "object" &&
+              typeof stroke.source === "object" &&
+              sameCubics(source, stroke.source)));
+        if (stroke !== undefined && source !== undefined && !same) {
           stroke.source = source;
           stroke.cubics.clear();
           stroke.painted = undefined;

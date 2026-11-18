@@ -340,12 +340,15 @@ interface EvaluatedSample {
 
 function evaluate(stage: Stage, time: Time, events: Events, at: number): EvaluatedSample {
   let out: FrameOutput;
+  let errors: string[];
+  let targets: Readonly<Record<string, unknown>>;
   try {
     out = frame(stage, { time, events });
+    errors = check(stage, out.targets).map(formatStageError);
+    targets = writtenOut(stage, out.targets);
   } catch (error) {
     return { at, targets: {}, visible: undefined, errors: [errorText(error)] };
   }
-  const errors = check(stage, out.targets).map(formatStageError);
   for (const member of stage.members) {
     if (member.kind !== "actor" || member.content.kind !== "readout") continue;
     try {
@@ -359,7 +362,7 @@ function evaluate(stage: Stage, time: Time, events: Events, at: number): Evaluat
       errors.push(`text of "${member.name}" ${detail}`);
     }
   }
-  return { at, targets: writtenOut(stage, out.targets), visible: out.visible, errors };
+  return { at, targets, visible: out.visible, errors };
 }
 
 function errorText(error: unknown): string {
@@ -423,6 +426,7 @@ function ambientBoundsFindings(
   rest: RestReader,
 ): readonly string[] {
   if (reviewed.kind === "member" && reviewed.member.kind !== "actor") return [];
+  if (!rest.has(reviewed.name)) return [];
   const box = rest.get(reviewed.name);
   for (const sample of evaluated) {
     if (!shown(sample, reviewed)) continue;
@@ -475,6 +479,7 @@ function stageMemberFindings(
       'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
     );
 
+  if (evaluated.some(({ errors }) => errors.length > 0)) return found;
   for (const reviewed of reviewedOf(stage)) {
     const { member } = reviewed;
     const prints = evaluated.map(({ targets }) => fingerprint(valueOfReview(targets, reviewed)));
@@ -539,7 +544,10 @@ function stageMemberFindings(
     const changes = prints.flatMap((print, index) => {
       const before = evaluated[index - 1];
       const now = evaluated[index];
-      return before === undefined || now === undefined || print === prints[index - 1]
+      return before === undefined ||
+        now === undefined ||
+        print === prints[index - 1] ||
+        shown(now, reviewed)
         ? []
         : [{ from: before.at, at: now.at }];
     });

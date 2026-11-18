@@ -162,7 +162,16 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
     }
     if (make === undefined)
       throw new TypeError("many: a list of items needs a function making each.");
-    return list(Object.freeze(source.map((item, index) => make(item, index).content)));
+    return list(
+      Object.freeze(
+        source.map((item, index) => {
+          const made = make(item, index);
+          if (Object.keys(made.meta).length > 0)
+            throw new TypeError("many: an item takes no modifiers; put them on the list.");
+          return made.content;
+        }),
+      ),
+    );
   }
   return {
     box: () => actor({ kind: "box" }),

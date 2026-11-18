@@ -73,7 +73,7 @@ export function check(
   const named = new Set<string>();
   for (const member of stage.members) {
     named.add(member.name);
-    const value = targets[member.name];
+    const value = Object.hasOwn(targets, member.name) ? targets[member.name] : undefined;
     if (value === undefined) continue;
     const mismatch = (reason: string): void => {
       errors.push({ kind: "shape_mismatch", member: member.name, reason });

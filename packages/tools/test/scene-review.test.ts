@@ -395,6 +395,36 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     );
   });
 
+  it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
+    const broken = defineStage({
+      beats: { show: [0, 400] },
+      cast: (m) => ({ row: m.many(2), dot: m.box() }),
+      scene: () => ({
+        row: (i) => {
+          if (i === 1) throw new Error("boom");
+          return { x: i };
+        },
+      }),
+    });
+    expect(review(broken).findings).toEqual(["boom"]);
+  });
+
+  it("judges an ambient member's bounds only where its box is measured", () => {
+    const unmeasured = defineStage({
+      beats: { show: [0, 400] },
+      cast: (m) => ({ flake: m.box().ambient() }),
+      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
+    });
+    expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
+    const measured = defineStage({
+      beats: { show: [0, 400] },
+      rest: { flake: { x: 5, y: 5, width: 4, height: 4 } },
+      cast: (m) => ({ flake: m.box().ambient() }),
+      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
+    });
+    expect(review(measured).findings.filter((line) => /bounds/.test(line))).toHaveLength(1);
+  });
+
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
     const mismatch = rawStage({
       beats: { show: [0, 400] },

@@ -132,6 +132,19 @@ describe("compileStage", () => {
     expect(pick.map(formatStageError).join()).toContain("layouts");
   });
 
+  it("refuses modifiers on a list item, which only its list can carry", () => {
+    const errors = compileStage(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: (m) => ({ row: m.many([1], () => m.box().on("a")) }),
+        scene: () => ({}),
+      }),
+    );
+    expect(errors.ok ? "" : errors.errors.map(formatStageError).join()).toContain(
+      "an item takes no modifiers",
+    );
+  });
+
   it("matches morph outlines once, base first", () => {
     const stage = compiled(
       defineStage({

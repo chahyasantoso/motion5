@@ -1,7 +1,7 @@
 import { pathBounds, unreachable, type Cubic2d } from "@gerak/core";
 import type { Content, Path } from "../author/cast";
 import { ZERO_BOX, restReader, type Box, type RestReader } from "../author/layout";
-import { frozenCubics, isCubics, type Stage } from "../run/compile";
+import type { Stage } from "../run/compile";
 import type { StageError } from "../run/errors";
 import { blendShapes } from "../run/outlines";
 
@@ -52,13 +52,9 @@ export function restOfBounds(bounds: Box): Box {
   return { ...bounds, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
 }
 
-/** A path's cubics, drawing a path function against `rest`. */
+/** A path's cubics, drawing a path function against `rest`; `compileStage` checked its answer. */
 export function pathOf(path: Path, rest: RestReader): readonly Cubic2d[] {
-  if (typeof path !== "function") return path;
-  const answer: unknown = path(rest);
-  if (!isCubics(answer))
-    throw new TypeError("A path function must answer cubics made by `toCubics`, at least one.");
-  return frozenCubics(answer);
+  return typeof path === "function" ? path(rest) : path;
 }
 
 function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): RestReader {

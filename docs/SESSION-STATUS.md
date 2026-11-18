@@ -16,7 +16,7 @@ byte ceiling.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves` and `@gerak/moves-tools`) adds named moves, couplings, signal parts, styles, `gerak moves`, `new-move`, `promote`, `style` and design review when installed.
   `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`) cleanly with core alone, discovering library plugins via manifest `gerak.commands`/`gerak.review`; `npx gerak init` writes page files, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md` (under 20 KB each) and every installed package's docs.
-  Decisions are ADR-170 to ADR-189; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
+  Decisions are ADR-170 to ADR-190; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
