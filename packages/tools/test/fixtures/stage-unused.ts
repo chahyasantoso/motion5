@@ -15,7 +15,7 @@ export default defineStage({
     const intro = beats.intro.of(time).progress;
     return {
       dot: { x: 100 * go },
-      word: [0, 1].map((index) => ({ x: index * 20 + 50 * intro })),
+      word: (index) => ({ x: index * 20 + 50 * intro }),
     };
   },
 });

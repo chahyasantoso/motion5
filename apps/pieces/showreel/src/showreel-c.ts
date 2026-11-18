@@ -26,7 +26,7 @@ import {
   wobble,
   smudge,
 } from "@gerak/moves";
-import { defineStage, type CompiledBeats } from "@gerak/stage";
+import { defineStage, type Beats, type ListPose, each } from "@gerak/stage";
 import { ballistic } from "./moves/ballistic";
 import { bump } from "./moves/bump";
 import { dash } from "./moves/dash";
@@ -263,7 +263,7 @@ export default defineStage({
   }),
   skins: { dom: { css: domCss } },
   scene: ({ time, beats: reelBeats, events, rest }) => {
-    const beats: CompiledBeats<ReelBeat> = reelBeats;
+    const beats: Beats<ReelBeat> = reelBeats;
     const dotRest = rest.get("dot");
     const stop = rest.get("stop");
     const radius = dotRest.height / 2;
@@ -351,7 +351,7 @@ export default defineStage({
         shockwave({ grow }, span(from, from + ms).of(time)),
       ]);
 
-    const sparks = Array.from({ length: 8 }, (_, k): Pose2d => {
+    const sparks = (k: number): Pose2d => {
       const lag = (k + 1) * 35;
       const own = rest.get(`sparks.${k}`);
       return combine([
@@ -359,9 +359,9 @@ export default defineStage({
         leapPath(span(beats.leap.from + lag, beats.leap.to + lag).of(time)),
         { opacity: 0.7 * (1 - k / 9), scale: 1 - k / 12 },
       ]);
-    });
+    };
 
-    const ant = Array.from({ length: 10 }, (_, i): Pose2d => {
+    const ant = (i: number): Pose2d => {
       const up = 1000 + i * 45;
       const down = 2250 + i * 35;
       const off = 2900 + i * 38;
@@ -382,9 +382,10 @@ export default defineStage({
         tint({ name: "charge", curve: "inOut" }, span(down, down + 420).of(time)),
         smudge({ amount: 5 }, span(off, off + 300).of(time)),
       ]);
-    });
+    };
 
-    const wgt = LAND.map((at, i): Pose2d => {
+    const wgt = (i: number): Pose2d => {
+      const at = LAND[i] ?? 0;
       const late = Math.abs(i - 2.5) * 30;
       return combine([
         drop({ distance: 640 }, span(at - 420, at + 140).of(time)),
@@ -399,7 +400,7 @@ export default defineStage({
         ),
         smudge({ amount: 4 }, span(5750 + late, 6070 + late).of(time)),
       ]);
-    });
+    };
 
     const floorRest = rest.get("floor");
     const floorTop = floorRest.y - floorRest.height / 2;
@@ -415,9 +416,9 @@ export default defineStage({
       tint({ name: "paper" }, span(LAND[5], LAND[5] + 700).of(time)),
     ]);
 
-    const dustOf = (i: number, at: number): Pose2d[] => {
+    const dustOf = (i: number, at: number): ListPose => {
       const letter = rest.get(`wgt.${i}`);
-      return [0, 1, 2].map((k): Pose2d => {
+      return (k: number): Pose2d => {
         const side = k === 0 ? -1 : k === 1 ? 1 : i % 2 === 1 ? 1 : -1;
         const size = (0.6 + 0.3 * k) * (i === 5 ? 1.5 : 1);
         return combine([
@@ -428,10 +429,10 @@ export default defineStage({
           ),
           { scale: size, opacity: 0.75 },
         ]);
-      });
+      };
     };
 
-    const hang = bobs.map((bob, i): Pose2d => {
+    const hang = each(bobs, (bob, i): Pose2d => {
       const swinging = (): Pose2d => {
         const lag = barX(time) - bob(time, events);
         const turn = ((lag / ((STRINGS[i] ?? 160) + 50)) * 180) / Math.PI;
@@ -443,7 +444,7 @@ export default defineStage({
       ]);
     });
 
-    const stl = STL_TURN.map((turn, i): Pose2d => {
+    const stl = each(STL_TURN, (turn, i): Pose2d => {
       const own = rest.get(`stl.${i}`);
       const back = toward(own, dotRest.x, dotRest.y);
       const dx = back.x ?? 0;
@@ -481,7 +482,7 @@ export default defineStage({
       [span(12700, 13050), (t) => wipe(reach, reversed(t))],
     ]);
 
-    const fin = [0, 1, 2].map((i): Pose2d => {
+    const fin = each([0, 1, 2], (i): Pose2d => {
       const from = 13050 + i * 110;
       const ripple = 13900 + (2 - i) * 45;
       return combine([

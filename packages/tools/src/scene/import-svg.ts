@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, sep } from "node:path";
 import { pathBounds, transformPath, type Cubic2d, type Matrix2d } from "@gerak/core";
-import { matchOutlines } from "@gerak/stage";
+import { matchOutlines } from "@gerak/stage/render";
 import { withPage } from "../page/page";
 import { pieceFiles } from "./briefs";
 import { addToPiece } from "./piece-edit";

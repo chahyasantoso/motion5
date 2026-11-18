@@ -27,7 +27,7 @@ import {
   wobble,
   smudge,
 } from "@gerak/moves";
-import { defineStage, type RestReader } from "@gerak/stage";
+import { defineStage, type RestReader, type ListPose, each } from "@gerak/stage";
 import { ballistic } from "./moves/ballistic";
 import { bump } from "./moves/bump";
 import { crouch } from "./moves/crouch";
@@ -380,10 +380,10 @@ const weightLetter = (time: Time, i: number): Pose2d => {
   ]);
 };
 
-const dust = (time: Time, rest: RestReader, li: number): readonly Pose2d[] => {
+const dust = (time: Time, rest: RestReader, li: number): ListPose => {
   const letter = rest.get(`weight.${li}`);
   const land = LANDS[li] ?? 0;
-  return [0, 1, 2].map((kk) => {
+  return (kk: number): Pose2d => {
     const side = DUST_SIDE[kk] === 0 ? (li % 2 ? 1 : -1) : (DUST_SIDE[kk] ?? 1);
     return combine([
       {
@@ -397,7 +397,7 @@ const dust = (time: Time, rest: RestReader, li: number): readonly Pose2d[] => {
         span(land, land + 700).of(time),
       ),
     ]);
-  });
+  };
 };
 
 const settleLetter = (time: Time, rest: RestReader, i: number): Pose2d => {
@@ -576,7 +576,7 @@ export default defineStage({
         ]),
         tint({ name: "ink" }, span(WIPE_AT + 150, WIPE_AT + 300).of(time)),
       ]),
-      ant: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => antLetter(time, i)),
+      ant: (i) => antLetter(time, i),
       floor: combine([
         sequence(time, [
           [span(3350, 3800), (t) => spread({}, span(0, 450).of(t, ease.cubicOut))],
@@ -585,7 +585,7 @@ export default defineStage({
         ...LANDS.map((land, i) => nod({ distance: 2 + i }, span(land, land + 170).of(time))),
         tint({ name: "cool" }, span(4795, 5495).of(time)),
       ]),
-      weight: [0, 1, 2, 3, 4, 5].map((i) => weightLetter(time, i)),
+      weight: (i) => weightLetter(time, i),
       dust0: dust(time, rest, 0),
       dust1: dust(time, rest, 1),
       dust2: dust(time, rest, 2),
@@ -593,14 +593,14 @@ export default defineStage({
       dust4: dust(time, rest, 4),
       dust5: dust(time, rest, 5),
       rig: { x: barOf(overlap) },
-      hang: HANG.map((length, i) =>
+      hang: each(HANG, (length, i) =>
         dangle({ length, damping: 0.18, gain: 0.36, lag: i * 28, limit: 63 }, overlap, {
           carrier: barOf,
         }),
       ),
-      settleWord: [0, 1, 2, 3, 4, 5].map((i) => settleLetter(time, rest, i)),
+      settleWord: (i) => settleLetter(time, rest, i),
       line: {},
-      phrase: [0, 1, 2].map((i) =>
+      phrase: each([0, 1, 2], (i) =>
         combine([
           springSettle(
             { dy: 126, turn: 5, rings: 1, damping: 5 },

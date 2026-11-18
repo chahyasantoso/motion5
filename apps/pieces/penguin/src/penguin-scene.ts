@@ -1,6 +1,6 @@
 import { elapsedOf, ease, mix, seeded, span, type Pose2d } from "@gerak/core";
 import { follow } from "@gerak/moves";
-import { defineStage } from "@gerak/stage";
+import { defineStage, each } from "@gerak/stage";
 import talk from "../../references/talk.json" with { type: "json" };
 
 /** The recording runs eight seconds; the sea and the penguin settle after it. */
@@ -2368,7 +2368,7 @@ export default defineStage({
     const stretch = breath + 0.03 * lively;
 
     return {
-      snowBack: backFlakes.map((flake) => flakePose(flake, snowMs, 0.75)),
+      snowBack: each(backFlakes, (flake) => flakePose(flake, snowMs, 0.75)),
       floe: { y: floeY, rotation: floeTurn } satisfies Pose2d,
       penguin: {
         y: floeY - 5 * lively,
@@ -2382,7 +2382,7 @@ export default defineStage({
       faceBeakLower: { shape: open },
       faceEyelidLeft: { shape: shut },
       faceEyelidRight: { shape: shut },
-      snowFront: frontFlakes.map((flake) => flakePose(flake, snowMs, 1)),
+      snowFront: each(frontFlakes, (flake) => flakePose(flake, snowMs, 1)),
     };
   },
 });

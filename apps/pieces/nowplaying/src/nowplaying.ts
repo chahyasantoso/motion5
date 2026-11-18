@@ -73,14 +73,14 @@ export default defineStage({
   },
   scene: ({ time, events }) => ({
     line: { y: mix(0, -16, drift.of(time).progress) } satisfies Pose2d,
-    title: Array.from(TITLE, (_c, i): Pose2d => {
+    title: (i): Pose2d => {
       const t = LETTERS.of(arrive.of(time), i);
       return combine([
         fade({}, t),
         rise({ distance: 14 }, t),
         smudge({ amount: 6, build: 0.7 }, reversed(t)),
       ]);
-    }),
+    },
     artist: combine([fade({}, drift.of(time)), rise({ distance: 8 }, drift.of(time))]),
     play: { scale: playScale(time, events) } satisfies Pose2d,
   }),

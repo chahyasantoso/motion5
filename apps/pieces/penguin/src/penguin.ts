@@ -3,7 +3,7 @@
 import { combine, ease, mix, springEase, type Pose2d, type Time } from "@gerak/core";
 import { trail } from "@gerak/moves";
 import { chainFromRest, chainThrough } from "@gerak/rig";
-import { defineStage, type CompiledBeats, type Pivot } from "@gerak/stage";
+import { defineStage, type Beats, type Pivot } from "@gerak/stage";
 import { handWave } from "./moves/hand-wave";
 import { waddle } from "./moves/waddle";
 
@@ -29,16 +29,13 @@ const LEAN = -6;
 const TUCK = -10;
 const STEP = { angle: 6, count: 2, sink: 4 };
 
-const leanOf = (
-  time: Time,
-  beats: CompiledBeats<"waddle" | "lean" | "wave" | "settle">,
-): number => {
+const leanOf = (time: Time, beats: Beats<"waddle" | "lean" | "wave" | "settle">): number => {
   const settling = beats.settle.of(time, springEase({ stiffness: 140, damping: 11 })).progress;
   const leaning = beats.lean.of(time, ease.sineInOut).progress;
   return LEAN * leaning * (1 - settling);
 };
 
-const rollOf = (time: Time, beats: CompiledBeats<"waddle" | "lean" | "wave" | "settle">): number =>
+const rollOf = (time: Time, beats: Beats<"waddle" | "lean" | "wave" | "settle">): number =>
   (waddle(STEP, beats.waddle.of(time)).rotation ?? 0) + leanOf(time, beats);
 
 const turnAbout = (pivot: Pivot, about: Pivot, degrees: number): Pose2d => {

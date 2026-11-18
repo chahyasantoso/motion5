@@ -1,22 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { toCubics, type Events, type Pose2d, type Time } from "@gerak/core";
 import { follow, trace } from "@gerak/moves";
-import {
-  blendShapes,
-  compileStage,
-  defineStage,
-  matchOutlines,
-  NO_LAYOUT_READERS,
-  type CompiledStage,
-  type Member,
-  type PoseMode,
-  type RestReader,
-  type StageDefinition,
-} from "@gerak/stage";
+import { compileStage, defineStage, type RestReader, type Stage } from "@gerak/stage";
+import { blendShapes, matchOutlines } from "@gerak/stage/render";
 import {
   mountStage,
   pathData,
   type FrameSource,
+  type StageInput,
   type StageElement,
   type StageEvent,
   type StageFonts,
@@ -151,12 +142,12 @@ function makeStage(seen: Seen) {
       seen.events = events;
       seen.rest = rest;
       const camera: Pose2d = { y: 40 };
-      return { camera, word: [{ x: 1 }, { x: 2 }] };
+      return { camera, word: (i) => ({ x: i + 1 }) };
     },
   });
 }
 
-function mounted(seen: Seen = {}, fonts?: StageFonts, customStage?: CompiledStage) {
+function mounted(seen: Seen = {}, fonts?: StageFonts, customStage?: Stage) {
   const container = new FakeElement("div");
   if (fonts !== undefined) container.ownerDocument.fonts = fonts;
   const options = { frames: frames() };
@@ -176,12 +167,7 @@ function mounted(seen: Seen = {}, fonts?: StageFonts, customStage?: CompiledStag
   };
 }
 
-function mustCompile<
-  P extends PoseMode,
-  B extends string,
-  C extends Readonly<Record<string, Member<B>>>,
-  L extends string,
->(def: StageDefinition<P, B, C, L>): CompiledStage<P> {
+function mustCompile(def: unknown): Stage {
   const result = compileStage(def);
   if (!result.ok) throw new Error("Expected stage to compile.");
   return result.stage;
@@ -206,7 +192,7 @@ describe("mountStage", () => {
     expect(mountedB.player.values.camera).toEqual({ y: 40 });
   });
 
-  it("rejects invalid StageDefinition with formatted StageError and rejects 3d stages", () => {
+  it("rejects an invalid definition with its formatted errors", () => {
     const badDef = defineStage({
       beats: { whole: [0, 100] },
       cast: (m) => ({
@@ -216,26 +202,8 @@ describe("mountStage", () => {
       scene: () => ({}),
     });
     expect(() => mountStage(new FakeElement("div"), badDef, { frames: frames() })).toThrow(
-      /unknown beat "missing"/,
+      /"missing", which is not a beat/,
     );
-
-    const def3d = defineStage({
-      pose: "3d",
-      beats: { whole: [0, 100] },
-      cast: (m) => ({ cube: m.box() }),
-      scene: () => ({ cube: { z: 10 } }),
-    });
-    expect(() => mountStage(new FakeElement("div"), def3d, { frames: frames() })).toThrow(
-      /"3d" stages are not supported/,
-    );
-
-    const compiled3d = compileStage(def3d);
-    expect(compiled3d.ok).toBe(true);
-    if (compiled3d.ok) {
-      expect(() =>
-        mountStage(new FakeElement("div"), compiled3d.stage, { frames: frames() }),
-      ).toThrow(/"3d" stages are not supported/);
-    }
   });
 
   it("builds the cast as nested elements named by the cast", () => {
@@ -262,12 +230,32 @@ describe("mountStage", () => {
     expect(root.find("card").attributes.get("data-skin")).toBe("default");
   });
 
+  it("asks a hidden list for no item poses, and a shown one for each", () => {
+    const asked: number[] = [];
+    const def = defineStage({
+      beats,
+      cast: (m) => ({ word: m.letters("HI").on("word") }),
+      scene: () => ({
+        word: (i) => {
+          asked.push(i);
+          return { x: i };
+        },
+      }),
+    });
+    const { at } = mounted({}, undefined, mustCompile(def));
+    asked.length = 0;
+    at(700);
+    expect(asked).toEqual([]);
+    at(400);
+    expect(asked).toEqual([0, 1]);
+  });
+
   it("shows a member on two beats, hides it in the gap, and holds a stretch ending the story", () => {
     const { root, at } = mounted();
     expect(root.find("word").style.visibility).toBe("hidden");
     at(400);
     expect(root.find("word").style.visibility).toBe("");
-    expect(root.find("word.0").style.visibility).toBe("");
+    expect(root.find("word.0").style.visibility).not.toBe("hidden");
     at(700);
     expect(root.find("word").style.visibility).toBe("hidden");
     expect(root.find("card").style.visibility).not.toBe("hidden");
@@ -292,7 +280,7 @@ describe("mountStage", () => {
       skins: { dom: { css: `[data-path="trail"] { stroke: red }` } },
       scene: ({ time, beats: b }) => ({
         trail: { x: 5, opacity: 0.5, ...trace({}, b.all.of(time)) },
-        marks: [{ drawn: 0.25 }, { y: 3 }],
+        marks: (i) => (i === 0 ? { drawn: 0.25 } : { y: 3 }),
       }),
     });
     const { root, at } = mounted({}, undefined, mustCompile(def));
@@ -306,9 +294,11 @@ describe("mountStage", () => {
     expect(trail.attributes.has("data-skin")).toBe(false);
     const style = root.children.find((child) => child.tagName === "style")?.textContent ?? "";
     expect(style).toContain(
-      `:where([data-cast="trail"]) { position: absolute; left: 10px; top: 20px; width: 100px; height: 40px; }`,
+      `:where([data-layout="main"] [data-cast="trail"]) { position: absolute; left: 10px; top: 20px; width: 100px; height: 40px; }`,
     );
-    expect(style).toContain(`:where([data-cast="marks.1"]) { position: absolute; left: 10px;`);
+    expect(style).toContain(
+      `:where([data-layout="main"] [data-cast="marks.1"]) { position: absolute; left: 10px;`,
+    );
     at(500);
     expect(trail.style.transform).toBe("translate3d(5px, 0px, 0px)");
     expect(trail.style.opacity).toBe("0.5");
@@ -356,16 +346,16 @@ describe("mountStage", () => {
     expect(writes).toEqual(["00:01", "00:02"]);
   });
 
-  it("throws TypeError on shape_mismatch and readout errors", () => {
+  it("throws on a shape mistake when checks are on, and on a readout that throws", () => {
     const badShape = defineStage({
       beats: { all: [0, 1000] },
       cast: (m) => ({ card: m.box(), dots: m.many(2) }),
       // @ts-expect-error intentional shape mismatch at runtime
       scene: () => ({ card: [{ x: 1 }] }),
     });
-    expect(() => mountStage(new FakeElement("div"), badShape, { frames: frames() })).toThrow(
-      TypeError,
-    );
+    expect(() =>
+      mountStage(new FakeElement("div"), badShape, { frames: frames(), checks: true }),
+    ).toThrow(/"card" needs a pose object, got an array/);
 
     const badReadout = defineStage({
       beats: { all: [0, 1000] },
@@ -378,7 +368,7 @@ describe("mountStage", () => {
       scene: () => ({}),
     });
     const mountedReadout = mountStage(new FakeElement("div"), badReadout, { frames: frames() });
-    expect(() => mountedReadout.driver.seek(0.8)).toThrow(TypeError);
+    expect(() => mountedReadout.driver.seek(0.8)).toThrow("readout failed");
   });
 
   it("hands the scene a rest box for every name the cast makes", () => {
@@ -423,9 +413,11 @@ describe("mountStage", () => {
   });
 
   it("writes a group's value on the group's element and a list item by item", () => {
-    const { root } = mounted();
+    const { root, at } = mounted();
     expect(root.find("camera").style.transform).toBe("translate3d(0px, 40px, 0px)");
     expect(root.find("dot").style.transform).toBeUndefined();
+    expect(root.find("word.1").style.transform).toBeUndefined();
+    at(400);
     expect(root.find("word.1").style.transform).toBe("translate3d(2px, 0px, 0px)");
   });
 
@@ -570,8 +562,8 @@ describe("mountStage", () => {
     expect(listeners.size).toBe(0);
   });
 
-  describe("DomSkinCss inline and url", () => {
-    it("resolves ready synchronously for inline skins", async () => {
+  describe("DOM skins inline and by URL", () => {
+    it("resolves ready at once for an inline skin", async () => {
       const container = new FakeElement("div");
       const stage = mountStage(
         container,
@@ -580,7 +572,6 @@ describe("mountStage", () => {
           cast: (m) => ({ card: m.box() }),
           skins: {
             dom: {
-              kind: "inline",
               css: `[data-cast="card"] { color: red; }`,
               defs: `<linearGradient id="g"></linearGradient>`,
             },
@@ -589,39 +580,31 @@ describe("mountStage", () => {
         }),
         { frames: frames() },
       );
-      let resolved = false;
-      const check = stage.ready.then(() => {
-        resolved = true;
-      });
-      await check;
-      expect(resolved).toBe(true);
+      await stage.ready;
       const root = container.children[0]?.shadowRoot;
       const style = root?.children.find((c) => c.tagName === "style");
       expect(style?.textContent).toContain(`[data-cast="card"] { color: red; }`);
       expect(root?.find("card").attributes.has("data-skin")).toBe(false);
     });
 
-    it("loads url stylesheet, triggers re-measurement on load, fetches defs, and settles ready", async () => {
-      let resolveFetch: (res: { ok: boolean; text: () => Promise<string> }) => void = () =>
-        undefined;
-      const fetchCalls: string[] = [];
-      vi.stubGlobal("fetch", (url: string) => {
-        fetchCalls.push(url);
-        return new Promise((resolve) => {
-          resolveFetch = resolve;
-        });
-      });
-
+    it("fetches a URL skin and applies it as an inline one: same markers, defs, then a measure", async () => {
+      const bodies: Record<string, string> = {
+        "https://example.com/skin.css": `[data-cast="card"] { color: red; }`,
+        "https://example.com/defs.svg": '<linearGradient id="url-grad"></linearGradient>',
+      };
+      vi.stubGlobal("fetch", async (url: string) => ({
+        ok: true,
+        text: async () => bodies[url] ?? "",
+      }));
       const container = new FakeElement("div");
       const seen: Seen = {};
       const stage = mountStage(
         container,
         defineStage({
           beats: { all: [0, 500] },
-          cast: (m) => ({ card: m.box() }),
+          cast: (m) => ({ card: m.box(), plain: m.box() }),
           skins: {
             dom: {
-              kind: "url",
               css: new URL("https://example.com/skin.css"),
               defs: new URL("https://example.com/defs.svg"),
             },
@@ -633,127 +616,77 @@ describe("mountStage", () => {
         }),
         { frames: frames() },
       );
-
       const root = container.children[0]?.shadowRoot;
-      const link = root?.children.find((c) => c.tagName === "link");
-      expect(link?.attributes.get("rel")).toBe("stylesheet");
-      expect(link?.attributes.get("href")).toBe("https://example.com/skin.css");
-      expect(fetchCalls).toEqual(["https://example.com/defs.svg"]);
-
-      let readyDone = false;
-      const readyPromise = stage.ready.then(() => {
-        readyDone = true;
-      });
-
-      // Stylesheet load triggers re-measurement, while ready still waits on defs fetch.
-      root?.find("card") && (root.find("card").offsetWidth = 320);
-      link?.fire("load");
-      await Promise.resolve();
+      if (root === undefined) throw new Error("No shadow root.");
+      expect(root.children.some((c) => c.tagName === "link")).toBe(false);
+      root.find("card").offsetWidth = 320;
+      await stage.ready;
+      const style = root.children.find((c) => c.tagName === "style");
+      expect(style?.textContent).toContain(`[data-cast="card"] { color: red; }`);
+      expect(root.find("card").attributes.has("data-skin")).toBe(false);
+      expect(root.find("plain").attributes.get("data-skin")).toBe("default");
       expect(seen.rest?.get("card").width).toBe(320);
-      expect(stage.rest.card?.width).toBe(320);
-      expect(readyDone).toBe(false);
-
-      resolveFetch({
-        ok: true,
-        text: async () => '<linearGradient id="url-grad"></linearGradient>',
-      });
-      await readyPromise;
-      expect(readyDone).toBe(true);
-      const frame = root?.children.find((c) => c.tagName === "div");
+      expect(stage.rest["card"]?.width).toBe(320);
+      const frame = root.children.find((c) => c.tagName === "div");
       const defs = frame?.children.filter((c) => c.innerHTML !== undefined) ?? [];
-      expect(defs).toHaveLength(1);
-      expect(defs[0]?.innerHTML).toBe(
+      expect(defs.map((c) => c.innerHTML)).toEqual([
         '<defs><linearGradient id="url-grad"></linearGradient></defs>',
-      );
+      ]);
     });
 
-    it("settles ready and reports error when url stylesheet fails or defs fetch fails", async () => {
+    it("settles ready and reports which file failed when a URL skin cannot load", async () => {
       const reported: unknown[] = [];
       vi.stubGlobal("reportError", (err: unknown) => reported.push(err));
       vi.stubGlobal("fetch", async () => ({ ok: false, status: 404, text: async () => "" }));
-
-      const container = new FakeElement("div");
       const stage = mountStage(
-        container,
+        new FakeElement("div"),
         defineStage({
           beats: { all: [0, 500] },
           cast: (m) => ({ card: m.box() }),
-          skins: {
-            dom: {
-              kind: "url",
-              css: new URL("https://example.com/missing.css"),
-              defs: new URL("https://example.com/missing.svg"),
-            },
-          },
+          skins: { dom: { css: new URL("https://example.com/missing.css") } },
           scene: () => ({}),
         }),
         { frames: frames() },
       );
-
-      const link = container.children[0]?.shadowRoot?.children.find((c) => c.tagName === "link");
-      link?.fire("error");
       await stage.ready;
-      expect(reported).toHaveLength(2);
       expect(reported.map(String).join("\n")).toContain("missing.css");
-      expect(reported.map(String).join("\n")).toContain("missing.svg");
     });
 
-    it("ignores stale async url skin loads after replace(next)", async () => {
+    it("ignores a URL skin that lands after replace swapped in another", async () => {
       const resolvers: ((res: { ok: boolean; text: () => Promise<string> }) => void)[] = [];
-      vi.stubGlobal("fetch", () => {
-        return new Promise((resolve) => {
-          resolvers.push(resolve);
-        });
-      });
-
+      vi.stubGlobal(
+        "fetch",
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve);
+          }),
+      );
       const container = new FakeElement("div");
-      const makeUrlStage = (cssHref: string, defsHref: string) =>
+      const makeUrlStage = (href: string) =>
         defineStage({
           beats: { all: [0, 500] },
           cast: (m) => ({ card: m.box() }),
-          skins: {
-            dom: {
-              kind: "url",
-              css: new URL(cssHref),
-              defs: new URL(defsHref),
-            },
-          },
+          skins: { dom: { css: new URL(href) } },
           scene: () => ({}),
         });
-
-      const stage = mountStage(
-        container,
-        makeUrlStage("https://example.com/first.css", "https://example.com/first.svg"),
-        { frames: frames() },
-      );
+      const stage = mountStage(container, makeUrlStage("https://example.com/first.css"), {
+        frames: frames(),
+      });
       const firstReady = stage.ready;
+      stage.replace(makeUrlStage("https://example.com/second.css"));
       const root = container.children[0]?.shadowRoot;
-      const firstLink = root?.children.find((c) => c.tagName === "link");
-
-      stage.replace(
-        makeUrlStage("https://example.com/second.css", "https://example.com/second.svg"),
-      );
+      if (root === undefined) throw new Error("No shadow root.");
+      root.find("card").offsetWidth = 999;
+      resolvers[0]?.({ ok: true, text: async () => `[data-cast="card"] { color: stale; }` });
       await firstReady;
-      const links = root?.children.filter((c) => c.tagName === "link") ?? [];
-      expect(links).toHaveLength(1);
-      expect(links[0]?.attributes.get("href")).toBe("https://example.com/second.css");
-
-      // Stale first load and fetch resolve late: must not overwrite or re-measure.
-      if (root) root.find("card").offsetWidth = 999;
-      firstLink?.fire("load");
-      resolvers[0]?.({ ok: true, text: async () => '<linearGradient id="stale"/>' });
-      await Promise.resolve();
-      expect(stage.rest.card?.width).toBe(0);
-
-      // Second skin resolves cleanly.
-      if (root) root.find("card").offsetWidth = 220;
-      links[0]?.fire("load");
-      resolvers[1]?.({ ok: true, text: async () => '<linearGradient id="fresh"/>' });
+      const style = () => root.children.find((c) => c.tagName === "style")?.textContent ?? "";
+      expect(style()).not.toContain("stale");
+      expect(stage.rest["card"]?.width).toBe(0);
+      root.find("card").offsetWidth = 220;
+      resolvers[1]?.({ ok: true, text: async () => `[data-cast="card"] { color: fresh; }` });
       await stage.ready;
-      expect(stage.rest.card?.width).toBe(220);
-      const frame = root?.children.find((c) => c.tagName === "div");
-      const defs = frame?.children.filter((c) => c.innerHTML !== undefined) ?? [];
-      expect(defs[0]?.innerHTML).toBe('<defs><linearGradient id="fresh"/></defs>');
+      expect(style()).toContain("fresh");
+      expect(stage.rest["card"]?.width).toBe(220);
     });
   });
 
@@ -766,12 +699,7 @@ describe("mountStage", () => {
       ]);
 
     /** A stage whose members take the offsets and sizes in `sizes` by name, with a resize to call. */
-    function laidOut<
-      P extends PoseMode,
-      B extends string,
-      C extends Readonly<Record<string, Member<B>>>,
-      L extends string,
-    >(def: StageDefinition<P, B, C, L>, sizes: Record<string, Size>) {
+    function laidOut(def: StageInput, sizes: Record<string, Size>) {
       let resized: (() => void) | undefined;
       vi.stubGlobal("Element", FakeElement);
       vi.stubGlobal(
@@ -835,7 +763,7 @@ describe("mountStage", () => {
       expect(seen.rest?.get("word")).toEqual({ x: 250, y: 250, width: 200, height: 80 });
       expect(seen.rest?.get("under")).toEqual({ x: 250, y: 294, width: 200, height: 1 });
       expect(style()).toContain(
-        `:where([data-cast="under"]) { position: absolute; left: 50px; top: 93.5px; width: 200px; height: 1px; }`,
+        `:where([data-layout="main"] [data-cast="under"]) { position: absolute; left: 50px; top: 93.5px; width: 200px; height: 1px; }`,
       );
       const svg = root.find("under").children[0];
       expect(svg?.attributes.get("viewBox")).toBe("150 293.5 200 1");
@@ -888,7 +816,9 @@ describe("mountStage", () => {
         'Error: mountStage: paths "a" and "b" read each other.',
       ]);
       expect(root.find("a").children[0]?.children[0]?.attributes.has("d")).toBe(false);
-      expect(style()).toContain(`:where([data-cast="b"]) { position: absolute; }`);
+      expect(style()).toContain(
+        `:where([data-layout="main"] [data-cast="b"]) { position: absolute; }`,
+      );
     });
 
     it("reports a path function that throws and keeps its last good path", () => {
@@ -1175,7 +1105,7 @@ describe("mountStage", () => {
       expect(stage.layouts.wide?.card).toEqual({ x: 200, y: 50, width: 200, height: 100 });
     });
 
-    it("measures a swapped stage without layouts with no layout left on the frame", () => {
+    it("measures a swapped stage without layouts under its one layout, main", () => {
       const seen: Laid = {};
       const { stage, root, frame, at } = layered(seen);
       at(200);
@@ -1193,7 +1123,7 @@ describe("mountStage", () => {
           },
         }),
       );
-      expect(frame.attributes.has("data-layout")).toBe(false);
+      expect(frame.attributes.get("data-layout")).toBe("main");
       expect(seen.rest?.get("card").x).toBe(200);
       expect(stage.rest.card?.x).toBe(200);
     });
@@ -1220,7 +1150,7 @@ describe("mountStage", () => {
       expect(defs[0]?.attributes.get("aria-hidden")).toBe("true");
     });
 
-    it("leaves a stage without layouts unlabelled, handing the scene no layouts", () => {
+    it("labels a stage without layouts main, handing the scene that one layout", () => {
       let handed: Readonly<Record<string, RestReader>> | undefined;
       const def = defineStage({
         beats: { all: [0, 1000] },
@@ -1232,8 +1162,8 @@ describe("mountStage", () => {
       });
       const { root } = mounted({}, undefined, mustCompile(def));
       const frame = root.children.find((child) => child.tagName === "div");
-      expect(frame?.attributes.has("data-layout")).toBe(false);
-      expect(handed).toBe(NO_LAYOUT_READERS);
+      expect(frame?.attributes.get("data-layout")).toBe("main");
+      expect(Object.keys(handed ?? {})).toEqual(["main"]);
     });
   });
 

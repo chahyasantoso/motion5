@@ -12,7 +12,7 @@ const MAX_SIGNATURE = 140;
 /** Packages with a scene-facing entry, each with the entry files a caller imports. */
 export const PACKAGES = [
   { dir: "core", entries: ["src/index.ts"] },
-  { dir: "stage", entries: ["src/index.ts", "src/dom/index.ts"] },
+  { dir: "stage", entries: ["src/index.ts", "src/render/index.ts", "src/dom/index.ts"] },
   { dir: "player", entries: ["src/index.ts"] },
   { dir: "dom", entries: ["src/index.ts"] },
   { dir: "react", entries: ["src/index.ts"] },
@@ -47,19 +47,11 @@ const CORE_INTROS = {
 
 /** Stage's groups in learning order and their 1-line reference summaries. */
 const STAGE_INTROS = {
-  runtime:
-    "Authoring entry point (`defineStage`), frame evaluation (`evaluateFrame`), and scene shape validation. Reach for this group when writing or running a stage piece.",
-  beats:
-    "Compiled timeline spans (`compileBeats`) and stretch visibility (`presentAt`). Reach for this group when mapping named story intervals.",
-  cast: "Cast builders (`m.box`, `m.text`, `m.readout`, `m.stroke`, `m.morph`, `m.many`, `m.letters`, `m.words`, `m.group`), outline morphing, and dependency-ordered stroke resolution.",
-  layout:
-    "Stage frame defaults, measured `RestReader` lookup, multi-layout specs, and cross-layout `carry` transitions.",
-  skins:
-    "DOM stylesheet/defs skin compilation (`inline` strings or `url` assets) and typed renderer skin extension.",
-  review:
-    "Author-declared review expectations (`settle`, `ambient`, `static`) and per-target step limits compiled onto `CompiledStage.review`.",
-  compile:
-    "Stage compilation (`compileStage`), flattened typed scene target inference, and closed `StageError` formatting.",
+  author:
+    "What a piece is written with: `defineStage`, the cast builders, list poses by index and the scene's context. Reach for it whenever you write a piece.",
+  run: "What renderers and tools run a piece with: `compileStage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.",
+  render:
+    "Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.",
   dom: "Browser CSS custom property helpers exported from `@gerak/stage/dom` (`cssVariables`, `isTokenName`).",
 };
 

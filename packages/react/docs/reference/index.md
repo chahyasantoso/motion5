@@ -14,5 +14,5 @@
 - **`OwnedDriver`** `type OwnedDriver = Driver & { dispose?(): void; }`: A driver a component owns, released when the component leaves.
 - **`PlayerHost`** `type PlayerHost = { createDriver?: <D extends OwnedDriver>(own: () => D) => D; guard?: <T extends object>(scene: Scene<T>, fallback?: T) => Scene<T> }`: What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped.
 - **`Playing`** `type Playing<T, D> = { player: Player<T>; driver: D }`: What `usePlayer` gives: the `player` and the `driver` it plays on.
-- **`Stage`** `<P extends PoseMode = "2d", B extends string = string, C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>, L extends string = never>({ stage, options }: StageProps<P, B, C, L>): ReactNode`: Plays a stage in a div that fills its parent; compatible updates swap via `replace`, others remount.
-- **`StageProps`** `type StageProps<P, B, C, L> = { stage: CompiledStage<P> | StageDefinition<P, B, C, L>; options?: StageOptions | undefined }`: What `<Stage />` plays: a compiled stage or stage definition, and mount options.
+- **`Stage`** `({ stage, options }: StageProps): ReactNode`: Plays a stage in a div that fills its parent; a stage with the same signature swaps in, others remount.
+- **`StageProps`** `type StageProps = { stage: StageInput; options?: StageOptions | undefined }`: What `<Stage />` plays: a compiled stage or what `defineStage` returns, and mount options.

@@ -1,5 +1,5 @@
 import { combine, lanes, span, type Pose2d } from "@gerak/core";
-import { defineStage } from "@gerak/stage";
+import { defineStage, each } from "@gerak/stage";
 import { cssVariables } from "@gerak/stage/dom";
 import { card } from "../../showreel/style";
 import { kick } from "../../showreel/src/moves/kick";
@@ -82,7 +82,9 @@ export default defineStage({
         squish({ squash: 0.35, wobbles: 3 }, stampLand.of(time)),
       ]),
       ring: shockwave({ grow: 14 }, burst.of(time)),
-      dust: DUST_DX.map((dx) => kick({ dx, rise: 40 + Math.abs(dx) / 3, fall: 6 }, burst.of(time))),
+      dust: each(DUST_DX, (dx) =>
+        kick({ dx, rise: 40 + Math.abs(dx) / 3, fall: 6 }, burst.of(time)),
+      ),
     };
   },
 });

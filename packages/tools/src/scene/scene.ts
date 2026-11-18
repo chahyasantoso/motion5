@@ -10,17 +10,18 @@ import {
 import { manualDriver, play } from "@gerak/player";
 import {
   compileStage,
-  evaluateFrame,
   formatStageError,
+  frame,
   isStageDefinition,
-  type CompiledStage,
-  type PoseMode,
-  type TargetLimits,
+  listPose,
+  type Limits,
+  type Stage,
 } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
-export type { TargetLimits };
+/** Review limits of one target. */
+export type TargetLimits = Limits;
 
 /** One named beat of a stage module's story, in ms. */
 export interface Beat {
@@ -75,7 +76,7 @@ export interface SceneModule {
   readonly style?: string;
   readonly beats?: readonly Beat[];
   /** Compiled stage contract when the module default-exports `defineStage(...)`. */
-  readonly stage?: CompiledStage<PoseMode>;
+  readonly stage?: Stage;
 }
 
 /** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
@@ -131,26 +132,35 @@ export interface SceneSample {
   readonly targets: Readonly<Record<string, unknown>>;
 }
 
-function moduleFromStage(stage: CompiledStage<PoseMode>): SceneModule {
-  const { beats, cues, review } = stage;
+/** A frame's targets with each list's `(index, count) => pose` written out as its items' poses. */
+export function writtenOut(
+  stage: Stage,
+  targets: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  const out: Record<string, unknown> = { ...targets };
+  for (const member of stage.members) {
+    const value = targets[member.name];
+    if (member.kind !== "list" || typeof value !== "function") continue;
+    const count = member.items.length;
+    out[member.name] = member.items.map((_, index) => listPose(value, index, count));
+  }
+  return out;
+}
+
+function moduleFromStage(stage: Stage): SceneModule {
   return {
     stage,
-    cues,
-    limits: review.limits,
-    ...(review.design === undefined ? {} : { design: review.design }),
-    ...(review.style === undefined ? {} : { style: review.style }),
-    durationMs: beats.durationMs,
-    beats: beats.order.flatMap((name) => {
-      const span = beats[name];
-      return span === undefined ? [] : [{ name, from: span.from, to: span.to }];
-    }),
-    scene: (time, events) => {
-      const evaluated = evaluateFrame(stage, { time, events });
-      if (!evaluated.ok) {
-        throw new TypeError(evaluated.errors.map(formatStageError).join("\n"));
-      }
-      return evaluated.poses;
-    },
+    cues: stage.cues,
+    limits: stage.limits,
+    ...(stage.design === undefined ? {} : { design: stage.design }),
+    ...(stage.style === undefined ? {} : { style: stage.style }),
+    durationMs: stage.durationMs,
+    beats: Object.entries(stage.beats).map(([name, span]) => ({
+      name,
+      from: span.from,
+      to: span.to,
+    })),
+    scene: (time, events) => writtenOut(stage, frame(stage, { time, events }).targets),
   };
 }
 

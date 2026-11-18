@@ -289,15 +289,15 @@ export default defineStage({
         mode: "scale",
       });
     };
-    const row = (part: Part) => firstOrder.map((index) => carry(part, index));
+    const row = (part: Part) => (index: number) => carry(part, index);
     const detail = { delayMs: 260, inMs: 220, outMs: 120 };
-    const notes = firstOrder.map((index) => {
+    const notes = (index: number): Pose2d => {
       const pose: Pose2d = {
         ...carry("note", index),
         opacity: shownAt(time, events, (state) => state.open === index, detail),
       };
       return pose;
-    });
+    };
     return {
       tick: {
         opacity: shownAt(time, events, (state) => state.sorted, {

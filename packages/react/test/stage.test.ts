@@ -2,7 +2,7 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { type FrameSource, type StageElement, type StageEvent, type StageStyle } from "@gerak/dom";
-import { compileStage, defineStage, type Member, type PoseMode } from "@gerak/stage";
+import { compileStage, defineStage } from "@gerak/stage";
 import { Stage, type StageProps } from "@gerak/react";
 
 class FakeStyle implements StageStyle {
@@ -93,13 +93,8 @@ class FakeElement implements StageElement<FakeElement, FakeElement> {
 
 const NO_FRAMES: FrameSource = { requestFrame: () => 1, cancelFrame: () => undefined };
 
-function renderStage<
-  P extends PoseMode,
-  B extends string,
-  C extends Readonly<Record<string, Member<B>>>,
-  L extends string,
->(props: StageProps<P, B, C, L>) {
-  const Component: FC<StageProps<P, B, C, L>> = Stage;
+function renderStage(props: StageProps) {
+  const Component: FC<StageProps> = Stage;
   return createElement(Component, props);
 }
 

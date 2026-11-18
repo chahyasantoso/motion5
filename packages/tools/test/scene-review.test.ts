@@ -7,7 +7,6 @@ import {
   defineStage,
   isStageDefinition,
   type CastBuilder,
-  type PoseMode,
   type StageDefinition,
 } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
@@ -338,7 +337,7 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
-  function rawStage(options: Record<string, unknown>): StageDefinition<PoseMode> {
+  function rawStage(options: Record<string, unknown>): StageDefinition {
     const built: unknown = Reflect.apply(defineStage, undefined, [options]);
     if (!isStageDefinition(built)) throw new Error("expected StageDefinition");
     return built;
@@ -396,6 +395,36 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     );
   });
 
+  it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
+    const broken = defineStage({
+      beats: { show: [0, 400] },
+      cast: (m) => ({ row: m.many(2), dot: m.box() }),
+      scene: () => ({
+        row: (i) => {
+          if (i === 1) throw new Error("boom");
+          return { x: i };
+        },
+      }),
+    });
+    expect(review(broken).findings).toEqual(["boom"]);
+  });
+
+  it("judges an ambient member's bounds only where its box is measured", () => {
+    const unmeasured = defineStage({
+      beats: { show: [0, 400] },
+      cast: (m) => ({ flake: m.box().ambient() }),
+      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
+    });
+    expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
+    const measured = defineStage({
+      beats: { show: [0, 400] },
+      rest: { flake: { x: 5, y: 5, width: 4, height: 4 } },
+      cast: (m) => ({ flake: m.box().ambient() }),
+      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
+    });
+    expect(review(measured).findings.filter((line) => /bounds/.test(line))).toHaveLength(1);
+  });
+
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
     const mismatch = rawStage({
       beats: { show: [0, 400] },
@@ -403,7 +432,7 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(
-      'scene: "dots" shape mismatch: expected 2 poses, got 1.',
+      'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
     );
   });
 

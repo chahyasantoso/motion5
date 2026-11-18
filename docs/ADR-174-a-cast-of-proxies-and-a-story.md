@@ -1,6 +1,7 @@
 # ADR-174: A cast of proxies, a story of named beats, and skins per renderer
 
 **Status:** Accepted, 2026-11-12
+**Superseded in part by ADR-190:** the cast, list values, visibility and frame evaluation of stage v3.
 
 ## Context
 

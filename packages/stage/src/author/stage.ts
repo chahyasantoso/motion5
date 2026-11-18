@@ -1,0 +1,105 @@
+import type { Events, Pose2d, Span, Time } from "@gerak/core";
+import type { CastBuilder, Members } from "./cast";
+import type { Carry, Frame, Rest, RestReader } from "./layout";
+
+/** A list's pose in the scene: the pose of item `index` of `count`. */
+export type ListPose = (index: number, count: number) => Pose2d;
+
+type Entry<M> = {
+  [K in keyof M & string]:
+    | readonly [K, M[K]]
+    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? Entry<G> : never);
+}[keyof M & string];
+
+/** What the scene returns: a pose per actor or group, a `ListPose` per list, all named flat. */
+export type Targets<M> = string extends keyof M
+  ? Readonly<Record<string, Pose2d | ListPose | undefined>>
+  : {
+      readonly [E in Entry<M> as E[0]]?: E[1] extends { readonly kind: "list" } ? ListPose : Pose2d;
+    };
+
+/** Every member name of a cast, group children included. */
+export type MemberName<M> = Entry<M>[0];
+
+/** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */
+export function each<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose {
+  return (index) => {
+    const item = items[index];
+    return item === undefined ? {} : pose(item, index);
+  };
+}
+
+/** Beats by name, each a `Span`: `beats.enter.of(time)` is time inside it. */
+export type Beats<B extends string = string> = Readonly<Record<B, Span>>;
+
+/** What the scene reads each frame. */
+export interface SceneContext<B extends string = string, L extends string = string> {
+  readonly time: Time;
+  readonly beats: Beats<B>;
+  readonly events: Events;
+  /** Rest boxes of the layout showing now. */
+  readonly rest: RestReader;
+  readonly layouts: Readonly<Record<L, RestReader>>;
+  readonly carry: Carry;
+}
+
+/** Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless. */
+export interface LayoutsInput<L extends string = string> {
+  readonly names: readonly [L, ...L[]];
+  readonly pick?: ((events: Events) => L) | undefined;
+  readonly rests?: Readonly<Record<L, Rest>> | undefined;
+}
+
+/** The DOM skin: CSS and SVG defs as strings, or as URLs of files beside the piece. */
+export type DomSkinInput =
+  | { readonly css: string; readonly defs?: string | undefined }
+  | { readonly css: URL; readonly defs?: URL | undefined };
+
+/** Review limits of one target, overriding the command's defaults. */
+export interface Limits {
+  readonly jump?: number | undefined;
+  readonly turn?: number | undefined;
+  readonly ratio?: number | undefined;
+}
+
+/** A piece as written: beats in ms, a cast, and a scene from time to poses. */
+export interface StageOptions<B extends string, M extends Members<B>, L extends string> {
+  readonly beats: Readonly<Record<B, readonly [number, number]>>;
+  /** Defaults to the last beat's end; longer holds the end. */
+  readonly durationMs?: number | undefined;
+  readonly frame?: Frame | undefined;
+  readonly cast: (m: CastBuilder<NoInfer<B>>) => M;
+  readonly rest?: Rest | undefined;
+  readonly layouts?: LayoutsInput<L> | undefined;
+  readonly skins?: { readonly dom?: DomSkinInput | undefined } | undefined;
+  readonly cues?: Events | undefined;
+  readonly style?: string | undefined;
+  readonly design?: unknown;
+  readonly limits?: Readonly<Record<string, Limits>> | undefined;
+  readonly scene: (context: SceneContext<NoInfer<B>, NoInfer<L>>) => Targets<NoInfer<M>>;
+}
+
+/** A piece as `defineStage` returns it, before `compileStage` checks it. */
+export interface StageDefinition<
+  B extends string = string,
+  M extends Members<B> = Members<B>,
+  L extends string = string,
+> extends StageOptions<B, M, L> {
+  readonly kind: "stage-definition";
+}
+
+/** Declares a piece; its beat and layout names type the cast's `on` and the scene's context. */
+export function defineStage<
+  const B extends string,
+  M extends Members<B>,
+  const L extends string = never,
+>(options: StageOptions<B, M, L>): StageDefinition<B, M, L> {
+  return Object.freeze({ ...options, kind: "stage-definition" });
+}
+
+/** Whether `value` is what `defineStage` returns. */
+export function isStageDefinition(value: unknown): value is StageDefinition {
+  return (
+    typeof value === "object" && value !== null && Reflect.get(value, "kind") === "stage-definition"
+  );
+}

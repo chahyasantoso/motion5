@@ -35,6 +35,7 @@ export {
   type StageEvent,
   type StageFonts,
   type StageHost,
+  type StageInput,
   type StageOptions,
   type StageStroke,
   type StageStyle,

@@ -92,17 +92,13 @@ Public: `.`
 
 ## packages/stage
 
-Public: `.`, `./dom`
+Public: `.`, `./render`, `./dom`
 
 - `src/`: stage entrypoint
-- `src/beats/`: beat spans
-- `src/cast/`: cast, morphs, strokes
-- `src/compile/`: stage compiler
+- `src/author/`: defineStage, cast builders, scene types
 - `src/dom/`: DOM tokens
-- `src/layout/`: rest boxes, carry
-- `src/review/`: review limits
-- `src/runtime/`: defineStage, evaluate
-- `src/skins/`: DOM and URL skins
+- `src/render/`: strokes and morphs for renderers
+- `src/run/`: compile, frame, check, visibility, carry
 
 ## packages/three
 

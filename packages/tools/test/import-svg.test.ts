@@ -8,8 +8,8 @@ import {
   compileStage,
   formatStageError,
   isStageDefinition,
-  type CompiledStage,
-  type PoseMode,
+  type Content,
+  type Stage,
 } from "@gerak/stage";
 import { importSvg, importSvgInto, type ImportResult } from "../src/scene/import-svg";
 import { readSceneModule } from "../src/scene/scene";
@@ -29,7 +29,7 @@ interface Imported {
   readonly defs: string;
 }
 
-function stageOf(module: unknown): CompiledStage<PoseMode> {
+function stageOf(module: unknown): Stage {
   const def: unknown = Reflect.get(Object(module), "default");
   if (!isStageDefinition(def)) throw new Error("missing default defineStage");
   const compiled = compileStage(def);
@@ -37,7 +37,7 @@ function stageOf(module: unknown): CompiledStage<PoseMode> {
   return compiled.stage;
 }
 
-function inlineDom(stage: CompiledStage<PoseMode>): {
+function inlineDom(stage: Stage): {
   readonly css: string;
   readonly defs: string;
 } {
@@ -56,11 +56,15 @@ async function bring(svg: string, name: string, margin?: number): Promise<Import
   return { result, module, ...inlineDom(stage) };
 }
 
+function contentNamed(stage: Stage, name: string): Content | undefined {
+  const found = stage.members.find((member) => member.name === name);
+  return found?.kind === "actor" ? found.content : undefined;
+}
+
 function cubicsOf(imported: Imported, name: string): readonly Cubic2d[] {
-  const found = stageOf(imported.module).members.byName.get(name);
-  const content = found?.content;
+  const content = contentNamed(stageOf(imported.module), name);
   if (content?.kind === "stroke" && typeof content.path !== "function") return content.path;
-  if (content?.kind === "morph") return content.base;
+  if (content?.kind === "morph") return content.shapes[0] ?? [];
   throw new Error(`no path member ${name}`);
 }
 
@@ -190,12 +194,14 @@ describe("gerak import-svg outlines to morph to", () => {
   it("makes <part>-shape<N> the Nth of its part's shapes, and lists what it cannot", async () => {
     const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
     expect(imported.result.members).toEqual(["beak", "lid", "eye"]);
-    const beak = stageOf(imported.module).members.byName.get("beak")?.content;
+    const beak = contentNamed(stageOf(imported.module), "beak");
     if (beak === undefined || beak.kind !== "morph") throw new Error("no beak");
-    const tips = beak.targets.map((outline) => Math.max(...along(outline).map(([, y]) => y)));
+    const tips = beak.shapes
+      .slice(1)
+      .map((outline) => Math.max(...along(outline).map(([, y]) => y)));
     expect(tips).toEqual([expect.closeTo(45, 3), expect.closeTo(60, 3)]);
     for (const name of ["lid", "eye"]) {
-      const member = stageOf(imported.module).members.byName.get(name)?.content;
+      const member = contentNamed(stageOf(imported.module), name);
       expect(member?.kind).toBe("stroke");
     }
     const reasons = imported.result.leftOut.map(({ reason }) => reason).join("\n");
@@ -408,9 +414,11 @@ export default defineStage({
       expect(result.kind).toBe("written");
     }
     const imported = await read(root);
-    expect([...stageOf(imported.module).members.byName.keys()].sort()).toEqual(
-      ["base", "oneStrip", "onePlain", "oneSun", "twoStrip", "twoPlain", "twoSun"].sort(),
-    );
+    expect(
+      stageOf(imported.module)
+        .members.map(({ name }) => name)
+        .sort(),
+    ).toEqual(["base", "oneStrip", "onePlain", "oneSun", "twoStrip", "twoPlain", "twoSun"].sort());
     const ids = [...imported.defs.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(["one-glow", "two-glow", "one-ramp", "two-ramp"]));

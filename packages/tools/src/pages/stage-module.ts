@@ -1,18 +1,16 @@
 import {
   compileStage,
   formatStageError,
-  isStage2d,
   isStageDefinition,
-  type CompiledStage,
-  type PoseMode,
+  type Stage,
   type StageDefinition,
 } from "@gerak/stage";
 
 /** A stage module as the pieces' pages play it. */
 export interface LoadedStage {
   readonly kind: "stage";
-  readonly stage: CompiledStage;
-  readonly definition: StageDefinition<PoseMode>;
+  readonly stage: Stage;
+  readonly definition: StageDefinition;
   readonly exports: Readonly<Record<string, unknown>>;
 }
 
@@ -49,9 +47,6 @@ export function stageOf(value: unknown): LoadedStage | string {
   const compiled = compileStage(candidate);
   if (!compiled.ok) {
     return compiled.errors.map(formatStageError).join("\n");
-  }
-  if (!isStage2d(compiled.stage)) {
-    return "3D stages are not supported on DOM stage pages.";
   }
   return {
     kind: "stage",
