@@ -8,7 +8,7 @@ import {
 } from "@gerak/core";
 import { NO_REST, type RestReader } from "../author/layout";
 import { carryFor } from "./carry";
-import type { Stage } from "./compile";
+import { isPlainRecord, type Stage } from "./compile";
 import type { StageError } from "./errors";
 
 /** One frame's inputs; `boxes` holds each layout's measured rest, else the piece's own rests are read. */
@@ -26,13 +26,9 @@ export interface FrameOutput {
   readonly targets: Readonly<Record<string, unknown>>;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 // The scene's type checks each field; at run time a pose is any plain object.
 function isPose(value: unknown): value is Pose2d {
-  return isRecord(value);
+  return isPlainRecord(value);
 }
 
 /** The pose a target holds, or undefined when it holds none. */
@@ -62,7 +58,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     layouts,
     carry: carryFor(stage.layouts.pick, layouts, rest, events, time),
   });
-  if (!isRecord(targets))
+  if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");
   const ms = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
   return { layout, visible: stage.visibleAt(ms), targets };

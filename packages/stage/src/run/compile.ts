@@ -90,7 +90,8 @@ export const DEFAULT_FRAME: Frame = Object.freeze({ width: 1280, height: 720 });
 
 const CUBIC_KEYS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"] as const;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/** Whether `value` is an object and not an array. */
+export function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -105,7 +106,7 @@ export function isCubics(value: unknown): value is readonly Cubic2d[] {
     value.length > 0 &&
     value.every(
       (cubic: unknown) =>
-        isRecord(cubic) &&
+        isPlainRecord(cubic) &&
         typeof cubic["id"] === "string" &&
         CUBIC_KEYS.every((key) => finite(cubic[key])),
     )
@@ -119,7 +120,7 @@ export function frozenCubics(cubics: readonly Cubic2d[]): readonly Cubic2d[] {
 
 function isBox(value: unknown): value is Box {
   return (
-    isRecord(value) &&
+    isPlainRecord(value) &&
     finite(value["x"]) &&
     finite(value["y"]) &&
     finite(value["width"]) &&
@@ -128,7 +129,7 @@ function isBox(value: unknown): value is Box {
 }
 
 function isRest(value: unknown): value is Rest {
-  return isRecord(value) && Object.values(value).every(isBox);
+  return isPlainRecord(value) && Object.values(value).every(isBox);
 }
 
 interface Beats {
@@ -141,7 +142,7 @@ function compileBeats(raw: unknown, rawDuration: unknown, errors: StageError[]):
     errors.push({ kind: "invalid", field, reason });
     return undefined;
   };
-  if (!isRecord(raw)) return fail("beats", "`beats` must be an object of `[from, to]` ms.");
+  if (!isPlainRecord(raw)) return fail("beats", "`beats` must be an object of `[from, to]` ms.");
   const pairs: (readonly [string, number, number])[] = [];
   for (const [name, pair] of Object.entries(raw)) {
     const from: unknown = Array.isArray(pair) ? pair[0] : undefined;
@@ -227,7 +228,7 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
     errors.push({ kind: "invalid", field: "cast", reason: `"${name}": ${reason}` });
     return undefined;
   };
-  if (!isRecord(raw)) return fail("make members with the cast builders.");
+  if (!isPlainRecord(raw)) return fail("make members with the cast builders.");
   const kind = raw["kind"];
   switch (kind) {
     case "box":
@@ -311,7 +312,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
       if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
       if (seen.has(name)) errors.push({ kind: "duplicate_member", name });
       seen.add(name);
-      if (!isRecord(spec) || !isRecord(spec["meta"])) {
+      if (!isPlainRecord(spec) || !isPlainRecord(spec["meta"])) {
         errors.push({
           kind: "invalid",
           field: "cast",
@@ -334,7 +335,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
         });
       const rawPivot = meta["pivot"];
       const pivot =
-        isRecord(rawPivot) && finite(rawPivot["x"]) && finite(rawPivot["y"])
+        isPlainRecord(rawPivot) && finite(rawPivot["x"]) && finite(rawPivot["y"])
           ? Object.freeze({ x: rawPivot["x"], y: rawPivot["y"] })
           : undefined;
       if (rawPivot !== undefined && pivot === undefined)
@@ -377,7 +378,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
         }
         case "group": {
           const children = spec["members"];
-          if (!isRecord(children)) {
+          if (!isPlainRecord(children)) {
             errors.push({
               kind: "invalid",
               field: "cast",
@@ -403,7 +404,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
       }
     }
   };
-  if (!isRecord(raw))
+  if (!isPlainRecord(raw))
     errors.push({
       kind: "invalid",
       field: "cast",
@@ -431,7 +432,7 @@ function compileLayouts(rawLayouts: unknown, rawRest: unknown, errors: StageErro
       : fail("`rest` must map member names to { x, y, width, height }.");
   }
   if (rawRest !== undefined) return fail("give `layouts.rests`, not `rest`, with named layouts.");
-  if (!isRecord(rawLayouts)) return fail("`layouts` must be { names, pick?, rests? }.");
+  if (!isPlainRecord(rawLayouts)) return fail("`layouts` must be { names, pick?, rests? }.");
   const rawNames = rawLayouts["names"];
   if (
     !Array.isArray(rawNames) ||
@@ -461,11 +462,11 @@ function compileLayouts(rawLayouts: unknown, rawRest: unknown, errors: StageErro
     );
   }
   const rawRests = rawLayouts["rests"];
-  if (rawRests !== undefined && !(isRecord(rawRests) && Object.values(rawRests).every(isRest)))
+  if (rawRests !== undefined && !(isPlainRecord(rawRests) && Object.values(rawRests).every(isRest)))
     return fail("`layouts.rests` must map layout names to rests.");
   const readers: Record<string, RestReader> = {};
   for (const name of rawNames) {
-    const rest = isRecord(rawRests) ? rawRests[name] : undefined;
+    const rest = isPlainRecord(rawRests) ? rawRests[name] : undefined;
     if (rawRests !== undefined && !isRest(rest))
       return fail(`\`layouts.rests\` has no rest for "${name}".`);
     readers[name] = isRest(rest) ? restReader(rest) : NO_REST;
@@ -483,10 +484,10 @@ function compileSkin(raw: unknown, errors: StageError[]): DomSkin | undefined {
     return undefined;
   };
   if (raw === undefined) return undefined;
-  if (!isRecord(raw)) return fail("`skins` must be { dom?: { css, defs? } }.");
+  if (!isPlainRecord(raw)) return fail("`skins` must be { dom?: { css, defs? } }.");
   const dom = raw["dom"];
   if (dom === undefined) return undefined;
-  if (!isRecord(dom)) return fail("`skins.dom` must be { css, defs? }.");
+  if (!isPlainRecord(dom)) return fail("`skins.dom` must be { css, defs? }.");
   const css = dom["css"];
   const defs = dom["defs"];
   if (css instanceof URL) {
@@ -504,9 +505,9 @@ function compileLimits(raw: unknown, errors: StageError[]): Readonly<Record<stri
   if (raw === undefined) return Object.freeze({});
   const limits: Record<string, Limits> = {};
   const valid =
-    isRecord(raw) &&
+    isPlainRecord(raw) &&
     Object.entries(raw).every(([target, entry]) => {
-      if (!isRecord(entry)) return false;
+      if (!isPlainRecord(entry)) return false;
       const own: { jump?: number; turn?: number; ratio?: number } = {};
       for (const [field, limit] of Object.entries(entry)) {
         if (!finite(limit) || limit < 0) return false;
@@ -548,7 +549,7 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
 
 /** Checks a piece and compiles it into a `Stage`, or lists every reason it cannot. */
 export function compileStage(definition: unknown): CompileResult {
-  if (!isRecord(definition))
+  if (!isPlainRecord(definition))
     return {
       ok: false,
       errors: [
@@ -565,7 +566,7 @@ export function compileStage(definition: unknown): CompileResult {
   let frame = DEFAULT_FRAME;
   if (rawFrame !== undefined) {
     if (
-      isRecord(rawFrame) &&
+      isPlainRecord(rawFrame) &&
       finite(rawFrame["width"]) &&
       finite(rawFrame["height"]) &&
       rawFrame["width"] > 0 &&
@@ -638,5 +639,5 @@ export function compileStage(definition: unknown): CompileResult {
 
 /** Whether `value` is a stage `compileStage` returned. */
 export function isStage(value: unknown): value is Stage {
-  return isRecord(value) && value["kind"] === "stage";
+  return isPlainRecord(value) && value["kind"] === "stage";
 }
