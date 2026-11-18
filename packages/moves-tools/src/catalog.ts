@@ -17,7 +17,7 @@ import {
   type OptionField,
   type StyleCard,
 } from "@gerak/moves";
-import { SCENE_LIMITS, briefFolders, sourceFiles } from "@gerak/tools/scene";
+import { SCENE_LIMITS, briefFolders, readSceneModule, sourceFiles } from "@gerak/tools/scene";
 import { qualityNames, rangesOf, styleCards } from "./cards";
 import {
   checkMove,
@@ -1670,12 +1670,28 @@ async function designOf(
       const message = error instanceof Error ? error.message : String(error);
       return { kind: "refused", message: `--design: ${file} could not be imported: ${message}` };
     }
-    const read = readDesign(
-      typeof module === "object" && module !== null ? Reflect.get(module, "design") : undefined,
-    );
+    const sceneRead = readSceneModule(module);
+    const modObj = typeof module === "object" && module !== null ? module : undefined;
+    const defExport = modObj === undefined ? undefined : Reflect.get(modObj, "default");
+    const defObj = typeof defExport === "object" && defExport !== null ? defExport : undefined;
+    const rawDesign =
+      !("reason" in sceneRead) && sceneRead.design !== undefined
+        ? sceneRead.design
+        : modObj !== undefined && Object.hasOwn(modObj, "design")
+          ? Reflect.get(modObj, "design")
+          : defObj === undefined
+            ? undefined
+            : Reflect.get(defObj, "design");
+    const read = readDesign(rawDesign);
     if (read.kind === "refused") return { kind: "refused", message: `--design: ${read.reason}` };
     const own: unknown =
-      typeof module === "object" && module !== null ? Reflect.get(module, "style") : undefined;
+      !("reason" in sceneRead) && sceneRead.style !== undefined
+        ? sceneRead.style
+        : modObj !== undefined && Object.hasOwn(modObj, "style")
+          ? Reflect.get(modObj, "style")
+          : defObj === undefined
+            ? undefined
+            : Reflect.get(defObj, "style");
     if (style === undefined && typeof own === "string") style = own;
     if (!Object.hasOwn(read.design, args.target))
       return {

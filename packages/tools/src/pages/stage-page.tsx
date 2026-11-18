@@ -27,5 +27,5 @@ export async function stagePage(pieces: ModuleGlob, components: ModuleGlob): Pro
   if (typeof loaded === "string") {
     container.textContent = loaded;
     mounted();
-  } else createRoot(container).render(<Stage module={loaded.module} options={options} />);
+  } else createRoot(container).render(<Stage stage={loaded.stage} options={options} />);
 }

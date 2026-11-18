@@ -1,19 +1,29 @@
-import { pathToFileURL } from "node:url";
-import { mergeEvents, pathBounds, valueField, unreachable } from "@gerak/core";
-import { manualDriver, play } from "@gerak/player";
-import { quaternionFromEuler3d } from "@gerak/core";
+import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
-  NO_REST,
-  describeLoop,
-  drawInPasses,
+  NO_EVENTS,
+  mergeEvents,
+  pathBounds,
+  quaternionFromEuler3d,
+  unreachable,
+  valueField,
+} from "@gerak/core";
+import { manualDriver, play } from "@gerak/player";
+import {
+  formatStageError,
+  evaluateFrame,
   presentAt,
-  restOfBounds,
-  thickened,
-  type CastName,
-  type Rest,
+  resolveStaticStrokes,
+  restReader,
+  type CompiledStage,
+  type DomSkinCss,
+  type FrameEvaluation,
+  type PoseMode,
+  type RestReader,
+  type ReviewMemberSpec,
 } from "@gerak/stage";
+import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { installedPackages } from "./installed";
 import { SCENE_LIMITS } from "./limits";
 import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
@@ -270,68 +280,194 @@ export type ReviewPreparation =
   | { readonly kind: "ready"; readonly find: ReviewFinder }
   | { readonly kind: "refused"; readonly message: string };
 
-/** A name's value in a sample: a target's own, or one item of a `many` target, as `dust.3`. */
-function valueOf(targets: Readonly<Record<string, unknown>>, name: CastName): unknown {
-  switch (name.kind) {
+interface EvaluatedSample {
+  readonly at: number;
+  readonly targets: Readonly<Record<string, unknown>>;
+  readonly evaluation: FrameEvaluation<PoseMode>;
+}
+
+/** Evaluates a compiled stage at each requested ms using `evaluateFrame`. */
+function sampleStageFrames(
+  stage: CompiledStage<PoseMode>,
+  ms: readonly number[],
+): readonly EvaluatedSample[] {
+  let latest: FrameEvaluation<PoseMode> | undefined;
+  const driver = manualDriver({ durationMs: stage.beats.durationMs });
+  play(
+    (time, events) => {
+      latest = evaluateFrame(stage, { time, events });
+      return latest.ok ? latest.poses : {};
+    },
+    driver,
+    { cues: stage.cues },
+  );
+  return ms.map((at, index) => {
+    if (!(index === 0 && at === 0 && latest !== undefined)) {
+      driver.seekMs(at);
+    }
+    const evaluation: FrameEvaluation<PoseMode> =
+      latest ?? evaluateFrame(stage, { time: driver.now(), events: NO_EVENTS });
+    return {
+      at,
+      targets: evaluation.ok ? evaluation.poses : {},
+      evaluation,
+    };
+  });
+}
+
+/** A member's value in evaluated poses: its own target, or one item of a list. */
+function valueOfReview(
+  targets: Readonly<Record<string, unknown>>,
+  member: ReviewMemberSpec,
+): unknown {
+  switch (member.kind) {
     case "actor":
-    case "many":
+    case "list":
     case "group":
-      return targets[name.name];
+      return targets[member.name];
     case "item": {
-      const dot = name.name.lastIndexOf(".");
-      const list = targets[name.name.slice(0, dot)];
+      const dot = member.name.lastIndexOf(".");
+      const list = targets[member.name.slice(0, dot)];
       if (!Array.isArray(list)) return undefined;
-      const item: unknown = list[Number(name.name.slice(dot + 1))];
+      const item: unknown = list[Number(member.name.slice(dot + 1))];
       return item;
     }
     default:
-      return unreachable(name.kind);
+      return unreachable(member.kind);
   }
 }
 
-/** A name that must be moved to be of use: a lone actor or a list, not a group, an item, or a
- * watched member, which may move only on a person's events. */
-function mustMove(name: CastName): boolean {
-  switch (name.kind) {
-    case "actor":
-    case "many":
-      return !name.still && !name.watch;
-    case "group":
-    case "item":
-      return false;
-    default:
-      return unreachable(name.kind);
+/** Emits deduplicated findings for frame-level shape mismatches, readout errors, and extra targets. */
+function frameEvaluationFindings(evaluated: readonly EvaluatedSample[]): readonly string[] {
+  const found: string[] = [];
+  const seenShapes = new Set<string>();
+  const seenReadouts = new Set<string>();
+  const seenExtra = new Set<string>();
+  for (const { at, evaluation } of evaluated) {
+    if (!evaluation.ok) {
+      for (const error of evaluation.errors) {
+        const key = `${error.member}:${error.reason}`;
+        if (seenShapes.has(key)) continue;
+        seenShapes.add(key);
+        found.push(formatStageError(error));
+      }
+      continue;
+    }
+    for (const target of evaluation.extraTargets) {
+      if (seenExtra.has(target)) continue;
+      seenExtra.add(target);
+      found.push(`the scene answers "${target}", which is not in the cast.`);
+    }
+    for (const { member, error } of evaluation.readoutErrors) {
+      if (seenReadouts.has(member)) continue;
+      seenReadouts.add(member);
+      const raw = error instanceof Error ? error.message : String(error);
+      const prefix = `The text of "${member}" `;
+      const detail = raw.startsWith(prefix)
+        ? raw.slice(prefix.length).replace(/\.$/, "")
+        : `fails: ${raw}`;
+      found.push(`text of "${member}" ${detail} at ${at} ms`);
+    }
   }
+  return found;
 }
 
-/** What a stage module's scene does against its cast and beats: a member never moved, a target not
- * cast, a value changing outside its presence; unmeasured layouts say so once instead. */
-function stageFindings(
-  cast: readonly CastName[],
+/** Checks ambient member bounds against the stage frame at visible frames. */
+function ambientBoundsFindings(
+  stage: CompiledStage<PoseMode>,
+  member: ReviewMemberSpec,
+  evaluated: readonly EvaluatedSample[],
+  rest: RestReader,
+): readonly string[] {
+  if (member.kind !== "actor" && member.kind !== "item") return [];
+  const box = rest.get(member.name);
+  for (const { at, evaluation } of evaluated) {
+    if (!evaluation.ok || evaluation.visibility[member.name] === false) continue;
+    const pose = valueOfReview(evaluation.poses, member);
+    if (typeof pose !== "object" || pose === null || Array.isArray(pose)) continue;
+    const x: unknown = Reflect.get(pose, "x");
+    const y: unknown = Reflect.get(pose, "y");
+    if (typeof x === "number" && Number.isFinite(x)) {
+      const px = box.x + x;
+      if (px < 0 || px > stage.frame.width) {
+        return [
+          `ambient member "${member.name}" leaves stage bounds at ${at} ms (x=${Math.round(px * 100) / 100}, frame width ${stage.frame.width}).`,
+        ];
+      }
+    }
+    if (typeof y === "number" && Number.isFinite(y)) {
+      const py = box.y + y;
+      if (py < 0 || py > stage.frame.height) {
+        return [
+          `ambient member "${member.name}" leaves stage bounds at ${at} ms (y=${Math.round(py * 100) / 100}, frame height ${stage.frame.height}).`,
+        ];
+      }
+    }
+  }
+  return [];
+}
+
+/** Checks cast expectations (`"settle"`, `"ambient"`, `"static"`), morph usage, and stretch bounds. */
+function stageMemberFindings(
+  stage: CompiledStage<PoseMode>,
   beats: readonly Beat[],
-  samples: Samples,
-  durationMs: number,
+  evaluated: readonly EvaluatedSample[],
+  rest: RestReader,
   unmeasured: boolean,
 ): readonly string[] {
-  const known = new Set(cast.map(({ name }) => name));
-  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))];
-  const found: string[] = targets
-    .filter((target) => !known.has(target))
-    .map((target) => `the scene answers "${target}", which is not in the cast.`);
+  const found: string[] = [];
   if (unmeasured)
     found.push(
       'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
     );
   const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
-  for (const member of cast) {
-    const prints = samples.map(({ targets: values }) => fingerprint(valueOf(values, member)));
+  const durationMs = stage.beats.durationMs;
+
+  for (const member of stage.review.members) {
+    const prints = evaluated.map(({ targets }) => fingerprint(valueOfReview(targets, member)));
     const unmoved = prints.every((print) => print === prints[0]);
-    if (mustMove(member) && unmoved && !unmeasured)
-      found.push(
-        `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
-      );
-    const given = samples.some(({ targets: values }) => {
-      const value = valueOf(values, member);
+
+    switch (member.expectation) {
+      case "settle": {
+        if (
+          (member.kind === "actor" || member.kind === "list") &&
+          !member.watch &&
+          unmoved &&
+          !unmeasured
+        )
+          found.push(
+            `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
+          );
+        break;
+      }
+      case "ambient": {
+        found.push(...ambientBoundsFindings(stage, member, evaluated, rest));
+        break;
+      }
+      case "static": {
+        const parentStatic =
+          member.kind === "item" &&
+          stage.review.byName.get(member.name.slice(0, member.name.lastIndexOf(".")))
+            ?.expectation === "static";
+        if (parentStatic) break;
+        const hasAnyPose = evaluated.some(
+          ({ evaluation }) =>
+            evaluation.ok && valueOfReview(evaluation.poses, member) !== undefined,
+        );
+        if (!hasAnyPose) break;
+        if (!unmoved) {
+          found.push(`cast member "${member.name}" is static, but the scene moves it.`);
+        } else {
+          found.push(`cast member "${member.name}" is static, but the scene gives it a pose.`);
+        }
+        break;
+      }
+      default:
+        return unreachable(member.expectation);
+    }
+
+    const givenShape = evaluated.some(({ targets }) => {
+      const value = valueOfReview(targets, member);
       return (
         typeof value === "object" &&
         value !== null &&
@@ -339,14 +475,13 @@ function stageFindings(
         Reflect.get(value, "shape") !== undefined
       );
     });
-    if (given && member.shapes === undefined)
+    if (givenShape && !member.hasMorph)
       found.push(`cast member "${member.name}" is given shape, but has no shapes.`);
-    if (member.still && !unmoved)
-      found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
+
     if (member.on === undefined) continue;
     const changes = prints.flatMap((print, index) => {
-      const before = samples[index - 1];
-      const now = samples[index];
+      const before = evaluated[index - 1];
+      const now = evaluated[index];
       return before === undefined || now === undefined || print === prints[index - 1]
         ? []
         : [{ from: before.at, at: now.at }];
@@ -371,79 +506,74 @@ function stageFindings(
 
 const SKIN_NAME = /\[data-(cast|path)\s*=\s*(?:"([^"]*)"|'([^']*)'|([\w.-]+))\s*\]/g;
 
-/** One finding for each name an exact `[data-cast=x]` or `[data-path=x]` rule of the skin gives that no
- * member has, or that names as a stroke a member with no path; comments are skipped. */
-function skinFindings(cast: readonly CastName[], css: string | undefined): readonly string[] {
-  const byName = new Map(cast.map((member) => [member.name, member]));
-  const found = new Set<string>();
+function readDomSkin(dom: DomSkinCss | undefined): {
+  readonly css?: string;
+  readonly errors: readonly string[];
+} {
+  if (dom === undefined) return { errors: [] };
+  switch (dom.kind) {
+    case "inline":
+      return { css: dom.css, errors: [] };
+    case "url": {
+      const errors: string[] = [];
+      let css: string | undefined;
+      if (dom.css.protocol === "file:") {
+        try {
+          css = readFileSync(fileURLToPath(dom.css), "utf8");
+        } catch (error) {
+          errors.push(
+            `skin css "${dom.css.href}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+      if (dom.defs !== undefined && dom.defs.protocol === "file:") {
+        try {
+          readFileSync(fileURLToPath(dom.defs), "utf8");
+        } catch (error) {
+          errors.push(
+            `skin defs "${dom.defs.href}" could not be read: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+      return { ...(css === undefined ? {} : { css }), errors };
+    }
+    default:
+      return unreachable(dom);
+  }
+}
+
+/** Checks DOM skin `[data-cast]` and `[data-path]` rules against compiled cast members. */
+function stageSkinFindings(stage: CompiledStage<PoseMode>): readonly string[] {
+  const { css, errors } = readDomSkin(stage.skins.dom);
+  const found = new Set<string>(errors);
   const plain = (css ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
   for (const [, kind, double, single, bare] of plain.matchAll(SKIN_NAME)) {
     const named = double ?? single ?? bare;
     if (named === undefined) continue;
-    const member = byName.get(named);
+    const member = stage.review.byName.get(named);
     if (member === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
-    else if (kind === "path" && member.path === undefined)
+    else if (kind === "path" && !member.hasPath)
       found.add(`skin rule styles "${named}" as a stroke, but it has no path.`);
   }
   return [...found];
 }
 
-/** The path functions drawn in passes where the module's things rest, as the stage draws them: one
- * that fails, one that reads its own box, and paths that read each other in a loop. */
-function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
+/** Resolves stroke paths in passes against rest boxes and emits cycle, self-read, and error findings. */
+function stagePathFindings(stage: CompiledStage<PoseMode>, rest: RestReader): readonly string[] {
   const found: string[] = [];
-  const paths = cast.flatMap(({ name, path }) =>
-    path === undefined ? [] : [[name, path] as const],
-  );
-  // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
-  const measured = Object.keys(rest).length > 0;
-  const loop = drawInPasses(paths, rest, (name, answer, read) => {
-    if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
-    switch (answer.kind) {
-      case "drawn":
-        return restOfBounds(thickened(pathBounds(answer.cubics)));
-      case "failed": {
-        const { error } = answer;
-        if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
-          found.push(
-            `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        return undefined;
-      }
-      default:
-        return unreachable(answer);
-    }
-  });
-  if (loop !== undefined) found.push(describeLoop(loop));
-  return found;
-}
-
-/** Each text function called at each sampled ms: one that throws or answers a non-string, once each. */
-function textFindings(
-  cast: readonly CastName[],
-  ms: readonly number[],
-  durationMs: number,
-): readonly string[] {
-  const found: string[] = [];
-  const driver = manualDriver({ durationMs });
-  const readouts = cast.flatMap(({ name, text }) =>
-    typeof text === "function" ? [[name, text] as const] : [],
-  );
-  const wrong = new Set<string>();
-  for (const at of ms) {
-    driver.seekMs(at);
-    for (const [name, text] of readouts) {
-      if (wrong.has(name)) continue;
-      let why: string | undefined;
-      try {
-        const said: unknown = text(driver.now());
-        if (typeof said !== "string") why = `answers ${typeof said}, not a string`;
-      } catch (error) {
-        why = `fails: ${error instanceof Error ? error.message : String(error)}`;
-      }
-      if (why === undefined) continue;
-      wrong.add(name);
-      found.push(`text of "${name}" ${why} at ${at} ms`);
+  // With no measured boxes, a path may divide by zero; only non-cubic errors fail then.
+  const measured = rest.keys().length > 0;
+  const resolution = resolveStaticStrokes(stage, rest);
+  if (!resolution.ok) {
+    found.push(formatStageError(resolution.error).replace(/\.$/, ""));
+    return found;
+  }
+  for (const name of resolution.selfReads) {
+    found.push(`path "${name}" reads its own rest box`);
+  }
+  for (const { name, error } of resolution.failures) {
+    if (measured || !(error instanceof TypeError && /cubic/i.test(error.message))) {
+      found.push(`path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   return found;
@@ -629,6 +759,19 @@ export function measureSamples(module: SceneModule): Samples {
   return sampleScene(module, { kind: "time", ms });
 }
 
+function stageRestOf(stage: CompiledStage<PoseMode>): RestReader {
+  switch (stage.layout.kind) {
+    case "single":
+      return restReader(stage.layout.rest);
+    case "multi": {
+      const initial = stage.layout.pick(NO_EVENTS);
+      return restReader(stage.layout.rests?.[initial]);
+    }
+    default:
+      return unreachable(stage.layout);
+  }
+}
+
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> &
@@ -640,51 +783,85 @@ export function reviewSceneModule(
   const end = request.to ?? module.durationMs;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
-  const samples = sampleScene(module, { kind: "time", ms });
-  const { beats, cast } = module;
-  const byName = new Map((cast ?? []).map((entry) => [entry.name, entry] as const));
-  // A sampled path names its member first, an item as `dust[3]`; the member is the longest name it starts with.
-  const ownerOfPath = (path: string): CastName | undefined => {
+  const stage = module.stage;
+  if (stage === undefined) {
+    const samples = sampleScene(module, { kind: "time", ms });
+    const findings = [
+      ...reviewValues(
+        samples,
+        request,
+        () => false,
+        () => false,
+        module.limits,
+      ),
+      ...seekFindings(module, samples),
+      ...lateCueFindings(module),
+      ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
+      ...(request.finders ?? []).flatMap((find) => find({ module, samples })),
+    ];
+    return { kind: "reviewed", findings };
+  }
+
+  const evaluated = sampleStageFrames(stage, ms);
+  const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
+  const evalByAt = new Map(evaluated.map((entry) => [entry.at, entry.evaluation] as const));
+  const beats = module.beats ?? [];
+  const ownerOfPath = (path: string): ReviewMemberSpec | undefined => {
     const dotted = path.replace(/\[(\d+)\]/g, ".$1");
-    const whole = byName.get(dotted);
+    const whole = stage.review.byName.get(dotted);
     if (whole !== undefined) return whole;
     for (let cut = dotted.lastIndexOf("."); cut > 0; cut = dotted.lastIndexOf(".", cut - 1)) {
-      const found = byName.get(dotted.slice(0, cut));
+      const found = stage.review.byName.get(dotted.slice(0, cut));
       if (found !== undefined) return found;
     }
     return undefined;
   };
-  const spanOf = (name: string) => beats?.find((beat) => beat.name === name);
-  const shown = (name: string, at: number): boolean => {
-    const on = byName.get(name)?.on;
-    return on === undefined || presentAt(on, spanOf, module.durationMs, at);
-  };
-  // A member shows only while it and every group around it, and an item's list, are shown.
+  const spanOf = (name: string) => beats.find((beat) => beat.name === name);
   const hidden = (path: string, at: number): boolean => {
     const owner = ownerOfPath(path);
     if (owner === undefined) return false;
+    const ev = evalByAt.get(at);
+    if (ev !== undefined && ev.ok) return ev.visibility[owner.name] === false;
     const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
-    return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
+    return [owner.name, ...list, ...owner.groups].some((name) => {
+      const on = stage.review.byName.get(name)?.on;
+      return on !== undefined && !presentAt(on, spanOf, stage.beats.durationMs, at);
+    });
   };
-  const ongoing = (name: string) => byName.get(name)?.ongoing === true;
-  const findings = [
-    ...reviewValues(samples, request, hidden, ongoing, module.limits),
-    ...seekFindings(module, samples),
+  const ongoing = (name: string): boolean => {
+    const spec = stage.review.byName.get(name);
+    if (spec === undefined) return false;
+    switch (spec.expectation) {
+      case "settle":
+        return false;
+      case "ambient":
+      case "static":
+        return true;
+      default:
+        return unreachable(spec.expectation);
+    }
+  };
+  const allFramesOk = evaluated.every((entry) => entry.evaluation.ok);
+  const valueFindings = [
+    ...reviewValues(samples, request, hidden, ongoing, stage.review.limits),
+    ...(allFramesOk ? seekFindings(module, samples) : []),
     ...lateCueFindings(module),
-    ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
+    ...(allFramesOk ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS) : []),
     ...(request.finders ?? []).flatMap((find) => find({ module, samples })),
   ];
-  if (beats === undefined) return { kind: "reviewed", findings };
+  const rest = stageRestOf(stage);
+  const unmeasured =
+    stage.layout.kind === "multi" &&
+    Object.values(stage.layout.rests ?? {}).every((r) => Object.keys(r).length === 0);
+
   return {
     kind: "reviewed",
     findings: [
-      ...findings.map((finding) => labelled(beats, finding)),
-      ...(cast === undefined
-        ? []
-        : stageFindings(cast, beats, samples, module.durationMs, module.unmeasured === true)),
-      ...(cast === undefined ? [] : skinFindings(cast, module.skinCss)),
-      ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
-      ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
+      ...frameEvaluationFindings(evaluated),
+      ...valueFindings.map((finding) => labelled(beats, finding)),
+      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
+      ...stageSkinFindings(stage),
+      ...stagePathFindings(stage, rest),
     ],
   };
 }

@@ -8,7 +8,7 @@ import {
   type Cubic2d,
 } from "@gerak/core";
 
-/** An outline split into its pieces: a cubic that does not start where the last ended starts another. */
+/** Splits cubics into continuous outlines wherever a cubic does not start where the last ended. */
 export function piecesOf(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[] {
   const pieces: Cubic2d[][] = [];
   let last: Cubic2d | undefined;
@@ -22,7 +22,6 @@ export function piecesOf(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d
   return pieces;
 }
 
-/** A closed piece turned to run the way `like` does and start at the cubic start nearest its start. */
 function turnedLike(piece: readonly Cubic2d[], like: readonly Cubic2d[]): readonly Cubic2d[] {
   const first = like[0];
   if (first === undefined || !isClosedPath(piece) || !isClosedPath(like)) return piece;
@@ -37,8 +36,7 @@ function turnedLike(piece: readonly Cubic2d[], like: readonly Cubic2d[]): readon
   return [...way.slice(near), ...way.slice(0, near)];
 }
 
-/** Outlines made to blend, the first being the path: the same pieces in the same order, each with as
- * many cubics in every outline; or why they cannot. */
+/** Matches outlines to blend smoothly by piece count, orientation, and cubic count. */
 export function matchOutlines(
   outlines: readonly (readonly Cubic2d[])[],
 ): { readonly matched: readonly (readonly Cubic2d[])[] } | { readonly reason: string } {
@@ -47,10 +45,10 @@ export function matchOutlines(
   const count = counts[0] ?? 0;
   if (counts.some((each) => each !== count)) {
     const named = counts.map(
-      (each, index) => `${index === 0 ? "path" : `shapes[${index - 1}]`} has ${each}`,
+      (each, index) => `${index === 0 ? "base" : `targets[${index - 1}]`} has ${each}`,
     );
     return {
-      reason: `its outlines have different numbers of pieces (${named.join(", ")}); a piece starts where a cubic does not meet the last.`,
+      reason: `outlines have different piece counts (${named.join(", ")}); a piece starts at a gap.`,
     };
   }
   const first = split[0] ?? [];
@@ -66,19 +64,20 @@ export function matchOutlines(
   };
 }
 
-/** The cubics `shape` asks of matched outlines: 0 is the first, 1 the second, between them each
- * control point is blended; clamped to the first and the last. */
+/** Interpolates matched outlines at `shape` index (clamped to `[0, matched.length - 1]`). */
 export function blendShapes(
   matched: readonly (readonly Cubic2d[])[],
   shape: number,
 ): readonly Cubic2d[] {
   const last = matched.length - 1;
+  if (last < 0) return [];
   const at = Math.min(Math.max(Number.isFinite(shape) ? shape : 0, 0), last);
   const from = Math.min(Math.floor(at), Math.max(last - 1, 0));
   const here = matched[from] ?? [];
   const there = matched[from + 1];
   const share = at - from;
   if (there === undefined || share === 0) return here;
+  if (share === 1) return there.map((d, index): Cubic2d => ({ ...d, id: here[index]?.id ?? d.id }));
   return here.map((c, index): Cubic2d => {
     const d = there[index] ?? c;
     return {

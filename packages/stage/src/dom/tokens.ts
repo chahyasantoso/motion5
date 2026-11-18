@@ -1,4 +1,9 @@
-/** A `:host` rule setting each token as a custom property, in the tokens' order; empty for none. */
+/** Whether `name` is a valid CSS custom property name (`--` then letters, digits, `-`, `_`). */
+export function isTokenName(name: string): boolean {
+  return /^--[A-Za-z0-9_-]+$/.test(name);
+}
+
+/** Builds a `:host { ... }` CSS rule setting each token as a custom property in order. */
 export function cssVariables(tokens: Readonly<Record<string, string>>): string {
   const entries = Object.entries(tokens);
   if (entries.length === 0) return "";
@@ -9,9 +14,4 @@ export function cssVariables(tokens: Readonly<Record<string, string>>): string {
     return `${name}: ${value};`;
   });
   return `:host { ${lines.join(" ")} }`;
-}
-
-/** Whether `name` is a custom property name a token may have: `--` then letters, digits, `-` or `_`. */
-export function isTokenName(name: string): boolean {
-  return /^--[A-Za-z0-9_-]+$/.test(name);
 }

@@ -1,8 +1,20 @@
-import { stageModuleOf, type StageValues } from "@gerak/dom";
-import { readStageModule, type StageModule } from "@gerak/stage";
+import {
+  compileStage,
+  formatStageError,
+  isStage2d,
+  isStageDefinition,
+  type CompiledStage,
+  type PoseMode,
+  type StageDefinition,
+} from "@gerak/stage";
 
 /** A stage module as the pieces' pages play it. */
-export type LoadedStage = StageModule<string, StageValues>;
+export interface LoadedStage {
+  readonly kind: "stage";
+  readonly stage: CompiledStage;
+  readonly definition: StageDefinition<PoseMode>;
+  readonly exports: Readonly<Record<string, unknown>>;
+}
 
 /** A module glob as Vite builds it: a path to the loader of that module. */
 export type ModuleGlob = Readonly<Record<string, () => Promise<unknown>>>;
@@ -27,16 +39,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-/** A stage module from what a file exports, or why it is not one. */
+/** Compiles a stage module from what a file exports, or returns why it is not one. */
 export function stageOf(value: unknown): LoadedStage | string {
-  const read = readStageModule(value);
-  return "reason" in read ? read.reason : stageModuleOf(read);
-}
-
-/** A loaded piece: its stage module and every export its file has, for the marks it names. */
-export interface LoadedPiece {
-  readonly module: LoadedStage;
-  readonly exports: Readonly<Record<string, unknown>>;
+  const exports: Readonly<Record<string, unknown>> = isRecord(value) ? value : {};
+  const candidate: unknown = isStageDefinition(value) ? value : Reflect.get(exports, "default");
+  if (!isStageDefinition(candidate)) {
+    return "Stage module must default-export `defineStage(...)`.";
+  }
+  const compiled = compileStage(candidate);
+  if (!compiled.ok) {
+    return compiled.errors.map(formatStageError).join("\n");
+  }
+  if (!isStage2d(compiled.stage)) {
+    return "3D stages are not supported on DOM stage pages.";
+  }
+  return {
+    kind: "stage",
+    stage: compiled.stage,
+    definition: candidate,
+    exports,
+  };
 }
 
 /** The lookups a page makes over the module globs of a pieces folder. */
@@ -50,7 +72,7 @@ export interface PieceLookup {
   /** Imports the component module at a path `componentFileOf` found, or says it is not one. */
   loadComponentModule(path: string): Promise<unknown>;
   /** The stage module `<brief>/src/<name>.ts`, or why there is none; it never throws. */
-  loadStageModule(name: string): Promise<LoadedPiece | string>;
+  loadStageModule(name: string): Promise<LoadedStage | string>;
 }
 
 /** The lookups over a pieces folder's `<brief>/src/*.ts` and `<brief>/src/*.tsx` module globs. */
@@ -89,9 +111,8 @@ export function pieceLookup(pieceFiles: ModuleGlob, componentFiles: ModuleGlob):
       if (load === undefined) return `No stage piece named "${name}" (${file.path}).`;
       try {
         const loaded = await load();
-        const exports: Readonly<Record<string, unknown>> = isRecord(loaded) ? loaded : {};
-        const module = stageOf(exports);
-        return typeof module === "string" ? `${file.path}: ${module}` : { module, exports };
+        const result = stageOf(loaded);
+        return typeof result === "string" ? `${file.path}: ${result}` : result;
       } catch (error) {
         const why = error instanceof Error ? error.message : String(error);
         return `No stage piece named "${name}" (${file.path}): ${why}`;

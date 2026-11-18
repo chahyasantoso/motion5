@@ -1,5 +1,4 @@
 [
   "isRecord: packages/moves-tools/src/design.ts, packages/moves/src/moves/declare.ts",
-  "isRecord: packages/stage/src/module.ts, packages/tools/src/pages/live/code-panel.tsx, packages/tools/src/pages/live/host.tsx, packages/tools/src/scene/joints.ts, packages/tools/src/vite/index.ts",
   "unreachable: packages/core/src/utility/unreachable.ts, packages/tools/src/page/unreachable.ts"
 ]

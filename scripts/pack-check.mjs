@@ -134,13 +134,15 @@ export function typeCheckFiles(specifiers) {
 
 /** A minimal stage module for the check's one brief. */
 const DEMO_PIECE = `import { slide } from "@gerak/moves";
-import { actor, story } from "@gerak/stage";
+import { defineStage } from "@gerak/stage";
 
-export const beats = story(2000, { go: [0, 2000] });
-export const cast = { box: actor() };
-export const skins = { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } };
-export const scene = (time) => ({
-  box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
+export default defineStage({
+  beats: { go: [0, 2000] },
+  cast: (m) => ({ box: m.box() }),
+  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
+  scene: ({ time, beats }) => ({
+    box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
+  }),
 });
 `;
 
@@ -362,52 +364,53 @@ function installSubset(dir, packages, tarballs, lock, peers) {
   return run.code === 0 ? undefined : firstErrorLine(run.err);
 }
 
-const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, span, type Pose2d, type Time } from "@gerak/core";
-import { actor, many, story } from "@gerak/stage";
-
-export const beats = story(3000, { intro: [0, 1200], follow: [800, 2000], hold: [2000, 3000] });
-export const cast = {
-  dot: actor(),
-  bars: many(3),
-  arc: actor({
-    path: arcPath({
-      x0: 200,
-      y0: 360,
-      x1: 440,
-      y1: 360,
-      rx: 120,
-      ry: 120,
-      sweep: true,
-    }),
-  }),
-};
-export const skins = {
-  dom: {
-    css: [
-      '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
-      '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
-      '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
-    ].join("\\n"),
-  },
-};
+const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, span, type Pose2d } from "@gerak/core";
+import { defineStage } from "@gerak/stage";
 
 const [first, second] = chain([1000, 1000], { overlap: 200 });
 const row = lanes([1, 1, 1], 0.25);
 const tail = span(1400, 2200);
 
-export const scene = (time: Time) => {
-  const p = ease.cubicOut(first.of(time).progress);
-  const q = ease.quadOut(tail.of(time).progress);
-  return {
-    dot: { x: mix(-160, 0, p), opacity: mix(0, 1, p) } satisfies Pose2d,
-    bars: [0, 1, 2].map(
-      (i): Pose2d => ({
-        y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
+export default defineStage({
+  beats: { intro: [0, 1200], follow: [800, 2000], hold: [2000, 3000] },
+  cast: (m) => ({
+    dot: m.box(),
+    bars: m.many(3),
+    arc: m.stroke(
+      arcPath({
+        x0: 200,
+        y0: 360,
+        x1: 440,
+        y1: 360,
+        rx: 120,
+        ry: 120,
+        sweep: true,
       }),
     ),
-    arc: { drawn: mix(0, 1, q) } satisfies Pose2d,
-  };
-};
+  }),
+  skins: {
+    dom: {
+      css: [
+        '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
+        '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
+        '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
+      ].join("\\n"),
+    },
+  },
+  scene: ({ time }) => {
+    const p = ease.cubicOut(first.of(time).progress);
+    const q = ease.quadOut(tail.of(time).progress);
+    return {
+      dot: { x: mix(-160, 0, p), opacity: mix(0, 1, p) } satisfies Pose2d,
+      bars: [0, 1, 2].map(
+        (i): Pose2d => ({
+          y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
+        }),
+      ),
+      arc: { drawn: mix(0, 1, q) } satisfies Pose2d,
+    };
+  },
+});
 `;
 
 const STYLED_CARD = `import { defineStyle } from "@gerak/moves";
@@ -422,16 +425,17 @@ export const card = defineStyle({
 });
 `;
 
-const STYLED_PIECE = (styleName, quality) => `import type { Time } from "@gerak/core";
-import { drop } from "@gerak/moves";
-import { actor, story } from "@gerak/stage";
+const STYLED_PIECE = (styleName, quality) => `import { drop } from "@gerak/moves";
+import { defineStage } from "@gerak/stage";
 
-${styleName === undefined ? "" : `export const style = ${JSON.stringify(styleName)};\n`}export const design = { box: { y: { fall: ${JSON.stringify(quality)} } } };
-export const beats = story(2000, { fall: [0, 1200], hold: [1200, 2000] });
-export const cast = { box: actor() };
-export const skins = { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } };
-export const scene = (time: Time) => ({
-  box: drop({ distance: 200, squash: 0.2 }, beats.fall.of(time)),
+export default defineStage({
+  ${styleName === undefined ? "" : `style: ${JSON.stringify(styleName)},\n  `}design: { box: { y: { fall: ${JSON.stringify(quality)} } } },
+  beats: { fall: [0, 1200], hold: [1200, 2000] },
+  cast: (m) => ({ box: m.box() }),
+  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
+  scene: ({ time, beats }) => ({
+    box: drop({ distance: 200, squash: 0.2 }, beats.fall.of(time)),
+  }),
 });
 `;
 

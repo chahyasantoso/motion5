@@ -1,8 +1,9 @@
 import { elapsedOf, type Time } from "@gerak/core";
+import { defineStage } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import { readSceneModule, reviewSceneModule } from "@gerak/tools/scene";
 import { libraryFinder } from "../src/review";
-import * as stageClean from "../../tools/test/fixtures/stage-clean";
+import stageClean from "../../tools/test/fixtures/stage-clean";
 
 const limits = { hold: 500, jump: 1000, turn: 150, ratio: 1.5 };
 
@@ -36,9 +37,9 @@ describe("a design checked by the review", () => {
   });
 
   it("measures each beat of a stage module by its own quality", () => {
-    const stage = {
+    const stage = defineStage({
       ...stageClean,
-      scene: (time: Time) => {
+      scene: ({ time }) => {
         const at = ms(time);
         const rise = Math.min(1, Math.max(0, at - 400) / 1000);
         const fall = Math.min(1, Math.max(0, at - 1400) / 600);
@@ -47,10 +48,10 @@ describe("a design checked by the review", () => {
           word: [{ x: 0 }, { x: 0 }],
         };
       },
-    };
+    });
     const found = (design: unknown): readonly string[] => {
       const plain = review(stage);
-      return review({ ...stage, design }).filter((line) => !plain.includes(line));
+      return review(defineStage({ ...stage, design })).filter((line) => !plain.includes(line));
     };
     expect(found({ dot: { y: { go: "heavy", out: "light" } } })).toEqual([]);
     const wrong = found({ dot: { y: { go: "light", out: "heavy" } } });
@@ -80,7 +81,7 @@ describe("a design checked by the review", () => {
     const wrong = designFindings({ ball: { y: 3 } });
     expect(wrong).toHaveLength(1);
     expect(wrong[0]).toContain("ball.y");
-    const stage = review({ ...stageClean, design: "heavy" });
+    const stage = review(defineStage({ ...stageClean, design: "heavy" }));
     expect(stage.some((line) => line.startsWith("The module's `design`"))).toBe(true);
   });
 
@@ -91,11 +92,13 @@ describe("a design checked by the review", () => {
   });
 
   it("reads and checks the design of a stage module", () => {
-    const read = readSceneModule({ ...stageClean, design: { dot: { x: "heavy" } } });
+    const read = readSceneModule(defineStage({ ...stageClean, design: { dot: { x: "heavy" } } }));
     if ("reason" in read) throw new Error(read.reason);
     expect(read.design).toEqual({ dot: { x: "heavy" } });
     const plain = review(stageClean);
-    const checked = review({ ...stageClean, design: { dot: { x: "calm" }, dust: { x: "calm" } } });
+    const checked = review(
+      defineStage({ ...stageClean, design: { dot: { x: "calm" }, dust: { x: "calm" } } }),
+    );
     expect(checked.filter((line) => !plain.includes(line))).toEqual([
       expect.stringContaining('"dust"'),
     ]);

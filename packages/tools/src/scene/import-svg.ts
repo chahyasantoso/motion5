@@ -470,22 +470,23 @@ function asCubics(cubics: readonly (readonly number[])[]): readonly Cubic2d[] {
   }));
 }
 
-/** The parts as members of a `cast` object, one `actor` each. */
-function castSource(parts: readonly Part[]): string {
+/** The parts as members of `cast: (m) => ({ ... })`, one `m.stroke` or `m.morph` each. */
+function castSource(parts: readonly Part[], indent = "    "): string {
   return parts
-    .map(
-      ({ name, cubics, shapes }) =>
-        `  "${name}": actor({\n    still: true,\n    path: [\n${cubics.map((line) => `      ${line}`).join("\n")}\n    ],${shapesSource(shapes)}\n  }),`,
-    )
+    .map(({ name, cubics, shapes }) => {
+      const baseLines = cubics.map((line) => `${indent}  ${line}`).join("\n");
+      if (shapes === undefined) {
+        return `${indent}"${name}": m.stroke([\n${baseLines}\n${indent}]).static(),`;
+      }
+      const targetLines = shapes
+        .map(
+          (lines) =>
+            `${indent}    [\n${lines.map((line) => `${indent}      ${line}`).join("\n")}\n${indent}    ],`,
+        )
+        .join("\n");
+      return `${indent}"${name}": m.morph(\n${indent}  [\n${baseLines}\n${indent}  ],\n${indent}  [\n${targetLines}\n${indent}  ],\n${indent}).static(),`;
+    })
     .join("\n");
-}
-
-/** A member's `shapes` option as source, or nothing when it has none. */
-function shapesSource(shapes: Part["shapes"]): string {
-  if (shapes === undefined) return "";
-  const outline = (lines: readonly string[]) =>
-    `      [\n${lines.map((line) => `        ${line}`).join("\n")}\n      ],`;
-  return `\n    shapes: [\n${shapes.map(outline).join("\n")}\n    ],`;
 }
 
 /** The parts' two skin rules each, as the text of a template literal. */
@@ -502,28 +503,25 @@ function moduleSource(
   const cast = castSource(built.parts);
   const css = cssSource(built.parts);
   const defs =
-    built.defs.length === 0 ? "" : `\n    defs: \`${templateText(built.defs.join("\n"))}\`,`;
+    built.defs.length === 0 ? "" : `\n      defs: \`${templateText(built.defs.join("\n"))}\`,`;
   return `// Imported from ${basename(source)} by gerak import-svg: flat parts in paint order; rename a part by replacing its quoted name.
-import type { Time } from "@gerak/core";
-import { actor, story } from "@gerak/stage";
+import { defineStage } from "@gerak/stage";
 
-export const beats = story(1000, { show: [0, 1000] });
-
-export const frame = { width: ${frame.width}, height: ${frame.height} };
-
-export const cast = {
+export default defineStage({
+  beats: { show: [0, 1000] },
+  frame: { width: ${frame.width}, height: ${frame.height} },
+  cast: (m) => ({
 ${cast}
-};
-
-export const skins = {
-  dom: {
-    css: \`
+  }),
+  skins: {
+    dom: {
+      css: \`
 ${css}
 \`,${defs}
+    },
   },
-};
-
-export const scene = (_time: Time) => ({});
+  scene: () => ({}),
+});
 `;
 }
 

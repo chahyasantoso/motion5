@@ -97,18 +97,19 @@ describe("a piece's style lively share", () => {
 
   it("leaves out only the beat a design names, and all beats when it names none", async () => {
     const stage = (design: string): string => `
-import { story } from "@gerak/stage";
-export const style = "reel";
-export const beats = story(1000, { a: [0, 400], b: [600, 1000] });
-export const cast = {};
-export const skins = {};
-export const design = ${design};
-export const scene = (time: { clock: { kind: string; elapsed?: number } }) => {
-  const at = time.clock.elapsed ?? 0;
-  const t = at < 500 ? Math.min(1, at / 400) : Math.min(1, Math.max(0, (at - 600) / 400));
-  const y = 300 * (1 - t);
-  return { b0: { y }, b1: { y }, b2: { y } };
-};
+import { defineStage } from "@gerak/stage";
+export default defineStage({
+  style: "reel",
+  beats: { a: [0, 400], b: [600, 1000] },
+  cast: (m) => ({ b0: m.box(), b1: m.box(), b2: m.box() }),
+  design: ${design},
+  scene: ({ time }) => {
+    const at = "elapsed" in time.clock ? time.clock.elapsed : 0;
+    const t = at < 500 ? Math.min(1, at / 400) : Math.min(1, Math.max(0, (at - 600) / 400));
+    const y = 300 * (1 - t);
+    return { b0: { y }, b1: { y }, b2: { y } };
+  },
+});
 `;
     const names = (beat: string): string =>
       `{ b0: { y: ${beat} }, b1: { y: ${beat} }, b2: { y: ${beat} } }`;

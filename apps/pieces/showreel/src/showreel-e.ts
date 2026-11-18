@@ -21,17 +21,7 @@ import {
   wobble,
   smudge,
 } from "@gerak/moves";
-import {
-  actor,
-  frame as frameOf,
-  group,
-  letters,
-  many,
-  restOf,
-  story,
-  words,
-  type Rest,
-} from "@gerak/stage";
+import { defineStage, type RestReader } from "@gerak/stage";
 import { bump } from "./moves/bump";
 import { crouch } from "./moves/crouch";
 import { dangle } from "./moves/dangle";
@@ -51,37 +41,6 @@ import { tint } from "./moves/tint";
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;
 const landOf = (i: number): number => LAND[i] ?? LAND[0];
 
-export const beats = story(15000, {
-  origin: [0, 850],
-  launch: [850, 1450],
-  anticipate: [1000, 3900],
-  floor: [3350, 6000],
-  weight: [3460, 6350],
-  thud0: [3880, 4580],
-  thud1: [4045, 4745],
-  thud2: [4210, 4910],
-  thud3: [4375, 5075],
-  thud4: [4540, 5240],
-  thud5: [4795, 5495],
-  overlap: [6150, 9550],
-  drop: [9450, 10230],
-  landing: [9850, 10400],
-  settle: [10230, 11550],
-  burst: [10230, 10930],
-  underline: [10800, 12500],
-  wipe: [11550, 13050],
-  collapse: [12200, 12920],
-  finale: [13050, 15000],
-  leap: [13250, 13900],
-  period: [13900, 14400],
-  credit: [14250, 15000],
-  hudOrigin: [0, 1000],
-  hudAnticipation: [1000, 3460],
-  hudWeight: [3460, 6150],
-  hudOverlap: [6150, 9450],
-  hudSettle: [9450, 13000],
-});
-
 const THUDS = ["thud0", "thud1", "thud2", "thud3", "thud4", "thud5"] as const;
 const thudOf = (i: number) => THUDS[i] ?? THUDS[0];
 
@@ -99,29 +58,29 @@ function stroke(
 }
 
 /** Where the full stop lands: on the final line's baseline, just after its last word. */
-function periodPoint(rest: Rest): { x: number; y: number } {
-  const slot = restOf(rest, "slot");
+function periodPoint(rest: RestReader): { x: number; y: number } {
+  const slot = rest.get("slot");
   return { x: slot.x - slot.width / 2 + 7, y: slot.y - 5 };
 }
 
 /** The WEIGHT floor's height: the word's baseline. */
-function floorY(rest: Rest): number {
-  const w = restOf(rest, "weight.0");
+function floorY(rest: RestReader): number {
+  const w = rest.get("weight.0");
   return w.y + w.height / 2 - 16;
 }
 
 const ARC_APEX = 430;
 
-const upPath = (rest: Rest) => {
-  const dot = restOf(rest, "dot");
+const upPath = (rest: RestReader) => {
+  const dot = rest.get("dot");
   const from = { x: dot.x, y: dot.y + 20 };
   const to = { x: dot.x, y: dot.y - 520 };
   return stroke(from, { x: dot.x, y: dot.y - 150 }, { x: dot.x, y: dot.y - 320 }, to);
 };
 
-const floorPath = (rest: Rest) => {
-  const first = restOf(rest, "weight.0");
-  const last = restOf(rest, "weight.5");
+const floorPath = (rest: RestReader) => {
+  const first = rest.get("weight.0");
+  const last = rest.get("weight.5");
   const y = floorY(rest);
   const left = first.x;
   const right = last.x;
@@ -129,10 +88,10 @@ const floorPath = (rest: Rest) => {
   return stroke({ x: left, y }, { x: left + third, y }, { x: right - third, y }, { x: right, y });
 };
 
-const underlinePath = (rest: Rest) => {
-  const dot = restOf(rest, "dot");
-  const first = restOf(rest, "settle.0");
-  const last = restOf(rest, "settle.5");
+const underlinePath = (rest: RestReader) => {
+  const dot = rest.get("dot");
+  const first = rest.get("settle.0");
+  const last = rest.get("settle.5");
   const half = Math.max(dot.x - (first.x - first.width / 2), last.x + last.width / 2 - dot.x) - 6;
   const left = dot.x - half;
   const right = dot.x + half;
@@ -147,8 +106,8 @@ const underlinePath = (rest: Rest) => {
 };
 
 // The leap's quadratic arc as a cubic: the same curve `lob` flies with this apex.
-const arcPath = (rest: Rest) => {
-  const a = restOf(rest, "dot");
+const arcPath = (rest: RestReader) => {
+  const a = rest.get("dot");
   const b = periodPoint(rest);
   const c = { x: (a.x + b.x) / 2, y: Math.min(a.y, b.y) - ARC_APEX };
   return stroke(
@@ -161,58 +120,10 @@ const arcPath = (rest: Rest) => {
 
 const DUST = 18;
 
-export const cast = {
-  camera: group({
-    wipe: actor({ on: ["wipe"] }),
-    trailUp: actor({ path: upPath, on: ["launch"] }),
-    floor: actor({ path: floorPath, on: ["floor"] }),
-    underline: actor({ path: underlinePath, on: ["underline"] }),
-    trailArc: actor({ path: arcPath, on: [["leap", "period"]] }),
-    ant: letters("ANTICIPATE", { on: ["anticipate"] }),
-    weight: letters("WEIGHT", { on: ["weight"] }),
-    dust: many(
-      Array.from({ length: DUST }, (_, j) => j),
-      (j) => actor({ on: [thudOf(Math.floor(j / 3))] }),
-    ),
-    overlap: group({ bar: actor({ still: true }), hang: letters("OVERLAP") }, { on: ["overlap"] }),
-    settle: letters("SETTLE", { on: [["settle", "collapse"]] }),
-    fin: group(
-      { line: words("Timing is everything", { still: false }), slot: actor({ still: true }) },
-      { on: ["finale"], still: true },
-    ),
-    credit: actor({ text: "CLAUDE · MOTION DESIGN · REEL 2026", on: ["credit"] }),
-    ringLaunch: actor({ on: ["launch"] }),
-    ringLand: actor({ on: ["landing"] }),
-    ringBurst: actor({ on: ["burst"] }),
-    ringPeriod: actor({ on: ["period"] }),
-    dot: actor({
-      on: [
-        ["origin", "launch"],
-        ["drop", "finale"],
-      ],
-    }),
-  }),
-  vignette: actor({ still: true }),
-  hud: group(
-    {
-      hudOrigin: actor({ text: "00 — ORIGIN", on: ["hudOrigin"], still: false }),
-      hudAnticipation: actor({ text: "01 — ANTICIPATION", on: ["hudAnticipation"], still: true }),
-      hudWeight: actor({ text: "02 — WEIGHT", on: ["hudWeight"], still: true }),
-      hudOverlap: actor({ text: "03 — OVERLAP", on: ["hudOverlap"], still: true }),
-      hudSettle: actor({ text: "04 — SETTLE", on: ["hudSettle"], still: true }),
-    },
-    { still: true },
-  ),
-};
-
-export const frame = frameOf({ width: 1280, height: 720 });
-
 const HANG = [140, 185, 160, 200, 170, 210, 180] as const;
 const hangLength = (i: number) => HANG[i] ?? HANG[0];
 
-export const skins = {
-  dom: {
-    css: `
+const domCss = `
 [data-stage="frame"] {
   --ink: #101114; --paper: #f3efe6; --coral: #ff5b3a; --mute: #7d8290;
   background: var(--ink); color: var(--paper);
@@ -297,9 +208,7 @@ ${HANG.map((h, i) => `[data-cast="hang.${i}"] { --string: ${h}px; }`).join("\n")
 [data-cast^="hud"] { font: 12px/1 Consolas, "Courier New", monospace; letter-spacing: 0.18em; color: var(--mute); }
 [data-cast="hudOrigin"], [data-cast="hudAnticipation"], [data-cast="hudWeight"],
 [data-cast="hudOverlap"], [data-cast="hudSettle"] { position: absolute; left: 0; top: 0; }
-`,
-  },
-};
+`;
 
 const at = (from: number, to: number, time: Time): Time => span(from, to).of(time);
 
@@ -327,8 +236,8 @@ const burstAt = (i: number) => 10230 + (Math.abs(i - 2.5) - 0.5) * 55;
 const collapseAt = (i: number) => 12300 + (2 - (Math.abs(i - 2.5) - 0.5)) * 50;
 const SUCKED = 520;
 
-function dot(time: Time, rest: Rest): Pose2d {
-  const home = restOf(rest, "dot");
+function dot(time: Time, rest: RestReader): Pose2d {
+  const home = rest.get("dot");
   const stop = periodPoint(rest);
   const ex = stop.x - home.x;
   const ey = stop.y - home.y;
@@ -470,12 +379,12 @@ function floor(time: Time): Pose2d {
   ]);
 }
 
-function dust(time: Time, j: number, rest: Rest): Pose2d {
+function dust(time: Time, j: number, rest: RestReader): Pose2d {
   const li = Math.floor(j / 3);
   const kind = j % 3;
   const side = kind === 0 ? -1 : kind === 1 ? 1 : li % 2 ? 1 : -1;
-  const letter = restOf(rest, `weight.${li}`);
-  const me = restOf(rest, `dust.${j}`);
+  const letter = rest.get(`weight.${li}`);
+  const me = rest.get(`dust.${j}`);
   const size = (0.6 + 0.3 * kind) * (li === 5 ? 1.5 : 1);
   const land = landOf(li);
   return combine([
@@ -525,9 +434,9 @@ function hang(time: Time, i: number): Pose2d {
 
 const TURNS = [-48, 30, -16, 18, -30, 50] as const;
 
-function settle(time: Time, i: number, rest: Rest): Pose2d {
-  const home = restOf(rest, "dot");
-  const me = restOf(rest, `settle.${i}`);
+function settle(time: Time, i: number, rest: RestReader): Pose2d {
+  const home = rest.get("dot");
+  const me = rest.get(`settle.${i}`);
   const dx = home.x - me.x;
   const dy = home.y - me.y;
   const turn = TURNS[i] ?? 0;
@@ -553,9 +462,9 @@ function underline(time: Time): Pose2d {
   ]);
 }
 
-function flood(time: Time, rest: Rest): Pose2d {
-  const home = restOf(rest, "dot");
-  const me = restOf(rest, "wipe");
+function flood(time: Time, rest: RestReader): Pose2d {
+  const home = rest.get("dot");
+  const me = rest.get("wipe");
   const x = home.x - (me.x - me.width / 2);
   const y = home.y - (me.y - me.height / 2);
   return sequence(time, [
@@ -572,7 +481,7 @@ function flood(time: Time, rest: Rest): Pose2d {
 
 function ring(
   time: Time,
-  rest: Rest,
+  rest: RestReader,
   name: string,
   point: { x: number; y: number },
   from: number,
@@ -580,7 +489,7 @@ function ring(
   grow: number,
   alpha: number,
 ): Pose2d {
-  const me = restOf(rest, name);
+  const me = rest.get(name);
   return combine([
     { x: point.x - me.x, y: point.y - me.y, scale: 0.2, opacity: alpha },
     shockwave({ grow }, at(from, from + ms, time)),
@@ -598,39 +507,101 @@ function word(time: Time, i: number): Pose2d {
 
 const indices = (count: number): readonly number[] => Array.from({ length: count }, (_, i) => i);
 
-export const scene = (time: Time, _events: Events, rest: Rest) => {
-  const home = restOf(rest, "dot");
-  const stop = periodPoint(rest);
-  const credit = at(14250, 14850, time);
-  return {
-    camera: camera(time),
-    wipe: flood(time, rest),
-    trailUp: streak({ arrive: 0.43, lag: 0.33 }, at(850, 1450, time)),
-    floor: floor(time),
-    underline: underline(time),
-    trailArc: streak({ arrive: 0.65, lag: 0.12 }, at(13250, 14250, time)),
-    ant: indices(10).map((i) => ant(time, i)),
-    weight: indices(6).map((i) => weight(time, i)),
-    dust: indices(DUST).map((j) => dust(time, j, rest)),
-    overlap: sequence(time, [[OVERLAP, bar]]),
-    bar: {},
-    hang: indices(7).map((i) => sequence(time, [[OVERLAP, (t) => hang(t, i)]])),
-    settle: indices(6).map((i) => settle(time, i, rest)),
-    fin: {},
-    line: indices(3).map((i) => word(time, i)),
-    slot: {},
-    credit: combine([rise({ distance: 14 }, credit), fade({}, credit)]),
-    ringLaunch: ring(time, rest, "ringLaunch", { x: home.x, y: home.y + 38 }, 850, 600, 11, 0.9),
-    ringLand: ring(time, rest, "ringLand", { x: home.x, y: home.y + 18 }, 9850, 550, 8, 0.8),
-    ringBurst: ring(time, rest, "ringBurst", home, 10230, 700, 21, 0.9),
-    ringPeriod: ring(time, rest, "ringPeriod", { x: stop.x, y: stop.y + 6 }, 13900, 500, 4, 0.7),
-    dot: dot(time, rest),
-    vignette: {},
-    hud: {},
-    hudOrigin: fade({}, at(200, 600, time)),
-    hudAnticipation: {},
-    hudWeight: {},
-    hudOverlap: {},
-    hudSettle: {},
-  };
-};
+export default defineStage({
+  frame: { width: 1280, height: 720 },
+  beats: {
+    origin: [0, 850],
+    launch: [850, 1450],
+    anticipate: [1000, 3900],
+    floor: [3350, 6000],
+    weight: [3460, 6350],
+    thud0: [3880, 4580],
+    thud1: [4045, 4745],
+    thud2: [4210, 4910],
+    thud3: [4375, 5075],
+    thud4: [4540, 5240],
+    thud5: [4795, 5495],
+    overlap: [6150, 9550],
+    drop: [9450, 10230],
+    landing: [9850, 10400],
+    settle: [10230, 11550],
+    burst: [10230, 10930],
+    underline: [10800, 12500],
+    wipe: [11550, 13050],
+    collapse: [12200, 12920],
+    finale: [13050, 15000],
+    leap: [13250, 13900],
+    period: [13900, 14400],
+    credit: [14250, 15000],
+    hudOrigin: [0, 1000],
+    hudAnticipation: [1000, 3460],
+    hudWeight: [3460, 6150],
+    hudOverlap: [6150, 9450],
+    hudSettle: [9450, 13000],
+  },
+  cast: (m) => ({
+    camera: m.group({
+      wipe: m.box().on("wipe"),
+      trailUp: m.stroke(upPath).on("launch"),
+      floor: m.stroke(floorPath).on("floor"),
+      underline: m.stroke(underlinePath).on("underline"),
+      trailArc: m.stroke(arcPath).on(["leap", "period"]),
+      ant: m.letters("ANTICIPATE").on("anticipate"),
+      weight: m.letters("WEIGHT").on("weight"),
+      dust: m.many(
+        Array.from({ length: DUST }, (_, j) => j),
+        (j) => m.box().on(thudOf(Math.floor(j / 3))),
+      ),
+      overlap: m.group({ bar: m.box().static(), hang: m.letters("OVERLAP") }).on("overlap"),
+      settle: m.letters("SETTLE").on(["settle", "collapse"]),
+      fin: m
+        .group({ line: m.words("Timing is everything"), slot: m.box().static() })
+        .on("finale")
+        .static(),
+      credit: m.text("CLAUDE · MOTION DESIGN · REEL 2026").on("credit"),
+      ringLaunch: m.box().on("launch"),
+      ringLand: m.box().on("landing"),
+      ringBurst: m.box().on("burst"),
+      ringPeriod: m.box().on("period"),
+      dot: m.box().on(["origin", "launch"], ["drop", "finale"]),
+    }),
+    vignette: m.box().static(),
+    hud: m
+      .group({
+        hudOrigin: m.text("00 — ORIGIN").on("hudOrigin"),
+        hudAnticipation: m.text("01 — ANTICIPATION").on("hudAnticipation").static(),
+        hudWeight: m.text("02 — WEIGHT").on("hudWeight").static(),
+        hudOverlap: m.text("03 — OVERLAP").on("hudOverlap").static(),
+        hudSettle: m.text("04 — SETTLE").on("hudSettle").static(),
+      })
+      .static(),
+  }),
+  skins: { dom: { css: domCss } },
+  scene: ({ time, rest }) => {
+    const home = rest.get("dot");
+    const stop = periodPoint(rest);
+    const credit = at(14250, 14850, time);
+    return {
+      camera: camera(time),
+      wipe: flood(time, rest),
+      trailUp: streak({ arrive: 0.43, lag: 0.33 }, at(850, 1450, time)),
+      floor: floor(time),
+      underline: underline(time),
+      trailArc: streak({ arrive: 0.65, lag: 0.12 }, at(13250, 14250, time)),
+      ant: indices(10).map((i) => ant(time, i)),
+      weight: indices(6).map((i) => weight(time, i)),
+      dust: indices(DUST).map((j) => dust(time, j, rest)),
+      overlap: sequence(time, [[OVERLAP, bar]]),
+      hang: indices(7).map((i) => sequence(time, [[OVERLAP, (t) => hang(t, i)]])),
+      settle: indices(6).map((i) => settle(time, i, rest)),
+      line: indices(3).map((i) => word(time, i)),
+      credit: combine([rise({ distance: 14 }, credit), fade({}, credit)]),
+      ringLaunch: ring(time, rest, "ringLaunch", { x: home.x, y: home.y + 38 }, 850, 600, 11, 0.9),
+      ringLand: ring(time, rest, "ringLand", { x: home.x, y: home.y + 18 }, 9850, 550, 8, 0.8),
+      ringBurst: ring(time, rest, "ringBurst", home, 10230, 700, 21, 0.9),
+      ringPeriod: ring(time, rest, "ringPeriod", { x: stop.x, y: stop.y + 6 }, 13900, 500, 4, 0.7),
+      dot: dot(time, rest),
+      hudOrigin: fade({}, at(200, 600, time)),
+    };
+  },
+});

@@ -12,7 +12,7 @@ const MAX_SIGNATURE = 140;
 /** Packages with a scene-facing entry, each with the entry files a caller imports. */
 export const PACKAGES = [
   { dir: "core", entries: ["src/index.ts"] },
-  { dir: "stage", entries: ["src/index.ts"] },
+  { dir: "stage", entries: ["src/index.ts", "src/dom/index.ts"] },
   { dir: "player", entries: ["src/index.ts"] },
   { dir: "dom", entries: ["src/index.ts"] },
   { dir: "react", entries: ["src/index.ts"] },
@@ -44,7 +44,33 @@ const CORE_INTROS = {
   utility:
     "Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard. Reach for them instead of writing your own.",
 };
-const CORE_GROUPS = Object.keys(CORE_INTROS);
+
+/** Stage's groups in learning order and their 1-line reference summaries. */
+const STAGE_INTROS = {
+  runtime:
+    "Authoring entry point (`defineStage`), frame evaluation (`evaluateFrame`), and scene shape validation. Reach for this group when writing or running a stage piece.",
+  beats:
+    "Compiled timeline spans (`compileBeats`) and stretch visibility (`presentAt`). Reach for this group when mapping named story intervals.",
+  cast: "Cast builders (`m.box`, `m.text`, `m.readout`, `m.stroke`, `m.morph`, `m.many`, `m.letters`, `m.words`, `m.group`), outline morphing, and dependency-ordered stroke resolution.",
+  layout:
+    "Stage frame defaults, measured `RestReader` lookup, multi-layout specs, and cross-layout `carry` transitions.",
+  skins:
+    "DOM stylesheet/defs skin compilation (`inline` strings or `url` assets) and typed renderer skin extension.",
+  review:
+    "Author-declared review expectations (`settle`, `ambient`, `static`) and per-target step limits compiled onto `CompiledStage.review`.",
+  compile:
+    "Stage compilation (`compileStage`), flattened typed scene target inference, and closed `StageError` formatting.",
+  dom: "Browser CSS custom property helpers exported from `@gerak/stage/dom` (`cssVariables`, `isTokenName`).",
+};
+
+const GROUP_INTROS = {
+  core: CORE_INTROS,
+  stage: STAGE_INTROS,
+};
+const GROUP_ORDER = {
+  core: Object.keys(CORE_INTROS),
+  stage: Object.keys(STAGE_INTROS),
+};
 
 /** The read-whole pages: the package whose export index they carry, and the page. */
 export const READ_WHOLE = [
@@ -119,12 +145,19 @@ function shapeOf(type, checker, declaration) {
       .join(" & ");
   }
   const members = checker.getPropertiesOfType(type);
-  const plain =
+  const isPlainObject =
     (type.flags & ts.TypeFlags.Object) !== 0 &&
     !checker.isArrayType(type) &&
-    !checker.isTupleType(type) &&
-    members.length > 0;
-  if (!plain) return checker.typeToString(type, declaration, ALIAS_BODY);
+    !checker.isTupleType(type);
+  if (
+    isPlainObject &&
+    members.length === 0 &&
+    declaration !== undefined &&
+    ts.isInterfaceDeclaration(declaration)
+  )
+    return "{}";
+  if (!isPlainObject || members.length === 0)
+    return checker.typeToString(type, declaration, ALIAS_BODY);
   const calls = type
     .getCallSignatures()
     .map((call) => checker.signatureToString(call, declaration, NAMED));
@@ -258,13 +291,14 @@ function groupOf(file, srcFolder) {
 }
 
 function orderGroups(dir, names) {
-  const known = dir === "core" ? CORE_GROUPS.filter((name) => names.includes(name)) : [];
+  const order = GROUP_ORDER[dir] ?? [];
+  const known = order.filter((name) => names.includes(name));
   const rest = names.filter((name) => !known.includes(name)).sort();
   return [...known, ...rest];
 }
 
 function introOf(dir, group) {
-  return dir === "core" ? (CORE_INTROS[group] ?? "") : "";
+  return GROUP_INTROS[dir]?.[group] ?? "";
 }
 
 /** Every package's exports as groups, and the names with no doc comment. */

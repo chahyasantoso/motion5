@@ -30,12 +30,13 @@ export {
 } from "./events";
 export {
   mountStage,
-  stageModuleOf,
   type MountedStage,
   type StageElement,
   type StageEvent,
   type StageFonts,
+  type StageHost,
   type StageOptions,
+  type StageStroke,
   type StageStyle,
   type StageValues,
 } from "./stage";

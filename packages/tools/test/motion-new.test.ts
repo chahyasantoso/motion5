@@ -54,8 +54,10 @@ describe("gerak new", () => {
     const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
     expect(module.beats?.map(({ name }) => name)).toEqual(["show"]);
-    expect(module.cast?.map(({ name, kind }) => [name, kind])).toEqual([["title", "actor"]]);
-    expect(imported.skins).toEqual({ dom: { css: "" } });
+    expect(module.stage?.members.entries.map(({ name, kind }) => [name, kind])).toEqual([
+      ["title", "actor"],
+    ]);
+    expect(module.stage?.skins).toEqual({ dom: { kind: "inline", css: "" } });
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
     expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({ title: {} }));
   });

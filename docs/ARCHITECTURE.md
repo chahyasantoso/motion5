@@ -61,7 +61,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | --- | --- |
 | What a value is at a time | the scene, built from `core` and optionally `moves` |
 | Fields, time, eases, spans, lanes, envelopes, paths, 3D maths and blends | `@gerak/core` |
-| Casts, stories, skins, layouts and `carried` | `@gerak/stage` |
+| Casts, `defineStage`, skins, layouts and `carry` | `@gerak/stage` |
 | Named moves, couplings, signal parts and style cards | `@gerak/moves` |
 | Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig`, bound to Three.js skeletons by `@gerak/rig-three` |
 | Bodies, contacts and a seekable simulation | `@gerak/physics`, backed by `@gerak/rapier` |
