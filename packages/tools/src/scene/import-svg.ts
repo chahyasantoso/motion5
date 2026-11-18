@@ -154,7 +154,7 @@ class Defs {
     const boxed = server.units === "objectBoundingBox";
     if (boxed && !(box.width > 0 && box.height > 0))
       return { why: `gradient #${server.id} on a shape with no width or height` };
-    const along = (key: string, axis: "x" | "y" | "r", fallback: string): number => {
+    const coord = (key: string, axis: "x" | "y" | "r", fallback: string): number => {
       const text = (server.attributes[key] ?? fallback).trim();
       const value = Number.parseFloat(text);
       if (!text.endsWith("%")) return value;
@@ -170,21 +170,21 @@ class Defs {
     const fields: [string, number][] =
       server.kind === "linear"
         ? [
-            ["x1", along("x1", "x", "0%")],
-            ["y1", along("y1", "y", "0%")],
-            ["x2", along("x2", "x", "100%")],
-            ["y2", along("y2", "y", "0%")],
+            ["x1", coord("x1", "x", "0%")],
+            ["y1", coord("y1", "y", "0%")],
+            ["x2", coord("x2", "x", "100%")],
+            ["y2", coord("y2", "y", "0%")],
           ]
         : [
-            ["cx", along("cx", "x", "50%")],
-            ["cy", along("cy", "y", "50%")],
-            ["r", along("r", "r", "50%")],
+            ["cx", coord("cx", "x", "50%")],
+            ["cy", coord("cy", "y", "50%")],
+            ["r", coord("r", "r", "50%")],
             ...(server.attributes["fx"] === undefined
               ? []
-              : [["fx", along("fx", "x", "50%")] as [string, number]]),
+              : [["fx", coord("fx", "x", "50%")] as [string, number]]),
             ...(server.attributes["fy"] === undefined
               ? []
-              : [["fy", along("fy", "y", "50%")] as [string, number]]),
+              : [["fy", coord("fy", "y", "50%")] as [string, number]]),
           ];
     // Everything lands in the shape's frame px at once: its matrix, then the box's, then the gradient's own.
     const reach = multiply(

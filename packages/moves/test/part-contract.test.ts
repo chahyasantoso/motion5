@@ -1,5 +1,14 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import { ease, keyframes, mixPose, taper, type Ease, type Pose2d, type Time } from "@gerak/core";
+import {
+  ease,
+  keyframes,
+  mixPose,
+  taper,
+  type Curve,
+  type Ease,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { definePart, noise1d, partContract, squashed, trail } from "../src";
 
 describe("definePart", () => {
@@ -28,7 +37,7 @@ describe("definePart", () => {
 
 describe("a declared part keeps its type", () => {
   it("taper, mixPose, keyframes and ease are as they were declared", () => {
-    expectTypeOf(taper).toEqualTypeOf<(progress: number, power: number) => number>();
+    expectTypeOf(taper).toEqualTypeOf<(options: { readonly power: number }) => Curve>();
     expectTypeOf(mixPose).toEqualTypeOf<(from: Pose2d, to: Pose2d, share: number) => Pose2d>();
     expectTypeOf(keyframes).toBeFunction();
     const moved: (time: Time) => number = keyframes(0, [], (from) => from);

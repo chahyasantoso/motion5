@@ -60,7 +60,7 @@ export const handWave = defineMove({
       1,
       Math.max(0, (progress - LIFT_SHARE) / (1 - LIFT_SHARE - LOWER_SHARE)),
     );
-    const sway = wave(waving, count) * arch(waving) ** 0.5;
+    const sway = wave({ count })(waving) * arch(waving) ** 0.5;
     const turned = arch(up);
     const along = 1 + (reach - 1) * up - fold * turned;
     return {

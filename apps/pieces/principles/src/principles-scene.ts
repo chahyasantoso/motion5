@@ -48,6 +48,7 @@ const PATH = toCubics([
   anchor("start", START_X, 0, 0, 0, 160, -430),
   anchor("land", 0, 0, -170, -430, 0, 0),
 ]);
+const arc = along(PATH);
 
 const crouch = keyframes(
   0,
@@ -68,7 +69,7 @@ const pull = backEase({ amount: 1.6, direction: "in" });
 /** The body's offset from its landing spot: a short pull back, then along the arc. */
 function flight(time: Time): Pose2d {
   const share = leap.of(time, pull).progress;
-  const point = along(PATH, share);
+  const point = arc(share);
   return { x: (point.x ?? 0) + mix(0, PULLBACK_PX, Math.min(0, share)), y: point.y ?? 0 };
 }
 

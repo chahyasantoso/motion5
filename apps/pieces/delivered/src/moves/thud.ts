@@ -1,6 +1,9 @@
 import { attack, taper, wave, type Pose2d } from "@gerak/core";
 import { defineMove, squashed } from "@gerak/moves";
 
+const rise = attack({ rate: 40 });
+const fade = taper({ power: 2 });
+
 export const thud = defineMove({
   id: "thud",
   role: "emphasis",
@@ -32,10 +35,10 @@ export const thud = defineMove({
   example: { options: { squash: 0.2, tilt: 5, rings: 3 } },
   moments: () => ({}),
   run: ({ squash, tilt, rings }, { progress }): Pose2d => {
-    const built = attack(progress, 40);
-    const left = taper(progress, 2);
-    const crush = squash * built * left * wave(progress, rings, 0.25);
-    const sway = tilt * built * left * wave(progress, rings * 0.7);
+    const built = rise(progress);
+    const left = fade(progress);
+    const crush = squash * built * left * wave({ count: rings, phase: 0.25 })(progress);
+    const sway = tilt * built * left * wave({ count: rings * 0.7 })(progress);
     return { ...squashed(crush, 1, "bottom"), rotation: sway };
   },
 });

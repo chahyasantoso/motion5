@@ -5,10 +5,11 @@ import { noise1d } from "../src/index";
 describe("wave", () => {
   it("crosses zero 2 * count - 1 times strictly inside", () => {
     for (const count of [1, 2, 3, 4]) {
+      const curve = wave({ count });
       let crossings = 0;
-      let last = Math.sign(wave(1 / 1000, count));
+      let last = Math.sign(curve(1 / 1000));
       for (let i = 2; i < 1000; i += 1) {
-        const sign = Math.sign(wave(i / 1000, count));
+        const sign = Math.sign(curve(i / 1000));
         if (sign !== 0 && last !== 0 && sign !== last) crossings += 1;
         if (sign !== 0) last = sign;
       }
@@ -16,16 +17,19 @@ describe("wave", () => {
     }
   });
   it("is 1 at progress 0 for phase 0.25", () => {
-    expect(wave(0, 2, 0.25)).toBeCloseTo(1, 12);
+    expect(wave({ count: 2, phase: 0.25 })(0)).toBeCloseTo(1, 12);
   });
 });
 
 describe("envelopes", () => {
   it("match their closed forms", () => {
+    const tapered = taper({ power: 2 });
+    const decayed = decay({ rate: 3 });
+    const attacked = attack({ rate: 3 });
     for (const p of [0, 0.5, 1]) {
-      expect(taper(p, 2)).toBeCloseTo((1 - p) ** 2, 12);
-      expect(decay(p, 3)).toBeCloseTo(Math.exp(-3 * p), 12);
-      expect(attack(p, 3)).toBeCloseTo(1 - Math.exp(-3 * p), 12);
+      expect(tapered(p)).toBeCloseTo((1 - p) ** 2, 12);
+      expect(decayed(p)).toBeCloseTo(Math.exp(-3 * p), 12);
+      expect(attacked(p)).toBeCloseTo(1 - Math.exp(-3 * p), 12);
       expect(arch(p)).toBeCloseTo(Math.sin(Math.PI * p), 12);
     }
   });
@@ -41,23 +45,23 @@ describe("ballistic", () => {
   for (const options of cases) {
     it(`throws ${JSON.stringify(options)}`, () => {
       const { dx, dy, apex } = options;
-      const ys = Array.from({ length: 61 }, (_, i) => ballistic(i / 60, options).y);
+      const curve = ballistic(options);
+      const ys = Array.from({ length: 61 }, (_, i) => curve(i / 60).y);
       const second = ys.slice(2).map((y, i) => y - 2 * (ys[i + 1] ?? 0) + (ys[i] ?? 0));
       for (const value of second) expect(value).toBeCloseTo(second[0] ?? 0, 9);
       let lowest = Infinity;
-      for (let i = 0; i <= 100000; i += 1)
-        lowest = Math.min(lowest, ballistic(i / 100000, options).y);
+      for (let i = 0; i <= 100000; i += 1) lowest = Math.min(lowest, curve(i / 100000).y);
       expect(lowest).toBeCloseTo(Math.min(dy, 0) - apex, 6);
-      expect(ballistic(0, options).x).toBeCloseTo(dx, 12);
-      expect(ballistic(0, options).y).toBeCloseTo(dy, 12);
-      expect(ballistic(1, options).x).toBeCloseTo(0, 12);
-      expect(ballistic(1, options).y).toBeCloseTo(0, 12);
-      expect(ballistic(0.25, options).x).toBeCloseTo(dx * 0.75, 12);
+      expect(curve(0).x).toBeCloseTo(dx, 12);
+      expect(curve(0).y).toBeCloseTo(dy, 12);
+      expect(curve(1).x).toBeCloseTo(0, 12);
+      expect(curve(1).y).toBeCloseTo(0, 12);
+      expect(curve(0.25).x).toBeCloseTo(dx * 0.75, 12);
     });
   }
   it("refuses a negative apex", () => {
-    expect(() => ballistic(0.5, { dx: 0, dy: 0, apex: -1 })).toThrow(RangeError);
-    expect(() => ballistic(0.5, { dx: 0, dy: 0, apex: -1 })).toThrow(/ballistic/);
+    expect(() => ballistic({ dx: 0, dy: 0, apex: -1 })).toThrow(RangeError);
+    expect(() => ballistic({ dx: 0, dy: 0, apex: -1 })).toThrow(/ballistic/);
   });
 });
 

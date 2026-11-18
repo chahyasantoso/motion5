@@ -2,6 +2,7 @@ import { eulerFromMatrix3d, IDENTITY_MATRIX3, swingFrame3d } from "../geometry/r
 import { arcLength } from "./arc-length";
 import type { Pose3d } from "../fields/pose3d";
 import type { Cubic3d } from "../geometry/shapes";
+import type { Curve } from "../time/shapes";
 
 type Triple = readonly [number, number, number];
 
@@ -30,27 +31,28 @@ function slopeOf(c: Cubic3d, t: number): Triple {
   ];
 }
 
-/** The pose `share` of the way along a 3D path by distance; `face` adds the turn of local +x onto the tangent, no roll. */
+/** A curve of the pose at a share of a 3D path's distance; `face` adds the turn of local +x onto the tangent, no roll. */
 export function along3d(
   cubics: readonly Cubic3d[],
-  share: number,
   options: { readonly face?: boolean } = {},
-): Pose3d {
+): Curve<Pose3d> {
   if (cubics.length === 0) throw new RangeError("along3d: the path has no segments.");
   const arc = arcLength(cubics.length, (index, t) => {
     const c = cubics[index];
     if (c === undefined) throw new RangeError("along3d: the path has no segments.");
     return pointOf(c, t);
   });
-  const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
-  const cubic = cubics[segment];
-  if (cubic === undefined) throw new RangeError("along3d: the path has no segments.");
-  const [x, y, z] = pointOf(cubic, t);
-  if (options.face !== true) return { x, y, z };
-  const slope = slopeOf(cubic, t);
-  const tangent: Triple =
-    slope[0] === 0 && slope[1] === 0 && slope[2] === 0
-      ? [cubic.x3 - cubic.x0, cubic.y3 - cubic.y0, cubic.z3 - cubic.z0]
-      : slope;
-  return { x, y, z, ...eulerFromMatrix3d(swingFrame3d(IDENTITY_MATRIX3, tangent)) };
+  return (share) => {
+    const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
+    const cubic = cubics[segment];
+    if (cubic === undefined) throw new RangeError("along3d: the path has no segments.");
+    const [x, y, z] = pointOf(cubic, t);
+    if (options.face !== true) return { x, y, z };
+    const slope = slopeOf(cubic, t);
+    const tangent: Triple =
+      slope[0] === 0 && slope[1] === 0 && slope[2] === 0
+        ? [cubic.x3 - cubic.x0, cubic.y3 - cubic.y0, cubic.z3 - cubic.z0]
+        : slope;
+    return { x, y, z, ...eulerFromMatrix3d(swingFrame3d(IDENTITY_MATRIX3, tangent)) };
+  };
 }

@@ -60,7 +60,9 @@ export const springSettle = defineMove({
   example: { options: { dx: -200, dy: 80, lift: 60, turn: 40, scale: 0.2, rings: 2, damping: 4 } },
   moments: () => ({}),
   run: ({ dx, dy, lift, turn, scale, squash, rings, damping }, { progress: p }): Pose2d => {
-    const ring = (q: number) => decay(q, damping) * wave(q, rings, 0.25);
+    const fall = decay({ rate: damping });
+    const swing = wave({ count: rings, phase: 0.25 });
+    const ring = (q: number) => fall(q) * swing(q);
     const r = 1 - (ring(p) - p * ring(1));
     const left = 1 - r;
     const s = scale + (1 - scale) * r;
