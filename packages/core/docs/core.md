@@ -18,7 +18,7 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 
 | Shape | Type | Core functions |
 | --- | --- | --- |
-| **Timing** | `Timing` / `(t: Time) => Time` | `span`, `chain`, `lanes`, `loop`, `reversed`, `repeated`, `timeAt`, `withProgress` |
+| **Timing** | `Timing` (`of(t: Time) => Time`) | `span`, `chain`, `lanes`, `loop` build them; `reversed`, `repeated`, `timeAt`, `withProgress` remap a `Time` |
 | **Curve** | `Curve<T>` / `Ease` (`(u: number) => T`) | `ease.*`, `backEase`, `springEase`, `arch`, `wave`, `attack`, `decay`, `taper`, `ballistic`, `along`, `along3d` |
 | **Signal** | `Signal<T>` (`(t: Time, e: Events) => T`) | Returned by `tally`, `keyframes`; measured by `velocity`, `velocity3d` |
 
@@ -53,7 +53,7 @@ Every pose field is optional and omitted fields stay inactive:
 - **Blends:** `mix`, `mixAngle` (shortest arc), `mixPoint` (`Point2d`), `mixPoint3d` (`Point3d`), `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
 - **Paths & shapes:** `circlePath({ cx, cy, r })`, `ellipsePath({ cx, cy, rx, ry })`, `rectPath({ x, y, width, height, rx?, ry? })`, `linePath({ x1, y1, x2, y2 })`, `polygonPath({ points, closed })`, `arcPath({ x0, y0, x1, y1, rx, ry, degrees?, large?, sweep? })`, `pathFrom(d)`, `toCubics` / `toCubics3d` (`Anchor2d`/`Anchor3d` `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics, { turn? })(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
 - **3D camera:** `orbit({ target, radius, azimuth, elevation })`, `aim(from, to, up?)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
-- **Measures, events, utilities:** `velocity` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events in O(1)/frame; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
+- **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events in O(1)/frame; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
 
 ## Idiom
 

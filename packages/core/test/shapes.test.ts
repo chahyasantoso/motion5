@@ -61,7 +61,7 @@ describe("core shapes", () => {
       },
     ];
 
-    const waveCurve: Curve = wave({ count: 2, phase: 0.25 });
+    const waveCurve: Curve = wave({ count: 1.5, phase: 0.1 });
     const attackCurve: Curve = attack({ rate: 3 });
     const decayCurve: Curve = decay({ rate: 3 });
     const taperCurve: Curve = taper({ power: 2 });
@@ -73,7 +73,10 @@ describe("core shapes", () => {
     const alongCurve: Curve<Pose2d> = along(c2, { turn: true });
     const along3dCurve: Curve<Pose3d> = along3d(c3, { face: true });
 
-    const waveExpected = [1, -1, 1, -1, 1];
+    const waveExpected = [
+      0.5877852522924731, 0.15643446504023098, -0.8090169943749476, 0.9876883405951378,
+      -0.5877852522924728,
+    ];
     const attackExpected = [
       0, 0.5276334472589853, 0.7768698398515702, 0.8946007754381357, 0.950212931632136,
     ];

@@ -67,7 +67,8 @@ Read `AGENTS.md` first; every rule there applies.
 ### 3. One owner for the eases
 
 `NAMED_CURVES` in `packages/tools/src/page/curves.ts` is built from core's `ease` and `Curve`, and its local copies
-go. A name core lacks stays local. Its comment and the `motion-read` test stop naming `@gerak/moves`.
+go. A name core lacks stays local. Its comment and the `motion-read` test stop naming `@gerak/moves`. The boundary
+scan lets `packages/tools/src/page/` import `@gerak/core`, and still no library or renderer.
 
 ### 4. Record and docs
 

@@ -4,7 +4,7 @@
 
 ## Context
 
-`@gerak/core` already held three shapes: timings (`Timing`), curves (`Ease`, `arch`, `wave`, `attack`, `decay`, `taper`, `ballistic`, `along`, `along3d`, `mix*`), and signals (`(time, events) => value`). Only `Timing` was named; `@gerak/player` named the signal shape `Scene<T>`, `velocity` and `velocity3d` wrote its function signature out each time, and the seven non-ease curve functions took progress alongside loose settings instead of building a `Curve` once from their settings as `backEase` and `springEase` do. Meanwhile `NAMED_CURVES` in `@gerak/tools/src/page/curves.ts` kept its own copies of core's eases under a local `Curve` type.
+`@gerak/core` already held three shapes: timings (`Timing`), curves (`Ease`, `arch`, `wave`, `attack`, `decay`, `taper`, `ballistic`, `along`, `along3d`, `mix*`), and signals (`(time, events) => value`). Only `Timing` was named; `@gerak/player` named the signal shape `Scene<T>`, `velocity` and `velocity3d` wrote its function signature out each time, and the seven non-ease curve functions took progress alongside loose settings instead of building a `Curve` once from their settings as `backEase` and `springEase` do. Meanwhile `NAMED_CURVES` in `packages/tools/src/page/curves.ts` kept its own copies of core's eases under a local `Curve` type.
 
 ## Decision
 
@@ -14,6 +14,6 @@
 
 ## Consequences
 
-- Every curve with settings builds once outside the frame loop (including `arcLength` for `along`/`along3d` and parabola constants for `ballistic`), with no behaviour change.
+- Every curve with settings builds once outside the frame loop (including `arcLength` for `along`/`along3d` and parabola constants for `ballistic`). Every sampled value is unchanged; `along` and `along3d` now refuse an empty path when built, not when sampled, and `@gerak/tools/page` no longer exports its own `Curve` type.
 - One type (`Signal`) names `(time, events) => T` across core, player, renderers and tools.
 - `packages/tools/src/page/` still imports nothing from `@gerak/stage`, `@gerak/dom`, `@gerak/player`, `@gerak/react` or `@gerak/moves`.
