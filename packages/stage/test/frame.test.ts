@@ -50,6 +50,9 @@ describe("frame", () => {
       }),
     );
     const errors = check(stage, { box: [], dots: [{}, {}], card: 3, ghost: {} });
+    expect(errors.map(formatStageError)[1]).toBe(
+      'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
+    );
     expect(errors.map(({ kind }) => kind)).toEqual([
       "shape_mismatch",
       "shape_mismatch",
