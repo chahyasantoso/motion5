@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-18, Asia/Jakarta.
-- **Read against:** `feat/stage-v3-followup`, stage v3 follow-up built on `refactor/points-and-reference` after PR 600.
+- **Read against:** `refactor/points-and-reference` after PR 601 (stage v3 follow-up).
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Search and harvest** (`plan/search-plan.md`): `gerak find` over the library and brief records in `@gerak/moves-tools`, followed by the live kit and dev-only web overlay (`plan/roadmap.md`).
+- **Signals** in three plans, in order: `plan/shapes-plan.md` (core names its shapes, one curve convention), `plan/principles-plan.md` (principles in core, plain moves, no moves-tools) and `plan/stage-3d-plan.md` (3D objects in a stage); then the live kit and web overlay (`plan/roadmap.md`).
 
 ## Open, and not scheduled
 
