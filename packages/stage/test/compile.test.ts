@@ -119,7 +119,13 @@ describe("compileStage", () => {
       }),
       scene: () => ({}),
     });
-    expect(readout.map(formatStageError).join()).toContain("a readout inside a list");
+    expect(readout.map(({ kind }) => kind)).toEqual(["invalid"]);
+    const handBuilt = errorsOf({
+      beats: { a: [0, 100] },
+      cast: () => ({ box: { kind: "actor" } }),
+      scene: () => ({}),
+    });
+    expect(handBuilt.map(({ kind }) => kind)).toEqual(["invalid"]);
     expect(
       errorsOf({ beats: { a: [0, 900] }, durationMs: 500, cast: () => ({}), scene: () => ({}) }),
     ).toHaveLength(1);

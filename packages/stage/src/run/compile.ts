@@ -14,7 +14,9 @@ import {
   type Content,
   type Expect,
   type ItemContent,
+  type Members,
   type Pivot,
+  type Stretch,
 } from "../author/cast";
 import {
   NO_REST,
@@ -29,7 +31,8 @@ import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, type Window } from "./timeline";
 
-interface MemberBase {
+/** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
+export type Member = {
   readonly name: string;
   /** Index of the enclosing group in `Stage.members`, or -1 at the top. */
   readonly parent: number;
@@ -38,13 +41,11 @@ interface MemberBase {
   readonly pivot?: Pivot | undefined;
   /** Ms the member shows, its own or its group's; absent means always. */
   readonly on?: readonly Window[] | undefined;
-}
-
-/** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
-export type Member =
-  | (MemberBase & { readonly kind: "actor"; readonly content: Content })
-  | (MemberBase & { readonly kind: "list"; readonly items: readonly ItemContent[] })
-  | (MemberBase & { readonly kind: "group" });
+} & (
+  | { readonly kind: "actor"; readonly content: Content }
+  | { readonly kind: "list"; readonly items: readonly ItemContent[] }
+  | { readonly kind: "group" }
+);
 
 /** The DOM skin, inline or as file URLs. */
 export type DomSkin =
@@ -182,11 +183,11 @@ interface Inherited {
 
 function windowsOf(
   name: string,
-  raw: unknown,
+  stretches: readonly Stretch[],
   beats: Beats,
   errors: StageError[],
 ): readonly Window[] | undefined {
-  if (!Array.isArray(raw) || raw.length === 0) {
+  if (stretches.length === 0) {
     errors.push({
       kind: "invalid",
       field: "cast",
@@ -195,17 +196,8 @@ function windowsOf(
     return undefined;
   }
   const windows: Window[] = [];
-  for (const stretch of raw) {
-    const [first, last]: readonly unknown[] =
-      typeof stretch === "string" ? [stretch, stretch] : Array.isArray(stretch) ? stretch : [];
-    if (typeof first !== "string" || typeof last !== "string") {
-      errors.push({
-        kind: "invalid",
-        field: "cast",
-        reason: `"${name}": a stretch is a beat or [from, to] beats.`,
-      });
-      continue;
-    }
+  for (const stretch of stretches) {
+    const [first, last] = typeof stretch === "string" ? [stretch, stretch] : stretch;
     const start = beats.beats[first];
     const end = beats.beats[last];
     if (start === undefined) errors.push({ kind: "unknown_beat", member: name, beat: first });
@@ -221,25 +213,13 @@ function windowsOf(
   return Object.freeze(windows);
 }
 
-function contentOf(name: string, raw: unknown, errors: StageError[]): Content | undefined {
-  const fail = (reason: string): undefined => {
-    errors.push({ kind: "invalid", field: "cast", reason: `"${name}": ${reason}` });
-    return undefined;
-  };
-  if (!isPlainRecord(raw)) return fail("make members with the cast builders.");
-  const kind = raw["kind"];
-  switch (kind) {
+function contentOf(name: string, content: Content, errors: StageError[]): Content | undefined {
+  switch (content.kind) {
     case "box":
-      return Object.freeze({ kind: "box" });
-    case "text": {
-      const value = raw["value"];
-      return typeof value === "string"
-        ? Object.freeze({ kind: "text", value })
-        : fail("text needs a string.");
-    }
+    case "text":
+      return Object.freeze(content);
     case "readout": {
-      const format = raw["format"];
-      if (typeof format !== "function") return fail("a readout needs a function of time.");
+      const { format } = content;
       const checked = (time: Time): string => {
         const answer: unknown = Reflect.apply(format, undefined, [time]);
         if (typeof answer !== "string")
@@ -249,7 +229,7 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
       return Object.freeze({ kind: "readout", format: checked });
     }
     case "stroke": {
-      const path = raw["path"];
+      const { path } = content;
       if (typeof path === "function") {
         const checked = (rest: RestReader): readonly Cubic2d[] => {
           const answer: unknown = Reflect.apply(path, undefined, [rest]);
@@ -259,13 +239,17 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
         };
         return Object.freeze({ kind: "stroke", path: checked });
       }
-      return isCubics(path)
-        ? Object.freeze({ kind: "stroke", path: frozenCubics(path) })
-        : fail("a stroke needs cubics or a function of rest.");
+      if (isCubics(path)) return Object.freeze({ kind: "stroke", path: frozenCubics(path) });
+      errors.push({
+        kind: "invalid",
+        field: "cast",
+        reason: `"${name}": a stroke needs cubics or a function of rest.`,
+      });
+      return undefined;
     }
     case "morph": {
-      const shapes = raw["shapes"];
-      if (!Array.isArray(shapes) || shapes.length < 2 || !shapes.every(isCubics)) {
+      const { shapes } = content;
+      if (shapes.length < 2 || !shapes.every(isCubics)) {
         errors.push({
           kind: "morph_mismatch",
           member: name,
@@ -284,108 +268,55 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
       });
     }
     default:
-      return fail(`unknown content ${String(kind)}.`);
+      return unreachable(content);
   }
 }
 
-function itemOf(name: string, raw: unknown, errors: StageError[]): ItemContent | undefined {
+function itemOf(name: string, raw: ItemContent, errors: StageError[]): ItemContent | undefined {
   const content = contentOf(name, raw, errors);
   if (content === undefined) return undefined;
-  if (content.kind === "readout") {
-    errors.push({
-      kind: "invalid",
-      field: "cast",
-      reason: `"${name}": a readout inside a list; a readout is a top-level actor.`,
-    });
-    return undefined;
-  }
+  if (content.kind === "readout")
+    throw new TypeError(`"${name}": a readout cannot be a list item.`);
   return content;
 }
 
-function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly Member[] {
+function compileCast(raw: Members, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
-  const visit = (record: Record<string, unknown>, from: Inherited): void => {
+  const visit = (record: Members, from: Inherited): void => {
     for (const [name, spec] of Object.entries(record)) {
       if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
       if (seen.has(name)) errors.push({ kind: "duplicate_member", name });
       seen.add(name);
-      if (!isPlainRecord(spec) || !isPlainRecord(spec["meta"])) {
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": make members with the cast builders.`,
-        });
-        continue;
-      }
-      const meta = spec["meta"];
-      const on = meta["on"] === undefined ? from.on : windowsOf(name, meta["on"], beats, errors);
-      const rawExpect = meta["expect"];
-      const expect =
-        rawExpect === "settle" || rawExpect === "ambient" || rawExpect === "static"
-          ? rawExpect
-          : from.expect;
-      if (rawExpect !== undefined && expect !== rawExpect)
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": expect is settle, ambient or static.`,
-        });
-      const rawPivot = meta["pivot"];
-      const pivot =
-        isPlainRecord(rawPivot) && finite(rawPivot["x"]) && finite(rawPivot["y"])
-          ? Object.freeze({ x: rawPivot["x"], y: rawPivot["y"] })
-          : undefined;
-      if (rawPivot !== undefined && pivot === undefined)
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": a pivot needs finite x and y.`,
-        });
+      const on =
+        spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
+      const expect = spec.meta.expect ?? from.expect;
+      const pivot = spec.meta.pivot;
       const base = {
         name,
         parent: from.parent,
         expect,
-        watch: typeof meta["watch"] === "boolean" ? meta["watch"] : from.watch,
+        watch: spec.meta.watch ?? from.watch,
         ...(pivot === undefined ? {} : { pivot }),
         ...(on === undefined ? {} : { on }),
       };
-      const kind = spec["kind"];
-      switch (kind) {
+      switch (spec.kind) {
         case "actor": {
-          const content = contentOf(name, spec["content"], errors);
+          const content = contentOf(name, spec.content, errors);
           if (content !== undefined)
             members.push(Object.freeze({ ...base, kind: "actor", content }));
           break;
         }
         case "list": {
-          const raws = spec["items"];
-          if (!Array.isArray(raws)) {
-            errors.push({
-              kind: "invalid",
-              field: "cast",
-              reason: `"${name}": a list needs items.`,
-            });
-            break;
-          }
-          const items = raws.flatMap(
+          const items = spec.items.flatMap(
             (item, index) => itemOf(`${name}.${index}`, item, errors) ?? [],
           );
           members.push(Object.freeze({ ...base, kind: "list", items: Object.freeze(items) }));
           break;
         }
         case "group": {
-          const children = spec["members"];
-          if (!isPlainRecord(children)) {
-            errors.push({
-              kind: "invalid",
-              field: "cast",
-              reason: `"${name}": a group needs members.`,
-            });
-            break;
-          }
           members.push(Object.freeze({ ...base, kind: "group" }));
-          visit(children, {
+          visit(spec.members, {
             parent: members.length - 1,
             on,
             watch: base.watch,
@@ -394,11 +325,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
           break;
         }
         default:
-          errors.push({
-            kind: "invalid",
-            field: "cast",
-            reason: `"${name}": make members with the cast builders.`,
-          });
+          return unreachable(spec);
       }
     }
   };
