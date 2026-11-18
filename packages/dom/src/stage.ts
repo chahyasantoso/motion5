@@ -1,5 +1,12 @@
-import { unreachable, type Cubic2d, type Events, type Pose2d, type Time } from "@gerak/core";
-import { play, type Player, type Scene } from "@gerak/player";
+import {
+  unreachable,
+  type Cubic2d,
+  type Events,
+  type Pose2d,
+  type Signal,
+  type Time,
+} from "@gerak/core";
+import { play, type Player } from "@gerak/player";
 import {
   check,
   compileStage,
@@ -771,7 +778,7 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
   fit();
   measured = measure();
 
-  const sceneOf = (): Scene<StageValues> => (time, events) => {
+  const sceneOf = (): Signal<StageValues> => (time, events) => {
     const out = frameOf(currentStage, { time, events, boxes: measured.readers });
     if (options.checks === true) {
       const errors = check(currentStage, out.targets);

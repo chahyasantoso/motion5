@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import type { Signal } from "@gerak/core";
 import type { ClockDriver } from "@gerak/dom";
-import type { Driver, Scene } from "@gerak/player";
+import type { Driver } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
 import { isStageDefinition } from "@gerak/stage";
 import { stageOf, type LoadedStage, type PieceLookup } from "../stage-module";
@@ -241,7 +242,7 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial, lookup }) => {
   const host: PlayerHost = useMemo(
     () => ({
       createDriver: keeper.createDriver,
-      guard<T extends object>(scene: Scene<T>, fallback?: T): Scene<T> {
+      guard<T extends object>(scene: Signal<T>, fallback?: T): Signal<T> {
         return guard(scene, (message) => setError(message), fallback);
       },
     }),

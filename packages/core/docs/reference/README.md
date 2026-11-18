@@ -3,7 +3,7 @@
 Generated from doc comments by `npm run reference -- --write`; one page per source folder.
 
 - [fields](./fields.md), 13 exports: Pose fields, rest values, combining rules, and lifting 2D poses to 3D.
-- [time](./time.md), 23 exports: Time is a number over a span; this group reads it, shapes it (loop, chain, reversed, repeated) and arranges phases or lanes into one timeline.
+- [time](./time.md), 25 exports: Time is a number over a span; this group reads it, shapes it (loop, chain, reversed, repeated) and arranges phases or lanes into one timeline.
 - [blend](./blend.md), 8 exports: Blending turns two values or poses into the value between them, and keyframes turns a list of keys into a curve.
 - [ease](./ease.md), 9 exports: Easing reshapes progress so motion accelerates or settles; spring and back are the eases with overshoot.
 - [envelope](./envelope.md), 5 exports: An envelope is an amount over time: an arch up and down, an attack, a decay, a taper or a wave.

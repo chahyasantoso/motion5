@@ -1,8 +1,9 @@
 import { spring, springMemory, type SpringOptions } from "./spring";
+import type { Curve } from "../time/shapes";
 import { unreachable } from "../utility/unreachable";
 
 /** A curve from progress 0 to 1 onto eased progress, 0 at 0 and 1 at 1; back and elastic overshoot. */
-export type Ease = (progress: number) => number;
+export type Ease = Curve<number>;
 
 /** Which end of a curve is slow: `in` starts slow, `out` ends slow, `inOut` does both. */
 export type EaseDirection = "in" | "out" | "inOut";
