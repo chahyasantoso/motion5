@@ -1,4 +1,4 @@
-import { isTokenName } from "@gerak/stage";
+import { isTokenName } from "@gerak/stage/dom";
 import { VALUE_FIELDS } from "@gerak/core";
 import { DESCRIPTOR_KEYS, type DescriptorRanges } from "./qualities";
 
