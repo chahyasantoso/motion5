@@ -1,36 +1,12 @@
 # Live inputs
 
-Read this when a piece follows numbers that arrive while it plays: a microphone's level, a slider, a recorded session.
-The loop is in [the agent guide](./stage.md).
+Read this when a piece follows streaming inputs (microphone level, slider, recorded sample session). Core time/events loop is in [stage.md](./stage.md).
 
-A rig can follow numbers that arrive while it plays: how far a mouth is open, whether an eye is shut, a slider. Each
-number is a sample, an event with a value: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. A scene stays a function of
-time and events, so a session of samples replays, scrubs and renders like any other piece.
+Each live sample is a `MotionEvent` carrying `value`: `{ name: "mouthOpen", at: 1234, value: 0.6 }`. Scenes remain pure functions of `({ time, events })`, so recorded sessions scrub and pass deterministic review.
 
-- **Read samples through `follow` (when `@gerak/moves` is installed) or a deterministic spring over `events`.** `follow({ start: 0, on: { mouthOpen: "value" } })` from `@gerak/moves` springs to each sample's own
-  value, smoothing a jittery source cleanly; with `@gerak/core` alone, spring from the prior sample value using `spring` and `elapsedOf`. Either way, derive values functionally from `(time, events)` rather than keeping mutable state outside the scene, and map the answer to the parts: a beak's `rotation`, an
-  eyelid's `scaleY`.
-- **A recording is `cues`.** A JSON list of samples is a session: `import talk from "../references/<file>.json" with
-  { type: "json" }` (the tools run in Node, which needs the attribute) and `export const cues = talk`. Make the story at least as long as the recording; the review reports cues after its end,
-  which no clock reaches.
-- **A live source calls `send`.** `mountStage(...).send("mouthOpen", level)` logs a sample at the clock's time and
-  keeps the clock running past the story's end until it settles; `events()` hands back the log, ready to save as
-  `cues`. `talk.html?piece=<name>` does this from the microphone. A loop of the story would clear the log each pass,
-  so a live piece does not loop its story: an idle motion such as breathing loops inside the scene, on `time`'s
-  elapsed ms, while the clock runs on.
-- **Switch or morph a mouth.** Parts drawn apart (`beakShut`, `beakOpen`) switch with `opacity` from the scene. Where
-  the step shows, morph: `actor({ path, shapes: [open, wide] })` and the value field `shape` blends them, 0 being
-  `path`, 1 `shapes[0]` and 1.5 halfway to `shapes[1]`. Each outline must have as many separate pieces as `path`;
-  the member's box stays its `path`'s. Look at the midway frames: a blend pairs cubics by order, and can twist.
-  Draw the outlines in the SVG beside the part, with ids `<part>-shape1`, `<part>-shape2` (hidden with
-  `opacity="0"` if you like): the import makes them the part's `shapes` instead of parts, and lists any it cannot.
-- **How much has been said is `tally`.** `tally({ start: 0, on: { mouthOpen: "value" } })` answers the area under
-  the samples so far, each held until the next, and `.total(events)` the whole recording's, so `said(time, events) /
-  said.total(events)` runs 0 to 1 through the speech: reveal a caption's `words` by that share, or fill a progress
-  bar. It is exact, seeks for free, and costs the same at the end as at the start. Never sum a `follow` from the
-  start of the talk to find it.
-- **Test a sample by hand** with `gerak sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"`
-  (`name:target=value@ms` for a target).
-- **Check** that no part is cut by the frame with the mouth at its widest, and that the review is clean with the
-  recording as `cues`: it also seeks the scene back and forth and reports a value that differs from playing to it,
-  which a scene keeping state between frames shows.
+- **Read samples functionally:** With `@gerak/moves`, `follow({ start: 0, on: { mouthOpen: "value" } })` smooths each sample's target; with `@gerak/core` alone, fold over `events` using `spring` and `elapsedOf`. Never mutate external state across frames.
+- **Recordings as `cues`:** Pass imported JSON sample arrays into `defineStage({ cues: talk, durationMs })` so playback reaches every cue cleanly (`gerak review` reports cues past `durationMs`).
+- **Live microphone / push inputs:** `mountStage(host, stage)` exposes driver event emission for streaming inputs; loop ambient idle motion smoothly on `elapsedOf(time.clock)` rather than restarting cues.
+- **Switch or morph mouths:** Use `m.morph(shut, [open, wide])` in `cast` and animate `shape` (`0` = `base`, `1` = `targets[0]`, `1.5` = halfway to `targets[1]`). Every outline must match continuous piece count (`matchOutlines` verifies this during `compileStage`). In SVGs, `<part>-shape1` and `<part>-shape2` import directly into `m.morph`.
+- **Measure progress with `tally`:** Use `tally({ start: 0, on: { mouthOpen: "value" } })` and `.total(events)` to compute normalized cumulative intensity for word reveals or meters at $O(1)$ per step.
+- **Verify:** Test sample overrides via `gerak sample <file>.ts --at 1300 --events "mouthOpen=0.6@1234"` and confirm `gerak review <file>.ts` reports clean seek determinism.

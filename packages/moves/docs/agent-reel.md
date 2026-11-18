@@ -26,18 +26,18 @@ storyboard before it, and shots in place of one idea.
 
 ## Shots as beats
 
-- Name the beats by the shots: `story(10000, { hook: [0, 3000], story: [3000, 7000], call: [7000, 10000] })`. Add a
+- Name the beats by the shots in `defineStage({ beats: { hook: [0, 3000], story: [3000, 7000], call: [7000, 10000] }, ... })`. Add a
   beat for each transition when it spans its own ms: `hookToStory: [2600, 3200]`.
 - Keep each shot's scene work local to its beat: one function per shot, written from 0, placed with `sequence`. A
   shot never reads another shot's time.
-- A member belongs to the shots it is seen in: `on: ["hook", "story"]` shows it across both. The carried member's
-  `on` names both shots of its change.
+- A member belongs to the shots it is seen in: `.on("hook", "story")` shows it across both. The carried member's
+  `.on(...)` names both shots of its change.
 - B-roll is a cutaway to the piece's own material: a detail of the product, the hook's object from another side, a
   word from the script. Never borrowed footage and never another piece's members.
 
 ## The camera
 
-- The camera is a group, `world: group({ ... })` skinned `position: absolute; inset: 0`, holding everything that sits
+- The camera is a group, `world: m.group({ ... })` skinned `position: absolute; inset: 0`, holding everything that sits
   in the scene. Moving `world` moves the view: its `x` and `y` pan, its `scale` zooms about the frame's centre,
   and a short decaying `rotation` or offset shakes. Write the camera as one `sequence<Pose2d>` of its moves by shot.
   `x` and `y` are screen px, outside the zoom: to keep a pan of `x` on the same place at scale `s`, write `x * s`.
@@ -48,12 +48,12 @@ storyboard before it, and shots in place of one idea.
   steps the review refuses as jumps.
 - **Zoom geometrically.** A large zoom grows `scale` as `to ** progress`, never `mix(1, to, progress)`: each frame then
   grows by the same factor, and the steps stay under the review's ratio limit. A zoom to 20 needs about 900 ms.
-- **Write the camera from the skin's own numbers, not `restOf`.** The review runs with no browser, where `restOf` is
-  a zero box, so a camera computed from it reads wrong there.
-- Members the camera alone moves are `still: true`; a group's `still` says nothing of its members, so a caption is
-  `words(text, { still: true })`.
+- **Write the camera from the skin's own numbers, not `rest.get(...)`.** The review runs with no browser, where `rest`
+  returns `ZERO_BOX`, so a camera computed from it reads wrong there.
+- Members the camera alone moves are `.static()`; a group's `.static()` says nothing of its members, so a caption is
+  `m.words(text).static()`.
 - Text that must stay still while the camera moves (a caption, the call to action) sits outside `world`, as
-  `words` or `letters`: an `actor` with no `text` shows nothing to read.
+  `m.words` or `m.letters`: `m.box()` with no text shows nothing to read.
 
 ## Seamless transitions
 
@@ -61,8 +61,8 @@ At every shot change one named member carries the eye from one shot into the nex
 in the storyboard's "Carried in":
 
 - **Carry.** The member moves from its place in one shot to its place in the next: two layouts, one per shot, and
-  `carried` from [layout](../../stage/docs/agent-layout.md), with cues at the change.
-- **Morph.** A path member's outline becomes another: `actor({ path, shapes: [next] })` and the pose field `shape`
+  `carry` in `scene({ carry })` from [layout](../../stage/docs/agent-layout.md), with `cues` at the change.
+- **Morph.** A path member's outline becomes another: `m.morph(base, [next])` and the pose field `shape`
   from 0 to 1 over the change; the outlines must match (`matchOutlines` says why not).
 - **Zoom through.** The camera pushes into the member until it fills the whole frame, corners included; the change
   falls on a frame that is all the member's colour, and the next shot opens on that colour and pulls back out of it.
