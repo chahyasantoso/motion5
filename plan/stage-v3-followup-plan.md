@@ -64,8 +64,7 @@ performance/stage-baseline.json`, and one cold review on Sonnet that sees neithe
 
 Last, the NADI measure: build tarballs with `node scripts/pack-check.mjs --keep`, move its `project` out, delete its
 `pieces` and `gerak` field, run `npx gerak init`, `git init`; one fresh Sonnet agent at medium effort there and one
-plain HTML/JS agent in an empty folder, both with the 2026-11-18 prompts (the NADI brief text is in that session's
-transcript). Report tokens, calls, time, files read and defects by eye from the same six frames; interview the gerak
+plain HTML/JS agent in an empty folder, both with the prompts in `plan/measure-nadi.md`, whose rows the result joins. Report tokens, calls, time, files read and defects by eye from the same six frames; interview the gerak
 agent for every fact it learned outside the guide and state each one in the guide. One pull request.
 
 ## Not in this plan
