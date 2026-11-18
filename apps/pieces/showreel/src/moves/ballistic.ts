@@ -27,5 +27,5 @@ export const ballistic = defineMove({
   example: { options: { dx: -300, dy: 10, apex: 300 } },
   moments: () => ({ top: 0.5 }),
   run: ({ dx, dy, apex }, { progress }): Pose2d =>
-    thrown(progress, { dx, dy, apex: peakAbove(dy, apex) }),
+    thrown({ dx, dy, apex: peakAbove(dy, apex) })(progress),
 });

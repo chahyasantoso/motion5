@@ -4,6 +4,8 @@ import { arch, taper } from "@gerak/core";
 import { withProgress, type Time } from "@gerak/core";
 import { carried, pushed, whole } from "./whole";
 
+const fade = taper({ power: 1 });
+
 /** Plays its input, then passes its last pose and settles back onto it. */
 export const overshoot = defineMove({
   id: "overshoot",
@@ -39,7 +41,7 @@ export const overshoot = defineMove({
       return whole(played, carried(first, last, played));
     }
     const v = (time.progress - playing) / share;
-    return pushed(last, first, amount * arch(v) * taper(v, 1), carried(first, last));
+    return pushed(last, first, amount * arch(v) * fade(v), carried(first, last));
   },
   moments: ({ share }) => ({ settle: 1 - share }),
 });

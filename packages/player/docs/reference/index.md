@@ -1,9 +1,8 @@
 # @gerak/player: index
 
 - **`manualDriver`** `(options?: { readonly durationMs?: number; }): ManualDriver`: A driver moved by hand: `.seek(progress)`, `.seekMs(ms)`. Timed when given `durationMs`, untimed otherwise.
-- **`play`** `<T extends object>(scene: Scene<T>, driver: Driver, options?: PlayOptions): Player<T>`: Runs `scene` against `driver`, telling each target's subscribers its value on every step.
+- **`play`** `<T extends object>(scene: Signal<T>, driver: Driver, options?: PlayOptions): Player<T>`: Runs `scene` against `driver`, telling each target's subscribers its value on every step.
 - **`Driver`** `type Driver = { now: () => Time; events?: () => Events; subscribe: (listener: () => void) => () => void; options?: object }`: What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves.
 - **`ManualDriver`** `type ManualDriver = { seek: (progress: number) => void; seekMs: (ms: number) => void; now: () => Time; events?: () => Events; subscribe: (listener: () => void) => () => void; options?: object }`: A driver moved by hand, timed when it knows its length in ms.
-- **`Player`** `type Player<T> = { time: Time; values: T; subscribe: <K extends keyof T>(target: K, listener: (value: T[K]) => void) => () => void; refresh: () => void; replace: (next: Scene<T>, cues?: Events) => void; on: (name: string, listener: (event: MotionEvent) => void) => () => void; dispose: () => void }`: A scene's values by target, rerun whole on each step of its driver.
+- **`Player`** `type Player<T> = { time: Time; values: T; subscribe: <K extends keyof T>(target: K, listener: (value: T[K]) => void) => () => void; refresh: () => void; replace: (next: Signal<T>, cues?: Events) => void; on: (name: string, listener: (event: MotionEvent) => void) => () => void; dispose: () => void }`: A scene's values by target, rerun whole on each step of its driver.
 - **`PlayOptions`** `type PlayOptions = { cues?: Events }`: Options of `play`: `cues`, the scene's own events at known ms, merged with the page's. The scene sees only events at or before the time's elapsed ms.
-- **`Scene`** `type Scene<T> = (time: Time, events: Events) => T`: A scene: every target's value from the time and the events so far.

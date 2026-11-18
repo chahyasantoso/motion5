@@ -30,18 +30,20 @@ const sCurve = [
 ];
 
 describe("along3d", () => {
+  const path = along3d(sCurve);
+
   it("hits the end points at share 0 and 1, and clamps outside", () => {
-    expect(along3d(sCurve, 0)).toEqual({ x: 0, y: 0, z: 0 });
-    const end = along3d(sCurve, 1);
+    expect(path(0)).toEqual({ x: 0, y: 0, z: 0 });
+    const end = path(1);
     expect(end.x).toBeCloseTo(300, 9);
     expect(end.y).toBeCloseTo(400, 9);
     expect(end.z).toBeCloseTo(0, 9);
-    expect(along3d(sCurve, 2)).toEqual(along3d(sCurve, 1));
-    expect(along3d(sCurve, -1)).toEqual(along3d(sCurve, 0));
+    expect(path(2)).toEqual(path(1));
+    expect(path(-1)).toEqual(path(0));
   });
 
   it("covers equal distance in equal share steps", () => {
-    const points = Array.from({ length: 11 }, (_, i) => along3d(sCurve, i / 10));
+    const points = Array.from({ length: 11 }, (_, i) => path(i / 10));
     const lengths = points.slice(1).map((p, i) => {
       const q = points[i];
       return Math.hypot(
@@ -56,7 +58,7 @@ describe("along3d", () => {
 
   it("turns local +x onto a tangent along +z with face", () => {
     const straight = [cubic("z", [0, 0, 0, 0, 0, 100, 0, 0, 200, 0, 0, 300])];
-    const pose = along3d(straight, 0.5, { face: true });
+    const pose = along3d(straight, { face: true })(0.5);
     const m = matrixFromEuler3d({
       rotation: pose.rotation ?? 0,
       rotationX: pose.rotationX ?? 0,
@@ -69,8 +71,8 @@ describe("along3d", () => {
   });
 
   it("adds no turn without face, and refuses an empty path", () => {
-    expect(along3d(sCurve, 0.5).rotation).toBeUndefined();
-    expect(() => along3d([], 0.5)).toThrow(RangeError);
+    expect(path(0.5).rotation).toBeUndefined();
+    expect(() => along3d([])).toThrow(RangeError);
   });
 
   it("builds one cubic per pair of anchors", () => {
@@ -105,7 +107,7 @@ describe("a bank on a facing turn", () => {
 
   it("rolls about the nose when combined after the facing turn", () => {
     const path = [cubic("a", [0, 0, 0, 1, 1, 0, 2, 1, 1, 3, 0, 2])];
-    const facing = along3d(path, 0.4, { face: true });
+    const facing = along3d(path, { face: true })(0.4);
     const banked = combine3d([facing, { rotationX: 35 }]);
     nose(banked).forEach((value, axis) => expect(value).toBeCloseTo(nose(facing)[axis] ?? 0, 9));
     expect(banked).not.toEqual(facing);

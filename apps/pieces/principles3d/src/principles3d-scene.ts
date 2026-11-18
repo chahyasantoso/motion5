@@ -58,6 +58,7 @@ const PATH = toCubics3d([
   anchor("start", START.x, START.y, START.z, 0, 0, 0, 1.6, 4, 2.5),
   anchor("land", 0, 0, 0, -1.7, 4, 2.5, 0, 0, 0),
 ]);
+const arc = along3d(PATH);
 
 const crouch = keyframes(
   0,
@@ -78,7 +79,7 @@ const pull = backEase({ amount: 1.6, direction: "in" });
 /** The body's place: a short pull back, then along an arc that leaves the xy plane. */
 export function flight(time: Time): Pose3d {
   const share = leap.of(time, pull).progress;
-  const point = along3d(PATH, share);
+  const point = arc(share);
   return {
     x: (point.x ?? 0) + mix(0, PULLBACK, Math.min(0, share)),
     y: point.y ?? 0,

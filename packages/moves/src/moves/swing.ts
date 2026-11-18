@@ -3,6 +3,8 @@ import type { Pose2d } from "@gerak/core";
 import { taper } from "@gerak/core";
 import { wave } from "@gerak/core";
 
+const fade = taper({ power: 1 });
+
 /** Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge. */
 export const swing = defineMove({
   id: "swing",
@@ -26,8 +28,8 @@ export const swing = defineMove({
   },
   example: { options: { angle: 35, swings: 2, anchor: "top" } },
   run({ angle, swings, anchor }, { progress }): Pose2d {
-    const turn = wave(progress, (swings + 0.5) / 2, 0.25);
-    return { rotation: angle * taper(progress, 1) * turn, anchor };
+    const turn = wave({ count: (swings + 0.5) / 2, phase: 0.25 })(progress);
+    return { rotation: angle * fade(progress) * turn, anchor };
   },
   moments: () => ({}),
 });

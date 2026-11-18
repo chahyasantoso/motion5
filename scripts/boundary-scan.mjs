@@ -448,16 +448,22 @@ function packageOf(specifier) {
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Page tools import node, a browser driver and a dev server, never gerak; they read only the brief folders' owner and the live plugin. */
+/** Page tools import node, core, a browser driver and a dev server, never a library or renderer; they read only the brief folders' owner and the live plugin. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
     specifier.startsWith(".")
       ? [PAGE_TOOLS, BRIEFS, LIVE_PLUGIN].some((allowedPath) =>
           posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(allowedPath),
         )
-      : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
+      : specifier.startsWith("node:") ||
+        specifier === "@gerak/core" ||
+        specifier === "playwright-core" ||
+        specifier === "vite",
   );
-  if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
+  if (!allowed)
+    violations.push(
+      `${file}: page tool import outside node, @gerak/core, playwright-core and vite`,
+    );
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
 const BRIEFS = "packages/tools/src/scene/briefs";

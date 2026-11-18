@@ -1,44 +1,26 @@
-/** A curve from share 0 to 1 of a move's time onto share 0 to 1 of its travel. */
-export type Curve = (u: number) => number;
+import { ease, type Curve } from "@gerak/core";
 
-const BACK = 1.70158;
-const out =
-  (curve: Curve): Curve =>
-  (u) =>
-    1 - curve(1 - u);
-const inOut =
-  (curve: Curve): Curve =>
-  (u) =>
-    u < 0.5 ? curve(2 * u) / 2 : 1 - curve(2 - 2 * u) / 2;
-
-const sineIn: Curve = (u) => 1 - Math.cos((u * Math.PI) / 2);
-const quadIn: Curve = (u) => u * u;
-const cubicIn: Curve = (u) => u * u * u;
-const quartIn: Curve = (u) => u ** 4;
-const expoIn: Curve = (u) => (u === 0 ? 0 : 2 ** (10 * u - 10));
-const backIn: Curve = (u) => u * u * ((BACK + 1) * u - BACK);
-
-/** The curves a measured move is named after, under the names `@gerak/moves` gives its eases. */
+/** The curves a measured move is named after, under the names `@gerak/core` gives its eases. */
 export const NAMED_CURVES: Readonly<Record<string, Curve>> = Object.freeze({
-  linear: (u: number) => u,
-  sineIn,
-  sineOut: out(sineIn),
-  sineInOut: inOut(sineIn),
-  quadIn,
-  quadOut: out(quadIn),
-  quadInOut: inOut(quadIn),
-  cubicIn,
-  cubicOut: out(cubicIn),
-  cubicInOut: inOut(cubicIn),
-  quartIn,
-  quartOut: out(quartIn),
-  quartInOut: inOut(quartIn),
-  expoIn,
-  expoOut: out(expoIn),
-  expoInOut: inOut(expoIn),
-  backIn,
-  backOut: out(backIn),
-  backInOut: inOut(backIn),
+  linear: ease.linear,
+  sineIn: ease.sineIn,
+  sineOut: ease.sineOut,
+  sineInOut: ease.sineInOut,
+  quadIn: ease.quadIn,
+  quadOut: ease.quadOut,
+  quadInOut: ease.quadInOut,
+  cubicIn: ease.cubicIn,
+  cubicOut: ease.cubicOut,
+  cubicInOut: ease.cubicInOut,
+  quartIn: ease.quartIn,
+  quartOut: ease.quartOut,
+  quartInOut: ease.quartInOut,
+  expoIn: ease.expoIn,
+  expoOut: ease.expoOut,
+  expoInOut: ease.expoInOut,
+  backIn: ease.backIn,
+  backOut: ease.backOut,
+  backInOut: ease.backInOut,
 });
 
 /** CSS `cubic-bezier(x1, y1, x2, y2)` as a curve, solving for the curve's time at each share of time. */

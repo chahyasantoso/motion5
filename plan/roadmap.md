@@ -10,9 +10,9 @@ anywhere: on a web page, on a live stage, in a video.**
 
 Three things follow from it:
 
-- **Authored, not copied.** A piece is built from named moves with declared options. A move the brief lacks is
-  defined, checked and kept, so the next piece can use it. Throwaway animation code and copies of the examples both
-  miss the objective.
+- **Authored, not copied.** A piece is built from signals: core's principles and curves, an installed move
+  package's moves, or moves written beside the scene. A move package is chosen by reading its README; there is no
+  registry. Copies of the examples miss the objective.
 - **One base, many apps.** The base answers every question about motion once. An app is a way of working with it and
   adds no second answer.
 - **An agent and a person share one format.** A scene file an agent wrote opens in every app, and a piece made in an
@@ -46,9 +46,9 @@ Three things follow from it:
 
 | Question | Owner |
 | --- | --- |
-| A value at a time, from time and events | the scene, `moves` |
-| The vocabulary of moves | `moves` |
-| Where an authored move lives and how it is found | `moves`, `tools` |
+| A value at a time, from time and events | the scene, as a `Signal` from `core` |
+| The motion principles | `core` |
+| Where a move lives | beside the scene, or in a move package such as `moves` |
 | How an agent is told to work | the guides, the scaffold |
 | What is on the stage | `stage` |
 | The frame and the camera | `stage` |
@@ -126,7 +126,12 @@ Three things follow from it:
 10. **Installable tools** (`plan/installable-plan.md`): one `gerak` command, the pages and the guide shipped with
    `@gerak/tools`, and `gerak init`, so a person's own project makes and checks pieces with no clone. The live kit
    and the overlay need it, since the overlay runs inside someone else's site.
-11. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
+11. **Signals,** in three plans:
+   - `plan/shapes-plan.md`: timings, curves and signals named in core, and one way to call a curve;
+   - `plan/principles-plan.md`: the motion principles as signal transforms in core, 2D and 3D; `@gerak/moves` a
+     plain move package, and `@gerak/moves-tools` gone;
+   - `plan/stage-3d-plan.md`: 3D objects in a stage, on the player's clock.
+12. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 

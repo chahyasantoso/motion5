@@ -61,7 +61,7 @@ export const launch = defineMove({
       const q = progress / crouch;
       const k = cubicInOut(clamp01(q / 0.65));
       return {
-        x: tremble * k * k * wave(q, 6 * crouch),
+        x: tremble * k * k * wave({ count: 6 * crouch })(q),
         scaleY: 1 - squash * k,
         scaleX: 1 + squash * bulge * k,
         anchor: "bottom",

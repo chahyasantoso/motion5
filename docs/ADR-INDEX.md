@@ -162,7 +162,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-155 — The motion tools package — Accepted, 2026-11-08
 - ADR-156 — Core is frozen — Accepted, 2026-11-08
 - ADR-157 — What an agent needs from moves and rig — Accepted, 2026-11-08
-- ADR-158 — motion:read, and CSS animations held to the paused clock — Accepted, 2026-11-08
+- ADR-158 — motion:read, and CSS animations held to the paused clock — Accepted, 2026-11-08 — superseded in part
 - ADR-159 — motion:check reads text and contacts the page marks — Accepted, 2026-11-08
 - ADR-160 — motion:render — Accepted, 2026-11-08
 - ADR-161 — Events from the page — Accepted, 2026-11-08
@@ -195,3 +195,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-188 — Installable tools and one command — Accepted, 2026-11-16
 - ADR-189 — Core, modules and library — Accepted, 2026-11-16
 - ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18
+- ADR-191 — Shapes and curves — Accepted, 2026-11-18

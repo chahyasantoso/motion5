@@ -18,17 +18,19 @@ const sCurve = [
 ];
 
 describe("along", () => {
+  const path = along(sCurve);
+
   it("hits the first and last points at share 0 and 1, and clamps outside", () => {
-    expect(along(sCurve, 0)).toEqual({ x: 0, y: 0 });
-    const end = along(sCurve, 1);
+    expect(path(0)).toEqual({ x: 0, y: 0 });
+    const end = path(1);
     expect(end.x).toBeCloseTo(300, 9);
     expect(end.y).toBeCloseTo(400, 9);
-    expect(along(sCurve, 2)).toEqual(along(sCurve, 1));
-    expect(along(sCurve, -1)).toEqual(along(sCurve, 0));
+    expect(path(2)).toEqual(path(1));
+    expect(path(-1)).toEqual(path(0));
   });
 
   it("covers equal distance in equal share steps", () => {
-    const points = Array.from({ length: 11 }, (_, i) => along(sCurve, i / 10));
+    const points = Array.from({ length: 11 }, (_, i) => path(i / 10));
     const lengths = points.slice(1).map((p, i) => {
       const q = points[i];
       return Math.hypot((p.x ?? 0) - (q?.x ?? 0), (p.y ?? 0) - (q?.y ?? 0));
@@ -40,12 +42,12 @@ describe("along", () => {
   it("heads 0 along a horizontal segment and 90 down a vertical one", () => {
     const flat = [cubic("h", [0, 0, 10, 0, 20, 0, 30, 0])];
     const down = [cubic("v", [0, 0, 0, 10, 0, 20, 0, 30])];
-    expect(along(flat, 0.5, { turn: true }).rotation).toBeCloseTo(0, 9);
-    expect(along(down, 0.5, { turn: true }).rotation).toBeCloseTo(90, 9);
-    expect(along(down, 0.5).rotation).toBeUndefined();
+    expect(along(flat, { turn: true })(0.5).rotation).toBeCloseTo(0, 9);
+    expect(along(down, { turn: true })(0.5).rotation).toBeCloseTo(90, 9);
+    expect(along(down)(0.5).rotation).toBeUndefined();
   });
 
   it("refuses an empty path", () => {
-    expect(() => along([], 0.5)).toThrow(RangeError);
+    expect(() => along([])).toThrow(RangeError);
   });
 });

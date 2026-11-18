@@ -1,6 +1,10 @@
 import { attack, decay, taper, wave, type Pose2d } from "@gerak/core";
 import { defineMove } from "@gerak/moves";
 
+const fade = taper({ power: 2 });
+const fall = decay({ rate: 3 });
+const rise = attack({ rate: 25 });
+
 export const jolt = defineMove({
   id: "jolt",
   role: "emphasis",
@@ -26,10 +30,10 @@ export const jolt = defineMove({
   example: { options: { distance: 10, count: 5, sideways: 0.35 } },
   moments: () => ({}),
   run: ({ distance, count, sideways }, { progress: p }): Pose2d => {
-    const envelope = taper(p, 2) * decay(p, 3) * attack(p, 25);
+    const envelope = fade(p) * fall(p) * rise(p);
     return {
-      y: distance * envelope * wave(p, count),
-      x: distance * sideways * envelope * wave(p, count * 0.64),
+      y: distance * envelope * wave({ count })(p),
+      x: distance * sideways * envelope * wave({ count: count * 0.64 })(p),
     };
   },
 });

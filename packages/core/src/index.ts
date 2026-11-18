@@ -28,6 +28,7 @@ export {
   type Vec3,
 } from "./geometry/rotation3d";
 export { UNTIMED, atProgress, elapsedOf, liveAt, type Clock, type Time } from "./time/time";
+export { type Curve, type Signal } from "./time/shapes";
 export { span, type Span } from "./time/span";
 export { type Timing } from "./time/timing";
 export { loop, type LoopOptions } from "./time/loop";

@@ -1,6 +1,7 @@
 import { arcLength } from "./arc-length";
 import type { Pose2d } from "../fields/pose";
 import type { Cubic2d } from "../geometry/shapes";
+import type { Curve } from "../time/shapes";
 
 function pointOf(c: Cubic2d, t: number): { readonly x: number; readonly y: number } {
   const u = 1 - t;
@@ -25,29 +26,32 @@ function slopeOf(c: Cubic2d, t: number): { readonly dx: number; readonly dy: num
   };
 }
 
-/** The `{ x, y }` point `share` of the way along a path by distance, in the path's coordinates;
+/** A curve of the `{ x, y }` point at a share of a path's distance, in the path's coordinates;
  * `turn: true` adds `rotation`, the heading in degrees (down is 90). */
 export function along(
   cubics: readonly Cubic2d[],
-  share: number,
   options: { readonly turn?: boolean } = {},
-): Pose2d {
-  if (cubics.length === 0) throw new RangeError("along: the path has no segments.");
-  const arc = arcLength(cubics.length, (index, t) => {
-    const c = cubics[index];
+): Curve<Pose2d> {
+  const segments = [...cubics];
+  const turn = options.turn === true;
+  if (segments.length === 0) throw new RangeError("along: the path has no segments.");
+  const arc = arcLength(segments.length, (index, t) => {
+    const c = segments[index];
     if (c === undefined) throw new RangeError("along: the path has no segments.");
     const p = pointOf(c, t);
     return [p.x, p.y];
   });
-  const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
-  const cubic = cubics[segment];
-  if (cubic === undefined) throw new RangeError("along: the path has no segments.");
-  const point = pointOf(cubic, t);
-  if (options.turn !== true) return { x: point.x, y: point.y };
-  const slope = slopeOf(cubic, t);
-  const heading =
-    slope.dx === 0 && slope.dy === 0
-      ? Math.atan2(cubic.y3 - cubic.y0, cubic.x3 - cubic.x0)
-      : Math.atan2(slope.dy, slope.dx);
-  return { x: point.x, y: point.y, rotation: (heading * 180) / Math.PI };
+  return (share) => {
+    const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
+    const cubic = segments[segment];
+    if (cubic === undefined) throw new RangeError("along: the path has no segments.");
+    const point = pointOf(cubic, t);
+    if (!turn) return { x: point.x, y: point.y };
+    const slope = slopeOf(cubic, t);
+    const heading =
+      slope.dx === 0 && slope.dy === 0
+        ? Math.atan2(cubic.y3 - cubic.y0, cubic.x3 - cubic.x0)
+        : Math.atan2(slope.dy, slope.dx);
+    return { x: point.x, y: point.y, rotation: (heading * 180) / Math.PI };
+  };
 }

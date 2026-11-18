@@ -1,10 +1,11 @@
 import type { Events } from "../events/event-list";
+import type { Signal } from "../time/shapes";
 import type { Time } from "../time/time";
 import { timeAt } from "../time/time-at";
 import { unreachable } from "../utility/unreachable";
 
 function between<K extends string>(
-  signal: (time: Time, events: Events) => { readonly [F in K]?: number },
+  signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
   events: Events,
@@ -23,7 +24,7 @@ function between<K extends string>(
 
 /** Per second, in `fields` order, how fast each field of a signal moves at `time`, kept inside the clock. */
 export function speedOf<K extends string>(
-  signal: (time: Time, events: Events) => { readonly [F in K]?: number },
+  signal: Signal<{ readonly [F in K]?: number }>,
   fields: readonly K[],
   time: Time,
   events: Events,

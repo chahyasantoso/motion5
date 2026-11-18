@@ -309,6 +309,8 @@ const ACTIVITY = [
   "Bayu menjawab 12 tiket bantuan",
 ];
 
+const heroPath = along(lineCubics);
+
 export default defineStage({
   frame: { width: W, height: H },
   durationMs: TOTAL_MS,
@@ -441,8 +443,8 @@ export default defineStage({
     // hero: dot -> line -> chart -> logo
     const dr = prog(ms, 1400, 3400, ease.sineInOut);
     const morph = prog(ms, 15200, 2000, ease.cubicInOut);
-    const head = along(lineCubics, Math.max(0.0001, dr));
-    const base = along(lineCubics, 0.0001);
+    const head = heroPath(Math.max(0.0001, dr));
+    const base = heroPath(0.0001);
     const sparkAppear = prog(ms, 0, 900);
     const sparkHide = 1 - prog(ms, 15200, 800, ease.cubicIn);
     const pulse = 1 + 0.2 * Math.sin(ms / 240);

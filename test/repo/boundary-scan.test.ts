@@ -144,16 +144,21 @@ describe("boundary scan: pure packages", () => {
 });
 
 describe("boundary scan: page tools", () => {
-  it("keeps page tools to node, playwright-core, vite and the brief folders' owner", async () => {
+  it("keeps page tools to node, @gerak/core, playwright-core, vite and the brief folders' owner", async () => {
     const violations = await withTree(
       {
+        "packages/core/package.json": JSON.stringify({
+          name: "@gerak/core",
+          gerak: { group: "core" },
+          exports: { ".": "./src/index.ts" },
+        }),
         "packages/tools/package.json": JSON.stringify({
           name: "@gerak/tools",
           gerak: { group: "core" },
           exports: {},
         }),
         "packages/tools/src/page/frames.ts":
-          'import { join } from "node:path";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, chromium, a];',
+          'import { join } from "node:path";\nimport { ease } from "@gerak/core";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, ease, chromium, a];',
         "packages/tools/src/page/page.ts":
           'import { createServer } from "vite";\nexport const a = createServer;',
         "packages/tools/src/page/sample.ts":
@@ -166,8 +171,8 @@ describe("boundary scan: page tools", () => {
       (tree) => scan(tree),
     );
     expect(violations).toEqual([
-      "packages/tools/src/page/reach.ts: page tool import outside node, playwright-core and vite",
-      "packages/tools/src/page/sample.ts: page tool import outside node, playwright-core and vite",
+      "packages/tools/src/page/reach.ts: page tool import outside node, @gerak/core, playwright-core and vite",
+      "packages/tools/src/page/sample.ts: page tool import outside node, @gerak/core, playwright-core and vite",
       "upward import across groups: @gerak/tools (core) imports @gerak/moves (library)",
     ]);
   });
