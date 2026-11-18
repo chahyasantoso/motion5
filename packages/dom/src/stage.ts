@@ -1,47 +1,30 @@
-import {
-  NO_EVENTS,
-  unreachable,
-  type Cubic2d,
-  type Events,
-  type Pose2d,
-  type Time,
-} from "@gerak/core";
+import { unreachable, type Cubic2d, type Events, type Pose2d, type Time } from "@gerak/core";
 import { play, type Player, type Scene } from "@gerak/player";
 import {
+  check,
   compileStage,
-  evaluateFrame,
   formatStageError,
-  isCompiledStage,
-  isStage2d,
+  frame as frameOf,
+  isStage,
   isStageDefinition,
-  resolveStaticStrokes,
-  restOfBounds,
+  listPose,
+  poseOf,
   restReader,
-  sameCast,
-  strokeBox,
-  DEFAULT_FRAME,
-  NO_LAYOUTS,
-  NO_LAYOUT_READERS,
-  NO_REST,
   ZERO_BOX,
-  type ActorPath,
   type Box,
-  type CompiledContent,
-  type CompiledMember,
-  type CompiledMembers,
-  type CompiledStage,
-  type DomSkinCss,
+  type Content,
+  type DomSkin,
   type Frame,
-  type FrameEvaluation,
-  type Layouts,
+  type FrameOutput,
   type Member,
-  type MemberEntry,
+  type Path,
   type Pivot,
-  type PoseMode,
   type Rest,
   type RestReader,
+  type Stage,
   type StageDefinition,
 } from "@gerak/stage";
+import { drawStrokes, morphAt, restOfBounds, strokeBox } from "@gerak/stage/render";
 import { clockDriver, type ClockDriver } from "./drivers";
 import type { PointerLike } from "./events";
 import type { FrameSource } from "./frames";
@@ -92,7 +75,7 @@ export interface StageStroke<S> {
 /** Minimal container contract accepted by `mountStage`: a page `Element` or test stand-in. */
 export interface StageHost<E, S extends StageStroke<S> = StageStroke<never>> {
   readonly ownerDocument: {
-    createElement(tag: "div" | "style" | "link"): E;
+    createElement(tag: "div" | "style"): E;
     createElementNS(namespace: typeof SVG, name: "svg" | "path"): S;
     readonly fonts?: StageFonts;
   };
@@ -123,33 +106,34 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>>
   removeEventListener(type: string, listener: (event: StageEvent) => void): void;
 }
 
-/** A scene's answer per member name: one value, or one per item of a `many`. */
-export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
+/** A frame's targets as the scene returned them: a pose per actor or group, a function per list. */
+export type StageValues = Readonly<Record<string, unknown>>;
 
-/** Settings of `mountStage`: the frames its clock runs on. */
+/** What `mountStage` and `<Stage>` take: a compiled stage, or what `defineStage` returns. */
+export type StageInput = Stage | Pick<StageDefinition, "kind">;
+
+/** Settings of `mountStage`: the frames its clock runs on, and whether each frame's shapes are checked. */
 export interface StageOptions {
   readonly frames?: FrameSource;
   /** Told of the driver each time a run starts, the first and every replay. */
   readonly onDriver?: (driver: ClockDriver) => void;
+  /** Checks every frame's targets with `check` and throws on a mistake; for authoring pages. */
+  readonly checks?: boolean;
 }
 
 /** A playing stage: its player, driver, measured boxes, skin readiness, and lifecycle controls. */
 export interface MountedStage {
   readonly player: Player<StageValues>;
   readonly driver: ClockDriver;
+  /** Rest boxes of the layout showing. */
   readonly rest: Rest;
-  readonly layouts: Layouts;
+  /** Rest boxes of every layout, by name. */
+  readonly layouts: Readonly<Record<string, Rest>>;
+  /** Settles once the skin is applied and measured; a URL skin is fetched first. */
   readonly ready: Promise<void>;
   replay(): void;
-  /** Swaps in a compatible stage (same cast and duration), keeping time. */
-  replace<
-    P extends PoseMode = "2d",
-    B extends string = string,
-    C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>,
-    L extends string = never,
-  >(
-    next: CompiledStage<P> | StageDefinition<P, B, C, L>,
-  ): void;
+  /** Swaps in a stage with the same signature, keeping time. */
+  replace(next: StageInput): void;
   /** Logs a sample of a live number at the clock's ms; the clock runs on past the end until settled. */
   send(name: string, value: number, target?: string): void;
   /** Everything logged so far, oldest first: hovers and samples. */
@@ -199,30 +183,25 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
 }
 
 /** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it. */
-function strokePlace(name: string, box: Box | undefined, layout?: string): string {
+function strokePlace(name: string, box: Box | undefined, layout: string): string {
   const at =
     box === undefined
       ? ""
       : ` left: ${box.x}px; top: ${box.y}px; width: ${box.width}px; height: ${box.height}px;`;
-  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
-  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
+  return `:where([data-layout=${JSON.stringify(layout)}] [data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
 }
 
 /** A member's transform origin at its pivot, from where its box rests. */
-function pivotPlace(name: string, box: Box, pivot: Pivot, layout?: string): string {
+function pivotPlace(name: string, box: Box, pivot: Pivot, layout: string): string {
   const left = pivot.x - (box.x - box.width / 2);
   const top = pivot.y - (box.y - box.height / 2);
-  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
-  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { transform-origin: ${left}px ${top}px; }`;
+  return `:where([data-layout=${JSON.stringify(layout)}] [data-cast=${JSON.stringify(name)}]) { transform-origin: ${left}px ${top}px; }`;
 }
-
-/** The key a stroke keeps its drawing under on a stage with no layouts. */
-const UNLAID = "";
 
 interface Stroke<S> {
   readonly svg: S;
   readonly path: S;
-  source: ActorPath;
+  source: Path;
   readonly isMorph: boolean;
   readonly cubics: Map<string, readonly Cubic2d[]>;
   painted: readonly Cubic2d[] | undefined;
@@ -230,14 +209,15 @@ interface Stroke<S> {
 }
 
 interface Measured {
-  readonly rest: Rest;
-  readonly layouts: Layouts;
-  readonly restReader: RestReader;
-  readonly layoutReaders: Readonly<Record<string, RestReader>>;
+  readonly layouts: Readonly<Record<string, Rest>>;
+  readonly readers: Readonly<Record<string, RestReader>>;
 }
 
+/** A member's element, or a list item's: `index` is the item's place in its list `member`. */
 interface Placed<E> {
-  entry: MemberEntry;
+  readonly name: string;
+  member: Member;
+  readonly index: number | undefined;
   readonly element: E;
   readonly parent: Placed<E> | undefined;
   readonly items: readonly E[];
@@ -251,9 +231,9 @@ function sameFrame(a: Frame, b: Frame): boolean {
   return a.width === b.width && a.height === b.height;
 }
 
-function sameDomSkin(a: DomSkinCss | undefined, b: DomSkinCss | undefined): boolean {
+function sameDomSkin(a: DomSkin | undefined, b: DomSkin | undefined): boolean {
   if (a === b) return true;
-  if (a === undefined || b === undefined || a.kind !== b.kind) return false;
+  if (a === undefined || b === undefined) return false;
   switch (a.kind) {
     case "inline":
       return b.kind === "inline" && a.css === b.css && a.defs === b.defs;
@@ -264,10 +244,10 @@ function sameDomSkin(a: DomSkinCss | undefined, b: DomSkinCss | undefined): bool
   }
 }
 
-function samePivots(a: CompiledMembers, b: CompiledMembers): boolean {
-  return a.entries.every((ae, index) => {
-    const be = b.entries[index];
-    return ae.pivot?.x === be?.pivot?.x && ae.pivot?.y === be?.pivot?.y;
+function samePivots(a: readonly Member[], b: readonly Member[]): boolean {
+  return a.every((member, index) => {
+    const other = b[index];
+    return member.pivot?.x === other?.pivot?.x && member.pivot?.y === other?.pivot?.y;
   });
 }
 
@@ -301,114 +281,66 @@ function report(error: unknown): void {
     }, 0);
 }
 
-function isList(value: Pose2d | readonly Pose2d[]): value is readonly Pose2d[] {
-  return Array.isArray(value);
-}
-
 function isElement(value: unknown): value is Element {
   return typeof Element !== "undefined" && value instanceof Element;
 }
 
-function assert2dStage(stage: CompiledStage<PoseMode>): CompiledStage<"2d"> {
-  switch (stage.pose) {
-    case "2d":
-      if (isStage2d(stage)) return stage;
-      throw new Error("mountStage: expected a 2d stage.");
-    case "3d":
-      throw new Error('mountStage: "3d" stages are not supported by @gerak/dom.');
+function contentOf(placed: Placed<unknown>): Content | undefined {
+  const { member, index } = placed;
+  switch (member.kind) {
+    case "actor":
+      return member.content;
+    case "list":
+      return index === undefined ? undefined : member.items[index];
+    case "group":
+      return undefined;
     default:
-      return unreachable(stage.pose);
+      return unreachable(member);
   }
 }
 
-function resolveStage<
-  P extends PoseMode,
-  B extends string,
-  C extends Readonly<Record<string, Member<B>>>,
-  L extends string,
->(input: CompiledStage<P> | StageDefinition<P, B, C, L>): CompiledStage<"2d"> {
-  if (isStageDefinition(input)) {
-    const compiled = compileStage(input);
-    if (!compiled.ok) {
-      const details = compiled.errors.map(formatStageError).join("\n");
-      throw new Error(`mountStage: invalid stage definition:\n${details}`);
-    }
-    return assert2dStage(compiled.stage);
-  }
-  if (isCompiledStage(input)) return assert2dStage(input);
-  throw new Error("mountStage: expected a CompiledStage or StageDefinition.");
+function sourceOf(content: Content | undefined): Path | undefined {
+  if (content?.kind === "stroke") return content.path;
+  if (content?.kind === "morph") return content.shapes[0];
+  return undefined;
 }
 
-function layoutNamesOf(stage: CompiledStage<"2d">): readonly string[] {
-  switch (stage.layout.kind) {
-    case "single":
-      return [];
-    case "multi":
-      return stage.layout.names;
-    default:
-      return unreachable(stage.layout);
-  }
+/** The stage a definition compiles to, or the stage itself; throws naming every compile error. */
+function resolveStage(input: StageInput): Stage {
+  if (isStage(input)) return input;
+  if (!isStageDefinition(input))
+    throw new Error("mountStage: expected a stage or what `defineStage` returns.");
+  const compiled = compileStage(input);
+  if (compiled.ok) return compiled.stage;
+  throw new Error(
+    `mountStage: invalid stage:\n${compiled.errors.map(formatStageError).join("\n")}`,
+  );
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === "AbortError";
-}
-
-/** Plays a compiled or defined stage in `host`; `R` or a click on the background replays it. */
-export function mountStage<
-  P extends PoseMode = "2d",
-  B extends string = string,
-  C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>,
-  L extends string = never,
->(
-  host: Element,
-  stage: CompiledStage<P> | StageDefinition<P, B, C, L>,
-  options?: StageOptions,
-): MountedStage;
-export function mountStage<
-  E extends StageElement<E, S>,
-  S extends StageStroke<S>,
-  P extends PoseMode = "2d",
-  B extends string = string,
-  C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>,
-  L extends string = never,
->(
+/** Plays a stage in `host`; `R` or a click on the background replays it. */
+export function mountStage(host: Element, stage: StageInput, options?: StageOptions): MountedStage;
+export function mountStage<E extends StageElement<E, S>, S extends StageStroke<S>>(
   host: E & StageElement<E, S>,
-  stage: CompiledStage<P> | StageDefinition<P, B, C, L>,
+  stage: StageInput,
   options?: StageOptions,
 ): MountedStage;
-export function mountStage<
-  E extends StageElement<E, S>,
-  S extends StageStroke<S>,
-  P extends PoseMode = "2d",
-  B extends string = string,
-  C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>,
-  L extends string = never,
->(
+export function mountStage<E extends StageElement<E, S>, S extends StageStroke<S>>(
   host: Element | (E & StageElement<E, S>),
-  stage: CompiledStage<P> | StageDefinition<P, B, C, L>,
+  stage: StageInput,
   options: StageOptions = {},
 ): MountedStage {
-  if (isElement(host))
-    return mountInto<HTMLElement, SVGElement, P, B, C, L>(host, host, stage, options);
+  if (isElement(host)) return mountInto<HTMLElement, SVGElement>(host, host, stage, options);
   return mountInto(host, host, stage, options);
 }
 
-function mountInto<
-  E extends StageElement<E, S>,
-  S extends StageStroke<S>,
-  P extends PoseMode = "2d",
-  B extends string = string,
-  C extends Readonly<Record<string, Member<B>>> = Readonly<Record<string, Member<B>>>,
-  L extends string = never,
->(
+function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
   container: StageHost<E, S>,
   rawContainer: unknown,
-  stageInput: CompiledStage<P> | StageDefinition<P, B, C, L>,
+  stageInput: StageInput,
   options: StageOptions,
 ): MountedStage {
   let currentStage = resolveStage(stageInput);
-  let size: Frame = currentStage.frame ?? DEFAULT_FRAME;
+  let size: Frame = currentStage.frame;
   const document = container.ownerDocument;
 
   const host = document.createElement("div");
@@ -442,11 +374,12 @@ function mountInto<
   root.append(style, frame);
 
   const placed = new Map<string, Placed<E>>();
+  const byIndex: Placed<E>[] = [];
   const strokes = new Map<E, Stroke<S>>();
   const strokeNames: string[] = [];
   const startTime: Time = {
     progress: 0,
-    clock: { kind: "timed", elapsed: 0, length: currentStage.beats.durationMs },
+    clock: { kind: "timed", elapsed: 0, length: currentStage.durationMs },
   };
   let lastLoop: string | undefined;
 
@@ -474,61 +407,43 @@ function mountInto<
     }
   };
 
-  const createMemberElement = (name: string, kind: string): E => {
+  const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
     made.setAttribute("data-cast", name);
     made.setAttribute("data-kind", kind);
     return made;
   };
 
-  const leaf = (element: E, entry: MemberEntry, content: CompiledContent): void => {
+  const leaf = (own: E, name: string, content: Content): void => {
     switch (content.kind) {
-      case "empty":
+      case "box":
         break;
       case "text":
-        element.textContent = content.value;
-        element.setAttribute("data-text", "");
+        own.textContent = content.value;
+        own.setAttribute("data-text", "");
         break;
       case "readout":
         try {
-          element.textContent = content.format(startTime);
+          own.textContent = content.format(startTime);
         } catch {
-          // Readout failures are surfaced during frame evaluation.
+          // A failing readout throws again on the first frame, where the player reports it.
         }
-        element.setAttribute("data-text", "");
+        own.setAttribute("data-text", "");
         break;
-      case "stroke": {
-        const svg = document.createElementNS(SVG, "svg");
-        const path = document.createElementNS(SVG, "path");
-        path.setAttribute("data-path", entry.name);
-        svg.append(path);
-        element.append(svg);
-        element.setAttribute("data-stroke", "");
-        strokeNames.push(entry.name);
-        strokes.set(element, {
-          svg,
-          path,
-          source: content.path,
-          isMorph: false,
-          cubics: new Map(),
-          painted: undefined,
-          hasPartDefs: false,
-        });
-        break;
-      }
+      case "stroke":
       case "morph": {
         const svg = document.createElementNS(SVG, "svg");
         const path = document.createElementNS(SVG, "path");
-        path.setAttribute("data-path", entry.name);
+        path.setAttribute("data-path", name);
         svg.append(path);
-        element.append(svg);
-        element.setAttribute("data-stroke", "");
-        strokeNames.push(entry.name);
-        strokes.set(element, {
+        own.append(svg);
+        own.setAttribute("data-stroke", "");
+        strokeNames.push(name);
+        strokes.set(own, {
           svg,
           path,
-          source: content.matched[0] ?? content.base,
-          isMorph: true,
+          source: content.kind === "stroke" ? content.path : (content.shapes[0] ?? []),
+          isMorph: content.kind === "morph",
           cubics: new Map(),
           painted: undefined,
           hasPartDefs: false,
@@ -540,61 +455,69 @@ function mountInto<
     }
   };
 
-  const build = (
-    members: Readonly<Record<string, CompiledMember>>,
-    into: E,
-    parent: Placed<E> | undefined,
-  ): void => {
-    for (const [name, member] of Object.entries(members)) {
-      const entry = currentStage.members.byName.get(name);
-      if (entry === undefined) throw new Error(`mountStage: "${name}" has no cast entry.`);
-      const kindAttr = member.kind === "list" ? "many" : member.kind;
-      const own = createMemberElement(name, kindAttr);
-      into.append(own);
-      switch (member.kind) {
-        case "actor":
-          leaf(own, entry, member.content);
-          placed.set(name, { entry, element: own, parent, items: [] });
-          break;
-        case "list": {
-          const items = member.items.map((_, index) =>
-            createMemberElement(`${name}.${index}`, "item"),
-          );
-          const self: Placed<E> = { entry, element: own, parent, items };
-          placed.set(name, self);
-          member.items.forEach((itemMember, index) => {
-            const itemElement = items[index];
-            const itemEntry = currentStage.members.byName.get(itemMember.name);
-            if (itemElement === undefined || itemEntry === undefined)
-              throw new Error(`mountStage: "${itemMember.name}" is unnamed.`);
-            leaf(itemElement, itemEntry, itemMember.content);
-            own.append(itemElement);
-            placed.set(itemMember.name, {
-              entry: itemEntry,
-              element: itemElement,
-              parent: self,
-              items: [],
-            });
-          });
-          break;
-        }
-        case "group": {
-          const self: Placed<E> = { entry, element: own, parent, items: [] };
-          placed.set(name, self);
-          build(member.members, own, self);
-          break;
-        }
-        default:
-          unreachable(member);
+  for (const member of currentStage.members) {
+    const parent = byIndex[member.parent];
+    const into = parent?.element ?? frame;
+    const own = element(member.name, member.kind === "list" ? "many" : member.kind);
+    into.append(own);
+    switch (member.kind) {
+      case "actor": {
+        leaf(own, member.name, member.content);
+        const self = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items: [],
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        break;
       }
+      case "list": {
+        const items = member.items.map((_, index) => element(`${member.name}.${index}`, "item"));
+        const self: Placed<E> = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items,
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        member.items.forEach((content, index) => {
+          const item = items[index];
+          if (item === undefined) return;
+          const name = `${member.name}.${index}`;
+          leaf(item, name, content);
+          own.append(item);
+          placed.set(name, { name, member, index, element: item, parent: self, items: [] });
+        });
+        break;
+      }
+      case "group": {
+        const self = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items: [],
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        break;
+      }
+      default:
+        unreachable(member);
     }
-  };
-
-  build(currentStage.members.tree, frame, undefined);
+  }
   container.append(host);
 
   let activeSkinCss = "";
-  let lastPlaces: readonly string[] = strokeNames.map((name) => strokePlace(name, undefined));
+  let lastPlaces: readonly string[] = [];
   const styleWith = (places: readonly string[]): string =>
     `${DEFAULT_SKIN}\n${places.join("\n")}\n${activeSkinCss}`;
 
@@ -618,23 +541,23 @@ function mountInto<
     sharedDefsSvg.innerHTML = trimmed.startsWith("<defs") ? trimmed : `<defs>${paints}</defs>`;
   };
 
-  const applyDefaultSkinMarkers = (
-    styled: ((name: string, list?: string) => boolean) | undefined,
-  ): void => {
-    for (const { entry, element } of placed.values()) {
-      if (entry.kind === "group" || entry.kind === "list") continue;
-      if (strokes.has(element)) continue;
-      if (styled !== undefined && !styled(entry.name, entry.list)) {
-        element.setAttribute("data-skin", "default");
-      } else {
-        element.removeAttribute("data-skin");
-      }
+  const markDefaultSkins = (styled: (name: string, list?: string) => boolean): void => {
+    for (const target of placed.values()) {
+      if (
+        target.member.kind === "group" ||
+        (target.member.kind === "list" && target.index === undefined)
+      )
+        continue;
+      if (strokes.has(target.element)) continue;
+      const list = target.index === undefined ? undefined : target.member.name;
+      if (styled(target.name, list)) target.element.removeAttribute("data-skin");
+      else target.element.setAttribute("data-skin", "default");
     }
   };
 
   const setPartDefs = (partDefsByName: ReadonlyMap<string, string>): void => {
-    for (const [name, { element }] of placed) {
-      const stroke = strokes.get(element);
+    for (const [name, { element: own }] of placed) {
+      const stroke = strokes.get(own);
       if (stroke === undefined) continue;
       const partDefs = partDefsByName.get(name);
       if (partDefs !== undefined) {
@@ -652,22 +575,10 @@ function mountInto<
   };
 
   let live = true;
-  let mountedReady = false;
+  let mounted = false;
   let skinEpoch = 0;
-  let activeLinkCleanup: (() => void) | undefined;
   let activeAbort: AbortController | undefined;
-  let settlePendingSkin: (() => void) | undefined;
   let currentReady: Promise<void> = Promise.resolve();
-
-  const teardownSkinLoad = (): void => {
-    skinEpoch += 1;
-    settlePendingSkin?.();
-    settlePendingSkin = undefined;
-    activeAbort?.abort();
-    activeAbort = undefined;
-    activeLinkCleanup?.();
-    activeLinkCleanup = undefined;
-  };
 
   const fit = (): void => {
     if (host.clientHeight === 0 && host.clientWidth > 0) {
@@ -684,15 +595,15 @@ function mountInto<
     frame.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
 
-  let names: readonly string[] = layoutNamesOf(currentStage);
-  let shown: string | undefined = names[0];
-  if (shown !== undefined) frame.setAttribute("data-layout", shown);
+  let names: readonly string[] = currentStage.layouts.names;
+  let shown: string = names[0] ?? "";
+  frame.setAttribute("data-layout", shown);
 
-  // Measures the stage as laid out, or under every layout in turn, then shows the layout in force again.
+  // Measures the stage under every layout in turn, then shows the layout in force again.
   const measure = (): Measured => {
     const ordered: string[] = [];
     const loops = new Set<string>();
-    const laidOut = (layout: string | undefined): Rest => {
+    const laidOut = (layout: string): Rest => {
       const boxes: Record<string, Box> = {};
       for (const [name, { element: own, parent }] of placed) {
         if (strokes.has(own)) continue;
@@ -706,9 +617,7 @@ function mountInto<
         const height = own.offsetHeight;
         boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
       }
-      const key = layout ?? UNLAID;
-      const resolution = resolveStaticStrokes(currentStage, restReader(boxes));
-      const places = new Map<string, string>();
+      const drawn = drawStrokes(currentStage, restReader(boxes));
       const owners = new Map<
         string,
         { readonly stroke: Stroke<S>; readonly parent: Placed<E> | undefined }
@@ -717,30 +626,26 @@ function mountInto<
         const stroke = strokes.get(own);
         if (stroke !== undefined) owners.set(name, { stroke, parent });
       }
-      if (!resolution.ok) {
-        loops.add(`mountStage: ${formatStageError(resolution.error)}`);
-      } else {
-        for (const failure of resolution.failures) {
+      if (!drawn.ok) loops.add(`mountStage: ${formatStageError(drawn.error)}`);
+      else {
+        for (const failure of drawn.strokes.failures)
           report(
             new Error(`The path of "${failure.name}" failed: ${String(failure.error)}`, {
               cause: failure.error,
             }),
           );
-        }
-        for (const [name, resolved] of resolution.strokes) {
-          const owner = owners.get(name);
-          if (owner !== undefined) owner.stroke.cubics.set(key, resolved.cubics);
-        }
+        for (const [name, cubics] of drawn.strokes.cubics)
+          owners.get(name)?.stroke.cubics.set(layout, cubics);
       }
       for (const [name, { stroke, parent }] of owners) {
-        const cubics = stroke.cubics.get(key);
+        const cubics = stroke.cubics.get(layout);
         if (cubics === undefined) {
-          places.set(name, strokePlace(name, undefined, layout));
+          ordered.push(strokePlace(name, undefined, layout));
           boxes[name] = ZERO_BOX;
           continue;
         }
         const box = strokeBox(cubics);
-        const home = parent === undefined ? undefined : boxes[parent.entry.name];
+        const home = parent === undefined ? undefined : boxes[parent.name];
         const left =
           home === undefined || parent === undefined
             ? 0
@@ -749,57 +654,31 @@ function mountInto<
           home === undefined || parent === undefined
             ? 0
             : home.y - home.height / 2 + parent.element.clientTop;
-        places.set(name, strokePlace(name, { ...box, x: box.x - left, y: box.y - top }, layout));
+        ordered.push(strokePlace(name, { ...box, x: box.x - left, y: box.y - top }, layout));
         boxes[name] = restOfBounds(box);
       }
-      for (const name of owners.keys()) {
-        const place = places.get(name);
-        if (place !== undefined) ordered.push(place);
-      }
-      const rest: Record<string, Box> = {};
-      for (const [name, { entry }] of placed) {
+      for (const { name, member, index } of placed.values()) {
         const box = boxes[name];
-        if (box === undefined) continue;
-        rest[name] = box;
-        if (entry.pivot !== undefined) ordered.push(pivotPlace(name, box, entry.pivot, layout));
+        if (box !== undefined && index === undefined && member.pivot !== undefined)
+          ordered.push(pivotPlace(name, box, member.pivot, layout));
       }
-      return Object.freeze(rest);
+      return Object.freeze({ ...boxes });
     };
 
-    let nextMeasured: Measured;
-    if (names.length === 0) {
-      if (shown !== undefined) frame.removeAttribute("data-layout");
-      shown = undefined;
-      const rest = laidOut(undefined);
-      paint(UNLAID);
-      nextMeasured = {
-        rest,
-        layouts: NO_LAYOUTS,
-        restReader: restReader(rest),
-        layoutReaders: NO_LAYOUT_READERS,
-      };
-    } else {
-      const layouts: Record<string, Rest> = {};
-      const readers: Record<string, RestReader> = {};
-      if (shown === undefined || !names.includes(shown)) shown = names[0];
-      try {
-        for (const name of names) {
-          frame.setAttribute("data-layout", name);
-          const laid = laidOut(name);
-          layouts[name] = laid;
-          readers[name] = restReader(laid);
-        }
-      } finally {
-        if (shown !== undefined) frame.setAttribute("data-layout", shown);
+    const layouts: Record<string, Rest> = {};
+    const readers: Record<string, RestReader> = {};
+    if (!names.includes(shown)) shown = names[0] ?? "";
+    try {
+      for (const name of names) {
+        frame.setAttribute("data-layout", name);
+        const laid = laidOut(name);
+        layouts[name] = laid;
+        readers[name] = restReader(laid);
       }
-      if (shown !== undefined) paint(shown);
-      nextMeasured = {
-        rest: NO_REST,
-        layouts: Object.freeze(layouts),
-        restReader: restReader(NO_REST),
-        layoutReaders: Object.freeze(readers),
-      };
+    } finally {
+      frame.setAttribute("data-layout", shown);
     }
+    paint(shown);
 
     const looped = loops.size === 0 ? undefined : [...loops].join(" ");
     if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
@@ -807,11 +686,12 @@ function mountInto<
     lastPlaces = ordered;
     const text = styleWith(ordered);
     if (style.textContent !== text) style.textContent = text;
-    return nextMeasured;
+    return { layouts: Object.freeze(layouts), readers: Object.freeze(readers) };
   };
 
   let measured: Measured;
-  let lastEvaluation: Extract<FrameEvaluation<"2d">, { readonly ok: true }> | undefined;
+  let lastFrame: FrameOutput | undefined;
+  let readouts = new Map<string, string>();
   let run: { readonly driver: ClockDriver; readonly player: Player<StageValues>; stop(): void };
 
   const resized = (): void => {
@@ -820,103 +700,55 @@ function mountInto<
     run.player.refresh();
   };
 
-  const applySkin = (skin: DomSkinCss | undefined): void => {
-    teardownSkinLoad();
+  const useCss = (css: string, defs: string | undefined): void => {
+    const parted = partPaints(css, defs, strokeNames);
+    activeSkinCss = parted.css;
+    markDefaultSkins(namedBy(css));
+    setSharedDefs(defs);
+    setPartDefs(parted.defs);
+    style.textContent = styleWith(lastPlaces);
+  };
+
+  const fetchText = async (url: URL, signal: AbortSignal): Promise<string> => {
+    if (typeof fetch !== "function") throw new Error(`cannot fetch "${url.href}" without fetch.`);
+    const response = await fetch(url.href, { signal });
+    if (!response.ok) throw new Error(`"${url.href}" answered HTTP ${response.status}.`);
+    return response.text();
+  };
+
+  // A URL skin is fetched and then applied exactly as an inline one, so both style the same members.
+  const applySkin = (skin: DomSkin | undefined): void => {
+    skinEpoch += 1;
+    activeAbort?.abort();
+    activeAbort = undefined;
     const epoch = skinEpoch;
-    const resolved: DomSkinCss = skin ?? { kind: "inline", css: "" };
+    const resolved: DomSkin = skin ?? { kind: "inline", css: "" };
     switch (resolved.kind) {
-      case "inline": {
-        const parted = partPaints(resolved.css, resolved.defs, strokeNames);
-        activeSkinCss = parted.css;
-        applyDefaultSkinMarkers(namedBy(resolved.css));
-        setSharedDefs(resolved.defs);
-        setPartDefs(parted.defs);
-        style.textContent = styleWith(lastPlaces);
+      case "inline":
+        useCss(resolved.css, resolved.defs);
         currentReady = Promise.resolve();
         break;
-      }
       case "url": {
-        activeSkinCss = "";
-        applyDefaultSkinMarkers(undefined);
-        setSharedDefs(undefined);
-        setPartDefs(new Map());
-        style.textContent = styleWith(lastPlaces);
-
-        const link = document.createElement("link");
-        link.setAttribute("rel", "stylesheet");
-        link.setAttribute("href", resolved.css.href);
-        root.append(link);
-
+        useCss("", undefined);
         const controller = new AbortController();
         activeAbort = controller;
-
-        let resolveCss: () => void = () => undefined;
-        const cssDone = new Promise<void>((resolve) => {
-          resolveCss = resolve;
-        });
-        const cleanupLink = (): void => {
-          link.removeEventListener("load", onLoad);
-          link.removeEventListener("error", onError);
-        };
-        const onLoad = (): void => {
-          cleanupLink();
-          if (live && epoch === skinEpoch && mountedReady) resized();
-          resolveCss();
-        };
-        const onError = (): void => {
-          cleanupLink();
-          if (live && epoch === skinEpoch) {
-            report(new Error(`mountStage: failed to load stylesheet "${resolved.css.href}".`));
-          }
-          resolveCss();
-        };
-        link.addEventListener("load", onLoad);
-        link.addEventListener("error", onError);
-        activeLinkCleanup = () => {
-          cleanupLink();
-          link.remove();
-        };
-
-        const defsUrl = resolved.defs;
-        const defsDone =
-          defsUrl === undefined
-            ? Promise.resolve()
-            : typeof fetch !== "function"
-              ? Promise.resolve().then(() => {
-                  if (live && epoch === skinEpoch) {
-                    report(
-                      new Error(`mountStage: cannot fetch defs "${defsUrl.href}" without fetch.`),
-                    );
-                  }
-                })
-              : fetch(defsUrl.href, { signal: controller.signal })
-                  .then(async (response) => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const text = await response.text();
-                    if (!live || epoch !== skinEpoch) return;
-                    setSharedDefs(text);
-                  })
-                  .catch((error: unknown) => {
-                    if (!live || epoch !== skinEpoch || isAbortError(error)) return;
-                    report(
-                      new Error(
-                        `mountStage: failed to load defs "${defsUrl.href}": ${String(error)}`,
-                        { cause: error },
-                      ),
-                    );
-                  });
-
-        currentReady = new Promise<void>((resolve) => {
-          let settled = false;
-          const finish = (): void => {
-            if (settled) return;
-            settled = true;
-            if (settlePendingSkin === finish) settlePendingSkin = undefined;
-            resolve();
-          };
-          settlePendingSkin = finish;
-          void Promise.all([cssDone, defsDone]).then(finish);
-        });
+        const defs = resolved.defs;
+        currentReady = Promise.all([
+          fetchText(resolved.css, controller.signal),
+          defs === undefined ? Promise.resolve(undefined) : fetchText(defs, controller.signal),
+        ]).then(
+          ([css, defsText]) => {
+            if (!live || epoch !== skinEpoch) return;
+            useCss(css, defsText);
+            if (mounted) resized();
+          },
+          (error: unknown) => {
+            if (!live || epoch !== skinEpoch) return;
+            report(
+              new Error(`mountStage: the skin failed to load: ${String(error)}`, { cause: error }),
+            );
+          },
+        );
         break;
       }
       default:
@@ -926,13 +758,13 @@ function mountInto<
 
   applySkin(currentStage.skins.dom);
 
-  const watched = [...placed.values()].filter(({ entry }) => entry.watch);
   const drive = (): { readonly driver: ClockDriver; stop(): void } => {
     const driver = clockDriver({
-      duration: currentStage.beats.durationMs,
+      duration: currentStage.durationMs,
       ...(options.frames === undefined ? {} : { frames: options.frames }),
     });
-    for (const { entry, element: own } of watched) driver.watch(entry.name, own);
+    for (const target of placed.values())
+      if (target.member.watch) driver.watch(target.name, target.element);
     return { driver, stop: () => driver.dispose() };
   };
 
@@ -940,89 +772,79 @@ function mountInto<
   measured = measure();
 
   const sceneOf = (): Scene<StageValues> => (time, events) => {
-    const boxes =
-      currentStage.layout.kind === "multi" ? measured.layoutReaders : measured.restReader;
-    const evaluated = evaluateFrame(currentStage, { time, events, boxes });
-    if (!evaluated.ok) {
-      const details = evaluated.errors.map(formatStageError).join(" ");
-      throw new TypeError(`mountStage: ${details}`);
+    const out = frameOf(currentStage, { time, events, boxes: measured.readers });
+    if (options.checks === true) {
+      const errors = check(currentStage, out.targets);
+      if (errors.length > 0)
+        throw new TypeError(`mountStage: ${errors.map(formatStageError).join(" ")}`);
     }
-    const [firstReadoutError] = evaluated.readoutErrors;
-    if (firstReadoutError !== undefined) {
-      const err = firstReadoutError.error;
-      if (err instanceof TypeError) throw err;
-      throw new TypeError(
-        `mountStage: readout "${firstReadoutError.member}" failed: ${err instanceof Error ? err.message : String(err)}`,
-        { cause: err },
-      );
-    }
-    lastEvaluation = evaluated;
-    return evaluated.poses;
+    const nextReadouts = new Map<string, string>();
+    for (const member of currentStage.members)
+      if (member.kind === "actor" && member.content.kind === "readout")
+        nextReadouts.set(member.name, member.content.format(time));
+    readouts = nextReadouts;
+    lastFrame = out;
+    return out.targets;
   };
 
   // Styles the frame under the layout in force before a frame's values are written.
   const follow = (): void => {
-    const inForce = lastEvaluation?.layout;
-    if (inForce === shown) return;
+    const inForce = lastFrame?.layout;
+    if (inForce === undefined || inForce === shown) return;
     shown = inForce;
-    if (shown === undefined) frame.removeAttribute("data-layout");
-    else {
-      frame.setAttribute("data-layout", shown);
-      paint(shown);
-    }
+    frame.setAttribute("data-layout", shown);
+    paint(shown);
   };
 
-  const applyEvaluation = (): void => {
-    const evaluated = lastEvaluation;
-    if (evaluated === undefined) return;
-    for (const [name, visible] of Object.entries(evaluated.visibility)) {
-      const target = placed.get(name);
-      if (target === undefined) continue;
-      if (!visible || target.element.style.visibility === "hidden") {
-        target.element.style.visibility = visible ? "" : "hidden";
-      }
+  const showAndRead = (): void => {
+    const visible = lastFrame?.visible;
+    if (visible === undefined) return;
+    for (const target of byIndex) {
+      const on = visible[target.name] ?? true;
+      if (!on || target.element.style.visibility === "hidden")
+        target.element.style.visibility = on ? "" : "hidden";
     }
-    for (const [name, text] of Object.entries(evaluated.readouts)) {
+    for (const [name, text] of readouts) {
       const target = placed.get(name);
-      if (target !== undefined && target.element.textContent !== text) {
+      if (target !== undefined && target.element.textContent !== text)
         target.element.textContent = text;
-      }
-    }
-    for (const [name, cubics] of Object.entries(evaluated.morphs)) {
-      const target = placed.get(name);
-      if (target === undefined) continue;
-      const drawing = strokes.get(target.element);
-      if (drawing !== undefined && !sameCubics(cubics, drawing.painted)) {
-        drawing.path.setAttribute("d", pathData(cubics));
-        drawing.painted = cubics;
-      }
     }
   };
 
-  const bind = (target: Placed<E>, value: Pose2d | readonly Pose2d[] | undefined): void => {
+  const morph = (own: E, content: Content | undefined, pose: Pose2d): void => {
+    if (content?.kind !== "morph") return;
+    const drawing = strokes.get(own);
+    const cubics = morphAt(content, pose);
+    if (drawing !== undefined && !sameCubics(cubics, drawing.painted)) {
+      drawing.path.setAttribute("d", pathData(cubics));
+      drawing.painted = cubics;
+    }
+  };
+
+  const bind = (target: Placed<E>, value: unknown): void => {
     if (value === undefined) return;
-    const kind = target.entry.kind;
-    switch (kind) {
+    const member = target.member;
+    switch (member.kind) {
       case "actor":
-      case "group":
-        if (isList(value))
-          throw new TypeError(`mountStage: "${target.entry.name}" takes one value, not a list.`);
-        write(target.element, value);
+      case "group": {
+        const pose = poseOf(value);
+        if (pose === undefined) return;
+        write(target.element, pose);
+        morph(target.element, contentOf(target), pose);
         break;
-      case "list":
-        if (!isList(value))
-          throw new TypeError(
-            `mountStage: "${target.entry.name}" takes a list, one value per item.`,
-          );
+      }
+      case "list": {
+        const count = member.items.length;
         target.items.forEach((item, index) => {
-          const each = value[index];
-          if (each !== undefined) write(item, each);
+          const pose = listPose(value, index, count);
+          if (pose === undefined) return;
+          write(item, pose);
+          morph(item, member.items[index], pose);
         });
         break;
-      case "item":
-        break;
+      }
       default:
-        unreachable(kind);
+        unreachable(member);
     }
   };
 
@@ -1031,12 +853,10 @@ function mountInto<
     const cues = currentStage.cues;
     const player = play<StageValues>(sceneOf(), driver, cues.length === 0 ? {} : { cues });
     options.onDriver?.(driver);
-    const [first] = placed.keys();
-    if (first !== undefined) player.subscribe(first, follow);
-    for (const target of placed.values())
-      if (target.entry.kind !== "item")
-        player.subscribe(target.entry.name, (value) => bind(target, value));
-    if (first !== undefined) player.subscribe(first, applyEvaluation);
+    const first = byIndex[0];
+    if (first !== undefined) player.subscribe(first.name, follow);
+    for (const target of byIndex) player.subscribe(target.name, (value) => bind(target, value));
+    if (first !== undefined) player.subscribe(first.name, showAndRead);
     return {
       driver,
       player,
@@ -1048,7 +868,7 @@ function mountInto<
   };
 
   run = start();
-  mountedReady = true;
+  mounted = true;
 
   const replay = (): void => {
     run.stop();
@@ -1089,7 +909,7 @@ function mountInto<
       return run.driver;
     },
     get rest() {
-      return measured.rest;
+      return measured.layouts[shown] ?? {};
     },
     get layouts() {
       return measured.layouts;
@@ -1104,58 +924,50 @@ function mountInto<
     events: () => [...run.driver.events()],
     replace(next) {
       const nextStage = resolveStage(next);
-      if (
-        nextStage.beats.durationMs !== currentStage.beats.durationMs ||
-        !sameCast(currentStage.members, nextStage.members)
-      ) {
-        throw new Error(
-          "mountStage.replace: cannot replace a stage with a different cast or durationMs.",
-        );
-      }
+      if (nextStage.signature !== currentStage.signature)
+        throw new Error("mountStage.replace: the next stage has a different cast or durationMs.");
       const prevStage = currentStage;
       currentStage = nextStage;
       let strokesChanged = false;
-      for (const [name, target] of placed) {
-        const entry = nextStage.members.byName.get(name);
-        if (entry === undefined) continue;
-        target.entry = entry;
+      for (const target of placed.values()) {
+        const index = byIndex.indexOf(
+          target.index === undefined ? target : (target.parent ?? target),
+        );
+        const member = nextStage.members[index];
+        if (member === undefined) continue;
+        target.member = member;
         const stroke = strokes.get(target.element);
-        if (stroke === undefined || entry.content === undefined) continue;
-        const nextSource =
-          entry.content.kind === "stroke"
-            ? entry.content.path
-            : entry.content.kind === "morph"
-              ? (entry.content.matched[0] ?? entry.content.base)
-              : undefined;
-        if (nextSource !== undefined && stroke.source !== nextSource) {
-          stroke.source = nextSource;
+        const source = sourceOf(contentOf(target));
+        if (stroke !== undefined && source !== undefined && stroke.source !== source) {
+          stroke.source = source;
           stroke.cubics.clear();
           stroke.painted = undefined;
           strokesChanged = true;
         }
       }
-
       const skinChanged = !sameDomSkin(prevStage.skins.dom, nextStage.skins.dom);
       if (skinChanged) applySkin(nextStage.skins.dom);
-
       const frameChanged = !sameFrame(prevStage.frame, nextStage.frame);
       if (frameChanged) {
         applyFrameSize(nextStage.frame);
         fit();
       }
-
-      const nextNames = layoutNamesOf(nextStage);
-      const layoutsChanged = !sameNames(nextNames, names);
-      const pivotsChanged = !samePivots(prevStage.members, nextStage.members);
-      names = nextNames;
-      if (skinChanged || frameChanged || layoutsChanged || pivotsChanged || strokesChanged) {
+      const layoutsChanged = !sameNames(nextStage.layouts.names, names);
+      names = nextStage.layouts.names;
+      if (
+        skinChanged ||
+        frameChanged ||
+        layoutsChanged ||
+        strokesChanged ||
+        !samePivots(prevStage.members, nextStage.members)
+      )
         measured = measure();
-      }
       run.player.replace(sceneOf(), nextStage.cues);
     },
     dispose() {
       live = false;
-      teardownSkinLoad();
+      skinEpoch += 1;
+      activeAbort?.abort();
       fonts?.removeEventListener("loadingdone", fontsLoaded);
       observer?.disconnect();
       host.removeEventListener("keydown", onKey);
