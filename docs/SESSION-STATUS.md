@@ -6,21 +6,21 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-18, Asia/Jakarta.
-- **Read against:** `refactor/points-and-reference` after PR 601 (stage v3 follow-up).
+- **Read against:** `feat/signals`, shapes and curves (`plan/shapes-plan.md`) built on `refactor/points-and-reference` after PR 601.
 
 ## Now
 
-- **A scene is compiled from `defineStage`, split across thirteen packages in three enforced groups (`core`, `modules`, `library`).**
-  `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`), eases, envelopes, blends, paths, geometry, 3D maths and measures;
-  `@gerak/stage` owns `defineStage`, cast builders, list poses by index, `compileStage`, `frame`, `check`, layouts and `carry`, with `@gerak/stage/render` outlines and `@gerak/stage/dom` tokens; `@gerak/player`, `@gerak/dom` and `@gerak/react` play and write it.
+- **A scene is compiled from `defineStage`, split across thirteen packages in three enforced groups (`core`, `modules`, `library`), with core's three shapes named (`Timing`, `Curve<T>`, `Signal<T>`) and one curve convention.**
+  `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`), shapes (`Timing`, `Curve<T = number>`, `Ease = Curve<number>`, `Signal<T = Pose2d>`), eases (`ease.*`, `backEase`, `springEase`, `spring`), envelopes (`arch`, `wave`, `attack`, `decay`, `taper`), blends, paths (`ballistic`, `along`, `along3d` and every curve with settings built from its settings before taking progress), geometry, 3D maths and measures (`velocity`, `velocity3d`, `tally`);
+  `@gerak/stage` owns `defineStage`, cast builders, list poses by index, `compileStage`, `frame`, `check`, layouts and `carry`, with `@gerak/stage/render` outlines and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` and `@gerak/react` (`usePlayer`, `PlayerHost`) play and write `Signal`.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves` and `@gerak/moves-tools`) adds named moves, couplings, signal parts, styles, `gerak moves`, `new-move`, `promote`, `style` and design review when installed.
-  `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`) cleanly with core alone, discovering library plugins via manifest `gerak.commands`/`gerak.review`; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md` (under 20 KB each) and every installed package's docs.
-  Decisions are ADR-170 to ADR-190; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
+  `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`, with `NAMED_CURVES` built from core's `ease` and `Curve`) cleanly with core alone, discovering library plugins via manifest `gerak.commands`/`gerak.review`; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md` (under 20 KB each) and every installed package's docs.
+  Decisions are ADR-170 to ADR-191; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **Signals** in three plans, in order: `plan/shapes-plan.md` (core names its shapes, one curve convention), `plan/principles-plan.md` (principles in core, plain moves, no moves-tools) and `plan/stage-3d-plan.md` (3D objects in a stage); then the live kit and web overlay (`plan/roadmap.md`).
+- **Principles and 3D stage**, in order: `plan/principles-plan.md` (principles in core, plain moves, no moves-tools) and `plan/stage-3d-plan.md` (3D objects in a stage); then the live kit and web overlay (`plan/roadmap.md`).
 
 ## Open, and not scheduled
 

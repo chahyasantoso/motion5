@@ -40,14 +40,14 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 | --- | --- |
 | Squash and stretch | `squashed3d(squash, weight, axis)` keeps volume; `smear3d(velocity3d(...), { stretch, max })` stretches along travel |
 | Anticipation | `squashed3d` on a span before the move, then `backEase({ amount, direction: "in" })` on a `mix` |
-| Arcs | `along3d(toCubics3d(anchors), share, { face })`; `face` points local +x along the path |
+| Arcs | `along3d(toCubics3d(anchors), { face })(share)`; `face` points local +x along the path |
 | Follow-through | `trailTurn(signal, { damping })` for a turn, the short way round; three `trail` calls for a position |
 | Staging | the camera is the stage: `orbit` places it, `aim` points it, a `span` moves it |
 | Stagger, timing, eases, settle | `lanes`, `span`, `ease`, `springEase`, as in 2D |
 
 - **A smear on a body that must keep its face:** an outer group takes `smear3d(...).pose` and the mesh inside takes
   `turn`. Reversing travel never flips the stretch.
-- **A bank into a turn:** a facing turn from `along3d(..., { face: true })` points local +x along the path. Bank with
+- **A bank into a turn:** a facing turn from `along3d(..., { face: true })(share)` points local +x along the path. Bank with
   `combine3d([facing, { rotationX: bank }])`: it turns after the facing turn, so it rolls about the nose. Writing
   `rotationX` into the facing pose's own fields tilts about the world instead. Read the turn rate from the facing
   turn at two times with `timeAt`, and bank in proportion to it.
