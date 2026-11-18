@@ -32,8 +32,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
-  final hold under `--hold`, and a target still moving at the end; the final-hold finding names no target, so
-  `gerak sample <scene.ts> --watch <path> --from <ms>` shows which value still changes. For a 3D scene give `--jump` in world units.
+  final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   For a stage module (`defineStage`) a finding that names a time also names the beat there, and it
   adds: a `"settle"` member the scene never moves (unless `.watch()` or `.ambient()`), a `.static()` member the scene moves or poses, a target
   the scene answers that is not cast, a member whose value changes outside its `.on()` stretches (before the first, in a

@@ -81,7 +81,21 @@ describe("gerak review on a scene file", () => {
     const { findings } = review(flawed);
     expect(findings).toContain("ball.x jumps 400 at 608 ms");
     expect(findings).toContain("letters[1].x jumps 400 at 608 ms");
-    expect(findings).toContain("the final pose holds only 192 ms");
+    expect(findings).toContain("ball still changes 192 ms before the end");
+  });
+
+  it("names multiple targets changing in the final hold window", () => {
+    const samples = [0, 16, 32, 48, 64].map((at, index) => ({
+      at,
+      targets: {
+        a: { x: index <= 2 ? index : 2 },
+        b: { x: index <= 3 ? index : 3 },
+        still: { x: 0 },
+      },
+    }));
+    expect(reviewValues(samples, { ...limits, hold: 40 })).toEqual([
+      "a, b still change 16 ms before the end",
+    ]);
   });
 
   it("reports a target still moving on the last frame", () => {
