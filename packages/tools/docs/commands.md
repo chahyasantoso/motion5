@@ -10,7 +10,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 
 - **`gerak init [folder] [--refresh]`**: sets up your project, found as the nearest `package.json`: writes the
   page files into `folder` (default `pieces`, from where you run), `"gerak": { "pieces": "<folder>" }` into the
-  `package.json`, the make-motion skill into `.claude/skills/make-motion/` and an `AGENTS.md`. It refuses, naming
+  `package.json`, the make-motion skill into `.claude/skills/make-motion/`, `AGENTS.md` and `tsconfig.json`. It refuses, naming
   each file, and writes nothing when any of them exists or the `package.json` already names `gerak.pieces`.
   `--refresh` rewrites only the six page files of the pieces folder, and nothing else.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the

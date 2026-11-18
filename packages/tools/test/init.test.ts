@@ -50,7 +50,7 @@ function init(caller: string, args: string[] = []) {
 function snapshot(dir: string): string[] {
   const out: string[] = [];
   const visit = (path: string) => {
-    for (const name of ["package.json", "AGENTS.md", ".claude", "pieces"]) {
+    for (const name of ["package.json", "AGENTS.md", "tsconfig.json", ".claude", "pieces"]) {
       const full = join(path, name);
       if (existsSync(full)) out.push(full);
     }
@@ -64,7 +64,7 @@ afterEach(() => {
 });
 
 describe("gerak init", () => {
-  it("writes the pages, the skill, AGENTS.md and the package.json entry, keeping the keys", () => {
+  it("writes the pages, the skill, AGENTS.md, tsconfig.json and the package.json entry, keeping the keys", () => {
     const dir = project('{ "name": "mine", "version": "1.0.0", "dependencies": { "a": "1" } }');
     const { code, result } = init(dir);
     expect(code).toBe(0);
@@ -76,6 +76,18 @@ describe("gerak init", () => {
     expect(agents).toContain("node_modules/@gerak/core/docs/core.md");
     expect(agents).toContain("node_modules/@gerak/stage/docs/stage.md");
     expect(agents).toContain("pieces");
+    expect(JSON.parse(readFileSync(join(dir, "tsconfig.json"), "utf8"))).toEqual({
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        lib: ["ES2022", "DOM"],
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+      },
+      include: ["pieces/*/src"],
+    });
     const text = readFileSync(join(dir, "package.json"), "utf8");
     expect(text.endsWith("}\n")).toBe(true);
     const parsed = JSON.parse(text);
@@ -93,6 +105,9 @@ describe("gerak init", () => {
     expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).gerak.pieces).toBe(
       "web/motion",
     );
+    expect(JSON.parse(readFileSync(join(dir, "tsconfig.json"), "utf8")).include).toEqual([
+      "web/motion/*/src",
+    ]);
   });
 
   it("refuses a second run, naming the files, and writes nothing", () => {
@@ -102,21 +117,26 @@ describe("gerak init", () => {
     const { code, result } = init(dir);
     expect(code).toBe(1);
     expect(result.kind).toBe("refused");
-    for (const name of ["pieces/stage.ts", SKILL, "AGENTS.md", "gerak.pieces"])
+    for (const name of ["pieces/stage.ts", SKILL, "AGENTS.md", "tsconfig.json", "gerak.pieces"])
       expect(result.message, name).toContain(name);
     expect(readFileSync(join(dir, "package.json"), "utf8")).toBe(before);
   });
 
-  it("refuses a project that already has an AGENTS.md and writes nothing", () => {
-    const dir = project("{}");
-    writeFileSync(join(dir, "AGENTS.md"), "mine\n");
-    const { code, result } = init(dir);
-    expect(code).toBe(1);
-    expect(result.message).toContain("AGENTS.md");
-    expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toBe("mine\n");
-    expect(existsSync(join(dir, "pieces"))).toBe(false);
-    expect(existsSync(join(dir, ".claude"))).toBe(false);
-    expect(readFileSync(join(dir, "package.json"), "utf8")).toBe("{}");
+  it("refuses a project that already has an AGENTS.md or tsconfig.json and writes nothing", () => {
+    for (const [file, content] of [
+      ["AGENTS.md", "mine\n"],
+      ["tsconfig.json", '{"compilerOptions":{}}\n'],
+    ] as const) {
+      const dir = project("{}");
+      writeFileSync(join(dir, file), content);
+      const { code, result } = init(dir);
+      expect(code, file).toBe(1);
+      expect(result.message, file).toContain(file);
+      expect(readFileSync(join(dir, file), "utf8")).toBe(content);
+      expect(existsSync(join(dir, "pieces"))).toBe(false);
+      expect(existsSync(join(dir, ".claude"))).toBe(false);
+      expect(readFileSync(join(dir, "package.json"), "utf8")).toBe("{}");
+    }
   });
 
   it("refuses with no package.json", () => {
@@ -137,12 +157,14 @@ describe("gerak init", () => {
     writeFileSync(join(dir, "pieces", "demo", "brief.md"), "brief\n");
     writeFileSync(join(dir, "pieces", "stage.ts"), "changed\n");
     writeFileSync(join(dir, "AGENTS.md"), "edited\n");
+    writeFileSync(join(dir, "tsconfig.json"), '{"edited":true}\n');
     writeFileSync(join(dir, SKILL), "edited skill\n");
     const { code, result } = init(dir, ["--refresh"]);
     expect(code).toBe(0);
     expect(result.kind).toBe("written");
     expect(readFileSync(join(dir, "pieces", "stage.ts"), "utf8")).toBe(pageFiles()["stage.ts"]);
     expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toBe("edited\n");
+    expect(readFileSync(join(dir, "tsconfig.json"), "utf8")).toBe('{"edited":true}\n');
     expect(readFileSync(join(dir, SKILL), "utf8")).toBe("edited skill\n");
     expect(readFileSync(join(dir, "pieces", "demo", "brief.md"), "utf8")).toBe("brief\n");
   });

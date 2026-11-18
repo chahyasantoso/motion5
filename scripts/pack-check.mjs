@@ -330,6 +330,7 @@ function initError(project, exists = existsSync) {
     ),
     skill,
     "AGENTS.md",
+    "tsconfig.json",
     ...READ_WHOLE_PAGES,
   ];
   const absent = expected.filter((file) => !exists(join(project, file)));
@@ -513,7 +514,17 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
       ? undefined
       : firstErrorLine(created.out || created.err),
   );
+  const tscAfterNew = sh("npx --no-install tsc --noEmit", dir);
+  check(
+    "core-only tsc after new",
+    tscAfterNew.code === 0 ? undefined : firstErrorLine(tscAfterNew.out || tscAfterNew.err),
+  );
   writeFileSync(demoFile, CORE_PIECE);
+  const tscOnPiece = sh("npx --no-install tsc --noEmit", dir);
+  check(
+    "core-only tsc on piece",
+    tscOnPiece.code === 0 ? undefined : firstErrorLine(tscOnPiece.out || tscOnPiece.err),
+  );
   const reviewed = sh("npx --no-install gerak review pieces/demo/src/demo.ts", dir);
   const reviewJson = jsonOf(reviewed);
   check(
