@@ -4,7 +4,13 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Cubic2d } from "@gerak/core";
-import { readStageModule, type StageModule } from "@gerak/stage";
+import {
+  compileStage,
+  formatStageError,
+  isStageDefinition,
+  type CompiledStage,
+  type PoseMode,
+} from "@gerak/stage";
 import { importSvg, importSvgInto, type ImportResult } from "../src/scene/import-svg";
 import { readSceneModule } from "../src/scene/scene";
 import { reviewSceneModule } from "../src/scene/review";
@@ -23,10 +29,21 @@ interface Imported {
   readonly defs: string;
 }
 
-function stageOf(module: unknown): StageModule {
-  const read = readStageModule(module);
-  if ("reason" in read) throw new Error(read.reason);
-  return read;
+function stageOf(module: unknown): CompiledStage<PoseMode> {
+  const def: unknown = Reflect.get(Object(module), "default");
+  if (!isStageDefinition(def)) throw new Error("missing default defineStage");
+  const compiled = compileStage(def);
+  if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+  return compiled.stage;
+}
+
+function inlineDom(stage: CompiledStage<PoseMode>): {
+  readonly css: string;
+  readonly defs: string;
+} {
+  const dom = stage.skins.dom;
+  if (dom?.kind === "inline") return { css: dom.css, defs: dom.defs ?? "" };
+  return { css: "", defs: "" };
 }
 
 async function bring(svg: string, name: string, margin?: number): Promise<Imported> {
@@ -36,14 +53,15 @@ async function bring(svg: string, name: string, margin?: number): Promise<Import
   if (result.kind !== "written") throw new Error(result.message);
   const module: Record<string, unknown> = await import(pathToFileURL(result.file).href);
   const stage = stageOf(module);
-  return { result, module, css: stage.skins.dom?.css ?? "", defs: stage.skins.dom?.defs ?? "" };
+  return { result, module, ...inlineDom(stage) };
 }
 
 function cubicsOf(imported: Imported, name: string): readonly Cubic2d[] {
-  const found = stageOf(imported.module).cast[name];
-  if (found === undefined || found.kind !== "actor" || typeof found.path === "function")
-    throw new Error(`no path member ${name}`);
-  return found.path ?? [];
+  const found = stageOf(imported.module).members.byName.get(name);
+  const content = found?.content;
+  if (content?.kind === "stroke" && typeof content.path !== "function") return content.path;
+  if (content?.kind === "morph") return content.base;
+  throw new Error(`no path member ${name}`);
 }
 
 type Point = readonly [number, number];
@@ -148,7 +166,7 @@ describe("gerak import-svg geometry", () => {
   it("keeps parts flat in paint order, as the id and the module's frame say", async () => {
     const imported = await bring(join(fixtures, "svg-transforms.svg"), "fixture");
     expect(imported.result.frame).toEqual({ width: 200, height: 120 });
-    expect(imported.module["frame"]).toEqual({ width: 200, height: 120 });
+    expect(stageOf(imported.module).frame).toEqual({ width: 200, height: 120 });
     expect(imported.css).toContain('[data-cast="tile"] { z-index: 1; }');
     expect(imported.css).toContain('[data-cast="dot"] { z-index: 2; }');
     expect(imported.css).toContain(
@@ -172,19 +190,17 @@ describe("gerak import-svg outlines to morph to", () => {
   it("makes <part>-shape<N> the Nth of its part's shapes, and lists what it cannot", async () => {
     const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
     expect(imported.result.members).toEqual(["beak", "lid", "eye"]);
-    const beak = stageOf(imported.module).cast["beak"];
-    if (beak === undefined || beak.kind !== "actor") throw new Error("no beak");
-    const tips = (beak.shapes ?? []).map((outline) =>
-      Math.max(...along(outline).map(([, y]) => y)),
-    );
+    const beak = stageOf(imported.module).members.byName.get("beak")?.content;
+    if (beak === undefined || beak.kind !== "morph") throw new Error("no beak");
+    const tips = beak.targets.map((outline) => Math.max(...along(outline).map(([, y]) => y)));
     expect(tips).toEqual([expect.closeTo(45, 3), expect.closeTo(60, 3)]);
     for (const name of ["lid", "eye"]) {
-      const member = stageOf(imported.module).cast[name];
-      expect(member?.kind === "actor" ? member.shapes : "missing").toBeUndefined();
+      const member = stageOf(imported.module).members.byName.get(name)?.content;
+      expect(member?.kind).toBe("stroke");
     }
     const reasons = imported.result.leftOut.map(({ reason }) => reason).join("\n");
     expect(reasons).toMatch(/the shapes of "lid" must be numbered 1, 2, 3 in turn/);
-    expect(reasons).toMatch(/"eye" cannot morph: its outlines have different numbers of pieces/);
+    expect(reasons).toMatch(/"eye" cannot morph: outlines have different piece counts/);
     expect(reasons).toMatch(/an outline of "ghost", which no part is named/);
   }, 60000);
 });
@@ -305,27 +321,25 @@ describe("gerak import-svg --into a piece", () => {
     mkdirSync(join(root, "scratch", "src"), { recursive: true });
     writeFileSync(
       join(root, "scratch", "src", "scratch.ts"),
-      `import { actor, story } from "@gerak/stage";
+      `import { defineStage } from "@gerak/stage";
 
-export const beats = story(1000, { show: [0, 1000] });
-
-export const frame = ${frame};
-
-export const cast = {
-  "base": actor({ still: true, path: [{ id: "c0", x0: 1, y0: 1, x1: 2, y1: 2, x2: 3, y2: 3, x3: 4, y3: 4 }] }),
-} as const;
-
-export const skins = {
-  dom: {
-    css: \`
+export default defineStage({
+  beats: { show: [0, 1000] },
+  frame: ${frame},
+  cast: (m) => ({
+    "base": m.stroke([{ id: "c0", x0: 1, y0: 1, x1: 2, y1: 2, x2: 3, y2: 3, x3: 4, y3: 4 }]).static(),
+  } as const),
+  skins: {
+    dom: {
+      css: \`
 [data-cast="base"] { z-index: 1; }
 [data-path="base"] { fill: url(#keep); stroke: none; }
 \`,
-    defs: \`<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>\`,
+      defs: \`<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>\`,
+    },
   },
-};
-
-export const scene = (_time: unknown) => ({});
+  scene: () => ({}),
+});
 `,
     );
     return root;
@@ -354,8 +368,7 @@ export const scene = (_time: unknown) => ({});
         outside: [],
       },
       module,
-      css: stage.skins.dom?.css ?? "",
-      defs: stage.skins.dom?.defs ?? "",
+      ...inlineDom(stage),
     };
   }
 
@@ -380,7 +393,7 @@ export const scene = (_time: unknown) => ({});
       '[data-path="artEven"] { fill: none; stroke: #000000; stroke-width: 9; }',
     );
     const after = readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8");
-    expect(after.startsWith(before.slice(0, before.indexOf("} as const;")))).toBe(true);
+    expect(after.startsWith(before.slice(0, before.indexOf("  } as const)")))).toBe(true);
     expect(after).toContain('[data-path="base"] { fill: url(#keep); stroke: none; }');
     expect(after).toContain(
       '<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>',
@@ -395,7 +408,7 @@ export const scene = (_time: unknown) => ({});
       expect(result.kind).toBe("written");
     }
     const imported = await read(root);
-    expect(Object.keys(stageOf(imported.module).cast).sort()).toEqual(
+    expect([...stageOf(imported.module).members.byName.keys()].sort()).toEqual(
       ["base", "oneStrip", "onePlain", "oneSun", "twoStrip", "twoPlain", "twoSun"].sort(),
     );
     const ids = [...imported.defs.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]);

@@ -30,7 +30,7 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
     saveButton.hidden = true;
     return;
   }
-  const stage = mountStage(root, loaded.module);
+  const stage = mountStage(root, loaded.stage);
 
   saveButton.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(stage.events(), null, 1)], { type: "application/json" });

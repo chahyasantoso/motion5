@@ -187,16 +187,16 @@ describe("gerak style", () => {
 
   it("measures one shape per beat for a field that moves in both", async () => {
     const text = `
-import { story } from "@gerak/stage";
-export const durationMs = 1000;
-export const beats = story(1000, { a: [0, 400], b: [600, 1000] });
-export const cast = {};
-export const skins = {};
-export const scene = (time: { clock: { kind: string; elapsed?: number } }) => {
-  const at = time.clock.elapsed ?? 0;
-  const t = at < 500 ? Math.min(1, at / 400) : Math.min(1, Math.max(0, (at - 600) / 400));
-  return { ball: { x: 100 * t } };
-};
+import { defineStage } from "@gerak/stage";
+export default defineStage({
+  beats: { a: [0, 400], b: [600, 1000] },
+  cast: (m) => ({ ball: m.box() }),
+  scene: ({ time }) => {
+    const at = "elapsed" in time.clock ? time.clock.elapsed : 0;
+    const t = at < 500 ? Math.min(1, at / 400) : Math.min(1, Math.max(0, (at - 600) / 400));
+    return { ball: { x: 100 * t } };
+  },
+});
 `;
     const root = localRoot({ "reel/src/two.ts": text });
     const shapes = measureShapes(await moduleOf(join(root, "reel", "src", "two.ts")));

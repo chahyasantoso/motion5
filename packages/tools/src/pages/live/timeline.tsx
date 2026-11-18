@@ -47,12 +47,9 @@ function beatMarks(story: unknown): readonly TimelineMark[] {
 }
 
 /** The timeline's marks: each beat of the module's story at its start, then its cues and `_MS` moments. */
-export function extractMarks(
-  sceneModule: Readonly<Record<string, unknown>>,
-  durationMs: number,
-): readonly TimelineMark[] {
-  const result: TimelineMark[] = [...beatMarks(sceneModule.beats)];
-  const cues = sceneModule.cues;
+export function extractMarks(sceneModule: object, durationMs: number): readonly TimelineMark[] {
+  const result: TimelineMark[] = [...beatMarks(Reflect.get(sceneModule, "beats"))];
+  const cues: unknown = Reflect.get(sceneModule, "cues");
   if (Array.isArray(cues)) {
     for (const item of cues) {
       if (isCueObject(item)) {
@@ -60,9 +57,8 @@ export function extractMarks(
       }
     }
   }
-  for (const key of Object.keys(sceneModule)) {
+  for (const [key, value] of Object.entries(sceneModule)) {
     if (key.endsWith("_MS")) {
-      const value = sceneModule[key];
       if (typeof value === "number") {
         if (key === "BEAT_MS" && value === durationMs) {
           continue;

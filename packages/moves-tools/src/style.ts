@@ -52,12 +52,13 @@ async function loadPiece(file: string): Promise<Piece> {
     return { kind: "failed", message: error instanceof Error ? error.message : String(error) };
   }
   const read = readSceneModule(loaded);
-  if ("reason" in read)
-    return {
-      kind: "refused",
-      reason: read.reason,
-      styled: Reflect.get(Object(loaded), "style") !== undefined,
-    };
+  if ("reason" in read) {
+    const def: unknown = Reflect.get(Object(loaded), "default");
+    const styled =
+      Reflect.get(Object(loaded), "style") !== undefined ||
+      (typeof def === "object" && def !== null && Reflect.get(def, "style") !== undefined);
+    return { kind: "refused", reason: read.reason, styled };
+  }
   return { kind: "module", module: read };
 }
 

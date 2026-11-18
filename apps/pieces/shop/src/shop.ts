@@ -8,7 +8,7 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import { actor, carried, many, restOf, story, type Layouts, type Rest } from "@gerak/stage";
+import { defineStage, type CastBuilder } from "@gerak/stage";
 
 /** A small shop: six products, a price sort, and a detail view that the grid folds into a rail beside. */
 
@@ -101,24 +101,12 @@ const layoutName = (state: ShopState): Layout => {
 };
 
 /** The layout in force, from the events alone. */
-export const layout = (events: Events): Layout => layoutName(stateOf(events));
+const layout = (events: Events): Layout => layoutName(stateOf(events));
 
-export const beats = story(7000, { browse: [0, 7000] });
-
-const textOf = (make: (product: (typeof products)[number]) => string) =>
-  many(products, (product) => actor({ text: make(product) }));
-
-export const cast = {
-  title: actor({ text: "Field & Fold", still: true }),
-  sort: actor({ text: "Sort by price", watch: true, still: true }),
-  tick: actor(),
-  tile: many(COUNT, { watch: true }),
-  swatch: many(COUNT),
-  label: textOf((product) => product.name),
-  price: textOf((product) => `$${product.price}`),
-  note: textOf((product) => product.text),
-  back: actor({ text: "← Back", watch: true }),
-};
+const textOf = <B extends string>(
+  m: CastBuilder<B>,
+  make: (product: (typeof products)[number]) => string,
+) => m.many(products, (product) => m.text(make(product)));
 
 /* The skin: every layout's boxes, written out as CSS. */
 
@@ -222,9 +210,7 @@ const swatches = products
   .map((product, index) => `[data-cast="swatch.${index}"] { background: ${product.colour}; }`)
   .join("\n");
 
-export const skins = {
-  dom: {
-    css: `
+const domCss = `
 [data-cast] { position: absolute; margin: 0; box-sizing: border-box; }
 [data-cast="tile"], [data-cast="swatch"], [data-cast="label"], [data-cast="price"], [data-cast="note"] { left: 0; top: 0; width: 1280px; height: 720px; pointer-events: none; }
 [data-cast="title"] { left: 64px; top: 46px; font: 600 26px/1.2 Georgia, "Times New Roman", serif; color: #2b2622; letter-spacing: 0.01em; }
@@ -239,9 +225,7 @@ export const skins = {
 [data-cast="back"] { left: ${DETAIL_TEXT}px; top: ${TOP + AREA_HEIGHT - 82}px; width: 112px; height: 40px; border-radius: 20px; background: #2b2622; color: #fffdf9; font: 500 14px/40px system-ui, sans-serif; text-align: center; cursor: pointer; z-index: 95; user-select: none; }
 ${swatches}
 ${layouts.map((name) => layoutCss(name, stateOfLayout(name))).join("\n")}
-`,
-  },
-};
+`;
 
 /* The scene. */
 
@@ -274,53 +258,60 @@ const shownAt = (
   return mix(from, to, stretch.of(time, ease.sineInOut).progress);
 };
 
-export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layout>) => {
-  // A tool with no browser measures no layout; every card then rests where it is.
-  const measured = Object.keys(all).length > 0;
-  const carry = (part: Part, index: number): Pose2d => {
-    if (!measured) return {};
-    return carried({
-      own: restOf(rest, `${part}.${index}`),
-      at: (past) => restOf(all[layout(past)], `${part}.${index}`),
-      events,
-      time,
-      ms: CARRY_MS,
-      ease: ease.cubicOut,
-      size: "scale",
-    });
-  };
-  const row = (part: Part) => firstOrder.map((index) => carry(part, index));
-  const detail = { delayMs: 260, inMs: 220, outMs: 120 };
-  const notes = firstOrder.map((index) => {
-    const pose: Pose2d = {
-      ...carry("note", index),
-      opacity: shownAt(time, events, (state) => state.open === index, detail),
+export default defineStage({
+  beats: { browse: [0, 7000] },
+  layouts: { names: layouts, pick: layout },
+  cast: (m) => ({
+    title: m.text("Field & Fold").static(),
+    sort: m.text("Sort by price").watch().static(),
+    tick: m.box(),
+    tile: m.many(COUNT).watch(),
+    swatch: m.many(COUNT),
+    label: textOf(m, (product) => product.name),
+    price: textOf(m, (product) => `$${product.price}`),
+    note: textOf(m, (product) => product.text),
+    back: m.text("← Back").watch(),
+  }),
+  skins: { dom: { css: domCss } },
+  cues: [
+    { name: "click", at: 1500, target: "sort" },
+    { name: "click", at: 1700, target: "sort" },
+    { name: "click", at: 3500, target: "tile.2" },
+    { name: "click", at: 5500, target: "back" },
+  ],
+  scene: ({ time, events, rest, carry: carryBox }) => {
+    const measured = rest.keys().length > 0;
+    const carry = (part: Part, index: number): Pose2d => {
+      if (!measured) return {};
+      return carryBox(`${part}.${index}`, {
+        ms: CARRY_MS,
+        ease: ease.cubicOut,
+        mode: "scale",
+      });
     };
-    return pose;
-  });
-  return {
-    title: {} satisfies Pose2d,
-    sort: {} satisfies Pose2d,
-    tick: {
-      opacity: shownAt(time, events, (state) => state.sorted, {
-        delayMs: 0,
-        inMs: 160,
-        outMs: 160,
-      }),
-    },
-    tile: row("tile"),
-    swatch: row("swatch"),
-    label: row("label"),
-    price: row("price"),
-    note: notes,
-    back: { opacity: shownAt(time, events, (state) => state.open !== undefined, detail) },
-  };
-};
-
-/** One visitor: sorts, changes their mind mid-flight, opens the third card, and comes back. */
-export const cues: Events = [
-  { name: "click", at: 1500, target: "sort" },
-  { name: "click", at: 1700, target: "sort" },
-  { name: "click", at: 3500, target: "tile.2" },
-  { name: "click", at: 5500, target: "back" },
-];
+    const row = (part: Part) => firstOrder.map((index) => carry(part, index));
+    const detail = { delayMs: 260, inMs: 220, outMs: 120 };
+    const notes = firstOrder.map((index) => {
+      const pose: Pose2d = {
+        ...carry("note", index),
+        opacity: shownAt(time, events, (state) => state.open === index, detail),
+      };
+      return pose;
+    });
+    return {
+      tick: {
+        opacity: shownAt(time, events, (state) => state.sorted, {
+          delayMs: 0,
+          inMs: 160,
+          outMs: 160,
+        }),
+      },
+      tile: row("tile"),
+      swatch: row("swatch"),
+      label: row("label"),
+      price: row("price"),
+      note: notes,
+      back: { opacity: shownAt(time, events, (state) => state.open !== undefined, detail) },
+    };
+  },
+});

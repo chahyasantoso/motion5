@@ -36,13 +36,9 @@ function unwrapped(node: ts.Expression): ts.Expression {
   return current;
 }
 
-function exportedConst(file: ts.SourceFile, name: string): ts.Expression | undefined {
+function namedConst(file: ts.SourceFile, name: string): ts.Expression | undefined {
   for (const statement of file.statements) {
     if (!ts.isVariableStatement(statement)) continue;
-    const exported = ts
-      .getModifiers(statement)
-      ?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword);
-    if (exported !== true) continue;
     for (const declaration of statement.declarationList.declarations)
       if (
         ts.isIdentifier(declaration.name) &&
@@ -50,6 +46,53 @@ function exportedConst(file: ts.SourceFile, name: string): ts.Expression | undef
         declaration.initializer !== undefined
       )
         return unwrapped(declaration.initializer);
+  }
+  return undefined;
+}
+
+function defineStageOptions(file: ts.SourceFile): ts.ObjectLiteralExpression | undefined {
+  for (const statement of file.statements) {
+    if (!ts.isExportAssignment(statement) || statement.isExportEquals) continue;
+    let expr = unwrapped(statement.expression);
+    if (ts.isIdentifier(expr)) {
+      const bound = namedConst(file, expr.text);
+      if (bound === undefined) return undefined;
+      expr = bound;
+    }
+    if (!ts.isCallExpression(expr)) return undefined;
+    if (!ts.isIdentifier(expr.expression) || expr.expression.text !== "defineStage") {
+      return undefined;
+    }
+    const [arg] = expr.arguments;
+    if (arg === undefined) return undefined;
+    const options = unwrapped(arg);
+    return ts.isObjectLiteralExpression(options) ? options : undefined;
+  }
+  return undefined;
+}
+
+function castObjectLiteral(expr: ts.Expression): ts.ObjectLiteralExpression | undefined {
+  const fn = unwrapped(expr);
+  if (ts.isArrowFunction(fn)) {
+    if (!ts.isBlock(fn.body)) {
+      const body = unwrapped(fn.body);
+      return ts.isObjectLiteralExpression(body) ? body : undefined;
+    }
+    for (const statement of fn.body.statements) {
+      if (ts.isReturnStatement(statement) && statement.expression !== undefined) {
+        const returned = unwrapped(statement.expression);
+        return ts.isObjectLiteralExpression(returned) ? returned : undefined;
+      }
+    }
+    return undefined;
+  }
+  if (ts.isFunctionExpression(fn)) {
+    for (const statement of fn.body.statements) {
+      if (ts.isReturnStatement(statement) && statement.expression !== undefined) {
+        const returned = unwrapped(statement.expression);
+        return ts.isObjectLiteralExpression(returned) ? returned : undefined;
+      }
+    }
   }
   return undefined;
 }
@@ -101,8 +144,7 @@ function appendedText(
   return { at, text: `${before === "" || before.endsWith("\n") ? "" : "\n"}${text}\n` };
 }
 
-/** `source` with the cast members, skin rules and defs added at the ends of the piece's own
- * `cast`, `skins.dom.css` and `skins.dom.defs`, and nothing else touched; or why it cannot. */
+/** `source` with the cast members, skin rules and defs added inside `defineStage({ ... })`. */
 export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   const file = ts.createSourceFile(
     "piece.ts",
@@ -113,8 +155,12 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   );
   const refuse = (message: string): PieceEdit => ({ kind: "refused", message });
 
+  const options = defineStageOptions(file);
+  if (options === undefined) return refuse("The piece must default-export `defineStage({ ... })`.");
+
   // A piece with no `frame` plays in the stage's default one.
-  const frameNode = exportedConst(file, "frame");
+  const frameProp = property(options, "frame");
+  const frameNode = frameProp === undefined ? undefined : unwrapped(frameProp.initializer);
   const width =
     frameNode === undefined
       ? DEFAULT_FRAME.width
@@ -130,9 +176,12 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   if (width === undefined || height === undefined)
     return refuse("The piece's `frame` is not an object literal with a numeric width and height.");
 
-  const cast = exportedConst(file, "cast");
-  if (cast === undefined || !ts.isObjectLiteralExpression(cast))
-    return refuse("The piece's `cast` is not an object literal, so no member can be added to it.");
+  const castProp = property(options, "cast");
+  const cast = castProp === undefined ? undefined : castObjectLiteral(castProp.initializer);
+  if (cast === undefined)
+    return refuse(
+      "The piece's `cast` is not a `(m) => ({ ... })` returning an object literal, so no member can be added to it.",
+    );
   const known = new Set<string>();
   for (const member of cast.properties)
     if (member.name !== undefined) {
@@ -142,7 +191,8 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   const clash = add.names.find((name) => known.has(name));
   if (clash !== undefined) return refuse(`The piece's cast already has a member "${clash}".`);
 
-  const skins = exportedConst(file, "skins");
+  const skinsProp = property(options, "skins");
+  const skins = skinsProp === undefined ? undefined : unwrapped(skinsProp.initializer);
   const dom =
     skins !== undefined && ts.isObjectLiteralExpression(skins) ? property(skins, "dom") : undefined;
   const domObject = dom === undefined ? undefined : unwrapped(dom.initializer);

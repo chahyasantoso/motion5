@@ -1,16 +1,11 @@
-import type { Pose2d, Time } from "@gerak/core";
-import { actor, story } from "@gerak/stage";
+import type { Pose2d } from "@gerak/core";
+import { defineStage } from "@gerak/stage";
 
-/** The piece's beats by name, in ms; its length is the story's. */
-export const beats = story(800, { show: [0, 800] });
-
-/** Who is on stage; the skin decides what each one looks like. */
-export const cast = { title: actor() };
-
-/** How the cast looks on the page, by `[data-cast="<name>"]`; a member left out is drawn plain. */
-export const skins = { dom: { css: `` } };
-
-/** Every member's value at `time`; `gerak sample` and `gerak timeline` read it. */
-export const scene = (_time: Time) => ({
-  title: {} satisfies Pose2d,
+export default defineStage({
+  beats: { show: [0, 800] },
+  cast: (m) => ({ title: m.box() }),
+  skins: { dom: { css: `` } },
+  scene: () => ({
+    title: {} satisfies Pose2d,
+  }),
 });

@@ -309,9 +309,9 @@ const HOT_SWAP =
   `  });\n` +
   `}\n`;
 
-/** Whether a source file exports the story and the cast of a stage module. */
+/** Whether a source file default-exports a `defineStage` stage module. */
 function isStageSource(code: string): boolean {
-  return /export\s+const\s+beats\b/.test(code) && /export\s+const\s+cast\b/.test(code);
+  return /\bexport\s+default\b/.test(code) && /\bdefineStage\s*(?:<[^>]*>)?\s*\(/.test(code);
 }
 
 /** Provides live HMR scene transform and source/edit endpoints for the live editor. */
