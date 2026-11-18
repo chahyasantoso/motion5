@@ -4,6 +4,7 @@ import {
   mergeEvents,
   type Events,
   type MotionEvent,
+  type Signal,
   type Time,
   unreachable,
 } from "@gerak/core";
@@ -65,7 +66,7 @@ function readLimits(
 
 /** What a scene module exports for the tools: its scene, duration, cues, and optional stage contract. */
 export interface SceneModule {
-  readonly scene: (time: Time, events: Events) => object;
+  readonly scene: Signal<object>;
   readonly durationMs: number;
   readonly cues: Events;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */

@@ -19,8 +19,8 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 | Shape | Type | Core functions |
 | --- | --- | --- |
 | **Timing** | `Timing` / `(t: Time) => Time` | `span`, `chain`, `lanes`, `loop`, `reversed`, `repeated`, `timeAt`, `withProgress` |
-| **Curve** | `Curve<T>` / `Ease` (`(u: number) => T`) | `ease.*`, `backEase`, `springEase`, `arch`, `wave`, `attack`, `decay`, `taper`, `ballistic`, `along`, `along3d`, `mix*`, `keyframes` |
-| **Signal** | `Signal<T>` (`(t: Time, e: Events) => T`) | `velocity`, `velocity3d`, `sequence` |
+| **Curve** | `Curve<T>` / `Ease` (`(u: number) => T`) | `ease.*`, `backEase`, `springEase`, `arch`, `wave`, `attack`, `decay`, `taper`, `ballistic`, `along`, `along3d` |
+| **Signal** | `Signal<T>` (`(t: Time, e: Events) => T`) | Returned by `tally`, `keyframes`; measured by `velocity`, `velocity3d` |
 
 ## Arranging time
 

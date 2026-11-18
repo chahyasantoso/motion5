@@ -36,18 +36,20 @@ export function along3d(
   cubics: readonly Cubic3d[],
   options: { readonly face?: boolean } = {},
 ): Curve<Pose3d> {
-  if (cubics.length === 0) throw new RangeError("along3d: the path has no segments.");
-  const arc = arcLength(cubics.length, (index, t) => {
-    const c = cubics[index];
+  const segments = [...cubics];
+  const face = options.face === true;
+  if (segments.length === 0) throw new RangeError("along3d: the path has no segments.");
+  const arc = arcLength(segments.length, (index, t) => {
+    const c = segments[index];
     if (c === undefined) throw new RangeError("along3d: the path has no segments.");
     return pointOf(c, t);
   });
   return (share) => {
     const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
-    const cubic = cubics[segment];
+    const cubic = segments[segment];
     if (cubic === undefined) throw new RangeError("along3d: the path has no segments.");
     const [x, y, z] = pointOf(cubic, t);
-    if (options.face !== true) return { x, y, z };
+    if (!face) return { x, y, z };
     const slope = slopeOf(cubic, t);
     const tangent: Triple =
       slope[0] === 0 && slope[1] === 0 && slope[2] === 0

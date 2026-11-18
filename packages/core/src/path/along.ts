@@ -32,19 +32,21 @@ export function along(
   cubics: readonly Cubic2d[],
   options: { readonly turn?: boolean } = {},
 ): Curve<Pose2d> {
-  if (cubics.length === 0) throw new RangeError("along: the path has no segments.");
-  const arc = arcLength(cubics.length, (index, t) => {
-    const c = cubics[index];
+  const segments = [...cubics];
+  const turn = options.turn === true;
+  if (segments.length === 0) throw new RangeError("along: the path has no segments.");
+  const arc = arcLength(segments.length, (index, t) => {
+    const c = segments[index];
     if (c === undefined) throw new RangeError("along: the path has no segments.");
     const p = pointOf(c, t);
     return [p.x, p.y];
   });
   return (share) => {
     const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
-    const cubic = cubics[segment];
+    const cubic = segments[segment];
     if (cubic === undefined) throw new RangeError("along: the path has no segments.");
     const point = pointOf(cubic, t);
-    if (options.turn !== true) return { x: point.x, y: point.y };
+    if (!turn) return { x: point.x, y: point.y };
     const slope = slopeOf(cubic, t);
     const heading =
       slope.dx === 0 && slope.dy === 0

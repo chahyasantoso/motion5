@@ -22,7 +22,7 @@ so frames, probes and checks of such a page sampled the wrong moment.
 
 ## Consequences
 
-Page tools still import nothing from gerak. A CSS animation started between two steps is placed up to 16 ms late.
+Page tools still import nothing from gerak. **Superseded in part by [ADR-191](./ADR-191-shapes-and-curves.md), 2026-11-18:** page tools import `@gerak/core` for `ease` and `Curve`. A CSS animation started between two steps is placed up to 16 ms late.
 A move the page makes by changing layout, such as `left` or `width`, is not read.
 
 ## Rejected

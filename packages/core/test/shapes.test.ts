@@ -139,21 +139,33 @@ describe("core shapes", () => {
     ];
 
     ps.forEach((p, i) => {
-      expect(waveCurve(p)).toBeCloseTo(waveExpected[i]!, 12);
-      expect(attackCurve(p)).toBeCloseTo(attackExpected[i]!, 12);
-      expect(decayCurve(p)).toBeCloseTo(decayExpected[i]!, 12);
-      expect(taperCurve(p)).toBeCloseTo(taperExpected[i]!, 12);
-      expect(ballisticCurve(p).x).toBeCloseTo(ballisticExpected[i]!.x, 12);
-      expect(ballisticCurve(p).y).toBeCloseTo(ballisticExpected[i]!.y, 12);
-      expect(alongCurve(p).x).toBeCloseTo(alongExpected[i]!.x, 12);
-      expect(alongCurve(p).y).toBeCloseTo(alongExpected[i]!.y, 12);
-      expect(alongCurve(p).rotation).toBeCloseTo(alongExpected[i]!.rotation, 12);
-      expect(along3dCurve(p).x).toBeCloseTo(along3dExpected[i]!.x, 12);
-      expect(along3dCurve(p).y).toBeCloseTo(along3dExpected[i]!.y, 12);
-      expect(along3dCurve(p).z).toBeCloseTo(along3dExpected[i]!.z, 12);
-      expect(along3dCurve(p).rotation).toBeCloseTo(along3dExpected[i]!.rotation, 12);
-      expect(along3dCurve(p).rotationX).toBeCloseTo(along3dExpected[i]!.rotationX, 12);
-      expect(along3dCurve(p).rotationY).toBeCloseTo(along3dExpected[i]!.rotationY, 12);
+      expect(waveCurve(p)).toBeCloseTo(waveExpected[i] ?? NaN, 12);
+      expect(attackCurve(p)).toBeCloseTo(attackExpected[i] ?? NaN, 12);
+      expect(decayCurve(p)).toBeCloseTo(decayExpected[i] ?? NaN, 12);
+      expect(taperCurve(p)).toBeCloseTo(taperExpected[i] ?? NaN, 12);
+      const b = ballisticExpected[i];
+      expect(b).toBeDefined();
+      if (b !== undefined) {
+        expect(ballisticCurve(p).x).toBeCloseTo(b.x, 12);
+        expect(ballisticCurve(p).y).toBeCloseTo(b.y, 12);
+      }
+      const a2 = alongExpected[i];
+      expect(a2).toBeDefined();
+      if (a2 !== undefined) {
+        expect(alongCurve(p).x).toBeCloseTo(a2.x, 12);
+        expect(alongCurve(p).y).toBeCloseTo(a2.y, 12);
+        expect(alongCurve(p).rotation).toBeCloseTo(a2.rotation, 12);
+      }
+      const a3 = along3dExpected[i];
+      expect(a3).toBeDefined();
+      if (a3 !== undefined) {
+        expect(along3dCurve(p).x).toBeCloseTo(a3.x, 12);
+        expect(along3dCurve(p).y).toBeCloseTo(a3.y, 12);
+        expect(along3dCurve(p).z).toBeCloseTo(a3.z, 12);
+        expect(along3dCurve(p).rotation).toBeCloseTo(a3.rotation, 12);
+        expect(along3dCurve(p).rotationX).toBeCloseTo(a3.rotationX, 12);
+        expect(along3dCurve(p).rotationY).toBeCloseTo(a3.rotationY, 12);
+      }
     });
   });
 });
