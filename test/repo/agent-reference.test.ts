@@ -210,4 +210,28 @@ describe("agent reference", () => {
     expect(domExports.length).toBeGreaterThan(0);
     expect(domExports.filter((name) => !stage.includes("`" + name + "`"))).toEqual([]);
   });
+
+  it("documents every type named in reference/author.md signatures in a stage reference page", () => {
+    const builtins = new Set(["Readonly", "Record", "Extract", "Exclude", "NoInfer", "URL"]);
+    const author = readFileSync(new URL("packages/stage/docs/reference/author.md", ROOT), "utf8");
+    const stageRef = referenceOf("stage");
+    const coreRef = referenceOf("core");
+    const missing: string[] = [];
+    for (const line of author.split("\n")) {
+      const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+      if (written === null) continue;
+      const [, name, signature = ""] = written;
+      for (const match of signature.matchAll(/\b([A-Z]\w+)\b/g)) {
+        const type = match[1] ?? "";
+        if (
+          builtins.has(type) ||
+          stageRef.includes(entryLine(type)) ||
+          coreRef.includes(entryLine(type))
+        )
+          continue;
+        missing.push(`${name}: ${type}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });

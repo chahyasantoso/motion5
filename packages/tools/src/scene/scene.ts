@@ -79,15 +79,6 @@ export interface SceneModule {
   readonly stage?: Stage;
 }
 
-/** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
-export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
-  let found: Beat | undefined;
-  for (const beat of beats)
-    if (beat.from <= ms && ms <= beat.to && (found === undefined || beat.from >= found.from))
-      found = beat;
-  return found?.name;
-}
-
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
 export function parseEvents(text: string): Events | { readonly reason: string } {
   const events: MotionEvent[] = [];

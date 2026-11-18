@@ -22,6 +22,7 @@ import {
   type FrameOutput,
   type Member,
   type RestReader,
+  beatAt,
   type Stage,
   type Window,
 } from "@gerak/stage";
@@ -29,14 +30,7 @@ import { drawStrokes } from "@gerak/stage/render";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { installedPackages } from "./installed";
 import { SCENE_LIMITS } from "./limits";
-import {
-  beatAt,
-  readSceneModule,
-  sampleScene,
-  writtenOut,
-  type Beat,
-  type SceneModule,
-} from "./scene";
+import { readSceneModule, sampleScene, writtenOut, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
 export interface SceneReviewRequest {
@@ -558,7 +552,7 @@ function stageMemberFindings(
       const change = changes.find(({ from, at }) => at < outside.until && from >= outside.after);
       if (change !== undefined)
         found.push(
-          `${reviewed.name} changes at ${change.at} ms${labelAt(beats, change.at)}, ${outside.where}.`,
+          `${reviewed.name} changes at ${change.at} ms${labelAt(stage, change.at)}, ${outside.where}.`,
         );
     }
   }
@@ -672,16 +666,16 @@ function outsides(
   return found;
 }
 
-function labelAt(beats: readonly Beat[], ms: number): string {
-  const name = beatAt(beats, ms);
+function labelAt(stage: Stage, ms: number): string {
+  const name = beatAt(stage.beats, stage.durationMs, ms);
   return name === undefined ? "" : ` (beat "${name}")`;
 }
 
 /** A finding that names a time, `at 480 ms`, also names the beat it falls in. */
-function labelled(beats: readonly Beat[], finding: string): string {
+function labelled(stage: Stage, finding: string): string {
   return finding.replace(
     /\bat (\d+(?:\.\d+)?) ms\b/,
-    (time, ms: string) => `${time}${labelAt(beats, Number(ms))}`,
+    (time, ms: string) => `${time}${labelAt(stage, Number(ms))}`,
   );
 }
 
@@ -897,7 +891,7 @@ export function reviewSceneModule(
     kind: "reviewed",
     findings: [
       ...frameEvaluationFindings(evaluated),
-      ...valueFindings.map((finding) => labelled(beats, finding)),
+      ...valueFindings.map((finding) => labelled(stage, finding)),
       ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
       ...stageSkinFindings(stage),
       ...stagePathFindings(stage, rest),

@@ -1,4 +1,4 @@
-import type { Cubic2d, Time } from "@gerak/core";
+import { unreachable, type Cubic2d, type Time } from "@gerak/core";
 import type { RestReader } from "./layout";
 
 /** What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it. */
@@ -36,17 +36,17 @@ export interface Meta<B extends string = string> {
 }
 
 /** Modifiers every member takes; each returns a new member. */
-export interface Modifiers<B extends string, Self> {
+export interface Modifiers<B extends string, S> {
   /** Shows the member only during these stretches; children show only while it does. */
-  on(...stretches: Stretch<B>[]): Self;
+  on(...stretches: Stretch<B>[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
-  watch(enabled?: boolean): Self;
-  pivot(point: Pivot): Self;
+  watch(enabled?: boolean): S;
+  pivot(point: Pivot): S;
   /** The scene never poses it; a group's children keep their own expectation. */
-  static(): Self;
+  static(): S;
   /** It keeps moving, like snow; a group's children and a list's items inherit it. */
-  ambient(): Self;
-  settle(): Self;
+  ambient(): S;
+  settle(): S;
 }
 
 /** One element on the stage. */
@@ -153,7 +153,7 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
   const text = (value: string): ActorSpec<B, ItemContent> => actor({ kind: "text", value });
   function many<T>(
     source: number | readonly T[],
-    make?: (item: T, index: number) => ActorSpec<B, ItemContent>,
+    make?: (item: T, index: number) => ActorSpec<B, Content>,
   ): ListSpec<B> {
     if (typeof source === "number") {
       if (!(Number.isInteger(source) && source >= 0))
@@ -168,7 +168,20 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
           const made = make(item, index);
           if (Object.keys(made.meta).length > 0)
             throw new TypeError("many: an item takes no modifiers; put them on the list.");
-          return made.content;
+          const { content } = made;
+          switch (content.kind) {
+            case "readout":
+              throw new TypeError(
+                `many: item ${index} is a readout; a readout is a top-level actor.`,
+              );
+            case "box":
+            case "text":
+            case "stroke":
+            case "morph":
+              return content;
+            default:
+              return unreachable(content);
+          }
         }),
       ),
     );

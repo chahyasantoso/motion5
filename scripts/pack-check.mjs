@@ -7,6 +7,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -88,6 +89,7 @@ export function peerVersions(
     "three",
     "typescript",
     "@types/react",
+    "@types/react-dom",
     "@types/three",
     "vite",
     "playwright-core",
@@ -330,6 +332,7 @@ function initError(project, exists = existsSync) {
     ),
     skill,
     "AGENTS.md",
+    "tsconfig.json",
     ...READ_WHOLE_PAGES,
   ];
   const absent = expected.filter((file) => !exists(join(project, file)));
@@ -513,7 +516,17 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
       ? undefined
       : firstErrorLine(created.out || created.err),
   );
+  const tscAfterNew = sh("npx --no-install tsc --noEmit", dir);
+  check(
+    "core-only tsc after new",
+    tscAfterNew.code === 0 ? undefined : firstErrorLine(tscAfterNew.out || tscAfterNew.err),
+  );
   writeFileSync(demoFile, CORE_PIECE);
+  const tscOnPiece = sh("npx --no-install tsc --noEmit", dir);
+  check(
+    "core-only tsc on piece",
+    tscOnPiece.code === 0 ? undefined : firstErrorLine(tscOnPiece.out || tscOnPiece.err),
+  );
   const reviewed = sh("npx --no-install gerak review pieces/demo/src/demo.ts", dir);
   const reviewJson = jsonOf(reviewed);
   check(
@@ -626,6 +639,22 @@ function coreLibraryChecks(dir, tarballs, lock, check) {
   check("core+library live.html loads @gerak/moves", liveMovesError(dir));
 }
 
+/** Runs `gerak init` and `gerak new --three` beside the full install, then `tsc`; the first failure, or undefined. */
+function threeTscError(work, project) {
+  const dir = join(work, "three");
+  mkdirSync(dir);
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({ name: "three-check", private: true, type: "module" }),
+  );
+  symlinkSync(join(project, "node_modules"), join(dir, "node_modules"), "junction");
+  for (const command of ["gerak init", "gerak new spin --three", "tsc --noEmit"]) {
+    const run = sh(`npx --no-install ${command}`, dir);
+    if (run.code !== 0) return `${command}: ${firstErrorLine(run.out || run.err)}`;
+  }
+  return undefined;
+}
+
 /** Packs every package, installs the tarballs into an empty project, imports each export and
  * type-checks a consumer of them all. */
 export function packCheck({ keep = false, log = console.log } = {}) {
@@ -726,6 +755,9 @@ export function packCheck({ keep = false, log = console.log } = {}) {
           : undefined;
     if (anatomyError !== undefined) failed += 1;
     log(formatResult("gerak moves --anatomy", anatomyError));
+    const threeError = threeTscError(work, project);
+    if (threeError !== undefined) failed += 1;
+    log(formatResult("tsc after new --three", threeError));
     const second = join(work, "second");
     mkdirSync(second);
     writeFileSync(

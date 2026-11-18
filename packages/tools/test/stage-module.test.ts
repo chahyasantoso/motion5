@@ -9,7 +9,7 @@ import {
   type RestReader,
   type StageDefinition,
 } from "@gerak/stage";
-import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
+import { readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
 import * as outside from "./fixtures/stage-outside";
@@ -105,20 +105,6 @@ describe("a stage module in the scene tools", () => {
     expect(read.stage).toBeUndefined();
     expect(reviewSceneModule(read, limits).findings.some((line) => /cast/.test(line))).toBe(false);
   });
-
-  it("names the beat a time falls in, the latest started, and none in a gap", () => {
-    const read = moduleOf(
-      defineStage({
-        beats: { a: [0, 600], b: [300, 400] },
-        durationMs: 1000,
-        cast: () => ({}),
-        scene: () => ({}),
-      }),
-    );
-    expect(beatAt(read.beats ?? [], 100)).toBe("a");
-    expect(beatAt(read.beats ?? [], 350)).toBe("b");
-    expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
-  });
 });
 
 describe("a stage module with layouts in the scene tools", () => {
@@ -193,7 +179,7 @@ describe("gerak review of a member still ringing", () => {
 
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
-    const bad = rawStage({ ...clean.default, skins: { dom: { css: 1 } } });
+    const bad = rawStage({ ...clean.default, frame: { width: 0, height: 10 } });
     const own = compileStage(bad);
     const tools = readSceneModule(bad);
     expect(
@@ -325,18 +311,19 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("refuses a readout inside a list, naming it", () => {
+  it("refuses a readout inside a list, naming the item", () => {
     const read = compileStage(
       rawStage({
         beats: { all: [0, 1000] },
-        cast: (m: CastBuilder) => ({
-          row: { ...m.many([1], () => m.box()), items: [m.readout(() => "x").content] },
-        }),
+        cast: (m: {
+          many: (items: readonly number[], make: () => object) => object;
+          readout: (format: () => string) => object;
+        }) => ({ row: m.many([1], () => m.readout(() => "x")) }),
         scene: () => ({}),
       }),
     );
     expect(!read.ok && read.errors.map(formatStageError).join("\n")).toMatch(
-      /"row\.0".*readout inside a list/,
+      /many: item 0 is a readout/,
     );
   });
 
@@ -460,6 +447,7 @@ describe("gerak review on a stage module", () => {
       }),
     });
     expect(findings(twice).filter((finding) => finding.startsWith("dot"))).toEqual([
+      "dot still changes 80 ms before the end",
       'dot changes at 464 ms (beat "gap"), between its beats "a", ending at 300 ms, and "b", starting at 600 ms.',
     ]);
   });

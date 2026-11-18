@@ -1,6 +1,12 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { mountStage, type MountedStage, type StageInput, type StageOptions } from "@gerak/dom";
-import { compileStage, formatStageError, isStage, type Stage as CompiledStage } from "@gerak/stage";
+import {
+  compileStage,
+  formatStageError,
+  isStage,
+  isStageDefinition,
+  type Stage as CompiledStage,
+} from "@gerak/stage";
 
 /** What `<Stage />` plays: a compiled stage or what `defineStage` returns, and mount options. */
 export interface StageProps {
@@ -10,6 +16,8 @@ export interface StageProps {
 
 function compiled(input: StageInput): CompiledStage {
   if (isStage(input)) return input;
+  if (!isStageDefinition(input))
+    throw new Error("Stage: expected a stage or what `defineStage` returns.");
   const result = compileStage(input);
   if (result.ok) return result.stage;
   throw new Error(`Stage: invalid stage:\n${result.errors.map(formatStageError).join("\n")}`);

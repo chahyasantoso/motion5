@@ -78,6 +78,26 @@ function agentsText(folder: string, installed: readonly InstalledPackage[]): str
   ].join("\n");
 }
 
+function tsconfigText(folder: string): string {
+  return `${JSON.stringify(
+    {
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        lib: ["ES2022", "DOM"],
+        jsx: "react-jsx",
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+      },
+      include: [`${folder}/*/src`],
+    },
+    null,
+    2,
+  )}\n`;
+}
+
 function write(file: string, text: string): void {
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, text);
@@ -111,6 +131,7 @@ export function initProject(
     ...Object.keys(pages).map((name) => `${folder}/${name}`),
     SKILL_FILE,
     "AGENTS.md",
+    "tsconfig.json",
   ];
   const existing = targets.filter((target) => existsSync(join(project, target)));
   const named = gerak !== undefined && gerak !== null && Reflect.get(gerak, "pieces") !== undefined;
@@ -120,6 +141,7 @@ export function initProject(
   for (const [name, text] of Object.entries(pages)) write(join(project, folder, name), text);
   write(join(project, SKILL_FILE), skill.replaceAll(REPO_LINK, INSTALLED_LINK));
   write(join(project, "AGENTS.md"), agentsText(folder, installed));
+  write(join(project, "tsconfig.json"), tsconfigText(folder));
   const kept = gerak === undefined || gerak === null ? [] : Object.entries(gerak);
   const next = { ...manifest, gerak: { ...Object.fromEntries(kept), pieces: folder } };
   write(manifestFile, `${JSON.stringify(next, null, 2)}\n`);

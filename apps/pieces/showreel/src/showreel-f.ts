@@ -66,8 +66,6 @@ const SETTLE_TURN = [-48, 30, -16, 18, -30, 50];
 const STRINGS = [140, 185, 160, 200, 170, 210, 180];
 const WEIGHT = "WEIGHT";
 
-const THUDS = ["thud0", "thud1", "thud2", "thud3", "thud4", "thud5"] as const;
-
 const LABELS = [
   [span(0, 1250), "00 — ORIGIN"],
   [span(ANT_IN, 4000), "01 — ANTICIPATION"],
@@ -409,7 +407,7 @@ const dust = (time: Time, rest: RestReader, j: number): Pose2d => {
       x: letter.x + side * letter.width * 0.42 - own.x,
       y: ground.y - ground.height / 2 - 4 - own.y,
       scale: (0.6 + 0.3 * kind) * (li === 5 ? 1.5 : 1),
-      opacity: 0.75,
+      opacity: (elapsedOf(time.clock) ?? 0) < land ? 0 : 0.75,
     },
     kick(
       { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: kind === 2 ? 30 : 9 },
@@ -527,10 +525,7 @@ export default defineStage({
       ant: m.letters("ANTICIPATE").on("anticipation"),
       floor: m.box().on("weight"),
       wgt: m.letters(WEIGHT).on("weight"),
-      dust: m.many(
-        Array.from({ length: 18 }, (_, j) => j),
-        (j) => m.box().on(THUDS[Math.floor(j / 3)] ?? "thud0"),
-      ),
+      dust: m.many(18).on(["thud0", "thud5"]),
       overlap: m.group({ bar: m.box().static(), hang: m.letters("OVERLAP") }).on("overlap"),
       sett: m.letters("SETTLE").on(["burst", "flood"]),
       fin: m.group({ fine: m.words("Timing is everything"), stop: m.box().static() }).on("finale"),

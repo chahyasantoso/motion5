@@ -1,6 +1,7 @@
 import {
   combine,
   ease,
+  elapsedOf,
   reversed,
   sequence,
   span,
@@ -40,9 +41,6 @@ import { tint } from "./moves/tint";
 // Each WEIGHT letter's landing; the last lands late and hardest.
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;
 const landOf = (i: number): number => LAND[i] ?? LAND[0];
-
-const THUDS = ["thud0", "thud1", "thud2", "thud3", "thud4", "thud5"] as const;
-const thudOf = (i: number) => THUDS[i] ?? THUDS[0];
 
 // One straight or curved stroke as cubics, from a start, two handles and an end, in frame px.
 function stroke(
@@ -392,7 +390,7 @@ function dust(time: Time, j: number, rest: RestReader): Pose2d {
       x: letter.x + side * letter.width * 0.42 - me.x,
       y: floorY(rest) - 6 - me.y,
       scale: size,
-      opacity: 0.75,
+      opacity: (elapsedOf(time.clock) ?? 0) < land ? 0 : 0.75,
     },
     kick(
       { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: 30 * (kind === 2 ? 1 : 0.3) },
@@ -546,10 +544,7 @@ export default defineStage({
       trailArc: m.stroke(arcPath).on(["leap", "period"]),
       ant: m.letters("ANTICIPATE").on("anticipate"),
       weight: m.letters("WEIGHT").on("weight"),
-      dust: m.many(
-        Array.from({ length: DUST }, (_, j) => j),
-        (j) => m.box().on(thudOf(Math.floor(j / 3))),
-      ),
+      dust: m.many(DUST).on(["thud0", "thud5"]),
       overlap: m.group({ bar: m.box().static(), hang: m.letters("OVERLAP") }).on("overlap"),
       settle: m.letters("SETTLE").on(["settle", "collapse"]),
       fin: m

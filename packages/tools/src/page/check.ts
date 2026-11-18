@@ -28,7 +28,7 @@ export type Finding =
       readonly frames: number;
     }
   | { readonly kind: "jump"; readonly element: string; readonly at: number; readonly px: number }
-  | { readonly kind: "short-hold"; readonly ms: number }
+  | { readonly kind: "short-hold"; readonly ms: number; readonly targets: readonly string[] }
   | { readonly kind: "still-moving"; readonly element: string }
   | {
       readonly kind: "low-contrast";
@@ -118,7 +118,14 @@ export function restFindings(
   let settled = lastIndex;
   while (settled > 0 && names.every((name) => same(name, settled - 1, settled))) settled -= 1;
   const rest = (ats[lastIndex] ?? 0) - (ats[settled] ?? 0);
-  return settled > 0 && rest < hold ? [{ kind: "short-hold", ms: rest }] : [];
+  if (!(settled > 0 && rest < hold)) return [];
+  const targets = names.filter((name) =>
+    ats.some(
+      (at, index) =>
+        index > 0 && (ats[lastIndex] ?? 0) - at < hold && !same(name, index - 1, index),
+    ),
+  );
+  return [{ kind: "short-hold", ms: rest, targets }];
 }
 
 /** Findings over frames sampled at a fixed step: long overlaps, jumps, a short final hold, no rest. */
@@ -201,7 +208,7 @@ export function describeFinding(finding: Finding): string {
     case "jump":
       return `${finding.element} jumps ${finding.px} px at ${finding.at} ms`;
     case "short-hold":
-      return `the final pose holds only ${finding.ms} ms`;
+      return `${finding.targets.join(", ")} still ${finding.targets.length === 1 ? "changes" : "change"} ${finding.ms} ms before the end`;
     case "still-moving":
       return `${finding.element} is still moving on the last frame`;
     case "low-contrast":

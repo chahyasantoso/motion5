@@ -1,6 +1,5 @@
 import {
   NO_EVENTS,
-  isMotionEvent,
   mergeEvents,
   span,
   type Cubic2d,
@@ -14,22 +13,24 @@ import {
   type Content,
   type Expect,
   type ItemContent,
+  type Members,
   type Pivot,
+  type Stretch,
 } from "../author/cast";
-import {
-  NO_REST,
-  restReader,
-  type Box,
-  type Frame,
-  type Rest,
-  type RestReader,
-} from "../author/layout";
-import type { Limits, SceneContext } from "../author/stage";
+import { NO_REST, restReader, type Frame, type Rest, type RestReader } from "../author/layout";
+import type {
+  DomSkinInput,
+  LayoutsInput,
+  Limits,
+  SceneContext,
+  StageDefinition,
+} from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
-import { visibility, type Window } from "./timeline";
+import { visibility, windowOf, type Window } from "./timeline";
 
-interface MemberBase {
+/** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
+export type Member = {
   readonly name: string;
   /** Index of the enclosing group in `Stage.members`, or -1 at the top. */
   readonly parent: number;
@@ -38,13 +39,11 @@ interface MemberBase {
   readonly pivot?: Pivot | undefined;
   /** Ms the member shows, its own or its group's; absent means always. */
   readonly on?: readonly Window[] | undefined;
-}
-
-/** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
-export type Member =
-  | (MemberBase & { readonly kind: "actor"; readonly content: Content })
-  | (MemberBase & { readonly kind: "list"; readonly items: readonly ItemContent[] })
-  | (MemberBase & { readonly kind: "group" });
+} & (
+  | { readonly kind: "actor"; readonly content: Content }
+  | { readonly kind: "list"; readonly items: readonly ItemContent[] }
+  | { readonly kind: "group" }
+);
 
 /** The DOM skin, inline or as file URLs. */
 export type DomSkin =
@@ -116,18 +115,10 @@ function frozenCubics(cubics: readonly Cubic2d[]): readonly Cubic2d[] {
   return Object.freeze(cubics.map((cubic) => Object.freeze({ ...cubic })));
 }
 
-function isBox(value: unknown): value is Box {
-  return (
-    isPlainRecord(value) &&
-    finite(value["x"]) &&
-    finite(value["y"]) &&
-    finite(value["width"]) &&
-    finite(value["height"])
+function isRest(rest: Rest): boolean {
+  return Object.values(rest).every(
+    (box) => finite(box.x) && finite(box.y) && finite(box.width) && finite(box.height),
   );
-}
-
-function isRest(value: unknown): value is Rest {
-  return isPlainRecord(value) && Object.values(value).every(isBox);
 }
 
 interface Beats {
@@ -135,41 +126,34 @@ interface Beats {
   readonly durationMs: number;
 }
 
-function compileBeats(raw: unknown, rawDuration: unknown, errors: StageError[]): Beats | undefined {
+function compileBeats(
+  given: Readonly<Record<string, readonly [number, number]>>,
+  givenDuration: number | undefined,
+  errors: StageError[],
+): Beats | undefined {
   const fail = (field: string, reason: string): undefined => {
     errors.push({ kind: "invalid", field, reason });
     return undefined;
   };
-  if (!isPlainRecord(raw)) return fail("beats", "`beats` must be an object of `[from, to]` ms.");
-  const pairs: (readonly [string, number, number])[] = [];
-  for (const [name, pair] of Object.entries(raw)) {
-    const from: unknown = Array.isArray(pair) ? pair[0] : undefined;
-    const to: unknown = Array.isArray(pair) ? pair[1] : undefined;
-    if (
-      !Array.isArray(pair) ||
-      pair.length !== 2 ||
-      !finite(from) ||
-      !finite(to) ||
-      from < 0 ||
-      to < from
-    )
-      return fail("beats", `beat "${name}" must be [from, to] ms with 0 <= from <= to.`);
-    pairs.push([name, from, to]);
-  }
-  const last = pairs.reduce((most, [, , to]) => Math.max(most, to), 0);
-  if (rawDuration !== undefined && !(finite(rawDuration) && rawDuration > 0))
+  const pairs = Object.entries(given);
+  const bad = pairs.find(
+    ([, [from, to]]) => !(finite(from) && finite(to) && 0 <= from && from < to),
+  );
+  if (bad !== undefined)
+    return fail("beats", `beat "${bad[0]}" must be [from, to] ms with 0 <= from < to.`);
+  if (givenDuration !== undefined && !(finite(givenDuration) && givenDuration > 0))
     return fail("durationMs", "`durationMs` must be above 0.");
-  const durationMs = finite(rawDuration) ? rawDuration : last;
+  const durationMs = givenDuration ?? pairs.reduce((most, [, [, to]]) => Math.max(most, to), 0);
   if (!(durationMs > 0))
     return fail("beats", "the last beat must end above 0 ms, or give `durationMs`.");
-  const late = pairs.find(([, , to]) => to > durationMs);
+  const late = pairs.find(([, [, to]]) => to > durationMs);
   if (late !== undefined)
     return fail(
       "beats",
-      `beat "${late[0]}" ends at ${late[2]} ms, past durationMs ${durationMs} ms.`,
+      `beat "${late[0]}" ends at ${late[1][1]} ms, past durationMs ${durationMs} ms.`,
     );
   const beats: Record<string, Span> = {};
-  for (const [name, from, to] of pairs) beats[name] = span(from, to);
+  for (const [name, [from, to]] of pairs) beats[name] = span(from, to);
   return { beats: Object.freeze(beats), durationMs };
 }
 
@@ -182,11 +166,11 @@ interface Inherited {
 
 function windowsOf(
   name: string,
-  raw: unknown,
+  stretches: readonly Stretch[],
   beats: Beats,
   errors: StageError[],
 ): readonly Window[] | undefined {
-  if (!Array.isArray(raw) || raw.length === 0) {
+  if (stretches.length === 0) {
     errors.push({
       kind: "invalid",
       field: "cast",
@@ -195,51 +179,32 @@ function windowsOf(
     return undefined;
   }
   const windows: Window[] = [];
-  for (const stretch of raw) {
-    const [first, last]: readonly unknown[] =
-      typeof stretch === "string" ? [stretch, stretch] : Array.isArray(stretch) ? stretch : [];
-    if (typeof first !== "string" || typeof last !== "string") {
-      errors.push({
-        kind: "invalid",
-        field: "cast",
-        reason: `"${name}": a stretch is a beat or [from, to] beats.`,
-      });
-      continue;
-    }
+  for (const stretch of stretches) {
+    const [first, last] = typeof stretch === "string" ? [stretch, stretch] : stretch;
     const start = beats.beats[first];
     const end = beats.beats[last];
     if (start === undefined) errors.push({ kind: "unknown_beat", member: name, beat: first });
     if (end === undefined && last !== first)
       errors.push({ kind: "unknown_beat", member: name, beat: last });
     if (start === undefined || end === undefined) continue;
-    if (end.to < start.from) {
+    if (end.to <= start.from) {
       errors.push({ kind: "reversed_stretch", member: name, from: first, to: last });
       continue;
     }
-    windows.push(Object.freeze([start.from, end.to >= beats.durationMs ? Infinity : end.to]));
+    windows.push(windowOf(start.from, end.to, beats.durationMs));
   }
   return Object.freeze(windows);
 }
 
-function contentOf(name: string, raw: unknown, errors: StageError[]): Content | undefined {
-  const fail = (reason: string): undefined => {
-    errors.push({ kind: "invalid", field: "cast", reason: `"${name}": ${reason}` });
-    return undefined;
-  };
-  if (!isPlainRecord(raw)) return fail("make members with the cast builders.");
-  const kind = raw["kind"];
-  switch (kind) {
+function contentOf(name: string, content: Content, errors: StageError[]): Content | undefined {
+  switch (content.kind) {
     case "box":
-      return Object.freeze({ kind: "box" });
-    case "text": {
-      const value = raw["value"];
-      return typeof value === "string"
-        ? Object.freeze({ kind: "text", value })
-        : fail("text needs a string.");
-    }
+    case "text":
+    case "stroke":
+    case "morph":
+      return itemOf(name, content, errors);
     case "readout": {
-      const format = raw["format"];
-      if (typeof format !== "function") return fail("a readout needs a function of time.");
+      const { format } = content;
       const checked = (time: Time): string => {
         const answer: unknown = Reflect.apply(format, undefined, [time]);
         if (typeof answer !== "string")
@@ -248,8 +213,18 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
       };
       return Object.freeze({ kind: "readout", format: checked });
     }
+    default:
+      return unreachable(content);
+  }
+}
+
+function itemOf(name: string, content: ItemContent, errors: StageError[]): ItemContent | undefined {
+  switch (content.kind) {
+    case "box":
+    case "text":
+      return Object.freeze(content);
     case "stroke": {
-      const path = raw["path"];
+      const { path } = content;
       if (typeof path === "function") {
         const checked = (rest: RestReader): readonly Cubic2d[] => {
           const answer: unknown = Reflect.apply(path, undefined, [rest]);
@@ -259,13 +234,17 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
         };
         return Object.freeze({ kind: "stroke", path: checked });
       }
-      return isCubics(path)
-        ? Object.freeze({ kind: "stroke", path: frozenCubics(path) })
-        : fail("a stroke needs cubics or a function of rest.");
+      if (isCubics(path)) return Object.freeze({ kind: "stroke", path: frozenCubics(path) });
+      errors.push({
+        kind: "invalid",
+        field: "cast",
+        reason: `"${name}": a stroke needs cubics or a function of rest.`,
+      });
+      return undefined;
     }
     case "morph": {
-      const shapes = raw["shapes"];
-      if (!Array.isArray(shapes) || shapes.length < 2 || !shapes.every(isCubics)) {
+      const { shapes } = content;
+      if (shapes.length < 2 || !shapes.every(isCubics)) {
         errors.push({
           kind: "morph_mismatch",
           member: name,
@@ -284,108 +263,53 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
       });
     }
     default:
-      return fail(`unknown content ${String(kind)}.`);
+      return unreachable(content);
   }
 }
 
-function itemOf(name: string, raw: unknown, errors: StageError[]): ItemContent | undefined {
-  const content = contentOf(name, raw, errors);
-  if (content === undefined) return undefined;
-  if (content.kind === "readout") {
-    errors.push({
-      kind: "invalid",
-      field: "cast",
-      reason: `"${name}": a readout inside a list; a readout is a top-level actor.`,
-    });
-    return undefined;
-  }
-  return content;
-}
-
-function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly Member[] {
+function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
-  const visit = (record: Record<string, unknown>, from: Inherited): void => {
+  const visit = (record: Members, from: Inherited): void => {
     for (const [name, spec] of Object.entries(record)) {
       if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
       if (seen.has(name)) errors.push({ kind: "duplicate_member", name });
       seen.add(name);
-      if (!isPlainRecord(spec) || !isPlainRecord(spec["meta"])) {
+      const on =
+        spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
+      const expect = spec.meta.expect ?? from.expect;
+      const pivot = spec.meta.pivot;
+      if (pivot !== undefined && (!finite(pivot.x) || !finite(pivot.y)))
         errors.push({
           kind: "invalid",
           field: "cast",
-          reason: `"${name}": make members with the cast builders.`,
-        });
-        continue;
-      }
-      const meta = spec["meta"];
-      const on = meta["on"] === undefined ? from.on : windowsOf(name, meta["on"], beats, errors);
-      const rawExpect = meta["expect"];
-      const expect =
-        rawExpect === "settle" || rawExpect === "ambient" || rawExpect === "static"
-          ? rawExpect
-          : from.expect;
-      if (rawExpect !== undefined && expect !== rawExpect)
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": expect is settle, ambient or static.`,
-        });
-      const rawPivot = meta["pivot"];
-      const pivot =
-        isPlainRecord(rawPivot) && finite(rawPivot["x"]) && finite(rawPivot["y"])
-          ? Object.freeze({ x: rawPivot["x"], y: rawPivot["y"] })
-          : undefined;
-      if (rawPivot !== undefined && pivot === undefined)
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": a pivot needs finite x and y.`,
+          reason: `"${name}": pivot needs finite x and y.`,
         });
       const base = {
         name,
         parent: from.parent,
         expect,
-        watch: typeof meta["watch"] === "boolean" ? meta["watch"] : from.watch,
+        watch: spec.meta.watch ?? from.watch,
         ...(pivot === undefined ? {} : { pivot }),
         ...(on === undefined ? {} : { on }),
       };
-      const kind = spec["kind"];
-      switch (kind) {
+      switch (spec.kind) {
         case "actor": {
-          const content = contentOf(name, spec["content"], errors);
+          const content = contentOf(name, spec.content, errors);
           if (content !== undefined)
             members.push(Object.freeze({ ...base, kind: "actor", content }));
           break;
         }
         case "list": {
-          const raws = spec["items"];
-          if (!Array.isArray(raws)) {
-            errors.push({
-              kind: "invalid",
-              field: "cast",
-              reason: `"${name}": a list needs items.`,
-            });
-            break;
-          }
-          const items = raws.flatMap(
+          const items = spec.items.flatMap(
             (item, index) => itemOf(`${name}.${index}`, item, errors) ?? [],
           );
           members.push(Object.freeze({ ...base, kind: "list", items: Object.freeze(items) }));
           break;
         }
         case "group": {
-          const children = spec["members"];
-          if (!isPlainRecord(children)) {
-            errors.push({
-              kind: "invalid",
-              field: "cast",
-              reason: `"${name}": a group needs members.`,
-            });
-            break;
-          }
           members.push(Object.freeze({ ...base, kind: "group" }));
-          visit(children, {
+          visit(spec.members, {
             parent: members.length - 1,
             on,
             watch: base.watch,
@@ -394,62 +318,45 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
           break;
         }
         default:
-          errors.push({
-            kind: "invalid",
-            field: "cast",
-            reason: `"${name}": make members with the cast builders.`,
-          });
+          return unreachable(spec);
       }
     }
   };
-  if (!isPlainRecord(raw))
-    errors.push({
-      kind: "invalid",
-      field: "cast",
-      reason: "`cast` must return an object of members.",
-    });
-  else visit(raw, { parent: -1, on: undefined, watch: false, expect: "settle" });
+  visit(cast, { parent: -1, on: undefined, watch: false, expect: "settle" });
   return Object.freeze(members);
 }
 
-function compileLayouts(rawLayouts: unknown, rawRest: unknown, errors: StageError[]): StageLayouts {
+function single(rest: RestReader): StageLayouts {
+  return Object.freeze({
+    names: Object.freeze(["main"] as const),
+    pick: () => "main",
+    readers: Object.freeze({ main: rest }),
+  });
+}
+
+function compileLayouts(
+  layouts: LayoutsInput | undefined,
+  rest: Rest | undefined,
+  errors: StageError[],
+): StageLayouts {
   const fail = (reason: string): StageLayouts => {
     errors.push({ kind: "invalid", field: "layouts", reason });
     return single(NO_REST);
   };
-  const single = (rest: RestReader): StageLayouts =>
-    Object.freeze({
-      names: Object.freeze(["main"] as const),
-      pick: () => "main",
-      readers: Object.freeze({ main: rest }),
-    });
-  if (rawLayouts === undefined) {
-    if (rawRest === undefined) return single(NO_REST);
-    return isRest(rawRest)
-      ? single(restReader(rawRest))
-      : fail("`rest` must map member names to { x, y, width, height }.");
+  if (layouts === undefined) {
+    if (rest === undefined) return single(NO_REST);
+    return isRest(rest) ? single(restReader(rest)) : fail("`rest` boxes need finite numbers.");
   }
-  if (rawRest !== undefined) return fail("give `layouts.rests`, not `rest`, with named layouts.");
-  if (!isPlainRecord(rawLayouts)) return fail("`layouts` must be { names, pick?, rests? }.");
-  const rawNames = rawLayouts["names"];
-  if (
-    !Array.isArray(rawNames) ||
-    !rawNames.every((name): name is string => typeof name === "string" && name !== "")
-  )
-    return fail("`layouts.names` must list layout names.");
-  const [first, ...others] = rawNames;
-  if (first === undefined) return fail("`layouts.names` must list at least one layout.");
-  if (new Set(rawNames).size !== rawNames.length)
-    return fail("`layouts.names` names a layout twice.");
-  const rawPick = rawLayouts["pick"];
-  if (rawPick !== undefined && typeof rawPick !== "function")
-    return fail("`layouts.pick` must be a function of events.");
+  if (rest !== undefined) return fail("give `layouts.rests`, not `rest`, with named layouts.");
+  const { names, rests } = layouts;
+  if (names.includes("") || new Set(names).size !== names.length)
+    return fail("`layouts.names` must name each layout once, none empty.");
   const pick = (events: Events): string => {
-    if (typeof rawPick !== "function") return first;
-    const answer: unknown = Reflect.apply(rawPick, undefined, [events]);
-    if (typeof answer === "string" && rawNames.includes(answer)) return answer;
+    if (layouts.pick === undefined) return names[0];
+    const answer: unknown = layouts.pick(events);
+    if (typeof answer === "string" && names.includes(answer)) return answer;
     throw new RangeError(
-      `layouts.pick answered ${JSON.stringify(answer)}, not one of ${rawNames.join(", ")}.`,
+      `layouts.pick answered ${JSON.stringify(answer)}, not one of ${names.join(", ")}.`,
     );
   };
   try {
@@ -459,69 +366,34 @@ function compileLayouts(rawLayouts: unknown, rawRest: unknown, errors: StageErro
       `\`pick\` with no events: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
     );
   }
-  const rawRests = rawLayouts["rests"];
-  if (rawRests !== undefined && !(isPlainRecord(rawRests) && Object.values(rawRests).every(isRest)))
-    return fail("`layouts.rests` must map layout names to rests.");
   const readers: Record<string, RestReader> = {};
-  for (const name of rawNames) {
-    const rest = isPlainRecord(rawRests) ? rawRests[name] : undefined;
-    if (rawRests !== undefined && !isRest(rest))
-      return fail(`\`layouts.rests\` has no rest for "${name}".`);
-    readers[name] = isRest(rest) ? restReader(rest) : NO_REST;
+  for (const name of names) {
+    const own = rests?.[name];
+    if (own !== undefined && !isRest(own))
+      return fail(`\`layouts.rests\` boxes of "${name}" need finite numbers.`);
+    readers[name] = own === undefined ? NO_REST : restReader(own);
   }
-  return Object.freeze({
-    names: Object.freeze([first, ...others] as const),
-    pick,
-    readers: Object.freeze(readers),
-  });
+  return Object.freeze({ names, pick, readers: Object.freeze(readers) });
 }
 
-function compileSkin(raw: unknown, errors: StageError[]): DomSkin | undefined {
-  const fail = (reason: string): undefined => {
-    errors.push({ kind: "invalid", field: "skins", reason });
-    return undefined;
-  };
-  if (raw === undefined) return undefined;
-  if (!isPlainRecord(raw)) return fail("`skins` must be { dom?: { css, defs? } }.");
-  const dom = raw["dom"];
-  if (dom === undefined) return undefined;
-  if (!isPlainRecord(dom)) return fail("`skins.dom` must be { css, defs? }.");
-  const css = dom["css"];
-  const defs = dom["defs"];
-  if (css instanceof URL) {
-    if (defs !== undefined && !(defs instanceof URL))
-      return fail("`skins.dom.defs` must be a URL when `css` is.");
-    return Object.freeze({ kind: "url", css, ...(defs === undefined ? {} : { defs }) });
-  }
-  if (typeof css !== "string") return fail("`skins.dom.css` must be a string or a URL.");
-  if (defs !== undefined && typeof defs !== "string")
-    return fail("`skins.dom.defs` must be a string when `css` is.");
-  return Object.freeze({ kind: "inline", css, ...(defs === undefined ? {} : { defs }) });
+function isInline(dom: DomSkinInput): dom is Extract<DomSkinInput, { readonly css: string }> {
+  return typeof dom.css === "string";
 }
 
-function compileLimits(raw: unknown, errors: StageError[]): Readonly<Record<string, Limits>> {
-  if (raw === undefined) return Object.freeze({});
-  const limits: Record<string, Limits> = {};
-  const valid =
-    isPlainRecord(raw) &&
-    Object.entries(raw).every(([target, entry]) => {
-      if (!isPlainRecord(entry)) return false;
-      const own: { jump?: number; turn?: number; ratio?: number } = {};
-      for (const [field, limit] of Object.entries(entry)) {
-        if (!finite(limit) || limit < 0) return false;
-        if (field === "jump" || field === "turn" || field === "ratio") own[field] = limit;
-        else return false;
-      }
-      limits[target] = Object.freeze(own);
-      return true;
-    });
+function compileSkin(dom: DomSkinInput): DomSkin {
+  return Object.freeze(isInline(dom) ? { kind: "inline", ...dom } : { kind: "url", ...dom });
+}
+
+function compileLimits(
+  limits: Readonly<Record<string, Limits>>,
+  errors: StageError[],
+): Readonly<Record<string, Limits>> {
+  const valid = Object.values(limits).every((own) =>
+    Object.values(own).every((limit) => limit === undefined || (finite(limit) && limit >= 0)),
+  );
   if (!valid)
-    errors.push({
-      kind: "invalid",
-      field: "limits",
-      reason: "`limits` maps targets to { jump?, turn?, ratio? }, each >= 0.",
-    });
-  return Object.freeze(limits);
+    errors.push({ kind: "invalid", field: "limits", reason: "each limit must be a number >= 0." });
+  return Object.freeze({ ...limits });
 }
 
 function signatureOf(durationMs: number, members: readonly Member[]): string {
@@ -545,47 +417,23 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
   ]);
 }
 
-/** Checks a piece and compiles it into a `Stage`, or lists every reason it cannot. */
-export function compileStage(definition: unknown): CompileResult {
-  if (!isPlainRecord(definition))
-    return {
-      ok: false,
-      errors: [
-        { kind: "invalid", field: "stage", reason: "a stage is what `defineStage` returns." },
-      ],
-    };
+/** Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot. */
+export function compileStage<B extends string, M extends Members<B>, L extends string>(
+  definition: StageDefinition<B, M, L>,
+): CompileResult {
   const errors: StageError[] = [];
-  const scene = definition["scene"];
-  if (typeof scene !== "function")
-    errors.push({ kind: "invalid", field: "scene", reason: "`scene` must be a function." });
-  const beats = compileBeats(definition["beats"], definition["durationMs"], errors);
-
-  const rawFrame = definition["frame"];
-  let frame = DEFAULT_FRAME;
-  if (rawFrame !== undefined) {
-    if (
-      isPlainRecord(rawFrame) &&
-      finite(rawFrame["width"]) &&
-      finite(rawFrame["height"]) &&
-      rawFrame["width"] > 0 &&
-      rawFrame["height"] > 0
-    )
-      frame = Object.freeze({ width: rawFrame["width"], height: rawFrame["height"] });
-    else
-      errors.push({
-        kind: "invalid",
-        field: "frame",
-        reason: "`frame` needs a width and height above 0.",
-      });
-  }
-
-  const castFn = definition["cast"];
+  const beats = compileBeats(definition.beats, definition.durationMs, errors);
+  const frame = definition.frame ?? DEFAULT_FRAME;
+  if (!(finite(frame.width) && finite(frame.height) && frame.width > 0 && frame.height > 0))
+    errors.push({
+      kind: "invalid",
+      field: "frame",
+      reason: "`frame` needs a width and height above 0.",
+    });
   let members: readonly Member[] = [];
-  if (typeof castFn !== "function")
-    errors.push({ kind: "invalid", field: "cast", reason: "`cast` must be `(m) => ({ ... })`." });
-  else if (beats !== undefined) {
+  if (beats !== undefined) {
     try {
-      members = compileCast(Reflect.apply(castFn, undefined, [castBuilder()]), beats, errors);
+      members = compileCast(definition.cast(castBuilder<B>()), beats, errors);
     } catch (thrown) {
       errors.push({
         kind: "invalid",
@@ -594,39 +442,21 @@ export function compileStage(definition: unknown): CompileResult {
       });
     }
   }
-
-  const layouts = compileLayouts(definition["layouts"], definition["rest"], errors);
-  const dom = compileSkin(definition["skins"], errors);
-  const rawCues = definition["cues"];
-  let cues = NO_EVENTS;
-  if (rawCues !== undefined) {
-    if (Array.isArray(rawCues) && rawCues.every(isMotionEvent)) cues = mergeEvents(rawCues);
-    else
-      errors.push({
-        kind: "invalid",
-        field: "cues",
-        reason: "`cues` must be a list of { name, at, target? } events.",
-      });
-  }
-  const style = definition["style"];
-  if (style !== undefined && typeof style !== "string")
-    errors.push({ kind: "invalid", field: "style", reason: "`style` names a style card." });
-  const limits = compileLimits(definition["limits"], errors);
-
-  if (errors.length > 0 || beats === undefined || typeof scene !== "function")
-    return { ok: false, errors: Object.freeze(errors) };
-  const design: unknown = definition["design"];
+  const layouts = compileLayouts(definition.layouts, definition.rest, errors);
+  const limits = compileLimits(definition.limits ?? {}, errors);
+  if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
+  const { skins, cues, style, design, scene } = definition;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
-    frame,
+    frame: Object.freeze({ width: frame.width, height: frame.height }),
     beats: beats.beats,
     members,
     layouts,
-    skins: Object.freeze(dom === undefined ? {} : { dom }),
-    cues,
+    skins: Object.freeze(skins?.dom === undefined ? {} : { dom: compileSkin(skins.dom) }),
+    cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
-    ...(typeof style === "string" ? { style } : {}),
+    ...(style === undefined ? {} : { style }),
     ...(design === undefined ? {} : { design }),
     scene: (context: SceneContext): unknown => Reflect.apply(scene, undefined, [context]),
     visibleAt: visibility(members),
@@ -635,7 +465,7 @@ export function compileStage(definition: unknown): CompileResult {
   return { ok: true, stage };
 }
 
-/** Whether `value` is a stage `compileStage` returned. */
+/** Whether `value` reads as a compiled stage: `kind` only, so a stage from a second copy of the package passes. */
 export function isStage(value: unknown): value is Stage {
   return isPlainRecord(value) && value["kind"] === "stage";
 }

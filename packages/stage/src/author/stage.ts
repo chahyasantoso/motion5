@@ -5,21 +5,30 @@ import type { Carry, Frame, Rest, RestReader } from "./layout";
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
 
-type Entry<M> = {
+/** Every member name of a cast, group children included. */
+export type MemberName<M> = {
   [K in keyof M & string]:
-    | readonly [K, M[K]]
-    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? Entry<G> : never);
+    | K
+    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? MemberName<G> : never);
 }[keyof M & string];
+
+/** The member named `K` in a cast, looked up inside groups too. */
+export type MemberOf<M, K> = K extends keyof M
+  ? M[K]
+  : {
+      [G in keyof M]: M[G] extends { readonly kind: "group"; readonly members: infer H }
+        ? MemberOf<H, K>
+        : never;
+    }[keyof M];
 
 /** What the scene returns: a pose per actor or group, a `ListPose` per list, all named flat. */
 export type Targets<M> = string extends keyof M
   ? Readonly<Record<string, Pose2d | ListPose | undefined>>
   : {
-      readonly [E in Entry<M> as E[0]]?: E[1] extends { readonly kind: "list" } ? ListPose : Pose2d;
+      readonly [K in MemberName<M>]?: MemberOf<M, K> extends { readonly kind: "list" }
+        ? ListPose
+        : Pose2d;
     };
-
-/** Every member name of a cast, group children included. */
-export type MemberName<M> = Entry<M>[0];
 
 /** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */
 export function each<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose {
@@ -97,7 +106,7 @@ export function defineStage<
   return Object.freeze({ ...options, kind: "stage-definition" });
 }
 
-/** Whether `value` is what `defineStage` returns. */
+/** Whether `value` reads as what `defineStage` returns: `kind` only, so a second copy of the package passes. */
 export function isStageDefinition(value: unknown): value is StageDefinition {
   return (
     typeof value === "object" && value !== null && Reflect.get(value, "kind") === "stage-definition"

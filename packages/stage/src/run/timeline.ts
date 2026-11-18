@@ -1,4 +1,6 @@
-/** Ms a member shows, both ends included; an end at the piece's last ms holds past it. */
+import type { Span } from "@gerak/core";
+
+/** Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it. */
 export type Window = readonly [from: number, to: number];
 
 /** What `visibleAt` needs of a member: its name, parent index and own windows. */
@@ -8,8 +10,30 @@ export interface Shown {
   readonly on?: readonly Window[] | undefined;
 }
 
+/** The window from `from` to `to` ms; one reaching `durationMs` holds past it. */
+export function windowOf(from: number, to: number, durationMs: number): Window {
+  return Object.freeze([from, to >= durationMs ? Infinity : to]);
+}
+
+function holds([from, to]: Window, ms: number): boolean {
+  return ms >= from && ms < to;
+}
+
 function inside(windows: readonly Window[] | undefined, ms: number): boolean {
-  return windows === undefined || windows.some(([from, to]) => ms >= from && ms <= to);
+  return windows === undefined || windows.some((window) => holds(window, ms));
+}
+
+/** The latest-started beat whose window holds `ms`, or `undefined` in a gap between beats. */
+export function beatAt(
+  beats: Readonly<Record<string, Span>>,
+  durationMs: number,
+  ms: number,
+): string | undefined {
+  let found: { readonly name: string; readonly from: number } | undefined;
+  for (const [name, { from, to }] of Object.entries(beats))
+    if (holds(windowOf(from, to, durationMs), ms) && (found === undefined || from >= found.from))
+      found = { name, from };
+  return found?.name;
 }
 
 function recordAt(members: readonly Shown[], ms: number): Readonly<Record<string, boolean>> {
@@ -36,13 +60,11 @@ export function visibility(
     const always = recordAt(members, 0);
     return () => always;
   }
-  // Region 2i+1 is exactly points[i]; region 2i+2 lies between points[i] and points[i+1].
-  const regions: Readonly<Record<string, boolean>>[] = [recordAt(members, (points[0] ?? 0) - 1)];
-  points.forEach((point, index) => {
-    const next = points[index + 1];
-    regions.push(recordAt(members, point));
-    regions.push(recordAt(members, next === undefined ? point + 1 : (point + next) / 2));
-  });
+  // Region 0 precedes points[0]; region i+1 holds across [points[i], points[i+1]).
+  const regions: readonly Readonly<Record<string, boolean>>[] = [
+    recordAt(members, (points[0] ?? 0) - 1),
+    ...points.map((point) => recordAt(members, point)),
+  ];
   return (ms) => {
     let low = 0;
     let high = points.length - 1;
@@ -54,7 +76,6 @@ export function visibility(
         low = middle + 1;
       } else high = middle - 1;
     }
-    const region = found < 0 ? 0 : points[found] === ms ? 2 * found + 1 : 2 * found + 2;
-    return regions[region] ?? regions[0] ?? {};
+    return regions[found + 1] ?? regions[0] ?? {};
   };
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   NO_REST,
   ZERO_BOX,
+  beatAt,
   check,
   compileStage,
   defineStage,
@@ -10,13 +11,17 @@ import {
   frame,
   listPose,
   restReader,
+  type Members,
   type Stage,
+  type StageDefinition,
 } from "../src";
 
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled(definition: unknown): Stage {
+function compiled<B extends string, M extends Members<B>, L extends string>(
+  definition: StageDefinition<B, M, L>,
+): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
@@ -64,7 +69,7 @@ describe("frame", () => {
     ]);
   });
 
-  it("shows members by their stretches, both ends included, a group hiding its children, the last beat holding", () => {
+  it("shows members by their stretches, start included and end excluded, a group hiding its children, the last beat holding", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100], b: [200, 300], c: [300, 1000] },
@@ -82,10 +87,10 @@ describe("frame", () => {
         .filter(([, on]) => on)
         .map(([name]) => name);
     expect(shown(0)).toEqual(["always", "early"]);
-    expect(shown(100)).toEqual(["always", "early"]);
+    expect(shown(100)).toEqual(["always"]);
     expect(shown(150)).toEqual(["always"]);
     expect(shown(200)).toEqual(["always", "gap", "child"]);
-    expect(shown(300)).toEqual(["always", "gap", "child", "tail"]);
+    expect(shown(300)).toEqual(["always", "tail"]);
     expect(shown(5000)).toEqual(["always", "tail"]);
     expect(stage.visibleAt(150)).toBe(stage.visibleAt(160));
   });
@@ -102,7 +107,7 @@ describe("frame", () => {
       }),
     );
     const within = (ranges: readonly (readonly [number, number])[], ms: number) =>
-      ranges.some(([from, to]) => ms >= from && (ms <= to || to >= 600));
+      ranges.some(([from, to]) => ms >= from && (ms < to || to >= 600));
     for (let ms = -5; ms <= 700; ms += 1) {
       const two = within([[0, 400]], ms);
       expect(stage.visibleAt(ms)).toEqual({
@@ -117,6 +122,34 @@ describe("frame", () => {
         three: two && within([[80, 400]], ms),
       });
     }
+  });
+
+  it("names the latest-started beat whose window holds a ms, as visibility reads it", () => {
+    const stage = compiled(
+      defineStage({
+        beats: { a: [0, 600], b: [300, 400], c: [600, 800] },
+        durationMs: 1000,
+        cast: (m) => ({ shot: m.box().on("c") }),
+        scene: () => ({}),
+      }),
+    );
+    const named = (ms: number) => beatAt(stage.beats, stage.durationMs, ms);
+    expect([100, 350, 400, 600, 799, 800, 900].map(named)).toEqual([
+      "a",
+      "b",
+      "a",
+      "c",
+      "c",
+      undefined,
+      undefined,
+    ]);
+    expect(stage.visibleAt(800)).toEqual({ shot: false });
+    expect(named(1000)).toBeUndefined();
+    const held = compiled(
+      defineStage({ beats: { a: [0, 500] }, cast: () => ({}), scene: () => ({}) }),
+    );
+    expect(beatAt(held.beats, held.durationMs, 500)).toBe("a");
+    expect(beatAt(held.beats, held.durationMs, 9000)).toBe("a");
   });
 
   it("picks the layout from events and reads measured boxes before the piece's own rests", () => {
@@ -169,7 +202,13 @@ describe("frame", () => {
   });
 
   it("refuses a scene that returns no object", () => {
-    const stage = compiled({ beats: { a: [0, 100] }, cast: () => ({}), scene: () => 3 });
+    const stage = compiled(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: () => ({}),
+        scene: () => Reflect.get({ three: 3 }, "three"),
+      }),
+    );
     expect(() => frame(stage, { time: at(0) })).toThrow(TypeError);
     expect(NO_REST.get("x")).toEqual(ZERO_BOX);
   });
