@@ -407,7 +407,7 @@ const dust = (time: Time, rest: RestReader, j: number): Pose2d => {
       x: letter.x + side * letter.width * 0.42 - own.x,
       y: ground.y - ground.height / 2 - 4 - own.y,
       scale: (0.6 + 0.3 * kind) * (li === 5 ? 1.5 : 1),
-      opacity: 0.75,
+      opacity: (elapsedOf(time.clock) ?? 0) < land ? 0 : 0.75,
     },
     kick(
       { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: kind === 2 ? 30 : 9 },

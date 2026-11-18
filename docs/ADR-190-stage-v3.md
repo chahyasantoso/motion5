@@ -17,7 +17,7 @@ changed word broke the piece at run time.
   each with `expect`, `watch`, `pivot` and its `on` windows in ms; renderers and review read the same entries.
   `stage.signature` answers whether two stages mount on the same elements.
 - **Visibility is compiled.** `compileStage` turns every `on` into regions between window ends; `visibleAt(ms)` is a
-  binary search returning a shared record. Both ends of a window are included, as before.
+  binary search returning a shared record. A window includes its start and excludes its end unless it reaches durationMs.
 - **`frame` runs, `check` judges.** `frame` returns the scene's targets untouched; `check` owns every shape rule and
   runs in review and on authoring pages (`checks: true`), not in live playback. A hidden member is not written.
 - **Layouts are always named**, `main` when a piece gives none. **Identity is data**: guards read `kind`.

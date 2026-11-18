@@ -117,6 +117,7 @@ describe("a stage module in the scene tools", () => {
     );
     expect(beatAt(read.beats ?? [], 100)).toBe("a");
     expect(beatAt(read.beats ?? [], 350)).toBe("b");
+    expect(beatAt(read.beats ?? [], 400)).toBe("a");
     expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
   });
 });
@@ -325,7 +326,7 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("refuses a readout inside a list", () => {
+  it("refuses a readout inside a list, naming it", () => {
     const read = compileStage(
       rawStage({
         beats: { all: [0, 1000] },
@@ -335,7 +336,9 @@ describe("gerak review on a stage module", () => {
         scene: () => ({}),
       }),
     );
-    expect(read.ok).toBe(false);
+    expect(!read.ok && read.errors.map(formatStageError).join("\n")).toMatch(
+      /"row\.0".*readout inside a list/,
+    );
   });
 
   it("says once that layouts are unmeasured without a browser, in place of a carried member never moved", () => {
@@ -457,7 +460,8 @@ describe("gerak review on a stage module", () => {
         dot: { x: Math.round(time.progress * 1000) % 300 < 150 ? 0 : 1 },
       }),
     });
-    expect(findings(twice).filter((finding) => finding.startsWith("dot changes"))).toEqual([
+    expect(findings(twice).filter((finding) => finding.startsWith("dot"))).toEqual([
+      "dot still changes 80 ms before the end",
       'dot changes at 464 ms (beat "gap"), between its beats "a", ending at 300 ms, and "b", starting at 600 ms.',
     ]);
   });

@@ -1,6 +1,7 @@
 import {
   combine,
   ease,
+  elapsedOf,
   reversed,
   sequence,
   span,
@@ -389,7 +390,7 @@ function dust(time: Time, j: number, rest: RestReader): Pose2d {
       x: letter.x + side * letter.width * 0.42 - me.x,
       y: floorY(rest) - 6 - me.y,
       scale: size,
-      opacity: 0.75,
+      opacity: (elapsedOf(time.clock) ?? 0) < land ? 0 : 0.75,
     },
     kick(
       { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: 30 * (kind === 2 ? 1 : 0.3) },

@@ -272,15 +272,25 @@ function contentOf(name: string, content: Content, errors: StageError[]): Conten
   }
 }
 
-function itemOf(name: string, raw: ItemContent, errors: StageError[]): ItemContent | undefined {
+function isMembers(value: unknown): value is Members {
+  return isPlainRecord(value);
+}
+
+function itemOf(name: string, raw: Content, errors: StageError[]): ItemContent | undefined {
   const content = contentOf(name, raw, errors);
   if (content === undefined) return undefined;
-  if (content.kind === "readout")
-    throw new TypeError(`"${name}": a readout cannot be a list item.`);
+  if (content.kind === "readout") {
+    errors.push({
+      kind: "invalid",
+      field: "cast",
+      reason: `"${name}": a readout inside a list is not allowed.`,
+    });
+    return undefined;
+  }
   return content;
 }
 
-function compileCast(raw: Members, beats: Beats, errors: StageError[]): readonly Member[] {
+function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
   const visit = (record: Members, from: Inherited): void => {
@@ -292,6 +302,12 @@ function compileCast(raw: Members, beats: Beats, errors: StageError[]): readonly
         spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
       const expect = spec.meta.expect ?? from.expect;
       const pivot = spec.meta.pivot;
+      if (pivot !== undefined && (!finite(pivot.x) || !finite(pivot.y)))
+        errors.push({
+          kind: "invalid",
+          field: "cast",
+          reason: `"${name}": pivot needs finite x and y.`,
+        });
       const base = {
         name,
         parent: from.parent,
@@ -329,7 +345,7 @@ function compileCast(raw: Members, beats: Beats, errors: StageError[]): readonly
       }
     }
   };
-  if (!isPlainRecord(raw))
+  if (!isMembers(raw))
     errors.push({
       kind: "invalid",
       field: "cast",
@@ -512,7 +528,8 @@ export function compileStage(definition: unknown): CompileResult {
     errors.push({ kind: "invalid", field: "cast", reason: "`cast` must be `(m) => ({ ... })`." });
   else if (beats !== undefined) {
     try {
-      members = compileCast(Reflect.apply(castFn, undefined, [castBuilder()]), beats, errors);
+      const rawCast: unknown = Reflect.apply(castFn, undefined, [castBuilder()]);
+      members = compileCast(rawCast, beats, errors);
     } catch (thrown) {
       errors.push({
         kind: "invalid",

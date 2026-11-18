@@ -119,7 +119,15 @@ describe("compileStage", () => {
       }),
       scene: () => ({}),
     });
-    expect(readout.map(({ kind }) => kind)).toEqual(["invalid"]);
+    expect(readout.map(formatStageError).join()).toContain("a readout inside a list");
+    const badPivot = errorsOf(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: (m) => ({ a: m.box().pivot({ x: Number.NaN, y: 0 }) }),
+        scene: () => ({}),
+      }),
+    );
+    expect(badPivot.map(formatStageError).join()).toContain("pivot");
     const handBuilt = errorsOf({
       beats: { a: [0, 100] },
       cast: () => ({ box: { kind: "actor" } }),
