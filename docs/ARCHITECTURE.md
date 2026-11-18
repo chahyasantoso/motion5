@@ -27,7 +27,7 @@ Three dependency groups enforce one direction of imports: `library` may import `
   (writes a pose on an `Object3D`, paired with `rig-three` for skinned skeletons). A renderer never computes motion.
 - **Engines behind a port:** `rapier` puts Rapier behind `physics`' `PhysicsWorld`.
 - **Tools:** `tools/scene` reads a scene module with no browser; `tools/page` drives a real page with Playwright and
-  Vite, and the scan holds it to `node:`, `playwright-core` and `vite`. `moves-tools` plugs the library's `moves`,
+  Vite, and the scan holds it to `node:`, `@gerak/core`, `playwright-core` and `vite`. `moves-tools` plugs the library's `moves`,
   `new-move`, `promote` and `style` commands and the design reviewer into `gerak`.
 
 ## 2a. What a piece is built from
