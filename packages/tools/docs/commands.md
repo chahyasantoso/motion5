@@ -3,7 +3,8 @@
 Run from your project's folder. A page is a path inside the site with no leading `/`; the site is the pieces folder,
 `--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one, unless
 `--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
-and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` and
+and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
+`1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
 `(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
 
@@ -13,7 +14,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   each file, and writes nothing when any of them exists or the `package.json` already names `gerak.pieces`.
   `--refresh` rewrites only the six page files of the pieces folder, and nothing else.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
-  address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files.
+  address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
+  running until stopped, so start it in the background; page tools start their own server and need no `live`.
 - **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one stage module (the brief
   is the name unless `--in` names another; open as `stage.html?piece=<name>`); `--three` writes `<brief>/<name>.html`, its
   entry, a component and `<brief>/src/<name>-scene.ts` instead. Refuses a name any brief already holds; every target rests
@@ -30,7 +32,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
-  final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
+  final hold under `--hold`, and a target still moving at the end; the final-hold finding names no target, so
+  `gerak sample <scene.ts> --watch <path> --from <ms>` shows which value still changes. For a 3D scene give `--jump` in world units.
   For a stage module (`defineStage`) a finding that names a time also names the beat there, and it
   adds: a `"settle"` member the scene never moves (unless `.watch()` or `.ambient()`), a `.static()` member the scene moves or poses, a target
   the scene answers that is not cast, a member whose value changes outside its `.on()` stretches (before the first, in a
