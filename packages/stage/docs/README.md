@@ -1,10 +1,10 @@
 # @gerak/stage docs
 
-Who is on stage and when. Pages for a brief that needs more than the loop are named in the table.
+Who is on stage, when each member shows, and how scenes compile and evaluate cleanly. Pages for specialized topics are listed below.
 
-- [stage.md](./stage.md): read whole before making a piece: the loop, the stage module, the traps.
+- [stage.md](./stage.md): read whole before making a piece — `defineStage`, cast builders, skins, and traps.
 - [Events](./agent-events.md), [layout](./agent-layout.md) and [live inputs](./agent-inputs.md).
-- [Reference](./reference/README.md): every export with its signature, by source folder.
+- [Reference](./reference/README.md): every export of `@gerak/stage` and `@gerak/stage/dom` with its signature, grouped by folder.
 
 | The brief has | Read |
 | --- | --- |

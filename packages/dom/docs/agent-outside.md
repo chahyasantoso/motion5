@@ -10,15 +10,12 @@ install the packages (see the README), then run `npx gerak init` in your project
 To play a module on a page of your own, mount it yourself:
 
 ```ts
-import { mountStage, stageModuleOf } from "@gerak/dom";
-import { readStageModule } from "@gerak/stage";
-import * as piece from "./piece";
+import { mountStage } from "@gerak/dom";
+import piece from "./piece";
 
-const read = readStageModule(piece);
-if ("reason" in read) throw new Error(read.reason);
 const container = document.querySelector<HTMLElement>("#stage");
 if (container === null) throw new Error("No #stage element.");
-const stage = mountStage(container, stageModuleOf(read));
+const stage = mountStage(container, piece);
 ```
 
 - The stage builds inside a shadow root, so `document.querySelector` does not find its members; read them through

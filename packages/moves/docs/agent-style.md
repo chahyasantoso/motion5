@@ -10,7 +10,7 @@ each, not which move to use, so your piece keeps its own story and borrows the f
 
 ## In a style, step by step
 
-1. **Name it.** Add `export const style = "<brief>"` to your stage module. A name with no card is refused.
+1. **Name it.** Set `style: "<brief>"` in `defineStage({ ... })`. A name with no card is refused.
 2. **Read the card, not the pieces.** `npx gerak moves --anatomy --style <brief>` prints the card first: the
    lively share per field, the tokens, the habits, and the brief's moves and parts. Never open the style brief's
    pages or pieces (`<brief>/*.html`, `<brief>/src/*.ts`); its story is not yours. A move's options come from `npx gerak moves <id>`.
@@ -24,7 +24,7 @@ each, not which move to use, so your piece keeps its own story and borrows the f
 5. **Take the look.** Import the card and prepend its tokens to your skin:
 
    ```ts
-   import { cssVariables } from "@gerak/stage";
+   import { cssVariables } from "@gerak/stage/dom";
    import { card } from "../../showreel/style";
 
    const css = `${cssVariables(card.tokens)}\n.ball { background: var(--coral); }`;

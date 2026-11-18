@@ -19,7 +19,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   entry, a component and `<brief>/src/<name>-scene.ts` instead. Refuses a name any brief already holds; every target rests
   (`{}`) and the scene imports no move.
 - **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a stage
-  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `actor({ still: true, path })`
+  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `m.stroke(path).static()`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
@@ -31,12 +31,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
-  For a stage module (it exports `beats` and `cast`) a finding that names a time also names the beat there, and it
-  adds: a cast member the scene never moves that is not `still`, a `still` member or group the scene moves, a target
-  the scene answers that is not cast, a member whose value changes outside its `on` stretches (before the first, in a
-  gap, or after the last), a path that reads its own box, paths that read each other in a loop, and a text function
-  that throws or answers something other than a string. A step while a member, its group or its list is hidden by
-  `on` is not a jump. A module may export `limits`, `{ target: { jump?, turn?, ratio? } }`, to judge one target by its own
+  For a stage module (`defineStage`) a finding that names a time also names the beat there, and it
+  adds: a `"settle"` member the scene never moves (unless `.watch()` or `.ambient()`), a `.static()` member the scene moves or poses, a target
+  the scene answers that is not cast, a member whose value changes outside its `.on()` stretches (before the first, in a
+  gap, or after the last), frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout function
+  that throws. A step while a member, its group or its list is hidden by
+  `.on()` is not a jump. `limits` in `defineStage`, `{ target: { jump?, turn?, ratio? } }`, judges one target by its own
   limits instead of the flags; a `custom` value is judged as a ratio.
 - **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still

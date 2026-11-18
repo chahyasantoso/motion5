@@ -1,52 +1,40 @@
 # Layout and changing place
 
-Read this when a value comes from where the layout puts a member, or a member moves between places the layout decides:
-a route change, a card opening, a list reordering. The loop is in [the agent guide](./stage.md).
+Read this when poses depend on measured layout geometry or transitions across layout states (route switch, expanding card, reordered list). Loop basics are in [stage.md](./stage.md).
 
-## Where the layout puts a member
+## Reading measured rest boxes
 
-- An entrance ends at its rest pose, the member's layout position, and starts away from it by its options. Start far
-  enough out to be off the stage; the frame clips what leaves it.
-- A value the layout decides, such as the point a reveal grows from, is `restOf(rest, "dot")`, not a number you guess.
+- Entrances arrive at layout rest (start offsets relative to `rest`, rather than guessing coordinates).
+- Read a member's measured box via `rest.get("dot")` (`{ x, y, width, height }` centered in frame px, returning `ZERO_BOX` before browser measurement or in headless mode).
 
-## Changing place
+## Multi-layout transitions with `carry`
 
-A route change, a card opening and a reordering list move a member from one place the layout decides to another.
-Never compute those places: name the layouts, let the stage measure them, and carry the member with `carried`.
+Declare `layouts: { names, pick, rests? }` in `defineStage`, style each view in CSS with `[data-layout="<name>"] [data-cast="..."]`, and let `carry(member, options)` interpolate between layouts deterministically:
 
 ```ts
-import { ease, type Events, type Time } from "@gerak/core";
-import { carried, restOf, type Layouts, type Rest } from "@gerak/stage";
+import { ease } from "@gerak/core";
+import { defineStage } from "@gerak/stage";
 
-export const layouts = ["list", "detail"] as const;
-type Layout = (typeof layouts)[number];
-export const layout = (events: Events): Layout =>
-  events.findLast((event) => event.name === "click")?.target === "card" ? "detail" : "list";
-export const scene = (time: Time, events: Events, rest: Rest, all: Layouts<Layout>) => ({
-  card: carried({
-    own: restOf(rest, "card"),
-    at: (past) => restOf(all[layout(past)], "card"),
-    events, time, ms: 450, ease: ease.cubicOut,
+export default defineStage({
+  beats: { show: [0, 1200] },
+  durationMs: 2500,
+  cast: (m) => ({ card: m.box().watch() }),
+  layouts: {
+    names: ["list", "detail"],
+    pick: (events) =>
+      events.findLast((event) => event.name === "click")?.target === "card" ? "detail" : "list",
+  },
+  cues: [{ name: "click", at: 1200, target: "card" }],
+  scene: ({ carry }) => ({
+    card: carry("card", { ms: 450, ease: ease.cubicOut, mode: "scale" }),
   }),
 });
 ```
 
-- **Layouts.** `layouts` names them; `skins.dom.css` styles each under `[data-layout="<name>"] [data-cast="…"]`. The
-  stage measures every layout and passes them all as the scene's fourth argument; `rest`, the third, is the layout in
-  force. `layout(events)` answers which one is in force from the events alone, never the time, so the moment of a
-  change is its event's. Without `layout`, the first layout is in force.
-- **A route is a layout.** A member one route does not show is `display: none` under that layout; its box there is
-  zero, and nothing is carried from or to it: it stays put, so let it enter or exit instead.
-- **`carried`** carries the member from where it is drawn to the box `at` names after each event, over `ms`, so a
-  second click mid-flight sets off from where the member is, never from its old rest. `size` is `"scale"` (default),
-  `"clip"` or `"keep"`. `"clip"` crops and never draws larger than the member's own box, so it suits only a member
-  that rests at the larger box both ways; a card that opens and closes is carried by `"scale"`, its text in members of
-  their own, sized to their text, so each comes to rest at scale 1.
-- **Scripted clicks.** Export `cues`, events at known ms such as `{ name: "click", at: 1500, target: "card" }`; the
-  stage plays them beside the page's own, so the tools and `stage.html` show each change without a hand on the mouse.
-- **A reorder needs no layout.** The items stay where the page put them; `at` answers the slot box each item takes
-  after the events, `(past) => restOf(rest, \`list.${slotOf(past, index)}\`)`. The page's own order, and so its tab
-  order, stays the first one until the site reorders its data.
-- **One layout per view, never per order.** A grid that sorts and opens is two layouts, `grid` and `detail`, not one
-  per order and view: the slot an item takes is `restOf(all[layout(past)], \`card.${slotOf(past, index)}\`)`, the box
-  the page puts the item of that index at in that layout.
+- **State switching (`pick`):** Derive active layout from `events` alone (never from `time`). The first entry in `layouts.names` is active at `[]` and must succeed during `compileStage`.
+- **Routes / absent boxes:** Members hidden (`display: none`) in a layout report zero width/height and are omitted from scaling between visible/absent layouts.
+- **`carry` modes:**
+  - `"scale"` (default): translates center and scales width/height toward the previous/interrupted layout box, returning smoothly to `scale: 1`.
+  - `"clip"`: crops without scaling (only suited where resting size encloses both layouts).
+  - `"keep"`: moves position while holding size unchanged.
+- **Reordering within one layout:** Keep layout single or per-view and pass `target: (past, reader) => reader.get(\`list.\${slotOf(past, index)}\`)` to carry an item across slot boxes without multiplying layout names.

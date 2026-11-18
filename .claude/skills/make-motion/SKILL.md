@@ -9,7 +9,7 @@ A piece starts from its brief, not from a piece that already exists.
 
 1. Read [`core.md`](../../../packages/core/docs/core.md) and [`stage.md`](../../../packages/stage/docs/stage.md) whole, and follow
    the loop in `stage.md`. A piece is one stage module: `npx gerak new <name>` writes
-   `<pieces>/<name>/src/<name>.ts` with its cast, its story and its skin, and `stage.html?piece=<name>` shows it.
+   `<pieces>/<name>/src/<name>.ts` with `defineStage` (beats, cast, skins, scene), and `stage.html?piece=<name>` shows it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.

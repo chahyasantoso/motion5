@@ -78,7 +78,7 @@ describe("agent reference", () => {
         const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
         if (written === null) continue;
         const [, name, signature = ""] = written;
-        if (signature.endsWith("…") || new RegExp(`^type ${name}(<.*>)?$`).test(signature))
+        if (signature.endsWith("…") || new RegExp(`^type ${name}(?:<[^=>]*>)?$`).test(signature))
           cut.push(`${dir}: ${name}`);
       }
     }
@@ -203,6 +203,11 @@ describe("agent reference", () => {
     const stage = readFileSync(new URL("packages/stage/docs/stage.md", ROOT), "utf8");
     expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(14 * 1024);
     expect(stage).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
-    expect(stage).toContain("./reference/index.md");
+    for (const page of readdirSync(new URL("packages/stage/docs/reference/", ROOT))) {
+      if (page !== "README.md") expect(stage).toContain(`./reference/${page}`);
+    }
+    const domExports = exportsOf(["stage/src/dom/index.ts"]).get("stage/src/dom/index.ts") ?? [];
+    expect(domExports.length).toBeGreaterThan(0);
+    expect(domExports.filter((name) => !stage.includes("`" + name + "`"))).toEqual([]);
   });
 });
