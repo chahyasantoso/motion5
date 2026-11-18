@@ -28,7 +28,7 @@ What a piece is written with: `defineStage`, the cast builders, list poses by in
 - **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[] }`: Reads rest boxes; a name never measured answers a zero box.
 - **`defineStage`** `<const B extends string, M extends Members<B>, const L extends string = never>(options: StageOptions<B, M, L>): StageDefinition<B, M, L>`: Declares a piece; its beat and layout names type the cast's `on` and the scene's context.
 - **`each`** `<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose`: A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none.
-- **`isStageDefinition`** `(value: unknown): value is StageDefinition`: Whether `value` is what `defineStage` returns.
+- **`isStageDefinition`** `(value: unknown): value is StageDefinition`: Whether `value` reads as what `defineStage` returns: `kind` only, so a second copy of the package passes.
 - **`Beats`** `type Beats<B> = { readonly [P in keyof Record<B, Span>]: Record<B, Span>[P]; }`: Beats by name, each a `Span`: `beats.enter.of(time)` is time inside it.
 - **`DomSkinInput`** `type DomSkinInput = { readonly css: string; readonly defs?: string | undefined; } | { readonly css: URL; readonly defs?: URL | undefined; }`: The DOM skin: CSS and SVG defs as strings, or as URLs of files beside the piece.
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, type FC } from "react";
 import { mountStage, type MountedStage } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
-import { compileStage } from "@gerak/stage";
+import { compileStage, type StageDefinition } from "@gerak/stage";
 import type { LoadedStage } from "../stage-module";
 
 export interface LiveStageViewProps {
@@ -21,7 +21,7 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
   const container = useRef<HTMLDivElement>(null);
   const shown = useRef<Shown | undefined>(undefined);
   const currentScene = useRef(loaded.definition.scene);
-  const lastValues = useRef<object | undefined>(undefined);
+  const lastValues = useRef<ReturnType<StageDefinition["scene"]> | undefined>(undefined);
   const reported = useRef(new Set<string>());
 
   useEffect(() => {
@@ -30,9 +30,9 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
     currentScene.current = loaded.definition.scene;
     reported.current.clear();
 
-    const guardedScene = (ctx: unknown): object => {
+    const guardedScene: StageDefinition["scene"] = (ctx) => {
       try {
-        const next: unknown = Reflect.apply(currentScene.current, undefined, [ctx]);
+        const next = currentScene.current(ctx);
         if (typeof next === "object" && next !== null) {
           lastValues.current = next;
           return next;

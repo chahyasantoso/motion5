@@ -5,17 +5,6 @@ import type { Stage } from "../run/compile";
 import type { StageError } from "../run/errors";
 import { blendShapes } from "../run/outlines";
 
-/** A drawn path: its cubics, or what its function threw. */
-export type PathAnswer =
-  | { readonly kind: "drawn"; readonly cubics: readonly Cubic2d[] }
-  | { readonly kind: "failed"; readonly error: unknown };
-
-/** Paths that read each other, and the paths waiting behind them. */
-export interface StrokeLoop {
-  readonly loop: readonly string[];
-  readonly behind: readonly string[];
-}
-
 /** Every stroke and morph drawn in order, the rest with their boxes added, and what failed to draw. */
 export interface Strokes {
   readonly cubics: ReadonlyMap<string, readonly Cubic2d[]>;
@@ -34,7 +23,7 @@ export function morphAt(
 }
 
 /** Bounds grown to 1 px where thinner, centred on the edge, so straight lines stay visible. */
-export function thickened(box: Box): Box {
+function thickened(box: Box): Box {
   const side = (from: number, size: number): readonly [number, number] =>
     size >= 1 ? [from, size] : [from + size / 2 - 0.5, 1];
   const [x, width] = side(box.x, box.width);
@@ -50,11 +39,6 @@ export function strokeBox(cubics: readonly Cubic2d[]): Box {
 /** A top-left box as a centre-origin rest box. */
 export function restOfBounds(bounds: Box): Box {
   return { ...bounds, x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-}
-
-/** A path's cubics, drawing a path function against `rest`; `compileStage` checked its answer. */
-export function pathOf(path: Path, rest: RestReader): readonly Cubic2d[] {
-  return typeof path === "function" ? path(rest) : path;
 }
 
 function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): RestReader {
@@ -84,46 +68,8 @@ function inLoop(from: string, reads: ReadonlyMap<string, ReadonlySet<string>>): 
   return false;
 }
 
-/** Draws paths in passes, each once the boxes it reads are drawn; `settle` answers the box a drawn path adds. */
-export function drawInPasses(
-  paths: readonly (readonly [string, Path])[],
-  rest: RestReader,
-  settle: (name: string, answer: PathAnswer, read: ReadonlySet<string>) => Box | undefined,
-): StrokeLoop | undefined {
-  const boxes: Record<string, Box> = {};
-  for (const key of rest.keys()) boxes[key] = rest.get(key);
-  const pending = new Map(paths);
-  const reads = new Map<string, ReadonlySet<string>>();
-  for (let drew = true; drew && pending.size > 0; ) {
-    drew = false;
-    for (const [name, path] of [...pending]) {
-      const read = new Set<string>();
-      let answer: PathAnswer;
-      try {
-        answer = { kind: "drawn", cubics: pathOf(path, recording(boxes, read)) };
-      } catch (error) {
-        answer = { kind: "failed", error };
-      }
-      const waits = new Set([...read].filter((other) => other !== name && pending.has(other)));
-      if (waits.size > 0) {
-        reads.set(name, waits);
-        continue;
-      }
-      pending.delete(name);
-      reads.delete(name);
-      drew = true;
-      const box = settle(name, answer, read);
-      if (box !== undefined) boxes[name] = box;
-    }
-  }
-  if (pending.size === 0) return undefined;
-  const names = [...pending.keys()];
-  const loop = names.filter((name) => inLoop(name, reads));
-  return { loop, behind: names.filter((name) => !loop.includes(name)) };
-}
-
 /** The paths of a stage's strokes and morph bases, list items named `<list>.<index>`. */
-export function pathsOf(stage: Stage): readonly (readonly [string, Path])[] {
+function pathsOf(stage: Stage): readonly (readonly [string, Path])[] {
   const paths: (readonly [string, Path])[] = [];
   const add = (name: string, content: Content): void => {
     if (content.kind === "stroke") paths.push([name, content.path]);
@@ -145,7 +91,7 @@ export function pathsOf(stage: Stage): readonly (readonly [string, Path])[] {
   return paths;
 }
 
-/** Draws every stroke and morph base against `rest`, or the loop of paths that read each other. */
+/** Draws every stroke and morph base against `rest`, each once the boxes it reads are drawn, or the loop of paths that read each other. */
 export function drawStrokes(
   stage: Stage,
   rest: RestReader,
@@ -157,22 +103,40 @@ export function drawStrokes(
   for (const key of rest.keys()) boxes[key] = rest.get(key);
   const failures: { readonly name: string; readonly error: unknown }[] = [];
   const selfReads: string[] = [];
-  const loop = drawInPasses(pathsOf(stage), rest, (name, answer, read) => {
-    if (read.has(name)) selfReads.push(name);
-    switch (answer.kind) {
-      case "drawn": {
-        const box = restOfBounds(strokeBox(answer.cubics));
-        cubics.set(name, answer.cubics);
-        boxes[name] = box;
-        return box;
+  const pending = new Map(pathsOf(stage));
+  const reads = new Map<string, ReadonlySet<string>>();
+  for (let drew = true; drew && pending.size > 0; ) {
+    drew = false;
+    for (const [name, path] of [...pending]) {
+      const read = new Set<string>();
+      let drawn: readonly Cubic2d[] | undefined;
+      let error: unknown;
+      try {
+        drawn = typeof path === "function" ? path(recording(boxes, read)) : path;
+      } catch (thrown) {
+        error = thrown;
       }
-      case "failed":
-        failures.push({ name, error: answer.error });
-        return undefined;
-      default:
-        return unreachable(answer);
+      const waits = new Set([...read].filter((other) => other !== name && pending.has(other)));
+      if (waits.size > 0) {
+        reads.set(name, waits);
+        continue;
+      }
+      pending.delete(name);
+      reads.delete(name);
+      drew = true;
+      if (read.has(name)) selfReads.push(name);
+      if (drawn === undefined) failures.push({ name, error });
+      else {
+        cubics.set(name, drawn);
+        boxes[name] = restOfBounds(strokeBox(drawn));
+      }
     }
-  });
-  if (loop !== undefined) return { ok: false, error: { kind: "stroke_loop", ...loop } };
+  }
+  if (pending.size > 0) {
+    const names = [...pending.keys()];
+    const loop = names.filter((name) => inLoop(name, reads));
+    const behind = names.filter((name) => !loop.includes(name));
+    return { ok: false, error: { kind: "stroke_loop", loop, behind } };
+  }
   return { ok: true, strokes: { cubics, rest: restReader(boxes), failures, selfReads } };
 }

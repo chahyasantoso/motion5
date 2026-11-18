@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { toCubics, type Events, type Pose2d, type Time } from "@gerak/core";
 import { follow, trace } from "@gerak/moves";
-import { compileStage, defineStage, type RestReader, type Stage } from "@gerak/stage";
+import {
+  compileStage,
+  defineStage,
+  type Members,
+  type RestReader,
+  type Stage,
+  type StageDefinition,
+} from "@gerak/stage";
 import { blendShapes, matchOutlines } from "@gerak/stage/render";
 import {
   mountStage,
@@ -167,7 +174,9 @@ function mounted(seen: Seen = {}, fonts?: StageFonts, customStage?: Stage) {
   };
 }
 
-function mustCompile(def: unknown): Stage {
+function mustCompile<B extends string, M extends Members<B>, L extends string>(
+  def: StageDefinition<B, M, L>,
+): Stage {
   const result = compileStage(def);
   if (!result.ok) throw new Error("Expected stage to compile.");
   return result.stage;

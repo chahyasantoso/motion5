@@ -18,6 +18,9 @@ changed word broke the piece at run time.
   `stage.signature` answers whether two stages mount on the same elements.
 - **Visibility is compiled.** `compileStage` turns every `on` into regions between window ends; `visibleAt(ms)` is a
   binary search returning a shared record. A window includes its start and excludes its end unless it reaches durationMs.
+- **`compileStage` checks only what types cannot.** It takes what `defineStage` returns, trusts its shape, and refuses
+  non-finite numbers, reversed or empty beats, duplicate or dotted names, mismatched morphs and a `pick` answer
+  outside `names`; untyped JavaScript that breaks the shape fails with a plain error.
 - **`frame` runs, `check` judges.** `frame` returns the scene's targets untouched; `check` owns every shape rule and
   runs in review and on authoring pages (`checks: true`), not in live playback. A hidden member is not written.
 - **Layouts are always named**, `main` when a piece gives none. **Identity is data**: guards read `kind`.

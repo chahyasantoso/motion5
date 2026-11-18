@@ -106,7 +106,7 @@ export function defineStage<
   return Object.freeze({ ...options, kind: "stage-definition" });
 }
 
-/** Whether `value` is what `defineStage` returns. */
+/** Whether `value` reads as what `defineStage` returns: `kind` only, so a second copy of the package passes. */
 export function isStageDefinition(value: unknown): value is StageDefinition {
   return (
     typeof value === "object" && value !== null && Reflect.get(value, "kind") === "stage-definition"

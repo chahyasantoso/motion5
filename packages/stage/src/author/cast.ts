@@ -1,4 +1,4 @@
-import type { Cubic2d, Time } from "@gerak/core";
+import { unreachable, type Cubic2d, type Time } from "@gerak/core";
 import type { RestReader } from "./layout";
 
 /** What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it. */
@@ -100,18 +100,6 @@ export interface CastBuilder<B extends string = string> {
   group<M extends Members<B>>(members: M): GroupSpec<B, M>;
 }
 
-const made = new WeakSet<object>();
-
-/** Whether `value` is a member the cast builders made. */
-export function isSpec(value: unknown): value is Spec {
-  return typeof value === "object" && value !== null && made.has(value);
-}
-
-function remember<S extends Spec>(spec: S): S {
-  made.add(spec);
-  return spec;
-}
-
 function modifiers<B extends string, S>(
   meta: Meta<B>,
   rebuild: (meta: Meta<B>) => S,
@@ -131,39 +119,33 @@ function actor<B extends string, C extends Content>(
   content: C,
   meta: Meta<B> = {},
 ): ActorSpec<B, C> {
-  return remember(
-    Object.freeze({
-      kind: "actor",
-      content,
-      meta,
-      ...modifiers(meta, (next) => actor<B, C>(content, next)),
-    }),
-  );
+  return Object.freeze({
+    kind: "actor",
+    content,
+    meta,
+    ...modifiers(meta, (next) => actor<B, C>(content, next)),
+  });
 }
 
 function list<B extends string>(items: readonly ItemContent[], meta: Meta<B> = {}): ListSpec<B> {
-  return remember(
-    Object.freeze({
-      kind: "list",
-      items,
-      meta,
-      ...modifiers(meta, (next) => list<B>(items, next)),
-    }),
-  );
+  return Object.freeze({
+    kind: "list",
+    items,
+    meta,
+    ...modifiers(meta, (next) => list<B>(items, next)),
+  });
 }
 
 function group<B extends string, M extends Members<B>>(
   members: M,
   meta: Meta<B> = {},
 ): GroupSpec<B, M> {
-  return remember(
-    Object.freeze({
-      kind: "group",
-      members,
-      meta,
-      ...modifiers(meta, (next) => group<B, M>(members, next)),
-    }),
-  );
+  return Object.freeze({
+    kind: "group",
+    members,
+    meta,
+    ...modifiers(meta, (next) => group<B, M>(members, next)),
+  });
 }
 
 /** The cast builders; a list item made by `many(items, make)` keeps its content only. */
@@ -171,7 +153,7 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
   const text = (value: string): ActorSpec<B, ItemContent> => actor({ kind: "text", value });
   function many<T>(
     source: number | readonly T[],
-    make?: (item: T, index: number) => ActorSpec<B, ItemContent>,
+    make?: (item: T, index: number) => ActorSpec<B, Content>,
   ): ListSpec<B> {
     if (typeof source === "number") {
       if (!(Number.isInteger(source) && source >= 0))
@@ -186,7 +168,20 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
           const made = make(item, index);
           if (Object.keys(made.meta).length > 0)
             throw new TypeError("many: an item takes no modifiers; put them on the list.");
-          return made.content;
+          const { content } = made;
+          switch (content.kind) {
+            case "readout":
+              throw new TypeError(
+                `many: item ${index} is a readout; a readout is a top-level actor.`,
+              );
+            case "box":
+            case "text":
+            case "stroke":
+            case "morph":
+              return content;
+            default:
+              return unreachable(content);
+          }
         }),
       ),
     );

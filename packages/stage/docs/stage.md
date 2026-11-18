@@ -4,8 +4,8 @@ Read this page whole before making a piece. A piece is one `defineStage({ ... })
 
 <!-- generated:reference:start -->
 - [author](./reference/author.md) (38): `ActorSpec`, `CastBuilder`, `Content`, `Expect`, `GroupSpec`, `ItemContent`, `ListSpec`, `Members`, `Meta`, `Modifiers`, `Path`, `Pivot`, `Spec`, `Stretch`, `NO_REST`, `ZERO_BOX`, `restReader`, `Box`, `Carry`, `CarryMode`, `CarryOptions`, `Frame`, `Rest`, `RestReader`, `defineStage`, `each`, `isStageDefinition`, `Beats`, `DomSkinInput`, `Limits`, `LayoutsInput`, `ListPose`, `MemberName`, `MemberOf`, `SceneContext`, `StageDefinition`, `StageOptions`, `Targets`
-- [run](./reference/run.md) (21): `DEFAULT_FRAME`, `compileStage`, `isStage`, `CompileResult`, `DomSkin`, `Member`, `Stage`, `StageLayouts`, `formatStageError`, `StageError`, `check`, `frame`, `listPose`, `poseOf`, `FrameInput`, `FrameOutput`, `beatAt`, `Window`, `blendShapes`, `matchOutlines`, `piecesOf`
-- [render](./reference/render.md) (11): `drawInPasses`, `drawStrokes`, `morphAt`, `pathOf`, `pathsOf`, `restOfBounds`, `strokeBox`, `thickened`, `PathAnswer`, `StrokeLoop`, `Strokes`
+- [run](./reference/run.md) (20): `DEFAULT_FRAME`, `compileStage`, `isStage`, `CompileResult`, `DomSkin`, `Member`, `Stage`, `StageLayouts`, `formatStageError`, `StageError`, `check`, `frame`, `listPose`, `poseOf`, `FrameInput`, `FrameOutput`, `beatAt`, `Window`, `blendShapes`, `matchOutlines`
+- [render](./reference/render.md) (5): `drawStrokes`, `morphAt`, `restOfBounds`, `strokeBox`, `Strokes`
 - [dom](./reference/dom.md) (2): `cssVariables`, `isTokenName`
 <!-- generated:reference:end -->
 

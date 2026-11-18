@@ -6,20 +6,26 @@ import {
   formatStageError,
   isStage,
   isStageDefinition,
+  type Members,
   type Stage,
+  type StageDefinition,
   type StageError,
 } from "../src";
 
 const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
 
-function compiled(definition: unknown): Stage {
+function compiled<B extends string, M extends Members<B>, L extends string>(
+  definition: StageDefinition<B, M, L>,
+): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
-function errorsOf(definition: unknown): readonly StageError[] {
+function errorsOf<B extends string, M extends Members<B>, L extends string>(
+  definition: StageDefinition<B, M, L>,
+): readonly StageError[] {
   const result = compileStage(definition);
   return result.ok ? [] : result.errors;
 }
@@ -108,18 +114,16 @@ describe("compileStage", () => {
     for (const error of errors) expect(formatStageError(error)).not.toBe("");
   });
 
-  it("refuses a readout smuggled into a list, a beat past durationMs and a bad layout pick", () => {
-    const readout = errorsOf({
-      beats: { a: [0, 100] },
-      cast: (m: {
-        many: (items: readonly number[], make: () => object) => object;
-        readout: (f: () => string) => object;
-      }) => ({
-        row: m.many([0], () => m.readout(() => "x")),
+  it("refuses a readout in a list, a bad pivot, beats past durationMs or of no length, and a bad layout pick", () => {
+    const readout = errorsOf(
+      defineStage({
+        beats: { a: [0, 100] },
+        // @ts-expect-error: a readout cannot be a list item
+        cast: (m) => ({ row: m.many([0], () => m.readout(() => "x")) }),
+        scene: () => ({}),
       }),
-      scene: () => ({}),
-    });
-    expect(readout.map(formatStageError).join()).toContain("a readout inside a list");
+    );
+    expect(readout.map(formatStageError).join()).toContain("many: item 0 is a readout");
     const badPivot = errorsOf(
       defineStage({
         beats: { a: [0, 100] },
@@ -128,27 +132,23 @@ describe("compileStage", () => {
       }),
     );
     expect(badPivot.map(formatStageError).join()).toContain("pivot");
-    const handBuilt = errorsOf({
-      beats: { a: [0, 100] },
-      cast: () => ({ box: { kind: "actor" } }),
-      scene: () => ({}),
-    });
-    expect(handBuilt.map(formatStageError)).toEqual([
-      errorsOf({
-        beats: { a: [0, 100] },
-        cast: () => ({ box: { kind: "actor", content: { kind: "box" }, meta: {} } }),
-        scene: () => ({}),
-      }).map(formatStageError)[0],
-    ]);
-    expect(handBuilt.map(formatStageError).join()).toContain("make members with the cast builders");
     expect(
-      errorsOf({ beats: { a: [0, 900] }, durationMs: 500, cast: () => ({}), scene: () => ({}) }),
+      errorsOf(
+        defineStage({
+          beats: { a: [0, 900] },
+          durationMs: 500,
+          cast: () => ({}),
+          scene: () => ({}),
+        }),
+      ),
     ).toHaveLength(1);
-    const agree = errorsOf({
-      beats: { a: [0, 500], empty: [500, 500] },
-      cast: () => ({}),
-      scene: () => ({}),
-    });
+    const agree = errorsOf(
+      defineStage({
+        beats: { a: [0, 500], empty: [500, 500] },
+        cast: () => ({}),
+        scene: () => ({}),
+      }),
+    );
     expect(agree).toEqual([
       {
         kind: "invalid",
@@ -156,12 +156,14 @@ describe("compileStage", () => {
         reason: 'beat "empty" must be [from, to] ms with 0 <= from < to.',
       },
     ]);
-    const pick = errorsOf({
-      beats: { a: [0, 100] },
-      cast: () => ({}),
-      layouts: { names: ["one"], pick: () => "two" },
-      scene: () => ({}),
-    });
+    const pick = errorsOf(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: () => ({}),
+        layouts: { names: ["one"], pick: () => Reflect.get({ two: "two" }, "two") },
+        scene: () => ({}),
+      }),
+    );
     expect(pick.map(formatStageError).join()).toContain("layouts");
   });
 

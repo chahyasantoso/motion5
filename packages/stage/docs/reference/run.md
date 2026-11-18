@@ -3,8 +3,8 @@
 What renderers and tools run a piece with: `compileStage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.
 
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame of a piece that gives none.
-- **`compileStage`** `(definition: unknown): CompileResult`: Checks a piece and compiles it into a `Stage`, or lists every reason it cannot.
-- **`isStage`** `(value: unknown): value is Stage`: Whether `value` is a stage `compileStage` returned.
+- **`compileStage`** `<B extends string, M extends Members<B>, L extends string>(definition: StageDefinition<B, M, L>): CompileResult`: Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot.
+- **`isStage`** `(value: unknown): value is Stage`: Whether `value` reads as a compiled stage: `kind` only, so a stage from a second copy of the package passes.
 - **`CompileResult`** `type CompileResult = { readonly ok: true; readonly stage: Stage; } | { readonly ok: false; readonly errors: readonly StageError[]; }`: A compiled stage or every reason it is not one.
 - **`DomSkin`** `type DomSkin = { readonly kind: "inline"; readonly css: string; readonly defs?: string | undefined; } | { readonly kind: "url"; readonly css: URL; readonly defs?: URL | undefined; }`: The DOM skin, inline or as file URLs.
 - **`Member`** `type Member = { readonly name: string; readonly parent: number; readonly expect: Expect; readonly watch: boolean; readonly pivot?: Pivot | undefined; readonly on?: readonly Window[] | undefined; } & ({ readonly kind: "actor"; readonly content: Content; } | { readonly kind: "list"; readonly items: readonly ItemContent[]; } | { readonly kind: "group"; })`: One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`.
@@ -22,4 +22,3 @@ What renderers and tools run a piece with: `compileStage`, `frame` and `check`, 
 - **`Window`** `type Window = readonly [from: number, to: number]`: Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it.
 - **`blendShapes`** `(matched: readonly (readonly Cubic2d[])[], shape: number): readonly Cubic2d[]`: Interpolates matched outlines at `shape` index (clamped to `[0, matched.length - 1]`).
 - **`matchOutlines`** `(outlines: readonly (readonly Cubic2d[])[]): { readonly matched: readonly (readonly Cubic2d[])[]; } | { readonly reason: string; }`: Matches outlines to blend smoothly by piece count, orientation, and cubic count.
-- **`piecesOf`** `(cubics: readonly Cubic2d[]): readonly (readonly Cubic2d[])[]`: Splits cubics into continuous outlines wherever a cubic does not start where the last ended.

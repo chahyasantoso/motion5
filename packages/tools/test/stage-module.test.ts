@@ -179,7 +179,7 @@ describe("gerak review of a member still ringing", () => {
 
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
-    const bad = rawStage({ ...clean.default, skins: { dom: { css: 1 } } });
+    const bad = rawStage({ ...clean.default, frame: { width: 0, height: 10 } });
     const own = compileStage(bad);
     const tools = readSceneModule(bad);
     expect(
@@ -311,7 +311,7 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("refuses a readout inside a list, naming it", () => {
+  it("refuses a readout inside a list, naming the item", () => {
     const read = compileStage(
       rawStage({
         beats: { all: [0, 1000] },
@@ -323,7 +323,7 @@ describe("gerak review on a stage module", () => {
       }),
     );
     expect(!read.ok && read.errors.map(formatStageError).join("\n")).toMatch(
-      /"row\.0".*readout inside a list/,
+      /many: item 0 is a readout/,
     );
   });
 

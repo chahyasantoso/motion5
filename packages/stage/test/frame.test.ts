@@ -11,13 +11,17 @@ import {
   frame,
   listPose,
   restReader,
+  type Members,
   type Stage,
+  type StageDefinition,
 } from "../src";
 
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled(definition: unknown): Stage {
+function compiled<B extends string, M extends Members<B>, L extends string>(
+  definition: StageDefinition<B, M, L>,
+): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
@@ -198,7 +202,13 @@ describe("frame", () => {
   });
 
   it("refuses a scene that returns no object", () => {
-    const stage = compiled({ beats: { a: [0, 100] }, cast: () => ({}), scene: () => 3 });
+    const stage = compiled(
+      defineStage({
+        beats: { a: [0, 100] },
+        cast: () => ({}),
+        scene: () => Reflect.get({ three: 3 }, "three"),
+      }),
+    );
     expect(() => frame(stage, { time: at(0) })).toThrow(TypeError);
     expect(NO_REST.get("x")).toEqual(ZERO_BOX);
   });
