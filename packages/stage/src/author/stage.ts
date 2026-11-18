@@ -5,21 +5,32 @@ import type { Carry, Frame, Rest, RestReader } from "./layout";
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
 
-type Entry<M> = {
+/** Every member name of a cast, group children included. */
+export type MemberName<M> = {
   [K in keyof M & string]:
-    | readonly [K, M[K]]
-    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? Entry<G> : never);
+    | K
+    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? MemberName<G> : never);
 }[keyof M & string];
 
 /** What the scene returns: a pose per actor or group, a `ListPose` per list, all named flat. */
 export type Targets<M> = string extends keyof M
   ? Readonly<Record<string, Pose2d | ListPose | undefined>>
   : {
-      readonly [E in Entry<M> as E[0]]?: E[1] extends { readonly kind: "list" } ? ListPose : Pose2d;
+      readonly [K in MemberName<M>]?: K extends keyof M
+        ? M[K] extends { readonly kind: "list" }
+          ? ListPose
+          : Pose2d
+        : {
+            [G in keyof M & string]: M[G] extends {
+              readonly kind: "group";
+              readonly members: infer H;
+            }
+              ? K extends keyof Targets<H>
+                ? Exclude<Targets<H>[K], undefined>
+                : never
+              : never;
+          }[keyof M & string];
     };
-
-/** Every member name of a cast, group children included. */
-export type MemberName<M> = Entry<M>[0];
 
 /** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */
 export function each<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose {

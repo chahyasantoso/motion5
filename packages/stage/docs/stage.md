@@ -67,16 +67,16 @@ export default defineStage({
 | `m.many(count)`, `m.many(items, (item, i) => m.text(...))`, `m.letters(text)`, `m.words(text)` | list | `(index, count) => Pose2d` |
 | `m.group({ ... })` | container moving its children | `Pose2d` |
 
-- **Lists take a function of the index.** The cast owns the count; the renderer asks for each shown item. With per-item data, `each(items, (item, i) => pose)` gives that function.
+- **Lists take a function of the index.** The cast owns the count; the renderer asks for each shown item (or use `each(items, (item, i) => pose)` for per-item data).
 - `.on(beat, [from, to], ...)` shows a member only then, start included and end excluded; a stretch reaching the end holds past it, and a group hides its children.
-- `.watch()` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`) on the member into `events`; `.pivot({ x, y })` turns and scales it about a frame point.
-- `.settle()` is the default: the member moves and holds its end. `.ambient()` keeps moving, like snow, passes to children and items, and must stay in the frame. `.static()` means the scene never poses it; on a group it marks the container only.
+- `.watch()` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`) into `events`; `.pivot({ x, y })` sets the transform origin in frame px.
+- `.settle()` (default) moves and holds; `.ambient()` keeps moving (inherited by children and items) and must stay in frame; `.static()` forbids scene poses (container only on a group).
 
 ## Layouts, carry and skins
 
-- `rest.get("<name>")` is a measured box `{ x, y, width, height }`, centre origin; an unmeasured name answers a zero box.
-- `layouts: { names, pick: (events) => name, rests? }` names layouts the skin styles under `[data-layout="<name>"]`; `carry("<member>", { ms, ease?, mode?, target? })` moves a member from its box in the last layout to its box in the next, `mode` `"scale" | "clip" | "keep"`.
-- `skins.dom` is `{ css: string, defs?: string }`, or `{ css: URL, defs?: URL }` for files beside the piece (`new URL("./piece.css", import.meta.url)`), fetched then applied the same way. `cssVariables` from `@gerak/stage/dom` writes style-card tokens as `:host` custom properties.
+- `rest.get("<name>")` returns a measured centre-origin `Box` (zero box when unmeasured).
+- `layouts` names layouts styled under `[data-layout="<name>"]`, picked from `events`; `carry("<member>", options)` animates a member across layout changes (`mode`: `"scale" | "clip" | "keep"`).
+- `skins.dom` takes inline `css`/`defs` strings or `URL`s (`new URL("./piece.css", import.meta.url)`) fetched once. `cssVariables` from `@gerak/stage/dom` writes style-card tokens as `:host` custom properties.
 
 ## How the DOM renderer draws
 

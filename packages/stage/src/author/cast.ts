@@ -36,17 +36,17 @@ export interface Meta<B extends string = string> {
 }
 
 /** Modifiers every member takes; each returns a new member. */
-export interface Modifiers<B extends string, Self> {
+export interface Modifiers<B extends string, S> {
   /** Shows the member only during these stretches; children show only while it does. */
-  on(...stretches: Stretch<B>[]): Self;
+  on(...stretches: Stretch<B>[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
-  watch(enabled?: boolean): Self;
-  pivot(point: Pivot): Self;
+  watch(enabled?: boolean): S;
+  pivot(point: Pivot): S;
   /** The scene never poses it; a group's children keep their own expectation. */
-  static(): Self;
+  static(): S;
   /** It keeps moving, like snow; a group's children and a list's items inherit it. */
-  ambient(): Self;
-  settle(): Self;
+  ambient(): S;
+  settle(): S;
 }
 
 /** One element on the stage. */
