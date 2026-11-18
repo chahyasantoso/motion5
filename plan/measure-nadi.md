@@ -83,3 +83,5 @@ Report briefly when done: the file that plays it, the storyboard, how you checke
 | 2026-11-18 | plain HTML | 94.1k | 13 | 4.5 min |
 | 2026-11-18 | gerak PR 599 | 170.2k | 33 | 12.2 min |
 | 2026-11-18 | gerak v3 (PR 600) | 160.5k | 31 | 8.8 min |
+| 2026-11-18 | plain HTML | 99.4k | 10 | 4.3 min |
+| 2026-11-18 | gerak v3 follow-up (PR 601) | 126.2k | 18 | 6.9 min |
