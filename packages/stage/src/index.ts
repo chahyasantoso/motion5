@@ -36,6 +36,7 @@ export {
   type LayoutsInput,
   type ListPose,
   type MemberName,
+  type MemberOf,
   type SceneContext,
   type StageDefinition,
   type StageOptions,
@@ -53,4 +54,4 @@ export {
 } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";
 export { check, frame, listPose, poseOf, type FrameInput, type FrameOutput } from "./run/frame";
-export type { Window } from "./run/timeline";
+export { beatAt, type Window } from "./run/timeline";

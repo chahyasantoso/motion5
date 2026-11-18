@@ -112,10 +112,10 @@ describe("compileStage", () => {
     const readout = errorsOf({
       beats: { a: [0, 100] },
       cast: (m: {
-        many: (n: number) => object;
-        readout: (f: () => string) => { content: unknown };
+        many: (items: readonly number[], make: () => object) => object;
+        readout: (f: () => string) => object;
       }) => ({
-        row: { ...m.many(1), items: [m.readout(() => "x").content] },
+        row: m.many([0], () => m.readout(() => "x")),
       }),
       scene: () => ({}),
     });
@@ -133,7 +133,14 @@ describe("compileStage", () => {
       cast: () => ({ box: { kind: "actor" } }),
       scene: () => ({}),
     });
-    expect(handBuilt.map(({ kind }) => kind)).toEqual(["invalid"]);
+    expect(handBuilt.map(formatStageError)).toEqual([
+      errorsOf({
+        beats: { a: [0, 100] },
+        cast: () => ({ box: { kind: "actor", content: { kind: "box" }, meta: {} } }),
+        scene: () => ({}),
+      }).map(formatStageError)[0],
+    ]);
+    expect(handBuilt.map(formatStageError).join()).toContain("make members with the cast builders");
     expect(
       errorsOf({ beats: { a: [0, 900] }, durationMs: 500, cast: () => ({}), scene: () => ({}) }),
     ).toHaveLength(1);
@@ -216,6 +223,17 @@ describe("compileStage", () => {
       beats: { enter: [0, 100] },
       cast: (m) => ({ dots: m.many(3), card: m.group({ title: m.text("x") }) }),
       scene: () => ({ dots: (i) => ({ x: i }), title: { x: 1 }, card: {} }),
+    });
+    defineStage({
+      beats: { enter: [0, 100] },
+      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
+      scene: () => ({ row: (i) => ({ x: i }), inner: { y: 1 } }),
+    });
+    defineStage({
+      beats: { enter: [0, 100] },
+      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
+      // @ts-expect-error: a list inside nested groups still takes a function of the index
+      scene: () => ({ row: { x: 1 } }),
     });
     defineStage({
       beats: { enter: [0, 100] },

@@ -100,6 +100,18 @@ export interface CastBuilder<B extends string = string> {
   group<M extends Members<B>>(members: M): GroupSpec<B, M>;
 }
 
+const made = new WeakSet<object>();
+
+/** Whether `value` is a member the cast builders made. */
+export function isSpec(value: unknown): value is Spec {
+  return typeof value === "object" && value !== null && made.has(value);
+}
+
+function remember<S extends Spec>(spec: S): S {
+  made.add(spec);
+  return spec;
+}
+
 function modifiers<B extends string, S>(
   meta: Meta<B>,
   rebuild: (meta: Meta<B>) => S,
@@ -119,33 +131,39 @@ function actor<B extends string, C extends Content>(
   content: C,
   meta: Meta<B> = {},
 ): ActorSpec<B, C> {
-  return Object.freeze({
-    kind: "actor",
-    content,
-    meta,
-    ...modifiers(meta, (next) => actor<B, C>(content, next)),
-  });
+  return remember(
+    Object.freeze({
+      kind: "actor",
+      content,
+      meta,
+      ...modifiers(meta, (next) => actor<B, C>(content, next)),
+    }),
+  );
 }
 
 function list<B extends string>(items: readonly ItemContent[], meta: Meta<B> = {}): ListSpec<B> {
-  return Object.freeze({
-    kind: "list",
-    items,
-    meta,
-    ...modifiers(meta, (next) => list<B>(items, next)),
-  });
+  return remember(
+    Object.freeze({
+      kind: "list",
+      items,
+      meta,
+      ...modifiers(meta, (next) => list<B>(items, next)),
+    }),
+  );
 }
 
 function group<B extends string, M extends Members<B>>(
   members: M,
   meta: Meta<B> = {},
 ): GroupSpec<B, M> {
-  return Object.freeze({
-    kind: "group",
-    members,
-    meta,
-    ...modifiers(meta, (next) => group<B, M>(members, next)),
-  });
+  return remember(
+    Object.freeze({
+      kind: "group",
+      members,
+      meta,
+      ...modifiers(meta, (next) => group<B, M>(members, next)),
+    }),
+  );
 }
 
 /** The cast builders; a list item made by `many(items, make)` keeps its content only. */

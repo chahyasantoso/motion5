@@ -12,24 +12,22 @@ export type MemberName<M> = {
     | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? MemberName<G> : never);
 }[keyof M & string];
 
+/** The member named `K` in a cast, looked up inside groups too. */
+export type MemberOf<M, K> = K extends keyof M
+  ? M[K]
+  : {
+      [G in keyof M]: M[G] extends { readonly kind: "group"; readonly members: infer H }
+        ? MemberOf<H, K>
+        : never;
+    }[keyof M];
+
 /** What the scene returns: a pose per actor or group, a `ListPose` per list, all named flat. */
 export type Targets<M> = string extends keyof M
   ? Readonly<Record<string, Pose2d | ListPose | undefined>>
   : {
-      readonly [K in MemberName<M>]?: K extends keyof M
-        ? M[K] extends { readonly kind: "list" }
-          ? ListPose
-          : Pose2d
-        : {
-            [G in keyof M & string]: M[G] extends {
-              readonly kind: "group";
-              readonly members: infer H;
-            }
-              ? K extends keyof Targets<H>
-                ? Exclude<Targets<H>[K], undefined>
-                : never
-              : never;
-          }[keyof M & string];
+      readonly [K in MemberName<M>]?: MemberOf<M, K> extends { readonly kind: "list" }
+        ? ListPose
+        : Pose2d;
     };
 
 /** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */

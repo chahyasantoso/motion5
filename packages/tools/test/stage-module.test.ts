@@ -9,7 +9,7 @@ import {
   type RestReader,
   type StageDefinition,
 } from "@gerak/stage";
-import { beatAt, readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
+import { readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
 import * as outside from "./fixtures/stage-outside";
@@ -104,21 +104,6 @@ describe("a stage module in the scene tools", () => {
     expect(read.beats).toBeUndefined();
     expect(read.stage).toBeUndefined();
     expect(reviewSceneModule(read, limits).findings.some((line) => /cast/.test(line))).toBe(false);
-  });
-
-  it("names the beat a time falls in, the latest started, and none in a gap", () => {
-    const read = moduleOf(
-      defineStage({
-        beats: { a: [0, 600], b: [300, 400] },
-        durationMs: 1000,
-        cast: () => ({}),
-        scene: () => ({}),
-      }),
-    );
-    expect(beatAt(read.beats ?? [], 100)).toBe("a");
-    expect(beatAt(read.beats ?? [], 350)).toBe("b");
-    expect(beatAt(read.beats ?? [], 400)).toBe("a");
-    expect(beatAt(read.beats ?? [], 900)).toBeUndefined();
   });
 });
 
@@ -330,9 +315,10 @@ describe("gerak review on a stage module", () => {
     const read = compileStage(
       rawStage({
         beats: { all: [0, 1000] },
-        cast: (m: CastBuilder) => ({
-          row: { ...m.many([1], () => m.box()), items: [m.readout(() => "x").content] },
-        }),
+        cast: (m: {
+          many: (items: readonly number[], make: () => object) => object;
+          readout: (format: () => string) => object;
+        }) => ({ row: m.many([1], () => m.readout(() => "x")) }),
         scene: () => ({}),
       }),
     );

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   NO_REST,
   ZERO_BOX,
+  beatAt,
   check,
   compileStage,
   defineStage,
@@ -117,6 +118,34 @@ describe("frame", () => {
         three: two && within([[80, 400]], ms),
       });
     }
+  });
+
+  it("names the latest-started beat whose window holds a ms, as visibility reads it", () => {
+    const stage = compiled(
+      defineStage({
+        beats: { a: [0, 600], b: [300, 400], c: [600, 800] },
+        durationMs: 1000,
+        cast: (m) => ({ shot: m.box().on("c") }),
+        scene: () => ({}),
+      }),
+    );
+    const named = (ms: number) => beatAt(stage.beats, stage.durationMs, ms);
+    expect([100, 350, 400, 600, 799, 800, 900].map(named)).toEqual([
+      "a",
+      "b",
+      "a",
+      "c",
+      "c",
+      undefined,
+      undefined,
+    ]);
+    expect(stage.visibleAt(800)).toEqual({ shot: false });
+    expect(named(1000)).toBeUndefined();
+    const held = compiled(
+      defineStage({ beats: { a: [0, 500] }, cast: () => ({}), scene: () => ({}) }),
+    );
+    expect(beatAt(held.beats, held.durationMs, 500)).toBe("a");
+    expect(beatAt(held.beats, held.durationMs, 9000)).toBe("a");
   });
 
   it("picks the layout from events and reads measured boxes before the piece's own rests", () => {

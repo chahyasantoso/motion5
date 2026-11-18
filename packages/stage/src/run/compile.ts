@@ -13,8 +13,8 @@ import {
   castBuilder,
   type Content,
   type Expect,
+  isSpec,
   type ItemContent,
-  type Members,
   type Pivot,
   type Stretch,
 } from "../author/cast";
@@ -29,7 +29,7 @@ import {
 import type { Limits, SceneContext } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
-import { visibility, type Window } from "./timeline";
+import { visibility, windowOf, type Window } from "./timeline";
 
 /** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
 export type Member = {
@@ -208,7 +208,7 @@ function windowsOf(
       errors.push({ kind: "reversed_stretch", member: name, from: first, to: last });
       continue;
     }
-    windows.push(Object.freeze([start.from, end.to >= beats.durationMs ? Infinity : end.to]));
+    windows.push(windowOf(start.from, end.to, beats.durationMs));
   }
   return Object.freeze(windows);
 }
@@ -272,10 +272,6 @@ function contentOf(name: string, content: Content, errors: StageError[]): Conten
   }
 }
 
-function isMembers(value: unknown): value is Members {
-  return isPlainRecord(value);
-}
-
 function itemOf(name: string, raw: Content, errors: StageError[]): ItemContent | undefined {
   const content = contentOf(name, raw, errors);
   if (content === undefined) return undefined;
@@ -293,11 +289,19 @@ function itemOf(name: string, raw: Content, errors: StageError[]): ItemContent |
 function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
-  const visit = (record: Members, from: Inherited): void => {
+  const visit = (record: Readonly<Record<string, unknown>>, from: Inherited): void => {
     for (const [name, spec] of Object.entries(record)) {
       if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
       if (seen.has(name)) errors.push({ kind: "duplicate_member", name });
       seen.add(name);
+      if (!isSpec(spec)) {
+        errors.push({
+          kind: "invalid",
+          field: "cast",
+          reason: `"${name}": make members with the cast builders.`,
+        });
+        continue;
+      }
       const on =
         spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
       const expect = spec.meta.expect ?? from.expect;
@@ -345,7 +349,7 @@ function compileCast(raw: unknown, beats: Beats, errors: StageError[]): readonly
       }
     }
   };
-  if (!isMembers(raw))
+  if (!isPlainRecord(raw))
     errors.push({
       kind: "invalid",
       field: "cast",

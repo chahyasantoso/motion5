@@ -1,3 +1,5 @@
+import type { Span } from "@gerak/core";
+
 /** Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it. */
 export type Window = readonly [from: number, to: number];
 
@@ -8,8 +10,30 @@ export interface Shown {
   readonly on?: readonly Window[] | undefined;
 }
 
+/** The window from `from` to `to` ms; one reaching `durationMs` holds past it. */
+export function windowOf(from: number, to: number, durationMs: number): Window {
+  return Object.freeze([from, to >= durationMs ? Infinity : to]);
+}
+
+function holds([from, to]: Window, ms: number): boolean {
+  return ms >= from && ms < to;
+}
+
 function inside(windows: readonly Window[] | undefined, ms: number): boolean {
-  return windows === undefined || windows.some(([from, to]) => ms >= from && ms < to);
+  return windows === undefined || windows.some((window) => holds(window, ms));
+}
+
+/** The latest-started beat whose window holds `ms`, or `undefined` in a gap between beats. */
+export function beatAt(
+  beats: Readonly<Record<string, Span>>,
+  durationMs: number,
+  ms: number,
+): string | undefined {
+  let found: { readonly name: string; readonly from: number } | undefined;
+  for (const [name, { from, to }] of Object.entries(beats))
+    if (holds(windowOf(from, to, durationMs), ms) && (found === undefined || from >= found.from))
+      found = { name, from };
+  return found?.name;
 }
 
 function recordAt(members: readonly Shown[], ms: number): Readonly<Record<string, boolean>> {
