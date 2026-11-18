@@ -821,8 +821,9 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
     }
   };
 
+  // A hidden member is not written: the scene is a function of time, so the frame that shows it writes it.
   const bind = (target: Placed<E>, value: unknown): void => {
-    if (value === undefined) return;
+    if (value === undefined || lastFrame?.visible[target.name] === false) return;
     const member = target.member;
     switch (member.kind) {
       case "actor":

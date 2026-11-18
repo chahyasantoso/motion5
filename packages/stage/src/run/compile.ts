@@ -163,8 +163,12 @@ function compileBeats(raw: unknown, rawDuration: unknown, errors: StageError[]):
   const durationMs = finite(rawDuration) ? rawDuration : last;
   if (!(durationMs > 0))
     return fail("beats", "the last beat must end above 0 ms, or give `durationMs`.");
-  if (last > durationMs)
-    return fail("beats", `a beat ends at ${last} ms, past durationMs ${durationMs} ms.`);
+  const late = pairs.find(([, , to]) => to > durationMs);
+  if (late !== undefined)
+    return fail(
+      "beats",
+      `beat "${late[0]}" ends at ${late[2]} ms, past durationMs ${durationMs} ms.`,
+    );
   const beats: Record<string, Span> = {};
   for (const [name, from, to] of pairs) beats[name] = span(from, to);
   return { beats: Object.freeze(beats), durationMs };
@@ -240,7 +244,7 @@ function contentOf(name: string, raw: unknown, errors: StageError[]): Content | 
       const checked = (time: Time): string => {
         const answer: unknown = Reflect.apply(format, undefined, [time]);
         if (typeof answer !== "string")
-          throw new TypeError(`readout "${name}" answered ${typeof answer}, not a string.`);
+          throw new TypeError(`The text of "${name}" answered ${typeof answer}, not a string.`);
         return answer;
       };
       return Object.freeze({ kind: "readout", format: checked });
@@ -292,7 +296,7 @@ function itemOf(name: string, raw: unknown, errors: StageError[]): ItemContent |
     errors.push({
       kind: "invalid",
       field: "cast",
-      reason: `"${name}": a readout cannot be a list item.`,
+      reason: `"${name}": a readout inside a list; a readout is a top-level actor.`,
     });
     return undefined;
   }

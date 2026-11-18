@@ -45,7 +45,7 @@ describe("a design checked by the review", () => {
         const fall = Math.min(1, Math.max(0, at - 1400) / 600);
         return {
           dot: { y: at < 1400 ? 300 * rise ** 3 : 300 * (1 - fall) ** 3 },
-          word: [{ x: 0 }, { x: 0 }],
+          word: () => ({ x: 0 }),
         };
       },
     });

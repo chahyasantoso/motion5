@@ -119,7 +119,7 @@ describe("compileStage", () => {
       }),
       scene: () => ({}),
     });
-    expect(readout.map(formatStageError).join()).toContain("a readout cannot be a list item");
+    expect(readout.map(formatStageError).join()).toContain("a readout inside a list");
     expect(
       errorsOf({ beats: { a: [0, 900] }, durationMs: 500, cast: () => ({}), scene: () => ({}) }),
     ).toHaveLength(1);

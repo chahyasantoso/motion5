@@ -46,7 +46,7 @@ export function formatStageError(error: StageError): string {
     case "shape_mismatch":
       return `scene: "${error.member}" ${error.reason}`;
     case "unknown_target":
-      return `scene: "${error.name}" is not in the cast.`;
+      return `the scene answers "${error.name}", which is not in the cast.`;
     case "stroke_loop": {
       const one = error.behind.length === 1;
       const behind =

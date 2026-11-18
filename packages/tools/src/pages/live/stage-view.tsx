@@ -1,14 +1,8 @@
 import { useEffect, useRef, type FC } from "react";
 import { mountStage, type MountedStage } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
-import { compileStage, isStage2d, type CompiledStage, type PoseMode } from "@gerak/stage";
+import { compileStage } from "@gerak/stage";
 import type { LoadedStage } from "../stage-module";
-
-/** What of a stage decides its elements; a scene swaps in place only while this stays the same. */
-export function shapeOf(stage: CompiledStage<PoseMode>): string {
-  const layoutNames = stage.layout.kind === "multi" ? stage.layout.names : null;
-  return JSON.stringify([stage.beats, stage.members.tree, stage.skins, stage.frame, layoutNames]);
-}
 
 export interface LiveStageViewProps {
   readonly loaded: LoadedStage;
@@ -56,9 +50,9 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
     };
 
     const compiled = compileStage({ ...loaded.definition, scene: guardedScene });
-    if (!compiled.ok || !isStage2d(compiled.stage)) return;
+    if (!compiled.ok) return;
     const playing = compiled.stage;
-    const shape = shapeOf(playing);
+    const shape = playing.signature;
     const kept = shown.current;
     try {
       if (kept !== undefined && kept.shape === shape) {
@@ -68,7 +62,7 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
       const progress = kept?.mounted.driver.now().progress;
       kept?.mounted.dispose();
       shown.current = undefined;
-      const mounted = mountStage(element, playing, { onDriver });
+      const mounted = mountStage(element, playing, { onDriver, checks: true });
       if (progress !== undefined) mounted.driver.seek(progress);
       shown.current = { mounted, shape };
     } catch (error) {

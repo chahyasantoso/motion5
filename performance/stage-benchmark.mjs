@@ -19,6 +19,7 @@ const flag = (name) => {
 };
 
 const stageApi = await import("@gerak/stage");
+const renderApi = await import("@gerak/stage/render").catch(() => ({}));
 const { timeAt } = await import("@gerak/core");
 
 async function stageFiles() {
@@ -50,7 +51,8 @@ function consumeValue(value) {
 /** One frame through whichever stage API is installed, reading everything a renderer would. */
 function frameRunner(stage) {
   if (typeof stageApi.frame === "function") {
-    const { frame, morphAt, listPose } = stageApi;
+    const { frame, listPose } = stageApi;
+    const { morphAt } = renderApi;
     return (time) => {
       const out = frame(stage, { time });
       let read = 0;
@@ -62,7 +64,7 @@ function frameRunner(stage) {
             for (let index = 0; index < member.items.length; index += 1) {
               const pose = listPose(value, index, member.items.length);
               const item = member.items[index];
-              if (item !== undefined && item.kind === "morph") read += morphAt(item, pose).length;
+              if (item?.kind === "morph") read += morphAt(item, pose).length;
               read += pose === undefined ? 0 : 1;
             }
             break;
@@ -135,7 +137,20 @@ function recordOutputs(definition, times, name) {
   );
   const run = frameRunner(recording);
   for (const time of times) run(time);
-  return outputs.slice(0, times.length);
+  return outputs.slice(0, times.length).map((output) => settled(recording, output));
+}
+
+/** An output whose list functions answer recorded poses, so a replay leaves the piece's work out. */
+function settled(stage, output) {
+  if (!Array.isArray(stage.members)) return output;
+  const out = { ...output };
+  for (const member of stage.members) {
+    const value = output[member.name];
+    if (member.kind !== "list" || typeof value !== "function") continue;
+    const poses = member.items.map((_, index) => value(index, member.items.length));
+    out[member.name] = (index) => poses[index];
+  }
+  return out;
 }
 
 /** The definition with its scene replaced by a replay of `outputs`, so a frame costs only the stage. */
@@ -156,7 +171,7 @@ for (const file of await stageFiles()) {
   const name = relative(PIECES, file).replaceAll("\\", "/");
   const definition = (await import(pathToFileURL(file).href)).default;
   const stage = compiled(definition, name);
-  const durationMs = stage.beats.durationMs;
+  const durationMs = stage.durationMs ?? stage.beats.durationMs;
   const base = { progress: 0, clock: { kind: "timed", elapsed: 0, length: durationMs } };
   const times = [];
   for (let ms = 0; ms <= durationMs; ms += STEP_MS) times.push(timeAt(base, ms));

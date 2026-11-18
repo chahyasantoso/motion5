@@ -505,8 +505,6 @@ function word(time: Time, i: number): Pose2d {
   ]);
 }
 
-const indices = (count: number): readonly number[] => Array.from({ length: count }, (_, i) => i);
-
 export default defineStage({
   frame: { width: 1280, height: 720 },
   beats: {
@@ -588,13 +586,13 @@ export default defineStage({
       floor: floor(time),
       underline: underline(time),
       trailArc: streak({ arrive: 0.65, lag: 0.12 }, at(13250, 14250, time)),
-      ant: indices(10).map((i) => ant(time, i)),
-      weight: indices(6).map((i) => weight(time, i)),
-      dust: indices(DUST).map((j) => dust(time, j, rest)),
+      ant: (i) => ant(time, i),
+      weight: (i) => weight(time, i),
+      dust: (j) => dust(time, j, rest),
       overlap: sequence(time, [[OVERLAP, bar]]),
-      hang: indices(7).map((i) => sequence(time, [[OVERLAP, (t) => hang(t, i)]])),
-      settle: indices(6).map((i) => settle(time, i, rest)),
-      line: indices(3).map((i) => word(time, i)),
+      hang: (i) => sequence(time, [[OVERLAP, (t) => hang(t, i)]]),
+      settle: (i) => settle(time, i, rest),
+      line: (i) => word(time, i),
       credit: combine([rise({ distance: 14 }, credit), fade({}, credit)]),
       ringLaunch: ring(time, rest, "ringLaunch", { x: home.x, y: home.y + 38 }, 850, 600, 11, 0.9),
       ringLand: ring(time, rest, "ringLand", { x: home.x, y: home.y + 18 }, 9850, 550, 8, 0.8),

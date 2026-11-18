@@ -28,7 +28,9 @@ export {
 } from "./author/layout";
 export {
   defineStage,
+  each,
   isStageDefinition,
+  type Beats,
   type DomSkinInput,
   type Limits,
   type LayoutsInput,

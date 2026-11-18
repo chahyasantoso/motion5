@@ -54,7 +54,7 @@ describe("gerak new", () => {
     const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
     expect(module.beats?.map(({ name }) => name)).toEqual(["show"]);
-    expect(module.stage?.members.entries.map(({ name, kind }) => [name, kind])).toEqual([
+    expect(module.stage?.members.map(({ name, kind }) => [name, kind])).toEqual([
       ["title", "actor"],
     ]);
     expect(module.stage?.skins).toEqual({ dom: { kind: "inline", css: "" } });

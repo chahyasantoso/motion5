@@ -21,10 +21,21 @@ export type Targets<M> = string extends keyof M
 /** Every member name of a cast, group children included. */
 export type MemberName<M> = Entry<M>[0];
 
+/** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */
+export function each<T>(items: readonly T[], pose: (item: T, index: number) => Pose2d): ListPose {
+  return (index) => {
+    const item = items[index];
+    return item === undefined ? {} : pose(item, index);
+  };
+}
+
+/** Beats by name, each a `Span`: `beats.enter.of(time)` is time inside it. */
+export type Beats<B extends string = string> = Readonly<Record<B, Span>>;
+
 /** What the scene reads each frame. */
 export interface SceneContext<B extends string = string, L extends string = string> {
   readonly time: Time;
-  readonly beats: Readonly<Record<B, Span>>;
+  readonly beats: Beats<B>;
   readonly events: Events;
   /** Rest boxes of the layout showing now. */
   readonly rest: RestReader;

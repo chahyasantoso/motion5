@@ -12,7 +12,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { fade, hop, pulse, rise, slide, anticipate, wipe, smudge } from "@gerak/moves";
-import { defineStage, type RestReader } from "@gerak/stage";
+import { defineStage, type RestReader, each } from "@gerak/stage";
 import { bump } from "./moves/bump";
 import { crouch } from "./moves/crouch";
 import { dangle } from "./moves/dangle";
@@ -560,12 +560,12 @@ export default defineStage({
       trailUp: streak({ arrive: 0.43, lag: 0.34 }, span(850, 1450).of(time)),
       trailArc: streak({ arrive: 0.65, lag: 0.21 }, span(LEAP, PERIOD + 350).of(time)),
       underline: underline(time),
-      ant: Array.from({ length: 10 }, (_, i) => anticipateLetter(time, i)),
+      ant: (i) => anticipateLetter(time, i),
       floor: floor(time),
-      wgt: Array.from({ length: WEIGHT.length }, (_, i) => weightLetter(time, i)),
-      dust: Array.from({ length: 18 }, (_, j) => dust(time, rest, j)),
+      wgt: (i) => weightLetter(time, i),
+      dust: (j) => dust(time, rest, j),
       overlap: { x: bar(time) },
-      hang: STRINGS.map((length, i) =>
+      hang: each(STRINGS, (length, i) =>
         dangle(
           {
             length: length + 50,
@@ -579,10 +579,10 @@ export default defineStage({
           { carrier: bar },
         ),
       ),
-      sett: Array.from({ length: 6 }, (_, i) => settleLetter(time, rest, i)),
+      sett: (i) => settleLetter(time, rest, i),
       fin: {},
-      fine: Array.from({ length: 3 }, (_, i) => finWord(time, i)),
-      credit: Array.from({ length: 7 }, () => credit(time)),
+      fine: (i) => finWord(time, i),
+      credit: () => credit(time),
       ringLaunch: ring(time, rest, "ringLaunch", { x: home.x, y: home.y + 38 }, 850, 600, 2.2, 0.9),
       ringLand: ring(time, rest, "ringLand", { x: home.x, y: home.y + 18 }, LAND, 550, 1.6, 0.8),
       ringBurst: ring(time, rest, "ringBurst", home, BURST, 700, 4.2, 0.9),

@@ -402,11 +402,9 @@ export default defineStage({
     const q = ease.quadOut(tail.of(time).progress);
     return {
       dot: { x: mix(-160, 0, p), opacity: mix(0, 1, p) } satisfies Pose2d,
-      bars: [0, 1, 2].map(
-        (i): Pose2d => ({
-          y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
-        }),
-      ),
+      bars: (i): Pose2d => ({
+        y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
+      }),
       arc: { drawn: mix(0, 1, q) } satisfies Pose2d,
     };
   },

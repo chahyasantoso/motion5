@@ -7,7 +7,6 @@ import {
   defineStage,
   isStageDefinition,
   type CastBuilder,
-  type PoseMode,
   type StageDefinition,
 } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
@@ -338,7 +337,7 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
-  function rawStage(options: Record<string, unknown>): StageDefinition<PoseMode> {
+  function rawStage(options: Record<string, unknown>): StageDefinition {
     const built: unknown = Reflect.apply(defineStage, undefined, [options]);
     if (!isStageDefinition(built)) throw new Error("expected StageDefinition");
     return built;
@@ -403,7 +402,7 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(
-      'scene: "dots" shape mismatch: expected 2 poses, got 1.',
+      'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
     );
   });
 

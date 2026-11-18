@@ -230,6 +230,26 @@ describe("mountStage", () => {
     expect(root.find("card").attributes.get("data-skin")).toBe("default");
   });
 
+  it("asks a hidden list for no item poses, and a shown one for each", () => {
+    const asked: number[] = [];
+    const def = defineStage({
+      beats,
+      cast: (m) => ({ word: m.letters("HI").on("word") }),
+      scene: () => ({
+        word: (i) => {
+          asked.push(i);
+          return { x: i };
+        },
+      }),
+    });
+    const { at } = mounted({}, undefined, mustCompile(def));
+    asked.length = 0;
+    at(700);
+    expect(asked).toEqual([]);
+    at(400);
+    expect(asked).toEqual([0, 1]);
+  });
+
   it("shows a member on two beats, hides it in the gap, and holds a stretch ending the story", () => {
     const { root, at } = mounted();
     expect(root.find("word").style.visibility).toBe("hidden");
@@ -393,9 +413,11 @@ describe("mountStage", () => {
   });
 
   it("writes a group's value on the group's element and a list item by item", () => {
-    const { root } = mounted();
+    const { root, at } = mounted();
     expect(root.find("camera").style.transform).toBe("translate3d(0px, 40px, 0px)");
     expect(root.find("dot").style.transform).toBeUndefined();
+    expect(root.find("word.1").style.transform).toBeUndefined();
+    at(400);
     expect(root.find("word.1").style.transform).toBe("translate3d(2px, 0px, 0px)");
   });
 
