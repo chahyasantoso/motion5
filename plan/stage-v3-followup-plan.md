@@ -6,7 +6,7 @@ Agents making a piece in a project from `gerak init` get a type check that runs,
 shots at once, and review findings that name what to fix, so a piece costs fewer tokens and rounds; the owner reads
 one NADI measure that says whether gerak now beats a plain HTML/JS agent.
 
-Status: proposed. Base: `refactor/points-and-reference` at `5219a5c5` (PR 600 merged); branch
+Status: approved 2026-11-18. Base: `refactor/points-and-reference` at `5219a5c5` (PR 600 merged); branch
 `feat/stage-v3-followup`. `main` is still behind that base; merging it there is the owner's call, not this plan's.
 
 ## Where things stand
@@ -17,17 +17,18 @@ Status: proposed. Base: `refactor/points-and-reference` at `5219a5c5` (PR 600 me
   page tools' size and server (`packages/tools/docs/commands.md`).
 - NADI measure on 2026-11-18, fresh Sonnet medium agents, installed tarballs: plain HTML 94.1k tokens / 4.5 min, gerak
   v3 160.5k / 8.8 min. The v3 agent read 7 built source files for behaviour the guide now states.
-- Budgets PR 600 missed: `packages/stage/src` 1716 lines (target 1300); an author reads `stage.md` 10.4 KB plus
-  `reference/author.md` 8.9 KB (target 14 KB together).
+- `packages/stage/src` is 1716 lines, most of it `compileStage` re-checking builder output; an author reads
+  `stage.md` 10.4 KB plus `reference/author.md` 8.9 KB.
 
 ## Decisions
 
 ### 1. Beat windows include their start and exclude their end
 
 A member on `a: [0, 1000]` shows for `0 <= ms < 1000`; a window whose end reaches `durationMs` still holds past it.
-Adjacent beats then hand over with neither overlap nor gap. Owners: `packages/stage/src/run/compile.ts` (windows) and
+Adjacent beats then hand over with neither overlap nor gap. A beat of zero length (`[500, 500]`) is refused by
+`compileStage` as an `invalid` beats error. Owners: `packages/stage/src/run/compile.ts` (windows) and
 `run/timeline.ts` (`inside`); review's outside-stretch wording in `packages/tools/src/scene/review.ts` follows. Test
-first: at the shared ms of two adjacent beats exactly one member shows; `frame.test.ts`'s inclusive-end assertions
+first: at the shared ms of two adjacent beats exactly one member shows, and a zero-length beat fails to compile; `frame.test.ts`'s inclusive-end assertions
 change with it, and the stage guide's `.on(...)` line says the new rule. Pieces whose sheets change at a beat end are
 named in the pull request.
 
@@ -44,17 +45,20 @@ runs `npx tsc --noEmit` after `init` and after `new`.
 scene-file review does the same, so "the final pose holds only 16 ms" becomes "`camera` still changes 16 ms before
 the end". The `gerak sample` hint in `commands.md` goes.
 
-### 4. An author reads at most 14 KB
+### 4. Every type an author meets is documented
 
-The builder spec types an author never names (`Meta`, `Modifiers`, `Spec`, `ActorSpec`, `ListSpec`, `GroupSpec`,
-`Members`) leave the root export, kept inside `author/`; `reference/author.md` then lists what a piece writes. Measure
-`stage.md` plus `reference/author.md` after `npm run reference -- --write`; trim prose in `stage.md` only where a
-sentence repeats the reference.
+No type that appears in a signature an author reads leaves the reference: hiding one sends agents to
+`node_modules` source. Reading cost falls by clearer `stage.md` prose only. `test/repo/agent-reference.test.ts` gains
+the rule: every type named in `reference/author.md` signatures has its own entry in a stage reference page.
 
-### 5. The source budget is re-set, not chased
+### 5. `compileStage` checks only what types cannot
 
-`compile.ts` validation is most of the 1716 lines and stays. The plan's budget becomes "no growth from 1716";
-`npm run metrics` or a line count in the pull request reports it.
+Cast objects come from the `m.*` builders, so `compileStage` stops re-checking their shape (`kind`, `meta` being an
+object, `watch` a boolean, pivot numbers, content kinds). It keeps every check a type cannot express: duplicate names
+across groups, dots in names, reversed stretches, beats past `durationMs` and of zero length, morph piece counts, a
+`pick` answer outside `names`, non-finite `rest` and `frame` numbers, and readout and path answers checked when they
+run. A hand-built cast object then fails with a plain error; the stage tests that smuggle one change to expect it.
+The line count of `packages/stage/src` before and after is in the pull request.
 
 ## Execution
 
