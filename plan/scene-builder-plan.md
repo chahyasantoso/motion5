@@ -117,8 +117,11 @@ export default sceneBuilder({ skins: { dom: { css } } })
 
 ### 6. The renderer
 
-- `@gerak/dom` draws the compiled stage as `mountStage` does today. Skins stay in the scene's options, because the
-  pages load them from the piece file.
+- `@gerak/dom` draws the compiled stage as `mountStage` does today.
+- A skin is the renderer's, not the scene's. Until the last wave it sits in the scene's options, because the
+  definition carries it. In the last wave the piece file exports it beside the scene (`export const skin`), the pages
+  pass it to `mountStage(stage, { skin })`, the live editor edits that export, and the scene holds no skin. Headless
+  tools never read it.
 
 ### 7. Every piece moves
 
