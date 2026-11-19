@@ -1,33 +1,38 @@
 # @gerak/moves: moves
 
-- **`MOVE_ROLES`** `const MOVE_ROLES: readonly ("enter" | "exit" | "emphasis" | "travel" | "reveal" | "follow" | "modifier")[]`: Every role, in the order a catalog lists them.
-- **`defineMove`** `<const Fs extends OptionFields, I, R, const M extends Moments>(declaration: MoveDeclaration<Fs, I, R, M>): Move<Fs, I, R, M>`: Makes a move from its declaration. The call checks options (kind, `min`, `max`, `enum`) and fills defaults; `run(options, time, input)` may take a third argument callers must then pass.
-- **`InputArgs`** `type InputArgs<I> = unknown extends I ? [] : [input: I]`: The trailing argument a caller passes: none for a move whose `run` takes no input.
-- **`Move`** `type Move<Fs, I, R, M> = { (options: OptionsIn<Fs>, time: Time, ...input: InputArgs<I>): R; id: string; role: "enter" | "exit" | "emphasis" | "travel" | "reveal" | "follow" | "modifier"; description: string; options: Fs; example: MoveExample<Fs, I>; moments: (options: OptionsIn<Fs>) => M }`: A move: callable with a caller's options, and carrying what its declaration says of them.
-- **`MoveDeclaration`** `type MoveDeclaration<Fs, I, R, M> = { id: string; role: "enter" | "exit" | "emphasis" | "travel" | "reveal" | "follow" | "modifier"; description: string; options: Fs; example: MoveExample<Fs, I>; run: (options: Options<Fs>, time: Time, input: I) => R; moments: (options: Options<Fs>) => M }`: A move's one declaration: the source of its types, option checks, moments and catalog entry.
-- **`MoveExample`** `type MoveExample<Fs, I> = { options: OptionsIn<Fs>; input?: I }`: A call the gate samples: `options` a caller would pass, and `input` when the move's `run` takes one.
-- **`MoveRole`** `type MoveRole = "enter" | "exit" | "emphasis" | "travel" | "reveal" | "follow" | "modifier"`: What a move is for: `enter`, `travel` end at rest; `exit` starts at rest; `emphasis` both; `reveal` ends shown; `follow`, `modifier` hold no rest.
-- **`Moments`** `type Moments = { readonly [x: string]: number | readonly number[]; }`: Named times a move reaches, as shares of its progress, such as a hop's landings.
-- **`OptionField`** `type OptionField = { readonly kind: "number"; readonly default?: number; readonly min?: number; readonly max?: number; readonly description: string; } | { readonly kind: "string"; readonly default?: string; readonly enum?: readonly string[]; readonly description: string; } | { readonly kind: "boolean"; readonly default?: boolean; readonly description: string; }`: One option of a move; an option with a `default` may be left out by the caller.
-- **`OptionFields`** `type OptionFields = { readonly [x: string]: OptionField; }`: A move's options by name, each an `OptionField` with its kind, range, default and description.
-- **`Options`** `type Options<Fs> = { readonly [K in keyof Fs]: ValueOf<Fs[K]>; }`: Options as a move runs on them: every default filled in.
-- **`OptionsIn`** `type OptionsIn<Fs> = { readonly [K in Exclude<keyof Fs, Defaulted<Fs>>]: ValueOf<Fs[K]>; } & { readonly [K in Defaulted<Fs>]?: ValueOf<Fs[K]>; }`: Options as a caller passes them: defaulted ones may be left out.
-- **`drop`** `(options, time)`: Falls from `distance` above its rest pose, accelerating, then lands and recovers from `squash`. Options: `distance` number >=0, required: Start this far above rest, in px.; `squash` number 0..1, default 0: Height lost on landing, as a share; default 0.
-- **`rise`** `(options, time)`: Rises from `distance` px below its rest pose, decelerating. Options: `distance` number >=0, required: Start this far below rest, in px.
-- **`slide`** `(options, time)`: Slides in from `distance` px away on one side, decelerating. Options: `distance` number >=0, required: Start this far from rest, in px.; `from` string, default left: The side it comes from; default left.
-- **`pop`** `(options, time)`: Grows from nothing past full size and settles back to exactly 1. Options: `overshoot` number 0..1, default 0.2: How far past full size it grows, as a share; default 0.2.
-- **`fade`** `(options, time)`: Fades in, opacity from 0 to 1.
-- **`unfold`** `(options, time)`: Grows from nothing along one axis to full size, held at an edge. Options: `from` string, default top: The edge that stays put; default top.
-- **`swing`** `(options, time)`: Hangs in from a turn of `angle` degrees and swings to rest like a sign on a hinge. Options: `angle` number, required: Start turned this far, in degrees.; `swings` number 0..8, default 2: Half-swings before it settles; default 2.; `anchor` string, default top: The hinge, the point that stays put; default top.
-- **`pulse`** `(options, time)`: Grows to `1 + amount` times its size and returns. Options: `amount` number 0..2, default 0.15: How much it grows, as a share of its size; default 0.15.
-- **`shake`** `(options, time)`: Shakes sideways `count` times, starting hard and dying away. Options: `distance` number >=0, required: The most it can reach to either side, in px.; `count` number 1..16, default 4: Back-and-forth cycles; default 4.
-- **`wobble`** `(options, time)`: Wobbles `count` times, a shake that turns instead of moving. Options: `angle` number >=0, required: The widest turn, in degrees.; `count` number 1..16, default 3: Back-and-forth cycles; default 3.
-- **`nod`** `(options, time)`: Dips `distance` px down and comes back up, once. Options: `distance` number >=0, required: How far down it dips, in px.
-- **`arc`** `(options, time)`: Travels from an offset to rest along a path bowed by `lift` px. Options: `dx` number, required: Start this far right of rest, in px (negative: left).; `dy` number, required: Start this far below rest, in px (negative: above).; `lift` number, default 0: How far the middle of the path bows off the straight line, in px, at right angles to it; default 0.
-- **`hop`** `(options, time)`: Lands `bounces + 1` times, each flight `decay` as high, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on. Options: `height` number >=0, required: Peak of the first flight above rest, in px.; `bounces` number 0..16, required: Landings after the first; 0 lands once.; `decay` number 0.01..1, default 0.5: Each flight's height as a share of the last; default 0.5.; `squash` number 0..1, default 0: Height lost at the hardest landing, as a share; default 0.; `dx` number, default 0: Start this far left of rest, in px, arriving by the last landing.
-- **`rope`** `(options, time, input: { readonly points: readonly (Point2d & { readonly id?: string; })[]; })`: Bends a chain of points from straight into their shape, link by link. Takes `{ points }` as a third argument and answers anchors for `toCubics`. Options: `angle` number, default 0: Heading of the straight rope away from its pinned end, in degrees; default 0.; `pin` string, default start: Which end stays on its point in the shape while the rest moves; default start.; `release` string, default pin: Which end bends first: the pinned end or the free end; default pin.; `overshoot` number 0..1, default 0.5: How far each joint bends past its shape before settling; default 0.5.; `ripple` number 0..0.9, default 0.6: Share of the move spent passing the bend from one end to the other; default 0.6.
-- **`trace`** `(options, time)`: Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share kept drawn behind the head. Options: `tail` number 0.001..1, default 1: Share of the path that stays drawn behind the head; default 1 keeps all of it. An empty stroke draws nothing, so a moving dot is a member of its own.
-- **`wipe`** `(options, time)`: Grows a circle from `(x, y)` to `radius`, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left. Options: `radius` number >=0, required: Final circle radius, in px; cover the stage's far corner.; `x` number, required: Circle centre from the target's left edge, in px.; `y` number, required: Circle centre from the target's top edge, in px.
-- **`anticipate`** `(options, time, input: (time: Time) => Pose2d)`: Winds up the other way from its input's travel, then plays the input and ends where it ends. Options: `share` number 0..0.9, default 0.2: Share of the progress spent winding up; default 0.2.; `amount` number 0..1, default 0.15: How far back it goes, as a share of the input's whole travel; default 0.15.
-- **`overshoot`** `(options, time, input: (time: Time) => Pose2d)`: Plays its input, then passes its last pose and settles back onto it. Options: `share` number 0..0.9, default 0.3: Share of the progress spent past the end; default 0.3.; `amount` number 0..1, default 0.1: How far past the end, as a share of the input's whole travel; default 0.1.
-- **`smudge`** `(options, time)`: Blurs from sharp to `amount` as speed builds; reversed, it sharpens as it slows. Options: `amount` number >=0, required: The blur it ends at, in px.; `build` number 0.05..1, default 1: Share of the span the blur takes to build, then holds; default 1.
+- **`drop`** `(options: DropOptions): (time: Time) => Pose2d`: Falls from above, accelerating, then lands and recovers from its squash.
+- **`DROP_LANDING`** `const DROP_LANDING: 0.75`: Share of the progress the fall takes; the drop lands at this share.
+- **`DropOptions`** `type DropOptions = { distance: number; squash?: number }`: Options of `drop`.
+- **`rise`** `(options: RiseOptions): (time: Time) => Pose2d`: Rises from below, decelerating to rest.
+- **`RiseOptions`** `type RiseOptions = { distance: number }`: Options of `rise`.
+- **`slide`** `(options: SlideOptions): (time: Time) => Pose2d`: Slides in from one side, decelerating to rest.
+- **`SlideOptions`** `type SlideOptions = { distance: number; from?: "bottom" | "top" | "left" | "right" }`: Options of `slide`.
+- **`pop`** `(options?: PopOptions): (time: Time) => Pose2d`: Grows from nothing past full size, then settles to exactly full size.
+- **`PopOptions`** `type PopOptions = { overshoot?: number }`: Options of `pop`.
+- **`fade`** `(): (time: Time) => Pose2d`: Fades in from clear to opaque.
+- **`unfold`** `(options?: UnfoldOptions): (time: Time) => Pose2d`: Grows from nothing along one axis to full size, held at one edge.
+- **`UnfoldOptions`** `type UnfoldOptions = { from?: "bottom" | "top" | "left" | "right" }`: Options of `unfold`.
+- **`swing`** `(options: SwingOptions): (time: Time) => Pose2d`: Hangs in from a turn and swings to rest, each swing smaller than the last.
+- **`SwingOptions`** `type SwingOptions = { angle: number; swings?: number; anchor?: Anchor }`: Options of `swing`.
+- **`pulse`** `(options?: PulseOptions): (time: Time) => Pose2d`: Grows a little and returns to its size.
+- **`PulseOptions`** `type PulseOptions = { amount?: number }`: Options of `pulse`.
+- **`shake`** `(options: ShakeOptions): (time: Time) => Pose2d`: Shakes side to side, starting hard and dying away.
+- **`ShakeOptions`** `type ShakeOptions = { distance: number; count?: number }`: Options of `shake`.
+- **`wobble`** `(options: WobbleOptions): (time: Time) => Pose2d`: Turns back and forth, starting hard and dying away.
+- **`WobbleOptions`** `type WobbleOptions = { angle: number; count?: number }`: Options of `wobble`.
+- **`nod`** `(options: NodOptions): (time: Time) => Pose2d`: Dips down and comes back up, once.
+- **`NodOptions`** `type NodOptions = { distance: number }`: Options of `nod`.
+- **`hop`** `(options: HopOptions): (time: Time) => HopPose`: Lands `bounces + 1` times, each flight lower, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on.
+- **`hopLandings`** `(options: HopOptions): { readonly landings: readonly number[]; readonly lastLanding: number; }`: Where in its progress a hop touches the floor: `landings` each as a share from 0 to 1, and `lastLanding`, the final one, where it reaches rest.
+- **`HopOptions`** `type HopOptions = { height: number; bounces: number; decay?: number; squash?: number; dx?: number }`: Options of `hop` and `hopLandings`.
+- **`HopPose`** `type HopPose = Pose2d & { readonly contact: { readonly hits: number; readonly justHit: number; }; }`: What a hop answers: its pose and its floor contact.
+- **`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`: Bends a chain of points from straight into their shape, link by link, answering anchors for `toCubics`.
+- **`RopeOptions`** `type RopeOptions = { points: readonly (Point2d & { readonly id?: string; })[]; angle?: number; pin?: "start" | "end"; release?: "free" | "pin"; overshoot?: number; ripple?: number }`: Options of `rope`.
+- **`trace`** `(options?: TraceOptions): (time: Time) => Required<Pick<Pose2d, "drawn" | "drawnFrom">>`: Draws a stroked path on from its start, keeping a share of it drawn behind the head.
+- **`TraceOptions`** `type TraceOptions = { tail?: number }`: Options of `trace`.
+- **`wipe`** `(options: WipeOptions): (time: Time) => Required<Pick<Pose2d, "clipX" | "clipY" | "clipRadius">>`: Reveals the target through a circle that grows from a point, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left.
+- **`WipeOptions`** `type WipeOptions = { radius: number; x: number; y: number }`: Options of `wipe`.
+- **`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`: Plays another move, then goes a little past its end and settles back.
+- **`OvershootOptions`** `type OvershootOptions = { share?: number; amount?: number }`: Options of `overshoot`.
+- **`smudge`** `(options: SmudgeOptions): (time: Time) => Pose2d`: Blurs from sharp to a given blur as speed builds, for motion blur on something leaping or thrown.
+- **`SmudgeOptions`** `type SmudgeOptions = { amount: number; build?: number }`: Options of `smudge`.

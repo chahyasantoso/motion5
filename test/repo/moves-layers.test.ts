@@ -9,9 +9,8 @@ const SRC = resolve(
 
 /** Each layer's folder and its height; a file imports only from its own height or lower. */
 const LAYERS: readonly (readonly [string, number])[] = [
-  ["style", 1],
-  ["parts", 2],
-  ["moves", 3],
+  ["parts", 1],
+  ["moves", 2],
 ];
 
 function filesOf(folder: string): readonly string[] {
@@ -59,33 +58,27 @@ function climbs(files: readonly string[], read: (file: string) => string): reado
 }
 
 describe("the layers of @gerak/moves", () => {
-  it("never import from a higher layer's folder: style, then parts, then moves", () => {
+  it("never import from a higher layer's folder: parts, then moves", () => {
     expect(climbs(filesOf(SRC), (file) => code(file))).toEqual([]);
   });
 
-  it("refuses a style file that imports a part, as a quality built on an ease would", () => {
-    const style = join(SRC, "style", "qualities.ts");
-    expect(climbs([style], () => 'import { ease } from "../parts/ease/ease";')).toEqual([
-      `${join("style", "qualities.ts")} imports ${join("parts", "ease", "ease.ts")}`,
-    ]);
-  });
-
   it("reads a side-effect import, a dynamic import, a folder and a .js ending, and refuses the package's index", () => {
-    const field = join(SRC, "style", "qualities.ts");
+    const part = join(SRC, "parts", "signal", "noise.ts");
     const imports = [
-      'import "../parts/blend/mix";',
-      'const later = import("../moves/drop");',
-      'import { definePart } from "../parts";',
-      'import { mix } from "../parts/blend/mix.js";',
-      'import { combine } from "../index";',
+      'import "../../moves/drop";',
+      'const later = import("../../moves/rise");',
+      'import { slide } from "../../moves";',
+      'import { nod } from "../../moves/nod.js";',
+      'import { combine } from "../../index";',
     ].join("\n");
-    const found = climbs([field], () => imports);
+    const found = climbs([part], () => imports);
+    const named = (target: string) => `${join("parts", "signal", "noise.ts")} imports ${target}`;
     expect(found).toEqual([
-      `${join("style", "qualities.ts")} imports ${join("parts", "blend", "mix.ts")}`,
-      `${join("style", "qualities.ts")} imports ${join("moves", "drop.ts")}`,
-      `${join("style", "qualities.ts")} imports ${join("parts", "index.ts")}`,
-      `${join("style", "qualities.ts")} imports ${join("parts", "blend", "mix.ts")}`,
-      `${join("style", "qualities.ts")} imports index.ts, which re-exports every layer`,
+      named(join("moves", "drop.ts")),
+      named(join("moves", "rise.ts")),
+      named(join("moves", "index.ts")),
+      named(join("moves", "nod.ts")),
+      `${named("index.ts")}, which re-exports every layer`,
     ]);
   });
 });

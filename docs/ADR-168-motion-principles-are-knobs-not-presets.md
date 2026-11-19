@@ -1,6 +1,7 @@
 # ADR-168: Motion principles are knobs, not presets
 
 **Status:** Accepted, 2026-11-09
+**Superseded in part by ADR-192:** "no wrapper that takes a move".
 
 ## Context
 

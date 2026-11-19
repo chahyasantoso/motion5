@@ -1,22 +1,15 @@
-import { type Pose2d } from "@gerak/core";
-import { defineMove } from "@gerak/moves";
+import { type Pose2d, type Time } from "@gerak/core";
 
-export const open = defineMove({
-  id: "open",
-  role: "enter",
-  description:
-    "Grows from nothing along one axis out of its own middle to full size, both ends at once; a floor or an underline drawn out from the centre. Reversed, it closes into the middle.",
-  options: {
-    axis: {
-      kind: "string",
-      enum: ["x", "y"],
-      default: "x",
-      description: "The axis it grows along; default x, a line drawn out sideways.",
-    },
-  },
-  example: { options: { axis: "x" } },
-  moments: () => ({}),
-  run: ({ axis }, { progress }): Pose2d => {
+/** Options of `open`. */
+export interface OpenOptions {
+  /** The axis it grows along; default x, a line drawn out sideways. */
+  readonly axis?: "x" | "y";
+}
+
+/** Grows from nothing along one axis out of its own middle to full size, both ends at once. */
+export function open(options: OpenOptions = {}): (time: Time) => Pose2d {
+  const { axis = "x" } = options;
+  return ({ progress }): Pose2d => {
     const grown = 1 - (1 - progress) ** 3;
     switch (axis) {
       case "x":
@@ -28,5 +21,5 @@ export const open = defineMove({
         return none;
       }
     }
-  },
-});
+  };
+}

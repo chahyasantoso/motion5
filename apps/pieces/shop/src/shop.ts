@@ -1,8 +1,8 @@
 import {
+  atProgress,
   ease,
-  mix,
-  span,
-  timeAt,
+  easeTo,
+  state,
   type Events,
   type MotionEvent,
   type Pose2d,
@@ -92,7 +92,7 @@ const after = (state: ShopState, event: MotionEvent): ShopState => {
   return opened === undefined ? state : { ...state, open: opened };
 };
 
-const stateOf = (events: Events): ShopState => events.reduce(after, START);
+const shop = state(START, after);
 
 const layoutName = (state: ShopState): Layout => {
   const order = state.sorted ? "price" : "first";
@@ -101,7 +101,7 @@ const layoutName = (state: ShopState): Layout => {
 };
 
 /** The layout in force, from the events alone. */
-const layout = (events: Events): Layout => layoutName(stateOf(events));
+const layout = (events: Events): Layout => layoutName(shop(atProgress(0), events));
 
 const textOf = <B extends string>(
   m: CastBuilder<B>,
@@ -230,33 +230,25 @@ ${layouts.map((name) => layoutCss(name, stateOfLayout(name))).join("\n")}
 /* The scene. */
 
 const CARRY_MS = 420;
+
+/** How far a toggle is shown: it eases from wherever it was when the events last changed it. */
+const shownBy = (
+  shown: (current: ShopState) => boolean,
+  timing: { readonly delayMs: number; readonly inMs: number; readonly outMs: number },
+) =>
+  easeTo(shop, (current) => (shown(current) ? 1 : 0), {
+    ms: { up: timing.inMs, down: timing.outMs },
+    delayMs: { up: timing.delayMs, down: 0 },
+    ease: ease.sineInOut,
+  });
+const detail = { delayMs: 260, inMs: 220, outMs: 120 };
+const noteShown = Array.from({ length: COUNT }, (_, index) =>
+  shownBy((current) => current.open === index, detail),
+);
+const tickShown = shownBy((current) => current.sorted, { delayMs: 0, inMs: 160, outMs: 160 });
+const backShown = shownBy((current) => current.open !== undefined, detail);
 const parts = ["tile", "swatch", "label", "price", "note"] as const;
 type Part = (typeof parts)[number];
-
-/** How far a toggle is shown at `ms`: it eases from wherever it was when the events last changed it. */
-const shownAt = (
-  time: Time,
-  events: Events,
-  shown: (state: ShopState) => boolean,
-  timing: { readonly delayMs: number; readonly inMs: number; readonly outMs: number },
-): number => {
-  let state = START;
-  let from = shown(state) ? 1 : 0;
-  let to = from;
-  let stretch = span(0, 1);
-  const at = (ms: number): number =>
-    mix(from, to, stretch.of(timeAt(time, ms), ease.sineInOut).progress);
-  for (const event of events) {
-    state = after(state, event);
-    const next = shown(state) ? 1 : 0;
-    if (next === to) continue;
-    from = at(event.at);
-    to = next;
-    const start = event.at + (next === 1 ? timing.delayMs : 0);
-    stretch = span(start, start + (next === 1 ? timing.inMs : timing.outMs));
-  }
-  return mix(from, to, stretch.of(time, ease.sineInOut).progress);
-};
 
 export default defineStage({
   beats: { browse: [0, 7000] },
@@ -290,28 +282,23 @@ export default defineStage({
       });
     };
     const row = (part: Part) => (index: number) => carry(part, index);
-    const detail = { delayMs: 260, inMs: 220, outMs: 120 };
     const notes = (index: number): Pose2d => {
       const pose: Pose2d = {
         ...carry("note", index),
-        opacity: shownAt(time, events, (state) => state.open === index, detail),
+        opacity: noteShown[index]?.(time, events) ?? 0,
       };
       return pose;
     };
     return {
       tick: {
-        opacity: shownAt(time, events, (state) => state.sorted, {
-          delayMs: 0,
-          inMs: 160,
-          outMs: 160,
-        }),
+        opacity: tickShown(time, events),
       },
       tile: row("tile"),
       swatch: row("swatch"),
       label: row("label"),
       price: row("price"),
       note: notes,
-      back: { opacity: shownAt(time, events, (state) => state.open !== undefined, detail) },
+      back: { opacity: backShown(time, events) },
     };
   },
 });

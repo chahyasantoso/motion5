@@ -7,26 +7,16 @@ import {
   span,
   toCubics,
   velocity,
+  smear,
   type Anchor2d,
   type Cubic2d,
   type Events,
   type Pose2d,
   type Time,
+  anticipation,
+  NO_EVENTS,
 } from "@gerak/core";
-import {
-  anticipate,
-  drop,
-  fade,
-  nod,
-  pulse,
-  rise,
-  slide,
-  smear,
-  squashed,
-  wipe,
-  wobble,
-  smudge,
-} from "@gerak/moves";
+import { drop, fade, nod, pulse, rise, slide, squashed, wipe, wobble, smudge } from "@gerak/moves";
 import { defineStage, type RestReader, type ListPose, each } from "@gerak/stage";
 import { ballistic } from "./moves/ballistic";
 import { bump } from "./moves/bump";
@@ -200,10 +190,10 @@ const collapseAt = (i: number) => COLLAPSE_AT + (2 - (Math.abs(i - 2.5) - 0.5)) 
 /** The bar's sideways travel on the overlap beat's own clock: in from the left, back, then whipped out. */
 const barOf = (time: Time): number =>
   combine([
-    slide({ distance: 1250, from: "left" }, BAR_IN.of(time, BAR_SWEEP)),
-    anticipate({ share: 1 / 3, amount: 55 / 1450 }, BAR_OUT.of(time), (t) =>
-      slide({ distance: 1450, from: "right" }, reversed(t)),
-    ),
+    slide({ distance: 1250, from: "left" })(BAR_IN.of(time, BAR_SWEEP)),
+    anticipation({ share: 1 / 3, amount: 55 / 1450 })((t) =>
+      slide({ distance: 1450, from: "right" })(reversed(t)),
+    )(BAR_OUT.of(time), NO_EVENTS),
   ]).x ?? 0;
 
 /** Where the full stop sits, measured from the slot after the last word. */
@@ -215,45 +205,43 @@ const stopOf = (rest: RestReader) => {
 const camera = (time: Time): Pose2d =>
   combine([
     sequence(time, [
-      [span(500, 1400), (t) => push({ to: 1.12, curve: "in" }, reversed(t))],
-      [span(1400, 2900), (t) => push({ to: 1.04, curve: "inOut" }, t)],
+      [span(500, 1400), (t) => push({ to: 1.12, curve: "in" })(reversed(t))],
+      [span(1400, 2900), (t) => push({ to: 1.04, curve: "inOut" })(t)],
       [
         span(2900, 3500),
-        (t) => combine([{ scale: 1.04 }, push({ to: 1 / 1.04, curve: "out" }, t)]),
+        (t) => combine([{ scale: 1.04 }, push({ to: 1 / 1.04, curve: "out" })(t)]),
       ],
-      [span(13050, 15000), (t) => push({ to: 1.045, curve: "out" }, t)],
+      [span(13050, 15000), (t) => push({ to: 1.045, curve: "out" })(t)],
     ]),
-    bump({ dy: 50 }, span(2900, 3700).of(time)),
+    bump({ dy: 50 })(span(2900, 3700).of(time)),
     ...LANDS.map((land, i) =>
-      jolt(
-        { distance: (3 + i * i * 0.6) * 1.4, count: 6, sideways: 0.35 },
+      jolt({ distance: (3 + i * i * 0.6) * 1.4, count: 6, sideways: 0.35 })(
         span(land, land + 560).of(time),
       ),
     ),
-    bump({ dy: -40 }, span(5750, 6450).of(time)),
-    bump({ turn: 0.9 }, span(6150, 7700).of(time)),
-    jolt({ distance: 7, count: 6, sideways: 0 }, span(9850, 10450).of(time)),
-    jolt({ distance: 3.5, count: 5, sideways: 0 }, span(PERIOD_AT, PERIOD_AT + 500).of(time)),
+    bump({ dy: -40 })(span(5750, 6450).of(time)),
+    bump({ turn: 0.9 })(span(6150, 7700).of(time)),
+    jolt({ distance: 7, count: 6, sideways: 0 })(span(9850, 10450).of(time)),
+    jolt({ distance: 3.5, count: 5, sideways: 0 })(span(PERIOD_AT, PERIOD_AT + 500).of(time)),
   ]);
 
 const dot = (time: Time, events: Events, rest: RestReader): Pose2d => {
   const stop = stopOf(rest);
   const toStop = { x: stop.x - DOT.x, y: stop.y - DOT.y };
   const leapPath = (t: Time): Pose2d =>
-    combine([toStop, ballistic({ dx: -toStop.x, dy: -toStop.y, apex: 430 }, LEAP.of(t))]);
+    combine([toStop, ballistic({ dx: -toStop.x, dy: -toStop.y, apex: 430 })(LEAP.of(t))]);
   const fallPath = (t: Time): Pose2d =>
-    drop({ distance: 440 }, span(9450, 9450 + 400 / 0.75).of(t));
+    drop({ distance: 440 })(span(9450, 9450 + 400 / 0.75).of(t));
   return sequence(time, [
     [
       span(0, 1250),
       (t) =>
         combine([
-          launch(
-            { height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 },
+          launch({ height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 })(
             span(450, 1250).of(t),
           ),
           { y: LAUNCH_Y - DOT.y },
-          springSettle({ scale: 0, rings: 1.9, damping: 4.8 }, span(60, 850).of(t)),
+          springSettle({ scale: 0, rings: 1.9, damping: 4.8 })(span(60, 850).of(t)),
         ]),
     ],
     [
@@ -269,36 +257,35 @@ const dot = (time: Time, events: Events, rest: RestReader): Pose2d => {
     ],
     [
       span(9850, 10150),
-      (t) => combine([squish({ squash: 0.48, bulge: 0.8, wobbles: 0 }, t), bump({ dy: -42 }, t)]),
+      (t) => combine([squish({ squash: 0.48, bulge: 0.8, wobbles: 0 })(t), bump({ dy: -42 })(t)]),
     ],
-    [span(10150, 10230), (t) => crouch({ squash: 0.38, bulge: 0.8, curve: "out" }, t)],
+    [span(10150, 10230), (t) => crouch({ squash: 0.38, bulge: 0.8, curve: "out" })(t)],
     [
       span(10230, 13050),
       (t) =>
         combine([
           { anchor: "bottom" },
-          springSettle({ squash: 0.38, rings: 2.8, damping: 5.2 }, span(0, 870).of(t)),
-          pulse({ amount: 0.3 }, span(0, 300).of(t)),
+          springSettle({ squash: 0.38, rings: 2.8, damping: 5.2 })(span(0, 870).of(t)),
+          pulse({ amount: 0.3 })(span(0, 300).of(t)),
           sequence(t, [
             [
               span(WIPE_AT - 150 - 10230, WIPE_AT - 10230),
-              (u) => push({ to: 0.7, curve: "inOut" }, u),
+              (u) => push({ to: 0.7, curve: "inOut" })(u),
             ],
             [
               span(WIPE_AT - 10230, WIPE_AT + 600 - 10230),
-              (u) => springSettle({ scale: 0.7, rings: 1.8, damping: 4.2 }, u),
+              (u) => springSettle({ scale: 0.7, rings: 1.8, damping: 4.2 })(u),
             ],
           ]),
           ...[0, 1, 2, 3, 4, 5].map((i) =>
-            pulse(
-              { amount: 0.2 },
+            pulse({ amount: 0.2 })(
               span(collapseAt(i) + 520 - 10230, collapseAt(i) + 760 - 10230).of(t),
             ),
           ),
-          tint({ name: "ink" }, span(WIPE_AT - 10230, WIPE_AT + 70 - 10230).of(t)),
+          tint({ name: "ink" })(span(WIPE_AT - 10230, WIPE_AT + 70 - 10230).of(t)),
         ]),
     ],
-    [span(13050, 13250), (t) => crouch({ squash: 0.4, bulge: 0.75 }, t)],
+    [span(13050, 13250), (t) => crouch({ squash: 0.4, bulge: 0.75 })(t)],
     [
       LEAP,
       () =>
@@ -308,17 +295,17 @@ const dot = (time: Time, events: Events, rest: RestReader): Pose2d => {
             velocity((t) => leapPath(t), time, events),
             { stretch: 0.3, max: 1.5 },
           ).pose,
-          push({ to: 0.64, curve: "inOut" }, LEAP.of(time)),
+          push({ to: 0.64, curve: "inOut" })(LEAP.of(time)),
         ]),
     ],
     [
       span(PERIOD_AT, 15000),
       (t) =>
         combine([
-          squish({ squash: 0.42, bulge: 0.7, wobbles: 0 }, span(0, 260).of(t)),
+          squish({ squash: 0.42, bulge: 0.7, wobbles: 0 })(span(0, 260).of(t)),
           { ...toStop, y: toStop.y - 18 * 0.36, scale: 0.64 },
-          bump({ dy: -16 }, span(0, 240).of(t)),
-          squish({ squash: 0.18, bulge: 0.7, wobbles: 0 }, span(240, 480).of(t)),
+          bump({ dy: -16 })(span(0, 240).of(t)),
+          squish({ squash: 0.18, bulge: 0.7, wobbles: 0 })(span(240, 480).of(t)),
         ]),
     ],
   ]);
@@ -330,21 +317,18 @@ const antLetter = (time: Time, i: number): Pose2d => {
   const leap = 2900 + i * 38;
   const flight = 3550 - leap;
   return combine([
-    launch(
-      {
-        height: 1.1 * flight + 0.0014 * flight * flight,
-        squash: 0.3,
-        bulge: 0.33,
-        stretch: 0.45,
-        crouch: (leap - sink) / (leap - sink + flight),
-        tremble: 1.6,
-        flight: "accelerate",
-      },
-      span(sink, leap + flight).of(time),
-    ),
-    springSettle({ dy: 120, turn: 9, rings: 1, damping: 5 }, span(up, up + 600).of(time)),
-    smudge({ amount: 5 }, span(leap, leap + 300).of(time)),
-    tint({ name: "charge", curve: "inOut" }, span(sink, sink + 420).of(time)),
+    launch({
+      height: 1.1 * flight + 0.0014 * flight * flight,
+      squash: 0.3,
+      bulge: 0.33,
+      stretch: 0.45,
+      crouch: (leap - sink) / (leap - sink + flight),
+      tremble: 1.6,
+      flight: "accelerate",
+    })(span(sink, leap + flight).of(time)),
+    springSettle({ dy: 120, turn: 9, rings: 1, damping: 5 })(span(up, up + 600).of(time)),
+    smudge({ amount: 5 })(span(leap, leap + 300).of(time)),
+    tint({ name: "charge", curve: "inOut" })(span(sink, sink + 420).of(time)),
   ]);
 };
 
@@ -357,25 +341,25 @@ const weightLetter = (time: Time, i: number): Pose2d => {
       span(land - 420, land + 140),
       (t) =>
         combine([
-          drop({ distance: 640 }, t),
-          smudge({ amount: 3, build: 0.75 }, t),
-          squashed(-0.12, Math.min(1, t.progress / 0.75)),
+          drop({ distance: 640 })(t),
+          smudge({ amount: 3, build: 0.75 })(t),
+          squashed({ squash: -0.12 })(Math.min(1, t.progress / 0.75)),
         ]),
     ],
     [
       span(land, 5550),
       (t) =>
         combine([
-          squish({ squash: 0.24, bulge: 0.67, wobbles: 2.8 }, span(0, 700).of(t)),
-          wobble({ angle: 1.6, count: 2 }, span(0, 800).of(t)),
+          squish({ squash: 0.24, bulge: 0.67, wobbles: 2.8 })(span(0, 700).of(t)),
+          wobble({ angle: 1.6, count: 2 })(span(0, 800).of(t)),
         ]),
     ],
     [
       span(5550, 6260),
       (t) =>
-        anticipate({ share: (plunge - 5550) / (6260 - 5550), amount: 14 / fallen }, t, (u) =>
-          combine([rise({ distance: fallen }, reversed(u)), smudge({ amount: 4, build: 0.6 }, u)]),
-        ),
+        anticipation({ share: (plunge - 5550) / (6260 - 5550), amount: 14 / fallen })((u) =>
+          combine([rise({ distance: fallen })(reversed(u)), smudge({ amount: 4, build: 0.6 })(u)]),
+        )(t, NO_EVENTS),
     ],
   ]);
 };
@@ -392,10 +376,12 @@ const dust = (time: Time, rest: RestReader, li: number): ListPose => {
         scale: (0.6 + 0.3 * kk) * (li === 5 ? 1.5 : 1),
         opacity: 0.75,
       },
-      kick(
-        { dx: side * (40 + kk * 28), rise: 10 + 22 * kk, fall: kk === 2 ? 30 : 9, shrink: 0.75 },
-        span(land, land + 700).of(time),
-      ),
+      kick({
+        dx: side * (40 + kk * 28),
+        rise: 10 + 22 * kk,
+        fall: kk === 2 ? 30 : 9,
+        shrink: 0.75,
+      })(span(land, land + 700).of(time)),
     ]);
   };
 };
@@ -411,27 +397,26 @@ const settleLetter = (time: Time, rest: RestReader, i: number): Pose2d => {
         span(burstAt(i), out),
         (t) =>
           combine([
-            springSettle({ ...away, lift: 70, rings: 2.4, damping: 5 }, span(0, 1400).of(t)),
-            springSettle({ turn, rings: 2, damping: 3.7 }, span(0, 1400).of(t)),
-            springSettle({ scale: 0.15, rings: 3.2, damping: 6.5 }, span(0, 1400).of(t)),
-            smudge({ amount: 4 }, reversed(span(0, 220).of(t))),
+            springSettle({ ...away, lift: 70, rings: 2.4, damping: 5 })(span(0, 1400).of(t)),
+            springSettle({ turn, rings: 2, damping: 3.7 })(span(0, 1400).of(t)),
+            springSettle({ scale: 0.15, rings: 3.2, damping: 6.5 })(span(0, 1400).of(t)),
+            smudge({ amount: 4 })(reversed(span(0, 220).of(t))),
           ]),
       ],
       [
         span(out, out + 520),
         (t) =>
-          anticipate({ share: 0.3, amount: 0.2 }, t, (u) =>
+          anticipation({ share: 0.3, amount: 0.2 })((u) =>
             combine([
-              springSettle(
-                { ...away, turn: turn * 0.5, scale: 0.05, rings: 0, damping: 3 },
+              springSettle({ ...away, turn: turn * 0.5, scale: 0.05, rings: 0, damping: 3 })(
                 reversed(u),
               ),
-              smudge({ amount: 3, build: 1 }, u),
+              smudge({ amount: 3, build: 1 })(u),
             ]),
-          ),
+          )(t, NO_EVENTS),
       ],
     ]),
-    tint({ name: "ink" }, span(WIPE_AT + 150, WIPE_AT + 300).of(time)),
+    tint({ name: "ink" })(span(WIPE_AT + 150, WIPE_AT + 300).of(time)),
   ]);
 };
 
@@ -556,34 +541,34 @@ export default defineStage({
       flood: sequence(time, [
         [
           span(WIPE_AT, WIPE_AT + 400),
-          (t) => wipe({ radius: 800, x: DOT.x, y: DOT.y }, span(0, 400).of(t, ease.quadOut)),
+          (t) => wipe({ radius: 800, x: DOT.x, y: DOT.y })(span(0, 400).of(t, ease.quadOut)),
         ],
-        [span(12700, 13050), (t) => wipe({ radius: 800, x: DOT.x, y: DOT.y }, reversed(t))],
+        [span(12700, 13050), (t) => wipe({ radius: 800, x: DOT.x, y: DOT.y })(reversed(t))],
       ]),
-      trailUp: streak({ arrive: 0.43, lag: 0.17 }, span(850, 1450).of(time)),
+      trailUp: streak({ arrive: 0.43, lag: 0.17 })(span(850, 1450).of(time)),
       trailArc: combine([
         { scaleX: (stop.x - DOT.x) / (STOP_AT.x - DOT.x), anchor: "left" },
-        streak({ arrive: 0.65, lag: 0.21 }, span(13250, 14250).of(time)),
+        streak({ arrive: 0.65, lag: 0.21 })(span(13250, 14250).of(time)),
       ]),
       underline: combine([
         { scaleX: settleHalf / UNDERLINE_HALF },
         sequence(time, [
-          [span(10800, 11300), (t) => spread({}, span(0, 500).of(t, ease.cubicOut))],
+          [span(10800, 11300), (t) => spread({})(span(0, 500).of(t, ease.cubicOut))],
           [
             span(COLLAPSE_AT - 100, COLLAPSE_AT + 200),
-            (t) => spread({}, reversed(span(0, 300).of(t, ease.cubicIn))),
+            (t) => spread({})(reversed(span(0, 300).of(t, ease.cubicIn))),
           ],
         ]),
-        tint({ name: "ink" }, span(WIPE_AT + 150, WIPE_AT + 300).of(time)),
+        tint({ name: "ink" })(span(WIPE_AT + 150, WIPE_AT + 300).of(time)),
       ]),
       ant: (i) => antLetter(time, i),
       floor: combine([
         sequence(time, [
-          [span(3350, 3800), (t) => spread({}, span(0, 450).of(t, ease.cubicOut))],
-          [span(5750, 6000), (t) => spread({}, reversed(span(0, 250).of(t, ease.cubicIn)))],
+          [span(3350, 3800), (t) => spread({})(span(0, 450).of(t, ease.cubicOut))],
+          [span(5750, 6000), (t) => spread({})(reversed(span(0, 250).of(t, ease.cubicIn)))],
         ]),
-        ...LANDS.map((land, i) => nod({ distance: 2 + i }, span(land, land + 170).of(time))),
-        tint({ name: "cool" }, span(4795, 5495).of(time)),
+        ...LANDS.map((land, i) => nod({ distance: 2 + i })(span(land, land + 170).of(time))),
+        tint({ name: "cool" })(span(4795, 5495).of(time)),
       ]),
       weight: (i) => weightLetter(time, i),
       dust0: dust(time, rest, 0),
@@ -594,40 +579,38 @@ export default defineStage({
       dust5: dust(time, rest, 5),
       rig: { x: barOf(overlap) },
       hang: each(HANG, (length, i) =>
-        dangle({ length, damping: 0.18, gain: 0.36, lag: i * 28, limit: 63 }, overlap, {
-          carrier: barOf,
-        }),
+        dangle({ length, damping: 0.18, gain: 0.36, lag: i * 28, limit: 63, carrier: barOf })(
+          overlap,
+        ),
       ),
       settleWord: (i) => settleLetter(time, rest, i),
       line: {},
       phrase: each([0, 1, 2], (i) =>
         combine([
-          springSettle(
-            { dy: 126, turn: 5, rings: 1, damping: 5 },
+          springSettle({ dy: 126, turn: 5, rings: 1, damping: 5 })(
             span(13050 + i * 110, 13050 + i * 110 + 650).of(time),
           ),
-          jolt(
-            { distance: 7, count: 2, sideways: 0 },
+          jolt({ distance: 7, count: 2, sideways: 0 })(
             span(PERIOD_AT + (2 - i) * 45, PERIOD_AT + (2 - i) * 45 + 700).of(time),
           ),
         ]),
       ),
       credit: combine([
-        rise({ distance: 14 }, span(14250, 14850).of(time)),
-        fade({}, span(14250, 14850).of(time, ease.quadOut)),
+        rise({ distance: 14 })(span(14250, 14850).of(time)),
+        fade()(span(14250, 14850).of(time, ease.quadOut)),
       ]),
-      ringLaunch: combine([{ opacity: 0.9 }, shockwave({ grow: 11 }, span(850, 1450).of(time))]),
-      ringLand: combine([{ opacity: 0.8 }, shockwave({ grow: 8 }, span(9850, 10400).of(time))]),
-      ringBurst: combine([{ opacity: 0.9 }, shockwave({ grow: 21 }, span(10230, 10930).of(time))]),
+      ringLaunch: combine([{ opacity: 0.9 }, shockwave({ grow: 11 })(span(850, 1450).of(time))]),
+      ringLand: combine([{ opacity: 0.8 }, shockwave({ grow: 8 })(span(9850, 10400).of(time))]),
+      ringBurst: combine([{ opacity: 0.9 }, shockwave({ grow: 21 })(span(10230, 10930).of(time))]),
       ringPeriod: combine([
         { x: stop.x, y: stop.y + 6, opacity: 0.7 },
-        shockwave({ grow: 4 }, span(PERIOD_AT, PERIOD_AT + 500).of(time)),
+        shockwave({ grow: 4 })(span(PERIOD_AT, PERIOD_AT + 500).of(time)),
       ]),
       dot: dot(time, events, rest),
       hud: combine([
         { opacity: 0.55 },
-        fade({}, span(200, 600).of(time)),
-        fade({}, reversed(span(12600, 13000).of(time))),
+        fade()(span(200, 600).of(time)),
+        fade()(reversed(span(12600, 13000).of(time))),
       ]),
       chapter: {},
       timecode: {},

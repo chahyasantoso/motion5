@@ -19,17 +19,6 @@ export default defineStage({
     parcel: m.box(),
     word: m.text("Delivered"),
   }),
-  design: {
-    parcel: {
-      y: { fall: "heavy" },
-      scaleY: { land: "loose" },
-      rotation: { land: "loose" },
-      tint: { tint: "calm" },
-      shadowBlur: { fall: "heavy" },
-    },
-    tether: { scaleY: { fall: "quick" } },
-    word: { opacity: { word: "calm" }, y: { word: "calm" } },
-  },
   skins: {
     dom: {
       css: `
@@ -43,12 +32,12 @@ export default defineStage({
     },
   },
   scene: ({ time, beats }) => {
-    const fall = drop({ distance: 140, squash: 0.12 }, beats.fall.of(time));
+    const fall = drop({ distance: 140, squash: 0.12 })(beats.fall.of(time));
     const height = -(fall.y ?? 0);
     const tinted = mix(0, 1, beats.tint.of(time, ease.sineInOut).progress);
     const parcel = combine([
       fall,
-      thud({ squash: 0.2, tilt: 6, rings: 3 }, beats.land.of(time)),
+      thud({ squash: 0.2, tilt: 6, rings: 3 })(beats.land.of(time)),
       {
         tint: tinted,
         shadowY: height,
@@ -58,7 +47,7 @@ export default defineStage({
     const release = span(500, 720).of(time, ease.quadOut).progress;
     const word = combine([
       { y: mix(18, 0, beats.word.of(time, ease.sineInOut).progress) },
-      fade({}, beats.word.of(time)),
+      fade()(beats.word.of(time)),
     ]);
     return {
       tether: { scaleY: 1 - release, anchor: "top" as const },

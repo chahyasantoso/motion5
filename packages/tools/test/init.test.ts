@@ -25,7 +25,7 @@ function package_(name: string, docs: boolean): InstalledPackage {
     mkdirSync(join(folder, "docs"));
     writeFileSync(join(folder, "docs", "README.md"), "index\n");
   }
-  return { name: `@gerak/${name}`, folder, commands: undefined, review: undefined };
+  return { name: `@gerak/${name}`, folder };
 }
 
 function init(caller: string, args: string[] = []) {

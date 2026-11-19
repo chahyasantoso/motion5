@@ -1,55 +1,27 @@
-import { arch, wave, type Pose2d } from "@gerak/core";
-import { defineMove } from "@gerak/moves";
+import { arch, wave, type Pose2d, type Time } from "@gerak/core";
 
 const inOut = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 const LIFT_SHARE = 0.28;
 const LOWER_SHARE = 0.24;
 
-export const handWave = defineMove({
-  id: "hand-wave",
-  role: "emphasis",
-  description:
-    "Lifts a limb about its joint, swings it back and forth to wave, and lowers it again; it can shorten and narrow as it comes up, as if raised toward the viewer. Give the limb its joint as pivot.",
-  options: {
-    lift: {
-      kind: "number",
-      description:
-        "How far the limb turns up from where it hangs, in degrees (negative turns the other way).",
-    },
-    swing: {
-      kind: "number",
-      min: 0,
-      max: 90,
-      default: 15,
-      description: "Each wave's swing to either side, in degrees; default 15.",
-    },
-    count: {
-      kind: "number",
-      min: 1,
-      max: 8,
-      default: 2,
-      description: "Waves, each one out and back; default 2.",
-    },
-    reach: {
-      kind: "number",
-      min: 0.2,
-      max: 1.5,
-      default: 1,
-      description:
-        "Its drawn length while raised, against its length at rest; under 1 tips it toward the viewer; default 1.",
-    },
-    fold: {
-      kind: "number",
-      min: 0,
-      max: 0.8,
-      default: 0,
-      description:
-        "How much shorter it looks halfway up, pointing most at the viewer, 0 to 0.8; default 0.",
-    },
-  },
-  example: { options: { lift: -150, swing: 15, count: 2, reach: 0.8, fold: 0.3 } },
-  moments: () => ({ raised: LIFT_SHARE, lowering: 1 - LOWER_SHARE }),
-  run: ({ lift, swing, count, reach, fold }, { progress }): Pose2d => {
+/** Options of `handWave`. */
+export interface HandWaveOptions {
+  /** How far the limb turns up from where it hangs, in degrees (negative turns the other way). */
+  readonly lift: number;
+  /** Each wave's swing to either side, in degrees; default 15. */
+  readonly swing?: number;
+  /** Waves, each one out and back; default 2. */
+  readonly count?: number;
+  /** Its drawn length while raised, against its length at rest; under 1 tips it toward the viewer; default 1. */
+  readonly reach?: number;
+  /** How much shorter it looks halfway up, pointing most at the viewer, 0 to 0.8; default 0. */
+  readonly fold?: number;
+}
+
+/** Lifts a limb about its joint, swings it back and forth to wave, and lowers it again. */
+export function handWave(options: HandWaveOptions): (time: Time) => Pose2d {
+  const { lift, swing = 15, count = 2, reach = 1, fold = 0 } = options;
+  return ({ progress }): Pose2d => {
     const up =
       progress < LIFT_SHARE
         ? inOut(progress / LIFT_SHARE)
@@ -68,5 +40,5 @@ export const handWave = defineMove({
       scaleX: 1 - 0.5 * fold * turned,
       scaleY: along,
     };
-  },
-});
+  };
+}

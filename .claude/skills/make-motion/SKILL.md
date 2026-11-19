@@ -13,10 +13,9 @@ A piece starts from its brief, not from a piece that already exists.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
-3. Read `@gerak/core`'s primitives in `core.md`. When `@gerak/moves` and `@gerak/moves-tools` are installed, run `npx gerak moves --anatomy`,
-   write `design`, and query `npx gerak moves --design <file> --target <member> --in <brief>` (or
-   `npx gerak new-move <id> --in <brief>` and `npx gerak moves --check`). With `@gerak/core` alone, write each member's
-   motion directly from `@gerak/core`'s time, blend, ease, envelope and path helpers.
+3. Read `@gerak/core`'s primitives in `core.md`. Write each member's motion from core's time, blend, ease,
+   envelope, path and principle helpers. With `@gerak/moves` installed, pick a move by reading its README, or write
+   your own beside the scene.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
 5. Read a page that `@gerak/stage`'s `docs/README.md` table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
@@ -35,7 +34,7 @@ A piece starts from its brief, not from a piece that already exists.
 - The obvious answer you named, the ideas you dropped, your three lines, and whether the finished piece shows them.
 - Your design, each line's fields and parts by kind, and for each line which choice you made (use, adjust, combine
   or write) and why.
-- Each move you used, and each move you wrote: its id, its role and why no catalogued move would do. Name any
+- Each move you used, and each move you wrote: its name and why no installed move would do. Name any
   motion you built from `keyframes` in the scene and say why it is not a move.
 - Any package source you opened, which file and why: that is a gap in the reference.
 - What you did not see at full speed.

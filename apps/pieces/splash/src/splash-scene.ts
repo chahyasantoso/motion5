@@ -1,6 +1,6 @@
 import { clockDriver } from "@gerak/dom";
 import { combine, ease, keyframes, lanes, mix, span, type Pose2d, type Time } from "@gerak/core";
-import { drop } from "@gerak/moves";
+import { DROP_LANDING, drop } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4800;
@@ -28,7 +28,7 @@ export const DROPLETS = [
 const FALL = { distance: 660, squash: 0.32 };
 const fall = span(250, 1000);
 /** The ms the falling drop touches the water. */
-export const IMPACT_MS = fall.at(drop.moments(FALL).landing);
+export const IMPACT_MS = fall.at(DROP_LANDING);
 const swallow = span(IMPACT_MS, IMPACT_MS + 180);
 
 const ringSpans = RINGS.map((ring) =>
@@ -78,7 +78,7 @@ function ringPose(ring: (typeof RINGS)[number], index: number, time: Time): Pose
 /** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time) => ({
   drop: combine([
-    drop(FALL, fall.of(time)),
+    drop(FALL)(fall.of(time)),
     {
       scale: mix(1, 0.5, swallow.of(time).progress),
       opacity: 1 - swallow.of(time).progress,

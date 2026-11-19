@@ -83,3 +83,25 @@ export { circlePath, ellipsePath, linePath, polygonPath, rectPath } from "./geom
 export { resamplePath, reversePath, transformPath, type Matrix2d } from "./geometry/path-edit";
 export { isClosedPath, meets, pathArea, pathBounds, SEAM } from "./geometry/path-measure";
 export { pathLength } from "./path/arc-length";
+export { smear } from "./principles/smear";
+export { smear3d } from "./principles/smear3d";
+export { trail, type TrailOptions } from "./principles/trail";
+export { trailTurn } from "./principles/trail-turn";
+export {
+  squashStretch,
+  squashStretch3d,
+  type SquashStretchOptions,
+} from "./principles/squash-stretch";
+export { anticipation, anticipation3d, type AnticipationOptions } from "./principles/anticipation";
+export {
+  followThrough,
+  followThrough3d,
+  type FollowThroughOptions,
+} from "./principles/follow-through";
+export { overlap, type OverlapOptions } from "./principles/overlap";
+export { arc, arc3d, type Arc3dOptions, type ArcBendOptions } from "./principles/arc";
+export { exaggerate, exaggerate3d, type ExaggerateOptions } from "./principles/exaggerate";
+export { secondary, secondary3d } from "./principles/secondary";
+export { state, type State, type StateOptions, type Step } from "./state/state";
+export { springTo, type SpringToOptions } from "./state/spring-to";
+export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";

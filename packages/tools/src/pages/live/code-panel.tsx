@@ -1,60 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { NumericLiteralSpan } from "@gerak/tools/vite";
 
 export type { NumericLiteralSpan };
-
-/** Names a scene can call, each perhaps a move: the scene module's own exports, then the app's move modules, searched before the built-in moves. */
-export type MoveSource = Readonly<Record<string, unknown>>;
-
-let builtIn: object = {};
-
-/** Settles once the built-in moves are known: the library's when the project has it, none otherwise. */
-export const builtInMovesLoaded: Promise<void> = import("virtual:gerak/built-in-moves").then(
-  (loaded) => {
-    builtIn = loaded;
-  },
-  () => undefined,
-);
-
-const NO_MOVES: MoveSource = {};
-const NO_MODULES: readonly MoveSource[] = [];
-
-/** The names to search: the scene's exports, then the app's move modules (the first to export a name wins). */
-export function moveSourceFrom(own: MoveSource, modules: readonly MoveSource[]): MoveSource {
-  const merged: Record<string, unknown> = Object.create(null);
-  for (const module of modules) {
-    for (const [name, value] of Object.entries(module)) {
-      if (!Object.hasOwn(merged, name)) merged[name] = value;
-    }
-  }
-  for (const [name, value] of Object.entries(own)) merged[name] = value;
-  return merged;
-}
-
-function isMoveFiles(value: unknown): value is { readonly files: readonly string[] } {
-  if (!isRecord(value)) return false;
-  const files = Reflect.get(value, "files");
-  return Array.isArray(files) && files.every((file) => typeof file === "string");
-}
-
-// Each load asks for the files afresh, so a move edited since the last one is read as it now stands.
-async function importAppMoves(): Promise<readonly MoveSource[]> {
-  const stamp = Date.now();
-  const res = await fetch("/__motion/moves");
-  if (!res.ok) return NO_MODULES;
-  const data: unknown = await res.json();
-  if (!isMoveFiles(data)) return NO_MODULES;
-  const loaded = await Promise.all(
-    data.files.map(async (path): Promise<unknown> => {
-      try {
-        return await import(/* @vite-ignore */ `${path}?t=${stamp}`);
-      } catch {
-        return undefined;
-      }
-    }),
-  );
-  return loaded.filter(isRecord);
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -110,52 +57,10 @@ export function stepForLiteral(text: string, value: number): number {
   return 1;
 }
 
-/** The options a move declares, when `value` is a move. */
-function declaredOptions(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== "function" && !isRecord(value)) return undefined;
-  const options: unknown = Reflect.get(value, "options");
-  return isRecord(options) ? options : undefined;
-}
-
-/** The min and max a move declares for a numeric option; `own` is searched before the built-in moves. */
-export function rangeForLiteral(
-  call?: string,
-  property?: string,
-  own: MoveSource = NO_MOVES,
-): { readonly min?: number; readonly max?: number } {
-  if (call === undefined || property === undefined) return {};
-  const options = declaredOptions(
-    Object.hasOwn(own, call) ? own[call] : Reflect.get(builtIn, call),
-  );
-  if (options === undefined || !Object.hasOwn(options, property)) return {};
-  const field = options[property];
-  if (!isRecord(field) || Reflect.get(field, "kind") !== "number") return {};
-  const min: unknown = Reflect.get(field, "min");
-  const max: unknown = Reflect.get(field, "max");
-  return {
-    ...(typeof min === "number" ? { min } : {}),
-    ...(typeof max === "number" ? { max } : {}),
-  };
-}
-
-/** Computes the formatted dragged value clamped to the declared range if present. */
-export function dragNumberValue(
-  startValue: number,
-  text: string,
-  deltaPx: number,
-  call?: string,
-  property?: string,
-  own: MoveSource = NO_MOVES,
-): string {
+/** Computes the formatted value of a number dragged by `deltaPx`. */
+export function dragNumberValue(startValue: number, text: string, deltaPx: number): string {
   const step = stepForLiteral(text, startValue);
-  let next = startValue + Math.round(deltaPx) * step;
-  const range = rangeForLiteral(call, property, own);
-  if (range.min !== undefined && next < range.min) {
-    next = range.min;
-  }
-  if (range.max !== undefined && next > range.max) {
-    next = range.max;
-  }
+  const next = startValue + Math.round(deltaPx) * step;
   return step < 1 ? Number(next.toFixed(2)).toString() : Math.round(next).toString();
 }
 
@@ -165,8 +70,6 @@ interface ActiveDrag {
   readonly startX: number;
   readonly initialValue: number;
   readonly initialText: string;
-  readonly call?: string;
-  readonly property?: string;
   currentStart: number;
   currentEnd: number;
   currentText: string;
@@ -177,19 +80,12 @@ export interface CodePanelProps {
   /** The scene file of a piece name, as the live server reads it. */
   readonly sceneFileOf: (name: string) => string | undefined;
   readonly version?: unknown;
-  /** The scene module, whose exported moves give a dragged option its range. */
-  readonly moves?: MoveSource | undefined;
 }
 
 /** Renders scene source code with interactive numeric literal spans. */
-export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, version, moves }) => {
+export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, version }) => {
   const [source, setSource] = useState<string>("");
   const [literals, setLiterals] = useState<readonly NumericLiteralSpan[]>([]);
-  const [appModules, setAppModules] = useState<readonly MoveSource[]>(NO_MODULES);
-  const searched = useMemo(
-    () => moveSourceFrom(moves ?? NO_MOVES, appModules),
-    [moves, appModules],
-  );
   const dragRef = useRef<ActiveDrag | null>(null);
   const inFlightRef = useRef<boolean>(false);
   const serverTextRef = useRef<string>("");
@@ -215,11 +111,6 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, ve
           }
         })
         .catch(() => {});
-    importAppMoves()
-      .then((modules) => {
-        if (!cancelled) setAppModules(modules);
-      })
-      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -330,8 +221,6 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, ve
       currentStart: lit.start,
       currentEnd: lit.end,
       currentText: lit.text,
-      ...(lit.call !== undefined ? { call: lit.call } : {}),
-      ...(lit.property !== undefined ? { property: lit.property } : {}),
     };
   };
 
@@ -340,14 +229,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, ve
     if (drag === null || drag.pointerId !== e.pointerId) return;
 
     const deltaPx = e.clientX - drag.startX;
-    const newText = dragNumberValue(
-      drag.initialValue,
-      drag.initialText,
-      deltaPx,
-      drag.call,
-      drag.property,
-      searched,
-    );
+    const newText = dragNumberValue(drag.initialValue, drag.initialText, deltaPx);
     if (newText === drag.currentText) return;
 
     applyLocalAndQueueEdit(drag, newText);
@@ -361,14 +243,7 @@ export const CodePanel: React.FC<CodePanelProps> = ({ sceneName, sceneFileOf, ve
     }
 
     const deltaPx = e.clientX - drag.startX;
-    const newText = dragNumberValue(
-      drag.initialValue,
-      drag.initialText,
-      deltaPx,
-      drag.call,
-      drag.property,
-      searched,
-    );
+    const newText = dragNumberValue(drag.initialValue, drag.initialText, deltaPx);
     if (newText !== drag.currentText) {
       applyLocalAndQueueEdit(drag, newText);
     }

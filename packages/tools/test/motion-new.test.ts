@@ -103,14 +103,14 @@ describe("gerak new", () => {
     expect(existsSync(join(dir, "rope-word/rope-word.html"))).toBe(false);
   });
 
-  it("no longer takes --move, and its usage line names the library's new-move", () => {
+  it("no longer takes --move, and its usage line names no move command", () => {
     for (const argv of [
       ["--move", "rope-in"],
       ["--move", "rope-in", "--in", "rope"],
     ]) {
       expect(parseNewArgs(argv)).toEqual({ kind: "usage", message: NEW_USAGE });
     }
-    expect(NEW_USAGE).toContain("gerak new-move <id> --in <brief>");
+    expect(NEW_USAGE).not.toContain("new-move");
   });
 
   it("with --in writes the piece into that brief's folder", () => {

@@ -4,7 +4,7 @@ import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
 const scene = (time: Time) => ({
-  ball: hop({ height: 100, bounces: 1 }, time),
+  ball: hop({ height: 100, bounces: 1 })(time),
   label: { text: time.progress < 0.5 ? "up" : "down" },
 });
 

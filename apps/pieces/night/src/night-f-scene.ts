@@ -12,9 +12,9 @@ const breathe = span(2400, 3600);
 
 /** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time) => ({
-  night: slide({ distance: 1000, from: "left" }, night.of(time)),
-  shift: slide({ distance: 1000, from: "right" }, shift.of(time)),
-  lamp: combine([fade({}, lampOn.of(time)), pulse({ amount: 0.6 }, repeated(breathe.of(time), 3))]),
+  night: slide({ distance: 1000, from: "left" })(night.of(time)),
+  shift: slide({ distance: 1000, from: "right" })(shift.of(time)),
+  lamp: combine([fade()(lampOn.of(time)), pulse({ amount: 0.6 })(repeated(breathe.of(time), 3))]),
 });
 
 /** The scene's clock on the page's frames. */

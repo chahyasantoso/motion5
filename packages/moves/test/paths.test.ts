@@ -5,21 +5,21 @@ import { rope, trace, wipe } from "@gerak/moves";
 describe("wipe", () => {
   it("grows its clip circle from nothing to the radius, easing in and out", () => {
     const options = { radius: 200, x: 10, y: 20 };
-    expect(wipe(options, atProgress(0))).toEqual({ clipX: 10, clipY: 20, clipRadius: 0 });
-    expect(wipe(options, atProgress(0.5))).toEqual({ clipX: 10, clipY: 20, clipRadius: 100 });
-    expect(wipe(options, atProgress(1))).toEqual({ clipX: 10, clipY: 20, clipRadius: 200 });
-    expect(wipe(options, atProgress(0.25)).clipRadius).toBeCloseTo(200 * 0.15625, 12);
+    expect(wipe(options)(atProgress(0))).toEqual({ clipX: 10, clipY: 20, clipRadius: 0 });
+    expect(wipe(options)(atProgress(0.5))).toEqual({ clipX: 10, clipY: 20, clipRadius: 100 });
+    expect(wipe(options)(atProgress(1))).toEqual({ clipX: 10, clipY: 20, clipRadius: 200 });
+    expect(wipe(options)(atProgress(0.25)).clipRadius).toBeCloseTo(200 * 0.15625, 12);
   });
 });
 
 describe("trace", () => {
   it("draws the share of its path that progress has reached, from its start", () => {
-    expect(trace({}, atProgress(0.3))).toEqual({ drawn: 0.3, drawnFrom: 0 });
+    expect(trace({})(atProgress(0.3))).toEqual({ drawn: 0.3, drawnFrom: 0 });
   });
 
   it("keeps only the tail's share drawn behind the head", () => {
-    expect(trace({ tail: 0.25 }, atProgress(0.5))).toEqual({ drawn: 0.5, drawnFrom: 0.25 });
-    expect(trace({ tail: 0.25 }, atProgress(0.1))).toEqual({ drawn: 0.1, drawnFrom: 0 });
+    expect(trace({ tail: 0.25 })(atProgress(0.5))).toEqual({ drawn: 0.5, drawnFrom: 0.25 });
+    expect(trace({ tail: 0.25 })(atProgress(0.1))).toEqual({ drawn: 0.1, drawnFrom: 0 });
   });
 });
 describe("rope", () => {
@@ -30,7 +30,7 @@ describe("rope", () => {
   ];
 
   it("starts straight along its angle from the pinned end, keeping every link's length", () => {
-    const start = rope({ angle: 0 }, atProgress(0), { points });
+    const start = rope({ angle: 0, points })(atProgress(0));
     expect(start.map(({ id }) => id)).toEqual(["a", "b", "c"]);
     expect(start[0]).toMatchObject({ x: 0, y: 0 });
     expect(start[1]?.x).toBeCloseTo(100, 9);
@@ -39,7 +39,7 @@ describe("rope", () => {
   });
 
   it("reaches its shape at the end", () => {
-    const end = rope({}, atProgress(1), { points });
+    const end = rope({ points })(atProgress(1));
     end.forEach((anchor, index) => {
       expect(anchor.x).toBeCloseTo(points[index]!.x, 9);
       expect(anchor.y).toBeCloseTo(points[index]!.y, 9);
@@ -47,29 +47,30 @@ describe("rope", () => {
   });
 
   it("keeps the other end on its point when pinned at the end", () => {
-    const start = rope({ pin: "end" }, atProgress(0), { points });
+    const start = rope({ pin: "end", points })(atProgress(0));
     expect(start[2]).toMatchObject({ x: 100, y: 100 });
   });
 
   it("refuses fewer points than a chain needs", () => {
-    expect(() => rope({}, atProgress(0), { points: [{ id: "a", x: 0, y: 0 }] })).toThrow(
-      /rope: input "points" needs at least 2 rows/,
+    expect(() => rope({ points: [{ id: "a", x: 0, y: 0 }] })(atProgress(0))).toThrow(
+      /rope: option "points" needs at least 2 rows/,
     );
   });
 
   it("accepts plain points without ids and numbers them from p0", () => {
-    const start = rope({ angle: 0 }, atProgress(0), {
+    const start = rope({
+      angle: 0,
       points: [
         { x: 0, y: 0 },
         { x: 100, y: 0 },
       ],
-    });
+    })(atProgress(0));
     expect(start.map(({ id }) => id)).toEqual(["p0", "p1"]);
   });
 
-  it("types its inputs from the declaration", () => {
-    // @ts-expect-error `points` is a declared input.
-    expect(() => rope({}, atProgress(0))).toThrow(/rope: input "points" is required/);
+  it("refuses a call with no points", () => {
+    // @ts-expect-error `points` is a required option.
+    expect(() => rope({})).toThrow(/rope: option "points" is required/);
   });
 });
 

@@ -1,22 +1,18 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "@gerak/core";
-import { unreachable } from "@gerak/core";
+import { unreachable, type Pose2d, type Time } from "@gerak/core";
+import { choiceOption } from "./options";
 
-/** Grows from nothing along one axis to full size, held at an edge. */
-export const unfold = defineMove({
-  id: "unfold",
-  role: "enter",
-  description: "Grows from nothing along one axis to full size, held at one edge.",
-  options: {
-    from: {
-      kind: "string",
-      enum: ["top", "bottom", "left", "right"],
-      default: "top",
-      description: "The edge that stays put; default top.",
-    },
-  },
-  example: { options: { from: "top" } },
-  run({ from }, { progress }): Pose2d {
+const EDGES = ["top", "bottom", "left", "right"] as const;
+
+/** Options of `unfold`. */
+export interface UnfoldOptions {
+  /** The edge that stays put: top, bottom, left or right; default top. */
+  readonly from?: (typeof EDGES)[number];
+}
+
+/** Grows from nothing along one axis to full size, held at one edge. */
+export function unfold(options: UnfoldOptions = {}): (time: Time) => Pose2d {
+  const from = choiceOption("unfold", "from", options.from, EDGES, "top");
+  return ({ progress }) => {
     const grown = 1 - (1 - progress) ** 2;
     switch (from) {
       case "top":
@@ -28,6 +24,5 @@ export const unfold = defineMove({
       default:
         return unreachable(from);
     }
-  },
-  moments: () => ({}),
-});
+  };
+}

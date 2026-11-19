@@ -1,38 +1,33 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "@gerak/core";
-import { arch, taper } from "@gerak/core";
-import { withProgress, type Time } from "@gerak/core";
+import { arch, taper, withProgress, type Pose2d, type Time } from "@gerak/core";
+import { numberOption } from "./options";
 import { carried, pushed, whole } from "./whole";
 
 const fade = taper({ power: 1 });
 
-/** Plays its input, then passes its last pose and settles back onto it. */
-export const overshoot = defineMove({
-  id: "overshoot",
-  role: "modifier",
-  description: "Plays another move, then goes a little past its end and settles back.",
-  options: {
-    share: {
-      kind: "number",
-      default: 0.3,
-      min: 0,
-      max: 0.9,
-      description: "Share of the progress spent past the end; default 0.3.",
-    },
-    amount: {
-      kind: "number",
-      default: 0.1,
-      min: 0,
-      max: 1,
-      description: "How far past the end, as a share of the input's whole travel; default 0.1.",
-    },
-  },
-  example: {
-    options: { share: 0.3, amount: 0.1 },
-    input: (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) }),
-  },
-  run({ share, amount }, time, input: (time: Time) => Pose2d): Pose2d {
-    const at = (progress: number) => input(withProgress(time, progress));
+/** Options of `overshoot`. */
+export interface OvershootOptions {
+  /** Share of the progress spent past the end, from 0 to 0.9; default 0.3. */
+  readonly share?: number;
+  /** How far past the end, as a share of the input's whole travel from 0 to 1; default 0.1. */
+  readonly amount?: number;
+}
+
+/** Plays another move, then goes a little past its end and settles back. */
+export function overshoot(
+  options: OvershootOptions = {},
+): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d {
+  const share = numberOption("overshoot", "share", options.share, {
+    default: 0.3,
+    min: 0,
+    max: 0.9,
+  });
+  const amount = numberOption("overshoot", "amount", options.amount, {
+    default: 0.1,
+    min: 0,
+    max: 1,
+  });
+  return (signal) => (time) => {
+    const at = (progress: number) => signal(withProgress(time, progress));
     const first = at(0);
     const last = at(1);
     const playing = 1 - share;
@@ -42,6 +37,5 @@ export const overshoot = defineMove({
     }
     const v = (time.progress - playing) / share;
     return pushed(last, first, amount * arch(v) * fade(v), carried(first, last));
-  },
-  moments: ({ share }) => ({ settle: 1 - share }),
-});
+  };
+}

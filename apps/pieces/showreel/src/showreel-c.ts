@@ -7,25 +7,15 @@ import {
   span,
   timeAt,
   velocity,
+  smear,
+  trail,
   type Events,
   type Pose2d,
   type Time,
+  anticipation,
+  NO_EVENTS,
 } from "@gerak/core";
-import {
-  anticipate,
-  drop,
-  fade,
-  pop,
-  pulse,
-  rise,
-  slide,
-  smear,
-  squashed,
-  trail,
-  wipe,
-  wobble,
-  smudge,
-} from "@gerak/moves";
+import { drop, fade, pop, pulse, rise, slide, squashed, wipe, wobble, smudge } from "@gerak/moves";
 import { defineStage, type Beats, type ListPose, each } from "@gerak/stage";
 import { ballistic } from "./moves/ballistic";
 import { bump } from "./moves/bump";
@@ -121,10 +111,10 @@ const OVERLAP_IN = span(6150, 7150);
 /** The bar of OVERLAP: sweeps in from the left, pulls back, whips off right. */
 const barPose = (time: Time): Pose2d =>
   combine([
-    slide({ distance: 1250, from: "left" }, OVERLAP_IN.of(time, ease.cubicInOut)),
-    anticipate({ share: 0.33, amount: 0.04 }, span(8700, 9450).of(time), (t) =>
-      slide({ distance: 1500, from: "right" }, reversed(t)),
-    ),
+    slide({ distance: 1250, from: "left" })(OVERLAP_IN.of(time, ease.cubicInOut)),
+    anticipation({ share: 0.33, amount: 0.04 })((t) =>
+      slide({ distance: 1500, from: "right" })(reversed(t)),
+    )(span(8700, 9450).of(time), NO_EVENTS),
   ]);
 const barX = (time: Time): number => barPose(time).x ?? 0;
 
@@ -271,44 +261,44 @@ export default defineStage({
 
     const camera = combine([
       sequence<Pose2d>(time, [
-        [span(500, 1400), (t) => push({ to: 1.12, curve: "in" }, reversed(t))],
-        [span(1400, 2900), (t) => push({ to: 1.04, curve: "inOut" }, t)],
-        [span(2900, 3500), (t) => push({ to: 1.04, curve: "in" }, reversed(t))],
-        [beats.finalPush, (t) => push({ to: 1.045, curve: "out" }, t)],
+        [span(500, 1400), (t) => push({ to: 1.12, curve: "in" })(reversed(t))],
+        [span(1400, 2900), (t) => push({ to: 1.04, curve: "inOut" })(t)],
+        [span(2900, 3500), (t) => push({ to: 1.04, curve: "in" })(reversed(t))],
+        [beats.finalPush, (t) => push({ to: 1.045, curve: "out" })(t)],
       ]),
-      bump({ dy: 50 }, span(2900, 3700).of(time)),
+      bump({ dy: 50 })(span(2900, 3700).of(time)),
       ...LAND.map((at, i) =>
-        jolt({ distance: 3 + i * i * 0.6, count: 6 }, span(at, at + 900).of(time)),
+        jolt({ distance: 3 + i * i * 0.6, count: 6 })(span(at, at + 900).of(time)),
       ),
-      bump({ dy: -40 }, span(5750, 6450).of(time)),
-      bump({ turn: 0.9 }, span(6150, 7700).of(time)),
-      jolt({ distance: 6, count: 6 }, span(9850, 10450).of(time)),
-      jolt({ distance: 3, count: 5 }, beats.landing.of(time)),
+      bump({ dy: -40 })(span(5750, 6450).of(time)),
+      bump({ turn: 0.9 })(span(6150, 7700).of(time)),
+      jolt({ distance: 6, count: 6 })(span(9850, 10450).of(time)),
+      jolt({ distance: 3, count: 5 })(beats.landing.of(time)),
     ]);
 
     const leapPath = (t: Time): Pose2d =>
-      combine([toStop, ballistic({ dx: -(toStop.x ?? 0), dy: -(toStop.y ?? 0), apex: 430 }, t)]);
+      combine([toStop, ballistic({ dx: -(toStop.x ?? 0), dy: -(toStop.y ?? 0), apex: 430 })(t)]);
     const leapSignal = (tm: Time): Pose2d => leapPath(beats.leap.of(tm));
     const stretch = smear(velocity(leapSignal, time, events), { stretch: 0.25, max: 1.6 }).pose;
     const landed: Pose2d = { ...toStop, y: (toStop.y ?? 0) - radius * 0.36, scale: 0.64 };
 
     const dotMotion = sequence<Pose2d>(time, [
-      [beats.appear, (t) => pop({ overshoot: 0.35 }, t)],
-      [span(450, 1250), (t) => launch({ height: 620, squash: 0.42, stretch: 0.9, crouch: 0.5 }, t)],
-      [span(9450, 9983), (t) => drop({ distance: 620 }, t)],
+      [beats.appear, (t) => pop({ overshoot: 0.35 })(t)],
+      [span(450, 1250), (t) => launch({ height: 620, squash: 0.42, stretch: 0.9, crouch: 0.5 })(t)],
+      [span(9450, 9983), (t) => drop({ distance: 620 })(t)],
       [
         span(9850, 10150),
         (t) =>
           combine([
-            squish({ squash: 0.48, bulge: 0.8, wobbles: 1 }, t),
-            ballistic({ dx: 0, dy: 0, apex: 84 }, t),
+            squish({ squash: 0.48, bulge: 0.8, wobbles: 1 })(t),
+            ballistic({ dx: 0, dy: 0, apex: 84 })(t),
           ]),
       ],
-      [span(10150, 10230), (t) => squashed(0.38, ease.cubicOut(t.progress))],
-      [span(10230, 11400), (t) => springSettle({ squash: 0.38, scale: 1.25, rings: 2 }, t)],
+      [span(10150, 10230), (t) => squashed({ squash: 0.38 })(ease.cubicOut(t.progress))],
+      [span(10230, 11400), (t) => springSettle({ squash: 0.38, scale: 1.25, rings: 2 })(t)],
       [span(11400, 11550), (t) => ({ scale: 1 - 0.3 * ease.cubicInOut(t.progress) })],
-      [span(11550, 12300), (t) => springSettle({ scale: 0.7, rings: 2, damping: 5 }, t)],
-      [span(13050, 13250), (t) => squashed(0.4, ease.cubicInOut(t.progress))],
+      [span(11550, 12300), (t) => springSettle({ scale: 0.7, rings: 2, damping: 5 })(t)],
+      [span(13050, 13250), (t) => squashed({ squash: 0.4 })(ease.cubicInOut(t.progress))],
       [
         beats.leap,
         (t) => combine([leapPath(t), { scale: 1 - 0.36 * ease.cubicInOut(t.progress) }]),
@@ -319,9 +309,9 @@ export default defineStage({
           combine([
             { anchor: "bottom" },
             landed,
-            squish({ squash: 0.42, wobbles: 1 }, span(13900, 14140).of(time)),
-            ballistic({ dx: 0, dy: 0, apex: 32 }, span(13900, 14140).of(time)),
-            squish({ squash: 0.18, wobbles: 1 }, span(14140, 14400).of(time)),
+            squish({ squash: 0.42, wobbles: 1 })(span(13900, 14140).of(time)),
+            ballistic({ dx: 0, dy: 0, apex: 32 })(span(13900, 14140).of(time)),
+            squish({ squash: 0.18, wobbles: 1 })(span(14140, 14400).of(time)),
           ]),
       ],
     ]);
@@ -329,11 +319,11 @@ export default defineStage({
       dotMotion,
       stretch,
       ...[0, 1, 2, 3, 4, 5].map((i) =>
-        pulse({ amount: 0.2 }, span(stlOut(i) + 520, stlOut(i) + 700).of(time)),
+        pulse({ amount: 0.2 })(span(stlOut(i) + 520, stlOut(i) + 700).of(time)),
       ),
       sequence<Pose2d>(time, [
-        [span(11550, 11620), (t) => tint({ name: "ink" }, t)],
-        [span(13034, 13050), (t) => tint({ name: "ink" }, reversed(t))],
+        [span(11550, 11620), (t) => tint({ name: "ink" })(t)],
+        [span(13034, 13050), (t) => tint({ name: "ink" })(reversed(t))],
       ]),
     ]);
 
@@ -348,7 +338,7 @@ export default defineStage({
       combine([
         toward(rest.get(name), x, y),
         { scale: 0.2 },
-        shockwave({ grow }, span(from, from + ms).of(time)),
+        shockwave({ grow })(span(from, from + ms).of(time)),
       ]);
 
     const sparks = (k: number): Pose2d => {
@@ -366,21 +356,18 @@ export default defineStage({
       const down = 2250 + i * 35;
       const off = 2900 + i * 38;
       return combine([
-        springSettle({ dy: 120, turn: 9, rings: 1, damping: 6 }, span(up, up + 520).of(time)),
-        launch(
-          {
-            height: 1300,
-            squash: 0.3,
-            bulge: 0.33,
-            stretch: 0.45,
-            crouch: (off - down) / (off + 650 - down),
-            tremble: 1.6,
-            flight: "accelerate",
-          },
-          span(down, off + 650).of(time),
-        ),
-        tint({ name: "charge", curve: "inOut" }, span(down, down + 420).of(time)),
-        smudge({ amount: 5 }, span(off, off + 300).of(time)),
+        springSettle({ dy: 120, turn: 9, rings: 1, damping: 6 })(span(up, up + 520).of(time)),
+        launch({
+          height: 1300,
+          squash: 0.3,
+          bulge: 0.33,
+          stretch: 0.45,
+          crouch: (off - down) / (off + 650 - down),
+          tremble: 1.6,
+          flight: "accelerate",
+        })(span(down, off + 650).of(time)),
+        tint({ name: "charge", curve: "inOut" })(span(down, down + 420).of(time)),
+        smudge({ amount: 5 })(span(off, off + 300).of(time)),
       ]);
     };
 
@@ -388,17 +375,18 @@ export default defineStage({
       const at = LAND[i] ?? 0;
       const late = Math.abs(i - 2.5) * 30;
       return combine([
-        drop({ distance: 640 }, span(at - 420, at + 140).of(time)),
+        drop({ distance: 640 })(span(at - 420, at + 140).of(time)),
         sequence<Pose2d>(time, [
-          [span(at - 420, at), (t) => smudge({ amount: 3 }, t)],
+          [span(at - 420, at), (t) => smudge({ amount: 3 })(t)],
           [span(at, at + 16), () => ({})],
         ]),
-        squish({ squash: 0.24, bulge: 0.67, wobbles: 3 }, span(at, at + 600).of(time)),
-        wobble({ angle: 2.5, count: 2 }, span(at, at + 700).of(time)),
-        anticipate({ share: 0.28, amount: 0.013 }, span(5550 + late, 6270 + late).of(time), (t) =>
-          rise({ distance: 1100 }, reversed(t)),
+        squish({ squash: 0.24, bulge: 0.67, wobbles: 3 })(span(at, at + 600).of(time)),
+        wobble({ angle: 2.5, count: 2 })(span(at, at + 700).of(time)),
+        anticipation({ share: 0.28, amount: 0.013 })((t) => rise({ distance: 1100 })(reversed(t)))(
+          span(5550 + late, 6270 + late).of(time),
+          NO_EVENTS,
         ),
-        smudge({ amount: 4 }, span(5750 + late, 6070 + late).of(time)),
+        smudge({ amount: 4 })(span(5750 + late, 6070 + late).of(time)),
       ]);
     };
 
@@ -406,14 +394,14 @@ export default defineStage({
     const floorTop = floorRest.y - floorRest.height / 2;
     const floor = combine([
       sequence<Pose2d>(time, [
-        [span(3460, 3910), (t) => open({ axis: "x" }, t)],
-        [span(5750, 6000), (t) => open({ axis: "x" }, reversed(t))],
+        [span(3460, 3910), (t) => open({ axis: "x" })(t)],
+        [span(5750, 6000), (t) => open({ axis: "x" })(reversed(t))],
       ]),
       ...LAND.map((at, i) =>
-        jolt({ distance: 2 + i, count: 3, sideways: 0 }, span(at, at + 450).of(time)),
+        jolt({ distance: 2 + i, count: 3, sideways: 0 })(span(at, at + 450).of(time)),
       ),
-      bump({ dy: -14 }, span(5550, 5950).of(time)),
-      tint({ name: "paper" }, span(LAND[5], LAND[5] + 700).of(time)),
+      bump({ dy: -14 })(span(5550, 5950).of(time)),
+      tint({ name: "paper" })(span(LAND[5], LAND[5] + 700).of(time)),
     ]);
 
     const dustOf = (i: number, at: number): ListPose => {
@@ -423,8 +411,7 @@ export default defineStage({
         const size = (0.6 + 0.3 * k) * (i === 5 ? 1.5 : 1);
         return combine([
           toward(rest.get(`dust${i}.${k}`), letter.x + side * letter.width * 0.42, floorTop - 4),
-          kick(
-            { dx: side * (40 + k * 28), rise: 10 + 22 * k, fall: k === 2 ? 30 : 9 },
+          kick({ dx: side * (40 + k * 28), rise: 10 + 22 * k, fall: k === 2 ? 30 : 9 })(
             span(at, at + 700).of(time),
           ),
           { scale: size, opacity: 0.75 },
@@ -450,25 +437,24 @@ export default defineStage({
       const dx = back.x ?? 0;
       const dy = back.y ?? 0;
       return combine([
-        springSettle(
-          { dx, dy, lift: 70, turn, scale: 0, rings: 2, damping: 4 },
+        springSettle({ dx, dy, lift: 70, turn, scale: 0, rings: 2, damping: 4 })(
           span(stlIn(i), stlIn(i) + 1200).of(time),
         ),
-        smudge({ amount: 4 }, reversed(span(stlIn(i), stlIn(i) + 220).of(time))),
-        anticipate({ share: 0.3, amount: 0.15 }, span(stlOut(i), stlOut(i) + 520).of(time), (t) =>
-          springSettle({ dx, dy, turn: turn * 0.5, scale: 0.05, rings: 0 }, reversed(t)),
-        ),
-        smudge({ amount: 3 }, span(stlOut(i) + 200, stlOut(i) + 520).of(time)),
-        tint({ name: "ink" }, span(11700, 11850).of(time)),
+        smudge({ amount: 4 })(reversed(span(stlIn(i), stlIn(i) + 220).of(time))),
+        anticipation({ share: 0.3, amount: 0.15 })((t) =>
+          springSettle({ dx, dy, turn: turn * 0.5, scale: 0.05, rings: 0 })(reversed(t)),
+        )(span(stlOut(i), stlOut(i) + 520).of(time), NO_EVENTS),
+        smudge({ amount: 3 })(span(stlOut(i) + 200, stlOut(i) + 520).of(time)),
+        tint({ name: "ink" })(span(11700, 11850).of(time)),
       ]);
     });
 
     const underline = combine([
       sequence<Pose2d>(time, [
-        [beats.underline, (t) => open({ axis: "x" }, t)],
-        [span(12100, 12400), (t) => open({ axis: "x" }, reversed(t))],
+        [beats.underline, (t) => open({ axis: "x" })(t)],
+        [span(12100, 12400), (t) => open({ axis: "x" })(reversed(t))],
       ]),
-      tint({ name: "ink" }, span(11700, 11850).of(time)),
+      tint({ name: "ink" })(span(11700, 11850).of(time)),
     ]);
 
     const floodRest = rest.get("flood");
@@ -478,23 +464,23 @@ export default defineStage({
       y: dotRest.y - (floodRest.y - floodRest.height / 2),
     };
     const flood = sequence<Pose2d>(time, [
-      [span(11550, 12150), (t) => wipe(reach, t)],
-      [span(12700, 13050), (t) => wipe(reach, reversed(t))],
+      [span(11550, 12150), (t) => wipe(reach)(t)],
+      [span(12700, 13050), (t) => wipe(reach)(reversed(t))],
     ]);
 
     const fin = each([0, 1, 2], (i): Pose2d => {
       const from = 13050 + i * 110;
       const ripple = 13900 + (2 - i) * 45;
       return combine([
-        springSettle({ dy: 130, turn: 5, rings: 1, damping: 5 }, span(from, from + 650).of(time)),
-        jolt({ distance: 6, count: 2, sideways: 0 }, span(ripple, ripple + 600).of(time)),
+        springSettle({ dy: 130, turn: 5, rings: 1, damping: 5 })(span(from, from + 650).of(time)),
+        jolt({ distance: 6, count: 2, sideways: 0 })(span(ripple, ripple + 600).of(time)),
       ]);
     });
 
     return {
       camera,
       flood,
-      trailUp: dash({ length: 540, arrive: 0.5, lag: 0.17 }, beats.launch.of(time)),
+      trailUp: dash({ length: 540, arrive: 0.5, lag: 0.17 })(beats.launch.of(time)),
       ant,
       floor,
       wgt,
@@ -513,8 +499,8 @@ export default defineStage({
       line: {},
       fin,
       credit: combine([
-        rise({ distance: 14 }, beats.credit.of(time)),
-        fade({}, beats.credit.of(time)),
+        rise({ distance: 14 })(beats.credit.of(time)),
+        fade()(beats.credit.of(time)),
       ]),
       ringLaunch: ringAt("ringLaunch", dotRest.x, dotRest.y + radius, 11, 600, 850),
       ringLand: ringAt("ringLand", dotRest.x, dotRest.y + radius, 8, 550, 9850),
@@ -524,8 +510,8 @@ export default defineStage({
       dot,
       hud: combine([
         { opacity: 0.55 },
-        fade({}, span(200, 600).of(time)),
-        fade({}, reversed(span(12600, 13000).of(time))),
+        fade()(span(200, 600).of(time)),
+        fade()(reversed(span(12600, 13000).of(time))),
       ]),
     };
   },

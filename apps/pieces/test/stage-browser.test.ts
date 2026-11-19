@@ -21,7 +21,7 @@ export default defineStage({
   cast: (m) => ({ box: m.box() }),
   skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
   scene: ({ time, beats }) => ({
-    box: slide({ distance: ${distance}, from: "left" }, beats.go.of(time)),
+    box: slide({ distance: ${distance}, from: "left" })(beats.go.of(time)),
   }),
 });
 `;

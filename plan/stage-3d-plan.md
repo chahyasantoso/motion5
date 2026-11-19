@@ -1,109 +1,94 @@
-# 3D objects in a stage
+# 3D objects in a scene
 
 ## Goal
 
-People and agents making a 3D piece cast its Three.js objects in a stage, so the objects get beats, `on` windows,
-the cast check and stage review, and are posed on the same clock as any DOM labels. The code adds one member kind,
-one builder and one binding in `@gerak/three`.
+People and agents making a 3D piece put its Three.js objects in a scene beside DOM labels and page elements. The
+objects get beats, `.show` windows, review and the same clock as everything else, and a 3D object can travel to a slot
+on a page. The code adds one element type, one binding in `@gerak/three`, and a screen-to-world function in core.
 
-Status: approved 2026-11-18. Starts after `plan/shapes-plan.md` and `plan/principles-plan.md` land. One branch, one
-pull request.
+Status: rewritten 2026-11-19 for the scene builder. The approved 2026-11-18 version cast objects in `defineStage`,
+which `plan/scene-builder-plan.md` removes. Starts after `plan/page-plan.md` lands. One branch, one pull request.
 
-Read `AGENTS.md` first; every rule there applies.
+Read `AGENTS.md` first. Every rule there applies.
 
 ## Where things stand
 
-- `@gerak/stage` is 2D only. ADR-190 removed pose `"3d"` "until a renderer needs them".
-- `@gerak/player` already plays a signal of any value shape, `Pose3d` included.
+- After `plan/scene-builder-plan.md`, a piece is a `sceneBuilder` chain over element values. `@gerak/dom` reads its
+  kinds with an exhaustive `switch`, and rendering refuses an element that no renderer draws.
+- After `plan/page-plan.md`, a page has sections, scroll beats and slots made from page elements.
+- `@gerak/player` plays a signal of any value shape, `Pose3d` included.
 - The 3D pieces (`overlay3d`, `principles3d`, `character3d`, `avatar-3d`, `dragon-intro`) play scene modules through
   the player, and write poses with `@gerak/three`'s `applyPose3d` and `useTarget3d`.
 - `gerak new --three` writes such a scene module.
-- Some code reads `Member.kind` with a predicate, not a `switch`, so a new kind would pass unnoticed:
-  - `packages/tools/src/scene/review.ts` reads `!== "list"`, `=== "actor"` and `!== "group"`;
-  - `packages/tools/src/scene/scene.ts` reads `writtenOut`'s list;
-  - `packages/dom/src/stage.ts` reads in its target lookup and readout.
-- `mountStage` in `@gerak/dom` returns `MountedStage`, which carries its `player`.
+- Core has `project3d`, from world units to the screen, and nothing from the screen to the world.
 
 ## Decisions
 
-### 1. Every read of `Member.kind` is a `switch`
+### 1. The `object` element
 
-The predicate reads above become exhaustive `switch` statements, as `AGENTS.md` requires, before any new kind exists.
-This changes no behaviour.
-
-### 2. `m.object()`
-
-- A new member kind, `"object"`, joins the `Member` union. Its scene value is a `Pose3d`.
-- It has no DOM element, rest box, skin or content.
-- `m.object()` returns an `ObjectSpec`. Its type allows only `.on(...)`, `.static()`, `.ambient()` and `.settle()`:
-  - no pointer event reaches an object, so it has no `.watch()`;
-  - its origin is the `Object3D`'s, so it has no `.pivot()`.
-- `m.group` and `m.many` do not accept an `ObjectSpec`, so an object is a top-level member, and the Three.js scene
-  graph nests objects. Types enforce all of this, so `compileStage` adds no check.
-- `Targets` maps an object to `Pose3d`. `check` refuses a non-pose for it.
-- Each `switch` from Decision 1 gains the `"object"` case:
-  - `signatureOf` keys it by name and kind;
-  - `mountStage` makes no element for it;
-  - scene review and `gerak sample` sample and judge it as they judge a 3D scene module's target, with `--jump` in
-    world units and per-target `limits`;
-  - readouts, strokes, morphs and shape findings do not apply to it.
+- `@gerak/stage` exports `object(name, options?)`. Its kind is `"object"`, and its pose type is `Pose3d`.
+- It has no DOM element, rest box, skin, content, pointer events or pivot. Its origin is the `Object3D`'s.
+- Types refuse a 2D motion on an object and a 3D motion on a 2D element.
+- Review samples and judges an object as it judges a 3D scene module's target, with `--jump` in world units and its
+  `.limits`.
 - Page tools (`frames`, `check`, `fps`, `render`, `compare`, and `review` on a page) see an object only as canvas
-  pixels, because `--watch` selects DOM elements. `commands.md` states this in one line.
-- Test first:
-  - an object compiles with kind `"object"`;
-  - a type test that `Targets` gives `Pose3d`, and that an object inside `m.group` fails to type-check;
-  - `mountStage` makes no element for an object.
+  pixels. `commands.md` states this in one line.
 
-### 3. `bindStage3d`
+### 2. `bindScene3d`
 
-- `@gerak/three` exports
-  `bindStage3d(player, stage, objects: Readonly<Record<string, Object3D>>, draw: () => void): () => void`.
-- On each player step it writes each object's pose with `applyPose3d`, sets `visible` from `stage.visibleAt`, then
-  calls `draw` once. The canvas therefore draws on the player's step, as ADR-183 requires.
-- It throws when a cast object has no entry in `objects`, and returns the unsubscribe.
-- `@gerak/three` gains a dependency on `@gerak/stage`. Both are group `core`.
-- Test first: one step writes a pose and `visible`, and calls `draw` once.
+- `@gerak/three` exports `bindScene3d(player, scene, objects: Readonly<Record<string, Object3D>>, draw: () => void)`.
+  It returns the unsubscribe.
+- On each player step it writes each object's pose with `applyPose3d`, sets `visible` from the scene's `.show`
+  windows, then calls `draw` once. The canvas therefore draws on the player's step, as ADR-183 requires.
+- It reads `kind` over its own closed union, `"object"`, with an exhaustive `switch`.
+- It throws when a scene's object has no entry in `objects`, and names it.
 
-### 4. Scaffold and worked example
+### 3. From a slot to the world
 
-- `gerak new --three` writes a stage with one `m.object()` bound through `bindStage3d`. `pack:check`'s
+- Core gains `unproject3d(point, lens, stage, depth)`: a screen point to world units at a depth.
+- `travel({ to: slot })` on an object moves it to the slot's screen point at its current depth.
+
+### 4. Scaffold and pieces
+
+- `gerak new --three` writes a builder piece with one `object` bound through `bindScene3d`. `pack:check`'s
   `tsc after new --three` stays green.
-- `overlay3d` moves to a stage: objects and DOM labels on one clock. Its frames match the baseline.
-- `stage.md` gains one row in the cast table and one bullet under "How the DOM renderer draws". `@gerak/three`'s docs
-  state `bindStage3d`.
+- `overlay3d` moves first: objects and DOM labels on one clock. Its frames match the baseline.
+- `principles3d`, `character3d`, `avatar-3d` and `dragon-intro` then move one at a time, each moved by a fresh agent.
+  Each agent reads only `AGENTS.md`, the package docs and `overlay3d`, never this plan. It reports every fact it had to
+  learn from package source or by trial.
+- Each such fact is stated in the docs as behaviour, not as a recipe, before the next piece starts. Each moved piece's
+  frames match the baseline, and its review gains no finding.
+- `page-plan`'s landing page gains a 3D drink in place of its drink image, as a second proof.
 
-### 5. The 3D exercise
+### 5. Tests first
 
-`principles3d`, `character3d`, `avatar-3d` and `dragon-intro` move onto stages one at a time, each moved by a fresh
-agent. Each agent:
-- reads only `AGENTS.md`, the package docs and `overlay3d`, never this plan;
-- reports every fact it had to learn from package source or by trial.
-
-Each such fact is stated in the docs as behaviour, not as a recipe, before the next piece starts. Each moved piece's
-frames match the baseline, and its review gains no finding.
+- An object compiles with kind `"object"`, and a 3D motion on a `box` fails to type-check.
+- One `bindScene3d` step writes a pose and `visible`, and calls `draw` once.
+- `unproject3d` inverts `project3d` at the same depth.
 
 ### 6. Record and docs
 
-- `docs/ADR-193-3d-objects-in-a-stage.md` records Decisions 1 to 4. It supersedes ADR-190's clause on pose `"3d"`.
-  Then run `npm run adr-index:write`.
+- A new ADR records Decisions 1 to 3, with the next free number. It supersedes ADR-190's clause on pose `"3d"`. Then
+  run `npm run adr-index:write`.
+- 3D in a scene goes on a page in `@gerak/three`'s docs, read on demand. `stage.md` gains one line that points to it,
+  under its ceiling. `core.md` gains `unproject3d` in its names by group.
 - Rewrite `docs/SESSION-STATUS.md` and the roadmap's "Done and not done" table.
 
 ## Execution
 
-1. **Baseline,** as `plan/shapes-plan.md` takes it: frames of every page under `apps/pieces`, each piece's
-   `gerak review` output, and every command's output on `tempo`, `card` and `overlay3d`.
-2. Decisions 1 to 6 in order. `npm run check` is green after each.
-3. Compare against the baseline. No frame may change, and command output changes only where `overlay3d` and the
-   exercise pieces became stages.
+1. **Baseline:** frames of every page under `apps/pieces`, each piece's `gerak review` output, and every command's
+   output on `tempo`, `card` and `overlay3d`.
+2. Decisions 5, then 1 to 3, then 4, then 6. `npm run check` is green after each.
+3. Compare against the baseline. No frame may change. Command output changes only where a 3D piece became a builder
+   piece.
 4. In the pull request, report:
-   - `npm run check` with no `packages/*/dist`;
-   - `npm run pack:check`;
-   - the stage benchmark;
-   - the comparison;
-   - what each exercise agent reported;
+   - `npm run check` with no `packages/*/dist`.
+   - `npm run pack:check`.
+   - the comparison.
+   - what each fresh agent reported.
    - one cold review by an agent that has not read this plan.
-5. Last, the NADI measure exactly as `plan/measure-nadi.md` states, measuring all three plans together.
 
 ## Not in this plan
 
-Objects inside groups or lists; pointer events on objects; React Three Fiber.
+- Objects inside groups or lists, and pointer events on objects.
+- React Three Fiber.

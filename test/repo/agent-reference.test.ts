@@ -1,17 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { moveParts } from "@gerak/moves-tools";
 import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mjs";
-import { COMMANDS as LIBRARY_COMMANDS } from "../../packages/moves-tools/bin/commands.mjs";
 import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
 const coreCommands = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
-const libraryCommands = readFileSync(
-  new URL("packages/moves-tools/docs/commands.md", ROOT),
-  "utf8",
-);
 const MAX_READ_WHOLE_BYTES = 20 * 1024;
 
 /** A package's generated reference pages, joined. */
@@ -126,31 +120,21 @@ describe("agent reference", () => {
     expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
 
     const moves = referenceOf("moves");
-    expect(moves).toContain("**`drop`** `(options, time)`:");
-    expect(moves).toContain("**`fade`** `(options, time)`:");
-    expect(moves).toContain("**`anticipate`** `(options, time, input: (time: Time) => Pose2d)`:");
+    expect(moves).toContain("**`drop`** `(options: DropOptions): (time: Time) => Pose2d`:");
+    expect(moves).toContain("**`fade`** `(): (time: Time) => Pose2d`:");
     expect(moves).toContain(
-      "**`rope`** `(options, time, input: { readonly points: readonly (Point2d & { readonly id?: string; })[]; })`:",
+      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`:",
     );
-  });
-
-  it("names in its parts list only exports of @gerak/moves, each one named in its reference", () => {
-    const exported = new Set(exportsOf(["moves/src/index.ts"]).get("moves/src/index.ts"));
-    const reference = referenceOf("moves");
-    const names = moveParts().map(({ name }) => name);
-    expect(new Set(names).size).toBe(names.length);
-    expect(names.filter((name) => !exported.has(name))).toEqual([]);
-    expect(names.filter((name) => !reference.includes(entryLine(name)))).toEqual([]);
+    expect(moves).toContain(
+      "**`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`:",
+    );
   });
 
   it("names every gerak command", () => {
     const missingCore = Object.keys(TOOLS_COMMANDS).filter(
       (name) => !coreCommands.includes(`\`gerak ${name}`),
     );
-    const missingLibrary = Object.keys(LIBRARY_COMMANDS).filter(
-      (name) => !libraryCommands.includes(`\`gerak ${name}`),
-    );
-    expect([...missingCore, ...missingLibrary]).toEqual([]);
+    expect(missingCore).toEqual([]);
   });
 
   it("lists every reference page of a package in that package's reference README", () => {
@@ -177,6 +161,8 @@ describe("agent reference", () => {
       "measure",
       "events",
       "utility",
+      "principles",
+      "state",
     ]);
   });
 
@@ -201,7 +187,7 @@ describe("agent reference", () => {
     }
 
     const stage = readFileSync(new URL("packages/stage/docs/stage.md", ROOT), "utf8");
-    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(14 * 1024);
+    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(10_500);
     expect(stage).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
     for (const page of readdirSync(new URL("packages/stage/docs/reference/", ROOT))) {
       if (page !== "README.md") expect(stage).toContain(`./reference/${page}`);

@@ -19,7 +19,8 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { smear3d, squashed3d, trailTurn } from "@gerak/moves";
+import { smear3d, trailTurn } from "@gerak/core";
+import { squashed3d } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4200;
@@ -141,7 +142,7 @@ export function camera(time: Time): Pose3d {
 export const scene = (time: Time, events: Events) => {
   const travel = smear3d(velocity3d(flight, time, events), { stretch: 0.075, max: 1.8 });
   return {
-    body: combine3d([squashed3d(0.45, crouch(time)), flight(time)]),
+    body: combine3d([squashed3d({ squash: 0.45 })(crouch(time)), flight(time)]),
     stretch: travel.pose,
     face: travel.turn,
     antenna: tail(time, events),

@@ -70,8 +70,6 @@ export interface Stage {
   readonly skins: { readonly dom?: DomSkin | undefined };
   readonly cues: Events;
   readonly limits: Readonly<Record<string, Limits>>;
-  readonly style?: string | undefined;
-  readonly design?: unknown;
   readonly scene: (context: SceneContext) => unknown;
   /** Which members show at `ms`, by name; one shared record per stretch of time. */
   readonly visibleAt: (ms: number) => Readonly<Record<string, boolean>>;
@@ -445,7 +443,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
-  const { skins, cues, style, design, scene } = definition;
+  const { skins, cues, scene } = definition;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
@@ -456,8 +454,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
     skins: Object.freeze(skins?.dom === undefined ? {} : { dom: compileSkin(skins.dom) }),
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
-    ...(style === undefined ? {} : { style }),
-    ...(design === undefined ? {} : { design }),
     scene: (context: SceneContext): unknown => Reflect.apply(scene, undefined, [context]),
     visibleAt: visibility(members),
     signature: signatureOf(beats.durationMs, members),

@@ -12,7 +12,7 @@ import {
   span,
   type Time,
 } from "@gerak/core";
-import { hop } from "@gerak/moves";
+import { hop, hopLandings } from "@gerak/moves";
 
 const timed = (elapsed: number): Time => ({
   progress: elapsed / 4000,
@@ -90,11 +90,11 @@ describe("span", () => {
   });
 
   it("names the scene ms a move's moment falls on", () => {
-    const { lastLanding } = hop.moments({ height: 300, bounces: 2, decay: 0.35 });
+    const { lastLanding } = hopLandings({ height: 300, bounces: 2, decay: 0.35 });
     const landMs = flight.at(lastLanding);
     expect(landMs).toBeCloseTo(400 + 2000 * lastLanding, 9);
     const options = { height: 300, bounces: 2, decay: 0.35 };
-    expect(hop(options, flight.of(timed(landMs - 1e-6))).y).toBeCloseTo(0, 3);
+    expect(hop(options)(flight.of(timed(landMs - 1e-6))).y).toBeCloseTo(0, 3);
   });
 
   it("refuses a time with no clock in ms and names the fix", () => {

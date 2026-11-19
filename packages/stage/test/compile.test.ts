@@ -30,6 +30,19 @@ function errorsOf<B extends string, M extends Members<B>, L extends string>(
   return result.ok ? [] : result.errors;
 }
 
+describe("defineStage options", () => {
+  it("takes no design and no style", () => {
+    const base = { beats: { enter: [0, 500] }, cast: () => ({}), scene: () => ({}) } as const;
+    // @ts-expect-error design is not a stage option
+    defineStage({ ...base, design: { card: {} } });
+    // @ts-expect-error style is not a stage option
+    defineStage({ ...base, style: "showreel" });
+    const stage = compiled(defineStage(base));
+    expect("design" in stage).toBe(false);
+    expect("style" in stage).toBe(false);
+  });
+});
+
 describe("compileStage", () => {
   it("compiles one flat member list, parents first, with list items as contents", () => {
     const stage = compiled(

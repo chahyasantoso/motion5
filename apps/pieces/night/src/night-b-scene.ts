@@ -14,11 +14,11 @@ export const scene = (time: Time) => {
   const night = lanes([1, 1], 0.45).of(words.of(time), 0);
   const shift = lanes([1, 1], 0.45).of(words.of(time), 1);
   return {
-    night: combine([slide({ distance: 90, from: "left" }, night), fade({}, night)]),
-    shift: combine([slide({ distance: 90, from: "right" }, shift), fade({}, shift)]),
+    night: combine([slide({ distance: 90, from: "left" })(night), fade()(night)]),
+    shift: combine([slide({ distance: 90, from: "right" })(shift), fade()(shift)]),
     dot: combine([
-      pop({ overshoot: 0.15 }, dotIn.of(time)),
-      pulse({ amount: 0.45 }, repeated(beat.of(time), 2)),
+      pop({ overshoot: 0.15 })(dotIn.of(time)),
+      pulse({ amount: 0.45 })(repeated(beat.of(time), 2)),
     ]),
   };
 };

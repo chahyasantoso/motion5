@@ -1,8 +1,4 @@
-import { definePart } from "../contract";
-import { spring } from "@gerak/core";
-import { elapsedOf, type Time } from "@gerak/core";
-import { unreachable } from "@gerak/core";
-import { type EventPoint, type Events, type MotionEvent } from "@gerak/core";
+import { elapsedOf, springTo, state, unreachable, type Events, type Time } from "@gerak/core";
 
 /** Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own),
  * `target`, `stiffness` (default 170), `damping` (26) and `rest` (0.001). */
@@ -22,85 +18,22 @@ export interface FollowOptions {
   readonly rest?: number;
 }
 
-/** The spring of a `follow` just after the event at `index - 1` set its goal at `since` ms. */
-interface FollowState {
-  readonly index: number;
-  readonly goal: number;
-  readonly value: number;
-  readonly speed: number;
-  readonly since: number;
-}
-
 /** A spring each named event sends towards its goal, or a sample's own with `"value"`, turning back with
  * no jump; pure in time and events, a later call goes on from the last. */
 export function follow(options: FollowOptions): (time: Time, events: Events) => number {
-  const stiffness = options.stiffness ?? 170;
-  const damping = options.damping ?? 26;
-  const rest = options.rest ?? 0.001;
-  if (!(stiffness > 0) || !(damping >= 0))
+  const { stiffness, damping } = options;
+  if ((stiffness !== undefined && !(stiffness > 0)) || (damping !== undefined && !(damping >= 0)))
     throw new RangeError("follow: stiffness must be above 0 and damping at least 0.");
-  const goalOf = (event: MotionEvent): number | undefined => {
-    if (options.target !== undefined && event.target !== options.target) return undefined;
-    const goal = options.on[event.name];
-    if (goal === "value") return event.value;
-    return goal;
-  };
-  let kept: FollowState | undefined;
-  // The events before `kept.index` it was built from, by identity; a log that differs there starts again.
-  let taken: MotionEvent[] = [];
-  const sameStart = (events: Events, count: number): boolean => {
-    if (events.length < count) return false;
-    for (let index = 0; index < count; index += 1) if (events[index] !== taken[index]) return false;
-    return true;
-  };
-  return (time, events) => {
-    const now = elapsedOf(time.clock);
-    // The kept spring holds when every event it took is still where it was, and none is in the future.
-    const resumes =
-      kept !== undefined &&
-      (now === undefined || kept.since <= now) &&
-      sameStart(events, kept.index);
-    let state = resumes ? kept : undefined;
-    const from = state?.index ?? 0;
-    for (let index = state?.index ?? 0; index < events.length; index += 1) {
-      const event = events[index];
-      if (event === undefined) continue;
-      const next = goalOf(event);
-      if (next === undefined) continue;
-      if (now !== undefined && event.at > now) break;
-      let value = state?.value ?? options.start;
-      let speed = state?.speed ?? 0;
-      if (state !== undefined) {
-        const moved = spring(
-          state.value - state.goal,
-          state.speed,
-          (event.at - state.since) / 1000,
-          {
-            stiffness,
-            damping,
-          },
-        );
-        value = state.goal + moved.offset;
-        speed = moved.speed;
-      }
-      state = { index: index + 1, goal: next, value, speed, since: event.at };
-    }
-    if (state === undefined) taken = [];
-    else if (from === 0) taken = events.slice(0, state.index);
-    else taken.push(...events.slice(from, state.index));
-    kept = state;
-    if (state === undefined) return options.start;
-    if (now === undefined) return state.goal;
-    const moved = spring(state.value - state.goal, state.speed, (now - state.since) / 1000, {
-      stiffness,
-      damping,
-    });
-    return Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest
-      ? state.goal
-      : state.goal + moved.offset;
-  };
+  const goal = state(
+    options.start,
+    (current, event) => {
+      const named = options.on[event.name];
+      return (named === "value" ? event.value : named) ?? current;
+    },
+    options.target === undefined ? {} : { target: options.target },
+  );
+  return springTo(goal, (value) => value, options);
 }
-definePart({ kind: "signal" }, follow);
 
 /** How a response to one event moves: from a full start, from rest, as a fade, or as a shake. */
 export type ReactionKind = "recoil" | "wobble" | "flash" | "shake";
@@ -167,4 +100,3 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     return total;
   };
 }
-definePart({ kind: "signal" }, react);

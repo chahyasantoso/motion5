@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, repeated, reversed, type Pose2d, type Time } from "@gerak/core";
-import { anticipate, overshoot, wipe } from "../src";
+import {
+  atProgress,
+  repeated,
+  reversed,
+  type Pose2d,
+  type Time,
+  anticipation,
+  NO_EVENTS,
+} from "@gerak/core";
+import { overshoot, wipe } from "../src";
 
 const ramp = (time: Time): Pose2d => ({ x: time.progress });
 const slide = (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) });
@@ -18,27 +26,35 @@ describe("modifiers", () => {
 
   it("reversed plays a move that answers something other than a pose backwards", () => {
     const options = { radius: 100, x: 0, y: 0 };
-    expect(wipe(options, reversed(atProgress(1))).clipRadius).toBeCloseTo(0);
-    expect(wipe(options, reversed(atProgress(0))).clipRadius).toBeCloseTo(100);
+    expect(wipe(options)(reversed(atProgress(1))).clipRadius).toBeCloseTo(0);
+    expect(wipe(options)(reversed(atProgress(0))).clipRadius).toBeCloseTo(100);
   });
 
   it("anticipate goes the other way mid wind-up and ends on the input's end", () => {
-    expect(anticipate({}, atProgress(0), ramp).x).toBeCloseTo(0);
-    expect(anticipate({ share: 0.2, amount: 0.15 }, atProgress(0.1), ramp).x).toBeCloseTo(-0.15);
-    expect(anticipate({ share: 0.2 }, atProgress(0.2), ramp).x).toBeCloseTo(0);
-    expect(anticipate({}, atProgress(1), ramp).x).toBe(1);
+    expect(
+      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0), NO_EVENTS).x,
+    ).toBeCloseTo(0);
+    expect(
+      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.1), NO_EVENTS).x,
+    ).toBeCloseTo(-0.15);
+    expect(
+      anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(0.2), NO_EVENTS).x,
+    ).toBeCloseTo(0);
+    expect(anticipation({ share: 0.2, amount: 0.15 })(ramp)(atProgress(1), NO_EVENTS).x).toBe(1);
   });
 
   it("anticipate with share 0 is the input unchanged", () => {
     for (const p of [0, 0.3, 1])
-      expect(anticipate({ share: 0 }, atProgress(p), ramp).x).toBeCloseTo(p);
+      expect(
+        anticipation({ share: 0, amount: 0.15 })(ramp)(atProgress(p), NO_EVENTS).x,
+      ).toBeCloseTo(p);
   });
 
   it("overshoot passes the end during the settle and lands exactly on it", () => {
     const options = { share: 0.3, amount: 0.1 };
-    expect(overshoot(options, atProgress(0.35), ramp).x).toBeCloseTo(0.35 / 0.7);
-    expect(overshoot(options, atProgress(0.8), ramp).x ?? 0).toBeGreaterThan(1);
-    expect(overshoot(options, atProgress(1), ramp).x).toBe(1);
+    expect(overshoot(options)(ramp)(atProgress(0.35)).x).toBeCloseTo(0.35 / 0.7);
+    expect(overshoot(options)(ramp)(atProgress(0.8)).x ?? 0).toBeGreaterThan(1);
+    expect(overshoot(options)(ramp)(atProgress(1)).x).toBe(1);
   });
 
   it("overshoot never hands its input a progress outside 0 to 1", () => {
@@ -47,7 +63,7 @@ describe("modifiers", () => {
       seen.push(time.progress);
       return ramp(time);
     };
-    for (let i = 0; i <= 20; i += 1) overshoot({}, atProgress(i / 20), spy);
+    for (let i = 0; i <= 20; i += 1) overshoot({})(spy)(atProgress(i / 20));
     expect(Math.min(...seen)).toBeGreaterThanOrEqual(0);
     expect(Math.max(...seen)).toBeLessThanOrEqual(1);
   });
@@ -63,14 +79,18 @@ describe("modifiers", () => {
   it("overshoot passes its end on a custom number and settles on it", () => {
     const tint = (time: Time): Pose2d => ({ custom: { tint: time.progress } });
     const options = { share: 0.3, amount: 0.1 };
-    expect(overshoot(options, atProgress(0.8), tint).custom?.tint ?? 0).toBeGreaterThan(1);
-    expect(overshoot(options, atProgress(1), tint).custom?.tint).toBe(1);
-    expect(overshoot(options, atProgress(0.35), tint).custom?.tint).toBeCloseTo(0.35 / 0.7);
+    expect(overshoot(options)(tint)(atProgress(0.8)).custom?.tint ?? 0).toBeGreaterThan(1);
+    expect(overshoot(options)(tint)(atProgress(1)).custom?.tint).toBe(1);
+    expect(overshoot(options)(tint)(atProgress(0.35)).custom?.tint).toBeCloseTo(0.35 / 0.7);
   });
 
   it("anticipate leaves a number that multiplies as the input gave it", () => {
     const grow = (time: Time): Pose2d => ({ scale: 1 + time.progress });
-    expect(anticipate({}, atProgress(0.1), grow).scale).toBe(1);
-    expect(anticipate({}, atProgress(1), grow).scale).toBe(2);
+    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(0.1), NO_EVENTS).scale).toBe(
+      1,
+    );
+    expect(anticipation({ share: 0.2, amount: 0.15 })(grow)(atProgress(1), NO_EVENTS).scale).toBe(
+      2,
+    );
   });
 });

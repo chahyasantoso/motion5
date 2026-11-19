@@ -1,9 +1,28 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "@gerak/core";
+import type { Pose2d, Time } from "@gerak/core";
 import { squashed } from "../parts/coupling/squashed";
+import { numberOption } from "./options";
 
 const CONTACT_WIDTH = 0.2;
 const SETTLE_SHARE = 0.5;
+
+/** Options of `hop` and `hopLandings`. */
+export interface HopOptions {
+  /** Peak of the first flight above rest, in px; at least 0, required. */
+  readonly height: number;
+  /** Landings after the first, from 0 to 16; 0 lands once; required. */
+  readonly bounces: number;
+  /** Each flight's height as a share of the last, from 0.01 to 1; default 0.5. */
+  readonly decay?: number;
+  /** Height lost at the hardest landing, as a share from 0 to 1; default 0. */
+  readonly squash?: number;
+  /** Start this far left of rest, in px, arriving by the last landing; default 0. */
+  readonly dx?: number;
+}
+
+/** What a hop answers: its pose and its floor contact. */
+export type HopPose = Pose2d & {
+  readonly contact: { readonly hits: number; readonly justHit: number };
+};
 
 /** Squash weight near a contact: 1 at it and exactly 0 from `CONTACT_WIDTH` of a flight away. */
 function contactWeight(distance: number): number {
@@ -29,46 +48,36 @@ function schedule(bounces: number, decay: number) {
   };
 }
 
-/** Lands `bounces + 1` times, each flight `decay` as high, and settles at rest. Adds `contact { hits,
- * justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on. */
-export const hop = defineMove({
-  id: "hop",
-  role: "enter",
-  description: "Lands bounces + 1 times, each flight lower, and settles at rest.",
-  options: {
-    height: { kind: "number", min: 0, description: "Peak of the first flight above rest, in px." },
-    bounces: {
-      kind: "number",
-      min: 0,
-      max: 16,
-      description: "Landings after the first; 0 lands once.",
-    },
-    decay: {
-      kind: "number",
-      default: 0.5,
-      min: 0.01,
-      max: 1,
-      description: "Each flight's height as a share of the last; default 0.5.",
-    },
-    squash: {
-      kind: "number",
-      default: 0,
-      min: 0,
-      max: 1,
-      description: "Height lost at the hardest landing, as a share; default 0.",
-    },
-    dx: {
-      kind: "number",
-      default: 0,
-      description: "Start this far left of rest, in px, arriving by the last landing.",
-    },
-  },
-  example: { options: { height: 200, bounces: 1, squash: 0.3, dx: 600 } },
-  run(
-    { height, bounces, decay, squash, dx },
-    { progress },
-  ): Pose2d & { readonly contact: { readonly hits: number; readonly justHit: number } } {
-    const { flights, shrink, lastFlight, airtime, total } = schedule(bounces, decay);
+function read(options: HopOptions) {
+  return {
+    height: numberOption("hop", "height", options.height, { min: 0 }),
+    bounces: numberOption("hop", "bounces", options.bounces, { min: 0, max: 16 }),
+    decay: numberOption("hop", "decay", options.decay, { default: 0.5, min: 0.01, max: 1 }),
+    squash: numberOption("hop", "squash", options.squash, { default: 0, min: 0, max: 1 }),
+    dx: numberOption("hop", "dx", options.dx, { default: 0 }),
+  };
+}
+
+/** Where in its progress a hop touches the floor: `landings` each as a share from 0 to 1, and
+ * `lastLanding`, the final one, where it reaches rest. */
+export function hopLandings(options: HopOptions): {
+  readonly landings: readonly number[];
+  readonly lastLanding: number;
+} {
+  const { bounces, decay } = read(options);
+  const { lengths, airtime, total } = schedule(bounces, decay);
+  let start = 0;
+  const landings = lengths.map((length) => (start += length) / total);
+  return { landings, lastLanding: airtime / total };
+}
+
+/** Lands `bounces + 1` times, each flight lower, and settles at rest. Adds `contact { hits, justHit }`:
+ * `justHit` runs 1 at a landing to 0 a fifth of a flight on. */
+export function hop(options: HopOptions): (time: Time) => HopPose {
+  const { height, bounces, decay, squash, dx } = read(options);
+  const { flights, shrink, lastFlight, airtime, total } = schedule(bounces, decay);
+  const squeeze = squashed({ squash });
+  return ({ progress }) => {
     const time = progress * total;
 
     let start = 0;
@@ -96,14 +105,8 @@ export const hop = defineMove({
     return {
       x: 0 - dx * (1 - Math.min(1, time / airtime)),
       y,
-      ...squashed(squash, weight),
+      ...squeeze(weight),
       contact: { hits, justHit: weight },
     };
-  },
-  moments({ bounces, decay }) {
-    const { lengths, airtime, total } = schedule(bounces, decay);
-    let start = 0;
-    const landings = lengths.map((length) => (start += length) / total);
-    return { landings, lastLanding: airtime / total };
-  },
-});
+  };
+}

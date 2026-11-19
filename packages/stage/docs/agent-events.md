@@ -47,7 +47,7 @@ export default defineStage({
   cast: (m) => ({ box: m.box() }),
   cues: [{ name: "hit", at: HIT_MS, target: "box" }],
   scene: ({ time, beats }) => ({
-    box: drop({ distance: 120, squash: 0.15 }, beats.fall.of(time)),
+    box: drop({ distance: 120, squash: 0.15 })(beats.fall.of(time)),
   }),
 });
 ```

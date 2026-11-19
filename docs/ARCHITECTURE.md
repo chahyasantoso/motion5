@@ -15,7 +15,7 @@ driver owns only time, a player owns only playback, and a renderer owns only wri
 ```text
 core:      core (pure) --> player (pure), stage (pure) --> dom, react, three, tools
 modules:   rig (pure), physics (pure), rig-three (--> rig, three), rapier (--> physics)
-library:   moves (pure --> core, rig, stage), moves-tools (--> core, dom, moves, tools)
+library:   moves (pure --> core, rig, stage)
 ```
 
 Three dependency groups enforce one direction of imports: `library` may import `modules` and `core`, and `modules` may import `core`, never the other way round. Each package declares `"gerak": { "group": "core" | "modules" | "library" }`, and the boundary scan enforces it.
@@ -27,8 +27,7 @@ Three dependency groups enforce one direction of imports: `library` may import `
   (writes a pose on an `Object3D`, paired with `rig-three` for skinned skeletons). A renderer never computes motion.
 - **Engines behind a port:** `rapier` puts Rapier behind `physics`' `PhysicsWorld`.
 - **Tools:** `tools/scene` reads a scene module with no browser; `tools/page` drives a real page with Playwright and
-  Vite, and the scan holds it to `node:`, `@gerak/core`, `playwright-core` and `vite`. `moves-tools` plugs the library's `moves`,
-  `new-move`, `promote` and `style` commands and the design reviewer into `gerak`.
+  Vite, and the scan holds it to `node:`, `@gerak/core`, `playwright-core` and `vite`.
 
 ## 2a. What a piece is built from
 
@@ -37,8 +36,8 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | Layer | Answers | Lives in |
 | --- | --- | --- |
 | 1. Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/core/src/fields/` |
-| 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/core/src/` (time, blend, ease, envelope, geometry, path, measure); `packages/moves/src/parts/<group>/`, listed by `npx gerak moves --parts` |
-| 3. Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
+| 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/core/src/` (time, blend, ease, envelope, geometry, path, measure); `packages/moves/src/parts/<group>/` |
+| 3. Moves | a named behaviour: parts coupled on fields inside one progress, a function from options to a function of time | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
 | 4. Arranging time | moves placed in time and across targets: spans, phases, lanes, loops, chains, reshaped time; the piece format | `packages/core/src/time/`; `@gerak/stage` |
 | 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |
 | 6. Logic | what happens because of what a person did | the event log, `react`, `tally` in `@gerak/core`, and `follow`/`react` in `@gerak/moves` today; rules, score and state wait for a brief |
@@ -53,7 +52,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
   from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,
   edited live and rendered frame-exact.
 - A move written for one brief lives in that brief's `src/moves/` and moves into `@gerak/moves` when a second brief
-  imports it. Any agent may write a part or a move; promotion is the review step, not a separate author.
+  imports it. Any agent may write a part or a move.
 
 ## 3. Ownership
 
@@ -62,7 +61,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | What a value is at a time | the scene, built from `core` and optionally `moves` |
 | Fields, time, eases, spans, lanes, envelopes, paths, 3D maths and blends | `@gerak/core` |
 | Casts, `defineStage`, skins, layouts and `carry` | `@gerak/stage` |
-| Named moves, couplings, signal parts and style cards | `@gerak/moves` |
+| Named moves, couplings and signal parts | `@gerak/moves` |
 | Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig`, bound to Three.js skeletons by `@gerak/rig-three` |
 | Bodies, contacts and a seekable simulation | `@gerak/physics`, backed by `@gerak/rapier` |
 | Which moment is shown, and who hears a value or a cue | `@gerak/player` |
@@ -71,7 +70,6 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | A pose on a Three.js object | `@gerak/three` |
 | Binding a player to React | `@gerak/react` (and `@gerak/three/react`) |
 | Reading, checking, editing live and photographing motion | `@gerak/tools` |
-| Move catalog, scaffolding, promotion and design/style review | `@gerak/moves-tools` |
 
 One owner per question. A second place that answers one of these is the defect to fix, not a convenience to keep.
 

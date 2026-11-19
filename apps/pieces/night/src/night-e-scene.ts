@@ -10,12 +10,9 @@ const shift = span(800, 1900);
 const moonIn = span(1500, 3600);
 
 export const scene = (time: Time) => ({
-  night: combine([rise({ distance: 70 }, night.of(time)), fade({}, night.of(time))]),
-  shift: combine([
-    slide({ distance: 220, from: "right" }, shift.of(time)),
-    fade({}, shift.of(time)),
-  ]),
-  moon: swing({ angle: 26, swings: 5, anchor: "top" }, moonIn.of(time)),
+  night: combine([rise({ distance: 70 })(night.of(time)), fade()(night.of(time))]),
+  shift: combine([slide({ distance: 220, from: "right" })(shift.of(time)), fade()(shift.of(time))]),
+  moon: swing({ angle: 26, swings: 5, anchor: "top" })(moonIn.of(time)),
 });
 
 /** The scene's clock on the page's frames. */

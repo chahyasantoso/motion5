@@ -1,7 +1,6 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
-import { briefFolders } from "../scene/briefs";
 
 /** A single scanned numeric literal in source code. */
 export interface NumericLiteralSpan {
@@ -198,25 +197,6 @@ function firstHeader(value: string | readonly string[] | undefined): string | un
   return typeof value === "string" ? value : value?.[0];
 }
 
-/** The `.ts` files directly inside each brief's `src/moves`, as paths the page can import, sorted. */
-function listMoveFiles(appRoot: string): string[] {
-  const root = resolve(appRoot);
-  return briefFolders(root)
-    .flatMap((brief) => {
-      try {
-        return readdirSync(resolve(root, brief, "src", "moves"), { withFileTypes: true })
-          .filter(
-            (entry) =>
-              entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts"),
-          )
-          .map((entry) => `/${brief}/src/moves/${entry.name}`);
-      } catch {
-        return [];
-      }
-    })
-    .sort();
-}
-
 /** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */
 function isOwnRequest(headers: MotionLiveHeaders | undefined): boolean {
   const site = firstHeader(headers?.["sec-fetch-site"]);
@@ -270,21 +250,9 @@ export interface MotionLiveServer {
     | undefined;
 }
 
-/** The module the live page imports to find built-in moves by name. */
-export const BUILT_IN_MOVES_MODULE = "virtual:gerak/built-in-moves";
-
-const BUILT_IN_MOVES_ID = `\0${BUILT_IN_MOVES_MODULE}`;
-
-/** What a plugin hook may ask of the bundler: where a specifier resolves from an importer, or nothing. */
-export interface PluginResolver {
-  resolve(specifier: string, importer: string): Promise<unknown>;
-}
-
 export interface MotionLivePlugin {
   readonly name: string;
   readonly apply: "serve";
-  resolveId(id: string): string | null;
-  load(this: PluginResolver, id: string): Promise<string | null>;
   transform(code: string, id: string): { readonly code: string; readonly map: null } | null;
   configureServer(server: MotionLiveServer): void;
 }
@@ -319,18 +287,9 @@ export function motionLivePlugin(options?: {
   readonly appRoot?: string;
   readonly repoRoot?: string;
 }): MotionLivePlugin {
-  let projectRoot = options?.appRoot ?? process.cwd();
   return {
     name: "motion-live",
     apply: "serve",
-    resolveId(id: string) {
-      return id === BUILT_IN_MOVES_MODULE ? BUILT_IN_MOVES_ID : null;
-    },
-    async load(id: string) {
-      if (id !== BUILT_IN_MOVES_ID) return null;
-      const found = await this.resolve("@gerak/moves", resolve(projectRoot, "index.html"));
-      return found === null || found === undefined ? "export {};" : 'export * from "@gerak/moves";';
-    },
     transform(code: string, id: string) {
       const normalized = id.replace(/\\/g, "/");
       if (!normalized.includes("/src/") || normalized.endsWith("-main.tsx")) return null;
@@ -349,7 +308,6 @@ export function motionLivePlugin(options?: {
         throw new Error("motionLivePlugin refuses a production server.");
       }
       const appRoot = options?.appRoot ?? server.config.root ?? process.cwd();
-      projectRoot = appRoot;
       if (server.middlewares === undefined) {
         return;
       }
@@ -360,12 +318,6 @@ export function motionLivePlugin(options?: {
           res.statusCode = 403;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Only this server's own pages may read or edit." }));
-          return;
-        }
-        if (req.method === "GET" && url.pathname === "/__motion/moves") {
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ files: listMoveFiles(appRoot) }));
           return;
         }
         if (req.method === "GET" && url.pathname === "/__motion/source") {

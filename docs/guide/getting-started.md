@@ -16,7 +16,7 @@ const durationMs = 1200;
 const fall = span(0, 900);
 
 const scene = (time: Time) => ({
-  title: drop({ distance: 400, squash: 0.2 }, fall.of(time)),
+  title: drop({ distance: 400, squash: 0.2 })(fall.of(time)),
 });
 
 const title = document.querySelector<HTMLElement>("#title");

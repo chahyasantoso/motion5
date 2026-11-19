@@ -21,6 +21,8 @@ Public: `.`
 - `src/geometry/`: points, curves, path parsing and shapes, lenses, rotation maths
 - `src/measure/`: velocity, speed, tally
 - `src/path/`: travel along throws and curves
+- `src/principles/`: the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary
+- `src/state/`: state from events: state, springTo, easeTo
 - `src/time/`: time, spans, sequence, lanes, reversed, repeated
 - `src/utility/`: seeded numbers, clamp, unreachable
 
@@ -30,24 +32,15 @@ Public: `.`
 
 - `src/`: DOM and SVG renderer
 
-## packages/moves-tools
-
-Public: `.`
-
-- `src/`: the library's commands: moves catalog, parts, promote, style, new-move
-- `src/templates/`: gerak new-move template
-
 ## packages/moves
 
 Public: `.`
 
 - `src/`: the one entry point
-- `src/moves/`: defineMove and the built-in moves and modifiers
-- `src/parts/`: definePart: what each part promises
-- `src/parts/coupling/`: poses from an amount or a speed: squashes, smears
+- `src/moves/`: the built-in moves and modifiers, each a function from options to a function of time
+- `src/parts/coupling/`: poses from an amount or a speed: squashes
 - `src/parts/oscillation/`: the private shake
-- `src/parts/signal/`: values from time and events: follow, trail, noise
-- `src/style/`: how a shape is judged: descriptors, qualities, their ranges
+- `src/parts/signal/`: values from time and events: follow, noise
 
 ## packages/physics
 

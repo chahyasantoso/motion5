@@ -14,8 +14,7 @@ const TEMPLATES = fileURLToPath(new URL("./templates/", import.meta.url));
 export const NAME_PATTERN = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 /** The usage line of `gerak new`. */
-export const NEW_USAGE =
-  "usage: gerak new <name> [--in <brief>] [--three] [--root dir]; a move is the library's: gerak new-move <id> --in <brief> [--root dir]";
+export const NEW_USAGE = "usage: gerak new <name> [--in <brief>] [--three] [--root dir]";
 
 /** Parsed `gerak new` arguments, or the usage text. */
 export type NewArgs =

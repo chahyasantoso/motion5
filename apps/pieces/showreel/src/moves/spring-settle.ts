@@ -1,65 +1,40 @@
-import { arch, decay, wave, type Pose2d } from "@gerak/core";
-import { defineMove } from "@gerak/moves";
+import { arch, decay, wave, type Pose2d, type Time } from "@gerak/core";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
-export const springSettle = defineMove({
-  id: "spring-settle",
-  role: "enter",
-  description:
-    "Springs in from an offset, a turn, a size and a squash to rest, overshooting and ringing a few times before it settles.",
-  options: {
-    dx: {
-      kind: "number",
-      default: 0,
-      description: "Start this far right of rest, in px; default 0.",
-    },
-    dy: { kind: "number", default: 0, description: "Start this far below rest, in px; default 0." },
-    lift: {
-      kind: "number",
-      default: 0,
-      description: "How far the path bows upward on the way, in px; default 0.",
-    },
-    turn: {
-      kind: "number",
-      default: 0,
-      description: "Start turned this far, in degrees; default 0.",
-    },
-    scale: {
-      kind: "number",
-      min: 0,
-      max: 4,
-      default: 1,
-      description: "Start at this size, 1 being full size; default 1.",
-    },
-    squash: {
-      kind: "number",
-      min: -0.9,
-      max: 0.9,
-      default: 0,
-      description:
-        "Start squashed by this share of its height and widened to match; negative stretches; default 0.",
-    },
-    rings: {
-      kind: "number",
-      min: 0,
-      max: 8,
-      default: 2,
-      description:
-        "Swings past rest and back over the span; 0 eases in with no overshoot; default 2.",
-    },
-    damping: {
-      kind: "number",
-      min: 0.5,
-      max: 12,
-      default: 4,
-      description:
-        "How fast the ringing dies away; low rings to the end, high settles early; default 4.",
-    },
-  },
-  example: { options: { dx: -200, dy: 80, lift: 60, turn: 40, scale: 0.2, rings: 2, damping: 4 } },
-  moments: () => ({}),
-  run: ({ dx, dy, lift, turn, scale, squash, rings, damping }, { progress: p }): Pose2d => {
+/** Options of `springSettle`. */
+export interface SpringSettleOptions {
+  /** Start this far right of rest, in px; default 0. */
+  readonly dx?: number;
+  /** Start this far below rest, in px; default 0. */
+  readonly dy?: number;
+  /** How far the path bows upward on the way, in px; default 0. */
+  readonly lift?: number;
+  /** Start turned this far, in degrees; default 0. */
+  readonly turn?: number;
+  /** Start at this size, 1 being full size; default 1. */
+  readonly scale?: number;
+  /** Start squashed by this share of its height and widened to match; negative stretches; default 0. */
+  readonly squash?: number;
+  /** Swings past rest and back over the span; 0 eases in with no overshoot; default 2. */
+  readonly rings?: number;
+  /** How fast the ringing dies away; low rings to the end, high settles early; default 4. */
+  readonly damping?: number;
+}
+
+/** Springs in from an offset, a turn, a size and a squash to rest, overshooting and ringing a few times before it settles. */
+export function springSettle(options: SpringSettleOptions = {}): (time: Time) => Pose2d {
+  const {
+    dx = 0,
+    dy = 0,
+    lift = 0,
+    turn = 0,
+    scale = 1,
+    squash = 0,
+    rings = 2,
+    damping = 4,
+  } = options;
+  return ({ progress: p }): Pose2d => {
     const fall = decay({ rate: damping });
     const swing = wave({ count: rings, phase: 0.25 });
     const ring = (q: number) => fall(q) * swing(q);
@@ -73,5 +48,5 @@ export const springSettle = defineMove({
       scaleX: s * (1 + squash * 0.8 * left),
       scaleY: s * (1 - squash * left),
     };
-  },
-});
+  };
+}

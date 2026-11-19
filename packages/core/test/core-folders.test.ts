@@ -14,6 +14,8 @@ const FOLDERS = [
   "geometry",
   "measure",
   "path",
+  "principles",
+  "state",
   "time",
   "utility",
 ];

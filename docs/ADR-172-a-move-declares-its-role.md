@@ -1,6 +1,7 @@
 # ADR-172: A move declares its role, and a gate holds it to it
 
 **Status:** Accepted, 2026-11-11
+**Superseded in part by ADR-192:** roles on moves.
 
 ## Context
 

@@ -13,7 +13,6 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMMANDS as LIBRARY_COMMANDS } from "../packages/moves-tools/bin/commands.mjs";
 import { COMMANDS } from "../packages/tools/bin/commands.mjs";
 import { build } from "./build.mjs";
 import { INSTALLABLE_PACKAGES, exportSpecifiers, readManifest } from "./installable-packages.mjs";
@@ -23,7 +22,8 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 /** The core packages needed to make, play and check a 2D piece without modules or the library. */
 export const CORE_INSTALL_SET = ["core", "player", "stage", "dom", "react", "tools"];
 const CORE_PEERS = ["react", "react-dom", "vite", "playwright-core", "typescript"];
-const LIBRARY_INSTALL_SET = [...CORE_INSTALL_SET, "rig", "moves", "moves-tools"];
+/** Commands an earlier package ran; `gerak` must list none and refuse each. */
+const REMOVED_COMMANDS = ["moves", "new-move", "promote", "style"];
 
 /** Every import specifier the installable packages declare, in build order. */
 export function allSpecifiers(directories = INSTALLABLE_PACKAGES, read = readManifest) {
@@ -143,7 +143,7 @@ export default defineStage({
   cast: (m) => ({ box: m.box() }),
   skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
   scene: ({ time, beats }) => ({
-    box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
+    box: slide({ distance: 300, from: "left" })(beats.go.of(time)),
   }),
 });
 `;
@@ -211,7 +211,7 @@ import { drop } from "@gerak/moves";
 export const durationMs = 2000;
 export const clock = () => clockDriver({ duration: durationMs });
 export const scene = (time: Time) => ({
-  box: drop({ distance: 200, squash: 0.2 }, time),
+  box: drop({ distance: 200, squash: 0.2 })(time),
 });
 `;
 
@@ -229,7 +229,7 @@ export function Livecheck() {
 }
 `;
 
-const CHECK_LIVE_MOVES = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+const CHECK_LIVE_DRAG = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { withPage } from "@gerak/tools/page";
 
@@ -255,9 +255,6 @@ try {
         if (msg.type() === "error") errors.push("console: " + msg.text());
       });
       await page.locator('[data-cast="box"]').waitFor();
-      await page.waitForFunction(() =>
-        performance.getEntriesByType("resource").some((entry) => entry.name.includes("built-in-moves")),
-      );
       const literal = page.locator('[data-live-number="0.2"]');
       await literal.waitFor();
       const index = await literal.getAttribute("data-live-index");
@@ -269,7 +266,7 @@ try {
       await page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2);
       await page.mouse.up();
       const dragged = await page.locator(\`[data-live-index="\${index}"]\`).textContent();
-      if (dragged !== "0") throw new Error("expected drop.squash drag to clamp at 0, got " + dragged);
+      if (dragged !== "-0.3") throw new Error("expected the drag to give -0.3, got " + dragged);
     },
   );
   if (errors.length > 0) throw new Error(errors.join("; "));
@@ -283,10 +280,10 @@ try {
 }
 `;
 
-/** Verifies live.html in an installed core+library project resolves `virtual:gerak/built-in-moves` in Chromium. */
-function liveMovesError(project) {
-  writeFileSync(join(project, "check-live-moves.mjs"), CHECK_LIVE_MOVES);
-  const run = spawnSync(process.execPath, ["check-live-moves.mjs"], {
+/** Verifies live.html in an installed project drags a number literal in Chromium. */
+function liveDragError(project) {
+  writeFileSync(join(project, "check-live-drag.mjs"), CHECK_LIVE_DRAG);
+  const run = spawnSync(process.execPath, ["check-live-drag.mjs"], {
     cwd: project,
     encoding: "utf8",
   });
@@ -414,32 +411,6 @@ export default defineStage({
 });
 `;
 
-const STYLED_CARD = `import { defineStyle } from "@gerak/moves";
-
-export const card = defineStyle({
-  name: "styled",
-  description: "Pack check style.",
-  qualities: {},
-  lively: { y: [0.5, 1] },
-  tokens: {},
-  habits: [],
-});
-`;
-
-const STYLED_PIECE = (styleName, quality) => `import { drop } from "@gerak/moves";
-import { defineStage } from "@gerak/stage";
-
-export default defineStage({
-  ${styleName === undefined ? "" : `style: ${JSON.stringify(styleName)},\n  `}design: { box: { y: { fall: ${JSON.stringify(quality)} } } },
-  beats: { fall: [0, 1200], hold: [1200, 2000] },
-  cast: (m) => ({ box: m.box() }),
-  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
-  scene: ({ time, beats }) => ({
-    box: drop({ distance: 200, squash: 0.2 }, beats.fall.of(time)),
-  }),
-});
-`;
-
 function jsonOf(run) {
   try {
     const lines = run.out.trim().split(/\r?\n/);
@@ -469,7 +440,7 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
   );
   const help = sh("npx --no-install gerak --help", dir);
   const missing = missingFromHelp(help.out, Object.keys(COMMANDS));
-  const extra = listedInHelp(help.out, Object.keys(LIBRARY_COMMANDS));
+  const extra = listedInHelp(help.out, REMOVED_COMMANDS);
   check(
     "core-only gerak --help",
     help.code !== 0
@@ -477,10 +448,10 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
       : missing.length > 0
         ? `leaves out ${missing.join(", ")}`
         : extra.length > 0
-          ? `lists library commands: ${extra.join(", ")}`
+          ? `lists removed commands: ${extra.join(", ")}`
           : undefined,
   );
-  for (const command of Object.keys(LIBRARY_COMMANDS)) {
+  for (const command of REMOVED_COMMANDS) {
     const run = sh(`npx --no-install gerak ${command}`, dir);
     check(
       `core-only gerak ${command} refused`,
@@ -493,15 +464,9 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
   check("core-only gerak init", init);
   if (init === undefined) {
     const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
-    const unmentioned = [
-      "moves",
-      "moves-tools",
-      "rig",
-      "rig-three",
-      "physics",
-      "rapier",
-      "three",
-    ].filter((name) => agents.includes(`@gerak/${name}`));
+    const unmentioned = ["moves", "rig", "rig-three", "physics", "rapier", "three"].filter((name) =>
+      agents.includes(`@gerak/${name}`),
+    );
     check(
       "core-only AGENTS.md",
       unmentioned.length > 0 ? `names uninstalled packages: ${unmentioned.join(", ")}` : undefined,
@@ -556,87 +521,6 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
         ? `missing ${absent.join(", ")}`
         : firstErrorLine(framed.out || framed.err),
   );
-}
-
-/** Verifies core plus the library packages: moves catalog, style check, and review design findings. */
-function coreLibraryChecks(dir, tarballs, lock, check) {
-  const installError = installSubset(dir, LIBRARY_INSTALL_SET, tarballs, lock, CORE_PEERS);
-  check("core+library install", installError);
-  if (installError !== undefined) return;
-  const init = initError(dir);
-  check("core+library gerak init", init);
-  if (init === undefined) {
-    const agents = readFileSync(join(dir, "AGENTS.md"), "utf8");
-    const missingDocs = ["rig", "moves", "moves-tools"].filter(
-      (name) => !agents.includes(`node_modules/@gerak/${name}/docs/README.md`),
-    );
-    check(
-      "core+library AGENTS.md",
-      missingDocs.length > 0 ? `omits ${missingDocs.join(", ")}` : undefined,
-    );
-  }
-  const moves = sh("npx --no-install gerak moves --move y:heavy", dir);
-  check(
-    "core+library gerak moves",
-    moves.code === 0 && /\bdrop\b/.test(moves.out)
-      ? undefined
-      : firstErrorLine(moves.out || moves.err),
-  );
-  const parts = sh("npx --no-install gerak moves --parts", dir);
-  check(
-    "core+library gerak moves --parts",
-    parts.code === 0 && /\bcoupling:/.test(parts.out) && /\bsignal:/.test(parts.out)
-      ? undefined
-      : firstErrorLine(parts.out || parts.err),
-  );
-  const missingThree = sh("npx --no-install gerak moves --renderer three", dir);
-  check(
-    "core+library missing renderer refused",
-    missingThree.code !== 0 && /not installed/.test(missingThree.out)
-      ? undefined
-      : firstErrorLine(missingThree.out || missingThree.err),
-  );
-  mkdirSync(join(dir, "pieces", "styled", "src"), { recursive: true });
-  mkdirSync(join(dir, "pieces", "bad", "src"), { recursive: true });
-  writeFileSync(join(dir, "pieces", "styled", "style.ts"), STYLED_CARD);
-  writeFileSync(join(dir, "pieces", "styled", "src", "styled.ts"), STYLED_PIECE("styled", "heavy"));
-  writeFileSync(join(dir, "pieces", "bad", "src", "bad.ts"), STYLED_PIECE(undefined, "light"));
-  const styled = sh("npx --no-install gerak style check styled", dir);
-  check(
-    "core+library gerak style check",
-    styled.code === 0 && styled.out.trim() === "ok"
-      ? undefined
-      : firstErrorLine(styled.out || styled.err),
-  );
-  const newMove = sh("npx --no-install gerak new-move bounce-in --in fresh", dir);
-  check(
-    "core+library gerak new-move",
-    newMove.code === 0 && existsSync(join(dir, "pieces", "fresh", "src", "moves", "bounce-in.ts"))
-      ? undefined
-      : firstErrorLine(newMove.out || newMove.err),
-  );
-  rmSync(join(dir, "pieces", "fresh"), { recursive: true, force: true });
-  const cleanReview = sh("npx --no-install gerak review pieces/styled/src/styled.ts", dir);
-  const cleanJson = jsonOf(cleanReview);
-  check(
-    "core+library gerak review clean",
-    cleanReview.code === 0 && cleanJson?.kind === "reviewed" && cleanJson.findings?.length === 0
-      ? undefined
-      : firstErrorLine(cleanReview.out || cleanReview.err),
-  );
-  const badReview = sh("npx --no-install gerak review pieces/bad/src/bad.ts", dir);
-  const badJson = jsonOf(badReview);
-  const hasDesignFinding =
-    badReview.code !== 0 &&
-    Array.isArray(badJson?.findings) &&
-    badJson.findings.some(
-      (finding) => finding.includes("box.y (fall)") && finding.includes("light wants"),
-    );
-  check(
-    "core+library gerak review design finding",
-    hasDesignFinding ? undefined : `expected design finding, got ${badReview.out || badReview.err}`,
-  );
-  check("core+library live.html loads @gerak/moves", liveMovesError(dir));
 }
 
 /** Runs `gerak init` and `gerak new --three` beside the full install, then `tsc`; the first failure, or undefined. */
@@ -741,20 +625,11 @@ export function packCheck({ keep = false, log = console.log } = {}) {
           : undefined;
     if (helpError !== undefined) failed += 1;
     log(formatResult("gerak --help", helpError));
-    const leftOfLibrary = missingFromHelp(help.out, Object.keys(LIBRARY_COMMANDS));
-    const libraryError =
-      leftOfLibrary.length > 0 ? `help leaves out ${leftOfLibrary.join(", ")}` : undefined;
-    if (libraryError !== undefined) failed += 1;
-    log(formatResult("gerak --help lists moves", libraryError));
-    const anatomy = sh("npx --no-install gerak moves --anatomy", project);
-    const anatomyError =
-      anatomy.code !== 0
-        ? firstErrorLine(anatomy.err || anatomy.out)
-        : anatomy.out.trim() === ""
-          ? "prints nothing"
-          : undefined;
-    if (anatomyError !== undefined) failed += 1;
-    log(formatResult("gerak moves --anatomy", anatomyError));
+    const removed = listedInHelp(help.out, REMOVED_COMMANDS);
+    const removedError =
+      removed.length > 0 ? `help lists removed commands: ${removed.join(", ")}` : undefined;
+    if (removedError !== undefined) failed += 1;
+    log(formatResult("gerak --help lists no removed command", removedError));
     const threeError = threeTscError(work, project);
     if (threeError !== undefined) failed += 1;
     log(formatResult("tsc after new --three", threeError));
@@ -778,7 +653,7 @@ export function packCheck({ keep = false, log = console.log } = {}) {
     if (pagesError !== undefined) failed += 1;
     log(formatResult("pages served from pieces/", pagesError));
     coreOnlyChecks(join(work, "core-only"), files, lock, check);
-    coreLibraryChecks(join(work, "core-library"), files, lock, check);
+    check("live.html drags a number", liveDragError(project));
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);

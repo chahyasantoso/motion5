@@ -1,62 +1,39 @@
-import { wave, type Pose2d } from "@gerak/core";
-import { defineMove } from "@gerak/moves";
+import { wave, type Pose2d, type Time } from "@gerak/core";
 
 const cubicInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
 const cubicOut = (p: number) => 1 - (1 - p) ** 3;
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
-export const launch = defineMove({
-  id: "launch",
-  role: "exit",
-  description:
-    "Crouches against the floor, shivering if asked, then snaps from squash to stretch and shoots straight up out of sight.",
-  options: {
-    height: { kind: "number", min: 0, description: "How far up it travels by the end, in px." },
-    squash: {
-      kind: "number",
-      min: 0,
-      max: 0.9,
-      default: 0.3,
-      description: "Height lost at the deepest crouch, as a share; default 0.3.",
-    },
-    bulge: {
-      kind: "number",
-      min: 0,
-      max: 1.5,
-      default: 0.8,
-      description: "How much the crouch widens, as a share of the squash; default 0.8.",
-    },
-    stretch: {
-      kind: "number",
-      min: 0,
-      max: 2,
-      default: 0.6,
-      description: "Extra height at the snap off the floor, as a share; default 0.6.",
-    },
-    crouch: {
-      kind: "number",
-      min: 0.05,
-      max: 0.9,
-      default: 0.5,
-      description: "Share of the span spent crouching and holding before lift-off; default 0.5.",
-    },
-    tremble: {
-      kind: "number",
-      min: 0,
-      default: 0,
-      description: "Side-to-side shiver at full crouch, in px; default 0.",
-    },
-    flight: {
-      kind: "string",
-      enum: ["decelerate", "accelerate"],
-      default: "decelerate",
-      description:
-        "Whether the leap slows as it rises, like a throw, or speeds up, like a rocket; default decelerate.",
-    },
-  },
-  example: { options: { height: 600, squash: 0.4, crouch: 0.5, tremble: 2 } },
-  moments: ({ crouch }) => ({ liftOff: crouch }),
-  run: ({ height, squash, bulge, stretch, crouch, tremble, flight }, { progress }): Pose2d => {
+/** Options of `launch`. */
+export interface LaunchOptions {
+  /** How far up it travels by the end, in px. */
+  readonly height: number;
+  /** Height lost at the deepest crouch, as a share; default 0.3. */
+  readonly squash?: number;
+  /** How much the crouch widens, as a share of the squash; default 0.8. */
+  readonly bulge?: number;
+  /** Extra height at the snap off the floor, as a share; default 0.6. */
+  readonly stretch?: number;
+  /** Share of the span spent crouching and holding before lift-off; default 0.5. */
+  readonly crouch?: number;
+  /** Side-to-side shiver at full crouch, in px; default 0. */
+  readonly tremble?: number;
+  /** Whether the leap slows as it rises, like a throw, or speeds up, like a rocket; default decelerate. */
+  readonly flight?: "decelerate" | "accelerate";
+}
+
+/** Crouches against the floor, shivering if asked, then snaps from squash to stretch and shoots straight up out of sight. */
+export function launch(options: LaunchOptions): (time: Time) => Pose2d {
+  const {
+    height,
+    squash = 0.3,
+    bulge = 0.8,
+    stretch = 0.6,
+    crouch = 0.5,
+    tremble = 0,
+    flight = "decelerate",
+  } = options;
+  return ({ progress }): Pose2d => {
     if (progress < crouch) {
       const q = progress / crouch;
       const k = cubicInOut(clamp01(q / 0.65));
@@ -75,5 +52,5 @@ export const launch = defineMove({
         : 1 + stretch - stretch * 0.6 * ((f - 0.12) / 0.88);
     const travel = flight === "accelerate" ? 0.55 * f + 0.45 * f * f : 1 - (1 - f) ** 2;
     return { y: -height * travel, scaleY, scaleX: 1 / Math.sqrt(scaleY), anchor: "bottom" };
-  },
-});
+  };
+}
