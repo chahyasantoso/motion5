@@ -312,6 +312,31 @@ describe("sceneBuilder: reading another element", () => {
       .motion(carry({ ms: 300 }));
     expect(poseAt(chain, "ball", 100)).toBeDefined();
   });
+
+  it("carries a part of a list from the box named after the element and the part", () => {
+    const dots = many("dots", 2);
+    const chain = sceneBuilder({
+      length: 2000,
+      layouts: {
+        names: ["row", "wide"],
+        pick: (events) => (events.some(({ name }) => name === "wide") ? "wide" : "row"),
+        rests: {
+          row: { "dots.1": { x: 100, y: 100, width: 200, height: 100 } },
+          wide: { "dots.1": { x: 300, y: 200, width: 400, height: 200 } },
+        },
+      },
+    })
+      .element(dots)
+      .motion(carry({ ms: 200 }));
+    const out = frame(compiled(chain), {
+      time: at(300),
+      events: mergeEvents([{ name: "wide", at: 200 }]),
+    }).targets["dots"];
+    expect([0, 1].map((index) => listPose(out, index, 2))).toEqual([
+      {},
+      { x: -100, y: -50, scaleX: 0.75, scaleY: 0.75 },
+    ]);
+  });
 });
 
 describe("sceneBuilder: refusals", () => {

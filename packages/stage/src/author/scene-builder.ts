@@ -208,11 +208,13 @@ function indexOf(context: MotionContext): { readonly index?: number } {
   return context.index === undefined ? {} : { index: context.index };
 }
 
-/** A motion giving the element's move from its box in the last layout to its box in the next. */
+/** A motion giving the element's move from its box in the last layout to its box in the next.
+ * A part of a list uses its box named `<element>.<index>`. */
 export function carry(options: CarryOptions): Motion<Pose2d, MotionContext> {
   return motion((_time, context?: MotionContext) => {
     const here = need(context, "carry");
-    return here.carry(here.element, options);
+    const member = here.index === undefined ? here.element : `${here.element}.${here.index}`;
+    return here.carry(member, options);
   });
 }
 
