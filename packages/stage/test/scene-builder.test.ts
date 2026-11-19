@@ -255,6 +255,22 @@ describe("stagger", () => {
     expect(poseAt(inside, "a", 1500)?.x).toBe(0.5);
   });
 
+  it("builds each part's motion from its index and plays it in that part's lane", () => {
+    const chain = sceneBuilder({ length: 3000 })
+      .element(word)
+      .motion(stagger((index) => slideX(index + 1), { spread: 1 }).in(run));
+    expect(xs(chain, 500)).toEqual([1, 1, 0]);
+    expect(xs(chain, 1000)).toEqual([1, 2, 3]);
+  });
+
+  it("takes the span of a motion built from its index", () => {
+    const chain = sceneBuilder({ length: 3000 })
+      .element(word)
+      .motion(stagger(() => ramp.in(win), { spread: 1 }));
+    expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
+    expect(xs(chain, 1500)).toEqual([1, 0.5, 0]);
+  });
+
   it("keeps a loop, so its element is ambient, and a take", () => {
     const stage = compiled(
       sceneBuilder({ length: 3000 })

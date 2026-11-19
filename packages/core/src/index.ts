@@ -31,6 +31,7 @@ export { UNTIMED, atProgress, elapsedOf, liveAt, type Clock, type Time } from ".
 export { type Curve, type Signal } from "./time/shapes";
 export { span, type Span } from "./time/span";
 export { motion, type Motion } from "./time/motion";
+export { shared } from "./time/shared";
 export { type Timing } from "./time/timing";
 export { loop, type LoopOptions } from "./time/loop";
 export { chain, type ChainOptions } from "./time/chain";

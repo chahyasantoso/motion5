@@ -71,7 +71,7 @@ export default sceneBuilder({ skins: { dom: { css } } })
 
 - **The chain is a `StageDefinition`.** Beats come from `.in` and `.show`; an element with no motion is static, one with a `.loop` motion ambient.
 - **Layering.** Motions run in list order: a layer motion adds by each field's rule, a `.take()` motion replaces its fields from its beat's start, `.modify(principle)` wraps all above it. `stayWith` loops are refused.
-- `stagger(m, { spread, from? })` plays `m` per part in lanes; `bindEach({ y: (i) => signal })` binds a field per part.
+- `stagger(m, { spread, from? })` plays `m` per part in lanes (`m` may be `(i, n) => motion`); `bindEach({ y: (i) => signal })` binds a field per part.
 - `m.ambient()` makes an element ambient with no period; `.show([a, b])` shows from `a`'s start to `b`'s end.
 
 ## Cast builders and modifiers

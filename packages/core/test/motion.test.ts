@@ -9,6 +9,12 @@ const at = (ms: number, length = 4000): Time => ({
 const progressOf = motion((time: Time) => time.progress);
 
 describe("motion", () => {
+  it("runs the progress inside a span through the ease given to in", () => {
+    const eased = progressOf.in(span(0, 1000), (progress) => progress * progress);
+    expect(eased(at(500, 1000))).toBe(0.25);
+    expect(progressOf.in(span(0, 1000))(at(500, 1000))).toBe(0.5);
+  });
+
   it("answers what the function answers, with the context passed along", () => {
     const echo = motion((time: Time, context?: string) => `${time.progress}:${context}`);
     expect(echo(at(1000), "ctx")).toBe("0.25:ctx");

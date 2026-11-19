@@ -7,6 +7,7 @@ import {
   motion,
   timeAt,
   unreachable,
+  type Ease,
   type Events,
   type LaneOrigin,
   type Lanes,
@@ -145,7 +146,7 @@ function reading(
       period: base.period,
       joins: base.joins,
       isAmbient: base.isAmbient,
-      in: (span: Span) => reading(base.in(span), reads),
+      in: (span: Span, ease?: Ease) => reading(base.in(span, ease), reads),
       loop: (ms: number) => reading(base.loop(ms), reads),
       take: () => reading(base.take(), reads),
       ambient: () => reading(base.ambient(), reads),
@@ -200,13 +201,40 @@ export interface StaggerOptions {
   readonly from?: StaggerFrom | undefined;
 }
 
-/** Plays `inner` on each part of a list element in its own lane; without parts it plays `inner` as it is.
- * Lanes run inside the span of `inner` when it has one. */
+function isMotion(
+  value:
+    | Motion<Pose2d, MotionContext>
+    | ((index: number, count: number) => Motion<Pose2d, MotionContext>),
+): value is Motion<Pose2d, MotionContext> {
+  return "joins" in value;
+}
+
+/** Plays `inner` on each part of a list element in its own lane; without parts it plays as it is.
+ * A function builds each part's motion from `(index, count)`; its traits come from `(0, 1)`. */
 export function stagger(
   inner: Motion<Pose2d, MotionContext>,
   options: StaggerOptions,
+): Motion<Pose2d, MotionContext>;
+export function stagger(
+  inner: (index: number, count: number) => Motion<Pose2d, MotionContext>,
+  options: StaggerOptions,
+): Motion<Pose2d, MotionContext>;
+export function stagger(
+  inner:
+    | Motion<Pose2d, MotionContext>
+    | ((index: number, count: number) => Motion<Pose2d, MotionContext>),
+  options: StaggerOptions,
 ): Motion<Pose2d, MotionContext> {
-  const { span } = inner;
+  const build = isMotion(inner) ? () => inner : inner;
+  const first = build(0, 1);
+  const { span } = first;
+  const parts = new Map<string, Motion<Pose2d, MotionContext>>();
+  const partOf = (index: number, count: number): Motion<Pose2d, MotionContext> => {
+    const key = `${index}/${count}`;
+    const held = parts.get(key) ?? build(index, count);
+    parts.set(key, held);
+    return held;
+  };
   const made = new Map<number, Lanes>();
   const lanesOf = (count: number): Lanes => {
     const held =
@@ -215,17 +243,18 @@ export function stagger(
     made.set(count, held);
     return held;
   };
-  const place = (time: Time): Time =>
-    span === undefined ? time : timeAt(time, span.at(time.progress));
+  const place = (time: Time, own: Span | undefined): Time =>
+    own === undefined ? time : timeAt(time, own.at(time.progress));
   const play = motion((time, context?: MotionContext) => {
     const { index, count } = need(context, "stagger");
-    const lane = index === undefined || count === undefined ? time : lanesOf(count).of(time, index);
-    return inner(place(lane), context);
+    if (index === undefined || count === undefined) return first(place(time, span), context);
+    const part = partOf(index, count);
+    return part(place(lanesOf(count).of(time, index), part.span), context);
   });
   const timed = span === undefined ? play : play.in(span);
-  const taken = inner.joins === "take" ? timed.take() : timed;
-  const marked = inner.isAmbient || inner.period !== undefined ? taken.ambient() : taken;
-  const reads = READS.get(inner);
+  const taken = first.joins === "take" ? timed.take() : timed;
+  const marked = first.isAmbient || first.period !== undefined ? taken.ambient() : taken;
+  const reads = READS.get(first);
   return reads === undefined ? marked : reading(marked, reads);
 }
 

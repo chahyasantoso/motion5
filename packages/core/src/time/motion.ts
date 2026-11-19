@@ -1,4 +1,5 @@
 import { loop } from "./loop";
+import type { Ease } from "../ease/ease";
 import type { Span } from "./span";
 import type { Time } from "./time";
 
@@ -15,8 +16,8 @@ export interface Motion<T, C = unknown> {
   readonly joins: Joins;
   /** Whether it keeps moving with no period, so its element is ambient. */
   readonly isAmbient: boolean;
-  /** Plays over `span`: progress 0 before it, 1 after it. */
-  in(span: Span): Motion<T, C>;
+  /** Plays over `span`: progress 0 before it, 1 after it, and `ease(progress)` inside it when `ease` is given. */
+  in(span: Span, ease?: Ease): Motion<T, C>;
   /** Repeats every `ms`, before `in` is applied. */
   loop(ms: number): Motion<T, C>;
   /** Replaces the fields it sets, from the start of its span on. */
@@ -26,6 +27,7 @@ export interface Motion<T, C = unknown> {
 }
 
 interface Traits {
+  readonly ease: Ease | undefined;
   readonly span: Span | undefined;
   readonly period: number | undefined;
   readonly joins: Joins;
@@ -46,7 +48,7 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
   const cycle = traits.period === undefined ? undefined : loop(traits.period);
   const run = (time: Time, context?: C): T => {
     const cycled = cycle === undefined ? time : cycle.of(time);
-    return fn(traits.span === undefined ? cycled : traits.span.of(cycled), context);
+    return fn(traits.span === undefined ? cycled : traits.span.of(cycled, traits.ease), context);
   };
   return Object.freeze(
     Object.assign(run, {
@@ -54,9 +56,9 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
       period: traits.period,
       joins: traits.joins,
       isAmbient: traits.isAmbient,
-      in(span: Span): Motion<T, C> {
+      in(span: Span, ease?: Ease): Motion<T, C> {
         if (!isSpan(span)) throw new RangeError("motion.in: give a span made by `span` or `beat`.");
-        return build(fn, { ...traits, span });
+        return build(fn, { ...traits, span, ease });
       },
       loop(ms: number): Motion<T, C> {
         loop(ms);
@@ -74,5 +76,11 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
 
 /** Gives `fn` the timing methods; called with no span or period it answers as `fn` does. */
 export function motion<T, C = unknown>(fn: (time: Time, context?: C) => T): Motion<T, C> {
-  return build(fn, { span: undefined, period: undefined, joins: "layer", isAmbient: false });
+  return build(fn, {
+    span: undefined,
+    ease: undefined,
+    period: undefined,
+    joins: "layer",
+    isAmbient: false,
+  });
 }

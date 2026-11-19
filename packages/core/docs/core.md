@@ -29,13 +29,13 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 | `span(fromMs, toMs)` | `Span` | One window; `.of(time, ease?)` clamps outside `[0, 1]`, `.at(share)` gives ms |
 | `chain(lengths, { gap?, overlap? })` | `readonly Span[]` | Windows one after another (`gap` or `overlap`, not both) |
 | `lanes(lengths, stagger, { from?, by?, spacing? })` | `Lanes` | Staggered `.of(time, i)` per item (`from`: `"start" \| "end" \| "center" \| "edges" \| { seed }`) |
-| `loop(periodMs, { yoyo? })` | `Timing` | A repeating cycle (`yoyo: true` reverses odd cycles) |
+| `loop(periodMs, { yoyo? })` | `Timing` | A repeating cycle (`yoyo` reverses odd cycles) |
 | `reversed(time)` / `repeated(time, count)` | `Time` | Wrap any `Time` to play backwards (`1 - p`) or cycle `count` times |
 | `sequence(time, [[span, fn], ...])` | `R` | Phases on one target; a finished phase holds its end |
 | `timeAt(time, ms)` / `withProgress(time, p)` | `Time` | Sample a signal at another moment |
 
-- `motion(fn)` is a `Motion`: `.in(span)` holds its start before and end after, `.loop(ms)` repeats, `.take()` replaces fields, `.ambient()` marks it always moving.
-- `span.of(time, ease)` clamps, so ease values: `mix(a, b, ease.backOut(t.progress))`.
+- `motion(fn)` is a `Motion`: `.in(span, ease?)` holds its start before and end after (eased inside), `.loop(ms)` repeats, `.take()` replaces fields, `.ambient()` marks it always moving.
+- `shared(signal)` runs once per frame however many elements read it.
 
 ## Fields, rests, and combining
 
@@ -75,7 +75,7 @@ const item = (time: Time, i: number): Pose2d => drop(lanes([1, 1, 1], 0.35, { fr
 
 <!-- generated:reference:start -->
 - [fields](./reference/fields.md) (13): `CUSTOM_FIELD`, `POSE_2D_FIELDS`, `VALUE_FIELDS`, `valueField`, `Anchor`, `Combining`, `Pose2d`, `ValueField`, `combine3d`, `lift2d`, `Pose3d`, `combine`, `POSE_2D_NUMBERS`
-- [time](./reference/time.md) (27): `UNTIMED`, `atProgress`, `elapsedOf`, `liveAt`, `Clock`, `Time`, `Curve`, `Signal`, `span`, `Span`, `motion`, `Motion`, `Timing`, `loop`, `LoopOptions`, `chain`, `ChainOptions`, `timeAt`, `sequence`, `Phase`, `lanes`, `LaneOrigin`, `Lanes`, `LanesOptions`, `reversed`, `repeated`, `withProgress`
+- [time](./reference/time.md) (28): `UNTIMED`, `atProgress`, `elapsedOf`, `liveAt`, `Clock`, `Time`, `Curve`, `Signal`, `span`, `Span`, `motion`, `Motion`, `shared`, `Timing`, `loop`, `LoopOptions`, `chain`, `ChainOptions`, `timeAt`, `sequence`, `Phase`, `lanes`, `LaneOrigin`, `Lanes`, `LanesOptions`, `reversed`, `repeated`, `withProgress`
 - [blend](./reference/blend.md) (8): `mix`, `mixAngle`, `mixPoint`, `mixPose`, `keyframes`, `Key`, `mixPoint3d`, `mixPose3d`
 - [ease](./reference/ease.md) (9): `backEase`, `ease`, `springEase`, `Ease`, `EaseDirection`, `spring`, `SpringOptions`, `SpringState`, `springMemory`
 - [envelope](./reference/envelope.md) (5): `wave`, `arch`, `attack`, `decay`, `taper`
