@@ -198,3 +198,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-191 — Shapes and curves — Accepted, 2026-11-18
 - ADR-192 — Principles, plain moves and state — Accepted, 2026-11-19 — superseded in part
 - ADR-193 — Scene builder — Accepted, 2026-11-20
+- ADR-194 — Pages — Accepted, 2026-11-20

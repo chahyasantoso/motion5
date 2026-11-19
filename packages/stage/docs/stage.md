@@ -47,7 +47,10 @@ A group's children are in the piece already. Call `.element(child)` only to give
 
 ## Beats
 
-`beat(name, ms, { at? } | { after, gap? })` is a named window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat.
+- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat.
+- Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
+- Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after.
+- Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 
 ## The chain
 
@@ -92,7 +95,7 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 ## Checking
 
 - `gerak review <file>`: compile errors, jumps, holds, elements that never move, skin rules naming no element, all headless.
-- `gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames.
+- `gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames. Headless review sees scroll motion only from scripted `cues` or `--action scroll:px@ms`.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.
 - Never open another piece's `src` files.
 

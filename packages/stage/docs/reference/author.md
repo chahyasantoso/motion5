@@ -7,9 +7,18 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`ItemContent`** `type ItemContent = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What a list item shows: any content but a readout.
 - **`Path`** `type Path = readonly Cubic2d[] | ((rest: RestReader) => readonly Cubic2d[])`: A stroke's outline: fixed cubics, or cubics drawn from the rest boxes of other members.
 - **`Pivot`** `type Pivot = { x: number; y: number }`: The point in frame px a member turns and scales around.
-- **`beat`** `(name: string, ms: number, place?: BeatPlace): Beat`: A beat `ms` long; `{ at }` starts it at a ms, `{ after, gap }` starts it `gap` ms after another ends.
-- **`Beat`** `type Beat = { name: string; from: number; to: number; of: (time: Time, ease?: Ease) => Time; at: (share: number) => number }`: A named stretch of the piece: a core `Span` that also says what it is called.
-- **`BeatPlace`** `type BeatPlace = { readonly at?: number; } | { readonly after: Beat; readonly gap?: number; }`: Where a beat starts: at a ms (default 0), or after another beat with an optional gap.
+- **`beat`** `(name: string, ms: number, place?: BeatPlace): Beat (+2 overloads)`: A clock beat `ms` long, a triggered beat `{ when, back }`, or a scroll window `{ scroll: [from, to] }`.
+- **`scrollPoint`** `(px: number): ScrollPoint`: A scroll position in `px`, with `.plus(px)`, `.minus(px)` and `.reached`.
+- **`Beat`** `type Beat = { name: string; from: number; to: number; of: (time: Time, ease?: Ease) => Time; at: (share: number) => number }`: A named stretch of the piece in ms: a core `Span` that also says what it is called.
+- **`BeatContext`** `type BeatContext = { events?: Events | undefined; rest?: RestReader | undefined }`: Context a scroll or trigger beat reads when mapping time: events so far and measured rests.
+- **`BeatPlace`** `type BeatPlace = { readonly at?: number; } | { readonly after: Beat; readonly gap?: number; }`: Where a clock beat starts: at a ms (default 0), or after another beat with an optional gap.
+- **`ScrollBeat`** `type ScrollBeat = { kind: "scroll-beat"; name: string; from: ScrollPoint; to: ScrollPoint; of: (time: Time, ease?: Ease, context?: BeatContext) => Time; active: (time: Time, context?: BeatContext) => boolean }`: A named window over scroll position, mapping `from` to `to` into progress 0 to 1.
+- **`ScrollBeatOptions`** `type ScrollBeatOptions = { scroll: readonly [from: ScrollPoint, to: ScrollPoint] }`: Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1.
+- **`ScrollPoint`** `type ScrollPoint = { kind: "scroll-point"; at: (rest?: RestReader) => number; plus: (px: number) => ScrollPoint; minus: (px: number) => ScrollPoint; reached: ScrollReached }`: A scroll position or section edge in px, resolved against measured page rest boxes.
+- **`ScrollReached`** `type ScrollReached = { kind: "scroll-reached"; point: ScrollPoint }`: A trigger condition that fires when scroll passes `point`.
+- **`TriggerBack`** `type TriggerBack = "reverse" | "stay" | "replay"`: What scrolling back past a trigger point does: reverse cleanly, stay at its end, or reset to replay.
+- **`TriggerBeat`** `type TriggerBeat = { kind: "trigger-beat"; name: string; ms: number; when: ScrollReached; back: TriggerBack; of: (time: Time, ease?: Ease, context?: BeatContext) => Time; active: (time: Time, context?: BeatContext) => boolean }`: A named clock beat started when scroll passes `when.point`, with explicit `back` behaviour.
+- **`TriggerPlace`** `type TriggerPlace = { when: ScrollReached; back: TriggerBack }`: Settings of a triggered clock beat: `when` scroll passes a point, and what scrolling `back` does.
 - **`box`** `(name: string, options?: ElementOptions): Element`: A page element styled by CSS.
 - **`group`** `(name: string, children: readonly Element[], options?: ElementOptions): Element`: A container: its pose moves its children, and each child keeps its own motions.
 - **`many`** `(name: string, count: number, options?: ElementOptions): Element (+1 overloads)`: A row of numbered parts: `count` boxes, or one part per item, each made by `make`.
