@@ -16,7 +16,7 @@
 - **`FollowThroughOptions`** `type FollowThroughOptions = { stiffness: number; damping: number }`: `stiffness`: the spring's pull per second squared, above 0; `damping`: its drag per second, 0 or more.
 - **`overlap`** `(options: OverlapOptions): <T>(signal: Signal<T>) => Signal<T>`: The signal `lagMs` later, holding its value at time 0 until then; any pose type.
 - **`OverlapOptions`** `type OverlapOptions = { lagMs: number }`: `lagMs`: how many ms later the signal plays, 0 or more.
-- **`arc`** `(options: ArcBendOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: The signal with a bow added at right angles to its straight travel from progress 0 to 1: 0 at both ends.
+- **`arc`** `(options: ArcBendOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: The signal with a bow added at right angles to its straight travel from progress 0 to 1: 0 at both ends. A signal that ends where it starts plays unchanged.
 - **`arc3d`** `(options: Arc3dOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: The 3D signal with `bend` added, scaled by the arch of its progress: 0 at both ends.
 - **`Arc3dOptions`** `type Arc3dOptions = { bend: { readonly x: number; readonly y: number; readonly z: number; } }`: `bend`: the world-unit offset the path bows by at its middle.
 - **`ArcBendOptions`** `type ArcBendOptions = { bend: number }`: `bend`: px the path bows by at its middle, to the right of its travel on screen when above 0.

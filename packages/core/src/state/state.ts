@@ -18,7 +18,8 @@ export interface StateOptions {
 export interface State<S> extends Signal<S> {
   /** The state before any event. */
   readonly start: S;
-  /** The moments the state changed up to `time`, oldest first; a rule result that `Object.is` the last is no step. */
+  /** The moments the state changed up to `time`, oldest first. The state owns the list and grows it on later
+   * calls, so copy it to keep it. */
   steps(time: Time, events: Events): readonly Step<S>[];
 }
 

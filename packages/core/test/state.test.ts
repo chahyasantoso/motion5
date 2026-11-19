@@ -179,3 +179,29 @@ describe("easeTo", () => {
     expect(signal({ progress: 0, clock: UNTIMED }, events)).toBe(1);
   });
 });
+
+describe("refused settings", () => {
+  const source = state(0, (current: number) => current + 1);
+  const pick = (value: number): number => value;
+
+  it("springTo refuses a stiffness that is not a finite positive number, and a rest that is not positive", () => {
+    for (const options of [
+      { stiffness: Infinity },
+      { stiffness: 0 },
+      { damping: -1 },
+      { rest: Number.NaN },
+      { rest: 0 },
+    ])
+      expect(() => springTo(source, pick, options)).toThrow(RangeError);
+  });
+
+  it("easeTo refuses a negative or non-finite time when it is built, not when it plays", () => {
+    for (const options of [
+      { ms: -50 },
+      { ms: Number.NaN },
+      { ms: { up: 100, down: -1 } },
+      { ms: 100, delayMs: -1 },
+    ])
+      expect(() => easeTo(source, pick, options)).toThrow(/easeTo/);
+  });
+});

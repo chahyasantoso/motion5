@@ -14,7 +14,8 @@ export interface Arc3dOptions {
   readonly bend: { readonly x: number; readonly y: number; readonly z: number };
 }
 
-/** The signal with a bow added at right angles to its straight travel from progress 0 to 1: 0 at both ends. */
+/** The signal with a bow added at right angles to its straight travel from progress 0 to 1: 0 at both ends.
+ * A signal that ends where it starts plays unchanged. */
 export function arc(options: ArcBendOptions): (signal: Signal<Pose2d>) => Signal<Pose2d> {
   const { bend } = options;
   if (!Number.isFinite(bend)) throw new RangeError("arc: bend must be a number.");

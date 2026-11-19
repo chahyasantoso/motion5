@@ -34,8 +34,12 @@ export function springTo<S>(
   const stiffness = options.stiffness ?? 170;
   const damping = options.damping ?? 26;
   const rest = options.rest ?? 0.001;
-  if (!(stiffness > 0) || !(damping >= 0))
-    throw new RangeError("springTo: stiffness must be above 0 and damping at least 0.");
+  if (!(stiffness > 0 && Number.isFinite(stiffness)) || !(damping >= 0 && Number.isFinite(damping)))
+    throw new RangeError(
+      "springTo: stiffness must be a finite number above 0 and damping at least 0.",
+    );
+  if (!(rest > 0 && Number.isFinite(rest)))
+    throw new RangeError("springTo: rest must be a finite number above 0.");
   const changes = changesOf(source, pick);
   let run: Run | undefined;
   return (time, events) => {

@@ -41,6 +41,13 @@ export function easeTo<S>(
   options: EaseToOptions,
 ): Signal<number> {
   const curve = options.ease ?? ease.linear;
+  for (const [name, value] of [
+    ["ms", options.ms],
+    ["delayMs", options.delayMs ?? 0],
+  ] as const)
+    for (const side of [sideOf(value, true), sideOf(value, false)])
+      if (!(side >= 0 && Number.isFinite(side)))
+        throw new RangeError(`easeTo: ${name} must be a finite number of ms, 0 or more.`);
   const changes = changesOf(source, pick);
   let run: Run | undefined;
   return (time, events) => {
