@@ -37,12 +37,10 @@ Public: `.`
 Public: `.`
 
 - `src/`: the one entry point
-- `src/moves/`: defineMove and the built-in moves and modifiers
-- `src/parts/`: definePart: what each part promises
+- `src/moves/`: the built-in moves and modifiers, each a function from options to a function of time
 - `src/parts/coupling/`: poses from an amount or a speed: squashes
 - `src/parts/oscillation/`: the private shake
 - `src/parts/signal/`: values from time and events: follow, noise
-- `src/style/`: how a shape is judged: descriptors, qualities, their ranges
 
 ## packages/physics
 
