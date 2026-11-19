@@ -82,8 +82,12 @@ Read `AGENTS.md` first; every rule there applies.
 
 ### 2. `@gerak/moves` becomes a plain move package
 
-- A move is a function from typed options to a `Signal`, for example `drop(options)`. Defaults live in the function;
-  there is no options schema.
+- A move is a function from typed options to a function of time, for example `drop(options)` returns
+  `(time: Time) => Pose2d`, which is also a `Signal`. Defaults live in the function; there is no options schema. A
+  value the old schema refused still throws a `RangeError` naming the move and the option.
+- A modifier takes its options, then the signal it changes: `overshoot(options)(signal)`, as the principles do.
+- Where a piece reads a move's moment, the move exports a plain function or constant: `hopLandings(options)` and
+  `DROP_LANDING`.
 - Removed:
   - `defineMove` and every move type;
   - roles, `moments` and examples;
@@ -120,7 +124,7 @@ Read `AGENTS.md` first; every rule there applies.
 - A piece's own `defineMove` file becomes a plain factory of the same name. Its `description` becomes the first line
   of the doc comment.
 - A style card a piece used becomes a plain object passed to `cssVariables`.
-- A call `drop(options, time)` becomes `drop(options)(time, events)`. A move with fixed options is built once.
+- A call `drop(options, time)` becomes `drop(options)(time)`. A move with fixed options is built once.
 
 ### 5. State from events
 
