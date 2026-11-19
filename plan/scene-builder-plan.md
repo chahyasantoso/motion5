@@ -88,7 +88,10 @@ export default sceneBuilder({ skins: { dom: { css } } })
 - Run: the compile, frame and check functions the renderers and tools need, renamed only where the old name says
   "stage".
 - Removed: `defineStage`, `CastBuilder`, `Members`, `Meta`, `Modifiers`, `Targets`, `SceneContext`, `Spec`, and every
-  type that exists only for them. The builder compiles to the stage the renderers already read, which stays internal.
+  type that exists only for them. Until the last wave, the builder's value is a `StageDefinition`, so every tool reads
+  it unchanged and each moved piece can be compared exactly. In the last wave the builder compiles straight to the
+  compiled `Stage` the renderers read, which stays internal, and `StageDefinition` and the cast builder go with
+  `defineStage`.
 
 ### 3. One element, one owner
 
@@ -150,7 +153,8 @@ export default sceneBuilder({ skins: { dom: { css } } })
    - Decisions 8, then 2 to 6 in `@gerak/stage` and `@gerak/dom`, with `defineStage` still present.
    - `card`, `catch`, `shop` and `nadi`, and any change to Decision 1 they force.
    - The other pieces and examples, a few per builder.
-   - Delete `defineStage` and its types, then Decision 9.
+   - The builder compiles straight to `Stage`; delete `defineStage`, `StageDefinition`, the cast builder and their
+     types; then Decision 9.
 3. Compare against the baseline. No frame may change. Command output changes only where a name changed.
 4. In the pull request, report:
    - `npm run check` with no `packages/*/dist`.
