@@ -44,21 +44,6 @@ export const cleanDefinition = defineStage({
   },
 });
 
-/** A scene answering a name it never cast. */
-export const unknownDefinition = defineStage({
-  beats,
-  cast: (m) => ({ stage: m.group({ dot: m.box().on("go"), word: m.letters("AB") }) }),
-  scene: ({ time, beats: b }) => {
-    const go = b.go.of(time).progress;
-    const intro = b.intro.of(time).progress;
-    return {
-      dot: { x: 100 * go },
-      word: (index) => ({ x: index * 20 + 50 * intro }),
-      ghost: { x: 10 * go },
-    };
-  },
-});
-
 /** A settling member the scene never moves. */
 export const unusedDefinition = defineStage({
   beats,

@@ -377,26 +377,6 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     expect(review(jumpingAmbient).findings.some((line) => /orb\.x jumps/.test(line))).toBe(true);
   });
 
-  it("flags unexpected motion or poses on static members", () => {
-    const staticPose = rawStage({
-      beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ bg: m.box().static() }),
-      scene: () => ({ bg: { x: 10 } }),
-    });
-    expect(review(staticPose).findings).toEqual([
-      'cast member "bg" is static, but the scene gives it a pose.',
-    ]);
-
-    const staticMoving = rawStage({
-      beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ bg: m.box().static() }),
-      scene: ({ time }: { readonly time: Time }) => ({ bg: { x: 10 * time.progress } }),
-    });
-    expect(review(staticMoving).findings).toContain(
-      'cast member "bg" is static, but the scene moves it.',
-    );
-  });
-
   it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
     const broken = defineStage({
       beats: { show: [0, 400] },

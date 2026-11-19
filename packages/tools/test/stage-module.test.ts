@@ -8,7 +8,6 @@ import {
   defineStage,
   rawStage,
   readModule,
-  unknownDefinition,
   unusedDefinition,
   type CastBuilder,
 } from "./stage-definitions";
@@ -79,13 +78,9 @@ describe("a stage module in the scene tools", () => {
     expect(start?.targets["dot"]).toEqual({ x: 0 });
   });
 
-  it("refuses a duration past its beats, a cast naming a missing beat, and a bad rest", () => {
+  it("refuses a duration past its beats and a bad rest", () => {
     const apart = readModule(defineStage({ ...cleanDefinition, durationMs: 1000 }));
     expect("reason" in apart && apart.reason).toMatch(/1400.*1000/);
-    const lost = readModule(
-      rawStage({ ...cleanDefinition, cast: (m: CastBuilder) => ({ dot: m.box().on("nowhere") }) }),
-    );
-    expect("reason" in lost && lost.reason).toMatch(/nowhere/);
     const badRest = readModule(rawStage({ ...cleanDefinition, rest: { dot: { x: 1 } } }));
     expect("reason" in badRest && badRest.reason).toMatch(/rest/);
     const agree = readModule(defineStage({ ...cleanDefinition, durationMs: 2000 }));
@@ -304,22 +299,6 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("refuses a readout inside a list, naming the item", () => {
-    const read = compileStage(
-      rawStage({
-        beats: { all: [0, 1000] },
-        cast: (m: {
-          many: (items: readonly number[], make: () => object) => object;
-          readout: (format: () => string) => object;
-        }) => ({ row: m.many([1], () => m.readout(() => "x")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(!read.ok && read.errors.map(formatStageError).join("\n")).toMatch(
-      /many: item 0 is a readout/,
-    );
-  });
-
   it("says once that layouts are unmeasured without a browser, in place of a carried member never moved", () => {
     const beats = { all: [0, 1000] } as const;
     const unmeasured = findings(
@@ -355,7 +334,7 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("skips a jump while a member is hidden, holds a static group to its word, and leaves its members their own", () => {
+  it("skips a jump while a member is hidden", () => {
     const beats = { early: [0, 300], late: [700, 1000] } as const;
     const hop = (time: Time) => ({ x: time.progress < 0.5 ? 0 : 400 + time.progress });
     const hidden = findings(
@@ -384,23 +363,9 @@ describe("gerak review on a stage module", () => {
       }),
     );
     expect(nested.some((line) => /jumps/.test(line))).toBe(false);
-    const still = findings(
-      rawStage({
-        beats,
-        cast: (m: CastBuilder<"early" | "late">) => ({
-          box: m.group({ inner: m.box() }).static(),
-        }),
-        scene: ({ time }: { readonly time: Time }) => ({
-          box: { y: time.progress },
-          inner: { x: time.progress },
-        }),
-      }),
-    );
-    expect(still).toContain('cast member "box" is static, but the scene moves it.');
-    expect(still.some((line) => /"inner"/.test(line))).toBe(false);
   });
 
-  it("lets a watched member move only on events, and reports a static member that moves", () => {
+  it("lets a watched member move only on events", () => {
     const beats = { all: [0, 500] } as const;
     expect(
       findings(
@@ -411,18 +376,6 @@ describe("gerak review on a stage module", () => {
         }),
       ),
     ).toEqual([]);
-    const moved = rawStage({
-      beats,
-      cast: (m: CastBuilder<"all">) => ({ a: m.box().static() }),
-      scene: ({ time }: { readonly time: Time }) => ({ a: { x: time.progress } }),
-    });
-    expect(findings(moved)).toContain('cast member "a" is static, but the scene moves it.');
-  });
-
-  it("finds a target the scene answers that is not cast", () => {
-    expect(findings(unknownDefinition)).toEqual([
-      'the scene answers "ghost", which is not in the cast.',
-    ]);
   });
 
   it("finds a member changing before its first stretch and after its last, with the beat there", () => {

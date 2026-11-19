@@ -490,19 +490,8 @@ function stageMemberFindings(
           );
         found.push(...ambientBoundsFindings(stage, reviewed, evaluated, rest));
         break;
-      case "static": {
-        if (reviewed.kind === "item") break;
-        const posed = evaluated.some(
-          ({ targets }) => valueOfReview(targets, reviewed) !== undefined,
-        );
-        if (!posed) break;
-        found.push(
-          unmoved
-            ? `cast member "${reviewed.name}" is static, but the scene gives it a pose.`
-            : `cast member "${reviewed.name}" is static, but the scene moves it.`,
-        );
+      case "static":
         break;
-      }
       default:
         return unreachable(member.expect);
     }
