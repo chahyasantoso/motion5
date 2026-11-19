@@ -13,10 +13,10 @@ write `<pieces>/references/<file>.svg` by hand, each part that moves its own sha
    needs that room, or a part that turns outward is cut off by the frame. It prints what it could not carry; nothing
    else is left out.
 2. **Name the parts by what moves.** Rename `path3806` to `flipperLeft` with one whole-word find-and-replace: the name
-   is the cast key and the skin's `[data-cast]` and `[data-path]` selectors. A rename that misses the skin is a
+   is the `shape("name", ...)` argument and the skin's `[data-cast]` and `[data-path]` selectors. A rename that misses the skin is a
    review finding.
-3. **Set a pivot at each joint,** in frame px: `m.stroke(path).pivot(214, 188)`. The part turns and
-   scales about it. Drop `.static()` from every part you move; the import marks them all static.
+3. **Set a pivot at each joint,** in frame px: `shape("name", path, { pivot: { x: 214, y: 188 } })`. The part turns and
+   scales about it. Add `.motion(...)` after the `.element(...)` of every part you move; a part with no motion is static.
 4. **Keep parts flat.** What carries what is a chain, not a group: a group paints as one layer, so grouping changes
    what is in front. Group only a rigid piece whose parts sit next to each other in paint order, such as an eye's
    white and pupil. `layer` in a value changes paint order while a part moves, such as a leg crossing behind; it does not add, so of two moves giving it the later one wins.

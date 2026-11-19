@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 const CURVES = {
   out: (p: number) => 1 - (1 - p) ** 3,
@@ -15,9 +15,11 @@ export interface PushOptions {
 }
 
 /** Scales from full size to a given size about its centre, as a camera pushing in or pulling out. */
-export function push(options: PushOptions): (time: Time) => Pose2d {
+export function push(options: PushOptions): Motion<Pose2d> {
   const { to, curve = "inOut" } = options;
-  return ({ progress }): Pose2d => ({
-    scale: 1 + (to - 1) * CURVES[curve](progress),
-  });
+  return motion(
+    ({ progress }): Pose2d => ({
+      scale: 1 + (to - 1) * CURVES[curve](progress),
+    }),
+  );
 }

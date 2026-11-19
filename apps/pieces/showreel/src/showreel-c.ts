@@ -2,6 +2,7 @@ import {
   combine,
   ease,
   elapsedOf,
+  motion,
   reversed,
   sequence,
   span,
@@ -9,14 +10,24 @@ import {
   velocity,
   smear,
   trail,
-  type Events,
   type Pose2d,
   type Time,
   anticipation,
   NO_EVENTS,
 } from "@gerak/core";
 import { drop, fade, pop, pulse, rise, slide, squashed, wipe, wobble, smudge } from "@gerak/moves";
-import { defineStage, type Beats, type ListPose, each } from "@gerak/stage";
+import {
+  beat,
+  bind,
+  box,
+  group,
+  many,
+  sceneBuilder,
+  stagger,
+  text,
+  type RestReader,
+  type SceneBuilder,
+} from "@gerak/stage";
 import { ballistic } from "./moves/ballistic";
 import { bump } from "./moves/bump";
 import { dash } from "./moves/dash";
@@ -29,6 +40,7 @@ import { shockwave } from "./moves/shockwave";
 import { springSettle } from "./moves/spring-settle";
 import { squish } from "./moves/squish";
 import { tint } from "./moves/tint";
+import { partOf, withScene } from "./scene-motion";
 
 /** The WEIGHT letters land one by one, the last one late. */
 const LAND = [3880, 4045, 4210, 4375, 4540, 4795] as const;
@@ -130,248 +142,267 @@ const fromCentre = (i: number, count: number): number => Math.abs(i - (count - 1
 const stlIn = (i: number): number => 10230 + fromCentre(i, 6) * 55;
 const stlOut = (i: number): number => 12300 + (2 - fromCentre(i, 6)) * 50;
 
-type ReelBeat =
-  | "origin"
-  | "anticipation"
-  | "weight"
-  | "overlap"
-  | "settle"
-  | "finale"
-  | "appear"
-  | "crouch"
-  | "launch"
-  | "antRise"
-  | "tension"
-  | "antCrouch"
-  | "antLeap"
-  | "weightFall"
-  | "land0"
-  | "land1"
-  | "land2"
-  | "land3"
-  | "land4"
-  | "land5"
-  | "weightExit"
-  | "overlapIn"
-  | "overlapSettle"
-  | "overlapOut"
-  | "dotReturn"
-  | "land"
-  | "burst"
-  | "underline"
-  | "flood"
-  | "collapse"
-  | "matchCut"
-  | "finalLine"
-  | "leap"
-  | "landing"
-  | "finalPush"
-  | "credit";
+/** The span a staggered run of `parts` lanes fills: each lane `length` ms, each starting `step` after the last. */
+const lanesOf = (from: number, length: number, step: number, parts: number) =>
+  span(from, from + length + (parts - 1) * step);
 
-export default defineStage({
-  frame: { width: 1280, height: 720 },
-  beats: {
-    origin: [0, 1000],
-    anticipation: [1000, 3460],
-    weight: [3460, 6150],
-    overlap: [6150, 9450],
-    settle: [9450, 13050],
-    finale: [13050, 15000],
-    appear: [0, 450],
-    crouch: [450, 850],
-    launch: [850, 1450],
-    antRise: [1000, 1700],
-    tension: [1400, 2900],
-    antCrouch: [2250, 2900],
-    antLeap: [2900, 3900],
-    weightFall: [3460, 4795],
-    land0: [LAND[0], LAND[0] + 700],
-    land1: [LAND[1], LAND[1] + 700],
-    land2: [LAND[2], LAND[2] + 700],
-    land3: [LAND[3], LAND[3] + 700],
-    land4: [LAND[4], LAND[4] + 700],
-    land5: [LAND[5], LAND[5] + 700],
-    weightExit: [5550, 6450],
-    overlapIn: [6150, 7150],
-    overlapSettle: [7150, 8700],
-    overlapOut: [8700, 9550],
-    dotReturn: [9450, 9850],
-    land: [9850, 10400],
-    burst: [10230, 11450],
-    underline: [10800, 11300],
-    flood: [11400, 11800],
-    collapse: [12200, 12920],
-    matchCut: [12700, 13050],
-    finalLine: [13050, 13920],
-    leap: [13250, 13900],
-    landing: [13900, 14400],
-    finalPush: [13050, 15000],
-    credit: [14250, 14850],
-  },
-  cast: (m) => ({
-    camera: m.group({
-      flood: m.box().on(["flood", "matchCut"]),
-      trailUp: m.box().on("launch"),
-      ant: m.letters("ANTICIPATE").on(["antRise", "antLeap"]),
-      floor: m.box().on(["weightFall", "weightExit"]),
-      wgt: m.letters("WEIGHT").on(["weightFall", "weightExit"]),
-      dust: m.group({
-        dust0: m.many(3).on("land0"),
-        dust1: m.many(3).on("land1"),
-        dust2: m.many(3).on("land2"),
-        dust3: m.many(3).on("land3"),
-        dust4: m.many(3).on("land4"),
-        dust5: m.many(3).on("land5"),
-      }),
-      overlap: m
-        .group({ bar: m.box().static(), hang: m.letters("OVERLAP") })
-        .on(["overlapIn", "overlapOut"]),
-      settleWord: m
-        .group({ stl: m.letters("SETTLE"), underline: m.box().on(["underline", "collapse"]) })
-        .on(["burst", "collapse"]),
-      line: m
-        .group({ fin: m.words("Timing is everything"), stop: m.box().static() })
-        .on(["finalLine", "finale"]),
-      credit: m.text("CLAUDE · MOTION DESIGN · REEL 2026").on(["credit", "finale"]),
-      ringLaunch: m.box().on("launch"),
-      ringLand: m.box().on("land"),
-      ringBurst: m.box().on("burst"),
-      ringPeriod: m.box().on("landing"),
-      sparks: m.many(8).on(["leap", "landing"]),
-      dot: m.box(),
-    }),
-    vignette: m.box().static(),
-    hud: m
-      .group({
-        label0: m.text("00 — ORIGIN").on("origin").static(),
-        label1: m.text("01 — ANTICIPATION").on("anticipation").static(),
-        label2: m.text("02 — WEIGHT").on("weight").static(),
-        label3: m.text("03 — OVERLAP").on("overlap").static(),
-        label4: m.text("04 — SETTLE").on("settle").static(),
-      })
-      .on(["origin", "settle"]),
+const reel = {
+  origin: beat("origin", 1000),
+  anticipation: beat("anticipation", 2460, { at: 1000 }),
+  weight: beat("weight", 2690, { at: 3460 }),
+  overlap: beat("overlap", 3300, { at: 6150 }),
+  settle: beat("settle", 3600, { at: 9450 }),
+  finale: beat("finale", 1950, { at: 13050 }),
+  launch: beat("launch", 600, { at: 850 }),
+  antRise: beat("antRise", 700, { at: 1000 }),
+  antLeap: beat("antLeap", 1000, { at: 2900 }),
+  weightFall: beat("weightFall", 1335, { at: 3460 }),
+  weightExit: beat("weightExit", 900, { at: 5550 }),
+  overlapIn: beat("overlapIn", 1000, { at: 6150 }),
+  overlapOut: beat("overlapOut", 850, { at: 8700 }),
+  land: beat("land", 550, { at: 9850 }),
+  burst: beat("burst", 1220, { at: 10230 }),
+  underline: beat("underline", 500, { at: 10800 }),
+  flood: beat("flood", 400, { at: 11400 }),
+  collapse: beat("collapse", 720, { at: 12200 }),
+  matchCut: beat("matchCut", 350, { at: 12700 }),
+  finalLine: beat("finalLine", 870, { at: 13050 }),
+  leap: beat("leap", 650, { at: 13250 }),
+  landing: beat("landing", 500, { at: 13900 }),
+  finalPush: beat("finalPush", 1950, { at: 13050 }),
+  credit: beat("credit", 600, { at: 14250 }),
+};
+const land0 = beat("land0", 700, { at: LAND[0] });
+const land1 = beat("land1", 700, { at: LAND[1] });
+const land2 = beat("land2", 700, { at: LAND[2] });
+const land3 = beat("land3", 700, { at: LAND[3] });
+const land4 = beat("land4", 700, { at: LAND[4] });
+const land5 = beat("land5", 700, { at: LAND[5] });
+
+const flood = box("flood");
+const trailUp = box("trailUp");
+const ants = text("ant", "ANTICIPATE", { split: "letters" });
+const floor = box("floor");
+const wgts = text("wgt", "WEIGHT", { split: "letters" });
+const dust0 = many("dust0", 3);
+const dust1 = many("dust1", 3);
+const dust2 = many("dust2", 3);
+const dust3 = many("dust3", 3);
+const dust4 = many("dust4", 3);
+const dust5 = many("dust5", 3);
+const dust = group("dust", [dust0, dust1, dust2, dust3, dust4, dust5]);
+const bar = box("bar");
+const hang = text("hang", "OVERLAP", { split: "letters" });
+const overlap = group("overlap", [bar, hang]);
+const stl = text("stl", "SETTLE", { split: "letters" });
+const underline = box("underline");
+const settleWord = group("settleWord", [stl, underline]);
+const fin = text("fin", "Timing is everything", { split: "words" });
+const stop = box("stop");
+const line = group("line", [fin, stop]);
+const credit = text("credit", "CLAUDE · MOTION DESIGN · REEL 2026");
+const ringLaunch = box("ringLaunch");
+const ringLand = box("ringLand");
+const ringBurst = box("ringBurst");
+const ringPeriod = box("ringPeriod");
+const sparks = many("sparks", 8);
+const dot = box("dot");
+const camera = group("camera", [
+  flood,
+  trailUp,
+  ants,
+  floor,
+  wgts,
+  dust,
+  overlap,
+  settleWord,
+  line,
+  credit,
+  ringLaunch,
+  ringLand,
+  ringBurst,
+  ringPeriod,
+  sparks,
+  dot,
+]);
+const vignette = box("vignette");
+const labels = [
+  text("label0", "00 — ORIGIN"),
+  text("label1", "01 — ANTICIPATION"),
+  text("label2", "02 — WEIGHT"),
+  text("label3", "03 — OVERLAP"),
+  text("label4", "04 — SETTLE"),
+];
+const hud = group("hud", labels);
+const labelBeats = [reel.origin, reel.anticipation, reel.weight, reel.overlap, reel.settle];
+
+/** The dot's flight to the full stop, from its resting box to the stop's. */
+function leapFrom(rest: RestReader) {
+  const dotRest = rest.get("dot");
+  const there = rest.get("stop");
+  const toStop = toward(dotRest, there.x, there.y);
+  const path = (t: Time): Pose2d =>
+    combine([toStop, ballistic({ dx: -(toStop.x ?? 0), dy: -(toStop.y ?? 0), apex: 430 })(t)]);
+  return { dotRest, toStop, path };
+}
+
+const reachOf = (rest: RestReader) => {
+  const dotRest = rest.get("dot");
+  const floodRest = rest.get("flood");
+  return {
+    radius: 1500,
+    x: dotRest.x - (floodRest.x - floodRest.width / 2),
+    y: dotRest.y - (floodRest.y - floodRest.height / 2),
+  };
+};
+
+const dotRun = withScene((time, { events, rest }) => {
+  const { dotRest, toStop, path } = leapFrom(rest);
+  const radius = dotRest.height / 2;
+  const leapSignal = (tm: Time): Pose2d => path(reel.leap.of(tm));
+  const stretch = smear(velocity(leapSignal, time, events), { stretch: 0.25, max: 1.6 }).pose;
+  const landed: Pose2d = { ...toStop, y: (toStop.y ?? 0) - radius * 0.36, scale: 0.64 };
+  const run = sequence<Pose2d>(time, [
+    [span(0, 450), (t) => pop({ overshoot: 0.35 })(t)],
+    [span(450, 1250), (t) => launch({ height: 620, squash: 0.42, stretch: 0.9, crouch: 0.5 })(t)],
+    [span(9450, 9983), (t) => drop({ distance: 620 })(t)],
+    [
+      span(9850, 10150),
+      (t) =>
+        combine([
+          squish({ squash: 0.48, bulge: 0.8, wobbles: 1 })(t),
+          ballistic({ dx: 0, dy: 0, apex: 84 })(t),
+        ]),
+    ],
+    [span(10150, 10230), (t) => squashed({ squash: 0.38 })(ease.cubicOut(t.progress))],
+    [span(10230, 11400), (t) => springSettle({ squash: 0.38, scale: 1.25, rings: 2 })(t)],
+    [span(11400, 11550), (t) => ({ scale: 1 - 0.3 * ease.cubicInOut(t.progress) })],
+    [span(11550, 12300), (t) => springSettle({ scale: 0.7, rings: 2, damping: 5 })(t)],
+    [span(13050, 13250), (t) => squashed({ squash: 0.4 })(ease.cubicInOut(t.progress))],
+    [reel.leap, (t) => combine([path(t), { scale: 1 - 0.36 * ease.cubicInOut(t.progress) }])],
+    [
+      reel.landing,
+      () =>
+        combine([
+          { anchor: "bottom" },
+          landed,
+          squish({ squash: 0.42, wobbles: 1 })(span(13900, 14140).of(time)),
+          ballistic({ dx: 0, dy: 0, apex: 32 })(span(13900, 14140).of(time)),
+          squish({ squash: 0.18, wobbles: 1 })(span(14140, 14400).of(time)),
+        ]),
+    ],
+  ]);
+  return combine([run, stretch]);
+});
+
+/** A ring pinned to a point of the frame, small and faint, then grown by a shockwave. */
+const ringAt = (
+  name: string,
+  at: (dotX: number, dotY: number, radius: number, stopX: number, stopY: number) => Pose2d,
+  grow: number,
+  ms: number,
+  from: number,
+) => [
+  withScene((_time, { rest }) => {
+    const home = rest.get("dot");
+    const there = rest.get("stop");
+    const point = at(home.x, home.y, home.height / 2, there.x, there.y);
+    return combine([toward(rest.get(name), point.x ?? 0, point.y ?? 0), { scale: 0.2 }]);
   }),
-  skins: { dom: { css: domCss } },
-  scene: ({ time, beats: reelBeats, events, rest }) => {
-    const beats: Beats<ReelBeat> = reelBeats;
-    const dotRest = rest.get("dot");
-    const stop = rest.get("stop");
-    const radius = dotRest.height / 2;
-    const toStop = toward(dotRest, stop.x, stop.y);
+  shockwave({ grow }).in(span(from, from + ms)),
+];
 
-    const camera = combine([
-      sequence<Pose2d>(time, [
-        [span(500, 1400), (t) => push({ to: 1.12, curve: "in" })(reversed(t))],
-        [span(1400, 2900), (t) => push({ to: 1.04, curve: "inOut" })(t)],
-        [span(2900, 3500), (t) => push({ to: 1.04, curve: "in" })(reversed(t))],
-        [beats.finalPush, (t) => push({ to: 1.045, curve: "out" })(t)],
-      ]),
-      bump({ dy: 50 })(span(2900, 3700).of(time)),
-      ...LAND.map((at, i) =>
-        jolt({ distance: 3 + i * i * 0.6, count: 6 })(span(at, at + 900).of(time)),
+const dustMotion = (i: number, land: number) =>
+  withScene((time, context) => {
+    const { rest } = context;
+    const k = partOf(context);
+    const letter = rest.get(`wgt.${i}`);
+    const floorRest = rest.get("floor");
+    const floorTop = floorRest.y - floorRest.height / 2;
+    const side = k === 0 ? -1 : k === 1 ? 1 : i % 2 === 1 ? 1 : -1;
+    const size = (0.6 + 0.3 * k) * (i === 5 ? 1.5 : 1);
+    return combine([
+      toward(rest.get(`dust${i}.${k}`), letter.x + side * letter.width * 0.42, floorTop - 4),
+      kick({ dx: side * (40 + k * 28), rise: 10 + 22 * k, fall: k === 2 ? 30 : 9 })(
+        span(land, land + 700).of(time),
       ),
-      bump({ dy: -40 })(span(5750, 6450).of(time)),
-      bump({ turn: 0.9 })(span(6150, 7700).of(time)),
-      jolt({ distance: 6, count: 6 })(span(9850, 10450).of(time)),
-      jolt({ distance: 3, count: 5 })(beats.landing.of(time)),
+      { scale: size, opacity: 0.75 },
     ]);
+  });
 
-    const leapPath = (t: Time): Pose2d =>
-      combine([toStop, ballistic({ dx: -(toStop.x ?? 0), dy: -(toStop.y ?? 0), apex: 430 })(t)]);
-    const leapSignal = (tm: Time): Pose2d => leapPath(beats.leap.of(tm));
-    const stretch = smear(velocity(leapSignal, time, events), { stretch: 0.25, max: 1.6 }).pose;
-    const landed: Pose2d = { ...toStop, y: (toStop.y ?? 0) - radius * 0.36, scale: 0.64 };
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
 
-    const dotMotion = sequence<Pose2d>(time, [
-      [beats.appear, (t) => pop({ overshoot: 0.35 })(t)],
-      [span(450, 1250), (t) => launch({ height: 620, squash: 0.42, stretch: 0.9, crouch: 0.5 })(t)],
-      [span(9450, 9983), (t) => drop({ distance: 620 })(t)],
-      [
-        span(9850, 10150),
-        (t) =>
-          combine([
-            squish({ squash: 0.48, bulge: 0.8, wobbles: 1 })(t),
-            ballistic({ dx: 0, dy: 0, apex: 84 })(t),
-          ]),
-      ],
-      [span(10150, 10230), (t) => squashed({ squash: 0.38 })(ease.cubicOut(t.progress))],
-      [span(10230, 11400), (t) => springSettle({ squash: 0.38, scale: 1.25, rings: 2 })(t)],
-      [span(11400, 11550), (t) => ({ scale: 1 - 0.3 * ease.cubicInOut(t.progress) })],
-      [span(11550, 12300), (t) => springSettle({ scale: 0.7, rings: 2, damping: 5 })(t)],
-      [span(13050, 13250), (t) => squashed({ squash: 0.4 })(ease.cubicInOut(t.progress))],
-      [
-        beats.leap,
-        (t) => combine([leapPath(t), { scale: 1 - 0.36 * ease.cubicInOut(t.progress) }]),
-      ],
-      [
-        beats.landing,
-        () =>
-          combine([
-            { anchor: "bottom" },
-            landed,
-            squish({ squash: 0.42, wobbles: 1 })(span(13900, 14140).of(time)),
-            ballistic({ dx: 0, dy: 0, apex: 32 })(span(13900, 14140).of(time)),
-            squish({ squash: 0.18, wobbles: 1 })(span(14140, 14400).of(time)),
-          ]),
-      ],
-    ]);
-    const dot = combine([
-      dotMotion,
-      stretch,
-      ...[0, 1, 2, 3, 4, 5].map((i) =>
-        pulse({ amount: 0.2 })(span(stlOut(i) + 520, stlOut(i) + 700).of(time)),
-      ),
-      sequence<Pose2d>(time, [
-        [span(11550, 11620), (t) => tint({ name: "ink" })(t)],
-        [span(13034, 13050), (t) => tint({ name: "ink" })(reversed(t))],
-      ]),
-    ]);
-
-    const ringAt = (
-      name: string,
-      x: number,
-      y: number,
-      grow: number,
-      ms: number,
-      from: number,
-    ): Pose2d =>
-      combine([
-        toward(rest.get(name), x, y),
-        { scale: 0.2 },
-        shockwave({ grow })(span(from, from + ms).of(time)),
-      ]);
-
-    const sparks = (k: number): Pose2d => {
-      const lag = (k + 1) * 35;
-      const own = rest.get(`sparks.${k}`);
-      return combine([
-        toward(own, dotRest.x, dotRest.y),
-        leapPath(span(beats.leap.from + lag, beats.leap.to + lag).of(time)),
-        { opacity: 0.7 * (1 - k / 9), scale: 1 - k / 12 },
-      ]);
-    };
-
-    const ant = (i: number): Pose2d => {
-      const up = 1000 + i * 45;
+export default sceneBuilder({
+  frame: { width: 1280, height: 720 },
+})
+  .element(camera)
+  .motion(
+    motion((t: Time) => push({ to: 1.12, curve: "in" })(reversed(t))).in(span(500, 1400)),
+    push({ to: 1.04, curve: "inOut" }).in(span(1400, 2900)).take(),
+    motion((t: Time) => push({ to: 1.04, curve: "in" })(reversed(t)))
+      .in(span(2900, 3500))
+      .take(),
+    push({ to: 1.045, curve: "out" }).in(reel.finalPush).take(),
+    bump({ dy: 50 }).in(span(2900, 3700)),
+    ...LAND.map((at, i) => jolt({ distance: 3 + i * i * 0.6, count: 6 }).in(span(at, at + 900))),
+    bump({ dy: -40 }).in(span(5750, 6450)),
+    bump({ turn: 0.9 }).in(span(6150, 7700)),
+    jolt({ distance: 6, count: 6 }).in(span(9850, 10450)),
+    jolt({ distance: 3, count: 5 }).in(reel.landing),
+  )
+  .element(flood)
+  .show([reel.flood, reel.matchCut])
+  .motion(
+    withScene((time, { rest }) => wipe(reachOf(rest))(time)).in(span(11550, 12150)),
+    withScene((time, { rest }) => wipe(reachOf(rest))(reversed(time)))
+      .in(span(12700, 13050))
+      .take(),
+  )
+  .element(trailUp)
+  .show(reel.launch)
+  .motion(dash({ length: 540, arrive: 0.5, lag: 0.17 }).in(reel.launch))
+  .element(ants)
+  .show([reel.antRise, reel.antLeap])
+  .motion(
+    stagger(springSettle({ dy: 120, turn: 9, rings: 1, damping: 6 }), { spread: 45 / 520 }).in(
+      lanesOf(1000, 520, 45, 10),
+    ),
+    withScene((time, context) => {
+      const i = partOf(context);
       const down = 2250 + i * 35;
       const off = 2900 + i * 38;
-      return combine([
-        springSettle({ dy: 120, turn: 9, rings: 1, damping: 6 })(span(up, up + 520).of(time)),
-        launch({
-          height: 1300,
-          squash: 0.3,
-          bulge: 0.33,
-          stretch: 0.45,
-          crouch: (off - down) / (off + 650 - down),
-          tremble: 1.6,
-          flight: "accelerate",
-        })(span(down, off + 650).of(time)),
-        tint({ name: "charge", curve: "inOut" })(span(down, down + 420).of(time)),
-        smudge({ amount: 5 })(span(off, off + 300).of(time)),
-      ]);
-    };
-
-    const wgt = (i: number): Pose2d => {
+      return launch({
+        height: 1300,
+        squash: 0.3,
+        bulge: 0.33,
+        stretch: 0.45,
+        crouch: (off - down) / (off + 650 - down),
+        tremble: 1.6,
+        flight: "accelerate",
+      })(span(down, off + 650).of(time));
+    }),
+    stagger(tint({ name: "charge", curve: "inOut" }), { spread: 35 / 420 }).in(
+      lanesOf(2250, 420, 35, 10),
+    ),
+    stagger(smudge({ amount: 5 }), { spread: 38 / 300 }).in(lanesOf(2900, 300, 38, 10)),
+  )
+  .element(floor)
+  .show([reel.weightFall, reel.weightExit])
+  .motion(
+    open({ axis: "x" }).in(span(3460, 3910)),
+    motion((t: Time) => open({ axis: "x" })(reversed(t)))
+      .in(span(5750, 6000))
+      .take(),
+    ...LAND.map((at, i) => jolt({ distance: 2 + i, count: 3, sideways: 0 }).in(span(at, at + 450))),
+    bump({ dy: -14 }).in(span(5550, 5950)),
+    tint({ name: "paper" }).in(span(LAND[5], LAND[5] + 700)),
+  )
+  .element(wgts)
+  .show([reel.weightFall, reel.weightExit])
+  .motion(
+    withScene((time, context) => {
+      const i = partOf(context);
       const at = LAND[i] ?? 0;
       const late = Math.abs(i - 2.5) * 30;
       return combine([
@@ -388,131 +419,141 @@ export default defineStage({
         ),
         smudge({ amount: 4 })(span(5750 + late, 6070 + late).of(time)),
       ]);
-    };
-
-    const floorRest = rest.get("floor");
-    const floorTop = floorRest.y - floorRest.height / 2;
-    const floor = combine([
-      sequence<Pose2d>(time, [
-        [span(3460, 3910), (t) => open({ axis: "x" })(t)],
-        [span(5750, 6000), (t) => open({ axis: "x" })(reversed(t))],
-      ]),
-      ...LAND.map((at, i) =>
-        jolt({ distance: 2 + i, count: 3, sideways: 0 })(span(at, at + 450).of(time)),
-      ),
-      bump({ dy: -14 })(span(5550, 5950).of(time)),
-      tint({ name: "paper" })(span(LAND[5], LAND[5] + 700).of(time)),
-    ]);
-
-    const dustOf = (i: number, at: number): ListPose => {
-      const letter = rest.get(`wgt.${i}`);
-      return (k: number): Pose2d => {
-        const side = k === 0 ? -1 : k === 1 ? 1 : i % 2 === 1 ? 1 : -1;
-        const size = (0.6 + 0.3 * k) * (i === 5 ? 1.5 : 1);
-        return combine([
-          toward(rest.get(`dust${i}.${k}`), letter.x + side * letter.width * 0.42, floorTop - 4),
-          kick({ dx: side * (40 + k * 28), rise: 10 + 22 * k, fall: k === 2 ? 30 : 9 })(
-            span(at, at + 700).of(time),
-          ),
-          { scale: size, opacity: 0.75 },
-        ]);
-      };
-    };
-
-    const hang = each(bobs, (bob, i): Pose2d => {
+    }),
+  )
+  .element(dust0)
+  .show(land0)
+  .motion(dustMotion(0, LAND[0]))
+  .element(dust1)
+  .show(land1)
+  .motion(dustMotion(1, LAND[1]))
+  .element(dust2)
+  .show(land2)
+  .motion(dustMotion(2, LAND[2]))
+  .element(dust3)
+  .show(land3)
+  .motion(dustMotion(3, LAND[3]))
+  .element(dust4)
+  .show(land4)
+  .motion(dustMotion(4, LAND[4]))
+  .element(dust5)
+  .show(land5)
+  .motion(dustMotion(5, LAND[5]))
+  .element(overlap)
+  .show([reel.overlapIn, reel.overlapOut])
+  .motion(motion(barPose))
+  .element(hang)
+  .motion(
+    withScene((time, context) => {
+      const bob = bobs[partOf(context)];
+      const length = STRINGS[partOf(context)] ?? 160;
+      if (bob === undefined) return {};
       const swinging = (): Pose2d => {
-        const lag = barX(time) - bob(time, events);
-        const turn = ((lag / ((STRINGS[i] ?? 160) + 50)) * 180) / Math.PI;
+        const lag = barX(time) - bob(time, context.events);
+        const turn = ((lag / (length + 50)) * 180) / Math.PI;
         return { rotation: Math.max(-45, Math.min(45, turn * 0.22)), anchor: "top" };
       };
       return sequence<Pose2d>(time, [
         [span(0, 9536), swinging],
         [span(9536, 9552), () => ({ anchor: "top" })],
       ]);
-    });
-
-    const stl = each(STL_TURN, (turn, i): Pose2d => {
-      const own = rest.get(`stl.${i}`);
-      const back = toward(own, dotRest.x, dotRest.y);
+    }),
+  )
+  .element(settleWord)
+  .show([reel.burst, reel.collapse])
+  .element(stl)
+  .motion(
+    withScene((time, context) => {
+      const i = partOf(context);
+      const { dotRest } = leapFrom(context.rest);
+      const back = toward(context.rest.get(`stl.${i}`), dotRest.x, dotRest.y);
       const dx = back.x ?? 0;
       const dy = back.y ?? 0;
+      const turn = STL_TURN[i] ?? 0;
       return combine([
         springSettle({ dx, dy, lift: 70, turn, scale: 0, rings: 2, damping: 4 })(
           span(stlIn(i), stlIn(i) + 1200).of(time),
         ),
-        smudge({ amount: 4 })(reversed(span(stlIn(i), stlIn(i) + 220).of(time))),
         anticipation({ share: 0.3, amount: 0.15 })((t) =>
           springSettle({ dx, dy, turn: turn * 0.5, scale: 0.05, rings: 0 })(reversed(t)),
         )(span(stlOut(i), stlOut(i) + 520).of(time), NO_EVENTS),
-        smudge({ amount: 3 })(span(stlOut(i) + 200, stlOut(i) + 520).of(time)),
-        tint({ name: "ink" })(span(11700, 11850).of(time)),
       ]);
-    });
-
-    const underline = combine([
-      sequence<Pose2d>(time, [
-        [beats.underline, (t) => open({ axis: "x" })(t)],
-        [span(12100, 12400), (t) => open({ axis: "x" })(reversed(t))],
-      ]),
-      tint({ name: "ink" })(span(11700, 11850).of(time)),
-    ]);
-
-    const floodRest = rest.get("flood");
-    const reach = {
-      radius: 1500,
-      x: dotRest.x - (floodRest.x - floodRest.width / 2),
-      y: dotRest.y - (floodRest.y - floodRest.height / 2),
-    };
-    const flood = sequence<Pose2d>(time, [
-      [span(11550, 12150), (t) => wipe(reach)(t)],
-      [span(12700, 13050), (t) => wipe(reach)(reversed(t))],
-    ]);
-
-    const fin = each([0, 1, 2], (i): Pose2d => {
-      const from = 13050 + i * 110;
-      const ripple = 13900 + (2 - i) * 45;
+    }),
+    stagger(
+      motion((t: Time) => smudge({ amount: 4 })(reversed(t))),
+      { spread: 55 / 220, from: "center" },
+    ).in(lanesOf(10230, 220, 55, 3)),
+    stagger(smudge({ amount: 3 }), { spread: 50 / 320, from: "edges" }).in(
+      lanesOf(12500, 320, 50, 3),
+    ),
+    tint({ name: "ink" }).in(span(11700, 11850)),
+  )
+  .element(underline)
+  .show([reel.underline, reel.collapse])
+  .motion(
+    open({ axis: "x" }).in(reel.underline),
+    motion((t: Time) => open({ axis: "x" })(reversed(t)))
+      .in(span(12100, 12400))
+      .take(),
+    tint({ name: "ink" }).in(span(11700, 11850)),
+  )
+  .element(line)
+  .show([reel.finalLine, reel.finale])
+  .element(fin)
+  .motion(
+    stagger(springSettle({ dy: 130, turn: 5, rings: 1, damping: 5 }), { spread: 110 / 650 }).in(
+      lanesOf(13050, 650, 110, 3),
+    ),
+    stagger(jolt({ distance: 6, count: 2, sideways: 0 }), { spread: 45 / 600, from: "end" }).in(
+      lanesOf(13900, 600, 45, 3),
+    ),
+  )
+  .element(credit)
+  .show([reel.credit, reel.finale])
+  .motion(rise({ distance: 14 }).in(reel.credit), fade().in(reel.credit))
+  .element(ringLaunch)
+  .show(reel.launch)
+  .motion(...ringAt("ringLaunch", (x, y, r) => ({ x, y: y + r }), 11, 600, 850))
+  .element(ringLand)
+  .show(reel.land)
+  .motion(...ringAt("ringLand", (x, y, r) => ({ x, y: y + r }), 8, 550, 9850))
+  .element(ringBurst)
+  .show(reel.burst)
+  .motion(...ringAt("ringBurst", (x, y) => ({ x, y }), 21, 700, 10230))
+  .element(ringPeriod)
+  .show(reel.landing)
+  .motion(...ringAt("ringPeriod", (_x, _y, _r, sx, sy) => ({ x: sx, y: sy + 6 }), 4, 500, 13900))
+  .element(sparks)
+  .show([reel.leap, reel.landing])
+  .motion(
+    withScene((time, context) => {
+      const k = partOf(context);
+      const lag = (k + 1) * 35;
+      const { dotRest, path } = leapFrom(context.rest);
+      const own = context.rest.get(`sparks.${k}`);
       return combine([
-        springSettle({ dy: 130, turn: 5, rings: 1, damping: 5 })(span(from, from + 650).of(time)),
-        jolt({ distance: 6, count: 2, sideways: 0 })(span(ripple, ripple + 600).of(time)),
+        toward(own, dotRest.x, dotRest.y),
+        path(span(reel.leap.from + lag, reel.leap.to + lag).of(time)),
+        { opacity: 0.7 * (1 - k / 9), scale: 1 - k / 12 },
       ]);
-    });
-
-    return {
-      camera,
-      flood,
-      trailUp: dash({ length: 540, arrive: 0.5, lag: 0.17 })(beats.launch.of(time)),
-      ant,
-      floor,
-      wgt,
-      dust: {},
-      dust0: dustOf(0, LAND[0]),
-      dust1: dustOf(1, LAND[1]),
-      dust2: dustOf(2, LAND[2]),
-      dust3: dustOf(3, LAND[3]),
-      dust4: dustOf(4, LAND[4]),
-      dust5: dustOf(5, LAND[5]),
-      overlap: barPose(time),
-      hang,
-      settleWord: {},
-      stl,
-      underline,
-      line: {},
-      fin,
-      credit: combine([
-        rise({ distance: 14 })(beats.credit.of(time)),
-        fade()(beats.credit.of(time)),
-      ]),
-      ringLaunch: ringAt("ringLaunch", dotRest.x, dotRest.y + radius, 11, 600, 850),
-      ringLand: ringAt("ringLand", dotRest.x, dotRest.y + radius, 8, 550, 9850),
-      ringBurst: ringAt("ringBurst", dotRest.x, dotRest.y, 21, 700, 10230),
-      ringPeriod: ringAt("ringPeriod", stop.x, stop.y + 6, 4, 500, 13900),
-      sparks,
-      dot,
-      hud: combine([
-        { opacity: 0.55 },
-        fade()(span(200, 600).of(time)),
-        fade()(reversed(span(12600, 13000).of(time))),
-      ]),
-    };
-  },
-});
+    }),
+  )
+  .element(dot)
+  .motion(
+    dotRun,
+    ...[0, 1, 2, 3, 4, 5].map((i) =>
+      pulse({ amount: 0.2 }).in(span(stlOut(i) + 520, stlOut(i) + 700)),
+    ),
+    tint({ name: "ink" }).in(span(11550, 11620)),
+    motion((t: Time) => tint({ name: "ink" })(reversed(t)))
+      .in(span(13034, 13050))
+      .take(),
+  )
+  .element(vignette)
+  .element(hud)
+  .show([reel.origin, reel.settle])
+  .motion(
+    bind({ opacity: () => 0.55 }),
+    fade().in(span(200, 600)),
+    motion((t: Time) => fade()(reversed(t))).in(span(12600, 13000)),
+  );

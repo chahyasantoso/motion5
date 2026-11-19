@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { squashed } from "../parts/coupling/squashed";
 import { numberOption } from "./options";
 
@@ -73,11 +73,11 @@ export function hopLandings(options: HopOptions): {
 
 /** Lands `bounces + 1` times, each flight lower, and settles at rest. Adds `contact { hits, justHit }`:
  * `justHit` runs 1 at a landing to 0 a fifth of a flight on. */
-export function hop(options: HopOptions): (time: Time) => HopPose {
+export function hop(options: HopOptions): Motion<HopPose> {
   const { height, bounces, decay, squash, dx } = read(options);
   const { flights, shrink, lastFlight, airtime, total } = schedule(bounces, decay);
   const squeeze = squashed({ squash });
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     const time = progress * total;
 
     let start = 0;
@@ -108,5 +108,5 @@ export function hop(options: HopOptions): (time: Time) => HopPose {
       ...squeeze(weight),
       contact: { hits, justHit: weight },
     };
-  };
+  });
 }

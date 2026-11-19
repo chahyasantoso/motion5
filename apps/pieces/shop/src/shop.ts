@@ -2,13 +2,12 @@ import {
   atProgress,
   ease,
   easeTo,
+  motion,
   state,
   type Events,
   type MotionEvent,
-  type Pose2d,
-  type Time,
 } from "@gerak/core";
-import { defineStage, type CastBuilder } from "@gerak/stage";
+import { bind, box, carry, many, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 
 /** A small shop: six products, a price sort, and a detail view that the grid folds into a rail beside. */
 
@@ -103,10 +102,8 @@ const layoutName = (state: ShopState): Layout => {
 /** The layout in force, from the events alone. */
 const layout = (events: Events): Layout => layoutName(shop(atProgress(0), events));
 
-const textOf = <B extends string>(
-  m: CastBuilder<B>,
-  make: (product: (typeof products)[number]) => string,
-) => m.many(products, (product) => m.text(make(product)));
+const textOf = (name: string, make: (product: (typeof products)[number]) => string) =>
+  many(name, products, (product) => text(name, make(product)));
 
 /* The skin: every layout's boxes, written out as CSS. */
 
@@ -182,9 +179,9 @@ const looksOf = (state: ShopState): readonly CardLook[] => {
   });
 };
 
-const box = (place: Place) =>
+const boxCss = (place: Place) =>
   `left: ${place.left}px; top: ${place.top}px; width: ${place.width}px; height: ${place.height}px;`;
-const text = ([left, top, size]: readonly [number, number, number]) =>
+const textCss = ([left, top, size]: readonly [number, number, number]) =>
   `left: ${left}px; top: ${top}px; font-size: ${size}px;`;
 
 const layoutCss = (name: Layout, state: ShopState): string =>
@@ -192,11 +189,11 @@ const layoutCss = (name: Layout, state: ShopState): string =>
     .map((look, index) => {
       const scope = `[data-layout="${name}"] [data-cast`;
       return [
-        `${scope}="tile.${index}"] { ${box(look.tile)} z-index: ${look.z}; }`,
-        `${scope}="swatch.${index}"] { ${box(look.swatch)} z-index: ${look.z + 1}; }`,
-        `${scope}="label.${index}"] { ${text(look.label)} z-index: ${look.z + 2}; }`,
-        `${scope}="price.${index}"] { ${text(look.price)} z-index: ${look.z + 2}; }`,
-        `${scope}="note.${index}"] { ${text(look.note)} z-index: ${look.z + 2}; }`,
+        `${scope}="tile.${index}"] { ${boxCss(look.tile)} z-index: ${look.z}; }`,
+        `${scope}="swatch.${index}"] { ${boxCss(look.swatch)} z-index: ${look.z + 1}; }`,
+        `${scope}="label.${index}"] { ${textCss(look.label)} z-index: ${look.z + 2}; }`,
+        `${scope}="price.${index}"] { ${textCss(look.price)} z-index: ${look.z + 2}; }`,
+        `${scope}="note.${index}"] { ${textCss(look.note)} z-index: ${look.z + 2}; }`,
       ].join("\n");
     })
     .join("\n");
@@ -247,58 +244,51 @@ const noteShown = Array.from({ length: COUNT }, (_, index) =>
 );
 const tickShown = shownBy((current) => current.sorted, { delayMs: 0, inMs: 160, outMs: 160 });
 const backShown = shownBy((current) => current.open !== undefined, detail);
-const parts = ["tile", "swatch", "label", "price", "note"] as const;
-type Part = (typeof parts)[number];
 
-export default defineStage({
-  beats: { browse: [0, 7000] },
+const title = text("title", "Field & Fold");
+const sort = text("sort", "Sort by price", { watch: true });
+const tick = box("tick");
+const tile = many("tile", COUNT, { watch: true });
+const swatch = many("swatch", COUNT);
+const label = textOf("label", (product) => product.name);
+const price = textOf("price", (product) => `$${product.price}`);
+const note = textOf("note", (product) => product.text);
+const back = text("back", "← Back", { watch: true });
+
+const toItsBox = carry({ ms: CARRY_MS, ease: ease.cubicOut, mode: "scale" });
+
+/** Each note shows while its product is open. */
+const noteOpacity = motion((time, context?: MotionContext) => ({
+  opacity: noteShown[context?.index ?? 0]?.(time, context?.events ?? []) ?? 0,
+}));
+
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
+
+export default sceneBuilder({
+  length: 7000,
   layouts: { names: layouts, pick: layout },
-  cast: (m) => ({
-    title: m.text("Field & Fold").static(),
-    sort: m.text("Sort by price").watch().static(),
-    tick: m.box(),
-    tile: m.many(COUNT).watch(),
-    swatch: m.many(COUNT),
-    label: textOf(m, (product) => product.name),
-    price: textOf(m, (product) => `$${product.price}`),
-    note: textOf(m, (product) => product.text),
-    back: m.text("← Back").watch(),
-  }),
-  skins: { dom: { css: domCss } },
+
   cues: [
     { name: "click", at: 1500, target: "sort" },
     { name: "click", at: 1700, target: "sort" },
     { name: "click", at: 3500, target: "tile.2" },
     { name: "click", at: 5500, target: "back" },
   ],
-  scene: ({ time, events, rest, carry: carryBox }) => {
-    const measured = rest.keys().length > 0;
-    const carry = (part: Part, index: number): Pose2d => {
-      if (!measured) return {};
-      return carryBox(`${part}.${index}`, {
-        ms: CARRY_MS,
-        ease: ease.cubicOut,
-        mode: "scale",
-      });
-    };
-    const row = (part: Part) => (index: number) => carry(part, index);
-    const notes = (index: number): Pose2d => {
-      const pose: Pose2d = {
-        ...carry("note", index),
-        opacity: noteShown[index]?.(time, events) ?? 0,
-      };
-      return pose;
-    };
-    return {
-      tick: {
-        opacity: tickShown(time, events),
-      },
-      tile: row("tile"),
-      swatch: row("swatch"),
-      label: row("label"),
-      price: row("price"),
-      note: notes,
-      back: { opacity: backShown(time, events) },
-    };
-  },
-});
+})
+  .element(title)
+  .element(sort)
+  .element(tick)
+  .motion(bind({ opacity: tickShown }))
+  .element(tile)
+  .motion(toItsBox)
+  .element(swatch)
+  .motion(toItsBox)
+  .element(label)
+  .motion(toItsBox)
+  .element(price)
+  .motion(toItsBox)
+  .element(note)
+  .motion(toItsBox, noteOpacity)
+  .element(back)
+  .motion(bind({ opacity: backShown }));

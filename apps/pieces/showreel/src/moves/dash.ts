@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 const inOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
@@ -16,9 +16,9 @@ export interface DashOptions {
 }
 
 /** A straight box drawn as a moving stretch of itself: the head runs out from one end, the tail follows and catches it, leaving nothing. */
-export function dash(options: DashOptions): (time: Time) => Pose2d {
+export function dash(options: DashOptions): Motion<Pose2d> {
   const { length, from = "bottom", arrive = 0.5, lag = 0.2 } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const head = 1 - (1 - clamp01(progress / arrive)) ** 2;
     const tail = inOut(clamp01((progress - lag) / (1 - lag)));
     const shown = Math.max(0, head - tail);
@@ -36,5 +36,5 @@ export function dash(options: DashOptions): (time: Time) => Pose2d {
         return none;
       }
     }
-  };
+  });
 }

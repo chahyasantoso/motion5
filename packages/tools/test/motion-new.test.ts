@@ -12,6 +12,7 @@ import {
   sampleScene,
   scaffold,
 } from "@gerak/tools/scene";
+import { reviewSceneModule } from "../src/scene/review";
 import { parseLiveArgs, startLiveServer } from "../src/page/live";
 import { callerPiecesRoot } from "../src/page/root";
 import { guard } from "../src/pages/live/guard";
@@ -45,11 +46,14 @@ const FILES = [
 ];
 
 describe("gerak new", () => {
-  it("writes one stage module of one beat and one actor, and it samples to rest", async () => {
+  it("writes one scene builder piece of one beat and one static actor, with no review finding", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(STAGE_FILES.map((file) => join(dir, file)));
+    const written = readFileSync(join(dir, "rope-word/src/rope-word.ts"), "utf8");
+    expect(written).toContain("sceneBuilder");
+    expect(written).not.toContain("defineStage");
     const imported = await import(pathToFileURL(join(dir, "rope-word/src/rope-word.ts")).href);
     const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
@@ -58,8 +62,12 @@ describe("gerak new", () => {
       ["title", "actor"],
     ]);
     expect(module.stage?.skins).toEqual({ dom: { kind: "inline", css: "" } });
+    expect(module.stage?.members.map(({ expect: kind }) => kind)).toEqual(["static"]);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
-    expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({ title: {} }));
+    expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({}));
+    expect(
+      reviewSceneModule(module, { hold: 500, jump: 150, turn: 150, ratio: 1.5 }).findings,
+    ).toEqual([]);
   });
 
   it("writes a scene that imports no move", () => {

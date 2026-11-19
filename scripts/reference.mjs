@@ -43,13 +43,17 @@ const CORE_INTROS = {
     "An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time. Reach for it to react to the page or to mark moments for other moves.",
   utility:
     "Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard. Reach for them instead of writing your own.",
+  principles:
+    "The motion principles as signal transforms: squash and stretch, anticipation, follow-through, overlap, arcs, exaggeration and secondary action, each built from its options then given a signal. Reach for them to give a move weight and life.",
+  state:
+    "State from events: a fold of the event log up to a time, and values that spring or ease when the state changes. Reach for it when motion answers hover, press, click or cues.",
 };
 
 /** Stage's groups in learning order and their 1-line reference summaries. */
 const STAGE_INTROS = {
   author:
-    "What a piece is written with: `defineStage`, the cast builders, list poses by index and the scene's context. Reach for it whenever you write a piece.",
-  run: "What renderers and tools run a piece with: `compileStage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.",
+    "What a piece is written with: `sceneBuilder`, its elements, beats and motions. Reach for it whenever you write a piece.",
+  run: "What renderers and tools run a piece with: `compileScene`'s `Stage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.",
   render:
     "Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.",
   dom: "Browser CSS custom property helpers exported from `@gerak/stage/dom` (`cssVariables`, `isTokenName`).",
@@ -369,26 +373,18 @@ export function referenceFiles(generated) {
   return files;
 }
 
-function isThreeD(entry) {
-  return /(rotation3d|stage3d|cubics3d)\.ts$/.test(entry.file) || /3d$/i.test(entry.name);
+/** One index line per group: its reference page and when to read it, without its export names. */
+function indexLineOf(dir, group) {
+  const intro = GROUP_INTROS[dir]?.[group.name] ?? group.intro;
+  const when = intro === "" ? "" : `: ${intro}`;
+  return `- [${group.name}](./reference/${group.name}.md)${when}`;
 }
 
-/** One compact index line per group linking its reference page, splitting 2D and 3D for geometry. */
-function indexLineOf(group) {
-  const names = (entries) => entries.map(({ name }) => `\`${name}\``).join(", ");
-  if (group.name === "geometry") {
-    const twoD = group.entries.filter((entry) => !isThreeD(entry));
-    const threeD = group.entries.filter((entry) => isThreeD(entry));
-    return `- [${group.name}](./reference/${group.name}.md) (${group.entries.length}): 2D ${names(twoD)}; 3D ${names(threeD)}`;
-  }
-  return `- [${group.name}](./reference/${group.name}.md) (${group.entries.length}): ${names(group.entries)}`;
-}
-
-/** The body between a read-whole page's markers: one names-only link line per reference group. */
+/** The body between a read-whole page's markers: one link line per reference group. */
 export function readWholeBody(generated, dir) {
   const found = generated.packages.find((candidate) => candidate.dir === dir);
   const groups = found === undefined ? [] : found.groups;
-  return groups.map(indexLineOf).join("\n");
+  return groups.map((group) => indexLineOf(dir, group)).join("\n");
 }
 
 /** The page with each marker pair's inside replaced; undefined when the pairs do not match. */

@@ -51,7 +51,7 @@ export const OWNERS = {
     "the built-in moves and modifiers, each a function from options to a function of time",
   "packages/player/src": "scene player, manual driver",
   "packages/stage/src": "stage entrypoint",
-  "packages/stage/src/author": "defineStage, cast builders, scene types",
+  "packages/stage/src/author": "sceneBuilder, elements, beats, and the compile input",
   "packages/stage/src/dom": "DOM tokens",
   "packages/stage/src/render": "strokes and morphs for renderers",
   "packages/stage/src/run": "compile, frame, check, visibility, carry",

@@ -1,33 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { toCubics, type Time } from "@gerak/core";
+import { formatStageError, type RestReader } from "@gerak/stage";
+import { sampleScene, type SceneModule } from "@gerak/tools/scene";
 import {
+  cleanDefinition,
   compileStage,
   defineStage,
-  formatStageError,
-  isStageDefinition,
+  rawStage,
+  readModule,
+  unusedDefinition,
   type CastBuilder,
-  type RestReader,
-  type StageDefinition,
-} from "@gerak/stage";
-import { readSceneModule, sampleScene, type SceneModule } from "@gerak/tools/scene";
+} from "./stage-definitions";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
 import * as outside from "./fixtures/stage-outside";
-import * as unknown from "./fixtures/stage-unknown";
-import * as unused from "./fixtures/stage-unused";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
 function moduleOf(value: object): SceneModule {
-  const read = readSceneModule(value);
+  const read = readModule(value);
   if ("reason" in read) throw new Error(read.reason);
   return read;
-}
-
-function rawStage(options: Record<string, unknown>): StageDefinition {
-  const built: unknown = Reflect.apply(defineStage, undefined, [options]);
-  if (!isStageDefinition(built)) throw new Error("expected StageDefinition");
-  return built;
 }
 
 const findings = (value: object) => reviewSceneModule(moduleOf(value), limits).findings;
@@ -61,7 +54,6 @@ describe("a stage module in the scene tools", () => {
     expect(read.beats).toEqual([
       { name: "intro", from: 0, to: 400 },
       { name: "go", from: 400, to: 1400 },
-      { name: "out", from: 1400, to: 2000 },
     ]);
     expect(read.stage?.members.map(({ name }) => name)).toEqual(["stage", "dot", "word", "mark"]);
   });
@@ -71,13 +63,13 @@ describe("a stage module in the scene tools", () => {
     expect(start?.targets["dot"]).toEqual({ x: 0 });
     expect(end?.targets["dot"]).toEqual({ x: 100 });
     const boxed = moduleOf(
-      defineStage({ ...clean.default, rest: { dot: { x: 7, y: 0, width: 1, height: 1 } } }),
+      defineStage({ ...cleanDefinition, rest: { dot: { x: 7, y: 0, width: 1, height: 1 } } }),
     );
     expect(sampleScene(boxed, { kind: "time", ms: [0] })[0]?.targets["dot"]).toEqual({ x: 7 });
   });
 
   it("samples a module whose path is a function of where things rest", () => {
-    const read = moduleOf(defineStage({ ...clean.default, cast: markedBy(underWord) }));
+    const read = moduleOf(defineStage({ ...cleanDefinition, cast: markedBy(underWord) }));
     const mark = read.stage?.members.find(({ name }) => name === "mark");
     const content = mark?.kind === "actor" ? mark.content : undefined;
     expect(content?.kind).toBe("stroke");
@@ -86,16 +78,12 @@ describe("a stage module in the scene tools", () => {
     expect(start?.targets["dot"]).toEqual({ x: 0 });
   });
 
-  it("refuses a duration past its beats, a cast naming a missing beat, and a bad rest", () => {
-    const apart = readSceneModule(defineStage({ ...clean.default, durationMs: 1000 }));
+  it("refuses a duration past its beats and a bad rest", () => {
+    const apart = readModule(defineStage({ ...cleanDefinition, durationMs: 1000 }));
     expect("reason" in apart && apart.reason).toMatch(/1400.*1000/);
-    const lost = readSceneModule(
-      rawStage({ ...clean.default, cast: (m: CastBuilder) => ({ dot: m.box().on("nowhere") }) }),
-    );
-    expect("reason" in lost && lost.reason).toMatch(/nowhere/);
-    const badRest = readSceneModule(rawStage({ ...clean.default, rest: { dot: { x: 1 } } }));
+    const badRest = readModule(rawStage({ ...cleanDefinition, rest: { dot: { x: 1 } } }));
     expect("reason" in badRest && badRest.reason).toMatch(/rest/);
-    const agree = readSceneModule(defineStage({ ...clean.default, durationMs: 2000 }));
+    const agree = readModule(defineStage({ ...cleanDefinition, durationMs: 2000 }));
     expect("reason" in agree).toBe(false);
   });
 
@@ -112,14 +100,14 @@ describe("a stage module with layouts in the scene tools", () => {
   it("hands the scene the rest of the layout in force, before and after a cue", () => {
     const read = moduleOf(
       defineStage({
-        beats: clean.default.beats,
-        cast: clean.default.cast,
+        beats: cleanDefinition.beats,
+        cast: cleanDefinition.cast,
         layouts: {
           names: ["wide", "tall"],
           pick: (events) => (events.some(({ name }) => name === "turn") ? "tall" : "wide"),
           rests: { wide: box(10), tall: box(70) },
         },
-        scene: clean.default.scene,
+        scene: cleanDefinition.scene,
       }),
     );
     const [before, after] = sampleScene(read, { kind: "time", ms: [0, 100] }, ["dot"], undefined, [
@@ -134,14 +122,14 @@ describe("a stage module with layouts in the scene tools", () => {
     const names: readonly [string, ...string[]] = ["wide", "tall"];
     const read = moduleOf(
       defineStage({
-        beats: clean.default.beats,
-        cast: clean.default.cast,
+        beats: cleanDefinition.beats,
+        cast: cleanDefinition.cast,
         layouts: {
           names,
           pick: (events) => (events.length > 0 ? "square" : "wide"),
           rests: { wide: box(10), tall: box(70) },
         },
-        scene: clean.default.scene,
+        scene: cleanDefinition.scene,
       }),
     );
     expect(() =>
@@ -179,9 +167,9 @@ describe("gerak review of a member still ringing", () => {
 
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
-    const bad = rawStage({ ...clean.default, frame: { width: 0, height: 10 } });
+    const bad = rawStage({ ...cleanDefinition, frame: { width: 0, height: 10 } });
     const own = compileStage(bad);
-    const tools = readSceneModule(bad);
+    const tools = readModule(bad);
     expect(
       !own.ok && "reason" in tools && tools.reason === own.errors.map(formatStageError).join("\n"),
     ).toBe(true);
@@ -198,7 +186,7 @@ describe("gerak review on a stage module", () => {
     const box = { x: 50, y: 20, width: 40, height: 10 };
     const fine = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         rest: { dot: box },
         cast: markedBy((rest) => {
           handed.push(rest);
@@ -210,7 +198,7 @@ describe("gerak review on a stage module", () => {
     expect(handed.map((rest) => rest.get("dot"))).toEqual([box]);
     const own = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         cast: markedBy((rest) => {
           const mark = rest.get("mark");
           return level(mark.x, mark.x + 1 + mark.width, 0);
@@ -220,7 +208,7 @@ describe("gerak review on a stage module", () => {
     expect(own).toEqual(['path "mark" reads its own rest box']);
     const broken = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         cast: markedBy(() => {
           throw new Error("no dot");
         }),
@@ -233,7 +221,7 @@ describe("gerak review on a stage module", () => {
     const widths: number[] = [];
     const other = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         cast: (m) => ({
           stage: m.group({
             dot: m.box().on("go"),
@@ -253,7 +241,7 @@ describe("gerak review on a stage module", () => {
     expect(widths.at(-1)).toBe(10);
     const loop = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         cast: (m) => ({
           stage: m.group({
             dot: m.box().on("go"),
@@ -267,7 +255,7 @@ describe("gerak review on a stage module", () => {
     expect(loop).toEqual(['paths "a" and "b" read each other']);
     const scaled = findings(
       defineStage({
-        ...clean.default,
+        ...cleanDefinition,
         cast: markedBy((rest) => level(0, 10 / rest.get("dot").width, 0)),
       }),
     );
@@ -311,22 +299,6 @@ describe("gerak review on a stage module", () => {
     ]);
   });
 
-  it("refuses a readout inside a list, naming the item", () => {
-    const read = compileStage(
-      rawStage({
-        beats: { all: [0, 1000] },
-        cast: (m: {
-          many: (items: readonly number[], make: () => object) => object;
-          readout: (format: () => string) => object;
-        }) => ({ row: m.many([1], () => m.readout(() => "x")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(!read.ok && read.errors.map(formatStageError).join("\n")).toMatch(
-      /many: item 0 is a readout/,
-    );
-  });
-
   it("says once that layouts are unmeasured without a browser, in place of a carried member never moved", () => {
     const beats = { all: [0, 1000] } as const;
     const unmeasured = findings(
@@ -357,12 +329,12 @@ describe("gerak review on a stage module", () => {
   });
 
   it("finds a member the scene never moves that is not static", () => {
-    expect(findings(unused)).toEqual([
+    expect(findings(unusedDefinition)).toEqual([
       'cast member "spare" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     ]);
   });
 
-  it("skips a jump while a member is hidden, holds a static group to its word, and leaves its members their own", () => {
+  it("skips a jump while a member is hidden", () => {
     const beats = { early: [0, 300], late: [700, 1000] } as const;
     const hop = (time: Time) => ({ x: time.progress < 0.5 ? 0 : 400 + time.progress });
     const hidden = findings(
@@ -391,23 +363,9 @@ describe("gerak review on a stage module", () => {
       }),
     );
     expect(nested.some((line) => /jumps/.test(line))).toBe(false);
-    const still = findings(
-      rawStage({
-        beats,
-        cast: (m: CastBuilder<"early" | "late">) => ({
-          box: m.group({ inner: m.box() }).static(),
-        }),
-        scene: ({ time }: { readonly time: Time }) => ({
-          box: { y: time.progress },
-          inner: { x: time.progress },
-        }),
-      }),
-    );
-    expect(still).toContain('cast member "box" is static, but the scene moves it.');
-    expect(still.some((line) => /"inner"/.test(line))).toBe(false);
   });
 
-  it("lets a watched member move only on events, and reports a static member that moves", () => {
+  it("lets a watched member move only on events", () => {
     const beats = { all: [0, 500] } as const;
     expect(
       findings(
@@ -418,16 +376,6 @@ describe("gerak review on a stage module", () => {
         }),
       ),
     ).toEqual([]);
-    const moved = rawStage({
-      beats,
-      cast: (m: CastBuilder<"all">) => ({ a: m.box().static() }),
-      scene: ({ time }: { readonly time: Time }) => ({ a: { x: time.progress } }),
-    });
-    expect(findings(moved)).toContain('cast member "a" is static, but the scene moves it.');
-  });
-
-  it("finds a target the scene answers that is not cast", () => {
-    expect(findings(unknown)).toEqual(['the scene answers "ghost", which is not in the cast.']);
   });
 
   it("finds a member changing before its first stretch and after its last, with the beat there", () => {

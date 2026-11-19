@@ -2,7 +2,19 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { type FrameSource, type StageElement, type StageEvent, type StageStyle } from "@gerak/dom";
-import { compileStage, defineStage } from "@gerak/stage";
+// The renderer is tested on compiled stages, built with the stage package's own compiler input.
+import { compileStage } from "../../stage/src/run/compile";
+import { defineStage, type StageDefinition } from "../../stage/src/author/stage";
+import type { Members } from "../../stage/src/author/cast";
+import type { Stage as CompiledStage } from "@gerak/stage";
+
+function staged<B extends string, M extends Members<B>, L extends string>(
+  def: StageDefinition<B, M, L>,
+): CompiledStage {
+  const result = compileStage(def);
+  if (!result.ok) throw new Error("Expected the stage to compile.");
+  return result.stage;
+}
 import { Stage, type StageProps } from "@gerak/react";
 
 class FakeStyle implements StageStyle {
@@ -104,16 +116,20 @@ describe("<Stage />", () => {
     const drivers: unknown[] = [];
     const options = { frames: NO_FRAMES, onDriver: (driver: unknown) => drivers.push(driver) };
 
-    const stageOne = defineStage({
-      beats: { intro: [0, 1000] },
-      cast: (m) => ({ card: m.box() }),
-      scene: () => ({ card: { x: 10 } }),
-    });
-    const stageTwo = defineStage({
-      beats: { intro: [0, 1000] },
-      cast: (m) => ({ card: m.box() }),
-      scene: () => ({ card: { x: 75 } }),
-    });
+    const stageOne = staged(
+      defineStage({
+        beats: { intro: [0, 1000] },
+        cast: (m) => ({ card: m.box() }),
+        scene: () => ({ card: { x: 10 } }),
+      }),
+    );
+    const stageTwo = staged(
+      defineStage({
+        beats: { intro: [0, 1000] },
+        cast: (m) => ({ card: m.box() }),
+        scene: () => ({ card: { x: 75 } }),
+      }),
+    );
 
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
@@ -155,11 +171,13 @@ describe("<Stage />", () => {
         scene: () => ({ card: { y: 5 } }),
       }),
     );
-    const second = defineStage({
-      beats: { intro: [0, 2000] },
-      cast: (m) => ({ card: m.box().watch(), extra: m.box() }),
-      scene: () => ({ extra: { x: 20 } }),
-    });
+    const second = staged(
+      defineStage({
+        beats: { intro: [0, 2000] },
+        cast: (m) => ({ card: m.box().watch(), extra: m.box() }),
+        scene: () => ({ extra: { x: 20 } }),
+      }),
+    );
     if (!first.ok) throw new Error("Expected first stage to compile.");
 
     let renderer: ReturnType<typeof create> | undefined;

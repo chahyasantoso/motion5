@@ -2,7 +2,7 @@
 
 Who is on stage, when each member shows, and how scenes compile and evaluate cleanly. Pages for specialized topics are listed below.
 
-- [stage.md](./stage.md): read whole before making a piece — `defineStage`, cast builders, skins, and traps.
+- [stage.md](./stage.md): read whole before making a piece — `sceneBuilder`, elements, beats, motions, skins, and traps.
 - [Events](./agent-events.md), [layout](./agent-layout.md) and [live inputs](./agent-inputs.md).
 - [Reference](./reference/README.md): every export of `@gerak/stage`, `@gerak/stage/render` and `@gerak/stage/dom` with its signature, one page per reader.
 

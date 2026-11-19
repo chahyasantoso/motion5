@@ -30,6 +30,17 @@ const SHAPES = {
   constant: (name: string) => {
     expect(Reflect.get(core, name), name).toEqual({ kind: "untimed" });
   },
+  motion: (name: string, args: readonly unknown[]) => {
+    const made = call(name, ...args);
+    if (typeof made !== "function") throw new TypeError(name + " is not callable");
+    expect(Reflect.apply(made, undefined, [time]), name).toBe(0.5);
+    expect(made, name).toHaveProperty("joins", "layer");
+  },
+  wrapper: (name: string) => {
+    const made = call(name, (t: core.Time) => t.progress);
+    if (typeof made !== "function") throw new TypeError(name + " is not callable");
+    expect(Reflect.apply(made, undefined, [time, core.NO_EVENTS]), name).toBe(0.5);
+  },
   picker: (name: string, args: readonly unknown[]) => {
     expect(call(name, ...args), name).toBe(0.5);
   },
@@ -55,6 +66,8 @@ const ALLOWED: Readonly<Record<string, Row>> = {
   atProgress: { shape: "constructor", args: [0.5] },
   elapsedOf: { shape: "reader", args: [time.clock] },
   UNTIMED: { shape: "constant" },
+  motion: { shape: "motion", args: [(t: core.Time) => t.progress] },
+  shared: { shape: "wrapper" },
   sequence: { shape: "picker", args: [time, [[core.span(0, 1000), (t: core.Time) => t.progress]]] },
 };
 

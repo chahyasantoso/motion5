@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { numberOption } from "./options";
 
 const PEAK_SHARE = 0.6;
@@ -10,18 +10,18 @@ export interface PopOptions {
 }
 
 /** Grows from nothing past full size, then settles to exactly full size. */
-export function pop(options: PopOptions = {}): (time: Time) => Pose2d {
+export function pop(options: PopOptions = {}): Motion<Pose2d> {
   const overshoot = numberOption("pop", "overshoot", options.overshoot, {
     default: 0.2,
     min: 0,
     max: 1,
   });
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     if (progress < PEAK_SHARE) {
       const grow = progress / PEAK_SHARE;
       return { scale: (1 + overshoot) * (1 - (1 - grow) ** 2) };
     }
     const settle = (progress - PEAK_SHARE) / (1 - PEAK_SHARE);
     return { scale: 1 + overshoot * (1 - settle) ** 2 };
-  };
+  });
 }

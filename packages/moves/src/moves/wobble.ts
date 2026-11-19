@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { shaken } from "../parts/oscillation/shaken";
 import { numberOption } from "./options";
 
@@ -11,9 +11,9 @@ export interface WobbleOptions {
 }
 
 /** Turns back and forth, starting hard and dying away. */
-export function wobble(options: WobbleOptions): (time: Time) => Pose2d {
+export function wobble(options: WobbleOptions): Motion<Pose2d> {
   const angle = numberOption("wobble", "angle", options.angle, { min: 0 });
   const count = numberOption("wobble", "count", options.count, { default: 3, min: 1, max: 16 });
   const sway = shaken({ count });
-  return ({ progress }) => ({ rotation: angle * sway(progress) });
+  return motion(({ progress }) => ({ rotation: angle * sway(progress) }));
 }

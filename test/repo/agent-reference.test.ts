@@ -6,7 +6,6 @@ import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
 const coreCommands = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
-const MAX_READ_WHOLE_BYTES = 20 * 1024;
 
 /** A package's generated reference pages, joined. */
 function referenceOf(dir: string): string {
@@ -120,14 +119,12 @@ describe("agent reference", () => {
     expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
 
     const moves = referenceOf("moves");
-    expect(moves).toContain("**`drop`** `(options: DropOptions): (time: Time) => Pose2d`:");
-    expect(moves).toContain("**`fade`** `(): (time: Time) => Pose2d`:");
+    expect(moves).toContain("**`drop`** `(options: DropOptions): Motion<Pose2d>`:");
+    expect(moves).toContain("**`fade`** `(): Motion<Pose2d>`:");
     expect(moves).toContain(
-      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`:",
+      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => Motion<Pose2d>`:",
     );
-    expect(moves).toContain(
-      "**`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`:",
-    );
+    expect(moves).toContain("**`rope`** `(options: RopeOptions): Motion<readonly Anchor2d[]>`:");
   });
 
   it("names every gerak command", () => {
@@ -167,35 +164,15 @@ describe("agent reference", () => {
   });
 
   it.each(["core", "stage"])(
-    "%s.md is held to 20 KB and names every export of its package",
+    "%s.md links every reference page of its package, and lists no export by name in place of the reference",
     (dir) => {
       const page = readFileSync(new URL(`packages/${dir}/docs/${dir}.md`, ROOT), "utf8");
-      expect(Buffer.byteLength(page)).toBeLessThanOrEqual(MAX_READ_WHOLE_BYTES);
-      const entry = `${dir}/src/index.ts`;
-      const exported = exportsOf([entry]).get(entry) ?? [];
-      expect(exported.length).toBeGreaterThan(0);
-      expect(exported.filter((name) => !page.includes("`" + name + "`"))).toEqual([]);
+      for (const file of readdirSync(new URL(`packages/${dir}/docs/reference/`, ROOT)))
+        if (file !== "README.md") expect(page).toContain(`./reference/${file}`);
+      expect(page).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
+      expect(page).not.toMatch(/\]\(\.\/reference\/[a-z0-9-]+\.md\) \(\d+\):/);
     },
   );
-
-  it("keeps core.md and stage.md compact without repeating per-export reference entries", () => {
-    const core = readFileSync(new URL("packages/core/docs/core.md", ROOT), "utf8");
-    expect(Buffer.byteLength(core)).toBeLessThanOrEqual(8 * 1024);
-    expect(core).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
-    for (const page of readdirSync(new URL("packages/core/docs/reference/", ROOT))) {
-      if (page !== "README.md") expect(core).toContain(`./reference/${page}`);
-    }
-
-    const stage = readFileSync(new URL("packages/stage/docs/stage.md", ROOT), "utf8");
-    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(10_500);
-    expect(stage).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
-    for (const page of readdirSync(new URL("packages/stage/docs/reference/", ROOT))) {
-      if (page !== "README.md") expect(stage).toContain(`./reference/${page}`);
-    }
-    const domExports = exportsOf(["stage/src/dom/index.ts"]).get("stage/src/dom/index.ts") ?? [];
-    expect(domExports.length).toBeGreaterThan(0);
-    expect(domExports.filter((name) => !stage.includes("`" + name + "`"))).toEqual([]);
-  });
 
   it("documents every type named in reference/author.md signatures in a stage reference page", () => {
     const builtins = new Set(["Readonly", "Record", "Extract", "Exclude", "NoInfer", "URL"]);

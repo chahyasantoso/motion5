@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 /** Options of `kick`. */
 export interface KickOptions {
@@ -13,10 +13,10 @@ export interface KickOptions {
 }
 
 /** A speck kicked up from a contact: flies out sideways and up, slowing, sinks again, and shrinks and fades away. */
-export function kick(options: KickOptions): (time: Time) => Pose2d {
+export function kick(options: KickOptions): Motion<Pose2d> {
   const { dx, rise = 20, fall = 10, shrink = 0.75 } = options;
-  return ({ progress: p }): Pose2d => {
+  return motion(({ progress: p }): Pose2d => {
     const out = 1 - (1 - p) ** 3;
     return { x: dx * out, y: -rise * out + fall * p * p, scale: 1 - shrink * p, opacity: 1 - p };
-  };
+  });
 }

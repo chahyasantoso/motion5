@@ -1,14 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { toCubics, type Events, type Pose2d, type Time } from "@gerak/core";
 import { follow, trace } from "@gerak/moves";
-import {
-  compileStage,
-  defineStage,
-  type Members,
-  type RestReader,
-  type Stage,
-  type StageDefinition,
-} from "@gerak/stage";
+import { formatStageError, type RestReader, type Stage } from "@gerak/stage";
+// The renderer is tested on compiled stages, built with the stage package's own compiler input.
+import { compileStage } from "../../stage/src/run/compile";
+import { defineStage, type StageDefinition } from "../../stage/src/author/stage";
+import type { Members } from "../../stage/src/author/cast";
 import { blendShapes, matchOutlines } from "@gerak/stage/render";
 import {
   mountStage,
@@ -160,7 +157,7 @@ function mounted(seen: Seen = {}, fonts?: StageFonts, customStage?: Stage) {
   const options = { frames: frames() };
   const stage =
     customStage === undefined
-      ? mountStage(container, makeStage(seen), options)
+      ? mountStage(container, staged(makeStage(seen)), options)
       : mountStage(container, customStage, options);
   const root = container.children[0]?.shadowRoot;
   if (root === undefined) throw new Error("No shadow root.");
@@ -182,6 +179,15 @@ function mustCompile<B extends string, M extends Members<B>, L extends string>(
   return result.stage;
 }
 
+/** Compiles a definition as `mountStage` once did, throwing its errors the same way. */
+function staged<B extends string, M extends Members<B>, L extends string>(
+  def: StageDefinition<B, M, L>,
+): Stage {
+  const result = compileStage(def);
+  if (result.ok) return result.stage;
+  throw new Error(`mountStage: invalid stage:\n${result.errors.map(formatStageError).join("\n")}`);
+}
+
 afterEach(() => {
   vi.unstubAllGlobals();
 });
@@ -194,7 +200,7 @@ describe("mountStage", () => {
     if (!compiled.ok) return;
 
     const containerA = new FakeElement("div");
-    const mountedA = mountStage(containerA, def, { frames: frames() });
+    const mountedA = mountStage(containerA, staged(def), { frames: frames() });
     const containerB = new FakeElement("div");
     const mountedB = mountStage(containerB, compiled.stage, { frames: frames() });
     expect(mountedA.player.values.camera).toEqual({ y: 40 });
@@ -210,7 +216,7 @@ describe("mountStage", () => {
       }),
       scene: () => ({}),
     });
-    expect(() => mountStage(new FakeElement("div"), badDef, { frames: frames() })).toThrow(
+    expect(() => mountStage(new FakeElement("div"), staged(badDef), { frames: frames() })).toThrow(
       /"missing", which is not a beat/,
     );
   });
@@ -332,7 +338,7 @@ describe("mountStage", () => {
       scene: ({ time }) => ({ dot: { x: time.progress } }),
     });
     const container = new FakeElement("div");
-    const stage = mountStage(container, def, { frames: frames() });
+    const stage = mountStage(container, staged(def), { frames: frames() });
     const timecode = container.children[0]?.shadowRoot?.find("timecode");
     if (timecode === undefined) throw new Error("No timecode.");
     expect(timecode.textContent).toBe("00:00");
@@ -363,7 +369,7 @@ describe("mountStage", () => {
       scene: () => ({ card: [{ x: 1 }] }),
     });
     expect(() =>
-      mountStage(new FakeElement("div"), badShape, { frames: frames(), checks: true }),
+      mountStage(new FakeElement("div"), staged(badShape), { frames: frames(), checks: true }),
     ).toThrow(/"card" needs a pose object, got an array/);
 
     const badReadout = defineStage({
@@ -376,7 +382,9 @@ describe("mountStage", () => {
       }),
       scene: () => ({}),
     });
-    const mountedReadout = mountStage(new FakeElement("div"), badReadout, { frames: frames() });
+    const mountedReadout = mountStage(new FakeElement("div"), staged(badReadout), {
+      frames: frames(),
+    });
     expect(() => mountedReadout.driver.seek(0.8)).toThrow("readout failed");
   });
 
@@ -414,7 +422,7 @@ describe("mountStage", () => {
     };
     const host = new FakeElement("div", document);
     container.append(host);
-    const stage = mountStage(host, makeStage(seen), { frames: frames() });
+    const stage = mountStage(host, staged(makeStage(seen)), { frames: frames() });
     expect(seen.rest?.get("camera")).toEqual({ x: 200, y: 100, width: 200, height: 100 });
     expect(stage.rest.camera).toEqual({ x: 200, y: 100, width: 200, height: 100 });
     // The camera's 3 by 2 px border sits between its box and the dot's offsets.
@@ -433,25 +441,27 @@ describe("mountStage", () => {
   it("swaps in a new scene on the same elements, tells of each run's driver, and rejects incompatible replace", () => {
     const drivers: unknown[] = [];
     const container = new FakeElement("div");
-    const stage = mountStage(container, makeStage({}), {
+    const stage = mountStage(container, staged(makeStage({})), {
       frames: frames(),
       onDriver: (driver) => drivers.push(driver),
     });
     const root = container.children[0]?.shadowRoot;
     const element = root?.find("camera");
     stage.replace(
-      defineStage({
-        beats,
-        cast: (m) => ({
-          camera: m.group({
-            dot: m.box(),
-            word: m.letters("HI").on("word", "late"),
+      staged(
+        defineStage({
+          beats,
+          cast: (m) => ({
+            camera: m.group({
+              dot: m.box(),
+              word: m.letters("HI").on("word", "late"),
+            }),
+            card: m.box().watch(),
           }),
-          card: m.box().watch(),
+          skins: { dom: { css: `[data-cast="dot"] { width: 10px }` } },
+          scene: () => ({ camera: { y: 99 } }),
         }),
-        skins: { dom: { css: `[data-cast="dot"] { width: 10px }` } },
-        scene: () => ({ camera: { y: 99 } }),
-      }),
+      ),
     );
     expect(root?.find("camera")).toBe(element);
     expect(element?.style.transform).toBe("translate3d(0px, 99px, 0px)");
@@ -461,11 +471,13 @@ describe("mountStage", () => {
 
     expect(() =>
       stage.replace(
-        defineStage({
-          beats,
-          cast: (m) => ({ other: m.box() }),
-          scene: () => ({}),
-        }),
+        staged(
+          defineStage({
+            beats,
+            cast: (m) => ({ other: m.box() }),
+            scene: () => ({}),
+          }),
+        ),
       ),
     ).toThrow(/different cast or durationMs/);
   });
@@ -493,7 +505,7 @@ describe("mountStage", () => {
       for (const frame of due) frame(ms);
     };
     const container = new FakeElement("div");
-    const stage = mountStage(container, def, {
+    const stage = mountStage(container, staged(def), {
       frames: {
         requestFrame: (frame) => queued.push(frame),
         cancelFrame: () => undefined,
@@ -576,17 +588,19 @@ describe("mountStage", () => {
       const container = new FakeElement("div");
       const stage = mountStage(
         container,
-        defineStage({
-          beats: { all: [0, 500] },
-          cast: (m) => ({ card: m.box() }),
-          skins: {
-            dom: {
-              css: `[data-cast="card"] { color: red; }`,
-              defs: `<linearGradient id="g"></linearGradient>`,
+        staged(
+          defineStage({
+            beats: { all: [0, 500] },
+            cast: (m) => ({ card: m.box() }),
+            skins: {
+              dom: {
+                css: `[data-cast="card"] { color: red; }`,
+                defs: `<linearGradient id="g"></linearGradient>`,
+              },
             },
-          },
-          scene: () => ({}),
-        }),
+            scene: () => ({}),
+          }),
+        ),
         { frames: frames() },
       );
       await stage.ready;
@@ -609,20 +623,22 @@ describe("mountStage", () => {
       const seen: Seen = {};
       const stage = mountStage(
         container,
-        defineStage({
-          beats: { all: [0, 500] },
-          cast: (m) => ({ card: m.box(), plain: m.box() }),
-          skins: {
-            dom: {
-              css: new URL("https://example.com/skin.css"),
-              defs: new URL("https://example.com/defs.svg"),
+        staged(
+          defineStage({
+            beats: { all: [0, 500] },
+            cast: (m) => ({ card: m.box(), plain: m.box() }),
+            skins: {
+              dom: {
+                css: new URL("https://example.com/skin.css"),
+                defs: new URL("https://example.com/defs.svg"),
+              },
             },
-          },
-          scene: ({ rest }) => {
-            seen.rest = rest;
-            return {};
-          },
-        }),
+            scene: ({ rest }) => {
+              seen.rest = rest;
+              return {};
+            },
+          }),
+        ),
         { frames: frames() },
       );
       const root = container.children[0]?.shadowRoot;
@@ -649,12 +665,14 @@ describe("mountStage", () => {
       vi.stubGlobal("fetch", async () => ({ ok: false, status: 404, text: async () => "" }));
       const stage = mountStage(
         new FakeElement("div"),
-        defineStage({
-          beats: { all: [0, 500] },
-          cast: (m) => ({ card: m.box() }),
-          skins: { dom: { css: new URL("https://example.com/missing.css") } },
-          scene: () => ({}),
-        }),
+        staged(
+          defineStage({
+            beats: { all: [0, 500] },
+            cast: (m) => ({ card: m.box() }),
+            skins: { dom: { css: new URL("https://example.com/missing.css") } },
+            scene: () => ({}),
+          }),
+        ),
         { frames: frames() },
       );
       await stage.ready;
@@ -672,12 +690,14 @@ describe("mountStage", () => {
       );
       const container = new FakeElement("div");
       const makeUrlStage = (href: string) =>
-        defineStage({
-          beats: { all: [0, 500] },
-          cast: (m) => ({ card: m.box() }),
-          skins: { dom: { css: new URL(href) } },
-          scene: () => ({}),
-        });
+        staged(
+          defineStage({
+            beats: { all: [0, 500] },
+            cast: (m) => ({ card: m.box() }),
+            skins: { dom: { css: new URL(href) } },
+            scene: () => ({}),
+          }),
+        );
       const stage = mountStage(container, makeUrlStage("https://example.com/first.css"), {
         frames: frames(),
       });
@@ -754,7 +774,7 @@ describe("mountStage", () => {
           return {};
         },
       });
-      return laidOut(def, { line: [100, 200, 600, 100], word: [50, 10, 200, 80] });
+      return laidOut(staged(def), { line: [100, 200, 600, 100], word: [50, 10, 200, 80] });
     }
 
     it("sits under a measured word, in the word's group, after layout and after a resize", () => {
@@ -804,7 +824,10 @@ describe("mountStage", () => {
         }),
         scene: () => ({}),
       });
-      const { root } = laidOut(def, { line: [100, 200, 600, 100], word: [50, 10, 200, 80] });
+      const { root } = laidOut(staged(def), {
+        line: [100, 200, 600, 100],
+        word: [50, 10, 200, 80],
+      });
       const d = root.find("link").children[0]?.children[0]?.attributes.get("d");
       expect(d).toBe(pathData(level(350, 250, 250)));
     });
@@ -820,7 +843,7 @@ describe("mountStage", () => {
         }),
         scene: () => ({}),
       });
-      const { root, style } = laidOut(def, {});
+      const { root, style } = laidOut(staged(def), {});
       expect(reported.map(String)).toEqual([
         'Error: mountStage: paths "a" and "b" read each other.',
       ]);
@@ -940,7 +963,7 @@ describe("mountStage", () => {
           return { card: { x: 1 } };
         },
       });
-      const stage = mountStage(host, def, { frames: frames() });
+      const stage = mountStage(host, staged(def), { frames: frames() });
       const root = host.children[0]?.shadowRoot;
       if (root === undefined || frame === undefined) throw new Error("No frame.");
       const card = root.find("card");
@@ -1098,16 +1121,18 @@ describe("mountStage", () => {
       const seen: Laid = {};
       const { stage } = layered(seen);
       stage.replace(
-        defineStage({
-          beats: { all: [0, 1000] },
-          cast: (m) => ({ card: m.box().watch(), dot: m.box() }),
-          layouts: { names: ["list", "detail", "wide"] },
-          scene: ({ rest, layouts }) => {
-            seen.rest = rest;
-            seen.layouts = layouts;
-            return {};
-          },
-        }),
+        staged(
+          defineStage({
+            beats: { all: [0, 1000] },
+            cast: (m) => ({ card: m.box().watch(), dot: m.box() }),
+            layouts: { names: ["list", "detail", "wide"] },
+            scene: ({ rest, layouts }) => {
+              seen.rest = rest;
+              seen.layouts = layouts;
+              return {};
+            },
+          }),
+        ),
       );
       expect(Object.keys(seen.layouts ?? {})).toEqual(["list", "detail", "wide"]);
       expect(seen.layouts?.wide?.get("card")).toEqual({ x: 200, y: 50, width: 200, height: 100 });
@@ -1122,15 +1147,17 @@ describe("mountStage", () => {
       at(400);
       expect(frame.attributes.get("data-layout")).toBe("detail");
       stage.replace(
-        defineStage({
-          beats: { all: [0, 1000] },
-          cast: (m) => ({ card: m.box().watch(), dot: m.box() }),
-          scene: ({ rest, layouts }) => {
-            seen.rest = rest;
-            seen.layouts = layouts;
-            return {};
-          },
-        }),
+        staged(
+          defineStage({
+            beats: { all: [0, 1000] },
+            cast: (m) => ({ card: m.box().watch(), dot: m.box() }),
+            scene: ({ rest, layouts }) => {
+              seen.rest = rest;
+              seen.layouts = layouts;
+              return {};
+            },
+          }),
+        ),
       );
       expect(frame.attributes.get("data-layout")).toBe("main");
       expect(seen.rest?.get("card").x).toBe(200);
@@ -1301,5 +1328,20 @@ describe("mountStage", () => {
     stage.dispose();
     expect(container.children).toEqual([]);
     expect(root.find("card").listeners.get("pointerenter")?.size ?? 0).toBe(0);
+  });
+});
+
+describe("mountStage with a skin", () => {
+  it("refuses a compiled stage given a skin as well, since it carries its own", () => {
+    const compiled = staged(
+      defineStage({
+        beats: { all: [0, 500] },
+        cast: (m) => ({ card: m.box() }),
+        scene: () => ({}),
+      }),
+    );
+    expect(() =>
+      mountStage(new FakeElement("div"), compiled, { frames: frames(), skin: { css: "" } }),
+    ).toThrow(/carries its own skin/);
   });
 });

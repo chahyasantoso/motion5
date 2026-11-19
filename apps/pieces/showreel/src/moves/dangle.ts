@@ -1,4 +1,12 @@
-import { NO_EVENTS, elapsedOf, timeAt, type Pose2d, type Time } from "@gerak/core";
+import {
+  NO_EVENTS,
+  elapsedOf,
+  timeAt,
+  type Pose2d,
+  type Time,
+  motion,
+  type Motion,
+} from "@gerak/core";
 import { trail } from "@gerak/core";
 
 /** Options of `dangle`. */
@@ -20,9 +28,9 @@ export interface DangleOptions {
 }
 
 /** Hangs on a string from a moving carrier and swings behind it whenever the carrier speeds up or stops, then rings down. */
-export function dangle(options: DangleOptions): (time: Time) => Pose2d {
+export function dangle(options: DangleOptions): Motion<Pose2d> {
   const { carrier, length, pace = 1, damping = 0.2, gain = 1, lag = 0, limit = 60 } = options;
-  return (time): Pose2d => {
+  return motion((time): Pose2d => {
     const omega = 2 * Math.PI * 1.25 * pace * Math.sqrt(160 / length);
     const late = (t: Time) => carrier(timeAt(t, (elapsedOf(t.clock) ?? 0) - lag));
     const follower = trail((t) => late(t), {
@@ -31,5 +39,5 @@ export function dangle(options: DangleOptions): (time: Time) => Pose2d {
     })(time, NO_EVENTS);
     const turn = (gain * Math.atan((late(time) - follower) / length) * 180) / Math.PI;
     return { rotation: Math.max(-limit, Math.min(limit, turn)), anchor: "top" };
-  };
+  });
 }

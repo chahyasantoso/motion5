@@ -4,52 +4,41 @@ Read this when motion answers page interactions (hover, press, click, focus, scr
 
 ## From the page
 
-In `defineStage`, enable interaction tracking on any cast member with `.watch()` and read `events` passed to `scene({ time, events })`:
+Give an element `watch: true` and fold its events with core's `state`; a motion reads the result at scene time:
 
 ```ts
-import { spring } from "@gerak/core";
-import { defineStage } from "@gerak/stage";
+import { springTo, state } from "@gerak/core";
+import { bind, box, sceneBuilder } from "@gerak/stage";
 
-export default defineStage({
-  durationMs: 900,
-  beats: { intro: [0, 900] },
-  cast: (m) => ({ card: m.box().watch().ambient() }),
-  scene: ({ time, events }) => {
-    const latest = events.filter((e) => e.target === "card").at(-1);
-    if (latest === undefined) return { card: { y: 0 } };
-    const ms = (time.clock.kind === "live" ? time.clock.elapsed : 0) - latest.at;
-    const target = latest.name === "enter" ? -14 : 0;
-    return { card: { y: target + spring(-target, 0, Math.max(0, ms) / 1000).offset } };
-  },
+const card = box("card", { watch: true });
+const over = state(false, (was, e) => (e.name === "enter" ? true : e.name === "leave" ? false : was), {
+  target: "card",
 });
+const lift = springTo(over, (on) => (on ? -14 : 0));
+
+export default sceneBuilder({ length: 900 }).element(card).motion(bind({ y: lift }));
 ```
 
-With `@gerak/moves`, `follow` encapsulates the spring fold cleanly (`const lift = follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })`).
+With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
 
 - `events` holds every event up to the current time, oldest first: `{ name, at, target }` in ms, plus pointer `(x, y)` relative to the watched element's top-left corner.
-- Put `.watch()` on a still wrapper `m.group` if the moving child leaves under the cursor.
+- Watch a still wrapper `group` if the moving child leaves under the cursor.
 - Derive answers strictly from `(time, events)` rather than mutable component variables so replays, scrubbing, and `gerak review --action hover:.card-hit@1000` match identically.
 
 ## Inside the scene (`cues`)
 
-Pass deterministic scripted events via `cues` inside `defineStage`:
+Pass deterministic scripted events in the scene's `cues` option:
 
 ```ts
-import { span } from "@gerak/core";
-import { drop } from "@gerak/moves";
-import { defineStage } from "@gerak/stage";
+import { drop, DROP_LANDING } from "@gerak/moves";
+import { beat, box, sceneBuilder } from "@gerak/stage";
 
-const fallSpan = span(0, 800);
-const HIT_MS = fallSpan.at(0.7);
+const fall = beat("fall", 800);
+const HIT_MS = fall.from + DROP_LANDING * (fall.to - fall.from);
 
-export default defineStage({
-  beats: { fall: [0, 800], settle: [800, 1400] },
-  cast: (m) => ({ box: m.box() }),
-  cues: [{ name: "hit", at: HIT_MS, target: "box" }],
-  scene: ({ time, beats }) => ({
-    box: drop({ distance: 120, squash: 0.15 })(beats.fall.of(time)),
-  }),
-});
+export default sceneBuilder({ length: 1400, cues: [{ name: "hit", at: HIT_MS, target: "box" }] })
+  .element(box("box"))
+  .motion(drop({ distance: 120, squash: 0.15 }).in(fall));
 ```
 
 - `player.on(name, listener)` notifies listeners as forward playback crosses an event (seeking backwards does not fire).

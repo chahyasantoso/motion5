@@ -5,9 +5,10 @@ import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import type { Cubic2d } from "@gerak/core";
 import {
-  compileStage,
+  compileScene,
   formatStageError,
-  isStageDefinition,
+  isDomSkin,
+  isScene,
   type Content,
   type Stage,
 } from "@gerak/stage";
@@ -30,9 +31,11 @@ interface Imported {
 }
 
 function stageOf(module: unknown): Stage {
-  const def: unknown = Reflect.get(Object(module), "default");
-  if (!isStageDefinition(def)) throw new Error("missing default defineStage");
-  const compiled = compileStage(def);
+  const scene: unknown = Reflect.get(Object(module), "default");
+  const skin: unknown = Reflect.get(Object(module), "skin");
+  if (!isScene(scene)) throw new Error("missing default scene");
+  if (skin !== undefined && !isDomSkin(skin)) throw new Error("the skin export is not { css }");
+  const compiled = compileScene(scene, { skin });
   if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
   return compiled.stage;
 }
@@ -165,6 +168,16 @@ describe("gerak import-svg geometry", () => {
         reviewSceneModule(read, { hold: 500, jump: 150, turn: 150, ratio: 1.5 }).findings,
       ).toEqual([]);
     }
+  }, 60000);
+
+  it("writes a scene builder piece with every part static", async () => {
+    const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
+    const source = readFileSync(imported.result.file, "utf8");
+    expect(source).toContain("sceneBuilder");
+    expect(source).not.toContain("defineStage");
+    const { members } = stageOf(imported.module);
+    expect(members.map(({ name }) => name)).toEqual(imported.result.members);
+    for (const member of members) expect(member.expect).toBe("static");
   }, 60000);
 
   it("keeps parts flat in paint order, as the id and the module's frame say", async () => {
@@ -327,25 +340,18 @@ describe("gerak import-svg --into a piece", () => {
     mkdirSync(join(root, "scratch", "src"), { recursive: true });
     writeFileSync(
       join(root, "scratch", "src", "scratch.ts"),
-      `import { defineStage } from "@gerak/stage";
+      `import { sceneBuilder, shape } from "@gerak/stage";
 
-export default defineStage({
-  beats: { show: [0, 1000] },
-  frame: ${frame},
-  cast: (m) => ({
-    "base": m.stroke([{ id: "c0", x0: 1, y0: 1, x1: 2, y1: 2, x2: 3, y2: 3, x3: 4, y3: 4 }]).static(),
-  } as const),
-  skins: {
-    dom: {
-      css: \`
+export const skin = {
+  css: \`
 [data-cast="base"] { z-index: 1; }
 [data-path="base"] { fill: url(#keep); stroke: none; }
 \`,
-      defs: \`<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>\`,
-    },
-  },
-  scene: () => ({}),
-});
+  defs: \`<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>\`,
+};
+
+export default sceneBuilder({ frame: ${frame}, length: 1000 })
+  .element(shape("base", [{ id: "c0", x0: 1, y0: 1, x1: 2, y1: 2, x2: 3, y2: 3, x3: 4, y3: 4 }]));
 `,
     );
     return root;
@@ -399,7 +405,7 @@ export default defineStage({
       '[data-path="artEven"] { fill: none; stroke: #000000; stroke-width: 9; }',
     );
     const after = readFileSync(join(root, "scratch", "src", "scratch.ts"), "utf8");
-    expect(after.startsWith(before.slice(0, before.indexOf("  } as const)")))).toBe(true);
+    expect(after.startsWith(before.slice(0, before.indexOf("\n`,")))).toBe(true);
     expect(after).toContain('[data-path="base"] { fill: url(#keep); stroke: none; }');
     expect(after).toContain(
       '<linearGradient id="keep"><stop offset="0" stop-color="#000"/></linearGradient>',

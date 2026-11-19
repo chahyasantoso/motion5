@@ -1,4 +1,4 @@
-import { arch, wave, type Pose2d, type Time } from "@gerak/core";
+import { arch, motion, wave, type Motion, type Pose2d } from "@gerak/core";
 
 const inOut = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 const LIFT_SHARE = 0.28;
@@ -19,9 +19,9 @@ export interface HandWaveOptions {
 }
 
 /** Lifts a limb about its joint, swings it back and forth to wave, and lowers it again. */
-export function handWave(options: HandWaveOptions): (time: Time) => Pose2d {
+export function handWave(options: HandWaveOptions): Motion<Pose2d> {
   const { lift, swing = 15, count = 2, reach = 1, fold = 0 } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const up =
       progress < LIFT_SHARE
         ? inOut(progress / LIFT_SHARE)
@@ -40,5 +40,5 @@ export function handWave(options: HandWaveOptions): (time: Time) => Pose2d {
       scaleX: 1 - 0.5 * fold * turned,
       scaleY: along,
     };
-  };
+  });
 }

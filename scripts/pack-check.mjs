@@ -136,16 +136,15 @@ export function typeCheckFiles(specifiers) {
 
 /** A minimal stage module for the check's one brief. */
 const DEMO_PIECE = `import { slide } from "@gerak/moves";
-import { defineStage } from "@gerak/stage";
+import { beat, box, sceneBuilder } from "@gerak/stage";
 
-export default defineStage({
-  beats: { go: [0, 2000] },
-  cast: (m) => ({ box: m.box() }),
-  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
-  scene: ({ time, beats }) => ({
-    box: slide({ distance: 300, from: "left" })(beats.go.of(time)),
-  }),
-});
+const go = beat("go", 2000);
+
+export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
+
+export default sceneBuilder()
+  .element(box("box"))
+  .motion(slide({ distance: 300, from: "left" }).in(go));
 `;
 
 /** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the stage page. */
@@ -364,51 +363,60 @@ function installSubset(dir, packages, tarballs, lock, peers) {
   return run.code === 0 ? undefined : firstErrorLine(run.err);
 }
 
-const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, span, type Pose2d } from "@gerak/core";
-import { defineStage } from "@gerak/stage";
+const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, motion, type Pose2d } from "@gerak/core";
+import { beat, box, many, sceneBuilder, shape, type MotionContext } from "@gerak/stage";
 
 const [first, second] = chain([1000, 1000], { overlap: 200 });
 const row = lanes([1, 1, 1], 0.25);
-const tail = span(1400, 2200);
+const intro = beat("intro", first.to - first.from, { at: first.from });
+const follow = beat("follow", second.to - second.from, { at: second.from });
+const reveal = beat("reveal", 800, { at: 1400 });
 
-export default defineStage({
-  beats: { intro: [0, 1200], follow: [800, 2000], hold: [2000, 3000] },
-  cast: (m) => ({
-    dot: m.box(),
-    bars: m.many(3),
-    arc: m.stroke(
-      arcPath({
-        x0: 200,
-        y0: 360,
-        x1: 440,
-        y1: 360,
-        rx: 120,
-        ry: 120,
-        sweep: true,
-      }),
-    ),
+const dot = box("dot");
+const bars = many("bars", 3);
+const arc = shape(
+  "arc",
+  arcPath({
+    x0: 200,
+    y0: 360,
+    x1: 440,
+    y1: 360,
+    rx: 120,
+    ry: 120,
+    sweep: true,
   }),
-  skins: {
-    dom: {
-      css: [
-        '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
-        '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
-        '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
-      ].join("\\n"),
-    },
-  },
-  scene: ({ time }) => {
-    const p = ease.cubicOut(first.of(time).progress);
-    const q = ease.quadOut(tail.of(time).progress);
-    return {
-      dot: { x: mix(-160, 0, p), opacity: mix(0, 1, p) } satisfies Pose2d,
-      bars: (i): Pose2d => ({
-        y: mix(60, 0, ease.sineOut(row.of(second.of(time), i).progress)),
+);
+
+export const skin = {
+  css: [
+    '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
+    '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
+    '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
+  ].join("\\n"),
+};
+
+export default sceneBuilder({
+  length: 3000,
+})
+  .element(dot)
+  .motion(
+    motion((time): Pose2d => {
+      const p = ease.cubicOut(time.progress);
+      return { x: mix(-160, 0, p), opacity: mix(0, 1, p) };
+    }).in(intro),
+  )
+  .element(bars)
+  .motion(
+    motion(
+      (time, context?: MotionContext): Pose2d => ({
+        y: mix(60, 0, ease.sineOut(row.of(time, context?.index ?? 0).progress)),
       }),
-      arc: { drawn: mix(0, 1, q) } satisfies Pose2d,
-    };
-  },
-});
+    ).in(follow),
+  )
+  .element(arc)
+  .motion(
+    motion((time): Pose2d => ({ drawn: mix(0, 1, ease.quadOut(time.progress)) })).in(reveal),
+  );
 `;
 
 function jsonOf(run) {

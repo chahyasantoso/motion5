@@ -1,10 +1,14 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileStage, formatStageError } from "@gerak/stage";
+import { compileScene, formatStageError, isDomSkin, isScene } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 
 const PIECES = join(import.meta.dirname, "..", "..", "apps", "pieces");
+
+function isStagePiece(source: string): boolean {
+  return source.includes("sceneBuilder(") && source.includes("export default");
+}
 
 function stagePieces(): string[] {
   return readdirSync(PIECES, { withFileTypes: true })
@@ -20,7 +24,7 @@ function stagePieces(): string[] {
       return names
         .filter((name) => name.endsWith(".ts"))
         .map((name) => join(src, name))
-        .filter((file) => readFileSync(file, "utf8").includes("export default defineStage"));
+        .filter((file) => isStagePiece(readFileSync(file, "utf8")));
     })
     .sort();
 }
@@ -29,10 +33,18 @@ describe("stage pieces", () => {
   it("every piece under apps/pieces compiles", async () => {
     const files = stagePieces();
     expect(files.length).toBeGreaterThan(0);
+    for (const builder of ["shop.ts", "nowplaying.ts", "nadi.ts", "showreel-e.ts", "penguin.ts"])
+      expect(files.some((file) => file.endsWith(builder))).toBe(true);
     const failures: string[] = [];
     for (const file of files) {
       const module: unknown = await import(pathToFileURL(file).href);
-      const compiled = compileStage(Reflect.get(Object(module), "default"));
+      const scene: unknown = Reflect.get(Object(module), "default");
+      const skin: unknown = Reflect.get(Object(module), "skin");
+      if (!isScene(scene) || (skin !== undefined && !isDomSkin(skin))) {
+        failures.push(`${file}: no scene, or a skin that is not { css }`);
+        continue;
+      }
+      const compiled = compileScene(scene, { skin });
       if (!compiled.ok)
         failures.push(`${file}: ${compiled.errors.map(formatStageError).join("; ")}`);
     }

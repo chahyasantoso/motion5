@@ -88,7 +88,7 @@ Public: `.`
 Public: `.`, `./render`, `./dom`
 
 - `src/`: stage entrypoint
-- `src/author/`: defineStage, cast builders, scene types
+- `src/author/`: sceneBuilder, elements, beats, and the compile input
 - `src/dom/`: DOM tokens
 - `src/render/`: strokes and morphs for renderers
 - `src/run/`: compile, frame, check, visibility, carry

@@ -5,16 +5,15 @@ import {
   ZERO_BOX,
   beatAt,
   check,
-  compileStage,
-  defineStage,
   formatStageError,
   frame,
   listPose,
   restReader,
-  type Members,
   type Stage,
-  type StageDefinition,
 } from "../src";
+import { compileStage } from "../src/run/compile";
+import { defineStage, type StageDefinition } from "../src/author/stage";
+import type { Members } from "../src/author/cast";
 
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);

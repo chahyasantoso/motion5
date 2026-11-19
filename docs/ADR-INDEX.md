@@ -194,6 +194,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-187 — Styles on briefs — Accepted, 2026-11-15 — superseded in part
 - ADR-188 — Installable tools and one command — Accepted, 2026-11-16
 - ADR-189 — Core, modules and library — Accepted, 2026-11-16 — superseded in part
-- ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18
+- ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18 — superseded in part
 - ADR-191 — Shapes and curves — Accepted, 2026-11-18
-- ADR-192 — Principles, plain moves and state — Accepted, 2026-11-19
+- ADR-192 — Principles, plain moves and state — Accepted, 2026-11-19 — superseded in part
+- ADR-193 — Scene builder — Accepted, 2026-11-20

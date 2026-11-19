@@ -1,9 +1,11 @@
 import { DEFAULT_FRAME } from "@gerak/stage";
 import ts from "typescript";
 
-/** What to add to a piece: cast members as source lines, skin rules, and paint-server markup. */
+/** What to add to a piece: `.element(...)` calls as source, their names, skin rules and paint-server markup. */
 export interface PieceAddition {
   readonly names: readonly string[];
+  /** What the added source calls from `@gerak/stage`, imported when the piece lacks it. */
+  readonly imports: readonly string[];
   readonly members: string;
   readonly css: string;
   readonly defs: string;
@@ -23,6 +25,8 @@ interface Insertion {
   readonly at: number;
   readonly text: string;
 }
+
+const ELEMENT_MAKERS = new Set(["box", "shape", "text", "many", "group"]);
 
 function unwrapped(node: ts.Expression): ts.Expression {
   let current = node;
@@ -50,49 +54,27 @@ function namedConst(file: ts.SourceFile, name: string): ts.Expression | undefine
   return undefined;
 }
 
-function defineStageOptions(file: ts.SourceFile): ts.ObjectLiteralExpression | undefined {
+/** The default export's chain and the `sceneBuilder(...)` call at its root. */
+function defaultChain(
+  file: ts.SourceFile,
+): { readonly chain: ts.Expression; readonly root: ts.CallExpression } | undefined {
   for (const statement of file.statements) {
     if (!ts.isExportAssignment(statement) || statement.isExportEquals) continue;
-    let expr = unwrapped(statement.expression);
-    if (ts.isIdentifier(expr)) {
-      const bound = namedConst(file, expr.text);
+    let chain = unwrapped(statement.expression);
+    if (ts.isIdentifier(chain)) {
+      const bound = namedConst(file, chain.text);
       if (bound === undefined) return undefined;
-      expr = bound;
+      chain = bound;
     }
-    if (!ts.isCallExpression(expr)) return undefined;
-    if (!ts.isIdentifier(expr.expression) || expr.expression.text !== "defineStage") {
-      return undefined;
-    }
-    const [arg] = expr.arguments;
-    if (arg === undefined) return undefined;
-    const options = unwrapped(arg);
-    return ts.isObjectLiteralExpression(options) ? options : undefined;
-  }
-  return undefined;
-}
-
-function castObjectLiteral(expr: ts.Expression): ts.ObjectLiteralExpression | undefined {
-  const fn = unwrapped(expr);
-  if (ts.isArrowFunction(fn)) {
-    if (!ts.isBlock(fn.body)) {
-      const body = unwrapped(fn.body);
-      return ts.isObjectLiteralExpression(body) ? body : undefined;
-    }
-    for (const statement of fn.body.statements) {
-      if (ts.isReturnStatement(statement) && statement.expression !== undefined) {
-        const returned = unwrapped(statement.expression);
-        return ts.isObjectLiteralExpression(returned) ? returned : undefined;
-      }
+    let node: ts.Expression = chain;
+    while (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      if (ts.isIdentifier(callee))
+        return callee.text === "sceneBuilder" ? { chain, root: node } : undefined;
+      if (!ts.isPropertyAccessExpression(callee)) return undefined;
+      node = callee.expression;
     }
     return undefined;
-  }
-  if (ts.isFunctionExpression(fn)) {
-    for (const statement of fn.body.statements) {
-      if (ts.isReturnStatement(statement) && statement.expression !== undefined) {
-        const returned = unwrapped(statement.expression);
-        return ts.isObjectLiteralExpression(returned) ? returned : undefined;
-      }
-    }
   }
   return undefined;
 }
@@ -120,6 +102,43 @@ function numberIn(object: ts.ObjectLiteralExpression, name: string): number | un
   return value !== undefined && ts.isNumericLiteral(value) ? Number(value.text) : undefined;
 }
 
+/** Every element name the piece makes: the string first argument of `box`, `shape`, `text`, `many`, `group`. */
+function elementNames(file: ts.SourceFile): ReadonlySet<string> {
+  const names = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      ELEMENT_MAKERS.has(node.expression.text)
+    ) {
+      const [first] = node.arguments;
+      if (first !== undefined && ts.isStringLiteralLike(first)) names.add(first.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return names;
+}
+
+/** Where the names the piece does not yet import from `@gerak/stage` go. */
+function importedNames(file: ts.SourceFile, names: readonly string[]): Insertion | undefined {
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const from = statement.moduleSpecifier;
+    if (!ts.isStringLiteral(from) || from.text !== "@gerak/stage") continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (bindings === undefined || !ts.isNamedImports(bindings)) continue;
+    const have = new Set(bindings.elements.map((element) => element.name.text));
+    const missing = names.filter((name) => !have.has(name));
+    if (missing.length === 0) return undefined;
+    const last = bindings.elements[bindings.elements.length - 1];
+    if (last === undefined) return { at: bindings.getStart() + 1, text: ` ${missing.join(", ")} ` };
+    return { at: last.getEnd(), text: `, ${missing.join(", ")}` };
+  }
+  if (names.length === 0) return undefined;
+  return { at: 0, text: `import { ${names.join(", ")} } from "@gerak/stage";\n` };
+}
+
 /** Where a block of members goes at the end of an object literal, with the comma it needs. */
 function appendedMembers(
   source: string,
@@ -144,7 +163,7 @@ function appendedText(
   return { at, text: `${before === "" || before.endsWith("\n") ? "" : "\n"}${text}\n` };
 }
 
-/** `source` with the cast members, skin rules and defs added inside `defineStage({ ... })`. */
+/** `source` with the elements appended to its `sceneBuilder` chain, and the rules and defs to its `skin`. */
 export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   const file = ts.createSourceFile(
     "piece.ts",
@@ -155,11 +174,16 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   );
   const refuse = (message: string): PieceEdit => ({ kind: "refused", message });
 
-  const options = defineStageOptions(file);
-  if (options === undefined) return refuse("The piece must default-export `defineStage({ ... })`.");
+  const found = defaultChain(file);
+  if (found === undefined)
+    return refuse("The piece must default-export a `sceneBuilder(...)` chain.");
 
   // A piece with no `frame` plays in the stage's default one.
-  const frameProp = property(options, "frame");
+  const [first] = found.root.arguments;
+  const options = first === undefined ? undefined : unwrapped(first);
+  if (options !== undefined && !ts.isObjectLiteralExpression(options))
+    return refuse("The piece's `sceneBuilder` options are not an object literal.");
+  const frameProp = options === undefined ? undefined : property(options, "frame");
   const frameNode = frameProp === undefined ? undefined : unwrapped(frameProp.initializer);
   const width =
     frameNode === undefined
@@ -176,49 +200,36 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   if (width === undefined || height === undefined)
     return refuse("The piece's `frame` is not an object literal with a numeric width and height.");
 
-  const castProp = property(options, "cast");
-  const cast = castProp === undefined ? undefined : castObjectLiteral(castProp.initializer);
-  if (cast === undefined)
-    return refuse(
-      "The piece's `cast` is not a `(m) => ({ ... })` returning an object literal, so no member can be added to it.",
-    );
-  const known = new Set<string>();
-  for (const member of cast.properties)
-    if (member.name !== undefined) {
-      const name = keyName(member.name);
-      if (name !== undefined) known.add(name);
-    }
+  const known = elementNames(file);
   const clash = add.names.find((name) => known.has(name));
-  if (clash !== undefined) return refuse(`The piece's cast already has a member "${clash}".`);
+  if (clash !== undefined) return refuse(`The piece already has an element "${clash}".`);
 
-  const skinsProp = property(options, "skins");
-  const skins = skinsProp === undefined ? undefined : unwrapped(skinsProp.initializer);
-  const dom =
-    skins !== undefined && ts.isObjectLiteralExpression(skins) ? property(skins, "dom") : undefined;
-  const domObject = dom === undefined ? undefined : unwrapped(dom.initializer);
-  if (domObject === undefined || !ts.isObjectLiteralExpression(domObject))
-    return refuse("The piece's `skins.dom` is not an object literal.");
-  const css = property(domObject, "css");
+  const skin = namedConst(file, "skin");
+  if (skin === undefined || !ts.isObjectLiteralExpression(skin))
+    return refuse("The piece's `export const skin` is not an object literal.");
+  const css = property(skin, "css");
   const cssText = css === undefined ? undefined : unwrapped(css.initializer);
   if (cssText === undefined || !ts.isNoSubstitutionTemplateLiteral(cssText))
-    return refuse("The piece's `skins.dom.css` is not a template literal without substitutions.");
+    return refuse(
+      "The piece's `skin.css` is not a template literal without substitutions; a skin read from a URL takes no new rules here.",
+    );
 
   const edits: Insertion[] = [
-    appendedMembers(source, cast, add.members),
+    { at: found.chain.getEnd(), text: `\n${add.members}` },
     appendedText(source, cssText, add.css),
   ];
+  const imports = importedNames(file, add.imports);
+  if (imports !== undefined) edits.push(imports);
   if (add.defs !== "") {
-    const defs = property(domObject, "defs");
+    const defs = property(skin, "defs");
     if (defs === undefined) {
       const line = source.lastIndexOf("\n", css === undefined ? 0 : css.getStart()) + 1;
       const indent = /^[ \t]*/.exec(source.slice(line))?.[0] ?? "";
-      edits.push(appendedMembers(source, domObject, `${indent}defs: \`${add.defs}\`,`));
+      edits.push(appendedMembers(source, skin, `${indent}defs: \`${add.defs}\`,`));
     } else {
       const defsText = unwrapped(defs.initializer);
       if (!ts.isNoSubstitutionTemplateLiteral(defsText))
-        return refuse(
-          "The piece's `skins.dom.defs` is not a template literal without substitutions.",
-        );
+        return refuse("The piece's `skin.defs` is not a template literal without substitutions.");
       const taken = new Set<string>();
       for (const match of defsText.text.matchAll(/\bid\s*=\s*["']([^"']+)["']/g))
         if (match[1] !== undefined) taken.add(match[1]);

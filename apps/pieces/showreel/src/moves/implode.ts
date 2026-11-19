@@ -1,4 +1,4 @@
-import { backEase, type Pose2d, type Time } from "@gerak/core";
+import { backEase, type Pose2d, motion, type Motion } from "@gerak/core";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
@@ -19,9 +19,9 @@ export interface ImplodeOptions {
 }
 
 /** Leans back away from a point, then is sucked into it, speeding up, shrinking and turning as it goes, and winks out on arrival. */
-export function implode(options: ImplodeOptions): (time: Time) => Pose2d {
+export function implode(options: ImplodeOptions): Motion<Pose2d> {
   const { dx, dy, lean = 2, scale = 0.05, turn = 0, vanish = 0.15 } = options;
-  return ({ progress: p }): Pose2d => {
+  return motion(({ progress: p }): Pose2d => {
     const q = backEase({ amount: lean, direction: "in" })(p);
     const shrink = p * p * p;
     const fade = vanish > 0 ? clamp01((p - (1 - vanish)) / vanish) : 0;
@@ -32,5 +32,5 @@ export function implode(options: ImplodeOptions): (time: Time) => Pose2d {
       scale: 1 + (scale - 1) * shrink,
       opacity: 1 - fade,
     };
-  };
+  });
 }

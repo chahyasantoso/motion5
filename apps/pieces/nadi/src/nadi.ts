@@ -4,16 +4,26 @@ import {
   elapsedOf,
   ease,
   mix,
+  motion,
   pathFrom,
   springEase,
   toCubics,
   type Anchor2d,
   type Pose2d,
+  type Signal,
   type Time,
 } from "@gerak/core";
-import { defineStage, each } from "@gerak/stage";
+import {
+  bind,
+  box,
+  group,
+  many,
+  sceneBuilder,
+  shape,
+  text,
+  type MotionContext,
+} from "@gerak/stage";
 
-type B = "all";
 const TOTAL_MS = 20000;
 const W = 1080;
 const H = 1920;
@@ -27,7 +37,7 @@ const prog = (
   dur: number,
   e: (p: number) => number = ease.cubicOut,
 ): number => e(c01((ms - from) / dur));
-const group = (n: number): string => {
+const dotted = (n: number): string => {
   const s = String(Math.round(n));
   let out = "";
   for (let i = 0; i < s.length; i++) {
@@ -311,205 +321,279 @@ const ACTIVITY = [
 
 const heroPath = along(lineCubics);
 
-export default defineStage({
-  frame: { width: W, height: H },
-  durationMs: TOTAL_MS,
-  beats: { all: [0, TOTAL_MS] },
-  cast: (m) => ({
-    bgDots: m.box(),
-    bgDots2: m.box(),
-    world: m
-      .group({
-        dash: m.group({
-          headG: m
-            .group({
-              title: m.text("Penjualan Langsung").static(),
-              livePill: m.text("LANGSUNG").static(),
-            })
-            .pivot({ x: 540, y: 100 }),
-          kpiAG: m
-            .group({
-              kpiABg: m.box().static(),
-              kpiAL: m.text("Pendapatan").static(),
-              kpiAV: m
-                .readout((t) => {
-                  const ms = msOf(t);
-                  return `Rp ${group(482 * prog(ms, 5600, 2600))} jt`;
-                })
-                .static(),
-              kpiAD: m.text("+12,4%").static(),
-            })
-            .pivot({ x: 198, y: 285 }),
-          kpiBG: m
-            .group({
-              kpiBBg: m.box().static(),
-              kpiBL: m.text("Pelanggan Baru").static(),
-              kpiBV: m
-                .readout((t) => {
-                  const ms = msOf(t);
-                  return group(1284 * prog(ms, 5850, 2600) + Math.max(0, ms - 8450) / 900);
-                })
-                .static(),
-              kpiBD: m.text("+8,1%").static(),
-            })
-            .pivot({ x: 540, y: 285 }),
-          kpiCG: m
-            .group({
-              kpiCBg: m.box().static(),
-              kpiCL: m.text("Churn").static(),
-              kpiCV: m
-                .readout((t) => {
-                  const ms = msOf(t);
-                  return `${dec1(2.1 * prog(ms, 6100, 2400))}%`;
-                })
-                .static(),
-              kpiCD: m.text("-0,4%").static(),
-            })
-            .pivot({ x: 882, y: 285 }),
-          chartG: m
-            .group({
-              chartBg: m.box().static(),
-              chartGrid: m.box().static(),
-              chartTitle: m.text("Pendapatan Real-time").static(),
-              chartTotal: m
-                .readout((t) => {
-                  const ms = msOf(t);
-                  return `Rp ${group(2400000 * prog(ms, 4800, 4200, ease.cubicInOut) + Math.max(0, ms - 9000) * 55)}`;
-                })
-                .static(),
-              chartCap: m.text("per jam, hari ini").static(),
-            })
-            .pivot({ x: 540, y: 680 }),
-          notifG: m
-            .group({
-              notifBg: m.box().static(),
-              notifIcon: m.box().static(),
-              notifTitle: m.text("Lonjakan penjualan").static(),
-              notifSub: m.text("dibanding jam lalu").static(),
-              notifVal: m
-                .readout((t) => `+${Math.round(32 * prog(msOf(t), 8300, 1100))}%`)
-                .static(),
-            })
-            .pivot({ x: 540, y: 1015 }),
-          regionG: m
-            .group({
-              regionBg: m.box().static(),
-              regionTitle: m.text("Per Wilayah").static(),
-              bars: m.many(5).ambient(),
-              barV0: m.readout((t) => String(Math.round(86 * prog(msOf(t), 7200, 1300)))).static(),
-              barV1: m.readout((t) => String(Math.round(64 * prog(msOf(t), 7320, 1300)))).static(),
-              barV2: m.readout((t) => String(Math.round(52 * prog(msOf(t), 7440, 1300)))).static(),
-              barV3: m.readout((t) => String(Math.round(41 * prog(msOf(t), 7560, 1300)))).static(),
-              barV4: m.readout((t) => String(Math.round(33 * prog(msOf(t), 7680, 1300)))).static(),
-              barNames: m.many(["Jkt", "Bdg", "Sby", "Mdn", "Mks"], (n) => m.text(n)).static(),
-            })
-            .pivot({ x: 280, y: 1275 }),
-          trafficG: m
-            .group({
-              trafficBg: m.box().static(),
-              trafficTitle: m.text("Sumber Trafik").static(),
-              arc0: m.stroke(arcs[0] ?? []),
-              arc1: m.stroke(arcs[1] ?? []),
-              arc2: m.stroke(arcs[2] ?? []),
-              arc3: m.stroke(arcs[3] ?? []),
-              visit: m.readout((t) => `${dec1(12.4 * prog(msOf(t), 7400, 1500))}rb`).static(),
-              legend: m.many(["Organik", "Iklan", "Sosial", "Langsung"], (n) => m.text(n)).static(),
-            })
-            .pivot({ x: 800, y: 1275 }),
-          activityG: m
-            .group({
-              activityBg: m.box().static(),
-              activityTitle: m.text("Aktivitas Tim").static(),
-              activity: m.many(ACTIVITY, (a) => m.text(a)),
-            })
-            .pivot({ x: 540, y: 1645 }),
-        }),
-        heroG: m.group({ heroLine: m.morph(lineCubics, [nCubics]), spark: m.box() }),
-        endG: m.group({
-          wordmark: m.letters("NADI"),
-          tag1: m.words("Denyut bisnis Anda,"),
-          tag2: m.words("real-time."),
-          cta: m.text("Coba gratis 14 hari"),
-        }),
-      })
-      .pivot({ x: W / 2, y: H / 2 }),
-  }),
-  skins: { dom: { css } },
-  scene: ({ time }) => {
-    const ms = msOf(time);
-    const cam = camPose(ms);
-    const at = (e: Entry): Pose2d => enter(ms, e, cam.tx, cam.ty, cam.z);
+/* ---------------- signals shared by several elements ---------------- */
+const camOf = (time: Time): ReturnType<typeof camPose> => camPose(msOf(time));
+const channel =
+  (make: (time: Time) => Pose2d) =>
+  (key: "x" | "y" | "scale" | "rotation" | "opacity" | "blur"): Signal<number> =>
+  (time) =>
+    make(time)[key] ?? 0;
 
-    // hero: dot -> line -> chart -> logo
-    const dr = prog(ms, 1400, 3400, ease.sineInOut);
-    const morph = prog(ms, 15200, 2000, ease.cubicInOut);
-    const head = heroPath(Math.max(0.0001, dr));
-    const base = heroPath(0.0001);
-    const sparkAppear = prog(ms, 0, 900);
-    const sparkHide = 1 - prog(ms, 15200, 800, ease.cubicIn);
-    const pulse = 1 + 0.2 * Math.sin(ms / 240);
+const draw = (time: Time): number => prog(msOf(time), 1400, 3400, ease.sineInOut);
+const morph = (time: Time): number => prog(msOf(time), 15200, 2000, ease.cubicInOut);
+const heroHead = (time: Time) => heroPath(Math.max(0.0001, draw(time)));
+const heroBase = heroPath(0.0001);
+const ctaProgress = (time: Time): number => c01((msOf(time) - 18500) / 800);
 
-    const dashFade = 1 - prog(ms, 15400, 1500, ease.sineInOut);
+/* ---------------- motions ---------------- */
+const arrive = (entry: Entry) => {
+  const pose = channel((time) => {
+    const cam = camOf(time);
+    return enter(msOf(time), entry, cam.tx, cam.ty, cam.z);
+  });
+  return bind({
+    x: pose("x"),
+    y: pose("y"),
+    scale: pose("scale"),
+    rotation: pose("rotation"),
+    opacity: pose("opacity"),
+    blur: pose("blur"),
+  });
+};
 
-    // grid parallax
-    const bgT = (k: number, zk: number): Pose2d => ({
-      x: cam.tx * k,
-      y: cam.ty * k,
-      scale: 1 + (cam.z - 1) * zk,
-      rotation: camAt(ms).rot * 0.5,
-    });
+const parallax = (k: number, zk: number) => {
+  const pose = channel(
+    (time): Pose2d => ({
+      x: camOf(time).tx * k,
+      y: camOf(time).ty * k,
+      scale: 1 + (camOf(time).z - 1) * zk,
+      rotation: camAt(msOf(time)).rot * 0.5,
+    }),
+  );
+  return bind({ x: pose("x"), y: pose("y"), scale: pose("scale"), rotation: pose("rotation") });
+};
 
-    const barGrow = (i: number): number => ease.cubicOut(c01((ms - (7000 + i * 130)) / 1100));
-    const arcP = (i: number): number => ease.cubicOut(c01((ms - (7300 + i * 260)) / 1000));
+const camera = channel((time) => camOf(time).pose);
 
-    const rise = (from: number, dur: number, dy: number, i = 0, stag = 0): Pose2d => {
-      const p = c01((ms - from - i * stag) / dur);
-      return {
-        y: dy * (1 - ease.backOut(p)),
-        opacity: c01(p * 2.5),
-        scale: mix(0.92, 1, ease.cubicOut(p)),
-      };
-    };
-    const ctaP = c01((ms - 18500) / 800);
+const drawArc = (i: number) =>
+  bind({ drawn: (time) => ease.cubicOut(c01((msOf(time) - (7300 + i * 260)) / 1000)) });
 
+// A part rises into place; `stagger` delays each later part.
+const riseIn = (from: number, dur: number, dy: number, stagger: number) =>
+  motion((time: Time, context?: MotionContext): Pose2d => {
+    const p = c01((msOf(time) - from - (context?.index ?? 0) * stagger) / dur);
     return {
-      bgDots: bgT(0.3, 0.2),
-      bgDots2: bgT(0.6, 0.45),
-      world: cam.pose,
-      dash: { opacity: dashFade },
-      headG: at(E.head),
-      kpiAG: at(E.kpiA),
-      kpiBG: at(E.kpiB),
-      kpiCG: at(E.kpiC),
-      chartG: at(E.chart),
-      notifG: at(E.notif),
-      regionG: at(E.region),
-      trafficG: at(E.traffic),
-      activityG: at(E.activity),
-      bars: (i: number): Pose2d => ({
-        scaleY: barGrow(i) * (1 + 0.025 * Math.sin(ms / 700 + i)),
-        anchor: "bottom",
-      }),
-      arc0: { drawn: arcP(0) },
-      arc1: { drawn: arcP(1) },
-      arc2: { drawn: arcP(2) },
-      arc3: { drawn: arcP(3) },
-      activity: each(ACTIVITY, (_a, i) => {
-        const p = c01((ms - (7300 + i * 160)) / 700);
-        return { x: mix(60, 0, ease.cubicOut(p)), opacity: p };
-      }),
-      heroG: {},
-      heroLine: { drawn: dr, shape: morph, custom: { sw: mix(7, 22, morph) } },
-      spark: {
-        x: (head.x ?? 0) - (base.x ?? 0),
-        y: (head.y ?? 0) - (base.y ?? 0),
-        scale: sparkAppear * sparkHide * pulse * (1 + 0.5 * arch(c01((ms - 10000) / 1600))),
-        opacity: sparkAppear,
-      },
-      wordmark: (i: number): Pose2d => rise(17100, 700, 70, i, 120),
-      tag1: (i: number): Pose2d => rise(17800, 700, 50, i, 160),
-      tag2: (i: number): Pose2d => rise(18200, 700, 50, i, 160),
-      cta: { scale: mix(0.6, 1, ease.backOut(ctaP)), opacity: c01(ctaP * 2.5) },
+      y: dy * (1 - ease.backOut(p)),
+      opacity: c01(p * 2.5),
+      scale: mix(0.92, 1, ease.cubicOut(p)),
     };
-  },
+  });
+
+/* ---------------- elements ---------------- */
+const readout = (name: string, make: (ms: number) => string) =>
+  text(name, (time) => make(msOf(time)));
+
+const kpi = (id: string, label: string, value: (ms: number) => string, delta: string, x: number) =>
+  group(
+    `${id}G`,
+    [box(`${id}Bg`), text(`${id}L`, label), readout(`${id}V`, value), text(`${id}D`, delta)],
+    { pivot: { x, y: 285 } },
+  );
+
+const bgDots = box("bgDots");
+const bgDots2 = box("bgDots2");
+
+const headG = group("headG", [text("title", "Penjualan Langsung"), text("livePill", "LANGSUNG")], {
+  pivot: { x: 540, y: 100 },
 });
+const kpiAG = kpi(
+  "kpiA",
+  "Pendapatan",
+  (ms) => `Rp ${dotted(482 * prog(ms, 5600, 2600))} jt`,
+  "+12,4%",
+  198,
+);
+const kpiBG = kpi(
+  "kpiB",
+  "Pelanggan Baru",
+  (ms) => dotted(1284 * prog(ms, 5850, 2600) + Math.max(0, ms - 8450) / 900),
+  "+8,1%",
+  540,
+);
+const kpiCG = kpi("kpiC", "Churn", (ms) => `${dec1(2.1 * prog(ms, 6100, 2400))}%`, "-0,4%", 882);
+const chartG = group(
+  "chartG",
+  [
+    box("chartBg"),
+    box("chartGrid"),
+    text("chartTitle", "Pendapatan Real-time"),
+    readout(
+      "chartTotal",
+      (ms) =>
+        `Rp ${dotted(2400000 * prog(ms, 4800, 4200, ease.cubicInOut) + Math.max(0, ms - 9000) * 55)}`,
+    ),
+    text("chartCap", "per jam, hari ini"),
+  ],
+  { pivot: { x: 540, y: 680 } },
+);
+const notifG = group(
+  "notifG",
+  [
+    box("notifBg"),
+    box("notifIcon"),
+    text("notifTitle", "Lonjakan penjualan"),
+    text("notifSub", "dibanding jam lalu"),
+    readout("notifVal", (ms) => `+${Math.round(32 * prog(ms, 8300, 1100))}%`),
+  ],
+  { pivot: { x: 540, y: 1015 } },
+);
+const bars = many("bars", 5);
+const regionG = group(
+  "regionG",
+  [
+    box("regionBg"),
+    text("regionTitle", "Per Wilayah"),
+    bars,
+    ...[86, 64, 52, 41, 33].map((top, i) =>
+      readout(`barV${i}`, (ms) => String(Math.round(top * prog(ms, 7200 + i * 120, 1300)))),
+    ),
+    many("barNames", ["Jkt", "Bdg", "Sby", "Mdn", "Mks"], (name) => text("name", name)),
+  ],
+  { pivot: { x: 280, y: 1275 } },
+);
+const arc0 = shape("arc0", arcs[0] ?? []);
+const arc1 = shape("arc1", arcs[1] ?? []);
+const arc2 = shape("arc2", arcs[2] ?? []);
+const arc3 = shape("arc3", arcs[3] ?? []);
+const trafficG = group(
+  "trafficG",
+  [
+    box("trafficBg"),
+    text("trafficTitle", "Sumber Trafik"),
+    arc0,
+    arc1,
+    arc2,
+    arc3,
+    readout("visit", (ms) => `${dec1(12.4 * prog(ms, 7400, 1500))}rb`),
+    many("legend", ["Organik", "Iklan", "Sosial", "Langsung"], (name) => text("name", name)),
+  ],
+  { pivot: { x: 800, y: 1275 } },
+);
+const activity = many("activity", ACTIVITY, (line) => text("line", line));
+const activityG = group(
+  "activityG",
+  [box("activityBg"), text("activityTitle", "Aktivitas Tim"), activity],
+  { pivot: { x: 540, y: 1645 } },
+);
+const dash = group("dash", [
+  headG,
+  kpiAG,
+  kpiBG,
+  kpiCG,
+  chartG,
+  notifG,
+  regionG,
+  trafficG,
+  activityG,
+]);
+
+const heroLine = shape("heroLine", { base: lineCubics, targets: [nCubics] });
+const spark = box("spark");
+const heroG = group("heroG", [heroLine, spark]);
+
+const wordmark = text("wordmark", "NADI", { split: "letters" });
+const tag1 = text("tag1", "Denyut bisnis Anda,", { split: "words" });
+const tag2 = text("tag2", "real-time.", { split: "words" });
+const cta = text("cta", "Coba gratis 14 hari");
+const endG = group("endG", [wordmark, tag1, tag2, cta]);
+
+const world = group("world", [dash, heroG, endG], { pivot: { x: W / 2, y: H / 2 } });
+
+const pulseAt = (ms: number): number => 1 + 0.2 * Math.sin(ms / 240);
+
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
+export default sceneBuilder({
+  frame: { width: W, height: H },
+  length: TOTAL_MS,
+})
+  .element(bgDots)
+  .motion(parallax(0.3, 0.2))
+  .element(bgDots2)
+  .motion(parallax(0.6, 0.45))
+  .element(world)
+  .motion(
+    bind({
+      x: camera("x"),
+      y: camera("y"),
+      scale: camera("scale"),
+      rotation: camera("rotation"),
+    }),
+  )
+  .element(dash)
+  .motion(bind({ opacity: (time) => 1 - prog(msOf(time), 15400, 1500, ease.sineInOut) }))
+  .element(headG)
+  .motion(arrive(E.head))
+  .element(kpiAG)
+  .motion(arrive(E.kpiA))
+  .element(kpiBG)
+  .motion(arrive(E.kpiB))
+  .element(kpiCG)
+  .motion(arrive(E.kpiC))
+  .element(chartG)
+  .motion(arrive(E.chart))
+  .element(notifG)
+  .motion(arrive(E.notif))
+  .element(regionG)
+  .motion(arrive(E.region))
+  .element(trafficG)
+  .motion(arrive(E.traffic))
+  .element(activityG)
+  .motion(arrive(E.activity))
+  .element(bars)
+  .motion(
+    motion((_time: Time, context?: MotionContext): Pose2d => {
+      const ms = msOf(context?.time ?? _time);
+      const i = context?.index ?? 0;
+      const grow = ease.cubicOut(c01((ms - (7000 + i * 130)) / 1100));
+      return { scaleY: grow * (1 + 0.025 * Math.sin(ms / 700 + i)), anchor: "bottom" };
+    }).loop(1400 * Math.PI),
+  )
+  .element(arc0)
+  .motion(drawArc(0))
+  .element(arc1)
+  .motion(drawArc(1))
+  .element(arc2)
+  .motion(drawArc(2))
+  .element(arc3)
+  .motion(drawArc(3))
+  .element(activity)
+  .motion(
+    motion((time: Time, context?: MotionContext): Pose2d => {
+      const p = c01((msOf(time) - (7300 + (context?.index ?? 0) * 160)) / 700);
+      return { x: mix(60, 0, ease.cubicOut(p)), opacity: p };
+    }),
+  )
+  .element(heroLine)
+  .motion(
+    bind({ drawn: draw, shape: morph }),
+    motion((time: Time): Pose2d => ({ custom: { sw: mix(7, 22, morph(time)) } })),
+  )
+  .element(spark)
+  .motion(
+    bind({
+      x: (time) => (heroHead(time).x ?? 0) - (heroBase.x ?? 0),
+      y: (time) => (heroHead(time).y ?? 0) - (heroBase.y ?? 0),
+      scale: (time) => {
+        const ms = msOf(time);
+        const appear = prog(ms, 0, 900);
+        const hide = 1 - prog(ms, 15200, 800, ease.cubicIn);
+        return appear * hide * pulseAt(ms) * (1 + 0.5 * arch(c01((ms - 10000) / 1600)));
+      },
+      opacity: (time) => prog(msOf(time), 0, 900),
+    }),
+  )
+  .element(wordmark)
+  .motion(riseIn(17100, 700, 70, 120))
+  .element(tag1)
+  .motion(riseIn(17800, 700, 50, 160))
+  .element(tag2)
+  .motion(riseIn(18200, 700, 50, 160))
+  .element(cta)
+  .motion(
+    bind({
+      scale: (time) => mix(0.6, 1, ease.backOut(ctaProgress(time))),
+      opacity: (time) => c01(ctaProgress(time) * 2.5),
+    }),
+  );

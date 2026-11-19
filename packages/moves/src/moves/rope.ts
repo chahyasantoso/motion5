@@ -1,5 +1,5 @@
 import { composeChain, type Link2d } from "@gerak/rig";
-import type { Anchor2d, Point2d, Time } from "@gerak/core";
+import { motion, type Motion, type Anchor2d, type Point2d, type Time } from "@gerak/core";
 import { choiceOption, numberOption } from "./options";
 
 const OVERSHOOT_SCALE = 2.5;
@@ -41,7 +41,7 @@ export interface RopeOptions {
 // then each link turns to its heading in the shape, rippling along from the end `release` names.
 /** Bends a chain of points from straight into their shape, link by link, answering anchors for
  * `toCubics`. */
-export function rope(options: RopeOptions): (time: Time) => readonly Anchor2d[] {
+export function rope(options: RopeOptions): Motion<readonly Anchor2d[]> {
   const { points } = options;
   if (points === undefined) throw new RangeError(`rope: option "points" is required.`);
   if (points.length < 2) throw new RangeError(`rope: option "points" needs at least 2 rows.`);
@@ -58,7 +58,7 @@ export function rope(options: RopeOptions): (time: Time) => readonly Anchor2d[] 
     min: 0,
     max: RIPPLE_LIMIT,
   });
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     const pinEnd = pin === "end";
     const shape = pinEnd ? [...points].reverse() : points;
     const pinned = shape[0] ?? { x: 0, y: 0 };
@@ -109,5 +109,5 @@ export function rope(options: RopeOptions): (time: Time) => readonly Anchor2d[] 
         outY: hy,
       };
     });
-  };
+  });
 }

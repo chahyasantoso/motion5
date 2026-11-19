@@ -277,9 +277,9 @@ const HOT_SWAP =
   `  });\n` +
   `}\n`;
 
-/** Whether a source file default-exports a `defineStage` stage module. */
+/** Whether a source file default-exports a `sceneBuilder` piece. */
 function isStageSource(code: string): boolean {
-  return /\bexport\s+default\b/.test(code) && /\bdefineStage\s*(?:<[^>]*>)?\s*\(/.test(code);
+  return /\bexport\s+default\b/.test(code) && /\bsceneBuilder\s*\(/.test(code);
 }
 
 /** Provides live HMR scene transform and source/edit endpoints for the live editor. */

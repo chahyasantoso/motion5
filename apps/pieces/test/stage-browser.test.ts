@@ -14,16 +14,15 @@ let copies = 0;
 /** A stage module of one actor that slides in from the left over the whole piece. */
 function fixture(distance: number): string {
   return `import { slide } from "@gerak/moves";
-import { defineStage } from "@gerak/stage";
+import { beat, box, sceneBuilder } from "@gerak/stage";
 
-export default defineStage({
-  beats: { go: [0, 2000] },
-  cast: (m) => ({ box: m.box() }),
-  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
-  scene: ({ time, beats }) => ({
-    box: slide({ distance: ${distance}, from: "left" })(beats.go.of(time)),
-  }),
-});
+const go = beat("go", 2000);
+
+export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
+
+export default sceneBuilder()
+  .element(box("box"))
+  .motion(slide({ distance: ${distance}, from: "left" }).in(go));
 `;
 }
 

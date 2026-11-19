@@ -26,18 +26,18 @@ storyboard before it, and shots in place of one idea.
 
 ## Shots as beats
 
-- Name the beats by the shots in `defineStage({ beats: { hook: [0, 3000], story: [3000, 7000], call: [7000, 10000] }, ... })`. Add a
+- Name the beats by the shots as `beat` values (`beat("hook", 3000)`, `beat("story", 4000, { after: hook })`, …). Add a
   beat for each transition when it spans its own ms: `hookToStory: [2600, 3200]`.
 - Keep each shot's scene work local to its beat: one function per shot, written from 0, placed with `sequence`. A
   shot never reads another shot's time.
-- A member belongs to the shots it is seen in: `.on("hook", "story")` shows it across both. The carried member's
-  `.on(...)` names both shots of its change.
+- An element belongs to the shots it is seen in: `.show([hook, story])` shows it across both. A carried element's
+  window spans both shots of its change.
 - B-roll is a cutaway to the piece's own material: a detail of the product, the hook's object from another side, a
   word from the script. Never borrowed footage and never another piece's members.
 
 ## The camera
 
-- The camera is a group, `world: m.group({ ... })` skinned `position: absolute; inset: 0`, holding everything that sits
+- The camera is a group, `group("world", [...])` skinned `position: absolute; inset: 0`, holding everything that sits
   in the scene. Moving `world` moves the view: its `x` and `y` pan, its `scale` zooms about the frame's centre,
   and a short decaying `rotation` or offset shakes. Write the camera as one `sequence<Pose2d>` of its moves by shot.
   `x` and `y` are screen px, outside the zoom: to keep a pan of `x` on the same place at scale `s`, write `x * s`.
@@ -50,10 +50,9 @@ storyboard before it, and shots in place of one idea.
   grows by the same factor, and the steps stay under the review's ratio limit. A zoom to 20 needs about 900 ms.
 - **Write the camera from the skin's own numbers, not `rest.get(...)`.** The review runs with no browser, where `rest`
   returns `ZERO_BOX`, so a camera computed from it reads wrong there.
-- Members the camera alone moves are `.static()`; a group's `.static()` says nothing of its members, so a caption is
-  `m.words(text).static()`.
+- Elements the camera alone moves take no motion of their own, so they are static.
 - Text that must stay still while the camera moves (a caption, the call to action) sits outside `world`, as
-  `m.words` or `m.letters`: `m.box()` with no text shows nothing to read.
+  `text(name, value, { split })`: a `box` with no text shows nothing to read.
 
 ## Seamless transitions
 

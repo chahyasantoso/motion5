@@ -1,4 +1,4 @@
-import { ballistic as thrown, type Pose2d, type Time } from "@gerak/core";
+import { ballistic as thrown, type Pose2d, motion, type Motion } from "@gerak/core";
 
 /** The parabola's true peak above the higher end, for a curve whose control point sits `apex` above it. */
 function peakAbove(dy: number, apex: number): number {
@@ -19,7 +19,7 @@ export interface BallisticOptions {
 }
 
 /** Thrown from an offset to rest along a parabola at even time steps, rising, hanging at the top and falling like a ball. */
-export function ballistic(options: BallisticOptions): (time: Time) => Pose2d {
+export function ballistic(options: BallisticOptions): Motion<Pose2d> {
   const { dx, dy, apex = 200 } = options;
-  return ({ progress }): Pose2d => thrown({ dx, dy, apex: peakAbove(dy, apex) })(progress);
+  return motion(({ progress }): Pose2d => thrown({ dx, dy, apex: peakAbove(dy, apex) })(progress));
 }

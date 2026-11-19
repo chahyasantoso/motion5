@@ -1,4 +1,4 @@
-import { unreachable, type Pose2d, type Time } from "@gerak/core";
+import { motion, type Motion, unreachable, type Pose2d } from "@gerak/core";
 import { choiceOption } from "./options";
 
 const EDGES = ["top", "bottom", "left", "right"] as const;
@@ -10,9 +10,9 @@ export interface UnfoldOptions {
 }
 
 /** Grows from nothing along one axis to full size, held at one edge. */
-export function unfold(options: UnfoldOptions = {}): (time: Time) => Pose2d {
+export function unfold(options: UnfoldOptions = {}): Motion<Pose2d> {
   const from = choiceOption("unfold", "from", options.from, EDGES, "top");
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     const grown = 1 - (1 - progress) ** 2;
     switch (from) {
       case "top":
@@ -24,5 +24,5 @@ export function unfold(options: UnfoldOptions = {}): (time: Time) => Pose2d {
       default:
         return unreachable(from);
     }
-  };
+  });
 }

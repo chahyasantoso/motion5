@@ -3,113 +3,131 @@
 ## Goal
 
 People and agents making a landing page animate the page's own elements on scroll, pointer and clock, section by
-section. Some elements travel across sections. The code lets a beat choose its driver. It adds a pointer signal, a
-page mode with no frame, sections with a placement, and slots that an element travels between.
+section, and move one element between sections. The code keeps one clock, takes scroll and pointer as inputs, adds a
+mount that animates existing page nodes, and measures sections and slots from the page's own CSS.
 
-Status: proposed 2026-11-19. Starts after `plan/scene-builder-plan.md` lands. One branch, one pull request. The web
-overlay in `plan/roadmap.md` builds on its page mode.
+Status: approved 2026-11-20. Starts after PR 604 (the scene builder) merges. Four slices, one pull request each, in
+order. The web overlay in `plan/roadmap.md` builds on the page mount.
 
-Read `AGENTS.md` first. Every rule there applies.
+Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
 ## Where things stand
 
-- Beats are in milliseconds. `@gerak/dom` has `scrollDriver`, injected by a source key (ADR-030), but a stage drives
-  one whole piece from one clock.
-- Pointer events are discrete: `enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`. Live inputs arrive as samples,
-  events with a value (`plan/live-inputs-plan.md`).
-- The DOM renderer draws inside a fixed frame, 1280 by 720 by default, scaled to fit its host.
-- `box` and `text` are page elements, and the renderer measures their rests.
+- A piece is a `sceneBuilder` chain plus `export const skin` (`packages/stage/docs/stage.md`, ADR-193).
+  `compileScene(scene, { skin })` gives a `Stage`; `mountStage` (`@gerak/dom`) draws it in a shadow-DOM frame it
+  builds itself, scaled to fit its host.
+- A stage runs on one clock. Events (`{ name, at, target, value? }`) arrive beside time; core's `state` folds them
+  (`packages/core/docs/core.md`, "State from events").
+- `@gerak/dom` has `scrollDriver` (ADR-030) and an outside-the-stage path that writes a pose onto any element
+  (`packages/dom/docs/agent-outside.md`). The pose-to-CSS writer is shared by both.
+- Page tools accept `--action scroll:px@ms` (`packages/tools/docs/commands.md`).
+- Elements are `box`, `shape`, `text`, `many`, `group`; `anchor` is deferred. A motion's context carries `rest`
+  (measured boxes), `index` and `count`.
 
 ## Decisions
 
-### 1. A beat chooses its driver
+### 1. One clock; scroll and pointer are inputs
 
-- A clock beat is `beat(name, ms, { at? | after?, gap? })`. Its points are times in ms.
-- A scroll beat is `beat(name, { scroll: { from, to } })`. Its points are scroll positions in px.
-- Types keep the two apart: a scroll beat refuses a time, and a clock beat refuses a scroll position.
-- The driver stays in `@gerak/dom`. A scroll beat names its source by key, as ADR-030 states.
-- One scene may mix clock and scroll beats. `.in(beat)` reads the same for both.
+- The scene keeps one clock. Scroll position and pointer position arrive as sample events with a value, like any
+  live input, so a recording replays and scrubs.
+- Core gains `scroll` and `pointer` states (built on `state`): `scroll.y` in px, `pointer.x` and `pointer.y` from 0 to
+  1 across the viewport.
+- A scroll beat is a window over scroll position: `beat(name, { scroll: [from, to] })`, with `from` and `to` scroll
+  points. `.in(scrollBeat)` gives the motion progress 0 to 1 from the folded scroll value, holding before and after,
+  exactly as a clock beat does from time.
+- Types keep the two apart: a scroll beat takes scroll points, a clock beat takes ms.
+- A trigger is a state change: `beat(name, ms, { when: point.reached })` starts a clock beat at the moment scroll first
+  passes the point. `back: "reverse" | "stay" | "replay"` says what scrolling back past it does; it has no default.
+- Smooth scroll is `springTo` on the scroll state; nothing new.
+- Headless review sees scroll motion only from scripted scroll: `cues` in the piece, or `--action scroll:px@ms`.
 
-### 2. Triggers
+### 2. A page mount in `@gerak/dom`
 
-- `beat(name, ms, { when: point.reached, back })` starts a clock beat when the scroll reaches a point.
-- `back` says what scrolling back past the point does: `"reverse"`, `"stay"` or `"replay"`. It has no default.
-- The crossing is an event in the event log, so a recorded session replays and scrubs.
+- `mountPage(scene, { root? })` animates existing nodes. It builds no frame, no shadow DOM and no element, and takes
+  no skin: the site's CSS is the look.
+- `el(selector)` binds an element to an existing node: `text("title", "", { node: el("#hero h1") })`. In a page scene
+  every element has a node; `compileScene` refuses one without, and names it.
+- Poses are written by the same pose-to-CSS writer `mountStage` uses; it stays the one owner.
+- Rests are measured from the page, and again on resize.
+- `mountStage` does not change.
 
-### 3. The pointer signal
+### 3. Lines are measured, not counted
 
-- `pointer.x` and `pointer.y` are signals from 0 to 1 across the viewport.
-- They are a `state` (`plan/principles-plan.md` Decision 5) over pointer samples, so a recording replays them.
+- `text(..., { split: "words" })` keeps a fixed part count from the text. In a page mount each word's context gains
+  `line`, measured from layout; headless it is 0.
+- A line-by-line headline is a stagger by `line`: `stagger` gains `by: "index" | "line"`, default `"index"`.
+- No part count changes on resize; only `line` does.
 
-### 4. Page mode
+### 4. Sections and slots are measured from CSS
 
-- `sceneBuilder({ page: true })` has no frame, no scaling and no clipping.
-- `el(selector)` makes an element from an existing page element: `text("title", el("#hero h1"), { split: "lines" })`.
-- Rests are measured from the page, again on every resize.
-- `text` gains `split: "lines"`, measured from the page's own line breaks.
+- gerak never changes page layout. A pinned section is a tall wrapper with a `position: sticky` inner; a fixed layer is
+  `position: fixed`. The page's CSS writes both; `packages/dom/docs/page.md` states the convention.
+- `section(name, el(selector))` reads a section's edges as scroll points: `.top`, `.end`, with `.plus(px)` and
+  `.minus(px)`. Scroll beats use them.
+- A slot is an element bound to an empty node the page's CSS places, with no motion:
+  `box("slotHero", { node: el("#hero .slot") })`. `anchor` stays deferred.
+- `travel({ to: slot, arc? })` moves an element from where it is to the slot's measured box over its beat, at any
+  viewport size.
+- An element belongs to one scene; the builder refuses an element in two scenes and names both. Scenes share beats,
+  states and signals, never elements.
 
-### 5. Sections
+## Slices
 
-- `section(scene, placement?)` places a scene on the page. `page(...sections)` joins them.
-- A placement is one of:
-  - flow, the default: the section takes space and scrolls away.
-  - `pin: { length }`: the section takes space and stays on screen for `length` px of scroll.
-  - `fixed: { from, to }, layer: "above" | "below"`: the section takes no space and stays on screen over that scroll
-    range.
-- A section gives its edges as scroll points: `hero.top`, `hero.end`, with `.plus(px)` and `.minus(px)`.
-- A section whose range is off the screen is not computed.
+| Slice | Decisions | Done when |
+| --- | --- | --- |
+| A. Inputs | 1 | scroll and pointer states, scroll beats, triggers; every existing piece samples the same |
+| B. Page mount | 2, 3 | `mountPage`, `el`, `node`, measured rests and `line`, `stagger` by line |
+| C. Sections | 4 (sections, ownership) | `section` edges as scroll points; the sticky and fixed convention documented |
+| D. Slots and the proof | 4 (slots, travel), proof | `travel`; the landing page and its measure |
 
-### 6. One owner across sections
+## Tests first, per slice
 
-- An element belongs to one scene. The builder refuses an element passed to two scenes, and names both.
-- Scenes affect each other only through shared values: beats, `state` and signals.
+- A: a scroll beat refuses ms and a clock beat refuses a scroll point, at type level; `.in(scrollBeat)` holds before
+  and after; a trigger with each `back` value gives the right progress as scroll passes the point and returns;
+  `pointer.x` replays the same from a recorded session.
+- B: `mountPage` writes a pose onto an existing node and creates none; a page scene element with no node is refused;
+  `line` is measured in the browser and 0 headless; `stagger` by line.
+- C: a section's edges match its measured box at two viewport sizes.
+- D: `travel` ends on the slot at two viewport sizes; an element in two scenes is refused.
 
-### 7. Slots and travel
+## Proof and measure
 
-- A slot is an `anchor` made from a page element: `anchor("slotHero", el("#hero .drink-slot"))`. The page's CSS places
-  it at every screen size.
-- `travel({ to: slot, arc? })` moves an element from where it is to a slot, over its beat.
-
-### 8. Tests first
-
-- A scroll beat refuses a time, and a clock beat refuses a scroll position, at type level.
-- A trigger with each `back` value gives the right progress when the scroll passes the point and returns.
-- `pointer.x` replays the same from a recorded session.
-- A fixed section stays on screen over its range only. A pinned section adds its length to the page.
-- An element in two scenes is refused.
-- `travel` ends on the slot at two viewport sizes.
-
-### 9. Proof and measure
-
-- One landing page in `apps/pieces`, with:
-  - a hero with a line-by-line headline.
-  - a features section.
-  - a pinned story section.
-  - a gallery.
-  - a drink image in a fixed section. It starts in the hero and travels to a slot in each of the next two sections.
+- One landing page in `apps/pieces` with its own HTML and CSS: a hero with a line-by-line headline, a features section,
+  a pinned story section, a gallery, and a drink image in a fixed layer that starts in the hero and travels to a slot
+  in each of the next two sections.
 - A separate fresh agent writes the same page with plain HTML, CSS, GSAP and ScrollTrigger from the same brief.
-- The report gives both versions' line counts and tokens, and the gerak version's review. It adds contact sheets of
-  both at three scroll positions and two viewport sizes.
+- The report gives both versions' line counts and tokens, the gerak version's review, and contact sheets of both at
+  three scroll positions and two viewport sizes.
 
-### 10. Record and docs
+## Docs and record
 
-- A new ADR records Decisions 1 to 7, with the next free number. Then run `npm run adr-index:write`.
-- Page mode, scroll beats, triggers, sections and slots go on a new page, `packages/stage/docs/page.md`, read on
-  demand. `stage.md` gains one line that points to it.
-- The roadmap's web overlay entry names page mode as its base.
-- Rewrite `docs/SESSION-STATUS.md`.
+- `packages/dom/docs/page.md`: how a page mount works, written tersely as behaviour (inputs, nodes, lines, the CSS
+  convention for pinning and fixed layers, sections, slots). `stage.md` and `core.md` explain scroll beats, the
+  `scroll` and `pointer` states and triggers where they belong, and link the new page.
+- A new ADR records Decisions 1 to 4, with the next free number; then `npm run adr-index:write`.
+- The roadmap's web overlay entry names the page mount as its base. Rewrite `docs/SESSION-STATUS.md` per slice.
 
 ## Execution
 
-1. **Baseline:** frames and review output of every piece, and every command's output on `tempo`, `card` and
-   `overlay3d`.
-2. Decisions 8, then 1 to 7 in order, then 9 and 10. `npm run check` is green after each.
-3. Compare against the baseline. No existing frame may change.
-4. In the pull request, report `npm run check`, `npm run pack:check`, the comparison, the proof and its measure, and
-   one cold review by an agent that has not read this plan.
+1. **Baseline,** kept outside the repository: `npx gerak sample <file> --at 0,250,500,750,1000,1500,2000,3000,4000,6000,8000,12000`
+   for every `apps/pieces/*/src/*.ts` outside `moves/`, and `npx gerak frames` of every page.
+2. Slices A to D in order, one pull request each, test first. `npm run check` is green before each pull request.
+3. After each slice, compare samples by value (keys in any order, 1e-9). No existing piece may change.
+4. In each pull request, report `npm run check`, `npm run pack:check`, the comparison, and one cold review by an
+   agent that has not read this plan. Slice D also reports the proof and its measure.
+
+## Working notes for any harness
+
+- Windows, Git Bash. Run git as plain commands.
+- Browser tests (`*-browser.test.ts`) can time out under full-suite load. Rerun a failing one alone with
+  `npx vitest run <file>` before treating it as a failure; never weaken it.
+- Regenerate reference pages with `npm run reference -- --write` and `docs/MAP.md` with `npm run map -- --write`
+  after any export or folder change.
+- Docs are terse statements of behaviour, never recipes.
 
 ## Not in this plan
 
 - Shader effects as a renderer plugin.
 - Transitions between routes.
+- `anchor` for stage pieces.
 - The visual editor.

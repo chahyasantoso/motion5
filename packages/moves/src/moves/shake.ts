@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { shaken } from "../parts/oscillation/shaken";
 import { numberOption } from "./options";
 
@@ -11,9 +11,9 @@ export interface ShakeOptions {
 }
 
 /** Shakes side to side, starting hard and dying away. */
-export function shake(options: ShakeOptions): (time: Time) => Pose2d {
+export function shake(options: ShakeOptions): Motion<Pose2d> {
   const distance = numberOption("shake", "distance", options.distance, { min: 0 });
   const count = numberOption("shake", "count", options.count, { default: 4, min: 1, max: 16 });
   const sway = shaken({ count });
-  return ({ progress }) => ({ x: distance * sway(progress) });
+  return motion(({ progress }) => ({ x: distance * sway(progress) }));
 }

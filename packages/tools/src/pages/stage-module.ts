@@ -1,16 +1,20 @@
 import {
-  compileStage,
+  compileScene,
   formatStageError,
-  isStageDefinition,
+  isDomSkin,
+  isScene,
+  type DomSkinInput,
+  type SceneBuilder,
   type Stage,
-  type StageDefinition,
 } from "@gerak/stage";
 
 /** A stage module as the pieces' pages play it. */
 export interface LoadedStage {
   readonly kind: "stage";
   readonly stage: Stage;
-  readonly definition: StageDefinition;
+  readonly scene: SceneBuilder;
+  /** The module's `skin` export, which the DOM renderer draws with. */
+  readonly skin: DomSkinInput | undefined;
   readonly exports: Readonly<Record<string, unknown>>;
 }
 
@@ -40,18 +44,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 /** Compiles a stage module from what a file exports, or returns why it is not one. */
 export function stageOf(value: unknown): LoadedStage | string {
   const exports: Readonly<Record<string, unknown>> = isRecord(value) ? value : {};
-  const candidate: unknown = isStageDefinition(value) ? value : Reflect.get(exports, "default");
-  if (!isStageDefinition(candidate)) {
-    return "Stage module must default-export `defineStage(...)`.";
+  const candidate: unknown = isScene(value) ? value : Reflect.get(exports, "default");
+  if (!isScene(candidate)) {
+    return "A piece must default-export `sceneBuilder(...)`.";
   }
-  const compiled = compileStage(candidate);
+  const given: unknown = Reflect.get(exports, "skin");
+  if (given !== undefined && !isDomSkin(given))
+    return "A piece's `skin` export must be `{ css }`, with `css` and `defs` both strings or both URLs.";
+  const skin = given;
+  const compiled = compileScene(candidate, { skin });
   if (!compiled.ok) {
     return compiled.errors.map(formatStageError).join("\n");
   }
   return {
     kind: "stage",
     stage: compiled.stage,
-    definition: candidate,
+    scene: candidate,
+    skin,
     exports,
   };
 }

@@ -1,20 +1,27 @@
-import { defineStage } from "@gerak/stage";
+import { motion, type Pose2d, type Time } from "@gerak/core";
+import { beat, box, group, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 
-export default defineStage({
-  beats: { intro: [0, 400], go: [400, 1400], out: [1400, 2000] },
-  cast: (m) => ({
-    stage: m.group({
-      dot: m.box().on("go"),
-      word: m.letters("AB"),
-    }),
-  }),
-  skins: { dom: { css: "" } },
-  scene: ({ time, beats }) => {
-    const intro = beats.intro.of(time).progress;
-    const out = beats.out.of(time).progress;
-    return {
-      dot: { x: 100 * intro + 10 * Math.min(1, out * 20) },
-      word: (index) => ({ x: index * 20 + 50 * intro }),
-    };
-  },
-});
+export const skin = { css: "" };
+
+const intro = beat("intro", 400);
+const go = beat("go", 1000, { after: intro });
+const out = beat("out", 600, { after: go });
+
+const dot = box("dot");
+const word = text("word", "AB", { split: "letters" });
+
+/** The dot moves in `intro` and `out`, outside the `go` stretch it shows in. */
+export default sceneBuilder({ length: out.to })
+  .element(group("stage", [dot, word]))
+  .element(dot)
+  .show(go)
+  .motion(motion((time: Time): Pose2d => ({ x: 100 * time.progress })).in(intro))
+  .motion(motion((time: Time): Pose2d => ({ x: 10 * Math.min(1, time.progress * 20) })).in(out))
+  .element(word)
+  .motion(
+    motion(
+      (time: Time, context?: MotionContext): Pose2d => ({
+        x: (context?.index ?? 0) * 20 + 50 * time.progress,
+      }),
+    ).in(intro),
+  );

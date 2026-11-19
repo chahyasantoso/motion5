@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 const CURVES = {
   linear: (p: number) => p,
@@ -18,9 +18,11 @@ export interface TintOptions {
 }
 
 /** Turns a named custom number from 0 to an amount, for a colour charging, flipping or flashing that the page's CSS reads as --<name>. */
-export function tint(options: TintOptions): (time: Time) => Pose2d {
+export function tint(options: TintOptions): Motion<Pose2d> {
   const { name, amount = 1, curve = "linear" } = options;
-  return ({ progress }): Pose2d => ({
-    custom: { [name]: amount * CURVES[curve](progress) },
-  });
+  return motion(
+    ({ progress }): Pose2d => ({
+      custom: { [name]: amount * CURVES[curve](progress) },
+    }),
+  );
 }

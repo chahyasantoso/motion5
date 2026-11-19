@@ -4,31 +4,28 @@ import { addToPiece, type PieceAddition } from "../src/scene/piece-edit";
 const css = (rules: string): string => `\`\n${rules}\n\``;
 
 function piece(parts: {
-  cast?: string;
+  chain?: string;
   css?: string;
   defs?: string;
   frame?: string | null;
 }): string {
-  const defs = parts.defs === undefined ? "" : `\n      defs: \`${parts.defs}\`,`;
-  return `import { defineStage } from "@gerak/stage";
+  const defs = parts.defs === undefined ? "" : `\n  defs: \`${parts.defs}\`,`;
+  const options =
+    parts.frame === null ? "" : `{ frame: ${parts.frame ?? "{ width: 100, height: 80 }"} }`;
+  return `import { box, sceneBuilder } from "@gerak/stage";
 
-export default defineStage({
-  ${parts.frame === null ? "" : `frame: ${parts.frame ?? "{ width: 100, height: 80 }"},`}
-  beats: { show: [0, 1000] },
-  cast: ${parts.cast ?? `(m) => ({\n    "a": m.box().static(),\n  })`},
-  skins: {
-    dom: {
-      css: ${parts.css ?? css('[data-cast="a"] { z-index: 1; }')},${defs}
-    },
-  },
-  scene: () => ({}),
-});
+export const skin = {
+  css: ${parts.css ?? css('[data-cast="a"] { z-index: 1; }')},${defs}
+};
+
+export default ${parts.chain ?? `sceneBuilder(${options}).element(box("a"))`};
 `;
 }
 
 const added: PieceAddition = {
   names: ["bB"],
-  members: '    "bB": m.box().static(),',
+  imports: ["box"],
+  members: '  .element(box("bB"))',
   css: '[data-cast="bB"] { z-index: 1; }',
   defs: '<linearGradient id="b-g"/>',
   defIds: ["b-g"],
@@ -41,47 +38,56 @@ function edited(source: string, add: PieceAddition = added): string {
 }
 
 describe("addToPiece", () => {
-  it("appends members and rules, adds defs when missing, and changes nothing else", () => {
+  it("appends elements to the chain and rules to the skin, adds defs when missing, and changes nothing else", () => {
     const before = piece({});
     const after = edited(before);
     expect(after).toBe(
       piece({
-        cast: `(m) => ({\n    "a": m.box().static(),\n    "bB": m.box().static(),\n  })`,
+        chain: `sceneBuilder({ frame: { width: 100, height: 80 } }).element(box("a"))\n  .element(box("bB"))`,
         css: css('[data-cast="a"] { z-index: 1; }\n[data-cast="bB"] { z-index: 1; }'),
         defs: '<linearGradient id="b-g"/>',
       }),
     );
-    expect(after.startsWith(before.slice(0, before.indexOf("cast:")))).toBe(true);
+    expect(after.startsWith(before.slice(0, before.indexOf("export const skin")))).toBe(true);
   });
 
-  it("appends to existing defs, through satisfies and as const, and reads the frame", () => {
-    const before = piece({
-      cast: `(m) => ({\n    "a": m.box().static()\n  } satisfies Record<string, unknown>)`,
-      defs: '<radialGradient id="a-g"/>\n',
-    });
+  it("appends to existing defs and reads the frame", () => {
+    const before = piece({ defs: '<radialGradient id="a-g"/>\n' });
     const result = addToPiece(before, added);
     if (result.kind !== "edited") throw new Error(result.message);
     expect(result.frame).toEqual({ width: 100, height: 80 });
-    expect(result.source).toContain('    "a": m.box().static(),\n    "bB": m.box().static(),\n  }');
     expect(result.source).toContain('<radialGradient id="a-g"/>\n<linearGradient id="b-g"/>\n`');
-    expect(edited(piece({ cast: `(m) => ({ "a": m.box() } as const)` }))).toContain('"bB"');
   });
 
-  it("refuses a cast that is not a callback returning an object literal, a clash of names, and a clash of def ids", () => {
+  it("refuses a piece with no scene chain, a clash of names, a clash of def ids, and an unreadable skin or frame", () => {
     const refused = (source: string, add: PieceAddition = added): string => {
       const result = addToPiece(source, add);
       if (result.kind !== "refused") throw new Error("edited");
       return result.message;
     };
-    expect(refused(`export const x = 1;`)).toMatch(/defineStage/);
-    expect(refused(piece({ cast: "build()" }))).toMatch(/returning an object literal/);
-    expect(refused(piece({ cast: "(m) => []" }))).toMatch(/returning an object literal/);
-    expect(refused(piece({}), { ...added, names: ["a"] })).toMatch(/already has a member "a"/);
+    expect(refused(`export const x = 1;`)).toMatch(/sceneBuilder/);
+    expect(refused(piece({ chain: "build()" }))).toMatch(/sceneBuilder/);
+    expect(refused(piece({}), { ...added, names: ["a"] })).toMatch(/already has an element "a"/);
     expect(refused(piece({ defs: '<linearGradient id="b-g"/>' }))).toMatch(
       /already has the id "b-g"/,
     );
     expect(refused(piece({ css: "style()" }))).toMatch(/css/);
     expect(refused(piece({ frame: "size()" }))).toMatch(/frame/);
+  });
+
+  it("imports what the added elements call when the piece lacks it, and nothing it has", () => {
+    const withShape = edited(piece({}), { ...added, imports: ["box", "shape"] });
+    expect(withShape).toContain('import { box, sceneBuilder, shape } from "@gerak/stage";');
+    expect(edited(piece({}), added)).toContain('import { box, sceneBuilder } from "@gerak/stage";');
+    const bare = piece({}).replace('import { box, sceneBuilder } from "@gerak/stage";\n', "");
+    expect(edited(bare, { ...added, imports: ["shape"] })).toMatch(
+      /^import \{ shape \} from "@gerak\/stage";\n/,
+    );
+  });
+
+  it("says a skin read from a URL takes no new rules", () => {
+    const result = addToPiece(piece({ css: 'new URL("./piece.css", import.meta.url)' }), added);
+    expect(result.kind === "refused" && result.message).toMatch(/URL/);
   });
 
   it("reads a piece with no frame as the stage's default 1280 by 720", () => {

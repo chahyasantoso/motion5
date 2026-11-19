@@ -1,14 +1,9 @@
 import { circlePath, rectPath } from "@gerak/core";
 import { describe, expect, it } from "vitest";
-import {
-  NO_REST,
-  compileStage,
-  defineStage,
-  formatStageError,
-  type Members,
-  type Stage,
-  type StageDefinition,
-} from "../src";
+import { NO_REST, formatStageError, type Stage } from "../src";
+import { compileStage } from "../src/run/compile";
+import { defineStage, type StageDefinition } from "../src/author/stage";
+import type { Members } from "../src/author/cast";
 import { piecesOf } from "../src/run/outlines";
 import { blendShapes, drawStrokes, matchOutlines, morphAt, strokeBox } from "../src/render";
 
