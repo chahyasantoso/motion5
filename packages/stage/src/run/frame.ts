@@ -16,6 +16,8 @@ export interface FrameInput {
   readonly time: Time;
   readonly events?: Events | undefined;
   readonly boxes?: Readonly<Record<string, RestReader>> | undefined;
+  /** Visual line index per item of a split text list, measured from layout on a page mount. */
+  readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
 }
 
 /** One frame: the layout showing, who shows, and the scene's output as returned. */
@@ -57,6 +59,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     rest,
     layouts,
     carry: carryFor(stage.layouts.pick, layouts, rest, events, time),
+    ...(input.lines === undefined ? {} : { lines: input.lines }),
   });
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");

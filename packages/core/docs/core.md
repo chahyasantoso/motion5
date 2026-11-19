@@ -66,7 +66,7 @@ Each has a `3d` twin where the pose type needs one. `smear`, `trail` and `trailT
 Events are `{ name, at, target, value? }`, oldest first. A scene never stores what happened; it folds the log.
 
 - `state(start, rule, { target? })` folds events up to a time; `.steps` lists when it changed.
-- `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives smooth scroll.
+- `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives smooth scroll, and a [page mount](../../dom/docs/page.md) streams both from the live page.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.
 - `tally` integrates held values over time. `velocity(signal, time, events)` reads speed; pass the scene's time, not an eased one.
 - Random is `seeded(seed)`, never `Math.random()`.
