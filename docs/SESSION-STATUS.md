@@ -15,7 +15,7 @@ byte ceiling.
   `@gerak/stage` owns `sceneBuilder`, elements (`box`, `shape`, `text`, `many`, `group`), `beat`, `bind`, `bindEach`, `stagger`, `stayWith`, `carry`, `compileScene`, `frame`, `check` and layouts, with `@gerak/stage/render` outlines and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` and `@gerak/react` (`usePlayer`, `PlayerHost`) play and write `Signal`.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves`) adds plain moves (each a function from options to a function of time), `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
-  `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`, with `NAMED_CURVES` built from core's `ease` and `Curve`) cleanly with core alone; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` (under 8 KB) and `stage.md` (under 10,500 bytes) and every installed package's docs.
+  `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`, with `NAMED_CURVES` built from core's `ease` and `Curve`) cleanly with core alone; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages and every installed package's docs.
   Decisions are ADR-170 to ADR-193; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line

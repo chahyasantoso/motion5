@@ -1,6 +1,6 @@
 # @gerak/stage: run
 
-What renderers and tools run a piece with: `compileStage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.
+What renderers and tools run a piece with: `compileScene`'s `Stage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.
 
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame of a piece that gives none.
 - **`isStage`** `(value: unknown): value is Stage`: Whether `value` reads as a compiled stage: `kind` only, so a stage from a second copy of the package passes.

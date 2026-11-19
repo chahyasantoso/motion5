@@ -1,6 +1,7 @@
 # ADR-192: Principles, plain moves and state
 
 **Status:** Accepted, 2026-11-19
+**Superseded in part by ADR-193:** the size ceiling on the pages read whole.
 
 ## Context
 

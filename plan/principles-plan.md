@@ -151,14 +151,12 @@ Read `AGENTS.md` first; every rule there applies.
     back in time, two events with the same goal, `"value"` events and an untimed clock. These tests are green
     against the old code first.
 
-### 6. The pages agents read whole stay small
+### 6. The pages agents read whole explain how things work
 
-- `core.md` and `stage.md` are read whole. They hold only what every piece needs: how the package works, its shapes,
-  one idiom, and its names by group.
-- What only one kind of piece needs goes on a page read on demand, listed in the package's `docs/README.md`.
-- `test/repo/agent-reference.test.ts` stays the one owner of their size. It keeps `core.md` under 8 KB and lowers
-  `stage.md` to 10,500 bytes. A ceiling may only go down.
-- Decisions 1 and 5 fit `core.md` under its ceiling. Signatures stay in the generated reference.
+- `core.md` and `stage.md` are read whole. They say how the package works, tersely, including what agents had to
+  guess, and link each reference page with one line on when to read it.
+- They list no exports by name and hold no size cap; `test/repo/agent-reference.test.ts` holds that they link every
+  reference page.
 
 ### 7. Record and docs
 

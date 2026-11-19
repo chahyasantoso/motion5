@@ -30,6 +30,9 @@ inside the motion.
 6. **`defineStage`, `StageDefinition`, the cast builder and their types leave the public surface.** The definition
    stays inside `@gerak/stage` as the compiler's input; its own tests and the renderer and review tests build compiled
    stages through it, for the mistakes the builder cannot write.
+7. **The pages read whole explain; the reference lists.** `core.md` and `stage.md` say how their package works, tersely,
+   including what agents had to guess, and link each reference page with one line on when to read it. They name no
+   export list and hold no size cap; a test holds that they link every reference page.
 
 ## Consequences
 
@@ -37,7 +40,8 @@ inside the motion.
   empty pose and no motion no longer writes one.
 - `gerak new` and `gerak import-svg` write builder pieces with a `skin` export, and `--into` appends `.element(...)` calls
   and skin rules.
-- `stage.md` is a third smaller; how the DOM draws moved to `@gerak/dom`'s docs.
+- How the DOM draws moved to `@gerak/dom`'s docs.
+- Supersedes in part [ADR-192](./ADR-192-principles-and-plain-moves.md) (the size ceiling on the pages read whole).
 - Supersedes in part [ADR-174](./ADR-174-a-cast-of-proxies-and-a-story.md) and
   [ADR-175](./ADR-175-paths-presence-by-beats-and-events-on-a-clock.md) (how a piece is written),
   [ADR-178](./ADR-178-layouts-the-stage-measures-and-carrying-between-boxes.md) (`carry` called from the scene) and

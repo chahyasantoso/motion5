@@ -12,5 +12,5 @@ Generated from doc comments by `npm run reference -- --write`; one page per sour
 - [measure](./measure.md), 5 exports: Measures read a signal back: how fast it moves, and the area under a stream of samples.
 - [events](./events.md), 6 exports: An event is something that happened at a moment, such as a hover, a press or a landing, carried beside the scene's time.
 - [utility](./utility.md), 3 exports: Small shared helpers: a seeded random, a clamp and an exhaustive-switch guard.
-- [principles](./principles.md), 25 exports
-- [state](./state.md), 9 exports
+- [principles](./principles.md), 25 exports: The motion principles as signal transforms: squash and stretch, anticipation, follow-through, overlap, arcs, exaggeration and secondary action, each built from its options then given a signal.
+- [state](./state.md), 9 exports: State from events: a fold of the event log up to a time, and values that spring or ease when the state changes.
