@@ -30,6 +30,15 @@ A page mount runs one live clock (`liveAt`) feeding scroll, pointer and watched 
 
 Headless tools advance scroll via `cues` or `npx gerak frames ... --action scroll:px@ms`.
 
+## Sections and CSS layout
+
+Site CSS owns page layout; `mountPage` never alters layout geometry.
+
+- **Pinned section:** wrap a `position: sticky` inner container (`top: 0` or a px offset) inside a tall outer section wrapper. Scroll beats span the outer wrapper while content pins inside the sticky inner container.
+- **Fixed layer:** place viewport-locked layers inside a `position: fixed` container (`inset: 0; pointer-events: none` in CSS).
+
+`section(name, el(selector))` exposes `.top` and `.end` as scroll points (supporting `.plus(px)`, `.minus(px)` and `.reached`). Scroll and trigger beats register any referenced section onto the stage; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
+
 ## Rests and measured lines
 
 `mountPage` temporarily clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`.
@@ -39,3 +48,7 @@ Headless tools advance scroll via `cues` or `npx gerak frames ... --action scrol
 - If the matched element already has matching child elements, `mountPage` binds them in place; if it has no child elements, `mountPage` wraps the parts in `<span>` nodes on mount and restores the original text on `dispose()`.
 - Each list part's `MotionContext` receives its layout row in `context.line` (0 headless, recomputed on resize without changing part count).
 - `stagger(motion, { spread, from?, by: "line" })` orders lanes by measured `line` so parts on the same visual line move together.
+
+## Ownership
+
+An element belongs to one scene; `sceneBuilder` refuses an element placed in two scenes and names both. Scenes may share beats, states, signals and sections.

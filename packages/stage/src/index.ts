@@ -9,6 +9,7 @@ export {
 export {
   beat,
   scrollPoint,
+  section,
   type Beat,
   type BeatContext,
   type BeatPlace,
@@ -16,6 +17,7 @@ export {
   type ScrollBeatOptions,
   type ScrollPoint,
   type ScrollReached,
+  type Section,
   type TriggerBack,
   type TriggerBeat,
   type TriggerPlace,
@@ -72,6 +74,7 @@ export {
 } from "./author/layout";
 export {
   isDomSkin,
+  type CompiledSection,
   type DomSkinInput,
   type Limits,
   type LayoutsInput,
