@@ -15,34 +15,34 @@ import {
   bindEach,
   box,
   carry,
-  compileStage,
   formatStageError,
   frame,
   group,
-  isStageDefinition,
   listPose,
   many,
   poseOf,
+  compileScene,
+  isScene,
   sceneBuilder,
+  type SceneBuilder,
   shape,
   stagger,
   stayWith,
   text,
   type Stage,
-  type StageDefinition,
 } from "../src";
 
 const at = (ms: number, length = 2000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled(definition: StageDefinition): Stage {
-  const result = compileStage(definition);
+function compiled(scene: SceneBuilder): Stage {
+  const result = compileScene(scene);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
-function poseAt(definition: StageDefinition, name: string, ms: number): Pose2d | undefined {
-  return poseOf(frame(compiled(definition), { time: at(ms) }).targets[name]);
+function poseAt(scene: SceneBuilder, name: string, ms: number): Pose2d | undefined {
+  return poseOf(frame(compiled(scene), { time: at(ms) }).targets[name]);
 }
 
 const slideX = (distance: number) =>
@@ -95,10 +95,10 @@ describe("sceneBuilder: what a chain compiles to", () => {
     .element(word)
     .motion(grow(2).loop(500));
 
-  it("is a stage definition every tool reads", () => {
-    expect(isStageDefinition(chain)).toBe(true);
-    expect(chain.kind).toBe("stage-definition");
-    expect(compileStage(chain).ok).toBe(true);
+  it("is a scene that compiles to a stage", () => {
+    expect(isScene(chain)).toBe(true);
+    expect(isScene({ kind: "scene" })).toBe(false);
+    expect(compileScene(chain).ok).toBe(true);
   });
 
   it("casts every element in the order of its first element call, with its meta", () => {
@@ -153,14 +153,17 @@ describe("sceneBuilder: what a chain compiles to", () => {
     expect(out["right"]).toBeUndefined();
   });
 
-  it("passes skins, cues and layouts from the options", () => {
+  it("takes its skin at compile time, and cues and layouts from the options", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
     const layouts = { names: ["one", "two"] as [string, string], pick: () => "two" };
-    const stage = compiled(
-      sceneBuilder({ skins: { dom: { css: "a{}" } }, cues, layouts })
-        .element(card)
-        .show(enter),
+    const compiledWithSkin = compileScene(
+      sceneBuilder({ cues, layouts }).element(card).show(enter),
+      {
+        skin: { css: "a{}" },
+      },
     );
+    if (!compiledWithSkin.ok) throw new Error("did not compile");
+    const stage = compiledWithSkin.stage;
     expect(stage.skins.dom).toEqual({ kind: "inline", css: "a{}" });
     expect(stage.layouts.names).toEqual(["one", "two"]);
     expect(stage.cues).toEqual(mergeEvents(cues));
@@ -206,7 +209,7 @@ describe("stagger", () => {
   const run = beat("run", 1000);
   const win = beat("win", 1000, { at: 1000 });
   const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
-  const xs = (definition: StageDefinition, ms: number): (number | undefined)[] => {
+  const xs = (definition: SceneBuilder, ms: number): (number | undefined)[] => {
     const out = frame(compiled(definition), { time: at(ms, 3000) }).targets;
     return [0, 1, 2].map((index) => listPose(out["word"], index, 3)?.x);
   };
@@ -501,7 +504,7 @@ describe("sceneBuilder: refusals", () => {
   });
 
   it("refuses a read of an element the chain never selects when compiled", () => {
-    const result = compileStage(
+    const result = compileScene(
       sceneBuilder()
         .element(box("a"))
         .motion(stayWith(box("ghost")))

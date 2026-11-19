@@ -1,16 +1,9 @@
 import { circlePath, rectPath } from "@gerak/core";
 import { describe, expect, it } from "vitest";
-import {
-  compileStage,
-  defineStage,
-  formatStageError,
-  isStage,
-  isStageDefinition,
-  type Members,
-  type Stage,
-  type StageDefinition,
-  type StageError,
-} from "../src";
+import { formatStageError, isStage, type Stage, type StageError } from "../src";
+import { compileStage } from "../src/run/compile";
+import { defineStage, isStageDefinition, type StageDefinition } from "../src/author/stage";
+import type { Members } from "../src/author/cast";
 
 const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
