@@ -1,15 +1,6 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "@gerak/core";
+import type { Pose2d, Time } from "@gerak/core";
 
-/** Fades in, opacity from 0 to 1. */
-export const fade = defineMove({
-  id: "fade",
-  role: "enter",
-  description: "Fades in from clear to opaque.",
-  options: {},
-  example: { options: {} },
-  run(_options, { progress }): Pose2d {
-    return { opacity: progress };
-  },
-  moments: () => ({}),
-});
+/** Fades in from clear to opaque. */
+export function fade(): (time: Time) => Pose2d {
+  return ({ progress }) => ({ opacity: progress });
+}

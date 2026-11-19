@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { anticipate } from "@gerak/moves";
 import {
   NO_EVENTS,
   anticipation,
@@ -54,12 +53,16 @@ describe("squashStretch", () => {
 
 describe("anticipation", () => {
   const options = { share: 0.2, amount: 0.15 };
-  it("equals the anticipate move at the same progress", () => {
+  it("matches the values the anticipate move gave over a rising line", () => {
     const wound = anticipation(options)(line);
-    for (const progress of [0, 0.1, 0.5, 1])
-      expect(wound(timed(progress), NO_EVENTS).x).toBeCloseTo(
-        anticipate(options, timed(progress), line).x ?? NaN,
-      );
+    const recorded: readonly (readonly [number, number])[] = [
+      [0, 0],
+      [0.1, -30],
+      [0.5, 75],
+      [1, 200],
+    ];
+    for (const [progress, x] of recorded)
+      expect(wound(timed(progress), NO_EVENTS).x).toBeCloseTo(x, 9);
   });
 
   it("goes the other way first and ends where the signal ends", () => {

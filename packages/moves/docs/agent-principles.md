@@ -7,21 +7,21 @@ look: pick the amounts the brief's style calls for. Names are in [the reference]
 
 | Principle | Use | Look for on the sheet |
 | --- | --- | --- |
-| Squash and stretch | `squashed(squash, weight, anchor)` at a contact; `smear(velocity(...), { stretch, max })` at speed | volume kept: wide when short, thin when long |
-| Anticipation | `anticipate`, or a crouch (`squashed` on a span before the move), then `backEase({ amount, direction: "in" })` on a `mix` | a small move the other way before the big one |
+| Squash and stretch | `squashed({ squash, anchor })(weight)` at a contact; `smear(velocity(...), { stretch, max })` at speed | volume kept: wide when short, thin when long |
+| Anticipation | `anticipation` from `@gerak/core`, or a crouch (`squashed` on a span before the move), then `backEase({ amount, direction: "in" })` on a `mix` | a small move the other way before the big one |
 | Slow in, slow out | `span.of(time, ease.*)`; `springEase({ stiffness, damping })` for a settle, `overshoot` for a move's end | bunched onion steps at the ends, wide in the middle |
 | Arcs | `along(toCubics(anchors), { turn })(share)` | the onion's centre path curves |
 | Follow-through, overlap | `trail(signal, { stiffness, damping })` on what hangs off a body; `rope` for a chain | parts stop after the body, at different times |
 | Stagger | `lanes(lengths, stagger, { from, spacing })` | an order the eye can follow |
 | Secondary action | `react` on a cue for a shake or wobble; `combine` to add it to a pose | small, and never hiding the main move |
-| Timing | `span` in ms, `move.moments` for when things land | the last frame holds long enough to read |
+| Timing | `span` in ms, `hopLandings` and `DROP_LANDING` for when things land | the last frame holds long enough to read |
 
 ## Patterns
 
 - **A crouch, then a leap.** Squash on a short span ending where the leap starts, so the weight falls as the travel
   begins:
   ```ts
-  const crouch = squashed(0.3, Math.sin(Math.PI * windup.of(time).progress));
+  const crouch = squashed({ squash: 0.3 })(Math.sin(Math.PI * windup.of(time).progress));
   const lift = mix(0, -260, leap.of(time, backEase({ amount: 2, direction: "in" })).progress);
   ```
 - **A settle.** `springEase` on a value, never on a move's progress: moves are not defined past 0 and 1, and a

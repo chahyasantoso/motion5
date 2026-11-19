@@ -1,25 +1,19 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "@gerak/core";
+import type { Pose2d, Time } from "@gerak/core";
 import { shaken } from "../parts/oscillation/shaken";
+import { numberOption } from "./options";
 
-/** Wobbles `count` times, a shake that turns instead of moving. */
-export const wobble = defineMove({
-  id: "wobble",
-  role: "emphasis",
-  description: "Turns back and forth, starting hard and dying away.",
-  options: {
-    angle: { kind: "number", min: 0, description: "The widest turn, in degrees." },
-    count: {
-      kind: "number",
-      default: 3,
-      min: 1,
-      max: 16,
-      description: "Back-and-forth cycles; default 3.",
-    },
-  },
-  example: { options: { angle: 8, count: 3 } },
-  run({ angle, count }, { progress }): Pose2d {
-    return { rotation: angle * shaken(count, progress) };
-  },
-  moments: () => ({}),
-});
+/** Options of `wobble`. */
+export interface WobbleOptions {
+  /** The widest turn, in degrees; at least 0, required. */
+  readonly angle: number;
+  /** Back-and-forth cycles, from 1 to 16; default 3. */
+  readonly count?: number;
+}
+
+/** Turns back and forth, starting hard and dying away. */
+export function wobble(options: WobbleOptions): (time: Time) => Pose2d {
+  const angle = numberOption("wobble", "angle", options.angle, { min: 0 });
+  const count = numberOption("wobble", "count", options.count, { default: 3, min: 1, max: 16 });
+  const sway = shaken({ count });
+  return ({ progress }) => ({ rotation: angle * sway(progress) });
+}

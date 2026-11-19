@@ -36,7 +36,7 @@ const leanOf = (time: Time, beats: Beats<"waddle" | "lean" | "wave" | "settle">)
 };
 
 const rollOf = (time: Time, beats: Beats<"waddle" | "lean" | "wave" | "settle">): number =>
-  (waddle(STEP, beats.waddle.of(time)).rotation ?? 0) + leanOf(time, beats);
+  (waddle(STEP)(beats.waddle.of(time)).rotation ?? 0) + leanOf(time, beats);
 
 const turnAbout = (pivot: Pivot, about: Pivot, degrees: number): Pose2d => {
   const r = (degrees * Math.PI) / 180;
@@ -1510,7 +1510,7 @@ export default defineStage({
     },
   },
   scene: ({ time, beats, events }) => {
-    const step = waddle(STEP, beats.waddle.of(time));
+    const step = waddle(STEP)(beats.waddle.of(time));
     const roll = (step.rotation ?? 0) + leanOf(time, beats);
     const sink = step.y ?? 0;
     const swing =
@@ -1523,8 +1523,7 @@ export default defineStage({
     const hold =
       beats.lean.of(time, ease.sineInOut).progress *
       (1 - beats.settle.of(time, ease.sineInOut).progress);
-    const wave = handWave(
-      { lift: -195, swing: 14, count: 2, reach: 0.72, fold: 0.6 },
+    const wave = handWave({ lift: -195, swing: 14, count: 2, reach: 0.72, fold: 0.6 })(
       beats.wave.of(time),
     );
 

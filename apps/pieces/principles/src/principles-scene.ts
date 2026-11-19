@@ -94,7 +94,7 @@ const pop = springEase({ stiffness: 170, damping: 9 });
 export const scene = (time: Time, events: Events) => {
   const travel = smear(velocity(flight, time, events), { stretch: 0.22, max: 1.8 });
   return {
-    body: combine([squashed(0.45, crouch(time), "bottom"), flight(time)]),
+    body: combine([squashed({ squash: 0.45, anchor: "bottom" })(crouch(time)), flight(time)]),
     stretch: travel.pose,
     face: { rotation: -travel.heading } satisfies Pose2d,
     antenna: { rotation: tail(time, events), anchor: "bottom" } satisfies Pose2d,

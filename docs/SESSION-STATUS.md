@@ -14,7 +14,7 @@ byte ceiling.
   `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`), shapes (`Timing`, `Curve<T = number>`, `Ease = Curve<number>`, `Signal<T = Pose2d>`), eases (`ease.*`, `backEase`, `springEase`, `spring`), envelopes (`arch`, `wave`, `attack`, `decay`, `taper`), blends, paths (`ballistic`, `along`, `along3d` and every curve with settings built from its settings before taking progress), geometry, 3D maths and measures (`velocity`, `velocity3d`, `tally`);
   `@gerak/stage` owns `defineStage`, cast builders, list poses by index, `compileStage`, `frame`, `check`, layouts and `carry`, with `@gerak/stage/render` outlines and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` and `@gerak/react` (`usePlayer`, `PlayerHost`) play and write `Signal`.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
-  the library (`@gerak/moves`) adds named moves, couplings and signal parts when installed.
+  the library (`@gerak/moves`) adds plain moves (each a function from options to a function of time), `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
   `@gerak/tools` runs `npx gerak <command>` (core commands, `stage.html`, `live.html`, `talk.html`, with `NAMED_CURVES` built from core's `ease` and `Curve`) cleanly with core alone; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md` (under 20 KB each) and every installed package's docs.
   Decisions are ADR-170 to ADR-191; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 

@@ -120,11 +120,13 @@ describe("agent reference", () => {
     expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
 
     const moves = referenceOf("moves");
-    expect(moves).toContain("**`drop`** `(options, time)`:");
-    expect(moves).toContain("**`fade`** `(options, time)`:");
-    expect(moves).toContain("**`anticipate`** `(options, time, input: (time: Time) => Pose2d)`:");
+    expect(moves).toContain("**`drop`** `(options: DropOptions): (time: Time) => Pose2d`:");
+    expect(moves).toContain("**`fade`** `(): (time: Time) => Pose2d`:");
     expect(moves).toContain(
-      "**`rope`** `(options, time, input: { readonly points: readonly (Point2d & { readonly id?: string; })[]; })`:",
+      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`:",
+    );
+    expect(moves).toContain(
+      "**`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`:",
     );
   });
 

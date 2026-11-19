@@ -21,25 +21,23 @@ export const scene = (time: Time) => {
   const hand = ticks.reduce(
     (sum, tick) =>
       sum +
-      (overshoot(
-        { amount: 0.35, share: 0.5 },
+      (overshoot({ amount: 0.35, share: 0.5 })((t): Pose2d => ({ rotation: 30 * t.progress }))(
         tick.of(time),
-        (t): Pose2d => ({ rotation: 30 * t.progress }),
       ).rotation ?? 0),
     0,
   );
   return {
     night: combine([
-      drop({ distance: 160, squash: 0.04 }, nightIn.of(time)),
-      fade({}, nightFade.of(time)),
+      drop({ distance: 160, squash: 0.04 })(nightIn.of(time)),
+      fade()(nightFade.of(time)),
     ]),
     shift: combine([
-      overshoot({ amount: 0.06, share: 0.35 }, shiftIn.of(time), (t) =>
-        slide({ distance: 420, from: "right" }, t),
+      overshoot({ amount: 0.06, share: 0.35 })((t) => slide({ distance: 420, from: "right" })(t))(
+        shiftIn.of(time),
       ),
-      fade({}, shiftFade.of(time)),
+      fade()(shiftFade.of(time)),
     ]),
-    dial: pop({ overshoot: 0.15 }, dialIn.of(time)),
+    dial: pop({ overshoot: 0.15 })(dialIn.of(time)),
     hand: { rotation: hand } satisfies Pose2d,
   };
 };

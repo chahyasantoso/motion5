@@ -37,7 +37,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | --- | --- | --- |
 | 1. Fields | what can change on a target, where it rests, how two answers join, how the review judges it | `packages/core/src/fields/` |
 | 2. Parts | how a number, point or pose changes over time, with no role, rest contract or option gate | `packages/core/src/` (time, blend, ease, envelope, geometry, path, measure); `packages/moves/src/parts/<group>/` |
-| 3. Moves | a named behaviour: parts coupled on fields inside one progress, with a role, options, moments and an example | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
+| 3. Moves | a named behaviour: parts coupled on fields inside one progress, a function from options to a function of time | `packages/moves/src/moves/`; a brief's own in `apps/pieces/<brief>/src/moves/` |
 | 4. Arranging time | moves placed in time and across targets: spans, phases, lanes, loops, chains, reshaped time; the piece format | `packages/core/src/time/`; `@gerak/stage` |
 | 5. Pieces | one brief's motion, as content | `apps/pieces/<brief>/` |
 | 6. Logic | what happens because of what a person did | the event log, `react`, `tally` in `@gerak/core`, and `follow`/`react` in `@gerak/moves` today; rules, score and state wait for a brief |

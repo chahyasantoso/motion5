@@ -16,7 +16,7 @@ import {
 } from "@gerak/react";
 
 const scene = (time: Time) => ({
-  box: drop({ distance: 100 }, time),
+  box: drop({ distance: 100 })(time),
   phase: { landed: time.progress >= 0.75 ? 1 : 0 },
 });
 

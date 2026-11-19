@@ -38,7 +38,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 | Principle | Use |
 | --- | --- |
-| Squash and stretch | `squashed3d(squash, weight, axis)` keeps volume; `smear3d(velocity3d(...), { stretch, max })` stretches along travel |
+| Squash and stretch | `squashed3d({ squash, axis })(weight)` keeps volume; `smear3d(velocity3d(...), { stretch, max })` stretches along travel |
 | Anticipation | `squashed3d` on a span before the move, then `backEase({ amount, direction: "in" })` on a `mix` |
 | Arcs | `along3d(toCubics3d(anchors), { face })(share)`; `face` points local +x along the path |
 | Follow-through | `trailTurn(signal, { damping })` for a turn, the short way round; three `trail` calls for a position |

@@ -29,7 +29,7 @@ describe("scanNumericLiterals", () => {
   it("scans numbers inside a move call and attaches call and property names", () => {
     const source = `
       import { drop } from "@gerak/moves";
-      const pose = drop({ distance: 700, squash: 0.18 }, time);
+      const pose = drop({ distance: 700, squash: 0.18 })(time);
     `;
     const spans = scanNumericLiterals(source);
     expect(spans).toHaveLength(2);
@@ -54,7 +54,7 @@ describe("scanNumericLiterals", () => {
   it("handles negative numbers and numbers outside move calls", () => {
     const source = `
       const count = 42;
-      const pose = drop({ distance: -1300 }, time);
+      const pose = drop({ distance: -1300 })(time);
     `;
     const spans = scanNumericLiterals(source);
     expect(spans).toHaveLength(2);

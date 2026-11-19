@@ -17,10 +17,9 @@ import {
   type Events,
   type Pose2d,
   type Time,
+  anticipation,
 } from "@gerak/core";
 import {
-  anticipate,
-  arc,
   drop,
   fade,
   hop,
@@ -62,10 +61,9 @@ export const layout: { px: number; py: number; settle: { x: number; y: number }[
 };
 
 /** Shown from `ms` on, hidden before. */
-const shownFrom = (time: Time, ms: number): Pose2d => fade({}, span(ms - 16, ms).of(time));
+const shownFrom = (time: Time, ms: number): Pose2d => fade()(span(ms - 16, ms).of(time));
 /** Hidden from `ms` on, shown before. */
-const hiddenFrom = (time: Time, ms: number): Pose2d =>
-  fade({}, reversed(span(ms, ms + 16).of(time)));
+const hiddenFrom = (time: Time, ms: number): Pose2d => fade()(reversed(span(ms, ms + 16).of(time)));
 
 const BEATS = [
   { at: 0, label: "00 — ORIGIN" },
@@ -109,14 +107,14 @@ const cameraScale = keyframes(
 function camera(time: Time): Pose2d {
   return combine([
     { scale: cameraScale(time) },
-    bump({ dy: 50 }, span(2900, 3700).of(time)),
+    bump({ dy: 50 })(span(2900, 3700).of(time)),
     ...LANDINGS.map((land, i) =>
-      jolt({ distance: 3 + i * i * 0.6, count: 6 }, span(land, land + 600).of(time)),
+      jolt({ distance: 3 + i * i * 0.6, count: 6 })(span(land, land + 600).of(time)),
     ),
-    bump({ dy: -40 }, span(WGT_DROP, 6450).of(time)),
-    bump({ turn: 0.9 }, span(6150, 7700).of(time)),
-    jolt({ distance: 6, count: 5, sideways: 0 }, span(LAND, LAND + 600).of(time)),
-    jolt({ distance: 3, count: 5, sideways: 0 }, span(PERIOD, PERIOD + 500).of(time)),
+    bump({ dy: -40 })(span(WGT_DROP, 6450).of(time)),
+    bump({ turn: 0.9 })(span(6150, 7700).of(time)),
+    jolt({ distance: 6, count: 5, sideways: 0 })(span(LAND, LAND + 600).of(time)),
+    jolt({ distance: 3, count: 5, sideways: 0 })(span(PERIOD, PERIOD + 500).of(time)),
   ]);
 }
 
@@ -126,26 +124,26 @@ function flight(time: Time): Pose2d {
   const { px, py } = layout;
   return combine([
     { x: px - DX, y: py - DY0, anchor: "center" },
-    ballistic({ dx: DX - px, dy: DY1 - py, apex: 430 }, span(LEAP, PERIOD).of(time)),
+    ballistic({ dx: DX - px, dy: DY1 - py, apex: 430 })(span(LEAP, PERIOD).of(time)),
   ]);
 }
 
 function dot(time: Time, events: Events): Pose2d {
   const { px, py } = layout;
   return sequence(time, [
-    [span(0, 450), (t) => springSettle({ scale: 0, rings: 1, damping: 2.5 }, t)],
+    [span(0, 450), (t) => springSettle({ scale: 0, rings: 1, damping: 2.5 })(t)],
     [
       span(450, 1250),
-      (t) => launch({ height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 }, t),
+      (t) => launch({ height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 })(t),
     ],
     [
       span(9450, BURST),
       (t) =>
         combine([
           LOW,
-          drop({ distance: 440, squash: 0.4 }, span(0, 400 / 0.75).of(t)),
-          hop({ height: 42, bounces: 0, squash: 0.2 }, span(400, 700).of(t)),
-          squashed(0.38, span(700, 780).of(t, ease.cubicOut).progress),
+          drop({ distance: 440, squash: 0.4 })(span(0, 400 / 0.75).of(t)),
+          hop({ height: 42, bounces: 0, squash: 0.2 })(span(400, 700).of(t)),
+          squashed({ squash: 0.38 })(span(700, 780).of(t, ease.cubicOut).progress),
         ]),
     ],
     [
@@ -153,8 +151,8 @@ function dot(time: Time, events: Events): Pose2d {
       (t) =>
         combine([
           LOW,
-          springSettle({ squash: 0.38, rings: 2.5, damping: 3.5 }, span(0, 900).of(t)),
-          pulse({ amount: 0.45 }, span(0, 220).of(t)),
+          springSettle({ squash: 0.38, rings: 2.5, damping: 3.5 })(span(0, 900).of(t)),
+          pulse({ amount: 0.45 })(span(0, 220).of(t)),
         ]),
     ],
     [span(11400, WIPE), (t) => combine([LOW, { scale: mix(1, 0.7, ease.cubicInOut(t.progress)) }])],
@@ -163,15 +161,18 @@ function dot(time: Time, events: Events): Pose2d {
       (t) =>
         combine([
           LOW,
-          springSettle({ scale: 0.7, rings: 1.5, damping: 4 }, span(0, 600).of(t)),
-          tint({ name: "inked" }, span(0, 70).of(t)),
+          springSettle({ scale: 0.7, rings: 1.5, damping: 4 })(span(0, 600).of(t)),
+          tint({ name: "inked" })(span(0, 70).of(t)),
           ...[0, 1, 2, 3, 4, 5].map((i) => {
             const arrive = stlOut(i) + 520 - WIPE;
-            return pulse({ amount: 0.2 }, span(arrive, arrive + 260).of(t));
+            return pulse({ amount: 0.2 })(span(arrive, arrive + 260).of(t));
           }),
         ]),
     ],
-    [span(MATCH, LEAP), (t) => combine([LOW, squashed(0.4, ease.cubicInOut(t.progress))])],
+    [
+      span(MATCH, LEAP),
+      (t) => combine([LOW, squashed({ squash: 0.4 })(ease.cubicInOut(t.progress))]),
+    ],
     [
       span(LEAP, PERIOD),
       () => {
@@ -188,8 +189,8 @@ function dot(time: Time, events: Events): Pose2d {
       (t) =>
         combine([
           { x: px - DX, y: py - DY0 - R * 0.36, scale: 0.64, anchor: "bottom" },
-          squish({ squash: 0.42, wobbles: 1 }, span(0, 240).of(t)),
-          hop({ height: 16, bounces: 0, squash: 0.3 }, span(0, 330).of(t)),
+          squish({ squash: 0.42, wobbles: 1 })(span(0, 240).of(t)),
+          hop({ height: 16, bounces: 0, squash: 0.3 })(span(0, 330).of(t)),
         ]),
     ],
   ]);
@@ -199,7 +200,7 @@ function ring(time: Time, x: number, y: number, fromMs: number, ms: number, grow
   return combine([
     { x, y, scale: 0.2 },
     shownFrom(time, fromMs),
-    shockwave({ grow: grow / 0.2 }, span(fromMs, fromMs + ms).of(time)),
+    shockwave({ grow: grow / 0.2 })(span(fromMs, fromMs + ms).of(time)),
   ]);
 }
 
@@ -209,24 +210,20 @@ function anticipateLetter(time: Time, i: number): Pose2d {
   const crouch = 2250 + i * 35;
   const leap = 2900 + i * 38;
   return combine([
-    springSettle(
-      { dy: 120, turn: 9, rings: 0.7, damping: 3 },
+    springSettle({ dy: 120, turn: 9, rings: 0.7, damping: 3 })(
       RISE.of(span(1000, 1925).of(time), i),
     ),
-    launch(
-      {
-        height: 1300,
-        squash: 0.3,
-        bulge: 0.33,
-        stretch: 0.45,
-        crouch: (leap - crouch) / (leap + 650 - crouch),
-        tremble: 1.6,
-        flight: "accelerate",
-      },
-      span(crouch, leap + 650).of(time),
-    ),
-    tint({ name: "charge", curve: "inOut" }, span(crouch, crouch + 420).of(time)),
-    smudge({ amount: 5, build: 0.46 }, span(leap, leap + 650).of(time)),
+    launch({
+      height: 1300,
+      squash: 0.3,
+      bulge: 0.33,
+      stretch: 0.45,
+      crouch: (leap - crouch) / (leap + 650 - crouch),
+      tremble: 1.6,
+      flight: "accelerate",
+    })(span(crouch, leap + 650).of(time)),
+    tint({ name: "charge", curve: "inOut" })(span(crouch, crouch + 420).of(time)),
+    smudge({ amount: 5, build: 0.46 })(span(leap, leap + 650).of(time)),
   ]);
 }
 
@@ -236,19 +233,17 @@ function weightLetter(time: Time, i: number): Pose2d {
   const land = wgtLand(i);
   const plunge = WGT_DROP + Math.abs(i - 2.5) * 30;
   return combine([
-    drop({ distance: 640 }, span(land - 420, land - 420 + 560).of(time)),
-    squish({ squash: 0.24, bulge: 0.66, wobbles: 2.5 }, span(land, land + 700).of(time)),
-    wobble({ angle: 2.5, count: 2 }, span(land, land + 800).of(time)),
+    drop({ distance: 640 })(span(land - 420, land - 420 + 560).of(time)),
+    squish({ squash: 0.24, bulge: 0.66, wobbles: 2.5 })(span(land, land + 700).of(time)),
+    wobble({ angle: 2.5, count: 2 })(span(land, land + 800).of(time)),
     sequence(time, [
-      [span(land - 420, land), (t) => smudge({ amount: 3 }, t)],
+      [span(land - 420, land), (t) => smudge({ amount: 3 })(t)],
       [span(land, END), (): Pose2d => ({})],
     ]),
-    anticipate(
-      { share: (plunge - WGT_LIFT) / (plunge + 520 - WGT_LIFT), amount: 14 / PLUNGE },
-      span(WGT_LIFT, plunge + 520).of(time),
-      (t) => rise({ distance: PLUNGE }, reversed(t)),
-    ),
-    smudge({ amount: 4, build: 0.6 }, span(plunge, plunge + 520).of(time)),
+    anticipation({ share: (plunge - WGT_LIFT) / (plunge + 520 - WGT_LIFT), amount: 14 / PLUNGE })(
+      (t) => rise({ distance: PLUNGE })(reversed(t)),
+    )(span(WGT_LIFT, plunge + 520).of(time), NO_EVENTS),
+    smudge({ amount: 4, build: 0.6 })(span(plunge, plunge + 520).of(time)),
     hiddenFrom(time, plunge + 520),
   ]);
 }
@@ -256,16 +251,16 @@ function weightLetter(time: Time, i: number): Pose2d {
 function floor(time: Time): Pose2d {
   return combine([
     sequence(time, [
-      [span(3350, 3800), (t) => spread({}, span(0, 450).of(t, ease.cubicOut))],
-      [span(WGT_DROP, 6000), (t) => spread({}, reversed(span(0, 250).of(t, ease.cubicIn)))],
+      [span(3350, 3800), (t) => spread({})(span(0, 450).of(t, ease.cubicOut))],
+      [span(WGT_DROP, 6000), (t) => spread({})(reversed(span(0, 250).of(t, ease.cubicIn)))],
     ]),
     shownFrom(time, 3350),
     hiddenFrom(time, 6000),
     ...LANDINGS.map((land, i) =>
-      jolt({ distance: 2 + i, count: 3, sideways: 0 }, span(land, land + 450).of(time)),
+      jolt({ distance: 2 + i, count: 3, sideways: 0 })(span(land, land + 450).of(time)),
     ),
     { y: -14 * span(WGT_LIFT, WGT_DROP).of(time, ease.cubicInOut).progress },
-    tint({ name: "cool" }, span(LAST_LANDING, LAST_LANDING + 700).of(time)),
+    tint({ name: "cool" })(span(LAST_LANDING, LAST_LANDING + 700).of(time)),
   ]);
 }
 
@@ -284,8 +279,7 @@ function dust(time: Time, j: number): Pose2d {
   return combine([
     shownFrom(time, land),
     { scale: (0.6 + 0.3 * kind) * (letter === 5 ? 1.5 : 1) },
-    kick(
-      { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: kind === 2 ? 30 : 9 },
+    kick({ dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: kind === 2 ? 30 : 9 })(
       span(land, land + 700).of(time),
     ),
   ]);
@@ -298,14 +292,14 @@ function bar(time: Time): Pose2d {
   return sequence(time, [
     [
       span(6150, 7150),
-      (t) => slide({ distance: 1250, from: "left" }, span(0, 1000).of(t, ease.quadIn)),
+      (t) => slide({ distance: 1250, from: "left" })(span(0, 1000).of(t, ease.quadIn)),
     ],
     [
       span(8700, 9450),
       (t) =>
-        anticipate({ share: 1 / 3, amount: 55 / 1450 }, t, (u) =>
-          slide({ distance: 1450, from: "right" }, reversed(u)),
-        ),
+        anticipation({ share: 1 / 3, amount: 55 / 1450 })((u) =>
+          slide({ distance: 1450, from: "right" })(reversed(u)),
+        )(t, NO_EVENTS),
     ],
   ]);
 }
@@ -337,40 +331,46 @@ function settleLetter(time: Time, i: number): Pose2d {
         span(stlIn(i), stlIn(i) + 1600),
         (t) =>
           combine([
-            springSettle({ dx, dy, lift: 70, turn, scale: 0.15, rings: 2, damping: 3.5 }, t),
-            fade({}, span(0, 60).of(t)),
-            smudge({ amount: 4 }, reversed(span(0, 220).of(t))),
+            springSettle({ dx, dy, lift: 70, turn, scale: 0.15, rings: 2, damping: 3.5 })(t),
+            fade()(span(0, 60).of(t)),
+            smudge({ amount: 4 })(reversed(span(0, 220).of(t))),
           ]),
       ],
       [
         span(out, out + 520),
         (t) =>
           combine([
-            anticipate({ share: 0.3, amount: 0.12 }, t, (u) =>
-              combine([arc({ dx, dy }, reversed(u)), pop({ overshoot: 0.05 }, reversed(u))]),
-            ),
+            anticipation({ share: 0.3, amount: 0.12 })((u) =>
+              combine([
+                {
+                  x: dx * (1 - reversed(u).progress) ** 3,
+                  y: dy * (1 - reversed(u).progress) ** 3,
+                },
+                pop({ overshoot: 0.05 })(reversed(u)),
+              ]),
+            )(t, NO_EVENTS),
             { rotation: turn * 0.5 * ease.cubicIn(t.progress) },
-            smudge({ amount: 3 }, span(160, 520).of(t)),
-            fade({}, reversed(span(440, 520).of(t))),
+            smudge({ amount: 3 })(span(160, 520).of(t)),
+            fade()(reversed(span(440, 520).of(t))),
           ]),
       ],
     ]),
-    tint({ name: "inked" }, span(WIPE + 150, WIPE + 300).of(time)),
+    tint({ name: "inked" })(span(WIPE + 150, WIPE + 300).of(time)),
   ]);
 }
 
 function underline(time: Time): Pose2d {
   return combine([
     sequence(time, [
-      [span(10800, 11300), (t) => spread({}, span(0, 500).of(t, ease.cubicOut))],
+      [span(10800, 11300), (t) => spread({})(span(0, 500).of(t, ease.cubicOut))],
       [
         span(COLLAPSE - 100, COLLAPSE + 200),
-        (t) => spread({}, reversed(span(0, 300).of(t, ease.cubicIn))),
+        (t) => spread({})(reversed(span(0, 300).of(t, ease.cubicIn))),
       ],
     ]),
     shownFrom(time, 10800),
     hiddenFrom(time, COLLAPSE + 200),
-    tint({ name: "inked" }, span(WIPE + 150, WIPE + 300).of(time)),
+    tint({ name: "inked" })(span(WIPE + 150, WIPE + 300).of(time)),
   ]);
 }
 
@@ -378,8 +378,8 @@ const COVER = { radius: 1500, x: DX, y: DY1 };
 
 function cover(time: Time): Pose2d {
   return sequence(time, [
-    [span(WIPE, WIPE + 600), (t) => wipe(COVER, span(0, 600).of(t, ease.cubicOut))],
-    [span(12700, MATCH), (t) => wipe(COVER, reversed(t))],
+    [span(WIPE, WIPE + 600), (t) => wipe(COVER)(span(0, 600).of(t, ease.cubicOut))],
+    [span(12700, MATCH), (t) => wipe(COVER)(reversed(t))],
   ]);
 }
 
@@ -388,8 +388,8 @@ function finaleWord(time: Time, i: number): Pose2d {
   const ripple = PERIOD + (2 - i) * 45;
   return combine([
     shownFrom(time, start),
-    springSettle({ dy: 120, turn: 5, rings: 0.7, damping: 3 }, span(start, start + 650).of(time)),
-    jolt({ distance: 6, count: 2, sideways: 0 }, span(ripple, ripple + 600).of(time)),
+    springSettle({ dy: 120, turn: 5, rings: 0.7, damping: 3 })(span(start, start + 650).of(time)),
+    jolt({ distance: 6, count: 2, sideways: 0 })(span(ripple, ripple + 600).of(time)),
   ]);
 }
 
@@ -405,12 +405,12 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => ({
   trailUp: combine([
     shownFrom(time, 850),
     hiddenFrom(time, 1450),
-    streak({ arrive: 0.675, lag: 0.31 }, span(850, 1450).of(time, ease.quadOut)),
+    streak({ arrive: 0.675, lag: 0.31 })(span(850, 1450).of(time, ease.quadOut)),
   ]),
   trailArc: combine([
     shownFrom(time, LEAP),
     hiddenFrom(time, PERIOD + 350),
-    streak({ arrive: 0.65, lag: 0.21 }, span(LEAP, PERIOD + 350).of(time)),
+    streak({ arrive: 0.65, lag: 0.21 })(span(LEAP, PERIOD + 350).of(time)),
   ]),
   anticipate: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => anticipateLetter(time, i)),
   weight: [0, 1, 2, 3, 4, 5].map((i) => weightLetter(time, i)),
@@ -422,13 +422,13 @@ export const scene = (time: Time, events: Events = NO_EVENTS) => ({
   underline: underline(time),
   finale: [0, 1, 2].map((i) => finaleWord(time, i)),
   credit: combine([
-    rise({ distance: 14 }, span(14250, 14850).of(time)),
-    fade({}, span(14250, 14850).of(time)),
+    rise({ distance: 14 })(span(14250, 14850).of(time)),
+    fade()(span(14250, 14850).of(time)),
   ]),
   hud: combine([
     { opacity: 0.55 },
-    fade({}, span(200, 600).of(time)),
-    fade({}, reversed(span(12600, 13000).of(time))),
+    fade()(span(200, 600).of(time)),
+    fade()(reversed(span(12600, 13000).of(time))),
   ]),
   labels: BEATS.map(({ at }, k) => {
     const next = BEATS[k + 1]?.at ?? END + 1;

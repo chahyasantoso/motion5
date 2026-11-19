@@ -28,7 +28,7 @@ export const scene = (time: Time, events: Events) => {
   const raised = -y / 14;
   return {
     card: combine([
-      drop({ distance: 420, squash: 0.06 }, intro.of(time)),
+      drop({ distance: 420, squash: 0.06 })(intro.of(time)),
       { y, scale: press(time, events) },
     ]),
     shadow: {

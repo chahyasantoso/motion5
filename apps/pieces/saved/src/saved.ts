@@ -28,16 +28,16 @@ export default defineStage({
   },
   scene: ({ time, beats }) => ({
     mark: combine([
-      pop({ overshoot: 0.15 }, beats.markIn.of(time)),
-      fade({}, beats.markIn.of(time)),
-      slide({ distance: 8, from: "top" }, reversed(beats.markOut.of(time))),
-      fade({}, reversed(beats.markOut.of(time))),
+      pop({ overshoot: 0.15 })(beats.markIn.of(time)),
+      fade()(beats.markIn.of(time)),
+      slide({ distance: 8, from: "top" })(reversed(beats.markOut.of(time))),
+      fade()(reversed(beats.markOut.of(time))),
     ]),
     word: combine([
-      slide({ distance: 14, from: "left" }, beats.wordIn.of(time)),
-      fade({}, beats.wordIn.of(time)),
-      slide({ distance: 8, from: "top" }, reversed(beats.wordOut.of(time))),
-      fade({}, reversed(beats.wordOut.of(time))),
+      slide({ distance: 14, from: "left" })(beats.wordIn.of(time)),
+      fade()(beats.wordIn.of(time)),
+      slide({ distance: 8, from: "top" })(reversed(beats.wordOut.of(time))),
+      fade()(reversed(beats.wordOut.of(time))),
     ]),
   }),
 });

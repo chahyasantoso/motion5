@@ -8,11 +8,10 @@ Write one when the motion in your three lines has a name and no catalogued move,
 can name goes in its brief's `src/moves`, where the next piece of that brief finds it.
 Glue that only this piece needs stays in the scene as a `mix`.
 
-1. Fill it in: the `role`, a `description` the next agent will choose it by, each option with its range and a
-   description, an `example`, and `run`, which answers a pose from the options and `progress` alone. Make an option of
-   what another brief would change, not of this piece's numbers. [`defineMove`](./reference/moves.md)
-   lists the roles and what each must hold.
-2. **Build `run` from the parts your design named,** imported from `@gerak/core` (`taper`, `decay`, `attack`, `arch`,
+1. Write it as a plain function: an exported options interface with each field documented by its unit and default, and
+   `export function name(options): (time: Time) => Pose2d`, which answers a pose from the options and `progress`
+   alone. Make an option of what another brief would change, not of this piece's numbers.
+2. **Build the returned function from the parts your design named,** imported from `@gerak/core` (`taper`, `decay`, `attack`, `arch`,
    `wave`, `ballistic`, `along`, `ease`, `smear`, `trail`) and `@gerak/moves` (`squashed`, ...): an `envelope` times
    an `oscillation` for anything that swings and dies away, a `path` for travel, an `ease` for timing, a `coupling`
    for a squash tied to the motion. Never call

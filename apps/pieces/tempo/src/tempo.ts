@@ -71,8 +71,8 @@ export default defineStage({
     right: { opacity: flashRight(time) } satisfies Pose2d,
     left: { opacity: flashLeft(time) } satisfies Pose2d,
     title: combine([
-      rise({ distance: 26 }, beats.arrive.of(time, ease.cubicOut)),
-      fade({}, beats.arrive.of(time)),
+      rise({ distance: 26 })(beats.arrive.of(time, ease.cubicOut)),
+      fade()(beats.arrive.of(time)),
     ]),
   }),
 });

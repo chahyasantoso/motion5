@@ -9,7 +9,7 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import { drop, hop, react } from "@gerak/moves";
+import { drop, hop, hopLandings, react } from "@gerak/moves";
 import { buildChain, chainPoses, ik } from "@gerak/rig";
 
 export const durationMs = 4800;
@@ -23,7 +23,7 @@ export const WORD = "CATCH";
 const BOUNCE = { height: 330, bounces: 2, decay: 0.35, squash: 0.35, dx: -1100 };
 const flight = span(400, 2400);
 /** The scene ms of the ball's last landing, where the hand meets it. */
-export const LAND_MS = flight.at(hop.moments(BOUNCE).lastLanding);
+export const LAND_MS = flight.at(hopLandings(BOUNCE).lastLanding);
 
 /** The scene's own events: the catch, at the ball's last landing. */
 export const cues: Events = [{ name: "catch", at: LAND_MS, target: "ball" }];
@@ -70,11 +70,11 @@ export const scene = (time: Time, events: Events) => {
     lower: bones.lower,
     elbow: tips.upper,
     hand: tips.lower,
-    ball: combine([hop(BOUNCE, flight.of(time)), carry]),
+    ball: combine([hop(BOUNCE)(flight.of(time)), carry]),
     letters: [...WORD].map((_, index) => {
       const letter = LETTERS.of(word.of(time), index);
       const fade: Pose2d = { opacity: ease.quadOut(Math.min(1, letter.progress * 3)) };
-      return combine([drop({ distance: 80, squash: 0.2 }, letter), fade]);
+      return combine([drop({ distance: 80, squash: 0.2 })(letter), fade]);
     }),
   };
 };

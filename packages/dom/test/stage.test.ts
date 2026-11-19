@@ -288,7 +288,7 @@ describe("mountStage", () => {
       }),
       skins: { dom: { css: `[data-path="trail"] { stroke: red }` } },
       scene: ({ time, beats: b }) => ({
-        trail: { x: 5, opacity: 0.5, ...trace({}, b.all.of(time)) },
+        trail: { x: 5, opacity: 0.5, ...trace({})(b.all.of(time)) },
         marks: (i) => (i === 0 ? { drawn: 0.25 } : { y: 3 }),
       }),
     });

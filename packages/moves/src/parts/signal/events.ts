@@ -1,4 +1,3 @@
-import { definePart } from "../contract";
 import { elapsedOf, springTo, state, unreachable, type Events, type Time } from "@gerak/core";
 
 /** Settings of a `follow`: `start`, `on` (goal by event name, or `"value"` for the event's own),
@@ -35,7 +34,6 @@ export function follow(options: FollowOptions): (time: Time, events: Events) => 
   );
   return springTo(goal, (value) => value, options);
 }
-definePart({ kind: "signal" }, follow);
 
 /** How a response to one event moves: from a full start, from rest, as a fade, or as a shake. */
 export type ReactionKind = "recoil" | "wobble" | "flash" | "shake";
@@ -102,4 +100,3 @@ export function react(options: ReactOptions): (time: Time, events: Events) => nu
     return total;
   };
 }
-definePart({ kind: "signal" }, react);

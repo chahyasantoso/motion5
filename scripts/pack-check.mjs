@@ -143,7 +143,7 @@ export default defineStage({
   cast: (m) => ({ box: m.box() }),
   skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
   scene: ({ time, beats }) => ({
-    box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
+    box: slide({ distance: 300, from: "left" })(beats.go.of(time)),
   }),
 });
 `;
@@ -211,7 +211,7 @@ import { drop } from "@gerak/moves";
 export const durationMs = 2000;
 export const clock = () => clockDriver({ duration: durationMs });
 export const scene = (time: Time) => ({
-  box: drop({ distance: 200, squash: 0.2 }, time),
+  box: drop({ distance: 200, squash: 0.2 })(time),
 });
 `;
 

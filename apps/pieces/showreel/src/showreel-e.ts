@@ -10,18 +10,10 @@ import {
   type Events,
   type Pose2d,
   type Time,
+  anticipation,
+  NO_EVENTS,
 } from "@gerak/core";
-import {
-  anticipate,
-  fade,
-  overshoot,
-  pulse,
-  rise,
-  slide,
-  wipe,
-  wobble,
-  smudge,
-} from "@gerak/moves";
+import { fade, overshoot, pulse, rise, slide, wipe, wobble, smudge } from "@gerak/moves";
 import { defineStage, type RestReader } from "@gerak/stage";
 import { bump } from "./moves/bump";
 import { crouch } from "./moves/crouch";
@@ -212,20 +204,20 @@ const at = (from: number, to: number, time: Time): Time => span(from, to).of(tim
 
 function camera(time: Time): Pose2d {
   return combine([
-    push({ to: 1.12, curve: "in" }, reversed(at(500, 1400, time))),
-    push({ to: 1.04, curve: "inOut" }, at(1400, 2900, time)),
-    push({ to: 1 / 1.04, curve: "out" }, at(2900, 3500, time)),
-    push({ to: 1.045, curve: "out" }, at(13050, 15000, time)),
-    bump({ dy: 50 }, at(2900, 3700, time)),
+    push({ to: 1.12, curve: "in" })(reversed(at(500, 1400, time))),
+    push({ to: 1.04, curve: "inOut" })(at(1400, 2900, time)),
+    push({ to: 1 / 1.04, curve: "out" })(at(2900, 3500, time)),
+    push({ to: 1.045, curve: "out" })(at(13050, 15000, time)),
+    bump({ dy: 50 })(at(2900, 3700, time)),
     ...LAND.map((land, i) =>
-      jolt({ distance: 3 + i * i * 0.6, count: 5.5, sideways: 0.35 }, at(land, land + 500, time)),
+      jolt({ distance: 3 + i * i * 0.6, count: 5.5, sideways: 0.35 })(at(land, land + 500, time)),
     ),
-    bump({ dy: -40 }, at(5750, 6450, time)),
-    bump({ turn: 0.9 }, at(6150, 7700, time)),
-    jolt({ distance: 6, count: 6 }, at(9850, 10450, time)),
-    jolt({ distance: 3, count: 5 }, at(13900, 14400, time)),
-    tint({ name: "flip" }, at(11700, 11850, time)),
-    tint({ name: "flip", amount: -1 }, at(13040, 13050, time)),
+    bump({ dy: -40 })(at(5750, 6450, time)),
+    bump({ turn: 0.9 })(at(6150, 7700, time)),
+    jolt({ distance: 6, count: 6 })(at(9850, 10450, time)),
+    jolt({ distance: 3, count: 5 })(at(13900, 14400, time)),
+    tint({ name: "flip" })(at(11700, 11850, time)),
+    tint({ name: "flip", amount: -1 })(at(13040, 13050, time)),
   ]);
 }
 
@@ -247,11 +239,10 @@ function dot(time: Time, rest: RestReader): Pose2d {
       span(0, 1450),
       (t) =>
         combine([
-          launch(
-            { height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 },
+          launch({ height: 620, squash: 0.42, bulge: 0.8, stretch: 0.9, crouch: 0.5 })(
             at(450, 1250, t),
           ),
-          springSettle({ scale: 0, rings: 1.5, damping: 5 }, at(60, 850, t)),
+          springSettle({ scale: 0, rings: 1.5, damping: 5 })(at(60, 850, t)),
           { y: 20 },
         ]),
     ],
@@ -261,44 +252,44 @@ function dot(time: Time, rest: RestReader): Pose2d {
         sequence(t, [
           [
             span(0, 400),
-            (f) => lob({ dx: 0, dy: -440, apex: 0, stretch: 0.5, facing: "upright" }, f),
+            (f) => lob({ dx: 0, dy: -440, apex: 0, stretch: 0.5, facing: "upright" })(f),
           ],
           [
             span(400, 700),
             (h) =>
               combine([
-                squish({ squash: 0.48, bulge: 0.8, wobbles: 1 }, h),
-                lob({ dx: 0, dy: 0, apex: 84, stretch: 0, facing: "upright" }, h),
+                squish({ squash: 0.48, bulge: 0.8, wobbles: 1 })(h),
+                lob({ dx: 0, dy: 0, apex: 84, stretch: 0, facing: "upright" })(h),
               ]),
           ],
-          [span(700, 780), (c) => crouch({ squash: 0.38, bulge: 0.79, curve: "out" }, c)],
+          [span(700, 780), (c) => crouch({ squash: 0.38, bulge: 0.79, curve: "out" })(c)],
         ]),
     ],
     [
       span(10230, 13050),
       (t) =>
         combine([
-          springSettle({ squash: 0.38, rings: 2.5, damping: 4.8 }, at(0, 800, t)),
-          pulse({ amount: 0.45 }, at(0, 260, t)),
-          push({ to: 0.7, curve: "inOut" }, at(1170, 1320, t)),
-          overshoot({ amount: 0.15, share: 0.4 }, at(1320, 1800, t), (o) =>
-            push({ to: 1 / 0.7, curve: "out" }, o),
+          springSettle({ squash: 0.38, rings: 2.5, damping: 4.8 })(at(0, 800, t)),
+          pulse({ amount: 0.45 })(at(0, 260, t)),
+          push({ to: 0.7, curve: "inOut" })(at(1170, 1320, t)),
+          overshoot({ amount: 0.15, share: 0.4 })((o) => push({ to: 1 / 0.7, curve: "out" })(o))(
+            at(1320, 1800, t),
           ),
-          ...arrivals.map((a) => pulse({ amount: 0.2 }, at(a - 40, a + 160, t))),
-          tint({ name: "dotflip" }, at(1320, 1390, t)),
+          ...arrivals.map((a) => pulse({ amount: 0.2 })(at(a - 40, a + 160, t))),
+          tint({ name: "dotflip" })(at(1320, 1390, t)),
         ]),
     ],
     [
       span(13050, 15000),
       (t) =>
         sequence(t, [
-          [span(0, 200), (c) => crouch({ squash: 0.4, bulge: 0.75 }, c)],
+          [span(0, 200), (c) => crouch({ squash: 0.4, bulge: 0.75 })(c)],
           [
             span(200, 850),
             (f) =>
               combine([
-                lob({ dx: -ex, dy: -ey, apex: ARC_APEX, stretch: 0.35, facing: "heading" }, f),
-                push({ to: small }, f),
+                lob({ dx: -ex, dy: -ey, apex: ARC_APEX, stretch: 0.35, facing: "heading" })(f),
+                push({ to: small })(f),
                 { x: ex, y: ey },
               ]),
           ],
@@ -306,9 +297,9 @@ function dot(time: Time, rest: RestReader): Pose2d {
             span(850, 1950),
             (l) =>
               combine([
-                squish({ squash: 0.42, bulge: 0.7, wobbles: 0.5 }, at(0, 240, l)),
-                squish({ squash: 0.18, bulge: 0.7, wobbles: 0.5 }, at(240, 480, l)),
-                lob({ dx: 0, dy: 0, apex: 32, stretch: 0, facing: "upright" }, at(0, 240, l)),
+                squish({ squash: 0.42, bulge: 0.7, wobbles: 0.5 })(at(0, 240, l)),
+                squish({ squash: 0.18, bulge: 0.7, wobbles: 0.5 })(at(240, 480, l)),
+                lob({ dx: 0, dy: 0, apex: 32, stretch: 0, facing: "upright" })(at(0, 240, l)),
                 { x: ex, y: ey - sink, scale: small },
               ]),
           ],
@@ -323,21 +314,18 @@ function ant(time: Time, i: number): Pose2d {
   const leap0 = 2900 + i * 38;
   const gone = leap0 + 650;
   return combine([
-    launch(
-      {
-        height: 1300,
-        squash: 0.3,
-        bulge: 0.33,
-        stretch: 0.45,
-        crouch: (leap0 - crouch0) / (gone - crouch0),
-        tremble: 1.6,
-        flight: "accelerate",
-      },
-      at(crouch0, gone, time),
-    ),
-    springSettle({ dy: 120, turn: 9, rings: 0.75, damping: 4 }, at(rise0, rise0 + 520, time)),
-    tint({ name: "charge", curve: "inOut" }, at(crouch0, crouch0 + 420, time)),
-    smudge({ amount: 5, build: 0.46 }, at(leap0, gone, time)),
+    launch({
+      height: 1300,
+      squash: 0.3,
+      bulge: 0.33,
+      stretch: 0.45,
+      crouch: (leap0 - crouch0) / (gone - crouch0),
+      tremble: 1.6,
+      flight: "accelerate",
+    })(at(crouch0, gone, time)),
+    springSettle({ dy: 120, turn: 9, rings: 0.75, damping: 4 })(at(rise0, rise0 + 520, time)),
+    tint({ name: "charge", curve: "inOut" })(at(crouch0, crouch0 + 420, time)),
+    smudge({ amount: 5, build: 0.46 })(at(leap0, gone, time)),
   ]);
 }
 
@@ -346,18 +334,16 @@ function weight(time: Time, i: number): Pose2d {
   const fall = land - 420;
   const plunge = 5750 + Math.abs(i - 2.5) * 30;
   return combine([
-    squish({ squash: 0.24, bulge: 0.67, wobbles: 2.8 }, at(land, land + 700, time)),
-    lob({ dx: 0, dy: -640, apex: 0, stretch: 0.2, facing: "upright" }, at(fall, land, time)),
-    wobble({ angle: 2.5, count: 2 }, at(land, land + 700, time)),
-    anticipate(
-      { share: (plunge - 5550) / (plunge + SUCKED - 5550), amount: 14 / 1100 },
-      at(5550, plunge + SUCKED, time),
-      (p) => slide({ distance: 1100, from: "bottom" }, reversed(p)),
-    ),
+    squish({ squash: 0.24, bulge: 0.67, wobbles: 2.8 })(at(land, land + 700, time)),
+    lob({ dx: 0, dy: -640, apex: 0, stretch: 0.2, facing: "upright" })(at(fall, land, time)),
+    wobble({ angle: 2.5, count: 2 })(at(land, land + 700, time)),
+    anticipation({ share: (plunge - 5550) / (plunge + SUCKED - 5550), amount: 14 / 1100 })((p) =>
+      slide({ distance: 1100, from: "bottom" })(reversed(p)),
+    )(at(5550, plunge + SUCKED, time), NO_EVENTS),
     sequence(time, [
-      [span(fall, land), (f) => smudge({ amount: 3 }, f)],
+      [span(fall, land), (f) => smudge({ amount: 3 })(f)],
       [span(land, plunge), () => ({})],
-      [span(plunge, plunge + SUCKED), (f) => smudge({ amount: 4, build: 0.6 }, f)],
+      [span(plunge, plunge + SUCKED), (f) => smudge({ amount: 4, build: 0.6 })(f)],
     ]),
   ]);
 }
@@ -366,14 +352,14 @@ function floor(time: Time): Pose2d {
   const last = landOf(5);
   return combine([
     sequence(time, [
-      [span(3350, 3800), () => spread({}, span(3350, 3800).of(time, ease.cubicOut))],
-      [span(5750, 6000), () => spread({}, reversed(span(5750, 6000).of(time, ease.cubicIn)))],
+      [span(3350, 3800), () => spread({})(span(3350, 3800).of(time, ease.cubicOut))],
+      [span(5750, 6000), () => spread({})(reversed(span(5750, 6000).of(time, ease.cubicIn)))],
     ]),
     ...LAND.map((land, i) =>
-      jolt({ distance: 2 + i, count: 3, sideways: 0 }, at(land, land + 350, time)),
+      jolt({ distance: 2 + i, count: 3, sideways: 0 })(at(land, land + 350, time)),
     ),
-    slide({ distance: 14, from: "top" }, reversed(at(5550, 5750, time))),
-    tint({ name: "cool" }, at(last, last + 700, time)),
+    slide({ distance: 14, from: "top" })(reversed(at(5550, 5750, time))),
+    tint({ name: "cool" })(at(last, last + 700, time)),
   ]);
 }
 
@@ -392,8 +378,7 @@ function dust(time: Time, j: number, rest: RestReader): Pose2d {
       scale: size,
       opacity: (elapsedOf(time.clock) ?? 0) < land ? 0 : 0.75,
     },
-    kick(
-      { dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: 30 * (kind === 2 ? 1 : 0.3) },
+    kick({ dx: side * (40 + kind * 28), rise: 10 + 22 * kind, fall: 30 * (kind === 2 ? 1 : 0.3) })(
       at(land, land + 700, time),
     ),
   ]);
@@ -407,27 +392,24 @@ const sweep = (u: number): number => 1 - Math.cbrt(1 - ease.cubicInOut(u ** 0.6)
 
 function bar(time: Time): Pose2d {
   return combine([
-    slide({ distance: 1250, from: "left" }, span(0, 1000).of(time, sweep)),
-    anticipate({ share: 0.33, amount: 55 / 1450 }, at(2550, 3300, time), (t) =>
-      slide({ distance: 1450, from: "right" }, reversed(t)),
-    ),
+    slide({ distance: 1250, from: "left" })(span(0, 1000).of(time, sweep)),
+    anticipation({ share: 0.33, amount: 55 / 1450 })((t) =>
+      slide({ distance: 1450, from: "right" })(reversed(t)),
+    )(at(2550, 3300, time), NO_EVENTS),
   ]);
 }
 
 function hang(time: Time, i: number): Pose2d {
   const length = hangLength(i) + 50;
-  return dangle(
-    {
-      length,
-      pace: Math.sqrt(length / hangLength(i)),
-      damping: 0.18,
-      gain: 0.45,
-      lag: i * 28,
-      limit: 65,
-    },
-    time,
-    { carrier: (t: Time) => bar(t).x ?? 0 },
-  );
+  return dangle({
+    length,
+    pace: Math.sqrt(length / hangLength(i)),
+    damping: 0.18,
+    gain: 0.45,
+    lag: i * 28,
+    limit: 65,
+    carrier: (t: Time) => bar(t).x ?? 0,
+  })(time);
 }
 
 const TURNS = [-48, 30, -16, 18, -30, 50] as const;
@@ -441,22 +423,21 @@ function settle(time: Time, i: number, rest: RestReader): Pose2d {
   const b0 = burstAt(i);
   const out = collapseAt(i);
   return combine([
-    springSettle(
-      { dx, dy, lift: 70, turn, scale: 0.15, rings: 2, damping: 4.4 },
+    springSettle({ dx, dy, lift: 70, turn, scale: 0.15, rings: 2, damping: 4.4 })(
       at(b0, b0 + 1200, time),
     ),
-    fade({}, at(b0, b0 + 60, time)),
-    smudge({ amount: 4 }, reversed(at(b0, b0 + 220, time))),
-    anticipate({ share: 0.45, amount: 0.15 }, at(out, out + SUCKED, time), (t) =>
-      springSettle({ dx, dy, turn: turn * 0.5, scale: 0.05, rings: 0 }, reversed(t)),
-    ),
+    fade()(at(b0, b0 + 60, time)),
+    smudge({ amount: 4 })(reversed(at(b0, b0 + 220, time))),
+    anticipation({ share: 0.45, amount: 0.15 })((t) =>
+      springSettle({ dx, dy, turn: turn * 0.5, scale: 0.05, rings: 0 })(reversed(t)),
+    )(at(out, out + SUCKED, time), NO_EVENTS),
   ]);
 }
 
 function underline(time: Time): Pose2d {
   return sequence(time, [
-    [span(10800, 11300), () => spread({}, span(10800, 11300).of(time, ease.cubicOut))],
-    [span(12200, 12500), () => spread({}, reversed(span(12200, 12500).of(time, ease.cubicIn)))],
+    [span(10800, 11300), () => spread({})(span(10800, 11300).of(time, ease.cubicOut))],
+    [span(12200, 12500), () => spread({})(reversed(span(12200, 12500).of(time, ease.cubicIn)))],
   ]);
 }
 
@@ -468,11 +449,11 @@ function flood(time: Time, rest: RestReader): Pose2d {
   return sequence(time, [
     [
       span(11550, 12150),
-      () => wipe({ radius: 780, x, y }, span(11550, 12150).of(time, ease.quartOut)),
+      () => wipe({ radius: 780, x, y })(span(11550, 12150).of(time, ease.quartOut)),
     ],
     [
       span(12700, 13050),
-      () => wipe({ radius: 780, x, y }, reversed(span(12700, 13050).of(time, ease.cubicIn))),
+      () => wipe({ radius: 780, x, y })(reversed(span(12700, 13050).of(time, ease.cubicIn))),
     ],
   ]);
 }
@@ -490,7 +471,7 @@ function ring(
   const me = rest.get(name);
   return combine([
     { x: point.x - me.x, y: point.y - me.y, scale: 0.2, opacity: alpha },
-    shockwave({ grow }, at(from, from + ms, time)),
+    shockwave({ grow })(at(from, from + ms, time)),
   ]);
 }
 
@@ -498,8 +479,8 @@ function word(time: Time, i: number): Pose2d {
   const from = 13050 + i * 110;
   const ripple = 13900 + (2 - i) * 45;
   return combine([
-    springSettle({ dy: 126, turn: 5, rings: 0.75, damping: 4 }, at(from, from + 650, time)),
-    jolt({ distance: 6, count: 2, sideways: 0 }, at(ripple, ripple + 600, time)),
+    springSettle({ dy: 126, turn: 5, rings: 0.75, damping: 4 })(at(from, from + 650, time)),
+    jolt({ distance: 6, count: 2, sideways: 0 })(at(ripple, ripple + 600, time)),
   ]);
 }
 
@@ -577,10 +558,10 @@ export default defineStage({
     return {
       camera: camera(time),
       wipe: flood(time, rest),
-      trailUp: streak({ arrive: 0.43, lag: 0.33 }, at(850, 1450, time)),
+      trailUp: streak({ arrive: 0.43, lag: 0.33 })(at(850, 1450, time)),
       floor: floor(time),
       underline: underline(time),
-      trailArc: streak({ arrive: 0.65, lag: 0.12 }, at(13250, 14250, time)),
+      trailArc: streak({ arrive: 0.65, lag: 0.12 })(at(13250, 14250, time)),
       ant: (i) => ant(time, i),
       weight: (i) => weight(time, i),
       dust: (j) => dust(time, j, rest),
@@ -588,13 +569,13 @@ export default defineStage({
       hang: (i) => sequence(time, [[OVERLAP, (t) => hang(t, i)]]),
       settle: (i) => settle(time, i, rest),
       line: (i) => word(time, i),
-      credit: combine([rise({ distance: 14 }, credit), fade({}, credit)]),
+      credit: combine([rise({ distance: 14 })(credit), fade()(credit)]),
       ringLaunch: ring(time, rest, "ringLaunch", { x: home.x, y: home.y + 38 }, 850, 600, 11, 0.9),
       ringLand: ring(time, rest, "ringLand", { x: home.x, y: home.y + 18 }, 9850, 550, 8, 0.8),
       ringBurst: ring(time, rest, "ringBurst", home, 10230, 700, 21, 0.9),
       ringPeriod: ring(time, rest, "ringPeriod", { x: stop.x, y: stop.y + 6 }, 13900, 500, 4, 0.7),
       dot: dot(time, rest),
-      hudOrigin: fade({}, at(200, 600, time)),
+      hudOrigin: fade()(at(200, 600, time)),
     };
   },
 });
