@@ -18,9 +18,9 @@ import { beat, box, sceneBuilder } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export default sceneBuilder({
-  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
-})
+export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
+
+export default sceneBuilder()
   .element(box("box"))
   .motion(slide({ distance: ${distance}, from: "left" }).in(go));
 `;

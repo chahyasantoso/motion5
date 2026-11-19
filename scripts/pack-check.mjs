@@ -140,9 +140,9 @@ import { beat, box, sceneBuilder } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export default sceneBuilder({
-  skins: { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } },
-})
+export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
+
+export default sceneBuilder()
   .element(box("box"))
   .motion(slide({ distance: 300, from: "left" }).in(go));
 `;
@@ -387,17 +387,16 @@ const arc = shape(
   }),
 );
 
+export const skin = {
+  css: [
+    '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
+    '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
+    '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
+  ].join("\\n"),
+};
+
 export default sceneBuilder({
   length: 3000,
-  skins: {
-    dom: {
-      css: [
-        '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
-        '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
-        '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
-      ].join("\\n"),
-    },
-  },
 })
   .element(dot)
   .motion(

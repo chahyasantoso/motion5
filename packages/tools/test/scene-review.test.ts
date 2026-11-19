@@ -3,14 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { elapsedOf, type Time } from "@gerak/core";
-import {
-  defineStage,
-  isStageDefinition,
-  type CastBuilder,
-  type StageDefinition,
-} from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
-import { readSceneModule } from "../src/scene/scene";
+import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
 import {
   isSceneFile,
   parseSceneReviewArgs,
@@ -28,7 +22,7 @@ import * as stageClean from "./fixtures/stage-clean";
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
 function review(module: unknown, options: { to?: number } = {}): SceneReviewResult {
-  const read = readSceneModule(module);
+  const read = readModule(module);
   if ("reason" in read) throw new Error(read.reason);
   return reviewSceneModule(read, { ...limits, ...options });
 }
@@ -104,7 +98,7 @@ describe("gerak review on a scene file", () => {
 
   it("stops at --to, and reads turn fields in degrees against the same limit", () => {
     expect(review(flawed, { to: 400 }).findings.some((line) => line.includes("jumps"))).toBe(false);
-    const turning = readSceneModule({
+    const turning = readModule({
       durationMs: 1000,
       scene: (time: { progress: number }) => ({ a: { rotationY: time.progress < 0.5 ? 0 : 200 } }),
     });
@@ -331,7 +325,7 @@ describe("gerak review costs", () => {
   it("flags a step over --budget, with or without limits, and a stage module", () => {
     const tiny = { ...limits, budget: 0.0001 };
     const over = (module: unknown) => {
-      const read = readSceneModule(module);
+      const read = readModule(module);
       if ("reason" in read) throw new Error(read.reason);
       return reviewSceneModule(read, tiny).findings.filter((line) => line.includes("budget"));
     };
@@ -350,12 +344,6 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
   afterEach(() => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
-
-  function rawStage(options: Record<string, unknown>): StageDefinition {
-    const built: unknown = Reflect.apply(defineStage, undefined, [options]);
-    if (!isStageDefinition(built)) throw new Error("expected StageDefinition");
-    return built;
-  }
 
   it("enforces ambient limits and stage bounds while skipping settle rest check", () => {
     const cleanAmbient = defineStage({

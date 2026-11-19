@@ -136,7 +136,7 @@ export function writtenOut(
   return out;
 }
 
-function moduleFromStage(stage: Stage): SceneModule {
+export function moduleFromStage(stage: Stage): SceneModule {
   return {
     stage,
     cues: stage.cues,

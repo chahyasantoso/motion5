@@ -1,15 +1,13 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileStage, formatStageError } from "@gerak/stage";
+import { compileScene, formatStageError, isDomSkin, isScene } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 
 const PIECES = join(import.meta.dirname, "..", "..", "apps", "pieces");
 
-const DEFAULTS = ["export default defineStage", "export default sceneBuilder("];
-
 function isStagePiece(source: string): boolean {
-  return DEFAULTS.some((start) => source.includes(start));
+  return source.includes("sceneBuilder(") && source.includes("export default");
 }
 
 function stagePieces(): string[] {
@@ -35,12 +33,18 @@ describe("stage pieces", () => {
   it("every piece under apps/pieces compiles", async () => {
     const files = stagePieces();
     expect(files.length).toBeGreaterThan(0);
-    for (const builder of ["shop.ts", "nowplaying.ts", "nadi.ts", "showreel-e.ts"])
+    for (const builder of ["shop.ts", "nowplaying.ts", "nadi.ts", "showreel-e.ts", "penguin.ts"])
       expect(files.some((file) => file.endsWith(builder))).toBe(true);
     const failures: string[] = [];
     for (const file of files) {
       const module: unknown = await import(pathToFileURL(file).href);
-      const compiled = compileStage(Reflect.get(Object(module), "default"));
+      const scene: unknown = Reflect.get(Object(module), "default");
+      const skin: unknown = Reflect.get(Object(module), "skin");
+      if (!isScene(scene) || (skin !== undefined && !isDomSkin(skin))) {
+        failures.push(`${file}: no scene, or a skin that is not { css }`);
+        continue;
+      }
+      const compiled = compileScene(scene, { skin });
       if (!compiled.ok)
         failures.push(`${file}: ${compiled.errors.map(formatStageError).join("; ")}`);
     }

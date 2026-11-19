@@ -29,7 +29,7 @@ import {
   type Stretch,
 } from "./cast";
 import type { Element } from "./elements";
-import type { Carry, CarryOptions, Frame, RestReader } from "./layout";
+import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
 import type {
   DomSkinInput,
   LayoutsInput,
@@ -78,6 +78,8 @@ export interface SceneBuilderOptions {
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
   readonly layouts?: LayoutsInput | undefined;
+  /** Boxes the headless tools read in place of measured ones, by element name. */
+  readonly rest?: Rest | undefined;
 }
 
 /** A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable. */
@@ -615,10 +617,14 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
-  const { frame, cues, layouts } = state.options;
+  const { frame, cues, layouts, rest } = state.options;
   return {
     kind: "stage-definition",
-    beats: Object.fromEntries([...state.beats].map(([name, beat]) => [name, [beat.from, beat.to]])),
+    beats: Object.fromEntries(
+      [...state.beats]
+        .sort(([, a], [, b]) => a.from - b.from)
+        .map(([name, beat]) => [name, [beat.from, beat.to]]),
+    ),
     limits: limitsOf(state),
     cast: (m) => castOf(state, m),
     scene: (context: SceneContext) => {
@@ -638,6 +644,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     ...(skin === undefined ? {} : { skins: { dom: skin } }),
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
+    ...(rest === undefined ? {} : { rest }),
   };
 }
 
