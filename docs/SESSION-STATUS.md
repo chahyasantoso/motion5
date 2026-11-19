@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Pages, then 3D in a scene**, in order: `plan/page-plan.md` and `plan/stage-3d-plan.md` (3D in a scene); then the live kit and web overlay (`plan/roadmap.md`).
+- **Pages, then 3D in a scene**, in order: `plan/page-plan.md` (four slices: inputs, page mount, sections, slots) and `plan/stage-3d-plan.md` (3D in a scene); then the live kit and web overlay (`plan/roadmap.md`).
 
 ## Open, and not scheduled
 

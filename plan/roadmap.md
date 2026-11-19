@@ -133,8 +133,9 @@ Three things follow from it:
      on it; a size ceiling on the pages agents read whole.
 12. **Scene builder** (`plan/scene-builder-plan.md`): `sceneBuilder` replaces `defineStage`. Elements and beats are
    values, and each element gets its motions in one chain.
-13. **Pages** (`plan/page-plan.md`): beats on scroll or clock, a pointer signal, page mode with no frame, sections
-   that flow, pin or stay fixed, and slots an element travels between. The web overlay's base.
+13. **Pages** (`plan/page-plan.md`, four slices): one clock with scroll and pointer as inputs, scroll beats and
+   triggers, a page mount that animates existing nodes, sections and slots measured from the page's CSS. The web
+   overlay's base.
 14. **3D in a scene** (`plan/stage-3d-plan.md`): Three.js objects as scene elements beside DOM labels, on one clock,
    and able to travel to a page's slots.
 15. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
