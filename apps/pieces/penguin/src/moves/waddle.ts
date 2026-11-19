@@ -1,4 +1,4 @@
-import { arch, wave, type Pose2d, type Time } from "@gerak/core";
+import { arch, motion, wave, type Motion, type Pose2d } from "@gerak/core";
 
 const easeSine = (u: number): number => arch(Math.min(1, Math.max(0, u)) / 2) ** 2;
 const oneCycle = wave({ count: 1 });
@@ -16,13 +16,13 @@ export interface WaddleOptions {
 }
 
 /** Rocks side to side from foot to foot, lingering on each side and sinking as it passes upright, then comes to rest. */
-export function waddle(options: WaddleOptions): (time: Time) => Pose2d {
+export function waddle(options: WaddleOptions): Motion<Pose2d> {
   const { angle, count = 2, sink = 0, linger = 0.35 } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const cycles = progress * count;
     const ramp = easeSine(Math.min(cycles * 2, (count - cycles) * 2));
     const side = oneCycle(cycles);
     const lean = Math.sign(side) * Math.abs(side) ** (1 - linger);
     return { rotation: -angle * lean * ramp, y: sink * ramp * (1 - side * side) ** 3 };
-  };
+  });
 }
