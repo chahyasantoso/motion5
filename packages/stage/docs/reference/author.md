@@ -64,7 +64,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`CarryMode`** `type CarryMode = "scale" | "clip" | "keep"`: How a carried member takes the size of its target box.
 - **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, layout: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
 - **`Frame`** `type Frame = { width: number; height: number }`: Stage size in px.
-- **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member name.
+- **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member or section name.
 - **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[] }`: Reads rest boxes; a name never measured answers a zero box.
 - **`isDomSkin`** `(value: unknown): value is DomSkinInput`: Whether `value` is a DOM skin: `{ css }` with an optional `defs`, both strings or both URLs.
 - **`CompiledSection`** `type CompiledSection = { name: string; node: string }`: A compiled page section selector measured into rest by `mountPage`.

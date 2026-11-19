@@ -49,7 +49,7 @@ A group's children are in the piece already. Call `.element(child)` only to give
 
 - Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required for non-page scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
-- Section: `section(name, el(selector))` reads measured section edges as `.top` and `.end` scroll points (with `.plus(px)`, `.minus(px)` and `.reached`); referencing either registers the section on the stage.
+- Section: `section(name, el(selector))` reads measured section edges as `.top` and `.end` scroll points (with `.plus(px)`, `.minus(px)` and `.reached`); using either in a scroll or trigger beat registers the section on the stage.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 

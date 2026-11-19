@@ -429,17 +429,32 @@ function compileLimits(
 
 function compileSections(
   raw: readonly CompiledSection[] | undefined,
+  members: readonly Member[],
   errors: StageError[],
 ): readonly CompiledSection[] {
   if (raw === undefined || raw.length === 0) return Object.freeze([]);
+  const memberByName = new Map(members.map((member) => [member.name, member]));
   const byName = new Map<string, string>();
   const compiled: CompiledSection[] = [];
   for (const sec of raw) {
-    if (sec.name === "" || sec.node.trim() === "") {
+    if (sec.name.includes(".")) {
+      errors.push({ kind: "reserved_dot", name: sec.name });
+      continue;
+    }
+    if (sec.name.trim() === "" || sec.node.trim() === "") {
       errors.push({
         kind: "invalid",
         field: "sections",
         reason: `section "${sec.name}" needs a non-empty name and selector.`,
+      });
+      continue;
+    }
+    const member = memberByName.get(sec.name);
+    if (member !== undefined && member.node !== sec.node) {
+      errors.push({
+        kind: "invalid",
+        field: "sections",
+        reason: `section "${sec.name}" (${sec.node}) collides with member "${member.name}".`,
       });
       continue;
     }
@@ -523,7 +538,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
       });
     }
   }
-  const sections = compileSections(definition.sections, errors);
+  const sections = compileSections(definition.sections, members, errors);
   const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };

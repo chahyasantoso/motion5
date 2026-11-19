@@ -93,7 +93,7 @@ export interface SceneBuilderOptions {
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
   readonly layouts?: LayoutsInput | undefined;
-  /** Boxes the headless tools read in place of measured ones, by element name. */
+  /** Boxes the headless tools read in place of measured ones, by element or section name. */
   readonly rest?: Rest | undefined;
 }
 
@@ -548,7 +548,7 @@ function addSections(
         );
       const colliding = elements.get(sec.name);
       if (colliding !== undefined && colliding.options.node?.selector !== sec.selector)
-        throw new RangeError(
+        throw new TypeError(
           `sceneBuilder: section "${sec.name}" (${sec.selector}) collides with element ${describe(colliding)}.`,
         );
       sections.set(sec.name, sec);
@@ -1039,7 +1039,9 @@ function select(state: State, element: Element): ElementStep {
 export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
   nextSceneId += 1;
   const label =
-    options.name !== undefined && options.name !== "" ? options.name : `scene ${nextSceneId}`;
+    options.name !== undefined && options.name.trim() !== ""
+      ? options.name
+      : `scene ${nextSceneId}`;
   const state: State = {
     owner: Object.freeze({ label }),
     options,

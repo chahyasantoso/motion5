@@ -38,6 +38,7 @@ describe("section", () => {
   it("validates name and NodeBinding, and resolves top, end, plus, minus, and reached", () => {
     expect(() => section("", el("#hero"))).toThrow(TypeError);
     expect(() => section("   ", el("#hero"))).toThrow(TypeError);
+    expect(() => section("cards.0", el("#hero"))).toThrow(TypeError);
     // @ts-expect-error section requires a NodeBinding from el(selector)
     expect(() => section("hero", "#hero")).toThrow(TypeError);
 
@@ -111,7 +112,27 @@ describe("section", () => {
       sceneBuilder()
         .element(box("hero", { node: el("#card") }))
         .motion(slideX(10).in(b1)),
-    ).toThrow(/hero/);
+    ).toThrow(TypeError);
+
+    expect(() =>
+      sceneBuilder()
+        .element(box("other", { node: el("#other") }))
+        .motion(slideX(10).in(b1))
+        .element(box("hero", { node: el("#card") })),
+    ).toThrow(TypeError);
+
+    // A scene using sections alone applies page-scene checks (requires node on elements, rejects skin).
+    const unlinkedResult = compileScene(
+      sceneBuilder().element(box("unlinked")).motion(slideX(10).in(b1)),
+    );
+    expect(unlinkedResult.ok).toBe(false);
+    const skinnedResult = compileScene(
+      sceneBuilder()
+        .element(box("hero", { node: el("#hero") }))
+        .motion(slideX(10).in(b1)),
+      { skin: { css: "" } },
+    );
+    expect(skinnedResult.ok).toBe(false);
 
     expect(() =>
       compiled(
@@ -152,6 +173,11 @@ describe("single-scene element ownership", () => {
 
     // Atomic rollback: failed registration must not claim freshSibling for beta.
     expect(() => sceneBuilder({ name: "gamma" }).element(freshSibling)).not.toThrow();
+
+    // Whitespace scene names fall back to sequential default scene labels.
+    const blankTarget = box("blankTarget");
+    sceneBuilder({ name: "   " }).element(blankTarget);
+    expect(() => sceneBuilder().element(blankTarget)).toThrow(/scene \d+/);
   });
 
   it("allows scenes to share beats, states, signals, and sections", () => {

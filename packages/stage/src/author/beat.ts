@@ -205,6 +205,10 @@ export function makeScrollPoint(
 export function section(name: string, node: NodeBinding): Section {
   if (typeof name !== "string" || name.trim() === "")
     throw new TypeError("section: a section needs a non-empty name.");
+  if (name.includes("."))
+    throw new TypeError(
+      `section "${name}": section names cannot contain ".", which names list items.`,
+    );
   if (
     typeof node !== "object" ||
     node === null ||
