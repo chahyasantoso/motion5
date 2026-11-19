@@ -471,9 +471,11 @@ const ringAt = (
   shockwave({ grow: size / 0.2 }).in(span(from, from + ms)),
 ];
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
+
 export default sceneBuilder({
   frame: { width: 1280, height: 720 },
-  skins: { dom: { css: domCss } },
 })
   .element(camera)
   .motion(

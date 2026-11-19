@@ -3,7 +3,7 @@ import type { Signal } from "@gerak/core";
 import type { ClockDriver } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
 import { driverKeeper, PlayerHostProvider, type OwnedDriver, type PlayerHost } from "@gerak/react";
-import { isStageDefinition } from "@gerak/stage";
+import { isScene } from "@gerak/stage";
 import { stageOf, type LoadedStage, type PieceLookup } from "../stage-module";
 import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
@@ -258,7 +258,7 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial, lookup }) => {
       if (!("detail" in event)) return;
       const detail = Reflect.get(event, "detail");
       if (!isRecord(detail)) return;
-      const isStage = isStageDefinition(Reflect.get(detail, "default"));
+      const isStage = isScene(Reflect.get(detail, "default"));
       const read = isStage ? stageOf(detail) : undefined;
       if (typeof read === "string") {
         event.preventDefault();

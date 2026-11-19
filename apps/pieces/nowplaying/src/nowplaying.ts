@@ -79,7 +79,10 @@ const css = `
 [data-cast="play"] { left: 790px; top: 400px; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0b45a; color: #141a2e; font-size: 24px; padding-left: 4px; box-sizing: border-box; cursor: pointer; }
 `;
 
-export default sceneBuilder({ length: 4000, skins: { dom: { css } } })
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
+export default sceneBuilder({ length: 4000 })
   .element(card)
   .element(heading)
   .element(line)

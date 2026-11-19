@@ -558,9 +558,11 @@ const jarOnLand = LAND.map((land, i) =>
   motion(jolt({ distance: 2 + i, count: 3, sideways: 0 })).in(span(land, land + 350)),
 );
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
+
 export default sceneBuilder({
   frame: { width: 1280, height: 720 },
-  skins: { dom: { css: domCss } },
 })
   .element(camera)
   .motion(

@@ -521,9 +521,11 @@ const ringGrow = (grow: number, alpha: number, from: number, ms: number) => [
 const spreadIn = (from: number, to: number, ms: number, curve: (p: number) => number) =>
   motion((t: Time) => spread({})(span(0, ms).of(t, curve))).in(span(from, to));
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
+
 export default sceneBuilder({
   frame: { width: 1280, height: 720 },
-  skins: { dom: { css: domCss } },
 })
   .element(camera)
   .motion(

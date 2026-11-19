@@ -9,11 +9,11 @@ import {
 import { play, type Player } from "@gerak/player";
 import {
   check,
-  compileStage,
+  compileScene,
   formatStageError,
   frame as frameOf,
+  isScene,
   isStage,
-  isStageDefinition,
   listPose,
   poseOf,
   restReader,
@@ -21,6 +21,7 @@ import {
   type Box,
   type Content,
   type DomSkin,
+  type DomSkinInput,
   type Frame,
   type FrameOutput,
   type Member,
@@ -28,8 +29,8 @@ import {
   type Pivot,
   type Rest,
   type RestReader,
+  type SceneBuilder,
   type Stage,
-  type StageDefinition,
 } from "@gerak/stage";
 import { drawStrokes, morphAt, restOfBounds, strokeBox } from "@gerak/stage/render";
 import { clockDriver, type ClockDriver } from "./drivers";
@@ -116,8 +117,8 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>>
 /** A frame's targets as the scene returned them: a pose per actor or group, a function per list. */
 export type StageValues = Readonly<Record<string, unknown>>;
 
-/** What `mountStage` and `<Stage>` take: a compiled stage, or what `defineStage` returns. */
-export type StageInput = Stage | Pick<StageDefinition, "kind">;
+/** What `mountStage` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
+export type StageInput = Stage | SceneBuilder;
 
 /** Settings of `mountStage`: the frames its clock runs on, and whether each frame's shapes are checked. */
 export interface StageOptions {
@@ -126,6 +127,8 @@ export interface StageOptions {
   readonly onDriver?: (driver: ClockDriver) => void;
   /** Checks every frame's targets with `check` and throws on a mistake; for authoring pages. */
   readonly checks?: boolean;
+  /** How the DOM draws a scene given as `sceneBuilder` returns it; a compiled stage carries its own. */
+  readonly skin?: DomSkinInput;
 }
 
 /** A playing stage: its player, driver, measured boxes, skin readiness, and lifecycle controls. */
@@ -312,12 +315,12 @@ function sourceOf(content: Content | undefined): Path | undefined {
   return undefined;
 }
 
-/** The stage a definition compiles to, or the stage itself; throws naming every compile error. */
-function resolveStage(input: StageInput): Stage {
+/** The stage a scene compiles to with `skin`, or the stage itself; throws naming every compile error. */
+function resolveStage(input: StageInput, skin: DomSkinInput | undefined): Stage {
   if (isStage(input)) return input;
-  if (!isStageDefinition(input))
-    throw new Error("mountStage: expected a stage or what `defineStage` returns.");
-  const compiled = compileStage(input);
+  if (!isScene(input))
+    throw new Error("mountStage: expected a stage or what `sceneBuilder` returns.");
+  const compiled = compileScene(input, { skin });
   if (compiled.ok) return compiled.stage;
   throw new Error(
     `mountStage: invalid stage:\n${compiled.errors.map(formatStageError).join("\n")}`,
@@ -346,7 +349,7 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
   stageInput: StageInput,
   options: StageOptions,
 ): MountedStage {
-  let currentStage = resolveStage(stageInput);
+  let currentStage = resolveStage(stageInput, options?.skin);
   let size: Frame = currentStage.frame;
   const document = container.ownerDocument;
 
@@ -931,7 +934,7 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
     },
     events: () => [...run.driver.events()],
     replace(next) {
-      const nextStage = resolveStage(next);
+      const nextStage = resolveStage(next, options?.skin);
       if (nextStage.signature !== currentStage.signature)
         throw new Error("mountStage.replace: the next stage has a different cast or durationMs.");
       const prevStage = currentStage;

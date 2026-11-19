@@ -25,7 +25,10 @@ const backwards = (inner: (time: Time) => Pose2d): Motion<Pose2d> =>
   motion((time) => inner(reversed(time)));
 
 /** The mark pops in, the word slides in behind it, and both lift away to the top. */
-export default sceneBuilder({ frame: { width: 400, height: 200 }, skins: { dom: { css } } })
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
+export default sceneBuilder({ frame: { width: 400, height: 200 } })
   .element(pill)
   .element(mark)
   .motion(

@@ -10,10 +10,11 @@ import {
 } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
-  compileStage,
+  compileScene,
   formatStageError,
   frame,
-  isStageDefinition,
+  isDomSkin,
+  isScene,
   listPose,
   type Limits,
   type Stage,
@@ -72,7 +73,7 @@ export interface SceneModule {
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
   readonly beats?: readonly Beat[];
-  /** Compiled stage contract when the module default-exports `defineStage(...)`. */
+  /** Compiled stage contract when the module default-exports `sceneBuilder(...)`. */
   readonly stage?: Stage;
 }
 
@@ -150,13 +151,17 @@ function moduleFromStage(stage: Stage): SceneModule {
   };
 }
 
-/** Reads a `defineStage` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
+/** Reads a `sceneBuilder` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
-  const defaultExport: unknown = isStageDefinition(value)
-    ? value
-    : Reflect.get(Object(value), "default");
-  if (isStageDefinition(defaultExport)) {
-    const compiled = compileStage(defaultExport);
+  const defaultExport: unknown = isScene(value) ? value : Reflect.get(Object(value), "default");
+  if (isScene(defaultExport)) {
+    const skin: unknown = Reflect.get(Object(value), "skin");
+    if (skin !== undefined && !isDomSkin(skin))
+      return {
+        reason:
+          "A piece's `skin` export must be `{ css }`, with `css` and `defs` both strings or both URLs.",
+      };
+    const compiled = compileScene(defaultExport, { skin });
     if (!compiled.ok) {
       return { reason: compiled.errors.map(formatStageError).join("\n") };
     }
@@ -164,7 +169,7 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   }
   const scene: unknown = Reflect.get(Object(value), "scene");
   if (defaultExport !== undefined && typeof scene !== "function") {
-    return { reason: "Stage module default export must be created with `defineStage(...)`." };
+    return { reason: "A piece's default export must be created with `sceneBuilder(...)`." };
   }
   const cues: unknown = Reflect.get(Object(value), "cues");
   if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))

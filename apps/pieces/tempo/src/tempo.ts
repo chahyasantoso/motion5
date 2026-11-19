@@ -61,10 +61,12 @@ const css = `
     `;
 
 /** Eight ticks at 120 beats a minute, then the title arrives. */
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
 export default sceneBuilder({
   frame: { width: 600, height: 600 },
   length: 5000,
-  skins: { dom: { css } },
 })
   .element(left)
   .motion(bind({ opacity: flashLeft }))

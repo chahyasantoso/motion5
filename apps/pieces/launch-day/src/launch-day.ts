@@ -57,7 +57,10 @@ const badge = (lane: number, dx: number): readonly Motion<Pose2d>[] => [
   inLane(lane, squish({ squash: 0.28, wobbles: 2 })).in(badges),
 ];
 
-export default sceneBuilder({ skins: { dom: { css } }, length: 5400 })
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
+export default sceneBuilder({ length: 5400 })
   .element(world)
   .motion(motion(jolt({ distance: 12, count: 4 })).in(burst))
   .element(dateText)

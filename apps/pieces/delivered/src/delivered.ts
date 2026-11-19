@@ -29,10 +29,12 @@ const css = `
 [data-cast="word"] { position: absolute; left: 0; top: 330px; width: 600px; height: 50px; display: flex; justify-content: center; font: 700 34px sans-serif; color: #2b6b45; }
 `;
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
 export default sceneBuilder({
   frame: { width: 600, height: 400 },
   length: 3000,
-  skins: { dom: { css } },
 })
   .element(step)
   .element(tether)

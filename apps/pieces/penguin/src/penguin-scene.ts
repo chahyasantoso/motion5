@@ -2285,13 +2285,9 @@ const snowing = (flakes: readonly Flake[], opacity: number) =>
 const mouthOpens = bind({ shape: open });
 const lidsShut = bind({ shape: shut });
 
-export default sceneBuilder({
-  frame: { width: 1280, height: 720 },
-  length: STORY_MS,
-  cues: talk,
-  skins: {
-    dom: {
-      css: `
+/** How the DOM renderer draws this piece. */
+export const skin = {
+  css: `
 [data-cast="sky"] { position: absolute; left: 0; top: 0; width: 1280px; height: 410px; background: linear-gradient(#7f9aae, #c4d5df); }
 [data-cast="sea"] { position: absolute; left: 0; top: 410px; width: 1280px; height: 310px; background: linear-gradient(#5d8ea6, #1f4c66); }
 [data-cast="floe"] { position: absolute; left: 280px; top: 528px; width: 720px; height: 180px; z-index: 8; }
@@ -2381,7 +2377,7 @@ export default sceneBuilder({
 [data-cast="faceEyelidRight"] { z-index: 39; }
 [data-path="faceEyelidRight"] { fill: url(#face-lidGrey); stroke: #000000; stroke-width: 3.1742; stroke-linejoin: round; }
 `,
-      defs: `<linearGradient id="bergFar-bergFill" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="150" gradientTransform="matrix(0.5 0 0 0.5 1000 330)"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b3d7e6"/></linearGradient>
+  defs: `<linearGradient id="bergFar-bergFill" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="150" gradientTransform="matrix(0.5 0 0 0.5 1000 330)"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b3d7e6"/></linearGradient>
 <linearGradient id="berg-bergFill" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="150" gradientTransform="matrix(0.9 0 0 0.9 70 273)"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#b3d7e6"/></linearGradient>
 <linearGradient id="ice-floeSideFill" gradientUnits="userSpaceOnUse" x1="0" y1="66" x2="0" y2="140" gradientTransform="matrix(1 0 0 1 280 528)"><stop offset="0" stop-color="#c6ecf6"/><stop offset="1" stop-color="#4f9dbb"/></linearGradient>
 <radialGradient id="ice-floeTopFill" gradientUnits="userSpaceOnUse" cx="330" cy="40" r="380" gradientTransform="matrix(1 0 0 1 280 528)"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#e6f6fb"/><stop offset="1" stop-color="#b9e0ee"/></radialGradient>
@@ -2394,8 +2390,12 @@ export default sceneBuilder({
 <radialGradient id="face-beakRed" gradientUnits="userSpaceOnUse" cx="200" cy="190" r="125" gradientTransform="matrix(0.95 0 0 0.95 424 150)"><stop offset="0" stop-color="#e42f29"/><stop offset="1" stop-color="#801418"/></radialGradient>
 <linearGradient id="face-lidGrey" gradientUnits="userSpaceOnUse" x1="0" y1="89" x2="0" y2="181" gradientTransform="matrix(0.95 0 0 0.95 424 150)"><stop offset="0" stop-color="#8f8f8e"/><stop offset="1" stop-color="#2b2b2b"/></linearGradient>
 `,
-    },
-  },
+};
+
+export default sceneBuilder({
+  frame: { width: 1280, height: 720 },
+  length: STORY_MS,
+  cues: talk,
 })
   .element(sky)
   .element(sea)

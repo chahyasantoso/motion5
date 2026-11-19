@@ -1,19 +1,4 @@
-export {
-  type ActorSpec,
-  type CastBuilder,
-  type Content,
-  type Expect,
-  type GroupSpec,
-  type ItemContent,
-  type ListSpec,
-  type Members,
-  type Meta,
-  type Modifiers,
-  type Path,
-  type Pivot,
-  type Spec,
-  type Stretch,
-} from "./author/cast";
+export { type Content, type Expect, type ItemContent, type Path, type Pivot } from "./author/cast";
 export { beat, type Beat, type BeatPlace } from "./author/beat";
 export {
   box,
@@ -32,11 +17,14 @@ export {
   bind,
   bindEach,
   carry,
+  compileScene,
+  isScene,
   sceneBuilder,
   stagger,
   stayWith,
   type BoundEachFields,
   type BoundFields,
+  type CompileSceneOptions,
   type ElementStep,
   type MotionContext,
   type Principle,
@@ -61,24 +49,14 @@ export {
   type RestReader,
 } from "./author/layout";
 export {
-  defineStage,
-  each,
-  isStageDefinition,
-  type Beats,
+  isDomSkin,
   type DomSkinInput,
   type Limits,
   type LayoutsInput,
   type ListPose,
-  type MemberName,
-  type MemberOf,
-  type SceneContext,
-  type StageDefinition,
-  type StageOptions,
-  type Targets,
 } from "./author/stage";
 export {
   DEFAULT_FRAME,
-  compileStage,
   isStage,
   type CompileResult,
   type DomSkin,

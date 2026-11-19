@@ -262,10 +262,13 @@ const noteOpacity = motion((time, context?: MotionContext) => ({
   opacity: noteShown[context?.index ?? 0]?.(time, context?.events ?? []) ?? 0,
 }));
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css: domCss };
+
 export default sceneBuilder({
   length: 7000,
   layouts: { names: layouts, pick: layout },
-  skins: { dom: { css: domCss } },
+
   cues: [
     { name: "click", at: 1500, target: "sort" },
     { name: "click", at: 1700, target: "sort" },

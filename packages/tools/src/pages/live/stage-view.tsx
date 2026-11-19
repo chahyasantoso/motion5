@@ -1,7 +1,7 @@
 import { useEffect, useRef, type FC } from "react";
 import { mountStage, type MountedStage } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
-import { compileStage, type StageDefinition } from "@gerak/stage";
+import { compileScene, type Stage } from "@gerak/stage";
 import type { LoadedStage } from "../stage-module";
 
 export interface LiveStageViewProps {
@@ -20,17 +20,17 @@ interface Shown {
 export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDriver }) => {
   const container = useRef<HTMLDivElement>(null);
   const shown = useRef<Shown | undefined>(undefined);
-  const currentScene = useRef(loaded.definition.scene);
-  const lastValues = useRef<ReturnType<StageDefinition["scene"]> | undefined>(undefined);
+  const currentScene = useRef(loaded.stage.scene);
+  const lastValues = useRef<ReturnType<Stage["scene"]> | undefined>(undefined);
   const reported = useRef(new Set<string>());
 
   useEffect(() => {
     const element = container.current;
     if (element === null) return;
-    currentScene.current = loaded.definition.scene;
+    currentScene.current = loaded.stage.scene;
     reported.current.clear();
 
-    const guardedScene: StageDefinition["scene"] = (ctx) => {
+    const guardedScene: Stage["scene"] = (ctx) => {
       try {
         const next = currentScene.current(ctx);
         if (typeof next === "object" && next !== null) {
@@ -49,7 +49,7 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
       }
     };
 
-    const compiled = compileStage({ ...loaded.definition, scene: guardedScene });
+    const compiled = compileScene(loaded.scene, { skin: loaded.skin, wrap: () => guardedScene });
     if (!compiled.ok) return;
     const playing = compiled.stage;
     const shape = playing.signature;

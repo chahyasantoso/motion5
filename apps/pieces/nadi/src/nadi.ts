@@ -501,10 +501,12 @@ const world = group("world", [dash, heroG, endG], { pivot: { x: W / 2, y: H / 2 
 
 const pulseAt = (ms: number): number => 1 + 0.2 * Math.sin(ms / 240);
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
 export default sceneBuilder({
   frame: { width: W, height: H },
   length: TOTAL_MS,
-  skins: { dom: { css } },
 })
   .element(bgDots)
   .motion(parallax(0.3, 0.2))

@@ -1,8 +1,9 @@
 import { beat, box, sceneBuilder } from "@gerak/stage";
 
+/** How the DOM renderer draws this piece. */
+export const skin = { css: `` };
+
 const show = beat("show", 800);
 const title = box("title");
 
-export default sceneBuilder({ skins: { dom: { css: `` } } })
-  .element(title)
-  .show(show);
+export default sceneBuilder().element(title).show(show);

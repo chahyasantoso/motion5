@@ -38,6 +38,7 @@ import type {
   SceneContext,
   StageDefinition,
 } from "./stage";
+import { compileStage, type CompileResult, type Stage } from "../run/compile";
 
 /** What a motion reads each frame, beside the time it plays in. */
 export interface MotionContext {
@@ -72,7 +73,6 @@ export type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>;
 
 /** Options of `sceneBuilder`: what is true of the whole piece. */
 export interface SceneBuilderOptions {
-  readonly skins?: { readonly dom?: DomSkinInput | undefined } | undefined;
   readonly frame?: Frame | undefined;
   readonly cues?: Events | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
@@ -80,8 +80,9 @@ export interface SceneBuilderOptions {
   readonly layouts?: LayoutsInput | undefined;
 }
 
-/** A piece being written: itself a `StageDefinition`, and `.element` selects what to give motions. */
-export interface SceneBuilder extends StageDefinition {
+/** A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable. */
+export interface SceneBuilder {
+  readonly kind: "scene";
   element(element: Element): ElementStep;
 }
 
@@ -93,8 +94,8 @@ export interface ElementStep extends SceneBuilder {
   modify(principle: Principle): ElementStep;
   /** Shows the element only during these windows: a beat, or `[from, to]` for one stretch across beats. */
   show(...windows: readonly ShowWindow[]): ElementStep;
-  /** Called, sets review limits of this element, a field once; read, holds each element's limits by name. */
-  readonly limits: ((limits: Limits) => ElementStep) & Readonly<Record<string, Limits>>;
+  /** Sets review limits of this element; each field once. */
+  limits(limits: Limits): ElementStep;
 }
 
 /** A beat, or two beats: from the start of the first to the end of the second. */
@@ -597,23 +598,7 @@ function limitsOf(state: State): Record<string, Limits> {
   return limits;
 }
 
-function holdsLimits<T extends object>(
-  value: T,
-  record: Readonly<Record<string, Limits>>,
-): value is T & Readonly<Record<string, Limits>> {
-  return Object.entries(record).every(([name, own]) => Reflect.get(value, name) === own);
-}
-
-function limitsMember(state: State, set: (limits: Limits) => ElementStep): ElementStep["limits"] {
-  const record = limitsOf(state);
-  const member = (limits: Limits): ElementStep => set(limits);
-  for (const [name, own] of Object.entries(record))
-    Object.defineProperty(member, name, { value: own, enumerable: true });
-  if (!holdsLimits(member, record)) throw new TypeError("sceneBuilder: limits were not kept.");
-  return member;
-}
-
-function definitionOf(state: State): StageDefinition {
+function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefinition {
   const ends = [...state.beats.values()].map((beat) => beat.to);
   const durationMs = state.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined);
   let plans: ReadonlyMap<string, Plan> | undefined;
@@ -630,7 +615,7 @@ function definitionOf(state: State): StageDefinition {
     );
     return plans;
   };
-  const { skins, frame, cues, layouts } = state.options;
+  const { frame, cues, layouts } = state.options;
   return {
     kind: "stage-definition",
     beats: Object.fromEntries([...state.beats].map(([name, beat]) => [name, [beat.from, beat.to]])),
@@ -650,7 +635,7 @@ function definitionOf(state: State): StageDefinition {
     },
     ...(durationMs === undefined ? {} : { durationMs }),
     ...(frame === undefined ? {} : { frame }),
-    ...(skins === undefined ? {} : { skins }),
+    ...(skin === undefined ? {} : { skins: { dom: skin } }),
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
   };
@@ -669,57 +654,67 @@ function changed(state: State, change: Partial<Entry>): State {
   return { ...state, entries: new Map(state.entries).set(name, { ...entry, ...change }) };
 }
 
+const STATES = new WeakMap<object, State>();
+
+function kept<T extends object>(value: T, state: State): T {
+  STATES.set(value, state);
+  return value;
+}
+
 function step(state: State): ElementStep {
-  return Object.freeze({
-    ...definitionOf(state),
-    element: (element: Element) => select(state, element),
-    motion: (...motions: readonly SceneMotion[]) => {
-      const beats = new Map(state.beats);
-      const added = motions.map((run): MotionStep => {
-        const traits = traitsOf(run);
-        const beat = beatOf(traits.span);
-        if (beat !== undefined) withBeat(beats, beat);
-        return { kind: "motion", run, ...traits, reads: READS.get(run) ?? [] };
-      });
-      const [, entry] = entryOf(state);
-      const next = { ...changed(state, { steps: [...entry.steps, ...added] }), beats };
-      const loop = loopOf(next.entries);
-      if (loop !== undefined)
-        throw new RangeError(
-          `sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`,
-        );
-      return step(next);
-    },
-    modify: (principle: Principle) => {
-      const [, entry] = entryOf(state);
-      return step(changed(state, { steps: [...entry.steps, { kind: "modify", principle }] }));
-    },
-    show: (...windows: readonly ShowWindow[]) => {
-      const beats = new Map(state.beats);
-      const stretches = windows.map((window): Stretch => {
-        const [from, to] = "name" in window ? [window, window] : window;
-        for (const end of [from, to]) {
-          if (beatOf(end) === undefined)
-            throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
-          withBeat(beats, end);
-        }
-        return from === to ? from.name : [from.name, to.name];
-      });
-      const [, entry] = entryOf(state);
-      return step({ ...changed(state, { show: [...entry.show, ...stretches] }), beats });
-    },
-    limits: limitsMember(state, (limits: Limits) => {
-      const [name, entry] = entryOf(state);
-      for (const field of ["jump", "turn", "ratio"] as const)
-        if (limits[field] !== undefined && entry.limits[field] !== undefined)
-          throw new TypeError(`sceneBuilder: "${name}" sets limit \`${field}\` twice.`);
-      const merged = {
-        ...entry.limits,
-        ...Object.fromEntries(Object.entries(limits).filter(([, value]) => value !== undefined)),
-      };
-      return step(changed(state, { limits: merged }));
+  return kept(
+    Object.freeze({
+      kind: "scene",
+      element: (element: Element) => select(state, element),
+      motion: (...motions: readonly SceneMotion[]) => {
+        const beats = new Map(state.beats);
+        const added = motions.map((run): MotionStep => {
+          const traits = traitsOf(run);
+          const beat = beatOf(traits.span);
+          if (beat !== undefined) withBeat(beats, beat);
+          return { kind: "motion", run, ...traits, reads: READS.get(run) ?? [] };
+        });
+        const [, entry] = entryOf(state);
+        const next = { ...changed(state, { steps: [...entry.steps, ...added] }), beats };
+        const loop = loopOf(next.entries);
+        if (loop !== undefined)
+          throw new RangeError(
+            `sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`,
+          );
+        return step(next);
+      },
+      modify: (principle: Principle) => {
+        const [, entry] = entryOf(state);
+        return step(changed(state, { steps: [...entry.steps, { kind: "modify", principle }] }));
+      },
+      show: (...windows: readonly ShowWindow[]) => {
+        const beats = new Map(state.beats);
+        const stretches = windows.map((window): Stretch => {
+          const [from, to] = "name" in window ? [window, window] : window;
+          for (const end of [from, to]) {
+            if (beatOf(end) === undefined)
+              throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
+            withBeat(beats, end);
+          }
+          return from === to ? from.name : [from.name, to.name];
+        });
+        const [, entry] = entryOf(state);
+        return step({ ...changed(state, { show: [...entry.show, ...stretches] }), beats });
+      },
+      limits: (limits: Limits) => {
+        const [name, entry] = entryOf(state);
+        for (const field of ["jump", "turn", "ratio"] as const)
+          if (limits[field] !== undefined && entry.limits[field] !== undefined)
+            throw new TypeError(`sceneBuilder: "${name}" sets limit \`${field}\` twice.`);
+        const merged = {
+          ...entry.limits,
+          ...Object.fromEntries(Object.entries(limits).filter(([, value]) => value !== undefined)),
+        };
+        return step(changed(state, { limits: merged }));
+      },
     }),
-  });
+    state,
+  );
 }
 
 function select(state: State, element: Element): ElementStep {
@@ -737,7 +732,7 @@ function select(state: State, element: Element): ElementStep {
   });
 }
 
-/** Starts a piece; the chain's value is a `StageDefinition`, so every tool, page and renderer reads it. */
+/** Starts a piece; `compileScene` turns the chain's value into the stage the renderers play. */
 export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
   const state: State = {
     options,
@@ -747,8 +742,33 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     beats: new Map(),
     current: undefined,
   };
-  return Object.freeze({
-    ...definitionOf(state),
-    element: (element: Element) => select(state, element),
-  });
+  return kept(
+    Object.freeze({ kind: "scene", element: (element: Element) => select(state, element) }),
+    state,
+  );
+}
+
+/** Whether `value` is a piece written with `sceneBuilder`. */
+export function isScene(value: unknown): value is SceneBuilder {
+  return typeof value === "object" && value !== null && STATES.has(value);
+}
+
+/** How a scene compiles: the DOM skin its renderer draws with, and a wrap around each frame's poses. */
+export interface CompileSceneOptions {
+  readonly skin?: DomSkinInput | undefined;
+  readonly wrap?: ((run: Stage["scene"]) => Stage["scene"]) | undefined;
+}
+
+/** The stage a scene plays as, or every reason it cannot. */
+export function compileScene(
+  scene: SceneBuilder,
+  options: CompileSceneOptions = {},
+): CompileResult {
+  const state = STATES.get(scene);
+  if (state === undefined)
+    throw new TypeError("compileScene: expected what `sceneBuilder` returns.");
+  const result = compileStage(definitionOf(state, options.skin));
+  const { wrap } = options;
+  if (!result.ok || wrap === undefined) return result;
+  return { ok: true, stage: Object.freeze({ ...result.stage, scene: wrap(result.stage.scene) }) };
 }

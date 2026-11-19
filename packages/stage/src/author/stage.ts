@@ -64,6 +64,16 @@ export type DomSkinInput =
   | { readonly css: string; readonly defs?: string | undefined }
   | { readonly css: URL; readonly defs?: URL | undefined };
 
+/** Whether `value` is a DOM skin: `{ css }` with an optional `defs`, both strings or both URLs. */
+export function isDomSkin(value: unknown): value is DomSkinInput {
+  if (typeof value !== "object" || value === null) return false;
+  const css: unknown = Reflect.get(value, "css");
+  const defs: unknown = Reflect.get(value, "defs");
+  if (typeof css === "string") return defs === undefined || typeof defs === "string";
+  if (css instanceof URL) return defs === undefined || defs instanceof URL;
+  return false;
+}
+
 /** Review limits of one target, overriding the command's defaults. */
 export interface Limits {
   readonly jump?: number | undefined;

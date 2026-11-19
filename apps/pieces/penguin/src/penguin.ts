@@ -1589,18 +1589,9 @@ const rigged: readonly (readonly [Element, readonly SceneMotion[]])[] = [
   [sparkRight, core],
 ];
 
-export default rigged.reduce<SceneBuilder>(
-  (piece, [element, motions]) =>
-    piece
-      .element(element)
-      .motion(...motions)
-      .modify(asDrawn),
-  sceneBuilder({
-    frame: { width: 454.57, height: 455.394 },
-    length: 4300,
-    skins: {
-      dom: {
-        css: `
+/** How the DOM renderer draws this piece. */
+export const skin = {
+  css: `
 [data-cast="feet"] { z-index: 1; }
 [data-path="feet"] { fill: url(#path3806_2_); stroke: #000000; stroke-width: 4.57; }
 [data-cast="feetShade"] { z-index: 2; }
@@ -1644,12 +1635,21 @@ export default rigged.reduce<SceneBuilder>(
 [data-cast="sparkRight"] { z-index: 21; }
 [data-path="sparkRight"] { fill: #ffffff; stroke: none; }
 `,
-        defs: `<radialGradient id="path3806_2_" gradientUnits="userSpaceOnUse" cx="2222.3" cy="954.96" r="564.63" gradientTransform="matrix(-0.000001575 0.2416 0.5263 0 -277.41 -216.98)"><stop offset="0" stop-color="#f7af47"/><stop offset="0.8868" stop-color="#f7af46"/><stop offset="1" stop-color="#c87811"/></radialGradient>
+  defs: `<radialGradient id="path3806_2_" gradientUnits="userSpaceOnUse" cx="2222.3" cy="954.96" r="564.63" gradientTransform="matrix(-0.000001575 0.2416 0.5263 0 -277.41 -216.98)"><stop offset="0" stop-color="#f7af47"/><stop offset="0.8868" stop-color="#f7af46"/><stop offset="1" stop-color="#c87811"/></radialGradient>
 <radialGradient id="path2385_1_" gradientUnits="userSpaceOnUse" cx="-173.46" cy="-678.91" r="765.75" gradientTransform="matrix(0 -0.3998 -0.3581 0.00000104 -70.983 11.269)"><stop offset="0" stop-color="#a5a5a4"/><stop offset="1" stop-color="#000000"/></radialGradient>
 <radialGradient id="path3793_1_" gradientUnits="userSpaceOnUse" cx="-136.29" cy="-311.89" r="270.79" gradientTransform="matrix(0 -0.6165 -0.5476 0 -139.82 38.871)"><stop offset="0" stop-color="#a5a5a4"/><stop offset="1" stop-color="#000000"/></radialGradient>
 <radialGradient id="path3802_2_" gradientUnits="userSpaceOnUse" cx="-170.3" cy="427.68" r="270.8" gradientTransform="matrix(0 -0.6165 0.5476 0 97.636 38.871)"><stop offset="0" stop-color="#a5a5a4"/><stop offset="1" stop-color="#000000"/></radialGradient>
 <radialGradient id="path3791_1_" gradientUnits="userSpaceOnUse" cx="-105.5" cy="-620.8" r="101.13" gradientTransform="matrix(1.2422 -0.0051 -0.0061 -0.9568 329.42 -399.92)"><stop offset="0" stop-color="#e42f29"/><stop offset="1" stop-color="#801418"/></radialGradient>`,
-      },
-    },
+};
+
+export default rigged.reduce<SceneBuilder>(
+  (piece, [element, motions]) =>
+    piece
+      .element(element)
+      .motion(...motions)
+      .modify(asDrawn),
+  sceneBuilder({
+    frame: { width: 454.57, height: 455.394 },
+    length: 4300,
   }),
 );

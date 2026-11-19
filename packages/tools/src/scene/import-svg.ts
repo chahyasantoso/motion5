@@ -471,24 +471,6 @@ function asCubics(cubics: readonly (readonly number[])[]): readonly Cubic2d[] {
 }
 
 /** The parts as members of `cast: (m) => ({ ... })`, one `m.stroke` or `m.morph` each. */
-function castSource(parts: readonly Part[], indent = "    "): string {
-  return parts
-    .map(({ name, cubics, shapes }) => {
-      const baseLines = cubics.map((line) => `${indent}  ${line}`).join("\n");
-      if (shapes === undefined) {
-        return `${indent}"${name}": m.stroke([\n${baseLines}\n${indent}]).static(),`;
-      }
-      const targetLines = shapes
-        .map(
-          (lines) =>
-            `${indent}    [\n${lines.map((line) => `${indent}      ${line}`).join("\n")}\n${indent}    ],`,
-        )
-        .join("\n");
-      return `${indent}"${name}": m.morph(\n${indent}  [\n${baseLines}\n${indent}  ],\n${indent}  [\n${targetLines}\n${indent}  ],\n${indent}).static(),`;
-    })
-    .join("\n");
-}
-
 /** The parts' two skin rules each, as the text of a template literal. */
 function cssSource(parts: readonly Part[]): string {
   return templateText(parts.map(({ box, path }) => `${box}\n${path}`).join("\n"));
@@ -518,20 +500,20 @@ function moduleSource(
 ): string {
   const css = cssSource(built.parts);
   const defs =
-    built.defs.length === 0 ? "" : `\n      defs: \`${templateText(built.defs.join("\n"))}\`,`;
+    built.defs.length === 0 ? "" : `\n  defs: \`${templateText(built.defs.join("\n"))}\`,`;
   return `// Imported from ${basename(source)} by gerak import-svg: flat static parts in paint order; add motions to a part with \`.motion(...)\` after its \`.element(...)\`.
 import { sceneBuilder, shape } from "@gerak/stage";
+
+/** How the DOM renderer draws this piece. */
+export const skin = {
+  css: \`
+${css}
+\`,${defs}
+};
 
 export default sceneBuilder({
   frame: { width: ${frame.width}, height: ${frame.height} },
   length: 1000,
-  skins: {
-    dom: {
-      css: \`
-${css}
-\`,${defs}
-    },
-  },
 })
 ${elementsSource(built.parts)};
 `;
@@ -659,7 +641,7 @@ export async function importSvgInto(
   if (built.parts.length === 0) return refuse("The SVG holds no shape this can draw.");
   const edit = addToPiece(source, {
     names: built.parts.map((part) => part.name),
-    members: castSource(built.parts),
+    members: elementsSource(built.parts),
     css: cssSource(built.parts),
     defs: templateText(built.defs.join("\n")),
     defIds: built.defs.flatMap((markup) => /\bid="([^"]+)"/.exec(markup)?.[1] ?? []),
