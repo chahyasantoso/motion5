@@ -15,17 +15,17 @@ Read this page whole before making a piece. A piece is a file whose default expo
 sceneBuilder().element(e).motion(m) -> compileScene(scene, { skin }) -> Stage -> frame(stage, { time, events, boxes }) -> renderer
 ```
 
-- **Elements are values,** each made once with a unique name: `box`, `text` (`split: "letters" | "words"`, or a function of time for a readout), `shape` (a path, a function of rest boxes, or `{ base, targets }` for a morph), `many(name, count | items, make?)` and `group(name, children)`. Options: `pivot`, `watch` (pointer events), `split`. A part of a many or split text is `<name>.<index>` in skins and findings.
+- **Elements are values,** each made once with a unique name: `box`, `text` (`split: "letters" | "words"`, or a function of time for a readout), `shape` (a path, a function of rest boxes, or `{ base, targets }`: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second), `many(name, count | items, make?)` and `group(name, children)`. A group's children are in the piece already; `.element` one only to give it motions. Options: `pivot` (frame px), `watch` (pointer events), `split`. A part is `<name>.<index>` in skins.
 - **Beats are values:** `beat(name, ms, { at? } | { after, gap? })`. A piece's beats are the ones its motions and windows use; `length` ends it later.
 - **The scene is pure.** Every motion is a function of time and its context (`time`, `events`, `rest`, `carry`, `element`, `read`, and `index`/`count` on parts), so every frame can be sought; fold `events` with core's `state`, keep no state.
 - **Playback.** A piece plays once at real speed from 0 and holds its last frame (reduced motion shows it). The clock runs past its length while an element is watched. Headless runs read zero boxes unless the scene's `rest` option gives them.
 
 ## The loop
 
-1. **Find the idea first.** Name the obvious answer, then write three non-obvious ideas differing in material and mechanics. Keep the strongest as three lines: what moves in what order, its character, the one moment the eye must not miss.
+1. **Find the idea first.** Name the obvious answer, then three non-obvious ideas differing in material and mechanics. Keep the strongest as three lines: what moves in what order, its character, the moment the eye must not miss.
 2. `npx gerak new <name> [--in <brief>]` scaffolds `<pieces>/<brief>/src/<name>.ts`; preview `stage.html?piece=<name>`.
 3. **Choose motions.** Moves from an installed move package, core's principles, `bind` over shared signals, and `motion(fn)` for the rest.
-4. **Check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations and bounds headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>` captures a `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
+4. **Check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks the piece headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>` captures a `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
 
 Never open sibling `<pieces>/*/src` files.
 
