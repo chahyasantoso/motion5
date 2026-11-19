@@ -77,6 +77,14 @@ export default sceneBuilder({ skins: { dom: { css } } })
   each other, and refuses a loop by naming every element in it.
 - **Layouts:** `layouts: { state, pick }` in the options. `carry({ ms, ease, mode })` is a motion.
 - **Free code:** a plain function `(time, context) => pose` is a motion. `motion(fn)` gives it the three methods.
+- **From the first four pieces:**
+  - `stagger(motion, { spread, from? })` plays a motion on each part of a `many` or split-text element in its own
+    lane of the motion's beat, built on core's `lanes`.
+  - `bindEach({ opacity: (index) => signal })` binds a field per part.
+  - `motion(fn).ambient()` marks a motion that keeps moving with no period, so its element is ambient.
+  - `.show([from, to])` shows the element from the start of one beat to the end of another, as one window.
+  - A bound signal reads scene time, so `.in` and `.loop` do not apply to `bind`.
+  - A moved piece is compared by values: layering may write a pose's keys in another order.
 - **Not yet:** `image`, `video`, `anchor`, `mask` and a written rest position wait for a piece that needs them.
 
 ### 2. Exports
