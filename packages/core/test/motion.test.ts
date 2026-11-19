@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { motion, span, type Time } from "@gerak/core";
+import { motion, span, UNTIMED, type MotionWindow, type Time } from "@gerak/core";
 
 const at = (ms: number, length = 4000): Time => ({
   progress: ms / length,
@@ -74,5 +74,25 @@ describe("motion", () => {
     expect(alive.loop(500).isAmbient).toBe(true);
     expect(alive.take().isAmbient).toBe(true);
     expect(progressOf.loop(500).isAmbient).toBe(false);
+  });
+
+  it("accepts a MotionWindow in .in(), passes context through, and preserves it across modifiers", () => {
+    const window: MotionWindow = {
+      of: (time, ease, context) => {
+        const offset = typeof context === "number" ? context : 0;
+        const raw = time.progress + offset;
+        return { progress: ease === undefined ? raw : ease(raw), clock: UNTIMED };
+      },
+    };
+    const windowed = motion((time: Time, context?: number) => `${time.progress}:${context}`).in(
+      window,
+      (p) => p * 2,
+    );
+    expect(windowed.span).toBeUndefined();
+    expect(windowed.window).toBe(window);
+    expect(windowed(at(1000), 0.25)).toBe("1:0.25");
+    expect(windowed.loop(1000).window).toBe(window);
+    expect(windowed.take().window).toBe(window);
+    expect(windowed.ambient().window).toBe(window);
   });
 });
