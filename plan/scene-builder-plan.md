@@ -125,7 +125,8 @@ export default sceneBuilder({ skins: { dom: { css } } })
 
 ### 7. Every piece moves
 
-- `card`, `catch`, `shop` and `nadi` move first. Together they use every part of Decision 1. Each place where
+- `shop`, `nadi`, `nowplaying` and `showreel-e` move first. Together they use every part of Decision 1: shared
+  state, layouts and carry, cues, readouts, morphs and strokes, loops, pointer events, show windows and rest boxes. Each place where
   the shape needed a verb, an option or a type it did not have changes Decision 1 here before the next wave.
 - Then every other piece and worked example that uses `defineStage` moves. 3D scene modules do not move.
 - `gerak new` writes a builder piece. `gerak new --three` does not change.
@@ -154,7 +155,7 @@ export default sceneBuilder({ skins: { dom: { css } } })
    and every command's output on `tempo`, `card` and `overlay3d`.
 2. Waves, `npm run check` green after each:
    - Decisions 8, then 2 to 6 in `@gerak/stage` and `@gerak/dom`, with `defineStage` still present.
-   - `card`, `catch`, `shop` and `nadi`, and any change to Decision 1 they force.
+   - `shop`, `nadi`, `nowplaying` and `showreel-e`, and any change to Decision 1 they force.
    - The other pieces and examples, a few per builder.
    - The builder compiles straight to `Stage`; delete `defineStage`, `StageDefinition`, the cast builder and their
      types; then Decision 9.
