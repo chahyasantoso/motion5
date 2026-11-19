@@ -16,6 +16,9 @@ Lessons become one line in `SKILL.md` or are dropped. Older entries live in git 
 - The browser tests time out under full-suite load at the base too (1 run in 3 on 2026-11-16, a different test each
   time). Rerun once, and run the base, before blaming a slice for a browser timeout.
 
+- A gate a builder cannot find is a gate the lead must find: the lead added a size test beside an older one in
+  `agent-reference.test.ts`, and two builders hit the older ceiling. Grep for an existing gate before adding one.
+
 ## What a wave costs
 
 Measured over 40 waves, 2026-11-11 to 11-14; the rows are in git history. The lead's own cost is never shown.
@@ -36,3 +39,5 @@ Add a line here only when a wave falls outside these ranges, or a new kind of wo
   design query, one builder) on Sonnet at medium effort: 306k, 248 calls, 25 min, for four features in one file;
   the lead then fixed its scoring, which the plan had specified wrongly. A slice of four features in one file is
   better split into two waves.
+- 2026-11-19, principles plan B (every move to a plain function, 21 piece moves, 30 pieces, tests) on Sonnet at
+  medium effort: 265k, 147 calls, 23 min, one builder for one API change; every piece sampled bit-exact.

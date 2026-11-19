@@ -62,7 +62,8 @@ running builder about it: a builder told to wait for origin stalls.
 3. Drop any option no test drives; it is a feature nobody chose.
 4. Break the code once for each new test whose failure the builder did not show, and see it fail: a browser test
    that measured nothing passed until the lead broke the camera.
-5. For a change that should not show, compare samples and frames before and after.
+5. For a change that should not show, compare samples and frames before and after. Exact samples are the proof;
+   page frames shift by a frame under load, so take them on a quiet machine and recapture any that differ.
 6. Look at a tool's output on a real page, not only its tests, and sample the values behind any frame a worker
    names as proof: a worker may name the wrong frame.
 7. Run the full check once, from a clean state when the change adds a build: no `dist` the check could lean on. One purpose per shell call; never move git state in a call that runs tests.
