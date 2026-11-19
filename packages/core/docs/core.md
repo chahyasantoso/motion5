@@ -1,6 +1,6 @@
 # @gerak/core
 
-Read this page whole before writing a scene. Pure motion primitives.
+Read this page whole before writing a scene.
 
 ## How core works
 
@@ -34,7 +34,8 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 | `sequence(time, [[span, fn], ...])` | `R` | Phases on one target; a finished phase holds its end |
 | `timeAt(time, ms)` / `withProgress(time, p)` | `Time` | Sample a signal at another moment |
 
-- `span.of(time, ease)` clamps, so apply an overshooting ease to values: `mix(a, b, ease.backOut(t.progress))`.
+- `motion(fn)` is a `Motion`: `.in(span)` holds its start before and end after, `.loop(ms)` repeats, `.take()` replaces fields.
+- `span.of(time, ease)` clamps, so ease values: `mix(a, b, ease.backOut(t.progress))`.
 
 ## Fields, rests, and combining
 
@@ -44,18 +45,18 @@ Every pose field is optional and omitted fields stay inactive:
 - **Multiply, rest `1`:** `scale`, `scaleX`, `scaleY`, `scaleZ`, `opacity`, `drawn` (`0..1`).
 - **Replace:** `shape` (rest `0`, morph index), `clipX`, `clipY`, `clipRadius`, `clipWidth`, `clipHeight`, `layer` (no rest).
 - **`anchor` (2D only):** `"center" | "top" | "bottom" | "left" | "right"`; `combine` keeps the first anchor given (`Pose3d` forbids `anchor`).
-- **`combine` vs `mixPose`:** `combine([a, b])` layers poses (`combine3d` composes Z-X-Y turns in order). `mixPose(a, b, share)` / `mixPose3d` interpolates two poses (a missing field uses its rest).
+- **`combine` vs `mixPose`:** `combine([a, b])` layers poses (`combine3d` composes Z-X-Y turns). `mixPose(a, b, share)` / `mixPose3d` interpolates (a missing field uses its rest).
 
 ## Eases, blends, paths, measures, events
 
-- **`ease`:** `linear`, `sine`, `quad`, `cubic`, `quart`, `expo`, `back` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`. Custom overshoot/physics: `backEase({ amount, direction })`, `springEase`, `spring(offset, speed, seconds, { stiffness, damping })`, `springMemory`.
+- **`ease`:** `linear`, `sine`, `quad`, `cubic`, `quart`, `expo`, `back` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`. Custom: `backEase({ amount, direction })`, `springEase`, `spring(offset, speed, seconds, { stiffness, damping })`, `springMemory`.
 - **Envelopes (`0..1` progress):** `arch(p)` (`0 -> 1 -> 0`), `wave({ count, phase? })(p)`, `attack({ rate })(p)`, `decay({ rate })(p)`, `taper({ power })(p)`.
 - **Blends:** `mix`, `mixAngle` (shortest arc), `mixPoint`, `mixPoint3d`, `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
 - **Paths & shapes:** `circlePath`, `ellipsePath`, `rectPath`, `linePath`, `polygonPath`, `arcPath`, `pathFrom(d)`, `toCubics` / `toCubics3d` (anchor `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics)(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
 - **3D camera:** `orbit`, `aim(from, to)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
 - **State:** `state(start, rule)` folds events; `springTo` / `easeTo` follow what a `pick` of it reads.
-- **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
-- **Principles** wrap a signal: `squashStretch(options)(signal)`, each with a `3d` twin. Slow in and out are eases; staging and appeal are not functions.
+- **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`**. `tally({ start, on, target? })` integrates events; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
+- **Principles** wrap a signal: `squashStretch(options)(signal)`, each with a `3d` twin. Slow in and out are eases.
 
 ## Idiom
 
@@ -74,7 +75,7 @@ const item = (time: Time, i: number): Pose2d => drop(lanes([1, 1, 1], 0.35, { fr
 
 <!-- generated:reference:start -->
 - [fields](./reference/fields.md) (13): `CUSTOM_FIELD`, `POSE_2D_FIELDS`, `VALUE_FIELDS`, `valueField`, `Anchor`, `Combining`, `Pose2d`, `ValueField`, `combine3d`, `lift2d`, `Pose3d`, `combine`, `POSE_2D_NUMBERS`
-- [time](./reference/time.md) (25): `UNTIMED`, `atProgress`, `elapsedOf`, `liveAt`, `Clock`, `Time`, `Curve`, `Signal`, `span`, `Span`, `Timing`, `loop`, `LoopOptions`, `chain`, `ChainOptions`, `timeAt`, `sequence`, `Phase`, `lanes`, `LaneOrigin`, `Lanes`, `LanesOptions`, `reversed`, `repeated`, `withProgress`
+- [time](./reference/time.md) (27): `UNTIMED`, `atProgress`, `elapsedOf`, `liveAt`, `Clock`, `Time`, `Curve`, `Signal`, `span`, `Span`, `motion`, `Motion`, `Timing`, `loop`, `LoopOptions`, `chain`, `ChainOptions`, `timeAt`, `sequence`, `Phase`, `lanes`, `LaneOrigin`, `Lanes`, `LanesOptions`, `reversed`, `repeated`, `withProgress`
 - [blend](./reference/blend.md) (8): `mix`, `mixAngle`, `mixPoint`, `mixPose`, `keyframes`, `Key`, `mixPoint3d`, `mixPose3d`
 - [ease](./reference/ease.md) (9): `backEase`, `ease`, `springEase`, `Ease`, `EaseDirection`, `spring`, `SpringOptions`, `SpringState`, `springMemory`
 - [envelope](./reference/envelope.md) (5): `wave`, `arch`, `attack`, `decay`, `taper`

@@ -1,4 +1,4 @@
-import { unreachable, type Pose2d, type Time } from "@gerak/core";
+import { motion, type Motion, unreachable, type Pose2d } from "@gerak/core";
 import { choiceOption, numberOption } from "./options";
 
 const SIDES = ["left", "right", "top", "bottom"] as const;
@@ -12,10 +12,10 @@ export interface SlideOptions {
 }
 
 /** Slides in from one side, decelerating to rest. */
-export function slide(options: SlideOptions): (time: Time) => Pose2d {
+export function slide(options: SlideOptions): Motion<Pose2d> {
   const distance = numberOption("slide", "distance", options.distance, { min: 0 });
   const from = choiceOption("slide", "from", options.from, SIDES, "left");
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     const away = distance * (1 - progress) ** 3;
     switch (from) {
       case "left":
@@ -29,5 +29,5 @@ export function slide(options: SlideOptions): (time: Time) => Pose2d {
       default:
         return unreachable(from);
     }
-  };
+  });
 }

@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { numberOption } from "./options";
 
 /** Options of `wipe`. */
@@ -15,13 +15,13 @@ export interface WipeOptions {
  * `clipY` and `clipRadius` in px from the target's top left. */
 export function wipe(
   options: WipeOptions,
-): (time: Time) => Required<Pick<Pose2d, "clipX" | "clipY" | "clipRadius">> {
+): Motion<Required<Pick<Pose2d, "clipX" | "clipY" | "clipRadius">>> {
   const radius = numberOption("wipe", "radius", options.radius, { min: 0 });
   const x = numberOption("wipe", "x", options.x);
   const y = numberOption("wipe", "y", options.y);
-  return ({ progress }) => ({
+  return motion(({ progress }) => ({
     clipX: x,
     clipY: y,
     clipRadius: radius * progress * progress * (3 - 2 * progress),
-  });
+  }));
 }

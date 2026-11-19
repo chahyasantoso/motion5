@@ -120,14 +120,12 @@ describe("agent reference", () => {
     expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
 
     const moves = referenceOf("moves");
-    expect(moves).toContain("**`drop`** `(options: DropOptions): (time: Time) => Pose2d`:");
-    expect(moves).toContain("**`fade`** `(): (time: Time) => Pose2d`:");
+    expect(moves).toContain("**`drop`** `(options: DropOptions): Motion<Pose2d>`:");
+    expect(moves).toContain("**`fade`** `(): Motion<Pose2d>`:");
     expect(moves).toContain(
-      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`:",
+      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => Motion<Pose2d>`:",
     );
-    expect(moves).toContain(
-      "**`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`:",
-    );
+    expect(moves).toContain("**`rope`** `(options: RopeOptions): Motion<readonly Anchor2d[]>`:");
   });
 
   it("names every gerak command", () => {

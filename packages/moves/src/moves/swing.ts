@@ -1,4 +1,4 @@
-import { taper, wave, type Anchor, type Pose2d, type Time } from "@gerak/core";
+import { motion, type Motion, taper, wave, type Anchor, type Pose2d } from "@gerak/core";
 import { choiceOption, numberOption } from "./options";
 
 const fade = taper({ power: 1 });
@@ -15,12 +15,12 @@ export interface SwingOptions {
 }
 
 /** Hangs in from a turn and swings to rest, each swing smaller than the last. */
-export function swing(options: SwingOptions): (time: Time) => Pose2d {
+export function swing(options: SwingOptions): Motion<Pose2d> {
   const angle = numberOption("swing", "angle", options.angle);
   const swings = numberOption("swing", "swings", options.swings, { default: 2, min: 0, max: 8 });
   const anchor = choiceOption("swing", "anchor", options.anchor, ANCHORS, "top");
-  return ({ progress }) => {
+  return motion(({ progress }) => {
     const turn = wave({ count: (swings + 0.5) / 2, phase: 0.25 })(progress);
     return { rotation: angle * fade(progress) * turn, anchor };
-  };
+  });
 }

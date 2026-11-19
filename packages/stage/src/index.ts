@@ -14,6 +14,34 @@ export {
   type Spec,
   type Stretch,
 } from "./author/cast";
+export { beat, type Beat, type BeatPlace } from "./author/beat";
+export {
+  box,
+  group,
+  many,
+  shape,
+  text,
+  type Element,
+  type ElementOptions,
+  type MorphSource,
+  type Outline,
+  type ShapeSource,
+  type TextOptions,
+} from "./author/elements";
+export {
+  bind,
+  carry,
+  sceneBuilder,
+  stayWith,
+  type BoundFields,
+  type ElementStep,
+  type MotionContext,
+  type Principle,
+  type ReadAt,
+  type SceneBuilder,
+  type SceneBuilderOptions,
+  type SceneMotion,
+} from "./author/scene-builder";
 export {
   NO_REST,
   ZERO_BOX,

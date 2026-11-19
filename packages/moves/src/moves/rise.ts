@@ -1,4 +1,4 @@
-import type { Pose2d, Time } from "@gerak/core";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { numberOption } from "./options";
 
 /** Options of `rise`. */
@@ -8,7 +8,7 @@ export interface RiseOptions {
 }
 
 /** Rises from below, decelerating to rest. */
-export function rise(options: RiseOptions): (time: Time) => Pose2d {
+export function rise(options: RiseOptions): Motion<Pose2d> {
   const distance = numberOption("rise", "distance", options.distance, { min: 0 });
-  return ({ progress }) => ({ y: distance * (1 - progress) ** 3 });
+  return motion(({ progress }) => ({ y: distance * (1 - progress) ** 3 }));
 }

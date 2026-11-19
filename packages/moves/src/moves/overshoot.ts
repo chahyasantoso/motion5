@@ -1,4 +1,12 @@
-import { arch, taper, withProgress, type Pose2d, type Time } from "@gerak/core";
+import {
+  arch,
+  motion,
+  taper,
+  withProgress,
+  type Motion,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import { numberOption } from "./options";
 import { carried, pushed, whole } from "./whole";
 
@@ -15,7 +23,7 @@ export interface OvershootOptions {
 /** Plays another move, then goes a little past its end and settles back. */
 export function overshoot(
   options: OvershootOptions = {},
-): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d {
+): (signal: (time: Time) => Pose2d) => Motion<Pose2d> {
   const share = numberOption("overshoot", "share", options.share, {
     default: 0.3,
     min: 0,
@@ -26,16 +34,17 @@ export function overshoot(
     min: 0,
     max: 1,
   });
-  return (signal) => (time) => {
-    const at = (progress: number) => signal(withProgress(time, progress));
-    const first = at(0);
-    const last = at(1);
-    const playing = 1 - share;
-    if (time.progress <= playing) {
-      const played = at(time.progress / playing);
-      return whole(played, carried(first, last, played));
-    }
-    const v = (time.progress - playing) / share;
-    return pushed(last, first, amount * arch(v) * fade(v), carried(first, last));
-  };
+  return (signal) =>
+    motion((time) => {
+      const at = (progress: number) => signal(withProgress(time, progress));
+      const first = at(0);
+      const last = at(1);
+      const playing = 1 - share;
+      if (time.progress <= playing) {
+        const played = at(time.progress / playing);
+        return whole(played, carried(first, last, played));
+      }
+      const v = (time.progress - playing) / share;
+      return pushed(last, first, amount * arch(v) * fade(v), carried(first, last));
+    });
 }
