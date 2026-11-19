@@ -150,7 +150,7 @@ Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
 
 | Area | Done | Not done |
 | --- | --- | --- |
-| Moves | a library by role with modifiers, a gate, a catalog, local moves and promotion by brief | particles from a seed |
+| Moves | plain moves with modifiers, the principles and state in core, and moves written beside the scene | particles from a seed |
 | Values | position, turn, scale, opacity, blur, strokes, circle and box clips, a piece's own numbers as CSS variables | colour and shadow as fields of their own, a mask of any shape |
 | Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues | a camera, joining two stage modules |
 | Bones | 2D and typed 3D chains, 3D FK and IK solvers with constraints, a skinned mesh's bones | retargeting |

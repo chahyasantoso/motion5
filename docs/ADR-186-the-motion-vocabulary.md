@@ -1,6 +1,7 @@
 # ADR-186: The motion vocabulary
 
 **Status:** Accepted, 2026-11-15
+**Superseded in part by ADR-192:** the vocabulary card and its catalog.
 
 ## Context
 

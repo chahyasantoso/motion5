@@ -52,7 +52,7 @@ Layers, each using only the ones below it and each in its own folder. A piece st
   from the events so far, as physics is replayed from snapshots, so a piece with logic can still be sought, reviewed,
   edited live and rendered frame-exact.
 - A move written for one brief lives in that brief's `src/moves/` and moves into `@gerak/moves` when a second brief
-  imports it. Any agent may write a part or a move; promotion is the review step, not a separate author.
+  imports it. Any agent may write a part or a move.
 
 ## 3. Ownership
 

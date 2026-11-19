@@ -1,6 +1,7 @@
 # ADR-189: Core, modules and library
 
 **Status:** Accepted, 2026-11-16
+**Superseded in part by ADR-192:** the library's tools, plugin hooks and search.
 
 ## Context
 
