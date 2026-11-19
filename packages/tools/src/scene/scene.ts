@@ -71,10 +71,6 @@ export interface SceneModule {
   readonly cues: Events;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
-  /** The module's `design` export as given; a package that reads one checks it in the review. */
-  readonly design?: unknown;
-  /** The name of the brief style card the piece follows, as its `style` export spells it. */
-  readonly style?: string;
   readonly beats?: readonly Beat[];
   /** Compiled stage contract when the module default-exports `defineStage(...)`. */
   readonly stage?: Stage;
@@ -144,8 +140,6 @@ function moduleFromStage(stage: Stage): SceneModule {
     stage,
     cues: stage.cues,
     limits: stage.limits,
-    ...(stage.design === undefined ? {} : { design: stage.design }),
-    ...(stage.style === undefined ? {} : { style: stage.style }),
     durationMs: stage.durationMs,
     beats: Object.entries(stage.beats).map(([name, span]) => ({
       name,
@@ -178,14 +172,6 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   const readLimit = readLimits(Reflect.get(Object(value), "limits"));
   if ("reason" in readLimit) return readLimit;
   const { limits } = readLimit;
-  const givenDesign: unknown = Reflect.get(Object(value), "design");
-  const givenStyle: unknown = Reflect.get(Object(value), "style");
-  if (givenStyle !== undefined && typeof givenStyle !== "string")
-    return { reason: "The module's `style` must be the name of a style card, a string." };
-  const designed = {
-    ...(givenDesign === undefined ? {} : { design: givenDesign }),
-    ...(givenStyle === undefined ? {} : { style: givenStyle }),
-  };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
   if (typeof scene !== "function")
@@ -193,7 +179,6 @@ export function readSceneModule(value: unknown): SceneModule | { readonly reason
   if (typeof given !== "number" || !Number.isFinite(given) || given <= 0)
     return { reason: "The module exports no `durationMs`, a positive number." };
   return {
-    ...designed,
     cues: ownCues,
     limits,
     scene: (time, events) => {

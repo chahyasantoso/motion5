@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 import { fileURLToPath } from "node:url";
-import { listCommands } from "./commands.mjs";
+import { COMMANDS } from "./commands.mjs";
+
+const commands = Object.fromEntries(
+  Object.entries(COMMANDS).map(([name, { file, summary }]) => [
+    name,
+    { url: new URL(file, import.meta.url).href, summary },
+  ]),
+);
 
 const [command, ...rest] = process.argv.slice(2);
 
 async function main() {
-  const commands = await listCommands();
   const usage = [
     "usage: gerak <command> [args]",
     ...Object.entries(commands).map(([name, { summary }]) => `  ${name}  ${summary}`),

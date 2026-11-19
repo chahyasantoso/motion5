@@ -1,4 +1,1 @@
-[
-  "isRecord: packages/moves-tools/src/design.ts, packages/moves/src/moves/declare.ts",
-  "unreachable: packages/core/src/utility/unreachable.ts, packages/tools/src/page/unreachable.ts"
-]
+["unreachable: packages/core/src/utility/unreachable.ts, packages/tools/src/page/unreachable.ts"]

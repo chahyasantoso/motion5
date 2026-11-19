@@ -326,7 +326,6 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial, lookup }) => {
           sceneName={bundle.name}
           sceneFileOf={lookup.sceneFileOf}
           version={bundle.sceneModule}
-          moves={bundle.sceneModule}
         />
       )}
       <Timeline driver={clock} durationMs={durationMs} marks={marks} />

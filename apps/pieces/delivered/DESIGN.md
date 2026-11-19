@@ -17,20 +17,6 @@ Three lines:
 - The colour (parcel): `tint` calm (ease, blend), orange to green through the skin's `--gerak-tint-to`.
 - The word (letters): `opacity` and `y` calm (ease), letters staggered (lane).
 
-## Commands run, in order
-
-1. `npx gerak moves --anatomy`
-2. `npx gerak moves --design apps/pieces/delivered/src/delivered.ts --target parcel --in delivered` (path error)
-3. `npx gerak moves --design delivered/src/delivered.ts --target parcel --in delivered`
-4. `npx gerak moves drop`
-5. `npx gerak moves squish`
-6. `npx gerak moves swing`
-7. `npx gerak moves --move tint:calm`
-8. `npx gerak moves --move shadowBlur:heavy`
-9. `npx gerak moves --move opacity:calm --in delivered`
-10. `npx gerak moves jolt`
-11. `npx gerak moves --check` (after writing `thud`)
-
 ## Choices
 
 - Fall: use `drop` (distance 140, squash 0.12). Landing: write `thud` (crush plus tip about the base, ringing).

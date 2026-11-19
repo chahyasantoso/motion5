@@ -3,13 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "gerak": {
-    "moves": [
-      "@gerak/moves",
-      "./*/src/moves"
-    ],
-    "promoteTo": "../../packages/moves/src/moves"
-  },
   "scripts": {
     "build": "vite build"
   },

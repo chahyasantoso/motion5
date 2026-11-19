@@ -74,5 +74,3 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak points <points.json> --spacing px [--prefix p]`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
 - **`gerak joints <model.glb|model.gltf> [--out file]`**: writes `<model>.joints.json` beside a skinned glTF: every bone's world rest
   point and parent, for `jointOf(table.joints, name)` in a scene module.
-
-When `@gerak/moves-tools` is installed, it adds `moves`, `new-move`, `promote` and `style` (see its [commands](../../moves-tools/docs/commands.md)).

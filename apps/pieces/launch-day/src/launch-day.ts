@@ -24,7 +24,6 @@ const css = `${cssVariables(card.tokens)}
 const DUST_DX = [-90, -55, -25, 25, 55, 90];
 
 export default defineStage({
-  style: "showreel",
   beats: {
     date: [0, 1100],
     badges: [1000, 2700],
@@ -43,10 +42,6 @@ export default defineStage({
       stamp: m.text("LIVE"),
     }),
   }),
-  design: {
-    stamp: { y: { stamp: "heavy" } },
-    dust: { y: { impact: "quick" } },
-  },
   skins: { dom: { css } },
   scene: ({ time }) => {
     const date = span(0, 700);

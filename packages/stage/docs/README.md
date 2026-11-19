@@ -19,5 +19,4 @@ Who is on stage, when each member shows, and how scenes compile and evaluate cle
 | Numbers arriving while it plays: a microphone, a slider, a recorded session | [live inputs](./agent-inputs.md) |
 | A person watching edits land as you save | [live editing](../../tools/docs/live.md) |
 | A page outside this repository, or a real site's own elements | [outside the stage](../../dom/docs/agent-outside.md) |
-| A piece in another brief's style, or turning your brief into a style | [styles](../../moves/docs/agent-style.md) |
 | A reel: several shots, a hook, a story and a call to action | [reels](../../moves/docs/agent-reel.md) |

@@ -25,8 +25,8 @@ defineStage({ beats, cast, scene }) -> compileStage -> Stage -> frame(stage, { t
 
 1. **Find the idea first.** Name the obvious answer in one line, then write three non-obvious ideas differing in material and mechanics. Choose the strongest and keep three lines: what moves in what order, its character, and the one moment the eye must not miss.
 2. `npx gerak new <name> [--in <brief>]` scaffolds `<pieces>/<brief>/src/<name>.ts`; preview at `stage.html?piece=<name>`.
-3. **Choose primitives.** With `@gerak/core` alone, compose `span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `arch`, `attack`, `decay`, `taper`, `ballistic`, `along` and `toCubics`. With `@gerak/moves` and `@gerak/moves-tools`, run `npx gerak moves --anatomy`, write `design` in `defineStage`, and query `npx gerak moves --design <file> --target <member> --in <brief>`.
-4. **Build and check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations, bounds and `design` headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` captures a contact `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
+3. **Choose primitives.** With `@gerak/core` alone, compose `span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `arch`, `attack`, `decay`, `taper`, `ballistic`, `along` and `toCubics`.
+4. **Build and check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations and bounds headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` captures a contact `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
 
 Never open sibling `<pieces>/*/src` files; treat visual sheets as truth alongside numeric checks.
 

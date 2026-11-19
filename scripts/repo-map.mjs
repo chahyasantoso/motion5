@@ -37,8 +37,6 @@ export const OWNERS = {
   "packages/core/src/utility": "seeded numbers, clamp, unreachable",
   "packages/rig/src": "joint vocabulary",
   "packages/rig-three/src": "glTF skeleton binding to rig joints",
-  "packages/moves-tools/src":
-    "the library's commands: moves catalog, parts, promote, style, new-move",
   "packages/rig/src/frame": "world frames",
   "packages/rig/src/ik/fabrik": "FABRIK",
   "packages/rig/src/ik/shared": "chains, goals, limits",
@@ -63,7 +61,6 @@ export const OWNERS = {
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
   "packages/tools/src/scene/templates": "gerak new templates",
-  "packages/moves-tools/src/templates": "gerak new-move template",
   "packages/tools/src/scene/templates/pages": "the page files of a pieces folder",
   "packages/tools/src/page": "page tools",
   "packages/tools/src/pages": "the stage, live and talk pages",

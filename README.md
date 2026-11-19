@@ -31,7 +31,7 @@ springs, rigs with FK and IK, and seekable physics. Drivers only report time and
 | `@gerak/tools` | core | the `gerak` command: `init`, `new`, `sample`, `review`, `render` |
 | `@gerak/rig`, `@gerak/rig-three` | modules | bones, chains, FK and IK (2D and 3D), and Three.js skeleton binding |
 | `@gerak/physics`, `@gerak/rapier` | modules | a seekable physics world, built in or on Rapier |
-| `@gerak/moves`, `@gerak/moves-tools` | library | parts that carry a choice, named moves, qualities, styles, and their commands |
+| `@gerak/moves` | library | parts that carry a choice, named moves and qualities |
 
 The worked examples and the pieces made with gerak live in `apps/pieces`, one folder per brief.
 

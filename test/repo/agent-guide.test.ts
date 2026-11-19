@@ -2,10 +2,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, posix, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mjs";
-import { COMMANDS as LIBRARY_COMMANDS } from "../../packages/moves-tools/bin/commands.mjs";
-
-const COMMANDS = { ...TOOLS_COMMANDS, ...LIBRARY_COMMANDS };
+import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
 const ROOT_PATH = fileURLToPath(ROOT);

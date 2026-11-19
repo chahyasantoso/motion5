@@ -1,6 +1,6 @@
 # @gerak/moves: calls
 
-Examples of moves, couplings, signals and style cards; primitives (`span`, `chain`, `lanes`, `ease`, `mix`, `VALUE_FIELDS`, `Time`, `Pose2d`, `Pose3d`) come from `@gerak/core`, and every `@gerak/moves` export is in [the reference](./reference/README.md).
+Examples of moves, couplings and signals; primitives (`span`, `chain`, `lanes`, `ease`, `mix`, `VALUE_FIELDS`, `Time`, `Pose2d`, `Pose3d`) come from `@gerak/core`, and every `@gerak/moves` export is in [the reference](./reference/README.md).
 
 ```ts
 import {
@@ -39,7 +39,7 @@ drop(options, LETTERS.of(word.of(time), i));
 ```
 
 Each move is `move(options, time)`. `move.options` lists its options with ranges; `move.moments(options)` gives named
-shares of its progress. The catalog, not this page, says what each move does and takes (`npx gerak moves`, `--role <role>`, or `<id>` when `@gerak/moves-tools` is installed). By role:
+shares of its progress. By role:
 
 - `exit`: **`smudge`**; `reversed(time)` from `@gerak/core` also turns any move into one
 - `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
@@ -49,7 +49,7 @@ shares of its progress. The catalog, not this page, says what each move does and
 - `follow`: **`rope`**
 - `modifier`: **`anticipate`**, **`overshoot`**
 
-What a move answers, which the catalog does not print:
+What a move answers:
 
 - An `enter`, `emphasis`, `travel` or `exit` move answers a `Pose2d`. `hop` adds `contact: { hits, justHit }`: `hits` counts
   the landings so far, and `justHit` runs 1 at a landing to 0 a fifth of a flight away, for what the landing touches.
@@ -94,7 +94,7 @@ const give = react({ on: ["catch"], kind: "wobble", amplitude: 26 });
 ```
 
 Writing a move: `defineMove` checks the options against `options` (kinds, `min`, `max`, `enum`) and fills defaults;
-`run(options, time, input)` takes an optional third argument of any type, which callers must then pass. All pose fields (`VALUE_FIELDS`) live in `@gerak/core` ([core.md](../../core/docs/core.md)). `checkMove(move)` and `describeFinding(id, finding)` from `@gerak/moves-tools` sample the example and each ranged option bound and check rest, finite numbers, descriptions and smooth motion.
+`run(options, time, input)` takes an optional third argument of any type, which callers must then pass. All pose fields (`VALUE_FIELDS`) live in `@gerak/core` ([core.md](../../core/docs/core.md)).
 
 ```ts
 import type { Pose2d } from "@gerak/core";

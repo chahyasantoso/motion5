@@ -22,7 +22,7 @@ const stage = mountStage(container, piece);
   `container.firstElementChild?.shadowRoot`.
 - To check a moment by hand, pause and seek: `stage.driver.pause()`, then `stage.driver.seek(progress)`, where
   progress runs from 0 to 1 over the story, not in ms.
-- When `@gerak/moves` is installed, a move's options with their ranges are in [the moves reference](../../moves/docs/reference/README.md) (and printed by `gerak moves` when `@gerak/moves-tools` is installed). For core-only pieces, see [core.md](../../core/docs/core.md).
+- When `@gerak/moves` is installed, a move's options with their ranges are in [the moves reference](../../moves/docs/reference/README.md). For core-only pieces, see [core.md](../../core/docs/core.md).
 
 ## On a real site's elements
 

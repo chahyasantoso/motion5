@@ -82,8 +82,6 @@ export interface StageOptions<B extends string, M extends Members<B>, L extends 
   readonly layouts?: LayoutsInput<L> | undefined;
   readonly skins?: { readonly dom?: DomSkinInput | undefined } | undefined;
   readonly cues?: Events | undefined;
-  readonly style?: string | undefined;
-  readonly design?: unknown;
   readonly limits?: Readonly<Record<string, Limits>> | undefined;
   readonly scene: (context: SceneContext<NoInfer<B>, NoInfer<L>>) => Targets<NoInfer<M>>;
 }

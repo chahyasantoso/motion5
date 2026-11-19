@@ -27,17 +27,6 @@ export function workspaceSourceAliases(...packageDirectories) {
   });
 }
 
-/** A Vite plugin for the repository's own servers: the live page's built-in moves module is the moves source. */
-export function builtInMovesPlugin() {
-  return {
-    name: "built-in-moves-from-source",
-    resolveId: (id) =>
-      id === "virtual:gerak/built-in-moves"
-        ? fileURLToPath(new URL("moves/src/index.ts", packagesRoot))
-        : null,
-  };
-}
-
 /** Every workspace package with a manifest, so a new package needs no config edit. */
 function allPackages() {
   return readdirSync(packagesRoot, { withFileTypes: true })

@@ -1,5 +1,5 @@
 import { configDefaults, defineConfig } from "vitest/config";
-import { builtInMovesPlugin, workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
+import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 import { pendingPaths } from "./test/pending.mjs";
 
 // An agent, a pipe and a log viewer parse no escape sequences, and every one of them is a byte on
@@ -10,7 +10,6 @@ export default defineConfig({
   resolve: {
     alias: [...workspaceSourceAliases()],
   },
-  plugins: [builtInMovesPlugin()],
   optimizeDeps: {
     exclude: [
       "@gerak/core",
@@ -18,7 +17,6 @@ export default defineConfig({
       "@gerak/moves",
       "@gerak/rig",
       "@gerak/rig-three",
-      "@gerak/moves-tools",
       "@gerak/dom",
       "@gerak/player",
     ],

@@ -13,9 +13,7 @@ A piece starts from its brief, not from a piece that already exists.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
-3. Read `@gerak/core`'s primitives in `core.md`. When `@gerak/moves` and `@gerak/moves-tools` are installed, run `npx gerak moves --anatomy`,
-   write `design`, and query `npx gerak moves --design <file> --target <member> --in <brief>` (or
-   `npx gerak new-move <id> --in <brief>` and `npx gerak moves --check`). With `@gerak/core` alone, write each member's
+3. Read `@gerak/core`'s primitives in `core.md`. Write each member's
    motion directly from `@gerak/core`'s time, blend, ease, envelope and path helpers.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.

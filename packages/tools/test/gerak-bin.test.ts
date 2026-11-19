@@ -1,14 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { existsSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { COMMANDS, listCommands } from "../bin/commands.mjs";
+import { COMMANDS } from "../bin/commands.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const binFolder = fileURLToPath(new URL("../bin/", import.meta.url));
-const libraryBinFolder = fileURLToPath(new URL("../../moves-tools/bin/", import.meta.url));
 const gerak = `${binFolder}gerak.mjs`;
 
 function run(file: string, args: string[]) {
@@ -26,18 +23,15 @@ describe("the gerak bin", () => {
     }
   });
 
-  it("lists the library's commands while it is installed, and not without it", async () => {
+  it("lists only its own commands, none for moves, and refuses one", () => {
     const help = run(gerak, ["--help"]);
-    for (const name of ["moves", "new-move", "promote", "style"])
-      expect(help.out).toContain(`  ${name}  `);
-    const empty = mkdtempSync(join(tmpdir(), "gerak-bare-"));
-    try {
-      const bare = Object.keys(await listCommands({ starts: [empty] }));
-      expect(bare).toEqual(Object.keys(COMMANDS));
-      for (const name of ["moves", "new-move", "promote", "style"])
-        expect(bare).not.toContain(name);
-    } finally {
-      rmSync(empty, { recursive: true, force: true });
+    const listed = [...help.out.matchAll(/^ {2}(\S+) {2}/gm)].map((match) => match[1]);
+    expect(listed).toEqual(Object.keys(COMMANDS));
+    for (const name of ["moves", "new-move", "promote", "style"]) {
+      expect(listed).not.toContain(name);
+      const refused = run(gerak, [name]);
+      expect(refused.code).not.toBe(0);
+      expect(refused.out).toContain(`Unknown command ${name}.`);
     }
   });
 
@@ -63,11 +57,11 @@ describe("the gerak bin", () => {
   });
 
   it("runs a command with the output its own script gives", () => {
-    const viaBin = run(gerak, ["moves", "--anatomy"]);
-    const direct = run(`${libraryBinFolder}motion-moves.mjs`, ["--anatomy"]);
-    expect(viaBin.code).toBe(0);
-    expect(viaBin.stdout.length).toBeGreaterThan(0);
-    expect(viaBin.stdout).toBe(direct.stdout);
+    const viaBin = run(gerak, ["points"]);
+    const direct = run(`${binFolder}motion-points.mjs`, []);
+    expect(viaBin.out.length).toBeGreaterThan(0);
+    expect(viaBin.code).toBe(direct.code);
+    expect(viaBin.out).toBe(direct.out);
   });
 
   it("resolves through the workspace bin link", () => {

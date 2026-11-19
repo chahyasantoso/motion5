@@ -19,17 +19,6 @@ export default defineStage({
     parcel: m.box(),
     word: m.text("Delivered"),
   }),
-  design: {
-    parcel: {
-      y: { fall: "heavy" },
-      scaleY: { land: "loose" },
-      rotation: { land: "loose" },
-      tint: { tint: "calm" },
-      shadowBlur: { fall: "heavy" },
-    },
-    tether: { scaleY: { fall: "quick" } },
-    word: { opacity: { word: "calm" }, y: { word: "calm" } },
-  },
   skins: {
     dom: {
       css: `
