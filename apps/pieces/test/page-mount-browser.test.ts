@@ -29,10 +29,14 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
     <meta charset="UTF-8" />
     <title>page mount browser test</title>
     <style>
-      body { margin: 0; font: 28px/1.3 sans-serif; height: 2200px; }
+      body { margin: 0; font: 28px/1.3 sans-serif; height: 2800px; }
       #headline-wrap { width: 200px; padding: 24px; }
       #headline { margin: 0; font-size: 28px; line-height: 1.3; }
       #card { width: 120px; height: 60px; margin-left: 24px; background: #225; }
+      #pin-wrap { margin-top: 300px; height: 700px; position: relative; background: #eee; }
+      #sticky-box { position: sticky; top: 60px; height: 200px; width: 200px; }
+      #sticky-slot { margin-top: 20px; width: 50px; height: 50px; background: #c53; }
+      #fixed-pin { position: fixed; right: 20px; top: 30px; width: 40px; height: 40px; background: #3a7; }
     </style>
   </head>
   <body>
@@ -40,6 +44,12 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
       <h1 id="headline">Fresh pressed citrus every morning</h1>
     </div>
     <div id="card"></div>
+    <div id="pin-wrap">
+      <div id="sticky-box">
+        <div id="sticky-slot"></div>
+      </div>
+    </div>
+    <div id="fixed-pin"></div>
     <script type="module" src="/${name}/src/main.ts"></script>
   </body>
 </html>
@@ -51,6 +61,7 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
     `import { motion } from "@gerak/core";
 import { mountPage } from "@gerak/dom";
 import { beat, box, el, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stage";
+import { boxInViewport } from "@gerak/stage/render";
 
 const reveal = beat("reveal", { scroll: [scrollPoint(0), scrollPoint(400)] });
 const headline = text("headline", "Fresh pressed citrus every morning", {
@@ -58,15 +69,20 @@ const headline = text("headline", "Fresh pressed citrus every morning", {
   node: el("#headline"),
 });
 const card = box("card", { node: el("#card") });
+const stickySlot = box("stickySlot", { node: el("#sticky-slot") });
+const fixedPin = box("fixedPin", { node: el("#fixed-pin") });
 
 const scene = sceneBuilder()
   .element(headline)
   .motion(stagger(motion((t) => ({ y: 20 * (1 - t.progress) })), { spread: 1, by: "line" }).in(reveal))
   .element(card)
-  .motion(motion((t) => ({ x: 100 * t.progress })).in(reveal));
+  .motion(motion((t) => ({ x: 100 * t.progress })).in(reveal))
+  .element(stickySlot)
+  .element(fixedPin);
 
 const mounted = mountPage(scene);
 Reflect.set(window, "__mountedPage", mounted);
+Reflect.set(window, "__boxInViewport", boxInViewport);
 `,
     "utf8",
   );
@@ -150,6 +166,49 @@ describe("mountPage in the browser", () => {
             }),
           )
           .toEqual([0, 0, 0, 0, 0]);
+
+        // Verify sticky (with top: 60px) and fixed placements match real getBoundingClientRect() across scroll phases.
+        for (const scrollTargetY of [0, 700, 1200]) {
+          const check = await page.evaluate((scrollY) => {
+            scrollTo(0, scrollY);
+            const mounted = Reflect.get(window, "__mountedPage");
+            const boxInViewportFn = Reflect.get(window, "__boxInViewport");
+            const rest =
+              typeof mounted === "object" && mounted !== null
+                ? Reflect.get(mounted, "rest")
+                : undefined;
+            const stickyBox =
+              typeof rest === "object" && rest !== null
+                ? Reflect.get(rest, "stickySlot")
+                : undefined;
+            const fixedBox =
+              typeof rest === "object" && rest !== null ? Reflect.get(rest, "fixedPin") : undefined;
+            const slotEl = document.querySelector("#sticky-slot")?.getBoundingClientRect();
+            const fixedEl = document.querySelector("#fixed-pin")?.getBoundingClientRect();
+            const stickyVp =
+              typeof boxInViewportFn === "function" && stickyBox !== undefined
+                ? Reflect.apply(boxInViewportFn, undefined, [stickyBox, window.scrollY])
+                : undefined;
+            const fixedVp =
+              typeof boxInViewportFn === "function" && fixedBox !== undefined
+                ? Reflect.apply(boxInViewportFn, undefined, [fixedBox, window.scrollY])
+                : undefined;
+            return {
+              stickyComputedY:
+                typeof stickyVp === "object" && stickyVp !== null
+                  ? Number(Reflect.get(stickyVp, "y"))
+                  : -1,
+              stickyActualY: slotEl ? slotEl.top + slotEl.height / 2 : -2,
+              fixedComputedY:
+                typeof fixedVp === "object" && fixedVp !== null
+                  ? Number(Reflect.get(fixedVp, "y"))
+                  : -1,
+              fixedActualY: fixedEl ? fixedEl.top + fixedEl.height / 2 : -2,
+            };
+          }, scrollTargetY);
+          expect(Math.abs(check.stickyComputedY - check.stickyActualY)).toBeLessThanOrEqual(1);
+          expect(Math.abs(check.fixedComputedY - check.fixedActualY)).toBeLessThanOrEqual(1);
+        }
       },
     );
   }, 30000);

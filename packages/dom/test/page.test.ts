@@ -281,4 +281,33 @@ describe("mountPage", () => {
     mounted.dispose();
     expect(headline.textContent).toBe("One two");
   });
+
+  it("wraps a single-word split text into one span and restores prior split DOM on failed mount", () => {
+    const solo = new FakeNode("solo");
+    solo.textContent = "HELLO";
+    const root = new FakeRoot([solo]);
+    const mounted = mountPage(
+      sceneBuilder({ length: 500 })
+        .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
+        .motion(() => ({ x: 5 })),
+      { root, frames: fakeFrames(), clock: () => 0 },
+    );
+    expect(root.createdCount).toBe(1);
+    expect(solo.children).toHaveLength(1);
+    expect(solo.children[0]?.style.transform).toBe("translate3d(5px, 0px, 0px)");
+    expect(solo.style.transform).toBe("");
+    mounted.dispose();
+    expect(solo.textContent).toBe("HELLO");
+
+    const rollbackRoot = new FakeRoot([new FakeNode("solo")]);
+    expect(() =>
+      mountPage(
+        sceneBuilder({ length: 500 })
+          .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
+          .element(box("missing", { node: el("#missing") })),
+        { root: rollbackRoot, frames: fakeFrames(), clock: () => 0 },
+      ),
+    ).toThrow(/"missing"/);
+    expect(rollbackRoot.nodes[0]?.textContent).toBe("");
+  });
 });

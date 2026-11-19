@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Remaining parts of `plan/page-plan.md` (`section` edges and CSS sticky/fixed convention, single-scene element ownership, slots, `travel`, and the landing-page proof and GSAP comparison), then `plan/stage-3d-plan.md` (3D in a scene), then the live kit and web overlay (`plan/roadmap.md`).**
+- **Remaining parts of `plan/page-plan.md` (`section` edges, the sticky/fixed CSS convention guide, single-scene element ownership, slots, `travel`, and the landing-page proof and GSAP comparison), then `plan/stage-3d-plan.md` (3D in a scene), then the live kit and web overlay (`plan/roadmap.md`).**
 
 ## Open, and not scheduled
 

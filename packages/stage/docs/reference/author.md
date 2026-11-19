@@ -5,7 +5,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Content`** `type Content = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "readout"; readonly format: (time: Time) => string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What an actor shows; `morph` holds its base outline first, then each target outline.
 - **`Expect`** `type Expect = "settle" | "ambient" | "static"`: What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it.
 - **`ItemContent`** `type ItemContent = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What a list item shows: any content but a readout.
-- **`NodeBinding`** `type NodeBinding = { kind: "node"; selector: string }`: A selector binding a page element or section to an existing DOM node.
+- **`NodeBinding`** `type NodeBinding = { kind: "node"; selector: string }`: A selector binding a page element to an existing DOM node.
 - **`Path`** `type Path = readonly Cubic2d[] | ((rest: RestReader) => readonly Cubic2d[])`: A stroke's outline: fixed cubics, or cubics drawn from the rest boxes of other members.
 - **`Pivot`** `type Pivot = { x: number; y: number }`: The point in frame px a member turns and scales around.
 - **`beat`** `(name: string, ms: number, place?: BeatPlace): Beat (+2 overloads)`: A clock beat `ms` long, a triggered beat `{ when, back }`, or a scroll window `{ scroll: [from, to] }`.
@@ -21,7 +21,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`TriggerBeat`** `type TriggerBeat = { kind: "trigger-beat"; name: string; ms: number; when: ScrollReached; back: TriggerBack; of: (time: Time, ease?: Ease, context?: BeatContext) => Time; active: (time: Time, context?: BeatContext) => boolean }`: A named clock beat started when scroll passes `when.point`, with explicit `back` behaviour.
 - **`TriggerPlace`** `type TriggerPlace = { when: ScrollReached; back: TriggerBack }`: Settings of a triggered clock beat: `when` scroll passes a point, and what scrolling `back` does.
 - **`box`** `(name: string, options?: ElementOptions): Element`: A page element styled by CSS.
-- **`el`** `(selector: string): NodeBinding`: Binds an element or section to an existing DOM node matched by CSS `selector`.
+- **`el`** `(selector: string): NodeBinding`: Binds an element to an existing DOM node matched by CSS `selector`.
 - **`group`** `(name: string, children: readonly Element[], options?: ElementOptions): Element`: A container: its pose moves its children, and each child keeps its own motions.
 - **`many`** `(name: string, count: number, options?: ElementOptions): Element (+1 overloads)`: A row of numbered parts: `count` boxes, or one part per item, each made by `make`.
 - **`shape`** `(name: string, outline: ShapeSource, options?: ElementOptions): Element`: A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`.
@@ -69,6 +69,3 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.
 - **`LayoutsInput`** `type LayoutsInput<L> = { names: readonly [L, ...L[]]; pick?: ((events: Events) => L) | undefined; rests?: Readonly<Record<L, Readonly<Record<string, Box>>>> | undefined }`: Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless.
 - **`ListPose`** `type ListPose = (index: number, count: number) => Pose2d`: A list's pose in the scene: the pose of item `index` of `count`.
-- **`boxInViewport`** `(box: Box, scrollY: number): Box`: The box's center and size in viewport coordinates at `scrollY` px.
-- **`withPlacement`** `(box: Box, placement: BoxPlacement): Box`: Attaches page scroll placement metadata onto `box` as a non-enumerable property.
-- **`BoxPlacement`** `type BoxPlacement = { readonly kind: "flow"; } | { readonly kind: "fixed"; } | { readonly kind: "sticky"; readonly minY: number; readonly maxY: number; readonly pinY: number; }`: How a measured box moves with page scroll: normal flow, viewport-fixed, or sticky inside a pin range.

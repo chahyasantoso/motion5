@@ -37,6 +37,10 @@ import type { StageEvent, StageFonts, StageInput, StageValues } from "./stage";
 export interface PageStyle extends RenderStyle {
   display?: string;
   position?: string;
+  top?: string;
+  right?: string;
+  bottom?: string;
+  left?: string;
   whiteSpace?: string;
 }
 
@@ -280,7 +284,18 @@ function wrapSplitText(
   const children: unknown[] = [];
   member.items.forEach((item, index) => {
     const span = needElement(doc.createElement("span"), `${member.name}.${index}`, "span");
-    span.textContent = item.kind === "text" ? item.value : "";
+    switch (item.kind) {
+      case "text":
+        span.textContent = item.value;
+        break;
+      case "box":
+      case "stroke":
+      case "morph":
+        span.textContent = "";
+        break;
+      default:
+        return unreachable(item);
+    }
     span.style.display = "inline-block";
     if (member.split === "letters") span.style.whiteSpace = "pre";
     span.setAttribute?.("data-gerak-part", String(index));
@@ -320,7 +335,6 @@ function bindList(
   if (first === undefined)
     throw new Error(`mountPage: "${member.name}" (${selector}) matched no node on the page.`);
   if (member.items.length === 0) return { member, node: first, items: [] };
-  if (matches.length === member.items.length) return { member, node: first, items: matches };
   if (matches.length === 1) {
     const kids = childElementsOf(first);
     if (kids.length === member.items.length) return { member, node: first, items: kids };
@@ -329,10 +343,14 @@ function bindList(
       const wrapped = wrapSplitText(first, member, doc);
       return { member, node: first, items: wrapped.items, restore: wrapped.restore };
     }
+    if (member.split === undefined && member.items.length === 1) {
+      return { member, node: first, items: matches };
+    }
     throw new Error(
       `mountPage: "${member.name}" (${selector}) matched 1 element with ${kids.length} children, expected ${member.items.length}.`,
     );
   }
+  if (matches.length === member.items.length) return { member, node: first, items: matches };
   throw new Error(
     `mountPage: "${member.name}" (${selector}) matched ${matches.length} nodes, expected ${member.items.length}.`,
   );
@@ -358,7 +376,9 @@ function rectOf(node: PageElement): RawRect {
 
 function cssPx(value: string | undefined): number | undefined {
   if (value === undefined || value === "" || value === "auto") return undefined;
-  const parsed = Number.parseFloat(value);
+  const trimmed = value.trim();
+  if (trimmed !== "0" && !trimmed.endsWith("px")) return undefined;
+  const parsed = Number.parseFloat(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -496,30 +516,37 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const byName = new Map<string, BoundTarget>();
   const allNodes: PageElement[] = [];
 
-  for (const member of stage.members) {
-    const selector = member.node;
-    if (selector === undefined) continue;
-    let bound: BoundTarget;
-    switch (member.kind) {
-      case "actor":
-      case "group": {
-        const raw = root.querySelector(selector);
-        if (raw === null)
-          throw new Error(`mountPage: "${member.name}" (${selector}) matched no node on the page.`);
-        const node = needElement(raw, member.name, selector);
-        bound = { member, node, items: [] };
-        allNodes.push(node);
-        break;
+  try {
+    for (const member of stage.members) {
+      const selector = member.node;
+      if (selector === undefined) continue;
+      let bound: BoundTarget;
+      switch (member.kind) {
+        case "actor":
+        case "group": {
+          const raw = root.querySelector(selector);
+          if (raw === null)
+            throw new Error(
+              `mountPage: "${member.name}" (${selector}) matched no node on the page.`,
+            );
+          const node = needElement(raw, member.name, selector);
+          bound = { member, node, items: [] };
+          allNodes.push(node);
+          break;
+        }
+        case "list":
+          bound = bindList(member, selector, root);
+          allNodes.push(...bound.items);
+          break;
+        default:
+          return unreachable(member);
       }
-      case "list":
-        bound = bindList(member, selector, root);
-        allNodes.push(...bound.items);
-        break;
-      default:
-        return unreachable(member);
+      targets.push(bound);
+      byName.set(member.name, bound);
     }
-    targets.push(bound);
-    byName.set(member.name, bound);
+  } catch (error) {
+    for (const target of targets) target.restore?.();
+    throw error;
   }
 
   const globalView: PageScrollTarget | undefined = isScrollTarget(globalThis.window)
@@ -573,7 +600,16 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const measure = (): void => {
     const savedTransforms = new Map<PageElement, string | undefined>();
-    const savedSticky = new Map<Element & { readonly style: PageStyle }, string | undefined>();
+    const savedSticky = new Map<
+      Element & { readonly style: PageStyle },
+      {
+        readonly position: string | undefined;
+        readonly top: string | undefined;
+        readonly right: string | undefined;
+        readonly bottom: string | undefined;
+        readonly left: string | undefined;
+      }
+    >();
     const stickyCache = new Map<Element, StickyAncestor>();
     const ancestors = new Map<
       PageElement,
@@ -587,17 +623,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     for (const target of targets) {
       if (!ancestors.has(target.node)) {
         ancestors.set(target.node, inspectAncestors(target.node, stickyCache));
-      }
-    }
-
-    for (const node of allNodes) {
-      savedTransforms.set(node, node.style.transform);
-      node.style.transform = "";
-    }
-    for (const { sticky } of ancestors.values()) {
-      if (sticky !== undefined && !savedSticky.has(sticky.element)) {
-        savedSticky.set(sticky.element, sticky.element.style.position);
-        sticky.element.style.position = "relative";
       }
     }
 
@@ -639,47 +664,83 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     };
 
     try {
+      for (const node of allNodes) {
+        savedTransforms.set(node, node.style.transform);
+        node.style.transform = "";
+      }
+      for (const { sticky } of ancestors.values()) {
+        if (sticky !== undefined && !savedSticky.has(sticky.element)) {
+          const { style } = sticky.element;
+          savedSticky.set(sticky.element, {
+            position: style.position,
+            top: style.top,
+            right: style.right,
+            bottom: style.bottom,
+            left: style.left,
+          });
+          style.position = "relative";
+          style.top = "auto";
+          style.right = "auto";
+          style.bottom = "auto";
+          style.left = "auto";
+        }
+      }
+
       for (const target of targets) {
         const { member } = target;
-        if (member.kind === "list") {
-          const itemRects = target.items.map((item) => rectOf(item));
-          target.items.forEach((item, index) => {
-            const info = ancestors.get(item) ?? { isFixed: false };
-            const rect = itemRects[index];
-            if (rect === undefined) return;
-            nextRest[`${member.name}.${index}`] = boxForNode(
-              rect,
+        switch (member.kind) {
+          case "list": {
+            const itemRects = target.items.map((item) => rectOf(item));
+            target.items.forEach((item, index) => {
+              const info = ancestors.get(item) ?? { isFixed: false };
+              const rect = itemRects[index];
+              if (rect === undefined) return;
+              nextRest[`${member.name}.${index}`] = boxForNode(
+                rect,
+                scrollX,
+                scrollY,
+                snapshotSticky(info.sticky),
+                info.isFixed,
+              );
+            });
+            if (member.split !== undefined || target.items.length > 0) {
+              nextLines[member.name] = computeLines(itemRects);
+            }
+            const containerRect = rectOf(target.node);
+            const containerInfo = ancestors.get(target.node) ?? { isFixed: false };
+            nextRest[member.name] = boxForNode(
+              containerRect,
+              scrollX,
+              scrollY,
+              snapshotSticky(containerInfo.sticky),
+              containerInfo.isFixed,
+            );
+            break;
+          }
+          case "actor":
+          case "group": {
+            const info = ancestors.get(target.node) ?? { isFixed: false };
+            nextRest[member.name] = boxForNode(
+              rectOf(target.node),
               scrollX,
               scrollY,
               snapshotSticky(info.sticky),
               info.isFixed,
             );
-          });
-          if (member.split !== undefined || target.items.length > 0) {
-            nextLines[member.name] = computeLines(itemRects);
+            break;
           }
-          const containerRect = rectOf(target.node);
-          const containerInfo = ancestors.get(target.node) ?? { isFixed: false };
-          nextRest[member.name] = boxForNode(
-            containerRect,
-            scrollX,
-            scrollY,
-            snapshotSticky(containerInfo.sticky),
-            containerInfo.isFixed,
-          );
-        } else {
-          const info = ancestors.get(target.node) ?? { isFixed: false };
-          nextRest[member.name] = boxForNode(
-            rectOf(target.node),
-            scrollX,
-            scrollY,
-            snapshotSticky(info.sticky),
-            info.isFixed,
-          );
+          default:
+            return unreachable(member);
         }
       }
     } finally {
-      for (const [el, prev] of savedSticky) el.style.position = prev ?? "";
+      for (const [el, prev] of savedSticky) {
+        el.style.position = prev.position ?? "";
+        el.style.top = prev.top ?? "";
+        el.style.right = prev.right ?? "";
+        el.style.bottom = prev.bottom ?? "";
+        el.style.left = prev.left ?? "";
+      }
       for (const [node, prev] of savedTransforms) node.style.transform = prev ?? "";
     }
 
@@ -748,12 +809,21 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const unwatch: (() => void)[] = [];
   for (const target of targets) {
-    if (!target.member.watch) continue;
-    if (target.member.kind === "list") {
-      target.items.forEach((item, index) =>
-        unwatch.push(recorder.watch(`${target.member.name}.${index}`, item)),
-      );
-    } else unwatch.push(recorder.watch(target.member.name, target.node));
+    const member = target.member;
+    if (!member.watch) continue;
+    switch (member.kind) {
+      case "list":
+        target.items.forEach((item, index) =>
+          unwatch.push(recorder.watch(`${member.name}.${index}`, item)),
+        );
+        break;
+      case "actor":
+      case "group":
+        unwatch.push(recorder.watch(member.name, target.node));
+        break;
+      default:
+        return unreachable(member);
+    }
   }
 
   const onScroll = (): void => {
@@ -764,6 +834,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const onPointerMove = (event: StageEvent): void => {
     if (event.clientX === undefined || event.clientY === undefined) return;
     const vp = readViewport();
+    if (!(vp.width > 0 && vp.height > 0)) return;
     const x = clamp(event.clientX / vp.width, 0, 1);
     const y = clamp(event.clientY / vp.height, 0, 1);
     muted = true;
@@ -788,13 +859,13 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
-  const layoutName = stage.layouts.names[0] ?? "main";
 
   const sceneSignal: Signal<StageValues> = (time, events) => {
+    const boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
     const out = frameOf(stage, {
       time,
       events,
-      boxes: { [layoutName]: currentReader },
+      boxes,
       lines: currentLines,
     });
     for (const target of targets) {
@@ -833,21 +904,36 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
     const visible = lastFrame?.visible[member.name] ?? true;
-    if (member.kind === "list") {
-      const count = member.items.length;
-      target.items.forEach((item, index) => {
-        applyVisibility(item, visible);
+    switch (member.kind) {
+      case "list": {
+        const count = member.items.length;
+        target.items.forEach((item, index) => {
+          applyVisibility(item, visible);
+          if (!visible || value === undefined) return;
+          const pose = listPose(value, index, count);
+          if (pose !== undefined) applyPose(item, member.items[index], pose);
+        });
+        break;
+      }
+      case "actor":
+        applyVisibility(target.node, visible);
         if (!visible || value === undefined) return;
-        const pose = listPose(value, index, count);
-        if (pose !== undefined) applyPose(item, member.items[index], pose);
-      });
-      return;
+        {
+          const pose = poseOf(value);
+          if (pose !== undefined) applyPose(target.node, member.content, pose);
+        }
+        break;
+      case "group":
+        applyVisibility(target.node, visible);
+        if (!visible || value === undefined) return;
+        {
+          const pose = poseOf(value);
+          if (pose !== undefined) applyPose(target.node, undefined, pose);
+        }
+        break;
+      default:
+        return unreachable(member);
     }
-    applyVisibility(target.node, visible);
-    if (!visible || value === undefined) return;
-    const pose = poseOf(value);
-    if (pose !== undefined)
-      applyPose(target.node, member.kind === "actor" ? member.content : undefined, pose);
   };
 
   for (const target of targets) {
@@ -872,20 +958,21 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     view.addEventListener("resize", onResize);
   }
 
+  const fonts = root.fonts ?? doc?.fonts;
+  const fontsLoaded = (): void => remeasure();
+  fonts?.addEventListener("loadingdone", fontsLoaded);
+  void fonts?.ready.then(fontsLoaded);
+
   const observer =
     typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => remeasure()) : undefined;
   if (observer !== undefined) {
     if (isDomElement(root.documentElement)) observer.observe(root.documentElement);
+    else if (isDomElement(root)) observer.observe(root);
     for (const target of targets) {
       if (isDomElement(target.node)) observer.observe(target.node);
       for (const item of target.items) if (isDomElement(item)) observer.observe(item);
     }
   }
-
-  const fonts = root.fonts ?? doc?.fonts;
-  const fontsLoaded = (): void => remeasure();
-  fonts?.addEventListener("loadingdone", fontsLoaded);
-  void fonts?.ready.then(fontsLoaded);
 
   return {
     player,
@@ -898,6 +985,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     },
     remeasure,
     send(name, value, target) {
+      if (!live) return;
       recorder.sample(name, value, target);
     },
     events: () => [...recorder.log],

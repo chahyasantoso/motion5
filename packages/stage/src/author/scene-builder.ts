@@ -300,7 +300,7 @@ export function stagger(
     return held;
   };
   const byIndex = new Map<number, Lanes>();
-  const byLine = new Map<number, { readonly key: string; readonly built: Lanes }>();
+  const byLine = new Map<string, Lanes>();
   const lanesOf = (count: number, context: MotionContext): Lanes => {
     switch (by) {
       case "index": {
@@ -315,13 +315,14 @@ export function stagger(
           raw !== undefined && raw.length === count
             ? raw
             : Array<number>(count).fill(context.line ?? 0);
-        const key = lines.join(",");
-        const held = byLine.get(count);
-        if (held !== undefined && held.key === key) return held.built;
+        const key = `${count}:${lines.join(",")}`;
+        const held = byLine.get(key);
+        if (held !== undefined) return held;
+        if (byLine.size >= 16) byLine.clear();
         const built = lanes(Array<number>(count).fill(1), options.spread, {
           by: orderLines(lines, from),
         });
-        byLine.set(count, { key, built });
+        byLine.set(key, built);
         return built;
       }
       default:

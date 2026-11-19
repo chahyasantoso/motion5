@@ -32,10 +32,10 @@ Headless tools advance scroll via `cues` or `npx gerak frames ... --action scrol
 
 ## Rests and measured lines
 
-`mountPage` temporarily clears its own inline transforms to measure each node's CSS rest box in page coordinates (`flow`, `fixed` or `sticky`), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`.
+`mountPage` temporarily clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`.
 
 `text(name, value, { split: "words" | "letters", node: el(selector) })` keeps a fixed part count from `value`:
 
 - If the matched element already has matching child elements, `mountPage` binds them in place; if it has no child elements, `mountPage` wraps the parts in `<span>` nodes on mount and restores the original text on `dispose()`.
-- Each word's `MotionContext` receives its layout row in `context.line` (0 headless, recomputed on resize without changing part count).
+- Each list part's `MotionContext` receives its layout row in `context.line` (0 headless, recomputed on resize without changing part count).
 - `stagger(motion, { spread, from?, by: "line" })` orders lanes by measured `line` so parts on the same visual line move together.
