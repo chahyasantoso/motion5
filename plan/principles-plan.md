@@ -41,7 +41,8 @@ Read `AGENTS.md` first; every rule there applies.
     it was when the state last changed.
 - `follow`'s goal depends only on the last matching event, so a rule that needs the old value cannot use it. `card`
   writes "leaving ends the press" in a second `follow`'s table for that reason.
-- Agents read `core.md` (8,186 bytes) and `stage.md` (10,500 bytes) whole. No test holds their size.
+- Agents read `core.md` (8,186 bytes) and `stage.md` (10,500 bytes) whole. `test/repo/agent-reference.test.ts` holds
+  `core.md` under 8 KB and `stage.md` under 14 KB.
 
 ## Decisions
 
@@ -151,8 +152,8 @@ Read `AGENTS.md` first; every rule there applies.
 - `core.md` and `stage.md` are read whole. They hold only what every piece needs: how the package works, its shapes,
   one idiom, and its names by group.
 - What only one kind of piece needs goes on a page read on demand, listed in the package's `docs/README.md`.
-- A new test, `test/repo/read-whole-size.test.ts`, holds `core.md` under 9,000 bytes and `stage.md` under 10,500
-  bytes. A ceiling may only go down.
+- `test/repo/agent-reference.test.ts` stays the one owner of their size. It keeps `core.md` under 8 KB and lowers
+  `stage.md` to 10,500 bytes. A ceiling may only go down.
 - Decisions 1 and 5 fit `core.md` under its ceiling. Signatures stay in the generated reference.
 
 ### 7. Record and docs
