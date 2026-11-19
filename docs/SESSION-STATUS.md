@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Principles and 3D stage**, in order: `plan/principles-plan.md` (principles in core, plain moves, no moves-tools) and `plan/stage-3d-plan.md` (3D objects in a stage); then the live kit and web overlay (`plan/roadmap.md`).
+- **Principles, then the scene builder**, in order: `plan/principles-plan.md` (principles in core, plain moves, no moves-tools, state as a fold over events, a size ceiling on read-whole docs), `plan/scene-builder-plan.md` (`sceneBuilder` replaces `defineStage`), `plan/page-plan.md` and `plan/stage-3d-plan.md` (3D in a scene); then the live kit and web overlay (`plan/roadmap.md`).
 
 ## Open, and not scheduled
 
