@@ -1,10 +1,10 @@
 # @gerak/stage
 
-Read this page whole before making a piece. A piece is one default export from `@gerak/stage`, a `sceneBuilder` chain or a `defineStage({ ... })`; look signatures up by group below (an author needs [author](./reference/author.md) only), motion primitives in [@gerak/core](../../core/docs/core.md), and topic guides in [README.md](./README.md); never read package source. `<pieces>` is the `gerak.pieces` directory in `package.json`.
+Read this page whole before making a piece. A piece is a file whose default export is a `sceneBuilder` chain and whose `skin` export is how the DOM draws it; look signatures up by group below, motion primitives in [@gerak/core](../../core/docs/core.md), and topic guides in [README.md](./README.md); never read package source. `<pieces>` is the `gerak.pieces` directory in `package.json`.
 
 <!-- generated:reference:start -->
-- [author](./reference/author.md) (70): `ActorSpec`, `CastBuilder`, `Content`, `Expect`, `GroupSpec`, `ItemContent`, `ListSpec`, `Members`, `Meta`, `Modifiers`, `Path`, `Pivot`, `Spec`, `Stretch`, `beat`, `Beat`, `BeatPlace`, `box`, `group`, `many`, `shape`, `text`, `Element`, `ElementOptions`, `MorphSource`, `Outline`, `ShapeSource`, `TextOptions`, `bind`, `bindEach`, `carry`, `sceneBuilder`, `stagger`, `stayWith`, `BoundEachFields`, `BoundFields`, `ElementStep`, `MotionContext`, `Principle`, `ReadAt`, `SceneBuilder`, `SceneBuilderOptions`, `SceneMotion`, `ShowWindow`, `StaggerFrom`, `StaggerOptions`, `NO_REST`, `ZERO_BOX`, `restReader`, `Box`, `Carry`, `CarryMode`, `CarryOptions`, `Frame`, `Rest`, `RestReader`, `defineStage`, `each`, `isStageDefinition`, `Beats`, `DomSkinInput`, `Limits`, `LayoutsInput`, `ListPose`, `MemberName`, `MemberOf`, `SceneContext`, `StageDefinition`, `StageOptions`, `Targets`
-- [run](./reference/run.md) (20): `DEFAULT_FRAME`, `compileStage`, `isStage`, `CompileResult`, `DomSkin`, `Member`, `Stage`, `StageLayouts`, `formatStageError`, `StageError`, `check`, `frame`, `listPose`, `poseOf`, `FrameInput`, `FrameOutput`, `beatAt`, `Window`, `blendShapes`, `matchOutlines`
+- [author](./reference/author.md) (55): `Content`, `Expect`, `ItemContent`, `Path`, `Pivot`, `beat`, `Beat`, `BeatPlace`, `box`, `group`, `many`, `shape`, `text`, `Element`, `ElementOptions`, `MorphSource`, `Outline`, `ShapeSource`, `TextOptions`, `bind`, `bindEach`, `carry`, `compileScene`, `isScene`, `sceneBuilder`, `stagger`, `stayWith`, `BoundEachFields`, `BoundFields`, `CompileSceneOptions`, `ElementStep`, `MotionContext`, `Principle`, `ReadAt`, `SceneBuilder`, `SceneBuilderOptions`, `SceneMotion`, `ShowWindow`, `StaggerFrom`, `StaggerOptions`, `NO_REST`, `ZERO_BOX`, `restReader`, `Box`, `Carry`, `CarryMode`, `CarryOptions`, `Frame`, `Rest`, `RestReader`, `isDomSkin`, `DomSkinInput`, `Limits`, `LayoutsInput`, `ListPose`
+- [run](./reference/run.md) (19): `DEFAULT_FRAME`, `isStage`, `CompileResult`, `DomSkin`, `Member`, `Stage`, `StageLayouts`, `formatStageError`, `StageError`, `check`, `frame`, `listPose`, `poseOf`, `FrameInput`, `FrameOutput`, `beatAt`, `Window`, `blendShapes`, `matchOutlines`
 - [render](./reference/render.md) (5): `drawStrokes`, `morphAt`, `restOfBounds`, `strokeBox`, `Strokes`
 - [dom](./reference/dom.md) (2): `cssVariables`, `isTokenName`
 <!-- generated:reference:end -->
@@ -12,106 +12,65 @@ Read this page whole before making a piece. A piece is one default export from `
 ## How stage works
 
 ```text
-defineStage({ beats, cast, scene }) -> compileStage -> Stage -> frame(stage, { time, events, boxes }) -> { layout, visible, targets } -> renderer
+sceneBuilder().element(e).motion(m) -> compileScene(scene, { skin }) -> Stage -> frame(stage, { time, events, boxes }) -> renderer
 ```
 
-- **One name per member.** Names are unique, group children included, and the scene names them flat. A list's items are `<list>.0`, `<list>.1`, … in skins, rests and review findings; `[data-cast^="<list>."]` selects them all.
-- **The scene is pure.** It returns poses from `({ time, beats, events, rest, layouts, carry })` only, so every frame can be sought; fold `events`, keep no state.
-- **Shadow DOM.** The DOM renderer builds `[data-cast="<name>"]` elements inside `[data-stage="frame"]`, labelled `[data-layout="<name>"]`; a piece without layouts has one, `main`. Headless runs read zero boxes unless the piece gives `rest`.
-- **Playback.** A piece plays once at real speed from 0 and holds its last frame (reduced motion shows it). The clock runs past `durationMs` while a member is watched.
+- **Elements are values,** each made once with a unique name: `box`, `text` (`split: "letters" | "words"`, or a function of time for a readout), `shape` (a path, a function of rest boxes, or `{ base, targets }` for a morph), `many(name, count | items, make?)` and `group(name, children)`. Options: `pivot`, `watch` (pointer events), `split`. A part of a many or split text is `<name>.<index>` in skins and findings.
+- **Beats are values:** `beat(name, ms, { at? } | { after, gap? })`. A piece's beats are the ones its motions and windows use; `length` ends it later.
+- **The scene is pure.** Every motion is a function of time and its context (`time`, `events`, `rest`, `carry`, `element`, `read`, and `index`/`count` on parts), so every frame can be sought; fold `events` with core's `state`, keep no state.
+- **Playback.** A piece plays once at real speed from 0 and holds its last frame (reduced motion shows it). The clock runs past its length while an element is watched. Headless runs read zero boxes unless the scene's `rest` option gives them.
 
 ## The loop
 
 1. **Find the idea first.** Name the obvious answer, then write three non-obvious ideas differing in material and mechanics. Keep the strongest as three lines: what moves in what order, its character, the one moment the eye must not miss.
 2. `npx gerak new <name> [--in <brief>]` scaffolds `<pieces>/<brief>/src/<name>.ts`; preview `stage.html?piece=<name>`.
-3. **Choose primitives.** From `@gerak/core`: `span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `ballistic`, `along`.
-4. **Check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations and bounds headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` captures a `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
+3. **Choose motions.** Moves from an installed move package, core's principles, `bind` over shared signals, and `motion(fn)` for the rest.
+4. **Check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations and bounds headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>` captures a `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
 
 Never open sibling `<pieces>/*/src` files.
 
 ## Idiom
 
 ```ts
-import { ease, lanes, mix } from "@gerak/core";
-import { defineStage } from "@gerak/stage";
+import { ease, motion, type Pose2d, type Time } from "@gerak/core";
+import { drop } from "@gerak/moves";
+import { beat, box, group, sceneBuilder, stagger, text } from "@gerak/stage";
 
-const letters = lanes([1, 1, 1, 1, 1], 0.3);
+export const skin = { css: `[data-cast="dot"] { width: 36px; height: 36px; background: #f53; }` };
 
-export default defineStage({
-  beats: { enter: [0, 600], hold: [600, 1800] },
-  cast: (m) => ({
-    card: m.group({ dot: m.box(), word: m.letters("HELLO") }),
-    caption: m.text("Hello").static(),
-  }),
-  scene: ({ time, beats }) => {
-    const t = beats.enter.of(time, ease.cubicOut).progress;
-    return {
-      card: { y: mix(40, 0, t) },
-      dot: { scale: mix(0.4, 1, t) },
-      word: (i) => ({ opacity: letters.of(beats.enter.of(time), i).progress }),
-    };
-  },
-});
+const enter = beat("enter", 600);
+const dot = box("dot");
+const word = text("word", "HELLO", { split: "letters" });
+const rise = motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) }));
+
+export default sceneBuilder({ length: 1800 })
+  .element(group("card", [dot, word]))
+  .element(dot)
+  .motion(drop({ distance: 80 }).in(enter, ease.cubicOut))
+  .element(word)
+  .motion(stagger(rise, { spread: 0.3 }).in(enter));
 ```
 
-## sceneBuilder
+## Motions and layering
 
-```ts
-const fall = beat("fall", 600);
-const hand = box("hand");
-const ball = shape("ball", circlePath({ cx: 0, cy: 0, r: 20 }));
-export default sceneBuilder({ skins: { dom: { css } } })
-  .element(hand)
-  .show(fall)
-  .element(ball)
-  .motion(drop({ distance: 300 }).in(fall))
-  .modify(squashStretch({ stretch: 0.1, max: 1.4 }))
-  .motion(stayWith(hand).in(fall).take());
-```
-
-- **The chain is a `StageDefinition`.** Beats come from `.in` and `.show`; an element with no motion is static, one with a `.loop` motion ambient.
-- **Layering.** Motions run in list order: a layer motion adds by each field's rule, a `.take()` motion replaces its fields from its beat's start, `.modify(principle)` wraps all above it. `stayWith` loops are refused.
-- `stagger(m, { spread, from? })` plays `m` per part in lanes (`m` may be `(i, n) => motion`); `bindEach({ y: (i) => signal })` binds a field per part.
-- `m.ambient()` makes an element ambient with no period; `.show([a, b])` shows from `a`'s start to `b`'s end.
-
-## Cast builders and modifiers
-
-| Builder | Member | Scene value |
-| --- | --- | --- |
-| `m.box()`, `m.text(value)` | actor | `Pose2d` |
-| `m.readout((time) => string)` | actor whose text the stage writes each frame; never in a list | `Pose2d` |
-| `m.stroke(cubics \| (rest) => cubics)` | SVG path, skinned with `[data-path="<name>"]`; a function reads other members' boxes, and a loop fails as `stroke_loop` | `Pose2d` with `drawn` |
-| `m.morph(base, targets)` | outline blended by `shape`: 0 is `base`, 1 `targets[0]`; outlines need equal piece counts | `Pose2d` with `shape` |
-| `m.many(count)`, `m.many(items, (item, i) => m.text(...))`, `m.letters(text)`, `m.words(text)` | list | `(index, count) => Pose2d` |
-| `m.group({ ... })` | container moving its children | `Pose2d` |
-
-- **Lists take a function of the index.** The cast owns the count; `each(items, (item, i) => pose)` poses per-item data.
-- **Literal names type the scene.** `Targets` checks names and lists only while the cast's keys are literal; keys typed `string` make it a plain record, and then only `gerak review` checks them.
-- **Time in the scene.** `time.progress` runs 0 to 1 over `durationMs`; `elapsedOf(time.clock)` answers ms (`undefined` untimed); `beats.<name>.of(time)` is time inside that beat.
-- `.on(beat, [from, to], ...)` shows a member only then (end excluded); a stretch reaching the end holds past it, and a group hides its children.
-- `.watch()` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`) into `events`; `.pivot({ x, y })` sets the origin in frame px.
-- `.settle()` (default) moves and holds; `.ambient()` keeps moving (children and items inherit it) and must stay in frame; `.static()` forbids scene poses.
+- **A motion** is a core `Motion`: `.in(beat, ease?)` plays it over a beat, holding its start before and its end after; `.loop(ms)` repeats it; `.take()` makes it replace the fields it sets from its beat's start; `.ambient()` marks it as never settling.
+- **Layering.** An element's motions run in list order and join by each field's rule (position adds, scale multiplies). `.modify(principle)` applies a principle to everything above it.
+- **Per part.** `stagger(m | (i, n) => m, { spread, from? })` plays a motion in each part's lane of its beat; `bindEach({ y: (i) => signal })` binds a field per part.
+- **Shared values.** `bind({ y: signal })` sets fields from signals at scene time; two elements that react to one thing share a signal, wrapped in core's `shared` when several read it.
+- **Reading another element.** `stayWith(e)` adds `e`'s travel since its beat started; elements reading each other in a loop are refused.
+- **Windows and limits.** `.show(beat | [from, to])` shows an element only then; `.limits({ jump, turn, ratio })` sets its review limits.
+- **Inferred.** An element with no motion is static, one with a `.loop` or `.ambient()` motion is ambient, every other settles.
 
 ## Layouts, carry and skins
 
-- `rest.get("<name>")` returns a measured centre-origin `Box` (zero box when unmeasured).
-- `layouts` names layouts styled under `[data-layout="<name>"]`, picked from `events`; `carry("<member>", options)` animates a member across layout changes (`mode`: `"scale" | "clip" | "keep"`).
-- `skins.dom` takes inline `css`/`defs` strings or `URL`s (`new URL("./piece.css", import.meta.url)`). `cssVariables` from `@gerak/stage/dom` writes style-card tokens as `:host` custom properties.
-
-## How the DOM renderer draws
-
-- **Frame and surround.** The frame is 1280 by 720 unless `frame` says otherwise, clips what leaves it, and scales to fit its host. Set `:host { background: #000; }` in the skin for a black surround, and the frame's background and font on `[data-stage="frame"]`.
-- **Default layout.** The renderer's rules have zero specificity (`:where`), so any skin rule wins. The frame, groups and lists lay children out as centred, wrapping flex rows, with a 24 px gap in the frame and 8 px in groups and lists. `position: absolute` places a member against its group's box (the frame's at the top level); a group whose children are all absolute has no size, so give it one (`inset: 0`). Never `position: static` or `display: contents`.
-- **Order.** Elements follow cast order, later on top; `z-index` reorders them. A group's pose, opacity and blur carry its children.
-- **Pose to CSS.** A pose writes `translate(x, y)`, `rotation`, skews, scales, about the member's `.pivot` (its centre without one); `x` and `y` move it from where it rests. `along(path)(share)` answers a point in the path's own coordinates, not an offset from that rest.
-- **Text.** Letter and word items hold no spaces: the list's flex gap spaces them, so a skin that changes the list's display spaces them itself (`margin`). Text keeps its spaces and line breaks (`white-space: pre`).
-- **Strokes and morphs.** Path coordinates are frame px wherever the member sits in the cast: the renderer places the member at its path's bounds (at least 1 px thick), so give a stroke no `left`, `top`, `width` or `height`. Style the path with `[data-path="<name>"]` (default `fill: none; stroke: currentColor; stroke-width: 2`); `drawn` and `drawnFrom` dash it by length. A morph pairs points in order along each piece: draw base and targets in the same direction from matching starts; a closed outline is turned to start nearest the base's.
-- **Values on CSS.** Each `custom.<name>` number is a unitless `--<name>` on the member's element and its path (`stroke-width: calc(var(--width) * 1px)`); a field's name is refused.
-- **Fonts.** Use fonts the page already has; the renderer measures again when one loads.
+- `context.rest.get("<name>")` returns a measured centre-origin `Box` (zero box when unmeasured).
+- `layouts: { names, pick }` names layouts styled under `[data-layout="<name>"]`, picked from `events`; `carry({ ms, ease, mode })` moves an element across layout changes (`mode`: `"scale" | "clip" | "keep"`).
+- `export const skin = { css, defs? }` takes inline strings or `URL`s (`new URL("./piece.css", import.meta.url)`). `cssVariables` from `@gerak/stage/dom` writes style-card tokens as `:host` custom properties.
+- How the DOM lays out, orders, strokes and spaces what it draws: [drawing](../../dom/docs/drawing.md).
 
 ## Traps
 
-- `npx gerak review` names a member that never moves, a static member the scene poses, an ambient member that stops or leaves the frame, a list given an array, and a name not in the cast. It judges ambient bounds only where the box is known (`rest`) and the member shows; `opacity: 0` counts as shown.
+- `npx gerak review` names an element that never moves, an ambient element that stops or leaves the frame, and a skin rule naming no element. It judges ambient bounds only where the box is known (`rest`) and the element shows; `opacity: 0` counts as shown.
 - Never cast with `as` or assert `!`; type pose literals (`const p: Pose2d = { x: 1 }`), use `?? 0`.
-- Review checks continuity even under `opacity: 0`; a member hidden by `.on(...)` may jump while hidden.
-- Keep scenes O(1) per frame: fold events with `tally`, sample other moments with `timeAt`; never loop from 0 to `time`.
+- Review checks continuity even under `opacity: 0`; an element hidden by `.show` may jump while hidden.
+- Keep motions O(1) per frame: fold events with `state`, sample other moments with `timeAt`; never loop from 0 to `time`.

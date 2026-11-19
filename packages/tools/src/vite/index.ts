@@ -277,11 +277,11 @@ const HOT_SWAP =
   `  });\n` +
   `}\n`;
 
-/** Whether a source file default-exports a `defineStage` or `sceneBuilder` stage module. */
+/** Whether a source file default-exports a `sceneBuilder` piece. */
 function isStageSource(code: string): boolean {
   return (
     /\bexport\s+default\b/.test(code) &&
-    /\b(?:defineStage|sceneBuilder)\s*(?:<[^>]*>)?\s*\(/.test(code)
+    /\bsceneBuilder\s*\(/.test(code)
   );
 }
 

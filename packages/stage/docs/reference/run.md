@@ -3,7 +3,6 @@
 What renderers and tools run a piece with: `compileStage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.
 
 - **`DEFAULT_FRAME`** `const DEFAULT_FRAME: Frame`: The frame of a piece that gives none.
-- **`compileStage`** `<B extends string, M extends Members<B>, L extends string>(definition: StageDefinition<B, M, L>): CompileResult`: Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot.
 - **`isStage`** `(value: unknown): value is Stage`: Whether `value` reads as a compiled stage: `kind` only, so a stage from a second copy of the package passes.
 - **`CompileResult`** `type CompileResult = { readonly ok: true; readonly stage: Stage; } | { readonly ok: false; readonly errors: readonly StageError[]; }`: A compiled stage or every reason it is not one.
 - **`DomSkin`** `type DomSkin = { readonly kind: "inline"; readonly css: string; readonly defs?: string | undefined; } | { readonly kind: "url"; readonly css: URL; readonly defs?: URL | undefined; }`: The DOM skin, inline or as file URLs.

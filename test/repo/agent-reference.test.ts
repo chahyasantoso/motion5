@@ -185,7 +185,7 @@ describe("agent reference", () => {
     }
 
     const stage = readFileSync(new URL("packages/stage/docs/stage.md", ROOT), "utf8");
-    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(10_500);
+    expect(Buffer.byteLength(stage)).toBeLessThanOrEqual(7_000);
     expect(stage).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
     for (const page of readdirSync(new URL("packages/stage/docs/reference/", ROOT))) {
       if (page !== "README.md") expect(stage).toContain(`./reference/${page}`);

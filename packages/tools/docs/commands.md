@@ -23,7 +23,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a
   `sceneBuilder` piece of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one static `.element(shape(name, path))`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
-  skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
+  skin and gradients in the skin's `defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
   `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`gerak review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
@@ -33,13 +33,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
-  For a stage module (`defineStage`) a finding that names a time also names the beat there, and it
-  adds: a `"settle"` member the scene never moves (unless `.watch()` or `.ambient()`), a `.static()` member the scene moves or poses, a target
-  the scene answers that is not cast, a member whose value changes outside its `.on()` stretches (before the first, in a
-  gap, or after the last), frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout function
-  that throws. A step while a member, its group or its list is hidden by
-  `.on()` is not a jump. `limits` in `defineStage`, `{ target: { jump?, turn?, ratio? } }`, judges one target by its own
-  limits instead of the flags; a `custom` value is judged as a ratio.
+  For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
+  adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
+  frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
+  function that throws. A step while an element, its group or its parts are hidden by `.show` is not a jump. An
+  element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
+  judged as a ratio.
 - **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
