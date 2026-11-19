@@ -494,25 +494,37 @@ function cssSource(parts: readonly Part[]): string {
   return templateText(parts.map(({ box, path }) => `${box}\n${path}`).join("\n"));
 }
 
+/** The parts as `.element(shape(...))` calls of a scene builder chain, one static element each. */
+function elementsSource(parts: readonly Part[]): string {
+  const lines = (list: readonly string[], indent: string): string =>
+    list.map((line) => `${indent}${line}`).join("\n");
+  return parts
+    .map(({ name, cubics, shapes }) => {
+      if (shapes === undefined)
+        return `  .element(\n    shape("${name}", [\n${lines(cubics, "      ")}\n    ]),\n  )`;
+      const targets = shapes
+        .map((outline) => `        [\n${lines(outline, "          ")}\n        ],`)
+        .join("\n");
+      return `  .element(\n    shape("${name}", {\n      base: [\n${lines(cubics, "        ")}\n      ],\n      targets: [\n${targets}\n      ],\n    }),\n  )`;
+    })
+    .join("\n");
+}
+
 /** The module's source text. */
 function moduleSource(
   source: string,
   frame: { readonly width: number; readonly height: number },
   built: ReturnType<typeof build>,
 ): string {
-  const cast = castSource(built.parts);
   const css = cssSource(built.parts);
   const defs =
     built.defs.length === 0 ? "" : `\n      defs: \`${templateText(built.defs.join("\n"))}\`,`;
-  return `// Imported from ${basename(source)} by gerak import-svg: flat parts in paint order; rename a part by replacing its quoted name.
-import { defineStage } from "@gerak/stage";
+  return `// Imported from ${basename(source)} by gerak import-svg: flat static parts in paint order; add motions to a part with \`.motion(...)\` after its \`.element(...)\`.
+import { sceneBuilder, shape } from "@gerak/stage";
 
-export default defineStage({
-  beats: { show: [0, 1000] },
+export default sceneBuilder({
   frame: { width: ${frame.width}, height: ${frame.height} },
-  cast: (m) => ({
-${cast}
-  }),
+  length: 1000,
   skins: {
     dom: {
       css: \`
@@ -520,8 +532,8 @@ ${css}
 \`,${defs}
     },
   },
-  scene: () => ({}),
-});
+})
+${elementsSource(built.parts)};
 `;
 }
 

@@ -31,7 +31,7 @@ interface Imported {
 
 function stageOf(module: unknown): Stage {
   const def: unknown = Reflect.get(Object(module), "default");
-  if (!isStageDefinition(def)) throw new Error("missing default defineStage");
+  if (!isStageDefinition(def)) throw new Error("missing default stage definition");
   const compiled = compileStage(def);
   if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
   return compiled.stage;
@@ -165,6 +165,16 @@ describe("gerak import-svg geometry", () => {
         reviewSceneModule(read, { hold: 500, jump: 150, turn: 150, ratio: 1.5 }).findings,
       ).toEqual([]);
     }
+  }, 60000);
+
+  it("writes a scene builder piece with every part static", async () => {
+    const imported = await bring(join(fixtures, "svg-shapes.svg"), "fixture");
+    const source = readFileSync(imported.result.file, "utf8");
+    expect(source).toContain("sceneBuilder");
+    expect(source).not.toContain("defineStage");
+    const { members } = stageOf(imported.module);
+    expect(members.map(({ name }) => name)).toEqual(imported.result.members);
+    for (const member of members) expect(member.expect).toBe("static");
   }, 60000);
 
   it("keeps parts flat in paint order, as the id and the module's frame say", async () => {

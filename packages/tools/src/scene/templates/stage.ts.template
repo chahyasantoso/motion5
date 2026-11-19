@@ -1,11 +1,8 @@
-import type { Pose2d } from "@gerak/core";
-import { defineStage } from "@gerak/stage";
+import { beat, box, sceneBuilder } from "@gerak/stage";
 
-export default defineStage({
-  beats: { show: [0, 800] },
-  cast: (m) => ({ title: m.box() }),
-  skins: { dom: { css: `` } },
-  scene: () => ({
-    title: {} satisfies Pose2d,
-  }),
-});
+const show = beat("show", 800);
+const title = box("title");
+
+export default sceneBuilder({ skins: { dom: { css: `` } } })
+  .element(title)
+  .show(show);

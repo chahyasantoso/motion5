@@ -1,4 +1,4 @@
-import { attack, taper, wave, type Pose2d, type Time } from "@gerak/core";
+import { attack, motion, taper, wave, type Motion, type Pose2d } from "@gerak/core";
 import { squashed } from "@gerak/moves";
 
 const rise = attack({ rate: 40 });
@@ -15,13 +15,13 @@ export interface ThudOptions {
 }
 
 /** A heavy body takes an impact on its base: it is crushed at once, then rings in height and tips side to side, each swing smaller. */
-export function thud(options: ThudOptions = {}): (time: Time) => Pose2d {
+export function thud(options: ThudOptions = {}): Motion<Pose2d> {
   const { squash = 0.2, tilt = 5, rings = 3 } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const built = rise(progress);
     const left = fade(progress);
     const crush = squash * built * left * wave({ count: rings, phase: 0.25 })(progress);
     const sway = tilt * built * left * wave({ count: rings * 0.7 })(progress);
     return { ...squashed({ squash: crush })(1), rotation: sway };
-  };
+  });
 }

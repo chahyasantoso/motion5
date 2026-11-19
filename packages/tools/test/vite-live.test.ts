@@ -225,6 +225,8 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     const stage = `export default defineStage({ beats: { go: [0, 1000] }, cast: () => ({}), scene: () => ({}) });`;
     const id = resolve("apps/pieces/saved/src/saved.ts");
     expect(plugin.transform(stage, id)?.code).toContain("import.meta.hot.accept");
+    const built = `export default sceneBuilder({ length: 1000 }).element(box("a"));`;
+    expect(plugin.transform(built, id)?.code).toContain("import.meta.hot.accept");
     expect(plugin.transform(`export const beats = 1;`, id)).toBeNull();
     expect(plugin.transform(stage, resolve("apps/pieces/saved/lib/saved.ts"))).toBeNull();
   });

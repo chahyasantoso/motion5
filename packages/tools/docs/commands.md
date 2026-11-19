@@ -16,12 +16,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
-- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one stage module (the brief
+- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one `sceneBuilder` piece (the brief
   is the name unless `--in` names another; open as `stage.html?piece=<name>`); `--three` writes `<brief>/<name>.html`, its
-  entry, a component and `<brief>/src/<name>-scene.ts` instead. Refuses a name any brief already holds; every target rests
-  (`{}`) and the scene imports no move.
-- **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a stage
-  module of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one `m.stroke(path).static()`
+  entry, a component and `<brief>/src/<name>-scene.ts` instead. Refuses a name any brief already holds; its one element
+  is static and the piece imports no move.
+- **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a
+  `sceneBuilder` piece of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one static `.element(shape(name, path))`
   per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
   skin and gradients in `skins.dom.defs`. It prints one JSON object: the members, the defs count, the frame, and
   `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
