@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   beat,
   bind,
+  bindEach,
   box,
   carry,
   compileStage,
@@ -24,6 +25,7 @@ import {
   poseOf,
   sceneBuilder,
   shape,
+  stagger,
   stayWith,
   text,
   type Stage,
@@ -187,6 +189,120 @@ describe("sceneBuilder: inference", () => {
       "settle",
       "ambient",
       "settle",
+    ]);
+  });
+});
+
+describe("sceneBuilder: ambient motions", () => {
+  it("makes an element ambient when a motion says ambient, with no period", () => {
+    const a = box("a");
+    const stage = compiled(sceneBuilder().element(a).motion(slideX(1).in(enter).ambient()));
+    expect(stage.members.map((member) => member.expect)).toEqual(["ambient"]);
+  });
+});
+
+describe("stagger", () => {
+  const word = text("word", "ABC", { split: "letters" });
+  const run = beat("run", 1000);
+  const win = beat("win", 1000, { at: 1000 });
+  const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
+  const xs = (definition: StageDefinition, ms: number): (number | undefined)[] => {
+    const out = frame(compiled(definition), { time: at(ms, 3000) }).targets;
+    return [0, 1, 2].map((index) => listPose(out["word"], index, 3)?.x);
+  };
+
+  it("gives the first and last part their lanes, from the start", () => {
+    const chain = sceneBuilder({ length: 3000 })
+      .element(word)
+      .motion(stagger(ramp, { spread: 1 }).in(run));
+    expect(xs(chain, 0)).toEqual([0, 0, 0]);
+    expect(xs(chain, 500)).toEqual([1, 0.5, 0]);
+    expect(xs(chain, 1000)).toEqual([1, 1, 1]);
+  });
+
+  it("starts from the end, the centre and the edges when asked", () => {
+    const from = (order: "end" | "center" | "edges") =>
+      xs(
+        sceneBuilder({ length: 3000 })
+          .element(word)
+          .motion(stagger(ramp, { spread: 1, from: order }).in(run)),
+        500,
+      );
+    expect(from("end")).toEqual([0, 0.5, 1]);
+    expect(from("center")).toEqual([0, 1, 0]);
+    expect(from("edges")).toEqual([1, 0, 1]);
+  });
+
+  it("stays inside the span of the motion it plays", () => {
+    const chain = sceneBuilder({ length: 3000 })
+      .element(word)
+      .motion(stagger(ramp.in(win), { spread: 1 }));
+    expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
+    expect(xs(chain, 500)).toEqual([0, 0, 0]);
+    expect(xs(chain, 1500)).toEqual([1, 0.5, 0]);
+    expect(xs(chain, 2500)).toEqual([1, 1, 1]);
+  });
+
+  it("plays the motion unchanged on an element without parts", () => {
+    const a = box("a");
+    const chain = sceneBuilder({ length: 2000 })
+      .element(a)
+      .motion(stagger(ramp, { spread: 1 }));
+    expect(poseAt(chain, "a", 1000)?.x).toBe(0.5);
+    const inside = sceneBuilder({ length: 3000 })
+      .element(a)
+      .motion(stagger(ramp.in(win), { spread: 1 }));
+    expect(poseAt(inside, "a", 1500)?.x).toBe(0.5);
+  });
+
+  it("keeps a loop, so its element is ambient, and a take", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 3000 })
+        .element(word)
+        .motion(stagger(ramp.loop(500), { spread: 1 })),
+    );
+    expect(stage.members[0]?.expect).toBe("ambient");
+    expect(stagger(ramp.take(), { spread: 1 }).joins).toBe("take");
+  });
+});
+
+describe("bindEach", () => {
+  it("binds a field of each part to the signal of its index", () => {
+    const dots = many("dots", 3);
+    const chain = sceneBuilder({ length: 2000 })
+      .element(dots)
+      .motion(
+        bindEach({
+          y: (index) => (time) => time.progress * 10 * (index + 1),
+          rotation: () => () => 9,
+        }),
+      );
+    const out = frame(compiled(chain), { time: at(1000) }).targets;
+    expect([0, 1, 2].map((index) => listPose(out["dots"], index, 3)?.y)).toEqual([5, 10, 15]);
+    expect(listPose(out["dots"], 1, 3)?.rotation).toBe(9);
+  });
+
+  it("refuses an element without parts", () => {
+    const chain = sceneBuilder({ length: 2000 })
+      .element(box("a"))
+      .motion(bindEach({ y: () => () => 1 }));
+    expect(() => poseAt(chain, "a", 0)).toThrow(TypeError);
+  });
+});
+
+describe("show with two beats", () => {
+  it("compiles [from, to] to one stretch and still takes separate beats", () => {
+    const a = box("a");
+    const late = beat("late", 100, { at: 2000 });
+    const stage = compiled(
+      sceneBuilder().element(a).show([enter, hold]).element(box("b")).show(late),
+    );
+    expect(stage.members[0]?.on).toEqual([[0, 1100]]);
+    expect(Object.keys(stage.beats)).toEqual(["enter", "hold", "late"]);
+    const mixed = compiled(sceneBuilder().element(a).show([enter, hold], late));
+    expect(mixed.members[0]?.on).toEqual([
+      [0, 1100],
+      [2000, Number.POSITIVE_INFINITY],
     ]);
   });
 });

@@ -57,4 +57,16 @@ describe("motion", () => {
     // @ts-expect-error a span is made by `span`
     expect(() => progressOf.in({ from: 0 })).toThrow(RangeError);
   });
+
+  it("marks a motion ambient with ambient(), keeping its time, and keeps the mark through in, loop and take", () => {
+    expect(progressOf.isAmbient).toBe(false);
+    const alive = progressOf.ambient();
+    expect(alive.isAmbient).toBe(true);
+    expect(alive(at(1000))).toBe(0.25);
+    expect(progressOf.isAmbient).toBe(false);
+    expect(alive.in(span(0, 1000)).isAmbient).toBe(true);
+    expect(alive.loop(500).isAmbient).toBe(true);
+    expect(alive.take().isAmbient).toBe(true);
+    expect(progressOf.loop(500).isAmbient).toBe(false);
+  });
 });

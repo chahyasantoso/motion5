@@ -34,7 +34,7 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 | `sequence(time, [[span, fn], ...])` | `R` | Phases on one target; a finished phase holds its end |
 | `timeAt(time, ms)` / `withProgress(time, p)` | `Time` | Sample a signal at another moment |
 
-- `motion(fn)` is a `Motion`: `.in(span)` holds its start before and end after, `.loop(ms)` repeats, `.take()` replaces fields.
+- `motion(fn)` is a `Motion`: `.in(span)` holds its start before and end after, `.loop(ms)` repeats, `.take()` replaces fields, `.ambient()` marks it always moving.
 - `span.of(time, ease)` clamps, so ease values: `mix(a, b, ease.backOut(t.progress))`.
 
 ## Fields, rests, and combining
@@ -51,12 +51,12 @@ Every pose field is optional and omitted fields stay inactive:
 
 - **`ease`:** `linear`, `sine`, `quad`, `cubic`, `quart`, `expo`, `back` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`. Custom: `backEase({ amount, direction })`, `springEase`, `spring(offset, speed, seconds, { stiffness, damping })`, `springMemory`.
 - **Envelopes (`0..1` progress):** `arch(p)` (`0 -> 1 -> 0`), `wave({ count, phase? })(p)`, `attack({ rate })(p)`, `decay({ rate })(p)`, `taper({ power })(p)`.
-- **Blends:** `mix`, `mixAngle` (shortest arc), `mixPoint`, `mixPoint3d`, `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
+- **Blends:** `mix`, `mixAngle`, `mixPoint`, `mixPoint3d`, `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
 - **Paths & shapes:** `circlePath`, `ellipsePath`, `rectPath`, `linePath`, `polygonPath`, `arcPath`, `pathFrom(d)`, `toCubics` / `toCubics3d` (anchor `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics)(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
 - **3D camera:** `orbit`, `aim(from, to)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
 - **State:** `state(start, rule)` folds events; `springTo` / `easeTo` follow what a `pick` of it reads.
 - **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`**. `tally({ start, on, target? })` integrates events; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
-- **Principles** wrap a signal: `squashStretch(options)(signal)`, each with a `3d` twin. Slow in and out are eases.
+- **Principles** wrap a signal: `squashStretch(options)(signal)`, each with a `3d` twin.
 
 ## Idiom
 

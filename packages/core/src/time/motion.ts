@@ -13,18 +13,23 @@ export interface Motion<T, C = unknown> {
   /** The repeat length in ms, or undefined when it does not loop. */
   readonly period: number | undefined;
   readonly joins: Joins;
+  /** Whether it keeps moving with no period, so its element is ambient. */
+  readonly isAmbient: boolean;
   /** Plays over `span`: progress 0 before it, 1 after it. */
   in(span: Span): Motion<T, C>;
   /** Repeats every `ms`, before `in` is applied. */
   loop(ms: number): Motion<T, C>;
   /** Replaces the fields it sets, from the start of its span on. */
   take(): Motion<T, C>;
+  /** Marks it as always moving; its time is unchanged. */
+  ambient(): Motion<T, C>;
 }
 
 interface Traits {
   readonly span: Span | undefined;
   readonly period: number | undefined;
   readonly joins: Joins;
+  readonly isAmbient: boolean;
 }
 
 function isSpan(value: unknown): value is Span {
@@ -48,6 +53,7 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
       span: traits.span,
       period: traits.period,
       joins: traits.joins,
+      isAmbient: traits.isAmbient,
       in(span: Span): Motion<T, C> {
         if (!isSpan(span)) throw new RangeError("motion.in: give a span made by `span` or `beat`.");
         return build(fn, { ...traits, span });
@@ -59,11 +65,14 @@ function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion
       take(): Motion<T, C> {
         return build(fn, { ...traits, joins: "take" });
       },
+      ambient(): Motion<T, C> {
+        return build(fn, { ...traits, isAmbient: true });
+      },
     }),
   );
 }
 
 /** Gives `fn` the timing methods; called with no span or period it answers as `fn` does. */
 export function motion<T, C = unknown>(fn: (time: Time, context?: C) => T): Motion<T, C> {
-  return build(fn, { span: undefined, period: undefined, joins: "layer" });
+  return build(fn, { span: undefined, period: undefined, joins: "layer", isAmbient: false });
 }

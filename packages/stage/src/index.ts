@@ -30,9 +30,12 @@ export {
 } from "./author/elements";
 export {
   bind,
+  bindEach,
   carry,
   sceneBuilder,
+  stagger,
   stayWith,
+  type BoundEachFields,
   type BoundFields,
   type ElementStep,
   type MotionContext,
@@ -41,6 +44,9 @@ export {
   type SceneBuilder,
   type SceneBuilderOptions,
   type SceneMotion,
+  type ShowWindow,
+  type StaggerFrom,
+  type StaggerOptions,
 } from "./author/scene-builder";
 export {
   NO_REST,

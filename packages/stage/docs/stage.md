@@ -3,7 +3,7 @@
 Read this page whole before making a piece. A piece is one default export from `@gerak/stage`, a `sceneBuilder` chain or a `defineStage({ ... })`; look signatures up by group below (an author needs [author](./reference/author.md) only), motion primitives in [@gerak/core](../../core/docs/core.md), and topic guides in [README.md](./README.md); never read package source. `<pieces>` is the `gerak.pieces` directory in `package.json`.
 
 <!-- generated:reference:start -->
-- [author](./reference/author.md) (64): `ActorSpec`, `CastBuilder`, `Content`, `Expect`, `GroupSpec`, `ItemContent`, `ListSpec`, `Members`, `Meta`, `Modifiers`, `Path`, `Pivot`, `Spec`, `Stretch`, `beat`, `Beat`, `BeatPlace`, `box`, `group`, `many`, `shape`, `text`, `Element`, `ElementOptions`, `MorphSource`, `Outline`, `ShapeSource`, `TextOptions`, `bind`, `carry`, `sceneBuilder`, `stayWith`, `BoundFields`, `ElementStep`, `MotionContext`, `Principle`, `ReadAt`, `SceneBuilder`, `SceneBuilderOptions`, `SceneMotion`, `NO_REST`, `ZERO_BOX`, `restReader`, `Box`, `Carry`, `CarryMode`, `CarryOptions`, `Frame`, `Rest`, `RestReader`, `defineStage`, `each`, `isStageDefinition`, `Beats`, `DomSkinInput`, `Limits`, `LayoutsInput`, `ListPose`, `MemberName`, `MemberOf`, `SceneContext`, `StageDefinition`, `StageOptions`, `Targets`
+- [author](./reference/author.md) (70): `ActorSpec`, `CastBuilder`, `Content`, `Expect`, `GroupSpec`, `ItemContent`, `ListSpec`, `Members`, `Meta`, `Modifiers`, `Path`, `Pivot`, `Spec`, `Stretch`, `beat`, `Beat`, `BeatPlace`, `box`, `group`, `many`, `shape`, `text`, `Element`, `ElementOptions`, `MorphSource`, `Outline`, `ShapeSource`, `TextOptions`, `bind`, `bindEach`, `carry`, `sceneBuilder`, `stagger`, `stayWith`, `BoundEachFields`, `BoundFields`, `ElementStep`, `MotionContext`, `Principle`, `ReadAt`, `SceneBuilder`, `SceneBuilderOptions`, `SceneMotion`, `ShowWindow`, `StaggerFrom`, `StaggerOptions`, `NO_REST`, `ZERO_BOX`, `restReader`, `Box`, `Carry`, `CarryMode`, `CarryOptions`, `Frame`, `Rest`, `RestReader`, `defineStage`, `each`, `isStageDefinition`, `Beats`, `DomSkinInput`, `Limits`, `LayoutsInput`, `ListPose`, `MemberName`, `MemberOf`, `SceneContext`, `StageDefinition`, `StageOptions`, `Targets`
 - [run](./reference/run.md) (20): `DEFAULT_FRAME`, `compileStage`, `isStage`, `CompileResult`, `DomSkin`, `Member`, `Stage`, `StageLayouts`, `formatStageError`, `StageError`, `check`, `frame`, `listPose`, `poseOf`, `FrameInput`, `FrameOutput`, `beatAt`, `Window`, `blendShapes`, `matchOutlines`
 - [render](./reference/render.md) (5): `drawStrokes`, `morphAt`, `restOfBounds`, `strokeBox`, `Strokes`
 - [dom](./reference/dom.md) (2): `cssVariables`, `isTokenName`
@@ -13,22 +13,21 @@ Read this page whole before making a piece. A piece is one default export from `
 
 ```text
 defineStage({ beats, cast, scene }) -> compileStage -> Stage -> frame(stage, { time, events, boxes }) -> { layout, visible, targets } -> renderer
-                                                                 check(stage, targets) -> StageError[]   (review and authoring pages)
 ```
 
 - **One name per member.** Names are unique, group children included, and the scene names them flat. A list's items are `<list>.0`, `<list>.1`, … in skins, rests and review findings; `[data-cast^="<list>."]` selects them all.
 - **The scene is pure.** It returns poses from `({ time, beats, events, rest, layouts, carry })` only, so every frame can be sought; fold `events`, keep no state.
 - **Shadow DOM.** The DOM renderer builds `[data-cast="<name>"]` elements inside `[data-stage="frame"]`, labelled `[data-layout="<name>"]`; a piece without layouts has one, `main`. Headless runs read zero boxes unless the piece gives `rest`.
-- **Playback.** A piece plays once at real speed from 0 and holds its last frame (reduced motion shows it). Its clock runs on past `durationMs` while any member is watched, so a later hover still plays out.
+- **Playback.** A piece plays once at real speed from 0 and holds its last frame (reduced motion shows it). The clock runs past `durationMs` while a member is watched.
 
 ## The loop
 
 1. **Find the idea first.** Name the obvious answer, then write three non-obvious ideas differing in material and mechanics. Keep the strongest as three lines: what moves in what order, its character, the one moment the eye must not miss.
 2. `npx gerak new <name> [--in <brief>]` scaffolds `<pieces>/<brief>/src/<name>.ts`; preview `stage.html?piece=<name>`.
-3. **Choose primitives.** From `@gerak/core`: `span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `arch`, `attack`, `decay`, `taper`, `ballistic`, `along`, `toCubics`.
+3. **Choose primitives.** From `@gerak/core`: `span`, `chain`, `lanes`, `loop`, `sequence`, `mix`, `mixPose`, `keyframes`, `ease`, `wave`, `ballistic`, `along`.
 4. **Check.** `npx gerak review <pieces>/<brief>/src/<name>.ts` checks compile errors, shapes, expectations and bounds headlessly; `npx gerak review "stage.html?piece=<name>" --watch '[data-cast="<member>"]' --to <ms>` captures a `sheet.png`. Repeat until clean and `npx tsc --noEmit` passes.
 
-Never open sibling `<pieces>/*/src` files; trust sheets beside numeric checks.
+Never open sibling `<pieces>/*/src` files.
 
 ## Idiom
 
@@ -44,7 +43,6 @@ export default defineStage({
     card: m.group({ dot: m.box(), word: m.letters("HELLO") }),
     caption: m.text("Hello").static(),
   }),
-  skins: { dom: { css: `[data-cast="dot"] { width: 36px; height: 36px; background: #f53; }` } },
   scene: ({ time, beats }) => {
     const t = beats.enter.of(time, ease.cubicOut).progress;
     return {
@@ -73,6 +71,8 @@ export default sceneBuilder({ skins: { dom: { css } } })
 
 - **The chain is a `StageDefinition`.** Beats come from `.in` and `.show`; an element with no motion is static, one with a `.loop` motion ambient.
 - **Layering.** Motions run in list order: a layer motion adds by each field's rule, a `.take()` motion replaces its fields from its beat's start, `.modify(principle)` wraps all above it. `stayWith` loops are refused.
+- `stagger(m, { spread, from? })` plays `m` per part in lanes; `bindEach({ y: (i) => signal })` binds a field per part.
+- `m.ambient()` makes an element ambient with no period; `.show([a, b])` shows from `a`'s start to `b`'s end.
 
 ## Cast builders and modifiers
 

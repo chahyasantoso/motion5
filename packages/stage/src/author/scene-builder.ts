@@ -3,10 +3,13 @@ import {
   VALUE_FIELDS,
   combine,
   elapsedOf,
+  lanes,
   motion,
   timeAt,
   unreachable,
   type Events,
+  type LaneOrigin,
+  type Lanes,
   type Motion,
   type Pose2d,
   type Signal,
@@ -22,6 +25,7 @@ import {
   type ItemContent,
   type Members,
   type Spec,
+  type Stretch,
 } from "./cast";
 import type { Element } from "./elements";
 import type { Carry, CarryOptions, Frame, RestReader } from "./layout";
@@ -86,11 +90,14 @@ export interface ElementStep extends SceneBuilder {
   motion(...motions: readonly SceneMotion[]): ElementStep;
   /** Wraps everything above it in the element's list in `principle`. */
   modify(principle: Principle): ElementStep;
-  /** Shows the element only during these beats. */
-  show(...beats: readonly Beat[]): ElementStep;
+  /** Shows the element only during these windows: a beat, or `[from, to]` for one stretch across beats. */
+  show(...windows: readonly ShowWindow[]): ElementStep;
   /** Called, sets review limits of this element, a field once; read, holds each element's limits by name. */
   readonly limits: ((limits: Limits) => ElementStep) & Readonly<Record<string, Limits>>;
 }
+
+/** A beat, or two beats: from the start of the first to the end of the second. */
+export type ShowWindow = Beat | readonly [from: Beat, to: Beat];
 
 type MotionStep = {
   readonly kind: "motion";
@@ -105,7 +112,7 @@ type Step = MotionStep | { readonly kind: "modify"; readonly principle: Principl
 
 interface Entry {
   readonly steps: readonly Step[];
-  readonly show: readonly Beat[];
+  readonly show: readonly Stretch[];
   readonly limits: Limits;
 }
 
@@ -137,9 +144,11 @@ function reading(
       span: base.span,
       period: base.period,
       joins: base.joins,
+      isAmbient: base.isAmbient,
       in: (span: Span) => reading(base.in(span), reads),
       loop: (ms: number) => reading(base.loop(ms), reads),
       take: () => reading(base.take(), reads),
+      ambient: () => reading(base.ambient(), reads),
     }),
   );
   READS.set(wrapped, reads);
@@ -160,6 +169,64 @@ export function bind(fields: BoundFields): Motion<Pose2d, MotionContext> {
     }
     return out;
   });
+}
+
+/** The fields `bindEach` sets: each maps a part's index to its signal. */
+export type BoundEachFields = {
+  readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: (index: number) => Signal<number>;
+};
+
+/** A motion setting each field of each part of a list element from that part's signal at the scene's time. */
+export function bindEach(fields: BoundEachFields): Motion<Pose2d, MotionContext> {
+  return motion((_time, context?: MotionContext) => {
+    const { time, events, index } = need(context, "bindEach");
+    if (index === undefined)
+      throw new TypeError("bindEach: this element has no parts; use `bind` instead.");
+    const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
+    for (const key of POSE_2D_NUMBERS) {
+      const signal = fields[key];
+      if (signal !== undefined) out[key] = signal(index)(time, events);
+    }
+    return out;
+  });
+}
+
+/** Which part of a staggered list starts first. */
+export type StaggerFrom = Exclude<LaneOrigin, { readonly seed: number }>;
+
+/** Settings of `stagger`: `spread` is the gap between starts in lane lengths, as `lanes` reads it. */
+export interface StaggerOptions {
+  readonly spread: number;
+  readonly from?: StaggerFrom | undefined;
+}
+
+/** Plays `inner` on each part of a list element in its own lane; without parts it plays `inner` as it is.
+ * Lanes run inside the span of `inner` when it has one. */
+export function stagger(
+  inner: Motion<Pose2d, MotionContext>,
+  options: StaggerOptions,
+): Motion<Pose2d, MotionContext> {
+  const { span } = inner;
+  const made = new Map<number, Lanes>();
+  const lanesOf = (count: number): Lanes => {
+    const held =
+      made.get(count) ??
+      lanes(Array<number>(count).fill(1), options.spread, { from: options.from ?? "start" });
+    made.set(count, held);
+    return held;
+  };
+  const place = (time: Time): Time =>
+    span === undefined ? time : timeAt(time, span.at(time.progress));
+  const play = motion((time, context?: MotionContext) => {
+    const { index, count } = need(context, "stagger");
+    const lane = index === undefined || count === undefined ? time : lanesOf(count).of(time, index);
+    return inner(place(lane), context);
+  });
+  const timed = span === undefined ? play : play.in(span);
+  const taken = inner.joins === "take" ? timed.take() : timed;
+  const marked = inner.isAmbient || inner.period !== undefined ? taken.ambient() : taken;
+  const reads = READS.get(inner);
+  return reads === undefined ? marked : reading(marked, reads);
 }
 
 function travel(before: Pose2d, now: Pose2d): Pose2d {
@@ -229,7 +296,7 @@ function traitsOf(run: SceneMotion): {
   return {
     span: isSpan(span) ? span : undefined,
     joins: joins === "take" ? "take" : "layer",
-    loops: typeof period === "number",
+    loops: typeof period === "number" || Reflect.get(run, "isAmbient") === true,
   };
 }
 
@@ -391,7 +458,7 @@ function castOf(state: State, m: CastBuilder<string>): Members {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
     const { pivot, watch } = element.options;
     let out = baseSpec(element, m, (child) => specOf(child));
-    if (entry.show.length > 0) out = out.on(...entry.show.map((beat) => beat.name));
+    if (entry.show.length > 0) out = out.on(...entry.show);
     if (watch !== undefined) out = out.watch(watch);
     if (pivot !== undefined) out = out.pivot(pivot);
     const expect = expectOf(entry);
@@ -598,15 +665,19 @@ function step(state: State): ElementStep {
       const [, entry] = entryOf(state);
       return step(changed(state, { steps: [...entry.steps, { kind: "modify", principle }] }));
     },
-    show: (...shown: readonly Beat[]) => {
+    show: (...windows: readonly ShowWindow[]) => {
       const beats = new Map(state.beats);
-      for (const beat of shown) {
-        if (beatOf(beat) === undefined)
-          throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
-        withBeat(beats, beat);
-      }
+      const stretches = windows.map((window): Stretch => {
+        const [from, to] = "name" in window ? [window, window] : window;
+        for (const end of [from, to]) {
+          if (beatOf(end) === undefined)
+            throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
+          withBeat(beats, end);
+        }
+        return from === to ? from.name : [from.name, to.name];
+      });
       const [, entry] = entryOf(state);
-      return step({ ...changed(state, { show: [...entry.show, ...shown] }), beats });
+      return step({ ...changed(state, { show: [...entry.show, ...stretches] }), beats });
     },
     limits: limitsMember(state, (limits: Limits) => {
       const [name, entry] = entryOf(state);
