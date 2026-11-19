@@ -1,38 +1,38 @@
 # @gerak/moves: moves
 
-- **`drop`** `(options: DropOptions): (time: Time) => Pose2d`: Falls from above, accelerating, then lands and recovers from its squash.
+- **`drop`** `(options: DropOptions): Motion<Pose2d>`: Falls from above, accelerating, then lands and recovers from its squash.
 - **`DROP_LANDING`** `const DROP_LANDING: 0.75`: Share of the progress the fall takes; the drop lands at this share.
 - **`DropOptions`** `type DropOptions = { distance: number; squash?: number }`: Options of `drop`.
-- **`rise`** `(options: RiseOptions): (time: Time) => Pose2d`: Rises from below, decelerating to rest.
+- **`rise`** `(options: RiseOptions): Motion<Pose2d>`: Rises from below, decelerating to rest.
 - **`RiseOptions`** `type RiseOptions = { distance: number }`: Options of `rise`.
-- **`slide`** `(options: SlideOptions): (time: Time) => Pose2d`: Slides in from one side, decelerating to rest.
+- **`slide`** `(options: SlideOptions): Motion<Pose2d>`: Slides in from one side, decelerating to rest.
 - **`SlideOptions`** `type SlideOptions = { distance: number; from?: "bottom" | "top" | "left" | "right" }`: Options of `slide`.
-- **`pop`** `(options?: PopOptions): (time: Time) => Pose2d`: Grows from nothing past full size, then settles to exactly full size.
+- **`pop`** `(options?: PopOptions): Motion<Pose2d>`: Grows from nothing past full size, then settles to exactly full size.
 - **`PopOptions`** `type PopOptions = { overshoot?: number }`: Options of `pop`.
-- **`fade`** `(): (time: Time) => Pose2d`: Fades in from clear to opaque.
-- **`unfold`** `(options?: UnfoldOptions): (time: Time) => Pose2d`: Grows from nothing along one axis to full size, held at one edge.
+- **`fade`** `(): Motion<Pose2d>`: Fades in from clear to opaque.
+- **`unfold`** `(options?: UnfoldOptions): Motion<Pose2d>`: Grows from nothing along one axis to full size, held at one edge.
 - **`UnfoldOptions`** `type UnfoldOptions = { from?: "bottom" | "top" | "left" | "right" }`: Options of `unfold`.
-- **`swing`** `(options: SwingOptions): (time: Time) => Pose2d`: Hangs in from a turn and swings to rest, each swing smaller than the last.
+- **`swing`** `(options: SwingOptions): Motion<Pose2d>`: Hangs in from a turn and swings to rest, each swing smaller than the last.
 - **`SwingOptions`** `type SwingOptions = { angle: number; swings?: number; anchor?: Anchor }`: Options of `swing`.
-- **`pulse`** `(options?: PulseOptions): (time: Time) => Pose2d`: Grows a little and returns to its size.
+- **`pulse`** `(options?: PulseOptions): Motion<Pose2d>`: Grows a little and returns to its size.
 - **`PulseOptions`** `type PulseOptions = { amount?: number }`: Options of `pulse`.
-- **`shake`** `(options: ShakeOptions): (time: Time) => Pose2d`: Shakes side to side, starting hard and dying away.
+- **`shake`** `(options: ShakeOptions): Motion<Pose2d>`: Shakes side to side, starting hard and dying away.
 - **`ShakeOptions`** `type ShakeOptions = { distance: number; count?: number }`: Options of `shake`.
-- **`wobble`** `(options: WobbleOptions): (time: Time) => Pose2d`: Turns back and forth, starting hard and dying away.
+- **`wobble`** `(options: WobbleOptions): Motion<Pose2d>`: Turns back and forth, starting hard and dying away.
 - **`WobbleOptions`** `type WobbleOptions = { angle: number; count?: number }`: Options of `wobble`.
-- **`nod`** `(options: NodOptions): (time: Time) => Pose2d`: Dips down and comes back up, once.
+- **`nod`** `(options: NodOptions): Motion<Pose2d>`: Dips down and comes back up, once.
 - **`NodOptions`** `type NodOptions = { distance: number }`: Options of `nod`.
-- **`hop`** `(options: HopOptions): (time: Time) => HopPose`: Lands `bounces + 1` times, each flight lower, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on.
+- **`hop`** `(options: HopOptions): Motion<HopPose>`: Lands `bounces + 1` times, each flight lower, and settles at rest. Adds `contact { hits, justHit }`: `justHit` runs 1 at a landing to 0 a fifth of a flight on.
 - **`hopLandings`** `(options: HopOptions): { readonly landings: readonly number[]; readonly lastLanding: number; }`: Where in its progress a hop touches the floor: `landings` each as a share from 0 to 1, and `lastLanding`, the final one, where it reaches rest.
 - **`HopOptions`** `type HopOptions = { height: number; bounces: number; decay?: number; squash?: number; dx?: number }`: Options of `hop` and `hopLandings`.
 - **`HopPose`** `type HopPose = Pose2d & { readonly contact: { readonly hits: number; readonly justHit: number; }; }`: What a hop answers: its pose and its floor contact.
-- **`rope`** `(options: RopeOptions): (time: Time) => readonly Anchor2d[]`: Bends a chain of points from straight into their shape, link by link, answering anchors for `toCubics`.
+- **`rope`** `(options: RopeOptions): Motion<readonly Anchor2d[]>`: Bends a chain of points from straight into their shape, link by link, answering anchors for `toCubics`.
 - **`RopeOptions`** `type RopeOptions = { points: readonly (Point2d & { readonly id?: string; })[]; angle?: number; pin?: "start" | "end"; release?: "free" | "pin"; overshoot?: number; ripple?: number }`: Options of `rope`.
-- **`trace`** `(options?: TraceOptions): (time: Time) => Required<Pick<Pose2d, "drawn" | "drawnFrom">>`: Draws a stroked path on from its start, keeping a share of it drawn behind the head.
+- **`trace`** `(options?: TraceOptions): Motion<Required<Pick<Pose2d, "drawn" | "drawnFrom">>>`: Draws a stroked path on from its start, keeping a share of it drawn behind the head.
 - **`TraceOptions`** `type TraceOptions = { tail?: number }`: Options of `trace`.
-- **`wipe`** `(options: WipeOptions): (time: Time) => Required<Pick<Pose2d, "clipX" | "clipY" | "clipRadius">>`: Reveals the target through a circle that grows from a point, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left.
+- **`wipe`** `(options: WipeOptions): Motion<Required<Pick<Pose2d, "clipX" | "clipY" | "clipRadius">>>`: Reveals the target through a circle that grows from a point, easing in and out, answering `clipX`, `clipY` and `clipRadius` in px from the target's top left.
 - **`WipeOptions`** `type WipeOptions = { radius: number; x: number; y: number }`: Options of `wipe`.
-- **`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => (time: Time) => Pose2d`: Plays another move, then goes a little past its end and settles back.
+- **`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => Motion<Pose2d>`: Plays another move, then goes a little past its end and settles back.
 - **`OvershootOptions`** `type OvershootOptions = { share?: number; amount?: number }`: Options of `overshoot`.
-- **`smudge`** `(options: SmudgeOptions): (time: Time) => Pose2d`: Blurs from sharp to a given blur as speed builds, for motion blur on something leaping or thrown.
+- **`smudge`** `(options: SmudgeOptions): Motion<Pose2d>`: Blurs from sharp to a given blur as speed builds, for motion blur on something leaping or thrown.
 - **`SmudgeOptions`** `type SmudgeOptions = { amount: number; build?: number }`: Options of `smudge`.
