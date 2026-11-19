@@ -85,6 +85,13 @@ export default sceneBuilder({ skins: { dom: { css } } })
   - `.show([from, to])` shows the element from the start of one beat to the end of another, as one window.
   - A bound signal reads scene time, so `.in` and `.loop` do not apply to `bind`.
   - A moved piece is compared by values: layering may write a pose's keys in another order.
+- **From the rest of the pieces:**
+  - `.in(beat, ease?)` eases the motion's progress inside its beat.
+  - `stagger((index, count) => motion, { spread, from? })` builds each part's motion from its index, for moves whose
+    options differ per part.
+  - A beat no motion reads is not declared; `length` gives the piece's end when the last beat ends before it.
+  - A calculation several elements read, such as one trail or one IK solve, is a shared signal; reading it from each
+    element repeats the work, so a shared signal caches its last frame.
 - **Not yet:** `image`, `video`, `anchor`, `mask` and a written rest position wait for a piece that needs them.
 
 ### 2. Exports
