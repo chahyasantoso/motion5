@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { liveAt } from "@gerak/core";
-import { trail } from "@gerak/moves";
+import { trail } from "../src";
 import { springMemory } from "@gerak/core";
-import { trailSettings } from "../src/parts/signal/trail";
+import { trailSettings } from "../src/principles/trail";
 
 const slow = { stiffness: 170, damping: 4 };
 

@@ -1,8 +1,6 @@
 import { defineMove } from "./declare";
 import type { Pose2d } from "@gerak/core";
-import { arch } from "@gerak/core";
-import { withProgress, type Time } from "@gerak/core";
-import { carried, pushed, whole } from "./whole";
+import { NO_EVENTS, anticipation, type Time } from "@gerak/core";
 
 /** Winds up the other way from its input's travel, then plays the input and ends where it ends. */
 export const anticipate = defineMove({
@@ -30,15 +28,7 @@ export const anticipate = defineMove({
     input: (time: Time): Pose2d => ({ x: -200 * (1 - time.progress) }),
   },
   run({ share, amount }, time, input: (time: Time) => Pose2d): Pose2d {
-    const at = (progress: number) => input(withProgress(time, progress));
-    const first = at(0);
-    const last = at(1);
-    if (time.progress >= share) {
-      const played = at((time.progress - share) / (1 - share));
-      return whole(played, carried(first, last, played));
-    }
-    const wind = amount * arch(time.progress / share);
-    return pushed(first, last, wind, carried(first, last));
+    return anticipation({ share, amount })(input)(time, NO_EVENTS);
   },
   moments: ({ share }) => ({ windUp: share / 2 }),
 });

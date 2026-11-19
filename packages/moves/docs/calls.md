@@ -72,8 +72,8 @@ overshoot({ share, amount }, time, (t) => anticipate({}, t, (u) => slide(options
 `trail`, `follow` and `velocity` take the scene's time, never an eased one (`@gerak/core` owns `ease`, `mix`, `keyframes`, `along`, `combine`, `velocity` and `seeded`).
 
 ```ts
-import { along, combine, combine3d, lift2d, mix, mixPoint, mixPose3d, seeded, toCubics, toCubics3d, velocity, velocity3d } from "@gerak/core";
-import { follow, react, smear, smear3d, squashed, squashed3d, trail, trailTurn } from "@gerak/moves";
+import { along, combine, combine3d, lift2d, mix, mixPoint, mixPose3d, seeded, smear, smear3d, toCubics, toCubics3d, trail, trailTurn, velocity, velocity3d } from "@gerak/core";
+import { follow, react, squashed, squashed3d } from "@gerak/moves";
 
 const tail = trail((t) => body(t).rotation ?? 0, { damping: 10 });
 tail(time, events);

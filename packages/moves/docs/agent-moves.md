@@ -14,7 +14,7 @@ Glue that only this piece needs stays in the scene as a `mix`.
    what another brief would change, not of this piece's numbers. [`defineMove`](./reference/moves.md)
    lists the roles and what each must hold.
 3. **Build `run` from the parts your design named,** imported from `@gerak/core` (`taper`, `decay`, `attack`, `arch`,
-   `wave`, `ballistic`, `along`, `ease`) and `@gerak/moves` (`squashed`, `smear`, `trail`, ...): an `envelope` times
+   `wave`, `ballistic`, `along`, `ease`, `smear`, `trail`) and `@gerak/moves` (`squashed`, ...): an `envelope` times
    an `oscillation` for anything that swings and dies away, a `path` for travel, an `ease` for timing, a `coupling`
    for a squash tied to the motion. Never call
    `Math.sin`, `Math.cos` or `Math.exp` in a move: a repo test refuses it, and the parts say the same thing by name.

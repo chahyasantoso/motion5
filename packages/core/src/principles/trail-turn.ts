@@ -1,15 +1,14 @@
-import { definePart } from "../contract";
 import {
   eulerFromMatrix3d,
   matrixFromQuaternion,
   quaternionFromEuler3d,
   type Quaternion,
   type Vec3,
-} from "@gerak/core";
-import type { Events } from "@gerak/core";
-import type { Pose3d } from "@gerak/core";
-import { elapsedOf, type Time } from "@gerak/core";
-import { timeAt } from "@gerak/core";
+} from "../geometry/rotation3d";
+import type { Events } from "../events/event-list";
+import type { Pose3d } from "../fields/pose3d";
+import { elapsedOf, type Time } from "../time/time";
+import { timeAt } from "../time/time-at";
 import { trailSettings, trailStart, type TrailOptions } from "./trail";
 
 const DEGREES = 180 / Math.PI;
@@ -101,4 +100,3 @@ export function trailTurn(
     return eulerFromMatrix3d(matrixFromQuaternion(turn));
   };
 }
-definePart({ kind: "signal" }, trailTurn);

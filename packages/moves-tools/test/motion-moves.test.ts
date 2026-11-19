@@ -188,7 +188,7 @@ describe("gerak moves", () => {
       PART_GROUPS.map((group) => `${group}:`),
     );
     expect(run.lines.filter((line) => line.startsWith("  "))).toHaveLength(moveParts().length);
-    expect(run.lines).toContainEqual(expect.stringMatching(/^ {2}trail\(/));
+    expect(run.lines).toContainEqual(expect.stringMatching(/^ {2}noise1d\(/));
   });
 
   it.each([["--bogus"], ["a", "b"], ["--role"]])("refuses the arguments %j", (...argv) => {

@@ -1,5 +1,6 @@
 import { NO_EVENTS, elapsedOf, timeAt, type Pose2d, type Time } from "@gerak/core";
-import { defineMove, trail } from "@gerak/moves";
+import { trail } from "@gerak/core";
+import { defineMove } from "@gerak/moves";
 
 /** What a hanging thing hangs from: the carrier's sideways position at a time, in px. */
 export interface Carrier {

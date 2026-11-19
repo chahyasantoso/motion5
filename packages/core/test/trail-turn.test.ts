@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { elapsedOf, liveAt, type Pose3d, type Time } from "@gerak/core";
-import { trail, trailTurn } from "@gerak/moves";
+import { trail, trailTurn } from "../src";
 
 const ms = (time: Time) => elapsedOf(time.clock) ?? 0;
 const stepTo =

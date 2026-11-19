@@ -9,7 +9,7 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import { definePart, noise1d, partContract, squashed, trail } from "../src";
+import { definePart, noise1d, partContract, squashed } from "../src";
 
 describe("definePart", () => {
   it("returns the function itself and records its contract under it", () => {
@@ -26,7 +26,6 @@ describe("definePart", () => {
   it("holds the contracts of the library's parts", () => {
     expect(partContract(squashed)?.kind).toBe("coupling");
     expect(partContract(noise1d)?.kind).toBe("signal");
-    expect(partContract(trail)?.kind).toBe("signal");
   });
 
   it("holds no contract for a core primitive", () => {

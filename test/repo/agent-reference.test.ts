@@ -177,6 +177,7 @@ describe("agent reference", () => {
       "measure",
       "events",
       "utility",
+      "principles",
     ]);
   });
 

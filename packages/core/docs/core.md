@@ -54,6 +54,9 @@ Every pose field is optional and omitted fields stay inactive:
 - **Paths & shapes:** `circlePath({ cx, cy, r })`, `ellipsePath({ cx, cy, rx, ry })`, `rectPath({ x, y, width, height, rx?, ry? })`, `linePath({ x1, y1, x2, y2 })`, `polygonPath({ points, closed })`, `arcPath({ x0, y0, x1, y1, rx, ry, degrees?, large?, sweep? })`, `pathFrom(d)`, `toCubics` / `toCubics3d` (`Anchor2d`/`Anchor3d` `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics, { turn? })(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
 - **3D camera:** `orbit({ target, radius, azimuth, elevation })`, `aim(from, to, up?)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
 - **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events in O(1)/frame; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
+- **Principles:** `squashStretch`, `anticipation`, `followThrough`, `overlap`, `arc`, `exaggerate`, `secondary` (each with a `3d` twin), `smear`, `trail`.
+- Slow in and slow out are the eases; timing is beats, `span`, `lanes`, `chain`.
+- Staging, solid drawing and appeal are not functions.
 
 ## Idiom
 
@@ -83,4 +86,5 @@ const phased = (time: Time): Pose2d => sequence(time, [[enter, drop], [leave, po
 - [measure](./reference/measure.md) (5): `velocity`, `velocity3d`, `tally`, `Tally`, `TallyOptions`
 - [events](./reference/events.md) (6): `NO_EVENTS`, `isMotionEvent`, `mergeEvents`, `EventPoint`, `Events`, `MotionEvent`
 - [utility](./reference/utility.md) (3): `seeded`, `unreachable`, `clamp`
+- [principles](./reference/principles.md) (25): `smear`, `smear3d`, `trail`, `TrailOptions`, `trailTurn`, `squashStretch`, `squashStretch3d`, `SquashStretchOptions`, `anticipation`, `anticipation3d`, `AnticipationOptions`, `followThrough`, `followThrough3d`, `FollowThroughOptions`, `overlap`, `OverlapOptions`, `arc`, `arc3d`, `Arc3dOptions`, `ArcBendOptions`, `exaggerate`, `exaggerate3d`, `ExaggerateOptions`, `secondary`, `secondary3d`
 <!-- generated:reference:end -->

@@ -19,7 +19,8 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { smear3d, squashed3d, trailTurn } from "@gerak/moves";
+import { smear3d, trailTurn } from "@gerak/core";
+import { squashed3d } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4200;

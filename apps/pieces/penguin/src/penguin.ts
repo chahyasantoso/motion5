@@ -1,7 +1,7 @@
 // A round penguin rigged from penguin.svg: the body rolls about its centre over planted feet, carrying the face and
 // both flippers; the right flipper turns at its shoulder to wave.
 import { combine, ease, mix, springEase, type Pose2d, type Time } from "@gerak/core";
-import { trail } from "@gerak/moves";
+import { trail } from "@gerak/core";
 import { chainFromRest, chainThrough } from "@gerak/rig";
 import { defineStage, type Beats, type Pivot } from "@gerak/stage";
 import { handWave } from "./moves/hand-wave";

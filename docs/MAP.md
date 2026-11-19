@@ -21,6 +21,7 @@ Public: `.`
 - `src/geometry/`: points, curves, path parsing and shapes, lenses, rotation maths
 - `src/measure/`: velocity, speed, tally
 - `src/path/`: travel along throws and curves
+- `src/principles/`: the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary
 - `src/time/`: time, spans, sequence, lanes, reversed, repeated
 - `src/utility/`: seeded numbers, clamp, unreachable
 
@@ -44,9 +45,9 @@ Public: `.`
 - `src/`: the one entry point
 - `src/moves/`: defineMove and the built-in moves and modifiers
 - `src/parts/`: definePart: what each part promises
-- `src/parts/coupling/`: poses from an amount or a speed: squashes, smears
+- `src/parts/coupling/`: poses from an amount or a speed: squashes
 - `src/parts/oscillation/`: the private shake
-- `src/parts/signal/`: values from time and events: follow, trail, noise
+- `src/parts/signal/`: values from time and events: follow, noise
 - `src/style/`: how a shape is judged: descriptors, qualities, their ranges
 
 ## packages/physics

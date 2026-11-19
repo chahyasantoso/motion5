@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PART_GROUPS, formatParts, moveParts } from "../src/index";
 
 const CURRENT = {
-  coupling: ["squashed", "squashed3d", "squashFromSpeed", "smear", "smear3d"],
-  signal: ["trail", "trailTurn", "noise1d", "react", "follow"],
+  coupling: ["squashed", "squashed3d"],
+  signal: ["noise1d", "react", "follow"],
 } as const;
 
 const folders: string[] = [];

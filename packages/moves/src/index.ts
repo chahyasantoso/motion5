@@ -1,6 +1,4 @@
 export { definePart, partContract, type PartContract } from "./parts/contract";
-export { trail, type TrailOptions } from "./parts/signal/trail";
-export { trailTurn } from "./parts/signal/trail-turn";
 export { noise1d } from "./parts/signal/noise";
 export { follow } from "./parts/signal/events";
 export { react } from "./parts/signal/events";
@@ -8,9 +6,6 @@ export { type FollowOptions } from "./parts/signal/events";
 export { type ReactionKind, type ReactOptions } from "./parts/signal/events";
 export { squashed } from "./parts/coupling/squashed";
 export { squashed3d } from "./parts/coupling/squashed";
-export { smear } from "./parts/coupling/smear";
-export { squashFromSpeed, type SquashFromSpeedOptions } from "./parts/coupling/squash-speed";
-export { smear3d } from "./parts/coupling/smear3d";
 export {
   MOVE_ROLES,
   defineMove,
