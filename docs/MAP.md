@@ -32,13 +32,6 @@ Public: `.`
 
 - `src/`: DOM and SVG renderer
 
-## packages/moves-tools
-
-Public: `.`
-
-- `src/`: the library's commands: moves catalog, parts, promote, style, new-move
-- `src/templates/`: gerak new-move template
-
 ## packages/moves
 
 Public: `.`
