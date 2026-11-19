@@ -1,6 +1,7 @@
 # ADR-190: Stage v3, one member list and list poses by index
 
 **Status:** Accepted, 2026-11-18
+**Superseded in part by ADR-193:** the cast builder as the authoring surface.
 
 ## Context
 

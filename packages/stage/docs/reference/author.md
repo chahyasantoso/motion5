@@ -1,6 +1,6 @@
 # @gerak/stage: author
 
-What a piece is written with: `defineStage`, the cast builders, list poses by index and the scene's context. Reach for it whenever you write a piece.
+What a piece is written with: `sceneBuilder`, its elements, beats and motions. Reach for it whenever you write a piece.
 
 - **`Content`** `type Content = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "readout"; readonly format: (time: Time) => string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What an actor shows; `morph` holds its base outline first, then each target outline.
 - **`Expect`** `type Expect = "settle" | "ambient" | "static"`: What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it.

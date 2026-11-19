@@ -203,8 +203,6 @@ Two improvements the owner asked to keep, each its own small plan:
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent
   pane, editing the event log from the timeline, a recorded session.
-- A chain API (`word("CATCH").drop(700).stagger(0.25)`) and a chain builder for rigs: sugar over the same scene and
-  the same `buildChain`.
 - Particles from a seed, as a move over a list of targets.
 - A React Three Fiber scaffold and integration (a future feature that must work alongside the clock and frame tools),
   and Vue and Svelte bindings.
