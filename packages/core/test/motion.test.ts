@@ -95,4 +95,22 @@ describe("motion", () => {
     expect(windowed.take().window).toBe(window);
     expect(windowed.ambient().window).toBe(window);
   });
+
+  it("passes outer time to a MotionWindow before applying .loop(ms)", () => {
+    const triggered: MotionWindow = {
+      of: (time, ease) => {
+        const elapsed = time.clock.kind === "timed" ? time.clock.elapsed : 0;
+        const raw = elapsed >= 600 ? Math.min(1, (elapsed - 600) / 1000) : 0;
+        return {
+          progress: ease === undefined ? raw : ease(raw),
+          clock: { kind: "timed", elapsed: raw * 1000, length: 1000 },
+        };
+      },
+    };
+    const looped = motion((time: Time) => time.progress)
+      .in(triggered, (p) => p * p)
+      .loop(500);
+    expect(looped(at(850))).toBe(0.25);
+    expect(looped(at(1350))).toBe(0.25);
+  });
 });

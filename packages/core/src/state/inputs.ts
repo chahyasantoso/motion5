@@ -34,7 +34,8 @@ function sampleState(
       !Number.isFinite(event.value)
     )
       return current;
-    return bounds === undefined ? event.value : clamp(event.value, bounds[0], bounds[1]);
+    const next = bounds === undefined ? event.value : clamp(event.value, bounds[0], bounds[1]);
+    return next === 0 ? 0 : next;
   });
 }
 

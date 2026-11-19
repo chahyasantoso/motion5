@@ -47,7 +47,7 @@ A group's children are in the piece already. Call `.element(child)` only to give
 
 ## Beats
 
-- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat.
+- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required when a piece uses only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
@@ -74,7 +74,7 @@ Helpers:
 
 - `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part.
 - `stagger(m | (i, n) => m, { spread, from? })`: each part plays in its own lane of the beat.
-- `stayWith(e)`: adds `e`'s travel since this motion's beat began. Elements reading each other in a loop are refused.
+- `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
 - `carry({ ms, ease, mode })`: moves an element between layouts.
 
 Two elements that react to one thing share one signal; wrap it in `shared` when several read it.
@@ -94,8 +94,8 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 
 ## Checking
 
-- `gerak review <file>`: compile errors, jumps, holds, elements that never move, skin rules naming no element, all headless.
-- `gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames. Headless review sees scroll motion only from scripted `cues` or `--action scroll:px@ms`.
+- `gerak review <file>`: compile errors, jumps, holds, elements that never move, skin rules naming no element, all headless. Headless review sees scroll motion from scripted `cues`; `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
+- `gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.
 - Never open another piece's `src` files.
 

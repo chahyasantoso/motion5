@@ -22,6 +22,7 @@ import {
   sceneBuilder,
   scrollPoint,
   stagger,
+  stayWith,
   text,
   type SceneBuilder,
   type Stage,
@@ -74,6 +75,7 @@ describe("beat type and runtime refusals", () => {
   const p = scrollPoint(400);
   const sb = beat("scroll-only", { scroll: [scrollPoint(0), scrollPoint(500)] });
   const tb = beat("trigger-only", 300, { when: p.reached, back: "stay" });
+  const card = box("card");
 
   it("refuses ms in scroll beats at type level and at runtime", () => {
     // @ts-expect-error a scroll beat takes scroll points, not ms
@@ -109,6 +111,27 @@ describe("beat type and runtime refusals", () => {
     expect(() => beat("empty", { scroll: [scrollPoint(400), scrollPoint(400)] })).toThrow(
       RangeError,
     );
+  });
+
+  it("refuses scroll and trigger beats in .show() and stayWith()", () => {
+    // @ts-expect-error .show takes clock beats, not scroll beats
+    expect(() => sceneBuilder({ length: 1000 }).element(card).show(sb)).toThrow(TypeError);
+    // @ts-expect-error .show takes clock beats, not trigger beats
+    expect(() => sceneBuilder({ length: 1000 }).element(card).show(tb)).toThrow(TypeError);
+    expect(() =>
+      sceneBuilder({ length: 1000 })
+        .element(box("other"))
+        .motion(slideX(10))
+        .element(card)
+        .motion(stayWith(box("other")).in(sb)),
+    ).toThrow(TypeError);
+    expect(() =>
+      sceneBuilder({ length: 1000 })
+        .element(box("other"))
+        .motion(slideX(10))
+        .element(card)
+        .motion(stayWith(box("other")).in(tb)),
+    ).toThrow(TypeError);
   });
 });
 
@@ -173,6 +196,22 @@ describe("scroll beats", () => {
       events: [{ name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
     }).targets["word"];
     expect([0, 1, 2].map((index) => listPose(outInner, index, 3)?.x)).toEqual([100, 50, 0]);
+
+    const staggeredEased = compiled(
+      sceneBuilder({ length: 2000 })
+        .element(word)
+        .motion(stagger(slideX(100).in(range, ease.quadIn), { spread: 1 })),
+    );
+    const outEased = frame(staggeredEased, {
+      time: at(500, 2000),
+      events: [{ name: INPUT_EVENTS.scroll, at: 500, value: 400 }],
+    }).targets["word"];
+    expect([0, 1, 2].map((index) => listPose(outEased, index, 3)?.x)).toEqual([100, 25, 0]);
+
+    const loopingScroll = sceneBuilder({ length: 2000 })
+      .element(card)
+      .motion(slideX(100).in(range).loop(500));
+    expect(() => poseAt(loopingScroll, "card", 500, [])).toThrow(RangeError);
 
     const smoothed = sceneBuilder({ length: 4000 })
       .element(card)
@@ -254,7 +293,7 @@ describe("trigger beats", () => {
     expect(poseAt(chain, "card", 2200, session)?.x).toBe(100);
   });
 
-  it("scrubs identically out of order for all three back modes and supports take()", () => {
+  it("scrubs identically out of order for all three back modes and supports take(), stagger and loop()", () => {
     const times = [0, 400, 500, 700, 900, 1200, 1400, 1600, 1800, 2000, 2200];
     for (const back of ["stay", "reverse", "replay"] as const) {
       const trig = beat(`t-${back}`, 400, { when: triggerPoint.reached, back });
@@ -285,6 +324,42 @@ describe("trigger beats", () => {
     expect(poseAt(taken, "card", 400, session)?.x).toBeCloseTo((400 / 3000) * 10, 9);
     expect(poseAt(taken, "card", 700, session)?.x).toBeCloseTo(45, 9);
     expect(poseAt(taken, "card", 1200, session)?.x).toBeCloseTo((1200 / 3000) * 10, 9);
+
+    const revTrig = beat("take-rev", 400, { when: triggerPoint.reached, back: "reverse" });
+    const takenRev = sceneBuilder({ length: 3000 })
+      .element(card)
+      .motion(slideX(10), slideX(90).in(revTrig).take());
+    expect(poseAt(takenRev, "card", 1400, session)?.x).toBeCloseTo(45, 9);
+    expect(poseAt(takenRev, "card", 1600, session)?.x).toBeCloseTo((1600 / 3000) * 10, 9);
+
+    const stayTrig = beat("take-stay", 400, { when: triggerPoint.reached, back: "stay" });
+    const takenStay = sceneBuilder({ length: 3000 })
+      .element(card)
+      .motion(slideX(10), slideX(90).in(stayTrig).take());
+    expect(poseAt(takenStay, "card", 1300, session)?.x).toBe(90);
+
+    const zeroTrig = beat("zero-trig", 400, { when: scrollPoint(0).reached, back: "stay" });
+    const zeroScene = sceneBuilder({ length: 1000 }).element(card).motion(slideX(100).in(zeroTrig));
+    expect(poseAt(zeroScene, "card", 200, [])?.x).toBeCloseTo(50, 9);
+
+    const longTrig = beat("long-trig", 1000, { when: triggerPoint.reached, back: "stay" });
+    const loopedDirect = sceneBuilder({ length: 3000 })
+      .element(card)
+      .motion(slideX(100).in(longTrig).loop(500));
+    expect(poseAt(loopedDirect, "card", 750, session)?.x).toBeCloseTo(50, 9);
+    expect(poseAt(loopedDirect, "card", 1250, session)?.x).toBeCloseTo(50, 9);
+
+    const word = text("word", "ABC", { split: "letters" });
+    const staggeredTrig = compiled(
+      sceneBuilder({ length: 3000 })
+        .element(word)
+        .motion(stagger(slideX(100).in(stayTrig), { spread: 1 })),
+    );
+    const outTrig = frame(staggeredTrig, {
+      time: at(700, 3000),
+      events: eventsUpTo(session, 700),
+    }).targets["word"];
+    expect([0, 1, 2].map((index) => listPose(outTrig, index, 3)?.x)).toEqual([100, 50, 0]);
   });
 });
 

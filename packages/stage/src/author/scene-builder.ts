@@ -339,7 +339,7 @@ function travel(before: Pose2d, now: Pose2d): Pose2d {
   return out;
 }
 
-/** A motion giving the change in `element`'s pose since the start of its own span; it reads `element`. */
+/** A motion giving the change in `element`'s pose since the start of its own clock span; it reads `element`. */
 export function stayWith(element: Element): Motion<Pose2d, MotionContext> {
   const base = motion((time, context?: MotionContext) => {
     const here = need(context, "stayWith");
@@ -451,7 +451,7 @@ function withInputBeat(
   const held = inputBeats.get(beat.name);
   if (held !== undefined && held !== beat)
     throw new RangeError(
-      `sceneBuilder: beat "${beat.name}" is defined twice with different settings.`,
+      `sceneBuilder: beat "${beat.name}" is already defined by another scroll or trigger beat.`,
     );
   inputBeats.set(beat.name, beat);
 }
@@ -654,7 +654,8 @@ function stackOf(
               const part = read.count === undefined ? undefined : (at?.index ?? 0);
               const parts = at?.count ?? read.count;
               const when = at?.time ?? time;
-              const key = `${name}|${part}|${parts}|${elapsedOf(when.clock)}|${when.progress}`;
+              const length = when.clock.kind === "timed" ? when.clock.length : "";
+              const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
               const known = env.read.get(key);
               if (known !== undefined && known.events === events) return known.pose;
               const pose = stackOf(read, env, part, parts)(when, events);
@@ -799,7 +800,12 @@ function step(state: State): ElementStep {
           const beat = beatOf(traits.span);
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
           if (isInputBeat(traits.window)) withInputBeat(beats, inputBeats, traits.window);
-          return { kind: "motion", run, ...traits, reads: READS.get(run) ?? [] };
+          const reads = READS.get(run) ?? [];
+          if (reads.length > 0 && traits.span === undefined && traits.window !== undefined)
+            throw new TypeError(
+              "stayWith: use a clock beat or no window; scroll and trigger beats have no start time in ms.",
+            );
+          return { kind: "motion", run, ...traits, reads };
         });
         const [, entry] = entryOf(state);
         const next = {

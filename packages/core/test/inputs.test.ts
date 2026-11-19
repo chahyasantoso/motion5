@@ -19,6 +19,8 @@ describe("scroll state", () => {
     { name: INPUT_EVENTS.scroll, at: 100, value: 120 },
     { name: INPUT_EVENTS.scroll, at: 200 },
     { name: INPUT_EVENTS.scroll, at: 300, value: Number.NaN },
+    { name: INPUT_EVENTS.scroll, at: 350, value: Infinity },
+    { name: INPUT_EVENTS.scroll, at: 375, value: -Infinity },
     { name: INPUT_EVENTS.scroll, at: 400, value: 480 },
   ];
 
@@ -28,8 +30,12 @@ describe("scroll state", () => {
     expect(scroll.y(liveAt(99), session)).toBe(0);
     expect(scroll.y(liveAt(100), session)).toBe(120);
     expect(scroll.y(liveAt(350), session)).toBe(120);
+    expect(scroll.y(liveAt(375), session)).toBe(120);
     expect(scroll.y(liveAt(400), session)).toBe(480);
     expect(scroll.y(untimed, session)).toBe(480);
+    expect(
+      scroll.y.steps(liveAt(200), [{ name: INPUT_EVENTS.scroll, at: 100, value: -0 }]),
+    ).toEqual([]);
   });
 
   it("replays identically when sought backwards or out of order", () => {

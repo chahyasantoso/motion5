@@ -1,7 +1,7 @@
 import { loop } from "./loop";
 import type { Ease } from "../ease/ease";
 import type { Span } from "./span";
-import type { Time } from "./time";
+import { withProgress, type Time } from "./time";
 
 /** How a motion joins what is under it on one element: `layer` adds by each field's rule, `take` replaces. */
 type Joins = "layer" | "take";
@@ -75,10 +75,19 @@ function isMotionWindow(value: unknown): value is MotionWindow {
 function build<T, C>(fn: (time: Time, context?: C) => T, traits: Traits): Motion<T, C> {
   const cycle = traits.period === undefined ? undefined : loop(traits.period);
   const run = (time: Time, context?: C): T => {
-    const cycled = cycle === undefined ? time : cycle.of(time);
-    const mapped =
-      traits.window === undefined ? cycled : traits.window.of(cycled, traits.ease, context);
-    return fn(mapped, context);
+    if (traits.window === undefined)
+      return fn(cycle === undefined ? time : cycle.of(time), context);
+    if (traits.span !== undefined) {
+      const cycled = cycle === undefined ? time : cycle.of(time);
+      return fn(traits.window.of(cycled, traits.ease, context), context);
+    }
+    const inside = traits.window.of(time, cycle === undefined ? traits.ease : undefined, context);
+    if (cycle === undefined) return fn(inside, context);
+    const cycled = cycle.of(inside);
+    return fn(
+      traits.ease === undefined ? cycled : withProgress(cycled, traits.ease(cycled.progress)),
+      context,
+    );
   };
   const built = Object.assign(run, {
     span: traits.span,

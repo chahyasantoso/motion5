@@ -212,10 +212,10 @@ function triggerState(
   back: TriggerBack,
 ): { readonly raw: number; readonly active: boolean } {
   const now = elapsedOf(time.clock);
-  const steps = scroll.y.steps(time, events);
   const initial = scroll.y.start >= threshold;
   switch (back) {
     case "stay": {
+      const steps = scroll.y.steps(time, events);
       if (now === undefined) {
         const reached = initial || steps.some((step) => step.value >= threshold);
         return { raw: reached ? 1 : 0, active: reached };
@@ -231,7 +231,7 @@ function triggerState(
       }
       let reached = initial;
       let started: number | undefined = initial ? 0 : undefined;
-      for (const step of steps) {
+      for (const step of scroll.y.steps(time, events)) {
         const next = step.value >= threshold;
         if (next === reached) continue;
         reached = next;
@@ -249,7 +249,7 @@ function triggerState(
       let progress = 0;
       let since = 0;
       let active = initial;
-      for (const step of steps) {
+      for (const step of scroll.y.steps(time, events)) {
         const next = step.value >= threshold;
         if (next === reached) continue;
         progress = clamp(progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms), 0, 1);
@@ -322,7 +322,8 @@ export function beat(
     const pair: unknown = second.scroll;
     if (!Array.isArray(pair) || pair.length !== 2)
       throw new TypeError(`beat "${name}": scroll needs [from, to] scroll points.`);
-    const [from, to] = pair;
+    const from: unknown = pair[0];
+    const to: unknown = pair[1];
     if (!isScrollPoint(from) || !isScrollPoint(to))
       throw new TypeError(`beat "${name}": scroll beat takes scroll points, not ms.`);
     const fixedFrom = FIXED_PX.get(from);
