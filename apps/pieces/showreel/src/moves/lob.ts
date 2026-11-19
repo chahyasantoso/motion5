@@ -1,4 +1,4 @@
-import { ballistic, type Pose2d, type Time } from "@gerak/core";
+import { ballistic, type Pose2d, motion, type Motion } from "@gerak/core";
 import { squashed } from "@gerak/moves";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
@@ -27,9 +27,9 @@ export interface LobOptions {
 }
 
 /** Thrown from an offset to rest along a parabola at even time steps, stretched along its flight in proportion to its speed and round again at both ends. */
-export function lob(options: LobOptions): (time: Time) => Pose2d {
+export function lob(options: LobOptions): Motion<Pose2d> {
   const { dx, dy, apex = 200, stretch = 0.4, facing = "heading" } = options;
-  return ({ progress: s }): Pose2d => {
+  return motion(({ progress: s }): Pose2d => {
     const cx = dx / 2;
     const cy = Math.min(dy, 0) - apex;
     const u = 1 - s;
@@ -58,5 +58,5 @@ export function lob(options: LobOptions): (time: Time) => Pose2d {
         return none;
       }
     }
-  };
+  });
 }

@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 /** Options of `spread`. */
 export interface SpreadOptions {
@@ -7,10 +7,12 @@ export interface SpreadOptions {
 }
 
 /** Draws a stroke outward from a point on it both ways at once, for a floor or an underline that opens from where something touched it. */
-export function spread(options: SpreadOptions = {}): (time: Time) => Pose2d {
+export function spread(options: SpreadOptions = {}): Motion<Pose2d> {
   const { from = 0.5 } = options;
-  return ({ progress }): Pose2d => ({
-    drawnFrom: from * (1 - progress),
-    drawn: from + (1 - from) * progress,
-  });
+  return motion(
+    ({ progress }): Pose2d => ({
+      drawnFrom: from * (1 - progress),
+      drawn: from + (1 - from) * progress,
+    }),
+  );
 }

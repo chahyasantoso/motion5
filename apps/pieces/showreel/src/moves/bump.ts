@@ -1,4 +1,4 @@
-import { arch, type Pose2d, type Time } from "@gerak/core";
+import { arch, type Pose2d, motion, type Motion } from "@gerak/core";
 
 /** Options of `bump`. */
 export interface BumpOptions {
@@ -11,10 +11,10 @@ export interface BumpOptions {
 }
 
 /** Eases out by an offset and a turn and eases back, once, in either direction. */
-export function bump(options: BumpOptions = {}): (time: Time) => Pose2d {
+export function bump(options: BumpOptions = {}): Motion<Pose2d> {
   const { dx = 0, dy = 0, turn = 0 } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const s = arch(progress) ** 2;
     return { x: dx * s, y: dy * s, rotation: turn * s };
-  };
+  });
 }

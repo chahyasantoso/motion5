@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 /** Options of `streak`. */
 export interface StreakOptions {
@@ -9,10 +9,12 @@ export interface StreakOptions {
 }
 
 /** Runs a drawn window along a stroke: the head draws on, the tail follows behind and catches it at the end, leaving nothing. */
-export function streak(options: StreakOptions = {}): (time: Time) => Pose2d {
+export function streak(options: StreakOptions = {}): Motion<Pose2d> {
   const { arrive = 0.65, lag = 0.35 } = options;
-  return ({ progress }): Pose2d => ({
-    drawn: Math.min(1, progress / arrive),
-    drawnFrom: Math.max(0, (progress - lag) / (1 - lag)),
-  });
+  return motion(
+    ({ progress }): Pose2d => ({
+      drawn: Math.min(1, progress / arrive),
+      drawnFrom: Math.max(0, (progress - lag) / (1 - lag)),
+    }),
+  );
 }

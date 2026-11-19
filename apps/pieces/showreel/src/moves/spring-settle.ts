@@ -1,4 +1,4 @@
-import { arch, decay, wave, type Pose2d, type Time } from "@gerak/core";
+import { arch, decay, wave, type Pose2d, motion, type Motion } from "@gerak/core";
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
@@ -23,7 +23,7 @@ export interface SpringSettleOptions {
 }
 
 /** Springs in from an offset, a turn, a size and a squash to rest, overshooting and ringing a few times before it settles. */
-export function springSettle(options: SpringSettleOptions = {}): (time: Time) => Pose2d {
+export function springSettle(options: SpringSettleOptions = {}): Motion<Pose2d> {
   const {
     dx = 0,
     dy = 0,
@@ -34,7 +34,7 @@ export function springSettle(options: SpringSettleOptions = {}): (time: Time) =>
     rings = 2,
     damping = 4,
   } = options;
-  return ({ progress: p }): Pose2d => {
+  return motion(({ progress: p }): Pose2d => {
     const fall = decay({ rate: damping });
     const swing = wave({ count: rings, phase: 0.25 });
     const ring = (q: number) => fall(q) * swing(q);
@@ -48,5 +48,5 @@ export function springSettle(options: SpringSettleOptions = {}): (time: Time) =>
       scaleX: s * (1 + squash * 0.8 * left),
       scaleY: s * (1 - squash * left),
     };
-  };
+  });
 }

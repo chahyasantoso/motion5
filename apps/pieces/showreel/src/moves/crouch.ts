@@ -1,4 +1,4 @@
-import { type Pose2d, type Time } from "@gerak/core";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 const CURVES = {
   out: (p: number) => 1 - (1 - p) ** 3,
@@ -16,10 +16,10 @@ export interface CrouchOptions {
 }
 
 /** Sinks into a squash against the floor and holds it, gathering itself before a jump, a pop or a burst. */
-export function crouch(options: CrouchOptions): (time: Time) => Pose2d {
+export function crouch(options: CrouchOptions): Motion<Pose2d> {
   const { squash, bulge = 0.8, curve = "inOut" } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     const k = CURVES[curve](progress);
     return { scaleY: 1 - squash * k, scaleX: 1 + squash * bulge * k, anchor: "bottom" };
-  };
+  });
 }

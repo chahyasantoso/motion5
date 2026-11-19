@@ -1,4 +1,4 @@
-import { wave, type Pose2d, type Time } from "@gerak/core";
+import { wave, type Pose2d, motion, type Motion } from "@gerak/core";
 
 const cubicInOut = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2);
 const cubicOut = (p: number) => 1 - (1 - p) ** 3;
@@ -23,7 +23,7 @@ export interface LaunchOptions {
 }
 
 /** Crouches against the floor, shivering if asked, then snaps from squash to stretch and shoots straight up out of sight. */
-export function launch(options: LaunchOptions): (time: Time) => Pose2d {
+export function launch(options: LaunchOptions): Motion<Pose2d> {
   const {
     height,
     squash = 0.3,
@@ -33,7 +33,7 @@ export function launch(options: LaunchOptions): (time: Time) => Pose2d {
     tremble = 0,
     flight = "decelerate",
   } = options;
-  return ({ progress }): Pose2d => {
+  return motion(({ progress }): Pose2d => {
     if (progress < crouch) {
       const q = progress / crouch;
       const k = cubicInOut(clamp01(q / 0.65));
@@ -52,5 +52,5 @@ export function launch(options: LaunchOptions): (time: Time) => Pose2d {
         : 1 + stretch - stretch * 0.6 * ((f - 0.12) / 0.88);
     const travel = flight === "accelerate" ? 0.55 * f + 0.45 * f * f : 1 - (1 - f) ** 2;
     return { y: -height * travel, scaleY, scaleX: 1 / Math.sqrt(scaleY), anchor: "bottom" };
-  };
+  });
 }
