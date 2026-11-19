@@ -538,3 +538,39 @@ describe("sceneBuilder: order", () => {
     expect(compiled(more).members).toHaveLength(2);
   });
 });
+
+describe("sceneBuilder: across copies and chains", () => {
+  it("reads a scene another copy of the package made, by its global key", () => {
+    const made = sceneBuilder({ length: 500 }).element(box("a"));
+    const key = Symbol.for("@gerak/stage/scene");
+    const elsewhere = Object.freeze(
+      Object.defineProperty({ kind: "scene" }, key, { value: Reflect.get(made, key) }),
+    );
+    expect(isScene(elsewhere)).toBe(true);
+    expect(isScene({ kind: "scene" })).toBe(false);
+  });
+
+  it("computes each read element once per time in a frame, so a chain of stayWith grows linearly", () => {
+    let calls = 0;
+    const counted = motion((time: Time): Pose2d => {
+      calls += 1;
+      return { x: 100 * time.progress };
+    });
+    const span = beat("span", 1000);
+    const links = Array.from({ length: 14 }, (_, index) => box(`link${index}`));
+    let chain = sceneBuilder({ length: 1000 })
+      .element(links[0] ?? box("none"))
+      .motion(counted.in(span));
+    for (let index = 1; index < links.length; index += 1) {
+      const link = links[index];
+      const before = links[index - 1];
+      if (link === undefined || before === undefined) continue;
+      chain = chain.element(link).motion(stayWith(before).in(span));
+    }
+    const result = compileScene(chain);
+    if (!result.ok) throw new Error("did not compile");
+    calls = 0;
+    frame(result.stage, { time: at(500, 1000) });
+    expect(calls).toBeLessThan(60);
+  });
+});

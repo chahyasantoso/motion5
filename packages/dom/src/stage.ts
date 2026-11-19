@@ -317,7 +317,13 @@ function sourceOf(content: Content | undefined): Path | undefined {
 
 /** The stage a scene compiles to with `skin`, or the stage itself; throws naming every compile error. */
 function resolveStage(input: StageInput, skin: DomSkinInput | undefined): Stage {
-  if (isStage(input)) return input;
+  if (isStage(input)) {
+    if (skin !== undefined)
+      throw new Error(
+        "mountStage: a compiled stage carries its own skin; pass `skin` to compileScene.",
+      );
+    return input;
+  }
   if (!isScene(input))
     throw new Error("mountStage: expected a stage or what `sceneBuilder` returns.");
   const compiled = compileScene(input, { skin });
@@ -934,7 +940,7 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
     },
     events: () => [...run.driver.events()],
     replace(next) {
-      const nextStage = resolveStage(next, options?.skin);
+      const nextStage = resolveStage(next, isStage(next) ? undefined : options?.skin);
       if (nextStage.signature !== currentStage.signature)
         throw new Error("mountStage.replace: the next stage has a different cast or durationMs.");
       const prevStage = currentStage;

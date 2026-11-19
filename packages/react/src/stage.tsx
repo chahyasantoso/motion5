@@ -16,7 +16,11 @@ export interface StageProps {
 }
 
 function compiled(input: StageInput, skin: DomSkinInput | undefined): CompiledStage {
-  if (isStage(input)) return input;
+  if (isStage(input)) {
+    if (skin !== undefined)
+      throw new Error("Stage: a compiled stage carries its own skin; pass `skin` to compileScene.");
+    return input;
+  }
   if (!isScene(input)) throw new Error("Stage: expected a stage or what `sceneBuilder` returns.");
   const result = compileScene(input, { skin });
   if (result.ok) return result.stage;

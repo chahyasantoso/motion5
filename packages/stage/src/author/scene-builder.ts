@@ -523,6 +523,8 @@ interface Env {
   readonly plans: ReadonlyMap<string, Plan>;
   readonly rest: RestReader;
   readonly carry: Carry;
+  /** Poses `read` already computed this frame, by element, part and time. */
+  readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
 }
 
 function replacing(below: Pose2d, pose: Pose2d): Pose2d {
@@ -563,12 +565,15 @@ function stackOf(
               const read = env.plans.get(name);
               if (read === undefined)
                 throw new RangeError(`read: "${name}" is not an element of the piece.`);
-              return stackOf(
-                read,
-                env,
-                read.count === undefined ? undefined : (at?.index ?? 0),
-                at?.count ?? read.count,
-              )(at?.time ?? time, events);
+              const part = read.count === undefined ? undefined : (at?.index ?? 0);
+              const parts = at?.count ?? read.count;
+              const when = at?.time ?? time;
+              const key = `${name}|${part}|${parts}|${elapsedOf(when.clock)}|${when.progress}`;
+              const known = env.read.get(key);
+              if (known !== undefined && known.events === events) return known.pose;
+              const pose = stackOf(read, env, part, parts)(when, events);
+              env.read.set(key, { events, pose });
+              return pose;
             },
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
@@ -628,7 +633,12 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     limits: limitsOf(state),
     cast: (m) => castOf(state, m),
     scene: (context: SceneContext) => {
-      const env: Env = { plans: plansOf(), rest: context.rest, carry: context.carry };
+      const env: Env = {
+        plans: plansOf(),
+        rest: context.rest,
+        carry: context.carry,
+        read: new Map(),
+      };
       const out: Record<string, Pose2d | ListPose> = {};
       for (const plan of env.plans.values()) {
         if (plan.steps.length === 0) continue;
@@ -661,16 +671,32 @@ function changed(state: State, change: Partial<Entry>): State {
   return { ...state, entries: new Map(state.entries).set(name, { ...entry, ...change }) };
 }
 
-const STATES = new WeakMap<object, State>();
+/** Where a scene keeps its state; a global symbol, so a second copy of this package reads it too. */
+const SCENE = Symbol.for("@gerak/stage/scene");
 
 function kept<T extends object>(value: T, state: State): T {
-  STATES.set(value, state);
-  return value;
+  Object.defineProperty(value, SCENE, { value: state });
+  return Object.freeze(value);
+}
+
+function isState(value: unknown): value is State {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Reflect.get(value, "elements") instanceof Map &&
+    Reflect.get(value, "entries") instanceof Map &&
+    Reflect.get(value, "beats") instanceof Map
+  );
+}
+
+function stateOf(value: object): State | undefined {
+  const state: unknown = Reflect.get(value, SCENE);
+  return isState(state) ? state : undefined;
 }
 
 function step(state: State): ElementStep {
   return kept(
-    Object.freeze({
+    {
       kind: "scene",
       element: (element: Element) => select(state, element),
       motion: (...motions: readonly SceneMotion[]) => {
@@ -719,7 +745,7 @@ function step(state: State): ElementStep {
         };
         return step(changed(state, { limits: merged }));
       },
-    }),
+    },
     state,
   );
 }
@@ -749,15 +775,12 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     beats: new Map(),
     current: undefined,
   };
-  return kept(
-    Object.freeze({ kind: "scene", element: (element: Element) => select(state, element) }),
-    state,
-  );
+  return kept({ kind: "scene", element: (element: Element) => select(state, element) }, state);
 }
 
 /** Whether `value` is a piece written with `sceneBuilder`. */
 export function isScene(value: unknown): value is SceneBuilder {
-  return typeof value === "object" && value !== null && STATES.has(value);
+  return typeof value === "object" && value !== null && stateOf(value) !== undefined;
 }
 
 /** How a scene compiles: the DOM skin its renderer draws with, and a wrap around each frame's poses. */
@@ -771,7 +794,7 @@ export function compileScene(
   scene: SceneBuilder,
   options: CompileSceneOptions = {},
 ): CompileResult {
-  const state = STATES.get(scene);
+  const state = stateOf(scene);
   if (state === undefined)
     throw new TypeError("compileScene: expected what `sceneBuilder` returns.");
   const result = compileStage(definitionOf(state, options.skin));

@@ -470,7 +470,6 @@ function asCubics(cubics: readonly (readonly number[])[]): readonly Cubic2d[] {
   }));
 }
 
-/** The parts as members of `cast: (m) => ({ ... })`, one `m.stroke` or `m.morph` each. */
 /** The parts' two skin rules each, as the text of a template literal. */
 function cssSource(parts: readonly Part[]): string {
   return templateText(parts.map(({ box, path }) => `${box}\n${path}`).join("\n"));
@@ -641,6 +640,7 @@ export async function importSvgInto(
   if (built.parts.length === 0) return refuse("The SVG holds no shape this can draw.");
   const edit = addToPiece(source, {
     names: built.parts.map((part) => part.name),
+    imports: ["shape"],
     members: elementsSource(built.parts),
     css: cssSource(built.parts),
     defs: templateText(built.defs.join("\n")),

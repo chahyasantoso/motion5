@@ -4,6 +4,8 @@ import ts from "typescript";
 /** What to add to a piece: `.element(...)` calls as source, their names, skin rules and paint-server markup. */
 export interface PieceAddition {
   readonly names: readonly string[];
+  /** What the added source calls from `@gerak/stage`, imported when the piece lacks it. */
+  readonly imports: readonly string[];
   readonly members: string;
   readonly css: string;
   readonly defs: string;
@@ -118,6 +120,25 @@ function elementNames(file: ts.SourceFile): ReadonlySet<string> {
   return names;
 }
 
+/** Where the names the piece does not yet import from `@gerak/stage` go. */
+function importedNames(file: ts.SourceFile, names: readonly string[]): Insertion | undefined {
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    const from = statement.moduleSpecifier;
+    if (!ts.isStringLiteral(from) || from.text !== "@gerak/stage") continue;
+    const bindings = statement.importClause?.namedBindings;
+    if (bindings === undefined || !ts.isNamedImports(bindings)) continue;
+    const have = new Set(bindings.elements.map((element) => element.name.text));
+    const missing = names.filter((name) => !have.has(name));
+    if (missing.length === 0) return undefined;
+    const last = bindings.elements[bindings.elements.length - 1];
+    if (last === undefined) return { at: bindings.getStart() + 1, text: ` ${missing.join(", ")} ` };
+    return { at: last.getEnd(), text: `, ${missing.join(", ")}` };
+  }
+  if (names.length === 0) return undefined;
+  return { at: 0, text: `import { ${names.join(", ")} } from "@gerak/stage";\n` };
+}
+
 /** Where a block of members goes at the end of an object literal, with the comma it needs. */
 function appendedMembers(
   source: string,
@@ -189,12 +210,16 @@ export function addToPiece(source: string, add: PieceAddition): PieceEdit {
   const css = property(skin, "css");
   const cssText = css === undefined ? undefined : unwrapped(css.initializer);
   if (cssText === undefined || !ts.isNoSubstitutionTemplateLiteral(cssText))
-    return refuse("The piece's `skin.css` is not a template literal without substitutions.");
+    return refuse(
+      "The piece's `skin.css` is not a template literal without substitutions; a skin read from a URL takes no new rules here.",
+    );
 
   const edits: Insertion[] = [
     { at: found.chain.getEnd(), text: `\n${add.members}` },
     appendedText(source, cssText, add.css),
   ];
+  const imports = importedNames(file, add.imports);
+  if (imports !== undefined) edits.push(imports);
   if (add.defs !== "") {
     const defs = property(skin, "defs");
     if (defs === undefined) {

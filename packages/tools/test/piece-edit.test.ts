@@ -24,6 +24,7 @@ export default ${parts.chain ?? `sceneBuilder(${options}).element(box("a"))`};
 
 const added: PieceAddition = {
   names: ["bB"],
+  imports: ["box"],
   members: '  .element(box("bB"))',
   css: '[data-cast="bB"] { z-index: 1; }',
   defs: '<linearGradient id="b-g"/>',
@@ -72,6 +73,21 @@ describe("addToPiece", () => {
     );
     expect(refused(piece({ css: "style()" }))).toMatch(/css/);
     expect(refused(piece({ frame: "size()" }))).toMatch(/frame/);
+  });
+
+  it("imports what the added elements call when the piece lacks it, and nothing it has", () => {
+    const withShape = edited(piece({}), { ...added, imports: ["box", "shape"] });
+    expect(withShape).toContain('import { box, sceneBuilder, shape } from "@gerak/stage";');
+    expect(edited(piece({}), added)).toContain('import { box, sceneBuilder } from "@gerak/stage";');
+    const bare = piece({}).replace('import { box, sceneBuilder } from "@gerak/stage";\n', "");
+    expect(edited(bare, { ...added, imports: ["shape"] })).toMatch(
+      /^import \{ shape \} from "@gerak\/stage";\n/,
+    );
+  });
+
+  it("says a skin read from a URL takes no new rules", () => {
+    const result = addToPiece(piece({ css: 'new URL("./piece.css", import.meta.url)' }), added);
+    expect(result.kind === "refused" && result.message).toMatch(/URL/);
   });
 
   it("reads a piece with no frame as the stage's default 1280 by 720", () => {

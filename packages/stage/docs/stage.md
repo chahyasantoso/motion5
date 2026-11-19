@@ -59,7 +59,7 @@ export default sceneBuilder({ length: 1800 })
 - **Shared values.** `bind({ y: signal })` sets fields from signals at scene time; two elements that react to one thing share a signal, wrapped in core's `shared` when several read it.
 - **Reading another element.** `stayWith(e)` adds `e`'s travel since its beat started; elements reading each other in a loop are refused.
 - **Windows and limits.** `.show(beat | [from, to])` shows an element only then; `.limits({ jump, turn, ratio })` sets its review limits.
-- **Inferred.** An element with no motion is static, one with a `.loop` or `.ambient()` motion is ambient, every other settles.
+- **Inferred.** An element with nothing in its list is static, one with a `.loop` or `.ambient()` motion is ambient, every other settles.
 
 ## Layouts, carry and skins
 

@@ -1330,3 +1330,18 @@ describe("mountStage", () => {
     expect(root.find("card").listeners.get("pointerenter")?.size ?? 0).toBe(0);
   });
 });
+
+describe("mountStage with a skin", () => {
+  it("refuses a compiled stage given a skin as well, since it carries its own", () => {
+    const compiled = staged(
+      defineStage({
+        beats: { all: [0, 500] },
+        cast: (m) => ({ card: m.box() }),
+        scene: () => ({}),
+      }),
+    );
+    expect(() =>
+      mountStage(new FakeElement("div"), compiled, { frames: frames(), skin: { css: "" } }),
+    ).toThrow(/carries its own skin/);
+  });
+});
