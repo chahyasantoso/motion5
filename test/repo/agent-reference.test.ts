@@ -178,6 +178,7 @@ describe("agent reference", () => {
       "events",
       "utility",
       "principles",
+      "state",
     ]);
   });
 

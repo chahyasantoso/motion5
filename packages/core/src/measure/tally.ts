@@ -1,5 +1,6 @@
-import { elapsedOf, type Time } from "../time/time";
+import { atProgress, elapsedOf, type Time } from "../time/time";
 import type { Events, MotionEvent } from "../events/event-list";
+import { state, type Step } from "../state/state";
 
 /** Settings of a `tally`: `start`, `on` (a held value by event name, or `"value"` for the event's own)
  * and `target`. */
@@ -20,66 +21,58 @@ export interface Tally {
   total(events: Events): number;
 }
 
+/** What is held since a counted event; a new one for each, so every counted event is a step. */
+interface Held {
+  readonly value: number;
+}
+
 /** Counted events of one list: their times, held values, and the area before each, oldest first. */
-interface TallyTable {
-  list: Events;
-  readonly taken: MotionEvent[];
+interface Table {
+  readonly source: readonly Step<Held>[];
   readonly times: number[];
   readonly values: number[];
   readonly areas: number[];
 }
 
-/** The area under held samples up to any time, each held until the next, from a table built once per
- * list and extended when a live list grows by appending; events oldest first. */
+/** The area under held samples up to any time, each held until the next: an integral over the steps of a
+ * state of the held value, extended as a list grows by appending. */
 export function tally(options: TallyOptions): Tally {
   const valueOf = (event: MotionEvent): number | undefined => {
-    if (options.target !== undefined && event.target !== options.target) return undefined;
     const held = options.on[event.name];
     if (held === "value") return event.value;
     return held;
   };
-  let table: TallyTable | undefined;
-  // A list grows when it holds every event the table took, by identity, at the same places.
-  const grows = (kept: TallyTable, events: Events): boolean => {
-    if (events.length < kept.taken.length) return false;
-    if (kept.list === events) return true;
-    for (let index = 0; index < kept.taken.length; index += 1)
-      if (events[index] !== kept.taken[index]) return false;
-    return true;
-  };
-  const tableOf = (events: Events): TallyTable => {
-    const kept =
-      table !== undefined && grows(table, events)
+  const held = state<Held>(
+    { value: options.start },
+    (current, event) => {
+      const value = valueOf(event);
+      return value === undefined ? current : { value };
+    },
+    options.target === undefined ? {} : { target: options.target },
+  );
+  let table: Table | undefined;
+  const tableOf = (events: Events): Table => {
+    const steps = held.steps(atProgress(0), events);
+    const kept: Table =
+      table !== undefined && table.source === steps
         ? table
-        : {
-            list: events,
-            taken: [],
-            times: [],
-            values: [],
-            areas: [],
-          };
-    for (let index = kept.taken.length; index < events.length; index += 1) {
-      const event = events[index];
-      if (event === undefined) break;
-      kept.taken.push(event);
-      const held = valueOf(event);
-      if (held === undefined) continue;
+        : { source: steps, times: [], values: [], areas: [] };
+    table = kept;
+    for (let index = kept.times.length; index < steps.length; index += 1) {
+      const step = steps[index];
+      if (step === undefined) break;
       const count = kept.times.length;
       const since = count === 0 ? 0 : (kept.times[count - 1] ?? 0);
-      if (event.at < since) {
-        table = undefined;
+      if (step.at < since)
         throw new RangeError(
-          `tally: events must be oldest first; one at ${event.at} ms follows ${since} ms.`,
+          `tally: events must be oldest first; one at ${step.at} ms follows ${since} ms.`,
         );
-      }
       const before = count === 0 ? options.start : (kept.values[count - 1] ?? 0);
       const area = count === 0 ? 0 : (kept.areas[count - 1] ?? 0);
-      kept.times.push(event.at);
-      kept.values.push(held);
-      kept.areas.push(area + (before * (event.at - since)) / 1000);
+      kept.times.push(step.at);
+      kept.values.push(step.value.value);
+      kept.areas.push(area + (before * (step.at - since)) / 1000);
     }
-    kept.list = events;
-    table = kept;
     return kept;
   };
   const total = (events: Events): number => {

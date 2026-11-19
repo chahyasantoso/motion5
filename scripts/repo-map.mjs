@@ -32,6 +32,7 @@ export const OWNERS = {
   "packages/core/src/principles":
     "the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary",
   "packages/core/src/path": "travel along throws and curves",
+  "packages/core/src/state": "state from events: state, springTo, easeTo",
   "packages/core/src/time": "time, spans, sequence, lanes, reversed, repeated",
   "packages/core/src/utility": "seeded numbers, clamp, unreachable",
   "packages/rig/src": "joint vocabulary",

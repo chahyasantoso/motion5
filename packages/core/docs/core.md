@@ -1,6 +1,6 @@
 # @gerak/core
 
-Read this page whole before writing a scene. Pure motion primitives, zero side effects.
+Read this page whole before writing a scene. Pure motion primitives.
 
 ## How core works
 
@@ -10,9 +10,9 @@ Motion evaluates every frame as a pure `Signal` of `(time, events)`:
 Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelope -> blend / path -> Pose2d / Pose3d -> combine
 ```
 
-- **2D stage:** px, origin top-left, `+x` right, **`+y` down**, `rotation` in degrees clockwise; transforms apply `translate -> rotate -> scale` around `anchor`.
-- **3D world:** world units, **`+y` up**, Euler `Z-X-Y` degrees; `lift2d(pose, { unitsPerPx })` maps 2D to 3D xy (scales, flips `y`/`rotation`, drops `anchor`).
-- **Clocks:** `timed` (`{ elapsed, length }` ms, needed by `span`, `chain`, `lanes`, `loop`, `velocity`); `live` (`liveAt`, `elapsed` only, `progress: 0`); `untimed` (`atProgress`, `UNTIMED`, or `scrollDriver` without `length`, `progress` only).
+- **2D stage:** px, origin top-left, **`+y` down**, `rotation` in degrees clockwise; `translate -> rotate -> scale` around `anchor`.
+- **3D world:** world units, **`+y` up**, Euler `Z-X-Y` degrees; `lift2d(pose, { unitsPerPx })` maps 2D to 3D xy.
+- **Clocks:** `timed` (`{ elapsed, length }` ms, needed by `span`, `chain`, `lanes`, `loop`, `velocity`); `live` (`liveAt`, `elapsed` only); `untimed` (`atProgress`, `UNTIMED`, `progress` only).
 
 ## Shapes
 
@@ -27,14 +27,14 @@ Clock (ms) -> Time { progress, clock } -> Span / Timing -> 0..1 -> ease / envelo
 | Helper | Output | Use when |
 | --- | --- | --- |
 | `span(fromMs, toMs)` | `Span` | One window; `.of(time, ease?)` clamps outside `[0, 1]`, `.at(share)` gives ms |
-| `chain(lengths, { gap?, overlap? })` | `readonly Span[]` | Sequential windows without manual cumulative ms (`gap` or `overlap`, not both) |
+| `chain(lengths, { gap?, overlap? })` | `readonly Span[]` | Windows one after another (`gap` or `overlap`, not both) |
 | `lanes(lengths, stagger, { from?, by?, spacing? })` | `Lanes` | Staggered `.of(time, i)` per item (`from`: `"start" \| "end" \| "center" \| "edges" \| { seed }`) |
-| `loop(periodMs, { yoyo? })` | `Timing` | Repeating cycle inside a timed clock (`yoyo: true` reverses odd cycles) |
+| `loop(periodMs, { yoyo? })` | `Timing` | A repeating cycle (`yoyo: true` reverses odd cycles) |
 | `reversed(time)` / `repeated(time, count)` | `Time` | Wrap any `Time` to play backwards (`1 - p`) or cycle `count` times |
-| `sequence(time, [[span, fn], ...])` | `R` | Mutually exclusive phases on one target; finished phases hold their end |
-| `timeAt(time, ms)` / `withProgress(time, p)` | `Time` | Sample a signal at another moment without looping over history |
+| `sequence(time, [[span, fn], ...])` | `R` | Phases on one target; a finished phase holds its end |
+| `timeAt(time, ms)` / `withProgress(time, p)` | `Time` | Sample a signal at another moment |
 
-- Pass `0..1` eases to `span.of(time, ease)`; apply overshooting eases (`back*`, `elasticOut`) to values via `mix(a, b, ease.backOut(t.progress))` so clamping does not clip.
+- `span.of(time, ease)` clamps, so apply an overshooting ease to values: `mix(a, b, ease.backOut(t.progress))`.
 
 ## Fields, rests, and combining
 
@@ -44,33 +44,30 @@ Every pose field is optional and omitted fields stay inactive:
 - **Multiply, rest `1`:** `scale`, `scaleX`, `scaleY`, `scaleZ`, `opacity`, `drawn` (`0..1`).
 - **Replace:** `shape` (rest `0`, morph index), `clipX`, `clipY`, `clipRadius`, `clipWidth`, `clipHeight`, `layer` (no rest).
 - **`anchor` (2D only):** `"center" | "top" | "bottom" | "left" | "right"`; `combine` keeps the first anchor given (`Pose3d` forbids `anchor`).
-- **`combine` vs `mixPose`:** `combine([a, b])` layers poses (`combine3d` composes Z-X-Y turns in order). `mixPose(a, b, share)` / `mixPose3d` interpolates two poses (missing fields use rest, or the present side if none).
+- **`combine` vs `mixPose`:** `combine([a, b])` layers poses (`combine3d` composes Z-X-Y turns in order). `mixPose(a, b, share)` / `mixPose3d` interpolates two poses (a missing field uses its rest).
 
 ## Eases, blends, paths, measures, events
 
-- **`ease`:** `linear`, `sineIn`/`Out`/`InOut`, `quadIn`/`Out`/`InOut`, `cubicIn`/`Out`/`InOut`, `quartIn`/`Out`/`InOut`, `expoIn`/`Out`/`InOut`, `backIn`/`Out`/`InOut`, `elasticOut`, `bounceIn`, `bounceOut`. Custom overshoot/physics: `backEase({ amount, direction })`, `springEase`, `spring(offset, speed, seconds, { stiffness, damping })`, `springMemory`.
+- **`ease`:** `linear`, `sine`, `quad`, `cubic`, `quart`, `expo`, `back` (`In`/`Out`/`InOut`), `elasticOut`, `bounceIn`, `bounceOut`. Custom overshoot/physics: `backEase({ amount, direction })`, `springEase`, `spring(offset, speed, seconds, { stiffness, damping })`, `springMemory`.
 - **Envelopes (`0..1` progress):** `arch(p)` (`0 -> 1 -> 0`), `wave({ count, phase? })(p)`, `attack({ rate })(p)`, `decay({ rate })(p)`, `taper({ power })(p)`.
-- **Blends:** `mix`, `mixAngle` (shortest arc), `mixPoint` (`Point2d`), `mixPoint3d` (`Point3d`), `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
-- **Paths & shapes:** `circlePath({ cx, cy, r })`, `ellipsePath({ cx, cy, rx, ry })`, `rectPath({ x, y, width, height, rx?, ry? })`, `linePath({ x1, y1, x2, y2 })`, `polygonPath({ points, closed })`, `arcPath({ x0, y0, x1, y1, rx, ry, degrees?, large?, sweep? })`, `pathFrom(d)`, `toCubics` / `toCubics3d` (`Anchor2d`/`Anchor3d` `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics, { turn? })(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
-- **3D camera:** `orbit({ target, radius, azimuth, elevation })`, `aim(from, to, up?)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
-- **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events in O(1)/frame; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
-- **Principles:** `squashStretch`, `anticipation`, `followThrough`, `overlap`, `arc`, `exaggerate`, `secondary` (each with a `3d` twin), `smear`, `trail`.
-- Slow in and slow out are the eases; timing is beats, `span`, `lanes`, `chain`.
-- Staging, solid drawing and appeal are not functions.
+- **Blends:** `mix`, `mixAngle` (shortest arc), `mixPoint`, `mixPoint3d`, `mixPose`, `mixPose3d`, `keyframes(start, keys, blend)`.
+- **Paths & shapes:** `circlePath`, `ellipsePath`, `rectPath`, `linePath`, `polygonPath`, `arcPath`, `pathFrom(d)`, `toCubics` / `toCubics3d` (anchor `in*`/`out*` are relative), `radial(angle, distance)`. Follow curves via `along(cubics)(share)`, `along3d`, `pathLength`, `pathBounds`; throw via `ballistic({ dx, dy, apex })(p)`.
+- **3D camera:** `orbit`, `aim(from, to)`, `Lens3d` (`Pose3d & { fov }`), `project3d(point, lens, stage)`.
+- **State:** `state(start, rule)` folds events; `springTo` / `easeTo` follow what a `pick` of it reads.
+- **Measures, events, utilities:** `velocity(signal, time, events)` / `velocity3d` take the **scene's `time`** (never eased). `tally({ start, on, target? })` integrates events; join lists with `mergeEvents` (`NO_EVENTS` when empty). Use `seeded(seed)` (never `Math.random()`), `clamp`, `unreachable`.
+- **Principles** wrap a signal: `squashStretch(options)(signal)`, each with a `3d` twin. Slow in and out are eases; staging and appeal are not functions.
 
 ## Idiom
 
 ```ts
-import { arch, chain, combine, ease, lanes, mix, repeated, reversed, sequence, span, type Pose2d, type Time } from "@gerak/core";
+import { arch, chain, combine, ease, lanes, mix, repeated, reversed, type Pose2d, type Time } from "@gerak/core";
 
 const [enter, hold, leave] = chain([500, 1200, 400]);
 const drop = (t: Time): Pose2d => ({ y: mix(-80, 0, ease.cubicOut(t.progress)), opacity: t.progress });
-const popOut = (t: Time): Pose2d => ({ y: mix(0, 60, ease.backOut(t.progress)) });
 
 const card = (time: Time): Pose2d =>
   combine([drop(enter.of(time)), { scale: 1 + 0.08 * arch(repeated(hold.of(time), 2).progress) }, drop(reversed(leave.of(time)))]);
 const item = (time: Time, i: number): Pose2d => drop(lanes([1, 1, 1], 0.35, { from: "center" }).of(enter.of(time), i));
-const phased = (time: Time): Pose2d => sequence(time, [[enter, drop], [leave, popOut]]);
 ```
 
 ## Exports by reference group
@@ -87,4 +84,5 @@ const phased = (time: Time): Pose2d => sequence(time, [[enter, drop], [leave, po
 - [events](./reference/events.md) (6): `NO_EVENTS`, `isMotionEvent`, `mergeEvents`, `EventPoint`, `Events`, `MotionEvent`
 - [utility](./reference/utility.md) (3): `seeded`, `unreachable`, `clamp`
 - [principles](./reference/principles.md) (25): `smear`, `smear3d`, `trail`, `TrailOptions`, `trailTurn`, `squashStretch`, `squashStretch3d`, `SquashStretchOptions`, `anticipation`, `anticipation3d`, `AnticipationOptions`, `followThrough`, `followThrough3d`, `FollowThroughOptions`, `overlap`, `OverlapOptions`, `arc`, `arc3d`, `Arc3dOptions`, `ArcBendOptions`, `exaggerate`, `exaggerate3d`, `ExaggerateOptions`, `secondary`, `secondary3d`
+- [state](./reference/state.md) (9): `state`, `State`, `StateOptions`, `Step`, `springTo`, `SpringToOptions`, `easeTo`, `EaseToOptions`, `UpDown`
 <!-- generated:reference:end -->

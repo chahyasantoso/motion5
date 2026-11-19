@@ -22,6 +22,7 @@ Public: `.`
 - `src/measure/`: velocity, speed, tally
 - `src/path/`: travel along throws and curves
 - `src/principles/`: the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary
+- `src/state/`: state from events: state, springTo, easeTo
 - `src/time/`: time, spans, sequence, lanes, reversed, repeated
 - `src/utility/`: seeded numbers, clamp, unreachable
 
