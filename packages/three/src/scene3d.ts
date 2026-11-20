@@ -21,23 +21,41 @@ function stageOf(scene: Stage | SceneBuilder): Stage {
   return compiled.stage;
 }
 
-/** Writes each object of a scene onto its `Object3D` on every player step, with `visible` from its `.show`
+/** Where a scene's object goes: an `Object3D`, posed from its position when bound, or a writer that takes the
+ * pose and whether the object shows, such as one handing bone poses to `applyBones`. */
+export type ObjectTarget3d = Object3D | ((pose: Pose3d, visible: boolean) => void);
+
+/** Writes each object of a scene onto its target on every player step, with `visible` from its `.show`
  * windows, then calls `draw` once, so the canvas draws on the player's step; returns the unsubscribe. */
 export function bindScene3d(
   player: Player<Readonly<Record<string, unknown>>>,
   scene: Stage | SceneBuilder,
-  objects: Readonly<Record<string, Object3D>>,
+  objects: Readonly<Record<string, ObjectTarget3d>>,
   draw: () => void,
 ): () => void {
   const stage = stageOf(scene);
-  const bound: { readonly name: string; readonly target: Object3D }[] = [];
+  const bound: {
+    readonly name: string;
+    readonly write: (pose: Pose3d | undefined, visible: boolean) => void;
+  }[] = [];
   for (const member of stage.members)
     switch (member.kind) {
       case "object": {
         const target = objects[member.name];
         if (target === undefined)
           throw new TypeError(`bindScene3d: object "${member.name}" has no entry in \`objects\`.`);
-        bound.push({ name: member.name, target });
+        if (typeof target === "function") {
+          bound.push({ name: member.name, write: (pose, visible) => target(pose ?? {}, visible) });
+          break;
+        }
+        const rest = { x: target.position.x, y: target.position.y, z: target.position.z };
+        bound.push({
+          name: member.name,
+          write: (pose, visible) => {
+            target.visible = visible;
+            if (pose !== undefined) applyPose3d(target, pose, rest);
+          },
+        });
         break;
       }
       case "actor":
@@ -51,11 +69,8 @@ export function bindScene3d(
     const time = player.time;
     const ms = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
     const visible = stage.visibleAt(ms);
-    for (const { name, target } of bound) {
-      target.visible = visible[name] ?? true;
-      const pose: Pose3d | undefined = pose3dOf(player.values[name]);
-      if (pose !== undefined) applyPose3d(target, pose);
-    }
+    for (const { name, write } of bound)
+      write(pose3dOf(player.values[name]), visible[name] ?? true);
     draw();
   };
   const first = bound[0];

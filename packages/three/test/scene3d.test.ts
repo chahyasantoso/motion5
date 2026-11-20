@@ -51,6 +51,26 @@ describe("bindScene3d", () => {
     expect(draws).toBe(3);
   });
 
+  it("poses an Object3D from its position when bound, and hands a writer the pose and visible", () => {
+    const stage = compiled();
+    const driver = manualDriver({ durationMs: 2000 });
+    const player = play((time, events) => frame(stage, { time, events }).targets, driver);
+    const placed = new Object3D();
+    placed.position.set(0, 3, 0);
+    bindScene3d(player, stage, { cube: placed }, () => undefined);
+    driver.seekMs(500);
+    expect([placed.position.x, placed.position.y]).toEqual([1, 3]);
+    const written: [Pose3d, boolean][] = [];
+    bindScene3d(
+      player,
+      stage,
+      { cube: (pose, visible) => written.push([pose, visible]) },
+      () => {},
+    );
+    driver.seekMs(1500);
+    expect(written.at(-1)).toEqual([{ x: 2, rotationY: 90 }, false]);
+  });
+
   it("names a scene's object that has no Object3D", () => {
     const stage = compiled();
     const player = play(
