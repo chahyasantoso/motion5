@@ -34,7 +34,7 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
    sizes, so no `rangeStart` or `rangeEnd`. A remeasure cancels and rebuilds them.
 6. **Trigger elements play on the document timeline, steered by their beat.** On each input frame the mount asks the
    beat its progress and `heading` (1 forward, -1 back, 0 at rest), and sets the animations' time and playback rate
-   only when the heading changes. `reverse`, `stay` and `replay` stay the trigger fold's alone.
+   when the heading changes or the animation is more than two frames from the beat's progress. `reverse`, `stay` and `replay` stay the trigger fold's alone.
 7. **The page tools keep their clock.** They hold only animations on the document timeline, since scripted scroll
    drives a scroll timeline, and tell the mount they hold the clock, so trigger elements stay in the engine there.
 
@@ -49,6 +49,9 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
   timeline; the bottle (`travel`, `smooth`) and the aura (`bind`, springs) stay in the engine.
 - Every piece samples the same as before; headless frames take no part in this.
 - A browser without `ScrollTimeline`, or a mount with its own `scrollTarget`, runs every element in the engine.
+
+- A motion that throws during sampling leaves every element of that hand-off in the engine; a scroll range longer
+  than the sample budget hands nothing to the browser.
 
 ## Rejected
 

@@ -231,6 +231,7 @@ function sampleTracks(
   for (const at of edges) if (at > 0 && at < length) placed.add(at);
   placed.add(length);
   const grid = [...placed].sort((a, b) => a - b);
+  if (grid.length > MAX_SAMPLES / 2) return new Map();
   for (const at of grid) {
     if (alive.size === 0) break;
     for (const [name, posed] of sample(at, new Set(alive))) add(name, at, posed);

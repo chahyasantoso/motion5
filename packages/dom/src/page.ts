@@ -30,7 +30,14 @@ import {
   type TriggerBeat,
 } from "@gerak/stage";
 import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
-import { sampleNear, scrollTracks, trackKeyframes, triggerTracks, type Track } from "./compositor";
+import {
+  sampleNear,
+  scrollTracks,
+  trackKeyframes,
+  triggerTracks,
+  type Track,
+  type TriggerTrack,
+} from "./compositor";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { applyPath, applyValue, type RenderStyle } from "./render";
@@ -516,6 +523,7 @@ const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
 // The page tools set this while they hold the clock; animations that run on time stay in the engine then.
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
+const TRIGGER_SLACK_MS = 34;
 
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
@@ -1075,9 +1083,12 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     for (const run of triggerRuns) {
       const { beat } = run;
       const heading = beat.heading(time, context);
-      if (heading !== 0 && heading === run.heading) continue;
-      run.heading = heading;
       const at = beat.of(time, undefined, context).progress * beat.ms;
+      // A running animation is left alone while it is where the beat says, within two frames.
+      const playing = run.animations[0]?.currentTime;
+      const near = typeof playing === "number" && Math.abs(playing - at) <= TRIGGER_SLACK_MS;
+      if (heading !== 0 && heading === run.heading && near) continue;
+      run.heading = heading;
       for (const animation of run.animations) {
         animation.currentTime = at;
         if (heading === 0) animation.pause();
@@ -1125,6 +1136,18 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       rest: reader,
       names,
     };
+    let scrolled: ReadonlyMap<string, Track> = new Map();
+    let triggered: ReadonlyMap<string, TriggerTrack> = new Map();
+    try {
+      scrolled = maxScroll > 0 ? scrollTracks(stage, input, maxScroll) : new Map();
+      if (Reflect.get(globalThis, HELD_CLOCK) !== true) {
+        const left = new Set([...names].filter((name) => !scrolled.has(name)));
+        triggered = triggerTracks(stage, { ...input, names: left });
+      }
+    } catch {
+      // A motion that throws at a place the page has not reached stays the engine's to report.
+      return;
+    }
     const next = new Map<string, Animation[]>();
     const play = (
       name: string,
@@ -1154,10 +1177,10 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     };
 
     const timeline: unknown =
-      maxScroll > 0 ? Reflect.construct(Timeline, [{ source, axis: "block" }]) : undefined;
+      scrolled.size > 0 ? Reflect.construct(Timeline, [{ source, axis: "block" }]) : undefined;
     if (timeline instanceof AnimationTimeline) {
       const y = readScrollY();
-      for (const [name, track] of scrollTracks(stage, input, maxScroll))
+      for (const [name, track] of scrolled)
         play(
           name,
           track,
@@ -1166,31 +1189,28 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
           maxScroll,
         );
     }
-    if (Reflect.get(globalThis, HELD_CLOCK) !== true) {
-      const left = new Set([...names].filter((name) => !next.has(name)));
-      const runs = new Map<TriggerBeat, TriggerRun>();
-      for (const [name, track] of triggerTracks(stage, { ...input, names: left })) {
-        const { beat } = track;
-        const animations = play(
-          name,
-          track,
-          0,
-          (node, keyframes) => {
-            const animation = node.animate(keyframes, {
-              duration: beat.ms,
-              fill: "both",
-              easing: "linear",
-            });
-            animation.pause();
-            return animation;
-          },
-          beat.ms,
-        );
-        const run = runs.get(beat) ?? { beat, animations: [], heading: undefined };
-        runs.set(beat, { ...run, animations: [...run.animations, ...animations] });
-      }
-      triggerRuns = [...runs.values()];
+    const runs = new Map<TriggerBeat, TriggerRun>();
+    for (const [name, track] of triggered) {
+      const { beat } = track;
+      const animations = play(
+        name,
+        track,
+        0,
+        (node, keyframes) => {
+          const animation = node.animate(keyframes, {
+            duration: beat.ms,
+            fill: "both",
+            easing: "linear",
+          });
+          animation.pause();
+          return animation;
+        },
+        beat.ms,
+      );
+      const run = runs.get(beat) ?? { beat, animations: [], heading: undefined };
+      runs.set(beat, { ...run, animations: [...run.animations, ...animations] });
     }
+    triggerRuns = [...runs.values()];
     if (next.size === 0) return;
     handed = next;
     engineOnly = new Set(

@@ -245,6 +245,15 @@ describe("triggered cards on the document timeline", () => {
         await running("crossing again")();
         await page.waitForTimeout(1000);
         await rest("revealed again")();
+        // Back and forth within one task: replay starts again with no frame between the two crossings.
+        await page.evaluate(() => {
+          for (const top of [0, 600]) {
+            window.scrollTo({ top, behavior: "instant" });
+            window.dispatchEvent(new Event("scroll"));
+          }
+        });
+        await page.waitForTimeout(400);
+        await running("crossed back and forth in one task")();
       },
     );
   }, 120000);
@@ -305,5 +314,26 @@ describe("the page tools on a page the browser plays", () => {
         0.25 + SLACK,
       );
     }
+  }, 120000);
+});
+
+describe("a motion that throws where the page has not scrolled", () => {
+  it("leaves the mount working and the element in the engine", async () => {
+    const { value, pageErrors } = await withPage(
+      {
+        page: "throws.html",
+        width: 800,
+        height: 600,
+        source: { kind: "serve", root: FIXTURES },
+        clock: "real",
+      },
+      ({ page }) =>
+        page.evaluate(() => ({
+          mounted: Reflect.get(window, "__mounted") === true,
+          animations: document.getElementById("late")?.getAnimations().length ?? -1,
+        })),
+    );
+    expect(pageErrors).toEqual([]);
+    expect(value).toEqual({ mounted: true, animations: 0 });
   }, 120000);
 });

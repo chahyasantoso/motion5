@@ -42,6 +42,7 @@ and when code moves between packages, the rules the target's manifest declares (
 constraints as constraints, never as advice. Say what not to read, and which gate a new folder will meet.
 
 Every brief tells the builder to:
+- fast-forward its worktree to the named hash first (it starts at `main`), and link `node_modules` from the main checkout with a junction, deleted before the worktree is;
 - commit after its first working version, so a usage limit loses less (resume a stopped agent by message);
 - save `npm run check` output to a file and test its exit code, never pipe it before a commit;
 - delete every `packages/*/dist` before the final check, so no gate leans on a build;

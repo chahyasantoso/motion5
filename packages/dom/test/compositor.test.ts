@@ -191,3 +191,22 @@ describe("what the browser plays from a trigger beat", () => {
     }
   });
 });
+
+describe("what the sampler refuses", () => {
+  it("gives up on a scroll range too long to sample before running the scene across it", () => {
+    let runs = 0;
+    const counted = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(box("counted"))
+        .motion(
+          motion((t: Time): Pose2d => {
+            runs += 1;
+            return { x: t.progress };
+          }).in(range),
+        ),
+    );
+    const names = new Set(["counted"]);
+    expect(scrollTracks(counted, { ...input, names }, 1_000_000).size).toBe(0);
+    expect(runs).toBeLessThan(10);
+  });
+});
