@@ -1,4 +1,4 @@
-import type { Anchor, Pose2d } from "@gerak/moves";
+import type { Anchor, Point2d, Pose2d } from "@gerak/core";
 import { BufferGeometry, Vector3, type Object3D } from "three";
 
 /** The anchor's point on the object's own geometry box, in its local space, y up; the origin without geometry. */
@@ -81,7 +81,7 @@ export function writeCustom(
 export function applyPose2d(
   object: Object3D,
   pose: Pose2d,
-  rest: { readonly x: number; readonly y: number } = { x: 0, y: 0 },
+  rest: Point2d = { x: 0, y: 0 },
   custom?: CustomWriter,
 ): void {
   const scaleX = (pose.scale ?? 1) * (pose.scaleX ?? 1);

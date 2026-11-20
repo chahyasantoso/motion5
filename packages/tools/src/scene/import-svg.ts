@@ -9,8 +9,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, sep } from "node:path";
-import type { Cubic2d } from "@gerak/moves";
-import { matchOutlines } from "@gerak/stage";
+import { pathBounds, transformPath, type Cubic2d, type Matrix2d } from "@gerak/core";
+import { matchOutlines } from "@gerak/stage/render";
 import { withPage } from "../page/page";
 import { pieceFiles } from "./briefs";
 import { addToPiece } from "./piece-edit";
@@ -23,15 +23,7 @@ import {
   type RawPaint,
   type RawPattern,
 } from "./svg-extract";
-import {
-  isEven,
-  isIdentity,
-  lengthScale,
-  multiply,
-  outlinesOf,
-  transformed,
-  type Matrix,
-} from "./svg-geometry";
+import { isEven, isIdentity, lengthScale, multiply, outlinesOf } from "./svg-geometry";
 
 /** The module written and what it holds, or `refused` with why; nothing is written then. */
 export type ImportResult =
@@ -92,7 +84,7 @@ function colour(css: string): string {
 }
 
 /** ` name="matrix(...)"`, or nothing for a matrix that moves nothing. */
-function transformAttribute(name: string, matrix: Matrix): string {
+function transformAttribute(name: string, matrix: Matrix2d): string {
   const flat = matrix.every(
     (value, index) => Math.abs(value - (index === 0 || index === 3 ? 1 : 0)) < 1e-9,
   );
@@ -138,7 +130,7 @@ class Defs {
   /** `url(#id)` for a gradient or pattern as it lands on one shape, or why it cannot. */
   place(
     paint: Extract<RawPaint, { kind: "server" }>,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     const { server } = paint;
     switch (server.kind) {
@@ -157,12 +149,12 @@ class Defs {
   private gradient(
     server: RawGradient,
     box: Box,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     const boxed = server.units === "objectBoundingBox";
     if (boxed && !(box.width > 0 && box.height > 0))
       return { why: `gradient #${server.id} on a shape with no width or height` };
-    const along = (key: string, axis: "x" | "y" | "r", fallback: string): number => {
+    const coord = (key: string, axis: "x" | "y" | "r", fallback: string): number => {
       const text = (server.attributes[key] ?? fallback).trim();
       const value = Number.parseFloat(text);
       if (!text.endsWith("%")) return value;
@@ -178,21 +170,21 @@ class Defs {
     const fields: [string, number][] =
       server.kind === "linear"
         ? [
-            ["x1", along("x1", "x", "0%")],
-            ["y1", along("y1", "y", "0%")],
-            ["x2", along("x2", "x", "100%")],
-            ["y2", along("y2", "y", "0%")],
+            ["x1", coord("x1", "x", "0%")],
+            ["y1", coord("y1", "y", "0%")],
+            ["x2", coord("x2", "x", "100%")],
+            ["y2", coord("y2", "y", "0%")],
           ]
         : [
-            ["cx", along("cx", "x", "50%")],
-            ["cy", along("cy", "y", "50%")],
-            ["r", along("r", "r", "50%")],
+            ["cx", coord("cx", "x", "50%")],
+            ["cy", coord("cy", "y", "50%")],
+            ["r", coord("r", "r", "50%")],
             ...(server.attributes["fx"] === undefined
               ? []
-              : [["fx", along("fx", "x", "50%")] as [string, number]]),
+              : [["fx", coord("fx", "x", "50%")] as [string, number]]),
             ...(server.attributes["fy"] === undefined
               ? []
-              : [["fy", along("fy", "y", "50%")] as [string, number]]),
+              : [["fy", coord("fy", "y", "50%")] as [string, number]]),
           ];
     // Everything lands in the shape's frame px at once: its matrix, then the box's, then the gradient's own.
     const reach = multiply(
@@ -225,7 +217,7 @@ class Defs {
 
   private pattern(
     server: RawPattern,
-    frame: Matrix,
+    frame: Matrix2d,
   ): { readonly css: string } | { readonly why: string } {
     if (
       server.units !== "userSpaceOnUse" ||
@@ -281,29 +273,8 @@ interface Placement {
 
 /** The extent of cubics given as eight numbers each, from points along every curve. */
 function boundsOf(cubics: readonly (readonly number[])[]): Part["bounds"] {
-  let x0 = Infinity;
-  let y0 = Infinity;
-  let x1 = -Infinity;
-  let y1 = -Infinity;
-  for (const cubic of cubics)
-    for (let step = 0; step <= 32; step += 1) {
-      const t = step / 32;
-      const u = 1 - t;
-      const at = (
-        a: number | undefined,
-        b: number | undefined,
-        c: number | undefined,
-        d: number | undefined,
-      ) =>
-        u ** 3 * (a ?? 0) + 3 * u * u * t * (b ?? 0) + 3 * u * t * t * (c ?? 0) + t ** 3 * (d ?? 0);
-      const x = at(cubic[0], cubic[2], cubic[4], cubic[6]);
-      const y = at(cubic[1], cubic[3], cubic[5], cubic[7]);
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-      y1 = Math.max(y1, y);
-    }
-  return { x0, y0, x1, y1 };
+  const box = pathBounds(asCubics(cubics), "curve");
+  return { x0: box.x, y0: box.y, x1: box.x + box.width, y1: box.y + box.height };
 }
 
 /** The part's name under the piece's prefix: `penguin` and `body` make `penguinBody`. */
@@ -325,7 +296,14 @@ function build(
   const defs = new Defs(viewBox, placement.prefix);
   // A placement is a scale and a shift, so a part that turns outward from a margin still shows.
   const { at, scale: grown } = placement;
-  const toFrame: Matrix = [grown, 0, 0, grown, at.x - viewBox.x * grown, at.y - viewBox.y * grown];
+  const toFrame: Matrix2d = [
+    grown,
+    0,
+    0,
+    grown,
+    at.x - viewBox.x * grown,
+    at.y - viewBox.y * grown,
+  ];
   const used = new Set<string>();
   let unnamed = 0;
   const parts: Part[] = [];
@@ -339,7 +317,9 @@ function build(
     if (parsed.error !== undefined)
       leftOut.push({ element: shape.element, reason: `path data stops early: ${parsed.error}` });
     const cubics = parsed.outlines.flatMap((outline) =>
-      outline.cubics.map((cubic) => transformed(cubic, matrix).map(thousandth)),
+      transformPath(outline, matrix).map((c) =>
+        [c.x0, c.y0, c.x1, c.y1, c.x2, c.y2, c.x3, c.y3].map(thousandth),
+      ),
     );
     if (cubics.length === 0) {
       leftOut.push({ element: shape.element, reason: "no outline to draw" });
@@ -490,27 +470,25 @@ function asCubics(cubics: readonly (readonly number[])[]): readonly Cubic2d[] {
   }));
 }
 
-/** The parts as members of a `cast` object, one `actor` each. */
-function castSource(parts: readonly Part[]): string {
-  return parts
-    .map(
-      ({ name, cubics, shapes }) =>
-        `  "${name}": actor({\n    still: true,\n    path: [\n${cubics.map((line) => `      ${line}`).join("\n")}\n    ],${shapesSource(shapes)}\n  }),`,
-    )
-    .join("\n");
-}
-
-/** A member's `shapes` option as source, or nothing when it has none. */
-function shapesSource(shapes: Part["shapes"]): string {
-  if (shapes === undefined) return "";
-  const outline = (lines: readonly string[]) =>
-    `      [\n${lines.map((line) => `        ${line}`).join("\n")}\n      ],`;
-  return `\n    shapes: [\n${shapes.map(outline).join("\n")}\n    ],`;
-}
-
 /** The parts' two skin rules each, as the text of a template literal. */
 function cssSource(parts: readonly Part[]): string {
   return templateText(parts.map(({ box, path }) => `${box}\n${path}`).join("\n"));
+}
+
+/** The parts as `.element(shape(...))` calls of a scene builder chain, one static element each. */
+function elementsSource(parts: readonly Part[]): string {
+  const lines = (list: readonly string[], indent: string): string =>
+    list.map((line) => `${indent}${line}`).join("\n");
+  return parts
+    .map(({ name, cubics, shapes }) => {
+      if (shapes === undefined)
+        return `  .element(\n    shape("${name}", [\n${lines(cubics, "      ")}\n    ]),\n  )`;
+      const targets = shapes
+        .map((outline) => `        [\n${lines(outline, "          ")}\n        ],`)
+        .join("\n");
+      return `  .element(\n    shape("${name}", {\n      base: [\n${lines(cubics, "        ")}\n      ],\n      targets: [\n${targets}\n      ],\n    }),\n  )`;
+    })
+    .join("\n");
 }
 
 /** The module's source text. */
@@ -519,31 +497,24 @@ function moduleSource(
   frame: { readonly width: number; readonly height: number },
   built: ReturnType<typeof build>,
 ): string {
-  const cast = castSource(built.parts);
   const css = cssSource(built.parts);
   const defs =
-    built.defs.length === 0 ? "" : `\n    defs: \`${templateText(built.defs.join("\n"))}\`,`;
-  return `// Imported from ${basename(source)} by gerak import-svg: flat parts in paint order; rename a part by replacing its quoted name.
-import type { Time } from "@gerak/moves";
-import { actor, story } from "@gerak/stage";
+    built.defs.length === 0 ? "" : `\n  defs: \`${templateText(built.defs.join("\n"))}\`,`;
+  return `// Imported from ${basename(source)} by gerak import-svg: flat static parts in paint order; add motions to a part with \`.motion(...)\` after its \`.element(...)\`.
+import { sceneBuilder, shape } from "@gerak/stage";
 
-export const beats = story(1000, { show: [0, 1000] });
-
-export const frame = { width: ${frame.width}, height: ${frame.height} };
-
-export const cast = {
-${cast}
-};
-
-export const skins = {
-  dom: {
-    css: \`
+/** How the DOM renderer draws this piece. */
+export const skin = {
+  css: \`
 ${css}
 \`,${defs}
-  },
 };
 
-export const scene = (_time: Time) => ({});
+export default sceneBuilder({
+  frame: { width: ${frame.width}, height: ${frame.height} },
+  length: 1000,
+})
+${elementsSource(built.parts)};
 `;
 }
 
@@ -669,7 +640,8 @@ export async function importSvgInto(
   if (built.parts.length === 0) return refuse("The SVG holds no shape this can draw.");
   const edit = addToPiece(source, {
     names: built.parts.map((part) => part.name),
-    members: castSource(built.parts),
+    imports: ["shape"],
+    members: elementsSource(built.parts),
     css: cssSource(built.parts),
     defs: templateText(built.defs.join("\n")),
     defIds: built.defs.flatMap((markup) => /\bid="([^"]+)"/.exec(markup)?.[1] ?? []),

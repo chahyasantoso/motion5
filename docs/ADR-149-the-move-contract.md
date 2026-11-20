@@ -1,6 +1,7 @@
 # ADR-149: The move contract
 
 **Status:** Accepted, 2026-11-08
+**Superseded in part by ADR-192:** the move contract.
 
 ## Context
 

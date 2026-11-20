@@ -1,11 +1,5 @@
-import { unreachable } from "../../unreachable";
-import {
-  clamp,
-  effectiveLink,
-  pivotFromBaseTip,
-  toRadians,
-  type WorldFrame,
-} from "../../frame/frame";
+import { clamp, unreachable } from "@gerak/core";
+import { effectiveLink, pivotFromBaseTip, toRadians, type WorldFrame } from "../../frame/frame";
 import { solveLength, solveOffset, type SolveMember } from "./member";
 import { readGoal } from "./goal-reading";
 import type { ClosedFormQuality, SolveResult } from "./result";

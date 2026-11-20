@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Group, Object3D, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { applyBones, attach, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, attach, captureSkeleton } from "@gerak/rig-three";
 
 const MODEL = new URL("../references/dragonling.glb", import.meta.url);
 const EYES = new URL("../references/dragonling.eyes.json", import.meta.url);

@@ -1,6 +1,9 @@
 {
   "name": "@gerak/tools",
   "version": "0.1.0",
+  "gerak": {
+    "group": "core"
+  },
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -9,23 +12,21 @@
   "files": [
     "dist",
     "bin",
-    "guide",
+    "skill",
+    "docs",
     "LICENSE"
   ],
   "dependencies": {
+    "@gerak/core": "0.1.0",
     "@gerak/dom": "0.1.0",
-    "@gerak/moves": "0.1.0",
     "@gerak/player": "0.1.0",
     "@gerak/react": "0.1.0",
-    "@gerak/rig": "0.1.0",
-    "@gerak/stage": "0.1.0",
-    "@gerak/three": "0.1.0"
+    "@gerak/stage": "0.1.0"
   },
   "peerDependencies": {
     "playwright-core": "*",
     "react": "*",
     "react-dom": "*",
-    "three": "*",
     "typescript": "*",
     "vite": "*"
   },

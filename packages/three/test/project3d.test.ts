@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PerspectiveCamera, Vector3 } from "three";
-import { aim, orbit, project3d, seeded, type Lens3d } from "@gerak/moves";
+import { aim, orbit, project3d, seeded, type Lens3d } from "@gerak/core";
 import { applyPose3d } from "@gerak/three";
 
 const STAGE = { width: 1280, height: 720 };

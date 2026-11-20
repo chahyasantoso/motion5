@@ -23,6 +23,18 @@ describe("the gerak bin", () => {
     }
   });
 
+  it("lists only its own commands, none for moves, and refuses one", () => {
+    const help = run(gerak, ["--help"]);
+    const listed = [...help.out.matchAll(/^ {2}(\S+) {2}/gm)].map((match) => match[1]);
+    expect(listed).toEqual(Object.keys(COMMANDS));
+    for (const name of ["moves", "new-move", "promote", "style"]) {
+      expect(listed).not.toContain(name);
+      const refused = run(gerak, [name]);
+      expect(refused.code).not.toBe(0);
+      expect(refused.out).toContain(`Unknown command ${name}.`);
+    }
+  });
+
   it("prints the usage and exits 1 when given no command", () => {
     const none = run(gerak, []);
     expect(none.code).toBe(1);
@@ -45,11 +57,11 @@ describe("the gerak bin", () => {
   });
 
   it("runs a command with the output its own script gives", () => {
-    const viaBin = run(gerak, ["moves", "--anatomy"]);
-    const direct = run(`${binFolder}motion-moves.mjs`, ["--anatomy"]);
-    expect(viaBin.code).toBe(0);
-    expect(viaBin.stdout.length).toBeGreaterThan(0);
-    expect(viaBin.stdout).toBe(direct.stdout);
+    const viaBin = run(gerak, ["points"]);
+    const direct = run(`${binFolder}motion-points.mjs`, []);
+    expect(viaBin.out.length).toBeGreaterThan(0);
+    expect(viaBin.code).toBe(direct.code);
+    expect(viaBin.out).toBe(direct.out);
   });
 
   it("resolves through the workspace bin link", () => {

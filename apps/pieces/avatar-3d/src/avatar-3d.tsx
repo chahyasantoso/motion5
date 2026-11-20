@@ -19,7 +19,7 @@ import {
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { usePlayer } from "@gerak/react";
 import { applyPose3d } from "@gerak/three";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import type { Shape3d } from "@gerak/physics";
 import { clock, cues, props, scene } from "./avatar-3d-scene";
 

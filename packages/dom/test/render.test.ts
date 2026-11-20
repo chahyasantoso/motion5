@@ -47,6 +47,29 @@ describe("applyValue", () => {
     });
   });
 
+  it("writes nothing when the value equals the last one written, and only the properties that changed", () => {
+    let writes = 0;
+    const style: Record<string, string> = {};
+    const counted = new Proxy(style, {
+      set(object, key, value) {
+        writes += 1;
+        return Reflect.set(object, key, value);
+      },
+    });
+    const target: RenderTarget = { style: counted };
+    applyValue(target, { x: 5, custom: { glow: 1 } });
+    const first = writes;
+    expect(first).toBeGreaterThan(0);
+    applyValue(target, { x: 5, custom: { glow: 1 } });
+    expect(writes).toBe(first);
+    applyValue(target, { x: 5, opacity: 0.5, custom: { glow: 1 } });
+    expect(writes).toBe(first + 1);
+    expect(style["opacity"]).toBe("0.5");
+    applyValue(target, { x: 6, opacity: 0.5, custom: { glow: 1 } });
+    expect(writes).toBe(first + 2);
+    expect(style["transform"]).toBe("translate3d(6px, 0px, 0px)");
+  });
+
   it("puts the target back at rest when a later value moves nothing", () => {
     const target = element();
     applyValue(target, { rotation: 180, scaleX: 1.6 });

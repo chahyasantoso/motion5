@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { combine, ease, fade, pop, pulse, repeated, rise, span, type Time } from "@gerak/moves";
+import { combine, ease, repeated, span, type Time } from "@gerak/core";
+import { fade, pop, pulse, rise } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
@@ -12,16 +13,16 @@ const breathe = span(2200, 3400);
 /** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
 export const scene = (time: Time) => ({
   night: combine([
-    rise({ distance: 40 }, nightIn.of(time, ease.sineOut)),
-    fade({}, nightIn.of(time, ease.sineOut)),
+    rise({ distance: 40 })(nightIn.of(time, ease.sineOut)),
+    fade()(nightIn.of(time, ease.sineOut)),
   ]),
   shift: combine([
-    rise({ distance: 40 }, shiftIn.of(time, ease.sineOut)),
-    fade({}, shiftIn.of(time, ease.sineOut)),
+    rise({ distance: 40 })(shiftIn.of(time, ease.sineOut)),
+    fade()(shiftIn.of(time, ease.sineOut)),
   ]),
   dot: combine([
-    pop({ overshoot: 0.15 }, dotIn.of(time)),
-    pulse({ amount: 0.6 }, repeated(breathe.of(time), 1)),
+    pop({ overshoot: 0.15 })(dotIn.of(time)),
+    pulse({ amount: 0.6 })(repeated(breathe.of(time), 1)),
   ]),
 });
 

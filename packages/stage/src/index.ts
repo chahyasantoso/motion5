@@ -1,35 +1,96 @@
 export {
-  actor,
-  castNames,
-  presentAt,
-  group,
-  letters,
-  many,
-  pathOf,
-  words,
-  type Actor,
-  type ActorPath,
-  type ActorText,
-  type Behaviour,
-  type Cast,
-  type CastName,
-  type Group,
-  type Many,
-  type Member,
+  type Content,
+  type Expect,
+  type ItemContent,
+  type NodeBinding,
+  type Path,
   type Pivot,
-  type Stretch,
-} from "./cast";
-export { blendShapes, matchOutlines, meets, piecesOf, SEAM } from "./outlines";
-export { DEFAULT_FRAME, frame, story, type Frame, type Story } from "./story";
-export { cssVariables } from "./css-variables";
-export { carried, carry, type CarriedOptions, type CarrySize } from "./carry";
-export { NO_LAYOUTS, NO_REST, restOf, type Box, type Layouts, type Rest } from "./rest";
-export { readStageModule, type Skins, type StageModule } from "./module";
+} from "./author/cast";
 export {
-  boundsOf,
-  describeLoop,
-  drawInPasses,
-  restOfBounds,
-  type PathAnswer,
-  type StrokeLoop,
-} from "./strokes";
+  beat,
+  scrollPoint,
+  section,
+  type Beat,
+  type BeatContext,
+  type BeatPlace,
+  type ScrollBeat,
+  type ScrollBeatOptions,
+  type ScrollPoint,
+  type ScrollReached,
+  type Section,
+  type TriggerBack,
+  type TriggerBeat,
+  type TriggerPlace,
+} from "./author/beat";
+export {
+  box,
+  el,
+  group,
+  many,
+  shape,
+  text,
+  type Element,
+  type ElementOptions,
+  type MorphSource,
+  type Outline,
+  type ShapeSource,
+  type TextOptions,
+} from "./author/elements";
+export {
+  bind,
+  bindEach,
+  carry,
+  compileScene,
+  isScene,
+  sceneBuilder,
+  stagger,
+  stayWith,
+  travel,
+  type BoundEachFields,
+  type BoundFields,
+  type CompileSceneOptions,
+  type ElementStep,
+  type MotionContext,
+  type Principle,
+  type ReadAt,
+  type SceneBuilder,
+  type SceneBuilderOptions,
+  type SceneMotion,
+  type ShowWindow,
+  type StaggerBy,
+  type StaggerFrom,
+  type StaggerOptions,
+  type TravelOptions,
+} from "./author/scene-builder";
+export {
+  NO_REST,
+  ZERO_BOX,
+  restReader,
+  type Box,
+  type Carry,
+  type CarryMode,
+  type CarryOptions,
+  type Frame,
+  type Rest,
+  type RestReader,
+} from "./author/layout";
+export {
+  isDomSkin,
+  type CompiledSection,
+  type DomSkinInput,
+  type Limits,
+  type LayoutsInput,
+  type ListPose,
+} from "./author/stage";
+export {
+  DEFAULT_FRAME,
+  isStage,
+  type CompileResult,
+  type DomSkin,
+  type Member,
+  type Stage,
+  type StageLayouts,
+} from "./run/compile";
+export { formatStageError, type StageError } from "./run/errors";
+export { check, frame, listPose, poseOf, type FrameInput, type FrameOutput } from "./run/frame";
+export { beatAt, type Window } from "./run/timeline";

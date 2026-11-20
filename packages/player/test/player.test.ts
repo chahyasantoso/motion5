@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, hop, type Time } from "@gerak/moves";
+import { atProgress, type Time } from "@gerak/core";
+import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
 const scene = (time: Time) => ({
-  ball: hop({ height: 100, bounces: 1 }, time),
+  ball: hop({ height: 100, bounces: 1 })(time),
   label: { text: time.progress < 0.5 ? "up" : "down" },
 });
 

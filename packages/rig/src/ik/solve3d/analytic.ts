@@ -1,5 +1,4 @@
-import { unreachable } from "../../unreachable";
-import { clamp, readNumber, segmentExtent } from "../../frame/frame";
+import { readNumber, segmentExtent } from "../../frame/frame";
 import {
   add3,
   cross3,
@@ -15,14 +14,18 @@ import {
   multiplyVector3,
   transposeMatrix3,
   ZERO_EULER,
+  type Euler3d,
+  type Matrix3,
+  type Vec3,
+  unreachable,
+  clamp,
+} from "@gerak/core";
+import {
   effectiveLink3d,
   pivotFromBase3d,
   readPivotOffset3d,
   type EffectiveLink3d,
-  type Euler3d,
-  type Matrix3,
   type PivotOffset3d,
-  type Vec3,
   type WorldFrame3d,
 } from "../../frame/frame3d";
 import { bandQuality, cosineOpposite } from "../shared/analytic";

@@ -1,4 +1,4 @@
-import { NO_EVENTS, elapsedOf, type Events, type MotionEvent, type Time } from "@gerak/moves";
+import { NO_EVENTS, elapsedOf, type Events, type MotionEvent, type Time } from "@gerak/core";
 import type {
   BodySpec,
   BodySpec3d,

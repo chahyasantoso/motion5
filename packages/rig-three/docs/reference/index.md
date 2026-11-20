@@ -1,0 +1,7 @@
+# @gerak/rig-three: index
+
+- **`applyBones`** `(skeleton: CapturedSkeleton, poses: Readonly<Record<string, Pose3d>>): void`: Applies per-bone `Pose3d` deltas (from `bonesOf3d` or hand-keyed) relative to rest, resetting omitted bones.
+- **`attach`** `(skeleton: CapturedSkeleton, bone: string, object: Object3D, options: { readonly at: Vector3; readonly turn?: Quaternion; }): void`: Parents `object` to a bone at model-space `at`, turned by model-space `turn`, from captured rest only.
+- **`captureSkeleton`** `(source: Object3D | Skeleton): CapturedSkeleton`: Captures rest poses and world joints of a Three.js `Object3D` or `Skeleton`; throws on scaled or unnamed bones.
+- **`CapturedBone`** `type CapturedBone = { name: string; bone: Bone<Object3DEventMap>; parent: CapturedBone | undefined; restPosition: Readonly<Vector3>; restQuaternion: Readonly<Quaternion>; restWorldQuaternion: Readonly<Quaternion>; restParentWorldQuaternion: Readonly<Quaternion>; restParentWorldScale: Readonly<Vector3>; joint: Joint3d<string> }`: A captured Three.js bone with its rest local and world transforms and its world rest joint.
+- **`CapturedSkeleton`** `type CapturedSkeleton = { bones: readonly CapturedBone[]; byName: ReadonlyMap<string, CapturedBone>; joints: Readonly<Record<string, Joint3d<string>>>; joint: <Name extends string>(name: Name) => Joint3d<Name> }`: A Three.js skeleton captured at rest: bones parent-before-child, lookup by name, and world rest joints.

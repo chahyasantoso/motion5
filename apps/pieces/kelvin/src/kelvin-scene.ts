@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { combine, drop, ease, fade, mix, span, swing, type Pose2d, type Time } from "@gerak/moves";
+import { combine, ease, mix, span, type Pose2d, type Time } from "@gerak/core";
+import { drop, fade, swing } from "@gerak/moves";
 
 export const durationMs = 5000;
 
@@ -13,16 +14,16 @@ export const scene = (time: Time) => {
   const ruleProgress = rule.of(time, ease.sineInOut).progress;
   return {
     name: combine([
-      drop({ distance: 560, squash: 0.05 }, fall.of(time)),
-      fade({}, span(300, 700).of(time)),
+      drop({ distance: 560, squash: 0.05 })(fall.of(time)),
+      fade()(span(300, 700).of(time)),
     ]),
     rule: {
       scaleX: mix(0, 1, ruleProgress),
       opacity: mix(0, 1, ruleProgress),
     } satisfies Pose2d,
     tag: combine([
-      swing({ angle: 11, swings: 2, anchor: "top" }, hang.of(time)),
-      fade({}, tagIn.of(time)),
+      swing({ angle: 11, swings: 2, anchor: "top" })(hang.of(time)),
+      fade()(tagIn.of(time)),
     ]),
     caption: {
       opacity: mix(0, 1, caption.of(time, ease.sineInOut).progress),

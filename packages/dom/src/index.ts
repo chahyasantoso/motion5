@@ -29,13 +29,24 @@ export {
   type PointerLike,
 } from "./events";
 export {
+  mountPage,
+  type MountedPage,
+  type PageElement,
+  type PageOptions,
+  type PageRoot,
+  type PageScrollTarget,
+  type PageStyle,
+} from "./page";
+export {
   mountStage,
-  stageModuleOf,
   type MountedStage,
   type StageElement,
   type StageEvent,
   type StageFonts,
+  type StageHost,
+  type StageInput,
   type StageOptions,
+  type StageStroke,
   type StageStyle,
   type StageValues,
 } from "./stage";

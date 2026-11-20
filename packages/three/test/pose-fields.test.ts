@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Mesh, MeshBasicMaterial } from "three";
 import { applyValue, type RenderTarget } from "@gerak/dom";
-import { POSE_2D_FIELDS, type Pose2d } from "@gerak/moves";
+import { POSE_2D_FIELDS, type Pose2d } from "@gerak/core";
 import { applyPose2d, applyPose3d, WRITTEN_2D } from "../src/index";
 
 type Field = (typeof POSE_2D_FIELDS)[number];

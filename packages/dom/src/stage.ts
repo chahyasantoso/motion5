@@ -1,42 +1,43 @@
 import {
-  NO_EVENTS,
-  POSE_2D_FIELDS,
-  elapsedOf,
+  unreachable,
   type Cubic2d,
   type Events,
   type Pose2d,
-  type Span,
+  type Signal,
   type Time,
-} from "@gerak/moves";
-import { play, type Driver, type Player, type Scene } from "@gerak/player";
+} from "@gerak/core";
+import { play, type Player } from "@gerak/player";
 import {
-  blendShapes,
-  boundsOf,
-  castNames,
-  DEFAULT_FRAME,
-  describeLoop,
-  drawInPasses,
-  restOfBounds,
-  type PathAnswer,
-  type ActorPath,
+  check,
+  compileScene,
+  formatStageError,
+  frame as frameOf,
+  isScene,
+  isStage,
+  listPose,
+  poseOf,
+  restReader,
+  ZERO_BOX,
   type Box,
-  type Cast,
-  type CastName,
+  type Content,
+  type DomSkin,
+  type DomSkinInput,
   type Frame,
+  type FrameOutput,
+  type Member,
+  type Path,
   type Pivot,
-  type Layouts,
   type Rest,
-  type StageModule,
-  NO_LAYOUTS,
-  NO_REST,
-  presentAt,
+  type RestReader,
+  type SceneBuilder,
+  type Stage,
 } from "@gerak/stage";
+import { drawStrokes, morphAt, restOfBounds, strokeBox } from "@gerak/stage/render";
 import { clockDriver, type ClockDriver } from "./drivers";
 import type { PointerLike } from "./events";
 import type { FrameSource } from "./frames";
 import { partPaints } from "./paints";
 import { applyValue, pathData, splitStroke, type RenderStyle } from "./render";
-import { unreachable } from "./unreachable";
 
 /** The style properties the stage writes beside a value's; a page element's style has them all. */
 export interface StageStyle extends RenderStyle {
@@ -73,14 +74,26 @@ export interface StageStroke<S> {
   readonly style: RenderStyle;
   setAttribute(name: string, value: string): void;
   append(...nodes: S[]): void;
+  remove?(): void;
   getTotalLength?(): number;
   /** Markup inside it; the stage writes a skin's `defs` this way. */
   innerHTML?: string;
 }
 
+/** Minimal container contract accepted by `mountStage`: a page `Element` or test stand-in. */
+export interface StageHost<E, S extends StageStroke<S> = StageStroke<never>> {
+  readonly ownerDocument: {
+    createElement(tag: "div" | "style"): E;
+    createElementNS(namespace: typeof SVG, name: "svg" | "path"): S;
+    readonly fonts?: StageFonts;
+  };
+  append(...nodes: (E | S)[]): void;
+}
+
 /** An element the stage builds with and writes: a page element, or a stand-in in a test; `S` is
  * the SVG element it draws a stroke member's path with. */
-export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> {
+export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>>
+  extends StageHost<E, S> {
   readonly style: StageStyle;
   textContent: string | null;
   tabIndex: number;
@@ -93,78 +106,47 @@ export interface StageElement<E, S extends StageStroke<S> = StageStroke<never>> 
   readonly offsetHeight: number;
   readonly clientWidth: number;
   readonly clientHeight: number;
-  readonly ownerDocument: {
-    createElement(tag: "div" | "style"): E;
-    createElementNS(namespace: typeof SVG, name: "svg" | "path"): S;
-    readonly fonts?: StageFonts;
-  };
   attachShadow(init: { readonly mode: "open" }): { append(...nodes: E[]): void };
   setAttribute(name: string, value: string): void;
   removeAttribute(name: string): void;
-  append(...nodes: (E | S)[]): void;
   remove(): void;
   addEventListener(type: string, listener: (event: StageEvent) => void): void;
   removeEventListener(type: string, listener: (event: StageEvent) => void): void;
 }
 
-/** A scene's answer per member name: one value, or one per item of a `many`. */
-export type StageValues = Readonly<Record<string, Pose2d | readonly Pose2d[] | undefined>>;
+/** A frame's targets as the scene returned them: a pose per actor or group, a function per list. */
+export type StageValues = Readonly<Record<string, unknown>>;
 
-function isPose(value: unknown): value is Pose2d {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  const custom: unknown = Reflect.get(value, "custom");
-  return (
-    POSE_2D_FIELDS.every((field) => {
-      const given: unknown = Reflect.get(value, field);
-      return given === undefined || typeof given === (field === "anchor" ? "string" : "number");
-    }) &&
-    (custom === undefined ||
-      (typeof custom === "object" &&
-        custom !== null &&
-        Object.values(custom).every((entry) => typeof entry === "number")))
-  );
-}
+/** What `mountStage` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
+export type StageInput = Stage | SceneBuilder;
 
-function isStageValues(values: object): values is StageValues {
-  return Object.values(values).every(
-    (value) =>
-      value === undefined || isPose(value) || (Array.isArray(value) && value.every(isPose)),
-  );
-}
-
-/** A stage module whose scene answers any object, checked on every frame to be stage values. */
-export function stageModuleOf<B extends string>(
-  module: StageModule<B>,
-): StageModule<B, StageValues> {
-  return {
-    ...module,
-    scene: (time, events, rest, layouts) => {
-      const values = module.scene(time, events, rest, layouts);
-      if (!isStageValues(values))
-        throw new TypeError("The scene answered a value that is not a pose or a list of poses.");
-      return values;
-    },
-  };
-}
-
-/** Settings of `mountStage`: the frames its clock runs on. */
+/** Settings of `mountStage`: the frames its clock runs on, and whether each frame's shapes are checked. */
 export interface StageOptions {
   readonly frames?: FrameSource;
   /** Told of the driver each time a run starts, the first and every replay. */
   readonly onDriver?: (driver: ClockDriver) => void;
+  /** Checks every frame's targets with `check` and throws on a mistake; for authoring pages. */
+  readonly checks?: boolean;
+  /** How the DOM draws a scene given as `sceneBuilder` returns it; a compiled stage carries its own. */
+  readonly skin?: DomSkinInput;
 }
 
-/** A playing stage: its player and driver, which a replay swaps for fresh ones. */
-export interface MountedStage<B extends string = string> {
+/** A playing stage: its player, driver, measured boxes, skin readiness, and lifecycle controls. */
+export interface MountedStage {
   readonly player: Player<StageValues>;
   readonly driver: ClockDriver;
+  /** Rest boxes of the layout showing. */
+  readonly rest: Rest;
+  /** Rest boxes of every layout, by name. */
+  readonly layouts: Readonly<Record<string, Rest>>;
+  /** Settles once the skin is applied and measured; a URL skin is fetched first. */
+  readonly ready: Promise<void>;
   replay(): void;
-  /** Swaps in the scene of a module with the same cast, skin and story, keeping time. */
-  replace(next: StageModule<B, StageValues>): void;
-  /** Logs a sample of a live number at the clock's ms, such as a microphone's level; the clock runs on past
-   * the story's end until it settles. */
+  /** Swaps in a stage with the same signature, keeping time. */
+  replace(next: StageInput): void;
+  /** Logs a sample of a live number at the clock's ms; the clock runs on past the end until settled. */
   send(name: string, value: number, target?: string): void;
-  /** Everything logged so far, oldest first: hovers and samples, ready to save as a module's `cues`. */
+  /** Everything logged so far, oldest first: hovers and samples. */
   events(): Events;
   dispose(): void;
 }
@@ -210,239 +192,77 @@ function namedBy(css: string): (name: string, list?: string) => boolean {
     prefixes.some((start) => name.startsWith(start));
 }
 
-/** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it;
- * with no box it is only taken out of the flow. */
-function strokePlace(name: string, box: Box | undefined, layout?: string): string {
+/** A stroke member placed at `box` in its parent's space, at no specificity so a skin overrides it. */
+function strokePlace(name: string, box: Box | undefined, layout: string): string {
   const at =
     box === undefined
       ? ""
       : ` left: ${box.x}px; top: ${box.y}px; width: ${box.width}px; height: ${box.height}px;`;
-  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
-  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
+  return `:where([data-layout=${JSON.stringify(layout)}] [data-cast=${JSON.stringify(name)}]) { position: absolute;${at} }`;
 }
 
-/** A member's transform origin at its pivot, from where its box rests; under the skin and a pose's anchor. */
-function pivotPlace(name: string, box: Box, pivot: Pivot, layout?: string): string {
+/** A member's transform origin at its pivot, from where its box rests. */
+function pivotPlace(name: string, box: Box, pivot: Pivot, layout: string): string {
   const left = pivot.x - (box.x - box.width / 2);
   const top = pivot.y - (box.y - box.height / 2);
-  const under = layout === undefined ? "" : `[data-layout=${JSON.stringify(layout)}] `;
-  return `:where(${under}[data-cast=${JSON.stringify(name)}]) { transform-origin: ${left}px ${top}px; }`;
+  return `:where([data-layout=${JSON.stringify(layout)}] [data-cast=${JSON.stringify(name)}]) { transform-origin: ${left}px ${top}px; }`;
 }
 
-/** The key a stroke keeps its drawing under on a stage with no layouts. */
-const UNLAID = "";
-
-/** A stroke member's drawing: its svg and path, the path it is given, its last good cubics by
- * layout, and the cubics its path shows. */
 interface Stroke<S> {
   readonly svg: S;
   readonly path: S;
-  readonly source: ActorPath;
+  source: Path;
+  readonly isMorph: boolean;
   readonly cubics: Map<string, readonly Cubic2d[]>;
   painted: readonly Cubic2d[] | undefined;
-  /** Its path and shapes matched, when it morphs. */
-  readonly shapes: CastName["shapes"];
-  /** The `shape` its `d` was last written for. */
-  shape: number;
+  hasPartDefs: boolean;
 }
 
-/** The box a stroke is placed and viewed by: its bounds, grown about their centre to 1 px on a side thinner than that. */
-function strokeBox(cubics: readonly Cubic2d[]): Box {
-  const box = boundsOf(cubics);
-  const grown = (from: number, size: number): readonly [number, number] =>
-    size >= 1 ? [from, size] : [from + size / 2 - 0.5, 1];
-  const [x, width] = grown(box.x, box.width);
-  const [y, height] = grown(box.y, box.height);
-  return { x, y, width, height };
-}
-
-/** What one measure finds: the rest of a stage with no layouts, or every layout's rest. */
 interface Measured {
-  readonly rest: Rest;
-  readonly layouts: Layouts;
+  readonly layouts: Readonly<Record<string, Rest>>;
+  readonly readers: Readonly<Record<string, RestReader>>;
+}
+
+/** A member's element, or a list item's: `index` is the item's place in its list `member`. */
+interface Placed<E> {
+  readonly name: string;
+  member: Member;
+  readonly index: number | undefined;
+  readonly element: E;
+  readonly parent: Placed<E> | undefined;
+  readonly items: readonly E[];
 }
 
 function sameNames(next: readonly string[], last: readonly string[]): boolean {
   return next.length === last.length && next.every((name, index) => name === last[index]);
 }
 
-/** Reports an error the way an uncaught one in a frame is, without stopping the caller. */
-function report(error: unknown): void {
-  if (typeof reportError === "function") reportError(error);
-  else
-    setTimeout(() => {
-      throw error;
-    }, 0);
+function sameFrame(a: Frame, b: Frame): boolean {
+  return a.width === b.width && a.height === b.height;
 }
 
-interface Placed<E> {
-  readonly info: CastName;
-  readonly element: E;
-  readonly parent: Placed<E> | undefined;
-  readonly items: readonly E[];
-}
-
-function isList(value: Pose2d | readonly Pose2d[]): value is readonly Pose2d[] {
-  return Array.isArray(value);
-}
-
-function isBeat<B extends string>(order: readonly B[], name: string): name is B {
-  const names: readonly string[] = order;
-  return names.includes(name);
-}
-
-function isElement(value: unknown): value is Element {
-  return typeof Element !== "undefined" && value instanceof Element;
-}
-
-/** Plays a stage module in `container`: builds its cast, scopes its skin, fits its frame, measures
- * each rest box and binds the scene's values; `R` or a click on the background replays it. */
-export function mountStage<B extends string>(
-  container: HTMLElement,
-  module: StageModule<B, StageValues>,
-  options?: StageOptions,
-): MountedStage<B>;
-export function mountStage<
-  B extends string,
-  E extends StageElement<E, S>,
-  S extends StageStroke<S>,
->(
-  container: E & StageElement<E, S>,
-  module: StageModule<B, StageValues>,
-  options?: StageOptions,
-): MountedStage<B>;
-export function mountStage<
-  B extends string,
-  E extends StageElement<E, S>,
-  S extends StageStroke<S>,
->(
-  container: E & StageElement<E, S>,
-  module: StageModule<B, StageValues>,
-  options: StageOptions = {},
-): MountedStage<B> {
-  const { beats, cast } = module;
-  const size = module.frame ?? DEFAULT_FRAME;
-  const document = container.ownerDocument;
-  const infos = new Map(castNames(cast, beats.order).map((info) => [info.name, info]));
-  const styled = namedBy(module.skins.dom?.css ?? "");
-
-  const host = document.createElement("div");
-  host.setAttribute("data-stage", "host");
-  host.tabIndex = 0;
-  Object.assign(host.style, {
-    display: "block",
-    position: "relative",
-    overflow: "hidden",
-    width: "100%",
-    height: "100%",
-  });
-  const root = host.attachShadow({ mode: "open" });
-  const style = document.createElement("style");
-  // A part painted by a def of its own reads its own copy, so no two parts share a paint server.
-  const parted = partPaints(
-    module.skins.dom?.css ?? "",
-    module.skins.dom?.defs,
-    [...infos.values()].flatMap(({ name, path }) => (path === undefined ? [] : [name])),
-  );
-  const styleWith = (places: readonly string[]): string =>
-    `${DEFAULT_SKIN}\n${places.join("\n")}\n${parted.css}`;
-  style.textContent = styleWith(
-    [...infos.values()].flatMap(({ name, path }) =>
-      path === undefined ? [] : [strokePlace(name, undefined)],
-    ),
-  );
-  const frame = document.createElement("div");
-  frame.setAttribute("data-stage", "frame");
-  Object.assign(frame.style, {
-    position: "absolute",
-    left: "50%",
-    top: "50%",
-    marginLeft: `${-size.width / 2}px`,
-    marginTop: `${-size.height / 2}px`,
-    width: `${size.width}px`,
-    height: `${size.height}px`,
-    transformOrigin: "50% 50%",
-  });
-  root.append(style, frame);
-  const paints = module.skins.dom?.defs;
-  if (paints !== undefined) {
-    // Paint servers live once in the stage's root, so every member's `fill: url(#id)` reaches them.
-    const defs = document.createElementNS(SVG, "svg");
-    defs.setAttribute("aria-hidden", "true");
-    defs.setAttribute("style", "position: absolute; width: 0; height: 0; overflow: hidden;");
-    defs.innerHTML = `<defs>${paints}</defs>`;
-    frame.append(defs);
+function sameDomSkin(a: DomSkin | undefined, b: DomSkin | undefined): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  switch (a.kind) {
+    case "inline":
+      return b.kind === "inline" && a.css === b.css && a.defs === b.defs;
+    case "url":
+      return b.kind === "url" && a.css.href === b.css.href && a.defs?.href === b.defs?.href;
+    default:
+      return unreachable(a);
   }
+}
 
-  const placed = new Map<string, Placed<E>>();
-  const strokes = new Map<E, Stroke<S>>();
-  const readouts = new Map<E, { readonly name: string; readonly text: (time: Time) => string }>();
-  const startTime: Time = {
-    progress: 0,
-    clock: { kind: "timed", elapsed: 0, length: beats.durationMs },
-  };
-  const misread = new Set<string>();
-  let lastLoop: string | undefined;
-  // A readout throwing or answering a non-string is reported once, and the text it last wrote kept.
-  const readout = (name: string, text: (time: Time) => string, time: Time): string | undefined => {
-    let error: Error;
-    try {
-      const said: unknown = text(time);
-      if (typeof said === "string") return said;
-      error = new TypeError(`The text of "${name}" answered ${typeof said}, not a string.`);
-    } catch (thrown) {
-      error = new Error(`The text of "${name}" failed: ${String(thrown)}`, { cause: thrown });
-    }
-    if (!misread.has(name)) report(error);
-    misread.add(name);
-    return undefined;
-  };
-  const leaf = (element: E, info: CastName, list?: string): void => {
-    const text = info.text;
-    if (text !== undefined) {
-      if (typeof text === "function") {
-        readouts.set(element, { name: info.name, text });
-        element.textContent = readout(info.name, text, startTime) ?? "";
-      } else element.textContent = text;
-      element.setAttribute("data-text", "");
-    }
-    if (info.path !== undefined) {
-      const svg = document.createElementNS(SVG, "svg");
-      const path = document.createElementNS(SVG, "path");
-      path.setAttribute("data-path", info.name);
-      const partDefs = parted.defs.get(info.name);
-      if (partDefs !== undefined) svg.innerHTML = `<defs>${partDefs}</defs>`;
-      svg.append(path);
-      element.append(svg);
-      element.setAttribute("data-stroke", "");
-      strokes.set(element, {
-        svg,
-        path,
-        source: info.path,
-        cubics: new Map(),
-        painted: undefined,
-        shapes: info.shapes,
-        shape: 0,
-      });
-    } else if (!styled(info.name, list)) element.setAttribute("data-skin", "default");
-  };
-  const write = (element: E, value: Pose2d): void => {
-    const drawing = strokes.get(element);
-    if (drawing === undefined) {
-      applyValue(element, value);
-      return;
-    }
-    const { stroke, body } = splitStroke(value);
-    applyValue(element, body);
-    applyValue(drawing.path, stroke);
-    // The outline is rewritten on the frame its shape changes, and never otherwise.
-    const shape = value.shape ?? 0;
-    if (drawing.shapes !== undefined && shape !== drawing.shape) {
-      drawing.path.setAttribute("d", pathData(blendShapes(drawing.shapes, shape)));
-      drawing.shape = shape;
-    }
-  };
-  const sameCubics = (next: readonly Cubic2d[], last: readonly Cubic2d[] | undefined): boolean =>
+function samePivots(a: readonly Member[], b: readonly Member[]): boolean {
+  return a.every((member, index) => {
+    const other = b[index];
+    return member.pivot?.x === other?.pivot?.x && member.pivot?.y === other?.pivot?.y;
+  });
+}
+
+function sameCubics(next: readonly Cubic2d[], last: readonly Cubic2d[] | undefined): boolean {
+  return (
     last !== undefined &&
     next.length === last.length &&
     next.every((cubic, index) => {
@@ -458,86 +278,323 @@ export function mountStage<
         cubic.x3 === was.x3 &&
         cubic.y3 === was.y3
       );
+    })
+  );
+}
+
+/** Reports an error the way an uncaught one in a frame is, without stopping the caller. */
+function report(error: unknown): void {
+  if (typeof reportError === "function") reportError(error);
+  else
+    setTimeout(() => {
+      throw error;
+    }, 0);
+}
+
+function isElement(value: unknown): value is Element {
+  return typeof Element !== "undefined" && value instanceof Element;
+}
+
+function contentOf(placed: Placed<unknown>): Content | undefined {
+  const { member, index } = placed;
+  switch (member.kind) {
+    case "actor":
+      return member.content;
+    case "list":
+      return index === undefined ? undefined : member.items[index];
+    case "group":
+      return undefined;
+    default:
+      return unreachable(member);
+  }
+}
+
+function sourceOf(content: Content | undefined): Path | undefined {
+  if (content?.kind === "stroke") return content.path;
+  if (content?.kind === "morph") return content.shapes[0];
+  return undefined;
+}
+
+/** The stage a scene compiles to with `skin`, or the stage itself; throws naming every compile error. */
+function resolveStage(input: StageInput, skin: DomSkinInput | undefined): Stage {
+  if (isStage(input)) {
+    if (skin !== undefined)
+      throw new Error(
+        "mountStage: a compiled stage carries its own skin; pass `skin` to compileScene.",
+      );
+    return input;
+  }
+  if (!isScene(input))
+    throw new Error("mountStage: expected a stage or what `sceneBuilder` returns.");
+  const compiled = compileScene(input, { skin });
+  if (compiled.ok) return compiled.stage;
+  throw new Error(
+    `mountStage: invalid stage:\n${compiled.errors.map(formatStageError).join("\n")}`,
+  );
+}
+
+/** Plays a stage in `host`; `R` or a click on the background replays it. */
+export function mountStage(host: Element, stage: StageInput, options?: StageOptions): MountedStage;
+export function mountStage<E extends StageElement<E, S>, S extends StageStroke<S>>(
+  host: E & StageElement<E, S>,
+  stage: StageInput,
+  options?: StageOptions,
+): MountedStage;
+export function mountStage<E extends StageElement<E, S>, S extends StageStroke<S>>(
+  host: Element | (E & StageElement<E, S>),
+  stage: StageInput,
+  options: StageOptions = {},
+): MountedStage {
+  if (isElement(host)) return mountInto<HTMLElement, SVGElement>(host, host, stage, options);
+  return mountInto(host, host, stage, options);
+}
+
+function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
+  container: StageHost<E, S>,
+  rawContainer: unknown,
+  stageInput: StageInput,
+  options: StageOptions,
+): MountedStage {
+  let currentStage = resolveStage(stageInput, options?.skin);
+  let size: Frame = currentStage.frame;
+  const document = container.ownerDocument;
+
+  const host = document.createElement("div");
+  host.setAttribute("data-stage", "host");
+  host.tabIndex = 0;
+  Object.assign(host.style, {
+    display: "block",
+    position: "relative",
+    overflow: "hidden",
+    width: "100%",
+    height: "100%",
+  });
+  const root = host.attachShadow({ mode: "open" });
+  const style = document.createElement("style");
+  const frame = document.createElement("div");
+  frame.setAttribute("data-stage", "frame");
+  const applyFrameSize = (nextSize: Frame): void => {
+    size = nextSize;
+    Object.assign(frame.style, {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      marginLeft: `${-size.width / 2}px`,
+      marginTop: `${-size.height / 2}px`,
+      width: `${size.width}px`,
+      height: `${size.height}px`,
+      transformOrigin: "50% 50%",
     });
-  // A stroke's cubics in one layout from its pass's answer; a path function that throws is reported and
-  // that layout's last good path kept.
-  const draw = (
-    name: string,
-    stroke: Stroke<S>,
-    answer: PathAnswer,
-    layout: string,
-  ): readonly Cubic2d[] | undefined => {
-    switch (answer.kind) {
-      case "failed":
-        report(
-          new Error(`The path of "${name}" failed: ${String(answer.error)}`, {
-            cause: answer.error,
-          }),
-        );
-        return stroke.cubics.get(layout);
-      case "drawn":
-        stroke.cubics.set(layout, answer.cubics);
-        return answer.cubics;
-      default:
-        return unreachable(answer);
-    }
   };
-  // Shows every stroke as drawn in `layout`, writing a path only when its cubics changed.
+  applyFrameSize(size);
+  root.append(style, frame);
+
+  const placed = new Map<string, Placed<E>>();
+  const byIndex: Placed<E>[] = [];
+  const strokes = new Map<E, Stroke<S>>();
+  const strokeNames: string[] = [];
+  const startTime: Time = {
+    progress: 0,
+    clock: { kind: "timed", elapsed: 0, length: currentStage.durationMs },
+  };
+  let lastLoop: string | undefined;
+
+  const write = (element: E, value: Pose2d): void => {
+    const drawing = strokes.get(element);
+    if (drawing === undefined) {
+      applyValue(element, value);
+      return;
+    }
+    const { stroke, body } = splitStroke(value);
+    applyValue(element, body);
+    applyValue(drawing.path, stroke);
+  };
+
+  // Shows every non-morph stroke as drawn in `layout`, writing a path only when its cubics changed.
   const paint = (layout: string): void => {
     for (const stroke of strokes.values()) {
+      if (stroke.isMorph && stroke.painted !== undefined) continue;
       const cubics = stroke.cubics.get(layout);
       if (cubics === undefined || sameCubics(cubics, stroke.painted)) continue;
       const box = strokeBox(cubics);
       stroke.svg.setAttribute("viewBox", `${box.x} ${box.y} ${box.width} ${box.height}`);
       stroke.path.setAttribute("d", pathData(cubics));
       stroke.painted = cubics;
-      stroke.shape = 0;
     }
   };
+
   const element = (name: string, kind: string): E => {
     const made = document.createElement("div");
     made.setAttribute("data-cast", name);
     made.setAttribute("data-kind", kind);
     return made;
   };
-  const build = (members: Cast, into: E, parent: Placed<E> | undefined): void => {
-    for (const [name, member] of Object.entries(members)) {
-      const info = infos.get(name);
-      if (info === undefined) throw new Error(`mountStage: "${name}" has no cast name.`);
-      const own = element(name, member.kind);
-      into.append(own);
-      switch (member.kind) {
-        case "actor":
-          leaf(own, info);
-          placed.set(name, { info, element: own, parent, items: [] });
-          break;
-        case "many": {
-          const items = member.items.map((_, index) => element(`${name}.${index}`, "item"));
-          const self: Placed<E> = { info, element: own, parent, items };
-          placed.set(name, self);
-          items.forEach((item, index) => {
-            const itemInfo = infos.get(`${name}.${index}`);
-            if (itemInfo === undefined)
-              throw new Error(`mountStage: "${name}.${index}" is unnamed.`);
-            leaf(item, itemInfo, name);
-            own.append(item);
-            placed.set(itemInfo.name, { info: itemInfo, element: item, parent: self, items: [] });
-          });
-          break;
+
+  const leaf = (own: E, name: string, content: Content): void => {
+    switch (content.kind) {
+      case "box":
+        break;
+      case "text":
+        own.textContent = content.value;
+        own.setAttribute("data-text", "");
+        break;
+      case "readout":
+        try {
+          own.textContent = content.format(startTime);
+        } catch {
+          // A failing readout throws again on the first frame, where the player reports it.
         }
-        case "group": {
-          const self: Placed<E> = { info, element: own, parent, items: [] };
-          placed.set(name, self);
-          build(member.members, own, self);
-          break;
-        }
-        default:
-          unreachable(member);
+        own.setAttribute("data-text", "");
+        break;
+      case "stroke":
+      case "morph": {
+        const svg = document.createElementNS(SVG, "svg");
+        const path = document.createElementNS(SVG, "path");
+        path.setAttribute("data-path", name);
+        svg.append(path);
+        own.append(svg);
+        own.setAttribute("data-stroke", "");
+        strokeNames.push(name);
+        strokes.set(own, {
+          svg,
+          path,
+          source: content.kind === "stroke" ? content.path : (content.shapes[0] ?? []),
+          isMorph: content.kind === "morph",
+          cubics: new Map(),
+          painted: undefined,
+          hasPartDefs: false,
+        });
+        break;
+      }
+      default:
+        unreachable(content);
+    }
+  };
+
+  for (const member of currentStage.members) {
+    const parent = byIndex[member.parent];
+    const into = parent?.element ?? frame;
+    const own = element(member.name, member.kind === "list" ? "many" : member.kind);
+    into.append(own);
+    switch (member.kind) {
+      case "actor": {
+        leaf(own, member.name, member.content);
+        const self = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items: [],
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        break;
+      }
+      case "list": {
+        const items = member.items.map((_, index) => element(`${member.name}.${index}`, "item"));
+        const self: Placed<E> = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items,
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        member.items.forEach((content, index) => {
+          const item = items[index];
+          if (item === undefined) return;
+          const name = `${member.name}.${index}`;
+          leaf(item, name, content);
+          own.append(item);
+          placed.set(name, { name, member, index, element: item, parent: self, items: [] });
+        });
+        break;
+      }
+      case "group": {
+        const self = {
+          name: member.name,
+          member,
+          index: undefined,
+          element: own,
+          parent,
+          items: [],
+        };
+        placed.set(member.name, self);
+        byIndex.push(self);
+        break;
+      }
+      default:
+        unreachable(member);
+    }
+  }
+  container.append(host);
+
+  let activeSkinCss = "";
+  let lastPlaces: readonly string[] = [];
+  const styleWith = (places: readonly string[]): string =>
+    `${DEFAULT_SKIN}\n${places.join("\n")}\n${activeSkinCss}`;
+
+  let sharedDefsSvg: S | undefined;
+  const setSharedDefs = (paints: string | undefined): void => {
+    if (paints === undefined) {
+      sharedDefsSvg?.remove?.();
+      sharedDefsSvg = undefined;
+      return;
+    }
+    if (sharedDefsSvg === undefined) {
+      sharedDefsSvg = document.createElementNS(SVG, "svg");
+      sharedDefsSvg.setAttribute("aria-hidden", "true");
+      sharedDefsSvg.setAttribute(
+        "style",
+        "position: absolute; width: 0; height: 0; overflow: hidden;",
+      );
+      frame.append(sharedDefsSvg);
+    }
+    const trimmed = paints.trim();
+    sharedDefsSvg.innerHTML = trimmed.startsWith("<defs") ? trimmed : `<defs>${paints}</defs>`;
+  };
+
+  const markDefaultSkins = (styled: (name: string, list?: string) => boolean): void => {
+    for (const target of placed.values()) {
+      if (
+        target.member.kind === "group" ||
+        (target.member.kind === "list" && target.index === undefined)
+      )
+        continue;
+      if (strokes.has(target.element)) continue;
+      const list = target.index === undefined ? undefined : target.member.name;
+      if (styled(target.name, list)) target.element.removeAttribute("data-skin");
+      else target.element.setAttribute("data-skin", "default");
+    }
+  };
+
+  const setPartDefs = (partDefsByName: ReadonlyMap<string, string>): void => {
+    for (const [name, { element: own }] of placed) {
+      const stroke = strokes.get(own);
+      if (stroke === undefined) continue;
+      const partDefs = partDefsByName.get(name);
+      if (partDefs !== undefined) {
+        stroke.path.remove?.();
+        stroke.svg.innerHTML = `<defs>${partDefs}</defs>`;
+        stroke.svg.append(stroke.path);
+        stroke.hasPartDefs = true;
+      } else if (stroke.hasPartDefs) {
+        stroke.path.remove?.();
+        stroke.svg.innerHTML = "";
+        stroke.svg.append(stroke.path);
+        stroke.hasPartDefs = false;
       }
     }
   };
-  build(cast, frame, undefined);
-  container.append(host);
+
+  let live = true;
+  let mounted = false;
+  let skinEpoch = 0;
+  let activeAbort: AbortController | undefined;
+  let currentReady: Promise<void> = Promise.resolve();
 
   const fit = (): void => {
     if (host.clientHeight === 0 && host.clientWidth > 0) {
@@ -553,17 +610,16 @@ export function mountStage<
     // At scale 1 the frame carries no transform, so its content is rasterised as a plain page would be.
     frame.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
-  let names: readonly string[] = module.layouts ?? [];
-  let pick = module.layout;
-  // The layout the frame is styled under; the stage keeps no record of when it changed.
-  let shown: string | undefined = names[0];
-  if (shown !== undefined) frame.setAttribute("data-layout", shown);
-  // Measures the stage as laid out, or under every layout in turn, then shows the layout in force again.
+
+  let names: readonly string[] = currentStage.layouts.names;
+  let shown: string = names[0] ?? "";
+  frame.setAttribute("data-layout", shown);
+
+  // Measures the stage under every layout in turn, then shows the layout in force again.
   const measure = (): Measured => {
     const ordered: string[] = [];
     const loops = new Set<string>();
-    // Strokes sit out of the flow, so every other member is measured first and each path drawn from that.
-    const laidOut = (layout: string | undefined): Rest => {
+    const laidOut = (layout: string): Rest => {
       const boxes: Record<string, Box> = {};
       for (const [name, { element: own, parent }] of placed) {
         if (strokes.has(own)) continue;
@@ -577,28 +633,35 @@ export function mountStage<
         const height = own.offsetHeight;
         boxes[name] = { x: left + width / 2, y: top + height / 2, width, height };
       }
-      const laid: Rest = Object.freeze({ ...boxes });
-      const places = new Map<string, string>();
-      const paths: (readonly [string, ActorPath])[] = [];
+      const drawn = drawStrokes(currentStage, restReader(boxes));
       const owners = new Map<
         string,
         { readonly stroke: Stroke<S>; readonly parent: Placed<E> | undefined }
       >();
       for (const [name, { element: own, parent }] of placed) {
         const stroke = strokes.get(own);
-        if (stroke === undefined) continue;
-        paths.push([name, stroke.source]);
-        owners.set(name, { stroke, parent });
+        if (stroke !== undefined) owners.set(name, { stroke, parent });
       }
-      // Paths draw in passes, each reading the strokes drawn before it; a loop of reads is reported.
-      const loop = drawInPasses(paths, laid, (name, answer) => {
-        const owner = owners.get(name);
-        if (owner === undefined) return undefined;
-        const { stroke, parent } = owner;
-        const cubics = draw(name, stroke, answer, layout ?? UNLAID);
-        if (cubics === undefined) return undefined;
+      if (!drawn.ok) loops.add(`mountStage: ${formatStageError(drawn.error)}`);
+      else {
+        for (const failure of drawn.strokes.failures)
+          report(
+            new Error(`The path of "${failure.name}" failed: ${String(failure.error)}`, {
+              cause: failure.error,
+            }),
+          );
+        for (const [name, cubics] of drawn.strokes.cubics)
+          owners.get(name)?.stroke.cubics.set(layout, cubics);
+      }
+      for (const [name, { stroke, parent }] of owners) {
+        const cubics = stroke.cubics.get(layout);
+        if (cubics === undefined) {
+          ordered.push(strokePlace(name, undefined, layout));
+          boxes[name] = ZERO_BOX;
+          continue;
+        }
         const box = strokeBox(cubics);
-        const home = parent === undefined ? undefined : laid[parent.info.name];
+        const home = parent === undefined ? undefined : boxes[parent.name];
         const left =
           home === undefined || parent === undefined
             ? 0
@@ -607,153 +670,210 @@ export function mountStage<
           home === undefined || parent === undefined
             ? 0
             : home.y - home.height / 2 + parent.element.clientTop;
-        places.set(name, strokePlace(name, { ...box, x: box.x - left, y: box.y - top }, layout));
-        const rests = restOfBounds(box);
-        boxes[name] = rests;
-        return rests;
-      });
-      if (loop !== undefined) loops.add(`mountStage: ${describeLoop(loop)}.`);
-      for (const name of owners.keys())
-        if (!places.has(name)) {
-          places.set(name, strokePlace(name, undefined, layout));
-          boxes[name] = { x: 0, y: 0, width: 0, height: 0 };
-        }
-      for (const name of owners.keys()) {
-        const place = places.get(name);
-        if (place !== undefined) ordered.push(place);
+        ordered.push(strokePlace(name, { ...box, x: box.x - left, y: box.y - top }, layout));
+        boxes[name] = restOfBounds(box);
       }
-      const rest: Record<string, Box> = {};
-      for (const [name, { info }] of placed) {
+      for (const { name, member, index } of placed.values()) {
         const box = boxes[name];
-        if (box === undefined) continue;
-        rest[name] = box;
-        if (info.pivot !== undefined) ordered.push(pivotPlace(name, box, info.pivot, layout));
+        if (box !== undefined && index === undefined && member.pivot !== undefined)
+          ordered.push(pivotPlace(name, box, member.pivot, layout));
       }
-      return Object.freeze(rest);
+      return Object.freeze({ ...boxes });
     };
-    let measured: Measured;
-    if (names.length === 0) {
-      if (shown !== undefined) frame.removeAttribute("data-layout");
-      shown = undefined;
-      measured = { rest: laidOut(undefined), layouts: NO_LAYOUTS };
-      paint(UNLAID);
-    } else {
-      const layouts: Record<string, Rest> = {};
-      if (shown === undefined || !names.includes(shown)) shown = names[0];
-      try {
-        for (const name of names) {
-          frame.setAttribute("data-layout", name);
-          layouts[name] = laidOut(name);
-        }
-      } finally {
-        if (shown !== undefined) frame.setAttribute("data-layout", shown);
+
+    const layouts: Record<string, Rest> = {};
+    const readers: Record<string, RestReader> = {};
+    if (!names.includes(shown)) shown = names[0] ?? "";
+    try {
+      for (const name of names) {
+        frame.setAttribute("data-layout", name);
+        const laid = laidOut(name);
+        layouts[name] = laid;
+        readers[name] = restReader(laid);
       }
-      if (shown !== undefined) paint(shown);
-      measured = { rest: NO_REST, layouts: Object.freeze(layouts) };
+    } finally {
+      frame.setAttribute("data-layout", shown);
     }
-    // A loop is reported once, however many layouts it appears in, and again only when it changes.
+    paint(shown);
+
     const looped = loops.size === 0 ? undefined : [...loops].join(" ");
     if (looped !== undefined && looped !== lastLoop) report(new Error(looped));
     lastLoop = looped;
+    lastPlaces = ordered;
     const text = styleWith(ordered);
     if (style.textContent !== text) style.textContent = text;
-    return measured;
+    return { layouts: Object.freeze(layouts), readers: Object.freeze(readers) };
   };
 
-  const spanOf = (beat: string): Span | undefined =>
-    isBeat(beats.order, beat) ? beats[beat] : undefined;
-  // A stretch that ends at the story's end holds through the last frame and past it.
-  const present = (on: NonNullable<CastName["on"]>, ms: number): boolean =>
-    presentAt(on, spanOf, beats.durationMs, ms);
-  const showAt = (time: Time): void => {
-    const ms = elapsedOf(time.clock) ?? time.progress * beats.durationMs;
-    for (const { info, element: own } of placed.values()) {
-      if (info.on === undefined) continue;
-      own.style.visibility = present(info.on, ms) ? "" : "hidden";
-    }
-    for (const [own, { name, text }] of readouts) {
-      const said = readout(name, text, time);
-      if (said !== undefined && own.textContent !== said) own.textContent = said;
-    }
+  let measured: Measured;
+  let lastFrame: FrameOutput | undefined;
+  let readouts = new Map<string, string>();
+  let run: { readonly driver: ClockDriver; readonly player: Player<StageValues>; stop(): void };
+
+  const resized = (): void => {
+    fit();
+    measured = measure();
+    run.player.refresh();
   };
-  const bind = (target: Placed<E>, value: Pose2d | readonly Pose2d[] | undefined): void => {
-    if (value === undefined) return;
-    const kind = target.info.kind;
-    switch (kind) {
-      case "actor":
-      case "group":
-        if (isList(value))
-          throw new TypeError(`mountStage: "${target.info.name}" takes one value, not a list.`);
-        write(target.element, value);
+
+  const useCss = (css: string, defs: string | undefined): void => {
+    const parted = partPaints(css, defs, strokeNames);
+    activeSkinCss = parted.css;
+    markDefaultSkins(namedBy(css));
+    setSharedDefs(defs);
+    setPartDefs(parted.defs);
+    style.textContent = styleWith(lastPlaces);
+  };
+
+  const fetchText = async (url: URL, signal: AbortSignal): Promise<string> => {
+    if (typeof fetch !== "function") throw new Error(`cannot fetch "${url.href}" without fetch.`);
+    const response = await fetch(url.href, { signal });
+    if (!response.ok) throw new Error(`"${url.href}" answered HTTP ${response.status}.`);
+    return response.text();
+  };
+
+  // A URL skin is fetched and then applied exactly as an inline one, so both style the same members.
+  const applySkin = (skin: DomSkin | undefined): void => {
+    skinEpoch += 1;
+    activeAbort?.abort();
+    activeAbort = undefined;
+    const epoch = skinEpoch;
+    const resolved: DomSkin = skin ?? { kind: "inline", css: "" };
+    switch (resolved.kind) {
+      case "inline":
+        useCss(resolved.css, resolved.defs);
+        currentReady = Promise.resolve();
         break;
-      case "many":
-        if (!isList(value))
-          throw new TypeError(
-            `mountStage: "${target.info.name}" takes a list, one value per item.`,
-          );
-        target.items.forEach((item, index) => {
-          const each = value[index];
-          if (each !== undefined) write(item, each);
-        });
+      case "url": {
+        useCss("", undefined);
+        const controller = new AbortController();
+        activeAbort = controller;
+        const defs = resolved.defs;
+        currentReady = Promise.all([
+          fetchText(resolved.css, controller.signal),
+          defs === undefined ? Promise.resolve(undefined) : fetchText(defs, controller.signal),
+        ]).then(
+          ([css, defsText]) => {
+            if (!live || epoch !== skinEpoch) return;
+            useCss(css, defsText);
+            if (mounted) resized();
+          },
+          (error: unknown) => {
+            if (!live || epoch !== skinEpoch) return;
+            report(
+              new Error(`mountStage: the skin failed to load: ${String(error)}`, { cause: error }),
+            );
+          },
+        );
         break;
-      case "item":
-        break;
+      }
       default:
-        unreachable(kind);
+        unreachable(resolved);
     }
   };
 
-  const watched = [...placed.values()].filter(({ info }) => info.watch);
+  applySkin(currentStage.skins.dom);
+
   const drive = (): { readonly driver: ClockDriver; stop(): void } => {
     const driver = clockDriver({
-      duration: beats.durationMs,
+      duration: currentStage.durationMs,
       ...(options.frames === undefined ? {} : { frames: options.frames }),
     });
-    for (const { info, element: own } of watched) driver.watch(info.name, own);
+    for (const target of placed.values())
+      if (target.member.watch) driver.watch(target.name, target.element);
     return { driver, stop: () => driver.dispose() };
   };
 
   fit();
-  let measured = measure();
-  let scene = module.scene;
-  let cues = module.cues;
-  // The layout the latest scene call put in force, read from that call's events alone.
-  let inForce: string | undefined;
-  const sceneOf = (): Scene<StageValues> => (time, events) => {
-    const [initial] = names;
-    if (initial === undefined) {
-      inForce = undefined;
-      return scene(time, events, measured.rest, NO_LAYOUTS);
+  measured = measure();
+
+  const sceneOf = (): Signal<StageValues> => (time, events) => {
+    const out = frameOf(currentStage, { time, events, boxes: measured.readers });
+    if (options.checks === true) {
+      const errors = check(currentStage, out.targets);
+      if (errors.length > 0)
+        throw new TypeError(`mountStage: ${errors.map(formatStageError).join(" ")}`);
     }
-    const name = pick?.(events) ?? initial;
-    const rest = measured.layouts[name];
-    if (rest === undefined)
-      throw new RangeError(
-        `mountStage: layout answered "${name}", which is not one of ${names.join(", ")}.`,
-      );
-    inForce = name;
-    return scene(time, events, rest, measured.layouts);
+    const nextReadouts = new Map<string, string>();
+    for (const member of currentStage.members)
+      if (member.kind === "actor" && member.content.kind === "readout")
+        nextReadouts.set(member.name, member.content.format(time));
+    readouts = nextReadouts;
+    lastFrame = out;
+    return out.targets;
   };
+
   // Styles the frame under the layout in force before a frame's values are written.
   const follow = (): void => {
-    if (inForce === shown) return;
+    const inForce = lastFrame?.layout;
+    if (inForce === undefined || inForce === shown) return;
     shown = inForce;
-    if (shown === undefined) frame.removeAttribute("data-layout");
-    else {
-      frame.setAttribute("data-layout", shown);
-      paint(shown);
+    frame.setAttribute("data-layout", shown);
+    paint(shown);
+  };
+
+  const showAndRead = (): void => {
+    const visible = lastFrame?.visible;
+    if (visible === undefined) return;
+    for (const target of byIndex) {
+      const on = visible[target.name] ?? true;
+      if (!on || target.element.style.visibility === "hidden")
+        target.element.style.visibility = on ? "" : "hidden";
+    }
+    for (const [name, text] of readouts) {
+      const target = placed.get(name);
+      if (target !== undefined && target.element.textContent !== text)
+        target.element.textContent = text;
     }
   };
+
+  const morph = (own: E, content: Content | undefined, pose: Pose2d): void => {
+    if (content?.kind !== "morph") return;
+    const drawing = strokes.get(own);
+    const cubics = morphAt(content, pose);
+    if (drawing !== undefined && !sameCubics(cubics, drawing.painted)) {
+      drawing.path.setAttribute("d", pathData(cubics));
+      drawing.painted = cubics;
+    }
+  };
+
+  // A hidden member is not written: the scene is a function of time, so the frame that shows it writes it.
+  const bind = (target: Placed<E>, value: unknown): void => {
+    if (value === undefined || lastFrame?.visible[target.name] === false) return;
+    const member = target.member;
+    switch (member.kind) {
+      case "actor":
+      case "group": {
+        const pose = poseOf(value);
+        if (pose === undefined) return;
+        write(target.element, pose);
+        morph(target.element, contentOf(target), pose);
+        break;
+      }
+      case "list": {
+        const count = member.items.length;
+        target.items.forEach((item, index) => {
+          const pose = listPose(value, index, count);
+          if (pose === undefined) return;
+          write(item, pose);
+          morph(item, member.items[index], pose);
+        });
+        break;
+      }
+      default:
+        unreachable(member);
+    }
+  };
+
   const start = () => {
     const { driver, stop } = drive();
-    const player = play<StageValues>(sceneOf(), driver, cues === undefined ? {} : { cues });
+    const cues = currentStage.cues;
+    const player = play<StageValues>(sceneOf(), driver, cues.length === 0 ? {} : { cues });
     options.onDriver?.(driver);
-    const [first] = placed.keys();
-    if (first !== undefined) player.subscribe(first, follow);
-    for (const target of placed.values())
-      if (target.info.kind !== "item")
-        player.subscribe(target.info.name, (value) => bind(target, value));
-    if (first !== undefined) player.subscribe(first, () => showAt(player.time));
+    const first = byIndex[0];
+    if (first !== undefined) player.subscribe(first.name, follow);
+    for (const target of byIndex) player.subscribe(target.name, (value) => bind(target, value));
+    if (first !== undefined) player.subscribe(first.name, showAndRead);
     return {
       driver,
       player,
@@ -763,7 +883,9 @@ export function mountStage<
       },
     };
   };
-  let run = start();
+
+  run = start();
+  mounted = true;
 
   const replay = (): void => {
     run.stop();
@@ -777,24 +899,18 @@ export function mountStage<
   };
   host.addEventListener("keydown", onKey);
   frame.addEventListener("click", onClick);
-  const resized = (): void => {
-    fit();
-    measured = measure();
-    run.player.refresh();
-  };
+
   const observer =
-    isElement(container) && typeof ResizeObserver !== "undefined"
+    isElement(rawContainer) && typeof ResizeObserver !== "undefined"
       ? new ResizeObserver(resized)
       : undefined;
-  if (observer !== undefined && isElement(container)) {
-    observer.observe(container);
-    // A stroke's size follows its path, so it is not watched for its own redraw; a readout is, since its text
-    // changing width moves what rests beside it.
+  if (observer !== undefined && isElement(rawContainer)) {
+    observer.observe(rawContainer);
     for (const { element: own } of placed.values())
       if (isElement(own) && !strokes.has(own)) observer.observe(own);
   }
+
   // A web font that lands after mount changes text sizes, so the boxes are measured again.
-  let live = true;
   const fonts = document.fonts;
   const fontsLoaded = (): void => {
     if (live) resized();
@@ -809,24 +925,72 @@ export function mountStage<
     get driver() {
       return run.driver;
     },
+    get rest() {
+      return measured.layouts[shown] ?? {};
+    },
+    get layouts() {
+      return measured.layouts;
+    },
+    get ready() {
+      return currentReady;
+    },
     replay,
     send(name, value, target) {
       run.driver.send(name, value, target);
     },
     events: () => [...run.driver.events()],
     replace(next) {
-      scene = next.scene;
-      pick = next.layout;
-      cues = next.cues;
-      const nextNames = next.layouts ?? [];
-      if (!sameNames(nextNames, names)) {
-        names = nextNames;
-        measured = measure();
+      const nextStage = resolveStage(next, isStage(next) ? undefined : options?.skin);
+      if (nextStage.signature !== currentStage.signature)
+        throw new Error("mountStage.replace: the next stage has a different cast or durationMs.");
+      const prevStage = currentStage;
+      currentStage = nextStage;
+      let strokesChanged = false;
+      for (const target of placed.values()) {
+        const index = byIndex.indexOf(
+          target.index === undefined ? target : (target.parent ?? target),
+        );
+        const member = nextStage.members[index];
+        if (member === undefined) continue;
+        target.member = member;
+        const stroke = strokes.get(target.element);
+        const source = sourceOf(contentOf(target));
+        const same =
+          stroke !== undefined &&
+          (stroke.source === source ||
+            (typeof source === "object" &&
+              typeof stroke.source === "object" &&
+              sameCubics(source, stroke.source)));
+        if (stroke !== undefined && source !== undefined && !same) {
+          stroke.source = source;
+          stroke.cubics.clear();
+          stroke.painted = undefined;
+          strokesChanged = true;
+        }
       }
-      run.player.replace(sceneOf(), cues ?? NO_EVENTS);
+      const skinChanged = !sameDomSkin(prevStage.skins.dom, nextStage.skins.dom);
+      if (skinChanged) applySkin(nextStage.skins.dom);
+      const frameChanged = !sameFrame(prevStage.frame, nextStage.frame);
+      if (frameChanged) {
+        applyFrameSize(nextStage.frame);
+        fit();
+      }
+      const layoutsChanged = !sameNames(nextStage.layouts.names, names);
+      names = nextStage.layouts.names;
+      if (
+        skinChanged ||
+        frameChanged ||
+        layoutsChanged ||
+        strokesChanged ||
+        !samePivots(prevStage.members, nextStage.members)
+      )
+        measured = measure();
+      run.player.replace(sceneOf(), nextStage.cues);
     },
     dispose() {
       live = false;
+      skinEpoch += 1;
+      activeAbort?.abort();
       fonts?.removeEventListener("loadingdone", fontsLoaded);
       observer?.disconnect();
       host.removeEventListener("keydown", onKey);

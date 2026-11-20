@@ -1,6 +1,6 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { applyValue, type RenderTarget } from "@gerak/dom";
-import type { Pose2d } from "@gerak/moves";
+import type { Pose2d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { centreIn, usePlayer, useTarget } from "@gerak/react";
 import { BEAT_LABELS, DUST_SIDES, STRING_LENGTHS, clock, layout, scene } from "./showreel-b-scene";

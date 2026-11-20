@@ -1,4 +1,3 @@
-import { unreachable } from "../../unreachable";
 import { FABRIK_TOLERANCE, iterativeQuality } from "../fabrik/fabrik";
 import {
   FabrikIncumbent,
@@ -26,7 +25,6 @@ import {
   multiplyMatrix3,
   multiplyVector3,
   norm3,
-  readPivotOffset3d,
   scale3,
   subtract3,
   swingFrame3d,
@@ -34,8 +32,9 @@ import {
   type Euler3d,
   type Matrix3,
   type Vec3,
-  type WorldFrame3d,
-} from "../../frame/frame3d";
+  unreachable,
+} from "@gerak/core";
+import { readPivotOffset3d, type WorldFrame3d } from "../../frame/frame3d";
 import { branchPulls, type CompromiseRule } from "../shared/goal";
 import { aimPoint, goalMiss, readGoal, type GoalReading } from "../shared/goal-reading";
 import type { IterativeQuality } from "../shared/result";

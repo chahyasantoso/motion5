@@ -4,7 +4,7 @@ import { Group, Vector3 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { bonesOf3d, chainThrough3d, ik3d, jointOf, posedJoints3d } from "@gerak/rig";
 import { applyPose3d } from "@gerak/three";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import rig from "../references/dragonling.joints.json" with { type: "json" };
 
 async function loadModel(): Promise<Group> {

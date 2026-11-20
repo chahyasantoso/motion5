@@ -1,6 +1,6 @@
 import { composeChain, type Link2d } from "@gerak/rig";
-import { defineMove } from "./declare";
-import type { Anchor2d, Point2d } from "../parts/geometry/shapes";
+import { motion, type Motion, type Anchor2d, type Point2d, type Time } from "@gerak/core";
+import { choiceOption, numberOption } from "./options";
 
 const OVERSHOOT_SCALE = 2.5;
 const ORIGIN = { x: 0, y: 0 } as const;
@@ -21,67 +21,44 @@ function backOut(u: number, overshoot: number): number {
   return 1 + (c + 1) * (u - 1) ** 3 + c * (u - 1) ** 2;
 }
 
+/** Options of `rope`. */
+export interface RopeOptions {
+  /** The points the rope bends into, each with an optional `id` its anchor keeps; at least 2, required. */
+  readonly points: readonly (Point2d & { readonly id?: string })[];
+  /** Heading of the straight rope away from its pinned end, in degrees; default 0. */
+  readonly angle?: number;
+  /** Which end stays on its point in the shape while the rest moves: start or end; default start. */
+  readonly pin?: "start" | "end";
+  /** Which end bends first: the pinned end (pin) or the free end (free); default pin. */
+  readonly release?: "pin" | "free";
+  /** How far each joint bends past its shape before settling, from 0 to 1; default 0.5. */
+  readonly overshoot?: number;
+  /** Share of the move spent passing the bend from one end to the other, from 0 to 0.9; default 0.6. */
+  readonly ripple?: number;
+}
+
 // A chain through the points that never stretches: straight along `angle` from its pinned end,
 // then each link turns to its heading in the shape, rippling along from the end `release` names.
-/** Bends a chain of points from straight into their shape, link by link. Takes `{ points }` as a third
- * argument and answers anchors for `toCubics`. */
-export const rope = defineMove({
-  id: "rope",
-  role: "follow",
-  description: "Bends a chain of points from straight into their shape, link by link.",
-  options: {
-    angle: {
-      kind: "number",
-      default: 0,
-      description: "Heading of the straight rope away from its pinned end, in degrees; default 0.",
-    },
-    pin: {
-      kind: "string",
-      enum: ["start", "end"],
-      default: "start",
-      description: "Which end stays on its point in the shape while the rest moves; default start.",
-    },
-    release: {
-      kind: "string",
-      enum: ["pin", "free"],
-      default: "pin",
-      description: "Which end bends first: the pinned end or the free end; default pin.",
-    },
-    overshoot: {
-      kind: "number",
-      default: 0.5,
-      min: 0,
-      max: 1,
-      description: "How far each joint bends past its shape before settling; default 0.5.",
-    },
-    ripple: {
-      kind: "number",
-      default: 0.6,
-      min: 0,
-      max: RIPPLE_LIMIT,
-      description:
-        "Share of the move spent passing the bend from one end to the other; default 0.6.",
-    },
-  },
-  example: {
-    options: { angle: 90 },
-    input: {
-      points: [
-        { id: "a", x: 0, y: 0 },
-        { id: "b", x: 60, y: 20 },
-        { id: "c", x: 120, y: 0 },
-      ],
-    },
-  },
-  moments: () => ({}),
-  run(
-    { angle, pin, release, overshoot, ripple },
-    { progress },
-    input: { readonly points: readonly Point2d[] },
-  ): readonly Anchor2d[] {
-    if (input === undefined) throw new TypeError(`rope: input "points" is required.`);
-    const { points } = input;
-    if (points.length < 2) throw new RangeError(`rope: input "points" needs at least 2 rows.`);
+/** Bends a chain of points from straight into their shape, link by link, answering anchors for
+ * `toCubics`. */
+export function rope(options: RopeOptions): Motion<readonly Anchor2d[]> {
+  const { points } = options;
+  if (points === undefined) throw new RangeError(`rope: option "points" is required.`);
+  if (points.length < 2) throw new RangeError(`rope: option "points" needs at least 2 rows.`);
+  const angle = numberOption("rope", "angle", options.angle, { default: 0 });
+  const pin = choiceOption("rope", "pin", options.pin, ["start", "end"], "start");
+  const release = choiceOption("rope", "release", options.release, ["pin", "free"], "pin");
+  const overshoot = numberOption("rope", "overshoot", options.overshoot, {
+    default: 0.5,
+    min: 0,
+    max: 1,
+  });
+  const ripple = numberOption("rope", "ripple", options.ripple, {
+    default: 0.6,
+    min: 0,
+    max: RIPPLE_LIMIT,
+  });
+  return motion(({ progress }) => {
     const pinEnd = pin === "end";
     const shape = pinEnd ? [...points].reverse() : points;
     const pinned = shape[0] ?? { x: 0, y: 0 };
@@ -132,5 +109,5 @@ export const rope = defineMove({
         outY: hy,
       };
     });
-  },
-});
+  });
+}

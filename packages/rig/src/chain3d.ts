@@ -3,28 +3,27 @@ import { readNumber, segmentExtent } from "./frame/frame";
 import {
   IDENTITY_MATRIX3,
   ZERO_EULER,
-  composeWorld3d,
   eulerFromMatrix3d,
   matrixFromEuler3d,
   matrixFromQuaternion,
   multiplyMatrix3,
   multiplyVector3,
-  readPivotOffset3d,
   swingFrame3d,
   transposeMatrix3,
   type Euler3d,
   type Matrix3,
+  type Point3d,
   type Quaternion,
   type Vec3,
-  type WorldFrame3d,
-} from "./frame/frame3d";
+  unreachable,
+} from "@gerak/core";
+import { composeWorld3d, readPivotOffset3d, type WorldFrame3d } from "./frame/frame3d";
 import { readInfluence } from "./ik/shared/goal";
 import { UNBOUND_POLE3D, type Pole3d } from "./ik/solve3d/analytic";
 import type { ChainMember3d } from "./ik/solve3d/chain";
 import { FREE_JOINT3D, type JointLimit3d } from "./ik/solve3d/constraint";
 import type { SolveResult3d } from "./ik/solve3d/result";
 import { solveChain3d } from "./ik/solve3d/solve";
-import { unreachable } from "./unreachable";
 
 const EPSILON = 1e-9;
 
@@ -572,9 +571,7 @@ export function posedJoints3d<const Table extends JointTable3d>(
   table: Table,
   bones: Readonly<Partial<Record<string, BonePose3d>>>,
   root: BonePose3d = {},
-): Readonly<
-  Record<keyof Table & string, { readonly x: number; readonly y: number; readonly z: number }>
-> {
+): Readonly<Record<keyof Table & string, Point3d>> {
   for (const name of Object.keys(bones)) {
     if (!Object.hasOwn(table, name)) throw new RangeError(`posedJoints3d: no joint "${name}".`);
   }
@@ -626,7 +623,7 @@ export function posedJoints3d<const Table extends JointTable3d>(
     rotationX: readNumber(root.rotationX),
     rotationY: readNumber(root.rotationY),
   });
-  const points: Record<string, { readonly x: number; readonly y: number; readonly z: number }> = {};
+  const points: Record<string, Point3d> = {};
   for (const name of Object.keys(table)) {
     const at = multiplyVector3(rootTurn, place(name, new Set()).at);
     points[name] = Object.freeze({

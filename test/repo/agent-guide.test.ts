@@ -1,30 +1,132 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, posix, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
-const guide = [
-  "docs/guide/live.md",
-  "docs/guide/agent-motion.md",
-  "docs/guide/agent-events.md",
-  "docs/guide/agent-physics.md",
-  "docs/guide/agent-rigs.md",
-  "docs/guide/agent-principles.md",
-  "docs/guide/agent-3d.md",
-  "docs/guide/agent-moves.md",
-  "docs/guide/agent-layout.md",
-  "docs/guide/agent-artwork.md",
-  "docs/guide/agent-inputs.md",
-  "docs/guide/agent-outside.md",
-  "docs/guide/agent-style.md",
-]
-  .map((page) => readFileSync(new URL(page, ROOT), "utf8"))
-  .join("\n");
+const ROOT_PATH = fileURLToPath(ROOT);
+const PACKAGES = join(ROOT_PATH, "packages");
+
+interface Manifest {
+  readonly name: string;
+  readonly files?: readonly string[];
+  readonly exports?: Readonly<Record<string, unknown>>;
+}
+
+function manifestOf(dir: string): Manifest | undefined {
+  const file = join(PACKAGES, dir, "package.json");
+  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined;
+}
+
+/** Every markdown file under a folder, as a path from the repository root. */
+function markdownIn(folder: string): string[] {
+  return readdirSync(folder).flatMap((name) => {
+    const path = join(folder, name);
+    if (statSync(path).isDirectory()) return markdownIn(path);
+    return name.endsWith(".md") ? [relative(ROOT_PATH, path).split("\\").join("/")] : [];
+  });
+}
+
+const DOC_PACKAGES = readdirSync(PACKAGES).filter((dir) => existsSync(join(PACKAGES, dir, "docs")));
+
+/** Pages a person or agent writes: every docs page except the generated reference. */
+const HAND_WRITTEN = DOC_PACKAGES.flatMap((dir) =>
+  markdownIn(join(PACKAGES, dir, "docs")).filter((path) => !path.includes("/docs/reference/")),
+);
+const guide = HAND_WRITTEN.map((page) => readFileSync(new URL(page, ROOT), "utf8")).join("\n");
 const manifest: { readonly scripts: Readonly<Record<string, string>> } = JSON.parse(
   readFileSync(new URL("package.json", ROOT), "utf8"),
 );
 
-describe("agent guide", () => {
+function rawLinksOf(text: string): string[] {
+  return [...text.matchAll(/\]\(([^)\s]+)\)/g)]
+    .map((match) => match[1] ?? "")
+    .filter((link) => !/^[a-z][a-z0-9+.-]*:/i.test(link));
+}
+
+function linksOf(text: string): string[] {
+  return rawLinksOf(text)
+    .filter((link) => !link.startsWith("#"))
+    .map((link) => link.replace(/#.*$/, ""));
+}
+
+/** GitHub-style heading anchors of a markdown document. */
+function headingSlugs(text: string): Set<string> {
+  const counts = new Map<string, number>();
+  const slugs = new Set<string>();
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^#{1,6}\s+(.+?)\s*$/.exec(line);
+    if (match === null) continue;
+    const plain = (match[1] ?? "")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/[`*_~]/g, "")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s-]/gu, "")
+      .trim()
+      .replace(/\s+/g, "-");
+    if (plain === "") continue;
+    const seen = counts.get(plain) ?? 0;
+    counts.set(plain, seen + 1);
+    slugs.add(seen === 0 ? plain : `${plain}-${seen}`);
+  }
+  return slugs;
+}
+
+describe("package docs", () => {
+  it("ship in every package that has them", () => {
+    expect(DOC_PACKAGES.length).toBeGreaterThan(10);
+    for (const dir of DOC_PACKAGES) expect(manifestOf(dir)?.files, dir).toContain("docs");
+  });
+
+  it.each(DOC_PACKAGES)(
+    "%s: every relative link resolves inside its docs, or into another package's docs by the path an installed project has",
+    (dir) => {
+      const pages = markdownIn(join(PACKAGES, dir, "docs"));
+      for (const page of pages) {
+        const text = readFileSync(new URL(page, ROOT), "utf8");
+        for (const link of linksOf(text)) {
+          const target = posix.normalize(posix.join(posix.dirname(page), link));
+          const own = `packages/${dir}/docs/`;
+          const other = /^packages\/([\w-]+)\/docs\//.exec(target)?.[1];
+          const inside = target.startsWith(own);
+          const sibling = other !== undefined && link.startsWith(`../../${other}/docs/`);
+          expect(inside || sibling, `${page} -> ${link}`).toBe(true);
+          if (sibling)
+            expect(manifestOf(other ?? "")?.files, `${page} -> ${link}`).toContain("docs");
+          expect(existsSync(new URL(target, ROOT)), `${page} -> ${link}`).toBe(true);
+        }
+        for (const raw of rawLinksOf(text)) {
+          const hash = raw.indexOf("#");
+          if (hash < 0) continue;
+          const anchor = raw.slice(hash + 1);
+          const targetPath =
+            hash === 0
+              ? page
+              : posix.normalize(posix.join(posix.dirname(page), raw.slice(0, hash)));
+          const targetUrl = new URL(targetPath, ROOT);
+          if (!existsSync(targetUrl)) continue;
+          const slugs = headingSlugs(readFileSync(targetUrl, "utf8"));
+          expect(slugs.has(anchor), `${page} -> ${raw}`).toBe(true);
+        }
+      }
+    },
+  );
+
+  it.each(DOC_PACKAGES)("%s: its README lists every page of its docs", (dir) => {
+    const readme = `packages/${dir}/docs/README.md`;
+    const text = readFileSync(new URL(readme, ROOT), "utf8");
+    const allPages = markdownIn(join(PACKAGES, dir, "docs"));
+    expect(allPages.filter((page) => page.endsWith(".intro.md"))).toEqual([]);
+    const pages = allPages.filter((page) => page !== readme && !page.includes("/docs/reference/"));
+    for (const page of pages) {
+      const name = page.slice(`packages/${dir}/docs/`.length);
+      expect(text, `${dir}: ${name}`).toContain(`(./${name})`);
+    }
+    if (existsSync(new URL(`packages/${dir}/docs/reference/README.md`, ROOT)))
+      expect(text, dir).toContain("(./reference/README.md)");
+  });
+
   it("names only npm scripts that exist", () => {
     const named = [...guide.matchAll(/npm run ([\w:-]+)/g)].map((match) => match[1] ?? "");
     for (const script of named) expect(Object.keys(manifest.scripts)).toContain(script);
@@ -44,23 +146,20 @@ describe("agent guide", () => {
     );
     expect(paths.length).toBeGreaterThan(0);
     for (const path of paths)
-      expect(
-        existsSync(new URL((path ?? "").replace(/^<pieces>\//, "apps/pieces/"), ROOT)),
-        path,
-      ).toBe(true);
+      if (!(path ?? "").includes("<"))
+        expect(
+          existsSync(new URL((path ?? "").replace(/^<pieces>\//, "apps/pieces/"), ROOT)),
+          path,
+        ).toBe(true);
   });
 
   it("names only package import paths a workspace package exports", () => {
     const declared = new Set(
-      readdirSync(new URL("packages/", ROOT)).flatMap((dir) => {
-        const path = new URL(`packages/${dir}/package.json`, ROOT);
-        if (!existsSync(path)) return [];
-        const manifest: {
-          readonly name: string;
-          readonly exports?: Readonly<Record<string, unknown>>;
-        } = JSON.parse(readFileSync(path, "utf8"));
-        return Object.keys(manifest.exports ?? {}).map((subpath) =>
-          subpath === "." ? manifest.name : `${manifest.name}/${subpath.slice(2)}`,
+      readdirSync(PACKAGES).flatMap((dir) => {
+        const found = manifestOf(dir);
+        if (found === undefined) return [];
+        return Object.keys(found.exports ?? {}).map((subpath) =>
+          subpath === "." ? found.name : `${found.name}/${subpath.slice(2)}`,
         );
       }),
     );
@@ -70,48 +169,21 @@ describe("agent guide", () => {
       if (!path.endsWith("/") && !path.includes("<")) expect(declared, path).toContain(path);
   });
 
-  it("stays reachable from the guide index and the agent rules", () => {
-    const index = readFileSync(new URL("docs/guide/README.md", ROOT), "utf8");
-    const core = readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8");
-    for (const part of [
-      "live",
-      "agent-motion",
-      "agent-events",
-      "agent-physics",
-      "agent-rigs",
-      "agent-principles",
-      "agent-3d",
-      "agent-moves",
-      "agent-layout",
-      "agent-artwork",
-      "agent-inputs",
-      "agent-outside",
-      "agent-style",
-    ])
-      expect(index, part).toContain(`./${part}.md`);
-    for (const part of [
-      "agent-events",
-      "agent-physics",
-      "agent-rigs",
-      "agent-principles",
-      "agent-3d",
-      "agent-moves",
-      "agent-layout",
-      "agent-artwork",
-      "agent-inputs",
-      "agent-outside",
-      "agent-style",
-    ])
-      expect(core, part).toContain(`./${part}.md`);
+  it("is where the agent rules, the skill and the user guide send a reader", () => {
     expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(
-      "docs/guide/agent-motion.md",
+      "packages/stage/docs/stage.md",
     );
+    expect(readFileSync(new URL("AGENTS.md", ROOT), "utf8")).toContain(
+      "packages/core/docs/core.md",
+    );
+    const index = readFileSync(new URL("docs/guide/README.md", ROOT), "utf8");
+    for (const dir of DOC_PACKAGES)
+      expect(index, dir).toContain(`../../packages/${dir}/docs/README.md`);
   });
 
   it("names no worked example's scene file, so a piece starts from its brief and not from a copy", () => {
     const read = [
       guide,
-      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
       readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
     ].join("\n");
     const examples = [
@@ -129,7 +201,6 @@ describe("agent guide", () => {
   });
 
   it("names no source file of the demo app, a worked example's component or entry included", () => {
-    // Lists the folder's file names only; no source text is read.
     const examples = [
       "timing",
       "catch",
@@ -146,18 +217,19 @@ describe("agent guide", () => {
     );
     const read = [
       guide,
-      readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8"),
       readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8"),
     ].join("\n");
     const named = [...read.matchAll(/[\w-]+\.tsx?\b/g)].map((match) => match[0]);
     expect(named.filter((file) => sources.has(file))).toEqual([]);
   });
 
-  it("is what the make-motion skill sends an agent to, by a link that resolves", () => {
+  it("is what the make-motion skill sends an agent to, by links that resolve", () => {
     const skill = new URL(".claude/skills/make-motion/SKILL.md", ROOT);
     const text = readFileSync(skill, "utf8");
     expect(text).toMatch(/^---\r?\nname: make-motion\r?\ndescription: .+\r?\n---\r?\n/);
-    const link = /\]\((\.\.\/[^)]+agent-motion\.md)\)/.exec(text)?.[1] ?? "";
-    expect(existsSync(new URL(link, skill)), link).toBe(true);
+    const links = linksOf(text);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) expect(existsSync(new URL(link, skill)), link).toBe(true);
+    expect(dirname(fileURLToPath(skill))).toContain("make-motion");
   });
 });

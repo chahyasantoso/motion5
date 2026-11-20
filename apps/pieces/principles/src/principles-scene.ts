@@ -5,21 +5,19 @@ import {
   combine,
   ease,
   keyframes,
-  lane,
   lanes,
   mix,
-  smear,
   span,
   springEase,
-  squashed,
   toCubics,
-  trail,
   velocity,
   type Anchor2d,
   type Events,
   type Pose2d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { smear, trail } from "@gerak/core";
+import { squashed } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
@@ -51,6 +49,7 @@ const PATH = toCubics([
   anchor("start", START_X, 0, 0, 0, 160, -430),
   anchor("land", 0, 0, -170, -430, 0, 0),
 ]);
+const arc = along(PATH);
 
 const crouch = keyframes(
   0,
@@ -71,7 +70,7 @@ const pull = backEase({ amount: 1.6, direction: "in" });
 /** The body's offset from its landing spot: a short pull back, then along the arc. */
 function flight(time: Time): Pose2d {
   const share = leap.of(time, pull).progress;
-  const point = along(PATH, share);
+  const point = arc(share);
   return { x: (point.x ?? 0) + mix(0, PULLBACK_PX, Math.min(0, share)), y: point.y ?? 0 };
 }
 
@@ -95,13 +94,13 @@ const pop = springEase({ stiffness: 170, damping: 9 });
 export const scene = (time: Time, events: Events) => {
   const travel = smear(velocity(flight, time, events), { stretch: 0.22, max: 1.8 });
   return {
-    body: combine([squashed(0.45, crouch(time), "bottom"), flight(time)]),
+    body: combine([squashed({ squash: 0.45, anchor: "bottom" })(crouch(time)), flight(time)]),
     stretch: travel.pose,
     face: { rotation: -travel.heading } satisfies Pose2d,
     antenna: { rotation: tail(time, events), anchor: "bottom" } satisfies Pose2d,
     pad: { scale: mix(0, 1, settle.of(time, pop).progress) } satisfies Pose2d,
     letters: [...WORD].map((_, index): Pose2d => {
-      const share = lane(word.of(time), index, LETTERS).progress;
+      const share = LETTERS.of(word.of(time), index).progress;
       const rise = ease.cubicOut(share);
       return {
         y: mix(70, 0, rise),

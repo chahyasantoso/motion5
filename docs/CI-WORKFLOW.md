@@ -8,7 +8,7 @@ CI validates every pull request and the push branches named in [ci.yml](../.gith
 - `boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. The scanner's own tests run in the full suite, not twice.
 - `performance (node 24.21.0)` runs `npm run benchmark` and uploads its report. The benchmark exits nonzero when its structural budgets fail.
 
-On demand, outside `npm run check`: `npm run build` emits the nine installable packages to `dist/`, and `npm run pack:check` packs them, installs the tarballs into an empty project and imports every export under Node. Neither publishes anything.
+On demand, outside `npm run check`: `npm run build` emits the thirteen installable packages to `dist/`, and `npm run pack:check` packs them, installs the tarballs into an empty project and imports every export under Node. Neither publishes anything.
 
 ## Evidence
 

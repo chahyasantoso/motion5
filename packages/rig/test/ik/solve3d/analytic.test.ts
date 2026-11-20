@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  composeWorld3d,
-  ZERO_EULER,
-  ZERO_PIVOT_OFFSET3D,
-  type Euler3d,
-  type WorldFrame3d,
-} from "../../../src/frame/frame3d";
+import { ZERO_EULER, type Euler3d } from "@gerak/core";
+import { composeWorld3d, ZERO_PIVOT_OFFSET3D, type WorldFrame3d } from "../../../src/frame/frame3d";
 import { solveTwoBone } from "../../../src/ik/shared/analytic";
 import { solveTwoBone3d } from "../../../src/ik/solve3d/analytic";
 

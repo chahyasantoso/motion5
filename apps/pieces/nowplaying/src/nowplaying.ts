@@ -1,57 +1,21 @@
 import {
   combine,
   elapsedOf,
-  fade,
-  lane,
   lanes,
   mix,
+  motion,
   reversed,
-  rise,
-  span,
   type Events,
   type Pose2d,
   type Time,
-  smudge,
-} from "@gerak/moves";
-import { actor, group, letters, story, type Rest } from "@gerak/stage";
+} from "@gerak/core";
+import { fade, rise, smudge } from "@gerak/moves";
+import { beat, box, group, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 
 const TITLE = "Night Shift";
 
-/** The piece's beats by name, in ms; its length is the story's. */
-export const beats = story(4000, {
-  arrive: [300, 1700],
-  drift: [1900, 2900],
-  hold: [2900, 4000],
-});
-
-/** Who is on stage; the skin decides what each one looks like. */
-export const cast = {
-  card: actor({ still: true }),
-  heading: actor({ text: "Now playing", still: true }),
-  line: group({ title: letters(TITLE) }),
-  artist: actor({ text: "Mira Vale" }),
-  play: actor({ text: "▶", watch: true }),
-};
-
-/** How the cast looks on the page, by `[data-cast="<name>"]`; a member left out is drawn plain. */
-export const skins = {
-  dom: {
-    css: `
-[data-cast] { position: absolute; }
-[data-cast="title"] { position: relative; gap: 0; }
-[data-cast^="title."] { position: relative; }
-[data-cast="card"] { left: 340px; top: 210px; width: 600px; height: 300px; border-radius: 28px; background: #141a2e; box-shadow: 0 20px 60px #0008; }
-[data-cast="heading"] { left: 400px; top: 250px; font: 600 15px/1 system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: #7f8cb8; }
-[data-cast="line"] { gap: 0; left: 400px; top: 330px; display: flex; font: 700 56px/1 Georgia, serif; color: #f3efe6; }
-[data-cast^="title."] { white-space: pre; }
-[data-cast="artist"] { left: 400px; top: 405px; font: 400 22px/1 system-ui, sans-serif; color: #9aa6d0; }
-[data-cast="play"] { left: 790px; top: 400px; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0b45a; color: #141a2e; font-size: 24px; padding-left: 4px; box-sizing: border-box; cursor: pointer; }
-`,
-  },
-};
-
-const arrive = span(300, 1700);
-const drift = span(1900, 2900);
+const arrive = beat("arrive", 1400, { at: 300 });
+const drift = beat("drift", 1000, { at: 1900 });
 const LETTERS = lanes(
   Array.from(TITLE, () => 1),
   0.35,
@@ -79,19 +43,53 @@ const playScale = (time: Time, events: Events): number => {
   return 1 + from * (1 - Math.min(1, (now - left.at) / SETTLE_MS));
 };
 
-/** Every member's value at `time`; `gerak sample` and `gerak timeline` read it. */
-export const scene = (time: Time, events: Events, _rest: Rest) => ({
-  card: {} satisfies Pose2d,
-  heading: {} satisfies Pose2d,
-  line: { y: mix(0, -16, drift.of(time).progress) } satisfies Pose2d,
-  title: Array.from(TITLE, (_c, i): Pose2d => {
-    const t = lane(arrive.of(time), i, LETTERS);
-    return combine([
-      fade({}, t),
-      rise({ distance: 14 }, t),
-      smudge({ amount: 6, build: 0.7 }, reversed(t)),
-    ]);
-  }),
-  artist: combine([fade({}, drift.of(time)), rise({ distance: 8 }, drift.of(time))]),
-  play: { scale: playScale(time, events) } satisfies Pose2d,
-});
+/** A motion posing each letter from its own lane of the beat. */
+const perLetter = (pose: (lane: Time) => Pose2d) =>
+  motion((time, context?: MotionContext) => pose(LETTERS.of(time, context?.index ?? 0)));
+
+const letterFade = perLetter((lane) => fade()(lane));
+const letterRise = perLetter((lane) =>
+  combine([rise({ distance: 14 })(lane), smudge({ amount: 6, build: 0.7 })(reversed(lane))]),
+);
+
+const card = box("card");
+const heading = text("heading", "Now playing");
+const title = text("title", TITLE, { split: "letters" });
+const line = group("line", [title]);
+const artist = text("artist", "Mira Vale");
+const play = text("play", "▶", { watch: true });
+
+/** The play button's breathing scale, from its hover events. */
+const breathing = motion((time, context?: MotionContext) => ({
+  scale: playScale(time, context?.events ?? []),
+}));
+
+/** The whole line rises a little. */
+const lift = motion((time): Pose2d => ({ y: mix(0, -16, time.progress) }));
+
+const css = `
+[data-cast] { position: absolute; }
+[data-cast="title"] { position: relative; gap: 0; }
+[data-cast^="title."] { position: relative; }
+[data-cast="card"] { left: 340px; top: 210px; width: 600px; height: 300px; border-radius: 28px; background: #141a2e; box-shadow: 0 20px 60px #0008; }
+[data-cast="heading"] { left: 400px; top: 250px; font: 600 15px/1 system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: #7f8cb8; }
+[data-cast="line"] { gap: 0; left: 400px; top: 330px; display: flex; font: 700 56px/1 Georgia, serif; color: #f3efe6; }
+[data-cast^="title."] { white-space: pre; }
+[data-cast="artist"] { left: 400px; top: 405px; font: 400 22px/1 system-ui, sans-serif; color: #9aa6d0; }
+[data-cast="play"] { left: 790px; top: 400px; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f0b45a; color: #141a2e; font-size: 24px; padding-left: 4px; box-sizing: border-box; cursor: pointer; }
+`;
+
+/** How the DOM renderer draws this piece. */
+export const skin = { css };
+
+export default sceneBuilder({ length: 4000 })
+  .element(card)
+  .element(heading)
+  .element(line)
+  .motion(lift.in(drift))
+  .element(title)
+  .motion(letterFade.in(arrive), letterRise.in(arrive))
+  .element(artist)
+  .motion(fade().in(drift), rise({ distance: 8 }).in(drift))
+  .element(play)
+  .motion(breathing);

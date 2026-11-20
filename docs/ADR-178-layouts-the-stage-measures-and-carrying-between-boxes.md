@@ -1,6 +1,8 @@
 # ADR-178: Layouts the stage measures, and carrying between boxes
 
 **Status:** Accepted, 2026-11-13
+**Superseded in part by ADR-190:** the cast, list values, visibility and frame evaluation of stage v3.
+**Superseded in part by ADR-193:** `carry` called from the scene.
 
 ## Context
 

@@ -1,16 +1,11 @@
-import { useEffect, useMemo, useRef, type FC } from "react";
-import { mountStage, type MountedStage, type StageValues } from "@gerak/dom";
+import { useEffect, useRef, type FC } from "react";
+import { mountStage, type MountedStage } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
-import type { Layouts, Rest, StageModule } from "@gerak/stage";
-import { guard } from "./guard";
-
-/** What of a module decides its elements; a scene swaps in place only while this stays the same. */
-export function shapeOf(module: StageModule<string, StageValues>): string {
-  return JSON.stringify([module.beats, module.cast, module.skins, module.frame ?? null]);
-}
+import { compileScene, type Stage } from "@gerak/stage";
+import type { LoadedStage } from "../stage-module";
 
 export interface LiveStageViewProps {
-  readonly module: StageModule<string, StageValues>;
+  readonly loaded: LoadedStage;
   readonly onError: (message: string) => void;
   /** Told of the driver of each run, the first and every replay. */
   readonly onDriver: (driver: Driver) => void;
@@ -21,27 +16,43 @@ interface Shown {
   readonly shape: string;
 }
 
-/** Plays a stage module. A save with the same cast, skin and story swaps the scene in place; any other
- * mounts afresh at the same time. A scene that throws is reported. */
-export const LiveStageView: FC<LiveStageViewProps> = ({ module, onError, onDriver }) => {
+/** Plays a stage module. Same cast, skin, and beats swap in place; other edits remount at the same time. */
+export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDriver }) => {
   const container = useRef<HTMLDivElement>(null);
   const shown = useRef<Shown | undefined>(undefined);
-  const current = useRef(module.scene);
-  const scene = useMemo(
-    () =>
-      guard<StageValues, [Rest, Layouts]>(
-        (time, events, rest, layouts) => current.current(time, events, rest, layouts),
-        onError,
-      ),
-    [onError],
-  );
+  const currentScene = useRef(loaded.stage.scene);
+  const lastValues = useRef<ReturnType<Stage["scene"]> | undefined>(undefined);
+  const reported = useRef(new Set<string>());
 
   useEffect(() => {
     const element = container.current;
     if (element === null) return;
-    current.current = module.scene;
-    const playing: StageModule<string, StageValues> = { ...module, scene };
-    const shape = shapeOf(module);
+    currentScene.current = loaded.stage.scene;
+    reported.current.clear();
+
+    const guardedScene: Stage["scene"] = (ctx) => {
+      try {
+        const next = currentScene.current(ctx);
+        if (typeof next === "object" && next !== null) {
+          lastValues.current = next;
+          return next;
+        }
+        throw new TypeError("The scene returned no targets.");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!reported.current.has(message)) {
+          reported.current.add(message);
+          onError(message);
+        }
+        if (lastValues.current !== undefined) return lastValues.current;
+        throw error;
+      }
+    };
+
+    const compiled = compileScene(loaded.scene, { skin: loaded.skin, wrap: () => guardedScene });
+    if (!compiled.ok) return;
+    const playing = compiled.stage;
+    const shape = playing.signature;
     const kept = shown.current;
     try {
       if (kept !== undefined && kept.shape === shape) {
@@ -51,13 +62,13 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ module, onError, onDrive
       const progress = kept?.mounted.driver.now().progress;
       kept?.mounted.dispose();
       shown.current = undefined;
-      const mounted = mountStage(element, playing, { onDriver });
+      const mounted = mountStage(element, playing, { onDriver, checks: true });
       if (progress !== undefined) mounted.driver.seek(progress);
       shown.current = { mounted, shape };
     } catch (error) {
       onError(error instanceof Error ? error.message : String(error));
     }
-  }, [module, scene, onDriver, onError]);
+  }, [loaded, onDriver, onError]);
 
   useEffect(
     () => () => {

@@ -11,7 +11,8 @@ const PREFIX = "stage-paint-scratch-";
 const STEP_TIMEOUT_MS = 8000;
 
 /** Helpers every scratch piece writes first: a closed rectangle as four straight cubics. */
-const SHAPES = `import { story } from "@gerak/stage";
+const SHAPES = `import { motion } from "@gerak/core";
+import { sceneBuilder, shape } from "@gerak/stage";
 const seg = (id: string, x0: number, y0: number, x3: number, y3: number) => ({
   id, x0, y0, x1: x0 + (x3 - x0) / 3, y1: y0 + (y3 - y0) / 3,
   x2: x0 + (2 * (x3 - x0)) / 3, y2: y0 + (2 * (y3 - y0)) / 3, x3, y3,
@@ -20,35 +21,29 @@ const rect = (x: number, y: number, w: number, h: number) => [
   seg("t", x, y, x + w, y), seg("r", x + w, y, x + w, y + h),
   seg("b", x + w, y + h, x, y + h), seg("l", x, y + h, x, y),
 ];
-export const beats = story(1000, { go: [0, 1000] });
 `;
 
 const PIECES: Readonly<Record<string, string>> = {
-  gradient: `${SHAPES}import { actor } from "@gerak/stage";
-export const cast = {
-  left: actor({ path: rect(100, 100, 200, 100), still: true }),
-  right: actor({ path: rect(400, 100, 200, 100), still: true }),
-};
-export const skins = { dom: {
+  gradient: `${SHAPES}export const skin = {
   defs: '<linearGradient id="belly" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff"/></linearGradient>',
   css: '[data-path="left"] { fill: url(#belly); stroke: none; } [data-path="right"] { fill: url(#belly); stroke: none; }',
-} };
-export const scene = () => ({});
+};
+export default sceneBuilder({ length: 1000 })
+  .element(shape("left", rect(100, 100, 200, 100)))
+  .element(shape("right", rect(400, 100, 200, 100)));
 `,
-  line: `${SHAPES}import { actor } from "@gerak/stage";
-export const cast = { flat: actor({ path: [seg("a", 100, 300, 500, 300)], still: true }) };
-export const skins = { dom: { css: '[data-path="flat"] { stroke: #000; stroke-width: 4; }' } };
-export const scene = () => ({});
+  line: `${SHAPES}export const skin = { css: '[data-path="flat"] { stroke: #000; stroke-width: 4; }' };
+export default sceneBuilder({ length: 1000 }).element(shape("flat", [seg("a", 100, 300, 500, 300)]));
 `,
-  squash: `${SHAPES}import { actor } from "@gerak/stage";
-export const cast = { part: actor({ path: rect(200, 200, 100, 100), pivot: { x: 210, y: 210 } }) };
-export const skins = { dom: { css: '[data-path="part"] { fill: #36c; stroke: none; }' } };
-export const scene = () => ({ part: { scaleY: 0.5, anchor: "bottom" as const } });
+  squash: `${SHAPES}export const skin = { css: '[data-path="part"] { fill: #36c; stroke: none; }' };
+export default sceneBuilder({ length: 1000 })
+  .element(shape("part", rect(200, 200, 100, 100), { pivot: { x: 210, y: 210 } }))
+  .motion(motion(() => ({ scaleY: 0.5, anchor: "bottom" as const })));
 `,
-  turn: `${SHAPES}import { actor } from "@gerak/stage";
-export const cast = { part: actor({ path: rect(200, 200, 100, 100), pivot: { x: 210, y: 210 } }) };
-export const skins = { dom: { css: '[data-path="part"] { fill: #36c; stroke: none; }' } };
-export const scene = () => ({ part: { rotation: 90 } });
+  turn: `${SHAPES}export const skin = { css: '[data-path="part"] { fill: #36c; stroke: none; }' };
+export default sceneBuilder({ length: 1000 })
+  .element(shape("part", rect(200, 200, 100, 100), { pivot: { x: 210, y: 210 } }))
+  .motion(motion(() => ({ rotation: 90 })));
 `,
 };
 

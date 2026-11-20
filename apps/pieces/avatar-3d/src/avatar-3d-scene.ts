@@ -3,7 +3,6 @@ import {
   aim,
   combine3d,
   ease,
-  follow,
   mix,
   orbit,
   span,
@@ -11,7 +10,8 @@ import {
   type MotionEvent,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { follow } from "@gerak/moves";
 import { simulate, type BodySpec3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, bonesOf3d, chainThrough3d, ik3d, jointOf } from "@gerak/rig";

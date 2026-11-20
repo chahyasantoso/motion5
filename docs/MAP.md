@@ -8,6 +8,24 @@ current by `repo-map.test.ts`. Rules and reasons live in [ARCHITECTURE.md](./ARC
 - `*/src/`: one brief's pieces and components
 - `*/src/moves/`: one brief's own moves
 
+## packages/core
+
+Public: `.`
+
+- `src/`: primitives
+- `src/blend/`: mixes between two values, keyframes
+- `src/ease/`: eases and springs
+- `src/envelope/`: envelopes and waves
+- `src/events/`: the event list
+- `src/fields/`: what can change: the value table, poses, combine
+- `src/geometry/`: points, curves, path parsing and shapes, lenses, rotation maths
+- `src/measure/`: velocity, speed, tally
+- `src/path/`: travel along throws and curves
+- `src/principles/`: the motion principles: squash and stretch, anticipation, follow-through, overlap, arc, exaggerate, secondary
+- `src/state/`: state from events: state, springTo, easeTo
+- `src/time/`: time, spans, sequence, lanes, reversed, repeated
+- `src/utility/`: seeded numbers, clamp, unreachable
+
 ## packages/dom
 
 Public: `.`
@@ -18,23 +36,11 @@ Public: `.`
 
 Public: `.`
 
-- `src/`: the one entry point and shared helpers
-- `src/compose/`: sequence, lanes, reversed, repeated, loops
-- `src/fields/`: what can change: the value table, poses, combine
-- `src/moves/`: defineMove and the built-in moves and modifiers
-- `src/parts/`: definePart: what each part promises
-- `src/parts/blend/`: mixes between two values
-- `src/parts/coupling/`: poses from an amount or a speed: squashes, smears
-- `src/parts/dynamics/`: springs
-- `src/parts/ease/`: eases: progress to progress, 0 to 1
-- `src/parts/envelope/`: envelopes: amounts that rise and die away
-- `src/parts/geometry/`: points, curves and lenses
-- `src/parts/oscillation/`: swings: waves and shakes
-- `src/parts/path/`: travel along throws and curves
-- `src/parts/signal/`: values from time and events: follow, trail, noise
-- `src/parts/time/`: time, spans, windows
-- `src/parts/utility/`: seeded numbers, the event list
-- `src/style/`: how a shape is judged: descriptors, qualities, their ranges
+- `src/`: the one entry point
+- `src/moves/`: the built-in moves and modifiers, each a function from options to a function of time
+- `src/parts/coupling/`: poses from an amount or a speed: squashes
+- `src/parts/oscillation/`: the private shake
+- `src/parts/signal/`: values from time and events: follow, noise
 
 ## packages/physics
 
@@ -60,6 +66,12 @@ Public: `.`
 
 - `src/`: React hooks
 
+## packages/rig-three
+
+Public: `.`
+
+- `src/`: glTF skeleton binding to rig joints
+
 ## packages/rig
 
 Public: `.`
@@ -73,13 +85,17 @@ Public: `.`
 
 ## packages/stage
 
-Public: `.`
+Public: `.`, `./render`, `./dom`
 
-- `src/`: the cast, the story and where things rest
+- `src/`: stage entrypoint
+- `src/author/`: sceneBuilder, elements, beats, and the compile input
+- `src/dom/`: DOM tokens
+- `src/render/`: strokes and morphs for renderers
+- `src/run/`: compile, frame, check, visibility, carry
 
 ## packages/three
 
-Public: `.`, `./react`, `./skeleton`
+Public: `.`, `./react`
 
 - `src/`: Three.js adapter
 

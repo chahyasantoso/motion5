@@ -10,9 +10,9 @@ anywhere: on a web page, on a live stage, in a video.**
 
 Three things follow from it:
 
-- **Authored, not copied.** A piece is built from named moves with declared options. A move the brief lacks is
-  defined, checked and kept, so the next piece can use it. Throwaway animation code and copies of the examples both
-  miss the objective.
+- **Authored, not copied.** A piece is built from signals: core's principles and curves, an installed move
+  package's moves, or moves written beside the scene. A move package is chosen by reading its README; there is no
+  registry. Copies of the examples miss the objective.
 - **One base, many apps.** The base answers every question about motion once. An app is a way of working with it and
   adds no second answer.
 - **An agent and a person share one format.** A scene file an agent wrote opens in every app, and a piece made in an
@@ -46,9 +46,9 @@ Three things follow from it:
 
 | Question | Owner |
 | --- | --- |
-| A value at a time, from time and events | the scene, `moves` |
-| The vocabulary of moves | `moves` |
-| Where an authored move lives and how it is found | `moves`, `tools` |
+| A value at a time, from time and events | the scene, as a `Signal` from `core` |
+| The motion principles | `core` |
+| Where a move lives | beside the scene, or in a move package such as `moves` |
 | How an agent is told to work | the guides, the scaffold |
 | What is on the stage | `stage` |
 | The frame and the camera | `stage` |
@@ -71,11 +71,11 @@ Three things follow from it:
 
 | App | For | Objects come from | The source is |
 | --- | --- | --- | --- |
-| **Web overlay** | planning and tuning motion on a real site: enter, hover, press, scroll | the site's own elements, picked on the page | a scene file in the site's project |
+| **Web overlay** | planning and tuning motion on a real site: enter, hover, press, scroll | the site's own elements, picked on the page, driven on [the page mount](../packages/dom/docs/page.md) | a scene file in the site's project |
 | **Instrument** | live coding in a browser: the loop never stops, the code sits over the stage | object makers in the code | the text in the page, shared as a link, exported as a scene file |
 | **Video** | short pieces: social, explainer, commercial | object makers and assets | a scene file of shots, rendered to a file |
 
-- **Web overlay:** a dev-only panel on a running site. Pick an element, see its moves per trigger, loop the
+- **Web overlay:** a dev-only panel built on `mountPage` ([the page mount](../packages/dom/docs/page.md)) over a running site. Pick an element, see its moves per trigger, loop the
   interaction, type or drag, and each change is written to the file.
 - **Instrument:** `Ctrl+Enter` swaps the scene at the same moment of the loop; a broken edit changes nothing and
   shows in a status line; the caret's line lights its object; the move playing now glows in the code; a commented
@@ -126,7 +126,19 @@ Three things follow from it:
 10. **Installable tools** (`plan/installable-plan.md`): one `gerak` command, the pages and the guide shipped with
    `@gerak/tools`, and `gerak init`, so a person's own project makes and checks pieces with no clone. The live kit
    and the overlay need it, since the overlay runs inside someone else's site.
-11. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; the overlay attaches
+11. **Signals,** in two plans:
+   - `plan/shapes-plan.md`: timings, curves and signals named in core, and one way to call a curve;
+   - `plan/principles-plan.md`: the motion principles as signal transforms in core, 2D and 3D; `@gerak/moves` a
+     plain move package, and `@gerak/moves-tools` gone; state as a fold over events, with `follow` and `tally` built
+     on it; a size ceiling on the pages agents read whole.
+12. **Scene builder** (`plan/scene-builder-plan.md`): `sceneBuilder` replaces `defineStage`. Elements and beats are
+   values, and each element gets its motions in one chain.
+13. **Pages** (`plan/page-plan.md`, four slices): one clock with scroll and pointer as inputs, scroll beats and
+   triggers, a page mount that animates existing nodes, sections and slots measured from the page's CSS. The web
+   overlay's base.
+14. **3D in a scene** (`plan/stage-3d-plan.md`): Three.js objects as scene elements beside DOM labels, on one clock,
+   and able to travel to a page's slots.
+15. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; built on `mountPage`, the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 
@@ -139,7 +151,7 @@ Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
 
 | Area | Done | Not done |
 | --- | --- | --- |
-| Moves | a library by role with modifiers, a gate, a catalog, local moves and promotion by brief | particles from a seed |
+| Moves | plain moves with modifiers, the principles and state in core, and moves written beside the scene | particles from a seed |
 | Values | position, turn, scale, opacity, blur, strokes, circle and box clips, a piece's own numbers as CSS variables | colour and shadow as fields of their own, a mask of any shape |
 | Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues | a camera, joining two stage modules |
 | Bones | 2D and typed 3D chains, 3D FK and IK solvers with constraints, a skinned mesh's bones | retargeting |
@@ -192,8 +204,6 @@ Two improvements the owner asked to keep, each its own small plan:
 
 - Live extras: reroll a seed and pick from variations, an edit history to scrub, onion skin on the stage, an agent
   pane, editing the event log from the timeline, a recorded session.
-- A chain API (`word("CATCH").drop(700).stagger(0.25)`) and a chain builder for rigs: sugar over the same scene and
-  the same `buildChain`.
 - Particles from a seed, as a move over a list of targets.
 - A React Three Fiber scaffold and integration (a future feature that must work alongside the clock and frame tools),
   and Vue and Svelte bindings.

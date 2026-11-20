@@ -5,8 +5,9 @@ import {
   mergeEvents,
   type Events,
   type MotionEvent,
+  type Signal,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
 
 /** What drives a scene: the time now, the events so far when it watches any, and a signal each time it moves. */
 export interface Driver {
@@ -17,9 +18,6 @@ export interface Driver {
   readonly options?: object;
 }
 
-/** A scene: every target's value from the time and the events so far. */
-export type Scene<T extends object> = (time: Time, events: Events) => T;
-
 /** A scene's values by target, rerun whole on each step of its driver. */
 export interface Player<T extends object> {
   readonly time: Time;
@@ -29,7 +27,7 @@ export interface Player<T extends object> {
   /** Reruns the scene at the current time, for inputs it reads from outside such as a measured layout. */
   refresh(): void;
   /** Swaps the scene, and the cues when given, then reruns at the current time; the driver and listeners stay. */
-  replace(next: Scene<T>, cues?: Events): void;
+  replace(next: Signal<T>, cues?: Events): void;
   /** Calls `listener` each time forward play reaches an event of that name, a cue or the page's; a seek back calls nothing. */
   on(name: string, listener: (event: MotionEvent) => void): () => void;
   dispose(): void;
@@ -44,7 +42,7 @@ export interface PlayOptions {
 
 /** Runs `scene` against `driver`, telling each target's subscribers its value on every step. */
 export function play<T extends object>(
-  scene: Scene<T>,
+  scene: Signal<T>,
   driver: Driver,
   options: PlayOptions = {},
 ): Player<T> {

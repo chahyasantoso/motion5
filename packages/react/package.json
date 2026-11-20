@@ -1,16 +1,20 @@
 {
   "name": "@gerak/react",
   "version": "0.1.0",
+  "gerak": {
+    "group": "core"
+  },
   "license": "MIT",
   "type": "module",
   "files": [
     "dist",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",
   "dependencies": {
+    "@gerak/core": "0.1.0",
     "@gerak/dom": "0.1.0",
-    "@gerak/moves": "0.1.0",
     "@gerak/player": "0.1.0",
     "@gerak/stage": "0.1.0"
   },

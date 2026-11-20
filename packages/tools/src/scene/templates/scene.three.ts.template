@@ -1,5 +1,5 @@
 import { clockDriver } from "@gerak/dom";
-import { aim, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/moves";
+import { aim, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/core";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 800;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, seeded } from "@gerak/moves";
+import { liveAt, seeded } from "@gerak/core";
 import { builtinWorld, simulate, type PhysicsWorld } from "@gerak/physics";
 import { conformance } from "./conformance";
 

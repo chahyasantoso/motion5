@@ -1,24 +1,14 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/envelope/envelopes";
+import { motion, type Motion, arch, type Pose2d } from "@gerak/core";
+import { numberOption } from "./options";
 
-/** Grows to `1 + amount` times its size and returns. */
-export const pulse = defineMove({
-  id: "pulse",
-  role: "emphasis",
-  description: "Grows a little and returns to its size.",
-  options: {
-    amount: {
-      kind: "number",
-      default: 0.15,
-      min: 0,
-      max: 2,
-      description: "How much it grows, as a share of its size; default 0.15.",
-    },
-  },
-  example: { options: { amount: 0.15 } },
-  run({ amount }, { progress }): Pose2d {
-    return { scale: 1 + amount * arch(progress) ** 2 };
-  },
-  moments: () => ({ peak: 0.5 }),
-});
+/** Options of `pulse`. */
+export interface PulseOptions {
+  /** How much it grows, as a share of its size from 0 to 2; default 0.15. */
+  readonly amount?: number;
+}
+
+/** Grows a little and returns to its size. */
+export function pulse(options: PulseOptions = {}): Motion<Pose2d> {
+  const amount = numberOption("pulse", "amount", options.amount, { default: 0.15, min: 0, max: 2 });
+  return motion(({ progress }) => ({ scale: 1 + amount * arch(progress) ** 2 }));
+}

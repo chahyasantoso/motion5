@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events } from "@gerak/moves";
+import { liveAt, type Events } from "@gerak/core";
 import { scene } from "../card/src/card-scene";
 
 const pointer = (...steps: readonly [string, number][]): Events =>

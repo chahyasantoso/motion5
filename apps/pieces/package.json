@@ -3,17 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "gerak": {
-    "moves": [
-      "@gerak/moves",
-      "./*/src/moves"
-    ],
-    "promoteTo": "../../packages/moves/src/moves"
-  },
   "scripts": {
     "build": "vite build"
   },
   "dependencies": {
+    "@gerak/core": "*",
     "@gerak/dom": "*",
     "@gerak/moves": "*",
     "@gerak/physics": "*",
@@ -21,6 +15,7 @@
     "@gerak/rapier": "*",
     "@gerak/react": "*",
     "@gerak/rig": "*",
+    "@gerak/rig-three": "*",
     "@gerak/three": "*",
     "react": "19.2.8",
     "react-dom": "19.2.8",

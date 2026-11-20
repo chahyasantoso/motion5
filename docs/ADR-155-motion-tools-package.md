@@ -18,7 +18,7 @@ script names stay; they run `packages/tools/bin`.
 
 ## Consequences
 
-The boundary scan keeps page tools to node, `playwright-core` and `vite`. `test:frames` stays the browser check for
+The boundary scan keeps page tools to node, `playwright-core` and `vite`. **Refined by [ADR-191](./ADR-191-shapes-and-curves.md), 2026-11-18:** page tools may also import `@gerak/core`, still never a library or renderer. `test:frames` stays the browser check for
 what only a browser shows. A test holds that the timing beat's code scene and engine project draw one timeline.
 
 ## Rejected

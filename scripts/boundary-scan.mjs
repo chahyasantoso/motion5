@@ -335,6 +335,62 @@ async function pureLayer(scanRoot, workspaces) {
   }
   return { folders, names };
 }
+/** The groups, lowest first: a package imports only from its own group or a lower one. */
+export const GROUPS = ["core", "modules", "library"];
+
+/**
+ * Each package workspace's `"gerak": { "group" }`, by folder and by package name. A package
+ * manifest naming no group, or one outside `GROUPS`, is a violation: an unplaced package would
+ * pass the upward rule by never being read.
+ */
+async function packageGroups(scanRoot, workspaces, violations) {
+  const byFolder = new Map();
+  const byName = new Map();
+  for (const workspace of workspaces.filter((entry) => entry.startsWith("packages/"))) {
+    let manifest;
+    try {
+      manifest = JSON.parse(await readFile(join(scanRoot, workspace, "package.json"), "utf8"));
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    const group = manifest?.gerak?.group;
+    if (!GROUPS.includes(group)) {
+      violations.push(
+        `${workspace}/package.json: "gerak": { "group" } must be one of ${GROUPS.join(", ")}`,
+      );
+      continue;
+    }
+    const name = typeof manifest.name === "string" ? manifest.name : workspace;
+    byFolder.set(workspace, { name, group });
+    byName.set(name, group);
+  }
+  return { byFolder, byName };
+}
+
+/** Each import of a package in a higher group than the importer's, as `importer (group) imports target (group)`. */
+function upwardImports(own, specifiers, groups, found) {
+  for (const specifier of specifiers) {
+    if (specifier.startsWith(".")) continue;
+    const target = packageOf(specifier);
+    const group = groups.byName.get(target);
+    if (group !== undefined && GROUPS.indexOf(group) > GROUPS.indexOf(own.group))
+      found.add(`${own.name} (${own.group}) imports ${target} (${group})`);
+  }
+}
+
+/** The upward imports allowed for now, from `scripts/group-baseline.json`; none when the file is absent. */
+async function groupBaseline(scanRoot) {
+  try {
+    return new Set(
+      JSON.parse(await readFile(join(scanRoot, "scripts", "group-baseline.json"), "utf8")),
+    );
+  } catch (error) {
+    if (error?.code === "ENOENT") return new Set();
+    throw error;
+  }
+}
+
 /** Package names of the workspaces under `apps/`, by folder. */
 async function appNames(scanRoot, workspaces) {
   const names = new Map();
@@ -359,7 +415,7 @@ function folderOf(path) {
  * A package never reaches an app, an app never reaches another app, and an app reaches a package
  * only through its manifest, never by a relative path into `packages/`.
  */
-function checkAppBoundary(workspace, file, specifiers, violations, apps) {
+function checkAppBoundary(workspace, file, specifiers, violations, apps, crossPackagePaths = true) {
   const ownName = apps.get(workspace);
   for (const specifier of specifiers) {
     if (specifier.startsWith(".")) {
@@ -367,6 +423,12 @@ function checkAppBoundary(workspace, file, specifiers, violations, apps) {
       if (target === null || target === workspace) continue;
       if (workspace.startsWith("packages/") && target.startsWith("apps/"))
         violations.push(`${file}: package imports an app ${specifier}`);
+      else if (
+        crossPackagePaths &&
+        workspace.startsWith("packages/") &&
+        target.startsWith("packages/")
+      )
+        violations.push(`${file}: package imports another package by path ${specifier}`);
       else if (workspace.startsWith("apps/") && target.startsWith("packages/"))
         violations.push(`${file}: app imports a package by path ${specifier}`);
       else if (workspace.startsWith("apps/") && target.startsWith("apps/"))
@@ -386,16 +448,22 @@ function packageOf(specifier) {
   return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
-/** Page tools import node, a browser driver and a dev server, never gerak; they read only the brief folders' owner and the live plugin. */
+/** Page tools import node, core, a browser driver and a dev server, never a library or renderer; they read only the brief folders' owner and the live plugin. */
 function checkPageTools(file, specifiers, violations) {
   const allowed = specifiers.every((specifier) =>
     specifier.startsWith(".")
       ? [PAGE_TOOLS, BRIEFS, LIVE_PLUGIN].some((allowedPath) =>
           posix.normalize(posix.join(posix.dirname(file), specifier)).startsWith(allowedPath),
         )
-      : specifier.startsWith("node:") || specifier === "playwright-core" || specifier === "vite",
+      : specifier.startsWith("node:") ||
+        specifier === "@gerak/core" ||
+        specifier === "playwright-core" ||
+        specifier === "vite",
   );
-  if (!allowed) violations.push(`${file}: page tool import outside node, playwright-core and vite`);
+  if (!allowed)
+    violations.push(
+      `${file}: page tool import outside node, @gerak/core, playwright-core and vite`,
+    );
 }
 const PAGE_TOOLS = "packages/tools/src/page/";
 const BRIEFS = "packages/tools/src/scene/briefs";
@@ -415,20 +483,32 @@ export async function scan(scanRoot = root) {
   const declared = await declaredWorkspaceSubpaths(scanRoot, workspaces);
   const pure = await pureLayer(scanRoot, workspaces);
   const apps = await appNames(scanRoot, workspaces);
+  const groups = await packageGroups(scanRoot, workspaces, violations);
+  const upward = new Set();
   for (const workspace of workspaces) {
     const briefs = workspace.startsWith("apps/")
       ? await briefSources(join(scanRoot, workspace))
       : [];
-    const sourceFolders = [join(scanRoot, workspace, "src"), ...briefs];
+    const binFolders = workspace.startsWith("packages/") ? [join(scanRoot, workspace, "bin")] : [];
+    const sourceFolders = [join(scanRoot, workspace, "src"), ...briefs, ...binFolders];
     for (const path of (await Promise.all(sourceFolders.map(walk))).flat()) {
       const source = await readSource(path);
       if (source === undefined) continue;
       const file = relative(path, scanRoot);
       const specifiers = [...importSpecifiers(source)];
       if (file.startsWith(PAGE_TOOLS)) checkPageTools(file, specifiers, violations);
-      if (pure.folders.has(workspace))
-        checkPureSource(workspace, file, specifiers, violations, pure);
-      checkAppBoundary(workspace, file, specifiers, violations, apps);
+      const isPureSource = pure.folders.has(workspace);
+      if (isPureSource) checkPureSource(workspace, file, specifiers, violations, pure);
+      checkAppBoundary(
+        workspace,
+        file,
+        specifiers,
+        violations,
+        apps,
+        !(isPureSource && file.startsWith(`${workspace}/src/`)),
+      );
+      const own = groups.byFolder.get(workspace);
+      if (own !== undefined) upwardImports(own, specifiers, groups, upward);
       for (const specifier of undeclaredWorkspaceSubpaths(source, declared, specifiers))
         violations.push(`${file}: undeclared workspace subpath ${specifier}`);
     }
@@ -442,6 +522,12 @@ export async function scan(scanRoot = root) {
       checkAppBoundary(workspace, file, [...importSpecifiers(source)], violations, apps);
     }
   }
+  const baseline = await groupBaseline(scanRoot);
+  for (const pair of upward)
+    if (!baseline.has(pair)) violations.push(`upward import across groups: ${pair}`);
+  for (const pair of baseline)
+    if (!upward.has(pair))
+      violations.push(`gone from the tree, remove from scripts/group-baseline.json: ${pair}`);
   return violations;
 }
 

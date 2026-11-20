@@ -21,7 +21,7 @@ import {
 import { usePlayer } from "@gerak/react";
 import { applyPose3d, morphTargets, type CustomWriter } from "@gerak/three";
 import { useTarget3d } from "@gerak/three/react";
-import { applyBones, captureSkeleton, type CapturedSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton, type CapturedSkeleton } from "@gerak/rig-three";
 import {
   BALL_RADIUS,
   BALL_SPAWN,

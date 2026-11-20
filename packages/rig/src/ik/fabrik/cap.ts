@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 
 /** FABRIK iteration cap and its only owner; scales with serial depth, not member count. */
 

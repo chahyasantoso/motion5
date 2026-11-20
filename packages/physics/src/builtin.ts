@@ -1,3 +1,4 @@
+import { mixPoint, unreachable } from "@gerak/core";
 import type { BodySpec, BodyState, Collider, Contact, PhysicsWorld, Shape, Surface } from "./world";
 
 interface Vec {
@@ -76,14 +77,6 @@ const WAKE_SPEED = 30;
 const dot = (a: Vec, b: Vec) => a.x * b.x + a.y * b.y;
 const cross = (a: Vec, b: Vec) => a.x * b.y - a.y * b.x;
 const sub = (a: Vec, b: Vec): Vec => ({ x: a.x - b.x, y: a.y - b.y });
-const along = (a: Vec, b: Vec, t: number): Vec => ({
-  x: a.x + (b.x - a.x) * t,
-  y: a.y + (b.y - a.y) * t,
-});
-
-function unreachable(value: never): never {
-  throw new TypeError(`Unreachable value: ${JSON.stringify(value)}`);
-}
 
 function isBody(party: Body | Fixed): party is Body {
   return "inverseMass" in party;
@@ -182,7 +175,7 @@ function polygons(one: Polygon, two: Polygon) {
     const dq = dot(plane, q) - offset;
     if (dp <= 0) kept.push(p);
     if (dq <= 0) kept.push(q);
-    if (dp * dq < 0) kept.push(along(p, q, dp / (dp - dq)));
+    if (dp * dq < 0) kept.push(mixPoint(p, q, dp / (dp - dq)));
     if (kept.length < 2) return undefined;
     edge = kept;
   }
@@ -212,7 +205,7 @@ function circlePolygon(centre: Vec, radius: number, poly: Polygon) {
   const v2 = poly.corners[(face + 1) % poly.corners.length] ?? v1;
   const edge = sub(v2, v1);
   const t = Math.max(0, Math.min(1, dot(sub(centre, v1), edge) / (dot(edge, edge) || 1)));
-  const closest = along(v1, v2, t);
+  const closest = mixPoint(v1, v2, t);
   const away = sub(centre, closest);
   const distance = Math.hypot(away.x, away.y);
   if (distance >= radius) return undefined;

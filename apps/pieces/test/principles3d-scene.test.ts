@@ -1,7 +1,7 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
-import { NO_EVENTS, liveAt } from "@gerak/moves";
+import { NO_EVENTS, liveAt } from "@gerak/core";
 import { applyPose3d } from "@gerak/three";
 import {
   BITS_MS,

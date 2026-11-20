@@ -7,25 +7,26 @@ description: Make, change or polish an animation or motion piece for a web page 
 
 A piece starts from its brief, not from a piece that already exists.
 
-1. Read [`docs/guide/agent-motion.md`](../../../docs/guide/agent-motion.md) and follow its loop. It is short. A
-   piece is one stage module: `npx gerak new <name>` writes `<pieces>/<name>/src/<name>.ts` with its cast, its
-   story and its skin, and `stage.html?piece=<name>` shows it.
+1. Read [`core.md`](../../../packages/core/docs/core.md) and [`stage.md`](../../../packages/stage/docs/stage.md) whole, and follow
+   the loop in `stage.md`. A piece is one stage module: `npx gerak new <name>` writes
+   `<pieces>/<name>/src/<name>.ts`, a `sceneBuilder` piece with its `skin` export, and `stage.html?piece=<name>` shows it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.
-3. Read the primitives once with `npx gerak moves --anatomy` (fields by what they change, parts by kind,
-   qualities). Write the piece's `design` (each member's fields with the quality they should have) before choosing
-   any move, then ask `npx gerak moves --design <file> --target <member> --in <brief>`. Per line: use a move
-   as it is, at the options its row names, combine moves in the scene, or write one from the parts you named with
-   `npx gerak new --move <id> --in <brief>` and pass it through `npx gerak moves --check`.
+3. Read `@gerak/core`'s primitives in `core.md`. Write each member's motion from core's time, blend, ease,
+   envelope, path and principle helpers. With `@gerak/moves` installed, pick a move by reading its README, or write
+   your own beside the scene.
 4. Do not open any other piece in `<pieces>/*/src`, whether a stage module, a scene file or a component. They are
    tests of the runtime, and a piece begun from one comes out as its copy.
-5. Read a part the guide's table lists (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
-   when the brief needs it.
-6. Find any function or command by searching [the reference](../../../docs/guide/agent-reference.md) for its name;
-   do not read the reference whole, and do not read package source.
-7. Review with `gerak review`; dig with the other tools only into what a review showed. Read the sheet before
-   calling the piece finished.
+5. Read a page that `@gerak/stage`'s `docs/README.md` table names (events, physics, rigs, 3D, layout, artwork, live inputs and more) only
+   when the brief needs it and that package is installed; the pages of each installed package are listed in its `docs/README.md`.
+6. Find any function or type by searching `docs/reference/` of the package that exports it, and any command in
+   `docs/commands.md` of `@gerak/tools`, for its name; do not read package source, and do not read a package's docs
+   folder wholesale or list it with a shell: `core.md` and `stage.md` carry what a piece needs, and a reference page
+   gives a signature in full.
+7. Review with `gerak review <file>.ts` until it has no finding, then run `gerak frames` once and read its
+   `sheet.png` only; open a single frame only for a panel on the sheet that looks cut or overlapped. Dig with the other
+   tools only into what a review showed. Read the sheet before calling the piece finished.
 8. Change only your piece's files and the moves you wrote, and commit nothing unless asked.
 
 ## Report
@@ -33,7 +34,7 @@ A piece starts from its brief, not from a piece that already exists.
 - The obvious answer you named, the ideas you dropped, your three lines, and whether the finished piece shows them.
 - Your design, each line's fields and parts by kind, and for each line which choice you made (use, adjust, combine
   or write) and why.
-- Each move you used, and each move you wrote: its id, its role and why no catalogued move would do. Name any
+- Each move you used, and each move you wrote: its name and why no installed move would do. Name any
   motion you built from `keyframes` in the scene and say why it is not a move.
 - Any package source you opened, which file and why: that is a gap in the reference.
 - What you did not see at full speed.

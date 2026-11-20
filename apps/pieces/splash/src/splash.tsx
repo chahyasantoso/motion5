@@ -1,7 +1,7 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { applyValue } from "@gerak/dom";
 import type { Player } from "@gerak/player";
-import type { Pose2d } from "@gerak/moves";
+import type { Pose2d } from "@gerak/core";
 import { usePlayer, useTarget } from "@gerak/react";
 import { DROPLETS, RINGS, WORD, clock, scene } from "./splash-scene";
 

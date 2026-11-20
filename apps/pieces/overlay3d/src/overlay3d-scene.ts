@@ -2,7 +2,6 @@ import { clockDriver } from "@gerak/dom";
 import {
   aim,
   ease,
-  follow,
   mix,
   orbit,
   project3d,
@@ -11,7 +10,8 @@ import {
   type Lens3d,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { follow } from "@gerak/moves";
 import { posedJoints3d, type BonePose3d, type JointTable3d } from "@gerak/rig";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */

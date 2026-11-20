@@ -1,23 +1,52 @@
-import { type Events, type Time } from "@gerak/moves";
-import { actor, group, letters, restOf, story, type Rest } from "@gerak/stage";
+import { motion, type Pose2d, type Time } from "@gerak/core";
+import {
+  beat,
+  box,
+  group,
+  sceneBuilder,
+  shape,
+  text,
+  type MotionContext,
+  type Path,
+  type Rest,
+  type SceneBuilder,
+} from "@gerak/stage";
 
-export const beats = story(2000, { intro: [0, 400], go: [400, 1400], out: [1400, 2000] });
+export const skin = { css: "" };
 
-export const cast = {
-  stage: group({
-    dot: actor({ on: ["go"] }),
-    word: letters("AB"),
-    mark: actor({ still: true }),
-  }),
-};
+export const intro = beat("intro", 400);
+export const go = beat("go", 1000, { after: intro });
+export const out = beat("out", 600, { after: go });
 
-export const skins = { dom: { css: "" } };
+/** The clean piece, with the options a test varies: boxes, a length, and a stroke under the dot. */
+export function stageClean(
+  options: { rest?: Rest; length?: number; mark?: Path } = {},
+): SceneBuilder {
+  const dot = box("dot");
+  const word = text("word", "AB", { split: "letters" });
+  const mark = options.mark === undefined ? box("mark") : shape("mark", options.mark);
+  const stage = group("stage", [dot, word, mark]);
+  const atGo = motion(
+    (time: Time, context?: MotionContext): Pose2d => ({
+      x: (context?.rest.get("dot").x ?? 0) + 100 * time.progress,
+    }),
+  ).in(go);
+  const letters = motion(
+    (time: Time, context?: MotionContext): Pose2d => ({
+      x: (context?.index ?? 0) * 20 + 50 * time.progress,
+    }),
+  ).in(intro);
+  return sceneBuilder({
+    length: options.length ?? out.to,
+    ...(options.rest === undefined ? {} : { rest: options.rest }),
+  })
+    .element(stage)
+    .element(dot)
+    .show(go)
+    .motion(atGo)
+    .element(word)
+    .motion(letters)
+    .element(mark);
+}
 
-export const scene = (time: Time, _events: Events, rest: Rest) => {
-  const go = beats.go.of(time).progress;
-  const intro = beats.intro.of(time).progress;
-  return {
-    dot: { x: restOf(rest, "dot").x + 100 * go },
-    word: [0, 1].map((index) => ({ x: index * 20 + 50 * intro })),
-  };
-};
+export default stageClean();

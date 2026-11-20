@@ -7,14 +7,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
 import {
   NEW_USAGE,
-  parseCatalogArgs,
   parseNewArgs,
   readSceneModule,
-  runCatalog,
   sampleScene,
   scaffold,
-  scaffoldMove,
 } from "@gerak/tools/scene";
+import { reviewSceneModule } from "../src/scene/review";
 import { parseLiveArgs, startLiveServer } from "../src/page/live";
 import { callerPiecesRoot } from "../src/page/root";
 import { guard } from "../src/pages/live/guard";
@@ -48,19 +46,28 @@ const FILES = [
 ];
 
 describe("gerak new", () => {
-  it("writes one stage module of one beat and one actor, and it samples to rest", async () => {
+  it("writes one scene builder piece of one beat and one static actor, with no review finding", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(STAGE_FILES.map((file) => join(dir, file)));
+    const written = readFileSync(join(dir, "rope-word/src/rope-word.ts"), "utf8");
+    expect(written).toContain("sceneBuilder");
+    expect(written).not.toContain("defineStage");
     const imported = await import(pathToFileURL(join(dir, "rope-word/src/rope-word.ts")).href);
     const module = readSceneModule(imported);
     if ("reason" in module) throw new Error(module.reason);
     expect(module.beats?.map(({ name }) => name)).toEqual(["show"]);
-    expect(module.cast?.map(({ name, kind }) => [name, kind])).toEqual([["title", "actor"]]);
-    expect(imported.skins).toEqual({ dom: { css: "" } });
+    expect(module.stage?.members.map(({ name, kind }) => [name, kind])).toEqual([
+      ["title", "actor"],
+    ]);
+    expect(module.stage?.skins).toEqual({ dom: { kind: "inline", css: "" } });
+    expect(module.stage?.members.map(({ expect: kind }) => kind)).toEqual(["static"]);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
-    expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({ title: {} }));
+    expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({}));
+    expect(
+      reviewSceneModule(module, { hold: 500, jump: 150, turn: 150, ratio: 1.5 }).findings,
+    ).toEqual([]);
   });
 
   it("writes a scene that imports no move", () => {
@@ -69,44 +76,6 @@ describe("gerak new", () => {
     scaffold("rope-box", dir, { three: true });
     for (const file of ["rope-word/src/rope-word.ts", "rope-box/src/rope-box-scene.ts"])
       expect(readFileSync(join(dir, file), "utf8")).not.toMatch(/drop|lift2d/);
-  });
-
-  it("writes a move the catalog finds and the gate refuses until it is filled in", async () => {
-    const dir = appRoot();
-    const result = scaffoldMove("rope-in", dir, "rope");
-    if (result.kind !== "written") throw new Error(JSON.stringify(result));
-    expect(result.files).toEqual([join(dir, "rope/src/moves/rope-in.ts")]);
-    const catalog = (argv: readonly string[]) => {
-      const args = parseCatalogArgs(argv);
-      if (args.kind !== "ok") throw new Error(args.message);
-      return runCatalog(args, dir);
-    };
-    const listed = await catalog(["--all"]);
-    expect(listed.lines.map((line) => line.split(" ")[0])).toContain("rope-in");
-    const checked = await catalog(["--check"]);
-    expect(checked.code).toBe(1);
-    expect(checked.lines).toContain("rope-in: the move has no description.");
-    expect(checked.lines.some((line) => line.includes('"x" is 1 at progress 1'))).toBe(true);
-    const source = readFileSync(join(dir, "rope/src/moves/rope-in.ts"), "utf8");
-    const config = await resolveConfig(
-      join(process.cwd(), "apps/pieces/rope/src/moves/rope-in.ts"),
-    );
-    expect(await format(source, { ...config, filepath: "rope-in.ts" })).toBe(source);
-  });
-
-  it("refuses a move id that is not kebab-case or whose file exists", () => {
-    const dir = root();
-    for (const id of ["", "Rope", "rope_in", "../rope"])
-      expect(scaffoldMove(id, dir, "rope").kind).toBe("refused");
-    expect(scaffoldMove("rope-in", dir, "rope").kind).toBe("written");
-    expect(scaffoldMove("new", dir, "rope").kind).toBe("written");
-    expect(readFileSync(join(dir, "rope/src/moves/new.ts"), "utf8")).toContain(
-      "export const newMove =",
-    );
-    writeFileSync(join(dir, "rope/src/moves/keep.ts"), "keep");
-    expect(scaffoldMove("rope-in", dir, "rope").kind).toBe("refused");
-    expect(scaffoldMove("keep", dir, "rope").kind).toBe("refused");
-    expect(readFileSync(join(dir, "rope/src/moves/keep.ts"), "utf8")).toBe("keep");
   });
 
   it("with --three names the component after the page and points each file at the next", () => {
@@ -142,20 +111,17 @@ describe("gerak new", () => {
     expect(existsSync(join(dir, "rope-word/rope-word.html"))).toBe(false);
   });
 
-  it("refuses --move without --in and prints the usage line", () => {
-    for (const argv of [["--move", "rope-in"], ["--move"], ["--move", "rope-in", "--three"]]) {
+  it("no longer takes --move, and its usage line names no move command", () => {
+    for (const argv of [
+      ["--move", "rope-in"],
+      ["--move", "rope-in", "--in", "rope"],
+    ]) {
       expect(parseNewArgs(argv)).toEqual({ kind: "usage", message: NEW_USAGE });
     }
-    expect(parseNewArgs(["--move", "rope-in", "--in", "rope"])).toEqual({
-      kind: "move",
-      id: "rope-in",
-      brief: "rope",
-      root: undefined,
-    });
-    expect(NEW_USAGE).toContain("gerak new --move <id> --in <brief>");
+    expect(NEW_USAGE).not.toContain("new-move");
   });
 
-  it("with --in writes the piece and its move into that brief's folder", () => {
+  it("with --in writes the piece into that brief's folder", () => {
     const dir = root();
     const piece = scaffold("rope-word", dir, { brief: "ropes" });
     if (piece.kind !== "written") throw new Error(piece.message);
@@ -171,11 +137,7 @@ describe("gerak new", () => {
     expect(readFileSync(join(dir, "ropes/rope-box.html"), "utf8")).toContain(
       "/ropes/src/rope-box-main.tsx",
     );
-    const move = scaffoldMove("rope-in", dir, "ropes");
-    if (move.kind !== "written") throw new Error(move.message);
-    expect(move.files).toEqual([join(dir, "ropes/src/moves/rope-in.ts")]);
     expect(scaffold("rope-x", dir, { brief: "src" }).kind).toBe("refused");
-    expect(scaffoldMove("rope-y", dir, "Ropes").kind).toBe("refused");
   });
 
   it("refuses a name that already exists in any brief, and writes nothing", () => {

@@ -1,5 +1,5 @@
 import { tool } from "./load.mjs";
-const { parseNewArgs, scaffold, scaffoldMove } = await import(tool("scene/new"));
+const { parseNewArgs, scaffold } = await import(tool("scene/new"));
 const { callerDir, piecesRoot } = await import(tool("page/root"));
 
 const args = parseNewArgs(process.argv.slice(2));
@@ -10,8 +10,6 @@ const result = (() => {
   switch (args.kind) {
     case "usage":
       return { kind: "refused", message: args.message };
-    case "move":
-      return scaffoldMove(args.id, root, args.brief);
     case "piece":
       return scaffold(args.name, root, {
         three: args.three,

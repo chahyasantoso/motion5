@@ -1,6 +1,6 @@
+import { unreachable } from "@gerak/core";
 import RAPIER from "@dimforge/rapier3d-deterministic-compat";
 import { packSnapshot, unpackSnapshot } from "./snapshot";
-import { unreachable } from "./unreachable";
 import type {
   BodySpec3d,
   BodyState3d,

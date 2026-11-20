@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 import {
   pivotFromBaseTip,
   segmentExtent,

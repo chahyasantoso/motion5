@@ -1,29 +1,19 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
 import { shaken } from "../parts/oscillation/shaken";
+import { numberOption } from "./options";
 
-/** Shakes sideways `count` times, starting hard and dying away. */
-export const shake = defineMove({
-  id: "shake",
-  role: "emphasis",
-  description: "Shakes side to side, starting hard and dying away.",
-  options: {
-    distance: {
-      kind: "number",
-      min: 0,
-      description: "The most it can reach to either side, in px.",
-    },
-    count: {
-      kind: "number",
-      default: 4,
-      min: 1,
-      max: 16,
-      description: "Back-and-forth cycles; default 4.",
-    },
-  },
-  example: { options: { distance: 12, count: 4 } },
-  run({ distance, count }, { progress }): Pose2d {
-    return { x: distance * shaken(count, progress) };
-  },
-  moments: () => ({}),
-});
+/** Options of `shake`. */
+export interface ShakeOptions {
+  /** The most it can reach to either side, in px; at least 0, required. */
+  readonly distance: number;
+  /** Back-and-forth cycles, from 1 to 16; default 4. */
+  readonly count?: number;
+}
+
+/** Shakes side to side, starting hard and dying away. */
+export function shake(options: ShakeOptions): Motion<Pose2d> {
+  const distance = numberOption("shake", "distance", options.distance, { min: 0 });
+  const count = numberOption("shake", "count", options.count, { default: 4, min: 1, max: 16 });
+  const sway = shaken({ count });
+  return motion(({ progress }) => ({ x: distance * sway(progress) }));
+}

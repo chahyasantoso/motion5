@@ -1,0 +1,29 @@
+# @gerak/core: principles
+
+The motion principles as signal transforms: squash and stretch, anticipation, follow-through, overlap, arcs, exaggeration and secondary action, each built from its options then given a signal. Reach for them to give a move weight and life.
+
+- **`smear`** `(velocity: { readonly vx: number; readonly vy: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: Pose2d; readonly heading: number; }`: Stretches along travel by `stretch` per 1000 px/s up to `max`, area kept; `heading` in (-90, 90]. Content that must not turn goes in an inner element posed `{ rotation: -heading }`.
+- **`smear3d`** `(velocity: { readonly vx: number; readonly vy: number; readonly vz: number; }, options: { readonly stretch: number; readonly max: number; }): { readonly pose: Pose3d; readonly turn: Pose3d; }`: Stretches along travel by `stretch` per unit a second up to `max`, volume kept; reversing never flips it; `turn` undoes it.
+- **`trail`** `(signal: (time: Time, events: Events) => number, options: TrailOptions): (time: Time, events: Events) => number`: A value chasing `signal(time, events)` on a spring, for follow-through and drag. Pass the scene's time: the signal applies its own spans and eases.
+- **`TrailOptions`** `type TrailOptions = { stiffness?: number; damping?: number; stepMs?: number; rest?: number }`: Settings of a `trail`: `stiffness` (default 170), `damping` (26), `stepMs` (1 to 33, default 8) and `rest`, the distance under which it sits on the signal.
+- **`trailTurn`** `(signal: (time: Time, events: Events) => Pose3d, options: TrailOptions): (time: Time, events: Events) => Pose3d`: A turn chasing a `Pose3d` signal's turn on a spring, the short way round, resting exactly on it; pass the scene's time. Trail a position with three `trail` calls.
+- **`squashStretch`** `(options: SquashStretchOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: The signal stretched along its own travel and squashed across it, area kept.
+- **`squashStretch3d`** `(options: SquashStretchOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: The 3D signal stretched along its own travel and squashed across it, volume kept.
+- **`SquashStretchOptions`** `type SquashStretchOptions = { stretch: number; max: number }`: `stretch`: extra length per 1000 px/s (per unit a second in 3D), 0 or more; `max`: the longest stretch, 1 or more.
+- **`anticipation`** `(options: AnticipationOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: The signal winds up the other way from its travel, then plays and ends where it ends.
+- **`anticipation3d`** `(options: AnticipationOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: The 3D signal winds up the other way from its travel, then plays and ends where it ends.
+- **`AnticipationOptions`** `type AnticipationOptions = { share: number; amount: number }`: `share`: the share of the progress spent winding up, 0 to 0.9; `amount`: how far back it goes as a share of the signal's whole travel, 0 to 1.
+- **`followThrough`** `(options: FollowThroughOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: Each field of the signal chasing it on a spring, the turn the short way, resting exactly on the signal.
+- **`followThrough3d`** `(options: FollowThroughOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: Each position and scale of the 3D signal chasing it on a spring, the turn the short way.
+- **`FollowThroughOptions`** `type FollowThroughOptions = { stiffness: number; damping: number }`: `stiffness`: the spring's pull per second squared, above 0; `damping`: its drag per second, 0 or more.
+- **`overlap`** `(options: OverlapOptions): <T>(signal: Signal<T>) => Signal<T>`: The signal `lagMs` later, holding its value at time 0 until then; any pose type.
+- **`OverlapOptions`** `type OverlapOptions = { lagMs: number }`: `lagMs`: how many ms later the signal plays, 0 or more.
+- **`arc`** `(options: ArcBendOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: The signal with a bow added at right angles to its straight travel from progress 0 to 1: 0 at both ends. A signal that ends where it starts plays unchanged.
+- **`arc3d`** `(options: Arc3dOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: The 3D signal with `bend` added, scaled by the arch of its progress: 0 at both ends.
+- **`Arc3dOptions`** `type Arc3dOptions = { bend: { readonly x: number; readonly y: number; readonly z: number; } }`: `bend`: the world-unit offset the path bows by at its middle.
+- **`ArcBendOptions`** `type ArcBendOptions = { bend: number }`: `bend`: px the path bows by at its middle, to the right of its travel on screen when above 0.
+- **`exaggerate`** `(options: ExaggerateOptions): (signal: Signal<Pose2d>) => Signal<Pose2d>`: Each of the signal's fields pushed `amount` further from its rest.
+- **`exaggerate3d`** `(options: ExaggerateOptions): (signal: Signal<Pose3d>) => Signal<Pose3d>`: Each of the 3D signal's fields pushed `amount` further from its rest.
+- **`ExaggerateOptions`** `type ExaggerateOptions = { amount: number }`: `amount`: the share added to each field's distance from its rest; 0 changes nothing.
+- **`secondary`** `<T>(respond: (velocity: { readonly vx: number; readonly vy: number; }) => T): (primary: Signal<Pose2d>) => Signal<T>`: A signal that answers the primary's velocity in px a second through `respond`.
+- **`secondary3d`** `<T>(respond: (velocity: { readonly vx: number; readonly vy: number; readonly vz: number; }) => T): (primary: Signal<Pose3d>) => Signal<T>`: A signal that answers the primary's velocity in units a second through `respond`.

@@ -1,4 +1,4 @@
-import { unreachable } from "../page/unreachable";
+import { unreachable } from "@gerak/core";
 
 export type TimelineRow =
   | { readonly kind: "moves"; readonly node: string; readonly start: number; readonly rest: number }

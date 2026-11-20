@@ -1,0 +1,57 @@
+import { arcLength } from "./arc-length";
+import type { Pose2d } from "../fields/pose";
+import type { Cubic2d } from "../geometry/shapes";
+import type { Curve } from "../time/shapes";
+
+function pointOf(c: Cubic2d, t: number): { readonly x: number; readonly y: number } {
+  const u = 1 - t;
+  const a = u * u * u;
+  const b = 3 * u * u * t;
+  const d = 3 * u * t * t;
+  const e = t * t * t;
+  return {
+    x: a * c.x0 + b * c.x1 + d * c.x2 + e * c.x3,
+    y: a * c.y0 + b * c.y1 + d * c.y2 + e * c.y3,
+  };
+}
+
+function slopeOf(c: Cubic2d, t: number): { readonly dx: number; readonly dy: number } {
+  const u = 1 - t;
+  const a = 3 * u * u;
+  const b = 6 * u * t;
+  const d = 3 * t * t;
+  return {
+    dx: a * (c.x1 - c.x0) + b * (c.x2 - c.x1) + d * (c.x3 - c.x2),
+    dy: a * (c.y1 - c.y0) + b * (c.y2 - c.y1) + d * (c.y3 - c.y2),
+  };
+}
+
+/** A curve of the `{ x, y }` point at a share of a path's distance, in the path's coordinates;
+ * `turn: true` adds `rotation`, the heading in degrees (down is 90). */
+export function along(
+  cubics: readonly Cubic2d[],
+  options: { readonly turn?: boolean } = {},
+): Curve<Pose2d> {
+  const segments = [...cubics];
+  const turn = options.turn === true;
+  if (segments.length === 0) throw new RangeError("along: the path has no segments.");
+  const arc = arcLength(segments.length, (index, t) => {
+    const c = segments[index];
+    if (c === undefined) throw new RangeError("along: the path has no segments.");
+    const p = pointOf(c, t);
+    return [p.x, p.y];
+  });
+  return (share) => {
+    const { segment, t } = arc.locate(Math.max(0, Math.min(1, share)) * arc.total);
+    const cubic = segments[segment];
+    if (cubic === undefined) throw new RangeError("along: the path has no segments.");
+    const point = pointOf(cubic, t);
+    if (!turn) return { x: point.x, y: point.y };
+    const slope = slopeOf(cubic, t);
+    const heading =
+      slope.dx === 0 && slope.dy === 0
+        ? Math.atan2(cubic.y3 - cubic.y0, cubic.x3 - cubic.x0)
+        : Math.atan2(slope.dy, slope.dx);
+    return { x: point.x, y: point.y, rotation: (heading * 180) / Math.PI };
+  };
+}

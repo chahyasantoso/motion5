@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  CORE_INSTALL_SET,
   allSpecifiers,
   firstErrorLine,
   formatResult,
+  listedInHelp,
   missingBinFiles,
   missingExportFiles,
   missingFromHelp,
@@ -69,9 +71,11 @@ describe("pack check", () => {
     expect(missingBinFiles(manifest, () => false)).toEqual([]);
   });
 
-  it("names the commands a help text leaves out", () => {
+  it("names the commands a help text leaves out, and lists any present from a set", () => {
     const help = ["usage: gerak <command>", "  moves  find", "  new  scaffold"].join("\n");
     expect(missingFromHelp(help, ["moves", "new", "read"])).toEqual(["read"]);
+    expect(listedInHelp(help, ["moves", "style"])).toEqual(["moves"]);
+    expect(CORE_INSTALL_SET).toEqual(["core", "player", "stage", "dom", "react", "tools"]);
   });
 
   it("pins the peers to the versions the lockfile installed", () => {
@@ -82,6 +86,7 @@ describe("pack check", () => {
         "node_modules/three": { version: "0.186.1" },
         "node_modules/typescript": { version: "5.8.3" },
         "node_modules/@types/react": { version: "19.2.2" },
+        "node_modules/@types/react-dom": { version: "19.0.4" },
         "node_modules/@types/three": { version: "0.186.0" },
         "node_modules/vite": { version: "7.1.0" },
         "node_modules/playwright-core": { version: "1.55.0" },
@@ -94,6 +99,7 @@ describe("pack check", () => {
       "three@0.186.1",
       "typescript@5.8.3",
       "@types/react@19.2.2",
+      "@types/react-dom@19.0.4",
       "@types/three@0.186.0",
       "vite@7.1.0",
       "playwright-core@1.55.0",

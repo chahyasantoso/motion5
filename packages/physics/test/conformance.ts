@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, type Events, type MotionEvent } from "@gerak/moves";
+import { liveAt, type Events, type MotionEvent } from "@gerak/core";
 import { simulate, type PhysicsWorld, type Spawner } from "@gerak/physics";
 
 const G = 2000;

@@ -20,12 +20,12 @@ export async function stagePage(pieces: ModuleGlob, components: ModuleGlob): Pro
       mounted = resolve;
     }),
   );
-  const options = { onDriver: () => mounted() };
+  const options = { onDriver: () => mounted(), checks: true };
 
   const name = new URLSearchParams(window.location.search).get("piece") ?? "";
   const loaded = await pieceLookup(pieces, components).loadStageModule(name);
   if (typeof loaded === "string") {
     container.textContent = loaded;
     mounted();
-  } else createRoot(container).render(<Stage module={loaded.module} options={options} />);
+  } else createRoot(container).render(<Stage stage={loaded.stage} options={options} />);
 }

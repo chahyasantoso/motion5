@@ -10,8 +10,11 @@ if (fromSource) {
   registerSourceLoader();
 }
 
-/** The file URL of a tool module: its TypeScript source in the repository, its built file installed. */
-export function tool(module) {
-  const target = fromSource ? `../src/${module}.ts` : `../dist/${module}.js`;
-  return new URL(target, import.meta.url).href;
+/** The `tool` function of the package whose `bin/` folder holds `binUrl`: a tool module's file URL, its TypeScript source in the repository, its built file installed. */
+export function toolsOf(binUrl) {
+  const here = existsSync(new URL("../src/", binUrl));
+  return (module) => new URL(here ? `../src/${module}.ts` : `../dist/${module}.js`, binUrl).href;
 }
+
+/** The file URL of a tool module of this package. */
+export const tool = toolsOf(import.meta.url);

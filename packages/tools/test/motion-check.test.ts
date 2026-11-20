@@ -59,9 +59,19 @@ describe("gerak check analysis", () => {
     ]);
   });
 
-  it("reports a final hold shorter than the limit", () => {
+  it("reports a final hold shorter than the limit, naming every target that still changes", () => {
     const run = frames(40, (i) => ({ a: { x: Math.min(i, 35) * 2, y: 0 } }));
-    expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([{ kind: "short-hold", ms: 64 }]);
+    expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([
+      { kind: "short-hold", ms: 64, targets: ["a"] },
+    ]);
+    const both = frames(40, (i) => ({
+      a: { x: Math.min(i, 35) * 2, y: 0 },
+      b: { x: Math.min(i, 30) * 2, y: 100 },
+      c: { x: 0, y: 200 },
+    }));
+    expect(analyse(both, STAGE, DEFAULT_LIMITS)).toEqual([
+      { kind: "short-hold", ms: 64, targets: ["a", "b"] },
+    ]);
   });
 
   it("reports an element still moving on the last frame", () => {

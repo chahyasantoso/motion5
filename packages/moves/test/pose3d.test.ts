@@ -2,14 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   atProgress,
   combine3d,
-  hop,
   lift2d,
   mixPoint3d,
   mixPose3d,
-  squashed3d,
   type Pose2d,
   type Pose3d,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { hop, squashed3d } from "@gerak/moves";
 
 describe("Pose3d", () => {
   it("refuses a 2D pose where a 3D one goes", () => {
@@ -82,7 +81,7 @@ describe("lift2d", () => {
   });
 
   it("puts a hop's peak above the ground", () => {
-    const peak = hop({ height: 260, bounces: 0 }, atProgress(0.5));
+    const peak = hop({ height: 260, bounces: 0 })(atProgress(0.5));
     expect(lift2d(peak, { unitsPerPx: 0.01 }).y ?? 0).toBeGreaterThan(1);
   });
 
@@ -93,16 +92,16 @@ describe("lift2d", () => {
 
 describe("squashed3d", () => {
   it("keeps the volume while it shortens the named axis", () => {
-    const pose = squashed3d(0.4, 1);
+    const pose = squashed3d({ squash: 0.4 })(1);
     expect(pose.scaleY).toBeCloseTo(0.6, 12);
     expect((pose.scaleX ?? 1) * (pose.scaleY ?? 1) * (pose.scaleZ ?? 1)).toBeCloseTo(1, 12);
-    const side = squashed3d(0.4, 0.5, "x");
+    const side = squashed3d({ squash: 0.4, axis: "x" })(0.5);
     expect(side.scaleX).toBeCloseTo(0.8, 12);
     expect((side.scaleX ?? 1) * (side.scaleY ?? 1) * (side.scaleZ ?? 1)).toBeCloseTo(1, 12);
   });
 
   it("is no pose at all with no weight, and refuses a squash that flattens", () => {
-    expect(squashed3d(0.4, 0)).toEqual({});
-    expect(() => squashed3d(1, 1)).toThrow(RangeError);
+    expect(squashed3d({ squash: 0.4 })(0)).toEqual({});
+    expect(() => squashed3d({ squash: 1 })(1)).toThrow(RangeError);
   });
 });

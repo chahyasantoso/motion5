@@ -1,17 +1,22 @@
 {
   "name": "@gerak/rapier",
   "version": "0.1.0",
+  "gerak": {
+    "group": "modules"
+  },
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "files": [
     "dist",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@dimforge/rapier2d-deterministic-compat": "0.21.0",
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
+    "@gerak/core": "0.1.0",
     "@gerak/physics": "0.1.0"
   },
   "exports": {

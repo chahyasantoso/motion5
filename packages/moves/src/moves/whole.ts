@@ -1,4 +1,4 @@
-import { POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d, type ValueField } from "../fields/pose";
+import { POSE_2D_NUMBERS, VALUE_FIELDS, type Pose2d, type ValueField } from "@gerak/core";
 
 type PoseNumber = (typeof POSE_2D_NUMBERS)[number];
 

@@ -1,8 +1,8 @@
-import { atProgress, createLoopCycle, type Events, type LoopCycle, type Time } from "@gerak/moves";
+import { atProgress, type Events, type Time, unreachable } from "@gerak/core";
+import { createLoopCycle, type LoopCycle } from "./loop-cycle";
 import type { Driver } from "@gerak/player";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
-import { unreachable } from "./unreachable";
 
 /** Settings of `clockDriver`: `duration` ms, `delay`, `repeat`, `yoyo`, `autoplay`, `frames` and `reducedMotion`. */
 export interface ClockOptions {

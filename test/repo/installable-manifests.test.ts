@@ -1,16 +1,28 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
+import { PACKAGES } from "../../scripts/reference.mjs";
 import { withExtensions } from "../../scripts/build.mjs";
 import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-packages.mjs";
 
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
+const SHIPPED: Readonly<Record<string, readonly string[]>> = {
+  tools: ["dist", "bin", "skill", "docs", "LICENSE"],
+};
+
+/** Packages whose generated reference ships in `docs`. */
+const WITH_DOCS = new Set(PACKAGES.map(({ dir }) => dir));
+
 describe("installable manifests", () => {
-  it("names the nine runtime packages and the tools", () => {
-    expect(INSTALLABLE_PACKAGES).toHaveLength(10);
+  it("names every public package under packages/ once, the tools last", () => {
+    const publics = readdirSync(packagesRoot)
+      .filter((directory) => readManifest(directory).private !== true)
+      .sort();
+    expect([...INSTALLABLE_PACKAGES].sort()).toEqual(publics);
+    expect(INSTALLABLE_PACKAGES.at(-1)).toBe("tools");
   });
 
   describe.each(INSTALLABLE_PACKAGES)("%s", (directory) => {
@@ -21,7 +33,8 @@ describe("installable manifests", () => {
       expect(manifest.private).toBeUndefined();
       expect(manifest.license).toBe("MIT");
       expect(manifest.files).toEqual(
-        directory === "tools" ? ["dist", "bin", "guide", "LICENSE"] : ["dist", "LICENSE"],
+        SHIPPED[directory] ??
+          (WITH_DOCS.has(directory) ? ["dist", "docs", "LICENSE"] : ["dist", "LICENSE"]),
       );
       for (const [name, range] of Object.entries(manifest.dependencies ?? {})) {
         if (name.startsWith("@gerak/")) expect(range).toBe("0.1.0");

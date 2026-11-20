@@ -10,7 +10,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
 import { applyPose3d, morphTargets } from "@gerak/three";
-import { applyBones, captureSkeleton } from "@gerak/three/skeleton";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import {
   BALL_RADIUS,
   BALL_SPAWN,

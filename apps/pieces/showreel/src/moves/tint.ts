@@ -1,4 +1,4 @@
-import { defineMove, type Pose2d } from "@gerak/moves";
+import { type Pose2d, motion, type Motion } from "@gerak/core";
 
 const CURVES = {
   linear: (p: number) => p,
@@ -7,31 +7,22 @@ const CURVES = {
   inOut: (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2),
 } as const;
 
-export const tint = defineMove({
-  id: "tint",
-  role: "exit",
-  description:
-    "Turns a named custom number from 0 to an amount, for a colour charging, flipping or flashing that the page's CSS reads as --<name>; reversed, it turns back; for new colour work use the `tint` field of `@gerak/moves`.",
-  options: {
-    name: {
-      kind: "string",
-      description: "The custom number's name; the page reads it as --<name>.",
-    },
-    amount: {
-      kind: "number",
-      default: 1,
-      description: "Where the number ends; default 1, a full change of colour.",
-    },
-    curve: {
-      kind: "string",
-      enum: ["linear", "in", "out", "inOut"],
-      default: "linear",
-      description: "How the change is spread over the span; default linear.",
-    },
-  },
-  example: { options: { name: "charge", amount: 1, curve: "inOut" } },
-  moments: () => ({}),
-  run: ({ name, amount, curve }, { progress }): Pose2d => ({
-    custom: { [name]: amount * CURVES[curve](progress) },
-  }),
-});
+/** Options of `tint`. */
+export interface TintOptions {
+  /** The custom number's name; the page reads it as --<name>. */
+  readonly name: string;
+  /** Where the number ends; default 1, a full change of colour. */
+  readonly amount?: number;
+  /** How the change is spread over the span; default linear. */
+  readonly curve?: "linear" | "in" | "out" | "inOut";
+}
+
+/** Turns a named custom number from 0 to an amount, for a colour charging, flipping or flashing that the page's CSS reads as --<name>. */
+export function tint(options: TintOptions): Motion<Pose2d> {
+  const { name, amount = 1, curve = "linear" } = options;
+  return motion(
+    ({ progress }): Pose2d => ({
+      custom: { [name]: amount * CURVES[curve](progress) },
+    }),
+  );
+}

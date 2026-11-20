@@ -5,15 +5,19 @@
   "type": "module",
   "sideEffects": false,
   "gerak": {
+    "group": "library",
     "layer": "pure"
   },
   "files": [
     "dist",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@gerak/rig": "0.1.0"
+    "@gerak/core": "0.1.0",
+    "@gerak/rig": "0.1.0",
+    "@gerak/stage": "0.1.0"
   },
   "exports": {
     ".": {

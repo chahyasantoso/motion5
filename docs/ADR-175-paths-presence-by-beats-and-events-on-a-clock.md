@@ -1,6 +1,8 @@
 # ADR-175: Paths as content, presence as beats, and events on a clock
 
 **Status:** Accepted, 2026-11-12
+**Superseded in part by ADR-190:** the cast, list values, visibility and frame evaluation of stage v3.
+**Superseded in part by ADR-193:** how a piece is written.
 
 ## Context
 

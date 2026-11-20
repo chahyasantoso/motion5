@@ -20,6 +20,7 @@
     "scan:comments": "node scripts/comment-scan.mjs",
     "scan:cycles": "node scripts/cycle-scan.mjs",
     "scan:boundaries": "node scripts/boundary-scan.mjs",
+    "scan:duplicates": "node scripts/duplicate-scan.mjs",
     "adr-index": "node scripts/adr-index.mjs",
     "map": "node scripts/repo-map.mjs",
     "reference": "node scripts/reference.mjs",

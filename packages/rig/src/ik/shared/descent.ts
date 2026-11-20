@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 
 /** Damped least-squares walk in joint space from a legal pose toward the aims; only a
  * strictly lowering step is taken; the end pose seeds one FABRIK attempt; FABRIK stays the only publisher. */

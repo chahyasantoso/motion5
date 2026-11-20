@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 import { solveFabrik } from "../fabrik/fabrik";
 import type { WorldFrame } from "../../frame/frame";
 import { solveTwoBone } from "../shared/analytic";

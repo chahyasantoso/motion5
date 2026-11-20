@@ -1,4 +1,4 @@
-import { elapsedOf, type Time } from "@gerak/moves";
+import { elapsedOf, type Time } from "@gerak/core";
 
 export const durationMs = 2000;
 

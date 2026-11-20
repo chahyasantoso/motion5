@@ -16,6 +16,7 @@ export const STEPS = [
   "scan:comments",
   "scan:cycles",
   "scan:boundaries",
+  "scan:duplicates",
   "format:check",
   "typecheck",
   "test",

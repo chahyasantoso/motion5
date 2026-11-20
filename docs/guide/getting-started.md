@@ -8,14 +8,15 @@ onto an element or a Three.js object.
 
 ```ts
 import { applyValue, clockDriver } from "@gerak/dom";
-import { drop, span, type Time } from "@gerak/moves";
+import { span, type Time } from "@gerak/core";
+import { drop } from "@gerak/moves";
 import { play } from "@gerak/player";
 
 const durationMs = 1200;
 const fall = span(0, 900);
 
 const scene = (time: Time) => ({
-  title: drop({ distance: 400, squash: 0.2 }, fall.of(time)),
+  title: drop({ distance: 400, squash: 0.2 })(fall.of(time)),
 });
 
 const title = document.querySelector<HTMLElement>("#title");
@@ -60,7 +61,7 @@ with no browser.
 
 ## Where next
 
-- [Making motion as an agent](./agent-motion.md): the brief, the move catalog, composing and the review loop.
-- [Agent reference](./agent-reference.md): every function, type and command, each with a short example.
-- [3D scenes](./agent-3d.md), [rigs](./agent-rigs.md), [events](./agent-events.md), [physics](./agent-physics.md)
-  and [motion principles](./agent-principles.md) when a brief needs them.
+- [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): read whole before making motion; the loop is in the second.
+- [3D scenes](../../packages/three/docs/agent-3d.md), [rigs](../../packages/rig/docs/agent-rigs.md), [events](../../packages/stage/docs/agent-events.md), [physics](../../packages/physics/docs/agent-physics.md)
+  and [motion principles](../../packages/moves/docs/agent-principles.md) when a brief needs them.
+- [Live editing](../../packages/tools/docs/live.md) and [every command](../../packages/tools/docs/commands.md).

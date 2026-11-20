@@ -109,6 +109,7 @@ export async function startLiveServer(options: {
     root: options.root,
     logLevel: "error",
     plugins: added.plugins,
+    optimizeDeps: added.optimizeDeps,
     server: { ...added.server, port: options.port },
   });
   await server.listen();

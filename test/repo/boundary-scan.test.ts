@@ -129,7 +129,7 @@ describe("boundary scan: pure packages", () => {
       {
         "packages/geometry/package.json": JSON.stringify({
           name: "@gerak/geometry",
-          gerak: { layer: "pure" },
+          gerak: { group: "core", layer: "pure" },
           exports: { ".": "./src/index.ts" },
         }),
         "packages/geometry/src/index.ts":
@@ -144,12 +144,21 @@ describe("boundary scan: pure packages", () => {
 });
 
 describe("boundary scan: page tools", () => {
-  it("keeps page tools to node, playwright-core, vite and the brief folders' owner", async () => {
+  it("keeps page tools to node, @gerak/core, playwright-core, vite and the brief folders' owner", async () => {
     const violations = await withTree(
       {
-        "packages/tools/package.json": JSON.stringify({ name: "@gerak/tools", exports: {} }),
+        "packages/core/package.json": JSON.stringify({
+          name: "@gerak/core",
+          gerak: { group: "core" },
+          exports: { ".": "./src/index.ts" },
+        }),
+        "packages/tools/package.json": JSON.stringify({
+          name: "@gerak/tools",
+          gerak: { group: "core" },
+          exports: {},
+        }),
         "packages/tools/src/page/frames.ts":
-          'import { join } from "node:path";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, chromium, a];',
+          'import { join } from "node:path";\nimport { ease } from "@gerak/core";\nimport { chromium } from "playwright-core";\nimport { a } from "./page";\nexport const f = [join, ease, chromium, a];',
         "packages/tools/src/page/page.ts":
           'import { createServer } from "vite";\nexport const a = createServer;',
         "packages/tools/src/page/sample.ts":
@@ -162,9 +171,68 @@ describe("boundary scan: page tools", () => {
       (tree) => scan(tree),
     );
     expect(violations).toEqual([
-      "packages/tools/src/page/reach.ts: page tool import outside node, playwright-core and vite",
-      "packages/tools/src/page/sample.ts: page tool import outside node, playwright-core and vite",
+      "packages/tools/src/page/reach.ts: page tool import outside node, @gerak/core, playwright-core and vite",
+      "packages/tools/src/page/sample.ts: page tool import outside node, @gerak/core, playwright-core and vite",
+      "upward import across groups: @gerak/tools (core) imports @gerak/moves (library)",
     ]);
+  });
+});
+
+describe("boundary scan: groups", () => {
+  const groupOf = (name: string, group: string): string =>
+    JSON.stringify({ name, gerak: { group }, exports: { ".": "./src/index.ts" } });
+
+  it("refuses an import from a higher group and allows one from the same or a lower group", async () => {
+    const violations = await withTree(
+      {
+        "packages/dom/src/up.ts": 'import { hop } from "@gerak/moves";\nexport const u = hop;',
+        "packages/rig/src/up.ts": 'import { hop } from "@gerak/moves";\nexport const u = hop;',
+        "packages/moves/src/down.ts":
+          'import { solve } from "@gerak/rig";\nexport const d = solve;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "upward import across groups: @gerak/dom (core) imports @gerak/moves (library)",
+      "upward import across groups: @gerak/rig (modules) imports @gerak/moves (library)",
+    ]);
+  });
+
+  it("refuses a package manifest with no group or an unknown one", async () => {
+    const violations = await withTree(
+      {
+        "packages/loose/package.json": JSON.stringify({ name: "@gerak/loose", exports: {} }),
+        "packages/odd/package.json": groupOf("@gerak/odd", "extras"),
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      'packages/loose/package.json: "gerak": { "group" } must be one of core, modules, library',
+      'packages/odd/package.json: "gerak": { "group" } must be one of core, modules, library',
+    ]);
+  });
+
+  it("allows a baselined upward import and refuses a baseline line the tree no longer holds", async () => {
+    const violations = await withTree(
+      {
+        "packages/dom/src/up.ts": 'import { hop } from "@gerak/moves";\nexport const u = hop;',
+        "scripts/group-baseline.json": JSON.stringify([
+          "@gerak/dom (core) imports @gerak/moves (library)",
+          "@gerak/three (core) imports @gerak/rig (modules)",
+        ]),
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "gone from the tree, remove from scripts/group-baseline.json: @gerak/three (core) imports @gerak/rig (modules)",
+    ]);
+  });
+
+  it("holds the real tree's upward imports to the baseline", async () => {
+    const baseline = JSON.parse(
+      await readFile(join(root, "scripts", "group-baseline.json"), "utf8"),
+    ) as string[];
+    expect(baseline.length).toBeLessThanOrEqual(0);
   });
 });
 
@@ -298,5 +366,19 @@ describe("boundary scan: app boundary", () => {
     expect(violations).toContain(
       "apps/demo/src/path.ts: app imports another app ../../other/src/main",
     );
+  });
+
+  it("refuses a package reaching into another package by relative path, including bin scripts", async () => {
+    const violations = await withTree(
+      {
+        "packages/dom/bin/cli.mjs":
+          'import { hop } from "../../moves/src/index.ts";\nexport const x = hop;',
+        "packages/dom/src/ok.ts": 'import { a } from "./local";\nexport const y = a;',
+      },
+      (tree) => scan(tree),
+    );
+    expect(violations).toEqual([
+      "packages/dom/bin/cli.mjs: package imports another package by path ../../moves/src/index.ts",
+    ]);
   });
 });

@@ -5,33 +5,29 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-15, Asia/Jakarta.
-- **Read against:** `feat/installable`, the installable plan built on `main` at `a249afe8`.
+- **Captured:** 2026-11-20, Asia/Jakarta.
+- **Read against:** `feat/page-travel`, stacked on `feat/page-sections` (PR 607), `feat/page-mount` (PR 606), and `feat/page-inputs` (PR 605) from `refactor/points-and-reference` after PR 604.
 
 ## Now
 
-- **A scene is `(time, events) => targets`, and an agent designs before it chooses.** `@gerak/moves` holds fields,
-  parts by kind, moves and compose in layer folders; `@gerak/rig`, `@gerak/player`, `@gerak/physics`,
-  `@gerak/rapier`, `@gerak/dom`, `@gerak/react`, `@gerak/three` and `@gerak/stage` build, play and write it; the
-  one `npx gerak <command>` from `@gerak/tools` makes, reviews, samples and renders pieces, here and in a person's own
-  project after `npx gerak init`, which writes the page files, the skill and an `AGENTS.md` pointing at the guide the
-  package ships; a fresh agent made the 30 s `launch-night` reel that way, from the shipped guide alone. Each brief is a folder of the pieces folder (`gerak.pieces`; `apps/pieces` here), played at `stage.html?piece=<name>` or live at `live.html?scene=<name>`. `gerak moves --anatomy`
-  is the card of primitives, the catalog answers a piece's `design`, and `gerak review` checks the design. A brief
-  folder is portable with its own parts; its optional `style.ts` card holds the share of lively motion per field, which
-  `gerak review` checks for any piece naming it and `gerak style` measures (the `showreel` card, measured by
-  `launch-day`). Decisions are ADR-170 to ADR-188; the agent guide and the generated `docs/guide/agent-reference.md` describe use. Every package installs
-  from its tarball; nothing is on npm (ADR-179, ADR-188).
+- **A piece is a `sceneBuilder` chain compiled with `compileScene`, split across thirteen packages in three enforced groups (`core`, `modules`, `library`), playing either in a shadow-DOM stage (`mountStage`) or directly over existing page nodes (`mountPage`).**
+  `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`, `motion` with `MotionWindow`, `shared`), shapes (`Timing`, `Curve<T = number>`, `Ease = Curve<number>`, `Signal<T = Pose2d>`), eases (`ease.*`, `backEase`, `springEase`, `spring`), envelopes (`arch`, `wave`, `attack`, `decay`, `taper`), blends, paths (`ballistic`, `along`, `along3d`), geometry, 3D maths, measures (`velocity`, `velocity3d`, `tally`), motion principles (`squashStretch`, `anticipation`, `followThrough`, `overlap`, `arc`, `exaggerate`, `secondary`, `smear`, `trail`) and state from events (`state`, `eventLog`, `scroll`, `pointer`, `INPUT_EVENTS`, `springTo`, `easeTo`, which `follow` and `tally` build on);
+  `@gerak/stage` owns `sceneBuilder` (single-scene element ownership), elements (`box`, `shape`, `text`, `many`, `group`, `el(selector)`), beats (clock `beat`, `scrollPoint`, `section` `.top`/`.end` edges, scroll beats with `smooth`, triggered beats with `back`), `bind`, `bindEach`, `stagger` (by `index` or `line`), `stayWith`, `carry`, `travel` (onto measured slots), `compileScene`, `frame`, `check` and layouts, with `@gerak/stage/render` outlines/viewport box placements (`withPlacement`, `boxInViewport`) and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` (`mountStage`, `mountPage`) and `@gerak/react` (`usePlayer`, `PlayerHost`) play and write `Signal`.
+  Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
+  the library (`@gerak/moves`) adds plain moves, `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
+  `@gerak/tools` runs `npx gerak <command>` cleanly with core alone; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages.
+  Decisions are ADR-170 to ADR-194; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **The live kit and the web overlay** (`plan/roadmap.md`): the live editor's panel, timeline, swap and guard as their
-  own kit, then a dev-only overlay on a running site.
+- **3D in a scene (`plan/stage-3d-plan.md`), then the live kit and web overlay built on `mountPage` (`plan/roadmap.md`).**
 
 ## Open, and not scheduled
 
 - Retargeting remains a proposed design only.
 - React Three Fiber integration is deferred; `talk.html` is untried with a microphone.
 - Browser tests run in Chromium only.
+- A page frame reruns every element's motion and checks every node, so the yuzu proof costs about 2.4x GSAP's script time, which updates only animations in range.
 - The instrument waits for a person who asks to live-code.
 
 ## Where the rest of it lives

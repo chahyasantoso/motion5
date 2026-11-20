@@ -1,5 +1,6 @@
 import { eventDriver } from "@gerak/dom";
-import { combine, drop, follow, span, type Events, type Pose2d, type Time } from "@gerak/moves";
+import { combine, span, type Events, type Pose2d, type Time } from "@gerak/core";
+import { drop, follow } from "@gerak/moves";
 
 /** How long the intro runs, in ms; the tools sample this much, and the card answers the pointer after it too. */
 export const durationMs = 900;
@@ -27,7 +28,7 @@ export const scene = (time: Time, events: Events) => {
   const raised = -y / 14;
   return {
     card: combine([
-      drop({ distance: 420, squash: 0.06 }, intro.of(time)),
+      drop({ distance: 420, squash: 0.06 })(intro.of(time)),
       { y, scale: press(time, events) },
     ]),
     shadow: {

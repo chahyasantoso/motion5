@@ -14,15 +14,14 @@ let root = "";
 let source: { readonly kind: "serve"; readonly root: string } = { kind: "serve", root: "" };
 
 /** A stage module of one actor that slides in from the left over the whole piece. */
-const FIXTURE = `import { slide, type Time } from "@gerak/moves";
-import { actor, story } from "@gerak/stage";
+const FIXTURE = `import { slide } from "@gerak/moves";
+import { beat, box, sceneBuilder } from "@gerak/stage";
 
-export const beats = story(2000, { go: [0, 2000] });
-export const cast = { box: actor() };
-export const skins = { dom: { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' } };
-export const scene = (time: Time) => ({
-  box: slide({ distance: 300, from: "left" }, beats.go.of(time)),
-});
+export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
+
+const go = beat("go", 2000);
+
+export default sceneBuilder().element(box("box")).motion(slide({ distance: 300, from: "left" }).in(go));
 `;
 
 function brief(name: string): void {

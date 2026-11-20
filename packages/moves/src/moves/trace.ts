@@ -1,26 +1,16 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
+import { motion, type Motion, type Pose2d } from "@gerak/core";
+import { numberOption } from "./options";
 
-/** Draws a path on from its start, answering `drawn` and `drawnFrom`; `tail` (default 1) is the share
- * kept drawn behind the head. */
-export const trace = defineMove({
-  id: "trace",
-  role: "reveal",
-  description:
-    "Draws a stroked path on from its start, keeping a share of it drawn behind the head.",
-  options: {
-    tail: {
-      kind: "number",
-      default: 1,
-      min: 0.001,
-      max: 1,
-      description:
-        "Share of the path that stays drawn behind the head; default 1 keeps all of it. An empty stroke draws nothing, so a moving dot is a member of its own.",
-    },
-  },
-  example: { options: {} },
-  moments: () => ({}),
-  run({ tail }, { progress }): Required<Pick<Pose2d, "drawn" | "drawnFrom">> {
-    return { drawn: progress, drawnFrom: Math.max(0, progress - tail) };
-  },
-});
+/** Options of `trace`. */
+export interface TraceOptions {
+  /** Share of the path that stays drawn behind the head, from 0.001 to 1; default 1 keeps all of it. */
+  readonly tail?: number;
+}
+
+/** Draws a stroked path on from its start, keeping a share of it drawn behind the head. */
+export function trace(
+  options: TraceOptions = {},
+): Motion<Required<Pick<Pose2d, "drawn" | "drawnFrom">>> {
+  const tail = numberOption("trace", "tail", options.tail, { default: 1, min: 0.001, max: 1 });
+  return motion(({ progress }) => ({ drawn: progress, drawnFrom: Math.max(0, progress - tail) }));
+}

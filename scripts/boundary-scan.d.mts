@@ -6,3 +6,4 @@ export function undeclaredWorkspaceSubpaths(
   specifiers?: readonly string[],
 ): string[];
 export function scan(scanRoot?: string): Promise<string[]>;
+export const GROUPS: readonly ["core", "modules", "library"];

@@ -1,4 +1,4 @@
-import { unreachable } from "../../unreachable";
+import { unreachable } from "@gerak/core";
 import type { WorldFrame3d } from "../../frame/frame3d";
 import { twoBonePair } from "../shared/topology";
 import { solveTwoBone3d, UNBOUND_POLE3D, type Pole3d } from "./analytic";

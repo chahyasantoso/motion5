@@ -4,14 +4,16 @@ const packagesRoot = new URL("../packages/", import.meta.url);
 
 /** The installable packages, in dependency order: each follows everything it depends on. */
 export const INSTALLABLE_PACKAGES = [
+  "core",
   "rig",
-  "moves",
   "player",
   "stage",
+  "moves",
   "physics",
   "dom",
   "react",
   "three",
+  "rig-three",
   "rapier",
   "tools",
 ];

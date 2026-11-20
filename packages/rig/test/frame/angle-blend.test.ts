@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { clamp, lerpAngle } from "../../src/frame/frame";
+import { clamp } from "@gerak/core";
+import { lerpAngle } from "../../src/frame/frame";
 import type { SolveMember } from "../../src/ik/shared/member";
 import { solveTwoBone } from "../../src/ik/shared/analytic";
 

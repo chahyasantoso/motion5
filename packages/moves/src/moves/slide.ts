@@ -1,23 +1,21 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { unreachable } from "../unreachable";
+import { motion, type Motion, unreachable, type Pose2d } from "@gerak/core";
+import { choiceOption, numberOption } from "./options";
 
-/** Slides in from `distance` px away on one side, decelerating. */
-export const slide = defineMove({
-  id: "slide",
-  role: "enter",
-  description: "Slides in from one side, decelerating to rest.",
-  options: {
-    distance: { kind: "number", min: 0, description: "Start this far from rest, in px." },
-    from: {
-      kind: "string",
-      enum: ["left", "right", "top", "bottom"],
-      default: "left",
-      description: "The side it comes from; default left.",
-    },
-  },
-  example: { options: { distance: 200, from: "left" } },
-  run({ distance, from }, { progress }): Pose2d {
+const SIDES = ["left", "right", "top", "bottom"] as const;
+
+/** Options of `slide`. */
+export interface SlideOptions {
+  /** Start this far from rest, in px; at least 0, required. */
+  readonly distance: number;
+  /** The side it comes from: left, right, top or bottom; default left. */
+  readonly from?: (typeof SIDES)[number];
+}
+
+/** Slides in from one side, decelerating to rest. */
+export function slide(options: SlideOptions): Motion<Pose2d> {
+  const distance = numberOption("slide", "distance", options.distance, { min: 0 });
+  const from = choiceOption("slide", "from", options.from, SIDES, "left");
+  return motion(({ progress }) => {
     const away = distance * (1 - progress) ** 3;
     switch (from) {
       case "left":
@@ -31,6 +29,5 @@ export const slide = defineMove({
       default:
         return unreachable(from);
     }
-  },
-  moments: () => ({}),
-});
+  });
+}

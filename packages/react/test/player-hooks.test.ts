@@ -2,7 +2,8 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { clockDriver, type RenderTarget } from "@gerak/dom";
-import { drop, type Time } from "@gerak/moves";
+import { type Time } from "@gerak/core";
+import { drop } from "@gerak/moves";
 import { manualDriver, type ManualDriver } from "@gerak/player";
 import {
   PlayerHostProvider,
@@ -15,7 +16,7 @@ import {
 } from "@gerak/react";
 
 const scene = (time: Time) => ({
-  box: drop({ distance: 100 }, time),
+  box: drop({ distance: 100 })(time),
   phase: { landed: time.progress >= 0.75 ? 1 : 0 },
 });
 

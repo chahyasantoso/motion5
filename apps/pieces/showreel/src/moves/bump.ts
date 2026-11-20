@@ -1,27 +1,20 @@
-import { arch, defineMove, type Pose2d } from "@gerak/moves";
+import { arch, type Pose2d, motion, type Motion } from "@gerak/core";
 
-export const bump = defineMove({
-  id: "bump",
-  role: "emphasis",
-  description:
-    "Eases out by an offset and a turn and eases back, once, in either direction; a camera tilting after something, a dip, a roll.",
-  options: {
-    dx: {
-      kind: "number",
-      default: 0,
-      description: "Furthest right it goes, in px (negative: left); default 0.",
-    },
-    dy: {
-      kind: "number",
-      default: 0,
-      description: "Furthest down it goes, in px (negative: up); default 0.",
-    },
-    turn: { kind: "number", default: 0, description: "Furthest it turns, in degrees; default 0." },
-  },
-  example: { options: { dy: -40, turn: 1 } },
-  moments: () => ({ peak: 0.5 }),
-  run: ({ dx, dy, turn }, { progress }): Pose2d => {
+/** Options of `bump`. */
+export interface BumpOptions {
+  /** Furthest right it goes, in px (negative: left); default 0. */
+  readonly dx?: number;
+  /** Furthest down it goes, in px (negative: up); default 0. */
+  readonly dy?: number;
+  /** Furthest it turns, in degrees; default 0. */
+  readonly turn?: number;
+}
+
+/** Eases out by an offset and a turn and eases back, once, in either direction. */
+export function bump(options: BumpOptions = {}): Motion<Pose2d> {
+  const { dx = 0, dy = 0, turn = 0 } = options;
+  return motion(({ progress }): Pose2d => {
     const s = arch(progress) ** 2;
     return { x: dx * s, y: dy * s, rotation: turn * s };
-  },
-});
+  });
+}

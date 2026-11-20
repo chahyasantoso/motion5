@@ -6,23 +6,21 @@ import {
   combine3d,
   ease,
   keyframes,
-  lane,
   lanes,
   mix,
   mixPoint3d,
   orbit,
-  smear3d,
   span,
   springEase,
-  squashed3d,
   toCubics3d,
-  trailTurn,
   velocity3d,
   type Anchor3d,
   type Events,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { smear3d, trailTurn } from "@gerak/core";
+import { squashed3d } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4200;
@@ -61,6 +59,7 @@ const PATH = toCubics3d([
   anchor("start", START.x, START.y, START.z, 0, 0, 0, 1.6, 4, 2.5),
   anchor("land", 0, 0, 0, -1.7, 4, 2.5, 0, 0, 0),
 ]);
+const arc = along3d(PATH);
 
 const crouch = keyframes(
   0,
@@ -81,7 +80,7 @@ const pull = backEase({ amount: 1.6, direction: "in" });
 /** The body's place: a short pull back, then along an arc that leaves the xy plane. */
 export function flight(time: Time): Pose3d {
   const share = leap.of(time, pull).progress;
-  const point = along3d(PATH, share);
+  const point = arc(share);
   return {
     x: (point.x ?? 0) + mix(0, PULLBACK, Math.min(0, share)),
     y: point.y ?? 0,
@@ -117,7 +116,7 @@ const STAGE_CENTER = { x: -0.5, y: 2, z: 0 };
 
 /** One small object's place, rising and growing in its turn. */
 export function bit(time: Time, index: number): Pose3d {
-  const share = lane(arrival.of(time), index, BITS).progress;
+  const share = BITS.of(arrival.of(time), index).progress;
   return {
     x: (index - (BIT_COUNT - 1) / 2) * BIT_ROW.gap,
     y: mix(1.6, 0, ease.cubicOut(share)),
@@ -143,7 +142,7 @@ export function camera(time: Time): Pose3d {
 export const scene = (time: Time, events: Events) => {
   const travel = smear3d(velocity3d(flight, time, events), { stretch: 0.075, max: 1.8 });
   return {
-    body: combine3d([squashed3d(0.45, crouch(time)), flight(time)]),
+    body: combine3d([squashed3d({ squash: 0.45 })(crouch(time)), flight(time)]),
     stretch: travel.pose,
     face: travel.turn,
     antenna: tail(time, events),

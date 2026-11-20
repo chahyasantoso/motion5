@@ -68,7 +68,10 @@ async function place(
 export async function perform(page: Page, action: PageAction): Promise<void> {
   switch (action.kind) {
     case "scroll":
-      await page.evaluate((px) => scrollTo(0, px), action.px);
+      await page.evaluate((px) => {
+        scrollTo({ top: px, behavior: "instant" });
+        document.dispatchEvent(new Event("scroll", { bubbles: true }));
+      }, action.px);
       return;
     case "hover": {
       const { x, y } = await place(page, action.selector, action.point);

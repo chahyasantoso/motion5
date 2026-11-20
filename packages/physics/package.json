@@ -5,20 +5,22 @@
   "type": "module",
   "sideEffects": false,
   "gerak": {
+    "group": "modules",
     "layer": "pure"
   },
   "files": [
     "dist",
+    "docs",
     "LICENSE"
   ],
   "types": "./dist/index.d.ts",
-  "dependencies": {
-    "@gerak/moves": "0.1.0"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "dependencies": {
+    "@gerak/core": "0.1.0"
   }
 }

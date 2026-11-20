@@ -1,33 +1,35 @@
-import { pathToFileURL } from "node:url";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
-  isLively,
+  NO_EVENTS,
   mergeEvents,
-  outsideRanges,
+  pathBounds,
+  quaternionFromEuler3d,
+  unreachable,
   valueField,
-  type DescriptorRanges,
-  type Descriptors,
-  type StyleCard,
-} from "@gerak/moves";
+  type Events,
+  type Time,
+} from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
-import { quaternionFromEuler3d } from "@gerak/rig";
-import { dirname, resolve } from "node:path";
-import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import {
   NO_REST,
-  boundsOf,
-  describeLoop,
-  drawInPasses,
-  presentAt,
-  restOfBounds,
-  type CastName,
-  type Rest,
+  check,
+  formatStageError,
+  frame,
+  type Content,
+  type DomSkin,
+  type FrameOutput,
+  type Member,
+  type RestReader,
+  beatAt,
+  type Stage,
+  type Window,
 } from "@gerak/stage";
-import { unreachable } from "../page/unreachable";
+import { drawStrokes } from "@gerak/stage/render";
+import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { SCENE_LIMITS } from "./limits";
-import { qualityNames, rangesOf, styleCards } from "./cards";
-import { intentsOf, type Intent } from "./design";
-import { describeOffsets } from "./moves";
-import { beatAt, readSceneModule, sampleScene, type Beat, type SceneModule } from "./scene";
+import { readSceneModule, sampleScene, writtenOut, type Beat, type SceneModule } from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
 export interface SceneReviewRequest {
@@ -264,70 +266,238 @@ export function reviewValues(
   return [...jumps, ...rest.map(describeFinding), ...ghosts];
 }
 
-type Samples = Parameters<typeof reviewValues>[0];
+/** A scene module sampled over its run: each step's time and the value of each target. */
+export type Samples = Parameters<typeof reviewValues>[0];
 
-/** A name's value in a sample: a target's own, or one item of a `many` target, as `dust.3`. */
-function valueOf(targets: Readonly<Record<string, unknown>>, name: CastName): unknown {
-  switch (name.kind) {
-    case "actor":
-    case "many":
-    case "group":
-      return targets[name.name];
+/** A member, or one item of a list, as review reads it. */
+type Reviewed =
+  | { readonly kind: "member"; readonly name: string; readonly member: Member }
+  | {
+      readonly kind: "item";
+      readonly name: string;
+      readonly member: Extract<Member, { readonly kind: "list" }>;
+      readonly index: number;
+    };
+
+/** Every member and list item of a stage, parents first. */
+function reviewedOf(stage: Stage): readonly Reviewed[] {
+  return stage.members.flatMap((member): readonly Reviewed[] => {
+    const own: Reviewed = { kind: "member", name: member.name, member };
+    if (member.kind !== "list") return [own];
+    return [
+      own,
+      ...member.items.map(
+        (_, index): Reviewed => ({
+          kind: "item",
+          name: `${member.name}.${index}`,
+          member,
+          index,
+        }),
+      ),
+    ];
+  });
+}
+
+function contentOfReviewed(reviewed: Reviewed): Content | undefined {
+  switch (reviewed.kind) {
+    case "member":
+      return reviewed.member.kind === "actor" ? reviewed.member.content : undefined;
+    case "item":
+      return reviewed.member.items[reviewed.index];
+    default:
+      return unreachable(reviewed);
+  }
+}
+
+interface EvaluatedSample {
+  readonly at: number;
+  /** The scene's targets with each list's poses written out, one per item. */
+  readonly targets: Readonly<Record<string, unknown>>;
+  readonly visible: Readonly<Record<string, boolean>> | undefined;
+  readonly errors: readonly string[];
+}
+
+function evaluate(stage: Stage, time: Time, events: Events, at: number): EvaluatedSample {
+  let out: FrameOutput;
+  let errors: string[];
+  let targets: Readonly<Record<string, unknown>>;
+  try {
+    out = frame(stage, { time, events });
+    errors = check(stage, out.targets).map(formatStageError);
+    targets = writtenOut(stage, out.targets);
+  } catch (error) {
+    return { at, targets: {}, visible: undefined, errors: [errorText(error)] };
+  }
+  for (const member of stage.members) {
+    if (member.kind !== "actor" || member.content.kind !== "readout") continue;
+    try {
+      member.content.format(time);
+    } catch (error) {
+      const raw = errorText(error);
+      const prefix = `The text of "${member.name}" `;
+      const detail = raw.startsWith(prefix)
+        ? raw.slice(prefix.length).replace(/.$/, "")
+        : `fails: ${raw}`;
+      errors.push(`text of "${member.name}" ${detail}`);
+    }
+  }
+  return { at, targets, visible: out.visible, errors };
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** Runs the stage at each requested ms, as a player plays it. */
+function sampleStageFrames(stage: Stage, ms: readonly number[]): readonly EvaluatedSample[] {
+  let latest: EvaluatedSample | undefined;
+  const driver = manualDriver({ durationMs: stage.durationMs });
+  let at = 0;
+  play(
+    (time, events) => {
+      latest = evaluate(stage, time, events, at);
+      return latest.targets;
+    },
+    driver,
+    { cues: stage.cues },
+  );
+  return ms.map((next, index) => {
+    at = next;
+    if (!(index === 0 && next === 0 && latest !== undefined)) driver.seekMs(next);
+    return latest ?? evaluate(stage, driver.now(), NO_EVENTS, next);
+  });
+}
+
+/** A member's value in written-out targets: its own, or one item of its list. */
+function valueOfReview(targets: Readonly<Record<string, unknown>>, reviewed: Reviewed): unknown {
+  switch (reviewed.kind) {
+    case "member":
+      return targets[reviewed.name];
     case "item": {
-      const dot = name.name.lastIndexOf(".");
-      const list = targets[name.name.slice(0, dot)];
-      if (!Array.isArray(list)) return undefined;
-      const item: unknown = list[Number(name.name.slice(dot + 1))];
-      return item;
+      const list = targets[reviewed.member.name];
+      return Array.isArray(list) ? list[reviewed.index] : undefined;
     }
     default:
-      return unreachable(name.kind);
+      return unreachable(reviewed);
   }
 }
 
-/** A name that must be moved to be of use: a lone actor or a list, not a group, an item, or a
- * watched member, which may move only on a person's events. */
-function mustMove(name: CastName): boolean {
-  switch (name.kind) {
-    case "actor":
-    case "many":
-      return !name.still && !name.watch;
-    case "group":
-    case "item":
-      return false;
-    default:
-      return unreachable(name.kind);
-  }
+/** Whether a member or item shows: a list item shows while its list does. */
+function shown(sample: EvaluatedSample, reviewed: Reviewed): boolean {
+  return sample.visible?.[reviewed.member.name] !== false;
 }
 
-/** What a stage module's scene does against its cast and beats: a member never moved, a target not
- * cast, a value changing outside its presence; unmeasured layouts say so once instead. */
-function stageFindings(
-  cast: readonly CastName[],
+/** Each mistake once, at the first ms it happens: shapes, unknown targets, failing readouts. */
+function frameEvaluationFindings(evaluated: readonly EvaluatedSample[]): readonly string[] {
+  const first = new Map<string, number>();
+  for (const { at, errors } of evaluated)
+    for (const error of errors) if (!first.has(error)) first.set(error, at);
+  return [...first].map(([error, at]) =>
+    error.startsWith("text of ") ? `${error} at ${at} ms` : error,
+  );
+}
+
+/** An ambient member that leaves the frame while it shows. */
+function ambientBoundsFindings(
+  stage: Stage,
+  reviewed: Reviewed,
+  evaluated: readonly EvaluatedSample[],
+  rest: RestReader,
+): readonly string[] {
+  if (reviewed.kind === "member" && reviewed.member.kind !== "actor") return [];
+  if (!rest.has(reviewed.name)) return [];
+  const box = rest.get(reviewed.name);
+  for (const sample of evaluated) {
+    if (!shown(sample, reviewed)) continue;
+    const pose = valueOfReview(sample.targets, reviewed);
+    if (typeof pose !== "object" || pose === null || Array.isArray(pose)) continue;
+    const x: unknown = Reflect.get(pose, "x");
+    const y: unknown = Reflect.get(pose, "y");
+    if (typeof x === "number" && Number.isFinite(x)) {
+      const px = box.x + x;
+      if (px < 0 || px > stage.frame.width)
+        return [
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (x=${Math.round(px * 100) / 100}, frame width ${stage.frame.width}).`,
+        ];
+    }
+    if (typeof y === "number" && Number.isFinite(y)) {
+      const py = box.y + y;
+      if (py < 0 || py > stage.frame.height)
+        return [
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (y=${Math.round(py * 100) / 100}, frame height ${stage.frame.height}).`,
+        ];
+    }
+  }
+  return [];
+}
+
+/** The beats a window starts and ends on, named for findings; an unnamed edge is its ms. */
+function stretchOf(beats: readonly Beat[], [from, to]: Window): { start: Beat; end: Beat } {
+  const start = beats.find((beat) => beat.from === from) ?? { name: `${from} ms`, from, to: from };
+  const end =
+    to === Infinity
+      ? (beats.reduce<Beat | undefined>(
+          (last, beat) => (last === undefined || beat.to >= last.to ? beat : last),
+          undefined,
+        ) ?? start)
+      : (beats.find((beat) => beat.to === to) ?? { name: `${to} ms`, from: to, to });
+  return { start, end };
+}
+
+/** Checks expectations (`"settle"`, `"ambient"`, `"static"`), shapes on non-morphs, and changes outside stretches. */
+function stageMemberFindings(
+  stage: Stage,
   beats: readonly Beat[],
-  samples: Samples,
-  durationMs: number,
+  evaluated: readonly EvaluatedSample[],
+  rest: RestReader,
   unmeasured: boolean,
 ): readonly string[] {
-  const known = new Set(cast.map(({ name }) => name));
-  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))];
-  const found: string[] = targets
-    .filter((target) => !known.has(target))
-    .map((target) => `the scene answers "${target}", which is not in the cast.`);
+  const found: string[] = [];
   if (unmeasured)
     found.push(
       'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
     );
-  const beatNamed = (name: string) => beats.find((beat) => beat.name === name);
-  for (const member of cast) {
-    const prints = samples.map(({ targets: values }) => fingerprint(valueOf(values, member)));
+
+  if (evaluated.some(({ errors }) => errors.length > 0)) return found;
+  for (const reviewed of reviewedOf(stage)) {
+    const { member } = reviewed;
+    const prints = evaluated.map(({ targets }) => fingerprint(valueOfReview(targets, reviewed)));
     const unmoved = prints.every((print) => print === prints[0]);
-    if (mustMove(member) && unmoved && !unmeasured)
-      found.push(
-        `cast member "${member.name}" is never moved by the scene; move it or mark it still.`,
-      );
-    const given = samples.some(({ targets: values }) => {
-      const value = valueOf(values, member);
+
+    switch (member.expect) {
+      case "settle":
+        if (
+          reviewed.kind === "member" &&
+          member.kind !== "group" &&
+          !member.watch &&
+          unmoved &&
+          !unmeasured
+        )
+          found.push(
+            `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
+          );
+        break;
+      case "ambient":
+        if (
+          reviewed.kind === "member" &&
+          member.kind !== "group" &&
+          !member.watch &&
+          unmoved &&
+          !unmeasured
+        )
+          found.push(
+            `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
+          );
+        found.push(...ambientBoundsFindings(stage, reviewed, evaluated, rest));
+        break;
+      case "static":
+        break;
+      default:
+        return unreachable(member.expect);
+    }
+
+    const givenShape = evaluated.some(({ targets }) => {
+      const value = valueOfReview(targets, reviewed);
       return (
         typeof value === "object" &&
         value !== null &&
@@ -335,30 +505,28 @@ function stageFindings(
         Reflect.get(value, "shape") !== undefined
       );
     });
-    if (given && member.shapes === undefined)
-      found.push(`cast member "${member.name}" is given shape, but has no shapes.`);
-    if (member.still && !unmoved)
-      found.push(`cast member "${member.name}" is marked still, but the scene moves it.`);
-    if (member.on === undefined) continue;
+    if (givenShape && contentOfReviewed(reviewed)?.kind !== "morph")
+      found.push(`cast member "${reviewed.name}" is given shape, but has no shapes.`);
+
+    if (reviewed.kind === "item" || member.on === undefined) continue;
     const changes = prints.flatMap((print, index) => {
-      const before = samples[index - 1];
-      const now = samples[index];
-      return before === undefined || now === undefined || print === prints[index - 1]
+      const before = evaluated[index - 1];
+      const now = evaluated[index];
+      return before === undefined ||
+        now === undefined ||
+        print === prints[index - 1] ||
+        shown(now, reviewed)
         ? []
         : [{ from: before.at, at: now.at }];
     });
     const stretches = member.on
-      .flatMap(([first, last]) => {
-        const start = beatNamed(first);
-        const end = beatNamed(last);
-        return start === undefined || end === undefined ? [] : [{ start, end }];
-      })
+      .map((window) => stretchOf(beats, window))
       .sort((a, b) => a.start.from - b.start.from);
-    for (const outside of outsides(stretches, durationMs)) {
+    for (const outside of outsides(stretches, stage.durationMs)) {
       const change = changes.find(({ from, at }) => at < outside.until && from >= outside.after);
       if (change !== undefined)
         found.push(
-          `${member.name} changes at ${change.at} ms${labelAt(beats, change.at)}, ${outside.where}.`,
+          `${reviewed.name} changes at ${change.at} ms${labelAt(stage, change.at)}, ${outside.where}.`,
         );
     }
   }
@@ -367,82 +535,70 @@ function stageFindings(
 
 const SKIN_NAME = /\[data-(cast|path)\s*=\s*(?:"([^"]*)"|'([^']*)'|([\w.-]+))\s*\]/g;
 
-/** One finding for each name an exact `[data-cast=x]` or `[data-path=x]` rule of the skin gives that no
- * member has, or that names as a stroke a member with no path; comments are skipped. */
-function skinFindings(cast: readonly CastName[], css: string | undefined): readonly string[] {
-  const byName = new Map(cast.map((member) => [member.name, member]));
-  const found = new Set<string>();
+function readDomSkin(dom: DomSkin | undefined): {
+  readonly css?: string;
+  readonly errors: readonly string[];
+} {
+  if (dom === undefined) return { errors: [] };
+  switch (dom.kind) {
+    case "inline":
+      return { css: dom.css, errors: [] };
+    case "url": {
+      const errors: string[] = [];
+      let css: string | undefined;
+      if (dom.css.protocol === "file:") {
+        try {
+          css = readFileSync(fileURLToPath(dom.css), "utf8");
+        } catch (error) {
+          errors.push(`skin css "${dom.css.href}" could not be read: ${errorText(error)}`);
+        }
+      }
+      if (dom.defs !== undefined && dom.defs.protocol === "file:") {
+        try {
+          readFileSync(fileURLToPath(dom.defs), "utf8");
+        } catch (error) {
+          errors.push(`skin defs "${dom.defs.href}" could not be read: ${errorText(error)}`);
+        }
+      }
+      return { ...(css === undefined ? {} : { css }), errors };
+    }
+    default:
+      return unreachable(dom);
+  }
+}
+
+/** Checks DOM skin `[data-cast]` and `[data-path]` rules against the cast. */
+function stageSkinFindings(stage: Stage): readonly string[] {
+  const { css, errors } = readDomSkin(stage.skins.dom);
+  const found = new Set<string>(errors);
+  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
   const plain = (css ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
   for (const [, kind, double, single, bare] of plain.matchAll(SKIN_NAME)) {
     const named = double ?? single ?? bare;
     if (named === undefined) continue;
-    const member = byName.get(named);
-    if (member === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
-    else if (kind === "path" && member.path === undefined)
+    const reviewed = byName.get(named);
+    const content = reviewed === undefined ? undefined : contentOfReviewed(reviewed);
+    if (reviewed === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
+    else if (kind === "path" && content?.kind !== "stroke" && content?.kind !== "morph")
       found.add(`skin rule styles "${named}" as a stroke, but it has no path.`);
   }
   return [...found];
 }
 
-/** The path functions drawn in passes where the module's things rest, as the stage draws them: one
- * that fails, one that reads its own box, and paths that read each other in a loop. */
-function pathFindings(cast: readonly CastName[], rest: Rest): readonly string[] {
-  const found: string[] = [];
-  const paths = cast.flatMap(({ name, path }) =>
-    path === undefined ? [] : [[name, path] as const],
-  );
-  // With no measured boxes, a path may divide by a zero size; only a throw counts as failing then.
-  const measured = Object.keys(rest).length > 0;
-  const loop = drawInPasses(paths, rest, (name, answer, read) => {
-    if (read.has(name)) found.push(`path "${name}" reads its own rest box`);
-    switch (answer.kind) {
-      case "drawn":
-        return restOfBounds(boundsOf(answer.cubics));
-      case "failed": {
-        const { error } = answer;
-        if (measured || !(error instanceof TypeError && /cubic/i.test(error.message)))
-          found.push(
-            `path "${name}" fails: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        return undefined;
-      }
-      default:
-        return unreachable(answer);
-    }
-  });
-  if (loop !== undefined) found.push(describeLoop(loop));
-  return found;
-}
-
-/** Each text function called at each sampled ms: one that throws or answers a non-string, once each. */
-function textFindings(
-  cast: readonly CastName[],
-  ms: readonly number[],
-  durationMs: number,
-): readonly string[] {
-  const found: string[] = [];
-  const driver = manualDriver({ durationMs });
-  const readouts = cast.flatMap(({ name, text }) =>
-    typeof text === "function" ? [[name, text] as const] : [],
-  );
-  const wrong = new Set<string>();
-  for (const at of ms) {
-    driver.seekMs(at);
-    for (const [name, text] of readouts) {
-      if (wrong.has(name)) continue;
-      let why: string | undefined;
-      try {
-        const said: unknown = text(driver.now());
-        if (typeof said !== "string") why = `answers ${typeof said}, not a string`;
-      } catch (error) {
-        why = `fails: ${error instanceof Error ? error.message : String(error)}`;
-      }
-      if (why === undefined) continue;
-      wrong.add(name);
-      found.push(`text of "${name}" ${why} at ${at} ms`);
-    }
-  }
-  return found;
+/** Draws every path against the rest boxes and finds loops, self-reads and failures. */
+function stagePathFindings(stage: Stage, rest: RestReader): readonly string[] {
+  // With no measured boxes, a path may divide by zero; only non-cubic errors fail then.
+  const measured = rest.keys().length > 0;
+  const drawn = drawStrokes(stage, rest);
+  if (!drawn.ok) return [formatStageError(drawn.error).replace(/\.$/, "")];
+  return [
+    ...drawn.strokes.selfReads.map((name) => `path "${name}" reads its own rest box`),
+    ...drawn.strokes.failures.flatMap(({ name, error }) =>
+      measured || !(error instanceof TypeError && /cubic/i.test(error.message))
+        ? [`path "${name}" fails: ${errorText(error)}`]
+        : [],
+    ),
+  ];
 }
 
 interface Outside {
@@ -484,16 +640,16 @@ function outsides(
   return found;
 }
 
-function labelAt(beats: readonly Beat[], ms: number): string {
-  const name = beatAt(beats, ms);
+function labelAt(stage: Stage, ms: number): string {
+  const name = beatAt(stage.beats, stage.durationMs, ms);
   return name === undefined ? "" : ` (beat "${name}")`;
 }
 
 /** A finding that names a time, `at 480 ms`, also names the beat it falls in. */
-function labelled(beats: readonly Beat[], finding: string): string {
+function labelled(stage: Stage, finding: string): string {
   return finding.replace(
     /\bat (\d+(?:\.\d+)?) ms\b/,
-    (time, ms: string) => `${time}${labelAt(beats, Number(ms))}`,
+    (time, ms: string) => `${time}${labelAt(stage, Number(ms))}`,
   );
 }
 
@@ -618,260 +774,6 @@ function costFindings(
   ];
 }
 
-/** The number a target's value holds at a dotted field path, or none. */
-function numberAt(value: unknown, field: string): number | undefined {
-  let here = value;
-  for (const key of field.split(".")) {
-    if (typeof here !== "object" || here === null || Array.isArray(here)) return undefined;
-    here = Reflect.get(here, key);
-  }
-  return typeof here === "number" && Number.isFinite(here) ? here : undefined;
-}
-
-/** The amount a field rests at: its table row's, or 0 for a `custom` number and an unknown field. */
-function restOfField(field: string): number {
-  if (field.startsWith("custom.")) return 0;
-  return valueField(field.slice(field.lastIndexOf(".") + 1))?.rest ?? 0;
-}
-
-const SHAPE_POINTS = 62;
-const MOVED = 1e-4;
-
-/** A number to 2 places, a whole one plain. */
-function shown(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
-/** The indexes of the first and last step at which `values` changes, or none when it never does. */
-function changeSpan(values: readonly number[]): readonly [number, number] | undefined {
-  const steps = values.flatMap((value, index) =>
-    index > 0 && Math.abs(value - (values[index - 1] ?? value)) > MOVED ? [index] : [],
-  );
-  const first = steps[0];
-  const last = steps.at(-1);
-  return first === undefined || last === undefined ? undefined : [first, last];
-}
-
-/** `values` at `at` ms, from its first change to its last, as offsets from `rest` at evenly spaced points;
- * none when it never changes. */
-function offsetsOf(
-  at: readonly number[],
-  values: readonly number[],
-  rest: number,
-): readonly number[] | undefined {
-  const span = changeSpan(values);
-  if (span === undefined) return undefined;
-  const [first, last] = span;
-  const from = at[first - 1] ?? 0;
-  const to = at[last] ?? from;
-  return Array.from({ length: SHAPE_POINTS }, (_, point) => {
-    const when = from + ((to - from) * point) / (SHAPE_POINTS - 1);
-    const after = Math.min(
-      last,
-      Math.max(
-        first,
-        at.findIndex((time) => time >= when),
-      ),
-    );
-    const t0 = at[after - 1] ?? from;
-    const t1 = at[after] ?? to;
-    const v0 = values[after - 1] ?? 0;
-    const v1 = values[after] ?? v0;
-    const share = t1 === t0 ? 1 : Math.min(1, Math.max(0, (when - t0) / (t1 - t0)));
-    return v0 + (v1 - v0) * share - rest;
-  });
-}
-
-/** A target's value in one sample: a member by name, or one item of a list member as `<name>.<index>`. */
-function targetValue(found: Readonly<Record<string, unknown>>, target: string): unknown {
-  if (Object.hasOwn(found, target)) return found[target];
-  const dot = target.lastIndexOf(".");
-  const list = dot < 0 ? undefined : found[target.slice(0, dot)];
-  const index = Number(target.slice(dot + 1));
-  return Array.isArray(list) && Number.isInteger(index) && index >= 0 ? list[index] : undefined;
-}
-
-/** The targets one intent's target stands for: itself, or every item of a list member as `<name>.<index>`. */
-function unitsOf(samples: Samples, target: string): readonly string[] {
-  const count = Math.max(
-    0,
-    ...samples.map(({ targets: found }) => {
-      const value = Object.hasOwn(found, target) ? found[target] : undefined;
-      return Array.isArray(value) ? value.length : 0;
-    }),
-  );
-  return count === 0 ? [target] : Array.from({ length: count }, (_, index) => `${target}.${index}`);
-}
-
-/** A target's field as offsets from rest over the samples inside `span` (all when none), or none when
- * it never moves there. */
-function fieldOffsets(
-  samples: Samples,
-  target: string,
-  field: string,
-  span: Beat | undefined,
-): readonly number[] | undefined {
-  const inside = samples.filter(
-    ({ at }) => span === undefined || (at >= span.from && at <= span.to),
-  );
-  return offsetsOf(
-    inside.map(({ at }) => at),
-    inside.map(({ targets: found }) => numberAt(targetValue(found, target), field) ?? 0),
-    restOfField(field),
-  );
-}
-
-/** The descriptors that lie outside `ranges`, worded for `quality`; none when it fits. */
-function missesOf(
-  descriptors: Descriptors,
-  quality: string,
-  ranges: DescriptorRanges,
-): readonly string[] {
-  return outsideRanges(descriptors, ranges).map(
-    ({ key, value, range }) =>
-      `${key} ${value.toFixed(2)}, ${quality} wants ${shown(range[0])} to ${shown(range[1])}`,
-  );
-}
-
-/** One finding for each intent of the module's `design` that names what does not exist or whose field moves
- * outside its quality's ranges; a list member's intent holds for each of its items. */
-function designFindings(
-  module: SceneModule,
-  samples: Samples,
-  cards: readonly StyleCard[],
-): readonly string[] {
-  if (module.design === undefined) return [];
-  const beats = module.beats ?? [];
-  const exists = (target: string): boolean =>
-    samples.some(({ targets: found }) => targetValue(found, target) !== undefined);
-  const check = ({ field, beat, quality }: Intent, target: string): string | undefined => {
-    const name = beat === undefined ? `${target}.${field}` : `${target}.${field} (${beat})`;
-    const carried = samples.some(
-      ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
-    );
-    if (!carried)
-      return `design names the field "${field}" of "${target}", which its value never carries.`;
-    const span = beat === undefined ? undefined : beats.find((each) => each.name === beat);
-    if (beat !== undefined && span === undefined)
-      return `design names the beat "${beat}" for ${target}.${field}, which the module does not have.`;
-    const ranges = rangesOf(quality, cards);
-    if (ranges === undefined)
-      return `design names the quality "${quality}" for ${name}; the qualities are ${qualityNames(cards).join(", ")}.`;
-    const offsets = fieldOffsets(samples, target, field, span);
-    if (offsets === undefined) return `${name} never moves; ${quality} wants motion`;
-    const wants = missesOf(describeOffsets(offsets), quality, ranges);
-    return wants.length === 0 ? undefined : `${name}: ${wants.join("; ")}`;
-  };
-  return intentsOf(module.design).flatMap((intent) => {
-    if (!exists(intent.target))
-      return [`design names the target "${intent.target}", which the scene never returns.`];
-    return unitsOf(samples, intent.target).flatMap((target) => check(intent, target) ?? []);
-  });
-}
-
-/** The motions of `field` in the module, leaving out the targets (and, when the design names a beat, only
- * that beat) that the design names for that field. */
-export function styleMotions(
-  module: SceneModule,
-  samples: Samples,
-  field: string,
-): readonly Shape[] {
-  const named = module.design === undefined ? [] : intentsOf(module.design);
-  return shapesOf(module, samples, [field]).filter(
-    (shape) =>
-      !named.some(
-        (intent) =>
-          intent.field === field &&
-          (shape.target === intent.target || shape.target.startsWith(`${intent.target}.`)) &&
-          (intent.beat === undefined || shape.beat === intent.beat),
-      ),
-  );
-}
-
-/** For a styled module, one finding for each field of its card whose share of lively motions (three or
- * more, leaving out targets the design names for that field) lies outside the card's range. */
-function styleFindings(
-  module: SceneModule,
-  samples: Samples,
-  cards: readonly StyleCard[],
-): readonly string[] {
-  const card = cards.find((each) => each.name === module.style);
-  if (card === undefined) return [];
-  const percent = (share: number): number => Math.round(share * 100);
-  return Object.entries(card.lively).flatMap(([field, range]) => {
-    const motions = styleMotions(module, samples, field);
-    if (motions.length < 3) return [];
-    const lively = motions.filter((shape) => isLively(shape.descriptors)).length;
-    const share = lively / motions.length;
-    if (share >= range[0] && share <= range[1]) return [];
-    return [
-      `${field}: ${lively} of ${motions.length} motions lively (${percent(share)}%); ${card.name} wants ${percent(range[0])}% to ${percent(range[1])}% (style)`,
-    ];
-  });
-}
-
-/** One field of one target (an item of a list member as `word.3`) moving in one beat, and how. */
-export interface Shape {
-  readonly target: string;
-  readonly field: string;
-  readonly beat?: string;
-  readonly descriptors: Descriptors;
-}
-
-/** The dotted paths of the numbers a target's value carries in any sample. */
-function numberFields(samples: Samples, target: string): readonly string[] {
-  const paths = new Set<string>();
-  const walk = (value: unknown, prefix: string): void => {
-    if (typeof value === "number") {
-      if (prefix !== "" && Number.isFinite(value)) paths.add(prefix);
-      return;
-    }
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return;
-    for (const [key, inner] of Object.entries(value))
-      walk(inner, prefix === "" ? key : `${prefix}.${key}`);
-  };
-  for (const { targets: found } of samples) walk(targetValue(found, target), "");
-  return [...paths];
-}
-
-/** The shape of every unit, field (the given ones, else every number it carries) and beat in which the
- * field moves, over samples of the module. */
-function shapesOf(
-  module: SceneModule,
-  samples: Samples,
-  only?: readonly string[],
-): readonly Shape[] {
-  const spans: readonly (Beat | undefined)[] =
-    module.beats === undefined || module.beats.length === 0 ? [undefined] : module.beats;
-  const targets = [...new Set(samples.flatMap(({ targets: found }) => Object.keys(found)))].flatMap(
-    (target) => unitsOf(samples, target),
-  );
-  return targets.flatMap((target) =>
-    (only ?? numberFields(samples, target)).flatMap((field) => {
-      const carried = samples.some(
-        ({ targets: found }) => numberAt(targetValue(found, target), field) !== undefined,
-      );
-      if (!carried) return [];
-      return spans.flatMap((span) => {
-        const offsets = fieldOffsets(samples, target, field, span);
-        if (offsets === undefined) return [];
-        const descriptors = describeOffsets(offsets);
-        return [
-          span === undefined
-            ? { target, field, descriptors }
-            : { target, field, beat: span.name, descriptors },
-        ];
-      });
-    }),
-  );
-}
-
-/** The shape of each field each target of the module moves, in each beat (the whole run when it has
- * none), sampled every step over its run. */
-export function measureShapes(module: SceneModule): readonly Shape[] {
-  return shapesOf(module, measureSamples(module));
-}
-
 /** The module sampled every step over its whole run, as a review samples it. */
 export function measureSamples(module: SceneModule): Samples {
   const ms: number[] = [];
@@ -879,20 +781,41 @@ export function measureSamples(module: SceneModule): Samples {
   return sampleScene(module, { kind: "time", ms });
 }
 
+function stageRestOf(stage: Stage): RestReader {
+  return stage.layouts.readers[stage.layouts.pick(NO_EVENTS)] ?? NO_REST;
+}
+
 export function reviewSceneModule(
   module: SceneModule,
-  request: Pick<SceneReviewRequest, "to"> &
-    Limits & { readonly budget?: number; readonly cards?: readonly StyleCard[] },
+  request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
 ): SceneReviewResult {
-  const cards = request.cards ?? [];
   const end = request.to ?? module.durationMs;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
-  const samples = sampleScene(module, { kind: "time", ms });
-  const { beats, cast } = module;
-  const byName = new Map((cast ?? []).map((entry) => [entry.name, entry] as const));
-  // A sampled path names its member first, an item as `dust[3]`; the member is the longest name it starts with.
-  const ownerOfPath = (path: string): CastName | undefined => {
+  const stage = module.stage;
+  if (stage === undefined) {
+    const samples = sampleScene(module, { kind: "time", ms });
+    const findings = [
+      ...reviewValues(
+        samples,
+        request,
+        () => false,
+        () => false,
+        module.limits,
+      ),
+      ...seekFindings(module, samples),
+      ...lateCueFindings(module),
+      ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
+    ];
+    return { kind: "reviewed", findings };
+  }
+
+  const evaluated = sampleStageFrames(stage, ms);
+  const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
+  const byAt = new Map(evaluated.map((sample) => [sample.at, sample] as const));
+  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
+  const beats = module.beats ?? [];
+  const ownerOfPath = (path: string): Reviewed | undefined => {
     const dotted = path.replace(/\[(\d+)\]/g, ".$1");
     const whole = byName.get(dotted);
     if (whole !== undefined) return whole;
@@ -902,38 +825,44 @@ export function reviewSceneModule(
     }
     return undefined;
   };
-  const spanOf = (name: string) => beats?.find((beat) => beat.name === name);
-  const shown = (name: string, at: number): boolean => {
-    const on = byName.get(name)?.on;
-    return on === undefined || presentAt(on, spanOf, module.durationMs, at);
-  };
-  // A member shows only while it and every group around it, and an item's list, are shown.
   const hidden = (path: string, at: number): boolean => {
     const owner = ownerOfPath(path);
-    if (owner === undefined) return false;
-    const list = owner.kind === "item" ? [owner.name.slice(0, owner.name.lastIndexOf("."))] : [];
-    return [owner.name, ...list, ...owner.groups].some((name) => !shown(name, at));
+    const sample = byAt.get(at);
+    return owner !== undefined && sample !== undefined && !shown(sample, owner);
   };
-  const ongoing = (name: string) => byName.get(name)?.ongoing === true;
-  const findings = [
-    ...reviewValues(samples, request, hidden, ongoing, module.limits),
-    ...seekFindings(module, samples),
+  const ongoing = (name: string): boolean => {
+    const reviewed = byName.get(name);
+    if (reviewed === undefined) return false;
+    switch (reviewed.member.expect) {
+      case "settle":
+        return false;
+      case "ambient":
+      case "static":
+        return true;
+      default:
+        return unreachable(reviewed.member.expect);
+    }
+  };
+  const allFramesOk = evaluated.every((sample) => sample.errors.length === 0);
+  const valueFindings = [
+    ...reviewValues(samples, request, hidden, ongoing, stage.limits),
+    ...(allFramesOk ? seekFindings(module, samples) : []),
     ...lateCueFindings(module),
-    ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
-    ...designFindings(module, samples, cards),
-    ...styleFindings(module, samples, cards),
+    ...(allFramesOk ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS) : []),
   ];
-  if (beats === undefined) return { kind: "reviewed", findings };
+  const rest = stageRestOf(stage);
+  const unmeasured =
+    stage.layouts.names.length > 1 &&
+    stage.layouts.names.every((name) => (stage.layouts.readers[name]?.keys().length ?? 0) === 0);
+
   return {
     kind: "reviewed",
     findings: [
-      ...findings.map((finding) => labelled(beats, finding)),
-      ...(cast === undefined
-        ? []
-        : stageFindings(cast, beats, samples, module.durationMs, module.unmeasured === true)),
-      ...(cast === undefined ? [] : skinFindings(cast, module.skinCss)),
-      ...(cast === undefined ? [] : pathFindings(cast, module.rest ?? NO_REST)),
-      ...(cast === undefined ? [] : textFindings(cast, ms, module.durationMs)),
+      ...frameEvaluationFindings(evaluated),
+      ...valueFindings.map((finding) => labelled(stage, finding)),
+      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
+      ...stageSkinFindings(stage),
+      ...stagePathFindings(stage, rest),
     ],
   };
 }
@@ -945,18 +874,5 @@ export async function reviewSceneFile(
   const file = resolve(request.file);
   const module = readSceneModule(await import(pathToFileURL(file).href));
   if ("reason" in module) return { kind: "usage", message: module.reason };
-  if (module.style === undefined && module.design === undefined)
-    return reviewSceneModule(module, request);
-  const { cards, problems } = await styleCards(resolve(dirname(file), "..", ".."));
-  if (module.style !== undefined && !cards.some((card) => card.name === module.style)) {
-    const names = cards.map((card) => card.name).join(", ");
-    return {
-      kind: "usage",
-      message: [
-        `style "${module.style}" names no card; ${names === "" ? "there are none" : `the cards are ${names}`}`,
-        ...problems,
-      ].join("\n"),
-    };
-  }
-  return reviewSceneModule(module, { ...request, cards });
+  return reviewSceneModule(module, request);
 }

@@ -29,7 +29,7 @@ describe("scanNumericLiterals", () => {
   it("scans numbers inside a move call and attaches call and property names", () => {
     const source = `
       import { drop } from "@gerak/moves";
-      const pose = drop({ distance: 700, squash: 0.18 }, time);
+      const pose = drop({ distance: 700, squash: 0.18 })(time);
     `;
     const spans = scanNumericLiterals(source);
     expect(spans).toHaveLength(2);
@@ -54,7 +54,7 @@ describe("scanNumericLiterals", () => {
   it("handles negative numbers and numbers outside move calls", () => {
     const source = `
       const count = 42;
-      const pose = drop({ distance: -1300 }, time);
+      const pose = drop({ distance: -1300 })(time);
     `;
     const spans = scanNumericLiterals(source);
     expect(spans).toHaveLength(2);
@@ -116,6 +116,17 @@ describe("resolveSceneFile", () => {
     expect(resolveSceneFile("vite.config.ts", demoDir, repo).kind).toBe("refused");
     expect(resolveSceneFile("src/TimingBeat.tsx", demoDir, repo).kind).toBe("refused");
     expect(resolveSceneFile("src/timing-main.tsx", demoDir, repo).kind).toBe("refused");
+  });
+
+  it("allows scene files inside an installed project's pieces folder when no repoRoot is given", () => {
+    const project = makeTempDir();
+    const pieces = join(project, "pieces");
+    mkdirSync(join(pieces, "demo", "src"), { recursive: true });
+    expect(resolveSceneFile("demo/src/demo-scene.ts", pieces)).toEqual({
+      kind: "ok",
+      path: resolve(pieces, "demo", "src", "demo-scene.ts"),
+    });
+    expect(resolveSceneFile("../outside-scene.ts", pieces).kind).toBe("refused");
   });
 });
 
@@ -192,6 +203,12 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     }).toThrow("motionLivePlugin refuses a production server.");
   });
 
+  it("has no virtual module or load hook for moves", () => {
+    const plugin = motionLivePlugin({ appRoot: "/project" });
+    expect("resolveId" in plugin).toBe(false);
+    expect("load" in plugin).toBe(false);
+  });
+
   it("transforms scene imports by attaching HMR code", () => {
     const plugin = motionLivePlugin();
     const code = `import { TimingScene } from "./timing-scene";`;
@@ -205,7 +222,7 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
 
   it("hands a stage module's update to the page, and leaves other modules alone", () => {
     const plugin = motionLivePlugin();
-    const stage = `export const beats = story(1000, {});\nexport const cast = {};`;
+    const stage = `export default sceneBuilder({ length: 1000 }).element(box("a"));`;
     const id = resolve("apps/pieces/saved/src/saved.ts");
     expect(plugin.transform(stage, id)?.code).toContain("import.meta.hot.accept");
     expect(plugin.transform(`export const beats = 1;`, id)).toBeNull();
@@ -298,51 +315,29 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     expect(readFileSync(sceneFile, "utf8")).toBe("const x = 700;");
   });
 
-  it("lists the app's move files, sorted, and refuses another site", () => {
-    const demoDir = makeTempDir();
-    const empty = makeTempDir();
-    const movesDir = join(demoDir, "reel", "src", "moves");
-    const otherDir = join(demoDir, "title", "src", "moves");
-    mkdirSync(movesDir, { recursive: true });
-    mkdirSync(otherDir, { recursive: true });
-    for (const name of ["b.ts", "a.ts", "a.d.ts", "notes.md"]) {
-      writeFileSync(join(movesDir, name), "", "utf8");
-    }
-    writeFileSync(join(otherDir, "c.ts"), "", "utf8");
-    const answer = (
-      root: string,
-      headers?: Record<string, string>,
-    ): { readonly status: number; readonly body: string } => {
+  it("serves no moves route and refuses another site under /__motion/", () => {
+    const answer = (url: string, headers?: Record<string, string>) => {
       let handler:
         | ((req: MotionLiveRequest, res: MotionLiveResponse, next: () => void) => void)
         | undefined;
-      motionLivePlugin({ appRoot: root }).configureServer({
-        config: { command: "serve", isProduction: false, root },
+      motionLivePlugin({ appRoot: "/project" }).configureServer({
+        config: { command: "serve", isProduction: false, root: "/project" },
         middlewares: {
           use(fn) {
             handler = fn;
           },
         },
       });
-      let body = "";
-      const res: MotionLiveResponse = {
-        statusCode: 0,
-        setHeader() {},
-        end(chunk?: string) {
-          if (typeof chunk === "string") body += chunk;
-        },
-      };
-      handler?.({ method: "GET", url: "/__motion/moves", headers, on() {} }, res, () => {});
-      return { status: res.statusCode, body };
+      const res: MotionLiveResponse = { statusCode: 0, setHeader() {}, end() {} };
+      let passed = false;
+      handler?.({ method: "GET", url, headers, on() {} }, res, () => {
+        passed = true;
+      });
+      return { status: res.statusCode, passed };
     };
 
-    const listed = answer(demoDir);
-    expect(listed.status).toBe(200);
-    expect(JSON.parse(listed.body)).toEqual({
-      files: ["/reel/src/moves/a.ts", "/reel/src/moves/b.ts", "/title/src/moves/c.ts"],
-    });
-    expect(JSON.parse(answer(empty).body)).toEqual({ files: [] });
-    expect(answer(demoDir, { "sec-fetch-site": "cross-site" }).status).toBe(403);
+    expect(answer("/__motion/moves")).toEqual({ status: 0, passed: true });
+    expect(answer("/__motion/moves", { "sec-fetch-site": "cross-site" }).status).toBe(403);
   });
 
   it("serves GET /__motion/source and POST /__motion/edit via dev server middleware", async () => {

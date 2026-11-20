@@ -1,7 +1,6 @@
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
-import { briefFolders } from "../scene/briefs";
 
 /** A single scanned numeric literal in source code. */
 export interface NumericLiteralSpan {
@@ -138,7 +137,7 @@ export function scanNumericLiterals(source: string): readonly NumericLiteralSpan
   return spans;
 }
 
-/** Resolves a scene file path relative to appRoot and verifies it stays inside apps. */
+/** Resolves a scene file path relative to appRoot and verifies it stays inside `appRoot` (and `apps/` when `repoRoot` is set). */
 export function resolveSceneFile(
   fileParam: string,
   appRoot: string,
@@ -150,14 +149,9 @@ export function resolveSceneFile(
   const fullAppRoot = resolve(appRoot);
   const fullPath = resolve(fullAppRoot, fileParam);
   if (!fullPath.startsWith(fullAppRoot + sep)) {
-    return { kind: "refused", message: "Path must stay inside apps/." };
+    return { kind: "refused", message: "Path must stay inside the pieces folder." };
   }
-  const normalized = fullPath.replace(/\\/g, "/");
-  const insideApps =
-    repoRoot !== undefined
-      ? fullPath.startsWith(resolve(repoRoot, "apps") + sep)
-      : normalized.includes("/apps/");
-  if (!insideApps) {
+  if (repoRoot !== undefined && !fullPath.startsWith(resolve(repoRoot, "apps") + sep)) {
     return { kind: "refused", message: "Path must stay inside apps/." };
   }
   return { kind: "ok", path: fullPath };
@@ -201,25 +195,6 @@ type MotionLiveHeaders = Readonly<Record<string, string | readonly string[] | un
 
 function firstHeader(value: string | readonly string[] | undefined): string | undefined {
   return typeof value === "string" ? value : value?.[0];
-}
-
-/** The `.ts` files directly inside each brief's `src/moves`, as paths the page can import, sorted. */
-function listMoveFiles(appRoot: string): string[] {
-  const root = resolve(appRoot);
-  return briefFolders(root)
-    .flatMap((brief) => {
-      try {
-        return readdirSync(resolve(root, brief, "src", "moves"), { withFileTypes: true })
-          .filter(
-            (entry) =>
-              entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts"),
-          )
-          .map((entry) => `/${brief}/src/moves/${entry.name}`);
-      } catch {
-        return [];
-      }
-    })
-    .sort();
 }
 
 /** Whether a request comes from a page this server serves, or from no page at all; another site's page is refused. */
@@ -302,9 +277,9 @@ const HOT_SWAP =
   `  });\n` +
   `}\n`;
 
-/** Whether a source file exports the story and the cast of a stage module. */
+/** Whether a source file default-exports a `sceneBuilder` piece. */
 function isStageSource(code: string): boolean {
-  return /export\s+const\s+beats\b/.test(code) && /export\s+const\s+cast\b/.test(code);
+  return /\bexport\s+default\b/.test(code) && /\bsceneBuilder\s*\(/.test(code);
 }
 
 /** Provides live HMR scene transform and source/edit endpoints for the live editor. */
@@ -343,12 +318,6 @@ export function motionLivePlugin(options?: {
           res.statusCode = 403;
           res.setHeader("Content-Type", "application/json");
           res.end(JSON.stringify({ error: "Only this server's own pages may read or edit." }));
-          return;
-        }
-        if (req.method === "GET" && url.pathname === "/__motion/moves") {
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ files: listMoveFiles(appRoot) }));
           return;
         }
         if (req.method === "GET" && url.pathname === "/__motion/source") {

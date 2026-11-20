@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { applyValue, type RenderTarget } from "@gerak/dom";
-import type { Pose2d } from "@gerak/moves";
+import type { Pose2d } from "@gerak/core";
 import type { Player } from "@gerak/player";
 import { usePlayer, useTarget } from "@gerak/react";
 import { SIZE, STARTS, WORD, clock, scene } from "./pile-scene";

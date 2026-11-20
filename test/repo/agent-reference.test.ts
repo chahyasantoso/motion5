@@ -1,12 +1,23 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { moveParts } from "@gerak/tools/scene";
-import { COMMANDS } from "../../packages/tools/bin/commands.mjs";
+import { COMMANDS as TOOLS_COMMANDS } from "../../packages/tools/bin/commands.mjs";
 import { PACKAGES } from "../../scripts/reference.mjs";
 
 const ROOT = new URL("../../", import.meta.url);
-const reference = readFileSync(new URL("docs/guide/agent-reference.md", ROOT), "utf8");
+const coreCommands = readFileSync(new URL("packages/tools/docs/commands.md", ROOT), "utf8");
+
+/** A package's generated reference pages, joined. */
+function referenceOf(dir: string): string {
+  const folder = new URL(`packages/${dir}/docs/reference/`, ROOT);
+  return readdirSync(folder)
+    .map((name) => readFileSync(new URL(name, folder), "utf8"))
+    .join("\n");
+}
+
+function entryLine(name: string): string {
+  return `**\`${name}\`**`;
+}
 
 /** Every name a package's entry exports, read by the compiler as a caller sees them. */
 function exportsOf(names: readonly string[]): ReadonlyMap<string, readonly string[]> {
@@ -39,35 +50,151 @@ function exportsOf(names: readonly string[]): ReadonlyMap<string, readonly strin
 describe("agent reference", () => {
   it("names every export of every package a scene can use, so no agent reads source to find one", () => {
     const missing: string[] = [];
-    for (const [name, exported] of exportsOf(PACKAGES)) {
-      expect(exported.length, `${name} exports nothing the compiler can see`).toBeGreaterThan(0);
-      for (const symbol of exported) {
-        const pattern = new RegExp(`\`${symbol.replace(/\$/g, "\\$")}[\`(]`);
-        if (!pattern.test(reference)) missing.push(`${name}: ${symbol}`);
-      }
+    const all = PACKAGES.flatMap(({ dir, entries }) =>
+      entries.map((entry) => ({ dir, name: `${dir}/${entry}` })),
+    );
+    const exported = exportsOf(all.map(({ name }) => name));
+    const references = new Map(PACKAGES.map(({ dir }) => [dir, referenceOf(dir)]));
+    for (const { dir, name } of all) {
+      const symbols = exported.get(name) ?? [];
+      expect(symbols.length, `${name} exports nothing the compiler can see`).toBeGreaterThan(0);
+      for (const symbol of symbols)
+        if (!references.get(dir)?.includes(entryLine(symbol))) missing.push(`${name}: ${symbol}`);
     }
     expect(missing).toEqual([]);
   });
 
-  it("names in its parts list only exports of @gerak/moves, each one named here", () => {
-    const exported = new Set(exportsOf(["moves/src/index.ts"]).get("moves/src/index.ts"));
-    const names = moveParts().map(({ name }) => name);
-    expect(new Set(names).size).toBe(names.length);
-    expect(names.filter((name) => !exported.has(name))).toEqual([]);
-    expect(names.filter((name) => !new RegExp(`\`${name}[\`(]`).test(reference))).toEqual([]);
+  it("writes every signature of a reference page in full: none cut short, no type left as a bare name", () => {
+    const cut: string[] = [];
+    for (const { dir } of PACKAGES) {
+      for (const line of referenceOf(dir).split("\n")) {
+        const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+        if (written === null) continue;
+        const [, name, signature = ""] = written;
+        if (signature.endsWith("…") || new RegExp(`^type ${name}(?:<[^=>]*>)?$`).test(signature))
+          cut.push(`${dir}: ${name}`);
+      }
+    }
+    expect(cut).toEqual([]);
+  });
+
+  it("keeps type aliases named in signatures and own parameters on type heads", () => {
+    const leakedHeads: string[] = [];
+    for (const { dir } of PACKAGES) {
+      for (const line of referenceOf(dir).split("\n")) {
+        const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+        if (written === null) continue;
+        const [, name, signature = ""] = written;
+        if (/^type \w+<[^>]*[<{\[]/.test(signature)) leakedHeads.push(`${dir}: ${name}`);
+      }
+    }
+    expect(leakedHeads).toEqual([]);
+
+    const core = referenceOf("core");
+    expect(core).toContain(
+      "**`lift2d`** `(pose: Pose2d, options: { readonly unitsPerPx: number; }): Pose3d`",
+    );
+    expect(core).toContain("**`UNTIMED`** `const UNTIMED: Clock`");
+    expect(core).toContain("**`Point2d`** `type Point2d = { x: number; y: number }`");
+    expect(core).toContain("**`Point3d`** `type Point3d = { x: number; y: number; z: number }`");
+    expect(core).toContain("**`mixPoint`** `(from: Point2d, to: Point2d, share: number): Point2d`");
+    expect(core).toContain(
+      "**`mixPoint3d`** `(from: Point3d, to: Point3d, share: number): Point3d`",
+    );
+    expect(core).toContain("**`Lens3d`** `type Lens3d = Pose3d & { readonly fov: number; }`");
+    expect(core).not.toContain("Point3`");
+    const rigThree = referenceOf("rig-three");
+    expect(rigThree).toContain("restPosition: Readonly<Vector3>");
+    expect(rigThree).not.toContain("isVector3: true");
+
+    const three = referenceOf("three");
+    expect(three).toContain("**`applyPose2d`** `(object: Object3D, pose: Pose2d, rest?: Point2d");
+    expect(three).toContain("**`applyPose3d`** `(object: Object3D, pose: Pose3d, rest?: Point3d");
+    expect(referenceOf("dom")).toContain(
+      "emit: (name: string, target?: string, point?: Point2d) => void",
+    );
+    expect(referenceOf("rig")).toContain(
+      "posedJoints3d`** `<const Table extends JointTable3d>(table: Table, bones: Readonly<Partial<Record<string, BonePose3d>>>, root?: BonePose3d): Readonly<Record<keyof Table & string, Point3d>>`",
+    );
+    expect(referenceOf("physics")).toContain("readonly from: Point2d; readonly to: Point2d");
+
+    const moves = referenceOf("moves");
+    expect(moves).toContain("**`drop`** `(options: DropOptions): Motion<Pose2d>`:");
+    expect(moves).toContain("**`fade`** `(): Motion<Pose2d>`:");
+    expect(moves).toContain(
+      "**`overshoot`** `(options?: OvershootOptions): (signal: (time: Time) => Pose2d) => Motion<Pose2d>`:",
+    );
+    expect(moves).toContain("**`rope`** `(options: RopeOptions): Motion<readonly Anchor2d[]>`:");
   });
 
   it("names every gerak command", () => {
-    const missing = Object.keys(COMMANDS).filter((name) => !reference.includes(`\`gerak ${name}`));
-    expect(missing).toEqual([]);
+    const missingCore = Object.keys(TOOLS_COMMANDS).filter(
+      (name) => !coreCommands.includes(`\`gerak ${name}`),
+    );
+    expect(missingCore).toEqual([]);
   });
 
-  it("is where the guide and the make-motion skill send an agent", () => {
-    expect(readFileSync(new URL("docs/guide/agent-motion.md", ROOT), "utf8")).toContain(
-      "./agent-reference.md",
-    );
-    expect(readFileSync(new URL(".claude/skills/make-motion/SKILL.md", ROOT), "utf8")).toContain(
-      "agent-reference.md",
-    );
+  it("lists every reference page of a package in that package's reference README", () => {
+    for (const { dir } of PACKAGES) {
+      const folder = new URL(`packages/${dir}/docs/reference/`, ROOT);
+      const readme = readFileSync(new URL("README.md", folder), "utf8");
+      const pages = readdirSync(folder).filter((name) => name !== "README.md");
+      expect(pages.length, dir).toBeGreaterThan(0);
+      for (const page of pages) expect(readme, `${dir}/${page}`).toContain(`(./${page})`);
+    }
+  });
+
+  it("names core's groups in the order a reader needs them", () => {
+    const readme = readFileSync(new URL("packages/core/docs/reference/README.md", ROOT), "utf8");
+    const order = [...readme.matchAll(/\[(\w+)\]\(\.\//g)].map((match) => match[1]);
+    expect(order).toEqual([
+      "fields",
+      "time",
+      "blend",
+      "ease",
+      "envelope",
+      "geometry",
+      "path",
+      "measure",
+      "events",
+      "utility",
+      "principles",
+      "state",
+    ]);
+  });
+
+  it.each(["core", "stage"])(
+    "%s.md links every reference page of its package, and lists no export by name in place of the reference",
+    (dir) => {
+      const page = readFileSync(new URL(`packages/${dir}/docs/${dir}.md`, ROOT), "utf8");
+      for (const file of readdirSync(new URL(`packages/${dir}/docs/reference/`, ROOT)))
+        if (file !== "README.md") expect(page).toContain(`./reference/${file}`);
+      expect(page).not.toMatch(/^- \*\*`[^`]+`\*\*/m);
+      expect(page).not.toMatch(/\]\(\.\/reference\/[a-z0-9-]+\.md\) \(\d+\):/);
+    },
+  );
+
+  it("documents every type named in reference/author.md signatures in a stage reference page", () => {
+    const builtins = new Set(["Readonly", "Record", "Extract", "Exclude", "NoInfer", "URL"]);
+    const author = readFileSync(new URL("packages/stage/docs/reference/author.md", ROOT), "utf8");
+    const stageRef = referenceOf("stage");
+    const coreRef = referenceOf("core");
+    const missing: string[] = [];
+    for (const line of author.split("\n")) {
+      const written = /^- \*\*`([^`]+)`\*\* `([^`]*)`/.exec(line);
+      if (written === null) continue;
+      const [, name, signature = ""] = written;
+      for (const match of signature.matchAll(/\b([A-Z]\w+)\b/g)) {
+        const type = match[1] ?? "";
+        if (
+          builtins.has(type) ||
+          stageRef.includes(entryLine(type)) ||
+          coreRef.includes(entryLine(type))
+        )
+          continue;
+        missing.push(`${name}: ${type}`);
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });

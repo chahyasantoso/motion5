@@ -2,11 +2,7 @@ import { clockDriver } from "@gerak/dom";
 import {
   aim,
   combine,
-  drop,
   ease,
-  fade,
-  follow,
-  lane,
   lanes,
   mergeEvents,
   mix,
@@ -14,20 +10,18 @@ import {
   orbit,
   project3d,
   reversed,
-  rise,
   seeded,
   sequence,
-  slide,
   span,
   springEase,
-  tally,
-  wipe,
   type Events,
   type Lens3d,
   type Pose2d,
   type Pose3d,
   type Time,
-} from "@gerak/moves";
+} from "@gerak/core";
+import { tally } from "@gerak/core";
+import { drop, fade, follow, rise, slide, wipe } from "@gerak/moves";
 import { simulate, type BodyState3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, posedJoints3d } from "@gerak/rig";
@@ -209,13 +203,13 @@ const rootAt = (time: Time): Pose3d =>
 /* 2D over 3D. */
 const TITLE_WORDS = 3;
 const titleWord = (time: Time, i: number): Pose2d => {
-  const mine = lane(span(TITLE_AT, TITLE_AT + 1600).of(time), i, lanes([1, 1, 1], 0.45));
-  return combine([drop({ distance: 300, squash: 0.2 }, mine), fade({}, mine)]);
+  const mine = lanes([1, 1, 1], 0.45).of(span(TITLE_AT, TITLE_AT + 1600).of(time), i);
+  return combine([drop({ distance: 300, squash: 0.2 })(mine), fade()(mine)]);
 };
 const titleWipe = (time: Time): Pose2d =>
   sequence(time, [
     [span(0, TITLE_OUT.at(0)), (): Pose2d => ({})],
-    [TITLE_OUT, (t): Pose2d => wipe({ radius: 620, x: 470, y: 60 }, reversed(t))],
+    [TITLE_OUT, (t): Pose2d => wipe({ radius: 620, x: 470, y: 60 })(reversed(t))],
   ]);
 
 const plusAt = (all: Events, time: Time, id: string, lensNow: Lens3d): Pose2d => {
@@ -229,8 +223,8 @@ const plusAt = (all: Events, time: Time, id: string, lensNow: Lens3d): Pose2d =>
     stage,
   );
   const life = span(landing.at, landing.at + 900).of(time);
-  const lift = rise({ distance: 46 }, life);
-  const gone = fade({}, reversed(life));
+  const lift = rise({ distance: 46 })(life);
+  const gone = fade()(reversed(life));
   return {
     x: here.x,
     y: here.y - 14 + (lift.y ?? 0),
@@ -302,8 +296,8 @@ export const scene = (time: Time, events: Events) => {
     plus: PROPS.map((prop) => plusAt(all, time, prop.id, lensNow)),
     bubble: bubbleAt(time, events, bones, root, lensNow),
     card: combine([
-      slide({ distance: 560, from: "right" }, CARD_IN.of(time)),
-      fade({}, CARD_IN.of(time)),
+      slide({ distance: 560, from: "right" })(CARD_IN.of(time)),
+      fade()(CARD_IN.of(time)),
     ]),
   };
 };

@@ -9,8 +9,8 @@ import {
   type RefCallback,
 } from "react";
 import { applyValue, type EventDriver, type RenderTarget } from "@gerak/dom";
-import { NO_EVENTS, elapsedOf, type Events, type Pose2d } from "@gerak/moves";
-import { play, type Driver, type Player, type Scene } from "@gerak/player";
+import { NO_EVENTS, elapsedOf, type Events, type Pose2d, type Signal } from "@gerak/core";
+import { play, type Driver, type Player } from "@gerak/player";
 
 /** A driver a component owns, released when the component leaves. */
 export type OwnedDriver = Driver & { dispose?(): void };
@@ -26,7 +26,7 @@ export interface PlayerHost {
   /** Answers the driver to play on, given the component's own factory; the host owns it and no component disposes it. */
   readonly createDriver?: <D extends OwnedDriver>(own: () => D) => D;
   /** Wraps each scene before it plays, such as to fall back to the last good one when it throws. */
-  readonly guard?: <T extends object>(scene: Scene<T>, fallback?: T) => Scene<T>;
+  readonly guard?: <T extends object>(scene: Signal<T>, fallback?: T) => Signal<T>;
 }
 
 const NO_HOST: PlayerHost = {};
@@ -138,7 +138,7 @@ export function driverKeeper(): DriverKeeper {
 
 interface Shown<T extends object, D extends OwnedDriver> {
   readonly playing: Playing<T, D>;
-  readonly scene: Scene<T>;
+  readonly scene: Signal<T>;
   readonly createDriver: () => D;
   readonly cues: Events;
 }
@@ -146,7 +146,7 @@ interface Shown<T extends object, D extends OwnedDriver> {
 /** Plays `scene` on a driver from `createDriver` with `cues`; define all three outside the component.
  * Gives `Playing`, or `undefined` before it exists. */
 export function usePlayer<T extends object, D extends OwnedDriver>(
-  scene: Scene<T>,
+  scene: Signal<T>,
   createDriver: () => D,
   cues: Events = NO_EVENTS,
 ): Playing<T, D> | undefined {

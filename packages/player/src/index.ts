@@ -5,5 +5,4 @@ export {
   type ManualDriver,
   type Player,
   type PlayOptions,
-  type Scene,
 } from "./player";

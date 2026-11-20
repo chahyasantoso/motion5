@@ -2,13 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  RESERVED_FOLDERS,
-  briefFolders,
-  movesFolders,
-  pieceFiles,
-  portabilityFindings,
-} from "@gerak/tools/scene";
+import { RESERVED_FOLDERS, briefFolders, pieceFiles } from "@gerak/tools/scene";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -60,60 +54,6 @@ describe("brief folders", () => {
     expect(pieceFiles(root, "twin")).toEqual([
       join(root, "one/src/twin.ts"),
       join(root, "two/src/twin.ts"),
-    ]);
-  });
-
-  it("lists the moves folder of each brief that has one", () => {
-    const root = scratch(["one/src/moves/a.ts", "two/src/two.ts", "three/src/moves/b.ts"]);
-    expect(movesFolders(root)).toEqual([
-      join(root, "one/src/moves"),
-      join(root, "three/src/moves"),
-    ]);
-  });
-});
-
-describe("portability findings", () => {
-  const MOVE = (from: string) => `import { x } from "${from}";\n`;
-
-  it("lets a move import its own folder's parts", () => {
-    const root = scratch([
-      "reel/src/parts/envelope/x.ts",
-      "tour/src/parts/envelope/z.ts",
-      "tour/src/moves/m.ts",
-      "reel/src/moves/m.ts",
-    ]);
-    writeFileSync(
-      join(root, "reel/src/moves/m.ts"),
-      MOVE("../parts/envelope/x") + MOVE("@gerak/moves"),
-    );
-    writeFileSync(join(root, "tour/src/moves/m.ts"), MOVE("../parts/envelope/z"));
-    expect(portabilityFindings(root)).toEqual([]);
-  });
-
-  it("refuses an import that leaves the folder's parts", () => {
-    const root = scratch(["reel/src/moves/m.ts", "other/src/parts/envelope/y.ts"]);
-    writeFileSync(join(root, "reel/src/moves/m.ts"), MOVE("../../../other/src/parts/envelope/y"));
-    expect(portabilityFindings(root)).toEqual([
-      `${join("reel", "src", "moves", "m.ts")} imports ../../../other/src/parts/envelope/y`,
-    ]);
-  });
-
-  it("reads require, import-equals and a plain template specifier", () => {
-    const root = scratch(["reel/src/moves/m.ts"]);
-    writeFileSync(
-      join(root, "reel/src/moves/m.ts"),
-      [
-        'const a = require("node:fs");',
-        'import b = require("node:path");',
-        "const c = import(`node:os`);",
-        "const d = import(`node:${name}`);",
-      ].join("\n"),
-    );
-    const file = join("reel", "src", "moves", "m.ts");
-    expect(portabilityFindings(root)).toEqual([
-      `${file} imports node:fs`,
-      `${file} imports node:path`,
-      `${file} imports node:os`,
     ]);
   });
 });

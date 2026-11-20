@@ -1,16 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import {
-  combine,
-  ease,
-  fade,
-  nod,
-  pop,
-  pulse,
-  repeated,
-  rise,
-  span,
-  type Time,
-} from "@gerak/moves";
+import { combine, ease, repeated, span, type Time } from "@gerak/core";
+import { fade, nod, pop, pulse, rise } from "@gerak/moves";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4000;
@@ -23,20 +13,20 @@ const bob = span(2100, 3700);
 /** Every target's value at `time`. */
 export const scene = (time: Time) => ({
   night: combine([
-    rise({ distance: 50 }, nightIn.of(time, ease.sineInOut)),
-    fade({}, nightIn.of(time, ease.sineInOut)),
+    rise({ distance: 50 })(nightIn.of(time, ease.sineInOut)),
+    fade()(nightIn.of(time, ease.sineInOut)),
   ]),
   shift: combine([
-    rise({ distance: 50 }, shiftIn.of(time, ease.sineInOut)),
-    fade({}, shiftIn.of(time, ease.sineInOut)),
+    rise({ distance: 50 })(shiftIn.of(time, ease.sineInOut)),
+    fade()(shiftIn.of(time, ease.sineInOut)),
   ]),
   moon: combine([
-    pop({ overshoot: 0.1 }, moonIn.of(time, ease.sineInOut)),
-    nod({ distance: 12 }, repeated(bob.of(time, ease.linear), 2)),
+    pop({ overshoot: 0.1 })(moonIn.of(time, ease.sineInOut)),
+    nod({ distance: 12 })(repeated(bob.of(time, ease.linear), 2)),
   ]),
   glow: combine([
-    pop({ overshoot: 0 }, moonIn.of(time, ease.sineInOut)),
-    pulse({ amount: 0.3 }, repeated(bob.of(time, ease.linear), 2)),
+    pop({ overshoot: 0 })(moonIn.of(time, ease.sineInOut)),
+    pulse({ amount: 0.3 })(repeated(bob.of(time, ease.linear), 2)),
   ]),
 });
 

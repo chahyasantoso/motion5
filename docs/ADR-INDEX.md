@@ -153,7 +153,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-146 — The render metadata channel is removed — Accepted, 2026-11-06
 - ADR-147 — Stagger finishes every track — Accepted, 2026-11-07 — superseded in part
 - ADR-148 — Motion is plain code and the engine is optional — Accepted, 2026-11-08
-- ADR-149 — The move contract — Accepted, 2026-11-08
+- ADR-149 — The move contract — Accepted, 2026-11-08 — superseded in part
 - ADR-150 — Time and the time module — Accepted, 2026-11-08
 - ADR-151 — Neutral pose and path outputs — Accepted, 2026-11-08
 - ADR-152 — `@gerak/rig` owns solvers and their vocabulary — Accepted, 2026-11-08
@@ -162,7 +162,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-155 — The motion tools package — Accepted, 2026-11-08
 - ADR-156 — Core is frozen — Accepted, 2026-11-08
 - ADR-157 — What an agent needs from moves and rig — Accepted, 2026-11-08
-- ADR-158 — motion:read, and CSS animations held to the paused clock — Accepted, 2026-11-08
+- ADR-158 — motion:read, and CSS animations held to the paused clock — Accepted, 2026-11-08 — superseded in part
 - ADR-159 — motion:check reads text and contacts the page marks — Accepted, 2026-11-08
 - ADR-160 — motion:render — Accepted, 2026-11-08
 - ADR-161 — Events from the page — Accepted, 2026-11-08
@@ -172,17 +172,17 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-165 — simulate spawns bodies on events — Accepted, 2026-11-08
 - ADR-166 — motion:review and a one-call loop — Accepted, 2026-11-08
 - ADR-167 — Engine entries keep core off the code path — Accepted, 2026-11-09
-- ADR-168 — Motion principles are knobs, not presets — Accepted, 2026-11-09
+- ADR-168 — Motion principles are knobs, not presets — Accepted, 2026-11-09 — superseded in part
 - ADR-169 — A 3D pose for code scenes — Accepted, 2026-11-09
 - ADR-170 — Core and plugins are retired — Accepted, 2026-11-09
 - ADR-171 — Live editing edits the scene file — Accepted, 2026-11-09
-- ADR-172 — A move declares its role, and a gate holds it to it — Accepted, 2026-11-11
+- ADR-172 — A move declares its role, and a gate holds it to it — Accepted, 2026-11-11 — superseded in part
 - ADR-173 — One value, and one table of its fields — Accepted, 2026-11-11
-- ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12
-- ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12
+- ADR-174 — A cast of proxies, a story of named beats, and skins per renderer — Accepted, 2026-11-12 — superseded in part
+- ADR-175 — Paths as content, presence as beats, and events on a clock — Accepted, 2026-11-12 — superseded in part
 - ADR-176 — Strokes from the layout, skins that keep their own, and a library that grows — Accepted, 2026-11-13 — superseded in part
 - ADR-177 — Strokes that combine, presence the review reads, and text over time — Accepted, 2026-11-13
-- ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13
+- ADR-178 — Layouts the stage measures, and carrying between boxes — Accepted, 2026-11-13 — superseded in part
 - ADR-179 — Installable outside the repository, and not published — Accepted, 2026-11-13 — superseded in part
 - ADR-180 — Rigging vector artwork — Accepted, 2026-11-13
 - ADR-181 — Live inputs — Accepted, 2026-11-14
@@ -190,6 +190,12 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-183 — 2D over 3D on one clock — Accepted, 2026-11-14
 - ADR-184 — Scenes that stay fast — Accepted, 2026-11-14
 - ADR-185 — Layers as folders, laws and fields, and a measured catalog — Accepted, 2026-11-14 — superseded in part
-- ADR-186 — The motion vocabulary — Accepted, 2026-11-15
-- ADR-187 — Styles on briefs — Accepted, 2026-11-15
+- ADR-186 — The motion vocabulary — Accepted, 2026-11-15 — superseded in part
+- ADR-187 — Styles on briefs — Accepted, 2026-11-15 — superseded in part
 - ADR-188 — Installable tools and one command — Accepted, 2026-11-16
+- ADR-189 — Core, modules and library — Accepted, 2026-11-16 — superseded in part
+- ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18 — superseded in part
+- ADR-191 — Shapes and curves — Accepted, 2026-11-18
+- ADR-192 — Principles, plain moves and state — Accepted, 2026-11-19 — superseded in part
+- ADR-193 — Scene builder — Accepted, 2026-11-20
+- ADR-194 — Pages — Accepted, 2026-11-20

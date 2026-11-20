@@ -8,12 +8,11 @@ import {
   fk3d,
   ik3d,
   jointOf,
-  matrixFromEuler3d,
-  quaternionFromEuler3d,
   solveChain3d,
   UNBOUND_POLE3D,
 } from "../src/index";
-import { composeWorld3d, multiplyVector3 } from "../src/frame/frame3d";
+import { matrixFromEuler3d, multiplyVector3, quaternionFromEuler3d } from "@gerak/core";
+import { composeWorld3d } from "../src/frame/frame3d";
 
 const JOINTS = [
   { id: "shoulder", x: 0, y: 2, z: 0 },

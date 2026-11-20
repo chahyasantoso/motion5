@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { installedPackages, type InstalledPackage } from "./installed";
 import { pageFiles } from "./page-files";
 
 /** What `gerak init` did: the files it wrote, or why it wrote nothing. */
@@ -14,8 +15,12 @@ export type InitArgs =
 
 const USAGE = "usage: gerak init [folder] [--refresh]";
 const SKILL_FILE = ".claude/skills/make-motion/SKILL.md";
-const SKILL_IN_GUIDE = "skill/make-motion/SKILL.md";
-const GUIDE_LINK = "../../../node_modules/@gerak/tools/guide/";
+const REPO_LINK = "../../../packages/";
+const INSTALLED_LINK = "../../../node_modules/@gerak/";
+const READ_WHOLE = [
+  { name: "@gerak/core", path: "core/docs/core.md" },
+  { name: "@gerak/stage", path: "stage/docs/stage.md" },
+];
 
 export function parseInitArgs(argv: readonly string[]): InitArgs {
   const positional = argv.filter((arg) => !arg.startsWith("-"));
@@ -48,16 +53,49 @@ function parseManifest(file: string): Record<string, unknown> | undefined {
   return Object.fromEntries(Object.entries(parsed));
 }
 
-function agentsText(folder: string): string {
+/** One line per installed package, other than the two read whole, that ships a docs index. */
+function otherDocs(installed: readonly InstalledPackage[]): readonly string[] {
+  return installed
+    .filter(({ folder }) => existsSync(join(folder, "docs", "README.md")))
+    .map(({ name }) => name)
+    .filter((name) => !READ_WHOLE.some(({ name: whole }) => name === whole))
+    .map((name) => `- Read \`node_modules/${name}/docs/README.md\` when the brief needs ${name}.`);
+}
+
+function agentsText(folder: string, installed: readonly InstalledPackage[]): string {
   return [
     "# Agent instructions",
     "",
     "This project makes motion with gerak, a TypeScript library of moves, scenes and pages.",
     "",
-    "- Read `node_modules/@gerak/tools/guide/agent-motion.md` before making motion.",
+    ...READ_WHOLE.map(
+      ({ path }) => `- Read \`node_modules/@gerak/${path}\` whole before making motion.`,
+    ),
+    ...otherDocs(installed),
+    "- Open a package's `docs/reference` page only for a symbol whose fields you cannot see; do not list or read a docs folder wholesale.",
     `- The pieces folder is \`${folder}\`.`,
     "",
   ].join("\n");
+}
+
+function tsconfigText(folder: string): string {
+  return `${JSON.stringify(
+    {
+      compilerOptions: {
+        target: "ES2022",
+        module: "ESNext",
+        moduleResolution: "Bundler",
+        lib: ["ES2022", "DOM"],
+        jsx: "react-jsx",
+        strict: true,
+        noEmit: true,
+        skipLibCheck: true,
+      },
+      include: [`${folder}/*/src`],
+    },
+    null,
+    2,
+  )}\n`;
 }
 
 function write(file: string, text: string): void {
@@ -69,7 +107,8 @@ function write(file: string, text: string): void {
 export function initProject(
   cwd: string,
   folderArg: string,
-  guide: Readonly<Record<string, string>>,
+  skill: string,
+  installed: readonly InstalledPackage[] = installedPackages(),
 ): InitResult {
   const project = manifestFolder(cwd);
   if (project === undefined)
@@ -87,13 +126,12 @@ export function initProject(
   const target = join(project, folder);
   if (existsSync(target) && !statSync(target).isDirectory())
     return { kind: "refused", message: `${folder} is a file, not a folder.` };
-  const skill = guide[SKILL_IN_GUIDE];
-  if (skill === undefined) return { kind: "refused", message: "The shipped guide has no skill." };
   const pages = pageFiles();
   const targets = [
     ...Object.keys(pages).map((name) => `${folder}/${name}`),
     SKILL_FILE,
     "AGENTS.md",
+    "tsconfig.json",
   ];
   const existing = targets.filter((target) => existsSync(join(project, target)));
   const named = gerak !== undefined && gerak !== null && Reflect.get(gerak, "pieces") !== undefined;
@@ -101,8 +139,9 @@ export function initProject(
   if (clash.length > 0)
     return { kind: "refused", message: `Already set up, nothing written: ${clash.join(", ")}.` };
   for (const [name, text] of Object.entries(pages)) write(join(project, folder, name), text);
-  write(join(project, SKILL_FILE), skill.replaceAll("../../", GUIDE_LINK));
-  write(join(project, "AGENTS.md"), agentsText(folder));
+  write(join(project, SKILL_FILE), skill.replaceAll(REPO_LINK, INSTALLED_LINK));
+  write(join(project, "AGENTS.md"), agentsText(folder, installed));
+  write(join(project, "tsconfig.json"), tsconfigText(folder));
   const kept = gerak === undefined || gerak === null ? [] : Object.entries(gerak);
   const next = { ...manifest, gerak: { ...Object.fromEntries(kept), pieces: folder } };
   write(manifestFile, `${JSON.stringify(next, null, 2)}\n`);

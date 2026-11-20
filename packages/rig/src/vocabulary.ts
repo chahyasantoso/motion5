@@ -1,4 +1,4 @@
-import { unreachable } from "./unreachable";
+import { unreachable } from "@gerak/core";
 
 /** Lower local-angle bound, in degrees. */
 export const MIN_ROTATION_KEY = "minRotation" as const;

@@ -1,5 +1,6 @@
 import { clockDriver } from "@gerak/dom";
-import { drop, hop, lane, lanes, span, wipe, type Time } from "@gerak/moves";
+import { lanes, span, type Time } from "@gerak/core";
+import { drop, hop, wipe } from "@gerak/moves";
 
 /** The whole beat, in ms: letters fall, the dot hops in, then the cover wipes out from the dot. */
 export const BEAT_MS = 3000;
@@ -18,10 +19,10 @@ const cover = span(2400, 3000);
 export function timingScene(centre: { readonly x: number; readonly y: number }) {
   return (time: Time) => ({
     letters: [...WORD].map((_, index) =>
-      drop({ distance: 700, squash: 0.18 }, lane(word.of(time), index, LETTERS)),
+      drop({ distance: 700, squash: 0.18 })(LETTERS.of(word.of(time), index)),
     ),
-    dot: hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: 1300 }, flight.of(time)),
-    cover: wipe({ radius: 1500, x: centre.x, y: centre.y }, cover.of(time)),
+    dot: hop({ height: 260, bounces: 2, decay: 0.35, squash: 0.45, dx: 1300 })(flight.of(time)),
+    cover: wipe({ radius: 1500, x: centre.x, y: centre.y })(cover.of(time)),
   });
 }
 

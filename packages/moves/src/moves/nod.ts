@@ -1,18 +1,14 @@
-import { defineMove } from "./declare";
-import type { Pose2d } from "../fields/pose";
-import { arch } from "../parts/envelope/envelopes";
+import { motion, type Motion, arch, type Pose2d } from "@gerak/core";
+import { numberOption } from "./options";
 
-/** Dips `distance` px down and comes back up, once. */
-export const nod = defineMove({
-  id: "nod",
-  role: "emphasis",
-  description: "Dips down and comes back up, once.",
-  options: {
-    distance: { kind: "number", min: 0, description: "How far down it dips, in px." },
-  },
-  example: { options: { distance: 16 } },
-  run({ distance }, { progress }): Pose2d {
-    return { y: distance * arch(progress) ** 2 };
-  },
-  moments: () => ({ bottom: 0.5 }),
-});
+/** Options of `nod`. */
+export interface NodOptions {
+  /** How far down it dips, in px; at least 0, required. */
+  readonly distance: number;
+}
+
+/** Dips down and comes back up, once. */
+export function nod(options: NodOptions): Motion<Pose2d> {
+  const distance = numberOption("nod", "distance", options.distance, { min: 0 });
+  return motion(({ progress }) => ({ y: distance * arch(progress) ** 2 }));
+}

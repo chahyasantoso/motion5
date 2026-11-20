@@ -4,35 +4,32 @@ import {
   mergeEvents,
   type Events,
   type MotionEvent,
+  type Signal,
   type Time,
-} from "@gerak/moves";
+  unreachable,
+} from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
-  NO_LAYOUTS,
-  NO_REST,
-  castNames,
-  readStageModule,
-  type CastName,
-  type Layouts,
-  type Rest,
+  compileScene,
+  formatStageError,
+  frame,
+  isDomSkin,
+  isScene,
+  listPose,
+  type Limits,
+  type Stage,
 } from "@gerak/stage";
-import { readDesign, type Design } from "./design";
 import { parseNumbers } from "../page/args";
-import { unreachable } from "../page/unreachable";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
+
+/** Review limits of one target. */
+export type TargetLimits = Limits;
 
 /** One named beat of a stage module's story, in ms. */
 export interface Beat {
   readonly name: string;
   readonly from: number;
   readonly to: number;
-}
-
-/** A target's own review limits, in the units its fields use; a field left out takes the command's flag. */
-export interface TargetLimits {
-  readonly jump?: number;
-  readonly turn?: number;
-  readonly ratio?: number;
 }
 
 const LIMIT_FIELDS = ["jump", "turn", "ratio"] as const;
@@ -68,35 +65,16 @@ function readLimits(
   return { limits: read };
 }
 
-/** What a scene module exports for the tools: its scene, how long it runs in ms, and its own cues;
- * a stage module also carries its beats and the names its cast makes. */
+/** What a scene module exports for the tools: its scene, duration, cues, and optional stage contract. */
 export interface SceneModule {
-  readonly scene: (time: Time, events: Events) => object;
+  readonly scene: Signal<object>;
   readonly durationMs: number;
   readonly cues: Events;
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
-  /** The module's `design`: the quality each target's field should have, checked by the review. */
-  readonly design?: Design;
-  /** The name of the brief style card the piece follows, as its `style` export spells it. */
-  readonly style?: string;
   readonly beats?: readonly Beat[];
-  readonly cast?: readonly CastName[];
-  /** A stage module's `skins.dom.css`, which the review reads for the members it names. */
-  readonly skinCss?: string;
-  /** Where things rest for a stage module at the start, its own `rest` or the first layout's; a path function is called with it. */
-  readonly rest?: Rest;
-  /** A stage module whose layouts no renderer measured: it names `layouts` and gives no `rests`. */
-  readonly unmeasured?: boolean;
-}
-
-/** The latest-started beat that `ms` falls in, or `undefined` in a gap between beats. */
-export function beatAt(beats: readonly Beat[], ms: number): string | undefined {
-  let found: Beat | undefined;
-  for (const beat of beats)
-    if (beat.from <= ms && ms <= beat.to && (found === undefined || beat.from >= found.from))
-      found = beat;
-  return found?.name;
+  /** Compiled stage contract when the module default-exports `sceneBuilder(...)`. */
+  readonly stage?: Stage;
 }
 
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
@@ -143,73 +121,73 @@ export interface SceneSample {
   readonly targets: Readonly<Record<string, unknown>>;
 }
 
-/** The scene and duration a module exports, or why it has none. A stage module is read by
- * `readStageModule`; its length is its story's and its scene gets the module's `rest`. */
+/** A frame's targets with each list's `(index, count) => pose` written out as its items' poses. */
+export function writtenOut(
+  stage: Stage,
+  targets: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> {
+  const out: Record<string, unknown> = { ...targets };
+  for (const member of stage.members) {
+    const value = targets[member.name];
+    if (member.kind !== "list" || typeof value !== "function") continue;
+    const count = member.items.length;
+    out[member.name] = member.items.map((_, index) => listPose(value, index, count));
+  }
+  return out;
+}
+
+export function moduleFromStage(stage: Stage): SceneModule {
+  return {
+    stage,
+    cues: stage.cues,
+    limits: stage.limits,
+    durationMs: stage.durationMs,
+    beats: Object.entries(stage.beats).map(([name, span]) => ({
+      name,
+      from: span.from,
+      to: span.to,
+    })),
+    scene: (time, events) => writtenOut(stage, frame(stage, { time, events }).targets),
+  };
+}
+
+/** Reads a `sceneBuilder` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
+  const defaultExport: unknown = isScene(value) ? value : Reflect.get(Object(value), "default");
+  if (isScene(defaultExport)) {
+    const skin: unknown = Reflect.get(Object(value), "skin");
+    if (skin !== undefined && !isDomSkin(skin))
+      return {
+        reason:
+          "A piece's `skin` export must be `{ css }`, with `css` and `defs` both strings or both URLs.",
+      };
+    const compiled = compileScene(defaultExport, { skin });
+    if (!compiled.ok) {
+      return { reason: compiled.errors.map(formatStageError).join("\n") };
+    }
+    return moduleFromStage(compiled.stage);
+  }
+  const scene: unknown = Reflect.get(Object(value), "scene");
+  if (defaultExport !== undefined && typeof scene !== "function") {
+    return { reason: "A piece's default export must be created with `sceneBuilder(...)`." };
+  }
   const cues: unknown = Reflect.get(Object(value), "cues");
   if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))
     return { reason: "The module's `cues` must be a list of { name, at, target } events." };
   const readLimit = readLimits(Reflect.get(Object(value), "limits"));
   if ("reason" in readLimit) return readLimit;
   const { limits } = readLimit;
-  const givenDesign: unknown = Reflect.get(Object(value), "design");
-  const readIntent = givenDesign === undefined ? undefined : readDesign(givenDesign);
-  if (readIntent?.kind === "refused") return { reason: `The module's ${readIntent.reason}` };
-  const givenStyle: unknown = Reflect.get(Object(value), "style");
-  if (givenStyle !== undefined && typeof givenStyle !== "string")
-    return { reason: "The module's `style` must be the name of a style card, a string." };
-  const designed = {
-    ...(readIntent === undefined ? {} : { design: readIntent.design }),
-    ...(givenStyle === undefined ? {} : { style: givenStyle }),
-  };
   const given: unknown = Reflect.get(Object(value), "durationMs");
   const ownCues = cues === undefined ? NO_EVENTS : mergeEvents(cues);
-  if (Reflect.get(Object(value), "beats") !== undefined) {
-    const stage = readStageModule(value);
-    if ("reason" in stage) return stage;
-    const { beats, cast, scene } = stage;
-    if (given !== undefined && given !== beats.durationMs)
-      return {
-        reason: `The module's \`durationMs\` ${String(given)} differs from its story's ${beats.durationMs}; export only \`beats\`.`,
-      };
-    const layouts = stage.rests ?? NO_LAYOUTS;
-    const named: Layouts = layouts;
-    const first = stage.layouts?.[0];
-    const restFor = (events: Events): Rest => {
-      if (stage.layouts === undefined) return stage.rest ?? NO_REST;
-      const current = stage.layout?.(events) ?? first;
-      return (current === undefined ? undefined : named[current]) ?? NO_REST;
-    };
-    const rest = restFor(NO_EVENTS);
-    const unmeasured =
-      stage.layouts !== undefined && Reflect.get(Object(value), "rests") === undefined;
-    return {
-      ...designed,
-      ...(unmeasured ? { unmeasured } : {}),
-      cues: ownCues,
-      limits,
-      scene: (time, events) => scene(time, events, restFor(events), layouts),
-      durationMs: beats.durationMs,
-      beats: beats.order.flatMap((name) => {
-        const span = beats[name];
-        return span === undefined ? [] : [{ name, from: span.from, to: span.to }];
-      }),
-      cast: castNames(cast, beats.order),
-      ...(stage.skins.dom?.css === undefined ? {} : { skinCss: stage.skins.dom.css }),
-      rest,
-    };
-  }
-  const scene: unknown = Reflect.get(Object(value), "scene");
   if (typeof scene !== "function")
     return { reason: "The module exports no `scene`, a function from time to targets." };
   if (typeof given !== "number" || !Number.isFinite(given) || given <= 0)
     return { reason: "The module exports no `durationMs`, a positive number." };
   return {
-    ...designed,
     cues: ownCues,
     limits,
     scene: (time, events) => {
-      const values: unknown = Reflect.apply(scene, undefined, [time, events, NO_REST]);
+      const values: unknown = Reflect.apply(scene, undefined, [time, events]);
       if (typeof values !== "object" || values === null)
         throw new TypeError("The scene returned no targets.");
       return values;
@@ -247,8 +225,16 @@ export function sampleScene(
     }
   };
   return points().map(({ at, progress }) => {
-    if (request.kind === "time") driver.seekMs(at);
-    else driver.seek(progress);
+    switch (request.kind) {
+      case "time":
+        driver.seekMs(at);
+        break;
+      case "progress":
+        driver.seek(progress);
+        break;
+      default:
+        return unreachable(request);
+    }
     const values = Object.entries(player.values).filter(
       ([target]) => targets === undefined || targets.includes(target),
     );

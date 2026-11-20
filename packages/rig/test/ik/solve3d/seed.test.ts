@@ -9,9 +9,9 @@ import {
   multiplyVector3,
   rotationAboutAxis3d,
   scale3,
-  swingTwist3d,
   type Vec3,
-} from "../../../src/frame/frame3d";
+} from "@gerak/core";
+import { swingTwist3d } from "../../../src/frame/frame3d";
 import { UNBOUND_POLE3D } from "../../../src/ik/solve3d/analytic";
 import {
   centreLocal3d,
