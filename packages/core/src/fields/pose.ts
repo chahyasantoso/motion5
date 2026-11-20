@@ -338,14 +338,16 @@ export const POSE_2D_NUMBERS: readonly CarriedBy<"2d" | "both">[] = Object.freez
 );
 
 /** A 2D pose, every field optional: `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY`, `opacity`,
- * `anchor` and `custom` numbers. Stage px, y down, degrees clockwise. */
+ * `anchor` and `custom` numbers. Stage px, y down, degrees clockwise; a `Pose3d` is refused. */
 export type Pose2d = { readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: number } & {
+  readonly [K in CarriedBy<"3d">]?: never;
+} & {
   readonly anchor?: Anchor;
   readonly custom?: Readonly<Record<string, number>>;
 };
 
 /** Every field a renderer must write for a pose: its numbers and its anchor. */
-export const POSE_2D_FIELDS: readonly Exclude<keyof Pose2d, "custom">[] = Object.freeze([
+export const POSE_2D_FIELDS: readonly (CarriedBy<"2d" | "both"> | "anchor")[] = Object.freeze([
   ...POSE_2D_NUMBERS,
   "anchor",
 ]);

@@ -84,6 +84,7 @@ function pathsOf(stage: Stage): readonly (readonly [string, Path])[] {
         member.items.forEach((item, index) => add(`${member.name}.${index}`, item));
         break;
       case "group":
+      case "object":
         break;
       default:
         unreachable(member);

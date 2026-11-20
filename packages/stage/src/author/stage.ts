@@ -1,4 +1,4 @@
-import type { Events, Pose2d, Span, Time } from "@gerak/core";
+import type { Events, Pose2d, Pose3d, Span, Time } from "@gerak/core";
 import type { CastBuilder, Members } from "./cast";
 import type { ScrollBeat, TriggerBeat } from "./beat";
 import type { Carry, Frame, Rest, RestReader } from "./layout";
@@ -22,13 +22,15 @@ export type MemberOf<M, K> = K extends keyof M
         : never;
     }[keyof M];
 
-/** What the scene returns: a pose per actor or group, a `ListPose` per list, all named flat. */
+/** What the scene returns: a pose per actor or group, a `ListPose` per list, a `Pose3d` per object, all named flat. */
 export type Targets<M> = string extends keyof M
-  ? Readonly<Record<string, Pose2d | ListPose | undefined>>
+  ? Readonly<Record<string, Pose2d | Pose3d | ListPose | undefined>>
   : {
       readonly [K in MemberName<M>]?: MemberOf<M, K> extends { readonly kind: "list" }
         ? ListPose
-        : Pose2d;
+        : MemberOf<M, K> extends { readonly kind: "object" }
+          ? Pose3d
+          : Pose2d;
     };
 
 /** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */

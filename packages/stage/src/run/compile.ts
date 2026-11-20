@@ -43,6 +43,7 @@ export type Member = {
   /** Ms the member shows, its own or its group's; absent means always. */
   readonly on?: readonly Window[] | undefined;
 } & (
+  | { readonly kind: "object" }
   | { readonly kind: "actor"; readonly content: Content }
   | {
       readonly kind: "list";
@@ -296,7 +297,7 @@ function compileCast(
       const expect = spec.meta.expect ?? from.expect;
       const pivot = spec.meta.pivot;
       const node = spec.meta.node?.selector;
-      if (isPage && node === undefined)
+      if (isPage && node === undefined && spec.kind !== "object")
         errors.push({
           kind: "invalid",
           field: "cast",
@@ -338,6 +339,9 @@ function compileCast(
           );
           break;
         }
+        case "object":
+          members.push(Object.freeze({ ...base, kind: "object" }));
+          break;
         case "group": {
           members.push(Object.freeze({ ...base, kind: "group" }));
           visit(spec.members, {
@@ -496,6 +500,7 @@ function signatureOf(
       case "list":
         return [...own, member.items.map(contentKey)];
       case "group":
+      case "object":
         return own;
       default:
         return unreachable(member);
