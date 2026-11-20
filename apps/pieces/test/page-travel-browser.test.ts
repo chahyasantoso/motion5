@@ -92,6 +92,7 @@ describe("yuzu landing page with travel and slots in Chromium", () => {
           expect(Math.abs(drinkStoryA.cx - slotStoryA.cx)).toBeLessThanOrEqual(2);
           expect(Math.abs(drinkStoryA.cy - slotStoryA.cy)).toBeLessThanOrEqual(2);
           expect(Math.abs(drinkStoryA.width - slotStoryA.width)).toBeLessThanOrEqual(2);
+          expect(Math.abs(drinkStoryA.height - slotStoryA.height)).toBeLessThanOrEqual(2);
           expect((await rectOf(page, "#story-step-1")).opacity).toBeLessThan(0.05);
           expect((await rectOf(page, "#story-step-2")).opacity).toBeGreaterThan(0.95);
 
@@ -109,6 +110,29 @@ describe("yuzu landing page with travel and slots in Chromium", () => {
           for (const op of galleryOpacities) expect(op).toBeGreaterThan(0.95);
           const drinkAtGallery = await rectOf(page, "#drink");
           expect(drinkAtGallery.cy).toBeLessThan(0);
+
+          // 5. Scrolling back to hero reverses featuresReveal and returns drink cleanly to #hero .slot.
+          await scrollPageTo(page, 0, advanceTo, 3500);
+          const drinkReturned = await rectOf(page, "#drink");
+          const slotHeroAgain = await rectOf(page, "#hero .slot");
+          expect(Math.abs(drinkReturned.cx - slotHeroAgain.cx)).toBeLessThanOrEqual(2);
+          expect(Math.abs(drinkReturned.cy - slotHeroAgain.cy)).toBeLessThanOrEqual(2);
+          const featReversed = await page
+            .locator("#features .feature-card")
+            .evaluateAll((els) => els.map((el) => Number(getComputedStyle(el).opacity)));
+          for (const op of featReversed) expect(op).toBeLessThan(0.05);
+
+          // 6. Live viewport resize triggers remeasure() and keeps #drink aligned on #hero .slot.
+          if (width === 1280) {
+            await page.setViewportSize({ width: 390, height: 844 });
+            await advanceTo(3700);
+            const drinkResized = await rectOf(page, "#drink");
+            const slotResized = await rectOf(page, "#hero .slot");
+            expect(Math.abs(drinkResized.cx - slotResized.cx)).toBeLessThanOrEqual(2);
+            expect(Math.abs(drinkResized.cy - slotResized.cy)).toBeLessThanOrEqual(2);
+            expect(Math.abs(drinkResized.width - slotResized.width)).toBeLessThanOrEqual(2);
+            expect(Math.abs(drinkResized.height - slotResized.height)).toBeLessThanOrEqual(2);
+          }
         },
       );
       expect(pageErrors).toEqual([]);

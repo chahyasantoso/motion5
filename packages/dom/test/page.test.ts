@@ -362,4 +362,44 @@ describe("mountPage", () => {
     ).toThrow(/"absent".*#absent/);
     expect(failSolo.textContent).toBe("");
   });
+
+  it("syncs changed scrollY inside remeasure without duplicating updates", () => {
+    const cardNode = new FakeNode("card");
+    const root = new FakeRoot([cardNode]);
+    let scrollY = 0;
+    const listeners = new Set<() => void>();
+    const scrollTarget = {
+      get scrollY() {
+        return scrollY;
+      },
+      addEventListener(_type: string, listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_type: string, listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(200)] });
+    let sceneCalls = 0;
+    const mounted = mountPage(
+      sceneBuilder()
+        .element(box("card", { node: el("#card") }))
+        .motion(
+          motion((t) => {
+            sceneCalls += 1;
+            return { x: 100 * t.progress };
+          }).in(sb),
+        ),
+      { root, scrollTarget, frames: fakeFrames(), clock: () => 0 },
+    );
+
+    expect(cardNode.style.transform).toBe("");
+    const callsBefore = sceneCalls;
+    scrollY = 100;
+    mounted.remeasure();
+    expect(sceneCalls).toBe(callsBefore + 1);
+    expect(cardNode.style.transform).toBe("translate3d(50px, 0px, 0px)");
+    expect(mounted.events().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
+    mounted.dispose();
+  });
 });

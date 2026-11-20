@@ -443,6 +443,7 @@ function isElement(value: unknown): value is Element {
   if (typeof value !== "object" || value === null) return false;
   const kind: unknown = Reflect.get(value, "kind");
   const name: unknown = Reflect.get(value, "name");
+  const opts: unknown = Reflect.get(value, "options");
   return (
     (kind === "box" ||
       kind === "shape" ||
@@ -450,7 +451,9 @@ function isElement(value: unknown): value is Element {
       kind === "many" ||
       kind === "group") &&
     typeof name === "string" &&
-    name !== ""
+    name !== "" &&
+    typeof opts === "object" &&
+    opts !== null
   );
 }
 
@@ -475,8 +478,8 @@ export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
     const fromY = prev?.y ?? 0;
     const toX = target.x - own.x;
     const toY = target.y - own.y;
-    let x = mix(fromX, toX, p);
-    let y = mix(fromY, toY, p);
+    let x = p === 1 ? toX : mix(fromX, toX, p);
+    let y = p === 1 ? toY : mix(fromY, toY, p);
     if (bend !== 0 && p !== 1) {
       const dx = toX - fromX;
       const dy = toY - fromY;
@@ -490,14 +493,16 @@ export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
     if (!(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)) {
       return { x, y };
     }
+    const toScaleX = target.width / own.width;
+    const toScaleY = target.height / own.height;
     const uniform = prev?.scale ?? 1;
     const fromScaleX = uniform * (prev?.scaleX ?? 1);
     const fromScaleY = uniform * (prev?.scaleY ?? 1);
     return {
       x,
       y,
-      scaleX: mix(fromScaleX, target.width / own.width, p),
-      scaleY: mix(fromScaleY, target.height / own.height, p),
+      scaleX: p === 1 ? toScaleX : mix(fromScaleX, toScaleX, p),
+      scaleY: p === 1 ? toScaleY : mix(fromScaleY, toScaleY, p),
     };
   });
   return withMeta(base, [], [to]);

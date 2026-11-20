@@ -8,11 +8,14 @@ import {
   el,
   formatStageError,
   frame,
+  listPose,
+  many,
   poseOf,
   restReader,
   sceneBuilder,
   scrollPoint,
   section,
+  stagger,
   travel,
   type SceneBuilder,
   type Stage,
@@ -34,6 +37,8 @@ describe("travel", () => {
   it("validates its target element and finite arc option", () => {
     // @ts-expect-error travel requires an Element target
     expect(() => travel({ to: "#slot" })).toThrow(TypeError);
+    // @ts-expect-error travel requires a complete Element with options
+    expect(() => travel({ to: { kind: "box", name: "forged" } })).toThrow(TypeError);
     // @ts-expect-error travel requires an options object with `to`
     expect(() => travel({})).toThrow(TypeError);
 
@@ -384,5 +389,101 @@ describe("travel", () => {
     if (!invalidPage.ok) {
       expect(invalidPage.errors.map(formatStageError).join("\n")).toContain("unlinkedSlot");
     }
+
+    // Section / slot name collision in the same `.motion(...)` call throws TypeError.
+    const collidingHero = section("hero", el("#hero-section"));
+    const collidingSlot = box("hero", { node: el("#hero-slot") });
+    expect(() =>
+      sceneBuilder()
+        .element(box("mover", { node: el("#mover") }))
+        .motion(
+          travel({ to: collidingSlot }).in(
+            beat("move", { scroll: [collidingHero.top, collidingHero.end] }),
+          ),
+        ),
+    ).toThrow(TypeError);
+  });
+
+  it("supports stagger on lists, .take() windows, fractional scales, flow/0x0 slots", () => {
+    const b1 = beat("b1", 400, { at: 0 });
+    const b2 = beat("b2", 400, { at: 600 });
+    const items = many("items", 2);
+    const listSlot = box("listSlot");
+    const slotA = box("slotA");
+    const slotB = box("slotB");
+    const zeroSlot = box("zeroSlot");
+    const hero = box("hero");
+    const zeroFollower = box("zeroFollower");
+    const flowMover = box("flowMover");
+
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(items)
+        .motion(stagger(travel({ to: listSlot }), { spread: 0.2 }).in(b1))
+        .element(hero)
+        .motion(motion((): Pose2d => ({ scale: 1 / 3 })).in(b1))
+        .motion(travel({ to: slotA }).in(b1))
+        .motion(travel({ to: slotB }).take().in(b2))
+        .element(zeroFollower)
+        .motion(motion((): Pose2d => ({ scale: 2 })))
+        .motion(travel({ to: zeroSlot }).in(b1))
+        .element(flowMover)
+        .motion(
+          travel({ to: slotA }).in(
+            beat("scrollMove", { scroll: [scrollPoint(0), scrollPoint(200)] }),
+          ),
+        ),
+    );
+    expect(stage.members.find((m) => m.name === "listSlot")?.expect).toBe("static");
+
+    const boxes = {
+      main: restReader({
+        "items.0": { x: 0, y: 0, width: 100, height: 100 },
+        "items.1": { x: 0, y: 100, width: 100, height: 100 },
+        listSlot: { x: 200, y: 100, width: 100, height: 100 },
+        hero: { x: 50, y: 50, width: 100, height: 100 },
+        slotA: { x: 250, y: 150, width: 150, height: 150 },
+        slotB: { x: 500, y: 300, width: 100, height: 100 },
+        zeroFollower: { x: 20, y: 30, width: 80, height: 80 },
+        zeroSlot: { x: 120, y: 130, width: 0, height: 0 },
+        flowMover: withPlacement({ x: 50, y: 300, width: 100, height: 100 }, { kind: "flow" }),
+      }),
+    };
+
+    // stagger delays items.1 relative to items.0 while reaching exact listSlot at b1.to.
+    const staggerMid = frame(stage, { time: at(200, 1000), boxes }).targets["items"];
+    const p0Mid = listPose(staggerMid, 0, 2);
+    const p1Mid = listPose(staggerMid, 1, 2);
+    expect(p0Mid?.x ?? 0).toBeGreaterThan(p1Mid?.x ?? 0);
+    const staggerEnd = frame(stage, { time: at(400, 1000), boxes }).targets["items"];
+    expect(listPose(staggerEnd, 1, 2)?.x).toBeCloseTo(200, 9);
+    expect(listPose(staggerEnd, 1, 2)?.y).toBeCloseTo(0, 9);
+
+    // Before b2 starts, .take() leaves hero at slotA; at b2.to, fractional prior scale settles with undefined scaleX/scaleY.
+    const beforeTake = poseOf(frame(stage, { time: at(500, 1000), boxes }).targets["hero"]);
+    expect(beforeTake?.x).toBeCloseTo(200, 9);
+    expect(beforeTake?.scaleX).toBeCloseTo(1.5, 9);
+    const afterTake = poseOf(frame(stage, { time: at(1000, 1000), boxes }).targets["hero"]);
+    expect(afterTake?.x).toBeCloseTo(450, 9);
+    expect(afterTake?.y).toBeCloseTo(250, 9);
+    expect(afterTake?.scaleX).toBeUndefined();
+    expect(afterTake?.scaleY).toBeUndefined();
+
+    // 0x0 slot moves center while preserving non-identity prior scale.
+    const zeroEnd = poseOf(frame(stage, { time: at(400, 1000), boxes }).targets["zeroFollower"]);
+    expect(zeroEnd?.x).toBeCloseTo(100, 9);
+    expect(zeroEnd?.y).toBeCloseTo(100, 9);
+    expect(zeroEnd?.scale).toBeCloseTo(2, 9);
+
+    // Flow -> flow cancels shared scrollY offset cleanly.
+    const flowEnd = poseOf(
+      frame(stage, {
+        time: at(100, 1000),
+        boxes,
+        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 200 }],
+      }).targets["flowMover"],
+    );
+    expect(flowEnd?.x).toBeCloseTo(200, 9);
+    expect(flowEnd?.y).toBeCloseTo(-150, 9);
   });
 });

@@ -40,7 +40,7 @@ const galleryCards = many("galleryCards", 4, { node: el("#gallery .gallery-card"
 
 const intro = beat("intro", 700);
 const subIntro = beat("subIntro", 500, { at: 160 });
-const snapHero = beat("snapHero", { scroll: [scrollPoint(-1), scrollPoint(0)] });
+const snapHero = beat("snapHero", { scroll: [scrollPoint(-10000), scrollPoint(0)] });
 const toFeatures = beat("toFeatures", { scroll: [hero.top, features.top] });
 const featuresReveal = beat("featuresReveal", 550, {
   when: features.top.minus(240).reached,
