@@ -4,6 +4,7 @@ import {
   combine3d,
   ease,
   mix,
+  motion,
   orbit,
   span,
   type Events,
@@ -12,6 +13,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { follow } from "@gerak/moves";
+import { object, sceneBuilder } from "@gerak/stage";
 import { simulate, type BodySpec3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, bonesOf3d, chainThrough3d, ik3d, jointOf } from "@gerak/rig";
@@ -153,7 +155,7 @@ const wave3 = (progress: number) => Math.sin(Math.PI * 2 * 3 * progress);
 const pulse = (progress: number, count: number) =>
   (1 - Math.cos(Math.PI * 2 * count * progress)) / 2;
 
-function pawBones(time: Time) {
+function pawBones(time: Time): Readonly<Partial<Record<string, Pose3d>>> {
   const up = raise.of(time, ease.cubicOut).progress * (1 - lower.of(time, ease.sineInOut).progress);
   if (up <= 0) return {};
   const swing = wave3(wave.of(time).progress) * 0.04;
@@ -186,38 +188,99 @@ function wingPose(time: Time, side: 1 | -1): Pose3d {
   return { rotation: side * (18 * lift + 6 * flutter) };
 }
 
-/** Every target's 3D pose at `time` (y up, turns in degrees); `gerak sample` reads it. */
-export const scene = (time: Time, events: Events) => {
-  const open = Math.max(0, Math.min(1, mouth(time, events))) * (1 - settle.of(time).progress);
+let pawAt = Number.NaN;
+let pawNow: ReturnType<typeof pawBones> = {};
+/** The paw chain's bones at `time`, solved once for the three bones that read it. */
+function pawOf(time: Time) {
+  if (time.progress !== pawAt) {
+    pawNow = pawBones(time);
+    pawAt = time.progress;
+  }
+  return pawNow;
+}
+
+const openAt = (time: Time, events: Events) =>
+  Math.max(0, Math.min(1, mouth(time, events))) * (1 - settle.of(time).progress);
+
+const target = { x: 0, y: 0.21, z: 0 };
+const duckAt = (time: Time) => Math.sin(Math.PI * span(450, 950).of(time, ease.sineOut).progress);
+
+const cameraAt = (time: Time): Pose3d => {
   const eye = orbit({
-    target: { x: 0, y: 0.21, z: 0 },
+    target,
     radius: 1.6,
     azimuth: mix(42, 26, pan.of(time, ease.sineInOut).progress),
     elevation: mix(20, 12, pan.of(time, ease.sineInOut).progress),
   });
-  const turn = face.of(time, ease.sineInOut).progress;
-  const duck = Math.sin(Math.PI * span(450, 950).of(time, ease.sineOut).progress);
-  const bodies = Object.fromEntries(
-    props.map((prop) => [prop.id, bodyPose3d(sim.pose(prop.id, time, events))]),
-  );
-  return {
-    camera: { ...eye, ...aim(eye, { x: 0, y: 0.21, z: 0 }) } satisfies Pose3d,
-    dragon: { rotationY: 12 * turn, y: -0.012 * duck } satisfies Pose3d,
-    bones: {
-      ...pawBones(time),
-      Neck: { rotationX: 10 * duck } satisfies Pose3d,
-      Head: headPose(time, open),
-      Jaw: { rotationX: 26 * open } satisfies Pose3d,
-      LeftWing: wingPose(time, 1),
-      RightWing: wingPose(time, -1),
-    },
-    block: bodies["block"] ?? {},
-    ball: bodies["ball"] ?? {},
-    cube: bodies["cube"] ?? {},
-    marble: bodies["marble"] ?? {},
-    tile: bodies["tile"] ?? {},
-  };
+  return { ...eye, ...aim(eye, target) };
 };
+
+const LIMITS = { jump: 0.1, turn: 30 } as const;
+
+const pawBone = (name: "LeftFrontUpLeg" | "LeftFrontElbow" | "LeftFrontLeg") =>
+  motion((time: Time): Pose3d => pawOf(time)[name] ?? {});
+
+const propAt = (id: string) => (time: Time, context: { events: Events }) =>
+  bodyPose3d(sim.pose(id, time, context.events));
+
+/** The scene: the camera, the dragonling, each moving bone and each prop as an object. */
+export default sceneBuilder({
+  name: "avatar-3d",
+  length: durationMs,
+  frame: { width: 1280, height: 720 },
+  cues,
+})
+  .element(object("camera"))
+  .motion(motion(cameraAt))
+  .limits(LIMITS)
+  .element(object("dragon"))
+  .motion(
+    motion(
+      (time: Time): Pose3d => ({
+        rotationY: 12 * face.of(time, ease.sineInOut).progress,
+        y: -0.012 * duckAt(time),
+      }),
+    ),
+  )
+  .limits(LIMITS)
+  .element(object("LeftFrontUpLeg"))
+  .motion(pawBone("LeftFrontUpLeg"))
+  .limits(LIMITS)
+  .element(object("LeftFrontElbow"))
+  .motion(pawBone("LeftFrontElbow"))
+  .limits(LIMITS)
+  .element(object("LeftFrontLeg"))
+  .motion(pawBone("LeftFrontLeg"))
+  .limits(LIMITS)
+  .element(object("Neck"))
+  .motion(motion((time: Time): Pose3d => ({ rotationX: 10 * duckAt(time) })))
+  .limits(LIMITS)
+  .element(object("Head"))
+  .motion((time: Time, context): Pose3d => headPose(time, openAt(time, context.events)))
+  .limits(LIMITS)
+  .element(object("Jaw"))
+  .motion((time: Time, context): Pose3d => ({ rotationX: 26 * openAt(time, context.events) }))
+  .limits(LIMITS)
+  .element(object("LeftWing"))
+  .motion(motion((time: Time): Pose3d => wingPose(time, 1)))
+  .limits(LIMITS)
+  .element(object("RightWing"))
+  .motion(motion((time: Time): Pose3d => wingPose(time, -1)))
+  .limits(LIMITS)
+  .element(object("block"))
+  .motion(propAt("block"))
+  .limits(LIMITS)
+  .element(object("ball"))
+  .motion(propAt("ball"))
+  .limits(LIMITS)
+  .element(object("cube"))
+  .motion(propAt("cube"))
+  .limits(LIMITS)
+  .element(object("marble"))
+  .motion(propAt("marble"))
+  .limits(LIMITS)
+  .element(object("tile"))
+  .motion(propAt("tile"));
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });

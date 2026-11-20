@@ -17,11 +17,24 @@ import {
   type BufferGeometry,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import type { Events, Pose3d, Time } from "@gerak/core";
 import { usePlayer } from "@gerak/react";
-import { applyPose3d } from "@gerak/three";
+import { compileScene, formatStageError, frame } from "@gerak/stage";
+import { bindScene3d } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import type { Shape3d } from "@gerak/physics";
-import { clock, cues, props, scene } from "./avatar-3d-scene";
+import piece, { clock, props } from "./avatar-3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+const signal = (time: Time, events: Events) => frame(scene, { time, events }).targets;
+
+function propMesh(meshes: Readonly<Record<string, Mesh>>, id: string): Mesh {
+  const mesh = meshes[id];
+  if (mesh === undefined) throw new Error(`No mesh for prop "${id}".`);
+  return mesh;
+}
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -54,7 +67,7 @@ function geometryOf(shape: Shape3d): BufferGeometry {
 
 /** Builds the stage, loads the dragonling, binds every target, and renders when a target is written; click replays. */
 export const Avatar3d: React.FC = () => {
-  const playing = usePlayer(scene, clock, cues);
+  const playing = usePlayer(signal, clock, scene.cues);
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const parent = host.current;
@@ -95,13 +108,7 @@ export const Avatar3d: React.FC = () => {
     stage.add(platform);
 
     const render = () => renderer.render(stage, camera);
-    const unsubscribe: (() => void)[] = [];
-    unsubscribe.push(
-      player.subscribe("camera", (pose) => {
-        applyPose3d(camera, pose);
-        render();
-      }),
-    );
+    const meshes: Record<string, Mesh> = {};
     for (const prop of props) {
       const geometry = geometryOf(prop.spec.shape);
       const material = new MeshStandardMaterial({
@@ -112,38 +119,16 @@ export const Avatar3d: React.FC = () => {
       const mesh = new Mesh(geometry, material);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
-      const spawn = { x: prop.spec.x, y: prop.spec.y, z: prop.spec.z };
-      mesh.position.set(spawn.x, spawn.y, spawn.z);
+      mesh.position.set(prop.spec.x, prop.spec.y, prop.spec.z);
       stage.add(mesh);
-      const id = prop.id;
-      switch (id) {
-        case "block":
-        case "ball":
-        case "cube":
-        case "marble":
-        case "tile":
-          unsubscribe.push(
-            player.subscribe(id, (pose) => {
-              applyPose3d(mesh, pose, spawn);
-              render();
-            }),
-          );
-          break;
-        default:
-          throw new Error(`No target for prop "${id}".`);
-      }
+      meshes[prop.id] = mesh;
     }
 
     const dragon = new Group();
     stage.add(dragon);
-    unsubscribe.push(
-      player.subscribe("dragon", (pose) => {
-        applyPose3d(dragon, pose);
-        render();
-      }),
-    );
 
     let live = true;
+    let unbind: (() => void) | undefined;
     new GLTFLoader().load(
       MODEL_URL,
       (gltf) => {
@@ -156,13 +141,35 @@ export const Avatar3d: React.FC = () => {
           }
         });
         dragon.add(gltf.scene);
-        unsubscribe.push(
-          player.subscribe("bones", (poses) => {
+        const poses: Record<string, Pose3d> = {};
+        const bone = (name: string) => (pose: Pose3d) => {
+          poses[name] = pose;
+        };
+        unbind = bindScene3d(
+          player,
+          scene,
+          {
+            camera,
+            dragon,
+            LeftFrontUpLeg: bone("LeftFrontUpLeg"),
+            LeftFrontElbow: bone("LeftFrontElbow"),
+            LeftFrontLeg: bone("LeftFrontLeg"),
+            Neck: bone("Neck"),
+            Head: bone("Head"),
+            Jaw: bone("Jaw"),
+            LeftWing: bone("LeftWing"),
+            RightWing: bone("RightWing"),
+            block: propMesh(meshes, "block"),
+            ball: propMesh(meshes, "ball"),
+            cube: propMesh(meshes, "cube"),
+            marble: propMesh(meshes, "marble"),
+            tile: propMesh(meshes, "tile"),
+          },
+          () => {
             applyBones(skeleton, poses);
             render();
-          }),
+          },
         );
-        render();
         markReady();
       },
       undefined,
@@ -172,7 +179,7 @@ export const Avatar3d: React.FC = () => {
     render();
     return () => {
       live = false;
-      for (const stop of unsubscribe) stop();
+      unbind?.();
       for (const item of disposables) item.dispose();
       renderer.dispose();
       renderer.domElement.remove();
