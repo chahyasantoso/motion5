@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, type Time } from "@gerak/core";
+import { atProgress, eventLog, liveAt, type Time } from "@gerak/core";
 import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
@@ -236,5 +236,37 @@ describe("step timing", () => {
     clean();
     expect(scenes).toBe(2);
     expect(writes).toBe(2);
+  });
+});
+
+describe("play over a long growing log", () => {
+  it("costs about the same per step with many events logged as with a few", () => {
+    const log = eventLog();
+    let now = 0;
+    const listeners = new Set<() => void>();
+    const driver = {
+      now: (): Time => liveAt(now),
+      events: () => log.events,
+      subscribe(listener: () => void) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    };
+    const player = play((_time, events) => ({ count: events.length }), driver);
+    const steps = (count: number): number => {
+      const started = performance.now();
+      for (let index = 0; index < count; index += 1) {
+        now += 1;
+        log.add({ name: "tick", at: now });
+        for (const listener of listeners) listener();
+      }
+      return performance.now() - started;
+    };
+    steps(500);
+    const early = Math.min(steps(500), steps(500), steps(500));
+    steps(60000);
+    const late = Math.min(steps(500), steps(500), steps(500));
+    expect(player.values.count).toBe(log.events.length);
+    expect(late).toBeLessThan(early * 4);
   });
 });

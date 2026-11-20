@@ -4,7 +4,7 @@ Read this page whole before writing a scene. It says how core works; each refere
 
 ## The model
 
-A scene is a pure function of time and events. Every frame asks it again; it keeps no state.
+A scene is a pure function of time and events. Every frame asks it again; it keeps no state. A motion answers the same to the same reads, so a renderer may skip a motion whose reads have not changed.
 
 ```text
 Time -> timing (span, lanes, loop) -> 0..1 progress -> curve (ease, envelope, path) -> pose -> combine
@@ -69,6 +69,7 @@ Events are `{ name, at, target, value? }`, oldest first. A scene never stores wh
 - `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives a scroll position that trails the page (a scroll beat's `smooth` uses it), and a [page mount](../../dom/docs/page.md) streams both from the live page.
 - `eventLog()` keeps a log that only grows: `add` puts an event in at its time and nothing in it is replaced, so a state reading its `events` again checks only its last folded event; any other list is checked whole. A page mount's recorder keeps one.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.
+- `watchClock(onUse, run)` tells `onUse` when what `run` works out can change with the clock alone: `stillMoving()` says `time` (a spring or ease on its way), and a `watchedTime` says `maybe` when its clock or progress is read. States, `springTo` and `easeTo` read the clock through `rawTime` and report only while on their way.
 - `tally` integrates held values over time. `velocity(signal, time, events)` reads speed; pass the scene's time, not an eased one.
 - Random is `seeded(seed)`, never `Math.random()`.
 

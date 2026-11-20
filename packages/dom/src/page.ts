@@ -934,8 +934,14 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
 
+  // Built again only when the page is measured again.
+  let boxesFor: RestReader | undefined;
+  let boxes: Readonly<Record<string, RestReader>> = {};
   const sceneSignal: Signal<StageValues> = (time, events) => {
-    const boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
+    if (boxesFor !== currentReader) {
+      boxesFor = currentReader;
+      boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
+    }
     const only = runOnly;
     const moves = new Map<string, Moves>();
     const ran = frameOf(stage, {
