@@ -38,7 +38,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   2D, and turns and scales are written whole. It also takes a writer, `(pose, visible) => void`, for anything that
   is not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
   (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). Every object of the piece needs an entry,
-  or it throws and names the object. Many like objects are one object each.
+  or it throws and names the object. Many like objects are one object each; a chain that adds them in a loop holds
+  its value as `let piece: SceneBuilder = sceneBuilder(...)`, since `.element` answers a narrower step each time.
 
 ## The principles in 3D
 
@@ -121,7 +122,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   was spawned and its turn, as a `Pose3d`; return it from the object's motion. Place its mesh at the body's spawn
   point and bind it with `bindScene3d`.
 - **The camera's rest:** `bindScene3d` takes an `Object3D`'s position when it binds as its rest, so a camera posed
-  by `orbit`, which answers absolute points, binds at the origin.
+  by `orbit`, which answers absolute points, binds at the origin, or through a writer
+  `(pose) => applyPose3d(camera, pose)`, which takes no rest.
 
 ## 2D over 3D
 
