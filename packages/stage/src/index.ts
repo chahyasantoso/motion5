@@ -45,6 +45,7 @@ export {
   sceneBuilder,
   stagger,
   stayWith,
+  travel,
   type BoundEachFields,
   type BoundFields,
   type CompileSceneOptions,
@@ -59,6 +60,7 @@ export {
   type StaggerBy,
   type StaggerFrom,
   type StaggerOptions,
+  type TravelOptions,
 } from "./author/scene-builder";
 export {
   NO_REST,

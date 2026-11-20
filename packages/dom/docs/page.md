@@ -39,6 +39,10 @@ Site CSS owns page layout; `mountPage` never alters layout geometry.
 
 `section(name, el(selector))` exposes `.top` and `.end` as scroll points (supporting `.plus(px)`, `.minus(px)` and `.reached`). Scroll and trigger beats register any referenced section onto the stage; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
 
+- **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero", { node: el("#hero .slot") })`) with no motions.
+- **`travel({ to: slot, arc? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size.
+- Elements animated by `mountPage` keep `transform` unset in site CSS so the pose-to-CSS writer owns transforms alone.
+
 ## Rests and measured lines
 
 `mountPage` temporarily clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`.

@@ -970,7 +970,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const remeasure = (): void => {
     if (!live) return;
     measure();
-    player.refresh();
+    if (!syncScroll()) player.refresh();
   };
 
   const onResize = (): void => remeasure();
