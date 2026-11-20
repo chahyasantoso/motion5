@@ -42,6 +42,9 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
 
 - yuzu without `smooth`, 60 wheel steps, script time: 16 ms against GSAP's 24 ms (32 ms with the browser path off);
   with the CPU slowed 6x, about 135 ms against 220 ms. With the committed `smooth` bottle, 58 ms against 24 ms.
+- Read from Chromium's own compositor frames while wheeling through yuzu's story section, the progress bar sits
+  within 0.7 px of the scroll position (mean 0.3 px), with or without a 40 ms task every 100 ms. Run on the main
+  thread, it trails by about 22 px on average (GSAP's: about 35 px), and the task did not widen either gap.
 - yuzu's story progress and steps play on the scroll timeline, and its feature and gallery cards on the document
   timeline; the bottle (`travel`, `smooth`) and the aura (`bind`, springs) stay in the engine.
 - Every piece samples the same as before; headless frames take no part in this.
