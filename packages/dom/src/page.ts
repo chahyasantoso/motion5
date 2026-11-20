@@ -791,16 +791,14 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   let live = true;
   const listeners = new Set<() => void>();
   let lastScrollY = readScrollY();
-  let muted = false;
 
   const notify = (): void => {
-    if (muted) return;
     for (const listener of [...listeners]) listener();
   };
 
+  // An input only logs and asks for a frame; the frame renders once, so many inputs in one frame cost one render.
   const recorder = eventRecorder(elapsed, (at) => {
     activeUntil = Math.max(activeUntil, at + settleMs);
-    notify();
     schedule();
   });
 
@@ -815,8 +813,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const tick = (): void => {
     frameHandle = undefined;
     if (!live) return;
-    const scrolled = syncScroll();
-    if (!scrolled) notify();
+    syncScroll();
+    notify();
     if (live && (ambient || elapsed() < activeUntil)) schedule();
   };
 
@@ -826,11 +824,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     }
   }
 
-  if (lastScrollY !== 0) {
-    muted = true;
-    recorder.sample(INPUT_EVENTS.scroll, lastScrollY);
-    muted = false;
-  }
+  if (lastScrollY !== 0) recorder.sample(INPUT_EVENTS.scroll, lastScrollY);
 
   const unwatch: (() => void)[] = [];
   for (const target of targets) {
@@ -862,9 +856,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     if (!(vp.width > 0 && vp.height > 0)) return;
     const x = clamp(event.clientX / vp.width, 0, 1);
     const y = clamp(event.clientY / vp.height, 0, 1);
-    muted = true;
     recorder.sample(INPUT_EVENTS.pointerX, x);
-    muted = false;
     recorder.sample(INPUT_EVENTS.pointerY, y);
   };
   const pointerTarget = eventTargetOf(root, doc);
@@ -970,6 +962,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const remeasure = (): void => {
     if (!live) return;
     measure();
+    syncScroll();
     player.refresh();
   };
 

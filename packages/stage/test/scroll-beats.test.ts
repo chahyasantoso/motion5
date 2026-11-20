@@ -156,6 +156,33 @@ describe("scroll beats", () => {
     expect(poseAt(chain, "card", 500, scrollEvents)?.x).toBe(100);
   });
 
+  it("trails the scroll with a spring when smooth, and reads the position itself headless", () => {
+    const smooth = beat("smooth-scroll", {
+      scroll: [scrollPoint(0), scrollPoint(400)],
+      smooth: true,
+    });
+    const scene = sceneBuilder({ length: 3000 }).element(makeCard()).motion(slideX(100).in(smooth));
+    const jump: Events = [{ name: INPUT_EVENTS.scroll, at: 100, value: 400 }];
+    const stage = compiled(scene);
+    const xAt = (ms: number) =>
+      poseOf(frame(stage, { time: at(ms, 3000), events: jump }).targets["card"])?.x ?? 0;
+    expect(xAt(100)).toBe(0);
+    const mid = xAt(200);
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(100);
+    expect(xAt(2000)).toBe(100);
+    const untimed = poseOf(
+      frame(stage, { time: { progress: 0, clock: { kind: "untimed" } }, events: jump }).targets[
+        "card"
+      ],
+    );
+    expect(untimed?.x).toBe(100);
+    expect(() =>
+      // @ts-expect-error smooth takes true or springTo options
+      beat("bad", { scroll: [scrollPoint(0), scrollPoint(1)], smooth: 3 }),
+    ).toThrow(/smooth/);
+  });
+
   it("applies ease, supports take, and works with stagger and springTo", () => {
     const eased = sceneBuilder({ length: 2000 })
       .element(makeCard())

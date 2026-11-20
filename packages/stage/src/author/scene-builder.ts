@@ -1,11 +1,14 @@
 import {
   POSE_2D_NUMBERS,
   VALUE_FIELDS,
+  arch,
   combine,
   elapsedOf,
   lanes,
   loop,
+  mix,
   motion,
+  scroll,
   timeAt,
   unreachable,
   withProgress,
@@ -20,6 +23,7 @@ import {
   type Span,
   type Time,
 } from "@gerak/core";
+import { boxInViewport } from "../render/placement";
 import {
   isInputBeat,
   sectionsOfPoint,
@@ -126,6 +130,7 @@ type MotionStep = {
   readonly joins: "layer" | "take";
   readonly loops: boolean;
   readonly reads: readonly string[];
+  readonly travels: boolean;
 };
 
 type Step = MotionStep | { readonly kind: "modify"; readonly principle: Principle };
@@ -157,7 +162,9 @@ const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], limits: {} });
 let nextSceneId = 0;
 const OWNERS = new WeakMap<Element, SceneOwner>();
 const READS = new WeakMap<object, readonly string[]>();
+const TRAVEL_TARGETS = new WeakMap<object, readonly Element[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
+const BELOW_POSE = new WeakMap<MotionContext, Pose2d>();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 
 interface MotionBody {
@@ -189,9 +196,10 @@ function need(context: MotionContext | undefined, who: string): MotionContext {
   return context;
 }
 
-function reading(
+function withMeta(
   base: Motion<Pose2d, MotionContext>,
   reads: readonly string[],
+  targets: readonly Element[],
 ): Motion<Pose2d, MotionContext> {
   const wrapped = Object.assign((time: Time, context?: MotionContext) => base(time, context), {
     span: base.span,
@@ -199,15 +207,16 @@ function reading(
     period: base.period,
     joins: base.joins,
     isAmbient: base.isAmbient,
-    in: (window: InWindow, ease?: Ease) => reading(base.in(window, ease), reads),
-    loop: (ms: number) => reading(base.loop(ms), reads),
-    take: () => reading(base.take(), reads),
-    ambient: () => reading(base.ambient(), reads),
+    in: (window: InWindow, ease?: Ease) => withMeta(base.in(window, ease), reads, targets),
+    loop: (ms: number) => withMeta(base.loop(ms), reads, targets),
+    take: () => withMeta(base.take(), reads, targets),
+    ambient: () => withMeta(base.ambient(), reads, targets),
   });
   const body: unknown = Reflect.get(base, MOTION_BODY);
   if (body !== undefined) Object.defineProperty(wrapped, MOTION_BODY, { value: body });
   Object.freeze(wrapped);
-  READS.set(wrapped, reads);
+  if (reads.length > 0) READS.set(wrapped, reads);
+  if (targets.length > 0) TRAVEL_TARGETS.set(wrapped, targets);
   return wrapped;
 }
 
@@ -319,6 +328,7 @@ export function stagger(
   };
   const byIndex = new Map<number, Lanes>();
   const byLine = new Map<string, Lanes>();
+  const byLineList = new WeakMap<readonly number[], Lanes>();
   const lanesOf = (count: number, context: MotionContext): Lanes => {
     switch (by) {
       case "index": {
@@ -329,18 +339,21 @@ export function stagger(
       }
       case "line": {
         const raw = PART_LINES.get(context);
+        const known = raw === undefined ? undefined : byLineList.get(raw);
+        if (known !== undefined && raw?.length === count) return known;
         const lines =
           raw !== undefined && raw.length === count
             ? raw
             : Array<number>(count).fill(context.line ?? 0);
         const key = `${count}:${lines.join(",")}`;
-        const held = byLine.get(key);
-        if (held !== undefined) return held;
-        if (byLine.size >= 16) byLine.clear();
-        const built = lanes(Array<number>(count).fill(1), options.spread, {
-          by: orderLines(lines, from),
-        });
-        byLine.set(key, built);
+        const built =
+          byLine.get(key) ??
+          lanes(Array<number>(count).fill(1), options.spread, { by: orderLines(lines, from) });
+        if (!byLine.has(key)) {
+          if (byLine.size >= 16) byLine.clear();
+          byLine.set(key, built);
+        }
+        if (raw === lines) byLineList.set(raw, built);
         return built;
       }
       default:
@@ -376,11 +389,12 @@ export function stagger(
   const timed = outer === undefined ? play : play.in(outer);
   const taken = first.joins === "take" ? timed.take() : timed;
   const marked = first.isAmbient || first.period !== undefined ? taken.ambient() : taken;
-  const reads = READS.get(first);
-  return reads === undefined ? marked : reading(marked, reads);
+  const reads = READS.get(first) ?? [];
+  const targets = TRAVEL_TARGETS.get(first) ?? [];
+  return reads.length === 0 && targets.length === 0 ? marked : withMeta(marked, reads, targets);
 }
 
-function travel(before: Pose2d, now: Pose2d): Pose2d {
+function poseDelta(before: Pose2d, now: Pose2d): Pose2d {
   const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
   for (const key of POSE_2D_NUMBERS) {
     const was = before[key];
@@ -414,12 +428,88 @@ export function stayWith(element: Element): Motion<Pose2d, MotionContext> {
     const here = need(context, "stayWith");
     const start = here.span?.from ?? 0;
     const now = start + (elapsedOf(time.clock) ?? 0);
-    return travel(
+    return poseDelta(
       here.read(element, { time: timeAt(here.time, start), ...indexOf(here) }),
       here.read(element, { time: timeAt(here.time, now), ...indexOf(here) }),
     );
   });
-  return reading(base, [element.name]);
+  return withMeta(base, [element.name], []);
+}
+
+/** Options of `travel`: target slot element and optional perpendicular arc bend in px. */
+export interface TravelOptions {
+  readonly to: Element;
+  /** Perpendicular bow at mid-travel in px, 0 at both ends (default 0). */
+  readonly arc?: number | undefined;
+}
+
+function isElement(value: unknown): value is Element {
+  if (typeof value !== "object" || value === null) return false;
+  const kind: unknown = Reflect.get(value, "kind");
+  const name: unknown = Reflect.get(value, "name");
+  const opts: unknown = Reflect.get(value, "options");
+  return (
+    (kind === "box" ||
+      kind === "shape" ||
+      kind === "text" ||
+      kind === "many" ||
+      kind === "group") &&
+    typeof name === "string" &&
+    name !== "" &&
+    typeof opts === "object" &&
+    opts !== null
+  );
+}
+
+/** Moves an element from its current pose to `options.to`'s measured box over its beat. */
+export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
+  if (typeof options !== "object" || options === null || !isElement(options.to))
+    throw new TypeError("travel: `to` must be a target element.");
+  const { to, arc: bend = 0 } = options;
+  if (!Number.isFinite(bend))
+    throw new RangeError(`travel: \`arc\` must be a finite number of px, not ${bend}.`);
+  const base = motion((time, context?: MotionContext): Pose2d => {
+    const here = need(context, "travel");
+    const prev = BELOW_POSE.get(here);
+    const p = time.progress;
+    if (p === 0) return {};
+    const ownName = here.index === undefined ? here.element : `${here.element}.${here.index}`;
+    if (!here.rest.has(ownName) || !here.rest.has(to.name)) return {};
+    const scrollY = scroll.y(here.time, here.events);
+    const own = boxInViewport(here.rest.get(ownName), scrollY);
+    const target = boxInViewport(here.rest.get(to.name), scrollY);
+    const fromX = prev?.x ?? 0;
+    const fromY = prev?.y ?? 0;
+    const toX = target.x - own.x;
+    const toY = target.y - own.y;
+    let x = p === 1 ? toX : mix(fromX, toX, p);
+    let y = p === 1 ? toY : mix(fromY, toY, p);
+    if (bend !== 0 && p !== 1) {
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const length = Math.hypot(dx, dy);
+      if (length > 0) {
+        const push = bend * arch(p);
+        x -= (dy / length) * push;
+        y += (dx / length) * push;
+      }
+    }
+    if (!(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)) {
+      return { x, y };
+    }
+    const toScaleX = target.width / own.width;
+    const toScaleY = target.height / own.height;
+    const uniform = prev?.scale ?? 1;
+    const fromScaleX = uniform * (prev?.scaleX ?? 1);
+    const fromScaleY = uniform * (prev?.scaleY ?? 1);
+    return {
+      x,
+      y,
+      scaleX: p === 1 ? toScaleX : mix(fromScaleX, toScaleX, p),
+      scaleY: p === 1 ? toScaleY : mix(fromScaleY, toScaleY, p),
+    };
+  });
+  return withMeta(base, [], [to]);
 }
 
 function indexOf(context: MotionContext): { readonly index?: number } {
@@ -760,6 +850,23 @@ function replacing(below: Pose2d, pose: Pose2d): Pose2d {
   return out;
 }
 
+function joinTravel(below: Pose2d, pose: Pose2d): Pose2d {
+  const moves = pose.x !== undefined || pose.y !== undefined;
+  const sizes = pose.scaleX !== undefined || pose.scaleY !== undefined;
+  if (!moves && !sizes) return below;
+  const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = { ...below };
+  if (pose.x !== undefined) out.x = pose.x;
+  if (pose.y !== undefined) out.y = pose.y;
+  if (sizes) {
+    delete out.scale;
+    delete out.scaleX;
+    delete out.scaleY;
+    if (pose.scaleX !== undefined && pose.scaleX !== 1) out.scaleX = pose.scaleX;
+    if (pose.scaleY !== undefined && pose.scaleY !== 1) out.scaleY = pose.scaleY;
+  }
+  return out;
+}
+
 function stackOf(
   plan: Plan,
   env: Env,
@@ -805,10 +912,12 @@ function stackOf(
             ...(line === undefined ? {} : { line }),
           };
           if (partLines !== undefined) PART_LINES.set(context, partLines);
+          const prev = below(time, events);
+          if (step.travels) BELOW_POSE.set(context, prev);
           const pose = step.run(time, context);
           switch (step.joins) {
             case "layer":
-              return combine([below(time, events), pose]);
+              return step.travels ? joinTravel(prev, pose) : combine([prev, pose]);
             case "take": {
               const active =
                 step.window !== undefined &&
@@ -816,7 +925,8 @@ function stackOf(
                 typeof step.window.active === "function"
                   ? step.window.active(time, context)
                   : (elapsedOf(time.clock) ?? 0) >= (step.span?.from ?? 0);
-              return active ? replacing(below(time, events), pose) : below(time, events);
+              if (!active) return prev;
+              return step.travels ? joinTravel(prev, pose) : replacing(prev, pose);
             }
             default:
               return unreachable(step.joins);
@@ -952,6 +1062,7 @@ function step(state: State): ElementStep {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
         const sections = new Map(state.sections);
+        const travelTargets: Element[] = [];
         const added = motions.map((run): MotionStep => {
           const traits = traitsOf(run);
           const beat = beatOf(traits.span);
@@ -965,11 +1076,35 @@ function step(state: State): ElementStep {
             throw new TypeError(
               "stayWith: use a clock beat or no window; scroll and trigger beats have no start time in ms.",
             );
-          return { kind: "motion", run, ...traits, reads };
+          const targets = TRAVEL_TARGETS.get(run) ?? [];
+          for (const target of targets) travelTargets.push(target);
+          return { kind: "motion", run, ...traits, reads, travels: targets.length > 0 };
         });
+        const elements = new Map(state.elements);
+        const newTargets = new Map<string, Element>();
+        for (const target of travelTargets) {
+          validateRegistration(elements, sections, state.owner, target, newTargets);
+        }
         const [, entry] = entryOf(state);
+        const base = changed(state, { steps: [...entry.steps, ...added] });
+        let order = base.order;
+        let entries = base.entries;
+        if (newTargets.size > 0) {
+          const nextOrder = [...order];
+          const nextEntries = new Map(entries);
+          for (const [name, addedElement] of newTargets) {
+            elements.set(name, addedElement);
+            if (!nextOrder.includes(name)) nextOrder.push(name);
+            if (!nextEntries.has(name)) nextEntries.set(name, NO_ENTRY);
+          }
+          order = nextOrder;
+          entries = nextEntries;
+        }
         const next = {
-          ...changed(state, { steps: [...entry.steps, ...added] }),
+          ...base,
+          elements,
+          order,
+          entries,
           beats,
           inputBeats,
           sections,
@@ -979,6 +1114,7 @@ function step(state: State): ElementStep {
           throw new RangeError(
             `sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`,
           );
+        for (const addedElement of newTargets.values()) OWNERS.set(addedElement, state.owner);
         return step(next);
       },
       modify: (principle: Principle) => {

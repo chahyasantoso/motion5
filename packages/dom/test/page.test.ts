@@ -208,6 +208,8 @@ describe("mountPage", () => {
     ms = 100;
     scrollY = 200;
     scrollTarget.fire();
+    expect(card.style.transform).toBe("");
+    frames.tick(100);
     expect(card.style.transform).toBe("translate3d(40px, 0px, 0px)");
 
     ms = 150;
@@ -247,6 +249,7 @@ describe("mountPage", () => {
     const clockOut = new FakeNode("clock");
     const root = new FakeRoot([meter, clockOut]);
     let ms = 0;
+    const frames = fakeFrames();
     const mounted = mountPage(
       sceneBuilder()
         .element(box("meter", { node: el("#meter") }))
@@ -256,12 +259,44 @@ describe("mountPage", () => {
             node: el("#clock"),
           }),
         ),
-      { root, frames: fakeFrames(), clock: () => ms },
+      { root, frames, clock: () => ms },
     );
     ms = 250;
     mounted.send(INPUT_EVENTS.scroll, 75);
+    frames.tick(250);
     expect(meter.style.transform).toBe("translate3d(75px, 0px, 0px)");
     expect(clockOut.textContent).toBe("250ms");
+    mounted.dispose();
+  });
+
+  it("renders once per frame however many inputs arrive in it", () => {
+    const meter = new FakeNode("meter");
+    const root = new FakeRoot([meter]);
+    const frames = fakeFrames();
+    let runs = 0;
+    let ms = 0;
+    const mounted = mountPage(
+      sceneBuilder()
+        .element(box("meter", { node: el("#meter") }))
+        .motion(
+          bind({
+            x: (t, e) => {
+              runs += 1;
+              return scroll.y(t, e) + pointer.x(t, e);
+            },
+          }),
+        ),
+      { root, frames, clock: () => ms, viewport: () => ({ width: 100, height: 100 }) },
+    );
+    const before = runs;
+    ms = 16;
+    mounted.send(INPUT_EVENTS.scroll, 10);
+    mounted.send(INPUT_EVENTS.scroll, 20);
+    root.fire("pointermove", { clientX: 50, clientY: 50 });
+    expect(runs).toBe(before);
+    frames.tick(16);
+    expect(runs).toBe(before + 1);
+    expect(meter.style.transform).toBe("translate3d(20.5px, 0px, 0px)");
     mounted.dispose();
   });
 
@@ -361,5 +396,45 @@ describe("mountPage", () => {
       ),
     ).toThrow(/"absent".*#absent/);
     expect(failSolo.textContent).toBe("");
+  });
+
+  it("syncs changed scrollY inside remeasure without duplicating updates", () => {
+    const cardNode = new FakeNode("card");
+    const root = new FakeRoot([cardNode]);
+    let scrollY = 0;
+    const listeners = new Set<() => void>();
+    const scrollTarget = {
+      get scrollY() {
+        return scrollY;
+      },
+      addEventListener(_type: string, listener: () => void) {
+        listeners.add(listener);
+      },
+      removeEventListener(_type: string, listener: () => void) {
+        listeners.delete(listener);
+      },
+    };
+    const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(200)] });
+    let sceneCalls = 0;
+    const mounted = mountPage(
+      sceneBuilder()
+        .element(box("card", { node: el("#card") }))
+        .motion(
+          motion((t) => {
+            sceneCalls += 1;
+            return { x: 100 * t.progress };
+          }).in(sb),
+        ),
+      { root, scrollTarget, frames: fakeFrames(), clock: () => 0 },
+    );
+
+    expect(cardNode.style.transform).toBe("");
+    const callsBefore = sceneCalls;
+    scrollY = 100;
+    mounted.remeasure();
+    expect(sceneCalls).toBe(callsBefore + 1);
+    expect(cardNode.style.transform).toBe("translate3d(50px, 0px, 0px)");
+    expect(mounted.events().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
+    mounted.dispose();
   });
 });

@@ -208,11 +208,48 @@ const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const EMPTIED = new WeakSet<RenderStyle>();
+const LAST_WRITTEN = new WeakMap<
+  RenderStyle,
+  { readonly value: Pose2d; readonly length: number }
+>();
+
+function sameCustom(
+  a: Readonly<Record<string, number>> | undefined,
+  b: Readonly<Record<string, number>> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => Object.hasOwn(b, key) && Object.is(a[key], b[key]));
+}
+
+function samePose(a: Pose2d, b: Pose2d): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  for (const key of keys) {
+    if (!Object.hasOwn(b, key)) return false;
+    const left: unknown = Reflect.get(a, key);
+    const right: unknown = Reflect.get(b, key);
+    if (key === "custom") {
+      if (!sameCustom(a.custom, b.custom)) return false;
+    } else if (!Object.is(left, right)) return false;
+  }
+  return true;
+}
 
 // A field or custom name the value leaves out is cleared, so the page's own style shows again.
-/** Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed. */
+/** Writes a value, each custom number as `--<name>`; an unmeasured stroke is left undashed.
+ * A value equal to the last one written to that style, at that length, writes nothing. */
 export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
   const style = target.style;
+  const measured = target.getTotalLength?.() ?? length ?? 0;
+  const last = LAST_WRITTEN.get(style);
+  if (last !== undefined && last.length === measured && samePose(last.value, value)) return;
+  const copy: Pose2d =
+    value.custom === undefined ? { ...value } : { ...value, custom: { ...value.custom } };
+  LAST_WRITTEN.set(style, { value: copy, length: measured });
   style.transform = cssTransform(value);
   style.opacity = value.opacity === undefined ? "" : String(value.opacity);
   // Paint order steps, so a layer between two whole numbers paints as the nearer one.
@@ -237,7 +274,6 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
       : value.clipRadius === undefined
         ? ""
         : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
-  const measured = target.getTotalLength?.() ?? length ?? 0;
   const stroked = value.drawn !== undefined || value.drawnFrom !== undefined;
   if (stroked && measured > 0) {
     const dash = cssDash(value.drawnFrom ?? 0, value.drawn ?? 1, measured);

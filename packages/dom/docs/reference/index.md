@@ -1,7 +1,7 @@
 # @gerak/dom: index
 
 - **`applyPath`** `(target: RenderTarget, cubics: readonly Cubic2d[]): void`: Sets a path element's `d` to the cubic segments.
-- **`applyValue`** `(target: RenderTarget, value: Pose2d, length?: number): void`: Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed.
+- **`applyValue`** `(target: RenderTarget, value: Pose2d, length?: number): void`: Writes a value, each custom number as `--<name>`; an unmeasured stroke is left undashed. A value equal to the last one written to that style, at that length, writes nothing.
 - **`cssClip`** `(x: number, y: number, radius: number): string`: A CSS clip path showing what lies inside a circle `radius` px round, centred `x`, `y` px from the top left.
 - **`cssDash`** `(from: number, to: number, length: number): { readonly strokeDasharray: string; readonly strokeDashoffset: number; }`: The stroke dash that shows the stretch from share `from` to share `to` of a path `length` long.
 - **`cssOrigin`** `(anchor: Anchor): string`: The CSS transform origin an anchor names.
