@@ -27,8 +27,17 @@ import {
   type SceneBuilder,
   type Stage,
   type Moves,
+  type TriggerBeat,
 } from "@gerak/stage";
 import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
+import {
+  sampleNear,
+  scrollTracks,
+  trackKeyframes,
+  triggerTracks,
+  type Track,
+  type TriggerTrack,
+} from "./compositor";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { applyPath, applyValue, type RenderStyle } from "./render";
@@ -155,6 +164,13 @@ interface BoundTarget {
   readonly node: PageElement;
   readonly items: readonly PageElement[];
   readonly restore?: (() => void) | undefined;
+}
+
+/** The animations one trigger beat steers, and which way they last ran. */
+interface TriggerRun {
+  readonly beat: TriggerBeat;
+  readonly animations: readonly Animation[];
+  heading: -1 | 0 | 1 | undefined;
 }
 
 interface RawRect {
@@ -503,6 +519,12 @@ function boxForNode(
 
 // Tests set this to run the whole scene on every frame, to compare with frames run for a cause.
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
+// Tests set this to keep every element in the engine, to compare with what the browser plays.
+const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
+// The page tools set this while they hold the clock; every element stays in the engine, so what they read
+// is the pose `frame()` gives, with no browser frame to wait for.
+const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
+const TRIGGER_SLACK_MS = 34;
 
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
@@ -808,6 +830,12 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   let frameMoves = new Map<string, Moves>();
   let frameOnly: ReadonlySet<string> | undefined;
   let runOnly: ReadonlySet<string> | undefined;
+  // The elements the engine runs while the browser plays the rest; undefined when it plays none.
+  let engineOnly: ReadonlySet<string> | undefined;
+  let handed = new Map<string, Animation[]>();
+  let triggerRuns: TriggerRun[] = [];
+  // Set once the hand-off is defined below; a frame before then has no trigger to follow.
+  let syncTriggers = (): void => undefined;
   const lastMoves = (): ReadonlyMap<string, Moves> => {
     if (frameOnly === undefined) return frameMoves;
     const merged = new Map(earlierMoves);
@@ -861,6 +889,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       fresh || wholeNext || hasReadout || Reflect.get(globalThis, CLOCK_FRAMES_OFF) === true;
     fresh = false;
     if (whole) {
+      syncTriggers();
       runOnly = undefined;
       notify();
     } else {
@@ -942,7 +971,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       boxesFor = currentReader;
       boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
     }
-    const only = runOnly;
+    const only = runOnly ?? engineOnly;
     const moves = new Map<string, Moves>();
     const ran = frameOf(stage, {
       time,
@@ -994,7 +1023,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
-    if (runOnly !== undefined && !runOnly.has(member.name)) {
+    const ran = runOnly ?? engineOnly;
+    if (ran !== undefined && !ran.has(member.name)) {
       // Presence follows the clock, so it is applied on every frame, run or not.
       const shown = lastFrame?.visible[member.name] ?? true;
       if (member.kind === "list") for (const item of target.items) applyVisibility(item, shown);
@@ -1038,11 +1068,165 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     player.subscribe(target.member.name, (value) => bindTarget(target, value));
   }
 
+  // Scroll-driven elements play on a scroll timeline, trigger-driven ones on the document timeline
+  // steered by their beat; the engine runs the rest.
+  const release = (): void => {
+    for (const animations of handed.values())
+      for (const animation of animations) animation.cancel();
+    handed = new Map();
+    triggerRuns = [];
+    engineOnly = undefined;
+  };
+  syncTriggers = (): void => {
+    if (triggerRuns.length === 0) return;
+    const time = liveAt(elapsed());
+    const context = { events: recorder.log, rest: currentReader };
+    for (const run of triggerRuns) {
+      const { beat } = run;
+      const heading = beat.heading(time, context);
+      const at = beat.of(time, undefined, context).progress * beat.ms;
+      // A running animation is left alone while it is where the beat says, within two frames.
+      const playing = run.animations[0]?.currentTime;
+      const near = typeof playing === "number" && Math.abs(playing - at) <= TRIGGER_SLACK_MS;
+      if (heading !== 0 && heading === run.heading && near) continue;
+      run.heading = heading;
+      for (const animation of run.animations) {
+        animation.currentTime = at;
+        if (heading === 0) animation.pause();
+        else {
+          animation.playbackRate = heading;
+          animation.play();
+        }
+      }
+    }
+  };
+  const nodesOf = (target: BoundTarget): readonly PageElement[] =>
+    target.member.kind === "list" ? target.items : [target.node];
+  const handOff = (): void => {
+    release();
+    if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
+    if (Reflect.get(globalThis, HELD_CLOCK) === true) return;
+    const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
+    const source = doc?.documentElement;
+    if (typeof Timeline !== "function" || !isDomElement(source)) return;
+    if (scrollTarget === undefined || scrollTarget !== doc?.defaultView) return;
+    const maxScroll = source.scrollHeight - source.clientHeight;
+    const names = new Set<string>();
+    for (const target of targets) {
+      const { member } = target;
+      if (member.on !== undefined || member.expect === "ambient") continue;
+      if (!nodesOf(target).every(isDomElement)) continue;
+      switch (member.kind) {
+        case "actor":
+          if (member.content.kind === "readout" || member.content.kind === "morph") continue;
+          break;
+        case "list":
+          if (member.items.some((item) => item.kind === "morph")) continue;
+          break;
+        case "group":
+          break;
+        default:
+          unreachable(member);
+      }
+      names.add(member.name);
+    }
+    if (names.size === 0) return;
+    const reader = currentReader;
+    const input = {
+      boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
+      lines: currentLines,
+      rest: reader,
+      names,
+    };
+    let scrolled: ReadonlyMap<string, Track> = new Map();
+    let triggered: ReadonlyMap<string, TriggerTrack> = new Map();
+    try {
+      scrolled = maxScroll > 0 ? scrollTracks(stage, input, maxScroll) : new Map();
+      const left = new Set([...names].filter((name) => !scrolled.has(name)));
+      triggered = triggerTracks(stage, { ...input, names: left });
+    } catch {
+      // A motion that throws at a place the page has not reached stays the engine's to report.
+      return;
+    }
+    const next = new Map<string, Animation[]>();
+    const play = (
+      name: string,
+      track: Track,
+      at: number,
+      animate: (node: Element, keyframes: Keyframe[]) => Animation,
+      length: number,
+    ): Animation[] => {
+      const target = byName.get(name);
+      if (target === undefined) return [];
+      const nodes = nodesOf(target);
+      const animations: Animation[] = [];
+      track.parts.forEach((samples, index) => {
+        const node = nodes[index];
+        if (node === undefined || !isDomElement(node)) return;
+        const near = sampleNear(samples, at);
+        if (near !== undefined)
+          applyValue(node, {
+            ...near.fields,
+            ...(track.anchor === undefined ? {} : { anchor: track.anchor }),
+          });
+        const keyframes = trackKeyframes(samples, length);
+        if (keyframes.length > 0) animations.push(animate(node, keyframes));
+      });
+      next.set(name, animations);
+      return animations;
+    };
+
+    const timeline: unknown =
+      scrolled.size > 0 ? Reflect.construct(Timeline, [{ source, axis: "block" }]) : undefined;
+    if (timeline instanceof AnimationTimeline) {
+      const y = readScrollY();
+      for (const [name, track] of scrolled)
+        play(
+          name,
+          track,
+          y,
+          (node, keyframes) => node.animate(keyframes, { timeline, fill: "both" }),
+          maxScroll,
+        );
+    }
+    const runs = new Map<TriggerBeat, TriggerRun>();
+    for (const [name, track] of triggered) {
+      const { beat } = track;
+      const animations = play(
+        name,
+        track,
+        0,
+        (node, keyframes) => {
+          const animation = node.animate(keyframes, {
+            duration: beat.ms,
+            fill: "both",
+            easing: "linear",
+          });
+          animation.pause();
+          return animation;
+        },
+        beat.ms,
+      );
+      const run = runs.get(beat) ?? { beat, animations: [], heading: undefined };
+      runs.set(beat, { ...run, animations: [...run.animations, ...animations] });
+    }
+    triggerRuns = [...runs.values()];
+    if (next.size === 0) return;
+    handed = next;
+    engineOnly = new Set(
+      stage.members.map((member) => member.name).filter((name) => !handed.has(name)),
+    );
+    syncTriggers();
+  };
+  handOff();
+
   schedule();
 
   const remeasure = (): void => {
     if (!live) return;
+    release();
     measure();
+    handOff();
     syncScroll();
     player.refresh();
   };
@@ -1108,6 +1292,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       observer?.disconnect();
       fonts?.removeEventListener("loadingdone", fontsLoaded);
       for (const stop of unwatch) stop();
+      release();
       recorder.dispose();
       player.dispose();
       listeners.clear();

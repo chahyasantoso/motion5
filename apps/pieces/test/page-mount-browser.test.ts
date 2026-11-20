@@ -136,14 +136,20 @@ describe("mountPage in the browser", () => {
         const scrolled = await page.evaluate(() => {
           const card = document.querySelector<HTMLElement>("#card");
           const spans = [...document.querySelectorAll<HTMLElement>("#headline span")];
+          // These may play on the browser's scroll timeline, so their drawn transforms are read.
+          const matrixOf = (node: HTMLElement | null) => {
+            const drawn = node === null ? "none" : getComputedStyle(node).transform;
+            return new DOMMatrix(drawn === "none" ? "" : drawn);
+          };
+          const matrix = matrixOf(card);
           return {
-            cardTransform: card?.style.transform ?? "",
-            ys: spans.map((span) => span.style.transform),
+            card: { x: matrix.m41, y: matrix.m42, plain: matrix.is2D && matrix.m11 === 1 },
+            ys: spans.map((span) => matrixOf(span).m42),
           };
         });
-        expect(scrolled.cardTransform).toBe("translate3d(50px, 0px, 0px)");
-        expect(scrolled.ys[0]).toBe("");
-        expect(scrolled.ys[4]).not.toBe("");
+        expect(scrolled.card).toEqual({ x: 50, y: 0, plain: true });
+        expect(scrolled.ys[0]).toBe(0);
+        expect(scrolled.ys[4]).not.toBe(0);
 
         await page.evaluate(() => {
           const wrap = document.querySelector<HTMLElement>("#headline-wrap");

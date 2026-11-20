@@ -34,6 +34,30 @@ A page mount runs one live clock (`liveAt`) feeding scroll, pointer and watched 
 
 Headless tools advance scroll via `cues` or `npx gerak frames ... --action scroll:px@ms`.
 
+## Motion the browser plays
+
+On mount and on each remeasure, `mountPage` hands Chromium the elements whose motion it can work out ahead of time, as
+Web Animations; Chromium plays animations of `transform` and `opacity` on its compositor thread, so they keep up with
+the scroll while the page's script is busy. The scene does not change, and nothing turns this on.
+
+- **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one
+  `ScrollTimeline` over the document's whole scroll range.
+- **Trigger-driven:** every motion on the element plays in one trigger beat, and its pose before the trigger fires
+  equals its pose at the start. It plays on the document timeline; on each input the mount asks the beat which way it
+  runs and how far it has come, so `reverse`, `stay` and `replay` stay the beat's to decide.
+- Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed
+  `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock,
+  `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modify`, `.show` or `.ambient()` keeps it in
+  the engine, as does a `smooth` scroll beat.
+- The mount samples each element's pose from `frame()` and adds samples where straight lines between them miss by
+  more than 0.25 px, 0.1 degree, 0.001 scale or 0.005 opacity; an element that fails a check on any sample stays in
+  the engine.
+- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine, and so it
+  does while the page tools hold the clock: what they read is then the pose `frame()` gives, with no browser frame
+  to wait for.
+- `frame(stage, input)` stays the one answer to a pose: the browser plays what it gives, and headless tools never
+  use the browser.
+
 ## Sections and CSS layout
 
 Site CSS owns page layout; `mountPage` never alters layout geometry.

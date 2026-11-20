@@ -137,10 +137,12 @@ describe("section edges in the browser", () => {
                 domEnd: rect.bottom + scrollY,
               };
             }
+            // The badge may play on the browser's scroll timeline, so its drawn transform is read.
             const badge = document.querySelector("#badge");
+            const drawn = badge === null ? "none" : getComputedStyle(badge).transform;
             return {
               edges: out,
-              badgeTransform: badge instanceof HTMLElement ? badge.style.transform : "",
+              badgeX: new DOMMatrix(drawn === "none" ? "" : drawn).m41,
             };
           });
 
@@ -160,7 +162,7 @@ describe("section edges in the browser", () => {
           document.dispatchEvent(new Event("scroll", { bubbles: true }));
         }, wide.edges["story"]?.topEdge ?? 0);
         await session.advanceTo(100);
-        expect((await readEdges()).badgeTransform).toContain("translate3d(100px,");
+        expect((await readEdges()).badgeX).toBeCloseTo(100, 3);
 
         // Resize to taller viewport (768x900) so vh-based sections grow and shift story.top.
         await page.setViewportSize({ width: 768, height: 900 });
@@ -177,7 +179,7 @@ describe("section edges in the browser", () => {
         );
         expect(narrow.edges["story"]?.topEdge).toBeCloseTo(narrow.edges["story"]?.domTop ?? -1, 0);
         expect(narrow.edges["story"]?.endEdge).toBeCloseTo(narrow.edges["story"]?.domEnd ?? -1, 0);
-        expect(narrow.badgeTransform).not.toContain("translate3d(100px,");
+        expect(narrow.badgeX).not.toBeCloseTo(100, 0);
 
         // Scroll to the new narrow story.top -> progress returns to 1 (x = 100px).
         await page.evaluate((y) => {
@@ -185,7 +187,7 @@ describe("section edges in the browser", () => {
           document.dispatchEvent(new Event("scroll", { bubbles: true }));
         }, narrow.edges["story"]?.topEdge ?? 0);
         await session.advanceTo(200);
-        expect((await readEdges()).badgeTransform).toContain("translate3d(100px,");
+        expect((await readEdges()).badgeX).toBeCloseTo(100, 3);
       },
     );
   }, 30000);

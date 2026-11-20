@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        margin: 0;
+        height: 3000px;
+      }
+      .card {
+        position: fixed;
+        top: 100px;
+        width: 60px;
+        height: 60px;
+        background: #36c;
+      }
+      #reverse {
+        left: 20px;
+      }
+      #stay {
+        left: 120px;
+      }
+      #replay {
+        left: 220px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="reverse"></div>
+    <div class="card" id="stay"></div>
+    <div class="card" id="replay"></div>
+    <script type="module" src="./triggers.ts"></script>
+  </body>
+</html>

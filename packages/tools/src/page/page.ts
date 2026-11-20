@@ -119,12 +119,14 @@ function seedRandom(): void {
   };
 }
 
-/** Sets every CSS and Web Animations animation, which the fake clock skips, to the clock's time from when first seen. */
+/** Sets every CSS and Web Animations animation on the document timeline, which the fake clock skips, to the clock's time from when first seen. */
 function holdAnimations(ms: number): void {
   const seen: unknown = Reflect.get(window, "__motionBorn");
   const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
   Reflect.set(window, "__motionBorn", born);
   for (const animation of document.getAnimations()) {
+    // An animation on a scroll timeline follows the scripted scroll, not the clock.
+    if (animation.timeline !== document.timeline) continue;
     const start: unknown = born.get(animation);
     const from = typeof start === "number" ? start : ms;
     if (typeof start !== "number") born.set(animation, from);
@@ -169,6 +171,10 @@ export async function withPage<T>(
     const real = target.clock === "real";
     if (target.prepare !== undefined) await target.prepare(page);
     if (!real) {
+      // Tells a page mount the clock is held, so it draws every element itself.
+      await page.addInitScript(() => {
+        Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
+      });
       await page.clock.install({ time: 0 });
       // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
       await page.clock.pauseAt(1000);

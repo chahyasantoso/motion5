@@ -55,13 +55,18 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - The mount samples the element's pose from the scene across the beat, and adds samples where straight lines between
   them miss the scene by more than 0.25 px, 0.1 degree or 0.005 opacity. Keyframes are placed by scroll position and
   rebuilt on each remeasure.
-- The exact `ScrollTimeline` range form (`rangeStart` and `rangeEnd`, or offsets over the whole scroll range) is
-  settled by a spike in Slice A and written into this decision.
+- One `ScrollTimeline` on the document's scroller spans the whole scroll range: a keyframe at scroll `y` sits at
+  offset `y / (scrollHeight - clientHeight)`, with `fill: "both"`. The spike matched `scrollY` to the pixel at two
+  viewport sizes; no `rangeStart` or `rangeEnd`.
+- Every keyframe of a part names the same transform functions, in `cssTransform`'s order, so the browser blends
+  each field along a straight line; scale fields keep within 0.001.
 
 ### 4. The page tools keep their clock
 
 - The page tools leave an animation on a scroll timeline on that timeline, since scripted scroll drives it; ADR-158
   gains that line.
+- While the page tools hold the clock, the mount hands nothing to the browser: a scroll timeline catches up only when
+  a frame is drawn, and a read after a scripted scroll does not wait for one.
 
 ## Slices
 
@@ -113,7 +118,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   `C:/Users/chahy/.gemini/antigravity/brain/9bcf47ab-cb72-4047-aea8-583fce0b9de8/scratch/gsap-proof` on the owner's
   machine. Set `GERAK_CHROMIUM` to a Chromium executable when Playwright's own browser is missing.
 - Browser tests run in Chromium only. Rerun a timed-out one alone before treating it as a failure; never weaken it.
-- Builder subagents run on Sonnet 5.5 at medium effort or below.
+- Builder and review subagents run on Sonnet 5.5 at medium effort or below, never a frontier model.
 
 ## Not in this plan
 

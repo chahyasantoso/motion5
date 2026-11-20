@@ -27,6 +27,7 @@ import {
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
+  WINDOW_EVENTS,
   isInputBeat,
   sectionsOfPoint,
   type Beat,
@@ -52,6 +53,7 @@ import type {
   LayoutsInput,
   Limits,
   ListPose,
+  Drive,
   Moves,
   SceneContext,
   StageDefinition,
@@ -868,6 +870,46 @@ interface Env {
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
+  /** Filled as elements run: what drives each. */
+  readonly drives: Map<string, Drive> | undefined;
+}
+
+const MORE: Drive = Object.freeze({ kind: "more" });
+
+/** One drive for two: equal ones stay, and any two that differ are `more`. */
+function joinDrive(held: Drive, next: Drive): Drive {
+  switch (held.kind) {
+    case "more":
+      return held;
+    case "scroll":
+      if (next.kind !== "scroll") return MORE;
+      if (next.beats.every((beat) => held.beats.includes(beat))) return held;
+      return { kind: "scroll", beats: [...held.beats, ...next.beats] };
+    case "trigger":
+      return next.kind === "trigger" && next.beat === held.beat ? held : MORE;
+    default:
+      return unreachable(held);
+  }
+}
+
+function noteDrive(map: Map<string, Drive> | undefined, name: string, drive: Drive): void {
+  if (map === undefined) return;
+  const held = map.get(name);
+  map.set(name, held === undefined ? drive : joinDrive(held, drive));
+}
+
+/** What a step's window drives it by: a scroll beat without `smooth`, a trigger beat, or more. */
+function driveOf(step: MotionStep): Drive {
+  const window = step.window;
+  if (step.loops || step.travels || !isInputBeat(window)) return MORE;
+  switch (window.kind) {
+    case "scroll-beat":
+      return window.smooth ? MORE : { kind: "scroll", beats: [window] };
+    case "trigger-beat":
+      return { kind: "trigger", beat: window };
+    default:
+      return unreachable(window);
+  }
 }
 
 function note(moves: Map<string, Moves> | undefined, name: string, kind: Moves): void {
@@ -888,20 +930,25 @@ function movesOf(step: MotionStep, time: Time, context: unknown): Moves | undefi
   return "maybe";
 }
 
-/** The context a motion sees: its time tells the clock watcher when read, `carry` counts as `maybe`, and
- * reading another element moves this one as that element moves. */
+/** The context a motion sees: its time tells the clock watcher, `carry` counts as `maybe`, reading
+ * an element moves this one with it, and `other` hears a read of events, `carry` or `read`. */
 function watched(
   context: MotionContext,
   seen: () => void,
   readOf: (target: string) => void,
+  other: () => void,
 ): MotionContext {
   const time = watchedTime(context.time);
-  return {
+  const seenBy: MotionContext = {
     time,
-    events: context.events,
+    get events() {
+      other();
+      return context.events;
+    },
     rest: context.rest,
     get carry() {
       seen();
+      other();
       return context.carry;
     },
     element: context.element,
@@ -909,12 +956,15 @@ function watched(
     read: (target, at) => {
       const pose = context.read(target, at);
       readOf(typeof target === "string" ? target : target.name);
+      other();
       return pose;
     },
     ...(context.index === undefined ? {} : { index: context.index }),
     ...(context.count === undefined ? {} : { count: context.count }),
     ...(context.line === undefined ? {} : { line: context.line }),
   };
+  Object.defineProperty(seenBy, WINDOW_EVENTS, { value: context.events });
+  return seenBy;
 }
 
 function replacing(below: Pose2d, pose: Pose2d): Pose2d {
@@ -959,6 +1009,7 @@ function stackOf(
         const principled = step.principle(below);
         stack = (time, events) => {
           note(env.moves, plan.name, "maybe");
+          noteDrive(env.drives, plan.name, MORE);
           return principled(time, events);
         };
         break;
@@ -995,18 +1046,21 @@ function stackOf(
             ...(line === undefined ? {} : { line }),
           };
           const moves = env.moves;
+          const drives = env.drives;
           if (moves !== undefined) {
             const kind = movesOf(step, time, context);
             if (kind !== undefined) note(moves, plan.name, kind);
           }
+          noteDrive(drives, plan.name, driveOf(step));
           const used =
-            moves === undefined || step.travels
+            (moves === undefined && drives === undefined) || step.travels
               ? context
               : watched(
                   context,
                   () => note(moves, plan.name, "maybe"),
                   (target) =>
-                    note(moves, plan.name, moves.get(target) === "time" ? "time" : "maybe"),
+                    note(moves, plan.name, moves?.get(target) === "time" ? "time" : "maybe"),
+                  () => noteDrive(drives, plan.name, MORE),
                 );
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
@@ -1105,6 +1159,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         lines: context.lines,
         read: new Map(),
         moves: context.moves,
+        drives: context.drives,
       };
       const out: Record<string, Pose2d | ListPose> = {};
       for (const plan of env.plans.values()) {

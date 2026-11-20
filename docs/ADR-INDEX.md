@@ -200,3 +200,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-193 — Scene builder — Accepted, 2026-11-20
 - ADR-194 — Pages — Accepted, 2026-11-20
 - ADR-195 — Page frames run for a cause — Accepted, 2026-11-20
+- ADR-196 — The browser plays motion it can work out ahead of time — Accepted, 2026-11-20
