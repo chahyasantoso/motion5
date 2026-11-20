@@ -27,9 +27,10 @@ import {
   type SceneBuilder,
   type Stage,
   type Moves,
+  type TriggerBeat,
 } from "@gerak/stage";
 import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
-import { sampleNear, scrollKeyframes, scrollTracks } from "./compositor";
+import { sampleNear, scrollTracks, trackKeyframes, triggerTracks, type Track } from "./compositor";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { applyPath, applyValue, type RenderStyle } from "./render";
@@ -156,6 +157,13 @@ interface BoundTarget {
   readonly node: PageElement;
   readonly items: readonly PageElement[];
   readonly restore?: (() => void) | undefined;
+}
+
+/** The animations one trigger beat steers, and which way they last ran. */
+interface TriggerRun {
+  readonly beat: TriggerBeat;
+  readonly animations: readonly Animation[];
+  heading: -1 | 0 | 1 | undefined;
 }
 
 interface RawRect {
@@ -506,6 +514,8 @@ function boxForNode(
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 // Tests set this to keep every element in the engine, to compare with what the browser plays.
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
+// The page tools set this while they hold the clock; animations that run on time stay in the engine then.
+const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
@@ -814,6 +824,9 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   // The elements the engine runs while the browser plays the rest; undefined when it plays none.
   let engineOnly: ReadonlySet<string> | undefined;
   let handed = new Map<string, Animation[]>();
+  let triggerRuns: TriggerRun[] = [];
+  // Set once the hand-off is defined below; a frame before then has no trigger to follow.
+  let syncTriggers = (): void => undefined;
   const lastMoves = (): ReadonlyMap<string, Moves> => {
     if (frameOnly === undefined) return frameMoves;
     const merged = new Map(earlierMoves);
@@ -867,6 +880,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       fresh || wholeNext || hasReadout || Reflect.get(globalThis, CLOCK_FRAMES_OFF) === true;
     fresh = false;
     if (whole) {
+      syncTriggers();
       runOnly = undefined;
       notify();
     } else {
@@ -1045,14 +1059,37 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     player.subscribe(target.member.name, (value) => bindTarget(target, value));
   }
 
-  // Elements whose motions read only the scroll position play as Web Animations on a scroll timeline,
-  // sampled from the scene across the whole scroll range; the engine runs the rest.
+  // Elements whose motions read only the scroll position play on a scroll timeline, and those that read only
+  // a trigger beat's progress on the document timeline, steered by the beat; the engine runs the rest.
   const release = (): void => {
     for (const animations of handed.values())
       for (const animation of animations) animation.cancel();
     handed = new Map();
+    triggerRuns = [];
     engineOnly = undefined;
   };
+  syncTriggers = (): void => {
+    if (triggerRuns.length === 0) return;
+    const time = liveAt(elapsed());
+    const context = { events: recorder.log, rest: currentReader };
+    for (const run of triggerRuns) {
+      const { beat } = run;
+      const heading = beat.heading(time, context);
+      if (heading !== 0 && heading === run.heading) continue;
+      run.heading = heading;
+      const at = beat.of(time, undefined, context).progress * beat.ms;
+      for (const animation of run.animations) {
+        animation.currentTime = at;
+        if (heading === 0) animation.pause();
+        else {
+          animation.playbackRate = heading;
+          animation.play();
+        }
+      }
+    }
+  };
+  const nodesOf = (target: BoundTarget): readonly PageElement[] =>
+    target.member.kind === "list" ? target.items : [target.node];
   const handOff = (): void => {
     release();
     if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
@@ -1061,13 +1098,11 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     if (typeof Timeline !== "function" || !isDomElement(source)) return;
     if (scrollTarget === undefined || scrollTarget !== doc?.defaultView) return;
     const maxScroll = source.scrollHeight - source.clientHeight;
-    if (!(maxScroll > 0)) return;
     const names = new Set<string>();
     for (const target of targets) {
       const { member } = target;
       if (member.on !== undefined || member.expect === "ambient") continue;
-      const nodes = member.kind === "list" ? target.items : [target.node];
-      if (!nodes.every(isDomElement)) continue;
+      if (!nodesOf(target).every(isDomElement)) continue;
       switch (member.kind) {
         case "actor":
           if (member.content.kind === "readout" || member.content.kind === "morph") continue;
@@ -1084,41 +1119,84 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     }
     if (names.size === 0) return;
     const reader = currentReader;
-    const tracks = scrollTracks(stage, {
+    const input = {
       boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
       lines: currentLines,
-      maxScroll,
+      rest: reader,
       names,
-    });
-    if (tracks.size === 0) return;
-    const timeline: unknown = Reflect.construct(Timeline, [{ source, axis: "block" }]);
-    if (!(timeline instanceof AnimationTimeline)) return;
-    const y = readScrollY();
+    };
     const next = new Map<string, Animation[]>();
-    for (const [name, track] of tracks) {
+    const play = (
+      name: string,
+      track: Track,
+      at: number,
+      animate: (node: Element, keyframes: Keyframe[]) => Animation,
+      length: number,
+    ): Animation[] => {
       const target = byName.get(name);
-      if (target === undefined) continue;
-      const nodes = target.member.kind === "list" ? target.items : [target.node];
+      if (target === undefined) return [];
+      const nodes = nodesOf(target);
       const animations: Animation[] = [];
       track.parts.forEach((samples, index) => {
         const node = nodes[index];
         if (node === undefined || !isDomElement(node)) return;
-        const near = sampleNear(samples, y);
+        const near = sampleNear(samples, at);
         if (near !== undefined)
           applyValue(node, {
             ...near.fields,
             ...(track.anchor === undefined ? {} : { anchor: track.anchor }),
           });
-        const keyframes = scrollKeyframes(samples, maxScroll);
-        if (keyframes.length > 0)
-          animations.push(node.animate(keyframes, { timeline, fill: "both" }));
+        const keyframes = trackKeyframes(samples, length);
+        if (keyframes.length > 0) animations.push(animate(node, keyframes));
       });
       next.set(name, animations);
+      return animations;
+    };
+
+    const timeline: unknown =
+      maxScroll > 0 ? Reflect.construct(Timeline, [{ source, axis: "block" }]) : undefined;
+    if (timeline instanceof AnimationTimeline) {
+      const y = readScrollY();
+      for (const [name, track] of scrollTracks(stage, input, maxScroll))
+        play(
+          name,
+          track,
+          y,
+          (node, keyframes) => node.animate(keyframes, { timeline, fill: "both" }),
+          maxScroll,
+        );
     }
+    if (Reflect.get(globalThis, HELD_CLOCK) !== true) {
+      const left = new Set([...names].filter((name) => !next.has(name)));
+      const runs = new Map<TriggerBeat, TriggerRun>();
+      for (const [name, track] of triggerTracks(stage, { ...input, names: left })) {
+        const { beat } = track;
+        const animations = play(
+          name,
+          track,
+          0,
+          (node, keyframes) => {
+            const animation = node.animate(keyframes, {
+              duration: beat.ms,
+              fill: "both",
+              easing: "linear",
+            });
+            animation.pause();
+            return animation;
+          },
+          beat.ms,
+        );
+        const run = runs.get(beat) ?? { beat, animations: [], heading: undefined };
+        runs.set(beat, { ...run, animations: [...run.animations, ...animations] });
+      }
+      triggerRuns = [...runs.values()];
+    }
+    if (next.size === 0) return;
     handed = next;
     engineOnly = new Set(
       stage.members.map((member) => member.name).filter((name) => !handed.has(name)),
     );
+    syncTriggers();
   };
   handOff();
 

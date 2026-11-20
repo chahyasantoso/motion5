@@ -7,7 +7,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { NO_REST, type RestReader } from "../author/layout";
-import type { Moves } from "../author/stage";
+import type { Drive, Moves } from "../author/stage";
 import { carryFor } from "./carry";
 import { isPlainRecord, type Stage } from "./compile";
 import type { StageError } from "./errors";
@@ -23,9 +23,8 @@ export interface FrameInput {
   readonly only?: ReadonlySet<string> | undefined;
   /** Filled as elements run, list parts included: which can change with the clock alone. */
   readonly moves?: Map<string, Moves> | undefined;
-  /** Filled as elements run, list parts included: true while every motion reads only the scroll position
-   * through scroll beats without `smooth`. */
-  readonly scrollOnly?: Map<string, boolean> | undefined;
+  /** Filled as elements run, list parts included: what drives each besides its windows' time and boxes. */
+  readonly drives?: Map<string, Drive> | undefined;
 }
 
 /** One frame: the layout showing, who shows, and the scene's output as returned. */
@@ -70,7 +69,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     ...(input.lines === undefined ? {} : { lines: input.lines }),
     ...(input.only === undefined ? {} : { only: input.only }),
     ...(input.moves === undefined ? {} : { moves: input.moves }),
-    ...(input.scrollOnly === undefined ? {} : { scrollOnly: input.scrollOnly }),
+    ...(input.drives === undefined ? {} : { drives: input.drives }),
   });
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");

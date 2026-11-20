@@ -1,4 +1,4 @@
-import { INPUT_EVENTS, liveAt, motion, type Pose2d, type Time } from "@gerak/core";
+import { INPUT_EVENTS, ease, liveAt, motion, type Pose2d, type Time } from "@gerak/core";
 import {
   beat,
   box,
@@ -8,6 +8,7 @@ import {
   listPose,
   many,
   poseOf,
+  restReader,
   sceneBuilder,
   scrollPoint,
   stagger,
@@ -16,10 +17,11 @@ import {
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
-  SCROLL_TOLERANCE,
-  scrollKeyframes,
+  TRACK_TOLERANCE,
   scrollTracks,
-  type ScrollSample,
+  trackKeyframes,
+  triggerTracks,
+  type TrackSample,
 } from "../src/compositor";
 
 function compiled(scene: SceneBuilder): Stage {
@@ -57,14 +59,15 @@ const stage = compiled(
 
 const MAX = 2000;
 const names = new Set(["scrolled", "cards", "clocked", "skewed"]);
-const tracks = scrollTracks(stage, { boxes: {}, lines: {}, maxScroll: MAX, names });
+const input = { boxes: {}, lines: {}, rest: restReader(), names };
+const tracks = scrollTracks(stage, input, MAX);
 
-function between(samples: readonly ScrollSample[], y: number): ScrollSample["fields"] {
-  const after = samples.findIndex((s) => s.y >= y);
+function between(samples: readonly TrackSample[], y: number): TrackSample["fields"] {
+  const after = samples.findIndex((s) => s.at >= y);
   const b = samples[after];
   const a = samples[Math.max(0, after - 1)];
   if (a === undefined || b === undefined) throw new Error(`no samples around ${y}`);
-  const at = b.y === a.y ? 0 : (y - a.y) / (b.y - a.y);
+  const at = b.at === a.at ? 0 : (y - a.at) / (b.at - a.at);
   const out = { ...a.fields };
   for (const key of ["x", "y", "rotation", "scale", "scaleX", "scaleY", "opacity"] as const)
     out[key] = a.fields[key] + (b.fields[key] - a.fields[key]) * at;
@@ -106,12 +109,12 @@ describe("what the browser plays on a scroll timeline", () => {
         const y = (MAX * k) / 200 + 0.37;
         const line = between(samples, Math.min(MAX, y));
         const pose = engineAt(Math.min(MAX, y), name, index, count);
-        expect(Math.abs(line.y - (pose.y ?? 0))).toBeLessThanOrEqual(SCROLL_TOLERANCE.y);
+        expect(Math.abs(line.y - (pose.y ?? 0))).toBeLessThanOrEqual(TRACK_TOLERANCE.y);
         expect(Math.abs(line.rotation - (pose.rotation ?? 0))).toBeLessThanOrEqual(
-          SCROLL_TOLERANCE.rotation,
+          TRACK_TOLERANCE.rotation,
         );
         expect(Math.abs(line.opacity - (pose.opacity ?? 1))).toBeLessThanOrEqual(
-          SCROLL_TOLERANCE.opacity,
+          TRACK_TOLERANCE.opacity,
         );
       }
     }
@@ -120,11 +123,71 @@ describe("what the browser plays on a scroll timeline", () => {
   it("holds the pose outside the beat with few keyframes", () => {
     const samples = tracks.get("scrolled")?.parts[0] ?? [];
     expect(samples.length).toBeLessThan(120);
-    const keyframes = scrollKeyframes(samples, MAX);
+    const keyframes = trackKeyframes(samples, MAX);
     expect(keyframes[0]?.offset).toBe(0);
     expect(keyframes.at(-1)?.offset).toBe(1);
-    const transforms = keyframes.map((key) => String(key["transform"]));
+    const transforms = keyframes.map((key: Keyframe) => String(key["transform"]));
     for (const transform of transforms)
       expect(transform).toMatch(/^translate3d\(.+\) rotate\(.+\)$/);
+  });
+});
+
+const reveal = (back: "reverse" | "stay" | "replay", name: string = back) =>
+  beat(`reveal-${name}`, 600, { when: scrollPoint(500).reached, back });
+const rise = motion((t: Time): Pose2d => ({ y: 30 * (1 - t.progress), opacity: t.progress }));
+const triggered = compiled(
+  sceneBuilder({ length: 1000 })
+    .element(many("cards", 3))
+    .motion(stagger(rise, { spread: 0.3 }).in(reveal("reverse"), ease.cubicOut))
+    .element(box("stays"))
+    .motion(rise.in(reveal("stay")))
+    .element(box("replays"))
+    .motion(rise.in(reveal("replay")))
+    .element(box("taken"))
+    .motion(rise.in(reveal("stay", "taken")).take())
+    .element(box("clocked"))
+    .motion(
+      motion(
+        (t: Time, context?: { readonly time: Time }): Pose2d => ({
+          y: t.progress + (context?.time.progress ?? 0),
+        }),
+      ).in(reveal("stay", "clocked")),
+    ),
+);
+const triggerInput = {
+  boxes: {},
+  lines: {},
+  rest: restReader(),
+  names: new Set(["cards", "stays", "replays", "taken", "clocked"]),
+};
+const triggerSet = triggerTracks(triggered, triggerInput);
+
+describe("what the browser plays from a trigger beat", () => {
+  it("takes elements that read only one trigger's progress, for each way back", () => {
+    expect([...triggerSet.keys()].sort()).toEqual(["cards", "replays", "stays"]);
+    expect(triggerSet.get("stays")?.beat.back).toBe("stay");
+    expect(triggerSet.get("replays")?.beat.back).toBe("replay");
+  });
+
+  it("leaves out a taken motion, whose pose before the trigger is not its start", () => {
+    expect(triggerSet.has("taken")).toBe(false);
+  });
+
+  it("keeps straight lines between its samples within tolerance of frame()", () => {
+    const samples = triggerSet.get("cards")?.parts[1];
+    if (samples === undefined) throw new Error("no track for cards");
+    for (let k = 0; k <= 120; k += 1) {
+      const ms = (600 * k) / 120;
+      const { targets } = frame(triggered, {
+        time: liveAt(ms),
+        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 500 }],
+      });
+      const pose = listPose(targets["cards"], 1, 3);
+      const line = between(samples, ms);
+      expect(Math.abs(line.y - (pose?.y ?? 0))).toBeLessThanOrEqual(TRACK_TOLERANCE.y);
+      expect(Math.abs(line.opacity - (pose?.opacity ?? 1))).toBeLessThanOrEqual(
+        TRACK_TOLERANCE.opacity,
+      );
+    }
   });
 });

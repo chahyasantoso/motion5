@@ -53,6 +53,7 @@ import type {
   LayoutsInput,
   Limits,
   ListPose,
+  Drive,
   Moves,
   SceneContext,
   StageDefinition,
@@ -869,26 +870,45 @@ interface Env {
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
-  /** Filled as elements run: whether each reads only the scroll position. */
-  readonly scrollOnly: Map<string, boolean> | undefined;
+  /** Filled as elements run: what drives each. */
+  readonly drives: Map<string, Drive> | undefined;
 }
 
-function noteScroll(map: Map<string, boolean> | undefined, name: string, only: boolean): void {
+const MORE: Drive = Object.freeze({ kind: "more" });
+const SCROLL: Drive = Object.freeze({ kind: "scroll" });
+
+/** One drive for two: equal ones stay, and any two that differ are `more`. */
+function joinDrive(held: Drive, next: Drive): Drive {
+  switch (held.kind) {
+    case "more":
+      return held;
+    case "scroll":
+      return next.kind === "scroll" ? held : MORE;
+    case "trigger":
+      return next.kind === "trigger" && next.beat === held.beat ? held : MORE;
+    default:
+      return unreachable(held);
+  }
+}
+
+function noteDrive(map: Map<string, Drive> | undefined, name: string, drive: Drive): void {
   if (map === undefined) return;
-  if (!only) map.set(name, false);
-  else if (!map.has(name)) map.set(name, true);
+  const held = map.get(name);
+  map.set(name, held === undefined ? drive : joinDrive(held, drive));
 }
 
-/** Whether a step plays only in a scroll beat without `smooth`, so its window reads nothing but scroll. */
-function playsInScroll(step: MotionStep): boolean {
+/** What a step's window drives it by: a scroll beat without `smooth`, a trigger beat, or more. */
+function driveOf(step: MotionStep): Drive {
   const window = step.window;
-  return (
-    !step.loops &&
-    !step.travels &&
-    window !== undefined &&
-    Reflect.get(window, "kind") === "scroll-beat" &&
-    Reflect.get(window, "smooth") === false
-  );
+  if (step.loops || step.travels || !isInputBeat(window)) return MORE;
+  switch (window.kind) {
+    case "scroll-beat":
+      return window.smooth ? MORE : SCROLL;
+    case "trigger-beat":
+      return { kind: "trigger", beat: window };
+    default:
+      return unreachable(window);
+  }
 }
 
 function note(moves: Map<string, Moves> | undefined, name: string, kind: Moves): void {
@@ -988,7 +1008,7 @@ function stackOf(
         const principled = step.principle(below);
         stack = (time, events) => {
           note(env.moves, plan.name, "maybe");
-          noteScroll(env.scrollOnly, plan.name, false);
+          noteDrive(env.drives, plan.name, MORE);
           return principled(time, events);
         };
         break;
@@ -1025,21 +1045,21 @@ function stackOf(
             ...(line === undefined ? {} : { line }),
           };
           const moves = env.moves;
-          const scrollOnly = env.scrollOnly;
+          const drives = env.drives;
           if (moves !== undefined) {
             const kind = movesOf(step, time, context);
             if (kind !== undefined) note(moves, plan.name, kind);
           }
-          noteScroll(scrollOnly, plan.name, playsInScroll(step));
+          noteDrive(drives, plan.name, driveOf(step));
           const used =
-            (moves === undefined && scrollOnly === undefined) || step.travels
+            (moves === undefined && drives === undefined) || step.travels
               ? context
               : watched(
                   context,
                   () => note(moves, plan.name, "maybe"),
                   (target) =>
                     note(moves, plan.name, moves?.get(target) === "time" ? "time" : "maybe"),
-                  () => noteScroll(scrollOnly, plan.name, false),
+                  () => noteDrive(drives, plan.name, MORE),
                 );
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
@@ -1138,7 +1158,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         lines: context.lines,
         read: new Map(),
         moves: context.moves,
-        scrollOnly: context.scrollOnly,
+        drives: context.drives,
       };
       const out: Record<string, Pose2d | ListPose> = {};
       for (const plan of env.plans.values()) {

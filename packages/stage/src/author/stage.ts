@@ -1,5 +1,6 @@
 import type { Events, Pose2d, Span, Time } from "@gerak/core";
 import type { CastBuilder, Members } from "./cast";
+import type { TriggerBeat } from "./beat";
 import type { Carry, Frame, Rest, RestReader } from "./layout";
 
 /** A list's pose in the scene: the pose of item `index` of `count`. */
@@ -56,10 +57,16 @@ export interface SceneContext<B extends string = string, L extends string = stri
   readonly only?: ReadonlySet<string> | undefined;
   /** Filled as elements run: which can change with the clock alone, with no new input. */
   readonly moves?: Map<string, Moves> | undefined;
-  /** Filled as elements run: true while every motion an element ran reads only the scroll position,
-   * through scroll beats without `smooth`; false once one reads anything else. */
-  readonly scrollOnly?: Map<string, boolean> | undefined;
+  /** Filled as elements run: what drives each, besides its windows' time and the measured boxes. */
+  readonly drives?: Map<string, Drive> | undefined;
 }
+
+/** What drives an element: only the scroll position, through scroll beats without `smooth`; only one
+ * trigger beat's progress; or anything more, such as the clock, a spring, events or another element. */
+export type Drive =
+  | { readonly kind: "scroll" }
+  | { readonly kind: "trigger"; readonly beat: TriggerBeat }
+  | { readonly kind: "more" };
 
 /** How an element can change with no new input: `time` while a beat, trigger or spring is still running;
  * `maybe` when a motion read the clock or another element, or has no window. */

@@ -81,6 +81,7 @@ export {
   type Limits,
   type LayoutsInput,
   type ListPose,
+  type Drive,
   type Moves,
 } from "./author/stage";
 export {

@@ -6,7 +6,8 @@ import { withPage } from "@gerak/tools/page";
 const PIECES = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const source = { kind: "serve", root: PIECES } as const;
 const SCROLLED = ["#story-progress", "#story-step-1", "#story-step-2"];
-const ENGINE = ["#drink", "#hero-aura"];
+const TRIGGERED = ["#features .feature-card", "#gallery .gallery-card"];
+const ENGINE = ["#drink", "#hero-aura", "#hero-sub"];
 const POSITIONS = 50;
 
 interface Seen {
@@ -49,18 +50,20 @@ async function lookAcross(page: Page): Promise<readonly (readonly Seen[])[]> {
       }
       return out;
     },
-    { selectors: [...SCROLLED, ...ENGINE], positions: POSITIONS },
+    { selectors: [...SCROLLED, ...TRIGGERED, ...ENGINE], positions: POSITIONS },
   );
 }
 
-const offEngine = (page: Page) =>
-  page.addInitScript(() => {
+const offEngine = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
     Reflect.set(globalThis, Symbol.for("@gerak/dom/compositor-off"), true);
   });
-const noTimeline = (page: Page) =>
-  page.addInitScript(() => {
+};
+const noTimeline = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
     Reflect.deleteProperty(globalThis, "ScrollTimeline");
   });
+};
 
 async function run(
   width: number,
@@ -119,6 +122,10 @@ describe("yuzu's scroll-driven elements on the browser's scroll timeline", () =>
         expect(animated(played, selector), selector).toBe(1);
         expect(animated(engine, selector), selector).toBe(0);
       }
+      for (const selector of TRIGGERED) {
+        expect(animated(played, selector), selector).toBe(1);
+        expect(animated(engine, selector), selector).toBe(0);
+      }
       for (const selector of ENGINE) expect(animated(played, selector), selector).toBe(0);
       const widths = engine.map((row) => row[0]?.scaleX ?? 0);
       expect(Math.max(...widths) - Math.min(...widths)).toBeGreaterThan(0.5);
@@ -136,6 +143,109 @@ describe("yuzu's scroll-driven elements on the browser's scroll timeline", () =>
 
   it("leaves every element in the engine without ScrollTimeline", async () => {
     const rows = await run(1280, 720, noTimeline);
-    for (const selector of [...SCROLLED, ...ENGINE]) expect(animated(rows, selector)).toBe(0);
+    for (const selector of [...SCROLLED, ...TRIGGERED, ...ENGINE])
+      expect(animated(rows, selector)).toBe(0);
+  }, 120000);
+});
+
+const FIXTURES = fileURLToPath(new URL("./fixtures/compositor/", import.meta.url));
+const CARDS = ["reverse", "stay", "replay"] as const;
+
+interface Card {
+  readonly y: number;
+  readonly opacity: number;
+  readonly animations: number;
+}
+
+/** Each card's drawn pose and the engine's pose for the same moment, read in one task. */
+async function cardsNow(
+  page: Page,
+): Promise<{ readonly drawn: Record<string, Card>; readonly engine: Record<string, Card> }> {
+  return page.evaluate((names) => {
+    const expected: unknown = Reflect.apply(Reflect.get(window, "__expected"), window, []);
+    const drawn: Record<string, Card> = {};
+    for (const name of names) {
+      const node = document.getElementById(name);
+      if (node === null) throw new Error(`no #${name}`);
+      const style = getComputedStyle(node);
+      const matrix = new DOMMatrix(style.transform === "none" ? "" : style.transform);
+      drawn[name] = {
+        y: matrix.m42,
+        opacity: Number(style.opacity),
+        animations: node.getAnimations().length,
+      };
+    }
+    const engine: Record<string, Card> = {};
+    for (const name of names) {
+      const pose: unknown = Reflect.get(Object(expected), name);
+      engine[name] = {
+        y: Number(Reflect.get(Object(pose), "y")),
+        opacity: Number(Reflect.get(Object(pose), "opacity")),
+        animations: 1,
+      };
+    }
+    return { drawn, engine };
+  }, CARDS);
+}
+
+async function scrollTo(page: Page, top: number): Promise<void> {
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: "instant" }), top);
+}
+
+function expectCards(
+  seen: { readonly drawn: Record<string, Card>; readonly engine: Record<string, Card> },
+  px: number,
+  opacity: number,
+  when: string,
+): void {
+  for (const name of CARDS) {
+    const drawn = seen.drawn[name];
+    const engine = seen.engine[name];
+    expect(drawn?.animations, `${name} ${when}`).toBe(1);
+    expect(Math.abs((drawn?.y ?? NaN) - (engine?.y ?? NaN)), `${name} ${when}`).toBeLessThanOrEqual(
+      px,
+    );
+    expect(
+      Math.abs((drawn?.opacity ?? NaN) - (engine?.opacity ?? NaN)),
+      `${name} ${when}`,
+    ).toBeLessThanOrEqual(opacity);
+  }
+}
+
+describe("triggered cards on the document timeline", () => {
+  it("start once on crossing and follow reverse, stay and replay back as the engine does", async () => {
+    await withPage(
+      {
+        page: "triggers.html",
+        width: 800,
+        height: 600,
+        source: { kind: "serve", root: FIXTURES },
+        clock: "real",
+      },
+      async ({ page }) => {
+        // At rest the poses match within the sampling tolerance; while a card runs, a frame of skew.
+        const rest = (when: string) => async () =>
+          expectCards(await cardsNow(page), 0.25 + SLACK, 0.005 + SLACK, when);
+        const running = (when: string) => async () =>
+          expectCards(await cardsNow(page), 2, 0.05, when);
+        await page.waitForTimeout(400);
+        await rest("before crossing")();
+        await scrollTo(page, 600);
+        await page.waitForTimeout(400);
+        await running("while revealing")();
+        await page.waitForTimeout(1000);
+        await rest("revealed")();
+        await scrollTo(page, 0);
+        await page.waitForTimeout(400);
+        await running("after crossing back")();
+        await page.waitForTimeout(1000);
+        await rest("back at rest")();
+        await scrollTo(page, 600);
+        await page.waitForTimeout(400);
+        await running("crossing again")();
+        await page.waitForTimeout(1000);
+        await rest("revealed again")();
+      },
+    );
   }, 120000);
 });

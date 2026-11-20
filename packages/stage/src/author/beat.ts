@@ -113,6 +113,8 @@ export interface TriggerBeat extends MotionWindow {
   active(time: Time, context?: BeatContext): boolean;
   /** Whether its clock part is running at `time`, so its progress changes with no new input. */
   moving(time: Time, context?: BeatContext): boolean;
+  /** Which way its clock part runs at `time`: 1 forward, -1 back towards 0, 0 at rest. */
+  heading(time: Time, context?: BeatContext): -1 | 0 | 1;
 }
 
 const FIXED_PX = new WeakMap<ScrollPoint, number>();
@@ -298,7 +300,12 @@ type TriggerFold = (
   time: Time,
   events: Events,
   threshold: number,
-) => { readonly raw: number; readonly active: boolean; readonly moving: boolean };
+) => {
+  readonly raw: number;
+  readonly active: boolean;
+  readonly moving: boolean;
+  readonly heading: -1 | 0 | 1;
+};
 
 /** One trigger's reading of `scroll.y`: it folds each scroll step once, and starts again when the
  * state's step list or the threshold changes. */
@@ -357,31 +364,33 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
       case "stay": {
         if (now === undefined) {
           const shown = started !== undefined;
-          return { raw: shown ? 1 : 0, active: shown, moving: false };
+          return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
-        if (started === undefined) return { raw: 0, active: false, moving: false };
+        if (started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
         const raw = clamp(now - started, 0, ms) / ms;
-        return { raw, active: true, moving: raw < 1 };
+        return { raw, active: true, moving: raw < 1, heading: raw < 1 ? 1 : 0 };
       }
       case "replay": {
         if (now === undefined) {
           const shown = scroll.y(time, events) >= threshold;
-          return { raw: shown ? 1 : 0, active: shown, moving: false };
+          return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
-        if (started === undefined) return { raw: 0, active: false, moving: false };
+        if (started === undefined) return { raw: 0, active: false, moving: false, heading: 0 };
         const raw = clamp(now - started, 0, ms) / ms;
-        return { raw, active: true, moving: raw < 1 };
+        return { raw, active: true, moving: raw < 1, heading: raw < 1 ? 1 : 0 };
       }
       case "reverse": {
         if (now === undefined) {
           const shown = scroll.y(time, events) >= threshold;
-          return { raw: shown ? 1 : 0, active: shown, moving: false };
+          return { raw: shown ? 1 : 0, active: shown, moving: false, heading: 0 };
         }
         const raw = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
+        const moving = reached ? raw < 1 : raw > 0;
         return {
           raw,
           active: active && (reached || raw > 0),
-          moving: reached ? raw < 1 : raw > 0,
+          moving,
+          heading: !moving ? 0 : reached ? 1 : -1,
         };
       }
       default:
@@ -420,6 +429,10 @@ function makeTriggerBeat(
     moving(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
       return fold(time, events, when.point.at(rest)).moving;
+    },
+    heading(time: Time, context?: BeatContext): -1 | 0 | 1 {
+      const { events, rest } = readContext(context);
+      return fold(time, events, when.point.at(rest)).heading;
     },
   });
 }

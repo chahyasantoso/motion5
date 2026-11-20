@@ -12,6 +12,7 @@ import {
   sceneBuilder,
   scrollPoint,
   stagger,
+  type Drive,
   type MotionContext,
   type SceneBuilder,
   type Stage,
@@ -27,23 +28,23 @@ const live = (ms: number): Time => ({ progress: 0, clock: { kind: "live", elapse
 const slide = motion((t: Time): Pose2d => ({ x: 100 * t.progress }));
 const range = beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] });
 
-function scrollOnlyAt(stage: Stage, y: number): ReadonlyMap<string, boolean> {
-  const scrollOnly = new Map<string, boolean>();
+function drivesAt(stage: Stage, y: number): ReadonlyMap<string, Drive["kind"]> {
+  const drives = new Map<string, Drive>();
   const { targets } = frame(stage, {
     time: live(1000),
     events: [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
-    scrollOnly,
+    drives,
   });
   // A list's parts run when its answer is asked for each part.
   for (const member of stage.members)
     if (member.kind === "list")
       for (let index = 0; index < member.items.length; index += 1)
         listPose(targets[member.name], index, member.items.length);
-  return scrollOnly;
+  return new Map([...drives].map(([name, drive]) => [name, drive.kind]));
 }
 
-describe("what a frame reports as reading only the scroll position", () => {
-  it("a motion in a plain scroll beat, staggered parts included", () => {
+describe("what a frame reports as driving each element", () => {
+  it("scroll for a motion in a plain scroll beat, staggered parts included", () => {
     const stage = compiled(
       sceneBuilder({ length: 1000 })
         .element(box("plain"))
@@ -52,12 +53,12 @@ describe("what a frame reports as reading only the scroll position", () => {
         .motion(stagger(slide, { spread: 0.3 }).in(range)),
     );
     for (const y of [0, 200, 400]) {
-      expect(scrollOnlyAt(stage, y).get("plain")).toBe(true);
-      expect(scrollOnlyAt(stage, y).get("parts")).toBe(true);
+      expect(drivesAt(stage, y).get("plain")).toBe("scroll");
+      expect(drivesAt(stage, y).get("parts")).toBe("scroll");
     }
   });
 
-  it("not a smooth scroll beat, a clock beat, a trigger beat, a bind or a principle", () => {
+  it("a trigger beat as its own drive; a smooth scroll beat, a clock beat, a bind or a principle as more", () => {
     const stage = compiled(
       sceneBuilder({ length: 1000 })
         .element(box("smoothed"))
@@ -74,12 +75,13 @@ describe("what a frame reports as reading only the scroll position", () => {
         .motion(slide.in(range))
         .modify((signal) => signal),
     );
-    const only = scrollOnlyAt(stage, 200);
-    for (const name of ["smoothed", "clocked", "triggered", "bound", "principled"])
-      expect(only.get(name), name).toBe(false);
+    const only = drivesAt(stage, 200);
+    expect(only.get("triggered")).toBe("trigger");
+    for (const name of ["smoothed", "clocked", "bound", "principled"])
+      expect(only.get(name), name).toBe("more");
   });
 
-  it("not a scroll-beat motion that reads events, carry or another element", () => {
+  it("more for a scroll-beat motion that reads events, carry or another element", () => {
     const readsEvents = (t: Time, context?: MotionContext): Pose2d => ({
       x: t.progress + (context?.events.length ?? 0),
     });
@@ -101,17 +103,23 @@ describe("what a frame reports as reading only the scroll position", () => {
         .element(box("other"))
         .motion(motion(readsOther).in(range)),
     );
-    const only = scrollOnlyAt(stage, 200);
-    expect(only.get("plain")).toBe(true);
-    for (const name of ["events", "carry", "other"]) expect(only.get(name), name).toBe(false);
+    const only = drivesAt(stage, 200);
+    expect(only.get("plain")).toBe("scroll");
+    for (const name of ["events", "carry", "other"]) expect(only.get(name), name).toBe("more");
   });
 
-  it("one motion outside a scroll beat is enough to rule an element out", () => {
+  it("more for an element whose motions play in two kinds of beat, or two triggers", () => {
     const stage = compiled(
       sceneBuilder({ length: 1000 })
         .element(box("mixed"))
-        .motion(slide.in(range), slide.in(beat("intro", 300))),
+        .motion(slide.in(range), slide.in(beat("intro", 300)))
+        .element(box("twoTriggers"))
+        .motion(
+          slide.in(beat("first", 300, { when: scrollPoint(100).reached, back: "stay" })),
+          slide.in(beat("second", 300, { when: scrollPoint(200).reached, back: "stay" })),
+        ),
     );
-    expect(scrollOnlyAt(stage, 200).get("mixed")).toBe(false);
+    expect(drivesAt(stage, 200).get("mixed")).toBe("more");
+    expect(drivesAt(stage, 200).get("twoTriggers")).toBe("more");
   });
 });
