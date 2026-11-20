@@ -1,6 +1,7 @@
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
 import type { Events, MotionEvent } from "../events/event-list";
+import { isGrowingLog } from "../events/event-log";
 
 /** The moment a state changed, and what it became. */
 export interface Step<S> {
@@ -40,11 +41,18 @@ export function state<S>(
   let steps: Step<S>[] = [];
   let taken: MotionEvent[] = [];
   let latest = -Infinity;
+  let seen: Events | undefined;
   const fold = (time: Time, events: Events): void => {
     const now = elapsedOf(time.clock);
     let resumes = (now === undefined || latest <= now) && events.length >= taken.length;
-    for (let index = 0; resumes && index < taken.length; index += 1)
-      if (events[index] !== taken[index]) resumes = false;
+    // A growing log is never edited in place: an event put in before the last one folded moves that one.
+    const last = taken.length - 1;
+    if (resumes && events === seen && isGrowingLog(events))
+      resumes = last < 0 || events[last] === taken[last];
+    else
+      for (let index = 0; resumes && index < taken.length; index += 1)
+        if (events[index] !== taken[index]) resumes = false;
+    seen = events;
     if (!resumes) {
       current = start;
       steps = [];

@@ -57,7 +57,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`StaggerBy`** `type StaggerBy = "index" | "line"`: Whether `stagger` orders lanes by part index or by measured visual line.
 - **`StaggerFrom`** `type StaggerFrom = "start" | "end" | "center" | "edges"`: Which part of a staggered list starts first.
 - **`StaggerOptions`** `type StaggerOptions = { spread: number; from?: StaggerFrom | undefined; by?: StaggerBy | undefined }`: Settings of `stagger`: `spread` is the gap between starts in lane lengths, `from` is origin, `by` is order.
-- **`TravelOptions`** `type TravelOptions = { to: Element; arc?: number | undefined }`: Options of `travel`: target slot element and optional perpendicular arc bend in px.
+- **`TravelOptions`** `type TravelOptions = { to: Element; arc?: number | undefined; fit?: "contain" | "fill" | undefined }`: Options of `travel`: target slot element and optional perpendicular arc bend in px.
 - **`NO_REST`** `const NO_REST: RestReader`: A reader with no boxes, as headless runs have.
 - **`ZERO_BOX`** `const ZERO_BOX: Box`: Zero box answered for a name never measured.
 - **`restReader`** `(rest?: Rest): RestReader`: A `RestReader` over `rest`.

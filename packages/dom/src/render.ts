@@ -208,6 +208,28 @@ const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const EMPTIED = new WeakSet<RenderStyle>();
+type Written =
+  | "transform"
+  | "opacity"
+  | "zIndex"
+  | "transformBox"
+  | "transformOrigin"
+  | "filter"
+  | "clipPath";
+const WRITTEN_TEXT = new WeakMap<RenderStyle, Map<Written, string>>();
+
+// The browser parses every style it is given, so a property is set only when its text changes.
+function put(style: RenderStyle, key: Written, text: string): void {
+  let held = WRITTEN_TEXT.get(style);
+  if (held === undefined) {
+    held = new Map();
+    WRITTEN_TEXT.set(style, held);
+  }
+  if (held.get(key) === text) return;
+  held.set(key, text);
+  style[key] = text;
+}
+
 const LAST_WRITTEN = new WeakMap<
   RenderStyle,
   { readonly value: Pose2d; readonly length: number }
@@ -250,19 +272,24 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   const copy: Pose2d =
     value.custom === undefined ? { ...value } : { ...value, custom: { ...value.custom } };
   LAST_WRITTEN.set(style, { value: copy, length: measured });
-  style.transform = cssTransform(value);
-  style.opacity = value.opacity === undefined ? "" : String(value.opacity);
+  put(style, "transform", cssTransform(value));
+  put(style, "opacity", value.opacity === undefined ? "" : String(value.opacity));
   // Paint order steps, so a layer between two whole numbers paints as the nearer one.
-  style.zIndex = value.layer === undefined ? "" : String(Math.round(value.layer));
+  put(style, "zIndex", value.layer === undefined ? "" : String(Math.round(value.layer)));
   // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;
-  if (svg) style.transformBox = "fill-box";
-  style.transformOrigin =
-    value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "";
-  style.filter = cssFilter(value);
+  if (svg) put(style, "transformBox", "fill-box");
+  put(
+    style,
+    "transformOrigin",
+    value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "",
+  );
+  put(style, "filter", cssFilter(value));
   // A clip with a width and a height is a box, its radius rounding the corners; with a radius alone, a circle.
-  style.clipPath =
+  put(
+    style,
+    "clipPath",
     value.clipWidth !== undefined && value.clipHeight !== undefined
       ? cssClipBox(
           value.clipX ?? 0,
@@ -273,7 +300,8 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
         )
       : value.clipRadius === undefined
         ? ""
-        : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
+        : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius),
+  );
   const stroked = value.drawn !== undefined || value.drawnFrom !== undefined;
   if (stroked && measured > 0) {
     const dash = cssDash(value.drawnFrom ?? 0, value.drawn ?? 1, measured);

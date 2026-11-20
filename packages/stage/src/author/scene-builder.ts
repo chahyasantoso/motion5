@@ -329,6 +329,7 @@ export function stagger(
   const byIndex = new Map<number, Lanes>();
   const byLine = new Map<string, Lanes>();
   const byLineList = new WeakMap<readonly number[], Lanes>();
+  const byFlatLine = new Map<string, Lanes>();
   const lanesOf = (count: number, context: MotionContext): Lanes => {
     switch (by) {
       case "index": {
@@ -341,6 +342,11 @@ export function stagger(
         const raw = PART_LINES.get(context);
         const known = raw === undefined ? undefined : byLineList.get(raw);
         if (known !== undefined && raw?.length === count) return known;
+        if (raw === undefined || raw.length !== count) {
+          const flat = `${count}@${context.line ?? 0}`;
+          const held = byFlatLine.get(flat);
+          if (held !== undefined) return held;
+        }
         const lines =
           raw !== undefined && raw.length === count
             ? raw
@@ -354,6 +360,7 @@ export function stagger(
           byLine.set(key, built);
         }
         if (raw === lines) byLineList.set(raw, built);
+        else byFlatLine.set(`${count}@${context.line ?? 0}`, built);
         return built;
       }
       default:
@@ -441,6 +448,8 @@ export interface TravelOptions {
   readonly to: Element;
   /** Perpendicular bow at mid-travel in px, 0 at both ends (default 0). */
   readonly arc?: number | undefined;
+  /** `"contain"` (default) scales evenly to fit inside the slot, centred; `"fill"` stretches to its box. */
+  readonly fit?: "contain" | "fill" | undefined;
 }
 
 function isElement(value: unknown): value is Element {
@@ -465,9 +474,11 @@ function isElement(value: unknown): value is Element {
 export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
-  const { to, arc: bend = 0 } = options;
+  const { to, arc: bend = 0, fit = "contain" } = options;
   if (!Number.isFinite(bend))
     throw new RangeError(`travel: \`arc\` must be a finite number of px, not ${bend}.`);
+  if (fit !== "contain" && fit !== "fill")
+    throw new TypeError(`travel: \`fit\` must be "contain" or "fill", not ${String(fit)}.`);
   const base = motion((time, context?: MotionContext): Pose2d => {
     const here = need(context, "travel");
     const prev = BELOW_POSE.get(here);
@@ -497,8 +508,22 @@ export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
     if (!(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)) {
       return { x, y };
     }
-    const toScaleX = target.width / own.width;
-    const toScaleY = target.height / own.height;
+    const across = target.width / own.width;
+    const down = target.height / own.height;
+    let toScaleX: number;
+    let toScaleY: number;
+    switch (fit) {
+      case "contain":
+        toScaleX = Math.min(across, down);
+        toScaleY = toScaleX;
+        break;
+      case "fill":
+        toScaleX = across;
+        toScaleY = down;
+        break;
+      default:
+        return unreachable(fit);
+    }
     const uniform = prev?.scale ?? 1;
     const fromScaleX = uniform * (prev?.scaleX ?? 1);
     const fromScaleY = uniform * (prev?.scaleY ?? 1);
@@ -914,7 +939,9 @@ function stackOf(
           if (partLines !== undefined) PART_LINES.set(context, partLines);
           const prev = below(time, events);
           if (step.travels) BELOW_POSE.set(context, prev);
-          const pose = step.run(time, context);
+          // A travel with no window sits on its slot from the start.
+          const ran = step.travels && step.window === undefined ? withProgress(time, 1) : time;
+          const pose = step.run(ran, context);
           switch (step.joins) {
             case "layer":
               return step.travels ? joinTravel(prev, pose) : combine([prev, pose]);

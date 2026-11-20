@@ -13,6 +13,7 @@ import {
   type Signal,
   type Span,
   type SpringToOptions,
+  type Step,
   type Time,
 } from "@gerak/core";
 import type { NodeBinding } from "./cast";
@@ -278,66 +279,88 @@ function makeScrollBeat(
   });
 }
 
-function triggerState(
+type TriggerFold = (
   time: Time,
   events: Events,
   threshold: number,
-  ms: number,
-  back: TriggerBack,
-): { readonly raw: number; readonly active: boolean } {
-  const now = elapsedOf(time.clock);
-  const initial = scroll.y.start >= threshold;
-  switch (back) {
-    case "stay": {
-      const steps = scroll.y.steps(time, events);
-      if (now === undefined) {
-        const reached = initial || steps.some((step) => step.value >= threshold);
-        return { raw: reached ? 1 : 0, active: reached };
-      }
-      const started = initial ? 0 : steps.find((step) => step.value >= threshold)?.at;
-      if (started === undefined) return { raw: 0, active: false };
-      return { raw: clamp(now - started, 0, ms) / ms, active: true };
+) => { readonly raw: number; readonly active: boolean };
+
+/** One trigger's reading of `scroll.y`: it folds each scroll step once, and starts again when the
+ * state's step list or the threshold changes. */
+function triggerFold(ms: number, back: TriggerBack): TriggerFold {
+  let list: readonly Step<number>[] | undefined;
+  let limit = Number.NaN;
+  let done = 0;
+  let reached = false;
+  let started: number | undefined;
+  let progress = 0;
+  let since = 0;
+  let active = false;
+  return (time, events, threshold) => {
+    const now = elapsedOf(time.clock);
+    const steps = scroll.y.steps(time, events);
+    if (steps !== list || threshold !== limit || steps.length < done) {
+      const initial = scroll.y.start >= threshold;
+      list = steps;
+      limit = threshold;
+      done = 0;
+      reached = initial;
+      started = initial ? 0 : undefined;
+      progress = 0;
+      since = 0;
+      active = initial;
     }
-    case "replay": {
-      if (now === undefined) {
-        const reached = scroll.y(time, events) >= threshold;
-        return { raw: reached ? 1 : 0, active: reached };
+    for (; done < steps.length; done += 1) {
+      const step = steps[done];
+      if (step === undefined) break;
+      const next = step.value >= threshold;
+      switch (back) {
+        case "stay":
+          if (started === undefined && next) started = step.at;
+          break;
+        case "replay":
+          if (next === reached) break;
+          reached = next;
+          started = next ? step.at : undefined;
+          break;
+        case "reverse":
+          if (next === reached) break;
+          progress = clamp(
+            progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms),
+            0,
+            1,
+          );
+          since = step.at;
+          reached = next;
+          if (next) active = true;
+          break;
+        default:
+          return unreachable(back);
       }
-      let reached = initial;
-      let started: number | undefined = initial ? 0 : undefined;
-      for (const step of scroll.y.steps(time, events)) {
-        const next = step.value >= threshold;
-        if (next === reached) continue;
-        reached = next;
-        started = next ? step.at : undefined;
-      }
-      if (started === undefined) return { raw: 0, active: false };
-      return { raw: clamp(now - started, 0, ms) / ms, active: true };
     }
-    case "reverse": {
-      if (now === undefined) {
-        const reached = scroll.y(time, events) >= threshold;
-        return { raw: reached ? 1 : 0, active: reached };
+    switch (back) {
+      case "stay":
+      case "replay": {
+        if (now === undefined) {
+          const shown =
+            back === "stay" ? started !== undefined : scroll.y(time, events) >= threshold;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        if (started === undefined) return { raw: 0, active: false };
+        return { raw: clamp(now - started, 0, ms) / ms, active: true };
       }
-      let reached = initial;
-      let progress = 0;
-      let since = 0;
-      let active = initial;
-      for (const step of scroll.y.steps(time, events)) {
-        const next = step.value >= threshold;
-        if (next === reached) continue;
-        progress = clamp(progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms), 0, 1);
-        since = step.at;
-        reached = next;
-        if (next) active = true;
+      case "reverse": {
+        if (now === undefined) {
+          const shown = scroll.y(time, events) >= threshold;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        const raw = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
+        return { raw, active: active && (reached || raw > 0) };
       }
-      progress = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
-      if (!reached && progress <= 0) active = false;
-      return { raw: progress, active };
+      default:
+        return unreachable(back);
     }
-    default:
-      return unreachable(back);
-  }
+  };
 }
 
 function makeTriggerBeat(
@@ -346,6 +369,7 @@ function makeTriggerBeat(
   when: ScrollReached,
   back: TriggerBack,
 ): TriggerBeat {
+  const fold = triggerFold(ms, back);
   return Object.freeze({
     kind: "trigger-beat",
     name,
@@ -354,7 +378,7 @@ function makeTriggerBeat(
     back,
     of(time: Time, ease?: Ease, context?: BeatContext): Time {
       const { events, rest } = readContext(context);
-      const { raw } = triggerState(time, events, when.point.at(rest), ms, back);
+      const { raw } = fold(time, events, when.point.at(rest));
       const progress = ease === undefined ? raw : ease(raw);
       const clock =
         elapsedOf(time.clock) === undefined
@@ -364,7 +388,7 @@ function makeTriggerBeat(
     },
     active(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
-      return triggerState(time, events, when.point.at(rest), ms, back).active;
+      return fold(time, events, when.point.at(rest)).active;
     },
   });
 }

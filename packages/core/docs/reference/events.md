@@ -8,3 +8,5 @@ An event is something that happened at a moment, such as a hover, a press or a l
 - **`EventPoint`** `type EventPoint = { x: number; y: number; z?: number }`: A point an event happened at, in the scene's units; `z` only in 3D.
 - **`Events`** `type Events = readonly MotionEvent[]`: Every event so far, oldest first; a scene reads it beside its time.
 - **`MotionEvent`** `type MotionEvent = { name: string; at: number; target?: string; x?: number; y?: number; value?: number; point?: EventPoint; other?: string }`: Something that happened at `at` ms on the scene's clock: a hover, a press, a landing, or a sample of a live number; `target` names where.
+- **`eventLog`** `(): EventLog`: A log of events that only grows, so a state reading it again checks only its last folded event.
+- **`EventLog`** `type EventLog = { events: Events; add: (event: MotionEvent) => void; clear: () => void }`: A log that only grows: each event goes in at its time, after any at the same ms, and none is replaced.
