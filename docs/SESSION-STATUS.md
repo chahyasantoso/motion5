@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-20, Asia/Jakarta.
-- **Read against:** `feat/page-travel`, stacked on `feat/page-sections` (PR 607), `feat/page-mount` (PR 606), and `feat/page-inputs` (PR 605) from `refactor/points-and-reference` after PR 604.
+- **Read against:** `feat/engine`, from `main` after PR 611, which brought PRs 599 to 610 onto `main`.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **3D in a scene (`plan/stage-3d-plan.md`), then the live kit and web overlay built on `mountPage` (`plan/roadmap.md`).**
+- **The engine (`plan/engine-plan.md`), then the compositor (`plan/compositor-plan.md`), then 3D in a scene and the live kit (`plan/roadmap.md`).**
 
 ## Open, and not scheduled
 
