@@ -2,6 +2,7 @@ import { ease, type Ease } from "../ease/ease";
 import { mix } from "../blend/mix";
 import { span, type Span } from "../time/span";
 import { timeAt } from "../time/time-at";
+import { rawTime, stillMoving } from "./clock-watch";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
 import { changesOf, type Change } from "./changes";
@@ -50,7 +51,8 @@ export function easeTo<S>(
         throw new RangeError(`easeTo: ${name} must be a finite number of ms, 0 or more.`);
   const changes = changesOf(source, pick);
   let run: Run | undefined;
-  return (time, events) => {
+  return (watched, events) => {
+    const time = rawTime(watched);
     const { start, list } = changes(time, events);
     if (elapsedOf(time.clock) === undefined) return list[list.length - 1]?.to ?? start;
     const kept: Run =
@@ -67,6 +69,7 @@ export function easeTo<S>(
       const begin = change.at + sideOf(options.delayMs ?? 0, rising);
       kept.stretch = span(begin, begin + sideOf(options.ms, rising));
     }
+    if ((elapsedOf(time.clock) ?? 0) < kept.stretch.to) stillMoving();
     return mix(kept.from, kept.to, kept.stretch.of(time, curve).progress);
   };
 }

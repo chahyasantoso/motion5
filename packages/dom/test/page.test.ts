@@ -1,4 +1,4 @@
-import { INPUT_EVENTS, motion, pointer, scroll, type Pose2d } from "@gerak/core";
+import { INPUT_EVENTS, motion, pointer, scroll, springTo, type Pose2d } from "@gerak/core";
 import {
   beat,
   bind,
@@ -436,5 +436,186 @@ describe("mountPage", () => {
     expect(cardNode.style.transform).toBe("translate3d(50px, 0px, 0px)");
     expect(mounted.events().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
     mounted.dispose();
+  });
+});
+
+describe("mountPage frames for a cause", () => {
+  const OFF = Symbol.for("@gerak/dom/clock-frames-off");
+
+  type Run = {
+    readonly styles: string[];
+    readonly stillRuns: number;
+    readonly queuedAtEnd: number;
+  };
+
+  function play(off: boolean): Run {
+    Reflect.set(globalThis, OFF, off);
+    try {
+      const names = [
+        "intro",
+        "scrolled",
+        "smoothed",
+        "revealed",
+        "stayed",
+        "replayed",
+        "clocked",
+        "pointed",
+        "sprung",
+        "still",
+      ];
+      const nodes = names.map((name) => new FakeNode(name));
+      const parts = [0, 1, 2].map((index) => new FakeNode(`part${index}`, ["part"]));
+      nodes.forEach((node, index) => {
+        node.offsetTop = index * 300;
+      });
+      const root = new FakeRoot([...nodes, ...parts]);
+      const frames = fakeFrames();
+      let ms = 0;
+      let scrollY = 0;
+      const scrollTarget = {
+        listeners: new Set<() => void>(),
+        get scrollY() {
+          return scrollY;
+        },
+        addEventListener(_type: string, listener: () => void) {
+          this.listeners.add(listener);
+        },
+        removeEventListener(_type: string, listener: () => void) {
+          this.listeners.delete(listener);
+        },
+      };
+      let stillRuns = 0;
+      const sprung = springTo(pointer.x, (x) => x, { stiffness: 60, damping: 10 });
+      const slide = motion((t): Pose2d => ({ x: 100 * t.progress }));
+      const counted = motion((t): Pose2d => {
+        stillRuns += 1;
+        return { y: 50 * t.progress };
+      });
+      const range = beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] });
+      const smooth = beat("smooth", { scroll: [scrollPoint(0), scrollPoint(400)], smooth: true });
+      const scene = sceneBuilder()
+        .element(box("intro", { node: el("#intro") }))
+        .motion(slide.in(beat("introBeat", 300)))
+        .element(box("scrolled", { node: el("#scrolled") }))
+        .motion(slide.in(range))
+        .element(box("smoothed", { node: el("#smoothed") }))
+        .motion(slide.in(smooth))
+        .element(box("revealed", { node: el("#revealed") }))
+        .motion(slide.in(beat("rev", 500, { when: scrollPoint(200).reached, back: "reverse" })))
+        .element(box("stayed", { node: el("#stayed") }))
+        .motion(slide.in(beat("sta", 400, { when: scrollPoint(150).reached, back: "stay" })))
+        .element(box("replayed", { node: el("#replayed") }))
+        .motion(slide.in(beat("rep", 300, { when: scrollPoint(250).reached, back: "replay" })))
+        .element(box("clocked", { node: el("#clocked") }))
+        .motion(
+          motion(
+            (_t, context?: { readonly time: { readonly clock: { readonly kind: string } } }) => ({
+              rotation:
+                context?.time.clock.kind === "live"
+                  ? Number(Reflect.get(context.time.clock, "elapsed")) / 100
+                  : 0,
+            }),
+          ).in(range),
+        )
+        .element(box("pointed", { node: el("#pointed") }))
+        .motion(bind({ x: (t, e) => pointer.x(t, e) * 100 }))
+        .element(box("sprung", { node: el("#sprung") }))
+        .motion(bind({ x: (t, e) => sprung(t, e) * 100 }))
+        .element(box("still", { node: el("#still") }))
+        .motion(counted.in(beat("stillBeat", 100)))
+        .element(many("parts", 3, { node: el(".part") }))
+        .motion(
+          slide.in(beat("partBeat", 400, { when: scrollPoint(300).reached, back: "reverse" })),
+        );
+      const mounted = mountPage(scene, {
+        root,
+        scrollTarget,
+        frames,
+        clock: () => ms,
+        viewport: () => ({ width: 1000, height: 500 }),
+      });
+      const styles: string[] = [];
+      const scrollAt = new Map([
+        [496, 120],
+        [512, 260],
+        [528, 340],
+        [896, 380],
+        [1504, 90],
+        [1520, 10],
+        [2608, 330],
+      ]);
+      const after = stillRuns;
+      for (ms = 16; ms <= 6000; ms += 16) {
+        const y = scrollAt.get(ms);
+        if (y !== undefined) {
+          scrollY = y;
+          for (const listener of [...scrollTarget.listeners]) listener();
+        }
+        if (ms === 1200 || ms === 3008) root.fire("pointermove", { clientX: ms / 4, clientY: 100 });
+        if (frames.queued > 0) frames.tick(ms);
+        styles.push(
+          [...nodes, ...parts]
+            .map((node) => `${node.style.transform}|${node.style.opacity}`)
+            .join(";"),
+        );
+      }
+      const run = { styles, stillRuns: stillRuns - after, queuedAtEnd: frames.queued };
+      mounted.dispose();
+      return run;
+    } finally {
+      Reflect.deleteProperty(globalThis, OFF);
+    }
+  }
+
+  it("writes every node the same as running the whole scene on every frame", () => {
+    const whole = play(true);
+    const caused = play(false);
+    expect(caused.styles).toEqual(whole.styles);
+  });
+
+  it("runs a finished element only on input frames, and asks for no frame once nothing moves", () => {
+    const whole = play(true);
+    const caused = play(false);
+    expect(caused.stillRuns).toBeLessThan(whole.stillRuns / 4);
+    expect(caused.queuedAtEnd).toBe(0);
+  });
+});
+
+describe("mountPage frames for a cause, reading another element", () => {
+  const OFF = Symbol.for("@gerak/dom/clock-frames-off");
+
+  function play(off: boolean): string[] {
+    Reflect.set(globalThis, OFF, off);
+    try {
+      const leaderNode = new FakeNode("leader");
+      const followerNode = new FakeNode("follower");
+      const root = new FakeRoot([leaderNode, followerNode]);
+      const frames = fakeFrames();
+      let ms = 0;
+      const leader = box("leader", { node: el("#leader") });
+      const scene = sceneBuilder()
+        .element(leader)
+        .motion(motion((t): Pose2d => ({ x: 100 * t.progress })).loop(700))
+        .element(box("follower", { node: el("#follower") }))
+        .motion(
+          motion((_t, context?: { read(target: typeof leader): Pose2d }) => ({
+            y: context?.read(leader).x ?? 0,
+          })).in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })),
+        );
+      const mounted = mountPage(scene, { root, frames, clock: () => ms });
+      const styles: string[] = [];
+      for (ms = 16; ms <= 6000; ms += 16) {
+        if (frames.queued > 0) frames.tick(ms);
+        styles.push(`${leaderNode.style.transform};${followerNode.style.transform}`);
+      }
+      mounted.dispose();
+      return styles;
+    } finally {
+      Reflect.deleteProperty(globalThis, OFF);
+    }
+  }
+
+  it("keeps an element that reads a moving element running with it", () => {
+    expect(play(false)).toEqual(play(true));
   });
 });

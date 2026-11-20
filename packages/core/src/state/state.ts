@@ -1,3 +1,4 @@
+import { rawTime } from "./clock-watch";
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
 import type { Events, MotionEvent } from "../events/event-list";
@@ -44,7 +45,7 @@ export function state<S>(
   let seen: Events | undefined;
   let seenGeneration: number | undefined;
   const fold = (time: Time, events: Events): void => {
-    const now = elapsedOf(time.clock);
+    const now = elapsedOf(rawTime(time).clock);
     let resumes = (now === undefined || latest <= now) && events.length >= taken.length;
     // A growing log counts every change other than adding at its end, so an unchanged count means only that.
     const generation = generationOf(events);

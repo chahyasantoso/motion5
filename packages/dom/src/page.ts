@@ -26,6 +26,7 @@ import {
   type RestReader,
   type SceneBuilder,
   type Stage,
+  type Moves,
 } from "@gerak/stage";
 import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
 import { eventRecorder, type EventSource } from "./events";
@@ -500,6 +501,9 @@ function boxForNode(
   return withPlacement(flowBox, { kind: "flow" });
 }
 
+// Tests set this to run the whole scene on every frame, to compare with frames run for a cause.
+const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
+
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
   const stage = resolvePageStage(input);
@@ -796,11 +800,50 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     for (const listener of [...listeners]) listener();
   };
 
-  // An input only logs and asks for a frame; the frame renders once, so many inputs in one frame cost one render.
+  // An input logs and asks for a frame, which runs the whole scene once; with no input,
+  // a frame runs only the elements that move with time alone.
+  let fresh = true;
+  // The last frame's reading of how elements move: what it ran, and what an earlier frame said of the rest.
+  let earlierMoves: ReadonlyMap<string, Moves> = new Map();
+  let frameMoves = new Map<string, Moves>();
+  let frameOnly: ReadonlySet<string> | undefined;
+  let runOnly: ReadonlySet<string> | undefined;
+  const lastMoves = (): ReadonlyMap<string, Moves> => {
+    if (frameOnly === undefined) return frameMoves;
+    const merged = new Map(earlierMoves);
+    for (const name of frameOnly) merged.delete(name);
+    for (const [name, kind] of frameMoves) merged.set(name, kind);
+    return merged;
+  };
+  const hasReadout = targets.some(
+    (target) => target.member.kind === "actor" && target.member.content.kind === "readout",
+  );
+  const ambientNames = stage.members
+    .filter((member) => member.expect === "ambient")
+    .map((member) => member.name);
   const recorder = eventRecorder(elapsed, (at) => {
     activeUntil = Math.max(activeUntil, at + settleMs);
+    fresh = true;
     schedule();
   });
+  // What the next frame runs is decided when it is asked for, as the clock stands then.
+  let wholeNext = true;
+  let maybeNext = true;
+  const movingNow = (withMaybe: boolean): Set<string> => {
+    const names = new Set<string>(ambientNames);
+    for (const [name, kind] of lastMoves())
+      switch (kind) {
+        case "time":
+          names.add(name);
+          break;
+        case "maybe":
+          if (withMaybe) names.add(name);
+          break;
+        default:
+          unreachable(kind);
+      }
+    return names;
+  };
 
   const syncScroll = (): boolean => {
     const nextY = readScrollY();
@@ -814,14 +857,28 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     frameHandle = undefined;
     if (!live) return;
     syncScroll();
-    notify();
-    if (live && (ambient || elapsed() < activeUntil)) schedule();
+    const whole =
+      fresh || wholeNext || hasReadout || Reflect.get(globalThis, CLOCK_FRAMES_OFF) === true;
+    fresh = false;
+    if (whole) {
+      runOnly = undefined;
+      notify();
+    } else {
+      const names = movingNow(maybeNext);
+      if (names.size > 0) {
+        runOnly = names;
+        notify();
+        runOnly = undefined;
+      }
+    }
+    const now = elapsed();
+    wholeNext = now < introMs;
+    maybeNext = now < activeUntil;
+    if (live && (ambient || wholeNext || movingNow(maybeNext).size > 0)) schedule();
   };
 
   function schedule(): void {
-    if (live && frameHandle === undefined && (ambient || elapsed() < activeUntil)) {
-      frameHandle = frames.requestFrame(tick);
-    }
+    if (live && frameHandle === undefined) frameHandle = frames.requestFrame(tick);
   }
 
   if (lastScrollY !== 0) recorder.sample(INPUT_EVENTS.scroll, lastScrollY);
@@ -877,14 +934,31 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
 
+  // Built again only when the page is measured again.
+  let boxesFor: RestReader | undefined;
+  let boxes: Readonly<Record<string, RestReader>> = {};
   const sceneSignal: Signal<StageValues> = (time, events) => {
-    const boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
-    const out = frameOf(stage, {
+    if (boxesFor !== currentReader) {
+      boxesFor = currentReader;
+      boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
+    }
+    const only = runOnly;
+    const moves = new Map<string, Moves>();
+    const ran = frameOf(stage, {
       time,
       events,
       boxes,
       lines: currentLines,
+      moves,
+      ...(only === undefined ? {} : { only }),
     });
+    earlierMoves = lastMoves();
+    frameMoves = moves;
+    frameOnly = only;
+    const out =
+      only === undefined || lastFrame === undefined
+        ? ran
+        : { ...ran, targets: { ...lastFrame.targets, ...ran.targets } };
     for (const target of targets) {
       const { member } = target;
       if (member.kind === "actor" && member.content.kind === "readout") {
@@ -920,6 +994,13 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
+    if (runOnly !== undefined && !runOnly.has(member.name)) {
+      // Presence follows the clock, so it is applied on every frame, run or not.
+      const shown = lastFrame?.visible[member.name] ?? true;
+      if (member.kind === "list") for (const item of target.items) applyVisibility(item, shown);
+      else applyVisibility(target.node, shown);
+      return;
+    }
     const visible = lastFrame?.visible[member.name] ?? true;
     switch (member.kind) {
       case "list": {

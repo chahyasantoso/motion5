@@ -49,7 +49,8 @@ export { NO_EVENTS } from "./events/event-list";
 export { isMotionEvent, mergeEvents } from "./events/event-list";
 export { type EventPoint, type Events } from "./events/event-list";
 export { type MotionEvent } from "./events/event-list";
-export { eventLog, type EventLog } from "./events/event-log";
+export { eventLog, versionOf, type EventLog } from "./events/event-log";
+export { rawTime, stillMoving, watchClock, watchedTime, type ClockUse } from "./state/clock-watch";
 export { lanes, type LaneOrigin, type Lanes, type LanesOptions } from "./time/lanes";
 export { CUSTOM_FIELD, POSE_2D_FIELDS, VALUE_FIELDS } from "./fields/pose";
 export {

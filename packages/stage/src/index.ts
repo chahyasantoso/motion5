@@ -81,6 +81,7 @@ export {
   type Limits,
   type LayoutsInput,
   type ListPose,
+  type Moves,
 } from "./author/stage";
 export {
   DEFAULT_FRAME,

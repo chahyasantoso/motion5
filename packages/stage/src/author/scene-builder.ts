@@ -11,6 +11,8 @@ import {
   scroll,
   timeAt,
   unreachable,
+  watchClock,
+  watchedTime,
   withProgress,
   type Ease,
   type Events,
@@ -50,6 +52,7 @@ import type {
   LayoutsInput,
   Limits,
   ListPose,
+  Moves,
   SceneContext,
   StageDefinition,
 } from "./stage";
@@ -863,6 +866,55 @@ interface Env {
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
+  /** Filled as elements run: which can change with the clock alone. */
+  readonly moves: Map<string, Moves> | undefined;
+}
+
+function note(moves: Map<string, Moves> | undefined, name: string, kind: Moves): void {
+  if (moves === undefined) return;
+  if (kind === "time" || !moves.has(name)) moves.set(name, kind);
+}
+
+/** How a motion step can change with no new input at `time`, or undefined when only input moves it. */
+function movesOf(step: MotionStep, time: Time, context: unknown): Moves | undefined {
+  if (step.loops) return "time";
+  const window = step.window;
+  if (window === undefined) return undefined;
+  if (isSpan(window)) {
+    const now = elapsedOf(time.clock);
+    return now !== undefined && now < window.to ? "time" : undefined;
+  }
+  if (typeof window.moving === "function") return window.moving(time, context) ? "time" : undefined;
+  return "maybe";
+}
+
+/** The context a motion sees: its time tells the clock watcher when read, `carry` counts as `maybe`, and
+ * reading another element moves this one as that element moves. */
+function watched(
+  context: MotionContext,
+  seen: () => void,
+  readOf: (target: string) => void,
+): MotionContext {
+  const time = watchedTime(context.time);
+  return {
+    time,
+    events: context.events,
+    rest: context.rest,
+    get carry() {
+      seen();
+      return context.carry;
+    },
+    element: context.element,
+    span: context.span,
+    read: (target, at) => {
+      const pose = context.read(target, at);
+      readOf(typeof target === "string" ? target : target.name);
+      return pose;
+    },
+    ...(context.index === undefined ? {} : { index: context.index }),
+    ...(context.count === undefined ? {} : { count: context.count }),
+    ...(context.line === undefined ? {} : { line: context.line }),
+  };
 }
 
 function replacing(below: Pose2d, pose: Pose2d): Pose2d {
@@ -903,9 +955,14 @@ function stackOf(
   for (const step of plan.steps) {
     const below = stack;
     switch (step.kind) {
-      case "modify":
-        stack = step.principle(below);
+      case "modify": {
+        const principled = step.principle(below);
+        stack = (time, events) => {
+          note(env.moves, plan.name, "maybe");
+          return principled(time, events);
+        };
         break;
+      }
       case "motion":
         stack = (time, events) => {
           const partLines = index === undefined ? undefined : env.lines?.[plan.name];
@@ -937,15 +994,39 @@ function stackOf(
             ...(count === undefined ? {} : { count }),
             ...(line === undefined ? {} : { line }),
           };
-          if (partLines !== undefined) PART_LINES.set(context, partLines);
+          const moves = env.moves;
+          if (moves !== undefined) {
+            const kind = movesOf(step, time, context);
+            if (kind !== undefined) note(moves, plan.name, kind);
+          }
+          const used =
+            moves === undefined || step.travels
+              ? context
+              : watched(
+                  context,
+                  () => note(moves, plan.name, "maybe"),
+                  (target) =>
+                    note(moves, plan.name, moves.get(target) === "time" ? "time" : "maybe"),
+                );
+          if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
-          if (step.travels) BELOW_POSE.set(context, prev);
+          if (step.travels) BELOW_POSE.set(used, prev);
           // On a live or untimed clock a travel with no window sits on its slot; a timed scene sweeps it.
           const ran =
             step.travels && step.window === undefined && time.clock.kind !== "timed"
               ? withProgress(time, 1)
               : time;
-          const pose = step.run(ran, context);
+          const pose =
+            moves === undefined
+              ? step.run(ran, used)
+              : watchClock(
+                  (use) => note(moves, plan.name, use),
+                  () =>
+                    step.run(
+                      step.window === undefined && !step.travels ? watchedTime(ran) : ran,
+                      used,
+                    ),
+                );
           switch (step.joins) {
             case "layer":
               return step.travels ? joinTravel(prev, pose) : combine([prev, pose]);
@@ -954,7 +1035,7 @@ function stackOf(
                 step.window !== undefined &&
                 "active" in step.window &&
                 typeof step.window.active === "function"
-                  ? step.window.active(time, context)
+                  ? step.window.active(time, used)
                   : (elapsedOf(time.clock) ?? 0) >= (step.span?.from ?? 0);
               if (!active) return prev;
               return step.travels ? joinTravel(prev, pose) : replacing(prev, pose);
@@ -1023,10 +1104,12 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         carry: context.carry,
         lines: context.lines,
         read: new Map(),
+        moves: context.moves,
       };
       const out: Record<string, Pose2d | ListPose> = {};
       for (const plan of env.plans.values()) {
         if (plan.steps.length === 0) continue;
+        if (context.only !== undefined && !context.only.has(plan.name)) continue;
         out[plan.name] =
           plan.count === undefined
             ? stackOf(plan, env, undefined, undefined)(context.time, context.events)
