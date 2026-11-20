@@ -7,7 +7,8 @@ the page's main thread is busy, and costs less main-thread time than GSAP and Sc
 differently. The page mount hands the browser, as Web Animations, every element whose motion depends only on scroll,
 and keeps the rest in the engine.
 
-Status: proposed 2026-11-20. Starts after `plan/engine-plan.md` lands. Three slices, one pull request after the last.
+Status: approved 2026-11-20. Starts after PR 612 (`feat/engine`, the engine plan) merges; branch from `main`. Three
+slices, one pull request after the last.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
@@ -15,14 +16,19 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 - A frame is a pure function of time and events, so a motion that reads only its scroll beat's progress can be
   worked out for any scroll position ahead of time. GSAP's tweens and callbacks cannot be.
-- `mountPage` runs every element on the main thread in an animation frame; GSAP does the same. Both lag the scroll
-  when the main thread is busy.
+- `mountPage` runs frames for a cause (ADR-195): the whole scene after an input, only the elements that move with
+  time alone on other frames, and no frame at rest. Everything still runs on the main thread, as GSAP does; both lag
+  the scroll when the main thread is busy.
+- yuzu against the GSAP proof, 60 wheel steps, script time: about 40 ms against 30 ms without `smooth`, and about
+  75 ms with the committed `smooth` bottle. The scroll-driven feature cards, story steps and gallery are what this
+  plan moves; the bottle (`travel`, `smooth`) and the glow (`bind`, springs) stay in the engine.
 - Chromium runs a Web Animation on a `ScrollTimeline` on its compositor thread when it animates only `transform` and
   `opacity`. Other engines without `ScrollTimeline` run the engine for every element.
 - The page tools pause each CSS and Web Animations animation and set it to their clock (ADR-158); an animation on a
   scroll timeline follows the scripted scroll instead.
-- The engine's read tracking (`plan/engine-plan.md`, Decision 4, and the parked memo) can tell which reads a motion
-  made.
+- `frame(stage, { only, moves })` runs a set of elements and reports which move with time alone; a motion's context
+  notes a read of the clock, `carry` or another element (`packages/stage/src/author/scene-builder.ts`, `watched`).
+  It does not yet note a direct read of `events` or of the measured boxes.
 
 ## Decisions
 
@@ -37,7 +43,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 - An element qualifies when every motion on it plays in a scroll beat without `smooth`, its motions read nothing but
   their window time and the measured boxes, and it sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and
-  `opacity`.
+  `opacity`. Slice A extends the watched context to note a direct read of `events`, which disqualifies.
 - An element with any clock beat, `bind`, `travel`, `read`, `carry`, principle, spring or pointer read stays in the
   engine. An element that fails the read check on any sample stays in the engine.
 - An element that triggers a clock beat (`beat(name, ms, { when })`) qualifies when its motions play only in trigger
@@ -76,10 +82,11 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 ## Measure
 
-- Script time on yuzu against the GSAP proof, 60 wheel steps, unthrottled and with the CPU slowed 6x: the target is
-  less than GSAP's.
-- Keeping up under load: with a 40 ms main-thread task every 100 ms, the browser-driven bottle's and cards' positions
-  against the scroll position, sampled by the compositor's own frames in a Chromium trace, for gerak and for GSAP.
+- Script time with `performance/page-vs-gsap.mjs` (`--gerak` the served yuzu page, `--gsap` the GSAP proof folder,
+  `--throttle 6` for the slowed CPU), three runs each, yuzu with and without `smooth`: the target is less than GSAP's
+  without `smooth`.
+- Keeping up under load: with a 40 ms main-thread task every 100 ms, the cards' and story steps' positions against
+  the scroll position, sampled by the compositor's own frames in a Chromium trace, for gerak and for GSAP.
 - Sample comparison of every piece as in the engine plan; no piece may change.
 
 ## Docs and record
@@ -101,6 +108,10 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 ## Working notes for any harness
 
 - Windows, Git Bash. Run git as plain commands.
+- Serve yuzu with `npx vite --port 5199` in `apps/pieces`; the page is `http://localhost:5199/yuzu/yuzu.html`.
+- The GSAP proof is not in the repository: it is the folder
+  `C:/Users/chahy/.gemini/antigravity/brain/9bcf47ab-cb72-4047-aea8-583fce0b9de8/scratch/gsap-proof` on the owner's
+  machine. Set `GERAK_CHROMIUM` to a Chromium executable when Playwright's own browser is missing.
 - Browser tests run in Chromium only. Rerun a timed-out one alone before treating it as a failure; never weaken it.
 - Builder subagents run on Sonnet 5.5 at medium effort or below.
 
