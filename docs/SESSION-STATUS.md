@@ -5,22 +5,22 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-20, Asia/Jakarta.
-- **Read against:** `feat/compositor`, from `main` after PR 612.
+- **Captured:** 2026-11-21, Asia/Jakarta.
+- **Read against:** `feat/stage-3d`, from `main` after PR 613.
 
 ## Now
 
 - **A piece is a `sceneBuilder` chain compiled with `compileScene`, split across thirteen packages in three enforced groups (`core`, `modules`, `library`), playing either in a shadow-DOM stage (`mountStage`) or directly over existing page nodes (`mountPage`).**
   `@gerak/core` owns fields, time (`span`, `chain`, `lanes`, `loop`, `sequence`, `repeated`, `reversed`, `timeAt`, `motion` with `MotionWindow`, `shared`), shapes (`Timing`, `Curve<T = number>`, `Ease = Curve<number>`, `Signal<T = Pose2d>`), eases (`ease.*`, `backEase`, `springEase`, `spring`), envelopes (`arch`, `wave`, `attack`, `decay`, `taper`), blends, paths (`ballistic`, `along`, `along3d`), geometry, 3D maths, measures (`velocity`, `velocity3d`, `tally`), motion principles (`squashStretch`, `anticipation`, `followThrough`, `overlap`, `arc`, `exaggerate`, `secondary`, `smear`, `trail`) and state from events (`state`, `eventLog`, `scroll`, `pointer`, `INPUT_EVENTS`, `springTo`, `easeTo`, which `follow` and `tally` build on, and `watchClock` with `stillMoving`, which tell a renderer what moves with time alone);
-  `@gerak/stage` owns `sceneBuilder` (single-scene element ownership), elements (`box`, `shape`, `text`, `many`, `group`, `el(selector)`), beats (clock `beat`, `scrollPoint`, `section` `.top`/`.end` edges, scroll beats with `smooth`, triggered beats with `back`), `bind`, `bindEach`, `stagger` (by `index` or `line`), `stayWith`, `carry`, `travel` (onto measured slots), `compileScene`, `frame` (reporting each element's `moves` and `Drive`), `check` and layouts, with `@gerak/stage/render` outlines/viewport box placements (`withPlacement`, `boxInViewport`) and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` (`mountStage`, `mountPage`, which hands scroll- and trigger-driven elements to Chromium as Web Animations sampled from `frame()`) and `@gerak/react` (`usePlayer`, `PlayerHost`) play and write `Signal`.
+  `@gerak/stage` owns `sceneBuilder` (single-scene element ownership), elements (`box`, `shape`, `text`, `many`, `group`, `el(selector)`, and `object`, a Three.js object posed in `Pose3d`), beats (clock `beat`, `scrollPoint`, `section` `.top`/`.end` edges, scroll beats with `smooth`, triggered beats with `back`), `bind`, `bindEach`, `stagger` (by `index` or `line`), `stayWith`, `carry`, `travel` (onto measured slots, an object's through its view's lens), `compileScene`, `frame` (reporting each element's `moves` and `Drive`), `check` and layouts, with `@gerak/stage/render` outlines/viewport box placements (`withPlacement`, `boxInViewport`) and `@gerak/stage/dom` tokens; `@gerak/player` (`play`, `Player`), `@gerak/dom` (`mountStage`, `mountPage`, which hands scroll- and trigger-driven elements to Chromium as Web Animations sampled from `frame()`) `@gerak/react` (`usePlayer`, `PlayerHost`) and `@gerak/three` (`bindScene3d`) play and write `Signal`.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics`, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves`) adds plain moves, `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
   `@gerak/tools` runs `npx gerak <command>` cleanly with core alone; `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages.
-  Decisions are ADR-170 to ADR-196; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
+  Decisions are ADR-170 to ADR-197; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **The compositor pull request (`plan/compositor-plan.md`), then 3D in a scene and the live kit (`plan/roadmap.md`).**
+- **The 3D-in-a-scene pull request (`plan/stage-3d-plan.md`), then the live kit, the web overlay and video (`plan/roadmap.md`).**
 
 ## Open, and not scheduled
 

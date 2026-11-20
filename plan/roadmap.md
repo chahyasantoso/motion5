@@ -157,10 +157,10 @@ Stage by stage; `docs/SESSION-STATUS.md` holds the detail of what has landed.
 | --- | --- | --- |
 | Moves | plain moves with modifiers, the principles and state in core, and moves written beside the scene | particles from a seed |
 | Values | position, turn, scale, opacity, blur, strokes, circle and box clips, a piece's own numbers as CSS variables | colour and shadow as fields of their own, a mask of any shape |
-| Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues | a camera, joining two stage modules |
+| Stage | cast, story, presence, skins, measured rest, layouts and `carried`, scripted cues, Three.js objects travelling to page slots | a camera, joining two stage modules, objects in groups or lists |
 | Bones | 2D and typed 3D chains, 3D FK and IK solvers with constraints, a skinned mesh's bones | retargeting |
 | Bodies | 2D and 3D physics on Rapier, seekable | |
-| Bindings | DOM, React, Three.js poses, skeletons and morph targets | a React Three Fiber scaffold, Vue, Svelte |
+| Bindings | DOM, React, Three.js poses, skeletons and morph targets, `bindScene3d` on the player's step | a React Three Fiber scaffold, Vue, Svelte |
 | Artwork | | importing an SVG as a stage module, pivots at joints, the command that compares the rig with its SVG |
 | Tools | the `motion:*` commands, the live page, frames and their comparison | the live kit as a package |
 | Getting it | installable outside the repository, checked by installing | on npm |
