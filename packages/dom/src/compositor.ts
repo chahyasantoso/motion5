@@ -144,15 +144,22 @@ function missAt(a: TrackSample, b: TrackSample, mid: TrackSample): number {
   return worst;
 }
 
-/** The fewest samples whose straight lines stay within tolerance of every sample. */
-function fewest(samples: readonly TrackSample[]): readonly TrackSample[] {
+/** The fewest samples whose straight lines stay within tolerance of every sample, keeping those at `pinned`. */
+function fewest(
+  samples: readonly TrackSample[],
+  pinned: ReadonlySet<number>,
+): readonly TrackSample[] {
   const first = samples[0];
   if (first === undefined) return [];
   const kept: TrackSample[] = [first];
   let from = 0;
   while (from < samples.length - 1) {
     let to = from + 1;
-    for (let next = to + 1; next < samples.length; next += 1) {
+    for (
+      let next = to + 1;
+      next < samples.length && !pinned.has(samples[to]?.at ?? NaN);
+      next += 1
+    ) {
       const a = samples[from];
       const b = samples[next];
       if (a === undefined || b === undefined) break;
@@ -171,13 +178,14 @@ function fewest(samples: readonly TrackSample[]): readonly TrackSample[] {
   return kept;
 }
 
-/** Samples named elements along `[0, length]`, adding samples where straight lines miss the scene; an
- * element `fits` rejects on any sample, or that sets a field the browser does not play, is left out. */
+/** Samples elements along `[0, length]`, adding samples where lines miss the scene; one `fits`
+ * rejects on any sample, or that sets a field the browser does not play, is left out. */
 function sampleTracks(
   stage: Stage,
   names: ReadonlySet<string>,
   length: number,
   gridStep: number,
+  edges: readonly number[],
   run: (at: number, only: ReadonlySet<string>) => Sampled,
   fits: (name: string, at: number, sampled: Sampled) => boolean,
 ): Map<string, Track> {
@@ -218,9 +226,11 @@ function sampleTracks(
     samples.set(name, lists);
   };
 
-  const grid: number[] = [];
-  for (let at = 0; at < length; at += gridStep) grid.push(at);
-  grid.push(length);
+  const placed = new Set<number>();
+  for (let at = 0; at < length; at += gridStep) placed.add(at);
+  for (const at of edges) if (at > 0 && at < length) placed.add(at);
+  placed.add(length);
+  const grid = [...placed].sort((a, b) => a - b);
   for (const at of grid) {
     if (alive.size === 0) break;
     for (const [name, posed] of sample(at, new Set(alive))) add(name, at, posed);
@@ -261,7 +271,12 @@ function sampleTracks(
     const lists = samples.get(name);
     if (lists === undefined) continue;
     tracks.set(name, {
-      parts: lists.map((list) => fewest([...list].sort((p, q) => p.at - q.at))),
+      parts: lists.map((list) =>
+        fewest(
+          [...list].sort((p, q) => p.at - q.at),
+          new Set(edges),
+        ),
+      ),
       anchor: anchors.get(name),
     });
   }
@@ -304,9 +319,23 @@ export function scrollTracks(
     input.names,
     maxScroll,
     GRID_PX,
+    scrollEdges(stage, input),
     (y, only) => runFrame(stage, input, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
     (name, _, sampled) => sampled.drives.get(name)?.kind === "scroll" && !sampled.moves.has(name),
   );
+}
+
+/** Where the scroll beats of the named elements start and end, so samples land on their edges. */
+function scrollEdges(stage: Stage, input: TrackInput): readonly number[] {
+  const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
+  const edges = new Set<number>();
+  for (const drive of found.drives.values())
+    if (drive.kind === "scroll")
+      for (const beat of drive.beats) {
+        edges.add(beat.from.at(input.rest));
+        edges.add(beat.to.at(input.rest));
+      }
+  return [...edges];
 }
 
 /** Whether every part shows its first sample before the trigger fires, with no clock note. */
@@ -344,6 +373,7 @@ export function triggerTracks(stage: Stage, input: TrackInput): Map<string, Trig
       names,
       beat.ms,
       beat.ms / TRIGGER_GRID,
+      [],
       (ms, only) => runFrame(stage, input, ms, crossed, only),
       (name, ms, sampled) => {
         const drive = sampled.drives.get(name);

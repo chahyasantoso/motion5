@@ -1059,8 +1059,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     player.subscribe(target.member.name, (value) => bindTarget(target, value));
   }
 
-  // Elements whose motions read only the scroll position play on a scroll timeline, and those that read only
-  // a trigger beat's progress on the document timeline, steered by the beat; the engine runs the rest.
+  // Scroll-driven elements play on a scroll timeline, trigger-driven ones on the document timeline
+  // steered by their beat; the engine runs the rest.
   const release = (): void => {
     for (const animations of handed.values())
       for (const animation of animations) animation.cancel();

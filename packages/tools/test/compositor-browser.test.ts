@@ -264,8 +264,10 @@ describe("the page tools on a page the browser plays", () => {
         ],
       },
       async (session) => {
-        const look = () =>
-          session.page.evaluate(() => {
+        // A screenshot draws a frame, as `gerak frames` does, so the scroll timeline has caught up.
+        const look = async () => {
+          await session.page.screenshot();
+          return session.page.evaluate(() => {
             const expected: unknown = Reflect.apply(Reflect.get(window, "__expected"), window, []);
             const read = (name: string) => {
               const node = document.getElementById(name);
@@ -283,6 +285,7 @@ describe("the page tools on a page the browser plays", () => {
             };
             return { bar: read("bar"), card: read("card") };
           });
+        };
         await session.advanceTo(1600);
         const first = await look();
         await session.advanceTo(1900);

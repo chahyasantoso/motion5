@@ -875,7 +875,6 @@ interface Env {
 }
 
 const MORE: Drive = Object.freeze({ kind: "more" });
-const SCROLL: Drive = Object.freeze({ kind: "scroll" });
 
 /** One drive for two: equal ones stay, and any two that differ are `more`. */
 function joinDrive(held: Drive, next: Drive): Drive {
@@ -883,7 +882,9 @@ function joinDrive(held: Drive, next: Drive): Drive {
     case "more":
       return held;
     case "scroll":
-      return next.kind === "scroll" ? held : MORE;
+      if (next.kind !== "scroll") return MORE;
+      if (next.beats.every((beat) => held.beats.includes(beat))) return held;
+      return { kind: "scroll", beats: [...held.beats, ...next.beats] };
     case "trigger":
       return next.kind === "trigger" && next.beat === held.beat ? held : MORE;
     default:
@@ -903,7 +904,7 @@ function driveOf(step: MotionStep): Drive {
   if (step.loops || step.travels || !isInputBeat(window)) return MORE;
   switch (window.kind) {
     case "scroll-beat":
-      return window.smooth ? MORE : SCROLL;
+      return window.smooth ? MORE : { kind: "scroll", beats: [window] };
     case "trigger-beat":
       return { kind: "trigger", beat: window };
     default:
@@ -929,8 +930,8 @@ function movesOf(step: MotionStep, time: Time, context: unknown): Moves | undefi
   return "maybe";
 }
 
-/** The context a motion sees: a read of its time tells the clock watcher, `carry` counts as `maybe`,
- * a read of another element moves this one with it; `other` hears a read of events, `carry` or `read`. */
+/** The context a motion sees: its time tells the clock watcher, `carry` counts as `maybe`, reading
+ * an element moves this one with it, and `other` hears a read of events, `carry` or `read`. */
 function watched(
   context: MotionContext,
   seen: () => void,
