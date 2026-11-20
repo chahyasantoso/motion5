@@ -1,11 +1,12 @@
 import { clockDriver } from "@gerak/dom";
-import { aim, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/core";
+import { aim, motion, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/core";
+import { beat, box, object, sceneBuilder } from "@gerak/stage";
 
-/** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
-export const durationMs = 800;
+/** How long the scene runs, in ms. */
+const LENGTH = 800;
 
 /** The page's size in px; the page sizes its renderer and stage from it. */
-export const stage = { width: 1280, height: 720 } as const;
+export const size = { width: 1280, height: 720 } as const;
 
 const centre = { x: 0, y: 0, z: 0 };
 const eye = { x: 0, y: 0, z: 10 };
@@ -13,16 +14,27 @@ const eye = { x: 0, y: 0, z: 10 };
 /** The fixed camera: the page draws through it and `project3d` pins the label by it. */
 export const lens: Lens3d = { ...eye, ...aim(eye, centre), fov: 50 };
 
-/** Every target's pose at `time`: `box` in 3D (y up, turns in degrees), `label` in stage px. */
-export const scene = (time: Time) => {
-  const box: Pose3d = {};
+const whole = beat("whole", LENGTH);
+
+/** The box's pose at `time`, in world units (y up, turns in degrees); it is still until you give it a move. */
+const boxAt = (_time: Time): Pose3d => ({});
+
+/** The label over the box's centre, in stage px, as the lens draws it. */
+const pinned = (time: Time) => {
+  const box3d = boxAt(time);
   const at = project3d(
-    { x: centre.x + (box.x ?? 0), y: centre.y + (box.y ?? 0), z: centre.z + (box.z ?? 0) },
+    { x: centre.x + (box3d.x ?? 0), y: centre.y + (box3d.y ?? 0), z: centre.z + (box3d.z ?? 0) },
     lens,
-    stage,
+    size,
   );
-  return { box, label: { x: at.x, y: at.y, opacity: at.visible ? 1 : 0 } };
+  return { x: at.x, y: at.y, opacity: at.visible ? 1 : 0 };
 };
 
+export default sceneBuilder({ name: "__NAME__", length: LENGTH, frame: size })
+  .element(object("box"))
+  .motion(motion(boxAt).in(whole))
+  .element(box("label"))
+  .motion(motion(pinned).in(whole));
+
 /** The scene's clock on the page's frames. */
-export const clock = () => clockDriver({ duration: durationMs });
+export const clock = () => clockDriver({ duration: LENGTH });

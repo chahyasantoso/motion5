@@ -88,7 +88,7 @@ describe("gerak new", () => {
       'import { RopeWord } from "./rope-word";',
     );
     expect(readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8")).toContain(
-      'import { clock, lens, scene, stage } from "./rope-word-scene";',
+      'import piece, { clock, lens, size } from "./rope-word-scene";',
     );
   });
 
@@ -160,13 +160,13 @@ describe("gerak new", () => {
     },
   );
 
-  it("with --three writes a Three.js page whose scene samples and whose files typecheck", async () => {
+  it("with --three writes a builder piece with an object, whose page binds it and whose files typecheck", async () => {
     const dir = appRoot();
     const result = scaffold("rope-word", dir, { three: true });
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
     const component = readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8");
-    expect(component).toContain('from "@gerak/three/react"');
+    expect(component).toContain("bindScene3d(player, stage, { box: mesh }");
     expect(component).toContain("preserveDrawingBuffer: true");
     const loaded: unknown = await import(
       pathToFileURL(join(dir, "rope-word/src/rope-word-scene.ts")).href
@@ -174,7 +174,7 @@ describe("gerak new", () => {
     const module = readSceneModule(loaded);
     if ("reason" in module) throw new Error(module.reason);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
-    expect(Reflect.get(Object(loaded), "stage")).toEqual({ width: 1280, height: 720 });
+    expect(Reflect.get(Object(loaded), "size")).toEqual({ width: 1280, height: 720 });
     expect(Reflect.get(Object(Reflect.get(Object(loaded), "lens")), "fov")).toBe(50);
     expect(samples.map((sample) => sample.targets)).toEqual(
       Array(3).fill({ box: {}, label: { x: 640, y: 360, opacity: 1 } }),
