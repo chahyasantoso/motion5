@@ -172,11 +172,11 @@ describe("lines and stagger by line", () => {
   });
 
   it("supports from: 'end' | 'center' | 'edges' when staggering by line", () => {
-    const words = text("words", "A B C D", { split: "words", node: el("#words") });
     const enter = beat("enter", 1000);
     const lines = { words: [0, 1, 1, 2] };
 
     const sample = (from: "start" | "end" | "center" | "edges"): number[] => {
+      const words = text("words", "A B C D", { split: "words", node: el("#words") });
       const stage = compiled(
         sceneBuilder()
           .element(words)

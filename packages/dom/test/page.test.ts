@@ -8,6 +8,7 @@ import {
   many,
   sceneBuilder,
   scrollPoint,
+  section,
   text,
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
@@ -309,5 +310,56 @@ describe("mountPage", () => {
       ),
     ).toThrow(/"missing"/);
     expect(rollbackRoot.nodes[0]?.textContent).toBe("");
+  });
+
+  it("measures stage sections into rest, updates on remeasure, and refuses missing section nodes", () => {
+    const heroNode = new FakeNode("hero");
+    heroNode.offsetLeft = 0;
+    heroNode.offsetTop = 0;
+    heroNode.offsetWidth = 1000;
+    heroNode.offsetHeight = 600;
+    const storyNode = new FakeNode("story");
+    storyNode.offsetLeft = 0;
+    storyNode.offsetTop = 600;
+    storyNode.offsetWidth = 1000;
+    storyNode.offsetHeight = 1400;
+    const cardNode = new FakeNode("card");
+    const root = new FakeRoot([heroNode, storyNode, cardNode]);
+
+    const hero = section("hero", el("#hero"));
+    const story = section("story", el("#story"));
+    const sb = beat("go", { scroll: [hero.top, story.top] });
+
+    const mounted = mountPage(
+      sceneBuilder()
+        .element(box("card", { node: el("#card") }))
+        .motion(motion((t) => ({ x: 100 * t.progress })).in(sb)),
+      { root, frames: fakeFrames(), clock: () => 0 },
+    );
+
+    expect(mounted.rest["hero"]).toEqual({ x: 500, y: 300, width: 1000, height: 600 });
+    expect(mounted.rest["story"]).toEqual({ x: 500, y: 1300, width: 1000, height: 1400 });
+
+    heroNode.offsetHeight = 800;
+    storyNode.offsetTop = 800;
+    mounted.remeasure();
+    expect(mounted.rest["hero"]).toEqual({ x: 500, y: 400, width: 1000, height: 800 });
+    expect(mounted.rest["story"]).toEqual({ x: 500, y: 1500, width: 1000, height: 1400 });
+
+    mounted.dispose();
+    expect(heroNode.style.transform).toBe("");
+
+    const failSolo = new FakeNode("solo");
+    const missingSec = section("absent", el("#absent"));
+    const missingBeat = beat("miss", { scroll: [missingSec.top, missingSec.end] });
+    expect(() =>
+      mountPage(
+        sceneBuilder()
+          .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
+          .motion(motion((t) => ({ x: 10 * t.progress })).in(missingBeat)),
+        { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: () => 0 },
+      ),
+    ).toThrow(/"absent".*#absent/);
+    expect(failSolo.textContent).toBe("");
   });
 });

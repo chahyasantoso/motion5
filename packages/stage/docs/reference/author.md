@@ -5,11 +5,12 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Content`** `type Content = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "readout"; readonly format: (time: Time) => string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What an actor shows; `morph` holds its base outline first, then each target outline.
 - **`Expect`** `type Expect = "settle" | "ambient" | "static"`: What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it.
 - **`ItemContent`** `type ItemContent = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What a list item shows: any content but a readout.
-- **`NodeBinding`** `type NodeBinding = { kind: "node"; selector: string }`: A selector binding a page element to an existing DOM node.
+- **`NodeBinding`** `type NodeBinding = { kind: "node"; selector: string }`: A selector binding a page element or section to an existing DOM node.
 - **`Path`** `type Path = readonly Cubic2d[] | ((rest: RestReader) => readonly Cubic2d[])`: A stroke's outline: fixed cubics, or cubics drawn from the rest boxes of other members.
 - **`Pivot`** `type Pivot = { x: number; y: number }`: The point in frame px a member turns and scales around.
 - **`beat`** `(name: string, ms: number, place?: BeatPlace): Beat (+2 overloads)`: A clock beat `ms` long, a triggered beat `{ when, back }`, or a scroll window `{ scroll: [from, to] }`.
 - **`scrollPoint`** `(px: number): ScrollPoint`: A scroll position in `px`, with `.plus(px)`, `.minus(px)` and `.reached`.
+- **`section`** `(name: string, node: NodeBinding): Section`: A page section bound to `node` whose `.top` and `.end` edges resolve as scroll points.
 - **`Beat`** `type Beat = { name: string; from: number; to: number; of: (time: Time, ease?: Ease) => Time; at: (share: number) => number }`: A named stretch of the piece in ms: a core `Span` that also says what it is called.
 - **`BeatContext`** `type BeatContext = { events?: Events | undefined; rest?: RestReader | undefined }`: Context a scroll or trigger beat reads when mapping time: events so far and measured rests.
 - **`BeatPlace`** `type BeatPlace = { readonly at?: number; } | { readonly after: Beat; readonly gap?: number; }`: Where a clock beat starts: at a ms (default 0), or after another beat with an optional gap.
@@ -17,11 +18,12 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`ScrollBeatOptions`** `type ScrollBeatOptions = { scroll: readonly [from: ScrollPoint, to: ScrollPoint] }`: Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1.
 - **`ScrollPoint`** `type ScrollPoint = { kind: "scroll-point"; at: (rest?: RestReader) => number; plus: (px: number) => ScrollPoint; minus: (px: number) => ScrollPoint; reached: ScrollReached }`: A scroll position or section edge in px, resolved against measured page rest boxes.
 - **`ScrollReached`** `type ScrollReached = { kind: "scroll-reached"; point: ScrollPoint }`: A trigger condition that fires when scroll passes `point`.
+- **`Section`** `type Section = { kind: "section"; name: string; node: NodeBinding; top: ScrollPoint; end: ScrollPoint }`: A named page section whose `.top` and `.end` resolve as scroll points from measured CSS layout.
 - **`TriggerBack`** `type TriggerBack = "reverse" | "stay" | "replay"`: What scrolling back past a trigger point does: reverse cleanly, stay at its end, or reset to replay.
 - **`TriggerBeat`** `type TriggerBeat = { kind: "trigger-beat"; name: string; ms: number; when: ScrollReached; back: TriggerBack; of: (time: Time, ease?: Ease, context?: BeatContext) => Time; active: (time: Time, context?: BeatContext) => boolean }`: A named clock beat started when scroll passes `when.point`, with explicit `back` behaviour.
 - **`TriggerPlace`** `type TriggerPlace = { when: ScrollReached; back: TriggerBack }`: Settings of a triggered clock beat: `when` scroll passes a point, and what scrolling `back` does.
 - **`box`** `(name: string, options?: ElementOptions): Element`: A page element styled by CSS.
-- **`el`** `(selector: string): NodeBinding`: Binds an element to an existing DOM node matched by CSS `selector`.
+- **`el`** `(selector: string): NodeBinding`: Binds an element or section to an existing DOM node matched by CSS `selector`.
 - **`group`** `(name: string, children: readonly Element[], options?: ElementOptions): Element`: A container: its pose moves its children, and each child keeps its own motions.
 - **`many`** `(name: string, count: number, options?: ElementOptions): Element (+1 overloads)`: A row of numbered parts: `count` boxes, or one part per item, each made by `make`.
 - **`shape`** `(name: string, outline: ShapeSource, options?: ElementOptions): Element`: A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`.
@@ -48,7 +50,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Principle`** `type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>`: Wraps the signal of every motion above it in a `.modify` call.
 - **`ReadAt`** `type ReadAt = { time?: Time; index?: number; count?: number }`: Where `read` looks: another time, or another part of a list.
 - **`SceneBuilder`** `type SceneBuilder = { kind: "scene"; element: (element: Element) => ElementStep }`: A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable.
-- **`SceneBuilderOptions`** `type SceneBuilderOptions = { frame?: Frame | undefined; cues?: Events | undefined; length?: number | undefined; layouts?: LayoutsInput<string> | undefined; rest?: Readonly<Record<string, Box>> | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
+- **`SceneBuilderOptions`** `type SceneBuilderOptions = { name?: string | undefined; frame?: Frame | undefined; cues?: Events | undefined; length?: number | undefined; layouts?: LayoutsInput<string> | undefined; rest?: Readonly<Record<string, Box>> | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
 - **`SceneMotion`** `type SceneMotion = (time: Time, context: MotionContext) => Pose2d`: A core `Motion`, or a plain function from time and context to a pose.
 - **`ShowWindow`** `type ShowWindow = Beat | readonly [from: Beat, to: Beat]`: A beat, or two beats: from the start of the first to the end of the second.
 - **`StaggerBy`** `type StaggerBy = "index" | "line"`: Whether `stagger` orders lanes by part index or by measured visual line.
@@ -62,9 +64,10 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`CarryMode`** `type CarryMode = "scale" | "clip" | "keep"`: How a carried member takes the size of its target box.
 - **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, layout: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
 - **`Frame`** `type Frame = { width: number; height: number }`: Stage size in px.
-- **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member name.
+- **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member or section name.
 - **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[] }`: Reads rest boxes; a name never measured answers a zero box.
 - **`isDomSkin`** `(value: unknown): value is DomSkinInput`: Whether `value` is a DOM skin: `{ css }` with an optional `defs`, both strings or both URLs.
+- **`CompiledSection`** `type CompiledSection = { name: string; node: string }`: A compiled page section selector measured into rest by `mountPage`.
 - **`DomSkinInput`** `type DomSkinInput = { readonly css: string; readonly defs?: string | undefined; } | { readonly css: URL; readonly defs?: URL | undefined; }`: The DOM skin: CSS and SVG defs as strings, or as URLs of files beside the piece.
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.
 - **`LayoutsInput`** `type LayoutsInput<L> = { names: readonly [L, ...L[]]; pick?: ((events: Events) => L) | undefined; rests?: Readonly<Record<L, Readonly<Record<string, Box>>>> | undefined }`: Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless.

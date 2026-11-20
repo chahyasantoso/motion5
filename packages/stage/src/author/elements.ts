@@ -1,7 +1,7 @@
 import { unreachable, type Cubic2d, type Time } from "@gerak/core";
 import type { ItemContent, NodeBinding, Path, Pivot } from "./cast";
 
-/** Binds an element to an existing DOM node matched by CSS `selector`. */
+/** Binds an element or section to an existing DOM node matched by CSS `selector`. */
 export function el(selector: string): NodeBinding {
   if (typeof selector !== "string" || selector.trim() === "")
     throw new TypeError("el: selector must be a non-empty CSS selector string.");

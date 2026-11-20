@@ -20,7 +20,14 @@ import {
   type Span,
   type Time,
 } from "@gerak/core";
-import { isInputBeat, type Beat, type ScrollBeat, type TriggerBeat } from "./beat";
+import {
+  isInputBeat,
+  sectionsOfPoint,
+  type Beat,
+  type ScrollBeat,
+  type SectionBinding,
+  type TriggerBeat,
+} from "./beat";
 import {
   castBuilder,
   type ActorSpec,
@@ -34,6 +41,7 @@ import {
 import type { Element } from "./elements";
 import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
 import type {
+  CompiledSection,
   DomSkinInput,
   LayoutsInput,
   Limits,
@@ -78,12 +86,14 @@ export type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>;
 
 /** Options of `sceneBuilder`: what is true of the whole piece. */
 export interface SceneBuilderOptions {
+  /** Optional scene label shown in ownership diagnostics. */
+  readonly name?: string | undefined;
   readonly frame?: Frame | undefined;
   readonly cues?: Events | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
   readonly layouts?: LayoutsInput | undefined;
-  /** Boxes the headless tools read in place of measured ones, by element name. */
+  /** Boxes the headless tools read in place of measured ones, by element or section name. */
   readonly rest?: Rest | undefined;
 }
 
@@ -126,18 +136,26 @@ interface Entry {
   readonly limits: Limits;
 }
 
+interface SceneOwner {
+  readonly label: string;
+}
+
 interface State {
+  readonly owner: SceneOwner;
   readonly options: SceneBuilderOptions;
   readonly elements: ReadonlyMap<string, Element>;
   readonly order: readonly string[];
   readonly entries: ReadonlyMap<string, Entry>;
   readonly beats: ReadonlyMap<string, Beat>;
   readonly inputBeats: ReadonlyMap<string, ScrollBeat | TriggerBeat>;
+  readonly sections: ReadonlyMap<string, SectionBinding>;
   readonly current: string | undefined;
 }
 
 const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], limits: {} });
 
+let nextSceneId = 0;
+const OWNERS = new WeakMap<Element, SceneOwner>();
 const READS = new WeakMap<object, readonly string[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
@@ -463,14 +481,79 @@ function describe(element: Element): string {
   return `"${element.name}" (${element.kind})`;
 }
 
-function register(elements: Map<string, Element>, element: Element): void {
-  const held = elements.get(element.name);
+function validateRegistration(
+  elements: ReadonlyMap<string, Element>,
+  sections: ReadonlyMap<string, SectionBinding>,
+  owner: SceneOwner,
+  element: Element,
+  staged: Map<string, Element>,
+): void {
+  const held = elements.get(element.name) ?? staged.get(element.name);
   if (held !== undefined && held !== element)
     throw new TypeError(
       `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
-  elements.set(element.name, element);
-  if (element.kind === "group") for (const child of element.children) register(elements, child);
+  const existingOwner = OWNERS.get(element);
+  if (existingOwner !== undefined && existingOwner !== owner)
+    throw new TypeError(
+      `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
+    );
+  const sec = sections.get(element.name);
+  if (sec !== undefined && element.options.node?.selector !== sec.selector)
+    throw new TypeError(
+      `sceneBuilder: element ${describe(element)} collides with section "${sec.name}" (${sec.selector}).`,
+    );
+  staged.set(element.name, element);
+  if (element.kind === "group")
+    for (const child of element.children)
+      validateRegistration(elements, sections, owner, child, staged);
+}
+
+function register(
+  elements: Map<string, Element>,
+  sections: ReadonlyMap<string, SectionBinding>,
+  owner: SceneOwner,
+  element: Element,
+): void {
+  const staged = new Map<string, Element>();
+  validateRegistration(elements, sections, owner, element, staged);
+  for (const [name, entry] of staged) {
+    elements.set(name, entry);
+    OWNERS.set(entry, owner);
+  }
+}
+
+function addSections(
+  sections: Map<string, SectionBinding>,
+  elements: ReadonlyMap<string, Element>,
+  window: ScrollBeat | TriggerBeat,
+): void {
+  let points;
+  switch (window.kind) {
+    case "scroll-beat":
+      points = [window.from, window.to];
+      break;
+    case "trigger-beat":
+      points = [window.when.point];
+      break;
+    default:
+      return unreachable(window);
+  }
+  for (const point of points) {
+    for (const sec of sectionsOfPoint(point)) {
+      const prior = sections.get(sec.name);
+      if (prior !== undefined && prior.selector !== sec.selector)
+        throw new RangeError(
+          `sceneBuilder: section "${sec.name}" uses selector "${prior.selector}" in one beat and "${sec.selector}" in another.`,
+        );
+      const colliding = elements.get(sec.name);
+      if (colliding !== undefined && colliding.options.node?.selector !== sec.selector)
+        throw new TypeError(
+          `sceneBuilder: section "${sec.name}" (${sec.selector}) collides with element ${describe(colliding)}.`,
+        );
+      sections.set(sec.name, sec);
+    }
+  }
 }
 
 function withBeat(
@@ -771,7 +854,12 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
-  const isPage = [...state.elements.values()].some((element) => element.options.node !== undefined);
+  const isPage =
+    state.sections.size > 0 ||
+    [...state.elements.values()].some((element) => element.options.node !== undefined);
+  const compiledSections: readonly CompiledSection[] = [...state.sections.values()].map(
+    ({ name, selector }) => Object.freeze({ name, node: selector }),
+  );
   let maxTriggerMs = 0;
   for (const inputBeat of state.inputBeats.values())
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
@@ -813,6 +901,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     ...(rest === undefined ? {} : { rest }),
     ...(isPage ? { isPage: true } : {}),
     ...(settleMs === undefined ? {} : { settleMs }),
+    ...(compiledSections.length > 0 ? { sections: compiledSections } : {}),
   };
 }
 
@@ -844,7 +933,8 @@ function isState(value: unknown): value is State {
     Reflect.get(value, "elements") instanceof Map &&
     Reflect.get(value, "entries") instanceof Map &&
     Reflect.get(value, "beats") instanceof Map &&
-    Reflect.get(value, "inputBeats") instanceof Map
+    Reflect.get(value, "inputBeats") instanceof Map &&
+    Reflect.get(value, "sections") instanceof Map
   );
 }
 
@@ -861,11 +951,15 @@ function step(state: State): ElementStep {
       motion: (...motions: readonly SceneMotion[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
+        const sections = new Map(state.sections);
         const added = motions.map((run): MotionStep => {
           const traits = traitsOf(run);
           const beat = beatOf(traits.span);
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
-          if (isInputBeat(traits.window)) withInputBeat(beats, inputBeats, traits.window);
+          if (isInputBeat(traits.window)) {
+            withInputBeat(beats, inputBeats, traits.window);
+            addSections(sections, state.elements, traits.window);
+          }
           const reads = READS.get(run) ?? [];
           if (reads.length > 0 && traits.span === undefined && traits.window !== undefined)
             throw new TypeError(
@@ -878,6 +972,7 @@ function step(state: State): ElementStep {
           ...changed(state, { steps: [...entry.steps, ...added] }),
           beats,
           inputBeats,
+          sections,
         };
         const loop = loopOf(next.entries);
         if (loop !== undefined)
@@ -927,7 +1022,7 @@ function step(state: State): ElementStep {
 
 function select(state: State, element: Element): ElementStep {
   const elements = new Map(state.elements);
-  register(elements, element);
+  register(elements, state.sections, state.owner, element);
   const first = !state.order.includes(element.name);
   return step({
     ...state,
@@ -942,13 +1037,20 @@ function select(state: State, element: Element): ElementStep {
 
 /** Starts a piece; `compileScene` turns the chain's value into the stage the renderers play. */
 export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
+  nextSceneId += 1;
+  const label =
+    options.name !== undefined && options.name.trim() !== ""
+      ? options.name
+      : `scene ${nextSceneId}`;
   const state: State = {
+    owner: Object.freeze({ label }),
     options,
     elements: new Map(),
     order: [],
     entries: new Map(),
     beats: new Map(),
     inputBeats: new Map(),
+    sections: new Map(),
     current: undefined,
   };
   return kept({ kind: "scene", element: (element: Element) => select(state, element) }, state);

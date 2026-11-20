@@ -24,7 +24,7 @@ export interface Pivot {
   readonly y: number;
 }
 
-/** A selector binding a page element to an existing DOM node. */
+/** A selector binding a page element or section to an existing DOM node. */
 export interface NodeBinding {
   readonly kind: "node";
   readonly selector: string;
