@@ -1,6 +1,7 @@
 import { elapsedOf, type Time } from "../time/time";
 import type { Signal } from "../time/shapes";
 import type { Events, MotionEvent } from "../events/event-list";
+import { generationOf } from "../events/event-log";
 
 /** The moment a state changed, and what it became. */
 export interface Step<S> {
@@ -40,11 +41,18 @@ export function state<S>(
   let steps: Step<S>[] = [];
   let taken: MotionEvent[] = [];
   let latest = -Infinity;
+  let seen: Events | undefined;
+  let seenGeneration: number | undefined;
   const fold = (time: Time, events: Events): void => {
     const now = elapsedOf(time.clock);
     let resumes = (now === undefined || latest <= now) && events.length >= taken.length;
-    for (let index = 0; resumes && index < taken.length; index += 1)
-      if (events[index] !== taken[index]) resumes = false;
+    // A growing log counts every change other than adding at its end, so an unchanged count means only that.
+    const generation = generationOf(events);
+    if (!(resumes && events === seen && generation !== undefined && generation === seenGeneration))
+      for (let index = 0; resumes && index < taken.length; index += 1)
+        if (events[index] !== taken[index]) resumes = false;
+    seen = events;
+    seenGeneration = generation;
     if (!resumes) {
       current = start;
       steps = [];

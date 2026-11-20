@@ -1,6 +1,7 @@
 import {
   INPUT_EVENTS,
   ease,
+  eventLog,
   motion,
   pointer,
   scroll,
@@ -456,5 +457,108 @@ describe("recorded session replay and beat names", () => {
         .element(box("b"))
         .motion(slideX(20).in(sameScroll)),
     ).toThrow(RangeError);
+  });
+});
+
+describe("trigger beats over a long session", () => {
+  type Back = "reverse" | "stay" | "replay";
+  const threshold = 500;
+  const ms = 400;
+
+  function expected(back: Back, events: Events, now: number): number {
+    let y = 0;
+    let reached = false;
+    let started: number | undefined;
+    let progress = 0;
+    let since = 0;
+    for (const event of events) {
+      if (event.at > now || typeof event.value !== "number") continue;
+      if (event.value === y) continue;
+      y = event.value;
+      const next = y >= threshold;
+      switch (back) {
+        case "stay":
+          if (started === undefined && next) started = event.at;
+          break;
+        case "replay":
+          if (next !== reached) started = next ? event.at : undefined;
+          reached = next;
+          break;
+        case "reverse":
+          if (next === reached) break;
+          progress = Math.min(
+            1,
+            Math.max(0, progress + (reached ? 1 : -1) * ((event.at - since) / ms)),
+          );
+          since = event.at;
+          reached = next;
+          break;
+      }
+    }
+    if (back === "reverse")
+      return Math.min(1, Math.max(0, progress + (reached ? 1 : -1) * ((now - since) / ms)));
+    return started === undefined ? 0 : Math.min(1, Math.max(0, (now - started) / ms));
+  }
+
+  function sceneFor(back: Back) {
+    const trigger = beat(`t-${back}`, ms, { when: scrollPoint(threshold).reached, back });
+    return compiled(
+      sceneBuilder({ length: 100000 }).element(box("card")).motion(slideX(100).in(trigger)),
+    );
+  }
+
+  it.each(["reverse", "stay", "replay"] as const)(
+    "gives the same progress as folding every step again (%s)",
+    (back) => {
+      const stage = sceneFor(back);
+      let seed = 7;
+      const random = () => {
+        seed = (seed * 16807) % 2147483647;
+        return seed / 2147483647;
+      };
+      const events: { name: string; at: number; value: number }[] = [];
+      for (let at = 10; at < 6000; at += 10 + Math.floor(random() * 40)) {
+        events.push({ name: INPUT_EVENTS.scroll, at, value: Math.round(random() * 1000) });
+        const now = at + Math.floor(random() * 30);
+        const x = poseOf(
+          frame(stage, { time: { progress: 0, clock: { kind: "live", elapsed: now } }, events })
+            .targets["card"],
+        )?.x;
+        expect(x ?? 0).toBeCloseTo(100 * expected(back, events, now), 9);
+      }
+      const back300 = poseOf(
+        frame(stage, { time: { progress: 0, clock: { kind: "live", elapsed: 300 } }, events })
+          .targets["card"],
+      )?.x;
+      expect(back300 ?? 0).toBeCloseTo(100 * expected(back, events, 300), 9);
+    },
+  );
+
+  it("costs about the same per frame after many scroll steps as after a few", () => {
+    const stage = sceneFor("reverse");
+    const log = eventLog();
+    const frames = (from: number, count: number): number => {
+      const started = performance.now();
+      for (let index = from; index < from + count; index += 1) {
+        log.add({ name: INPUT_EVENTS.scroll, at: index, value: index % 2 === 0 ? 0 : 1000 });
+        frame(stage, {
+          time: { progress: 0, clock: { kind: "live", elapsed: index } },
+          events: log.events,
+        });
+      }
+      return performance.now() - started;
+    };
+    let next = 1;
+    const window = (): number => {
+      const spent = frames(next, 1000);
+      next += 1000;
+      return spent;
+    };
+    window();
+    const early = Math.min(window(), window(), window());
+    frames(next, 20000);
+    next += 20000;
+    const late = Math.min(window(), window(), window());
+    expect(late).toBeLessThan(early * 4);
   });
 });

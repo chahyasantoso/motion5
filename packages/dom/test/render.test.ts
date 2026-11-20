@@ -47,7 +47,7 @@ describe("applyValue", () => {
     });
   });
 
-  it("writes nothing when the value equals the last one written, and writes again when it changes", () => {
+  it("writes nothing when the value equals the last one written, and only the properties that changed", () => {
     let writes = 0;
     const style: Record<string, string> = {};
     const counted = new Proxy(style, {
@@ -62,9 +62,11 @@ describe("applyValue", () => {
     expect(first).toBeGreaterThan(0);
     applyValue(target, { x: 5, custom: { glow: 1 } });
     expect(writes).toBe(first);
-    applyValue(target, { x: 5, custom: { glow: 2 } });
-    expect(writes).toBeGreaterThan(first);
-    applyValue(target, { x: 6, custom: { glow: 2 } });
+    applyValue(target, { x: 5, opacity: 0.5, custom: { glow: 1 } });
+    expect(writes).toBe(first + 1);
+    expect(style["opacity"]).toBe("0.5");
+    applyValue(target, { x: 6, opacity: 0.5, custom: { glow: 1 } });
+    expect(writes).toBe(first + 2);
     expect(style["transform"]).toBe("translate3d(6px, 0px, 0px)");
   });
 

@@ -48,14 +48,14 @@ describe("travel", () => {
     expect(() => travel({ to: slot, arc: Number.NEGATIVE_INFINITY })).toThrow(RangeError);
   });
 
-  it("moves center and size from rest to the target slot across a beat", () => {
+  it("moves center and size from rest to the target slot's box across a beat with fit fill", () => {
     const heroSlot = box("heroSlot");
     const drink = box("drink");
     const move = beat("move", 400);
     const stage = compiled(
       sceneBuilder({ length: 400 })
         .element(drink)
-        .motion(travel({ to: heroSlot }).in(move)),
+        .motion(travel({ to: heroSlot, fit: "fill" }).in(move)),
     );
 
     const boxes = {
@@ -79,6 +79,57 @@ describe("travel", () => {
     expect(end?.y).toBeCloseTo(200, 9);
     expect(end?.scaleX).toBeCloseTo(1.5, 9);
     expect(end?.scaleY).toBeCloseTo(0.5, 9);
+  });
+
+  it("scales evenly to fit inside the slot, centred, by default", () => {
+    const slot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 400 })
+        .element(box("drink"))
+        .motion(travel({ to: slot }).in(beat("move", 400))),
+    );
+    const boxes = {
+      main: restReader({
+        drink: { x: 100, y: 200, width: 100, height: 200 },
+        slot: { x: 500, y: 400, width: 150, height: 100 },
+      }),
+    };
+    const mid = poseOf(frame(stage, { time: at(200, 400), boxes }).targets["drink"]);
+    expect(mid?.scaleX).toBeCloseTo(0.75, 9);
+    expect(mid?.scaleY).toBeCloseTo(0.75, 9);
+    const end = poseOf(frame(stage, { time: at(400, 400), boxes }).targets["drink"]);
+    expect(end?.x).toBeCloseTo(400, 9);
+    expect(end?.y).toBeCloseTo(200, 9);
+    expect(end?.scaleX).toBeCloseTo(0.5, 9);
+    expect(end?.scaleY).toBeCloseTo(0.5, 9);
+    // @ts-expect-error fit is "contain" or "fill"
+    expect(() => travel({ to: slot, fit: "cover" })).toThrow(TypeError);
+  });
+
+  it("sits on its slot on a live clock with no window, and sweeps across a timed scene", () => {
+    const slot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 400 })
+        .element(box("drink"))
+        .motion(travel({ to: slot })),
+    );
+    const boxes = {
+      main: restReader({
+        drink: { x: 100, y: 200, width: 100, height: 200 },
+        slot: { x: 500, y: 400, width: 50, height: 100 },
+      }),
+    };
+    for (const ms of [0, 200, 400]) {
+      const live: Time = { progress: 0, clock: { kind: "live", elapsed: ms } };
+      const pose = poseOf(frame(stage, { time: live, boxes }).targets["drink"]);
+      expect(pose?.x).toBeCloseTo(400, 9);
+      expect(pose?.y).toBeCloseTo(200, 9);
+      expect(pose?.scaleX).toBeCloseTo(0.5, 9);
+    }
+    expect(poseOf(frame(stage, { time: at(0, 400), boxes }).targets["drink"])).toEqual({});
+    const half = poseOf(frame(stage, { time: at(200, 400), boxes }).targets["drink"]);
+    expect(half?.x).toBeCloseTo(200, 9);
+    expect(half?.scaleX).toBeCloseTo(0.75, 9);
   });
 
   it("bows perpendicular to travel with arc, holding 0 bow at both ends and handling zero-distance", () => {

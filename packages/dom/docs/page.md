@@ -27,6 +27,7 @@ A page mount runs one live clock (`liveAt`) feeding scroll, pointer and watched 
 - Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`).
 - Elements with `watch: true` log `enter`, `leave`, `down`, `up`, `click`, `focus` and `blur`.
 - `mounted.send(name, value, target?)` logs a sample at the current clock time, and `mounted.events()` returns the recorded log.
+- The mount owns the inline `transform`, `opacity`, `z-index`, `transform-origin`, `transform-box`, `filter` and `clip-path` of every node it animates, and sets each only when its text changes; site code writing them inline is overwritten only when the pose changes that property.
 - An input only logs its sample and asks for a frame; the scene runs and writes once per animation frame, however many inputs arrived in it.
 - The mount never smooths the page's own scrolling. Smooth anchor jumps are the site's CSS (`scroll-behavior: smooth`), a smooth-scroll library is the site's script, and either reaches the scene as ordinary scroll samples.
 
@@ -42,7 +43,7 @@ Site CSS owns page layout; `mountPage` never alters layout geometry.
 `section(name, el(selector))` exposes `.top` and `.end` as scroll points (supporting `.plus(px)`, `.minus(px)` and `.reached`). Scroll and trigger beats register any referenced section onto the stage; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
 
 - **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero", { node: el("#hero .slot") })`) with no motions.
-- **`travel({ to: slot, arc? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size.
+- **`travel({ to: slot, arc?, fit? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size. It keeps its proportions unless `fit: "fill"`, and with no window it sits on the slot.
 - Elements animated by `mountPage` keep `transform` unset in site CSS so the pose-to-CSS writer owns transforms alone.
 
 ## Rests and measured lines

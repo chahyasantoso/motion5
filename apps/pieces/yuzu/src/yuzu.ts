@@ -16,7 +16,6 @@ import {
   el,
   many,
   sceneBuilder,
-  scrollPoint,
   section,
   stagger,
   text,
@@ -50,7 +49,6 @@ const galleryCards = many("galleryCards", 4, { node: el("#gallery .gallery-card"
 
 const intro = beat("intro", 700);
 const subIntro = beat("subIntro", 500, { at: 160 });
-const snapHero = beat("snapHero", { scroll: [scrollPoint(-10000), scrollPoint(0)] });
 const toFeatures = beat("toFeatures", { scroll: [hero.top, features.top], smooth: true });
 const featuresReveal = beat("featuresReveal", 550, {
   when: features.top.minus(240).reached,
@@ -91,7 +89,7 @@ export default sceneBuilder({ name: "yuzu" })
   .motion(riseFade(16).in(subIntro, ease.cubicOut))
   .element(drink)
   .motion(
-    travel({ to: slotHero }).in(snapHero),
+    travel({ to: slotHero }),
     riseFade(24).in(intro, ease.cubicOut),
     travel({ to: slotFeatures, arc: 64 }).in(toFeatures, ease.sineInOut),
     midTilt(8).in(toFeatures),

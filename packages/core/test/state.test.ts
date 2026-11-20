@@ -3,6 +3,7 @@ import {
   UNTIMED,
   ease,
   easeTo,
+  eventLog,
   liveAt,
   state,
   springTo,
@@ -59,6 +60,51 @@ describe("state", () => {
     expect(calls).toBe(3);
     counting(liveAt(100), events);
     expect(calls).toBe(3);
+  });
+
+  it("costs about the same per call on a long growing log as on a short one", () => {
+    const counting = state(0, (current: number) => current + 1);
+    const log = eventLog();
+    let at = 0;
+    const window = (): number => {
+      const started = performance.now();
+      for (let index = 0; index < 1000; index += 1) {
+        at += 1;
+        log.add(click(at));
+        for (let read = 0; read < 10; read += 1) counting(liveAt(at), log.events);
+      }
+      return performance.now() - started;
+    };
+    window();
+    const early = Math.min(window(), window(), window());
+    for (let index = 0; index < 20; index += 1) window();
+    const late = Math.min(window(), window(), window());
+    expect(counting(liveAt(at), log.events)).toBe(at);
+    expect(late).toBeLessThan(early * 4);
+  });
+
+  it("starts again when an event goes into a growing log before the last one folded, or it is emptied", () => {
+    const flag = state(false, toggle);
+    const log = eventLog();
+    log.add(click(100));
+    log.add(click(300));
+    expect(flag(liveAt(900), log.events)).toBe(false);
+    log.add(click(200));
+    expect(flag(liveAt(900), log.events)).toBe(true);
+    const twice = click(300);
+    const repeated = eventLog();
+    repeated.add(click(100));
+    repeated.add(twice);
+    repeated.add(twice);
+    const count = state(0, (current: number) => current + 1);
+    expect(count(liveAt(900), repeated.events)).toBe(3);
+    repeated.add(click(200));
+    expect(count(liveAt(900), repeated.events)).toBe(4);
+    const sum = state(0, (current: number, event: MotionEvent) => current + event.at);
+    expect(sum(liveAt(900), log.events)).toBe(600);
+    log.clear();
+    for (const at of [50, 60, 70, 80]) log.add(click(at));
+    expect(sum(liveAt(900), log.events)).toBe(260);
   });
 
   it("folds every event on an untimed clock, and none after the time on a timed one", () => {

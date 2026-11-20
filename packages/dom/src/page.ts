@@ -1009,7 +1009,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       if (!live) return;
       recorder.sample(name, value, target);
     },
-    events: () => [...recorder.log],
+    events: () => recorder.log,
     dispose() {
       if (!live) return;
       live = false;
