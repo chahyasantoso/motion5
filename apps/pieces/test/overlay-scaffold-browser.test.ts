@@ -19,18 +19,20 @@ beforeAll(() => {
   const file = join(PIECES_ROOT, NAME, "src", `${NAME}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const moving = source
-    .replace("const box: Pose3d = {};", MOVING_BOX)
+    .replace("const boxAt = (_time: Time): Pose3d => ({});", MOVING_BOX)
     .replace("fov: 50", "fov: 35")
     .replace("z: 10", "z: 12");
-  if (moving === source || !moving.includes("fov: 35") || !moving.includes("z: 12"))
+  if (!moving.includes("3 * along") || !moving.includes("fov: 35") || !moving.includes("z: 12"))
     throw new Error("The scaffolded scene no longer has the lines this test rewrites.");
   writeFileSync(file, moving, "utf8");
 });
 
 afterAll(removeScratch);
 
-const MOVING_BOX = `const along = time.progress;
-  const box: Pose3d = { x: 3 * along, y: -1.5 * along, scale: 0.15, rotation: 90 * along, rotationY: 30 * along };`;
+const MOVING_BOX = `const boxAt = (time: Time): Pose3d => {
+  const along = time.progress;
+  return { x: 3 * along, y: -1.5 * along, scale: 0.15, rotation: 90 * along, rotationY: 30 * along };
+};`;
 
 describe("a scaffolded 3D page pins a label on the box", () => {
   it("keeps the label's corner on the box's drawn centre at 0, 400 and 800 ms", async () => {

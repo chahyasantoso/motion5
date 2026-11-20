@@ -4,6 +4,7 @@ import {
   unreachable,
   type Events,
   type Pose2d,
+  type Pose3d,
   type Time,
 } from "@gerak/core";
 import { NO_REST, type RestReader } from "../author/layout";
@@ -43,6 +44,15 @@ function isPose(value: unknown): value is Pose2d {
 /** The pose a target holds, or undefined when it holds none. */
 export function poseOf(value: unknown): Pose2d | undefined {
   return isPose(value) ? value : undefined;
+}
+
+function isPose3d(value: unknown): value is Pose3d {
+  return isPlainRecord(value);
+}
+
+/** The 3D pose an object's target holds, or undefined when it holds none. */
+export function pose3dOf(value: unknown): Pose3d | undefined {
+  return isPose3d(value) ? value : undefined;
 }
 
 /** Item `index` of `count` from a list's target, or undefined when the scene gave none. */
@@ -94,6 +104,7 @@ export function check(
     switch (member.kind) {
       case "actor":
       case "group":
+      case "object":
         if (poseOf(value) === undefined)
           mismatch(`needs a pose object, got ${Array.isArray(value) ? "an array" : typeof value}.`);
         break;

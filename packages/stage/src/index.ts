@@ -27,10 +27,15 @@ export {
   el,
   group,
   many,
+  object,
   shape,
   text,
   type Element,
   type ElementOptions,
+  type ObjectElement,
+  type ObjectOptions,
+  type ObjectView,
+  type SceneElement,
   type MorphSource,
   type Outline,
   type ShapeSource,
@@ -46,10 +51,14 @@ export {
   stagger,
   stayWith,
   travel,
+  type TravelMotion,
   type BoundEachFields,
   type BoundFields,
   type CompileSceneOptions,
   type ElementStep,
+  type ObjectStep,
+  type Principle3d,
+  type SceneMotion3d,
   type MotionContext,
   type Principle,
   type ReadAt,
@@ -94,5 +103,13 @@ export {
   type StageLayouts,
 } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";
-export { check, frame, listPose, poseOf, type FrameInput, type FrameOutput } from "./run/frame";
+export {
+  check,
+  frame,
+  listPose,
+  pose3dOf,
+  poseOf,
+  type FrameInput,
+  type FrameOutput,
+} from "./run/frame";
 export { beatAt, type Window } from "./run/timeline";

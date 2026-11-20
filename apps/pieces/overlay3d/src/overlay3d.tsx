@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   AmbientLight,
   BoxGeometry,
@@ -17,35 +17,34 @@ import {
   type BufferGeometry,
   type Material,
 } from "three";
+import type { Events, Pose3d, Time } from "@gerak/core";
+import { applyValue } from "@gerak/dom";
 import { usePlayer, useTarget } from "@gerak/react";
-import { applyPose3d } from "@gerak/three";
-import { useTarget3d } from "@gerak/three/react";
+import { applyPose3d, bindScene3d } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
-import {
-  ARM,
-  CAPTION,
-  CUBE,
-  MARK,
-  cues,
-  clock,
-  lens,
-  scene,
-  stage,
-  wordsShown,
-} from "./overlay3d-scene";
+import { compileScene, formatStageError, frame, poseOf } from "@gerak/stage";
+import piece, { ARM, CAPTION, CUBE, MARK, clock, lens, stage, wordsShown } from "./overlay3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+const signal = (time: Time, events: Events) => frame(scene, { time, events }).targets;
+
+/** Writes a callout's pose onto its element. */
+const write = (element: Parameters<typeof applyValue>[0], value: unknown): void => {
+  const pose = poseOf(value);
+  if (pose !== undefined) applyValue(element, pose);
+};
 
 const UP = new Vector3(0, 1, 0);
 
 /** A cube turning with a short arm, and three DOM callouts pinned over it from the scene's own numbers. */
 export const Overlay3d: React.FC<{ readonly onReady?: () => void }> = ({ onReady }) => {
-  const playing = usePlayer(scene, clock, cues);
+  const playing = usePlayer(signal, clock, scene.cues);
   const player = playing?.player;
-  const draw = useRef<() => void>(() => undefined);
-  const invalidate = useCallback(() => draw.current(), []);
-  const object = useTarget3d(player, "object", { invalidate });
-  const pin = useTarget(player, "pin");
-  const tip = useTarget(player, "tip");
-  const caption = useTarget(player, "caption");
+  const pin = useTarget(player, "pin", write);
+  const tip = useTarget(player, "tip", write);
+  const caption = useTarget(player, "caption", write);
   const words = useRef<HTMLSpanElement>(null);
   const host = useRef<HTMLDivElement>(null);
 
@@ -122,28 +121,37 @@ export const Overlay3d: React.FC<{ readonly onReady?: () => void }> = ({ onReady
           wordsShown(typeof count === "number" ? count : 0),
         ).join(" ");
     };
-    draw.current = () => renderer.render(world, camera);
-    object(model);
-    applyBones(skeleton, player.values.bones);
-    show(player.values.caption.custom.words);
-    const stopBones = player.subscribe("bones", (poses) => {
-      applyBones(skeleton, poses);
-      draw.current();
-    });
-    const stopCaption = player.subscribe("caption", (value) => show(value.custom.words));
-    draw.current();
+    const bonePoses: Record<string, Pose3d> = {};
+    const stopCaption = player.subscribe("caption", (value) =>
+      show(poseOf(value)?.custom?.["words"]),
+    );
+    const unbind = bindScene3d(
+      player,
+      scene,
+      {
+        object: model,
+        base: (pose) => {
+          bonePoses["base"] = pose;
+        },
+        mid: (pose) => {
+          bonePoses["mid"] = pose;
+        },
+      },
+      () => {
+        applyBones(skeleton, bonePoses);
+        renderer.render(world, camera);
+      },
+    );
     onReady?.();
     return () => {
-      draw.current = () => undefined;
-      stopBones();
+      unbind();
       stopCaption();
-      object(null);
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [player, object, onReady]);
+  }, [player, onReady]);
 
   return (
     <div

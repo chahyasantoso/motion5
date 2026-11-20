@@ -24,8 +24,8 @@ beforeAll(() => {
     const path = join(PIECES_ROOT, name, "src", `${name}-scene.ts`);
     const text = readFileSync(path, "utf8");
     const looping = text.replace(
-      "clockDriver({ duration: durationMs })",
-      "clockDriver({ duration: durationMs, repeat: 100 })",
+      "clockDriver({ duration: LENGTH })",
+      "clockDriver({ duration: LENGTH, repeat: 100 })",
     );
     if (looping === text) throw new Error("The scaffolded scene no longer has the clock line.");
     writeFileSync(path, looping, "utf8");
@@ -33,8 +33,8 @@ beforeAll(() => {
   const file = join(PIECES_ROOT, SLOW, "src", `${SLOW}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const slowed = source.replace(
-    "const box: Pose3d = {};",
-    "for (const until = performance.now() + 30; performance.now() < until; );\n  const box: Pose3d = {};",
+    "const boxAt = (_time: Time): Pose3d => ({});",
+    "const boxAt = (_time: Time): Pose3d => {\n  for (const until = performance.now() + 30; performance.now() < until; );\n  return {};\n};",
   );
   if (slowed === source) throw new Error("The scaffolded scene no longer has the line to slow.");
   writeFileSync(file, slowed, "utf8");

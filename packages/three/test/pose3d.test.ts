@@ -22,6 +22,15 @@ describe("applyPose3d", () => {
     expect(mesh.material.transparent).toBe(true);
   });
 
+  it("asks Three.js to rebuild a material it turns transparent, and only then", () => {
+    const mesh = box();
+    const before = mesh.material.version;
+    applyPose3d(mesh, { opacity: 0 });
+    expect(mesh.material.version).toBe(before + 1);
+    applyPose3d(mesh, { opacity: 0.5 });
+    expect(mesh.material.version).toBe(before + 1);
+  });
+
   it("resets turn and scale with an empty pose", () => {
     const mesh = box();
     applyPose3d(mesh, { rotation: 30, rotationX: 40, rotationY: 50, scale: 3 });

@@ -102,3 +102,35 @@ export function project3d(
     visible: depth > EPSILON,
   };
 }
+
+/** The world point that `project3d` draws at `point` on the stage, `depth` along the view from the lens. */
+export function unproject3d(
+  point: { readonly x: number; readonly y: number },
+  lens: Lens3d,
+  stage: { readonly width: number; readonly height: number },
+  depth: number,
+): Point3d {
+  if (!(lens.fov > 0 && lens.fov < 180))
+    throw new RangeError("unproject3d: fov must be above 0 and below 180.");
+  if (!(depth > EPSILON) || !Number.isFinite(depth))
+    throw new RangeError("unproject3d: depth must be in front of the lens.");
+  if (!(stage.width > 0 && stage.height > 0))
+    throw new RangeError("unproject3d: the stage needs a size.");
+  const turn = matrixFromEuler3d({
+    rotation: lens.rotation ?? 0,
+    rotationX: lens.rotationX ?? 0,
+    rotationY: lens.rotationY ?? 0,
+  });
+  const focal = 1 / Math.tan((lens.fov * Math.PI) / 360);
+  const aspect = stage.width / stage.height;
+  const across = (point.x / stage.width) * 2 - 1;
+  const down = 1 - (point.y / stage.height) * 2;
+  const right = (across * aspect * depth) / focal;
+  const up = (down * depth) / focal;
+  const back = -depth;
+  return {
+    x: (lens.x ?? 0) + turn[0] * right + turn[1] * up + turn[2] * back,
+    y: (lens.y ?? 0) + turn[3] * right + turn[4] * up + turn[5] * back,
+    z: (lens.z ?? 0) + turn[6] * right + turn[7] * up + turn[8] * back,
+  };
+}

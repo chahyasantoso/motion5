@@ -1,27 +1,40 @@
 import { Bone, Group, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
-import { project3d } from "@gerak/core";
+import { project3d, type Pose2d, type Pose3d } from "@gerak/core";
+import { compileScene, formatStageError, frame, pose3dOf, poseOf } from "@gerak/stage";
 import { applyPose3d } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
-import {
+import piece, {
   ARM,
   CAPTION,
-  cues,
   durationMs,
   fadeOf,
   lens,
-  limits,
-  scene,
   stage,
   wordsShown,
 } from "../overlay3d/src/overlay3d-scene";
 
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+
 function at(ms: number) {
   const driver = manualDriver({ durationMs });
-  const player = play(scene, driver, { cues });
+  const player = play((time, events) => frame(scene, { time, events }).targets, driver, {
+    cues: scene.cues,
+  });
   driver.seek(ms / durationMs);
-  return player.values;
+  const values = player.values;
+  const flat = (name: string): Pose2d => poseOf(values[name]) ?? {};
+  const deep = (name: string): Pose3d => pose3dOf(values[name]) ?? {};
+  return {
+    object: deep("object"),
+    bones: { base: deep("base"), mid: deep("mid") },
+    pin: flat("pin"),
+    tip: flat("tip"),
+    caption: flat("caption"),
+  };
 }
 
 function buildArm() {
@@ -62,6 +75,7 @@ describe("overlay3d scene", () => {
 
   it("moves the arm and turns the object", () => {
     expect(at(2200).bones.base.rotation).not.toBe(at(0).bones.base.rotation);
+    expect(at(2200).bones.mid.rotation).not.toBe(at(0).bones.mid.rotation);
     expect(at(2200).object.rotationY).not.toBe(at(0).object.rotationY);
   });
 
@@ -85,7 +99,7 @@ describe("overlay3d scene", () => {
     expect(at(0).pin.opacity).toBeGreaterThan(0);
   });
 
-  it("limits the 3D targets and none of the callouts", () => {
-    expect(Object.keys(limits).sort()).toEqual(["bones", "object"]);
+  it("limits the 3D objects and none of the callouts", () => {
+    expect(Object.keys(scene.limits).sort()).toEqual(["base", "mid", "object"]);
   });
 });

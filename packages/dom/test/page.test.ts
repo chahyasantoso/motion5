@@ -1,4 +1,12 @@
-import { INPUT_EVENTS, motion, pointer, scroll, springTo, type Pose2d } from "@gerak/core";
+import {
+  INPUT_EVENTS,
+  motion,
+  pointer,
+  scroll,
+  springTo,
+  type Pose2d,
+  type Pose3d,
+} from "@gerak/core";
 import {
   beat,
   bind,
@@ -6,6 +14,7 @@ import {
   compileScene,
   el,
   many,
+  object,
   sceneBuilder,
   scrollPoint,
   section,
@@ -227,6 +236,29 @@ describe("mountPage", () => {
     expect(card.style.transform).toBe("");
     expect(items[1]?.style.transform).toBe("");
     expect(frames.queued).toBe(0);
+  });
+
+  it("mounts a page scene with an object, binds no node for it, and plays its 3D pose", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    let ms = 0;
+    const frames = fakeFrames();
+    const spin = beat("spin", 1000);
+    const scene = sceneBuilder()
+      .element(object("drink"))
+      .motion(motion((t): Pose3d => ({ rotationY: 90 * t.progress })).in(spin))
+      .element(box("card", { node: el("#card") }))
+      .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
+    const seen: unknown[] = [];
+    const mounted = mountPage(scene, { root, frames, clock: () => ms });
+    mounted.player.subscribe("drink", (value) => seen.push(value));
+    ms = 500;
+    frames.tick(500);
+    expect(root.createdCount).toBe(0);
+    expect(card.style.transform).toBe("translate3d(40px, 0px, 0px)");
+    expect(seen.at(-1)).toEqual({ rotationY: 45 });
+    expect(Object.keys(mounted.rest)).toEqual(["card"]);
+    mounted.dispose();
   });
 
   it("refuses a scene missing nodes, a compiled skin, or a missing selector", () => {

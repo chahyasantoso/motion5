@@ -40,6 +40,7 @@ Each is a value with a unique name, made once.
 - `shape(name, path)`: an SVG path, drawn in frame px. `path` may be a function of rest boxes. `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on through every target.
 - `many(name, count | items, make?)`: numbered parts.
 - `group(name, children)`: a container; its pose moves, turns and scales its children with it.
+- `object(name, { view? })`: a Three.js object, posed in `Pose3d` world units, drawn by `bindScene3d` and by no DOM renderer; it needs no `node` in a page scene. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
 
 A part is `<name>.<index>`. Options: `pivot` (frame px; the point it turns and scales about, its centre without one), `watch` (pointer events reach it), `split`, and `node` (`el(selector)`, binding an existing node on a [page mount](../../dom/docs/page.md); in a page scene every element has one and no `skin` is passed).
 

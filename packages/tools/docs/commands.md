@@ -18,7 +18,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
 - **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one `sceneBuilder` piece (the brief
   is the name unless `--in` names another; open as `stage.html?piece=<name>`); `--three` writes `<brief>/<name>.html`, its
-  entry, a component and `<brief>/src/<name>-scene.ts` instead. Refuses a name any brief already holds; its one element
+  entry, a component binding the piece's objects with `bindScene3d`, and `<brief>/src/<name>-scene.ts`, a
+  `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
 - **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a
   `sceneBuilder` piece of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one static `.element(shape(name, path))`

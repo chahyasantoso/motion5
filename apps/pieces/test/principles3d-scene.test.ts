@@ -1,7 +1,8 @@
 import { PerspectiveCamera, Vector3 } from "three";
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
-import { NO_EVENTS, liveAt } from "@gerak/core";
+import { NO_EVENTS, liveAt, type Pose3d } from "@gerak/core";
+import { compileScene, formatStageError, frame, pose3dOf } from "@gerak/stage";
 import { applyPose3d } from "@gerak/three";
 import {
   BITS_MS,
@@ -12,15 +13,36 @@ import {
   START,
   drag,
   durationMs,
-  scene,
   subject,
 } from "../principles3d/src/principles3d-scene";
+import piece from "../principles3d/src/principles3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });
-  const player = play(scene, driver);
+  const player = play((time, events) => frame(scene, { time, events }).targets, driver, {
+    cues: scene.cues,
+  });
   driver.seek(ms / durationMs);
-  return player.values;
+  const out: Record<string, Pose3d> = {};
+  for (const name of Object.keys(player.values)) out[name] = pose3dOf(player.values[name]) ?? {};
+  return out as Record<
+    | "body"
+    | "stretch"
+    | "face"
+    | "antenna"
+    | "pad"
+    | "bit0"
+    | "bit1"
+    | "bit2"
+    | "bit3"
+    | "bit4"
+    | "camera",
+    Pose3d
+  >;
 }
 
 function flat(values: ReturnType<typeof at>): Map<string, number> {

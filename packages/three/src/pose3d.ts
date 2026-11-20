@@ -54,7 +54,11 @@ export function applyPose3d(
     const material: unknown = Reflect.get(object, "material");
     if (material !== null && typeof material === "object" && "opacity" in material) {
       Reflect.set(material, "opacity", pose.opacity);
-      Reflect.set(material, "transparent", true);
+      // A material drawn while opaque keeps its opaque shader until Three.js is told to rebuild it.
+      if (Reflect.get(material, "transparent") !== true) {
+        Reflect.set(material, "transparent", true);
+        Reflect.set(material, "needsUpdate", true);
+      }
     }
   }
   writeCustom(object, pose.custom, custom);

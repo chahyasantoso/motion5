@@ -1,4 +1,4 @@
-import { unreachable, type Cubic2d, type Time } from "@gerak/core";
+import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
 import type { ItemContent, NodeBinding, Path, Pivot } from "./cast";
 
 /** Binds an element or section to an existing DOM node matched by CSS `selector`. */
@@ -66,6 +66,27 @@ export type Element =
       readonly children: readonly Element[];
       readonly options: ElementOptions;
     };
+
+/** Where an object is drawn: the element bound to the page's canvas, and the fixed lens the page draws through. */
+export interface ObjectView {
+  readonly canvas: Element;
+  readonly lens: Lens3d;
+}
+
+/** Options of `object`: its view, which `travel` onto a page slot needs. */
+export interface ObjectOptions {
+  readonly view?: ObjectView | undefined;
+}
+
+/** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `bindScene3d`, never by a DOM renderer. */
+export interface ObjectElement {
+  readonly kind: "object";
+  readonly name: string;
+  readonly view: ObjectView | undefined;
+}
+
+/** Any element of a piece: one a DOM renderer draws, or a Three.js object. */
+export type SceneElement = Element | ObjectElement;
 
 /** A base outline with the outlines it blends to. */
 export interface MorphSource {
@@ -190,6 +211,20 @@ export function many<T>(
     name: own,
     items: Object.freeze(source.map((item, index) => itemOf(own, index, third(item, index)))),
     options: optionsOf(fourth),
+  });
+}
+
+/** A Three.js object; its origin is the `Object3D`'s, and it has no node, skin, content, pivot or pointer events. */
+export function object(name: string, options?: ObjectOptions): ObjectElement {
+  const view = options?.view;
+  if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))
+    throw new TypeError(
+      `object "${name}": \`view\` needs a \`canvas\` box and a \`lens\` with a fov.`,
+    );
+  return Object.freeze({
+    kind: "object",
+    name: named("object", name),
+    view: view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens }),
   });
 }
 

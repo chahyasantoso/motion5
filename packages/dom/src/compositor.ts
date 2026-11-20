@@ -120,6 +120,7 @@ function partsOf(member: Member): number | undefined {
       return member.items.length;
     case "actor":
     case "group":
+    case "object":
       return undefined;
     default:
       return unreachable(member);

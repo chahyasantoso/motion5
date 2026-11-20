@@ -82,8 +82,18 @@ export interface GroupSpec<B extends string = string, M extends Members<B> = Mem
   readonly meta: Meta<B>;
 }
 
+/** A Three.js object: the scene gives it a `Pose3d`, and no DOM renderer draws it. */
+export interface ObjectSpec<B extends string = string> extends Modifiers<B, ObjectSpec<B>> {
+  readonly kind: "object";
+  readonly meta: Meta<B>;
+}
+
 /** Any member as written. */
-export type Spec<B extends string = string> = ActorSpec<B> | ListSpec<B> | GroupSpec<B>;
+export type Spec<B extends string = string> =
+  | ActorSpec<B>
+  | ListSpec<B>
+  | GroupSpec<B>
+  | ObjectSpec<B>;
 
 /** Members by name. */
 export type Members<B extends string = string> = Readonly<Record<string, Spec<B>>>;
@@ -108,6 +118,7 @@ export interface CastBuilder<B extends string = string> {
   letters(text: string): ListSpec<B>;
   words(text: string): ListSpec<B>;
   group<M extends Members<B>>(members: M): GroupSpec<B, M>;
+  object(): ObjectSpec<B>;
 }
 
 function modifiers<B extends string, S>(
@@ -161,6 +172,14 @@ function group<B extends string, M extends Members<B>>(
     members,
     meta,
     ...modifiers(meta, (next) => group<B, M>(members, next)),
+  });
+}
+
+function objectSpec<B extends string>(meta: Meta<B> = {}): ObjectSpec<B> {
+  return Object.freeze({
+    kind: "object",
+    meta,
+    ...modifiers(meta, (next) => objectSpec<B>(next)),
   });
 }
 
@@ -229,5 +248,6 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
         "words",
       ),
     group: (members) => group(Object.freeze({ ...members })),
+    object: () => objectSpec(),
   };
 }

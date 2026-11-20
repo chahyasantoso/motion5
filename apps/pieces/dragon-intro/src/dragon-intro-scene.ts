@@ -7,6 +7,7 @@ import {
   mergeEvents,
   mix,
   mixPose3d,
+  motion,
   orbit,
   project3d,
   reversed,
@@ -22,6 +23,7 @@ import {
 } from "@gerak/core";
 import { tally } from "@gerak/core";
 import { drop, fade, follow, rise, slide, wipe } from "@gerak/moves";
+import { box, object, sceneBuilder, type SceneBuilder } from "@gerak/stage";
 import { simulate, type BodyState3d } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, posedJoints3d } from "@gerak/rig";
@@ -274,32 +276,99 @@ const offsetFrom = (prop: { x: number; z: number }, state: BodyState3d | undefin
   };
 };
 
-/** Every target's pose at `time`. */
-export const scene = (time: Time, events: Events) => {
-  const push = PUSH.of(time, ease.cubicInOut).progress;
-  const lensNow: Lens3d = { ...cameraAt(push), fov: FOV };
-  const root = rootAt(time);
-  const bones = bonesAt(time, events);
-  const all = mergeEvents(events, sim.events(time, events));
-  const states = sim.at(time, events);
-  const present = Object.keys(states);
-  return {
-    camera: cameraAt(push),
-    dragon: root,
-    bones,
-    face: { custom: { shut: shutAt(time) } } satisfies Pose3d,
-    props: PROPS.map((prop): Pose3d => {
-      return present.includes(prop.id) ? offsetFrom(prop, states[prop.id]) : { scale: 0 };
-    }),
-    title: Array.from({ length: TITLE_WORDS }, (_, i) => titleWord(time, i)),
-    titleWipe: titleWipe(time),
-    plus: PROPS.map((prop) => plusAt(all, time, prop.id, lensNow)),
-    bubble: bubbleAt(time, events, bones, root, lensNow),
-    card: combine([
-      slide({ distance: 560, from: "right" })(CARD_IN.of(time)),
-      fade()(CARD_IN.of(time)),
-    ]),
+const cameraNow = (time: Time): Pose3d => cameraAt(PUSH.of(time, ease.cubicInOut).progress);
+const lensNow = (time: Time): Lens3d => ({ ...cameraNow(time), fov: FOV });
+
+/* The physics of the step just asked for, so each prop and mark reads one run of it. */
+let lastStep:
+  | {
+      readonly progress: number;
+      readonly events: Events;
+      readonly states: ReturnType<typeof sim.at>;
+      readonly all: Events;
+    }
+  | undefined;
+const physicsAt = (time: Time, events: Events) => {
+  if (lastStep?.progress === time.progress && lastStep.events === events) return lastStep;
+  lastStep = {
+    progress: time.progress,
+    events,
+    states: sim.at(time, events),
+    all: mergeEvents(events, sim.events(time, events)),
   };
+  return lastStep;
 };
+
+const propAt = (prop: (typeof PROPS)[number], time: Time, events: Events): Pose3d => {
+  const states = physicsAt(time, events).states;
+  const state = states[prop.id];
+  return state === undefined ? { scale: 0 } : offsetFrom(prop, state);
+};
+
+/** Review limits of the 3D objects, in world units: a jump of a fifth of the dragon's height. */
+const LIMITS = { jump: 0.1, turn: 30 } as const;
+
+/** Names of the boxes: the title words and the "+1" marks, one each. */
+export const WORDS = Array.from({ length: TITLE_WORDS }, (_, i) => `word${i}`);
+export const PLUSES = PROPS.map((prop) => `plus${prop.id}`);
+
+const card = (time: Time): Pose2d =>
+  combine([slide({ distance: 560, from: "right" })(CARD_IN.of(time)), fade()(CARD_IN.of(time))]);
+
+let builder: SceneBuilder = sceneBuilder({
+  name: "dragon-intro",
+  length: durationMs,
+  frame: stage,
+  cues,
+})
+  .element(object("camera"))
+  .motion(motion((time: Time): Pose3d => cameraNow(time)))
+  .limits(LIMITS)
+  .element(object("dragon"))
+  .motion(motion(rootAt))
+  .limits(LIMITS)
+  .element(object("Jaw"))
+  .motion((time: Time, context): Pose3d => bonesAt(time, context.events).Jaw ?? {})
+  .limits(LIMITS)
+  .element(object("Head"))
+  .motion((time: Time, context): Pose3d => bonesAt(time, context.events).Head ?? {})
+  .limits(LIMITS)
+  .element(object("Neck"))
+  .motion((time: Time, context): Pose3d => bonesAt(time, context.events).Neck ?? {})
+  .limits(LIMITS)
+  .element(object("face"))
+  .motion(motion((time: Time): Pose3d => ({ custom: { shut: shutAt(time) } })))
+  .limits(LIMITS);
+
+for (const prop of PROPS) {
+  builder = builder
+    .element(object(prop.id))
+    .motion((time: Time, context): Pose3d => propAt(prop, time, context.events))
+    .limits(LIMITS);
+}
+
+for (const [i, name] of WORDS.entries()) {
+  builder = builder.element(box(name)).motion(motion((time: Time) => titleWord(time, i)));
+}
+
+builder = builder.element(box("titleWipe")).motion(motion(titleWipe));
+
+for (const [i, prop] of PROPS.entries()) {
+  const name = PLUSES[i] ?? prop.id;
+  builder = builder.element(box(name)).motion((time: Time, context): Pose2d => {
+    const all = physicsAt(time, context.events).all;
+    return plusAt(all, time, prop.id, lensNow(time));
+  });
+}
+
+/** The dragonling's intro: a camera push, bones, blinks, falling props, and labels pinned by the piece. */
+export default builder
+  .element(box("bubble"))
+  .motion((time: Time, context): Pose2d => {
+    const bones = bonesAt(time, context.events);
+    return bubbleAt(time, context.events, bones, rootAt(time), lensNow(time));
+  })
+  .element(box("card"))
+  .motion(motion(card));
 
 export const clock = () => clockDriver({ duration: durationMs });

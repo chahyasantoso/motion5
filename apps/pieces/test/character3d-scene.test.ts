@@ -9,9 +9,11 @@ import {
 } from "three";
 import { describe, expect, it } from "vitest";
 import { manualDriver, play } from "@gerak/player";
+import type { Pose3d } from "@gerak/core";
+import { compileScene, formatStageError, frame, pose3dOf } from "@gerak/stage";
 import { applyPose3d, morphTargets } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
-import {
+import piece, {
   BALL_RADIUS,
   BALL_SPAWN,
   CHARACTER_FOCUS,
@@ -20,14 +22,26 @@ import {
   SKELETON_JOINTS,
   clock,
   durationMs,
-  scene,
 } from "../character3d/src/character3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
 
 function at(ms: number) {
   const driver = manualDriver({ durationMs });
-  const player = play(scene, driver);
+  const player = play((time, events) => frame(scene, { time, events }).targets, driver, {
+    cues: scene.cues,
+  });
   driver.seek(ms / durationMs);
-  return player.values;
+  const values = player.values;
+  const deep = (name: string): Pose3d => pose3dOf(values[name]) ?? {};
+  return {
+    bones: { spine: deep("spine"), shoulder: deep("shoulder"), elbow: deep("elbow") },
+    character: deep("character"),
+    ball: deep("ball"),
+    camera: deep("camera"),
+  };
 }
 
 function buildTestArmHierarchy() {
@@ -161,6 +175,17 @@ describe("the 3D character example scene", () => {
     applyPose3d(root, at(durationMs).character, undefined, writer);
     expect(head.morphTargetInfluences?.[0] ?? 0).toBeGreaterThan(0.7);
     expect(head.morphTargetInfluences?.[1] ?? 0).toBeCloseTo(0, 5);
+  });
+
+  it("makes each moving bone and each 3D target an object with its own limits", () => {
+    expect(Object.keys(scene.limits).sort()).toEqual([
+      "ball",
+      "camera",
+      "character",
+      "elbow",
+      "shoulder",
+      "spine",
+    ]);
   });
 
   it("holds everything still for the last 600 ms", () => {

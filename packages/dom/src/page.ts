@@ -159,8 +159,11 @@ interface PageDocument {
   removeEventListener?(type: string, listener: (event: StageEvent) => void): void;
 }
 
+/** A member drawn by a page node: every kind but a Three.js object, which no page node draws. */
+type DrawnMember = Exclude<Member, { readonly kind: "object" }>;
+
 interface BoundTarget {
-  readonly member: Member;
+  readonly member: DrawnMember;
   readonly node: PageElement;
   readonly items: readonly PageElement[];
   readonly restore?: (() => void) | undefined;
@@ -281,7 +284,7 @@ function resolvePageStage(input: StageInput): Stage {
   if (stage.skins.dom !== undefined)
     throw new Error("mountPage: a page scene takes no skin; style the page with CSS.");
   const missing = stage.members
-    .filter((member) => member.node === undefined)
+    .filter((member) => member.node === undefined && member.kind !== "object")
     .map((member) => `"${member.name}"`);
   if (missing.length > 0)
     throw new TypeError(
@@ -338,7 +341,7 @@ function wrapSplitText(
 }
 
 function bindList(
-  member: Extract<Member, { readonly kind: "list" }>,
+  member: Extract<DrawnMember, { readonly kind: "list" }>,
   selector: string,
   root: PageRoot,
 ): BoundTarget {
@@ -549,6 +552,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       if (selector === undefined) continue;
       let bound: BoundTarget;
       switch (member.kind) {
+        case "object":
+          continue;
         case "actor":
         case "group": {
           const raw = root.querySelector(selector);

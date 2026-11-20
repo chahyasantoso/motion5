@@ -16,12 +16,26 @@ import {
   WebGLRenderer,
 } from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import type { Events, Pose3d, Time } from "@gerak/core";
 import { usePlayer } from "@gerak/react";
 import { applyValue } from "@gerak/dom";
-import { applyPose3d } from "@gerak/three";
+import { applyPose3d, bindScene3d } from "@gerak/three";
 import { applyBones, attach, captureSkeleton } from "@gerak/rig-three";
+import { compileScene, formatStageError, frame, poseOf } from "@gerak/stage";
 import eyes from "../../references/dragonling.eyes.json" with { type: "json" };
-import { clock, cues, lens, propSpecs, scene, speech, stage } from "./dragon-intro-scene";
+import piece, { PLUSES, WORDS, clock, lens, propSpecs, speech, stage } from "./dragon-intro-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+const signal = (time: Time, events: Events) => frame(scene, { time, events }).targets;
+
+/** Writes a label's pose onto the element `find` answers, if it is mounted. */
+const writeTo = (find: () => HTMLElement | null | undefined) => (value: unknown) => {
+  const element = find();
+  const pose = poseOf(value);
+  if (element && pose !== undefined) applyValue(element, pose);
+};
 
 const TITLE = ["LITTLE", "EMBER", "TALKS"] as const;
 const MODEL = new URL("../../references/dragonling.glb", import.meta.url).href;
@@ -32,7 +46,7 @@ export const DragonIntro: React.FC<{
   readonly onReady?: () => void;
   readonly onError?: (error: unknown) => void;
 }> = ({ onReady, onError }) => {
-  const playing = usePlayer(scene, clock, cues);
+  const playing = usePlayer(signal, clock, scene.cues);
   const host = useRef<HTMLDivElement>(null);
   const wipe = useRef<HTMLDivElement>(null);
   const words = useRef<(HTMLSpanElement | null)[]>([]);
@@ -86,15 +100,8 @@ export const DragonIntro: React.FC<{
       return mesh;
     });
 
-    let queued = false;
     const render = () => {
-      queued = false;
       if (alive) renderer.render(world, camera);
-    };
-    const invalidate = () => {
-      if (queued) return;
-      queued = true;
-      queueMicrotask(render);
     };
 
     new GLTFLoader().load(
@@ -120,58 +127,68 @@ export const DragonIntro: React.FC<{
           lid.visible = false;
           return lid;
         });
+        const bonePoses: Record<string, Pose3d> = {};
+        const bone = (name: string) => (pose: Pose3d) => {
+          bonePoses[name] = pose;
+        };
+        const props: Record<string, Mesh> = {};
+        propSpecs.forEach((spec, i) => {
+          const mesh = meshes[i];
+          if (mesh !== undefined) props[spec.id] = mesh;
+        });
         unsubscribe.push(
-          player.subscribe("camera", (pose) => {
-            applyPose3d(camera, pose);
-            invalidate();
-          }),
-          player.subscribe("dragon", (pose) => {
-            applyPose3d(dragon, pose);
-            invalidate();
-          }),
-          player.subscribe("bones", (poses) => {
-            applyBones(skeleton, poses);
-            invalidate();
-          }),
-          player.subscribe("face", (pose) => {
-            const shut = pose.custom?.shut ?? 0;
-            for (const lid of lids) {
-              lid.visible = shut > 0.02;
-              lid.scale.set(1, Math.max(shut, 0.001), 1);
-            }
-            invalidate();
-          }),
-          player.subscribe("props", (poses) => {
-            poses.forEach((pose, i) => {
-              const mesh = meshes[i];
-              const spec = propSpecs[i];
-              if (mesh !== undefined && spec !== undefined)
-                applyPose3d(mesh, pose, { x: spec.x, y: 1.15, z: spec.z });
-            });
-            invalidate();
-          }),
-          player.subscribe("title", (poses) =>
-            poses.forEach((pose, i) => {
-              const word = words.current[i];
-              if (word) applyValue(word, pose);
-            }),
+          bindScene3d(
+            player,
+            scene,
+            {
+              camera: (pose) => applyPose3d(camera, pose),
+              dragon,
+              Jaw: bone("Jaw"),
+              Head: bone("Head"),
+              Neck: bone("Neck"),
+              face: (pose) => {
+                const shut = pose.custom?.shut ?? 0;
+                for (const lid of lids) {
+                  lid.visible = shut > 0.02;
+                  lid.scale.set(1, Math.max(shut, 0.001), 1);
+                }
+              },
+              ...props,
+            },
+            () => {
+              applyBones(skeleton, bonePoses);
+              render();
+            },
           ),
-          player.subscribe("titleWipe", (pose) => wipe.current && applyValue(wipe.current, pose)),
-          player.subscribe("plus", (poses) =>
-            poses.forEach((pose, i) => {
-              const mark = pluses.current[i];
-              if (mark) applyValue(mark, pose);
-            }),
+          ...WORDS.map((name, i) =>
+            player.subscribe(
+              name,
+              writeTo(() => words.current[i]),
+            ),
           ),
-          player.subscribe("bubble", (pose) => {
+          player.subscribe(
+            "titleWipe",
+            writeTo(() => wipe.current),
+          ),
+          ...PLUSES.map((name, i) =>
+            player.subscribe(
+              name,
+              writeTo(() => pluses.current[i]),
+            ),
+          ),
+          player.subscribe("bubble", (value) => {
+            const pose = poseOf(value);
+            if (pose === undefined) return;
             if (bubble.current) applyValue(bubble.current, pose);
-            const count = Math.ceil((pose.custom?.spoken ?? 0) * speech.length - 0.001);
+            const count = Math.ceil((pose.custom?.["spoken"] ?? 0) * speech.length - 0.001);
             if (said.current)
               said.current.textContent = speech.slice(0, Math.max(0, count)).join(" ");
           }),
-          player.subscribe("card", (pose) => card.current && applyValue(card.current, pose)),
+          player.subscribe(
+            "card",
+            writeTo(() => card.current),
+          ),
         );
-        render();
         onReady?.();
       },
       undefined,

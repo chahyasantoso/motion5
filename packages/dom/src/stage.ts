@@ -303,6 +303,7 @@ function contentOf(placed: Placed<unknown>): Content | undefined {
     case "list":
       return index === undefined ? undefined : member.items[index];
     case "group":
+    case "object":
       return undefined;
     default:
       return unreachable(member);
@@ -473,6 +474,18 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
 
   for (const member of currentStage.members) {
     const parent = byIndex[member.parent];
+    if (member.kind === "object") {
+      // A Three.js object has no DOM node; it keeps its place so parent indices still line up.
+      byIndex.push({
+        name: member.name,
+        member,
+        index: undefined,
+        element: frame,
+        parent,
+        items: [],
+      });
+      continue;
+    }
     const into = parent?.element ?? frame;
     const own = element(member.name, member.kind === "list" ? "many" : member.kind);
     into.append(own);
@@ -816,6 +829,8 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
     const visible = lastFrame?.visible;
     if (visible === undefined) return;
     for (const target of byIndex) {
+      // An object's place holds the frame; its presence is `bindScene3d`'s to write.
+      if (target.member.kind === "object") continue;
       const on = visible[target.name] ?? true;
       if (!on || target.element.style.visibility === "hidden")
         target.element.style.visibility = on ? "" : "hidden";
@@ -860,6 +875,8 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
         });
         break;
       }
+      case "object":
+        break;
       default:
         unreachable(member);
     }

@@ -30,7 +30,7 @@ export {
 export { UNTIMED, atProgress, elapsedOf, liveAt, type Clock, type Time } from "./time/time";
 export { type Curve, type Signal } from "./time/shapes";
 export { span, type Span } from "./time/span";
-export { motion, type InWindow, type Motion, type MotionWindow } from "./time/motion";
+export { motion, type InWindow, type Joins, type Motion, type MotionWindow } from "./time/motion";
 export { shared } from "./time/shared";
 export { type Timing } from "./time/timing";
 export { loop, type LoopOptions } from "./time/loop";
@@ -63,7 +63,7 @@ export {
 export { combine3d, lift2d } from "./fields/pose3d";
 export { mixPoint3d, mixPose3d } from "./blend/mix3d";
 export { type Pose3d } from "./fields/pose3d";
-export { aim, orbit, project3d, type Lens3d } from "./geometry/stage3d";
+export { aim, orbit, project3d, unproject3d, type Lens3d } from "./geometry/stage3d";
 export type { Anchor2d, Cubic2d, Point2d, Point3d } from "./geometry/shapes";
 export { toCubics } from "./geometry/path";
 export { along } from "./path/along";

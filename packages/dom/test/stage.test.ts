@@ -1,7 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { toCubics, type Events, type Pose2d, type Time } from "@gerak/core";
+import { motion, toCubics, type Events, type Pose2d, type Pose3d, type Time } from "@gerak/core";
 import { follow, trace } from "@gerak/moves";
-import { formatStageError, type RestReader, type Stage } from "@gerak/stage";
+import {
+  beat,
+  box,
+  compileScene,
+  formatStageError,
+  object,
+  sceneBuilder,
+  type RestReader,
+  type Stage,
+} from "@gerak/stage";
 // The renderer is tested on compiled stages, built with the stage package's own compiler input.
 import { compileStage } from "../../stage/src/run/compile";
 import { defineStage, type StageDefinition } from "../../stage/src/author/stage";
@@ -219,6 +228,30 @@ describe("mountStage", () => {
     expect(() => mountStage(new FakeElement("div"), staged(badDef), { frames: frames() })).toThrow(
       /"missing", which is not a beat/,
     );
+  });
+
+  it("mounts a piece with an object, draws no node for it, and plays its 3D pose", () => {
+    const spin = beat("spin", 1000);
+    const scene = sceneBuilder()
+      .element(box("label"))
+      .motion(motion((t: Time): Pose2d => ({ x: 10 * t.progress })).in(spin))
+      .element(object("cube"))
+      .motion(motion((t: Time): Pose3d => ({ rotationY: 90 * t.progress })).in(spin))
+      .show(spin)
+      .element(box("after"))
+      .motion(motion((t: Time): Pose2d => ({ y: t.progress })).in(beat("late", 500, { at: 1500 })));
+    const result = compileScene(scene);
+    if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
+    const { root, stage } = mounted({}, undefined, result.stage);
+    const frame = root.children.find((child) => child.tagName === "div");
+    expect(frame?.children.map((child) => child.attributes.get("data-cast"))).toEqual([
+      "label",
+      "after",
+    ]);
+    stage.driver.seek(0.25);
+    expect(stage.player.values.cube).toEqual({ rotationY: 45 });
+    stage.driver.seek(0.9);
+    expect(frame?.style.visibility ?? "").not.toBe("hidden");
   });
 
   it("builds the cast as nested elements named by the cast", () => {

@@ -26,7 +26,8 @@ changed word broke the piece at run time.
   runs in review and on authoring pages (`checks: true`), not in live playback. A hidden member is not written.
 - **Layouts are always named**, `main` when a piece gives none. **Identity is data**: guards read `kind`.
 - **A URL skin is fetched and applied as an inline one.** Pose `"3d"` and the open renderer skin registry are gone
-  until a renderer needs them.
+  until a renderer needs them. **Superseded in part by [ADR-197](./ADR-197-objects-in-a-scene.md), 2026-11-21:** an
+  `object` element is posed in `Pose3d` and drawn by `bindScene3d`.
 - **Three entries, one per reader:** `@gerak/stage` for authors and runners, `@gerak/stage/render` for outlines,
   `@gerak/stage/dom` for tokens.
 
