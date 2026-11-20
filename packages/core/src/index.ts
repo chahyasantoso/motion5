@@ -30,7 +30,7 @@ export {
 export { UNTIMED, atProgress, elapsedOf, liveAt, type Clock, type Time } from "./time/time";
 export { type Curve, type Signal } from "./time/shapes";
 export { span, type Span } from "./time/span";
-export { motion, type Motion } from "./time/motion";
+export { motion, type InWindow, type Motion, type MotionWindow } from "./time/motion";
 export { shared } from "./time/shared";
 export { type Timing } from "./time/timing";
 export { loop, type LoopOptions } from "./time/loop";
@@ -105,5 +105,6 @@ export { arc, arc3d, type Arc3dOptions, type ArcBendOptions } from "./principles
 export { exaggerate, exaggerate3d, type ExaggerateOptions } from "./principles/exaggerate";
 export { secondary, secondary3d } from "./principles/secondary";
 export { state, type State, type StateOptions, type Step } from "./state/state";
+export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { springTo, type SpringToOptions } from "./state/spring-to";
 export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";

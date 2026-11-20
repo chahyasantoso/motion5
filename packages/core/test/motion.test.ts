@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { motion, span, type Time } from "@gerak/core";
+import { motion, span, UNTIMED, type MotionWindow, type Time } from "@gerak/core";
 
 const at = (ms: number, length = 4000): Time => ({
   progress: ms / length,
@@ -74,5 +74,43 @@ describe("motion", () => {
     expect(alive.loop(500).isAmbient).toBe(true);
     expect(alive.take().isAmbient).toBe(true);
     expect(progressOf.loop(500).isAmbient).toBe(false);
+  });
+
+  it("accepts a MotionWindow in .in(), passes context through, and preserves it across modifiers", () => {
+    const window: MotionWindow = {
+      of: (time, ease, context) => {
+        const offset = typeof context === "number" ? context : 0;
+        const raw = time.progress + offset;
+        return { progress: ease === undefined ? raw : ease(raw), clock: UNTIMED };
+      },
+    };
+    const windowed = motion((time: Time, context?: number) => `${time.progress}:${context}`).in(
+      window,
+      (p) => p * 2,
+    );
+    expect(windowed.span).toBeUndefined();
+    expect(windowed.window).toBe(window);
+    expect(windowed(at(1000), 0.25)).toBe("1:0.25");
+    expect(windowed.loop(1000).window).toBe(window);
+    expect(windowed.take().window).toBe(window);
+    expect(windowed.ambient().window).toBe(window);
+  });
+
+  it("passes outer time to a MotionWindow before applying .loop(ms)", () => {
+    const triggered: MotionWindow = {
+      of: (time, ease) => {
+        const elapsed = time.clock.kind === "timed" ? time.clock.elapsed : 0;
+        const raw = elapsed >= 600 ? Math.min(1, (elapsed - 600) / 1000) : 0;
+        return {
+          progress: ease === undefined ? raw : ease(raw),
+          clock: { kind: "timed", elapsed: raw * 1000, length: 1000 },
+        };
+      },
+    };
+    const looped = motion((time: Time) => time.progress)
+      .in(triggered, (p) => p * p)
+      .loop(500);
+    expect(looped(at(850))).toBe(0.25);
+    expect(looped(at(1350))).toBe(0.25);
   });
 });

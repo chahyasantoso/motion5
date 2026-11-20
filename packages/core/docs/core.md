@@ -22,7 +22,7 @@ Time -> timing (span, lanes, loop) -> 0..1 progress -> curve (ease, envelope, pa
 - `chain(lengths)` lays windows end to end; `lanes(lengths, stagger)` gives each item its own window (`.of(time, i)`); `loop(ms)` repeats; `reversed`, `repeated` reshape a time.
 - `sequence(time, [[span, fn], ...])` plays phases on one target; a finished phase holds its end.
 - `timeAt(time, ms)` and `withProgress(time, p)` sample another moment. Never loop from 0 to now.
-- `motion(fn)` makes a `Motion`: a function of time with `.in(span, ease?)` (plays over the span, holds its start before and its end after), `.loop(ms)`, `.take()` (replaces the fields it sets) and `.ambient()` (never settles). Every move returns one.
+- `motion(fn)` makes a `Motion`: a function of time with `.in(window, ease?)` (plays over a span or a scroll/trigger window, holding its start before and its end after), `.loop(ms)`, `.take()` (replaces the fields it sets) and `.ambient()` (never settles). Every move returns one.
 - **Inside `.in(span)`** a motion's `time` is the span's own: `progress` 0 to 1 across it, `elapsedOf` ms since it began.
 - `shared(signal)` computes once per frame however many readers ask.
 
@@ -66,6 +66,7 @@ Each has a `3d` twin where the pose type needs one. `smear`, `trail` and `trailT
 Events are `{ name, at, target, value? }`, oldest first. A scene never stores what happened; it folds the log.
 
 - `state(start, rule, { target? })` folds events up to a time; `.steps` lists when it changed.
+- `scroll.y` folds `"scroll"` sample events in px (from 0); `pointer.x` and `pointer.y` fold `"pointer-x"` and `"pointer-y"` samples from 0 to 1 across the viewport (from 0.5). `INPUT_EVENTS` names the three sample events; `springTo(scroll.y, (y) => y)` gives smooth scroll.
 - `springTo(state, pick)` springs and `easeTo(state, pick, { ms })` eases to what `pick` reads, from wherever the value is when the state changes.
 - `tally` integrates held values over time. `velocity(signal, time, events)` reads speed; pass the scene's time, not an eased one.
 - Random is `seeded(seed)`, never `Math.random()`.

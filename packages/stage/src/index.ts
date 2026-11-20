@@ -1,5 +1,18 @@
 export { type Content, type Expect, type ItemContent, type Path, type Pivot } from "./author/cast";
-export { beat, type Beat, type BeatPlace } from "./author/beat";
+export {
+  beat,
+  scrollPoint,
+  type Beat,
+  type BeatContext,
+  type BeatPlace,
+  type ScrollBeat,
+  type ScrollBeatOptions,
+  type ScrollPoint,
+  type ScrollReached,
+  type TriggerBack,
+  type TriggerBeat,
+  type TriggerPlace,
+} from "./author/beat";
 export {
   box,
   group,
