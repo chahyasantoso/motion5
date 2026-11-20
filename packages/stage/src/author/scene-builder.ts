@@ -888,9 +888,13 @@ function movesOf(step: MotionStep, time: Time, context: unknown): Moves | undefi
   return "maybe";
 }
 
-/** The context a motion sees: its time tells the clock watcher when read, and `carry` or another element
- * counts as `maybe`. */
-function watched(context: MotionContext, seen: () => void): MotionContext {
+/** The context a motion sees: its time tells the clock watcher when read, `carry` counts as `maybe`, and
+ * reading another element moves this one as that element moves. */
+function watched(
+  context: MotionContext,
+  seen: () => void,
+  readOf: (target: string) => void,
+): MotionContext {
   const time = watchedTime(context.time);
   return {
     time,
@@ -903,8 +907,9 @@ function watched(context: MotionContext, seen: () => void): MotionContext {
     element: context.element,
     span: context.span,
     read: (target, at) => {
-      seen();
-      return context.read(target, at);
+      const pose = context.read(target, at);
+      readOf(typeof target === "string" ? target : target.name);
+      return pose;
     },
     ...(context.index === undefined ? {} : { index: context.index }),
     ...(context.count === undefined ? {} : { count: context.count }),
@@ -997,7 +1002,12 @@ function stackOf(
           const used =
             moves === undefined || step.travels
               ? context
-              : watched(context, () => note(moves, plan.name, "maybe"));
+              : watched(
+                  context,
+                  () => note(moves, plan.name, "maybe"),
+                  (target) =>
+                    note(moves, plan.name, moves.get(target) === "time" ? "time" : "maybe"),
+                );
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
           if (step.travels) BELOW_POSE.set(used, prev);

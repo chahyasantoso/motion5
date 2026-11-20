@@ -994,7 +994,13 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
-    if (runOnly !== undefined && !runOnly.has(member.name)) return;
+    if (runOnly !== undefined && !runOnly.has(member.name)) {
+      // Presence follows the clock, so it is applied on every frame, run or not.
+      const shown = lastFrame?.visible[member.name] ?? true;
+      if (member.kind === "list") for (const item of target.items) applyVisibility(item, shown);
+      else applyVisibility(target.node, shown);
+      return;
+    }
     const visible = lastFrame?.visible[member.name] ?? true;
     switch (member.kind) {
       case "list": {

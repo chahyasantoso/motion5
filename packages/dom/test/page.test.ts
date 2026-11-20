@@ -580,3 +580,42 @@ describe("mountPage frames for a cause", () => {
     expect(caused.queuedAtEnd).toBe(0);
   });
 });
+
+describe("mountPage frames for a cause, reading another element", () => {
+  const OFF = Symbol.for("@gerak/dom/clock-frames-off");
+
+  function play(off: boolean): string[] {
+    Reflect.set(globalThis, OFF, off);
+    try {
+      const leaderNode = new FakeNode("leader");
+      const followerNode = new FakeNode("follower");
+      const root = new FakeRoot([leaderNode, followerNode]);
+      const frames = fakeFrames();
+      let ms = 0;
+      const leader = box("leader", { node: el("#leader") });
+      const scene = sceneBuilder()
+        .element(leader)
+        .motion(motion((t): Pose2d => ({ x: 100 * t.progress })).loop(700))
+        .element(box("follower", { node: el("#follower") }))
+        .motion(
+          motion((_t, context?: { read(target: typeof leader): Pose2d }) => ({
+            y: context?.read(leader).x ?? 0,
+          })).in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })),
+        );
+      const mounted = mountPage(scene, { root, frames, clock: () => ms });
+      const styles: string[] = [];
+      for (ms = 16; ms <= 6000; ms += 16) {
+        if (frames.queued > 0) frames.tick(ms);
+        styles.push(`${leaderNode.style.transform};${followerNode.style.transform}`);
+      }
+      mounted.dispose();
+      return styles;
+    } finally {
+      Reflect.deleteProperty(globalThis, OFF);
+    }
+  }
+
+  it("keeps an element that reads a moving element running with it", () => {
+    expect(play(false)).toEqual(play(true));
+  });
+});
