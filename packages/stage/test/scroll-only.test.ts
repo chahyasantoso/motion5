@@ -80,15 +80,15 @@ describe("what a frame reports as reading only the scroll position", () => {
   });
 
   it("not a scroll-beat motion that reads events, carry or another element", () => {
-    const readsEvents = (t: Time, context: MotionContext): Pose2d => ({
-      x: t.progress + context.events.length,
+    const readsEvents = (t: Time, context?: MotionContext): Pose2d => ({
+      x: t.progress + (context?.events.length ?? 0),
     });
-    const readsCarry = (t: Time, context: MotionContext): Pose2d => {
-      void context.carry;
+    const readsCarry = (t: Time, context?: MotionContext): Pose2d => {
+      void context?.carry;
       return { x: t.progress };
     };
-    const readsOther = (t: Time, context: MotionContext): Pose2d => ({
-      x: t.progress + (context.read("plain").x ?? 0),
+    const readsOther = (t: Time, context?: MotionContext): Pose2d => ({
+      x: t.progress + (context?.read("plain").x ?? 0),
     });
     const stage = compiled(
       sceneBuilder({ length: 1000 })

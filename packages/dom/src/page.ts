@@ -29,6 +29,7 @@ import {
   type Moves,
 } from "@gerak/stage";
 import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
+import { sampleNear, scrollKeyframes, scrollTracks } from "./compositor";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { applyPath, applyValue, type RenderStyle } from "./render";
@@ -503,6 +504,8 @@ function boxForNode(
 
 // Tests set this to run the whole scene on every frame, to compare with frames run for a cause.
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
+// Tests set this to keep every element in the engine, to compare with what the browser plays.
+const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
 
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
@@ -808,6 +811,9 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   let frameMoves = new Map<string, Moves>();
   let frameOnly: ReadonlySet<string> | undefined;
   let runOnly: ReadonlySet<string> | undefined;
+  // The elements the engine runs while the browser plays the rest; undefined when it plays none.
+  let engineOnly: ReadonlySet<string> | undefined;
+  let handed = new Map<string, Animation[]>();
   const lastMoves = (): ReadonlyMap<string, Moves> => {
     if (frameOnly === undefined) return frameMoves;
     const merged = new Map(earlierMoves);
@@ -942,7 +948,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       boxesFor = currentReader;
       boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
     }
-    const only = runOnly;
+    const only = runOnly ?? engineOnly;
     const moves = new Map<string, Moves>();
     const ran = frameOf(stage, {
       time,
@@ -994,7 +1000,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
 
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
-    if (runOnly !== undefined && !runOnly.has(member.name)) {
+    const ran = runOnly ?? engineOnly;
+    if (ran !== undefined && !ran.has(member.name)) {
       // Presence follows the clock, so it is applied on every frame, run or not.
       const shown = lastFrame?.visible[member.name] ?? true;
       if (member.kind === "list") for (const item of target.items) applyVisibility(item, shown);
@@ -1038,11 +1045,90 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     player.subscribe(target.member.name, (value) => bindTarget(target, value));
   }
 
+  // Elements whose motions read only the scroll position play as Web Animations on a scroll timeline,
+  // sampled from the scene across the whole scroll range; the engine runs the rest.
+  const release = (): void => {
+    for (const animations of handed.values())
+      for (const animation of animations) animation.cancel();
+    handed = new Map();
+    engineOnly = undefined;
+  };
+  const handOff = (): void => {
+    release();
+    if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
+    const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
+    const source = doc?.documentElement;
+    if (typeof Timeline !== "function" || !isDomElement(source)) return;
+    if (scrollTarget === undefined || scrollTarget !== doc?.defaultView) return;
+    const maxScroll = source.scrollHeight - source.clientHeight;
+    if (!(maxScroll > 0)) return;
+    const names = new Set<string>();
+    for (const target of targets) {
+      const { member } = target;
+      if (member.on !== undefined || member.expect === "ambient") continue;
+      const nodes = member.kind === "list" ? target.items : [target.node];
+      if (!nodes.every(isDomElement)) continue;
+      switch (member.kind) {
+        case "actor":
+          if (member.content.kind === "readout" || member.content.kind === "morph") continue;
+          break;
+        case "list":
+          if (member.items.some((item) => item.kind === "morph")) continue;
+          break;
+        case "group":
+          break;
+        default:
+          unreachable(member);
+      }
+      names.add(member.name);
+    }
+    if (names.size === 0) return;
+    const reader = currentReader;
+    const tracks = scrollTracks(stage, {
+      boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
+      lines: currentLines,
+      maxScroll,
+      names,
+    });
+    if (tracks.size === 0) return;
+    const timeline: unknown = Reflect.construct(Timeline, [{ source, axis: "block" }]);
+    if (!(timeline instanceof AnimationTimeline)) return;
+    const y = readScrollY();
+    const next = new Map<string, Animation[]>();
+    for (const [name, track] of tracks) {
+      const target = byName.get(name);
+      if (target === undefined) continue;
+      const nodes = target.member.kind === "list" ? target.items : [target.node];
+      const animations: Animation[] = [];
+      track.parts.forEach((samples, index) => {
+        const node = nodes[index];
+        if (node === undefined || !isDomElement(node)) return;
+        const near = sampleNear(samples, y);
+        if (near !== undefined)
+          applyValue(node, {
+            ...near.fields,
+            ...(track.anchor === undefined ? {} : { anchor: track.anchor }),
+          });
+        const keyframes = scrollKeyframes(samples, maxScroll);
+        if (keyframes.length > 0)
+          animations.push(node.animate(keyframes, { timeline, fill: "both" }));
+      });
+      next.set(name, animations);
+    }
+    handed = next;
+    engineOnly = new Set(
+      stage.members.map((member) => member.name).filter((name) => !handed.has(name)),
+    );
+  };
+  handOff();
+
   schedule();
 
   const remeasure = (): void => {
     if (!live) return;
+    release();
     measure();
+    handOff();
     syncScroll();
     player.refresh();
   };
@@ -1108,6 +1194,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       observer?.disconnect();
       fonts?.removeEventListener("loadingdone", fontsLoaded);
       for (const stop of unwatch) stop();
+      release();
       recorder.dispose();
       player.dispose();
       listeners.clear();

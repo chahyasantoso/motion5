@@ -55,8 +55,11 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - The mount samples the element's pose from the scene across the beat, and adds samples where straight lines between
   them miss the scene by more than 0.25 px, 0.1 degree or 0.005 opacity. Keyframes are placed by scroll position and
   rebuilt on each remeasure.
-- The exact `ScrollTimeline` range form (`rangeStart` and `rangeEnd`, or offsets over the whole scroll range) is
-  settled by a spike in Slice A and written into this decision.
+- One `ScrollTimeline` on the document's scroller spans the whole scroll range: a keyframe at scroll `y` sits at
+  offset `y / (scrollHeight - clientHeight)`, with `fill: "both"`. The spike matched `scrollY` to the pixel at two
+  viewport sizes; no `rangeStart` or `rangeEnd`.
+- Every keyframe of a part names the same transform functions, in `cssTransform`'s order, so the browser blends
+  each field along a straight line; scale fields keep within 0.001.
 
 ### 4. The page tools keep their clock
 
