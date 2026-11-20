@@ -47,8 +47,9 @@ Read `AGENTS.md` first. Every rule there applies.
 
 ### 2. `bindScene3d`
 
-- `@gerak/three` exports `bindScene3d(player, scene, objects: Readonly<Record<string, Object3D>>, draw: () => void)`.
-  It returns the unsubscribe.
+- `@gerak/three` exports `bindScene3d(player, scene, objects: Readonly<Record<string, ObjectTarget3d>>, draw)`, where
+  a target is an `Object3D`, posed from its position when bound (as `useTarget3d` does), or a writer
+  `(pose, visible) => void`, which hands a skeleton's bone poses to `applyBones`. It returns the unsubscribe.
 - On each player step it writes each object's pose with `applyPose3d`, sets `visible` from the scene's `.show`
   windows, then calls `draw` once. The canvas therefore draws on the player's step, as ADR-183 requires.
 - It reads `kind` over its own closed union, `"object"`, with an exhaustive `switch`.
@@ -60,7 +61,10 @@ Read `AGENTS.md` first. Every rule there applies.
 - An object that travels names its view: `object(name, { view: { canvas, lens } })`, where `canvas` is an element bound
   to the page's canvas node (measured like a slot) and `lens` is the fixed `Lens3d` the page draws through.
 - `travel({ to: slot })` on such an object moves it to the slot's centre, taken relative to the canvas box, at its
-  current depth along the lens; on an object without a view, `sceneBuilder` refuses it and says so.
+  current depth along the lens; on an object without a view, or with `arc` or `fit`, `sceneBuilder` refuses it. Its
+  position is measured from the world origin, so the `Object3D` of an object that travels rests there.
+- A skeleton's bones are objects, one per bone, written through a writer; an object's pose is never read by an
+  element (`read` refuses it), so a label pinned to an object computes from the same functions as the object.
 
 ### 4. Scaffold and pieces
 
