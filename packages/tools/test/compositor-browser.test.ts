@@ -249,3 +249,58 @@ describe("triggered cards on the document timeline", () => {
     );
   }, 120000);
 });
+
+describe("the page tools on a page the browser plays", () => {
+  it("show a scroll-timeline animation at the scripted scroll, and keep triggers in the engine", async () => {
+    const { value } = await withPage(
+      {
+        page: "scroll.html",
+        width: 800,
+        height: 600,
+        source: { kind: "serve", root: FIXTURES },
+        actions: [
+          { kind: "scroll", px: 700, at: 300 },
+          { kind: "scroll", px: 400, at: 1700 },
+        ],
+      },
+      async (session) => {
+        const look = () =>
+          session.page.evaluate(() => {
+            const expected: unknown = Reflect.apply(Reflect.get(window, "__expected"), window, []);
+            const read = (name: string) => {
+              const node = document.getElementById(name);
+              if (node === null) throw new Error(`no #${name}`);
+              const transform = getComputedStyle(node).transform;
+              const matrix = new DOMMatrix(transform === "none" ? "" : transform);
+              const pose: unknown = Reflect.get(Object(expected), name);
+              return {
+                x: matrix.m41,
+                y: matrix.m42,
+                wantX: Number(Reflect.get(Object(pose), "x")),
+                wantY: Number(Reflect.get(Object(pose), "y")),
+                animations: node.getAnimations().length,
+              };
+            };
+            return { bar: read("bar"), card: read("card") };
+          });
+        await session.advanceTo(1600);
+        const first = await look();
+        await session.advanceTo(1900);
+        return [first, await look()];
+      },
+    );
+    const [first, second] = value;
+    expect(first?.bar.animations).toBe(1);
+    expect(first?.card.animations).toBe(0);
+    expect(first?.bar.wantX).toBeCloseTo(150, 5);
+    expect(second?.bar.wantX).toBeCloseTo(60, 5);
+    for (const seen of [first, second]) {
+      expect(Math.abs((seen?.bar.x ?? NaN) - (seen?.bar.wantX ?? NaN))).toBeLessThanOrEqual(
+        0.25 + SLACK,
+      );
+      expect(Math.abs((seen?.card.y ?? NaN) - (seen?.card.wantY ?? NaN))).toBeLessThanOrEqual(
+        0.25 + SLACK,
+      );
+    }
+  }, 120000);
+});
