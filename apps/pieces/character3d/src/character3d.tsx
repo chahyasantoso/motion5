@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   AmbientLight,
   Bone,
@@ -18,30 +18,28 @@ import {
   type BufferGeometry,
   type Material,
 } from "three";
+import type { Events, Pose3d, Time } from "@gerak/core";
 import { usePlayer } from "@gerak/react";
-import { applyPose3d, morphTargets, type CustomWriter } from "@gerak/three";
-import { useTarget3d } from "@gerak/three/react";
-import { applyBones, captureSkeleton, type CapturedSkeleton } from "@gerak/rig-three";
-import {
+import { applyPose3d, bindScene3d, morphTargets } from "@gerak/three";
+import { applyBones, captureSkeleton } from "@gerak/rig-three";
+import { compileScene, formatStageError, frame } from "@gerak/stage";
+import piece, {
   BALL_RADIUS,
   BALL_SPAWN,
   PEDESTAL,
   REACH_TARGET,
   SKELETON_JOINTS,
   clock,
-  scene,
 } from "./character3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+const signal = (time: Time, events: Events) => frame(scene, { time, events }).targets;
 
 const WIDTH = 1280;
 const HEIGHT = 720;
 const UP = new Vector3(0, 1, 0);
-
-interface CharacterRig {
-  readonly root: Group;
-  readonly skeleton: CapturedSkeleton;
-  readonly writer: CustomWriter;
-  readonly render: () => void;
-}
 
 function linkMesh(
   from: { readonly x: number; readonly y: number; readonly z: number },
@@ -92,18 +90,13 @@ function addMorphBox(
 
 /** A rigged character reaching in 3D for a target while blinking, smiling, and watching a physics ball settle. */
 export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onReady }) => {
-  const playing = usePlayer(scene, clock);
+  const playing = usePlayer(signal, clock, scene.cues);
   const player = playing?.player;
-  const renderRef = useRef<() => void>(() => undefined);
-  const invalidate = useCallback(() => renderRef.current(), []);
-  const ball = useTarget3d(player, "ball", { invalidate });
-  const camera = useTarget3d(player, "camera", { invalidate });
   const host = useRef<HTMLDivElement>(null);
-  const [rig, setRig] = useState<CharacterRig | null>(null);
 
   useEffect(() => {
     const parent = host.current;
-    if (parent === null) return undefined;
+    if (player === undefined || parent === null) return undefined;
     const renderer = new WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
     renderer.setSize(WIDTH, HEIGHT);
     renderer.setClearColor(0x1b2236);
@@ -269,45 +262,38 @@ export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onRead
     );
 
     const skeleton = captureSkeleton(characterRoot);
-    const writer = morphTargets(characterRoot);
-    const render = () => renderer.render(stage, lens);
-    renderRef.current = render;
-    setRig({ root: characterRoot, skeleton, writer, render });
+    const morphs = morphTargets(characterRoot);
+    const bonePoses: Record<string, Pose3d> = {};
+    const boneWriter = (name: string) => (pose: Pose3d) => {
+      bonePoses[name] = pose;
+    };
 
     ballMesh.position.set(BALL_SPAWN.x, BALL_SPAWN.y, BALL_SPAWN.z);
-    ball(ballMesh);
-    camera(lens);
-
-    render();
+    const unbind = bindScene3d(
+      player,
+      scene,
+      {
+        character: (pose) => applyPose3d(characterRoot, pose, undefined, morphs),
+        spine: boneWriter("spine"),
+        shoulder: boneWriter("shoulder"),
+        elbow: boneWriter("elbow"),
+        ball: ballMesh,
+        camera: lens,
+      },
+      () => {
+        applyBones(skeleton, bonePoses);
+        renderer.render(stage, lens);
+      },
+    );
+    onReady();
     return () => {
-      renderRef.current = () => undefined;
-      setRig(null);
-      ball(null);
-      camera(null);
+      unbind();
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [ball, camera]);
-
-  useEffect(() => {
-    if (player === undefined || rig === null) return undefined;
-    const stopBones = player.subscribe("bones", (poses) => {
-      applyBones(rig.skeleton, poses);
-      rig.render();
-    });
-    const stopChar = player.subscribe("character", (pose) => {
-      applyPose3d(rig.root, pose, undefined, rig.writer);
-      rig.render();
-    });
-    rig.render();
-    onReady();
-    return () => {
-      stopBones();
-      stopChar();
-    };
-  }, [player, rig, onReady]);
+  }, [player, onReady]);
 
   return <div ref={host} className="stage" onClick={() => playing?.driver.replay()} />;
 };

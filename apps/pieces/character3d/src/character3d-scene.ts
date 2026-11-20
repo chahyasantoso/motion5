@@ -1,8 +1,19 @@
 import { clockDriver } from "@gerak/dom";
-import { ease, mix, mixPoint3d, orbit, aim, span, type Pose3d, type Time } from "@gerak/core";
+import {
+  ease,
+  mix,
+  mixPoint3d,
+  motion,
+  orbit,
+  aim,
+  span,
+  type Pose3d,
+  type Time,
+} from "@gerak/core";
 import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
 import { bodyPose3d, bonesOf3d, childBase3d, chainThrough3d, ik3d } from "@gerak/rig";
+import { object, sceneBuilder } from "@gerak/stage";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */
 export const durationMs = 4200;
@@ -79,7 +90,7 @@ const smileWindow = span(1500, 2600);
 const cameraPan = span(0, 3400);
 
 /** Character morphs, skeleton bone turns, physics ball pose, and orbiting camera at `time`. */
-export const scene = (time: Time) => {
+export const sceneAt = (time: Time) => {
   const leanProgress = torsoLean.of(time, ease.sineInOut).progress;
   const torsoNow = ik3d(torso.chain, {
     spine: mixPoint3d(SKELETON_JOINTS.shoulder, LEAN_GOAL, leanProgress),
@@ -122,6 +133,29 @@ export const scene = (time: Time) => {
     camera: { ...eye, ...aim(eye, CHARACTER_FOCUS) } satisfies Pose3d,
   };
 };
+
+/** Review limits of the 3D objects, in world units: a jump of a fifth of the character's reach, and a turn of 30 degrees. */
+const LIMITS = { jump: 0.1, turn: 30 } as const;
+
+export default sceneBuilder({ name: "character3d", length: durationMs })
+  .element(object("character"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).character))
+  .limits(LIMITS)
+  .element(object("spine"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).bones.spine))
+  .limits(LIMITS)
+  .element(object("shoulder"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).bones.shoulder))
+  .limits(LIMITS)
+  .element(object("elbow"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).bones.elbow))
+  .limits(LIMITS)
+  .element(object("ball"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).ball))
+  .limits(LIMITS)
+  .element(object("camera"))
+  .motion(motion((time: Time): Pose3d => sceneAt(time).camera))
+  .limits(LIMITS);
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });
