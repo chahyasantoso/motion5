@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { aim, mixPoint, mixPoint3d, orbit, type Point2d, type Point3d } from "@gerak/core";
+import {
+  aim,
+  mixPoint,
+  mixPoint3d,
+  orbit,
+  project3d,
+  unproject3d,
+  type Lens3d,
+  type Point2d,
+  type Point3d,
+} from "@gerak/core";
 
 describe("aim", () => {
   it("gives no turn when looking down -z", () => {
@@ -41,5 +51,29 @@ describe("orbit", () => {
     const b: Point3d = { x: 1, y: 2, z: 3 };
     expect(mixPoint(a, { x: 10, y: 20 }, 0.5)).toEqual({ x: 5, y: 10 });
     expect(mixPoint3d(b, { x: 3, y: 6, z: 9 }, 0.5)).toEqual({ x: 2, y: 4, z: 6 });
+  });
+});
+
+describe("unproject3d", () => {
+  const stageSize = { width: 1280, height: 720 };
+  const eye = orbit({ target: { x: 0, y: 0.6, z: 0 }, radius: 9, azimuth: 25, elevation: 14 });
+  const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0.6, z: 0 }), fov: 40 };
+
+  it("inverts project3d at the same depth", () => {
+    for (const point of [
+      { x: 0, y: 0, z: 0 },
+      { x: 1.2, y: -0.7, z: 2.5 },
+      { x: -3, y: 2, z: -1 },
+    ]) {
+      const seen = project3d(point, lens, stageSize);
+      const back = unproject3d({ x: seen.x, y: seen.y }, lens, stageSize, seen.depth);
+      expect(back.x).toBeCloseTo(point.x, 9);
+      expect(back.y).toBeCloseTo(point.y, 9);
+      expect(back.z).toBeCloseTo(point.z, 9);
+    }
+  });
+
+  it("refuses a depth at or behind the lens", () => {
+    expect(() => unproject3d({ x: 0, y: 0 }, lens, stageSize, 0)).toThrow(RangeError);
   });
 });
