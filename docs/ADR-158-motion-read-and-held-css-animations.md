@@ -19,6 +19,8 @@ so frames, probes and checks of such a page sampled the wrong moment.
   A move no named curve fits within 0.02 gets a fitted `cubic-bezier`, when it has at least 8 frames.
 - At every step the page tools pause each CSS and Web Animations animation and set it to the clock's time: one
   present at load counts from time 0, one started later from the step it was first seen at.
+  **Amended by [ADR-196](./ADR-196-the-compositor.md), 2026-11-20:** an animation on a scroll timeline is left on it,
+  since scripted scroll drives it, and the tools tell a page mount they hold the clock.
 
 ## Consequences
 
