@@ -829,6 +829,8 @@ function mountInto<E extends StageElement<E, S>, S extends StageStroke<S>>(
     const visible = lastFrame?.visible;
     if (visible === undefined) return;
     for (const target of byIndex) {
+      // An object's place holds the frame; its presence is `bindScene3d`'s to write.
+      if (target.member.kind === "object") continue;
       const on = visible[target.name] ?? true;
       if (!on || target.element.style.visibility === "hidden")
         target.element.style.visibility = on ? "" : "hidden";

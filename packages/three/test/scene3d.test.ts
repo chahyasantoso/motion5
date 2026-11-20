@@ -71,6 +71,21 @@ describe("bindScene3d", () => {
     expect(written.at(-1)).toEqual([{ x: 2, rotationY: 90 }, false]);
   });
 
+  it("draws once when the piece has no object", () => {
+    const flat = sceneBuilder({ length: 500 }).element(box("only"));
+    const result = compileScene(flat);
+    if (!result.ok) throw new Error(result.errors.map(formatStageError).join("; "));
+    const player = play(
+      (time, events) => frame(result.stage, { time, events }).targets,
+      manualDriver({ durationMs: 500 }),
+    );
+    let draws = 0;
+    bindScene3d(player, result.stage, {}, () => {
+      draws += 1;
+    });
+    expect(draws).toBe(1);
+  });
+
   it("names a scene's object that has no Object3D", () => {
     const stage = compiled();
     const player = play(

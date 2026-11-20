@@ -24,7 +24,8 @@ a 3D object at all.
    an object with no entry. A skeleton's bones are objects, one per bone, written through a writer to `applyBones`.
 4. **Onto a page slot.** Core gains `unproject3d(point, lens, stage, depth)`. An object with
    `view: { canvas, lens }` takes `travel({ to: slot })`: it moves to the slot's centre on the canvas box at the depth
-   along the lens it starts from. `arc` and `fit` are refused on an object, and so is a travel with no view.
+   along the lens it starts from. `arc`, `fit` and `.take()` are refused on an object's travel, and so is a travel with no view.
+   Its position is measured from the world origin, so the `Object3D` of an object that travels rests there.
 5. `gerak new --three` writes a builder piece with one object bound through `bindScene3d`.
 
 Supersedes ADR-190's clause that pose `"3d"` is gone until a renderer needs it.

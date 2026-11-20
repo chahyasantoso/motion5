@@ -75,5 +75,8 @@ export function bindScene3d(
   };
   const first = bound[0];
   // One listener per step: the first object's carries every object's write and the one draw.
-  return first === undefined ? () => undefined : player.subscribe(first.name, write);
+  if (first !== undefined) return player.subscribe(first.name, write);
+  // With no object the canvas still draws once, as it does when bound.
+  draw();
+  return () => undefined;
 }

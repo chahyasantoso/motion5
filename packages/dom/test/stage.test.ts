@@ -237,7 +237,9 @@ describe("mountStage", () => {
       .motion(motion((t: Time): Pose2d => ({ x: 10 * t.progress })).in(spin))
       .element(object("cube"))
       .motion(motion((t: Time): Pose3d => ({ rotationY: 90 * t.progress })).in(spin))
-      .element(box("after"));
+      .show(spin)
+      .element(box("after"))
+      .motion(motion((t: Time): Pose2d => ({ y: t.progress })).in(beat("late", 500, { at: 1500 })));
     const result = compileScene(scene);
     if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
     const { root, stage } = mounted({}, undefined, result.stage);
@@ -246,8 +248,10 @@ describe("mountStage", () => {
       "label",
       "after",
     ]);
-    stage.driver.seek(0.5);
+    stage.driver.seek(0.25);
     expect(stage.player.values.cube).toEqual({ rotationY: 45 });
+    stage.driver.seek(0.9);
+    expect(frame?.style.visibility ?? "").not.toBe("hidden");
   });
 
   it("builds the cast as nested elements named by the cast", () => {

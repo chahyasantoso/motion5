@@ -154,7 +154,7 @@ describe("travel on an object", () => {
     expect(half?.x).toBeCloseTo((0.5 + (landed?.x ?? NaN)) / 2, 9);
   });
 
-  it("refuses a travel on an object with no view, and an arc or fit", () => {
+  it("refuses a travel on an object with no view, an arc or fit, and a take", () => {
     expect(() =>
       sceneBuilder({ rest })
         .element(object("bare"))
@@ -165,5 +165,10 @@ describe("travel on an object", () => {
         .element(object("bent", { view: { canvas, lens } }))
         .motion(travel({ to: slot, arc: 40 }).in(go)),
     ).toThrow(/travels straight/);
+    expect(() =>
+      sceneBuilder({ rest })
+        .element(object("taking", { view: { canvas, lens } }))
+        .motion(travel({ to: slot }).in(go).take()),
+    ).toThrow(/travels as a layer/);
   });
 });

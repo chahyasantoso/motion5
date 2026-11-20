@@ -155,8 +155,10 @@ sample, review and scrub with everything else.
   an object's pose and read them on the page in `player.subscribe` or a writer; the review judges them as ratios.
 - **Onto a page slot:** an object with `object(name, { view: { canvas, lens } })`, where `canvas` is a box bound to
   the page's canvas node and `lens` the page's lens, takes `travel({ to: slot })`: it moves to the slot's centre on
-  the canvas at the depth along the lens it starts from. `arc` and `fit` are for elements, and its `Object3D` rests
-  at the world origin, since its position is measured from there.
+  the canvas at the depth along the lens it starts from. `arc`, `fit` and `.take()` are for elements, and its
+  `Object3D` rests at the world origin, since its position is measured from there.
+- **Order on a step:** `bindScene3d` writes and draws in one player listener, taken when it binds; a listener
+  subscribed after it runs after the draw. The rest it reads is the `Object3D`'s position at that moment.
 - **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/rig-three"` makes
   `object` ride the bone, placed at `at`, a `Vector3` in the model's space (the space of the joint table and the eye
   file), and turned by `turn`, a `Quaternion` in that space. It reads only the captured rest, so it is right

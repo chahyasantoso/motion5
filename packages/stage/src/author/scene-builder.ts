@@ -1562,6 +1562,10 @@ function objectStep(state: State): ObjectStep {
               throw new TypeError(
                 `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` and \`fit\` are for elements.`,
               );
+            if (traits.joins === "take")
+              throw new TypeError(
+                `sceneBuilder: object "${name}" travels as a layer; \`.take()\` is for its other motions.`,
+              );
             measured.push(run.travel.to, view.canvas);
             return {
               kind: "travel3d",
