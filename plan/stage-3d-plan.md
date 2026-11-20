@@ -6,21 +6,28 @@ People and agents making a 3D piece put its Three.js objects in a scene beside D
 objects get beats, `.show` windows, review and the same clock as everything else, and a 3D object can travel to a slot
 on a page. The code adds one element type, one binding in `@gerak/three`, and a screen-to-world function in core.
 
-Status: rewritten 2026-11-19 for the scene builder. The approved 2026-11-18 version cast objects in `defineStage`,
-which `plan/scene-builder-plan.md` removes. Starts after `plan/page-plan.md` lands. One branch, one pull request.
+Status: rewritten 2026-11-19 for the scene builder; checked against `main` after PR 613 on 2026-11-20, which settled
+the page mount, typing, travel and proof gaps below. Branch `feat/stage-3d` from `main`. One pull request.
 
 Read `AGENTS.md` first. Every rule there applies.
 
 ## Where things stand
 
-- After `plan/scene-builder-plan.md`, a piece is a `sceneBuilder` chain over element values. `@gerak/dom` reads its
-  kinds with an exhaustive `switch`, and rendering refuses an element that no renderer draws.
-- After `plan/page-plan.md`, a page has sections, scroll beats and slots made from page elements.
+- A piece is a `sceneBuilder` chain over element values. A member's kind is `actor`, `group` or `list`, read with an
+  exhaustive `switch` in `@gerak/stage` (`cast.ts`, `scene-builder.ts`, `compile.ts`, `frame.ts`,
+  `render/strokes.ts`) and `@gerak/dom` (`stage.ts`, `page.ts`, `compositor.ts`); `@gerak/tools` has none.
+- `ElementStep.motion` takes `SceneMotion`, which returns a `Pose2d`; an element value carries no pose type.
+- `mountPage` refuses a member without `{ node: el(selector) }`, and its compositor hands only bound DOM nodes to the
+  browser. Both mounts return their `player`.
+- A page has sections, scroll beats, triggers and slots made from page elements; `travel({ to: slot })` reads the
+  slot's measured box in px.
 - `@gerak/player` plays a signal of any value shape, `Pose3d` included.
 - The 3D pieces (`overlay3d`, `principles3d`, `character3d`, `avatar-3d`, `dragon-intro`) play scene modules through
   the player, and write poses with `@gerak/three`'s `applyPose3d` and `useTarget3d`.
 - `gerak new --three` writes such a scene module.
-- Core has `project3d`, from world units to the screen, and nothing from the screen to the world.
+- Core has `project3d(point, lens, stage)`, from world units to the screen, and nothing from the screen to the world.
+- A 3D scene module exports `limits` per target, and `gerak review --jump` takes world units for it.
+- yuzu is the standing page measure against the GSAP proof (`performance/page-vs-gsap.mjs`).
 
 ## Decisions
 
@@ -28,7 +35,11 @@ Read `AGENTS.md` first. Every rule there applies.
 
 - `@gerak/stage` exports `object(name, options?)`. Its kind is `"object"`, and its pose type is `Pose3d`.
 - It has no DOM element, rest box, skin, content, pointer events or pivot. Its origin is the `Object3D`'s.
-- Types refuse a 2D motion on an object and a 3D motion on a 2D element.
+- `.element(e)` returns an `ElementStep` typed by the element's pose: an object's `.motion` takes motions returning
+  `Pose3d`, and `.modify` takes principles over `Signal<Pose3d>`. Types refuse a 2D motion on an object and a 3D
+  motion on a 2D element.
+- `mountStage` and `mountPage` accept an object, write nothing for it, and never hand it to the browser; its pose
+  reaches the canvas through `bindScene3d` on the mount's `player`.
 - Review samples and judges an object as it judges a 3D scene module's target, with `--jump` in world units and its
   `.limits`.
 - Page tools (`frames`, `check`, `fps`, `render`, `compare`, and `review` on a page) see an object only as canvas
@@ -46,7 +57,10 @@ Read `AGENTS.md` first. Every rule there applies.
 ### 3. From a slot to the world
 
 - Core gains `unproject3d(point, lens, stage, depth)`: a screen point to world units at a depth.
-- `travel({ to: slot })` on an object moves it to the slot's screen point at its current depth.
+- An object that travels names its view: `object(name, { view: { canvas, lens } })`, where `canvas` is an element bound
+  to the page's canvas node (measured like a slot) and `lens` is the fixed `Lens3d` the page draws through.
+- `travel({ to: slot })` on such an object moves it to the slot's centre, taken relative to the canvas box, at its
+  current depth along the lens; on an object without a view, `sceneBuilder` refuses it and says so.
 
 ### 4. Scaffold and pieces
 
@@ -58,11 +72,14 @@ Read `AGENTS.md` first. Every rule there applies.
   learn from package source or by trial.
 - Each such fact is stated in the docs as behaviour, not as a recipe, before the next piece starts. Each moved piece's
   frames match the baseline, and its review gains no finding.
-- `page-plan`'s landing page gains a 3D drink in place of its drink image, as a second proof.
+- A copy of yuzu, `yuzu-3d`, has a 3D drink in place of the drink image, travelling to the same slots, as a second
+  proof; yuzu itself stays as the GSAP measure.
 
 ### 5. Tests first
 
-- An object compiles with kind `"object"`, and a 3D motion on a `box` fails to type-check.
+- An object compiles with kind `"object"`, and a 3D motion on a `box`, or a 2D one on an object, fails to type-check.
+- `mountPage` and `mountStage` mount a piece with an object and write nothing for it.
+- `travel` on an object lands on the slot's centre as `project3d` sees it, at its starting depth.
 - One `bindScene3d` step writes a pose and `visible`, and calls `draw` once.
 - `unproject3d` inverts `project3d` at the same depth.
 
@@ -70,8 +87,8 @@ Read `AGENTS.md` first. Every rule there applies.
 
 - A new ADR records Decisions 1 to 3, with the next free number. It supersedes ADR-190's clause on pose `"3d"`. Then
   run `npm run adr-index:write`.
-- 3D in a scene goes on a page in `@gerak/three`'s docs, read on demand. `stage.md` gains one line that points to it,
-  under its ceiling. `core.md` gains `unproject3d` in its names by group.
+- 3D in a scene goes on a page in `@gerak/three`'s docs, read on demand. `stage.md` gains one line that points to it.
+  `core.md` gains `unproject3d` in its names by group.
 - Rewrite `docs/SESSION-STATUS.md` and the roadmap's "Done and not done" table.
 
 ## Execution
@@ -92,3 +109,8 @@ Read `AGENTS.md` first. Every rule there applies.
 
 - Objects inside groups or lists, and pointer events on objects.
 - React Three Fiber.
+
+## Working notes
+
+- Windows, Git Bash. Builder, fresh-agent and review subagents run on Sonnet 5.5 at medium effort or below.
+- Browser tests run in Chromium only; rerun a timed-out one alone before treating it as a failure.
