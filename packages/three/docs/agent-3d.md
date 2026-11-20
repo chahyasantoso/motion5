@@ -29,7 +29,9 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   turn. To spin past a full turn, mix the angle itself: `mixPose3d` takes the short way.
 - An object's motions stack as an element's do: layer motions combine by `combine3d`, a `.take()` motion replaces
   its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.show(beat)` sets the
-  `Object3D`'s `visible`. A motion with no window gets the scene's time.
+  `Object3D`'s `visible`. A motion with no window gets the scene's time. A plain function `(time, context)`
+  reads `context.time` and `context.events`, which `smear3d`, `velocity3d` and `trailTurn` take; a pose's
+  `opacity` never sets `visible`.
 - A pivot is the object's origin. To turn or squash about another point, put the mesh in a group and pose the group.
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
 - `bindScene3d` takes an `Object3D` per object: its position when bound is its rest, as an element's layout is in
@@ -174,3 +176,5 @@ sample, review and scrub with everything else.
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
 - Not yet: an object inside a group or a list, and pointer events on an object.
+- A material drawn once while opaque keeps drawing opaque after a pose sets its `opacity`: give a material whose
+  opacity a pose changes `transparent: true` when you make it.
