@@ -182,5 +182,5 @@ sample, review and scrub with everything else.
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
 - Not yet: an object inside a group or a list, and pointer events on an object.
-- A material drawn once while opaque keeps drawing opaque after a pose sets its `opacity`: give a material whose
-  opacity a pose changes `transparent: true` when you make it.
+- A pose's `opacity` turns its material transparent and has Three.js rebuild it, so it fades however it was
+  first drawn.

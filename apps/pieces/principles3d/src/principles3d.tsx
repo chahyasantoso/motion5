@@ -90,8 +90,6 @@ export const Principles3d: React.FC = () => {
     sun.position.set(4, 8, 6);
     stage.add(new AmbientLight(0xb9c4e8, 0.7), sun, ground, padGroup, bodyGroup, ...bits);
 
-    // Materials compile opaque on this first draw, so the small objects show before their opacity rises.
-    renderer.render(stage, lens);
     const unbind = bindScene3d(
       player,
       scene,
