@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   AmbientLight,
   CircleGeometry,
@@ -17,43 +17,28 @@ import {
   type BufferGeometry,
   type Material,
 } from "three";
+import type { Events, Time } from "@gerak/core";
 import { usePlayer } from "@gerak/react";
-import { useTarget3d } from "@gerak/three/react";
-import { BODY_HEIGHT, clock, scene } from "./principles3d-scene";
+import { applyPose3d, bindScene3d } from "@gerak/three";
+import { compileScene, formatStageError, frame } from "@gerak/stage";
+import piece, { BODY_HEIGHT, clock } from "./principles3d-scene";
+
+const compiled = compileScene(piece);
+if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
+const scene = compiled.stage;
+const signal = (time: Time, events: Events) => frame(scene, { time, events }).targets;
 
 const WIDTH = 1280;
 const HEIGHT = 720;
 
 /** A leaping body with a lagging antenna, a ground, a pad and a row of small objects, under an orbiting camera. */
 export const Principles3d: React.FC = () => {
-  const playing = usePlayer(scene, clock);
+  const playing = usePlayer(signal, clock, scene.cues);
   const player = playing?.player;
-  const renderRef = useRef<() => void>(() => undefined);
-  const pending = useRef(false);
-  // One render per step however many targets it writes: the first write queues it, the rest join it.
-  const invalidate = useCallback(() => {
-    if (pending.current) return;
-    pending.current = true;
-    queueMicrotask(() => {
-      pending.current = false;
-      renderRef.current();
-    });
-  }, []);
-  const body = useTarget3d(player, "body", { invalidate });
-  const stretch = useTarget3d(player, "stretch", { invalidate });
-  const face = useTarget3d(player, "face", { invalidate });
-  const antenna = useTarget3d(player, "antenna", { invalidate });
-  const pad = useTarget3d(player, "pad", { invalidate });
-  const bit0 = useTarget3d(player, "bit0", { invalidate });
-  const bit1 = useTarget3d(player, "bit1", { invalidate });
-  const bit2 = useTarget3d(player, "bit2", { invalidate });
-  const bit3 = useTarget3d(player, "bit3", { invalidate });
-  const bit4 = useTarget3d(player, "bit4", { invalidate });
-  const camera = useTarget3d(player, "camera", { invalidate });
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const parent = host.current;
-    if (parent === null) return undefined;
+    if (player === undefined || parent === null) return undefined;
     const renderer = new WebGLRenderer({ preserveDrawingBuffer: true, antialias: true });
     renderer.setSize(WIDTH, HEIGHT);
     renderer.setClearColor(0x1b2236);
@@ -97,30 +82,41 @@ export const Principles3d: React.FC = () => {
     stretchGroup.add(faceGroup);
     bodyGroup.add(stretchGroup);
 
-    const bitRefs = [bit0, bit1, bit2, bit3, bit4];
-    const bits = bitRefs.map(() => mesh(new TetrahedronGeometry(0.4), 0x7ccfb4));
+    const bit = () => mesh(new TetrahedronGeometry(0.4), 0x7ccfb4);
+    const [bit0, bit1, bit2, bit3, bit4] = [bit(), bit(), bit(), bit(), bit()];
+    const bits = [bit0, bit1, bit2, bit3, bit4];
 
     const sun = new DirectionalLight(0xfff1d6, 2.2);
     sun.position.set(4, 8, 6);
     stage.add(new AmbientLight(0xb9c4e8, 0.7), sun, ground, padGroup, bodyGroup, ...bits);
 
-    body(bodyGroup);
-    stretch(stretchGroup);
-    face(faceGroup);
-    antenna(antennaGroup);
-    pad(padGroup);
-    bitRefs.forEach((ref, index) => ref(bits[index] ?? null));
-    camera(lens);
-    renderRef.current = () => renderer.render(stage, lens);
-    renderRef.current();
+    // Materials compile opaque on this first draw, so the small objects show before their opacity rises.
+    renderer.render(stage, lens);
+    const unbind = bindScene3d(
+      player,
+      scene,
+      {
+        body: bodyGroup,
+        stretch: stretchGroup,
+        face: faceGroup,
+        antenna: antennaGroup,
+        pad: padGroup,
+        bit0: (pose) => applyPose3d(bit0, pose),
+        bit1: (pose) => applyPose3d(bit1, pose),
+        bit2: (pose) => applyPose3d(bit2, pose),
+        bit3: (pose) => applyPose3d(bit3, pose),
+        bit4: (pose) => applyPose3d(bit4, pose),
+        camera: lens,
+      },
+      () => renderer.render(stage, lens),
+    );
     return () => {
-      renderRef.current = () => undefined;
-      for (const ref of [body, stretch, face, antenna, pad, camera, ...bitRefs]) ref(null);
+      unbind();
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [body, stretch, face, antenna, pad, bit0, bit1, bit2, bit3, bit4, camera]);
+  }, [player]);
   return <div ref={host} className="stage" onClick={() => playing?.driver.replay()} />;
 };

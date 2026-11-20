@@ -9,6 +9,7 @@ import {
   lanes,
   mix,
   mixPoint3d,
+  motion,
   orbit,
   span,
   springEase,
@@ -21,6 +22,7 @@ import {
 } from "@gerak/core";
 import { smear3d, trailTurn } from "@gerak/core";
 import { squashed3d } from "@gerak/moves";
+import { object, sceneBuilder, type MotionContext } from "@gerak/stage";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak timeline` read it. */
 export const durationMs = 4200;
@@ -138,23 +140,42 @@ export function camera(time: Time): Pose3d {
   return { ...eye, ...aim(eye, mixPoint3d(STAGE_CENTER, subject(time), lean)) };
 }
 
-/** Every target's value at `time`; `gerak sample` and `gerak timeline` read it. */
-export const scene = (time: Time, events: Events) => {
-  const travel = smear3d(velocity3d(flight, time, events), { stretch: 0.075, max: 1.8 });
-  return {
-    body: combine3d([squashed3d({ squash: 0.45 })(crouch(time)), flight(time)]),
-    stretch: travel.pose,
-    face: travel.turn,
-    antenna: tail(time, events),
-    pad: { scale: mix(0, 1, settle.of(time, pop).progress) } satisfies Pose3d,
-    bit0: bit(time, 0),
-    bit1: bit(time, 1),
-    bit2: bit(time, 2),
-    bit3: bit(time, 3),
-    bit4: bit(time, 4),
-    camera: camera(time),
-  };
-};
+const body = (time: Time): Pose3d =>
+  combine3d([squashed3d({ squash: 0.45 })(crouch(time)), flight(time)]);
+
+const travelOf = (time: Time, events: Events) =>
+  smear3d(velocity3d(flight, time, events), { stretch: 0.075, max: 1.8 });
+
+const padAt = (time: Time): Pose3d => ({ scale: mix(0, 1, settle.of(time, pop).progress) });
+
+/** The scene: each 3D target is an object, bound to its Three.js node by the page. */
+export default sceneBuilder({ name: "principles3d", length: durationMs })
+  .element(object("body"))
+  .motion(motion(body))
+  .element(object("stretch"))
+  .motion(
+    (_time: Time, context: MotionContext): Pose3d => travelOf(context.time, context.events).pose,
+  )
+  .element(object("face"))
+  .motion(
+    (_time: Time, context: MotionContext): Pose3d => travelOf(context.time, context.events).turn,
+  )
+  .element(object("antenna"))
+  .motion((_time: Time, context: MotionContext): Pose3d => tail(context.time, context.events))
+  .element(object("pad"))
+  .motion(motion(padAt))
+  .element(object("bit0"))
+  .motion(motion((time: Time) => bit(time, 0)))
+  .element(object("bit1"))
+  .motion(motion((time: Time) => bit(time, 1)))
+  .element(object("bit2"))
+  .motion(motion((time: Time) => bit(time, 2)))
+  .element(object("bit3"))
+  .motion(motion((time: Time) => bit(time, 3)))
+  .element(object("bit4"))
+  .motion(motion((time: Time) => bit(time, 4)))
+  .element(object("camera"))
+  .motion(motion(camera));
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });
