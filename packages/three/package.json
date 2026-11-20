@@ -14,7 +14,8 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@gerak/core": "0.1.0",
-    "@gerak/player": "0.1.0"
+    "@gerak/player": "0.1.0",
+    "@gerak/stage": "0.1.0"
   },
   "devDependencies": {
     "@types/three": "^0.186.0",

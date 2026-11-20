@@ -102,5 +102,13 @@ export {
   type StageLayouts,
 } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";
-export { check, frame, listPose, poseOf, type FrameInput, type FrameOutput } from "./run/frame";
+export {
+  check,
+  frame,
+  listPose,
+  pose3dOf,
+  poseOf,
+  type FrameInput,
+  type FrameOutput,
+} from "./run/frame";
 export { beatAt, type Window } from "./run/timeline";
