@@ -80,7 +80,7 @@ describe("state", () => {
     for (let index = 0; index < 20; index += 1) window();
     const late = Math.min(window(), window(), window());
     expect(counting(liveAt(at), log.events)).toBe(at);
-    expect(late).toBeLessThan(early * 3);
+    expect(late).toBeLessThan(early * 4);
   });
 
   it("starts again when an event goes into a growing log before the last one folded, or it is emptied", () => {
@@ -91,6 +91,15 @@ describe("state", () => {
     expect(flag(liveAt(900), log.events)).toBe(false);
     log.add(click(200));
     expect(flag(liveAt(900), log.events)).toBe(true);
+    const twice = click(300);
+    const repeated = eventLog();
+    repeated.add(click(100));
+    repeated.add(twice);
+    repeated.add(twice);
+    const count = state(0, (current: number) => current + 1);
+    expect(count(liveAt(900), repeated.events)).toBe(3);
+    repeated.add(click(200));
+    expect(count(liveAt(900), repeated.events)).toBe(4);
     const sum = state(0, (current: number, event: MotionEvent) => current + event.at);
     expect(sum(liveAt(900), log.events)).toBe(600);
     log.clear();

@@ -27,6 +27,7 @@ A page mount runs one live clock (`liveAt`) feeding scroll, pointer and watched 
 - Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`).
 - Elements with `watch: true` log `enter`, `leave`, `down`, `up`, `click`, `focus` and `blur`.
 - `mounted.send(name, value, target?)` logs a sample at the current clock time, and `mounted.events()` returns the recorded log.
+- The mount owns the inline `transform`, `opacity`, `z-index`, `transform-origin`, `transform-box`, `filter` and `clip-path` of every node it animates, and sets each only when its text changes; site code writing them inline is overwritten only when the pose changes that property.
 - An input only logs its sample and asks for a frame; the scene runs and writes once per animation frame, however many inputs arrived in it.
 - The mount never smooths the page's own scrolling. Smooth anchor jumps are the site's CSS (`scroll-behavior: smooth`), a smooth-scroll library is the site's script, and either reaches the scene as ordinary scroll samples.
 

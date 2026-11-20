@@ -9,25 +9,32 @@ export interface EventLog {
   clear(): void;
 }
 
-const GROWING = new WeakSet<Events>();
+const GENERATION = new WeakMap<Events, number>();
 
-/** Whether `events` is an `eventLog`'s list, which no event is ever replaced in. */
-export function isGrowingLog(events: Events): boolean {
-  return GROWING.has(events);
+/** An `eventLog` list's count of changes other than adding at its end, or undefined for any other list. */
+export function generationOf(events: Events): number | undefined {
+  return GENERATION.get(events);
 }
 
-/** A log of events that only grows, so a state reading it again checks only its last folded event. */
+/** A log of events that only grows, so a state reading it again folds only the events added at its end. */
 export function eventLog(): EventLog {
   const events: MotionEvent[] = [];
-  GROWING.add(events);
+  let generation = 0;
+  GENERATION.set(events, generation);
+  const changed = (): void => {
+    generation += 1;
+    GENERATION.set(events, generation);
+  };
   return {
     events,
     add(event) {
       let index = events.length;
       while (index > 0 && (events[index - 1]?.at ?? 0) > event.at) index -= 1;
+      if (index < events.length) changed();
       events.splice(index, 0, event);
     },
     clear() {
+      changed();
       events.length = 0;
     },
   };

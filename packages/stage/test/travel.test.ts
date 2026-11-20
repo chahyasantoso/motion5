@@ -106,7 +106,7 @@ describe("travel", () => {
     expect(() => travel({ to: slot, fit: "cover" })).toThrow(TypeError);
   });
 
-  it("sits on its slot from the start when it has no window", () => {
+  it("sits on its slot on a live clock with no window, and sweeps across a timed scene", () => {
     const slot = box("slot");
     const stage = compiled(
       sceneBuilder({ length: 400 })
@@ -120,11 +120,16 @@ describe("travel", () => {
       }),
     };
     for (const ms of [0, 200, 400]) {
-      const pose = poseOf(frame(stage, { time: at(ms, 400), boxes }).targets["drink"]);
+      const live: Time = { progress: 0, clock: { kind: "live", elapsed: ms } };
+      const pose = poseOf(frame(stage, { time: live, boxes }).targets["drink"]);
       expect(pose?.x).toBeCloseTo(400, 9);
       expect(pose?.y).toBeCloseTo(200, 9);
       expect(pose?.scaleX).toBeCloseTo(0.5, 9);
     }
+    expect(poseOf(frame(stage, { time: at(0, 400), boxes }).targets["drink"])).toEqual({});
+    const half = poseOf(frame(stage, { time: at(200, 400), boxes }).targets["drink"]);
+    expect(half?.x).toBeCloseTo(200, 9);
+    expect(half?.scaleX).toBeCloseTo(0.75, 9);
   });
 
   it("bows perpendicular to travel with arc, holding 0 bow at both ends and handling zero-distance", () => {

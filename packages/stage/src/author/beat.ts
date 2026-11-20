@@ -339,11 +339,17 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
       }
     }
     switch (back) {
-      case "stay":
+      case "stay": {
+        if (now === undefined) {
+          const shown = started !== undefined;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        if (started === undefined) return { raw: 0, active: false };
+        return { raw: clamp(now - started, 0, ms) / ms, active: true };
+      }
       case "replay": {
         if (now === undefined) {
-          const shown =
-            back === "stay" ? started !== undefined : scroll.y(time, events) >= threshold;
+          const shown = scroll.y(time, events) >= threshold;
           return { raw: shown ? 1 : 0, active: shown };
         }
         if (started === undefined) return { raw: 0, active: false };

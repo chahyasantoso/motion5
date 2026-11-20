@@ -939,8 +939,11 @@ function stackOf(
           if (partLines !== undefined) PART_LINES.set(context, partLines);
           const prev = below(time, events);
           if (step.travels) BELOW_POSE.set(context, prev);
-          // A travel with no window sits on its slot from the start.
-          const ran = step.travels && step.window === undefined ? withProgress(time, 1) : time;
+          // On a live or untimed clock a travel with no window sits on its slot; a timed scene sweeps it.
+          const ran =
+            step.travels && step.window === undefined && time.clock.kind !== "timed"
+              ? withProgress(time, 1)
+              : time;
           const pose = step.run(ran, context);
           switch (step.joins) {
             case "layer":

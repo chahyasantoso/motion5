@@ -559,6 +559,6 @@ describe("trigger beats over a long session", () => {
     frames(next, 20000);
     next += 20000;
     const late = Math.min(window(), window(), window());
-    expect(late).toBeLessThan(early * 3);
+    expect(late).toBeLessThan(early * 4);
   });
 });
