@@ -6,17 +6,19 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 ## The loop
 
-1. `npx gerak new <name> --three` writes a page whose component is a Three.js stage: a renderer, a camera, a
-   light and one mesh per target, each bound with `useTarget3d`, and an entry that owns the page's readiness. It
-   sets no look. A scene that plays samples takes `(time, events)`, exports `cues`, and its component passes them as
-   `usePlayer(scene, clock, cues)`.
-2. Write the scene. It returns `Pose3d` targets: `{ x, y, z, rotation, rotationX, rotationY, scale, scaleX, scaleY,
-   scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px.
-3. `npx gerak review <pieces>/<brief>/src/<name>-scene.ts --jump 1` checks the values: jumps, a short final hold,
-   a target still moving at the end. It needs no browser. `--jump` limits a position's step per frame in the scene's
-   units, and its default of 150 is for px, so give a 3D scene its own, about a fifth of the subject's height: 0.1
-   for a character 0.5 units tall. Give `--turn` (degrees a step) one too, about 30: its default of 150 lets a bone
-   flip in one step. `--ratio` (scale and opacity) keeps its default.
+1. `npx gerak new <name> --three` writes a page, its entry, a component and `<name>-scene.ts`, a `sceneBuilder`
+   piece with one `object("box")` and one `box("label")` pinned over it. The component compiles the piece, plays it
+   with `usePlayer`, writes each label with `useTarget`, and binds each object with
+   `bindScene3d(player, stage, { box: mesh }, draw)`, which writes every object and then calls `draw` once a step.
+   It sets no look. A piece that plays samples passes `sceneBuilder({ cues })`, and the component passes
+   `stage.cues` to `usePlayer`.
+2. Write the piece. An object takes motions that return `Pose3d`: `{ x, y, z, rotation, rotationX, rotationY,
+   scale, scaleX, scaleY, scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px. A 2D motion
+   on an object, or a 3D one on a box, does not compile.
+3. `npx gerak review <pieces>/<brief>/src/<name>-scene.ts` checks the values: jumps, a short final hold, a target
+   still moving at the end. It needs no browser. Give each object `.limits({ jump, turn })` in world units: a jump
+   about a fifth of the subject's height (0.1 for a character 0.5 units tall) and `turn: 30`, since the command's
+   defaults are for px and let a bone flip in one step. The labels keep the defaults.
 4. `npx gerak review <name>.html --watch canvas --to <ms>` gives the frame sheet. Read it: the page tools see
    no element inside a canvas, so the sheet is how you see framing, silhouettes and whether the motion reads.
 
@@ -25,14 +27,14 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - `rotation` turns about z, `rotationX` about x, `rotationY` about y, in that order (Z-X-Y). Blend poses with
   `mixPose3d` and stack them with `combine3d`. Both turn through real rotations, so a pose never flips when two axes
   turn. To spin past a full turn, mix the angle itself: `mixPose3d` takes the short way.
+- An object's motions stack as an element's do: layer motions combine by `combine3d`, a `.take()` motion replaces
+  its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.show(beat)` sets the
+  `Object3D`'s `visible`. A motion with no window gets the scene's time.
 - A pivot is the object's origin. To turn or squash about another point, put the mesh in a group and pose the group.
-- Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y. A `Pose2d` passed
-  as a `Pose3d` does not compile.
-- In React, `useTarget3d(player, "name")` gives a ref for any `Object3D`, plain Three.js or React Three Fiber. The
-  object's position when it binds is its rest, as an element's layout is in 2D; turns and scales are written whole.
-  With `frameloop="demand"` pass R3F's `invalidate`.
-- Many like objects are one target: return a list of `Pose3d` as `props`, and bind each mesh with
-  `useTarget3d(player, "props", { at: i })`, which writes only its `i`th pose.
+- Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
+- `bindScene3d` takes an `Object3D` per object: its position when bound is its rest, as an element's layout is in
+  2D, and turns and scales are written whole. It also takes a writer, `(pose, visible) => void`, for anything that
+  is not posed whole, such as a bone. Many like objects are one object each.
 
 ## The principles in 3D
 
@@ -52,7 +54,8 @@ is a code scene like any other; only its poses and its renderer change. Names ar
   `rotationX` into the facing pose's own fields tilts about the world instead. Read the turn rate from the facing
   turn at two times with `timeAt`, and bank in proportion to it.
 - **A camera move:** `const eye = orbit({ target, radius, azimuth: mix(a, b, pan.of(time).progress), elevation });`
-  then `camera: { ...eye, ...aim(eye, target) }`. Bind the camera as a target like any mesh.
+  then an `object("camera")` whose motion returns `{ ...eye, ...aim(eye, target) }`, bound to the
+  `PerspectiveCamera` like any mesh.
 - **Staging:** move the camera or the subject, rarely both at once. A camera that drifts while the subject leaps hides
   the leap.
 
@@ -77,13 +80,15 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - **A chain under a posed chain:** a chain's base is its first bone's parent, and moves with it. To hang an arm from a
   torso you also pose, solve the torso first and pass `{ base: childBase3d(torso.chain, torsoNow, "<bone>") }` to the
   arm's `ik3d` and use the same base in `bonesOf3d`; nothing else is needed.
-- **Bones by hand:** a bone's `Pose3d` turns it about the model's own axes as they were at capture, carried by its
-  parents: `{ rotationX: 20 }` on a jaw or a head turns it about the model's x axis whatever way the exporter rolled
-  the bone. Return a `bones` target `{ <bone>: Pose3d }`; a bone left out goes back to rest.
+- **Bones by hand:** each bone that moves is an object of the piece, named after the bone, whose motion returns
+  its `Pose3d`. It turns the bone about the model's own axes as they were at capture, carried by its parents:
+  `{ rotationX: 20 }` on a jaw or a head turns it about the model's x axis whatever way the exporter rolled the
+  bone. A bone with no object stays at rest.
 - **Writing bones on the page:** after loading with `GLTFLoader` (`three/addons/loaders/GLTFLoader.js`, URL from
   `new URL("../references/<model>.glb", import.meta.url).href`), call `captureSkeleton(gltf.scene)` from
-  `"@gerak/rig-three"` once, then `player.subscribe("bones", (poses) => applyBones(skeleton, poses))`. Capture
-  before moving or turning the model; place the model by a parent group instead.
+  `"@gerak/rig-three"` once. Give `bindScene3d` a writer per bone object that keeps its pose in a record,
+  `{ Jaw: (pose) => { poses["Jaw"] = pose; } }`, and call `applyBones(skeleton, poses)` in `draw` before rendering.
+  Capture before moving or turning the model; place the model by a parent group instead.
 - **Talking:** drive a jaw bone (`{ rotationX: open * 18 }`) or a morph target from
   `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
   `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
@@ -95,7 +100,7 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 
 ## Bodies in depth
 
-- **The engine:** `const rapier3d = await rapierEngine3d()` from `"@gerak/rapier"` at the scene module's top level,
+- **The engine:** `const rapier3d = await rapierEngine3d()` from `"@gerak/rapier"` at the piece's top level,
   then `simulate(rapier3d(), (world) => { ... })` from `"@gerak/physics"`, as in 2D: `world.setGravity(0, -9.81, 0)`,
   `world.addCollider(...)`, `world.addBody(...)`. World units, y up.
   - A body: `{ id, shape, x, y, z }`, with `vx`, `vy`, `vz`, a starting `rotation` quaternion `{ w, x, y, z }`, spins
@@ -109,19 +114,23 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - **A character among bodies:** a character has no collider of its own. Give it fixed `"box"` colliders where its
   feet, legs and body stand, or props settle inside it.
 - **Reading a body:** `bodyPose3d(sim.pose("<id>", time))` from `"@gerak/rig"` answers its movement from where it
-  was spawned and its turn, as a `Pose3d`. Place its mesh at the body's spawn point and bind it with `useTarget3d`.
-- **The camera's rest:** `useTarget3d` takes an object's position when it binds as its rest, so a camera posed by
-  `orbit`, which answers absolute points, binds at the origin.
+  was spawned and its turn, as a `Pose3d`; return it from the object's motion. Place its mesh at the body's spawn
+  point and bind it with `bindScene3d`.
+- **The camera's rest:** `bindScene3d` takes an `Object3D`'s position when it binds as its rest, so a camera posed
+  by `orbit`, which answers absolute points, binds at the origin.
 
 ## 2D over 3D
 
-Words, captions and callouts over a 3D scene are DOM targets in the same scene, pinned by the scene itself, so they
+Words, captions and callouts over a 3D scene are boxes in the same piece, pinned by the piece itself, so they
 sample, review and scrub with everything else.
 
-- **The lens is the scene's.** Export `stage = { width, height }` and `lens: Lens3d` (a camera `Pose3d` plus `fov`,
-  vertical degrees), or a `lens` target if the camera moves. The page builds its `PerspectiveCamera` from them and
-  sizes its renderer and stage from `stage`; it holds no number of its own. A page with its own `fov` drifts every
-  label.
+- **The lens is the piece's.** Export the stage's size `{ width, height }` (also `sceneBuilder({ frame })`) and
+  `lens: Lens3d` (a camera `Pose3d` plus `fov`, vertical degrees). The page builds its `PerspectiveCamera` from them
+  and sizes its renderer and stage from the size; it holds no number of its own. A page with its own `fov` drifts
+  every label.
+- **A label reads no object.** `context.read` refuses an object, since its pose is 3D. Write the object's pose as a
+  plain function of time and give the same function to the object's motion and the label's, so both answer from
+  one source.
 - **A point to pixels:** `project3d(point, lens, stage)` from `"@gerak/core"` answers `{ x, y, depth, visible }`,
   px from the stage's top left. Return `{ x, y, opacity }` for the label; the element's top-left corner lands there,
   so offset it in CSS to centre a bubble or put its tail on the point.
@@ -130,16 +139,18 @@ sample, review and scrub with everything else.
   point under the same `bones` the scene returns, `root` being the pose of the model's parent group.
 - **Hiding:** a label whose point is behind the lens (`visible: false`) or turned to the far side of its object
   (`depth` greater than the object centre's) fades out over a few frames; never pop it.
-- **Drawing on the step:** the page renders once when built, then whenever a target it binds is written: pass a
-  render function as `useTarget3d`'s `invalidate`, or render inside `player.subscribe`. A free-running
-  `requestAnimationFrame` loop can show the canvas a step behind the labels.
+- **Drawing on the step:** `bindScene3d` calls `draw` once a step, after it writes every object, and once when it
+  binds. A free-running `requestAnimationFrame` loop can show the canvas a step behind the labels.
 - **Text from samples:** reveal a caption's words by how much has been said, `tally(...)(time, events) /
   total`, from `"@gerak/core"`, and let the component turn the share into words shown.
-- **Reviewing a mixed scene:** export `limits`, target name to `{ jump?, turn?, ratio? }`: the 3D targets get a jump
-  about a fifth of the subject's size and `turn: 30`, the px labels keep the command's defaults. A `custom` number
-  is judged as a ratio.
-- **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a target and
-  read them on the page in `player.subscribe`; the review judges them as ratios.
+- **Reviewing a mixed piece:** the objects' `.limits` hold a jump about a fifth of the subject's size and
+  `turn: 30`; the px labels keep the command's defaults. A `custom` number is judged as a ratio.
+- **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a label's or
+  an object's pose and read them on the page in `player.subscribe` or a writer; the review judges them as ratios.
+- **Onto a page slot:** an object with `object(name, { view: { canvas, lens } })`, where `canvas` is a box bound to
+  the page's canvas node and `lens` the page's lens, takes `travel({ to: slot })`: it moves to the slot's centre on
+  the canvas at the depth along the lens it starts from. `arc` and `fit` are for elements, and its `Object3D` rests
+  at the world origin, since its position is measured from there.
 - **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/rig-three"` makes
   `object` ride the bone, placed at `at`, a `Vector3` in the model's space (the space of the joint table and the eye
   file), and turned by `turn`, a `Quaternion` in that space. It reads only the captured rest, so it is right
@@ -148,7 +159,7 @@ sample, review and scrub with everything else.
   model's eye file in `<pieces>/references/` (each iris's box in model units). The box's centre lies inside the
   head: the eye's front surface is near `z + depth / 2`. Drive them from a custom number (0
   open, 1 shut) and hide them when open. Random blinks come from `seeded(n)` from `"@gerak/core"`, drawn once at the
-  top of the scene module so every play and seek blinks at the same times.
+  top of the piece's file so every play and seek blinks at the same times.
 - **Ending at rest:** the review asks every target to hold still before the end. A `follow` keeps settling after its
   last sample, and an idle sway never stops by itself: end the samples early, raise `follow`'s stiffness or give it a
   `rest`, and fade idle loops out before the final hold.
@@ -162,3 +173,4 @@ sample, review and scrub with everything else.
 - `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
+- Not yet: an object inside a group or a list, and pointer events on an object.

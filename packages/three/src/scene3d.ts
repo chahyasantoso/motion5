@@ -25,8 +25,8 @@ function stageOf(scene: Stage | SceneBuilder): Stage {
  * pose and whether the object shows, such as one handing bone poses to `applyBones`. */
 export type ObjectTarget3d = Object3D | ((pose: Pose3d, visible: boolean) => void);
 
-/** Writes each object of a scene onto its target on every player step, with `visible` from its `.show`
- * windows, then calls `draw` once, so the canvas draws on the player's step; returns the unsubscribe. */
+/** Writes each object onto its target on every player step, `visible` from its `.show` windows, then
+ * calls `draw` once, so the canvas draws on the step; returns the unsubscribe. */
 export function bindScene3d(
   player: Player<Readonly<Record<string, unknown>>>,
   scene: Stage | SceneBuilder,

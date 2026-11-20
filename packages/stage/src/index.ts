@@ -51,6 +51,7 @@ export {
   stagger,
   stayWith,
   travel,
+  type TravelMotion,
   type BoundEachFields,
   type BoundFields,
   type CompileSceneOptions,

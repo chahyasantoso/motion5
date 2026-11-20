@@ -4,7 +4,7 @@ import type { Span } from "./span";
 import { withProgress, type Time } from "./time";
 
 /** How a motion joins what is under it on one element: `layer` adds by each field's rule, `take` replaces. */
-type Joins = "layer" | "take";
+export type Joins = "layer" | "take";
 
 /** A window whose progress comes from time and context, such as events, accepted by `Motion.in`. */
 export interface MotionWindow {

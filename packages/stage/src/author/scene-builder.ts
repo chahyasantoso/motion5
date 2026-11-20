@@ -526,8 +526,6 @@ function isElement(value: unknown): value is Element {
   );
 }
 
-/** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
- * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
 /** What `travel` returns: a motion on an element, which an object with a view also takes. */
 export interface TravelMotion extends Motion<Pose2d, MotionContext> {
   readonly travel: TravelOptions;
@@ -560,8 +558,8 @@ function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOption
   return wrapped;
 }
 
-/** Where an object's travel puts it at progress `p`: toward the slot's centre on the canvas, at the depth
- * along the lens it starts from; undefined while a box is unmeasured or the start is behind the lens. */
+/** An object's travel at progress `p`: toward the slot's centre on the canvas at its starting depth;
+ * undefined while a box is unmeasured or the start is behind the lens. */
 function travelled3d(
   view: ObjectView,
   below: Pose3d,
@@ -587,6 +585,8 @@ function travelled3d(
   return { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
 }
 
+/** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
+ * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
 export function travel(options: TravelOptions): TravelMotion {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
