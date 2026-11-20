@@ -52,9 +52,9 @@ the scroll while the page's script is busy. The scene does not change, and nothi
 - The mount samples each element's pose from `frame()` and adds samples where straight lines between them miss by
   more than 0.25 px, 0.1 degree, 0.001 scale or 0.005 opacity; an element that fails a check on any sample stays in
   the engine.
-- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine. While
-  the page tools hold the clock, trigger-driven elements stay in the engine and scroll-driven ones follow the
-  scripted scroll.
+- Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine, and so it
+  does while the page tools hold the clock: what they read is then the pose `frame()` gives, with no browser frame
+  to wait for.
 - `frame(stage, input)` stays the one answer to a pose: the browser plays what it gives, and headless tools never
   use the browser.
 

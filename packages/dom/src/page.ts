@@ -521,7 +521,8 @@ function boxForNode(
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 // Tests set this to keep every element in the engine, to compare with what the browser plays.
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
-// The page tools set this while they hold the clock; animations that run on time stay in the engine then.
+// The page tools set this while they hold the clock; every element stays in the engine, so what they read
+// is the pose `frame()` gives, with no browser frame to wait for.
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 const TRIGGER_SLACK_MS = 34;
 
@@ -1104,6 +1105,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const handOff = (): void => {
     release();
     if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
+    if (Reflect.get(globalThis, HELD_CLOCK) === true) return;
     const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
     const source = doc?.documentElement;
     if (typeof Timeline !== "function" || !isDomElement(source)) return;
@@ -1140,10 +1142,8 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     let triggered: ReadonlyMap<string, TriggerTrack> = new Map();
     try {
       scrolled = maxScroll > 0 ? scrollTracks(stage, input, maxScroll) : new Map();
-      if (Reflect.get(globalThis, HELD_CLOCK) !== true) {
-        const left = new Set([...names].filter((name) => !scrolled.has(name)));
-        triggered = triggerTracks(stage, { ...input, names: left });
-      }
+      const left = new Set([...names].filter((name) => !scrolled.has(name)));
+      triggered = triggerTracks(stage, { ...input, names: left });
     } catch {
       // A motion that throws at a place the page has not reached stays the engine's to report.
       return;

@@ -26,6 +26,18 @@ if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n
 const { stage } = compiled;
 const mounted = mountPage(stage);
 
+// A page's own scroll-driven animation, with no gerak in it, across the whole scroll range.
+const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
+const plain = document.getElementById("plain");
+if (typeof Timeline === "function" && plain !== null) {
+  const timeline: unknown = Reflect.construct(Timeline, [{ source: document.documentElement }]);
+  if (timeline instanceof AnimationTimeline)
+    plain.animate([{ transform: "translateX(0px)" }, { transform: "translateX(240px)" }], {
+      timeline,
+      fill: "both",
+    });
+}
+
 // The engine's pose of each element now, for the browser test to hold the drawn one against.
 Reflect.set(window, "__expected", () => {
   const { targets } = frame(stage, { time: mounted.driver.now(), events: mounted.events() });

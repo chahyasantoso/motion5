@@ -171,7 +171,7 @@ export async function withPage<T>(
     const real = target.clock === "real";
     if (target.prepare !== undefined) await target.prepare(page);
     if (!real) {
-      // Tells a page mount the clock is held, so motion that runs on time stays in its engine.
+      // Tells a page mount the clock is held, so it draws every element itself.
       await page.addInitScript(() => {
         Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
       });

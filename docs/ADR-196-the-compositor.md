@@ -35,8 +35,10 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
 6. **Trigger elements play on the document timeline, steered by their beat.** On each input frame the mount asks the
    beat its progress and `heading` (1 forward, -1 back, 0 at rest), and sets the animations' time and playback rate
    when the heading changes or the animation is more than two frames from the beat's progress. `reverse`, `stay` and `replay` stay the trigger fold's alone.
-7. **The page tools keep their clock.** They hold only animations on the document timeline, since scripted scroll
-   drives a scroll timeline, and tell the mount they hold the clock, so trigger elements stay in the engine there.
+7. **The page tools keep their clock.** They tell the mount they hold the clock, and it then hands nothing to the
+   browser, so a tool reads the pose `frame()` gives at once; a scroll timeline catches up only when the browser
+   draws a frame, which a headless read after a scripted scroll does not wait for. They hold only animations on the
+   document timeline, so a page's own scroll-driven animation follows the scripted scroll.
 
 ## Consequences
 
@@ -62,3 +64,5 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
 - `rangeStart` and `rangeEnd` per beat: one timeline over the whole range matched exactly and needs no view ranges.
 - Handing trigger animations to the page tools' hold: their start is the trigger's, not the time the tools first
   saw them.
+- Leaving gerak's scroll-timeline animations on their timeline under the page tools: a style read after a scripted
+  scroll saw the scroll position from before it in CI, where no frame was drawn in between.

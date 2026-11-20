@@ -259,8 +259,8 @@ describe("triggered cards on the document timeline", () => {
   }, 120000);
 });
 
-describe("the page tools on a page the browser plays", () => {
-  it("show a scroll-timeline animation at the scripted scroll, and keep triggers in the engine", async () => {
+describe("the page tools while they hold the clock", () => {
+  it("keep every gerak element in the engine, and leave a page's own scroll-timeline animation to the scripted scroll", async () => {
     const { value } = await withPage(
       {
         page: "scroll.html",
@@ -292,7 +292,15 @@ describe("the page tools on a page the browser plays", () => {
                 animations: node.getAnimations().length,
               };
             };
-            return { bar: read("bar"), card: read("card") };
+            const root = document.documentElement;
+            const plainNode = document.getElementById("plain");
+            const plainDrawn = plainNode === null ? "none" : getComputedStyle(plainNode).transform;
+            return {
+              bar: read("bar"),
+              card: read("card"),
+              plainX: new DOMMatrix(plainDrawn === "none" ? "" : plainDrawn).m41,
+              plainWant: (240 * scrollY) / (root.scrollHeight - root.clientHeight),
+            };
           });
         };
         await session.advanceTo(1600);
@@ -302,11 +310,12 @@ describe("the page tools on a page the browser plays", () => {
       },
     );
     const [first, second] = value;
-    expect(first?.bar.animations).toBe(1);
+    expect(first?.bar.animations).toBe(0);
     expect(first?.card.animations).toBe(0);
     expect(first?.bar.wantX).toBeCloseTo(150, 5);
     expect(second?.bar.wantX).toBeCloseTo(60, 5);
     for (const seen of [first, second]) {
+      expect(Math.abs((seen?.plainX ?? NaN) - (seen?.plainWant ?? NaN))).toBeLessThanOrEqual(0.5);
       expect(Math.abs((seen?.bar.x ?? NaN) - (seen?.bar.wantX ?? NaN))).toBeLessThanOrEqual(
         0.25 + SLACK,
       );

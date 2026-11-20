@@ -65,6 +65,8 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 - The page tools leave an animation on a scroll timeline on that timeline, since scripted scroll drives it; ADR-158
   gains that line.
+- While the page tools hold the clock, the mount hands nothing to the browser: a scroll timeline catches up only when
+  a frame is drawn, and a read after a scripted scroll does not wait for one.
 
 ## Slices
 
