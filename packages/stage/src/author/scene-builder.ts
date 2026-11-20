@@ -26,6 +26,8 @@ import {
   type Signal,
   type Span,
   type Time,
+  project3d,
+  unproject3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
@@ -47,7 +49,7 @@ import {
   type Spec,
   type Stretch,
 } from "./cast";
-import type { Element, ObjectElement, SceneElement } from "./elements";
+import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
 import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
 import type {
   CompiledSection,
@@ -136,7 +138,7 @@ export interface ElementStep extends SceneBuilder {
 /** A piece with an object selected: its motions and principles are 3D; the order of calls matters. */
 export interface ObjectStep extends SceneBuilder {
   /** Appends motions: layer motions add by each field's rule, a `take` motion replaces its fields. */
-  motion(...motions: readonly SceneMotion3d[]): ObjectStep;
+  motion(...motions: readonly (SceneMotion3d | TravelMotion)[]): ObjectStep;
   /** Wraps everything above it in the object's list in `principle`. */
   modify(principle: Principle3d): ObjectStep;
   /** Shows the object only during these windows: a beat, or `[from, to]` for one stretch across beats. */
@@ -168,10 +170,20 @@ type Motion3dStep = {
   readonly loops: boolean;
 };
 
+type Travel3dStep = {
+  readonly kind: "travel3d";
+  readonly run: TravelMotion;
+  readonly view: ObjectView;
+  readonly span: Span | undefined;
+  readonly window: InWindow | undefined;
+  readonly loops: boolean;
+};
+
 type Step =
   | MotionStep
   | { readonly kind: "modify"; readonly principle: Principle }
   | Motion3dStep
+  | Travel3dStep
   | { readonly kind: "modify3d"; readonly principle: Principle3d };
 
 interface Entry {
@@ -204,6 +216,11 @@ const READS = new WeakMap<object, readonly string[]>();
 const TRAVEL_TARGETS = new WeakMap<object, readonly Element[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
 const BELOW_POSE = new WeakMap<MotionContext, Pose2d>();
+/** An object's travel: its view and the pose under it, and the world position the travel answers. */
+const OBJECT_TRAVEL = new WeakMap<
+  MotionContext,
+  { readonly view: ObjectView; readonly below: Pose3d; out: Pose3d | undefined }
+>();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 
 interface MotionBody {
@@ -511,7 +528,66 @@ function isElement(value: unknown): value is Element {
 
 /** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
  * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
-export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
+/** What `travel` returns: a motion on an element, which an object with a view also takes. */
+export interface TravelMotion extends Motion<Pose2d, MotionContext> {
+  readonly travel: TravelOptions;
+  in(window: InWindow, ease?: Ease): TravelMotion;
+  loop(ms: number): TravelMotion;
+  take(): TravelMotion;
+  ambient(): TravelMotion;
+}
+
+function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOptions): TravelMotion {
+  const wrapped: TravelMotion = Object.assign(
+    (time: Time, context?: MotionContext) => base(time, context),
+    {
+      span: base.span,
+      window: base.window,
+      period: base.period,
+      joins: base.joins,
+      isAmbient: base.isAmbient,
+      travel: options,
+      in: (window: InWindow, ease?: Ease) => travelMotion(base.in(window, ease), options),
+      loop: (ms: number) => travelMotion(base.loop(ms), options),
+      take: () => travelMotion(base.take(), options),
+      ambient: () => travelMotion(base.ambient(), options),
+    },
+  );
+  const body: unknown = Reflect.get(base, MOTION_BODY);
+  if (body !== undefined) Object.defineProperty(wrapped, MOTION_BODY, { value: body });
+  Object.freeze(wrapped);
+  TRAVEL_TARGETS.set(wrapped, [options.to]);
+  return wrapped;
+}
+
+/** Where an object's travel puts it at progress `p`: toward the slot's centre on the canvas, at the depth
+ * along the lens it starts from; undefined while a box is unmeasured or the start is behind the lens. */
+function travelled3d(
+  view: ObjectView,
+  below: Pose3d,
+  here: MotionContext,
+  to: Element,
+  p: number,
+): Pose3d | undefined {
+  if (p === 0 || !here.rest.has(to.name) || !here.rest.has(view.canvas.name)) return undefined;
+  const scrollY = scroll.y(here.time, here.events);
+  const slot = boxInViewport(here.rest.get(to.name), scrollY);
+  const canvas = boxInViewport(here.rest.get(view.canvas.name), scrollY);
+  if (!(canvas.width > 0 && canvas.height > 0)) return undefined;
+  const size = { width: canvas.width, height: canvas.height };
+  const point = {
+    x: slot.x - (canvas.x - canvas.width / 2),
+    y: slot.y - (canvas.y - canvas.height / 2),
+  };
+  const start = { x: below.x ?? 0, y: below.y ?? 0, z: below.z ?? 0 };
+  const seen = project3d(start, view.lens, size);
+  if (!seen.visible) return undefined;
+  const end = unproject3d(point, view.lens, size, seen.depth);
+  if (p === 1) return end;
+  return { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
+}
+
+export function travel(options: TravelOptions): TravelMotion {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
   const { to, arc: bend = 0, fit = "contain" } = options;
@@ -521,6 +597,11 @@ export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
     throw new TypeError(`travel: \`fit\` must be "contain" or "fill", not ${String(fit)}.`);
   const base = motion((time, context?: MotionContext): Pose2d => {
     const here = need(context, "travel");
+    const object = OBJECT_TRAVEL.get(here);
+    if (object !== undefined) {
+      object.out = travelled3d(object.view, object.below, here, to, time.progress);
+      return {};
+    }
     const prev = BELOW_POSE.get(here);
     const p = time.progress;
     if (p === 0) return {};
@@ -574,7 +655,7 @@ export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
       scaleY: p === 1 ? toScaleY : mix(fromScaleY, toScaleY, p),
     };
   });
-  return withMeta(base, [], [to]);
+  return travelMotion(base, Object.freeze({ to, arc: bend, fit }));
 }
 
 function indexOf(context: MotionContext): { readonly index?: number } {
@@ -597,7 +678,7 @@ function isWindow(value: unknown): value is InWindow {
   );
 }
 
-function traitsOf(run: SceneMotion | SceneMotion3d): {
+function traitsOf(run: SceneMotion | SceneMotion3d | TravelMotion): {
   span: Span | undefined;
   window: InWindow | undefined;
   joins: "layer" | "take";
@@ -1094,6 +1175,38 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
         };
         break;
       }
+      case "travel3d":
+        stack = (time, events) => {
+          const context: MotionContext = {
+            time,
+            events,
+            rest: env.rest,
+            carry: env.carry,
+            element: plan.name,
+            span: step.span,
+            read: readerOf(env, time, events),
+          };
+          const moves = env.moves;
+          if (moves !== undefined) {
+            const kind = movesOf(step, time, context);
+            if (kind !== undefined) note(moves, plan.name, kind);
+          }
+          noteDrive(env.drives, plan.name, MORE);
+          const prev = below(time, events);
+          // On a live or untimed clock a travel with no window sits on its slot, as an element's does.
+          const ran =
+            step.window === undefined && time.clock.kind !== "timed" ? withProgress(time, 1) : time;
+          const holder: { view: ObjectView; below: Pose3d; out: Pose3d | undefined } = {
+            view: step.view,
+            below: prev,
+            out: undefined,
+          };
+          OBJECT_TRAVEL.set(context, holder);
+          step.run(ran, context);
+          const out = holder.out;
+          return out === undefined ? prev : { ...prev, ...out };
+        };
+        break;
       case "motion3d":
         stack = (time, events) => {
           const context: MotionContext = {
@@ -1174,6 +1287,7 @@ function stackOf(
         break;
       }
       case "motion3d":
+      case "travel3d":
       case "modify3d":
         throw new TypeError(
           `sceneBuilder: "${plan.name}" is not an object and takes no 3D motion.`,
@@ -1419,15 +1533,16 @@ function objectStep(state: State): ObjectStep {
     {
       kind: "scene",
       element: elementOf(state),
-      motion: (...motions: readonly SceneMotion3d[]) => {
+      motion: (...motions: readonly (SceneMotion3d | TravelMotion)[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
         const sections = new Map(state.sections);
-        const added = motions.map((run): Motion3dStep => {
-          if ((TRAVEL_TARGETS.get(run) ?? []).length > 0 || (READS.get(run) ?? []).length > 0)
-            throw new TypeError(
-              "sceneBuilder: an object takes 3D motions; `travel` and `stayWith` are for elements.",
-            );
+        const [name, entry] = entryOf(state);
+        const self = state.elements.get(name);
+        const measured: Element[] = [];
+        const added = motions.map((run): Motion3dStep | Travel3dStep => {
+          if ((READS.get(run) ?? []).length > 0)
+            throw new TypeError("sceneBuilder: `stayWith` is for elements, not objects.");
           const traits = traitsOf(run);
           const beat = beatOf(traits.span);
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
@@ -1435,15 +1550,42 @@ function objectStep(state: State): ObjectStep {
             withInputBeat(beats, inputBeats, traits.window);
             addSections(sections, state.elements, traits.window);
           }
+          if ("travel" in run) {
+            const view = self?.kind === "object" ? self.view : undefined;
+            if (view === undefined)
+              throw new TypeError(
+                `sceneBuilder: object "${name}" travels only with \`object(name, { view: { canvas, lens } })\`.`,
+              );
+            if ((run.travel.arc ?? 0) !== 0 || (run.travel.fit ?? "contain") !== "contain")
+              throw new TypeError(
+                `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` and \`fit\` are for elements.`,
+              );
+            measured.push(run.travel.to, view.canvas);
+            return {
+              kind: "travel3d",
+              run,
+              view,
+              span: traits.span,
+              window: traits.window,
+              loops: traits.loops,
+            };
+          }
           return { kind: "motion3d", run, ...traits };
         });
-        const [, entry] = entryOf(state);
-        return objectStep({
-          ...changed(state, { steps: [...entry.steps, ...added] }),
-          beats,
-          inputBeats,
-          sections,
-        });
+        const elements = new Map(state.elements);
+        const staged = new Map<string, SceneElement>();
+        for (const target of measured)
+          validateRegistration(elements, sections, state.owner, target, staged);
+        const base = changed(state, { steps: [...entry.steps, ...added] });
+        const order = [...base.order];
+        const entries = new Map(base.entries);
+        for (const [added, element] of staged) {
+          elements.set(added, element);
+          OWNERS.set(element, state.owner);
+          if (!order.includes(added)) order.push(added);
+          if (!entries.has(added)) entries.set(added, NO_ENTRY);
+        }
+        return objectStep({ ...base, elements, order, entries, beats, inputBeats, sections });
       },
       modify: (principle: Principle3d) => {
         const [, entry] = entryOf(state);

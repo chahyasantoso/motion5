@@ -1,4 +1,14 @@
-import { liveAt, motion, type Pose2d, type Pose3d, type Time } from "@gerak/core";
+import {
+  aim,
+  liveAt,
+  motion,
+  orbit,
+  project3d,
+  type Lens3d,
+  type Pose2d,
+  type Pose3d,
+  type Time,
+} from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -8,8 +18,10 @@ import {
   formatStageError,
   frame,
   object,
+  pose3dOf,
   poseOf,
   sceneBuilder,
+  travel,
   type SceneBuilder,
   type Stage,
 } from "../src";
@@ -96,5 +108,53 @@ describe("an object in a scene", () => {
         .motion((_t, context) => ({ x: context.read("cube").x ?? 0 })),
     );
     expect(() => frame(stage, { time: liveAt(100) })).toThrow(/is an object; its pose is 3D/);
+  });
+});
+
+describe("travel on an object", () => {
+  const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 8, azimuth: 20, elevation: 10 });
+  const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
+  const canvas = box("gl");
+  const slot = box("slot");
+  // The canvas fills an 800x600 viewport; the slot sits right of centre and low.
+  const rest = {
+    gl: { x: 400, y: 300, width: 800, height: 600 },
+    slot: { x: 620, y: 450, width: 80, height: 80 },
+  };
+  const go = beat("go", 1000);
+  const start = motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4 }));
+
+  it("lands on the slot's centre as the lens sees it, at the depth it starts from", () => {
+    const stage = compiled(
+      sceneBuilder({ rest })
+        .element(object("drink", { view: { canvas, lens } }))
+        .motion(start, travel({ to: slot }).in(go)),
+    );
+    const size = { width: 800, height: 600 };
+    const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
+    const landed = pose3dOf(frame(stage, { time: liveAt(1000) }).targets["drink"]);
+    const seen = project3d(
+      { x: landed?.x ?? NaN, y: landed?.y ?? NaN, z: landed?.z ?? NaN },
+      lens,
+      size,
+    );
+    expect(seen.x).toBeCloseTo(620, 6);
+    expect(seen.y).toBeCloseTo(450, 6);
+    expect(seen.depth).toBeCloseTo(from.depth, 6);
+    const half = pose3dOf(frame(stage, { time: liveAt(500) }).targets["drink"]);
+    expect(half?.x).toBeCloseTo((0.5 + (landed?.x ?? NaN)) / 2, 9);
+  });
+
+  it("refuses a travel on an object with no view, and an arc or fit", () => {
+    expect(() =>
+      sceneBuilder({ rest })
+        .element(object("bare"))
+        .motion(travel({ to: slot }).in(go)),
+    ).toThrow(/travels only with/);
+    expect(() =>
+      sceneBuilder({ rest })
+        .element(object("bent", { view: { canvas, lens } }))
+        .motion(travel({ to: slot, arc: 40 }).in(go)),
+    ).toThrow(/travels straight/);
   });
 });
