@@ -1,4 +1,14 @@
-import { clamp, ease, mix, motion, pointer, scroll, type Pose2d, type Time } from "@gerak/core";
+import {
+  clamp,
+  ease,
+  mix,
+  motion,
+  pointer,
+  scroll,
+  springTo,
+  type Pose2d,
+  type Time,
+} from "@gerak/core";
 import {
   beat,
   bind,
@@ -41,17 +51,20 @@ const galleryCards = many("galleryCards", 4, { node: el("#gallery .gallery-card"
 const intro = beat("intro", 700);
 const subIntro = beat("subIntro", 500, { at: 160 });
 const snapHero = beat("snapHero", { scroll: [scrollPoint(-10000), scrollPoint(0)] });
-const toFeatures = beat("toFeatures", { scroll: [hero.top, features.top] });
+const toFeatures = beat("toFeatures", { scroll: [hero.top, features.top], smooth: true });
 const featuresReveal = beat("featuresReveal", 550, {
   when: features.top.minus(240).reached,
   back: "reverse",
 });
-const toStory = beat("toStory", { scroll: [features.top, story.top] });
+const toStory = beat("toStory", { scroll: [features.top, story.top], smooth: true });
 const storyPin = beat("storyPin", { scroll: [story.top, story.top.plus(720)] });
 const galleryReveal = beat("galleryReveal", 600, {
   when: gallery.top.minus(260).reached,
   back: "stay",
 });
+
+const auraX = springTo(pointer.x, (x) => x, { stiffness: 60, damping: 14 });
+const auraY = springTo(pointer.y, (y) => y, { stiffness: 60, damping: 14 });
 
 const riseFade = (distance: number) =>
   motion((t: Time): Pose2d => ({ y: distance * (1 - t.progress), opacity: t.progress }));
@@ -66,8 +79,8 @@ export default sceneBuilder({ name: "yuzu" })
   .element(heroAura)
   .motion(
     bind({
-      x: (t, e) => (pointer.x(t, e) - 0.5) * 44,
-      y: (t, e) => (pointer.y(t, e) - 0.5) * 32 - clamp(scroll.y(t, e) * 0.08, 0, 80),
+      x: (t, e) => (auraX(t, e) - 0.5) * 44,
+      y: (t, e) => (auraY(t, e) - 0.5) * 32 - clamp(scroll.y(t, e) * 0.08, 0, 80),
     }),
   )
   .element(headline)
@@ -80,9 +93,9 @@ export default sceneBuilder({ name: "yuzu" })
   .motion(
     travel({ to: slotHero }).in(snapHero),
     riseFade(24).in(intro, ease.cubicOut),
-    travel({ to: slotFeatures, arc: 64 }).in(toFeatures, ease.cubicInOut),
+    travel({ to: slotFeatures, arc: 64 }).in(toFeatures, ease.sineInOut),
     midTilt(8).in(toFeatures),
-    travel({ to: slotStory, arc: -64 }).in(toStory, ease.cubicInOut),
+    travel({ to: slotStory, arc: -64 }).in(toStory, ease.sineInOut),
     midTilt(-8).in(toStory),
   )
   .element(featureCards)

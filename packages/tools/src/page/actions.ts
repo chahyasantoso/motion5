@@ -69,7 +69,7 @@ export async function perform(page: Page, action: PageAction): Promise<void> {
   switch (action.kind) {
     case "scroll":
       await page.evaluate((px) => {
-        scrollTo(0, px);
+        scrollTo({ top: px, behavior: "instant" });
         document.dispatchEvent(new Event("scroll", { bubbles: true }));
       }, action.px);
       return;

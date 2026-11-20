@@ -23,13 +23,33 @@ async function scrollPageTo(
   ms: number,
 ) {
   await page.evaluate((targetY) => {
-    window.scrollTo(0, targetY);
+    window.scrollTo({ top: targetY, behavior: "instant" });
     window.dispatchEvent(new Event("scroll"));
   }, y);
   await advanceTo(ms);
 }
 
 describe("yuzu landing page with travel and slots in Chromium", () => {
+  it("a scripted scroll action lands at once on a page whose CSS scrolls smoothly", async () => {
+    const { pageErrors } = await withPage(
+      {
+        page: "yuzu/yuzu.html",
+        width: 1280,
+        height: 720,
+        source: PIECES_SOURCE,
+        actions: [{ kind: "scroll", px: 900, at: 100 }],
+      },
+      async ({ page, advanceTo }) => {
+        expect(
+          await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior),
+        ).toBe("smooth");
+        await advanceTo(100);
+        expect(await page.evaluate(() => window.scrollY)).toBe(900);
+      },
+    );
+    expect(pageErrors).toEqual([]);
+  });
+
   it.each([
     { name: "desktop", width: 1280, height: 720 },
     { name: "mobile", width: 390, height: 844 },

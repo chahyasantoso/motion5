@@ -328,6 +328,7 @@ export function stagger(
   };
   const byIndex = new Map<number, Lanes>();
   const byLine = new Map<string, Lanes>();
+  const byLineList = new WeakMap<readonly number[], Lanes>();
   const lanesOf = (count: number, context: MotionContext): Lanes => {
     switch (by) {
       case "index": {
@@ -338,18 +339,21 @@ export function stagger(
       }
       case "line": {
         const raw = PART_LINES.get(context);
+        const known = raw === undefined ? undefined : byLineList.get(raw);
+        if (known !== undefined && raw?.length === count) return known;
         const lines =
           raw !== undefined && raw.length === count
             ? raw
             : Array<number>(count).fill(context.line ?? 0);
         const key = `${count}:${lines.join(",")}`;
-        const held = byLine.get(key);
-        if (held !== undefined) return held;
-        if (byLine.size >= 16) byLine.clear();
-        const built = lanes(Array<number>(count).fill(1), options.spread, {
-          by: orderLines(lines, from),
-        });
-        byLine.set(key, built);
+        const built =
+          byLine.get(key) ??
+          lanes(Array<number>(count).fill(1), options.spread, { by: orderLines(lines, from) });
+        if (!byLine.has(key)) {
+          if (byLine.size >= 16) byLine.clear();
+          byLine.set(key, built);
+        }
+        if (raw === lines) byLineList.set(raw, built);
         return built;
       }
       default:

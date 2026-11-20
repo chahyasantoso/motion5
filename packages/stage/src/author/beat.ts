@@ -5,11 +5,14 @@ import {
   elapsedOf,
   scroll,
   span,
+  springTo,
   unreachable,
   type Ease,
   type Events,
   type MotionWindow,
+  type Signal,
   type Span,
+  type SpringToOptions,
   type Time,
 } from "@gerak/core";
 import type { NodeBinding } from "./cast";
@@ -72,9 +75,12 @@ export interface TriggerPlace {
   readonly back: TriggerBack;
 }
 
-/** Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1. */
+/** Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1, and `smooth` to trail the scroll. */
 export interface ScrollBeatOptions {
   readonly scroll: readonly [from: ScrollPoint, to: ScrollPoint];
+  /** Progress follows a spring towards the scroll position instead of the position itself; `true` uses
+   * `springTo`'s defaults. Headless, with no live clock, it reads the scroll position. */
+  readonly smooth?: true | SpringToOptions;
 }
 
 /** A named window over scroll position, mapping `from` to `to` into progress 0 to 1. */
@@ -244,7 +250,14 @@ export function scrollPoint(px: number): ScrollPoint {
   return makeScrollPoint(() => px, px);
 }
 
-function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): ScrollBeat {
+function makeScrollBeat(
+  name: string,
+  from: ScrollPoint,
+  to: ScrollPoint,
+  smooth: true | SpringToOptions | undefined,
+): ScrollBeat {
+  const position: Signal<number> =
+    smooth === undefined ? scroll.y : springTo(scroll.y, (y) => y, smooth === true ? {} : smooth);
   return Object.freeze({
     kind: "scroll-beat",
     name,
@@ -252,7 +265,7 @@ function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): Scrol
     to,
     of(time: Time, ease?: Ease, context?: BeatContext): Time {
       const { events, rest } = readContext(context);
-      const y = scroll.y(time, events);
+      const y = position(time, events);
       const start = from.at(rest);
       const end = to.at(rest);
       const raw = end <= start ? (y <= start ? 0 : 1) : clamp((y - start) / (end - start), 0, 1);
@@ -260,7 +273,7 @@ function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): Scrol
     },
     active(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
-      return scroll.y(time, events) >= from.at(rest);
+      return position(time, events) >= from.at(rest);
     },
   });
 }
@@ -393,7 +406,10 @@ export function beat(
       throw new RangeError(
         `beat "${name}": scroll range ${fixedFrom} to ${fixedTo} px must increase.`,
       );
-    return makeScrollBeat(name, from, to);
+    const smooth: unknown = Reflect.get(second, "smooth");
+    if (smooth !== undefined && smooth !== true && (typeof smooth !== "object" || smooth === null))
+      throw new TypeError(`beat "${name}": \`smooth\` takes true or springTo options.`);
+    return makeScrollBeat(name, from, to, second.smooth);
   }
   if (typeof second !== "number")
     throw new TypeError(`beat "${name}": expected a length in ms or { scroll: [from, to] }.`);

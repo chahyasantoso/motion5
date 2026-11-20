@@ -159,6 +159,7 @@ describe("section edges in the browser", () => {
           scrollTo(0, y);
           document.dispatchEvent(new Event("scroll", { bubbles: true }));
         }, wide.edges["story"]?.topEdge ?? 0);
+        await session.advanceTo(100);
         expect((await readEdges()).badgeTransform).toContain("translate3d(100px,");
 
         // Resize to taller viewport (768x900) so vh-based sections grow and shift story.top.
@@ -183,6 +184,7 @@ describe("section edges in the browser", () => {
           scrollTo(0, y);
           document.dispatchEvent(new Event("scroll", { bubbles: true }));
         }, narrow.edges["story"]?.topEdge ?? 0);
+        await session.advanceTo(200);
         expect((await readEdges()).badgeTransform).toContain("translate3d(100px,");
       },
     );
