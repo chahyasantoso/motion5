@@ -127,9 +127,9 @@ describe("sceneBuilder: what a chain compiles to", () => {
   });
 
   it("takes the length from the options when given", () => {
-    expect(compiled(sceneBuilder({ length: 3000 }).element(card).show(enter)).durationMs).toBe(
-      3000,
-    );
+    expect(
+      compiled(sceneBuilder({ length: 3000 }).element(box("card")).show(enter)).durationMs,
+    ).toBe(3000);
   });
 
   it("nests group children and keeps them flat in the scene", () => {
@@ -157,7 +157,7 @@ describe("sceneBuilder: what a chain compiles to", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
     const layouts = { names: ["one", "two"] as [string, string], pick: () => "two" };
     const compiledWithSkin = compileScene(
-      sceneBuilder({ cues, layouts }).element(card).show(enter),
+      sceneBuilder({ cues, layouts }).element(box("card")).show(enter),
       {
         skin: { css: "a{}" },
       },
@@ -205,7 +205,7 @@ describe("sceneBuilder: ambient motions", () => {
 });
 
 describe("stagger", () => {
-  const word = text("word", "ABC", { split: "letters" });
+  const makeWord = () => text("word", "ABC", { split: "letters" });
   const run = beat("run", 1000);
   const win = beat("win", 1000, { at: 1000 });
   const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
@@ -216,7 +216,7 @@ describe("stagger", () => {
 
   it("gives the first and last part their lanes, from the start", () => {
     const chain = sceneBuilder({ length: 3000 })
-      .element(word)
+      .element(makeWord())
       .motion(stagger(ramp, { spread: 1 }).in(run));
     expect(xs(chain, 0)).toEqual([0, 0, 0]);
     expect(xs(chain, 500)).toEqual([1, 0.5, 0]);
@@ -227,7 +227,7 @@ describe("stagger", () => {
     const from = (order: "end" | "center" | "edges") =>
       xs(
         sceneBuilder({ length: 3000 })
-          .element(word)
+          .element(makeWord())
           .motion(stagger(ramp, { spread: 1, from: order }).in(run)),
         500,
       );
@@ -238,7 +238,7 @@ describe("stagger", () => {
 
   it("stays inside the span of the motion it plays", () => {
     const chain = sceneBuilder({ length: 3000 })
-      .element(word)
+      .element(makeWord())
       .motion(stagger(ramp.in(win), { spread: 1 }));
     expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
     expect(xs(chain, 500)).toEqual([0, 0, 0]);
@@ -247,20 +247,19 @@ describe("stagger", () => {
   });
 
   it("plays the motion unchanged on an element without parts", () => {
-    const a = box("a");
     const chain = sceneBuilder({ length: 2000 })
-      .element(a)
+      .element(box("a"))
       .motion(stagger(ramp, { spread: 1 }));
     expect(poseAt(chain, "a", 1000)?.x).toBe(0.5);
     const inside = sceneBuilder({ length: 3000 })
-      .element(a)
+      .element(box("a"))
       .motion(stagger(ramp.in(win), { spread: 1 }));
     expect(poseAt(inside, "a", 1500)?.x).toBe(0.5);
   });
 
   it("builds each part's motion from its index and plays it in that part's lane", () => {
     const chain = sceneBuilder({ length: 3000 })
-      .element(word)
+      .element(makeWord())
       .motion(stagger((index) => slideX(index + 1), { spread: 1 }).in(run));
     expect(xs(chain, 500)).toEqual([1, 1, 0]);
     expect(xs(chain, 1000)).toEqual([1, 2, 3]);
@@ -268,7 +267,7 @@ describe("stagger", () => {
 
   it("takes the span of a motion built from its index", () => {
     const chain = sceneBuilder({ length: 3000 })
-      .element(word)
+      .element(makeWord())
       .motion(stagger(() => ramp.in(win), { spread: 1 }));
     expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
     expect(xs(chain, 1500)).toEqual([1, 0.5, 0]);
@@ -277,7 +276,7 @@ describe("stagger", () => {
   it("keeps a loop, so its element is ambient, and a take", () => {
     const stage = compiled(
       sceneBuilder({ length: 3000 })
-        .element(word)
+        .element(makeWord())
         .motion(stagger(ramp.loop(500), { spread: 1 })),
     );
     expect(stage.members[0]?.expect).toBe("ambient");
@@ -311,14 +310,13 @@ describe("bindEach", () => {
 
 describe("show with two beats", () => {
   it("compiles [from, to] to one stretch and still takes separate beats", () => {
-    const a = box("a");
     const late = beat("late", 100, { at: 2000 });
     const stage = compiled(
-      sceneBuilder().element(a).show([enter, hold]).element(box("b")).show(late),
+      sceneBuilder().element(box("a")).show([enter, hold]).element(box("b")).show(late),
     );
     expect(stage.members[0]?.on).toEqual([[0, 1100]]);
     expect(Object.keys(stage.beats)).toEqual(["enter", "hold", "late"]);
-    const mixed = compiled(sceneBuilder().element(a).show([enter, hold], late));
+    const mixed = compiled(sceneBuilder().element(box("a")).show([enter, hold], late));
     expect(mixed.members[0]?.on).toEqual([
       [0, 1100],
       [2000, Number.POSITIVE_INFINITY],
@@ -327,11 +325,9 @@ describe("show with two beats", () => {
 });
 
 describe("sceneBuilder: layering", () => {
-  const a = box("a");
-
   it("adds x and multiplies scale across layer motions", () => {
     const chain = sceneBuilder()
-      .element(a)
+      .element(box("a"))
       .motion(slideX(100).in(enter), slideX(40).in(enter), grow(2).in(enter), grow(3).in(enter));
     expect(poseAt(chain, "a", 0)).toEqual({ x: 0, scale: 1 });
     expect(poseAt(chain, "a", 400)).toEqual({ x: 140, scale: 6 });
@@ -339,14 +335,14 @@ describe("sceneBuilder: layering", () => {
   });
 
   it("holds an animation's start before its beat and its end after it", () => {
-    const chain = sceneBuilder().element(a).motion(slideX(100).in(hold)).show(enter);
+    const chain = sceneBuilder().element(box("a")).motion(slideX(100).in(hold)).show(enter);
     expect(poseAt(chain, "a", 100)?.x).toBe(0);
     expect(poseAt(chain, "a", 1500)?.x).toBe(100);
   });
 
   it("lets a take motion replace only its fields, only from the start of its span", () => {
     const chain = sceneBuilder()
-      .element(a)
+      .element(box("a"))
       .motion(
         slideX(100).in(enter),
         grow(2).in(enter),
@@ -362,7 +358,7 @@ describe("sceneBuilder: layering", () => {
 
   it("wraps everything above a modify and not what follows", () => {
     const chain = sceneBuilder()
-      .element(a)
+      .element(box("a"))
       .motion(slideX(100).in(enter))
       .modify((signal) => (time, events) => {
         const pose = signal(time, events);
@@ -396,10 +392,9 @@ describe("sceneBuilder: lists", () => {
 });
 
 describe("sceneBuilder: reading another element", () => {
-  const hand = box("hand");
-  const ball = box("ball");
-
   it("stayWith adds the travel of the read element since the start of its own span", () => {
+    const hand = box("hand");
+    const ball = box("ball");
     const chain = sceneBuilder()
       .element(hand)
       .motion(slideX(100).in(span(0, 1000)))
@@ -413,27 +408,29 @@ describe("sceneBuilder: reading another element", () => {
   });
 
   it("lets a motion read another element's pose through the context", () => {
+    const hand = box("hand");
     const chain = sceneBuilder({ length: 2000 })
       .element(hand)
       .motion(slideX(100).in(span(0, 1000)))
-      .element(ball)
+      .element(box("ball"))
       .motion((time, context) => ({ y: (context.read(hand).x ?? 0) + 1 }));
     expect(poseAt(chain, "ball", 500)?.y).toBe(51);
   });
 
   it("reads a pose a modify changed", () => {
+    const hand = box("hand");
     const chain = sceneBuilder({ length: 2000 })
       .element(hand)
       .motion(slideX(100).in(span(0, 1000)))
       .modify((signal) => (time, events) => ({ x: (signal(time, events).x ?? 0) + 7 }))
-      .element(ball)
+      .element(box("ball"))
       .motion(stayWith(hand).in(span(0, 1000)));
     expect(poseAt(chain, "ball", 1000)?.x).toBe(100);
   });
 
   it("binds fields to signals at scene time", () => {
     const chain = sceneBuilder({ length: 2000 })
-      .element(ball)
+      .element(box("ball"))
       .motion(bind({ y: (time) => time.progress * 100, rotation: () => 9 }));
     expect(poseAt(chain, "ball", 1000)).toEqual({ y: 50, rotation: 9 });
   });
@@ -443,7 +440,7 @@ describe("sceneBuilder: reading another element", () => {
       length: 2000,
       layouts: { names: ["a", "b"], pick: () => "a" },
     })
-      .element(ball)
+      .element(box("ball"))
       .motion(carry({ ms: 300 }));
     expect(poseAt(chain, "ball", 100)).toBeDefined();
   });
@@ -514,14 +511,18 @@ describe("sceneBuilder: refusals", () => {
   });
 
   it("refuses a limit field set twice on one element", () => {
-    const x = box("x");
-    expect(() => sceneBuilder().element(x).limits({ jump: 1 }).limits({ jump: 2 })).toThrow(/jump/);
-    expect(() => sceneBuilder().element(x).limits({ jump: 1 }).limits({ turn: 2 })).not.toThrow();
+    expect(() => sceneBuilder().element(box("x")).limits({ jump: 1 }).limits({ jump: 2 })).toThrow(
+      /jump/,
+    );
+    expect(() =>
+      sceneBuilder().element(box("x")).limits({ jump: 1 }).limits({ turn: 2 }),
+    ).not.toThrow();
   });
 
   it("refuses a beat name used for two different spans", () => {
-    const x = box("x");
-    expect(() => sceneBuilder().element(x).show(enter).show(beat("enter", 999))).toThrow(/enter/);
+    expect(() => sceneBuilder().element(box("x")).show(enter).show(beat("enter", 999))).toThrow(
+      /enter/,
+    );
   });
 });
 

@@ -208,24 +208,88 @@ const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
 const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
 const EMPTIED = new WeakSet<RenderStyle>();
+type Written =
+  | "transform"
+  | "opacity"
+  | "zIndex"
+  | "transformBox"
+  | "transformOrigin"
+  | "filter"
+  | "clipPath";
+const WRITTEN_TEXT = new WeakMap<RenderStyle, Map<Written, string>>();
+
+// The browser parses every style it is given, so a property is set only when its text changes.
+function put(style: RenderStyle, key: Written, text: string): void {
+  let held = WRITTEN_TEXT.get(style);
+  if (held === undefined) {
+    held = new Map();
+    WRITTEN_TEXT.set(style, held);
+  }
+  if (held.get(key) === text) return;
+  held.set(key, text);
+  style[key] = text;
+}
+
+const LAST_WRITTEN = new WeakMap<
+  RenderStyle,
+  { readonly value: Pose2d; readonly length: number }
+>();
+
+function sameCustom(
+  a: Readonly<Record<string, number>> | undefined,
+  b: Readonly<Record<string, number>> | undefined,
+): boolean {
+  if (a === b) return true;
+  if (a === undefined || b === undefined) return false;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  return keys.every((key) => Object.hasOwn(b, key) && Object.is(a[key], b[key]));
+}
+
+function samePose(a: Pose2d, b: Pose2d): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a);
+  if (keys.length !== Object.keys(b).length) return false;
+  for (const key of keys) {
+    if (!Object.hasOwn(b, key)) return false;
+    const left: unknown = Reflect.get(a, key);
+    const right: unknown = Reflect.get(b, key);
+    if (key === "custom") {
+      if (!sameCustom(a.custom, b.custom)) return false;
+    } else if (!Object.is(left, right)) return false;
+  }
+  return true;
+}
 
 // A field or custom name the value leaves out is cleared, so the page's own style shows again.
-/** Writes a value, each custom number as `--<name>`; a stroke with no length to measure is left undashed. */
+/** Writes a value, each custom number as `--<name>`; an unmeasured stroke is left undashed.
+ * A value equal to the last one written to that style, at that length, writes nothing. */
 export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
   const style = target.style;
-  style.transform = cssTransform(value);
-  style.opacity = value.opacity === undefined ? "" : String(value.opacity);
+  const measured = target.getTotalLength?.() ?? length ?? 0;
+  const last = LAST_WRITTEN.get(style);
+  if (last !== undefined && last.length === measured && samePose(last.value, value)) return;
+  const copy: Pose2d =
+    value.custom === undefined ? { ...value } : { ...value, custom: { ...value.custom } };
+  LAST_WRITTEN.set(style, { value: copy, length: measured });
+  put(style, "transform", cssTransform(value));
+  put(style, "opacity", value.opacity === undefined ? "" : String(value.opacity));
   // Paint order steps, so a layer between two whole numbers paints as the nearer one.
-  style.zIndex = value.layer === undefined ? "" : String(Math.round(value.layer));
+  put(style, "zIndex", value.layer === undefined ? "" : String(Math.round(value.layer)));
   // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;
-  if (svg) style.transformBox = "fill-box";
-  style.transformOrigin =
-    value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "";
-  style.filter = cssFilter(value);
+  if (svg) put(style, "transformBox", "fill-box");
+  put(
+    style,
+    "transformOrigin",
+    value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "",
+  );
+  put(style, "filter", cssFilter(value));
   // A clip with a width and a height is a box, its radius rounding the corners; with a radius alone, a circle.
-  style.clipPath =
+  put(
+    style,
+    "clipPath",
     value.clipWidth !== undefined && value.clipHeight !== undefined
       ? cssClipBox(
           value.clipX ?? 0,
@@ -236,8 +300,8 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
         )
       : value.clipRadius === undefined
         ? ""
-        : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius);
-  const measured = target.getTotalLength?.() ?? length ?? 0;
+        : cssClip(value.clipX ?? 0, value.clipY ?? 0, value.clipRadius),
+  );
   const stroked = value.drawn !== undefined || value.drawnFrom !== undefined;
   if (stroked && measured > 0) {
     const dash = cssDash(value.drawnFrom ?? 0, value.drawn ?? 1, measured);

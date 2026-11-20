@@ -29,6 +29,15 @@ export {
   type PointerLike,
 } from "./events";
 export {
+  mountPage,
+  type MountedPage,
+  type PageElement,
+  type PageOptions,
+  type PageRoot,
+  type PageScrollTarget,
+  type PageStyle,
+} from "./page";
+export {
   mountStage,
   type MountedStage,
   type StageElement,

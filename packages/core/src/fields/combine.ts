@@ -15,6 +15,10 @@ export function join(combines: Combining, held: number | undefined, value: numbe
   }
 }
 
+const NUMBER_KEYS: ReadonlyMap<string, (typeof POSE_2D_NUMBERS)[number]> = new Map(
+  POSE_2D_NUMBERS.map((key) => [key, key]),
+);
+
 type Customized = { readonly custom?: Readonly<Record<string, number>> };
 
 /** The custom numbers of values on one target added by name, or nothing when none has one. */
@@ -30,7 +34,9 @@ export function addCustom(values: readonly Customized[]): Record<string, number>
 export function combine(poses: readonly Pose2d[]): Pose2d {
   const out: { -readonly [K in keyof Pose2d]: Pose2d[K] } = {};
   for (const pose of poses) {
-    for (const key of POSE_2D_NUMBERS) {
+    for (const name of Object.keys(pose)) {
+      const key = NUMBER_KEYS.get(name);
+      if (key === undefined) continue;
       const value = pose[key];
       if (value !== undefined) out[key] = join(VALUE_FIELDS[key].combines, out[key], value);
     }

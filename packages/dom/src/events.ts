@@ -1,4 +1,11 @@
-import { liveAt, type Events, type MotionEvent, type Point2d, type Time } from "@gerak/core";
+import {
+  eventLog,
+  liveAt,
+  type Events,
+  type MotionEvent,
+  type Point2d,
+  type Time,
+} from "@gerak/core";
 import type { Driver } from "@gerak/player";
 import { pageFrames, type FrameSource } from "./frames";
 
@@ -46,19 +53,17 @@ export function eventRecorder(
   now: () => number,
   onRecord: (at: number) => void = () => undefined,
 ): EventRecorder {
-  const log: MotionEvent[] = [];
+  const log = eventLog();
   const unwatch = new Set<() => void>();
   const add = (event: Omit<MotionEvent, "at">): void => {
     const at = now();
-    let index = log.length;
-    while (index > 0 && (log[index - 1]?.at ?? 0) > at) index -= 1;
-    log.splice(index, 0, { ...event, at });
+    log.add({ ...event, at });
     onRecord(at);
   };
   const record = (name: string, target?: string, point?: Point2d): void =>
     add({ name, ...(target === undefined ? {} : { target }), ...(point ?? {}) });
   return {
-    log,
+    log: log.events,
     record,
     sample(name, value, target) {
       if (!Number.isFinite(value))
@@ -86,7 +91,7 @@ export function eventRecorder(
       return stop;
     },
     clear() {
-      log.length = 0;
+      log.clear();
     },
     dispose() {
       for (const stop of [...unwatch]) stop();

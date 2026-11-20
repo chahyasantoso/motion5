@@ -19,6 +19,7 @@ import {
 } from "../author/cast";
 import { NO_REST, restReader, type Frame, type Rest, type RestReader } from "../author/layout";
 import type {
+  CompiledSection,
   DomSkinInput,
   LayoutsInput,
   Limits,
@@ -37,11 +38,17 @@ export type Member = {
   readonly expect: Expect;
   readonly watch: boolean;
   readonly pivot?: Pivot | undefined;
+  /** Selector binding this member to an existing DOM node on a page mount. */
+  readonly node?: string | undefined;
   /** Ms the member shows, its own or its group's; absent means always. */
   readonly on?: readonly Window[] | undefined;
 } & (
   | { readonly kind: "actor"; readonly content: Content }
-  | { readonly kind: "list"; readonly items: readonly ItemContent[] }
+  | {
+      readonly kind: "list";
+      readonly items: readonly ItemContent[];
+      readonly split?: "letters" | "words" | undefined;
+    }
   | { readonly kind: "group" }
 );
 
@@ -70,6 +77,10 @@ export interface Stage {
   readonly skins: { readonly dom?: DomSkin | undefined };
   readonly cues: Events;
   readonly limits: Readonly<Record<string, Limits>>;
+  /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
+  readonly settleMs?: number | undefined;
+  /** Page sections referenced by scroll points in this stage. */
+  readonly sections: readonly CompiledSection[];
   readonly scene: (context: SceneContext) => unknown;
   /** Which members show at `ms`, by name; one shared record per stretch of time. */
   readonly visibleAt: (ms: number) => Readonly<Record<string, boolean>>;
@@ -127,6 +138,7 @@ interface Beats {
 function compileBeats(
   given: Readonly<Record<string, readonly [number, number]>>,
   givenDuration: number | undefined,
+  isPage: boolean,
   errors: StageError[],
 ): Beats | undefined {
   const fail = (field: string, reason: string): undefined => {
@@ -141,7 +153,8 @@ function compileBeats(
     return fail("beats", `beat "${bad[0]}" must be [from, to] ms with 0 <= from < to.`);
   if (givenDuration !== undefined && !(finite(givenDuration) && givenDuration > 0))
     return fail("durationMs", "`durationMs` must be above 0.");
-  const durationMs = givenDuration ?? pairs.reduce((most, [, [, to]]) => Math.max(most, to), 0);
+  const computedDuration = pairs.reduce((most, [, [, to]]) => Math.max(most, to), 0);
+  const durationMs = givenDuration ?? (isPage && computedDuration === 0 ? 1000 : computedDuration);
   if (!(durationMs > 0))
     return fail("beats", "the last beat must end above 0 ms, or give `durationMs`.");
   const late = pairs.find(([, [, to]]) => to > durationMs);
@@ -265,7 +278,12 @@ function itemOf(name: string, content: ItemContent, errors: StageError[]): ItemC
   }
 }
 
-function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonly Member[] {
+function compileCast(
+  cast: Members,
+  beats: Beats,
+  isPage: boolean,
+  errors: StageError[],
+): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
   const visit = (record: Members, from: Inherited): void => {
@@ -277,6 +295,13 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
         spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
       const expect = spec.meta.expect ?? from.expect;
       const pivot = spec.meta.pivot;
+      const node = spec.meta.node?.selector;
+      if (isPage && node === undefined)
+        errors.push({
+          kind: "invalid",
+          field: "cast",
+          reason: `"${name}": every element of a page scene needs \`{ node: el(selector) }\`.`,
+        });
       if (pivot !== undefined && (!finite(pivot.x) || !finite(pivot.y)))
         errors.push({
           kind: "invalid",
@@ -289,6 +314,7 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
         expect,
         watch: spec.meta.watch ?? from.watch,
         ...(pivot === undefined ? {} : { pivot }),
+        ...(node === undefined ? {} : { node }),
         ...(on === undefined ? {} : { on }),
       };
       switch (spec.kind) {
@@ -302,7 +328,14 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
           const items = spec.items.flatMap(
             (item, index) => itemOf(`${name}.${index}`, item, errors) ?? [],
           );
-          members.push(Object.freeze({ ...base, kind: "list", items: Object.freeze(items) }));
+          members.push(
+            Object.freeze({
+              ...base,
+              kind: "list",
+              items: Object.freeze(items),
+              ...(spec.split === undefined ? {} : { split: spec.split }),
+            }),
+          );
           break;
         }
         case "group": {
@@ -394,25 +427,83 @@ function compileLimits(
   return Object.freeze({ ...limits });
 }
 
-function signatureOf(durationMs: number, members: readonly Member[]): string {
+function compileSections(
+  raw: readonly CompiledSection[] | undefined,
+  members: readonly Member[],
+  errors: StageError[],
+): readonly CompiledSection[] {
+  if (raw === undefined || raw.length === 0) return Object.freeze([]);
+  const memberByName = new Map(members.map((member) => [member.name, member]));
+  const byName = new Map<string, string>();
+  const compiled: CompiledSection[] = [];
+  for (const sec of raw) {
+    if (sec.name.includes(".")) {
+      errors.push({ kind: "reserved_dot", name: sec.name });
+      continue;
+    }
+    if (sec.name.trim() === "" || sec.node.trim() === "") {
+      errors.push({
+        kind: "invalid",
+        field: "sections",
+        reason: `section "${sec.name}" needs a non-empty name and selector.`,
+      });
+      continue;
+    }
+    const member = memberByName.get(sec.name);
+    if (member !== undefined && member.node !== sec.node) {
+      errors.push({
+        kind: "invalid",
+        field: "sections",
+        reason: `section "${sec.name}" (${sec.node}) collides with member "${member.name}".`,
+      });
+      continue;
+    }
+    const prior = byName.get(sec.name);
+    if (prior !== undefined && prior !== sec.node) {
+      errors.push({
+        kind: "invalid",
+        field: "sections",
+        reason: `section "${sec.name}" names both "${prior}" and "${sec.node}".`,
+      });
+      continue;
+    }
+    if (prior === undefined) {
+      byName.set(sec.name, sec.node);
+      compiled.push(Object.freeze({ name: sec.name, node: sec.node }));
+    }
+  }
+  return Object.freeze(compiled);
+}
+
+function signatureOf(
+  durationMs: number,
+  members: readonly Member[],
+  sections: readonly CompiledSection[],
+): string {
   const contentKey = (content: Content): string =>
     content.kind === "text" ? `text:${content.value}` : content.kind;
-  return JSON.stringify([
-    durationMs,
-    members.map((member) => {
-      const own = [member.name, member.kind, member.parent, member.watch];
-      switch (member.kind) {
-        case "actor":
-          return [...own, contentKey(member.content)];
-        case "list":
-          return [...own, member.items.map(contentKey)];
-        case "group":
-          return own;
-        default:
-          return unreachable(member);
-      }
-    }),
-  ]);
+  const serializedMembers = members.map((member) => {
+    const own = [
+      member.name,
+      member.kind,
+      member.parent,
+      member.watch,
+      ...(member.node === undefined ? [] : [member.node]),
+    ];
+    switch (member.kind) {
+      case "actor":
+        return [...own, contentKey(member.content)];
+      case "list":
+        return [...own, member.items.map(contentKey)];
+      case "group":
+        return own;
+      default:
+        return unreachable(member);
+    }
+  });
+  return sections.length === 0
+    ? JSON.stringify([durationMs, serializedMembers])
+    : JSON.stringify([durationMs, serializedMembers, sections.map((sec) => [sec.name, sec.node])]);
 }
 
 /** Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot. */
@@ -420,7 +511,14 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   definition: StageDefinition<B, M, L>,
 ): CompileResult {
   const errors: StageError[] = [];
-  const beats = compileBeats(definition.beats, definition.durationMs, errors);
+  const isPage = definition.isPage === true;
+  if (isPage && definition.skins?.dom !== undefined)
+    errors.push({
+      kind: "invalid",
+      field: "skins",
+      reason: "a page scene takes no skin; style the page with CSS.",
+    });
+  const beats = compileBeats(definition.beats, definition.durationMs, isPage, errors);
   const frame = definition.frame ?? DEFAULT_FRAME;
   if (!(finite(frame.width) && finite(frame.height) && frame.width > 0 && frame.height > 0))
     errors.push({
@@ -431,7 +529,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   let members: readonly Member[] = [];
   if (beats !== undefined) {
     try {
-      members = compileCast(definition.cast(castBuilder<B>()), beats, errors);
+      members = compileCast(definition.cast(castBuilder<B>()), beats, isPage, errors);
     } catch (thrown) {
       errors.push({
         kind: "invalid",
@@ -440,23 +538,26 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
       });
     }
   }
+  const sections = compileSections(definition.sections, members, errors);
   const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
-  const { skins, cues, scene } = definition;
+  const { skins, cues, settleMs, scene } = definition;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
     frame: Object.freeze({ width: frame.width, height: frame.height }),
     beats: beats.beats,
     members,
+    sections,
     layouts,
     skins: Object.freeze(skins?.dom === undefined ? {} : { dom: compileSkin(skins.dom) }),
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
+    ...(settleMs === undefined ? {} : { settleMs }),
     scene: (context: SceneContext): unknown => Reflect.apply(scene, undefined, [context]),
     visibleAt: visibility(members),
-    signature: signatureOf(beats.durationMs, members),
+    signature: signatureOf(beats.durationMs, members, sections),
   });
   return { ok: true, stage };
 }

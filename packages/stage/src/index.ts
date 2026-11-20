@@ -1,7 +1,15 @@
-export { type Content, type Expect, type ItemContent, type Path, type Pivot } from "./author/cast";
+export {
+  type Content,
+  type Expect,
+  type ItemContent,
+  type NodeBinding,
+  type Path,
+  type Pivot,
+} from "./author/cast";
 export {
   beat,
   scrollPoint,
+  section,
   type Beat,
   type BeatContext,
   type BeatPlace,
@@ -9,12 +17,14 @@ export {
   type ScrollBeatOptions,
   type ScrollPoint,
   type ScrollReached,
+  type Section,
   type TriggerBack,
   type TriggerBeat,
   type TriggerPlace,
 } from "./author/beat";
 export {
   box,
+  el,
   group,
   many,
   shape,
@@ -35,6 +45,7 @@ export {
   sceneBuilder,
   stagger,
   stayWith,
+  travel,
   type BoundEachFields,
   type BoundFields,
   type CompileSceneOptions,
@@ -46,8 +57,10 @@ export {
   type SceneBuilderOptions,
   type SceneMotion,
   type ShowWindow,
+  type StaggerBy,
   type StaggerFrom,
   type StaggerOptions,
+  type TravelOptions,
 } from "./author/scene-builder";
 export {
   NO_REST,
@@ -63,6 +76,7 @@ export {
 } from "./author/layout";
 export {
   isDomSkin,
+  type CompiledSection,
   type DomSkinInput,
   type Limits,
   type LayoutsInput,

@@ -5,13 +5,18 @@ import {
   elapsedOf,
   scroll,
   span,
+  springTo,
   unreachable,
   type Ease,
   type Events,
   type MotionWindow,
+  type Signal,
   type Span,
+  type SpringToOptions,
+  type Step,
   type Time,
 } from "@gerak/core";
+import type { NodeBinding } from "./cast";
 import { NO_REST, type RestReader } from "./layout";
 
 /** A named stretch of the piece in ms: a core `Span` that also says what it is called. */
@@ -47,6 +52,21 @@ export interface ScrollPoint {
   readonly reached: ScrollReached;
 }
 
+/** A named page section whose `.top` and `.end` resolve as scroll points from measured CSS layout. */
+export interface Section {
+  readonly kind: "section";
+  readonly name: string;
+  readonly node: NodeBinding;
+  readonly top: ScrollPoint;
+  readonly end: ScrollPoint;
+}
+
+/** Section selector binding referenced by a section scroll point. */
+export interface SectionBinding {
+  readonly name: string;
+  readonly selector: string;
+}
+
 /** What scrolling back past a trigger point does: reverse cleanly, stay at its end, or reset to replay. */
 export type TriggerBack = "reverse" | "stay" | "replay";
 
@@ -56,9 +76,12 @@ export interface TriggerPlace {
   readonly back: TriggerBack;
 }
 
-/** Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1. */
+/** Settings of a scroll beat: `[from, to]` scroll points mapping 0 to 1, and `smooth` to trail the scroll. */
 export interface ScrollBeatOptions {
   readonly scroll: readonly [from: ScrollPoint, to: ScrollPoint];
+  /** Progress follows a spring towards the scroll position instead of the position itself; `true` uses
+   * `springTo`'s defaults. Headless, with no live clock, it reads the scroll position. */
+  readonly smooth?: true | SpringToOptions;
 }
 
 /** A named window over scroll position, mapping `from` to `to` into progress 0 to 1. */
@@ -87,6 +110,12 @@ export interface TriggerBeat extends MotionWindow {
 }
 
 const FIXED_PX = new WeakMap<ScrollPoint, number>();
+const POINT_SECTIONS = new WeakMap<ScrollPoint, readonly SectionBinding[]>();
+
+/** Section bindings referenced by a scroll point, empty for fixed numeric scroll points. */
+export function sectionsOfPoint(point: ScrollPoint): readonly SectionBinding[] {
+  return POINT_SECTIONS.get(point) ?? [];
+}
 
 function isScrollPoint(value: unknown): value is ScrollPoint {
   return (
@@ -149,6 +178,7 @@ function readContext(context: unknown): { readonly events: Events; readonly rest
 export function makeScrollPoint(
   resolve: (rest: RestReader) => number,
   fixed?: number,
+  sections?: readonly SectionBinding[],
 ): ScrollPoint {
   const shift = (delta: number, label: string): ScrollPoint => {
     if (!Number.isFinite(delta))
@@ -156,6 +186,7 @@ export function makeScrollPoint(
     return makeScrollPoint(
       (rest) => resolve(rest) + delta,
       fixed === undefined ? undefined : fixed + delta,
+      sections,
     );
   };
   let point: ScrollPoint;
@@ -173,7 +204,44 @@ export function makeScrollPoint(
     reached,
   });
   if (fixed !== undefined) FIXED_PX.set(point, fixed);
+  if (sections !== undefined && sections.length > 0) POINT_SECTIONS.set(point, sections);
   return point;
+}
+
+/** A page section bound to `node` whose `.top` and `.end` edges resolve as scroll points. */
+export function section(name: string, node: NodeBinding): Section {
+  if (typeof name !== "string" || name.trim() === "")
+    throw new TypeError("section: a section needs a non-empty name.");
+  if (name.includes("."))
+    throw new TypeError(
+      `section "${name}": section names cannot contain ".", which names list items.`,
+    );
+  if (
+    typeof node !== "object" ||
+    node === null ||
+    Reflect.get(node, "kind") !== "node" ||
+    typeof Reflect.get(node, "selector") !== "string" ||
+    node.selector.trim() === ""
+  )
+    throw new TypeError(`section "${name}": expected a node binding made by \`el(selector)\`.`);
+  const binding: SectionBinding = Object.freeze({ name, selector: node.selector });
+  const top = makeScrollPoint(
+    (rest) => {
+      const box = rest.get(name);
+      return box.y - box.height / 2;
+    },
+    undefined,
+    [binding],
+  );
+  const end = makeScrollPoint(
+    (rest) => {
+      const box = rest.get(name);
+      return box.y + box.height / 2;
+    },
+    undefined,
+    [binding],
+  );
+  return Object.freeze({ kind: "section", name, node, top, end });
 }
 
 /** A scroll position in `px`, with `.plus(px)`, `.minus(px)` and `.reached`. */
@@ -183,7 +251,14 @@ export function scrollPoint(px: number): ScrollPoint {
   return makeScrollPoint(() => px, px);
 }
 
-function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): ScrollBeat {
+function makeScrollBeat(
+  name: string,
+  from: ScrollPoint,
+  to: ScrollPoint,
+  smooth: true | SpringToOptions | undefined,
+): ScrollBeat {
+  const position: Signal<number> =
+    smooth === undefined ? scroll.y : springTo(scroll.y, (y) => y, smooth === true ? {} : smooth);
   return Object.freeze({
     kind: "scroll-beat",
     name,
@@ -191,7 +266,7 @@ function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): Scrol
     to,
     of(time: Time, ease?: Ease, context?: BeatContext): Time {
       const { events, rest } = readContext(context);
-      const y = scroll.y(time, events);
+      const y = position(time, events);
       const start = from.at(rest);
       const end = to.at(rest);
       const raw = end <= start ? (y <= start ? 0 : 1) : clamp((y - start) / (end - start), 0, 1);
@@ -199,71 +274,99 @@ function makeScrollBeat(name: string, from: ScrollPoint, to: ScrollPoint): Scrol
     },
     active(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
-      return scroll.y(time, events) >= from.at(rest);
+      return position(time, events) >= from.at(rest);
     },
   });
 }
 
-function triggerState(
+type TriggerFold = (
   time: Time,
   events: Events,
   threshold: number,
-  ms: number,
-  back: TriggerBack,
-): { readonly raw: number; readonly active: boolean } {
-  const now = elapsedOf(time.clock);
-  const initial = scroll.y.start >= threshold;
-  switch (back) {
-    case "stay": {
-      const steps = scroll.y.steps(time, events);
-      if (now === undefined) {
-        const reached = initial || steps.some((step) => step.value >= threshold);
-        return { raw: reached ? 1 : 0, active: reached };
-      }
-      const started = initial ? 0 : steps.find((step) => step.value >= threshold)?.at;
-      if (started === undefined) return { raw: 0, active: false };
-      return { raw: clamp(now - started, 0, ms) / ms, active: true };
+) => { readonly raw: number; readonly active: boolean };
+
+/** One trigger's reading of `scroll.y`: it folds each scroll step once, and starts again when the
+ * state's step list or the threshold changes. */
+function triggerFold(ms: number, back: TriggerBack): TriggerFold {
+  let list: readonly Step<number>[] | undefined;
+  let limit = Number.NaN;
+  let done = 0;
+  let reached = false;
+  let started: number | undefined;
+  let progress = 0;
+  let since = 0;
+  let active = false;
+  return (time, events, threshold) => {
+    const now = elapsedOf(time.clock);
+    const steps = scroll.y.steps(time, events);
+    if (steps !== list || threshold !== limit || steps.length < done) {
+      const initial = scroll.y.start >= threshold;
+      list = steps;
+      limit = threshold;
+      done = 0;
+      reached = initial;
+      started = initial ? 0 : undefined;
+      progress = 0;
+      since = 0;
+      active = initial;
     }
-    case "replay": {
-      if (now === undefined) {
-        const reached = scroll.y(time, events) >= threshold;
-        return { raw: reached ? 1 : 0, active: reached };
+    for (; done < steps.length; done += 1) {
+      const step = steps[done];
+      if (step === undefined) break;
+      const next = step.value >= threshold;
+      switch (back) {
+        case "stay":
+          if (started === undefined && next) started = step.at;
+          break;
+        case "replay":
+          if (next === reached) break;
+          reached = next;
+          started = next ? step.at : undefined;
+          break;
+        case "reverse":
+          if (next === reached) break;
+          progress = clamp(
+            progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms),
+            0,
+            1,
+          );
+          since = step.at;
+          reached = next;
+          if (next) active = true;
+          break;
+        default:
+          return unreachable(back);
       }
-      let reached = initial;
-      let started: number | undefined = initial ? 0 : undefined;
-      for (const step of scroll.y.steps(time, events)) {
-        const next = step.value >= threshold;
-        if (next === reached) continue;
-        reached = next;
-        started = next ? step.at : undefined;
-      }
-      if (started === undefined) return { raw: 0, active: false };
-      return { raw: clamp(now - started, 0, ms) / ms, active: true };
     }
-    case "reverse": {
-      if (now === undefined) {
-        const reached = scroll.y(time, events) >= threshold;
-        return { raw: reached ? 1 : 0, active: reached };
+    switch (back) {
+      case "stay": {
+        if (now === undefined) {
+          const shown = started !== undefined;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        if (started === undefined) return { raw: 0, active: false };
+        return { raw: clamp(now - started, 0, ms) / ms, active: true };
       }
-      let reached = initial;
-      let progress = 0;
-      let since = 0;
-      let active = initial;
-      for (const step of scroll.y.steps(time, events)) {
-        const next = step.value >= threshold;
-        if (next === reached) continue;
-        progress = clamp(progress + (reached ? 1 : -1) * (Math.max(0, step.at - since) / ms), 0, 1);
-        since = step.at;
-        reached = next;
-        if (next) active = true;
+      case "replay": {
+        if (now === undefined) {
+          const shown = scroll.y(time, events) >= threshold;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        if (started === undefined) return { raw: 0, active: false };
+        return { raw: clamp(now - started, 0, ms) / ms, active: true };
       }
-      progress = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
-      if (!reached && progress <= 0) active = false;
-      return { raw: progress, active };
+      case "reverse": {
+        if (now === undefined) {
+          const shown = scroll.y(time, events) >= threshold;
+          return { raw: shown ? 1 : 0, active: shown };
+        }
+        const raw = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
+        return { raw, active: active && (reached || raw > 0) };
+      }
+      default:
+        return unreachable(back);
     }
-    default:
-      return unreachable(back);
-  }
+  };
 }
 
 function makeTriggerBeat(
@@ -272,6 +375,7 @@ function makeTriggerBeat(
   when: ScrollReached,
   back: TriggerBack,
 ): TriggerBeat {
+  const fold = triggerFold(ms, back);
   return Object.freeze({
     kind: "trigger-beat",
     name,
@@ -280,7 +384,7 @@ function makeTriggerBeat(
     back,
     of(time: Time, ease?: Ease, context?: BeatContext): Time {
       const { events, rest } = readContext(context);
-      const { raw } = triggerState(time, events, when.point.at(rest), ms, back);
+      const { raw } = fold(time, events, when.point.at(rest));
       const progress = ease === undefined ? raw : ease(raw);
       const clock =
         elapsedOf(time.clock) === undefined
@@ -290,7 +394,7 @@ function makeTriggerBeat(
     },
     active(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
-      return triggerState(time, events, when.point.at(rest), ms, back).active;
+      return fold(time, events, when.point.at(rest)).active;
     },
   });
 }
@@ -332,7 +436,10 @@ export function beat(
       throw new RangeError(
         `beat "${name}": scroll range ${fixedFrom} to ${fixedTo} px must increase.`,
       );
-    return makeScrollBeat(name, from, to);
+    const smooth: unknown = Reflect.get(second, "smooth");
+    if (smooth !== undefined && smooth !== true && (typeof smooth !== "object" || smooth === null))
+      throw new TypeError(`beat "${name}": \`smooth\` takes true or springTo options.`);
+    return makeScrollBeat(name, from, to, second.smooth);
   }
   if (typeof second !== "number")
     throw new TypeError(`beat "${name}": expected a length in ms or { scroll: [from, to] }.`);
