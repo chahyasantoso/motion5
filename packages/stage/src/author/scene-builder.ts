@@ -27,6 +27,7 @@ import {
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
+  WINDOW_EVENTS,
   isInputBeat,
   sectionsOfPoint,
   type Beat,
@@ -868,6 +869,26 @@ interface Env {
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
+  /** Filled as elements run: whether each reads only the scroll position. */
+  readonly scrollOnly: Map<string, boolean> | undefined;
+}
+
+function noteScroll(map: Map<string, boolean> | undefined, name: string, only: boolean): void {
+  if (map === undefined) return;
+  if (!only) map.set(name, false);
+  else if (!map.has(name)) map.set(name, true);
+}
+
+/** Whether a step plays only in a scroll beat without `smooth`, so its window reads nothing but scroll. */
+function playsInScroll(step: MotionStep): boolean {
+  const window = step.window;
+  return (
+    !step.loops &&
+    !step.travels &&
+    window !== undefined &&
+    Reflect.get(window, "kind") === "scroll-beat" &&
+    Reflect.get(window, "smooth") === false
+  );
 }
 
 function note(moves: Map<string, Moves> | undefined, name: string, kind: Moves): void {
@@ -888,20 +909,25 @@ function movesOf(step: MotionStep, time: Time, context: unknown): Moves | undefi
   return "maybe";
 }
 
-/** The context a motion sees: its time tells the clock watcher when read, `carry` counts as `maybe`, and
- * reading another element moves this one as that element moves. */
+/** The context a motion sees: a read of its time tells the clock watcher, `carry` counts as `maybe`,
+ * a read of another element moves this one with it; `other` hears a read of events, `carry` or `read`. */
 function watched(
   context: MotionContext,
   seen: () => void,
   readOf: (target: string) => void,
+  other: () => void,
 ): MotionContext {
   const time = watchedTime(context.time);
-  return {
+  const seenBy: MotionContext = {
     time,
-    events: context.events,
+    get events() {
+      other();
+      return context.events;
+    },
     rest: context.rest,
     get carry() {
       seen();
+      other();
       return context.carry;
     },
     element: context.element,
@@ -909,12 +935,15 @@ function watched(
     read: (target, at) => {
       const pose = context.read(target, at);
       readOf(typeof target === "string" ? target : target.name);
+      other();
       return pose;
     },
     ...(context.index === undefined ? {} : { index: context.index }),
     ...(context.count === undefined ? {} : { count: context.count }),
     ...(context.line === undefined ? {} : { line: context.line }),
   };
+  Object.defineProperty(seenBy, WINDOW_EVENTS, { value: context.events });
+  return seenBy;
 }
 
 function replacing(below: Pose2d, pose: Pose2d): Pose2d {
@@ -959,6 +988,7 @@ function stackOf(
         const principled = step.principle(below);
         stack = (time, events) => {
           note(env.moves, plan.name, "maybe");
+          noteScroll(env.scrollOnly, plan.name, false);
           return principled(time, events);
         };
         break;
@@ -995,18 +1025,21 @@ function stackOf(
             ...(line === undefined ? {} : { line }),
           };
           const moves = env.moves;
+          const scrollOnly = env.scrollOnly;
           if (moves !== undefined) {
             const kind = movesOf(step, time, context);
             if (kind !== undefined) note(moves, plan.name, kind);
           }
+          noteScroll(scrollOnly, plan.name, playsInScroll(step));
           const used =
-            moves === undefined || step.travels
+            (moves === undefined && scrollOnly === undefined) || step.travels
               ? context
               : watched(
                   context,
                   () => note(moves, plan.name, "maybe"),
                   (target) =>
-                    note(moves, plan.name, moves.get(target) === "time" ? "time" : "maybe"),
+                    note(moves, plan.name, moves?.get(target) === "time" ? "time" : "maybe"),
+                  () => noteScroll(scrollOnly, plan.name, false),
                 );
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
@@ -1105,6 +1138,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         lines: context.lines,
         read: new Map(),
         moves: context.moves,
+        scrollOnly: context.scrollOnly,
       };
       const out: Record<string, Pose2d | ListPose> = {};
       for (const plan of env.plans.values()) {

@@ -113,7 +113,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   `C:/Users/chahy/.gemini/antigravity/brain/9bcf47ab-cb72-4047-aea8-583fce0b9de8/scratch/gsap-proof` on the owner's
   machine. Set `GERAK_CHROMIUM` to a Chromium executable when Playwright's own browser is missing.
 - Browser tests run in Chromium only. Rerun a timed-out one alone before treating it as a failure; never weaken it.
-- Builder subagents run on Sonnet 5.5 at medium effort or below.
+- Builder and review subagents run on Sonnet 5.5 at medium effort or below, never a frontier model.
 
 ## Not in this plan
 

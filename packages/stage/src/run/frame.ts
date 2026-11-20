@@ -23,6 +23,9 @@ export interface FrameInput {
   readonly only?: ReadonlySet<string> | undefined;
   /** Filled as elements run, list parts included: which can change with the clock alone. */
   readonly moves?: Map<string, Moves> | undefined;
+  /** Filled as elements run, list parts included: true while every motion reads only the scroll position
+   * through scroll beats without `smooth`. */
+  readonly scrollOnly?: Map<string, boolean> | undefined;
 }
 
 /** One frame: the layout showing, who shows, and the scene's output as returned. */
@@ -67,6 +70,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     ...(input.lines === undefined ? {} : { lines: input.lines }),
     ...(input.only === undefined ? {} : { only: input.only }),
     ...(input.moves === undefined ? {} : { moves: input.moves }),
+    ...(input.scrollOnly === undefined ? {} : { scrollOnly: input.scrollOnly }),
   });
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");

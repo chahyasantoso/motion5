@@ -90,6 +90,8 @@ export interface ScrollBeat extends MotionWindow {
   readonly name: string;
   readonly from: ScrollPoint;
   readonly to: ScrollPoint;
+  /** Whether progress trails the scroll position on a spring. */
+  readonly smooth: boolean;
   /** Maps scroll position from `context.events` between `from` and `to` into untimed progress 0 to 1. */
   of(time: Time, ease?: Ease, context?: BeatContext): Time;
   /** Whether scroll has reached `from` at `time` and `context`. */
@@ -168,9 +170,12 @@ function isEvents(value: unknown): value is Events {
   return Array.isArray(value);
 }
 
+/** Where a motion's context keeps its events for its window to read, so that read is not counted as the motion's. */
+export const WINDOW_EVENTS = Symbol.for("@gerak/stage/window-events");
+
 function readContext(context: unknown): { readonly events: Events; readonly rest: RestReader } {
   if (typeof context !== "object" || context === null) return { events: NO_EVENTS, rest: NO_REST };
-  const rawEvents: unknown = Reflect.get(context, "events");
+  const rawEvents: unknown = Reflect.get(context, WINDOW_EVENTS) ?? Reflect.get(context, "events");
   const rawRest: unknown = Reflect.get(context, "rest");
   return {
     events: isEvents(rawEvents) ? rawEvents : NO_EVENTS,
@@ -268,6 +273,7 @@ function makeScrollBeat(
     name,
     from,
     to,
+    smooth: smooth !== undefined,
     of(time: Time, ease?: Ease, context?: BeatContext): Time {
       const { events, rest } = readContext(context);
       const y = position(time, events);

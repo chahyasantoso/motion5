@@ -56,6 +56,9 @@ export interface SceneContext<B extends string = string, L extends string = stri
   readonly only?: ReadonlySet<string> | undefined;
   /** Filled as elements run: which can change with the clock alone, with no new input. */
   readonly moves?: Map<string, Moves> | undefined;
+  /** Filled as elements run: true while every motion an element ran reads only the scroll position,
+   * through scroll beats without `smooth`; false once one reads anything else. */
+  readonly scrollOnly?: Map<string, boolean> | undefined;
 }
 
 /** How an element can change with no new input: `time` while a beat, trigger or spring is still running;
