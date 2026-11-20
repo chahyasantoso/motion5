@@ -94,6 +94,8 @@ export interface ScrollBeat extends MotionWindow {
   of(time: Time, ease?: Ease, context?: BeatContext): Time;
   /** Whether scroll has reached `from` at `time` and `context`. */
   active(time: Time, context?: BeatContext): boolean;
+  /** Whether a `smooth` beat's spring is still on its way at `time`; a plain scroll beat moves only with input. */
+  moving(time: Time, context?: BeatContext): boolean;
 }
 
 /** A named clock beat started when scroll passes `when.point`, with explicit `back` behaviour. */
@@ -107,6 +109,8 @@ export interface TriggerBeat extends MotionWindow {
   of(time: Time, ease?: Ease, context?: BeatContext): Time;
   /** Whether this trigger has started or holds non-zero progress at `time` and `context`. */
   active(time: Time, context?: BeatContext): boolean;
+  /** Whether its clock part is running at `time`, so its progress changes with no new input. */
+  moving(time: Time, context?: BeatContext): boolean;
 }
 
 const FIXED_PX = new WeakMap<ScrollPoint, number>();
@@ -276,6 +280,11 @@ function makeScrollBeat(
       const { events, rest } = readContext(context);
       return position(time, events) >= from.at(rest);
     },
+    moving(time: Time, context?: BeatContext): boolean {
+      if (smooth === undefined) return false;
+      const { events } = readContext(context);
+      return position(time, events) !== scroll.y(time, events);
+    },
   });
 }
 
@@ -283,7 +292,7 @@ type TriggerFold = (
   time: Time,
   events: Events,
   threshold: number,
-) => { readonly raw: number; readonly active: boolean };
+) => { readonly raw: number; readonly active: boolean; readonly moving: boolean };
 
 /** One trigger's reading of `scroll.y`: it folds each scroll step once, and starts again when the
  * state's step list or the threshold changes. */
@@ -342,26 +351,32 @@ function triggerFold(ms: number, back: TriggerBack): TriggerFold {
       case "stay": {
         if (now === undefined) {
           const shown = started !== undefined;
-          return { raw: shown ? 1 : 0, active: shown };
+          return { raw: shown ? 1 : 0, active: shown, moving: false };
         }
-        if (started === undefined) return { raw: 0, active: false };
-        return { raw: clamp(now - started, 0, ms) / ms, active: true };
+        if (started === undefined) return { raw: 0, active: false, moving: false };
+        const raw = clamp(now - started, 0, ms) / ms;
+        return { raw, active: true, moving: raw < 1 };
       }
       case "replay": {
         if (now === undefined) {
           const shown = scroll.y(time, events) >= threshold;
-          return { raw: shown ? 1 : 0, active: shown };
+          return { raw: shown ? 1 : 0, active: shown, moving: false };
         }
-        if (started === undefined) return { raw: 0, active: false };
-        return { raw: clamp(now - started, 0, ms) / ms, active: true };
+        if (started === undefined) return { raw: 0, active: false, moving: false };
+        const raw = clamp(now - started, 0, ms) / ms;
+        return { raw, active: true, moving: raw < 1 };
       }
       case "reverse": {
         if (now === undefined) {
           const shown = scroll.y(time, events) >= threshold;
-          return { raw: shown ? 1 : 0, active: shown };
+          return { raw: shown ? 1 : 0, active: shown, moving: false };
         }
         const raw = clamp(progress + (reached ? 1 : -1) * (Math.max(0, now - since) / ms), 0, 1);
-        return { raw, active: active && (reached || raw > 0) };
+        return {
+          raw,
+          active: active && (reached || raw > 0),
+          moving: reached ? raw < 1 : raw > 0,
+        };
       }
       default:
         return unreachable(back);
@@ -395,6 +410,10 @@ function makeTriggerBeat(
     active(time: Time, context?: BeatContext): boolean {
       const { events, rest } = readContext(context);
       return fold(time, events, when.point.at(rest)).active;
+    },
+    moving(time: Time, context?: BeatContext): boolean {
+      const { events, rest } = readContext(context);
+      return fold(time, events, when.point.at(rest)).moving;
     },
   });
 }

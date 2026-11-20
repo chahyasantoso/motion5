@@ -205,9 +205,6 @@ const COLOUR_PROPERTIES = [
 ] as const;
 
 const CUSTOM_NAME = /^[A-Za-z_][\w-]*$/;
-const COLOURED = new WeakMap<RenderStyle, ReadonlySet<string>>();
-const CUSTOM_WRITTEN = new WeakMap<RenderStyle, ReadonlySet<string>>();
-const EMPTIED = new WeakSet<RenderStyle>();
 type Written =
   | "transform"
   | "opacity"
@@ -216,24 +213,42 @@ type Written =
   | "transformOrigin"
   | "filter"
   | "clipPath";
-const WRITTEN_TEXT = new WeakMap<RenderStyle, Map<Written, string>>();
 
-// The browser parses every style it is given, so a property is set only when its text changes.
-function put(style: RenderStyle, key: Written, text: string): void {
-  let held = WRITTEN_TEXT.get(style);
-  if (held === undefined) {
-    held = new Map();
-    WRITTEN_TEXT.set(style, held);
-  }
-  if (held.get(key) === text) return;
-  held.set(key, text);
-  style[key] = text;
+/** What `applyValue` last wrote to one style, so it writes only what changed. */
+interface Held {
+  value: Pose2d | undefined;
+  length: number;
+  readonly text: { [K in Written]?: string };
+  coloured: ReadonlySet<string>;
+  custom: ReadonlySet<string>;
+  emptied: boolean;
 }
 
-const LAST_WRITTEN = new WeakMap<
-  RenderStyle,
-  { readonly value: Pose2d; readonly length: number }
->();
+const HELD = new WeakMap<RenderStyle, Held>();
+const NOTHING: ReadonlySet<string> = new Set();
+
+function heldOf(style: RenderStyle): Held {
+  let held = HELD.get(style);
+  if (held === undefined) {
+    held = {
+      value: undefined,
+      length: 0,
+      text: {},
+      coloured: NOTHING,
+      custom: NOTHING,
+      emptied: false,
+    };
+    HELD.set(style, held);
+  }
+  return held;
+}
+
+// The browser parses every style it is given, so a property is set only when its text changes.
+function put(style: RenderStyle, held: Held, key: Written, text: string): void {
+  if (held.text[key] === text) return;
+  held.text[key] = text;
+  style[key] = text;
+}
 
 function sameCustom(
   a: Readonly<Record<string, number>> | undefined,
@@ -267,28 +282,30 @@ function samePose(a: Pose2d, b: Pose2d): boolean {
 export function applyValue(target: RenderTarget, value: Pose2d, length?: number): void {
   const style = target.style;
   const measured = target.getTotalLength?.() ?? length ?? 0;
-  const last = LAST_WRITTEN.get(style);
-  if (last !== undefined && last.length === measured && samePose(last.value, value)) return;
-  const copy: Pose2d =
+  const held = heldOf(style);
+  if (held.value !== undefined && held.length === measured && samePose(held.value, value)) return;
+  held.value =
     value.custom === undefined ? { ...value } : { ...value, custom: { ...value.custom } };
-  LAST_WRITTEN.set(style, { value: copy, length: measured });
-  put(style, "transform", cssTransform(value));
-  put(style, "opacity", value.opacity === undefined ? "" : String(value.opacity));
+  held.length = measured;
+  put(style, held, "transform", cssTransform(value));
+  put(style, held, "opacity", value.opacity === undefined ? "" : String(value.opacity));
   // Paint order steps, so a layer between two whole numbers paints as the nearer one.
-  put(style, "zIndex", value.layer === undefined ? "" : String(Math.round(value.layer)));
+  put(style, held, "zIndex", value.layer === undefined ? "" : String(Math.round(value.layer)));
   // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;
-  if (svg) put(style, "transformBox", "fill-box");
+  if (svg) put(style, held, "transformBox", "fill-box");
   put(
     style,
+    held,
     "transformOrigin",
     value.anchor !== undefined ? cssOrigin(value.anchor) : svg ? cssOrigin("center") : "",
   );
-  put(style, "filter", cssFilter(value));
+  put(style, held, "filter", cssFilter(value));
   // A clip with a width and a height is a box, its radius rounding the corners; with a radius alone, a circle.
   put(
     style,
+    held,
     "clipPath",
     value.clipWidth !== undefined && value.clipHeight !== undefined
       ? cssClipBox(
@@ -314,21 +331,25 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   // An empty stroke would still paint its caps; it is hidden, and otherwise left to its parent, never `visible`.
   const empty = stroked && (value.drawn ?? 1) <= (value.drawnFrom ?? 0);
   if (empty) style.visibility = "hidden";
-  else if (style.visibility === "hidden" && EMPTIED.has(style)) style.visibility = "";
-  if (empty) EMPTIED.add(style);
-  else EMPTIED.delete(style);
-  const coloured = new Set<string>();
+  else if (style.visibility === "hidden" && held.emptied) style.visibility = "";
+  held.emptied = empty;
+  let coloured: Set<string> | undefined;
   for (const [field, property, unit] of COLOUR_PROPERTIES) {
     const amount = value[field] ?? 0;
     if (amount !== 0) {
       style.setProperty?.(property, `${amount}${unit}`);
+      coloured ??= new Set();
       coloured.add(property);
-    } else if (COLOURED.get(style)?.has(property) === true) style.removeProperty?.(property);
+    } else if (held.coloured.has(property)) style.removeProperty?.(property);
   }
-  COLOURED.set(style, coloured);
-  const custom = value.custom ?? {};
-  for (const name of CUSTOM_WRITTEN.get(style) ?? [])
-    if (!Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);
+  held.coloured = coloured ?? NOTHING;
+  const custom = value.custom;
+  for (const name of held.custom)
+    if (custom === undefined || !Object.hasOwn(custom, name)) style.removeProperty?.(`--${name}`);
+  if (custom === undefined) {
+    held.custom = NOTHING;
+    return;
+  }
   for (const [name, number] of Object.entries(custom)) {
     if (!CUSTOM_NAME.test(name))
       throw new RangeError(
@@ -340,7 +361,7 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
       );
     style.setProperty?.(`--${name}`, String(number));
   }
-  CUSTOM_WRITTEN.set(style, new Set(Object.keys(custom)));
+  held.custom = new Set(Object.keys(custom));
 }
 
 /** Sets a path element's `d` to the cubic segments. */

@@ -3,6 +3,7 @@ import {
   atProgress,
   elapsedOf,
   mergeEvents,
+  versionOf,
   type Events,
   type MotionEvent,
   type Signal,
@@ -52,9 +53,11 @@ export function play<T extends object>(
     const page = driver.events?.() ?? NO_EVENTS;
     const all = page.length === 0 ? cues : cues.length === 0 ? page : mergeEvents(cues, page);
     const now = elapsedOf(time.clock);
-    return now === undefined || all.every((event) => event.at <= now)
-      ? all
-      : all.filter((event) => event.at <= now);
+    if (now === undefined) return all;
+    // A growing log is in time order, so its last event says whether any is still to come.
+    const inOrder = versionOf(all) !== undefined;
+    const ahead = inOrder ? (all.at(-1)?.at ?? 0) > now : all.some((event) => event.at > now);
+    return ahead ? all.filter((event) => event.at <= now) : all;
   };
   let current = scene;
   let values = current(time, events());

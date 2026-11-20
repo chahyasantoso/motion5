@@ -1,4 +1,5 @@
 import { spring } from "../ease/spring";
+import { rawTime, stillMoving } from "./clock-watch";
 import { elapsedOf } from "../time/time";
 import type { Signal } from "../time/shapes";
 import { changesOf, type Change } from "./changes";
@@ -42,7 +43,8 @@ export function springTo<S>(
     throw new RangeError("springTo: rest must be a finite number above 0.");
   const changes = changesOf(source, pick);
   let run: Run | undefined;
-  return (time, events) => {
+  return (watched, events) => {
+    const time = rawTime(watched);
     const now = elapsedOf(time.clock);
     const { start, list } = changes(time, events);
     if (now === undefined) return list[list.length - 1]?.to ?? start;
@@ -67,8 +69,8 @@ export function springTo<S>(
       stiffness,
       damping,
     });
-    return Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest
-      ? kept.goal
-      : kept.goal + moved.offset;
+    if (Math.abs(moved.offset) < rest && Math.abs(moved.speed) < 10 * rest) return kept.goal;
+    stillMoving();
+    return kept.goal + moved.offset;
   };
 }

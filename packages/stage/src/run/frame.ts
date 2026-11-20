@@ -7,6 +7,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { NO_REST, type RestReader } from "../author/layout";
+import type { Moves } from "../author/stage";
 import { carryFor } from "./carry";
 import { isPlainRecord, type Stage } from "./compile";
 import type { StageError } from "./errors";
@@ -18,6 +19,10 @@ export interface FrameInput {
   readonly boxes?: Readonly<Record<string, RestReader>> | undefined;
   /** Visual line index per item of a split text list, measured from layout on a page mount. */
   readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
+  /** Only these elements run; the rest are left out of `targets`. */
+  readonly only?: ReadonlySet<string> | undefined;
+  /** Filled as elements run, list parts included: which can change with the clock alone. */
+  readonly moves?: Map<string, Moves> | undefined;
 }
 
 /** One frame: the layout showing, who shows, and the scene's output as returned. */
@@ -60,6 +65,8 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     layouts,
     carry: carryFor(stage.layouts.pick, layouts, rest, events, time),
     ...(input.lines === undefined ? {} : { lines: input.lines }),
+    ...(input.only === undefined ? {} : { only: input.only }),
+    ...(input.moves === undefined ? {} : { moves: input.moves }),
   });
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");

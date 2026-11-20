@@ -12,6 +12,8 @@ export interface MotionWindow {
   of(time: Time, ease?: Ease, context?: unknown): Time;
   /** Whether this window is active at `time` and `context`, used by `.take()`. */
   active?(time: Time, context?: unknown): boolean;
+  /** Whether its time keeps changing with the clock alone at `time` and `context`, with no new input. */
+  moving?(time: Time, context?: unknown): boolean;
 }
 
 /** A clock `Span` or a context-driven `MotionWindow` accepted by `Motion.in`. */

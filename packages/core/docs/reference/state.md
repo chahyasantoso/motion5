@@ -2,6 +2,11 @@
 
 State from events: a fold of the event log up to a time, and values that spring or ease when the state changes. Reach for it when motion answers hover, press, click or cues.
 
+- **`rawTime`** `(time: Time): Time`: The time a `watchedTime` stands for, read without telling the watcher; any other time as it is.
+- **`stillMoving`** `(): void`: Tells the watcher that a value is still on its way with the clock, such as a spring not yet at rest.
+- **`watchClock`** `<T>(onUse: (use: ClockUse) => void, run: () => T): T`: Runs `run`, telling `onUse` each time what it works out can change with the clock alone.
+- **`watchedTime`** `(time: Time): Time`: A time that tells the watcher `maybe` when its clock or progress is read; `rawTime` reads it untold.
+- **`ClockUse`** `type ClockUse = "time" | "maybe"`: How a value can change with the clock alone: `time` while it is still on its way; `maybe` when code read the clock and nothing says whether it settles.
 - **`state`** `<S>(start: S, rule: (current: S, event: MotionEvent) => S, options?: StateOptions): State<S>`: The state `rule` folds the events into, from `start`, up to the time asked. Pure in time and events: it folds only new events, and starts again when an earlier one differs or time goes back.
 - **`State`** `type State<S> = { (time: Time, events: Events): S; start: S; steps: (time: Time, events: Events) => readonly Step<S>[] }`: What the scene is in at a time, given its events: a signal of that, with `start` and the `steps`.
 - **`StateOptions`** `type StateOptions = { target?: string | readonly string[] }`: Settings of a `state`: `target`, the event target, or targets, whose events reach the rule.

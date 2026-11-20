@@ -136,8 +136,8 @@ Three things follow from it:
 13. **Pages** (`plan/page-plan.md`, four slices): one clock with scroll and pointer as inputs, scroll beats and
    triggers, a page mount that animates existing nodes, sections and slots measured from the page's CSS. The web
    overlay's base.
-14. **Engine** (`plan/engine-plan.md`): each beat worked out once per frame, no allocation a motion does not hand
-   out, a writer per node, so a page costs no more main-thread time than the same page in GSAP.
+14. **Engine** (`plan/engine-plan.md`): the page mount runs a frame only for an input or for elements moving by
+   themselves, and only those elements, so a page costs about what the same page in GSAP does, and nothing at rest.
 15. **Compositor** (`plan/compositor-plan.md`): the page mount hands the browser, as Web Animations, every element
    whose motion depends only on scroll or a scroll trigger, so it keeps up with a busy main thread.
 16. **3D in a scene** (`plan/stage-3d-plan.md`): Three.js objects as scene elements beside DOM labels, on one clock,

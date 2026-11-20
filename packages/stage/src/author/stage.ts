@@ -52,7 +52,15 @@ export interface SceneContext<B extends string = string, L extends string = stri
   readonly carry: Carry;
   /** Visual line index per list item, measured from layout on a page mount. */
   readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
+  /** Only these elements run; the rest are left out of the answer. */
+  readonly only?: ReadonlySet<string> | undefined;
+  /** Filled as elements run: which can change with the clock alone, with no new input. */
+  readonly moves?: Map<string, Moves> | undefined;
 }
+
+/** How an element can change with no new input: `time` while a beat, trigger or spring is still running;
+ * `maybe` when a motion read the clock or another element, or has no window. */
+export type Moves = "time" | "maybe";
 
 /** Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless. */
 export interface LayoutsInput<L extends string = string> {
