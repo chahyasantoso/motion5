@@ -50,6 +50,8 @@ export interface SceneContext<B extends string = string, L extends string = stri
   readonly rest: RestReader;
   readonly layouts: Readonly<Record<L, RestReader>>;
   readonly carry: Carry;
+  /** Visual line index per list item, measured from layout on a page mount. */
+  readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
 }
 
 /** Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless. */
@@ -93,6 +95,10 @@ export interface StageOptions<B extends string, M extends Members<B>, L extends 
   readonly skins?: { readonly dom?: DomSkinInput | undefined } | undefined;
   readonly cues?: Events | undefined;
   readonly limits?: Readonly<Record<string, Limits>> | undefined;
+  /** True when the scene binds existing page nodes and takes no skin. */
+  readonly isPage?: boolean | undefined;
+  /** Minimum ms a page clock stays alive after an input event for triggers and springs to settle. */
+  readonly settleMs?: number | undefined;
   readonly scene: (context: SceneContext<NoInfer<B>, NoInfer<L>>) => Targets<NoInfer<M>>;
 }
 

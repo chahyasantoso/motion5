@@ -24,6 +24,12 @@ export interface Pivot {
   readonly y: number;
 }
 
+/** A selector binding a page element to an existing DOM node. */
+export interface NodeBinding {
+  readonly kind: "node";
+  readonly selector: string;
+}
+
 /** When a member shows: one beat, or every beat from the first to the second. */
 export type Stretch<B extends string = string> = B | readonly [B, B];
 
@@ -33,6 +39,7 @@ export interface Meta<B extends string = string> {
   readonly watch?: boolean | undefined;
   readonly expect?: Expect | undefined;
   readonly pivot?: Pivot | undefined;
+  readonly node?: NodeBinding | undefined;
 }
 
 /** Modifiers every member takes; each returns a new member. */
@@ -42,6 +49,8 @@ export interface Modifiers<B extends string, S> {
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
   pivot(point: Pivot): S;
+  /** Binds this member to an existing DOM node on a page mount. */
+  node(binding: NodeBinding): S;
   /** The scene never poses it; a group's children keep their own expectation. */
   static(): S;
   /** It keeps moving, like snow; a group's children and a list's items inherit it. */
@@ -61,6 +70,7 @@ export interface ActorSpec<B extends string = string, C extends Content = Conten
 export interface ListSpec<B extends string = string> extends Modifiers<B, ListSpec<B>> {
   readonly kind: "list";
   readonly items: readonly ItemContent[];
+  readonly split?: "letters" | "words" | undefined;
   readonly meta: Meta<B>;
 }
 
@@ -109,6 +119,7 @@ function modifiers<B extends string, S>(
     on: (...stretches) => next({ on: Object.freeze([...stretches]) }),
     watch: (enabled = true) => next({ watch: enabled }),
     pivot: (point) => next({ pivot: Object.freeze({ x: point.x, y: point.y }) }),
+    node: (binding) => next({ node: binding }),
     static: () => next({ expect: "static" }),
     ambient: () => next({ expect: "ambient" }),
     settle: () => next({ expect: "settle" }),
@@ -127,12 +138,17 @@ function actor<B extends string, C extends Content>(
   });
 }
 
-function list<B extends string>(items: readonly ItemContent[], meta: Meta<B> = {}): ListSpec<B> {
+function list<B extends string>(
+  items: readonly ItemContent[],
+  meta: Meta<B> = {},
+  split?: "letters" | "words",
+): ListSpec<B> {
   return Object.freeze({
     kind: "list",
     items,
+    ...(split === undefined ? {} : { split }),
     meta,
-    ...modifiers(meta, (next) => list<B>(items, next)),
+    ...modifiers(meta, (next) => list<B>(items, next, split)),
   });
 }
 
@@ -195,7 +211,11 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
     many,
     letters: (value) => {
       const segments = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value);
-      return list(Object.freeze([...segments].map(({ segment }) => text(segment).content)));
+      return list(
+        Object.freeze([...segments].map(({ segment }) => text(segment).content)),
+        {},
+        "letters",
+      );
     },
     words: (value) =>
       list(
@@ -205,6 +225,8 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
             .filter((word) => word !== "")
             .map((word) => text(word).content),
         ),
+        {},
+        "words",
       ),
     group: (members) => group(Object.freeze({ ...members })),
   };

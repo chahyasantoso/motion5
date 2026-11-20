@@ -51,6 +51,8 @@ export interface MotionContext {
   /** Which part of a list element this call poses, and how many parts there are. */
   readonly index?: number;
   readonly count?: number;
+  /** Which wrapped visual line this part sits on; measured from layout on a page mount, 0 headless. */
+  readonly line?: number;
   readonly rest: RestReader;
   readonly carry: Carry;
   /** The name of the element being posed. */
@@ -137,6 +139,7 @@ interface State {
 const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], limits: {} });
 
 const READS = new WeakMap<object, readonly string[]>();
+const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 
 interface MotionBody {
@@ -229,10 +232,34 @@ export function bindEach(fields: BoundEachFields): Motion<Pose2d, MotionContext>
 /** Which part of a staggered list starts first. */
 export type StaggerFrom = Exclude<LaneOrigin, { readonly seed: number }>;
 
-/** Settings of `stagger`: `spread` is the gap between starts in lane lengths, as `lanes` reads it. */
+/** Whether `stagger` orders lanes by part index or by measured visual line. */
+export type StaggerBy = "index" | "line";
+
+/** Settings of `stagger`: `spread` is the gap between starts in lane lengths, `from` is origin, `by` is order. */
 export interface StaggerOptions {
   readonly spread: number;
   readonly from?: StaggerFrom | undefined;
+  readonly by?: StaggerBy | undefined;
+}
+
+function orderLines(values: readonly number[], from: StaggerFrom): readonly number[] {
+  switch (from) {
+    case "start":
+      return values;
+    case "end":
+      return values.map((line) => -line);
+    case "center":
+    case "edges": {
+      const distinct = [...new Set(values)].sort((a, b) => a - b);
+      const mid = (distinct.length - 1) / 2;
+      return values.map((line) => {
+        const dist = Math.abs(distinct.indexOf(line) - mid);
+        return from === "center" ? dist : -dist;
+      });
+    }
+    default:
+      return unreachable(from);
+  }
 }
 
 function isMotion(
@@ -263,6 +290,8 @@ export function stagger(
   const first = build(0, 1);
   const { span, window } = first;
   const outer = span ?? window;
+  const by = options.by ?? "index";
+  const from = options.from ?? "start";
   const parts = new Map<string, Motion<Pose2d, MotionContext>>();
   const partOf = (index: number, count: number): Motion<Pose2d, MotionContext> => {
     const key = `${index}/${count}`;
@@ -270,13 +299,35 @@ export function stagger(
     parts.set(key, held);
     return held;
   };
-  const made = new Map<number, Lanes>();
-  const lanesOf = (count: number): Lanes => {
-    const held =
-      made.get(count) ??
-      lanes(Array<number>(count).fill(1), options.spread, { from: options.from ?? "start" });
-    made.set(count, held);
-    return held;
+  const byIndex = new Map<number, Lanes>();
+  const byLine = new Map<string, Lanes>();
+  const lanesOf = (count: number, context: MotionContext): Lanes => {
+    switch (by) {
+      case "index": {
+        const held =
+          byIndex.get(count) ?? lanes(Array<number>(count).fill(1), options.spread, { from });
+        byIndex.set(count, held);
+        return held;
+      }
+      case "line": {
+        const raw = PART_LINES.get(context);
+        const lines =
+          raw !== undefined && raw.length === count
+            ? raw
+            : Array<number>(count).fill(context.line ?? 0);
+        const key = `${count}:${lines.join(",")}`;
+        const held = byLine.get(key);
+        if (held !== undefined) return held;
+        if (byLine.size >= 16) byLine.clear();
+        const built = lanes(Array<number>(count).fill(1), options.spread, {
+          by: orderLines(lines, from),
+        });
+        byLine.set(key, built);
+        return built;
+      }
+      default:
+        return unreachable(by);
+    }
   };
   const place = (time: Time, own: Span | undefined): Time =>
     own === undefined ? time : timeAt(time, own.at(time.progress));
@@ -300,7 +351,7 @@ export function stagger(
       return first(place(time, span), here);
     }
     const part = partOf(index, count);
-    const laned = lanesOf(count).of(time, index);
+    const laned = lanesOf(count, here).of(time, index);
     if (part.span === undefined && part.window !== undefined) return runBody(part, laned, here);
     return part(place(laned, part.span), here);
   });
@@ -574,11 +625,12 @@ function castOf(state: State, m: CastBuilder<string>): Members {
     if (element.kind === "group") for (const child of element.children) nested.add(child.name);
   const specOf = (element: Element): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const { pivot, watch } = element.options;
+    const { pivot, watch, node } = element.options;
     let out = baseSpec(element, m, (child) => specOf(child));
     if (entry.show.length > 0) out = out.on(...entry.show);
     if (watch !== undefined) out = out.watch(watch);
     if (pivot !== undefined) out = out.pivot(pivot);
+    if (node !== undefined) out = out.node(node);
     const expect = expectOf(entry);
     switch (expect) {
       case "static":
@@ -609,6 +661,7 @@ interface Env {
   readonly plans: ReadonlyMap<string, Plan>;
   readonly rest: RestReader;
   readonly carry: Carry;
+  readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
 }
@@ -639,6 +692,8 @@ function stackOf(
         break;
       case "motion":
         stack = (time, events) => {
+          const partLines = index === undefined ? undefined : env.lines?.[plan.name];
+          const line = index === undefined ? undefined : (partLines?.[index] ?? 0);
           const context: MotionContext = {
             time,
             events,
@@ -664,7 +719,9 @@ function stackOf(
             },
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
+            ...(line === undefined ? {} : { line }),
           };
+          if (partLines !== undefined) PART_LINES.set(context, partLines);
           const pose = step.run(time, context);
           switch (step.joins) {
             case "layer":
@@ -714,6 +771,12 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
+  const isPage = [...state.elements.values()].some((element) => element.options.node !== undefined);
+  let maxTriggerMs = 0;
+  for (const inputBeat of state.inputBeats.values())
+    if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
+      maxTriggerMs = inputBeat.ms;
+  const settleMs = maxTriggerMs > 0 ? Math.max(2000, maxTriggerMs + 200) : undefined;
   const { frame, cues, layouts, rest } = state.options;
   return {
     kind: "stage-definition",
@@ -729,6 +792,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         plans: plansOf(),
         rest: context.rest,
         carry: context.carry,
+        lines: context.lines,
         read: new Map(),
       };
       const out: Record<string, Pose2d | ListPose> = {};
@@ -747,6 +811,8 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
     ...(rest === undefined ? {} : { rest }),
+    ...(isPage ? { isPage: true } : {}),
+    ...(settleMs === undefined ? {} : { settleMs }),
   };
 }
 

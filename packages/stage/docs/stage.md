@@ -41,13 +41,13 @@ Each is a value with a unique name, made once.
 - `many(name, count | items, make?)`: numbered parts.
 - `group(name, children)`: a container; its pose moves, turns and scales its children with it.
 
-A part is `<name>.<index>`. Options: `pivot` (frame px; the point it turns and scales about, its centre without one), `watch` (pointer events reach it), `split`.
+A part is `<name>.<index>`. Options: `pivot` (frame px; the point it turns and scales about, its centre without one), `watch` (pointer events reach it), `split`, and `node` (`el(selector)`, binding an existing node on a [page mount](../../dom/docs/page.md); in a page scene every element has one and no `skin` is passed).
 
 A group's children are in the piece already. Call `.element(child)` only to give a child motions.
 
 ## Beats
 
-- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required when a piece uses only scroll or trigger beats).
+- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required for non-page scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
@@ -66,14 +66,14 @@ Only `.motion` and `.modify` order matters.
 A motion is a core `Motion` or a plain `(time, context) => pose`.
 
 - `time` is the motion's own: inside `.in(beat)` it runs 0 to 1 across the beat, holding its start before and its end after. Without `.in` it spans the piece.
-- `context` holds `time` (the scene's), `events`, `rest` (measured boxes), `carry`, `element`, `read`, and `index` and `count` on a part.
+- `context` holds `time` (the scene's), `events`, `rest` (measured boxes), `carry`, `element`, `read`, plus `index`, `count` and `line` (measured row on a page mount, 0 headless) on a part.
 - **Layering:** an element's motions run in list order and join by core's field rules. A `.take()` motion replaces the fields it sets from its beat's start.
 - **Inferred:** nothing in the list is static; a `.loop` or `.ambient()` motion is ambient; anything else settles and must come to rest.
 
 Helpers:
 
 - `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part.
-- `stagger(m | (i, n) => m, { spread, from? })`: each part plays in its own lane of the beat.
+- `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat; `by: "line"` starts parts on the same measured `line` together.
 - `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
 - `carry({ ms, ease, mode })`: moves an element between layouts.
 
