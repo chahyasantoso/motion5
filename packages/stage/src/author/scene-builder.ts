@@ -443,7 +443,7 @@ export function stayWith(element: Element): Motion<Pose2d, MotionContext> {
   return withMeta(base, [element.name], []);
 }
 
-/** Options of `travel`: target slot element and optional perpendicular arc bend in px. */
+/** Options of `travel`: target slot element, optional perpendicular arc bend in px, and how it fits the slot. */
 export interface TravelOptions {
   readonly to: Element;
   /** Perpendicular bow at mid-travel in px, 0 at both ends (default 0). */
@@ -470,7 +470,8 @@ function isElement(value: unknown): value is Element {
   );
 }
 
-/** Moves an element from its current pose to `options.to`'s measured box over its beat. */
+/** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
+ * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
 export function travel(options: TravelOptions): Motion<Pose2d, MotionContext> {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
