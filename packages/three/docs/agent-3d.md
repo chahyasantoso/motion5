@@ -36,7 +36,9 @@ is a code scene like any other; only its poses and its renderer change. Names ar
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
 - `bindScene3d` takes an `Object3D` per object: its position when bound is its rest, as an element's layout is in
   2D, and turns and scales are written whole. It also takes a writer, `(pose, visible) => void`, for anything that
-  is not posed whole, such as a bone. Many like objects are one object each.
+  is not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
+  (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). Every object of the piece needs an entry,
+  or it throws and names the object. Many like objects are one object each.
 
 ## The principles in 3D
 
