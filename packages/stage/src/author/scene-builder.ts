@@ -138,6 +138,8 @@ export interface ElementStep extends SceneBuilder {
 /** A piece with an object selected: its motions and principles are 3D; the order of calls matters. */
 export interface ObjectStep extends SceneBuilder {
   /** Appends motions: layer motions add by each field's rule, a `take` motion replaces its fields. */
+  motion(...motions: readonly SceneMotion3d[]): ObjectStep;
+  /** Appends motions, a `travel` onto a page slot among them. */
   motion(...motions: readonly (SceneMotion3d | TravelMotion)[]): ObjectStep;
   /** Wraps everything above it in the object's list in `principle`. */
   modify(principle: Principle3d): ObjectStep;

@@ -99,6 +99,15 @@ describe("an object in a scene", () => {
     expect(() => scene.motion(turn)).not.toThrow();
   });
 
+  it("types a plain function motion on an object from its context", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("cube"))
+        .motion((time, context) => ({ y: time.progress + context.events.length })),
+    );
+    expect(pose3dOf(frame(stage, { time: liveAt(0) }).targets["cube"])).toEqual({ y: 0 });
+  });
+
   it("refuses a read of an object's pose from an element", () => {
     const stage = compiled(
       sceneBuilder()
