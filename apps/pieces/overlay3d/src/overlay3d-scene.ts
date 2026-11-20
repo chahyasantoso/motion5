@@ -3,6 +3,7 @@ import {
   aim,
   ease,
   mix,
+  motion,
   orbit,
   project3d,
   span,
@@ -12,6 +13,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { follow } from "@gerak/moves";
+import { box, object, sceneBuilder } from "@gerak/stage";
 import { posedJoints3d, type BonePose3d, type JointTable3d } from "@gerak/rig";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */
@@ -73,41 +75,53 @@ export function fadeOf(at: { readonly depth: number; readonly visible: boolean }
   return Math.min(1, Math.max(0, (centre - at.depth) / 0.4));
 }
 
-/** Review limits of the 3D targets: a jump of a fifth of the cube, and a turn of 30 degrees. */
-export const limits = {
-  object: { jump: CUBE / 5, turn: 30 },
-  bones: { jump: CUBE / 5, turn: 30 },
-} as const;
+/** Review limits of the 3D objects, in world units: a jump of a fifth of the cube, and a turn of 30 degrees. */
+const LIMITS = { jump: CUBE / 5, turn: 30 } as const;
 
-/** Every target's pose at `time`: `object` and `bones` in 3D, each callout in stage px. */
-export const scene = (time: Time, events: Events) => {
-  const object: Pose3d = {
-    rotationX: 10,
-    rotationY: mix(-20, 160, turn.of(time, ease.sineInOut).progress),
-  };
-  const bones: Record<"base" | "mid", BonePose3d> = {
-    base: { rotation: mix(0, 30, lean.of(time, ease.sineInOut).progress) },
-    mid: { rotation: mix(0, -60, curl.of(time, ease.sineInOut).progress) },
-  };
-  const centre = project3d({ x: 0, y: 0, z: 0 }, lens, stage).depth;
-  const mark = posedJoints3d(MARK_TABLE, {}, object).mark;
-  const tip = posedJoints3d(ARM, bones, object).tip;
-  const pinned = project3d(mark, lens, stage);
-  const tipped = project3d(tip, lens, stage);
-  const under = project3d(CAPTION_POINT, lens, stage);
-  return {
-    object,
-    bones,
-    pin: { x: pinned.x, y: pinned.y, opacity: fadeOf(pinned, centre) },
-    tip: { x: tipped.x, y: tipped.y, opacity: fadeOf(tipped, centre) },
-    caption: {
+/** The cube's turn at scene `time`. */
+export const objectAt = (time: Time): Pose3d => ({
+  rotationX: 10,
+  rotationY: mix(-20, 160, turn.of(time, ease.sineInOut).progress),
+});
+
+/** Each arm bone's turn at scene `time`, in the cube's own space. */
+export const bonesAt = (time: Time): Record<"base" | "mid", BonePose3d> => ({
+  base: { rotation: mix(0, 30, lean.of(time, ease.sineInOut).progress) },
+  mid: { rotation: mix(0, -60, curl.of(time, ease.sineInOut).progress) },
+});
+
+const centreDepth = () => project3d({ x: 0, y: 0, z: 0 }, lens, stage).depth;
+
+/** A callout over a projected point, faded behind the cube's centre. */
+const callout = (point: { readonly x: number; readonly y: number; readonly z: number }) => {
+  const at = project3d(point, lens, stage);
+  return { x: at.x, y: at.y, opacity: fadeOf(at, centreDepth()) };
+};
+
+export default sceneBuilder({ name: "overlay3d", length: durationMs, frame: stage, cues })
+  .element(object("object"))
+  .motion(motion(objectAt))
+  .limits(LIMITS)
+  .element(object("base"))
+  .motion(motion((time: Time): Pose3d => bonesAt(time).base))
+  .limits(LIMITS)
+  .element(object("mid"))
+  .motion(motion((time: Time): Pose3d => bonesAt(time).mid))
+  .limits(LIMITS)
+  .element(box("pin"))
+  .motion(motion((time: Time) => callout(posedJoints3d(MARK_TABLE, {}, objectAt(time)).mark)))
+  .element(box("tip"))
+  .motion(motion((time: Time) => callout(posedJoints3d(ARM, bonesAt(time), objectAt(time)).tip)))
+  .element(box("caption"))
+  .motion((time: Time, context) => {
+    const under = project3d(CAPTION_POINT, lens, stage);
+    return {
       x: under.x,
       y: under.y,
       opacity: under.visible ? 1 : 0,
-      custom: { words: revealed(time, events) },
-    },
-  };
-};
+      custom: { words: revealed(context.time, context.events) },
+    };
+  });
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });
