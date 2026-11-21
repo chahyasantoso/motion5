@@ -55,11 +55,11 @@ function writeScratchPage(): { readonly html: string } {
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
 import { mountPage } from "@gerak/dom";
-import { beat, box, el, restReader, sceneBuilder, section } from "@gerak/stage";
+import { beat, box, el, restReader, sceneBuilder } from "@gerak/stage";
 
-const hero = section("hero", el("#hero"));
-const features = section("features", el("#features"));
-const story = section("story", el("#story"));
+const hero = box("hero", { node: el("#hero") });
+const features = box("features", { node: el("#features") });
+const story = box("story", { node: el("#story") });
 const travelStory = beat("to-story", { scroll: [hero.top, story.top] });
 const inFeatures = beat("in-features", { scroll: [features.top, features.end] });
 
@@ -83,7 +83,7 @@ Reflect.set(window, "__restReader", restReader);
 beforeAll(removeLeftovers);
 afterAll(removeLeftovers);
 
-describe("section edges in the browser", () => {
+describe("element edges in the browser", () => {
   it("matches measured DOM boxes at two viewport sizes and drives scroll beats across resize", async () => {
     const scratch = writeScratchPage();
     await withPage(

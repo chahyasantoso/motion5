@@ -50,17 +50,17 @@ A group's children are in the piece already. Call `.element(child)` only to give
 
 - Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required for non-page scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
-- Section: `section(name, el(selector))` reads measured section edges as `.top` and `.end` scroll points (with `.plus(px)`, `.minus(px)` and `.reached`); using either in a scroll or trigger beat registers the section on the stage.
+- Edges: every element's `.top` and `.end` are scroll points on its measured box (with `.plus(px)`, `.minus(px)` and `.reached`); a scroll or trigger beat that reads one adds the element to the scene.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after. `smooth: true` or `smooth: { stiffness, damping }` maps `springTo(scroll.y)` instead, so the motion trails the scroll and settles on it; headless it reads `scroll.y`.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 
-Scenes can share beats, states, signals and sections.
+Scenes can share beats, states and signals. `.include(scene)` merges another scene's elements, beats and motions onto this one's clock; it refuses two elements of one name, and a scene that sets `frame`, `cues` or `length`, which only the scene that is mounted sets.
 
 ## The chain
 
 - `.element(e)` selects an element; it may be selected again later.
 - `.motion(...)` appends motions to its list; `.modify(principle)` wraps everything above it in the list.
-- `.show(beat | [from, to])` shows it only then; hidden, it is not drawn and may jump.
+- `.show(beat | [from, to] | { from } | { until })` shows it only then: during a beat, across beats, from a beat's start on, or until a beat's end; hidden, it is not drawn and may jump.
 - `.limits({ jump, turn, ratio })` sets its review limits.
 
 Only `.motion` and `.modify` order matters.

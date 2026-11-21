@@ -103,12 +103,6 @@ export interface Limits {
   readonly ratio?: number | undefined;
 }
 
-/** A compiled page section selector measured into rest by `mountPage`. */
-export interface CompiledSection {
-  readonly name: string;
-  readonly node: string;
-}
-
 /** A piece as written: beats in ms, a cast, and a scene from time to poses. */
 export interface StageOptions<B extends string, M extends Members<B>, L extends string> {
   readonly beats: Readonly<Record<B, readonly [number, number]>>;
@@ -125,8 +119,6 @@ export interface StageOptions<B extends string, M extends Members<B>, L extends 
   readonly isPage?: boolean | undefined;
   /** Minimum ms a page clock stays alive after an input event for triggers and springs to settle. */
   readonly settleMs?: number | undefined;
-  /** Named sections referenced by scroll points in this scene. */
-  readonly sections?: readonly CompiledSection[] | undefined;
   readonly scene: (context: SceneContext<NoInfer<B>, NoInfer<L>>) => Targets<NoInfer<M>>;
 }
 

@@ -19,7 +19,6 @@ import {
 } from "../author/cast";
 import { NO_REST, restReader, type Frame, type Rest, type RestReader } from "../author/layout";
 import type {
-  CompiledSection,
   DomSkinInput,
   LayoutsInput,
   Limits,
@@ -80,8 +79,6 @@ export interface Stage {
   readonly limits: Readonly<Record<string, Limits>>;
   /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
   readonly settleMs?: number | undefined;
-  /** Page sections referenced by scroll points in this stage. */
-  readonly sections: readonly CompiledSection[];
   readonly scene: (context: SceneContext) => unknown;
   /** Which members show at `ms`, by name; one shared record per stretch of time. */
   readonly visibleAt: (ms: number) => Readonly<Record<string, boolean>>;
@@ -454,59 +451,7 @@ function compileLimits(
   return Object.freeze({ ...limits });
 }
 
-function compileSections(
-  raw: readonly CompiledSection[] | undefined,
-  members: readonly Member[],
-  errors: StageError[],
-): readonly CompiledSection[] {
-  if (raw === undefined || raw.length === 0) return Object.freeze([]);
-  const memberByName = new Map(members.map((member) => [member.name, member]));
-  const byName = new Map<string, string>();
-  const compiled: CompiledSection[] = [];
-  for (const sec of raw) {
-    if (sec.name.includes(".")) {
-      errors.push({ kind: "reserved_dot", name: sec.name });
-      continue;
-    }
-    if (sec.name.trim() === "" || sec.node.trim() === "") {
-      errors.push({
-        kind: "invalid",
-        field: "sections",
-        reason: `section "${sec.name}" needs a non-empty name and selector.`,
-      });
-      continue;
-    }
-    const member = memberByName.get(sec.name);
-    if (member !== undefined && member.node !== sec.node) {
-      errors.push({
-        kind: "invalid",
-        field: "sections",
-        reason: `section "${sec.name}" (${sec.node}) collides with member "${member.name}".`,
-      });
-      continue;
-    }
-    const prior = byName.get(sec.name);
-    if (prior !== undefined && prior !== sec.node) {
-      errors.push({
-        kind: "invalid",
-        field: "sections",
-        reason: `section "${sec.name}" names both "${prior}" and "${sec.node}".`,
-      });
-      continue;
-    }
-    if (prior === undefined) {
-      byName.set(sec.name, sec.node);
-      compiled.push(Object.freeze({ name: sec.name, node: sec.node }));
-    }
-  }
-  return Object.freeze(compiled);
-}
-
-function signatureOf(
-  durationMs: number,
-  members: readonly Member[],
-  sections: readonly CompiledSection[],
-): string {
+function signatureOf(durationMs: number, members: readonly Member[]): string {
   const contentKey = (content: Content): string =>
     content.kind === "text" ? `text:${content.value}` : content.kind;
   const serializedMembers = members.map((member) => {
@@ -529,9 +474,7 @@ function signatureOf(
         return unreachable(member);
     }
   });
-  return sections.length === 0
-    ? JSON.stringify([durationMs, serializedMembers])
-    : JSON.stringify([durationMs, serializedMembers, sections.map((sec) => [sec.name, sec.node])]);
+  return JSON.stringify([durationMs, serializedMembers]);
 }
 
 /** Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot. */
@@ -566,7 +509,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
       });
     }
   }
-  const sections = compileSections(definition.sections, members, errors);
   const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
@@ -577,7 +519,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
     frame: Object.freeze({ width: frame.width, height: frame.height }),
     beats: beats.beats,
     members,
-    sections,
     layouts,
     skins: Object.freeze(skins?.dom === undefined ? {} : { dom: compileSkin(skins.dom) }),
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
@@ -585,7 +526,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
     ...(settleMs === undefined ? {} : { settleMs }),
     scene: (context: SceneContext): unknown => Reflect.apply(scene, undefined, [context]),
     visibleAt: visibility(members),
-    signature: signatureOf(beats.durationMs, members, sections),
+    signature: signatureOf(beats.durationMs, members),
   });
   return { ok: true, stage };
 }

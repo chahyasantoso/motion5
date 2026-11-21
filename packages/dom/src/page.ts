@@ -133,7 +133,7 @@ export interface PageOptions {
 export interface MountedPage {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
-  /** Measured rest boxes by element and section name. */
+  /** Measured rest boxes by element name. */
   readonly rest: Rest;
   /** Visual line indices per split text element, updated on resize without changing part count. */
   readonly lines: Readonly<Record<string, readonly number[]>>;
@@ -542,7 +542,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       ? root.ownerDocument
       : undefined;
   const targets: BoundTarget[] = [];
-  const boundSections: { readonly name: string; readonly node: PageElement }[] = [];
   const byName = new Map<string, BoundTarget>();
   const allNodes: PageElement[] = [];
 
@@ -575,14 +574,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       }
       targets.push(bound);
       byName.set(member.name, bound);
-    }
-    for (const sec of stage.sections) {
-      const raw = root.querySelector(sec.node);
-      if (raw === null)
-        throw new Error(
-          `mountPage: section "${sec.name}" (${sec.node}) matched no node on the page.`,
-        );
-      boundSections.push({ name: sec.name, node: needElement(raw, sec.name, sec.node) });
     }
   } catch (error) {
     for (const target of targets) target.restore?.();
@@ -663,11 +654,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     for (const target of targets) {
       if (!ancestors.has(target.node)) {
         ancestors.set(target.node, inspectAncestors(target.node, stickyCache));
-      }
-    }
-    for (const sec of boundSections) {
-      if (!ancestors.has(sec.node)) {
-        ancestors.set(sec.node, inspectAncestors(sec.node, stickyCache));
       }
     }
 
@@ -777,17 +763,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
           default:
             return unreachable(member);
         }
-      }
-      for (const sec of boundSections) {
-        if (nextRest[sec.name] !== undefined) continue;
-        const info = ancestors.get(sec.node) ?? { isFixed: false };
-        nextRest[sec.name] = boxForNode(
-          rectOf(sec.node),
-          scrollX,
-          scrollY,
-          snapshotSticky(info.sticky),
-          info.isFixed,
-        );
       }
     } finally {
       for (const [el, prev] of savedSticky) {
@@ -1259,9 +1234,6 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     for (const target of targets) {
       if (isDomElement(target.node)) observer.observe(target.node);
       for (const item of target.items) if (isDomElement(item)) observer.observe(item);
-    }
-    for (const sec of boundSections) {
-      if (isDomElement(sec.node)) observer.observe(sec.node);
     }
   }
 

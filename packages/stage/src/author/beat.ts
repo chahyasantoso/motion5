@@ -16,7 +16,6 @@ import {
   type Step,
   type Time,
 } from "@gerak/core";
-import type { NodeBinding } from "./cast";
 import { NO_REST, type RestReader } from "./layout";
 
 /** A named stretch of the piece in ms: a core `Span` that also says what it is called. */
@@ -39,7 +38,7 @@ export interface ScrollReached {
   readonly point: ScrollPoint;
 }
 
-/** A scroll position or section edge in px, resolved against measured page rest boxes. */
+/** A scroll position or an element's edge in px, resolved against measured page rest boxes. */
 export interface ScrollPoint {
   readonly kind: "scroll-point";
   /** The scroll position in px, resolved against `rest` when measured from the page. */
@@ -50,21 +49,6 @@ export interface ScrollPoint {
   minus(px: number): ScrollPoint;
   /** Trigger condition firing when scroll first passes this point. */
   readonly reached: ScrollReached;
-}
-
-/** A named page section whose `.top` and `.end` resolve as scroll points from measured CSS layout. */
-export interface Section {
-  readonly kind: "section";
-  readonly name: string;
-  readonly node: NodeBinding;
-  readonly top: ScrollPoint;
-  readonly end: ScrollPoint;
-}
-
-/** Section selector binding referenced by a section scroll point. */
-export interface SectionBinding {
-  readonly name: string;
-  readonly selector: string;
 }
 
 /** What scrolling back past a trigger point does: reverse cleanly, stay at its end, or reset to replay. */
@@ -118,11 +102,11 @@ export interface TriggerBeat extends MotionWindow {
 }
 
 const FIXED_PX = new WeakMap<ScrollPoint, number>();
-const POINT_SECTIONS = new WeakMap<ScrollPoint, readonly SectionBinding[]>();
+const POINT_MEASURES = new WeakMap<ScrollPoint, () => object>();
 
-/** Section bindings referenced by a scroll point, empty for fixed numeric scroll points. */
-export function sectionsOfPoint(point: ScrollPoint): readonly SectionBinding[] {
-  return POINT_SECTIONS.get(point) ?? [];
+/** The element whose edge a scroll point is, or undefined for a fixed px. */
+export function measuredBy(point: ScrollPoint): object | undefined {
+  return POINT_MEASURES.get(point)?.();
 }
 
 function isScrollPoint(value: unknown): value is ScrollPoint {
@@ -185,11 +169,11 @@ function readContext(context: unknown): { readonly events: Events; readonly rest
   };
 }
 
-/** Creates a scroll point from a resolver and optional fixed px; shared by `scrollPoint` and sections. */
+/** Creates a scroll point from a resolver, an optional fixed px, and the element whose edge it is. */
 export function makeScrollPoint(
   resolve: (rest: RestReader) => number,
   fixed?: number,
-  sections?: readonly SectionBinding[],
+  measures?: () => object,
 ): ScrollPoint {
   const shift = (delta: number, label: string): ScrollPoint => {
     if (!Number.isFinite(delta))
@@ -197,7 +181,7 @@ export function makeScrollPoint(
     return makeScrollPoint(
       (rest) => resolve(rest) + delta,
       fixed === undefined ? undefined : fixed + delta,
-      sections,
+      measures,
     );
   };
   let point: ScrollPoint;
@@ -215,44 +199,8 @@ export function makeScrollPoint(
     reached,
   });
   if (fixed !== undefined) FIXED_PX.set(point, fixed);
-  if (sections !== undefined && sections.length > 0) POINT_SECTIONS.set(point, sections);
+  if (measures !== undefined) POINT_MEASURES.set(point, measures);
   return point;
-}
-
-/** A page section bound to `node` whose `.top` and `.end` edges resolve as scroll points. */
-export function section(name: string, node: NodeBinding): Section {
-  if (typeof name !== "string" || name.trim() === "")
-    throw new TypeError("section: a section needs a non-empty name.");
-  if (name.includes("."))
-    throw new TypeError(
-      `section "${name}": section names cannot contain ".", which names list items.`,
-    );
-  if (
-    typeof node !== "object" ||
-    node === null ||
-    Reflect.get(node, "kind") !== "node" ||
-    typeof Reflect.get(node, "selector") !== "string" ||
-    node.selector.trim() === ""
-  )
-    throw new TypeError(`section "${name}": expected a node binding made by \`el(selector)\`.`);
-  const binding: SectionBinding = Object.freeze({ name, selector: node.selector });
-  const top = makeScrollPoint(
-    (rest) => {
-      const box = rest.get(name);
-      return box.y - box.height / 2;
-    },
-    undefined,
-    [binding],
-  );
-  const end = makeScrollPoint(
-    (rest) => {
-      const box = rest.get(name);
-      return box.y + box.height / 2;
-    },
-    undefined,
-    [binding],
-  );
-  return Object.freeze({ kind: "section", name, node, top, end });
 }
 
 /** A scroll position in `px`, with `.plus(px)`, `.minus(px)` and `.reached`. */

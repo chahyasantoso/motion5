@@ -1,4 +1,5 @@
 import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
+import { makeScrollPoint, type ScrollPoint } from "./beat";
 import type { ItemContent, NodeBinding, Path, Pivot } from "./cast";
 
 /** Binds an element or section to an existing DOM node matched by CSS `selector`. */
@@ -38,8 +39,14 @@ export type Outline =
       readonly targets: readonly (readonly Cubic2d[])[];
     };
 
-/** An element of a piece, made once with a name; `kind` says what it is. */
-export type Element =
+/** An element's measured edges as scroll points: the top and the bottom of its rest box. */
+export interface Edges {
+  readonly top: ScrollPoint;
+  readonly end: ScrollPoint;
+}
+
+/** What an element is, before its edges. */
+export type ElementBody =
   | { readonly kind: "box"; readonly name: string; readonly options: ElementOptions }
   | {
       readonly kind: "shape";
@@ -66,6 +73,9 @@ export type Element =
       readonly children: readonly Element[];
       readonly options: ElementOptions;
     };
+
+/** An element of a piece, made once with a name; `kind` says what it is. */
+export type Element = ElementBody & Edges;
 
 /** Where an object is drawn: the element bound to the page's canvas, and the fixed lens the page draws through. */
 export interface ObjectView {
@@ -103,6 +113,30 @@ function named(maker: string, name: string): string {
   return name;
 }
 
+/** `made` with `.top` and `.end`, each a scroll point on its measured rest box that names it. */
+function edged<T extends ElementBody>(made: T): T & Edges {
+  const name = made.name;
+  let element: (T & Edges) | undefined;
+  const self = (): object => {
+    if (element === undefined)
+      throw new Error(`"${name}": its edges were read before it was made.`);
+    return element;
+  };
+  const top = makeScrollPoint(
+    (rest) => rest.get(name).y - rest.get(name).height / 2,
+    undefined,
+    self,
+  );
+  const end = makeScrollPoint(
+    (rest) => rest.get(name).y + rest.get(name).height / 2,
+    undefined,
+    self,
+  );
+  const full: T & Edges = { ...made, top, end };
+  element = Object.freeze(full);
+  return full;
+}
+
 function optionsOf(options: ElementOptions | undefined): ElementOptions {
   const { pivot, watch, node } = options ?? {};
   if (node !== undefined && !isNodeBinding(node))
@@ -116,7 +150,7 @@ function optionsOf(options: ElementOptions | undefined): ElementOptions {
 
 /** A page element styled by CSS. */
 export function box(name: string, options?: ElementOptions): Element {
-  return Object.freeze({ kind: "box", name: named("box", name), options: optionsOf(options) });
+  return edged({ kind: "box", name: named("box", name), options: optionsOf(options) });
 }
 
 function isMorph(value: ShapeSource): value is MorphSource {
@@ -128,7 +162,7 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
   const drawn: Outline = isMorph(outline)
     ? { kind: "morph", base: outline.base, targets: outline.targets }
     : { kind: "path", path: outline };
-  return Object.freeze({
+  return edged({
     kind: "shape",
     name: named("shape", name),
     outline: Object.freeze(drawn),
@@ -145,7 +179,7 @@ export function text(
   const split = options?.split;
   if (split !== undefined && typeof content !== "string")
     throw new TypeError(`text "${name}": only a string can be split into parts.`);
-  return Object.freeze({
+  return edged({
     kind: "text",
     name: named("text", name),
     content,
@@ -197,7 +231,7 @@ export function many<T>(
     if (!(Number.isInteger(source) && source >= 0))
       throw new RangeError(`many "${own}": count must be a whole number >= 0, not ${source}.`);
     const options = typeof third === "function" ? undefined : third;
-    return Object.freeze({
+    return edged({
       kind: "many",
       name: own,
       items: Object.freeze(Array.from({ length: source }, (): ItemContent => ({ kind: "box" }))),
@@ -206,7 +240,7 @@ export function many<T>(
   }
   if (typeof third !== "function")
     throw new TypeError(`many "${own}": a list of items needs a function making each.`);
-  return Object.freeze({
+  return edged({
     kind: "many",
     name: own,
     items: Object.freeze(source.map((item, index) => itemOf(own, index, third(item, index)))),
@@ -234,7 +268,7 @@ export function group(
   children: readonly Element[],
   options?: ElementOptions,
 ): Element {
-  return Object.freeze({
+  return edged({
     kind: "group",
     name: named("group", name),
     children: Object.freeze([...children]),

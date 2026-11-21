@@ -14,7 +14,6 @@ import {
   restReader,
   sceneBuilder,
   scrollPoint,
-  section,
   stagger,
   travel,
   type SceneBuilder,
@@ -258,9 +257,9 @@ describe("travel", () => {
   });
 
   it("lands fixed elements onto flow and sticky slots at two viewport sizes", () => {
-    const hero = section("hero", el("#hero"));
-    const features = section("features", el("#features"));
-    const story = section("story", el("#story"));
+    const hero = box("hero", { node: el("#hero") });
+    const features = box("features", { node: el("#features") });
+    const story = box("story", { node: el("#story") });
     const slotFeatures = box("slotFeatures", { node: el("#features .slot") });
     const slotStory = box("slotStory", { node: el("#story .slot") });
     const drink = box("drink", { node: el("#drink") });
@@ -441,8 +440,8 @@ describe("travel", () => {
       expect(invalidPage.errors.map(formatStageError).join("\n")).toContain("unlinkedSlot");
     }
 
-    // Section / slot name collision in the same `.motion(...)` call throws TypeError.
-    const collidingHero = section("hero", el("#hero-section"));
+    // Two elements named "hero", an edge and a slot, in the same `.motion(...)` call throws TypeError.
+    const collidingHero = box("hero", { node: el("#hero-section") });
     const collidingSlot = box("hero", { node: el("#hero-slot") });
     expect(() =>
       sceneBuilder()

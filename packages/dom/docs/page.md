@@ -65,7 +65,7 @@ Site CSS owns page layout; `mountPage` never alters layout geometry.
 - **Pinned section:** wrap a `position: sticky` inner container (`top: 0` or a px offset) inside a tall outer section wrapper. Scroll beats span the outer wrapper while content pins inside the sticky inner container.
 - **Fixed layer:** place viewport-locked layers inside a `position: fixed` container (`inset: 0; pointer-events: none` in CSS).
 
-`section(name, el(selector))` exposes `.top` and `.end` as scroll points (supporting `.plus(px)`, `.minus(px)` and `.reached`). Scroll and trigger beats register any referenced section onto the stage; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
+Every element's `.top` and `.end` are scroll points on its measured box (supporting `.plus(px)`, `.minus(px)` and `.reached`). A scroll or trigger beat that reads them adds the element to the scene, with no motions if it has none; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
 
 - **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero", { node: el("#hero .slot") })`) with no motions.
 - **`travel({ to: slot, arc?, fit? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size. It keeps its proportions unless `fit: "fill"`, and with no window it sits on the slot.
@@ -83,4 +83,4 @@ Site CSS owns page layout; `mountPage` never alters layout geometry.
 
 ## Ownership
 
-An element belongs to one scene; `sceneBuilder` refuses an element placed in two scenes and names both. Scenes may share beats, states, signals and sections.
+An element belongs to one scene; `sceneBuilder` refuses an element placed in two scenes and names both. Scenes may share beats, states and signals; `.include(scene)` merges several into the one a page mounts.

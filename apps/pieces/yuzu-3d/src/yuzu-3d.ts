@@ -20,7 +20,6 @@ import {
   many,
   object,
   sceneBuilder,
-  section,
   stagger,
   text,
   travel,
@@ -33,10 +32,10 @@ const eye = { x: 0, y: 0, z: 10 };
 /** The fixed camera the page draws the can through; travel lands the can on a slot through it. */
 export const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
 
-const hero = section("hero", el("#hero"));
-const features = section("features", el("#features"));
-const story = section("story", el("#story"));
-const gallery = section("gallery", el("#gallery"));
+const hero = box("hero", { node: el("#hero") });
+const features = box("features", { node: el("#features") });
+const story = box("story", { node: el("#story") });
+const gallery = box("gallery", { node: el("#gallery") });
 
 const slotHero = box("slotHero", { node: el("#hero .slot") });
 const slotFeatures = box("slotFeatures", { node: el("#features .slot") });

@@ -17,7 +17,6 @@ import {
   object,
   sceneBuilder,
   scrollPoint,
-  section,
   text,
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
@@ -379,7 +378,7 @@ describe("mountPage", () => {
     expect(rollbackRoot.nodes[0]?.textContent).toBe("");
   });
 
-  it("measures stage sections into rest, updates on remeasure, and refuses missing section nodes", () => {
+  it("measures elements read for their edges into rest, updates on remeasure, and refuses missing nodes", () => {
     const heroNode = new FakeNode("hero");
     heroNode.offsetLeft = 0;
     heroNode.offsetTop = 0;
@@ -393,8 +392,8 @@ describe("mountPage", () => {
     const cardNode = new FakeNode("card");
     const root = new FakeRoot([heroNode, storyNode, cardNode]);
 
-    const hero = section("hero", el("#hero"));
-    const story = section("story", el("#story"));
+    const hero = box("hero", { node: el("#hero") });
+    const story = box("story", { node: el("#story") });
     const sb = beat("go", { scroll: [hero.top, story.top] });
 
     const mounted = mountPage(
@@ -417,7 +416,7 @@ describe("mountPage", () => {
     expect(heroNode.style.transform).toBe("");
 
     const failSolo = new FakeNode("solo");
-    const missingSec = section("absent", el("#absent"));
+    const missingSec = box("absent", { node: el("#absent") });
     const missingBeat = beat("miss", { scroll: [missingSec.top, missingSec.end] });
     expect(() =>
       mountPage(

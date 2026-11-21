@@ -33,10 +33,9 @@ import { boxInViewport } from "../render/placement";
 import {
   WINDOW_EVENTS,
   isInputBeat,
-  sectionsOfPoint,
+  measuredBy,
   type Beat,
   type ScrollBeat,
-  type SectionBinding,
   type TriggerBeat,
 } from "./beat";
 import {
@@ -52,7 +51,6 @@ import {
 import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
 import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
 import type {
-  CompiledSection,
   DomSkinInput,
   LayoutsInput,
   Limits,
@@ -112,7 +110,7 @@ export interface SceneBuilderOptions {
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
   readonly layouts?: LayoutsInput | undefined;
-  /** Boxes the headless tools read in place of measured ones, by element or section name. */
+  /** Boxes the headless tools read in place of measured ones, by element name. */
   readonly rest?: Rest | undefined;
 }
 
@@ -212,7 +210,6 @@ interface State {
   readonly entries: ReadonlyMap<string, Entry>;
   readonly beats: ReadonlyMap<string, Beat>;
   readonly inputBeats: ReadonlyMap<string, ScrollBeat | TriggerBeat>;
-  readonly sections: ReadonlyMap<string, SectionBinding>;
   readonly current: string | undefined;
 }
 
@@ -772,15 +769,6 @@ function includeOf(state: State): SceneBuilder["include"] {
     const inputBeats = new Map(state.inputBeats);
     for (const beat of other.beats.values()) withBeat(beats, inputBeats, beat);
     for (const beat of other.inputBeats.values()) withInputBeat(beats, inputBeats, beat);
-    const sections = new Map(state.sections);
-    for (const [name, section] of other.sections) {
-      const prior = sections.get(name);
-      if (prior !== undefined && prior.selector !== section.selector)
-        throw new RangeError(
-          `sceneBuilder: section "${name}" uses selector "${prior.selector}" in one scene and "${section.selector}" in another.`,
-        );
-      sections.set(name, section);
-    }
     const next: State = {
       ...state,
       elements,
@@ -788,7 +776,6 @@ function includeOf(state: State): SceneBuilder["include"] {
       entries: new Map([...state.entries, ...other.entries]),
       beats,
       inputBeats,
-      sections,
       current: undefined,
     };
     const loop = loopOf(next.entries);
@@ -801,7 +788,6 @@ function includeOf(state: State): SceneBuilder["include"] {
 
 function validateRegistration(
   elements: ReadonlyMap<string, SceneElement>,
-  sections: ReadonlyMap<string, SectionBinding>,
   owner: SceneOwner,
   element: SceneElement,
   staged: Map<string, SceneElement>,
@@ -816,36 +802,26 @@ function validateRegistration(
     throw new TypeError(
       `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
     );
-  const sec = sections.get(element.name);
-  if (sec !== undefined && selectorOf(element) !== sec.selector)
-    throw new TypeError(
-      `sceneBuilder: element ${describe(element)} collides with section "${sec.name}" (${sec.selector}).`,
-    );
   staged.set(element.name, element);
   if (element.kind === "group")
-    for (const child of element.children)
-      validateRegistration(elements, sections, owner, child, staged);
+    for (const child of element.children) validateRegistration(elements, owner, child, staged);
 }
 
 function register(
   elements: Map<string, SceneElement>,
-  sections: ReadonlyMap<string, SectionBinding>,
   owner: SceneOwner,
   element: SceneElement,
 ): void {
   const staged = new Map<string, SceneElement>();
-  validateRegistration(elements, sections, owner, element, staged);
+  validateRegistration(elements, owner, element, staged);
   for (const [name, entry] of staged) {
     elements.set(name, entry);
     OWNERS.set(entry, owner);
   }
 }
 
-function addSections(
-  sections: Map<string, SectionBinding>,
-  elements: ReadonlyMap<string, SceneElement>,
-  window: ScrollBeat | TriggerBeat,
-): void {
+/** The elements whose edges a scroll or trigger beat reads; using one adds it to the piece. */
+function edgeElementsOf(window: ScrollBeat | TriggerBeat): readonly Element[] {
   let points;
   switch (window.kind) {
     case "scroll-beat":
@@ -857,21 +833,7 @@ function addSections(
     default:
       return unreachable(window);
   }
-  for (const point of points) {
-    for (const sec of sectionsOfPoint(point)) {
-      const prior = sections.get(sec.name);
-      if (prior !== undefined && prior.selector !== sec.selector)
-        throw new RangeError(
-          `sceneBuilder: section "${sec.name}" uses selector "${prior.selector}" in one beat and "${sec.selector}" in another.`,
-        );
-      const colliding = elements.get(sec.name);
-      if (colliding !== undefined && selectorOf(colliding) !== sec.selector)
-        throw new TypeError(
-          `sceneBuilder: section "${sec.name}" (${sec.selector}) collides with element ${describe(colliding)}.`,
-        );
-      sections.set(sec.name, sec);
-    }
-  }
+  return points.map(measuredBy).filter(isElement);
 }
 
 function withBeat(
@@ -1471,12 +1433,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
-  const isPage =
-    state.sections.size > 0 ||
-    [...state.elements.values()].some((element) => selectorOf(element) !== undefined);
-  const compiledSections: readonly CompiledSection[] = [...state.sections.values()].map(
-    ({ name, selector }) => Object.freeze({ name, node: selector }),
-  );
+  const isPage = [...state.elements.values()].some((element) => selectorOf(element) !== undefined);
   let maxTriggerMs = 0;
   for (const inputBeat of state.inputBeats.values())
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
@@ -1522,7 +1479,6 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     ...(rest === undefined ? {} : { rest }),
     ...(isPage ? { isPage: true } : {}),
     ...(settleMs === undefined ? {} : { settleMs }),
-    ...(compiledSections.length > 0 ? { sections: compiledSections } : {}),
   };
 }
 
@@ -1554,8 +1510,7 @@ function isState(value: unknown): value is State {
     Reflect.get(value, "elements") instanceof Map &&
     Reflect.get(value, "entries") instanceof Map &&
     Reflect.get(value, "beats") instanceof Map &&
-    Reflect.get(value, "inputBeats") instanceof Map &&
-    Reflect.get(value, "sections") instanceof Map
+    Reflect.get(value, "inputBeats") instanceof Map
   );
 }
 
@@ -1623,7 +1578,6 @@ function objectStep(state: State): ObjectStep {
       motion: (...motions: readonly (SceneMotion3d | TravelMotion)[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
-        const sections = new Map(state.sections);
         const [name, entry] = entryOf(state);
         const self = state.elements.get(name);
         const measured: Element[] = [];
@@ -1635,7 +1589,7 @@ function objectStep(state: State): ObjectStep {
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
           if (isInputBeat(traits.window)) {
             withInputBeat(beats, inputBeats, traits.window);
-            addSections(sections, state.elements, traits.window);
+            for (const edge of edgeElementsOf(traits.window)) measured.push(edge);
           }
           if ("travel" in run) {
             const view = self?.kind === "object" ? self.view : undefined;
@@ -1665,8 +1619,7 @@ function objectStep(state: State): ObjectStep {
         });
         const elements = new Map(state.elements);
         const staged = new Map<string, SceneElement>();
-        for (const target of measured)
-          validateRegistration(elements, sections, state.owner, target, staged);
+        for (const target of measured) validateRegistration(elements, state.owner, target, staged);
         const base = changed(state, { steps: [...entry.steps, ...added] });
         const order = [...base.order];
         const entries = new Map(base.entries);
@@ -1676,7 +1629,7 @@ function objectStep(state: State): ObjectStep {
           if (!order.includes(added)) order.push(added);
           if (!entries.has(added)) entries.set(added, NO_ENTRY);
         }
-        return objectStep({ ...base, elements, order, entries, beats, inputBeats, sections });
+        return objectStep({ ...base, elements, order, entries, beats, inputBeats });
       },
       modify: (principle: Principle3d) => {
         const [, entry] = entryOf(state);
@@ -1700,7 +1653,6 @@ function step(state: State): ElementStep {
       motion: (...motions: readonly SceneMotion[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
-        const sections = new Map(state.sections);
         const travelTargets: Element[] = [];
         const added = motions.map((run): MotionStep => {
           const traits = traitsOf(run);
@@ -1708,7 +1660,7 @@ function step(state: State): ElementStep {
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
           if (isInputBeat(traits.window)) {
             withInputBeat(beats, inputBeats, traits.window);
-            addSections(sections, state.elements, traits.window);
+            for (const edge of edgeElementsOf(traits.window)) travelTargets.push(edge);
           }
           const reads = READS.get(run) ?? [];
           if (reads.length > 0 && traits.span === undefined && traits.window !== undefined)
@@ -1722,7 +1674,7 @@ function step(state: State): ElementStep {
         const elements = new Map(state.elements);
         const newTargets = new Map<string, Element>();
         for (const target of travelTargets) {
-          validateRegistration(elements, sections, state.owner, target, newTargets);
+          validateRegistration(elements, state.owner, target, newTargets);
         }
         const [, entry] = entryOf(state);
         const base = changed(state, { steps: [...entry.steps, ...added] });
@@ -1746,7 +1698,6 @@ function step(state: State): ElementStep {
           entries,
           beats,
           inputBeats,
-          sections,
         };
         const loop = loopOf(next.entries);
         if (loop !== undefined)
@@ -1769,7 +1720,7 @@ function step(state: State): ElementStep {
 
 function select(state: State, element: SceneElement): State {
   const elements = new Map(state.elements);
-  register(elements, state.sections, state.owner, element);
+  register(elements, state.owner, element);
   const first = !state.order.includes(element.name);
   return {
     ...state,
@@ -1797,7 +1748,6 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     entries: new Map(),
     beats: new Map(),
     inputBeats: new Map(),
-    sections: new Map(),
     current: undefined,
   };
   return kept({ kind: "scene", element: elementOf(state), include: includeOf(state) }, state);

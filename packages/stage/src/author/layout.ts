@@ -14,7 +14,7 @@ export interface Box {
   readonly height: number;
 }
 
-/** Rest boxes by member or section name. */
+/** Rest boxes by member name. */
 export type Rest = Readonly<Record<string, Box>>;
 
 /** Reads rest boxes; a name never measured answers a zero box. */

@@ -9,25 +9,14 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import {
-  beat,
-  bind,
-  box,
-  el,
-  many,
-  sceneBuilder,
-  section,
-  stagger,
-  text,
-  travel,
-} from "@gerak/stage";
+import { beat, bind, box, el, many, sceneBuilder, stagger, text, travel } from "@gerak/stage";
 
 /** Cold-Pressed Sparkling Yuzu landing page choreography. */
 
-const hero = section("hero", el("#hero"));
-const features = section("features", el("#features"));
-const story = section("story", el("#story"));
-const gallery = section("gallery", el("#gallery"));
+const hero = box("hero", { node: el("#hero") });
+const features = box("features", { node: el("#features") });
+const story = box("story", { node: el("#story") });
+const gallery = box("gallery", { node: el("#gallery") });
 
 const slotHero = box("slotHero", { node: el("#hero .slot") });
 const slotFeatures = box("slotFeatures", { node: el("#features .slot") });
