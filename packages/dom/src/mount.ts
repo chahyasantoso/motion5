@@ -718,9 +718,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       throw new Error('mount: a root with `frame: "fit"` needs a width and height in its CSS.');
     return size;
   };
+  // The page tools find a fitted root by its `data-gerak-frame` attribute.
   if (fitted !== undefined) {
     fittedSize(fitted);
     Object.assign(fitted.style, { overflow: "hidden", transformOrigin: "0 0" });
+    fitted.setAttribute("data-gerak-frame", "");
   }
   const scaleFrame = (): void => {
     if (fitted === undefined) return;
@@ -1490,6 +1492,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         }
       }
       for (const target of targets) target.restore?.();
+      fitted?.removeAttribute("data-gerak-frame");
       const at = mounts.indexOf(mounted);
       if (at >= 0) mounts.splice(at, 1);
     },
