@@ -154,52 +154,6 @@ describe("gerak review on a scene file", () => {
   });
 });
 
-describe("gerak review holds a skin to its cast", () => {
-  const stage = (css: string) =>
-    defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static(), dust: m.many(2).static() }),
-      skins: { dom: { css } },
-      scene: () => ({}),
-    });
-
-  it("finds a data-cast or data-path rule that names no member, once per name", () => {
-    const { findings } = review(
-      stage(
-        `[data-cast="box"] { z-index: 1; } [data-path="ghost"] { fill: red; } [data-cast="ghost"] { opacity: 0.5; } [data-cast="dust.1"] { color: red; } [data-cast='spook'] { color: blue; }`,
-      ),
-    );
-    expect(findings).toEqual([
-      'skin rule names "ghost", which is not in the cast.',
-      'skin rule names "spook", which is not in the cast.',
-    ]);
-  });
-
-  it("finds nothing in a skin that names its members, a list and its items, or none", () => {
-    expect(
-      review(
-        stage(
-          '[data-cast="box"] { z-index: 1; } [data-cast="dust"] { x: 1; } [data-cast="dust.0"] { x: 2; } [data-cast^="du"] { x: 3; }',
-        ),
-      ).findings,
-    ).toEqual([]);
-    expect(review(stage("")).findings).toEqual([]);
-  });
-
-  it("reads an unquoted name, skips comments, and finds a stroke rule on a member with no path", () => {
-    expect(
-      review(
-        stage(
-          '/* [data-cast="old"] */ [data-cast=bogus] { x: 1; } [data-path="box"] { fill: red; }',
-        ),
-      ).findings,
-    ).toEqual([
-      'skin rule names "bogus", which is not in the cast.',
-      'skin rule styles "box" as a stroke, but it has no path.',
-    ]);
-  });
-});
-
 describe("gerak review on a value's shape", () => {
   const line = [
     { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
@@ -211,7 +165,6 @@ describe("gerak review on a value's shape", () => {
     defineStage({
       beats: { show: [0, 2000] },
       cast,
-      skins: { dom: { css: "" } },
       scene: ({ time }) => ({ mouth: { shape: Math.min(1, time.progress * 4) } }),
     });
 
@@ -339,7 +292,7 @@ describe("gerak review costs", () => {
   });
 });
 
-describe("gerak review expectations, shape mismatches, and url skins", () => {
+describe("gerak review expectations and shape mismatches", () => {
   const dirs: string[] = [];
   afterEach(() => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -416,36 +369,5 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     expect(review(mismatch).findings).toContain(
       'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
     );
-  });
-
-  it("reads local file: URLs for DomSkinCss css and defs", () => {
-    const dir = mkdtempSync(join(tmpdir(), "gerak-skin-url-"));
-    dirs.push(dir);
-    const cssFile = join(dir, "skin.css");
-    const defsFile = join(dir, "defs.svg");
-    writeFileSync(
-      cssFile,
-      '[data-cast="box"] { z-index: 1; } [data-cast="ghost"] { opacity: 0.5; }',
-      "utf8",
-    );
-    writeFileSync(defsFile, '<linearGradient id="g"/>', "utf8");
-
-    const withUrl = defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static() }),
-      skins: { dom: { css: pathToFileURL(cssFile), defs: pathToFileURL(defsFile) } },
-      scene: () => ({}),
-    });
-    expect(review(withUrl).findings).toEqual([
-      'skin rule names "ghost", which is not in the cast.',
-    ]);
-
-    const missingUrl = defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static() }),
-      skins: { dom: { css: pathToFileURL(join(dir, "missing.css")) } },
-      scene: () => ({}),
-    });
-    expect(review(missingUrl).findings[0]).toMatch(/could not be read/);
   });
 });

@@ -18,7 +18,6 @@ import {
   formatStageError,
   frame,
   type Content,
-  type DomSkin,
   type FrameOutput,
   type Member,
   type RestReader,
@@ -533,58 +532,6 @@ function stageMemberFindings(
   return found;
 }
 
-const SKIN_NAME = /\[data-(cast|path)\s*=\s*(?:"([^"]*)"|'([^']*)'|([\w.-]+))\s*\]/g;
-
-function readDomSkin(dom: DomSkin | undefined): {
-  readonly css?: string;
-  readonly errors: readonly string[];
-} {
-  if (dom === undefined) return { errors: [] };
-  switch (dom.kind) {
-    case "inline":
-      return { css: dom.css, errors: [] };
-    case "url": {
-      const errors: string[] = [];
-      let css: string | undefined;
-      if (dom.css.protocol === "file:") {
-        try {
-          css = readFileSync(fileURLToPath(dom.css), "utf8");
-        } catch (error) {
-          errors.push(`skin css "${dom.css.href}" could not be read: ${errorText(error)}`);
-        }
-      }
-      if (dom.defs !== undefined && dom.defs.protocol === "file:") {
-        try {
-          readFileSync(fileURLToPath(dom.defs), "utf8");
-        } catch (error) {
-          errors.push(`skin defs "${dom.defs.href}" could not be read: ${errorText(error)}`);
-        }
-      }
-      return { ...(css === undefined ? {} : { css }), errors };
-    }
-    default:
-      return unreachable(dom);
-  }
-}
-
-/** Checks DOM skin `[data-cast]` and `[data-path]` rules against the cast. */
-function stageSkinFindings(stage: Stage): readonly string[] {
-  const { css, errors } = readDomSkin(stage.skins.dom);
-  const found = new Set<string>(errors);
-  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
-  const plain = (css ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
-  for (const [, kind, double, single, bare] of plain.matchAll(SKIN_NAME)) {
-    const named = double ?? single ?? bare;
-    if (named === undefined) continue;
-    const reviewed = byName.get(named);
-    const content = reviewed === undefined ? undefined : contentOfReviewed(reviewed);
-    if (reviewed === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
-    else if (kind === "path" && content?.kind !== "stroke" && content?.kind !== "morph")
-      found.add(`skin rule styles "${named}" as a stroke, but it has no path.`);
-  }
-  return [...found];
-}
-
 /** Draws every path against the rest boxes and finds loops, self-reads and failures. */
 function stagePathFindings(stage: Stage, rest: RestReader): readonly string[] {
   // With no measured boxes, a path may divide by zero; only non-cubic errors fail then.
@@ -861,7 +808,6 @@ export function reviewSceneModule(
       ...frameEvaluationFindings(evaluated),
       ...valueFindings.map((finding) => labelled(stage, finding)),
       ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
-      ...stageSkinFindings(stage),
       ...stagePathFindings(stage, rest),
     ],
   };

@@ -1,8 +1,6 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
 import { beat, box, group, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 
-export const skin = { css: "" };
-
 const intro = beat("intro", 400);
 const go = beat("go", 1000, { after: intro });
 const out = beat("out", 600, { after: go });

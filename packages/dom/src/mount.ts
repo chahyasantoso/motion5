@@ -50,7 +50,26 @@ import { clockDriver, type ClockDriver } from "./drivers";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
 import { applyPath, applyValue, pathData, type RenderStyle } from "./render";
-import type { StageEvent, StageFonts, StageInput, StageValues } from "./stage";
+import type { PointerLike } from "./events";
+
+/** What a mount reads of a page event: a key, where it landed, and the element it landed on. */
+export interface StageEvent extends PointerLike {
+  readonly key?: string;
+  readonly target?: unknown;
+}
+
+/** The document's font loading, which tells a mount when text may have changed size. */
+export interface StageFonts {
+  readonly ready: Promise<unknown>;
+  addEventListener(type: "loadingdone", listener: () => void): void;
+  removeEventListener(type: "loadingdone", listener: () => void): void;
+}
+
+/** A frame's targets as the scene returned them: a pose per actor or group, a function per list. */
+export type StageValues = Readonly<Record<string, unknown>>;
+
+/** What `mount` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
+export type StageInput = Stage | SceneBuilder;
 
 /** The style properties written or cleared while measuring and animating an existing page node. */
 export interface PageStyle extends RenderStyle {
@@ -305,8 +324,6 @@ function resolvePageStage(input: StageInput): Stage {
     stage = compiled.stage;
   } else throw new Error("mount: expected a stage or what `sceneBuilder` returns.");
 
-  if (stage.skins.dom !== undefined)
-    throw new Error("mount: a mounted scene takes no skin; style its markup with CSS.");
   const missing = stage.members
     .filter((member) => member.node === undefined && member.kind !== "object")
     .map((member) => `"${member.name}"`);

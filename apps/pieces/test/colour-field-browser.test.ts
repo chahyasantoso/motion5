@@ -20,7 +20,7 @@ function oklch(css: string): number[] {
   return found.slice(1).map(Number);
 }
 
-describe("the tint field on a skinned element", () => {
+describe("the tint field on a styled element", () => {
   it("mixes from red to blue through the OKLCH middle at tint 0, 0.5 and 1", async () => {
     const { value, pageErrors } = await withPage(
       {

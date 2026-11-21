@@ -13,7 +13,6 @@ import {
   compileScene,
   formatStageError,
   frame,
-  isDomSkin,
   isScene,
   listPose,
   type Limits,
@@ -155,13 +154,7 @@ export function moduleFromStage(stage: Stage): SceneModule {
 export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
   const defaultExport: unknown = isScene(value) ? value : Reflect.get(Object(value), "default");
   if (isScene(defaultExport)) {
-    const skin: unknown = Reflect.get(Object(value), "skin");
-    if (skin !== undefined && !isDomSkin(skin))
-      return {
-        reason:
-          "A piece's `skin` export must be `{ css }`, with `css` and `defs` both strings or both URLs.",
-      };
-    const compiled = compileScene(defaultExport, { skin });
+    const compiled = compileScene(defaultExport);
     if (!compiled.ok) {
       return { reason: compiled.errors.map(formatStageError).join("\n") };
     }

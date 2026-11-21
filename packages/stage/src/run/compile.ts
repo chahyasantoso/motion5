@@ -18,13 +18,7 @@ import {
   type Stretch,
 } from "../author/cast";
 import { NO_REST, restReader, type Frame, type Rest, type RestReader } from "../author/layout";
-import type {
-  DomSkinInput,
-  LayoutsInput,
-  Limits,
-  SceneContext,
-  StageDefinition,
-} from "../author/stage";
+import type { LayoutsInput, Limits, SceneContext, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, windowOf, type Window } from "./timeline";
@@ -52,11 +46,6 @@ export type Member = {
   | { readonly kind: "group" }
 );
 
-/** The DOM skin, inline or as file URLs. */
-export type DomSkin =
-  | { readonly kind: "inline"; readonly css: string; readonly defs?: string | undefined }
-  | { readonly kind: "url"; readonly css: URL; readonly defs?: URL | undefined };
-
 /** A stage's layouts; a piece with none has one named `main`. */
 export interface StageLayouts {
   readonly names: readonly [string, ...string[]];
@@ -74,7 +63,6 @@ export interface Stage {
   readonly beats: Readonly<Record<string, Span>>;
   readonly members: readonly Member[];
   readonly layouts: StageLayouts;
-  readonly skins: { readonly dom?: DomSkin | undefined };
   readonly cues: Events;
   readonly limits: Readonly<Record<string, Limits>>;
   /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
@@ -425,14 +413,6 @@ function compileLayouts(
   return Object.freeze({ names, pick, readers: Object.freeze(readers) });
 }
 
-function isInline(dom: DomSkinInput): dom is Extract<DomSkinInput, { readonly css: string }> {
-  return typeof dom.css === "string";
-}
-
-function compileSkin(dom: DomSkinInput): DomSkin {
-  return Object.freeze(isInline(dom) ? { kind: "inline", ...dom } : { kind: "url", ...dom });
-}
-
 function compileLimits(
   limits: Readonly<Record<string, Limits>>,
   errors: StageError[],
@@ -499,7 +479,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
-  const { skins, cues, settleMs, scene } = definition;
+  const { cues, settleMs, scene } = definition;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
@@ -507,7 +487,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
     beats: beats.beats,
     members,
     layouts,
-    skins: Object.freeze(skins?.dom === undefined ? {} : { dom: compileSkin(skins.dom) }),
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
     ...(settleMs === undefined ? {} : { settleMs }),

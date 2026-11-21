@@ -341,16 +341,11 @@ describe("mount", () => {
     mounted.dispose();
   });
 
-  it("refuses a scene missing nodes, a compiled skin, or a missing selector", () => {
+  it("refuses a scene missing nodes or a missing selector", () => {
     const root = new FakeRoot([new FakeNode("card")]);
     expect(() =>
       mount(sceneBuilder({ length: 500 }).element(box("plain")), { clock: "live", root }),
     ).toThrow(/"plain"/);
-    const skinned = compileScene(sceneBuilder({ length: 500 }).element(box("card")), {
-      skin: { css: "#card { width: 10px; }" },
-    });
-    if (!skinned.ok) throw new Error("expected skinned stage to compile");
-    expect(() => mount(skinned.stage, { clock: "live", root })).toThrow(/skin/i);
     expect(() => mount(sceneBuilder().element(box("missing")), { clock: "live", root })).toThrow(
       /"missing".*data-cast="missing"/,
     );

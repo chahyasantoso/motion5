@@ -1,6 +1,5 @@
 export * from "./scene";
 export * from "./new";
-export * from "./import-svg";
 export * from "./joints";
 export * from "./briefs";
 export * from "./page-files";

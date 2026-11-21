@@ -76,8 +76,6 @@ export {
   type RestReader,
 } from "./author/layout";
 export {
-  isDomSkin,
-  type DomSkinInput,
   type Limits,
   type LayoutsInput,
   type ListPose,
@@ -88,7 +86,6 @@ export {
   DEFAULT_FRAME,
   isStage,
   type CompileResult,
-  type DomSkin,
   type Member,
   type Stage,
   type StageLayouts,

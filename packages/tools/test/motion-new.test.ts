@@ -65,7 +65,6 @@ describe("gerak new", () => {
     expect(module.stage?.members.map(({ name, kind }) => [name, kind])).toEqual([
       ["title", "actor"],
     ]);
-    expect(module.stage?.skins).toEqual({});
     expect(written).not.toContain("skin");
     const page = readFileSync(join(dir, "rope-word/rope-word.html"), "utf8");
     expect(page).toContain('<div id="frame">');

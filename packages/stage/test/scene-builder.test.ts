@@ -167,18 +167,12 @@ describe("sceneBuilder: what a chain compiles to", () => {
     expect(out["right"]).toBeUndefined();
   });
 
-  it("takes its skin at compile time, and cues and layouts from the options", () => {
+  it("takes cues and layouts from the builder", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
     const layouts = { names: ["one", "two"] as [string, string], pick: () => "two" };
-    const compiledWithSkin = compileScene(
-      sceneBuilder({ cues, layouts }).element(box("card")).show(enter),
-      {
-        skin: { css: "a{}" },
-      },
-    );
-    if (!compiledWithSkin.ok) throw new Error("did not compile");
-    const stage = compiledWithSkin.stage;
-    expect(stage.skins.dom).toEqual({ kind: "inline", css: "a{}" });
+    const compiled = compileScene(sceneBuilder({ cues, layouts }).element(box("card")).show(enter));
+    if (!compiled.ok) throw new Error("did not compile");
+    const stage = compiled.stage;
     expect(stage.layouts.names).toEqual(["one", "two"]);
     expect(stage.cues).toEqual(mergeEvents(cues));
   });

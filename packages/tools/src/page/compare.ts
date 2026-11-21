@@ -10,7 +10,7 @@ export interface CompareRequest extends PageTarget {
   readonly at: number;
   readonly reference: string;
   readonly out?: string;
-  /** Room around the drawing in px, as `gerak import-svg --margin` gave the piece. */
+  /** Room in px added on every side of the reference's viewBox. */
   readonly margin?: number;
 }
 

@@ -4,10 +4,6 @@ export const COMMANDS = Object.freeze({
   compare: { file: "motion-compare.mjs", summary: "compare a page's frame with a reference SVG" },
   fps: { file: "motion-fps.mjs", summary: "measure a page's frame rate" },
   frames: { file: "motion-frames.mjs", summary: "capture a page's frames, crops and onion skins" },
-  "import-svg": {
-    file: "motion-import-svg.mjs",
-    summary: "turn an SVG file into a piece or add it to one",
-  },
   init: {
     file: "motion-init.mjs",
     summary: "set up a project: pieces folder, pages, skill and AGENTS.md",

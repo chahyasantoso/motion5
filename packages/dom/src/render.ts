@@ -138,19 +138,6 @@ function closes(start: Cubic2d | undefined, last: Cubic2d | undefined): boolean 
   return start !== undefined && last !== undefined && meets(last.x3, last.y3, start.x0, start.y0);
 }
 
-/** A value split into the fields `applyValue` writes as a stroke's dash and the rest, for a
- * renderer that draws a stroke inside its member. */
-export function splitStroke(value: Pose2d): { readonly stroke: Pose2d; readonly body: Pose2d } {
-  const { drawn, drawnFrom, ...body } = value;
-  return {
-    stroke: {
-      ...(drawn === undefined ? {} : { drawn }),
-      ...(drawnFrom === undefined ? {} : { drawnFrom }),
-    },
-    body,
-  };
-}
-
 /** The CSS filter a pose writes: its blur, then a drop shadow when a shadow field is off rest; empty when neither. */
 function cssFilter(value: Pose2d): string {
   const parts: string[] = [];
@@ -291,7 +278,7 @@ export function applyValue(target: RenderTarget, value: Pose2d, length?: number)
   put(style, held, "opacity", value.opacity === undefined ? "" : String(value.opacity));
   // Paint order steps, so a layer between two whole numbers paints as the nearer one.
   put(style, held, "zIndex", value.layer === undefined ? "" : String(Math.round(value.layer)));
-  // With no anchor, an HTML element keeps the page's origin, centre by default or a skin's own;
+  // With no anchor, an HTML element keeps the page's origin, centre by default, or what the markup's CSS sets;
   // an SVG element's default is its top-left, so it keeps the centre.
   const svg = "ownerSVGElement" in target;
   if (svg) put(style, held, "transformBox", "fill-box");

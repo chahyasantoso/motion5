@@ -12,8 +12,6 @@ import {
   type SceneBuilder,
 } from "@gerak/stage";
 
-export const skin = { css: "" };
-
 export const intro = beat("intro", 400);
 export const go = beat("go", 1000, { after: intro });
 export const out = beat("out", 600, { after: go });

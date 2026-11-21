@@ -51,7 +51,6 @@ import {
 import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
 import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
 import type {
-  DomSkinInput,
   LayoutsInput,
   Limits,
   ListPose,
@@ -1409,7 +1408,7 @@ function limitsOf(state: State): Record<string, Limits> {
   return limits;
 }
 
-function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefinition {
+function definitionOf(state: State): StageDefinition {
   const ends = [...state.beats.values()].map((beat) => beat.to);
   const durationMs = state.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined);
   let plans: ReadonlyMap<string, Plan> | undefined;
@@ -1466,7 +1465,6 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     },
     ...(durationMs === undefined ? {} : { durationMs }),
     ...(frame === undefined ? {} : { frame }),
-    ...(skin === undefined ? {} : { skins: { dom: skin } }),
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
     ...(rest === undefined ? {} : { rest }),
@@ -1750,9 +1748,8 @@ export function isScene(value: unknown): value is SceneBuilder {
   return typeof value === "object" && value !== null && stateOf(value) !== undefined;
 }
 
-/** How a scene compiles: the DOM skin its renderer draws with, and a wrap around each frame's poses. */
+/** How a scene compiles: a wrap around each frame's poses. */
 export interface CompileSceneOptions {
-  readonly skin?: DomSkinInput | undefined;
   readonly wrap?: ((run: Stage["scene"]) => Stage["scene"]) | undefined;
 }
 
@@ -1764,7 +1761,7 @@ export function compileScene(
   const state = stateOf(scene);
   if (state === undefined)
     throw new TypeError("compileScene: expected what `sceneBuilder` returns.");
-  const result = compileStage(definitionOf(state, options.skin));
+  const result = compileStage(definitionOf(state));
   const { wrap } = options;
   if (!result.ok || wrap === undefined) return result;
   return { ok: true, stage: Object.freeze({ ...result.stage, scene: wrap(result.stage.scene) }) };

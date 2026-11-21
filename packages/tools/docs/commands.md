@@ -12,21 +12,15 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   page files into `folder` (default `pieces`, from where you run), `"gerak": { "pieces": "<folder>" }` into the
   `package.json`, the make-motion skill into `.claude/skills/make-motion/`, `AGENTS.md` and `tsconfig.json`. It refuses, naming
   each file, and writes nothing when any of them exists or the `package.json` already names `gerak.pieces`.
-  `--refresh` rewrites only the six page files of the pieces folder, and nothing else.
+  `--refresh` rewrites only the four page files of the pieces folder, and nothing else.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
-- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one `sceneBuilder` piece (the brief
-  is the name unless `--in` names another; open as `stage.html?piece=<name>`); `--three` writes `<brief>/<name>.html`, its
+- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `sceneBuilder` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
+  is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, its
   entry, a component binding the piece's objects with `bindScene3d`, and `<brief>/src/<name>-scene.ts`, a
   `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
-- **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a
-  `sceneBuilder` piece of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one static `.element(shape(name, path))`
-  per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
-  skin and gradients in the skin's `defs`. It prints one JSON object: the members, the defs count, the frame, and
-  `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
-  `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
 - **`gerak review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
@@ -59,7 +53,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   second per 500 ms window, frame gaps over 16.7 and 33.4 ms, the five slowest frames split into `scene`, `write` and
   `rest` ms, and the WebGL renderer. Headless frames run uncapped (`vsync: false`); `--show` opens a window with a counter.
 - **`gerak compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
-  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
+  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, at
   that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing
   part is not. Writes `piece.png`, `reference.png`,
   `side-by-side.png` and `difference.png` (brighter is more different), and prints `{ kind: "compared", mean, members,
