@@ -130,6 +130,16 @@ Each step is one commit or a few, green on `npm run check`, in this order:
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
    Their tests go in the same commit.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
+   - `mount` grows from `mountPage`. Its time source option, today `clock: () => number`, is renamed `now`, so
+     `clock` can take `"live" | "timed"`.
+   - `"timed"`: the driver answers a timed `Time` over the piece's length, clamped at the end, and the whole scene runs
+     every frame until the length (`introMs` reaches it), so a motion with no window spans the piece.
+   - `frame: { width, height }`: `root` is sized to the frame, clipped and scaled to fit the viewport about its top
+     left. Rest boxes are frame px, measured relative to `root` with its scale removed while measuring.
+   - A shape's path is written on its bound `<path>` from the scene, as a morph's is today.
+   - Consumers of `mountStage` move to `mount` over the piece's own HTML: the React `<Stage>`, the live editor's
+     stage view, the talk page, `stage-page.tsx` and the `component.three` template; `stage.html` goes, and the page
+     tools open a piece by its HTML.
 6. **Include and one-sided show.**
 7. **The canaries.** Convert the six kept pieces. yuzu's frames and its GSAP numbers match the baseline; the 3D
    pieces' frames match theirs. `performance/stage-benchmark.mjs`, which still looks for `defineStage`, runs the
