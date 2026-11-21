@@ -4,18 +4,19 @@
 
 ## Binding nodes
 
-Bind every element in a page scene with `el(selector)`:
+An element binds to the nodes its markup tags with its name:
 
-```ts
-const headline = text("headline", "Fresh pressed citrus every morning", {
-  split: "words",
-  node: el("#headline"),
-});
-const card = box("card", { node: el("#card") });
+```html
+<h1 data-cast="headline">Fresh pressed citrus every morning</h1>
+<div data-cast="card"></div>
 ```
 
-- `compileScene` refuses a page scene if any element lacks `node`, or if a `skin` is passed.
-- `mountPage` matches each `selector` inside `root` (`document` by default) and throws if a node is missing.
+```ts
+const headline = text("headline", "Fresh pressed citrus every morning", { split: "words" });
+const card = box("card");
+```
+
+- `mountPage` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches. It refuses a compiled `skin`.
 - Plain `box`, `shape`, non-split `text`, `group` and matched `many` elements create no DOM nodes and leave CSS and HTML text intact; only readout text updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 
@@ -67,7 +68,7 @@ Site CSS owns page layout; `mountPage` never alters layout geometry.
 
 Every element's `.top` and `.end` are scroll points on its measured box (supporting `.plus(px)`, `.minus(px)` and `.reached`). A scroll or trigger beat that reads them adds the element to the scene, with no motions if it has none; `mountPage` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
 
-- **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero", { node: el("#hero .slot") })`) with no motions.
+- **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero")` on `<div data-cast="slotHero" class="slot">`) with no motions.
 - **`travel({ to: slot, arc?, fit? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size. It keeps its proportions unless `fit: "fill"`, and with no window it sits on the slot.
 - Elements animated by `mountPage` keep `transform` unset in site CSS so the pose-to-CSS writer owns transforms alone.
 
@@ -75,7 +76,7 @@ Every element's `.top` and `.end` are scroll points on its measured box (support
 
 `mountPage` temporarily clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`.
 
-`text(name, value, { split: "words" | "letters", node: el(selector) })` keeps a fixed part count from `value`:
+`text(name, value, { split: "words" | "letters" })` keeps a fixed part count from `value`:
 
 - If the matched element already has matching child elements, `mountPage` binds them in place; if it has no child elements, `mountPage` wraps the parts in `<span>` nodes on mount and restores the original text on `dispose()`.
 - Each list part's `MotionContext` receives its layout row in `context.line` (0 headless, recomputed on resize without changing part count).

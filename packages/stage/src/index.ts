@@ -1,11 +1,4 @@
-export {
-  type Content,
-  type Expect,
-  type ItemContent,
-  type NodeBinding,
-  type Path,
-  type Pivot,
-} from "./author/cast";
+export { type Content, type Expect, type ItemContent, type Path, type Pivot } from "./author/cast";
 export {
   beat,
   scrollPoint,
@@ -22,7 +15,6 @@ export {
 } from "./author/beat";
 export {
   box,
-  el,
   group,
   many,
   object,

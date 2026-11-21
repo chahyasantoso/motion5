@@ -84,7 +84,7 @@ describe("an object in a scene", () => {
       sceneBuilder()
         .element(object("cube"))
         .motion(turn.in(beat("spin", 1000)))
-        .element(box("label", { node: { kind: "node", selector: "#label" } }))
+        .element(box("label"))
         .motion(slide.in(beat("spin", 1000))),
     );
     expect(result.ok).toBe(true);

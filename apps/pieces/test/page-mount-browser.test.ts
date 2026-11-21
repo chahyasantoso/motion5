@@ -41,15 +41,15 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
   </head>
   <body>
     <div id="headline-wrap">
-      <h1 id="headline">Fresh pressed citrus every morning</h1>
+      <h1 id="headline" data-cast="headline">Fresh pressed citrus every morning</h1>
     </div>
-    <div id="card"></div>
+    <div id="card" data-cast="card"></div>
     <div id="pin-wrap">
       <div id="sticky-box">
-        <div id="sticky-slot"></div>
+        <div id="sticky-slot" data-cast="stickySlot"></div>
       </div>
     </div>
-    <div id="fixed-pin"></div>
+    <div id="fixed-pin" data-cast="fixedPin"></div>
     <script type="module" src="/${name}/src/main.ts"></script>
   </body>
 </html>
@@ -60,17 +60,16 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
 import { mountPage } from "@gerak/dom";
-import { beat, box, el, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stage";
+import { beat, box, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stage";
 import { boxInViewport } from "@gerak/stage/render";
 
 const reveal = beat("reveal", { scroll: [scrollPoint(0), scrollPoint(400)] });
 const headline = text("headline", "Fresh pressed citrus every morning", {
   split: "words",
-  node: el("#headline"),
-});
-const card = box("card", { node: el("#card") });
-const stickySlot = box("stickySlot", { node: el("#sticky-slot") });
-const fixedPin = box("fixedPin", { node: el("#fixed-pin") });
+  });
+const card = box("card");
+const stickySlot = box("stickySlot");
+const fixedPin = box("fixedPin");
 
 const scene = sceneBuilder()
   .element(headline)

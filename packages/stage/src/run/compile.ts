@@ -37,7 +37,7 @@ export type Member = {
   readonly expect: Expect;
   readonly watch: boolean;
   readonly pivot?: Pivot | undefined;
-  /** Selector binding this member to an existing DOM node on a page mount. */
+  /** Selector of the DOM nodes this member binds to: `[data-cast="<name>"]`; an object has none. */
   readonly node?: string | undefined;
   /** Ms the member shows, its own or its group's; absent means always. */
   readonly on?: readonly Window[] | undefined;
@@ -136,7 +136,6 @@ interface Beats {
 function compileBeats(
   given: Readonly<Record<string, readonly [number, number]>>,
   givenDuration: number | undefined,
-  isPage: boolean,
   errors: StageError[],
 ): Beats | undefined {
   const fail = (field: string, reason: string): undefined => {
@@ -152,7 +151,8 @@ function compileBeats(
   if (givenDuration !== undefined && !(finite(givenDuration) && givenDuration > 0))
     return fail("durationMs", "`durationMs` must be above 0.");
   const computedDuration = pairs.reduce((most, [, [, to]]) => Math.max(most, to), 0);
-  const durationMs = givenDuration ?? (isPage && computedDuration === 0 ? 1000 : computedDuration);
+  // A piece with only scroll and trigger beats has no clock beat to end it.
+  const durationMs = givenDuration ?? (computedDuration === 0 ? 1000 : computedDuration);
   if (!(durationMs > 0))
     return fail("beats", "the last beat must end above 0 ms, or give `durationMs`.");
   const late = pairs.find(([, [, to]]) => to > durationMs);
@@ -299,12 +299,12 @@ function itemOf(name: string, content: ItemContent, errors: StageError[]): ItemC
   }
 }
 
-function compileCast(
-  cast: Members,
-  beats: Beats,
-  isPage: boolean,
-  errors: StageError[],
-): readonly Member[] {
+/** The selector of the nodes a DOM renderer binds to the element `name`. */
+export function castSelector(name: string): string {
+  return `[data-cast="${name.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"]`;
+}
+
+function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
   const seen = new Set<string>();
   const visit = (record: Members, from: Inherited): void => {
@@ -316,13 +316,7 @@ function compileCast(
         spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
       const expect = spec.meta.expect ?? from.expect;
       const pivot = spec.meta.pivot;
-      const node = spec.meta.node?.selector;
-      if (isPage && node === undefined && spec.kind !== "object")
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": every element of a page scene needs \`{ node: el(selector) }\`.`,
-        });
+      const node = spec.kind === "object" ? undefined : castSelector(name);
       if (pivot !== undefined && (!finite(pivot.x) || !finite(pivot.y)))
         errors.push({
           kind: "invalid",
@@ -482,14 +476,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   definition: StageDefinition<B, M, L>,
 ): CompileResult {
   const errors: StageError[] = [];
-  const isPage = definition.isPage === true;
-  if (isPage && definition.skins?.dom !== undefined)
-    errors.push({
-      kind: "invalid",
-      field: "skins",
-      reason: "a page scene takes no skin; style the page with CSS.",
-    });
-  const beats = compileBeats(definition.beats, definition.durationMs, isPage, errors);
+  const beats = compileBeats(definition.beats, definition.durationMs, errors);
   const frame = definition.frame ?? DEFAULT_FRAME;
   if (!(finite(frame.width) && finite(frame.height) && frame.width > 0 && frame.height > 0))
     errors.push({
@@ -500,7 +487,7 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   let members: readonly Member[] = [];
   if (beats !== undefined) {
     try {
-      members = compileCast(definition.cast(castBuilder<B>()), beats, isPage, errors);
+      members = compileCast(definition.cast(castBuilder<B>()), beats, errors);
     } catch (thrown) {
       errors.push({
         kind: "invalid",

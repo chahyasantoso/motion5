@@ -5,7 +5,6 @@ import {
   beat,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
   listPose,
@@ -257,12 +256,12 @@ describe("travel", () => {
   });
 
   it("lands fixed elements onto flow and sticky slots at two viewport sizes", () => {
-    const hero = box("hero", { node: el("#hero") });
-    const features = box("features", { node: el("#features") });
-    const story = box("story", { node: el("#story") });
-    const slotFeatures = box("slotFeatures", { node: el("#features .slot") });
-    const slotStory = box("slotStory", { node: el("#story .slot") });
-    const drink = box("drink", { node: el("#drink") });
+    const hero = box("hero");
+    const features = box("features");
+    const story = box("story");
+    const slotFeatures = box("slotFeatures");
+    const slotStory = box("slotStory");
+    const drink = box("drink");
 
     const toFeatures = beat("toFeatures", { scroll: [hero.top, features.top] });
     const toStory = beat("toStory", { scroll: [features.top, story.top] });
@@ -428,24 +427,12 @@ describe("travel", () => {
     // Atomic rollback: freshSlot must remain unclaimed after thirdScene failed.
     expect(() => sceneBuilder({ name: "fourthScene" }).element(freshSlot)).not.toThrow();
 
-    // Missing `{ node: el(...) }` on a travel slot fails page-scene compilation naming it.
-    const unlinkedSlot = box("unlinkedSlot");
-    const invalidPage = compileScene(
-      sceneBuilder()
-        .element(box("drink", { node: el("#drink") }))
-        .motion(travel({ to: unlinkedSlot }).in(enter)),
-    );
-    expect(invalidPage.ok).toBe(false);
-    if (!invalidPage.ok) {
-      expect(invalidPage.errors.map(formatStageError).join("\n")).toContain("unlinkedSlot");
-    }
-
     // Two elements named "hero", an edge and a slot, in the same `.motion(...)` call throws TypeError.
-    const collidingHero = box("hero", { node: el("#hero-section") });
-    const collidingSlot = box("hero", { node: el("#hero-slot") });
+    const collidingHero = box("hero");
+    const collidingSlot = box("hero");
     expect(() =>
       sceneBuilder()
-        .element(box("mover", { node: el("#mover") }))
+        .element(box("mover"))
         .motion(
           travel({ to: collidingSlot }).in(
             beat("move", { scroll: [collidingHero.top, collidingHero.end] }),

@@ -1,28 +1,11 @@
 import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
 import { makeScrollPoint, type ScrollPoint } from "./beat";
-import type { ItemContent, NodeBinding, Path, Pivot } from "./cast";
+import type { ItemContent, Path, Pivot } from "./cast";
 
-/** Binds an element or section to an existing DOM node matched by CSS `selector`. */
-export function el(selector: string): NodeBinding {
-  if (typeof selector !== "string" || selector.trim() === "")
-    throw new TypeError("el: selector must be a non-empty CSS selector string.");
-  return Object.freeze({ kind: "node", selector });
-}
-
-function isNodeBinding(value: unknown): value is NodeBinding {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Reflect.get(value, "kind") === "node" &&
-    typeof Reflect.get(value, "selector") === "string"
-  );
-}
-
-/** What stays true of an element in any scene: where it turns, whether pointer events reach it, and its page node. */
+/** What stays true of an element in any scene: where it turns, and whether pointer events reach it. */
 export interface ElementOptions {
   readonly pivot?: Pivot | undefined;
   readonly watch?: boolean | undefined;
-  readonly node?: NodeBinding | undefined;
 }
 
 /** Options of `text`: how to split it into parts. */
@@ -138,13 +121,10 @@ function edged<T extends ElementBody>(made: T): T & Edges {
 }
 
 function optionsOf(options: ElementOptions | undefined): ElementOptions {
-  const { pivot, watch, node } = options ?? {};
-  if (node !== undefined && !isNodeBinding(node))
-    throw new TypeError("element: `node` must be made by `el(selector)`.");
+  const { pivot, watch } = options ?? {};
   return Object.freeze({
     ...(pivot === undefined ? {} : { pivot: Object.freeze({ x: pivot.x, y: pivot.y }) }),
     ...(watch === undefined ? {} : { watch }),
-    ...(node === undefined ? {} : { node }),
   });
 }
 
@@ -248,7 +228,7 @@ export function many<T>(
   });
 }
 
-/** A Three.js object; its origin is the `Object3D`'s, and it has no node, skin, content, pivot or pointer events. */
+/** A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content, pivot or pointer events. */
 export function object(name: string, options?: ObjectOptions): ObjectElement {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))

@@ -4,7 +4,6 @@ import {
   beat,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
   poseOf,
@@ -18,7 +17,7 @@ const NAMES = ["reverse", "stay", "replay"] as const;
 let scene = sceneBuilder({ name: "triggers" });
 for (const back of NAMES)
   scene = scene
-    .element(box(back, { node: el(`#${back}`) }))
+    .element(box(back))
     .motion(rise.in(beat(`reveal-${back}`, 1000, { when: scrollPoint(300).reached, back })));
 
 const compiled = compileScene(scene);

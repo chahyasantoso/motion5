@@ -6,7 +6,6 @@ import {
   bind,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
   group,
@@ -35,7 +34,7 @@ const slideX = (distance: number) =>
 
 describe("an element's edges", () => {
   it("resolve top, end, plus, minus and reached from its rest box", () => {
-    const hero = box("hero", { node: el("#hero") });
+    const hero = box("hero");
     expect(hero.top.at(NO_REST)).toBe(0);
     expect(hero.end.at(NO_REST)).toBe(0);
     const rest = restReader({ hero: { x: 640, y: 360, width: 1280, height: 720 } });
@@ -48,20 +47,20 @@ describe("an element's edges", () => {
   });
 
   it("add the element to the piece when a scroll or trigger beat reads them", () => {
-    const hero = box("hero", { node: el("#hero") });
-    const story = box("story", { node: el("#story") });
+    const hero = box("hero");
+    const story = box("story");
     const spanBeat = beat("span", { scroll: [hero.top.plus(50), story.top.minus(50)] });
     const trigBeat = beat("trig", 400, { when: story.end.minus(100).reached, back: "stay" });
 
     const stage = compiled(
       sceneBuilder()
-        .element(box("badge", { node: el("#badge") }))
+        .element(box("badge"))
         .motion(slideX(100).in(spanBeat), slideX(50).in(trigBeat)),
     );
     expect(stage.members.map((member) => [member.name, member.expect, member.node])).toEqual([
-      ["badge", "settle", "#badge"],
-      ["hero", "static", "#hero"],
-      ["story", "static", "#story"],
+      ["badge", "settle", '[data-cast="badge"]'],
+      ["hero", "static", '[data-cast="hero"]'],
+      ["story", "static", '[data-cast="story"]'],
     ]);
 
     const boxes = {
@@ -82,20 +81,14 @@ describe("an element's edges", () => {
   });
 
   it("refuse two elements of one name, whether given motions or read for their edges", () => {
-    const heroA = box("hero", { node: el("#hero") });
-    const heroB = box("hero", { node: el(".hero-alt") });
+    const heroA = box("hero");
+    const heroB = box("hero");
     const b1 = beat("b1", { scroll: [heroA.top, heroA.end] });
     const b2 = beat("b2", { scroll: [heroB.top, heroB.end] });
     expect(() =>
-      sceneBuilder()
-        .element(box("card", { node: el("#card") }))
-        .motion(slideX(10).in(b1), slideX(20).in(b2)),
+      sceneBuilder().element(box("card")).motion(slideX(10).in(b1), slideX(20).in(b2)),
     ).toThrow(TypeError);
-    expect(() =>
-      sceneBuilder()
-        .element(box("hero", { node: el("#card") }))
-        .motion(slideX(10).in(b1)),
-    ).toThrow(TypeError);
+    expect(() => sceneBuilder().element(box("hero")).motion(slideX(10).in(b1))).toThrow(TypeError);
     expect(compiled(sceneBuilder().element(heroA).motion(slideX(10).in(b1))).members).toHaveLength(
       1,
     );
@@ -143,25 +136,21 @@ describe("single-scene element ownership", () => {
     const sharedMotion = bind({ y: (t, e) => scroll.y(t, e) * 0.5 });
     const s1 = compiled(
       sceneBuilder({ name: "one" })
-        .element(box("a", { node: el("#a") }))
+        .element(box("a"))
         .motion(slideX(10).in(sharedBeat), sharedMotion),
     );
     const s2 = compiled(
       sceneBuilder({ name: "two" })
-        .element(box("b", { node: el("#b") }))
+        .element(box("b"))
         .motion(slideX(20).in(sharedBeat), sharedMotion),
     );
     expect([s1.members.length, s2.members.length]).toEqual([1, 1]);
 
-    const shared = box("shared", { node: el("#shared") });
+    const shared = box("shared");
     const edgeBeat = beat("edge", { scroll: [shared.top, shared.end] });
-    sceneBuilder({ name: "three" })
-      .element(box("c", { node: el("#c") }))
-      .motion(slideX(10).in(edgeBeat));
+    sceneBuilder({ name: "three" }).element(box("c")).motion(slideX(10).in(edgeBeat));
     expect(() =>
-      sceneBuilder({ name: "four" })
-        .element(box("d", { node: el("#d") }))
-        .motion(slideX(10).in(edgeBeat)),
+      sceneBuilder({ name: "four" }).element(box("d")).motion(slideX(10).in(edgeBeat)),
     ).toThrow(/shared.*three.*four/);
   });
 });

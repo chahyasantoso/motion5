@@ -722,11 +722,6 @@ function describe(element: SceneElement): string {
   return `"${element.name}" (${element.kind})`;
 }
 
-/** The selector of the page node an element is bound to; an object has none. */
-function selectorOf(element: SceneElement): string | undefined {
-  return element.kind === "object" ? undefined : element.options.node?.selector;
-}
-
 /** The owner each included scene's owner was merged into. */
 const INCLUDED_IN = new WeakMap<SceneOwner, SceneOwner>();
 
@@ -993,12 +988,11 @@ function castOf(state: State, m: CastBuilder<string>): Members {
     if (element.kind === "group") for (const child of element.children) nested.add(child.name);
   const specOf = (element: SceneElement): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const { pivot, watch, node } = element.kind === "object" ? {} : element.options;
+    const { pivot, watch } = element.kind === "object" ? {} : element.options;
     let out = baseSpec(element, m, (child) => specOf(child));
     if (entry.show.length > 0) out = out.showing(entry.show);
     if (watch !== undefined) out = out.watch(watch);
     if (pivot !== undefined) out = out.pivot(pivot);
-    if (node !== undefined) out = out.node(node);
     const expect = expectOf(entry);
     switch (expect) {
       case "static":
@@ -1433,7 +1427,6 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
-  const isPage = [...state.elements.values()].some((element) => selectorOf(element) !== undefined);
   let maxTriggerMs = 0;
   for (const inputBeat of state.inputBeats.values())
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
@@ -1477,7 +1470,6 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
     ...(rest === undefined ? {} : { rest }),
-    ...(isPage ? { isPage: true } : {}),
     ...(settleMs === undefined ? {} : { settleMs }),
   };
 }

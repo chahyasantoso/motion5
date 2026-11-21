@@ -12,7 +12,6 @@ import {
   bind,
   box,
   compileScene,
-  el,
   many,
   object,
   sceneBuilder,
@@ -68,6 +67,8 @@ class FakeNode implements PageElement {
   ) {}
 
   matches(selector: string): boolean {
+    const cast = /^\[data-cast="(.*)"\]$/.exec(selector);
+    if (cast !== null) return (this.attributes.get("data-cast") ?? this.id) === cast[1];
     if (selector.startsWith("#")) return this.id === selector.slice(1);
     if (selector.startsWith(".")) return this.classes.includes(selector.slice(1));
     return false;
@@ -169,6 +170,7 @@ describe("mountPage", () => {
     const title = new FakeNode("title");
     title.textContent = "Existing Site Title";
     const items = [new FakeNode("i1", ["item"]), new FakeNode("i2", ["item"])];
+    for (const item of items) item.setAttribute("data-cast", "items");
     const root = new FakeRoot([card, title, ...items]);
 
     let ms = 0;
@@ -192,11 +194,11 @@ describe("mountPage", () => {
 
     const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(400)] });
     const scene = sceneBuilder()
-      .element(box("card", { node: el("#card"), watch: true }))
+      .element(box("card", { watch: true }))
       .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(sb))
-      .element(text("title", "", { node: el("#title") }))
+      .element(text("title", ""))
       .motion(bind({ y: (t, e) => pointer.y(t, e) * 10 }))
-      .element(many("items", 2, { node: el(".item") }))
+      .element(many("items", 2))
       .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 15 }));
 
     const mounted = mountPage(scene, {
@@ -246,7 +248,7 @@ describe("mountPage", () => {
     const scene = sceneBuilder()
       .element(object("drink"))
       .motion(motion((t): Pose3d => ({ rotationY: 90 * t.progress })).in(spin))
-      .element(box("card", { node: el("#card") }))
+      .element(box("card"))
       .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
     const seen: unknown[] = [];
     const mounted = mountPage(scene, { root, frames, clock: () => ms });
@@ -270,9 +272,9 @@ describe("mountPage", () => {
     });
     if (!skinned.ok) throw new Error("expected skinned stage to compile");
     expect(() => mountPage(skinned.stage, { root })).toThrow(/skin/i);
-    expect(() =>
-      mountPage(sceneBuilder().element(box("missing", { node: el("#missing") })), { root }),
-    ).toThrow(/"missing".*#missing/);
+    expect(() => mountPage(sceneBuilder().element(box("missing")), { root })).toThrow(
+      /"missing".*data-cast="missing"/,
+    );
   });
 
   it("supports send on the shared live clock and respects readouts without clobbering plain text", () => {
@@ -283,12 +285,14 @@ describe("mountPage", () => {
     const frames = fakeFrames();
     const mounted = mountPage(
       sceneBuilder()
-        .element(box("meter", { node: el("#meter") }))
+        .element(box("meter"))
         .motion(bind({ x: (t, e) => scroll.y(t, e) }))
         .element(
-          text("clock", (t) => `${Math.round(t.clock.kind === "live" ? t.clock.elapsed : 0)}ms`, {
-            node: el("#clock"),
-          }),
+          text(
+            "clock",
+            (t) => `${Math.round(t.clock.kind === "live" ? t.clock.elapsed : 0)}ms`,
+            {},
+          ),
         ),
       { root, frames, clock: () => ms },
     );
@@ -308,7 +312,7 @@ describe("mountPage", () => {
     let ms = 0;
     const mounted = mountPage(
       sceneBuilder()
-        .element(box("meter", { node: el("#meter") }))
+        .element(box("meter"))
         .motion(
           bind({
             x: (t, e) => {
@@ -337,7 +341,7 @@ describe("mountPage", () => {
     const root = new FakeRoot([headline]);
     const mounted = mountPage(
       sceneBuilder({ length: 1000 })
-        .element(text("headline", "One two", { split: "words", node: el("#headline") }))
+        .element(text("headline", "One two", { split: "words" }))
         .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 })),
       { root, frames: fakeFrames(), clock: () => 0 },
     );
@@ -355,7 +359,7 @@ describe("mountPage", () => {
     const root = new FakeRoot([solo]);
     const mounted = mountPage(
       sceneBuilder({ length: 500 })
-        .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
+        .element(text("solo", "HELLO", { split: "words" }))
         .motion(() => ({ x: 5 })),
       { root, frames: fakeFrames(), clock: () => 0 },
     );
@@ -370,8 +374,8 @@ describe("mountPage", () => {
     expect(() =>
       mountPage(
         sceneBuilder({ length: 500 })
-          .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
-          .element(box("missing", { node: el("#missing") })),
+          .element(text("solo", "HELLO", { split: "words" }))
+          .element(box("missing")),
         { root: rollbackRoot, frames: fakeFrames(), clock: () => 0 },
       ),
     ).toThrow(/"missing"/);
@@ -392,13 +396,13 @@ describe("mountPage", () => {
     const cardNode = new FakeNode("card");
     const root = new FakeRoot([heroNode, storyNode, cardNode]);
 
-    const hero = box("hero", { node: el("#hero") });
-    const story = box("story", { node: el("#story") });
+    const hero = box("hero");
+    const story = box("story");
     const sb = beat("go", { scroll: [hero.top, story.top] });
 
     const mounted = mountPage(
       sceneBuilder()
-        .element(box("card", { node: el("#card") }))
+        .element(box("card"))
         .motion(motion((t) => ({ x: 100 * t.progress })).in(sb)),
       { root, frames: fakeFrames(), clock: () => 0 },
     );
@@ -416,16 +420,16 @@ describe("mountPage", () => {
     expect(heroNode.style.transform).toBe("");
 
     const failSolo = new FakeNode("solo");
-    const missingSec = box("absent", { node: el("#absent") });
+    const missingSec = box("absent");
     const missingBeat = beat("miss", { scroll: [missingSec.top, missingSec.end] });
     expect(() =>
       mountPage(
         sceneBuilder()
-          .element(text("solo", "HELLO", { split: "words", node: el("#solo") }))
+          .element(text("solo", "HELLO", { split: "words" }))
           .motion(motion((t) => ({ x: 10 * t.progress })).in(missingBeat)),
         { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: () => 0 },
       ),
-    ).toThrow(/"absent".*#absent/);
+    ).toThrow(/"absent".*data-cast="absent"/);
     expect(failSolo.textContent).toBe("");
   });
 
@@ -449,7 +453,7 @@ describe("mountPage", () => {
     let sceneCalls = 0;
     const mounted = mountPage(
       sceneBuilder()
-        .element(box("card", { node: el("#card") }))
+        .element(box("card"))
         .motion(
           motion((t) => {
             sceneCalls += 1;
@@ -496,6 +500,7 @@ describe("mountPage frames for a cause", () => {
       ];
       const nodes = names.map((name) => new FakeNode(name));
       const parts = [0, 1, 2].map((index) => new FakeNode(`part${index}`, ["part"]));
+      for (const part of parts) part.setAttribute("data-cast", "parts");
       nodes.forEach((node, index) => {
         node.offsetTop = index * 300;
       });
@@ -525,19 +530,19 @@ describe("mountPage frames for a cause", () => {
       const range = beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] });
       const smooth = beat("smooth", { scroll: [scrollPoint(0), scrollPoint(400)], smooth: true });
       const scene = sceneBuilder()
-        .element(box("intro", { node: el("#intro") }))
+        .element(box("intro"))
         .motion(slide.in(beat("introBeat", 300)))
-        .element(box("scrolled", { node: el("#scrolled") }))
+        .element(box("scrolled"))
         .motion(slide.in(range))
-        .element(box("smoothed", { node: el("#smoothed") }))
+        .element(box("smoothed"))
         .motion(slide.in(smooth))
-        .element(box("revealed", { node: el("#revealed") }))
+        .element(box("revealed"))
         .motion(slide.in(beat("rev", 500, { when: scrollPoint(200).reached, back: "reverse" })))
-        .element(box("stayed", { node: el("#stayed") }))
+        .element(box("stayed"))
         .motion(slide.in(beat("sta", 400, { when: scrollPoint(150).reached, back: "stay" })))
-        .element(box("replayed", { node: el("#replayed") }))
+        .element(box("replayed"))
         .motion(slide.in(beat("rep", 300, { when: scrollPoint(250).reached, back: "replay" })))
-        .element(box("clocked", { node: el("#clocked") }))
+        .element(box("clocked"))
         .motion(
           motion(
             (_t, context?: { readonly time: { readonly clock: { readonly kind: string } } }) => ({
@@ -548,13 +553,13 @@ describe("mountPage frames for a cause", () => {
             }),
           ).in(range),
         )
-        .element(box("pointed", { node: el("#pointed") }))
+        .element(box("pointed"))
         .motion(bind({ x: (t, e) => pointer.x(t, e) * 100 }))
-        .element(box("sprung", { node: el("#sprung") }))
+        .element(box("sprung"))
         .motion(bind({ x: (t, e) => sprung(t, e) * 100 }))
-        .element(box("still", { node: el("#still") }))
+        .element(box("still"))
         .motion(counted.in(beat("stillBeat", 100)))
-        .element(many("parts", 3, { node: el(".part") }))
+        .element(many("parts", 3))
         .motion(
           slide.in(beat("partBeat", 400, { when: scrollPoint(300).reached, back: "reverse" })),
         );
@@ -623,11 +628,11 @@ describe("mountPage frames for a cause, reading another element", () => {
       const root = new FakeRoot([leaderNode, followerNode]);
       const frames = fakeFrames();
       let ms = 0;
-      const leader = box("leader", { node: el("#leader") });
+      const leader = box("leader");
       const scene = sceneBuilder()
         .element(leader)
         .motion(motion((t): Pose2d => ({ x: 100 * t.progress })).loop(700))
-        .element(box("follower", { node: el("#follower") }))
+        .element(box("follower"))
         .motion(
           motion((_t, context?: { read(target: typeof leader): Pose2d }) => ({
             y: context?.read(leader).x ?? 0,

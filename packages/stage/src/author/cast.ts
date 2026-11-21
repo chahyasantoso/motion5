@@ -24,12 +24,6 @@ export interface Pivot {
   readonly y: number;
 }
 
-/** A selector binding a page element to an existing DOM node. */
-export interface NodeBinding {
-  readonly kind: "node";
-  readonly selector: string;
-}
-
 /** When a member shows, as `.on` takes it: one beat, or every beat from the first to the second. */
 export type OnStretch<B extends string = string> = B | readonly [B, B];
 
@@ -51,7 +45,6 @@ export interface Meta<B extends string = string> {
   readonly watch?: boolean | undefined;
   readonly expect?: Expect | undefined;
   readonly pivot?: Pivot | undefined;
-  readonly node?: NodeBinding | undefined;
 }
 
 /** Modifiers every member takes; each returns a new member. */
@@ -63,8 +56,6 @@ export interface Modifiers<B extends string, S> {
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
   pivot(point: Pivot): S;
-  /** Binds this member to an existing DOM node on a page mount. */
-  node(binding: NodeBinding): S;
   /** The scene never poses it; a group's children keep their own expectation. */
   static(): S;
   /** It keeps moving, like snow; a group's children and a list's items inherit it. */
@@ -145,7 +136,6 @@ function modifiers<B extends string, S>(
     showing: (stretches) => next({ on: Object.freeze([...stretches]) }),
     watch: (enabled = true) => next({ watch: enabled }),
     pivot: (point) => next({ pivot: Object.freeze({ x: point.x, y: point.y }) }),
-    node: (binding) => next({ node: binding }),
     static: () => next({ expect: "static" }),
     ambient: () => next({ expect: "ambient" }),
     settle: () => next({ expect: "settle" }),

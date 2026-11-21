@@ -38,11 +38,11 @@ function writeScratchPage(): { readonly html: string } {
     </style>
   </head>
   <body>
-    <section id="hero"></section>
-    <section id="features"></section>
-    <section id="story">
+    <section id="hero" data-cast="hero"></section>
+    <section id="features" data-cast="features"></section>
+    <section id="story" data-cast="story">
       <div class="story-sticky">
-        <div id="badge"></div>
+        <div id="badge" data-cast="badge"></div>
       </div>
     </section>
     <script type="module" src="/${name}/src/main.ts"></script>
@@ -55,16 +55,16 @@ function writeScratchPage(): { readonly html: string } {
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
 import { mountPage } from "@gerak/dom";
-import { beat, box, el, restReader, sceneBuilder } from "@gerak/stage";
+import { beat, box, restReader, sceneBuilder } from "@gerak/stage";
 
-const hero = box("hero", { node: el("#hero") });
-const features = box("features", { node: el("#features") });
-const story = box("story", { node: el("#story") });
+const hero = box("hero");
+const features = box("features");
+const story = box("story");
 const travelStory = beat("to-story", { scroll: [hero.top, story.top] });
 const inFeatures = beat("in-features", { scroll: [features.top, features.end] });
 
 const scene = sceneBuilder()
-  .element(box("badge", { node: el("#badge") }))
+  .element(box("badge"))
   .motion(
     motion((t) => ({ x: 100 * t.progress })).in(travelStory),
     motion((t) => ({ y: 20 * t.progress })).in(inFeatures),

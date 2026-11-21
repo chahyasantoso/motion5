@@ -9,32 +9,31 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import { beat, bind, box, el, many, sceneBuilder, stagger, text, travel } from "@gerak/stage";
+import { beat, bind, box, many, sceneBuilder, stagger, text, travel } from "@gerak/stage";
 
 /** Cold-Pressed Sparkling Yuzu landing page choreography. */
 
-const hero = box("hero", { node: el("#hero") });
-const features = box("features", { node: el("#features") });
-const story = box("story", { node: el("#story") });
-const gallery = box("gallery", { node: el("#gallery") });
+const hero = box("hero");
+const features = box("features");
+const story = box("story");
+const gallery = box("gallery");
 
-const slotHero = box("slotHero", { node: el("#hero .slot") });
-const slotFeatures = box("slotFeatures", { node: el("#features .slot") });
-const slotStory = box("slotStory", { node: el("#story .slot") });
+const slotHero = box("slotHero");
+const slotFeatures = box("slotFeatures");
+const slotStory = box("slotStory");
 
-const drink = box("drink", { node: el("#drink") });
-const heroAura = box("heroAura", { node: el("#hero-aura") });
+const drink = box("drink");
+const heroAura = box("heroAura");
 const headline = text("headline", "Bright citrus pressed fresh every cold morning", {
   split: "words",
-  node: el("#hero-headline"),
 });
-const heroSub = box("heroSub", { node: el("#hero-sub") });
-const heroCta = box("heroCta", { node: el("#hero-cta") });
-const featureCards = many("featureCards", 3, { node: el("#features .feature-card") });
-const storyProgress = box("storyProgress", { node: el("#story-progress") });
-const storyStep1 = box("storyStep1", { node: el("#story-step-1") });
-const storyStep2 = box("storyStep2", { node: el("#story-step-2") });
-const galleryCards = many("galleryCards", 4, { node: el("#gallery .gallery-card") });
+const heroSub = box("heroSub");
+const heroCta = box("heroCta");
+const featureCards = many("featureCards", 3);
+const storyProgress = box("storyProgress");
+const storyStep1 = box("storyStep1");
+const storyStep2 = box("storyStep2");
+const galleryCards = many("galleryCards", 4);
 
 const intro = beat("intro", 700);
 const subIntro = beat("subIntro", 500, { at: 160 });
