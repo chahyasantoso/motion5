@@ -145,6 +145,9 @@ describe("yuzu landing page with travel and slots in Chromium", () => {
           // 6. Live viewport resize triggers remeasure() and keeps #drink aligned on #hero .slot.
           if (width === 1280) {
             await page.setViewportSize({ width: 390, height: 844 });
+            // The resize reaches the page in real time; the clock waits for it, then steps.
+            await page.waitForFunction(() => window.innerWidth === 390);
+            await page.evaluate(() => window.dispatchEvent(new Event("resize")));
             await advanceTo(3700);
             const drinkResized = await rectOf(page, "#drink");
             const slotResized = await rectOf(page, "#hero .slot");
