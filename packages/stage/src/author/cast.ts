@@ -30,8 +30,20 @@ export interface NodeBinding {
   readonly selector: string;
 }
 
-/** When a member shows: one beat, or every beat from the first to the second. */
-export type Stretch<B extends string = string> = B | readonly [B, B];
+/** When a member shows, as `.on` takes it: one beat, or every beat from the first to the second. */
+export type OnStretch<B extends string = string> = B | readonly [B, B];
+
+/** When a member shows: from one beat's start to another's end, from a beat's start on, or until a beat's end. */
+export type Stretch<B extends string = string> =
+  | { readonly kind: "beats"; readonly from: B; readonly to: B }
+  | { readonly kind: "from"; readonly from: B }
+  | { readonly kind: "until"; readonly until: B };
+
+/** A stretch from what `.on` takes. */
+export function stretchOf<B extends string>(on: OnStretch<B>): Stretch<B> {
+  const [from, to] = typeof on === "string" ? [on, on] : on;
+  return Object.freeze({ kind: "beats", from, to });
+}
 
 /** A member's modifiers as written. */
 export interface Meta<B extends string = string> {
@@ -45,7 +57,9 @@ export interface Meta<B extends string = string> {
 /** Modifiers every member takes; each returns a new member. */
 export interface Modifiers<B extends string, S> {
   /** Shows the member only during these stretches; children show only while it does. */
-  on(...stretches: Stretch<B>[]): S;
+  on(...stretches: OnStretch<B>[]): S;
+  /** Shows the member only during these stretches, as compiled. */
+  showing(stretches: readonly Stretch<B>[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
   pivot(point: Pivot): S;
@@ -127,7 +141,8 @@ function modifiers<B extends string, S>(
 ): Modifiers<B, S> {
   const next = (change: Meta<B>): S => rebuild(Object.freeze({ ...meta, ...change }));
   return {
-    on: (...stretches) => next({ on: Object.freeze([...stretches]) }),
+    on: (...stretches) => next({ on: Object.freeze(stretches.map(stretchOf)) }),
+    showing: (stretches) => next({ on: Object.freeze([...stretches]) }),
     watch: (enabled = true) => next({ watch: enabled }),
     pivot: (point) => next({ pivot: Object.freeze({ x: point.x, y: point.y }) }),
     node: (binding) => next({ node: binding }),

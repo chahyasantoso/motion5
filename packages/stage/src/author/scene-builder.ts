@@ -149,8 +149,12 @@ export interface ObjectStep extends SceneBuilder {
   limits(limits: Limits): ObjectStep;
 }
 
-/** A beat, or two beats: from the start of the first to the end of the second. */
-export type ShowWindow = Beat | readonly [from: Beat, to: Beat];
+/** A beat; two beats, from the start of the first to the end of the second; from a beat's start on; or until a beat's end. */
+export type ShowWindow =
+  | Beat
+  | readonly [from: Beat, to: Beat]
+  | { readonly from: Beat }
+  | { readonly until: Beat };
 
 type MotionStep = {
   readonly kind: "motion";
@@ -958,7 +962,7 @@ function castOf(state: State, m: CastBuilder<string>): Members {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
     const { pivot, watch, node } = element.kind === "object" ? {} : element.options;
     let out = baseSpec(element, m, (child) => specOf(child));
-    if (entry.show.length > 0) out = out.on(...entry.show);
+    if (entry.show.length > 0) out = out.showing(entry.show);
     if (watch !== undefined) out = out.watch(watch);
     if (pivot !== undefined) out = out.pivot(pivot);
     if (node !== undefined) out = out.node(node);
@@ -1500,18 +1504,27 @@ function elementOf(state: State): SceneBuilder["element"] {
   return element;
 }
 
+function isPair(window: ShowWindow): window is readonly [from: Beat, to: Beat] {
+  return Array.isArray(window);
+}
+
 /** The state after `.show(...windows)` on the selected element. */
 function shown(state: State, windows: readonly ShowWindow[]): State {
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
+  const used = (end: unknown): Beat => {
+    const beat = beatOf(end);
+    if (beat === undefined)
+      throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
+    withBeat(beats, inputBeats, beat);
+    return beat;
+  };
   const stretches = windows.map((window): Stretch => {
-    const [from, to] = "name" in window ? [window, window] : window;
-    for (const end of [from, to]) {
-      if (beatOf(end) === undefined)
-        throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
-      withBeat(beats, inputBeats, end);
-    }
-    return from === to ? from.name : [from.name, to.name];
+    if (isPair(window))
+      return { kind: "beats", from: used(window[0]).name, to: used(window[1]).name };
+    if ("name" in window) return { kind: "beats", from: used(window).name, to: window.name };
+    if ("from" in window) return { kind: "from", from: used(window.from).name };
+    return { kind: "until", until: used(window.until).name };
   });
   const [, entry] = entryOf(state);
   return { ...changed(state, { show: [...entry.show, ...stretches] }), beats, inputBeats };

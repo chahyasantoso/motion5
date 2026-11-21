@@ -118,6 +118,20 @@ describe("sceneBuilder: what a chain compiles to", () => {
     expect(stage.frame).toEqual({ width: 800, height: 400 });
   });
 
+  it("shows an element from a beat's start on, or from the start until a beat's end", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 3000 })
+        .element(box("late"))
+        .show({ from: hold })
+        .element(box("early"))
+        .show({ until: enter }),
+    );
+    expect(stage.members.map((member) => member.on)).toEqual([
+      [[500, Number.POSITIVE_INFINITY]],
+      [[0, 400]],
+    ]);
+  });
+
   it("gathers the beats used by in and show, the length from the latest end, and the limits", () => {
     const stage = compiled(chain);
     expect(Object.keys(stage.beats)).toEqual(["enter", "hold"]);

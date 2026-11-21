@@ -191,19 +191,42 @@ function windowsOf(
     return undefined;
   }
   const windows: Window[] = [];
+  const known = (beat: string): Span | undefined => {
+    const found = beats.beats[beat];
+    if (found === undefined) errors.push({ kind: "unknown_beat", member: name, beat });
+    return found;
+  };
   for (const stretch of stretches) {
-    const [first, last] = typeof stretch === "string" ? [stretch, stretch] : stretch;
-    const start = beats.beats[first];
-    const end = beats.beats[last];
-    if (start === undefined) errors.push({ kind: "unknown_beat", member: name, beat: first });
-    if (end === undefined && last !== first)
-      errors.push({ kind: "unknown_beat", member: name, beat: last });
-    if (start === undefined || end === undefined) continue;
-    if (end.to <= start.from) {
-      errors.push({ kind: "reversed_stretch", member: name, from: first, to: last });
-      continue;
+    switch (stretch.kind) {
+      case "beats": {
+        const start = known(stretch.from);
+        const end = stretch.to === stretch.from ? start : known(stretch.to);
+        if (start === undefined || end === undefined) continue;
+        if (end.to <= start.from) {
+          errors.push({
+            kind: "reversed_stretch",
+            member: name,
+            from: stretch.from,
+            to: stretch.to,
+          });
+          continue;
+        }
+        windows.push(windowOf(start.from, end.to, beats.durationMs));
+        break;
+      }
+      case "from": {
+        const start = known(stretch.from);
+        if (start !== undefined) windows.push(windowOf(start.from, Infinity, beats.durationMs));
+        break;
+      }
+      case "until": {
+        const end = known(stretch.until);
+        if (end !== undefined) windows.push(windowOf(0, end.to, beats.durationMs));
+        break;
+      }
+      default:
+        return unreachable(stretch);
     }
-    windows.push(windowOf(start.from, end.to, beats.durationMs));
   }
   return Object.freeze(windows);
 }
