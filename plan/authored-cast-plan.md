@@ -130,9 +130,12 @@ Each step is one commit or a few, green on `npm run check`, in this order:
      boxes with placement, lines, cast parents, and a digest of the page and its stylesheets. A builder scene
      `<brief>/src/<name>.ts` whose page exists is refused without a cache matching that digest.
    - The frame size is the markup's: a fitted root's CSS size; the scene's `frame` option is gone.
-   - An object's rest position and parent join the cache with the Three.js binder (step 3).
+   - Objects stay out of the cache until a headless tool reads an object's rest.
 3. **Binders.** The DOM and Three.js binders, `data-cast` matching and override maps; `el()` and `bindScene3d`'s map
    move behind them.
+   - `mount` is the DOM binder, with `nodes` overriding the `data-cast` match by name; `binders` draw the objects,
+     each object claimed by exactly one. `threeBinder(root, { objects, draw })` matches `getObjectByName` and replaces
+     `bindScene3d`; the React 3D pieces call its `start` on their own player until step 7 mounts them.
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
    The scene's `rest` and `layouts` options go too: the cache owns rest. Their tests go in the same commit.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
