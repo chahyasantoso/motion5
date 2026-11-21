@@ -205,7 +205,6 @@ describe("compileStage", () => {
       compiled(
         defineStage({
           beats: { a: [0, 100] },
-          frame: { width: 100 * scale, height: 100 },
           cast: (m) => ({ card: m.group({ title: m.text(word) }) }),
           scene: () => ({ title: { scale } }),
         }),

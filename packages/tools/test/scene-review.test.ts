@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { elapsedOf, type Time } from "@gerak/core";
 import { afterEach, describe, expect, it } from "vitest";
+import type { MeasureCache } from "../src/page/measure-cache";
 import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
 import {
   isSceneFile,
@@ -21,8 +22,12 @@ import * as stageClean from "./fixtures/stage-clean";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
-function review(module: unknown, options: { to?: number } = {}): SceneReviewResult {
-  const read = readModule(module);
+function review(
+  module: unknown,
+  options: { to?: number } = {},
+  measured?: MeasureCache,
+): SceneReviewResult {
+  const read = readModule(module, measured);
   if ("reason" in read) throw new Error(read.reason);
   return reviewSceneModule(read, { ...limits, ...options });
 }
@@ -298,30 +303,37 @@ describe("gerak review expectations and shape mismatches", () => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
-  it("enforces ambient limits and stage bounds while skipping settle rest check", () => {
+  it("enforces ambient limits and the measured frame's bounds while skipping settle rest check", () => {
+    const measured = (
+      frame: { readonly width: number; readonly height: number },
+      rest: MeasureCache["rest"] = {},
+    ): MeasureCache => ({ page: "orb.html", digest: "", frame, rest, lines: {}, parents: {} });
     const cleanAmbient = defineStage({
-      frame: { width: 400, height: 300 },
       beats: { loop: [0, 1000] },
       cast: (m) => ({ orb: m.box().ambient() }),
       scene: ({ time }) => ({
         orb: { x: 200 + 50 * Math.sin(time.progress * Math.PI * 2), y: 150 },
       }),
     });
-    expect(review(cleanAmbient).findings).toEqual([]);
+    expect(review(cleanAmbient, {}, measured({ width: 400, height: 300 })).findings).toEqual([]);
 
     const outOfBounds = defineStage({
-      frame: { width: 400, height: 300 },
       beats: { loop: [0, 1000] },
-      rest: { orb: { x: 100, y: 100, width: 20, height: 20 } },
       cast: (m) => ({ orb: m.box().ambient() }),
       scene: ({ time }) => ({ orb: { x: 350 * time.progress } }),
     });
+    const orbRest: MeasureCache["rest"] = {
+      orb: { x: 100, y: 100, width: 20, height: 20, placement: { kind: "flow" } },
+    };
+    const bounded = measured({ width: 400, height: 300 }, orbRest);
+    expect(
+      review(outOfBounds, {}, bounded).findings.some((line) => /leaves stage bounds/.test(line)),
+    ).toBe(true);
     expect(review(outOfBounds).findings.some((line) => /leaves stage bounds/.test(line))).toBe(
-      true,
+      false,
     );
 
     const jumpingAmbient = defineStage({
-      frame: { width: 800, height: 600 },
       beats: { loop: [0, 1000] },
       cast: (m) => ({ orb: m.box().ambient() }),
       limits: { orb: { jump: 10 } },
@@ -344,20 +356,24 @@ describe("gerak review expectations and shape mismatches", () => {
     expect(review(broken).findings).toEqual(["boom"]);
   });
 
-  it("judges an ambient member's bounds only where its box is measured", () => {
+  it("judges an ambient member's bounds only where its box and frame are measured", () => {
     const unmeasured = defineStage({
       beats: { show: [0, 400] },
       cast: (m) => ({ flake: m.box().ambient() }),
       scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
     });
     expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
-    const measured = defineStage({
-      beats: { show: [0, 400] },
-      rest: { flake: { x: 5, y: 5, width: 4, height: 4 } },
-      cast: (m) => ({ flake: m.box().ambient() }),
-      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
-    });
-    expect(review(measured).findings.filter((line) => /bounds/.test(line))).toHaveLength(1);
+    const cache: MeasureCache = {
+      page: "flake.html",
+      digest: "",
+      frame: { width: 100, height: 100 },
+      rest: { flake: { x: 5, y: 5, width: 4, height: 4, placement: { kind: "flow" } } },
+      lines: {},
+      parents: {},
+    };
+    expect(
+      review(unmeasured, {}, cache).findings.filter((line) => /bounds/.test(line)),
+    ).toHaveLength(1);
   });
 
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {

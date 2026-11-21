@@ -71,7 +71,6 @@ export {
   type Carry,
   type CarryMode,
   type CarryOptions,
-  type Frame,
   type Rest,
   type RestReader,
 } from "./author/layout";
@@ -83,7 +82,6 @@ export {
   type Moves,
 } from "./author/stage";
 export {
-  DEFAULT_FRAME,
   isStage,
   type CompileResult,
   type Member,

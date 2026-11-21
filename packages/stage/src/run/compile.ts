@@ -17,7 +17,7 @@ import {
   type Pivot,
   type Stretch,
 } from "../author/cast";
-import { NO_REST, restReader, type Frame, type Rest, type RestReader } from "../author/layout";
+import { NO_REST, restReader, type Rest, type RestReader } from "../author/layout";
 import type { LayoutsInput, Limits, SceneContext, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
@@ -59,7 +59,6 @@ export interface StageLayouts {
 export interface Stage {
   readonly kind: "stage";
   readonly durationMs: number;
-  readonly frame: Frame;
   readonly beats: Readonly<Record<string, Span>>;
   readonly members: readonly Member[];
   readonly layouts: StageLayouts;
@@ -78,9 +77,6 @@ export interface Stage {
 export type CompileResult =
   | { readonly ok: true; readonly stage: Stage }
   | { readonly ok: false; readonly errors: readonly StageError[] };
-
-/** The frame of a piece that gives none. */
-export const DEFAULT_FRAME: Frame = Object.freeze({ width: 1280, height: 720 });
 
 const CUBIC_KEYS = ["x0", "y0", "x1", "y1", "x2", "y2", "x3", "y3"] as const;
 
@@ -457,13 +453,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
 ): CompileResult {
   const errors: StageError[] = [];
   const beats = compileBeats(definition.beats, definition.durationMs, errors);
-  const frame = definition.frame ?? DEFAULT_FRAME;
-  if (!(finite(frame.width) && finite(frame.height) && frame.width > 0 && frame.height > 0))
-    errors.push({
-      kind: "invalid",
-      field: "frame",
-      reason: "`frame` needs a width and height above 0.",
-    });
   let members: readonly Member[] = [];
   if (beats !== undefined) {
     try {
@@ -483,7 +472,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
-    frame: Object.freeze({ width: frame.width, height: frame.height }),
     beats: beats.beats,
     members,
     layouts,

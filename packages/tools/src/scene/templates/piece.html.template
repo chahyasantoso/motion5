@@ -11,6 +11,8 @@
         height: 100%;
       }
       #frame {
+        width: 1280px;
+        height: 720px;
         display: grid;
         place-items: center;
         font-family: system-ui, sans-serif;

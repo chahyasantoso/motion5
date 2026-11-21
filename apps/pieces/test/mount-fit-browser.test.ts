@@ -27,7 +27,7 @@ function writeScratchPage(holder: { readonly width: number; readonly height: num
     <style>
       body { margin: 0; }
       #holder { width: ${holder.width}px; height: ${holder.height}px; }
-      #frame { position: relative; background: #eee; }
+      #frame { position: relative; width: 400px; height: 200px; background: #eee; }
       [data-cast="dot"] { position: absolute; left: 280px; top: 80px; width: 40px; height: 40px; background: #36c; }
     </style>
   </head>
@@ -46,12 +46,13 @@ import { box, sceneBuilder } from "@gerak/stage";
 
 const root = document.getElementById("frame");
 if (root === null) throw new Error("#frame not found");
-const mounted = mount(sceneBuilder({ frame: { width: 400, height: 200 }, length: 500 }).element(box("dot")), {
+const mounted = mount(sceneBuilder({ length: 500 }).element(box("dot")), {
   clock: "timed",
   frame: "fit",
   root,
 });
 Reflect.set(window, "__rest", mounted.rest);
+Reflect.set(window, "__frame", mounted.measure().frame);
 `,
     "utf8",
   );
@@ -62,7 +63,7 @@ beforeAll(removeLeftovers);
 afterAll(removeLeftovers);
 
 describe('mount with frame "fit"', () => {
-  it("sizes the root to the scene's frame, scales it to its parent's box, and measures in frame px", async () => {
+  it("takes the root's CSS size as the frame, scales it to its parent's box, and measures in frame px", async () => {
     const page = writeScratchPage({ width: 200, height: 300 });
     await withPage(
       { page, width: 800, height: 600, source: PIECES_SOURCE },
@@ -73,16 +74,14 @@ describe('mount with frame "fit"', () => {
           if (frame === null || dot === null) throw new Error("missing nodes");
           const drawn = frame.getBoundingClientRect();
           return {
-            width: frame.style.width,
-            height: frame.style.height,
+            measured: Reflect.get(window, "__frame"),
             overflow: frame.style.overflow,
             drawnWidth: drawn.width,
             dotLeft: dot.getBoundingClientRect().left,
             rest: Reflect.get(window, "__rest"),
           };
         });
-        expect(seen.width).toBe("400px");
-        expect(seen.height).toBe("200px");
+        expect(seen.measured).toEqual({ width: 400, height: 200 });
         expect(seen.overflow).toBe("hidden");
         expect(seen.drawnWidth).toBeCloseTo(200, 3);
         expect(seen.dotLeft).toBeCloseTo(140, 3);

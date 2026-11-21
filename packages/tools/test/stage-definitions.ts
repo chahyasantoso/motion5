@@ -1,4 +1,5 @@
 import { formatStageError } from "@gerak/stage";
+import type { MeasureCache } from "../src/page/measure-cache";
 import { readSceneModule, type SceneModule } from "../src/scene/scene";
 import { moduleFromStage } from "../src/scene/scene";
 import { compileStage } from "../../stage/src/run/compile";
@@ -8,11 +9,14 @@ export { compileStage, defineStage, isStageDefinition, type StageDefinition };
 export type { CastBuilder } from "../../stage/src/author/cast";
 
 /** A stage read the way review reads a piece, built from the stage package's own compiler input. */
-export function readModule(value: unknown): SceneModule | { readonly reason: string } {
-  if (!isStageDefinition(value)) return readSceneModule(value);
+export function readModule(
+  value: unknown,
+  measured?: MeasureCache,
+): SceneModule | { readonly reason: string } {
+  if (!isStageDefinition(value)) return readSceneModule(value, measured);
   const compiled = compileStage(value);
   if (!compiled.ok) return { reason: compiled.errors.map(formatStageError).join("\n") };
-  return moduleFromStage(compiled.stage);
+  return moduleFromStage(compiled.stage, measured);
 }
 
 /** A definition with no checks on its options, for the mistakes the builder cannot write. */

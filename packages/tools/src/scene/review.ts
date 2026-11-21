@@ -414,9 +414,12 @@ function frameEvaluationFindings(evaluated: readonly EvaluatedSample[]): readonl
   );
 }
 
-/** An ambient member that leaves the frame while it shows. */
+/** The measured frame's size, which ambient members stay inside. */
+type FrameSize = { readonly width: number; readonly height: number };
+
+/** An ambient member that leaves the measured frame while it shows. */
 function ambientBoundsFindings(
-  stage: Stage,
+  frame: FrameSize,
   reviewed: Reviewed,
   evaluated: readonly EvaluatedSample[],
   rest: RestReader,
@@ -432,16 +435,16 @@ function ambientBoundsFindings(
     const y: unknown = Reflect.get(pose, "y");
     if (typeof x === "number" && Number.isFinite(x)) {
       const px = box.x + x;
-      if (px < 0 || px > stage.frame.width)
+      if (px < 0 || px > frame.width)
         return [
-          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (x=${Math.round(px * 100) / 100}, frame width ${stage.frame.width}).`,
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (x=${Math.round(px * 100) / 100}, frame width ${frame.width}).`,
         ];
     }
     if (typeof y === "number" && Number.isFinite(y)) {
       const py = box.y + y;
-      if (py < 0 || py > stage.frame.height)
+      if (py < 0 || py > frame.height)
         return [
-          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (y=${Math.round(py * 100) / 100}, frame height ${stage.frame.height}).`,
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (y=${Math.round(py * 100) / 100}, frame height ${frame.height}).`,
         ];
     }
   }
@@ -468,6 +471,7 @@ function stageMemberFindings(
   evaluated: readonly EvaluatedSample[],
   rest: RestReader,
   unmeasured: boolean,
+  frame: FrameSize | undefined,
 ): readonly string[] {
   const found: string[] = [];
   if (unmeasured)
@@ -505,7 +509,8 @@ function stageMemberFindings(
           found.push(
             `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
           );
-        found.push(...ambientBoundsFindings(stage, reviewed, evaluated, rest));
+        if (frame !== undefined)
+          found.push(...ambientBoundsFindings(frame, reviewed, evaluated, rest));
         break;
       case "static":
         break;
@@ -826,7 +831,7 @@ export function reviewSceneModule(
     findings: [
       ...frameEvaluationFindings(evaluated),
       ...valueFindings.map((finding) => labelled(stage, finding)),
-      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
+      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured, module.measured?.frame),
       ...stagePathFindings(stage, rest),
     ],
   };

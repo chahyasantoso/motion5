@@ -167,7 +167,7 @@ describe("gerak review of a member still ringing", () => {
 
 describe("one reader of a stage module", () => {
   it("refuses a bad stage module with the reason @gerak/stage gives", () => {
-    const bad = rawStage({ ...cleanDefinition, frame: { width: 0, height: 10 } });
+    const bad = rawStage({ ...cleanDefinition, durationMs: -1 });
     const own = compileStage(bad);
     const tools = readModule(bad);
     expect(

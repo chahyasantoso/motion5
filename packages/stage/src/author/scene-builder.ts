@@ -49,7 +49,7 @@ import {
   type Stretch,
 } from "./cast";
 import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
-import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
+import type { Carry, CarryOptions, Rest, RestReader } from "./layout";
 import type {
   LayoutsInput,
   Limits,
@@ -104,7 +104,6 @@ export type Principle3d = (signal: Signal<Pose3d>) => Signal<Pose3d>;
 export interface SceneBuilderOptions {
   /** Optional scene label shown in ownership diagnostics. */
   readonly name?: string | undefined;
-  readonly frame?: Frame | undefined;
   readonly cues?: Events | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
@@ -731,7 +730,7 @@ function owns(owner: SceneOwner, held: SceneOwner): boolean {
   return false;
 }
 
-const SCENE_OPTIONS = ["frame", "cues", "length", "layouts", "rest"] as const;
+const SCENE_OPTIONS = ["cues", "length", "layouts", "rest"] as const;
 
 /** `.include` for a state: merges another scene's state into it. */
 function includeOf(state: State): SceneBuilder["include"] {
@@ -1431,7 +1430,7 @@ function definitionOf(state: State): StageDefinition {
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
       maxTriggerMs = inputBeat.ms;
   const settleMs = maxTriggerMs > 0 ? Math.max(2000, maxTriggerMs + 200) : undefined;
-  const { frame, cues, layouts, rest } = state.options;
+  const { cues, layouts, rest } = state.options;
   return {
     kind: "stage-definition",
     beats: Object.fromEntries(
@@ -1464,7 +1463,6 @@ function definitionOf(state: State): StageDefinition {
       return out;
     },
     ...(durationMs === undefined ? {} : { durationMs }),
-    ...(frame === undefined ? {} : { frame }),
     ...(cues === undefined ? {} : { cues }),
     ...(layouts === undefined ? {} : { layouts }),
     ...(rest === undefined ? {} : { rest }),

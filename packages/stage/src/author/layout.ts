@@ -1,11 +1,5 @@
 import type { Ease, Events, Pose2d } from "@gerak/core";
 
-/** Stage size in px. */
-export interface Frame {
-  readonly width: number;
-  readonly height: number;
-}
-
 /** Where a member rests once laid out: its centre and size in frame px. */
 export interface Box {
   readonly x: number;

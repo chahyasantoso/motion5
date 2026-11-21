@@ -1,7 +1,7 @@
 import type { Events, Pose2d, Pose3d, Span, Time } from "@gerak/core";
 import type { CastBuilder, Members } from "./cast";
 import type { ScrollBeat, TriggerBeat } from "./beat";
-import type { Carry, Frame, Rest, RestReader } from "./layout";
+import type { Carry, Rest, RestReader } from "./layout";
 
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
@@ -93,7 +93,6 @@ export interface StageOptions<B extends string, M extends Members<B>, L extends 
   readonly beats: Readonly<Record<B, readonly [number, number]>>;
   /** Defaults to the last beat's end; longer holds the end. */
   readonly durationMs?: number | undefined;
-  readonly frame?: Frame | undefined;
   readonly cast: (m: CastBuilder<NoInfer<B>>) => M;
   readonly rest?: Rest | undefined;
   readonly layouts?: LayoutsInput<L> | undefined;

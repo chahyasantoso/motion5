@@ -58,7 +58,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Principle`** `type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>`: Wraps the signal of every motion above it in a `.modify` call.
 - **`ReadAt`** `type ReadAt = { time?: Time; index?: number; count?: number }`: Where `read` looks: another time, or another part of a list.
 - **`SceneBuilder`** `type SceneBuilder = { kind: "scene"; element: { (element: ObjectElement): ObjectStep; (element: Element): ElementStep; }; include: (scene: SceneBuilder) => SceneBuilder }`: A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable.
-- **`SceneBuilderOptions`** `type SceneBuilderOptions = { name?: string | undefined; frame?: Frame | undefined; cues?: Events | undefined; length?: number | undefined; layouts?: LayoutsInput<string> | undefined; rest?: Readonly<Record<string, Box>> | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
+- **`SceneBuilderOptions`** `type SceneBuilderOptions = { name?: string | undefined; cues?: Events | undefined; length?: number | undefined; layouts?: LayoutsInput<string> | undefined; rest?: Readonly<Record<string, Box>> | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
 - **`SceneMotion`** `type SceneMotion = (time: Time, context: MotionContext) => Pose2d`: A core `Motion`, or a plain function from time and context to a pose.
 - **`ShowWindow`** `type ShowWindow = Beat | readonly [from: Beat, to: Beat] | { readonly from: Beat; } | { readonly until: Beat; }`: A beat; two beats, from the start of the first to the end of the second; from a beat's start on; or until a beat's end.
 - **`StaggerBy`** `type StaggerBy = "index" | "line"`: Whether `stagger` orders lanes by part index or by measured visual line.
@@ -72,7 +72,6 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Carry`** `type Carry = (member: string, options: CarryOptions) => Pose2d`: Moves `member` from its box in the last layout to its box in the next, over `options.ms`.
 - **`CarryMode`** `type CarryMode = "scale" | "clip" | "keep"`: How a carried member takes the size of its target box.
 - **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, layout: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
-- **`Frame`** `type Frame = { width: number; height: number }`: Stage size in px.
 - **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member name.
 - **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[] }`: Reads rest boxes; a name never measured answers a zero box.
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.

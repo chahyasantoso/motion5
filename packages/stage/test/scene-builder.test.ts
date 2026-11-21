@@ -86,7 +86,7 @@ describe("sceneBuilder: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
   const card = box("card", { pivot: { x: 4, y: 6 }, watch: true });
   const word = text("word", "HEY", { split: "letters" });
-  const chain = sceneBuilder({ frame: { width: 800, height: 400 } })
+  const chain = sceneBuilder()
     .element(card)
     .motion(slideX(100).in(enter))
     .show(enter, hold)
@@ -115,7 +115,6 @@ describe("sceneBuilder: what a chain compiles to", () => {
       [0, 400],
       [500, Number.POSITIVE_INFINITY],
     ]);
-    expect(stage.frame).toEqual({ width: 800, height: 400 });
   });
 
   it("shows an element from a beat's start on, or from the start until a beat's end", () => {

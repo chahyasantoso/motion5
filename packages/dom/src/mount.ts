@@ -150,7 +150,7 @@ export interface PageScrollTarget {
  * `"timed"` runs over the scene's length and seeks, for reels and capture. */
 export type MountClock = "live" | "timed";
 
-/** Where a mount draws: `"page"` in place, or `"fit"`, which sizes `root` to the scene's frame,
+/** Where a mount draws: `"page"` in place, or `"fit"`, which takes `root`'s CSS size as the frame,
  * clips it and scales it about its top left to its parent's box, or else the viewport. */
 export type MountFrame = "page" | "fit";
 
@@ -711,27 +711,28 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     return { width: 1280, height: 720 };
   };
 
-  // A fitted root is the scene's frame in px, clipped, scaled about its top left to fit its parent.
-  const sizeFrame = (): void => {
-    if (fitted === undefined) return;
-    Object.assign(fitted.style, {
-      width: `${stage.frame.width}px`,
-      height: `${stage.frame.height}px`,
-      overflow: "hidden",
-      transformOrigin: "0 0",
-    });
+  // A fitted root's CSS size is the frame; it is clipped and scaled about its top left to fit its parent.
+  const fittedSize = (root: HTMLElement): { readonly width: number; readonly height: number } => {
+    const size = { width: root.offsetWidth, height: root.offsetHeight };
+    if (!(size.width > 0 && size.height > 0))
+      throw new Error('mount: a root with `frame: "fit"` needs a width and height in its CSS.');
+    return size;
   };
+  if (fitted !== undefined) {
+    fittedSize(fitted);
+    Object.assign(fitted.style, { overflow: "hidden", transformOrigin: "0 0" });
+  }
   const scaleFrame = (): void => {
     if (fitted === undefined) return;
+    const frame = fittedSize(fitted);
     const parent = fitted.parentElement;
     const box =
       parent !== null && parent.clientWidth > 0 && parent.clientHeight > 0
         ? { width: parent.clientWidth, height: parent.clientHeight }
         : readViewport();
-    const scale = Math.min(box.width / stage.frame.width, box.height / stage.frame.height);
+    const scale = Math.min(box.width / frame.width, box.height / frame.height);
     fitted.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
-  sizeFrame();
 
   let currentRest: Rest = {};
   let currentReader: RestReader = restReader();
@@ -1422,10 +1423,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       const parent = parentOf(node);
       if (parent !== undefined) parents[name] = parent;
     }
-    const frame =
-      fitted === undefined
-        ? readViewport()
-        : { width: fitted.offsetWidth, height: fitted.offsetHeight };
+    const frame = fitted === undefined ? readViewport() : fittedSize(fitted);
     return { frame, rest, lines: currentLines, parents };
   };
 
@@ -1453,7 +1451,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         const member = nextStage.members.find((each) => each.name === target.member.name);
         if (member !== undefined && member.kind === target.member.kind) target.member = member;
       }
-      sizeFrame();
       remeasure();
       player.replace(sceneSignal, nextStage.cues);
     },
