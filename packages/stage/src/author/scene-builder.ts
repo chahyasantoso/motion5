@@ -121,6 +121,8 @@ export interface SceneBuilder {
   readonly kind: "scene";
   element(element: ObjectElement): ObjectStep;
   element(element: Element): ElementStep;
+  /** Merges `scene`'s elements, beats and motions into this one, on one clock; nothing is selected after. */
+  include(scene: SceneBuilder): SceneBuilder;
 }
 
 /** A piece with one element selected; the order of `.motion` and `.modify` calls matters. */
@@ -728,6 +730,75 @@ function selectorOf(element: SceneElement): string | undefined {
   return element.kind === "object" ? undefined : element.options.node?.selector;
 }
 
+/** The owner each included scene's owner was merged into. */
+const INCLUDED_IN = new WeakMap<SceneOwner, SceneOwner>();
+
+/** Whether `owner` is `held` or took it in, directly or through scenes it included. */
+function owns(owner: SceneOwner, held: SceneOwner): boolean {
+  for (let at: SceneOwner | undefined = held; at !== undefined; at = INCLUDED_IN.get(at))
+    if (at === owner) return true;
+  return false;
+}
+
+const SCENE_OPTIONS = ["frame", "cues", "length", "layouts", "rest"] as const;
+
+/** `.include` for a state: merges another scene's state into it. */
+function includeOf(state: State): SceneBuilder["include"] {
+  return (scene) => {
+    const other = isScene(scene) ? stateOf(scene) : undefined;
+    if (other === undefined)
+      throw new TypeError("sceneBuilder: `.include` takes what `sceneBuilder` returns.");
+    const named = `scene "${other.owner.label}"`;
+    if (owns(state.owner, other.owner))
+      throw new TypeError(`sceneBuilder: ${named} is already in "${state.owner.label}".`);
+    const merged = INCLUDED_IN.get(other.owner);
+    if (merged !== undefined)
+      throw new TypeError(`sceneBuilder: ${named} is already included in "${merged.label}".`);
+    for (const option of SCENE_OPTIONS)
+      if (other.options[option] !== undefined)
+        throw new TypeError(
+          `sceneBuilder: ${named} sets \`${option}\`; only the scene that is mounted sets it.`,
+        );
+    const elements = new Map(state.elements);
+    for (const [name, element] of other.elements) {
+      const held = elements.get(name);
+      if (held !== undefined && held !== element)
+        throw new TypeError(
+          `sceneBuilder: ${describe(element)} of ${named} takes the name of ${describe(held)}.`,
+        );
+      elements.set(name, element);
+    }
+    const beats = new Map(state.beats);
+    const inputBeats = new Map(state.inputBeats);
+    for (const beat of other.beats.values()) withBeat(beats, inputBeats, beat);
+    for (const beat of other.inputBeats.values()) withInputBeat(beats, inputBeats, beat);
+    const sections = new Map(state.sections);
+    for (const [name, section] of other.sections) {
+      const prior = sections.get(name);
+      if (prior !== undefined && prior.selector !== section.selector)
+        throw new RangeError(
+          `sceneBuilder: section "${name}" uses selector "${prior.selector}" in one scene and "${section.selector}" in another.`,
+        );
+      sections.set(name, section);
+    }
+    const next: State = {
+      ...state,
+      elements,
+      order: [...state.order, ...other.order.filter((name) => !state.order.includes(name))],
+      entries: new Map([...state.entries, ...other.entries]),
+      beats,
+      inputBeats,
+      sections,
+      current: undefined,
+    };
+    const loop = loopOf(next.entries);
+    if (loop !== undefined)
+      throw new RangeError(`sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`);
+    INCLUDED_IN.set(other.owner, state.owner);
+    return kept({ kind: "scene", element: elementOf(next), include: includeOf(next) }, next);
+  };
+}
+
 function validateRegistration(
   elements: ReadonlyMap<string, SceneElement>,
   sections: ReadonlyMap<string, SectionBinding>,
@@ -741,7 +812,7 @@ function validateRegistration(
       `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
   const existingOwner = OWNERS.get(element);
-  if (existingOwner !== undefined && existingOwner !== owner)
+  if (existingOwner !== undefined && !owns(owner, existingOwner))
     throw new TypeError(
       `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
     );
@@ -1548,6 +1619,7 @@ function objectStep(state: State): ObjectStep {
     {
       kind: "scene",
       element: elementOf(state),
+      include: includeOf(state),
       motion: (...motions: readonly (SceneMotion3d | TravelMotion)[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
@@ -1624,6 +1696,7 @@ function step(state: State): ElementStep {
     {
       kind: "scene",
       element: elementOf(state),
+      include: includeOf(state),
       motion: (...motions: readonly SceneMotion[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
@@ -1727,7 +1800,7 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     sections: new Map(),
     current: undefined,
   };
-  return kept({ kind: "scene", element: elementOf(state) }, state);
+  return kept({ kind: "scene", element: elementOf(state), include: includeOf(state) }, state);
 }
 
 /** Whether `value` is a piece written with `sceneBuilder`. */
