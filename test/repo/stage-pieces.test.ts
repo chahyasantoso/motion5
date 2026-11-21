@@ -34,7 +34,13 @@ describe("stage pieces", () => {
   it("every piece under apps/pieces compiles", async () => {
     const files = stagePieces();
     expect(files.length).toBeGreaterThan(0);
-    for (const builder of ["shop.ts", "nowplaying.ts", "nadi.ts", "showreel-e.ts", "penguin.ts"])
+    for (const builder of [
+      "launch-day.ts",
+      "saved.ts",
+      "yuzu.ts",
+      "yuzu-3d.ts",
+      "overlay3d-scene.ts",
+    ])
       expect(files.some((file) => file.endsWith(builder))).toBe(true);
     const failures: string[] = [];
     for (const file of files) {

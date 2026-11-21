@@ -142,7 +142,10 @@ Three things follow from it:
    whose motion depends only on scroll or a scroll trigger, so it keeps up with a busy main thread.
 16. **3D in a scene** (`plan/stage-3d-plan.md`): Three.js objects as scene elements beside DOM labels, on one clock,
    and able to travel to a page's slots.
-17. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; built on `mountPage`, the overlay attaches
+17. **Authored cast** (`plan/authored-cast-plan.md`): the look lives in the renderer's own format, the scene names
+   the cast and each renderer binds it by name; no skin, `group` or `section`; a measure cache for headless tools;
+   scenes that include scenes; one mount with a clock and a frame. A prune of the pieces goes first.
+18. **The live kit, the web overlay and video.** The panel, timeline and guard become a package; built on `mountPage`, the overlay attaches
    to any page, picks elements and loops a trigger, with hover knobs and review marks on the timeline. Video then adds
    the camera, the beat driver, sound in the rendered file and a clip of footage as an object.
 

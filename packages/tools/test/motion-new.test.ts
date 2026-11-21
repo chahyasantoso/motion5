@@ -249,17 +249,7 @@ describe("gerak new", () => {
   });
 
   it("samples the first frame of every worked example under guard", async () => {
-    const examples = [
-      "timing",
-      "catch",
-      "splash",
-      "card",
-      "pile",
-      "principles",
-      "principles3d",
-      "character3d",
-      "overlay3d",
-    ] as const;
+    const examples = ["timing", "card", "pile", "character3d", "overlay3d"] as const;
     for (const name of examples) {
       const scenePath = join(process.cwd(), "apps/pieces", name, "src", `${name}-scene.ts`);
       const imported = await import(pathToFileURL(scenePath).href);

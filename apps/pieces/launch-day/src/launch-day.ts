@@ -1,12 +1,12 @@
 import { lanes, motion, type Motion, type Pose2d, type Time } from "@gerak/core";
 import { beat, box, group, many, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 import { cssVariables } from "@gerak/stage/dom";
-import { tokens } from "../../showreel/style";
-import { kick } from "../../showreel/src/moves/kick";
-import { jolt } from "../../showreel/src/moves/jolt";
-import { lob } from "../../showreel/src/moves/lob";
-import { shockwave } from "../../showreel/src/moves/shockwave";
-import { squish } from "../../showreel/src/moves/squish";
+import { tokens } from "../style";
+import { kick } from "./moves/kick";
+import { jolt } from "./moves/jolt";
+import { lob } from "./moves/lob";
+import { shockwave } from "./moves/shockwave";
+import { squish } from "./moves/squish";
 
 const css = `${cssVariables(tokens)}
 [data-cast="world"] { position: absolute; inset: 0; background: var(--paper); }
