@@ -7,7 +7,7 @@ A person or an agent making a page, a reel or a 3D piece builds its look in the 
 `section` and `el()` from the scene, adds binders that each renderer owns, a measure cache that headless tools read,
 scenes that include scenes, and one mount that takes a clock and a frame.
 
-Status: accepted by the owner 2026-11-21; not started. It starts after PR 614 (`feat/stage-3d`)
+Status: accepted by the owner 2026-11-21; in progress on `feat/authored-cast`. It starts after PR 614 (`feat/stage-3d`)
 merges. Two pull requests: the prune, then the refactor.
 
 Read `AGENTS.md` first. Every rule there applies.
@@ -85,8 +85,9 @@ Read `AGENTS.md` first. Every rule there applies.
 ### 7. One mount
 
 - `mount(scene, { clock, frame, binders })` replaces `mountStage` and `mountPage`. `clock` is `"live"` (scroll,
-  pointer, triggers) or `"timed"` (seekable, for reels and capture). `frame` is `"page"` (none) or `{ width, height }`
-  (fit, scale and clip). The compositor and the engine's frame rules keep working under it.
+  pointer, triggers) or `"timed"` (seekable, for reels and capture). `frame` is `"page"` (none) or `"fit"`: `root`
+  takes the scene's `frame` size, clipped and scaled to its parent's box; a size on the mount would be a second owner.
+  The compositor and the engine's frame rules keep working under it.
 
 ### 8. Pieces that stay
 
@@ -125,21 +126,20 @@ Each step is one commit or a few, green on `npm run check`, in this order:
 
 1. **ADR-198**, covering decisions 1 to 7, with the ADRs it supersedes in part (190, 193, 194, 197).
 2. **Measure.** `gerak measure` and the cache format; review and sample read it. The existing pieces still run.
+   - The frame size moves to the markup: the mount root's CSS `width` and `height` are the frame, measure records it,
+     and the scene's `frame` option goes; `"fit"` then reads the root's size.
 3. **Binders.** The DOM and Three.js binders, `data-cast` matching and override maps; `el()` and `bindScene3d`'s map
    move behind them.
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
    Their tests go in the same commit.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
-   - `mount` grows from `mountPage`. Its time source option, today `clock: () => number`, is renamed `now`, so
-     `clock` can take `"live" | "timed"`.
-   - `"timed"`: the driver answers a timed `Time` over the piece's length, clamped at the end, and the whole scene runs
-     every frame until the length (`introMs` reaches it), so a motion with no window spans the piece.
-   - `frame: { width, height }`: `root` is sized to the frame, clipped and scaled to fit the viewport about its top
-     left. Rest boxes are frame px, measured relative to `root` with its scale removed while measuring.
-   - A shape's path is written on its bound `<path>` from the scene, as a morph's is today.
-   - Consumers of `mountStage` move to `mount` over the piece's own HTML: the React `<Stage>`, the live editor's
-     stage view, the talk page, `stage-page.tsx` and the `component.three` template; `stage.html` goes, and the page
-     tools open a piece by its HTML.
+   - `mount` grows from `mountPage`; its time source option is `now`. `"timed"` runs the seekable `clockDriver` over
+     the scene's length, the whole scene each frame, with no compositor hand-off.
+   - `"fit"` measures rest boxes in frame px, from `root`'s unscaled top left.
+   - A shape's path is written on its bound `<path>` from the measured boxes.
+   - The React `<Stage>` mounts over its children; the live editor and the talk page load the piece's page, inject
+     its styles and body, and mount over the body's first element; `stage.html` goes.
+   - `gerak import-svg` and its piece edit go: they wrote a skin. The artwork guide puts the SVG in the page.
 6. **Include and one-sided show.**
 7. **The canaries.** Convert the six kept pieces. yuzu's frames and its GSAP numbers match the baseline; the 3D
    pieces' frames match theirs. `performance/stage-benchmark.mjs`, which still looks for `defineStage`, runs the

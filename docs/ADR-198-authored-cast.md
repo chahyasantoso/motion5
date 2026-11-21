@@ -37,7 +37,8 @@ could not be written as several scenes.
    ends after its last beat, plus `length` when given.
 7. **One mount.** `mount(scene, { root, clock, frame, binders })` in `@gerak/dom` replaces `mountStage` and
    `mountPage`. `clock` is `"live"` (scroll, pointer and triggers) or `"timed"` (seekable). `frame` is `"page"` or
-   `{ width, height }`, which fits, scales and clips `root`. The engine's frame rules and the compositor hold under
+   `"fit"`, which sizes `root` to the scene's `frame`, clips it and scales it to its parent; a size on the mount would
+   be a second owner of the scene's. The engine's frame rules and the compositor hold under
    it. A piece is its page and its motion module; the page's script mounts it, and `stage.html` goes.
 
 Supersedes in part ADR-190 (skins, groups), ADR-193 (the skin as the renderer's, `many`, `group`), ADR-194 (`el`,
