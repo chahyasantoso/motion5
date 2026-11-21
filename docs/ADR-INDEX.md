@@ -202,3 +202,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-195 — Page frames run for a cause — Accepted, 2026-11-20
 - ADR-196 — The browser plays motion it can work out ahead of time — Accepted, 2026-11-20
 - ADR-197 — Three.js objects in a scene — Accepted, 2026-11-21
+- ADR-198 — Authored cast — Accepted, 2026-11-21
