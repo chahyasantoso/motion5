@@ -1,6 +1,7 @@
 import { configDefaults, defineConfig } from "vitest/config";
 import { workspaceSourceAliases } from "./scripts/workspace-source-aliases.mjs";
 import { pendingPaths } from "./test/pending.mjs";
+import { BROWSER_TESTS } from "./test/browser-tests.mjs";
 
 // An agent, a pipe and a log viewer parse no escape sequences, and every one of them is a byte on
 // the output `npm run metrics` measures. A terminal keeps its colours.
@@ -37,5 +38,14 @@ export default defineConfig({
     // test fails with `act is not a function`. Pin the test environment instead of depending on
     // the shell that ran Vitest.
     env: { NODE_ENV: "development" },
+    // Page servers on one pieces folder reload each other's pages when a test writes a scratch piece,
+    // so the files that start one run one at a time, beside the parallel rest.
+    projects: [
+      { extends: true, test: { name: "unit", exclude: [...BROWSER_TESTS] } },
+      {
+        extends: true,
+        test: { name: "browser", include: [...BROWSER_TESTS], fileParallelism: false },
+      },
+    ],
   },
 });

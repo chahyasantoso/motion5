@@ -10,9 +10,10 @@ function isStagePiece(source: string): boolean {
   return source.includes("sceneBuilder(") && source.includes("export default");
 }
 
+/** Every builder piece, past the scratch pieces browser tests write and delete while this runs. */
 function stagePieces(): string[] {
   return readdirSync(PIECES, { withFileTypes: true })
-    .filter((brief) => brief.isDirectory())
+    .filter((brief) => brief.isDirectory() && !brief.name.includes("scratch"))
     .flatMap((brief) => {
       const src = join(PIECES, brief.name, "src");
       let names: string[] = [];

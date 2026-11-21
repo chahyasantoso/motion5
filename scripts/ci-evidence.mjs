@@ -42,8 +42,8 @@ function relative(file) {
 function key(test) {
   assert.equal(typeof test.file, "string");
   assert.equal(typeof test.name, "string");
-  assert.ok(test.file && test.name && !test.projectName, "Unsupported test identity");
-  return JSON.stringify([test.file, test.name]);
+  assert.ok(test.file && test.name, "Unsupported test identity");
+  return JSON.stringify([test.projectName ?? "", test.file, test.name]);
 }
 function counts(tests) {
   assert.ok(Array.isArray(tests) && tests.length > 0, "Missing or empty inventory");
