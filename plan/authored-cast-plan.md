@@ -132,7 +132,8 @@ Each step is one commit or a few, green on `npm run check`, in this order:
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
 6. **Include and one-sided show.**
 7. **The canaries.** Convert the six kept pieces. yuzu's frames and its GSAP numbers match the baseline; the 3D
-   pieces' frames match theirs.
+   pieces' frames match theirs. `performance/stage-benchmark.mjs`, which still looks for `defineStage`, runs the
+   converted pieces through the new mount, and `performance/stage-baseline.json` is regenerated over them.
 8. **Scaffold and docs.** `gerak new` writes markup and a motion file per renderer; `stage.md`, `page.md` and
    `agent-3d.md` are rewritten whole; the reference regenerates.
 9. **Proof.** A fresh Sonnet 5.5 agent, reading only the docs, builds a page and a reel; then one NADI measure row
