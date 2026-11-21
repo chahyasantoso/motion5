@@ -91,8 +91,9 @@ Read `AGENTS.md` first. Every rule there applies.
 ### 8. Pieces that stay
 
 `yuzu` (page and GSAP measure), `yuzu-3d` (mixed), `overlay3d` (the 3D example the docs cite), `character3d` (a
-`.glb` bound by name), `launch-day` (a short reel) and `saved` (the live page's folder). Every other piece is deleted
-in the prune.
+`.glb` bound by name), `launch-day` (a short reel, with the showreel moves it borrowed moved into it) and `saved`
+(the live page's folder). `timing`, `card` and `pile` stay as scene modules the live page, its browser tests and
+`gerak frames`' self-check run on. Every other piece is deleted in the prune; `references/` stays for the rig tests.
 
 ## The team
 

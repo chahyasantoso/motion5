@@ -298,7 +298,7 @@ describe("gerak import-svg paint", () => {
 describe("gerak import-svg on the penguin", () => {
   it("writes its 21 paths with their gradients and lists the Illustrator foreignObject", async () => {
     const imported = await bring(
-      join(import.meta.dirname, "../../../apps/pieces/penguin/references/penguin.svg"),
+      join(import.meta.dirname, "fixtures/penguin/penguin.svg"),
       "penguin",
     );
     expect(imported.result.members).toHaveLength(21);

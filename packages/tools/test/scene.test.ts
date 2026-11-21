@@ -68,7 +68,7 @@ describe("scene tools", () => {
 
 describe("scene tools and events", () => {
   it("read a module's own cues and refuse ones that are not events", async () => {
-    const catcher = moduleOf(await import("../../../apps/pieces/catch/src/catch-scene"));
+    const catcher = moduleOf(await import("./fixtures/catch-scene"));
     expect(catcher.cues.map(({ name }) => name)).toEqual(["catch"]);
     expect(readSceneModule({ scene: () => ({}), durationMs: 10, cues: [{ at: 1 }] })).toEqual({
       reason: "The module's `cues` must be a list of { name, at, target } events.",

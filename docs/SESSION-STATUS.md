@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-21, Asia/Jakarta.
-- **Read against:** `feat/stage-3d`, from `main` after PR 613.
+- **Read against:** `feat/prune`, from `main` after PR 614.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **The 3D-in-a-scene pull request (`plan/stage-3d-plan.md`), then the live kit, the web overlay and video (`plan/roadmap.md`).**
+- **Authored cast (`plan/authored-cast-plan.md`): the prune pull request leaves nine pieces in `apps/pieces` (`yuzu`, `yuzu-3d`, `overlay3d`, `character3d`, `launch-day`, `saved`, and the live page's examples `timing`, `card`, `pile`); then the refactor pull request.**
 
 ## Open, and not scheduled
 

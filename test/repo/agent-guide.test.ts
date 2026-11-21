@@ -188,12 +188,8 @@ describe("package docs", () => {
     ].join("\n");
     const examples = [
       "timing-scene",
-      "catch-scene",
-      "splash-scene",
       "card-scene",
       "pile-scene",
-      "principles-scene",
-      "principles3d-scene",
       "character3d-scene",
       "overlay3d-scene",
     ];
@@ -201,17 +197,7 @@ describe("package docs", () => {
   });
 
   it("names no source file of the demo app, a worked example's component or entry included", () => {
-    const examples = [
-      "timing",
-      "catch",
-      "splash",
-      "card",
-      "pile",
-      "principles",
-      "principles3d",
-      "character3d",
-      "overlay3d",
-    ];
+    const examples = ["timing", "card", "pile", "character3d", "overlay3d"];
     const sources = new Set(
       examples.flatMap((name) => readdirSync(new URL(`apps/pieces/${name}/src`, ROOT))),
     );
