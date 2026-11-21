@@ -181,7 +181,7 @@ describe("gerak new", () => {
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
     const component = readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8");
-    expect(component).toContain("bindScene3d(player, stage, { box: mesh }");
+    expect(component).toContain("threeBinder(world, { draw }).start(player, stage)");
     expect(component).toContain("preserveDrawingBuffer: true");
     const loaded: unknown = await import(
       pathToFileURL(join(dir, "rope-word/src/rope-word-scene.ts")).href

@@ -24,6 +24,7 @@ import { describe, expect, it } from "vitest";
 import {
   mount,
   MOUNTS,
+  type Binder,
   type ClockDriver,
   type FrameSource,
   type PageElement,
@@ -250,7 +251,7 @@ describe("mount", () => {
     expect(frames.queued).toBe(0);
   });
 
-  it("mounts a page scene with an object, binds no node for it, and plays its 3D pose", () => {
+  it("hands an object to the binder that claims it, binds no node for it, and stops the binder on dispose", () => {
     const card = new FakeNode("card");
     const root = new FakeRoot([card]);
     let ms = 0;
@@ -262,8 +263,18 @@ describe("mount", () => {
       .element(box("card"))
       .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
     const seen: unknown[] = [];
-    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
-    mounted.player.subscribe("drink", (value) => seen.push(value));
+    let stopped = 0;
+    const drinks: Binder = {
+      claims: (name) => name === "drink",
+      start: (player) => {
+        const off = player.subscribe("drink", (value) => seen.push(value));
+        return () => {
+          off();
+          stopped += 1;
+        };
+      },
+    };
+    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms, binders: [drinks] });
     ms = 500;
     frames.tick(500);
     expect(root.createdCount).toBe(0);
@@ -271,6 +282,44 @@ describe("mount", () => {
     expect(seen.at(-1)).toEqual({ rotationY: 45 });
     expect(Object.keys(mounted.rest)).toEqual(["card"]);
     mounted.dispose();
+    expect(stopped).toBe(1);
+  });
+
+  it("binds an element to the nodes `nodes` gives for its name, over its data-cast match", () => {
+    const tagged = new FakeNode("card");
+    const chosen = new FakeNode("elsewhere");
+    const parts = [new FakeNode("p0"), new FakeNode("p1")];
+    const root = new FakeRoot([tagged, chosen, ...parts]);
+    const frames = fakeFrames();
+    const scene = sceneBuilder({ length: 500 })
+      .element(box("card"))
+      .motion(() => ({ x: 7 }))
+      .element(many("dots", 2))
+      .motion((_t, ctx) => ({ y: ctx.index ?? 0 }));
+    const mounted = mount(scene, {
+      root,
+      frames,
+      clock: "live",
+      now: () => 0,
+      nodes: { card: chosen, dots: parts },
+    });
+    frames.tick(0);
+    expect(chosen.style.transform).toBe("translate3d(7px, 0px, 0px)");
+    expect(tagged.style.transform).toBe("");
+    expect(parts[1]?.style.transform).toBe("translate3d(0px, 1px, 0px)");
+    mounted.dispose();
+  });
+
+  it("refuses an object no binder claims, and one two binders claim, naming it", () => {
+    const root = new FakeRoot([]);
+    const scene = sceneBuilder({ length: 500 }).element(object("drink"));
+    const claiming: Binder = { claims: () => true, start: () => () => undefined };
+    expect(() => mount(scene, { root, clock: "live" })).toThrow(
+      /no binder draws the object "drink"/,
+    );
+    expect(() => mount(scene, { root, clock: "live", binders: [claiming, claiming] })).toThrow(
+      /2 binders draw the object "drink"/,
+    );
   });
 
   it("runs a timed clock over the scene's length that seeks, and hands the tools a ClockDriver", () => {

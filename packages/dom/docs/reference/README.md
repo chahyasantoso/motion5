@@ -2,4 +2,4 @@
 
 Generated from doc comments by `npm run reference -- --write`; one page per source folder.
 
-- [index](./index.md), 40 exports
+- [index](./index.md), 41 exports

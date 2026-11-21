@@ -171,6 +171,31 @@ export interface MountOptions {
   readonly onDriver?: (driver: Driver) => void;
   /** Checks every frame's targets with `check` and throws on a mistake; for authoring pages. */
   readonly checks?: boolean;
+  /** Nodes by element name, over the nodes its markup tags `data-cast` with that name. */
+  readonly nodes?: Readonly<Record<string, PageElement | readonly PageElement[]>>;
+  /** What draws the scene's object elements, such as `threeBinder`; each object needs exactly one. */
+  readonly binders?: readonly Binder[];
+}
+
+/** What draws a scene's object elements beside the mount: which it claims, and how it starts on the player. */
+export interface Binder {
+  /** Whether it draws the object element `name`. */
+  claims(name: string): boolean;
+  /** Writes what it claims from `player` on every step; returns the stop. */
+  start(player: Player<StageValues>, stage: Stage): () => void;
+}
+
+/** Names each object element of `stage` that no binder, or more than one, claims. */
+function checkBinders(stage: Stage, binders: readonly Binder[]): void {
+  const wrong: string[] = [];
+  for (const member of stage.members) {
+    if (member.kind !== "object") continue;
+    const count = binders.filter((binder) => binder.claims(member.name)).length;
+    if (count === 0) wrong.push(`no binder draws the object "${member.name}"`);
+    else if (count > 1) wrong.push(`${count} binders draw the object "${member.name}"`);
+  }
+  if (wrong.length > 0)
+    throw new Error(`mount: ${wrong.join("; ")}; each object needs one binder in \`binders\`.`);
 }
 
 /** A rest box as a measure holds it: its centre and size in px, and how the page places it. */
@@ -409,9 +434,9 @@ function wrapSplitText(
 function bindList(
   member: Extract<DrawnMember, { readonly kind: "list" }>,
   selector: string,
+  rawMatches: readonly unknown[],
   root: PageRoot,
 ): BoundTarget {
-  const rawMatches = Array.from(root.querySelectorAll(selector));
   if (rawMatches.length === 0)
     throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
   const matches = rawMatches.map((node, index) =>
@@ -605,6 +630,8 @@ const TRIGGER_SLACK_MS = 34;
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
 export function mount(input: StageInput, options: MountOptions): Mounted {
   let stage = resolvePageStage(input);
+  const binders = options.binders ?? [];
+  checkBinders(stage, binders);
   const root = options.root ?? (isPageRoot(globalThis.document) ? globalThis.document : undefined);
   if (root === undefined || !isPageRoot(root))
     throw new Error("mount: no document or `options.root` to query.");
@@ -635,16 +662,21 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
 
   try {
     for (const member of stage.members) {
-      const selector = member.node;
+      const given = options.nodes?.[member.name];
+      const selector = given === undefined ? member.node : `nodes["${member.name}"]`;
       if (selector === undefined) continue;
+      const found = (): readonly unknown[] => {
+        if (given === undefined) return Array.from(root.querySelectorAll(selector));
+        return isPageElement(given) ? [given] : given;
+      };
       let bound: BoundTarget;
       switch (member.kind) {
         case "object":
           continue;
         case "actor":
         case "group": {
-          const raw = root.querySelector(selector);
-          if (raw === null)
+          const raw = found()[0];
+          if (raw === undefined)
             throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
           const node = needElement(raw, member.name, selector);
           bound = { member, node, items: [] };
@@ -652,7 +684,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           break;
         }
         case "list":
-          bound = bindList(member, selector, root);
+          bound = bindList(member, selector, found(), root);
           allNodes.push(...bound.items);
           break;
         default:
@@ -1143,6 +1175,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     stage.cues.length === 0 ? {} : { cues: stage.cues },
   );
   options.onDriver?.(driver);
+  let stops = binders.map((binder) => binder.start(player, stage));
 
   const applyVisibility = (node: PageElement, visible: boolean): void => {
     if (!visible) {
@@ -1454,7 +1487,9 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         if (member !== undefined && member.kind === target.member.kind) target.member = member;
       }
       remeasure();
+      for (const stop of stops) stop();
       player.replace(sceneSignal, nextStage.cues);
+      stops = binders.map((binder) => binder.start(player, stage));
     },
     send(name, value, target) {
       if (!live) return;
@@ -1483,6 +1518,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       recorder.dispose();
       player.dispose();
       timed?.dispose();
+      for (const stop of stops) stop();
       listeners.clear();
       for (const node of allNodes) {
         applyValue(node, {});

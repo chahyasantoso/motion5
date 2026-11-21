@@ -20,7 +20,7 @@ import {
 } from "three";
 import type { Events, Pose3d, Time } from "@gerak/core";
 import { usePlayer } from "@gerak/react";
-import { applyPose3d, bindScene3d, morphTargets } from "@gerak/three";
+import { applyPose3d, morphTargets, threeBinder } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import { compileScene, formatStageError, frame } from "@gerak/stage";
 import piece, {
@@ -269,10 +269,8 @@ export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onRead
     };
 
     ballMesh.position.set(BALL_SPAWN.x, BALL_SPAWN.y, BALL_SPAWN.z);
-    const unbind = bindScene3d(
-      player,
-      scene,
-      {
+    const unbind = threeBinder(stage, {
+      objects: {
         character: (pose) => applyPose3d(characterRoot, pose, undefined, morphs),
         spine: boneWriter("spine"),
         shoulder: boneWriter("shoulder"),
@@ -280,11 +278,11 @@ export const Character3d: React.FC<{ readonly onReady: () => void }> = ({ onRead
         ball: ballMesh,
         camera: lens,
       },
-      () => {
+      draw: () => {
         applyBones(skeleton, bonePoses);
         renderer.render(stage, lens);
       },
-    );
+    }).start(player, scene);
     onReady();
     return () => {
       unbind();

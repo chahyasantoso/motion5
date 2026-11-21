@@ -11,7 +11,7 @@ import {
 } from "three";
 import { mount } from "@gerak/dom";
 import { compileScene, formatStageError } from "@gerak/stage";
-import { applyPose3d, bindScene3d } from "@gerak/three";
+import { applyPose3d, threeBinder } from "@gerak/three";
 import piece, { lens } from "./yuzu-3d";
 
 const compiled = compileScene(piece);
@@ -48,12 +48,9 @@ const fit = (): void => {
 fit();
 window.addEventListener("resize", fit);
 
-const mounted = mount(stage, { clock: "live" });
 const draw = (): void => renderer.render(world, camera);
-bindScene3d(
-  mounted.player,
-  stage,
-  {
+const drink = threeBinder(world, {
+  objects: {
     drink: (pose, visible) => {
       can.visible = visible;
       applyPose3d(can, pose);
@@ -62,5 +59,6 @@ bindScene3d(
     },
   },
   draw,
-);
+});
+const mounted = mount(stage, { clock: "live", binders: [drink] });
 window.addEventListener("resize", draw);

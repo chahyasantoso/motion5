@@ -13,7 +13,7 @@ import type { Events, Time } from "@gerak/core";
 import { applyValue } from "@gerak/dom";
 import { usePlayer, useTarget } from "@gerak/react";
 import { compileScene, formatStageError, frame, poseOf } from "@gerak/stage";
-import { applyPose3d, bindScene3d } from "@gerak/three";
+import { applyPose3d, threeBinder } from "@gerak/three";
 import piece, { clock, lens, size } from "./__NAME__-scene";
 
 const compiled = compileScene(piece);
@@ -46,7 +46,9 @@ export const __COMPONENT__: React.FC<{ readonly onReady?: () => void }> = ({ onR
     const material = new MeshStandardMaterial();
     const mesh = new Mesh(geometry, material);
     world.add(new AmbientLight(0xffffff, 0.5), light, mesh);
-    const unbind = bindScene3d(player, stage, { box: mesh }, () => renderer.render(world, camera));
+    mesh.name = "box";
+    const draw = () => renderer.render(world, camera);
+    const unbind = threeBinder(world, { draw }).start(player, stage);
     onReady?.();
     return () => {
       unbind();

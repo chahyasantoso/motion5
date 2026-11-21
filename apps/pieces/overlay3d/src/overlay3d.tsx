@@ -20,7 +20,7 @@ import {
 import type { Events, Pose3d, Time } from "@gerak/core";
 import { applyValue } from "@gerak/dom";
 import { usePlayer, useTarget } from "@gerak/react";
-import { applyPose3d, bindScene3d } from "@gerak/three";
+import { applyPose3d, threeBinder } from "@gerak/three";
 import { applyBones, captureSkeleton } from "@gerak/rig-three";
 import { compileScene, formatStageError, frame, poseOf } from "@gerak/stage";
 import piece, { ARM, CAPTION, CUBE, MARK, clock, lens, stage, wordsShown } from "./overlay3d-scene";
@@ -125,10 +125,8 @@ export const Overlay3d: React.FC<{ readonly onReady?: () => void }> = ({ onReady
     const stopCaption = player.subscribe("caption", (value) =>
       show(poseOf(value)?.custom?.["words"]),
     );
-    const unbind = bindScene3d(
-      player,
-      scene,
-      {
+    const unbind = threeBinder(world, {
+      objects: {
         object: model,
         base: (pose) => {
           bonePoses["base"] = pose;
@@ -137,11 +135,11 @@ export const Overlay3d: React.FC<{ readonly onReady?: () => void }> = ({ onReady
           bonePoses["mid"] = pose;
         },
       },
-      () => {
+      draw: () => {
         applyBones(skeleton, bonePoses);
         renderer.render(world, camera);
       },
-    );
+    }).start(player, scene);
     onReady?.();
     return () => {
       unbind();

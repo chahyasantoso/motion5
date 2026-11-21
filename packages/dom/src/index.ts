@@ -30,6 +30,7 @@ export {
 } from "./events";
 export {
   mount,
+  type Binder,
   MOUNTS,
   type MeasuredBox,
   type Measurement,

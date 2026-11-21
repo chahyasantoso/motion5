@@ -12,7 +12,7 @@ import {
   sceneBuilder,
   type Stage,
 } from "@gerak/stage";
-import { bindScene3d } from "../src/index";
+import { threeBinder } from "../src/index";
 
 const spin = beat("spin", 1000);
 const scene = sceneBuilder({ length: 2000 })
@@ -27,16 +27,33 @@ function compiled(): Stage {
   return result.stage;
 }
 
-describe("bindScene3d", () => {
+describe("threeBinder", () => {
+  it("claims an object element by the name of an Object3D under its root, or an entry that overrides it", () => {
+    const root = new Object3D();
+    const cube = new Object3D();
+    cube.name = "cube";
+    root.add(cube);
+    expect(threeBinder(root).claims("cube")).toBe(true);
+    expect(threeBinder(root).claims("ghost")).toBe(false);
+    expect(
+      threeBinder(new Object3D(), { objects: { ghost: () => undefined } }).claims("ghost"),
+    ).toBe(true);
+  });
+
   it("writes each object's pose and visible on a step, then draws once", () => {
     const stage = compiled();
     const driver = manualDriver({ durationMs: 2000 });
     const player = play((time, events) => frame(stage, { time, events }).targets, driver);
+    const root = new Object3D();
     const cube = new Object3D();
+    cube.name = "cube";
+    root.add(cube);
     let draws = 0;
-    const stop = bindScene3d(player, stage, { cube }, () => {
-      draws += 1;
-    });
+    const stop = threeBinder(root, {
+      draw: () => {
+        draws += 1;
+      },
+    }).start(player, stage);
     expect(draws).toBe(1);
     driver.seekMs(500);
     expect(draws).toBe(2);
@@ -51,22 +68,19 @@ describe("bindScene3d", () => {
     expect(draws).toBe(3);
   });
 
-  it("poses an Object3D from its position when bound, and hands a writer the pose and visible", () => {
+  it("poses an override Object3D from its position when bound, and hands a writer the pose and visible", () => {
     const stage = compiled();
     const driver = manualDriver({ durationMs: 2000 });
     const player = play((time, events) => frame(stage, { time, events }).targets, driver);
     const placed = new Object3D();
     placed.position.set(0, 3, 0);
-    bindScene3d(player, stage, { cube: placed }, () => undefined);
+    threeBinder(new Object3D(), { objects: { cube: placed } }).start(player, stage);
     driver.seekMs(500);
     expect([placed.position.x, placed.position.y]).toEqual([1, 3]);
     const written: [Pose3d, boolean][] = [];
-    bindScene3d(
-      player,
-      stage,
-      { cube: (pose, visible) => written.push([pose, visible]) },
-      () => {},
-    );
+    threeBinder(new Object3D(), {
+      objects: { cube: (pose, visible) => written.push([pose, visible]) },
+    }).start(player, stage);
     driver.seekMs(1500);
     expect(written.at(-1)).toEqual([{ x: 2, rotationY: 90 }, false]);
   });
@@ -80,18 +94,11 @@ describe("bindScene3d", () => {
       manualDriver({ durationMs: 500 }),
     );
     let draws = 0;
-    bindScene3d(player, result.stage, {}, () => {
-      draws += 1;
-    });
+    threeBinder(new Object3D(), {
+      draw: () => {
+        draws += 1;
+      },
+    }).start(player, result.stage);
     expect(draws).toBe(1);
-  });
-
-  it("names a scene's object that has no Object3D", () => {
-    const stage = compiled();
-    const player = play(
-      (time, events) => frame(stage, { time, events }).targets,
-      manualDriver({ durationMs: 2000 }),
-    );
-    expect(() => bindScene3d(player, scene, {}, () => undefined)).toThrow(/object "cube"/);
   });
 });
