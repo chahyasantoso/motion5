@@ -150,7 +150,7 @@ export interface PageScrollTarget {
 export type MountClock = "live" | "timed";
 
 /** Where a mount draws: `"page"` in place, or `"fit"`, which sizes `root` to the scene's frame,
- * clips it and scales it to fit the viewport about its top left. */
+ * clips it and scales it about its top left to its parent's box, or else the viewport. */
 export type MountFrame = "page" | "fit";
 
 /** Settings of `mount`: its clock and frame, the root it binds in, and the hooks tests and tools use. */
@@ -680,7 +680,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     return { width: 1280, height: 720 };
   };
 
-  // A fitted root is the scene's frame in px, clipped, scaled about its top left to fit the viewport.
+  // A fitted root is the scene's frame in px, clipped, scaled about its top left to fit its parent.
   const sizeFrame = (): void => {
     if (fitted === undefined) return;
     Object.assign(fitted.style, {
@@ -692,8 +692,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   };
   const scaleFrame = (): void => {
     if (fitted === undefined) return;
-    const vp = readViewport();
-    const scale = Math.min(vp.width / stage.frame.width, vp.height / stage.frame.height);
+    const parent = fitted.parentElement;
+    const box =
+      parent !== null && parent.clientWidth > 0 && parent.clientHeight > 0
+        ? { width: parent.clientWidth, height: parent.clientHeight }
+        : readViewport();
+    const scale = Math.min(box.width / stage.frame.width, box.height / stage.frame.height);
     fitted.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
   };
   sizeFrame();
@@ -1352,6 +1356,8 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   if (observer !== undefined) {
     if (isDomElement(root.documentElement)) observer.observe(root.documentElement);
     else if (isDomElement(root)) observer.observe(root);
+    const holder = fitted?.parentElement;
+    if (holder !== undefined && holder !== null) observer.observe(holder);
     for (const target of targets) {
       if (isDomElement(target.node)) observer.observe(target.node);
       for (const item of target.items) if (isDomElement(item)) observer.observe(item);
