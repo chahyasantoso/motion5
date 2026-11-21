@@ -986,11 +986,10 @@ function castOf(state: State, m: CastBuilder<string>): Members {
     if (element.kind === "group") for (const child of element.children) nested.add(child.name);
   const specOf = (element: SceneElement): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const { pivot, watch } = element.kind === "object" ? {} : element.options;
+    const { watch } = element.kind === "object" ? {} : element.options;
     let out = baseSpec(element, m, (child) => specOf(child));
     if (entry.show.length > 0) out = out.showing(entry.show);
     if (watch !== undefined) out = out.watch(watch);
-    if (pivot !== undefined) out = out.pivot(pivot);
     const expect = expectOf(entry);
     switch (expect) {
       case "static":

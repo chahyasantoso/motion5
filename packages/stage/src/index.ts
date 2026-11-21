@@ -1,4 +1,4 @@
-export { type Content, type Expect, type ItemContent, type Path, type Pivot } from "./author/cast";
+export { type Content, type Expect, type ItemContent, type Path } from "./author/cast";
 export {
   beat,
   scrollPoint,

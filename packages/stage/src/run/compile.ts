@@ -14,7 +14,6 @@ import {
   type Expect,
   type ItemContent,
   type Members,
-  type Pivot,
   type Stretch,
 } from "../author/cast";
 import { NO_REST, restReader, type Rest, type RestReader } from "../author/layout";
@@ -30,7 +29,6 @@ export type Member = {
   readonly parent: number;
   readonly expect: Expect;
   readonly watch: boolean;
-  readonly pivot?: Pivot | undefined;
   /** Selector of the DOM nodes this member binds to: `[data-cast="<name>"]`; an object has none. */
   readonly node?: string | undefined;
   /** Ms the member shows, its own or its group's; absent means always. */
@@ -299,20 +297,12 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
       const on =
         spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
       const expect = spec.meta.expect ?? from.expect;
-      const pivot = spec.meta.pivot;
       const node = spec.kind === "object" ? undefined : castSelector(name);
-      if (pivot !== undefined && (!finite(pivot.x) || !finite(pivot.y)))
-        errors.push({
-          kind: "invalid",
-          field: "cast",
-          reason: `"${name}": pivot needs finite x and y.`,
-        });
       const base = {
         name,
         parent: from.parent,
         expect,
         watch: spec.meta.watch ?? from.watch,
-        ...(pivot === undefined ? {} : { pivot }),
         ...(node === undefined ? {} : { node }),
         ...(on === undefined ? {} : { on }),
       };

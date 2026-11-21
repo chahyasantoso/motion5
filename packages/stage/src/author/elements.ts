@@ -1,10 +1,9 @@
 import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
 import { makeScrollPoint, type ScrollPoint } from "./beat";
-import type { ItemContent, Path, Pivot } from "./cast";
+import type { ItemContent, Path } from "./cast";
 
-/** What stays true of an element in any scene: where it turns, and whether pointer events reach it. */
+/** What stays true of an element in any scene: whether pointer events reach it. */
 export interface ElementOptions {
-  readonly pivot?: Pivot | undefined;
   readonly watch?: boolean | undefined;
 }
 
@@ -121,9 +120,8 @@ function edged<T extends ElementBody>(made: T): T & Edges {
 }
 
 function optionsOf(options: ElementOptions | undefined): ElementOptions {
-  const { pivot, watch } = options ?? {};
+  const { watch } = options ?? {};
   return Object.freeze({
-    ...(pivot === undefined ? {} : { pivot: Object.freeze({ x: pivot.x, y: pivot.y }) }),
     ...(watch === undefined ? {} : { watch }),
   });
 }
@@ -228,7 +226,7 @@ export function many<T>(
   });
 }
 
-/** A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content, pivot or pointer events. */
+/** A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content or pointer events. */
 export function object(name: string, options?: ObjectOptions): ObjectElement {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))

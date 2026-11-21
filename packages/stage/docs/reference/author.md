@@ -6,7 +6,6 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Expect`** `type Expect = "settle" | "ambient" | "static"`: What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it.
 - **`ItemContent`** `type ItemContent = { readonly kind: "box"; } | { readonly kind: "text"; readonly value: string; } | { readonly kind: "stroke"; readonly path: Path; } | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[]; }`: What a list item shows: any content but a readout.
 - **`Path`** `type Path = readonly Cubic2d[] | ((rest: RestReader) => readonly Cubic2d[])`: A stroke's outline: fixed cubics, or cubics drawn from the rest boxes of other members.
-- **`Pivot`** `type Pivot = { x: number; y: number }`: The point in frame px a member turns and scales around.
 - **`beat`** `(name: string, ms: number, place?: BeatPlace): Beat (+2 overloads)`: A clock beat `ms` long, a triggered beat `{ when, back }`, or a scroll window `{ scroll: [from, to] }`.
 - **`scrollPoint`** `(px: number): ScrollPoint`: A scroll position in `px`, with `.plus(px)`, `.minus(px)` and `.reached`.
 - **`Beat`** `type Beat = { name: string; from: number; to: number; of: (time: Time, ease?: Ease) => Time; at: (share: number) => number }`: A named stretch of the piece in ms: a core `Span` that also says what it is called.
@@ -22,13 +21,13 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`box`** `(name: string, options?: ElementOptions): Element`: A page element styled by CSS.
 - **`group`** `(name: string, children: readonly Element[], options?: ElementOptions): Element`: A container: its pose moves its children, and each child keeps its own motions.
 - **`many`** `(name: string, count: number, options?: ElementOptions): Element (+1 overloads)`: A row of numbered parts: `count` boxes, or one part per item, each made by `make`.
-- **`object`** `(name: string, options?: ObjectOptions): ObjectElement`: A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content, pivot or pointer events.
+- **`object`** `(name: string, options?: ObjectOptions): ObjectElement`: A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content or pointer events.
 - **`shape`** `(name: string, outline: ShapeSource, options?: ElementOptions): Element`: A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`.
 - **`text`** `(name: string, content: string | ((time: Time) => string), options?: TextOptions): Element`: Text, or text a function of time writes; `split` gives a string a part per letter or word.
 - **`Element`** `type Element = ElementBody & Edges`: An element of a piece, made once with a name; `kind` says what it is.
 - **`Edges`** `type Edges = { top: ScrollPoint; end: ScrollPoint }`: An element's measured edges as scroll points: the top and the bottom of its rest box.
 - **`ElementBody`** `type ElementBody = { readonly kind: "box"; readonly name: string; readonly options: ElementOptions; } | { readonly kind: "shape"; readonly name: string; readonly outline: Outline; readonly options: ElementOptions; } | { readonly kind: "text"; readonly name: string; readonly content: string | ((time: Time) => string); readonly split: "letters" | "words" | undefined; readonly options: ElementOptions; } | { readonly kind: "many"; readonly name: string; readonly items: readonly ItemContent[]; readonly options: ElementOptions; } | { readonly kind: "group"; readonly name: string; readonly children: readonly Element[]; readonly options: ElementOptions; }`: What an element is, before its edges.
-- **`ElementOptions`** `type ElementOptions = { pivot?: Pivot | undefined; watch?: boolean | undefined }`: What stays true of an element in any scene: where it turns, and whether pointer events reach it.
+- **`ElementOptions`** `type ElementOptions = { watch?: boolean | undefined }`: What stays true of an element in any scene: whether pointer events reach it.
 - **`ObjectElement`** `type ObjectElement = { kind: "object"; name: string; view: ObjectView | undefined }`: A Three.js object of a piece, posed in `Pose3d` world units and drawn by `bindScene3d`, never by a DOM renderer.
 - **`ObjectOptions`** `type ObjectOptions = { view?: ObjectView | undefined }`: Options of `object`: its view, which `travel` onto a page slot needs.
 - **`ObjectView`** `type ObjectView = { canvas: Element; lens: Lens3d }`: Where an object is drawn: the element bound to the page's canvas, and the fixed lens the page draws through.
@@ -36,7 +35,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`MorphSource`** `type MorphSource = { base: readonly Cubic2d[]; targets: readonly (readonly Cubic2d[])[] }`: A base outline with the outlines it blends to.
 - **`Outline`** `type Outline = { readonly kind: "path"; readonly path: Path; } | { readonly kind: "morph"; readonly base: readonly Cubic2d[]; readonly targets: readonly (readonly Cubic2d[])[]; }`: What a shape draws: a path, or a base outline with the outlines it blends to.
 - **`ShapeSource`** `type ShapeSource = Path | MorphSource`: What `shape` draws: a path, or a morph.
-- **`TextOptions`** `type TextOptions = { split?: "letters" | "words" | undefined; pivot?: Pivot | undefined; watch?: boolean | undefined }`: Options of `text`: how to split it into parts.
+- **`TextOptions`** `type TextOptions = { split?: "letters" | "words" | undefined; watch?: boolean | undefined }`: Options of `text`: how to split it into parts.
 - **`bind`** `(fields: BoundFields): Motion<Pose2d, MotionContext>`: A motion setting each field from its signal at the scene's time.
 - **`bindEach`** `(fields: BoundEachFields): Motion<Pose2d, MotionContext>`: A motion setting each field of each part of a list element from that part's signal at the scene's time.
 - **`carry`** `(options: CarryOptions): Motion<Pose2d, MotionContext>`: A motion giving the element's move from its box in the last layout to its box in the next. A part of a list uses its box named `<element>.<index>`.

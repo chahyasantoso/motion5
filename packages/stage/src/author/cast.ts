@@ -18,12 +18,6 @@ export type Content =
 /** What a list item shows: any content but a readout. */
 export type ItemContent = Exclude<Content, { readonly kind: "readout" }>;
 
-/** The point in frame px a member turns and scales around. */
-export interface Pivot {
-  readonly x: number;
-  readonly y: number;
-}
-
 /** When a member shows, as `.on` takes it: one beat, or every beat from the first to the second. */
 export type OnStretch<B extends string = string> = B | readonly [B, B];
 
@@ -44,7 +38,6 @@ export interface Meta<B extends string = string> {
   readonly on?: readonly Stretch<B>[] | undefined;
   readonly watch?: boolean | undefined;
   readonly expect?: Expect | undefined;
-  readonly pivot?: Pivot | undefined;
 }
 
 /** Modifiers every member takes; each returns a new member. */
@@ -55,7 +48,6 @@ export interface Modifiers<B extends string, S> {
   showing(stretches: readonly Stretch<B>[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
-  pivot(point: Pivot): S;
   /** The scene never poses it; a group's children keep their own expectation. */
   static(): S;
   /** It keeps moving, like snow; a group's children and a list's items inherit it. */
@@ -135,7 +127,6 @@ function modifiers<B extends string, S>(
     on: (...stretches) => next({ on: Object.freeze(stretches.map(stretchOf)) }),
     showing: (stretches) => next({ on: Object.freeze([...stretches]) }),
     watch: (enabled = true) => next({ watch: enabled }),
-    pivot: (point) => next({ pivot: Object.freeze({ x: point.x, y: point.y }) }),
     static: () => next({ expect: "static" }),
     ambient: () => next({ expect: "ambient" }),
     settle: () => next({ expect: "settle" }),

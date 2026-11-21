@@ -84,7 +84,7 @@ describe("elements", () => {
 
 describe("sceneBuilder: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
-  const card = box("card", { pivot: { x: 4, y: 6 }, watch: true });
+  const card = box("card", { watch: true });
   const word = text("word", "HEY", { split: "letters" });
   const chain = sceneBuilder()
     .element(card)
@@ -110,7 +110,6 @@ describe("sceneBuilder: what a chain compiles to", () => {
     ]);
     const cardMember = stage.members[0];
     expect(cardMember?.watch).toBe(true);
-    expect(cardMember?.pivot).toEqual({ x: 4, y: 6 });
     expect(cardMember?.on).toEqual([
       [0, 400],
       [500, Number.POSITIVE_INFINITY],

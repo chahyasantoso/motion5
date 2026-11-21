@@ -120,7 +120,7 @@ describe("compileStage", () => {
     for (const error of errors) expect(formatStageError(error)).not.toBe("");
   });
 
-  it("refuses a readout in a list, a bad pivot, beats past durationMs or of no length, and a bad layout pick", () => {
+  it("refuses a readout in a list, beats past durationMs or of no length, and a bad layout pick", () => {
     const readout = errorsOf(
       defineStage({
         beats: { a: [0, 100] },
@@ -130,14 +130,6 @@ describe("compileStage", () => {
       }),
     );
     expect(readout.map(formatStageError).join()).toContain("many: item 0 is a readout");
-    const badPivot = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ a: m.box().pivot({ x: Number.NaN, y: 0 }) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(badPivot.map(formatStageError).join()).toContain("pivot");
     expect(
       errorsOf(
         defineStage({
