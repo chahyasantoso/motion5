@@ -7,27 +7,27 @@ A person or an agent making a page, a reel or a 3D piece builds its look in the 
 `section` and `el()` from the scene, adds binders that each renderer owns, a measure cache that headless tools read,
 scenes that include scenes, and one mount that takes a clock and a frame.
 
-Status: accepted by the owner 2026-11-21; in progress on `feat/authored-cast`. It starts after PR 614 (`feat/stage-3d`)
-merges. Two pull requests: the prune, then the refactor.
+Status: accepted by the owner 2026-11-21. The prune merged as PR 615. The refactor is on `feat/authored-cast`, not
+pushed, no pull request yet: steps 1, 2, 3, 5 and 6 are done, and of step 4 `pivot` and `section`. Resume at step 4.
 
 Read `AGENTS.md` first. Every rule there applies.
 
 ## Where things stand
 
-- A piece is a `sceneBuilder` chain. A skin piece draws through `export const skin = { css, defs? }` on `mountStage`,
-  which creates nodes tagged `data-cast`; a page scene binds each element with `node: el(selector)` on `mountPage`
-  and refuses a skin; a 3D object is bound in renderer code with `bindScene3d(player, stage, { name: Object3D })`.
-  Three answers to one question.
-- `section(name, el(selector))` is a separate kind whose `.top` and `.end` are scroll points from its measured box.
-- `group(name, children)` restates a hierarchy that the DOM and the `Object3D` tree already hold. The only renderers
-  are `@gerak/dom` and `@gerak/three`; both have native hierarchy.
-- `text(name, value, { split })` and `many(name, count)` state the text and the count that the markup also holds.
-- `mountPage` runs a live clock (`liveAt`) with an optional `clock` source; `mountStage` runs a timed clock in a fixed
-  frame. Headless review reads zero rest boxes unless `rest` is passed.
-- 26 piece folders under `apps/pieces`; 26 tests in `apps/pieces/test`; `test/repo/stage-pieces.test.ts` names
-  `shop`, `nowplaying`, `nadi`, `showreel-e` and `penguin`; `performance/stage-baseline.json` times nine skin pieces.
-- The NADI brief lives in `plan/measure-nadi.md`, not in the piece. yuzu is the GSAP page measure
-  (`performance/page-vs-gsap.mjs`).
+- Before this plan, a piece drew three ways: a skin on `mountStage`, `el(selector)` on `mountPage`, and
+  `bindScene3d` in renderer code. Steps 1 to 3, 5 and 6 replaced them: `mount(scene, { clock, frame, root, binders,
+  nodes })` binds `data-cast`, `threeBinder` binds objects, and `gerak measure` writes the cache headless tools read.
+- Still in the scene, and going in step 4: `group`, `many(name, count)`, `text`'s string, the `rest` and `layouts`
+  options. The engine still fixes an actor or a list at compile.
+- Pieces: `saved` and `launch-day` are page, motion module and main, mounted timed and fitted, and measured. `yuzu`
+  and `yuzu-3d` mount live and are measured. `overlay3d` and `character3d` are still React components that start
+  `threeBinder` on their own player; their pages mount nothing, so review refuses their scene files until step 7.
+  `timing`, `card` and `pile` are plain React scene modules and need no cache.
+- A page edit makes its cache stale: run `gerak measure <brief>/<name>.html` again, or review refuses the scene.
+- `scripts/pack-check.mjs` was edited for the demo page and has not been run since; run `npm run pack:check` before
+  the pull request.
+- The docs still name what is gone (`mountStage`, `mountPage`, the skin, `frame`, `pivot`, `import-svg`,
+  `bindScene3d`): `stage.md`, `page.md`, `agent-3d.md`, the guide and the commands page. Step 8 rewrites them.
 
 ## Decisions
 
@@ -137,7 +137,8 @@ Each step is one commit or a few, green on `npm run check`, in this order:
      each object claimed by exactly one. `threeBinder(root, { objects, draw })` matches `getObjectByName` and replaces
      `bindScene3d`; the React 3D pieces call its `start` on their own player until step 7 mounts them.
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
-   Their tests go in the same commit. `pivot` and `section` are gone.
+   Their tests go in the same commit. `pivot` and `section` are gone. Build in this order, one commit each: part
+   counts, then `group`, then `rest`, `layouts` and `carry`.
    - **Part counts are the markup's.** The scene declares that an element has parts, because its motion reads its
      index: `box(name, { parts: true })`, or `text(name, { split })`. The count is the markup's (matched nodes, or
      the letters or words the mount wraps) and reaches `frame` beside the rest boxes: from the mount's binding, or
@@ -147,6 +148,7 @@ Each step is one commit or a few, green on `npm run check`, in this order:
      DOM; headless review reads the parent from the cache's `parents`.
    - **`rest` and `layouts` go.** The cache owns rest. The page arranges itself with CSS, and the mount re-measures.
      `carry` stays, triggered by a re-measure: an element whose rest moves is carried from its old box to its new.
+     Today `carry` reads `layouts.pick` and each layout's rest (`run/carry.ts`); its options keep their meaning.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
    - `mount` grows from `mountPage`; its time source option is `now`. `"timed"` runs the seekable `clockDriver` over
      the scene's length, the whole scene each frame, with no compositor hand-off.
@@ -156,10 +158,12 @@ Each step is one commit or a few, green on `npm run check`, in this order:
      its styles and body, and mount over the body's first element; `stage.html` goes.
    - `gerak import-svg` and its piece edit go: they wrote a skin. The artwork guide puts the SVG in the page.
 6. **Include and one-sided show.**
-7. **The canaries.** Convert the six kept pieces. yuzu's frames and its GSAP numbers match the baseline; the 3D
+7. **The canaries.** Convert the six kept pieces; `saved` and `launch-day` are done. `overlay3d` and `character3d`
+   get a page whose main mounts with `threeBinder`, and are measured. yuzu's frames and its GSAP numbers match the baseline; the 3D
    pieces' frames match theirs. `performance/stage-benchmark.mjs`, which still looks for `defineStage`, runs the
    converted pieces through the new mount, and `performance/stage-baseline.json` is regenerated over them.
-8. **Scaffold and docs.** `gerak new` writes markup and a motion file per renderer; `stage.md`, `page.md` and
+8. **Scaffold and docs.** `gerak new` writes markup and a motion file per renderer (`--three` still writes a React
+   component that starts `threeBinder` itself); `stage.md`, `page.md` and
    `agent-3d.md` are rewritten whole; the reference regenerates.
 9. **Proof.** A fresh Sonnet 5.5 agent, reading only the docs, builds a page and a reel; then one NADI measure row
    beside the plain agent.
