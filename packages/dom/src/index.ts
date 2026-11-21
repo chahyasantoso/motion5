@@ -30,6 +30,9 @@ export {
 } from "./events";
 export {
   mount,
+  MOUNTS,
+  type MeasuredBox,
+  type Measurement,
   type Mounted,
   type MountClock,
   type MountFrame,

@@ -35,6 +35,7 @@ import {
   morphAt,
   restOfBounds,
   strokeBox,
+  placementOf,
   withPlacement,
   type BoxPlacement,
 } from "@gerak/stage/render";
@@ -172,6 +173,28 @@ export interface MountOptions {
   readonly checks?: boolean;
 }
 
+/** A rest box as a measure holds it: its centre and size in px, and how the page places it. */
+export interface MeasuredBox {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly placement: BoxPlacement;
+}
+
+/** What a mount measured, as plain data: the frame, each rest box, each split's lines, each element's parent. */
+export interface Measurement {
+  /** A fitted root's size, or the viewport's on a page. */
+  readonly frame: { readonly width: number; readonly height: number };
+  readonly rest: Readonly<Record<string, MeasuredBox>>;
+  readonly lines: Readonly<Record<string, readonly number[]>>;
+  /** The nearest cast element holding each one, by name; an element with none is absent. */
+  readonly parents: Readonly<Record<string, string>>;
+}
+
+/** Where every live mount on a page is listed, for the page tools that read what it measured. */
+export const MOUNTS = Symbol.for("@gerak/dom/mounts");
+
 /** A playing mount: its player, driver, measured rests and text lines, input logger, and cleanup. */
 export interface Mounted {
   readonly player: Player<StageValues>;
@@ -181,6 +204,8 @@ export interface Mounted {
   /** Visual line indices per split text element, updated on resize without changing part count. */
   readonly lines: Readonly<Record<string, readonly number[]>>;
   remeasure(): void;
+  /** What it measured last, as plain data a cache can hold. */
+  measure(): Measurement;
   /** Swaps in a scene with the same cast and length, keeping time. */
   replace(next: StageInput): void;
   /** Logs a named numeric sample at the clock's ms and wakes the settle window. */
@@ -415,6 +440,12 @@ function bindList(
   throw new Error(
     `mount: "${member.name}" (${selector}) matched ${matches.length} nodes, expected ${member.items.length}.`,
   );
+}
+
+function parentNodeOf(node: unknown): unknown {
+  if (!isObjectRecord(node)) return undefined;
+  const parent: unknown = Reflect.get(node, "parentElement");
+  return isObjectRecord(parent) ? parent : undefined;
 }
 
 function rectOf(node: PageElement): RawRect {
@@ -1364,7 +1395,45 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     }
   }
 
-  return {
+  const nameOfNode = new Map<unknown, string>();
+  for (const target of targets) {
+    target.items.forEach((item, index) => nameOfNode.set(item, `${target.member.name}.${index}`));
+    if (!nameOfNode.has(target.node)) nameOfNode.set(target.node, target.member.name);
+  }
+  const parentOf = (node: unknown): string | undefined => {
+    for (let up = parentNodeOf(node); up !== undefined; up = parentNodeOf(up)) {
+      const name = nameOfNode.get(up);
+      if (name !== undefined) return name;
+    }
+    return undefined;
+  };
+  const measurement = (): Measurement => {
+    const rest: Record<string, MeasuredBox> = {};
+    for (const [name, box] of Object.entries(currentRest))
+      rest[name] = {
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        placement: placementOf(box),
+      };
+    const parents: Record<string, string> = {};
+    for (const [node, name] of nameOfNode) {
+      const parent = parentOf(node);
+      if (parent !== undefined) parents[name] = parent;
+    }
+    const frame =
+      fitted === undefined
+        ? readViewport()
+        : { width: fitted.offsetWidth, height: fitted.offsetHeight };
+    return { frame, rest, lines: currentLines, parents };
+  };
+
+  const listed: unknown = Reflect.get(globalThis, MOUNTS);
+  const mounts: unknown[] = Array.isArray(listed) ? listed : [];
+  Reflect.set(globalThis, MOUNTS, mounts);
+
+  const mounted: Mounted = {
     player,
     driver,
     get rest() {
@@ -1374,6 +1443,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       return currentLines;
     },
     remeasure,
+    measure: measurement,
     replace(next) {
       const nextStage = resolvePageStage(next);
       if (nextStage.signature !== stage.signature)
@@ -1423,6 +1493,10 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         }
       }
       for (const target of targets) target.restore?.();
+      const at = mounts.indexOf(mounted);
+      if (at >= 0) mounts.splice(at, 1);
     },
   };
+  mounts.push(mounted);
+  return mounted;
 }

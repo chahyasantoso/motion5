@@ -23,6 +23,7 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   mount,
+  MOUNTS,
   type ClockDriver,
   type FrameSource,
   type PageElement,
@@ -68,6 +69,7 @@ class FakeNode implements PageElement {
   offsetTop = 0;
   offsetWidth = 100;
   offsetHeight = 40;
+  parentElement: FakeNode | undefined = undefined;
 
   constructor(
     readonly id: string,
@@ -339,6 +341,47 @@ describe("mount", () => {
       mounted.replace(sceneBuilder().element(box("card")).element(box("other"))),
     ).toThrow(/different cast/);
     mounted.dispose();
+  });
+
+  it("measures its cast as plain data, each element's parent named, and lists itself while it plays", () => {
+    const card = new FakeNode("card");
+    card.offsetLeft = 20;
+    card.offsetTop = 50;
+    card.offsetWidth = 120;
+    card.offsetHeight = 60;
+    const title = new FakeNode("title");
+    title.parentElement = card;
+    const items = [new FakeNode("i1"), new FakeNode("i2")];
+    for (const item of items) {
+      item.setAttribute("data-cast", "items");
+      item.parentElement = card;
+    }
+    const root = new FakeRoot([card, title, ...items]);
+    const scene = sceneBuilder({ length: 500 })
+      .element(box("card"))
+      .element(box("title"))
+      .element(many("items", 2));
+    const mounted = mount(scene, {
+      root,
+      frames: fakeFrames(),
+      clock: "live",
+      now: () => 0,
+      viewport: () => ({ width: 800, height: 600 }),
+    });
+    const measured = mounted.measure();
+    expect(measured.frame).toEqual({ width: 800, height: 600 });
+    expect(measured.rest["card"]).toEqual({
+      x: 80,
+      y: 80,
+      width: 120,
+      height: 60,
+      placement: { kind: "flow" },
+    });
+    expect(measured.parents).toEqual({ title: "card", "items.0": "card", "items.1": "card" });
+    expect(JSON.parse(JSON.stringify(measured))).toEqual(measured);
+    expect(Reflect.get(globalThis, MOUNTS)).toContain(mounted);
+    mounted.dispose();
+    expect(Reflect.get(globalThis, MOUNTS)).not.toContain(mounted);
   });
 
   it("refuses a scene missing nodes or a missing selector", () => {

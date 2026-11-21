@@ -4,5 +4,5 @@ Generated from doc comments by `npm run reference -- --write`; one page per sour
 
 - [author](./author.md), 78 exports: What a piece is written with: `sceneBuilder`, its elements, beats and motions.
 - [run](./run.md), 19 exports: What renderers and tools run a piece with: `compileScene`'s `Stage`, `frame` and `check`, and the closed `StageError`.
-- [render](./render.md), 8 exports: Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.
+- [render](./render.md), 9 exports: Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.
 - [dom](./dom.md), 2 exports: Browser CSS custom property helpers exported from `@gerak/stage/dom` (`cssVariables`, `isTokenName`).
