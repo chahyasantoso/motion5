@@ -12,11 +12,13 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { manualDriver, play } from "@gerak/player";
 import {
+  NO_REST,
   compileScene,
   formatStageError,
   frame,
   isScene,
   listPose,
+  partCounts,
   type FrameInput,
   type Limits,
   type Stage,
@@ -131,26 +133,31 @@ export interface SceneSample {
 export function writtenOut(
   stage: Stage,
   targets: Readonly<Record<string, unknown>>,
+  counts?: Readonly<Record<string, number>>,
 ): Readonly<Record<string, unknown>> {
   const out: Record<string, unknown> = { ...targets };
   for (const member of stage.members) {
     const value = targets[member.name];
     if (member.kind !== "list" || typeof value !== "function") continue;
-    const count = member.items.length;
-    out[member.name] = member.items.map((_, index) => listPose(value, index, count));
+    const count = counts?.[member.name] ?? 1;
+    out[member.name] = Array.from({ length: count }, (_, index) => listPose(value, index, count));
   }
   return out;
 }
 
-/** The rest boxes and lines a frame of `stage` reads: the cache's, or none without a page. */
+/** The rest boxes, part counts and lines a frame of `stage` reads: the cache's, or the piece's without a page. */
 export function measuredInput(
   stage: Stage,
   measured: MeasureCache | undefined,
-): Pick<FrameInput, "boxes" | "lines"> {
-  if (measured === undefined) return {};
+): Pick<FrameInput, "boxes" | "counts" | "lines"> {
+  if (measured === undefined) {
+    const rest = stage.layouts.readers[stage.layouts.pick(NO_EVENTS)] ?? NO_REST;
+    return { counts: partCounts(stage, rest) };
+  }
   const reader = restOfCache(measured);
   return {
     boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
+    counts: partCounts(stage, reader, measured.lines),
     lines: measured.lines,
   };
 }
@@ -168,7 +175,8 @@ export function moduleFromStage(stage: Stage, measured?: MeasureCache): SceneMod
       from: span.from,
       to: span.to,
     })),
-    scene: (time, events) => writtenOut(stage, frame(stage, { time, events, ...input }).targets),
+    scene: (time, events) =>
+      writtenOut(stage, frame(stage, { time, events, ...input }).targets, input.counts),
   };
 }
 

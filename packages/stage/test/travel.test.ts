@@ -8,7 +8,6 @@ import {
   formatStageError,
   frame,
   listPose,
-  many,
   poseOf,
   restReader,
   sceneBuilder,
@@ -444,7 +443,7 @@ describe("travel", () => {
   it("supports stagger on lists, .take() windows, fractional scales, flow/0x0 slots", () => {
     const b1 = beat("b1", 400, { at: 0 });
     const b2 = beat("b2", 400, { at: 600 });
-    const items = many("items", 2);
+    const items = box("items", { parts: true });
     const listSlot = box("listSlot");
     const slotA = box("slotA");
     const slotB = box("slotB");

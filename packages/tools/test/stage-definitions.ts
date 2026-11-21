@@ -34,7 +34,7 @@ export const cleanDefinition = defineStage({
   cast: (m) => ({
     stage: m.group({
       dot: m.box().on("go"),
-      word: m.letters("AB"),
+      word: m.letters(),
       mark: m.box().static(),
     }),
   }),
@@ -52,7 +52,7 @@ export const cleanDefinition = defineStage({
 export const unusedDefinition = defineStage({
   beats,
   cast: (m) => ({
-    stage: m.group({ dot: m.box().on("go"), word: m.letters("AB"), spare: m.box() }),
+    stage: m.group({ dot: m.box().on("go"), word: m.letters(), spare: m.box() }),
   }),
   scene: ({ time, beats: b }) => {
     const go = b.go.of(time).progress;

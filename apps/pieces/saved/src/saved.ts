@@ -8,7 +8,7 @@ const markOut = beat("markOut", 320, { at: 1180 });
 const wordOut = beat("wordOut", 280, { at: 1220 });
 
 const mark = box("mark");
-const word = text("word", "Saved");
+const word = text("word");
 const pill = group("pill", [mark, word]);
 
 /** A motion playing `inner` backwards over its beat. */

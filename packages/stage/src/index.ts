@@ -1,4 +1,4 @@
-export { type Content, type Expect, type ItemContent, type Path } from "./author/cast";
+export { type Content, type Expect, type Path } from "./author/cast";
 export {
   beat,
   scrollPoint,
@@ -16,10 +16,10 @@ export {
 export {
   box,
   group,
-  many,
   object,
   shape,
   text,
+  type BoxOptions,
   type Element,
   type Edges,
   type ElementBody,
@@ -93,6 +93,7 @@ export {
   check,
   frame,
   listPose,
+  partCounts,
   pose3dOf,
   poseOf,
   type FrameInput,

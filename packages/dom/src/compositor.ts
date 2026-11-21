@@ -69,6 +69,7 @@ export interface TriggerTrack extends Track {
 /** What tracks are sampled from: the measured boxes, lines and rest, and the elements to try. */
 export interface TrackInput {
   readonly boxes: Readonly<Record<string, RestReader>>;
+  readonly counts?: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>>;
   readonly rest: RestReader;
   readonly names: ReadonlySet<string>;
@@ -114,24 +115,14 @@ function anchorOf(pose: object | undefined): Anchor | undefined {
   }
 }
 
-function partsOf(member: Member): number | undefined {
-  switch (member.kind) {
-    case "list":
-      return member.items.length;
-    case "actor":
-    case "group":
-    case "object":
-      return undefined;
-    default:
-      return unreachable(member);
-  }
-}
-
-function posesOf(member: Member, target: unknown): readonly (object | undefined)[] {
-  const count = partsOf(member);
-  return count === undefined
-    ? [poseOf(target)]
-    : Array.from({ length: count }, (_, index) => listPose(target, index, count));
+function posesOf(
+  member: Member,
+  target: unknown,
+  counts: Readonly<Record<string, number>> | undefined,
+): readonly (object | undefined)[] {
+  if (member.kind !== "list") return [poseOf(target)];
+  const count = counts?.[member.name] ?? 1;
+  return Array.from({ length: count }, (_, index) => listPose(target, index, count));
 }
 
 /** The largest miss, in tolerances, of the straight line from `a` to `b` at `mid`. */
@@ -298,6 +289,7 @@ function runFrame(
     time: liveAt(ms),
     events,
     boxes: input.boxes,
+    ...(input.counts === undefined ? {} : { counts: input.counts }),
     lines: input.lines,
     only,
     moves,
@@ -305,7 +297,8 @@ function runFrame(
   });
   const poses = new Map<string, readonly (object | undefined)[]>();
   for (const member of stage.members)
-    if (only.has(member.name)) poses.set(member.name, posesOf(member, targets[member.name]));
+    if (only.has(member.name))
+      poses.set(member.name, posesOf(member, targets[member.name], input.counts));
   return { poses, moves, drives };
 }
 

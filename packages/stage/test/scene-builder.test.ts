@@ -19,7 +19,6 @@ import {
   frame,
   group,
   listPose,
-  many,
   poseOf,
   compileScene,
   isScene,
@@ -71,13 +70,16 @@ describe("elements", () => {
   it("hold a name and a kind", () => {
     expect(box("a").kind).toBe("box");
     expect(shape("b", circlePath({ cx: 0, cy: 0, r: 5 })).kind).toBe("shape");
-    expect(text("c", "hi").kind).toBe("text");
-    expect(many("d", 3).kind).toBe("many");
+    expect(text("c").kind).toBe("text");
+    expect(box("d", { parts: true }).kind).toBe("box");
     expect(group("e", [box("f")]).kind).toBe("group");
     expect(box("a").name).toBe("a");
   });
 
-  it("refuse split on text a function writes", () => {
+  it("refuse a string on text, or split on a readout", () => {
+    // @ts-expect-error the markup holds a text element's string
+    expect(() => text("t", "hi")).toThrow(TypeError);
+    // @ts-expect-error a readout takes ElementOptions, not split
     expect(() => text("t", () => "x", { split: "letters" })).toThrow(TypeError);
   });
 });
@@ -85,7 +87,7 @@ describe("elements", () => {
 describe("sceneBuilder: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
   const card = box("card", { watch: true });
-  const word = text("word", "HEY", { split: "letters" });
+  const word = text("word", { split: "letters" });
   const chain = sceneBuilder()
     .element(card)
     .motion(slideX(100).in(enter))
@@ -211,7 +213,7 @@ describe("sceneBuilder: ambient motions", () => {
 });
 
 describe("stagger", () => {
-  const makeWord = () => text("word", "ABC", { split: "letters" });
+  const makeWord = () => text("word", { split: "letters" });
   const run = beat("run", 1000);
   const win = beat("win", 1000, { at: 1000 });
   const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
@@ -292,7 +294,7 @@ describe("stagger", () => {
 
 describe("bindEach", () => {
   it("binds a field of each part to the signal of its index", () => {
-    const dots = many("dots", 3);
+    const dots = box("dots", { parts: true });
     const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion(
@@ -377,8 +379,8 @@ describe("sceneBuilder: layering", () => {
 
 describe("sceneBuilder: lists", () => {
   it("gives a list element's poses per index and count", () => {
-    const dots = many("dots", 3);
-    const word = text("word", "ABC", { split: "letters" });
+    const dots = box("dots", { parts: true });
+    const word = text("word", { split: "letters" });
     const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion((time, context) => ({ x: (context.index ?? 0) * 10 + (context.count ?? 0) }))
@@ -388,12 +390,6 @@ describe("sceneBuilder: lists", () => {
     const out = frame(stage, { time: at(1000) }).targets;
     expect([0, 1, 2].map((index) => listPose(out["dots"], index, 3)?.x)).toEqual([3, 13, 23]);
     expect([0, 1, 2].map((index) => listPose(out["word"], index, 3)?.y)).toEqual([0.5, 1.5, 2.5]);
-  });
-
-  it("takes items from a list of data", () => {
-    const rows = many("rows", ["a", "b"], (item) => text("ignored", item));
-    const stage = compiled(sceneBuilder().element(rows).motion(slideX(1).in(enter)));
-    expect(stage.members[0]?.kind).toBe("list");
   });
 });
 
@@ -452,7 +448,7 @@ describe("sceneBuilder: reading another element", () => {
   });
 
   it("carries a part of a list from the box named after the element and the part", () => {
-    const dots = many("dots", 2);
+    const dots = box("dots", { parts: true });
     const chain = sceneBuilder({
       length: 2000,
       layouts: {
@@ -480,7 +476,7 @@ describe("sceneBuilder: reading another element", () => {
 describe("sceneBuilder: refusals", () => {
   it("refuses a second element with a name already used, naming both", () => {
     const chain = sceneBuilder().element(box("x"));
-    expect(() => chain.element(text("x", "hi"))).toThrow(/"x" \(box\).*"x" \(text\)/);
+    expect(() => chain.element(text("x"))).toThrow(/"x" \(box\).*"x" \(text\)/);
   });
 
   it("accepts the same element again, selected later", () => {

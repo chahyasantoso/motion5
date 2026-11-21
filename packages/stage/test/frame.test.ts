@@ -31,7 +31,7 @@ describe("frame", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 1000] },
-        cast: (m) => ({ dots: m.many(3), word: m.letters("HEY") }),
+        cast: (m) => ({ dots: m.many(), word: m.letters() }),
         scene: ({ time }) => ({
           dots: (i) => ({ x: i * 10 + time.progress }),
           word: (i, n) => ({ opacity: i / n }),
@@ -42,14 +42,14 @@ describe("frame", () => {
     expect(listPose(out.targets["dots"], 2, 3)).toEqual({ x: 20.5 });
     expect(listPose(out.targets["word"], 1, 3)).toEqual({ opacity: 1 / 3 });
     expect(listPose(undefined, 0, 3)).toBeUndefined();
-    expect(check(stage, out.targets)).toEqual([]);
+    expect(check(stage, out.targets, { dots: 3, word: 3 })).toEqual([]);
   });
 
   it("checks shapes in one place: arrays, non-poses, lists not given as functions, unknown names", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100] },
-        cast: (m) => ({ box: m.box(), dots: m.many(2), card: m.group({}) }),
+        cast: (m) => ({ box: m.box(), dots: m.many(), card: m.group({}) }),
         scene: () => ({}),
       }),
     );

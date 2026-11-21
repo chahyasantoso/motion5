@@ -8,7 +8,6 @@ import {
   frame,
   group,
   listPose,
-  many,
   sceneBuilder,
   scrollPoint,
   shape,
@@ -36,9 +35,9 @@ const slideX = (distance: number) =>
 describe("page scene compilation", () => {
   it("binds every element to its [data-cast] nodes and compiles split kinds onto lists", () => {
     const card = box("card");
-    const title = text("title", "One two three", { split: "words" });
+    const title = text("title", { split: "words" });
     const line = shape("line", circlePath({ cx: 0, cy: 0, r: 5 }));
-    const items = many("items", 2);
+    const items = box("items", { parts: true });
     const wrap = group("wrap", [card]);
     const stage = compiled(
       sceneBuilder()
@@ -74,7 +73,7 @@ describe("page scene compilation", () => {
 
 describe("lines and stagger by line", () => {
   it("gives line 0 headless on list parts and undefined on non-parts", () => {
-    const headline = text("headline", "Fresh pressed citrus every", {
+    const headline = text("headline", {
       split: "words",
     });
     const card = box("card");
@@ -100,7 +99,7 @@ describe("lines and stagger by line", () => {
   });
 
   it("staggers parts on the same line together when by is 'line', and reacts to resize lines", () => {
-    const headline = text("headline", "One two three four", {
+    const headline = text("headline", {
       split: "words",
     });
     const enter = beat("enter", 1000);
@@ -134,7 +133,7 @@ describe("lines and stagger by line", () => {
     const lines = { words: [0, 1, 1, 2] };
 
     const sample = (from: "start" | "end" | "center" | "edges"): number[] => {
-      const words = text("words", "A B C D", { split: "words" });
+      const words = text("words", { split: "words" });
       const stage = compiled(
         sceneBuilder()
           .element(words)

@@ -42,7 +42,7 @@ const markedBy =
   (m: CastBuilder<"intro" | "go" | "out">) => ({
     stage: m.group({
       dot: m.box().on("go"),
-      word: m.letters("AB"),
+      word: m.letters(),
       mark: m.stroke(path).static(),
     }),
   });
@@ -147,7 +147,7 @@ describe("gerak review of a member still ringing", () => {
       cast: (m) => ({
         stage: m.group({
           dot: m.box().on(...on),
-          word: m.letters("AB"),
+          word: m.letters(),
           mark: m.box().static(),
         }),
       }),
@@ -225,7 +225,7 @@ describe("gerak review on a stage module", () => {
         cast: (m) => ({
           stage: m.group({
             dot: m.box().on("go"),
-            word: m.letters("AB"),
+            word: m.letters(),
             mark: m
               .stroke((rest) => {
                 widths.push(rest.get("line").width);
@@ -245,7 +245,7 @@ describe("gerak review on a stage module", () => {
         cast: (m) => ({
           stage: m.group({
             dot: m.box().on("go"),
-            word: m.letters("AB"),
+            word: m.letters(),
             a: m.stroke((rest) => level(0, rest.get("b").width + 1, 0)).static(),
             b: m.stroke((rest) => level(0, rest.get("a").width + 1, 0)).static(),
           }),
@@ -357,7 +357,7 @@ describe("gerak review on a stage module", () => {
       defineStage({
         beats,
         cast: (m) => ({
-          outer: m.group({ dust: m.many(2).on("late"), solo: m.box() }).on("late"),
+          outer: m.group({ dust: m.many().on("late"), solo: m.box() }).on("late"),
         }),
         scene: ({ time }) => ({ outer: {}, dust: () => hop(time), solo: hop(time) }),
       }),

@@ -53,6 +53,8 @@ export interface SceneContext<B extends string = string, L extends string = stri
   readonly rest: RestReader;
   readonly layouts: Readonly<Record<L, RestReader>>;
   readonly carry: Carry;
+  /** Part count per list element, from the mount's binding or the cache's `<name>.<index>` boxes. */
+  readonly counts?: Readonly<Record<string, number>> | undefined;
   /** Visual line index per list item, measured from layout on a page mount. */
   readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
   /** Only these elements run; the rest are left out of the answer. */

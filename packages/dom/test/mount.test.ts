@@ -13,7 +13,6 @@ import {
   bind,
   box,
   compileScene,
-  many,
   object,
   sceneBuilder,
   scrollPoint,
@@ -207,9 +206,9 @@ describe("mount", () => {
     const scene = sceneBuilder()
       .element(box("card", { watch: true }))
       .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(sb))
-      .element(text("title", ""))
+      .element(text("title"))
       .motion(bind({ y: (t, e) => pointer.y(t, e) * 10 }))
-      .element(many("items", 2))
+      .element(box("items", { parts: true }))
       .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 15 }));
 
     const mounted = mount(scene, {
@@ -294,7 +293,7 @@ describe("mount", () => {
     const scene = sceneBuilder({ length: 500 })
       .element(box("card"))
       .motion(() => ({ x: 7 }))
-      .element(many("dots", 2))
+      .element(box("dots", { parts: true }))
       .motion((_t, ctx) => ({ y: ctx.index ?? 0 }));
     const mounted = mount(scene, {
       root,
@@ -409,7 +408,7 @@ describe("mount", () => {
     const scene = sceneBuilder({ length: 500 })
       .element(box("card"))
       .element(box("title"))
-      .element(many("items", 2));
+      .element(box("items", { parts: true }));
     const mounted = mount(scene, {
       root,
       frames: fakeFrames(),
@@ -507,7 +506,7 @@ describe("mount", () => {
     const root = new FakeRoot([headline]);
     const mounted = mount(
       sceneBuilder({ length: 1000 })
-        .element(text("headline", "One two", { split: "words" }))
+        .element(text("headline", { split: "words" }))
         .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 })),
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
@@ -525,7 +524,7 @@ describe("mount", () => {
     const root = new FakeRoot([solo]);
     const mounted = mount(
       sceneBuilder({ length: 500 })
-        .element(text("solo", "HELLO", { split: "words" }))
+        .element(text("solo", { split: "words" }))
         .motion(() => ({ x: 5 })),
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
@@ -540,7 +539,7 @@ describe("mount", () => {
     expect(() =>
       mount(
         sceneBuilder({ length: 500 })
-          .element(text("solo", "HELLO", { split: "words" }))
+          .element(text("solo", { split: "words" }))
           .element(box("missing")),
         { root: rollbackRoot, frames: fakeFrames(), clock: "live", now: () => 0 },
       ),
@@ -591,7 +590,7 @@ describe("mount", () => {
     expect(() =>
       mount(
         sceneBuilder()
-          .element(text("solo", "HELLO", { split: "words" }))
+          .element(text("solo", { split: "words" }))
           .motion(motion((t) => ({ x: 10 * t.progress })).in(missingBeat)),
         { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: "live", now: () => 0 },
       ),
@@ -725,7 +724,7 @@ describe("mount frames for a cause", () => {
         .motion(bind({ x: (t, e) => sprung(t, e) * 100 }))
         .element(box("still"))
         .motion(counted.in(beat("stillBeat", 100)))
-        .element(many("parts", 3))
+        .element(box("parts", { parts: true }))
         .motion(
           slide.in(beat("partBeat", 400, { when: scrollPoint(300).reached, back: "reverse" })),
         );

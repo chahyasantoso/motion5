@@ -202,7 +202,7 @@ describe("scroll beats", () => {
       poseAt(taken, "card", 100, [{ name: INPUT_EVENTS.scroll, at: 100, value: 400 }])?.x,
     ).toBe(40);
 
-    const makeWord = () => text("word", "ABC", { split: "letters" });
+    const makeWord = () => text("word", { split: "letters" });
     const staggeredOuter = compiled(
       sceneBuilder({ length: 2000 })
         .element(makeWord())
@@ -381,7 +381,7 @@ describe("trigger beats", () => {
     expect(poseAt(loopedDirect, "card", 750, session)?.x).toBeCloseTo(50, 9);
     expect(poseAt(loopedDirect, "card", 1250, session)?.x).toBeCloseTo(50, 9);
 
-    const word = text("word", "ABC", { split: "letters" });
+    const word = text("word", { split: "letters" });
     const staggeredTrig = compiled(
       sceneBuilder({ length: 3000 })
         .element(word)

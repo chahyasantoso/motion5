@@ -37,13 +37,13 @@ describe("defineStage options", () => {
 });
 
 describe("compileStage", () => {
-  it("compiles one flat member list, parents first, with list items as contents", () => {
+  it("compiles one flat member list, parents first, with split on list members", () => {
     const stage = compiled(
       defineStage({
         beats: { enter: [0, 500], hold: [500, 1600] },
         cast: (m) => ({
-          card: m.group({ badge: m.text("READY"), word: m.letters("HI") }),
-          dust: m.many(3),
+          card: m.group({ badge: m.text(), word: m.letters() }),
+          dust: m.many(),
         }),
         scene: () => ({}),
       }),
@@ -56,10 +56,7 @@ describe("compileStage", () => {
       ["dust", "list", -1],
     ]);
     const word = stage.members[2];
-    expect(word?.kind === "list" ? word.items : undefined).toEqual([
-      { kind: "text", value: "H" },
-      { kind: "text", value: "I" },
-    ]);
+    expect(word?.kind === "list" ? word.split : undefined).toBe("letters");
     expect(stage.layouts.names).toEqual(["main"]);
   });
 
@@ -80,7 +77,7 @@ describe("compileStage", () => {
         cast: (m) => ({
           weather: m.group({ flake: m.box(), still: m.box().static() }).ambient(),
           sign: m.group({ arrow: m.box() }).static(),
-          snow: m.many(2).ambient(),
+          snow: m.many().ambient(),
         }),
         scene: () => ({}),
       }),
@@ -120,16 +117,7 @@ describe("compileStage", () => {
     for (const error of errors) expect(formatStageError(error)).not.toBe("");
   });
 
-  it("refuses a readout in a list, beats past durationMs or of no length, and a bad layout pick", () => {
-    const readout = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        // @ts-expect-error: a readout cannot be a list item
-        cast: (m) => ({ row: m.many([0], () => m.readout(() => "x")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(readout.map(formatStageError).join()).toContain("many: item 0 is a readout");
+  it("refuses beats past durationMs or of no length, and a bad layout pick", () => {
     expect(
       errorsOf(
         defineStage({
@@ -165,19 +153,6 @@ describe("compileStage", () => {
     expect(pick.map(formatStageError).join()).toContain("layouts");
   });
 
-  it("refuses modifiers on a list item, which only its list can carry", () => {
-    const errors = compileStage(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ row: m.many([1], () => m.box().on("a")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(errors.ok ? "" : errors.errors.map(formatStageError).join()).toContain(
-      "an item takes no modifiers",
-    );
-  });
-
   it("matches morph outlines once, base first", () => {
     const stage = compiled(
       defineStage({
@@ -193,16 +168,18 @@ describe("compileStage", () => {
   });
 
   it("gives equal signatures to stages that mount on the same elements, and different ones otherwise", () => {
-    const make = (word: string, scale: number) =>
+    const make = (split: "letters" | "words", scale: number) =>
       compiled(
         defineStage({
           beats: { a: [0, 100] },
-          cast: (m) => ({ card: m.group({ title: m.text(word) }) }),
-          scene: () => ({ title: { scale } }),
+          cast: (m) => ({
+            card: m.group({ title: split === "letters" ? m.letters() : m.words() }),
+          }),
+          scene: () => ({ title: () => ({ scale }) }),
         }),
       ).signature;
-    expect(make("Hi", 1)).toBe(make("Hi", 2));
-    expect(make("Hi", 1)).not.toBe(make("Bye", 1));
+    expect(make("letters", 1)).toBe(make("letters", 2));
+    expect(make("letters", 1)).not.toBe(make("words", 1));
   });
 
   it("types beat names, list poses and unknown members", () => {
@@ -214,31 +191,25 @@ describe("compileStage", () => {
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ dots: m.many(3), card: m.group({ title: m.text("x") }) }),
+      cast: (m) => ({ dots: m.many(), card: m.group({ title: m.text() }) }),
       // @ts-expect-error: a list takes a function of the index, not an array
       scene: () => ({ dots: [{}, {}, {}] }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ dots: m.many(3), card: m.group({ title: m.text("x") }) }),
+      cast: (m) => ({ dots: m.many(), card: m.group({ title: m.text() }) }),
       scene: () => ({ dots: (i) => ({ x: i }), title: { x: 1 }, card: {} }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
+      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters() }) }) }),
       scene: () => ({ row: (i) => ({ x: i }), inner: { y: 1 } }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
+      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters() }) }) }),
       // @ts-expect-error: a list inside nested groups still takes a function of the index
       scene: () => ({ row: { x: 1 } }),
-    });
-    defineStage({
-      beats: { enter: [0, 100] },
-      // @ts-expect-error: a readout cannot be a list item
-      cast: (m) => ({ row: m.many([1], () => m.readout(() => "x")) }),
-      scene: () => ({}),
     });
     expect(true).toBe(true);
   });

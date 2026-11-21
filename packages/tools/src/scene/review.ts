@@ -287,13 +287,15 @@ type Reviewed =
     };
 
 /** Every member and list item of a stage, parents first. */
-function reviewedOf(stage: Stage): readonly Reviewed[] {
+function reviewedOf(stage: Stage, counts?: Readonly<Record<string, number>>): readonly Reviewed[] {
   return stage.members.flatMap((member): readonly Reviewed[] => {
     const own: Reviewed = { kind: "member", name: member.name, member };
     if (member.kind !== "list") return [own];
+    const count = counts?.[member.name] ?? 1;
     return [
       own,
-      ...member.items.map(
+      ...Array.from(
+        { length: count },
         (_, index): Reviewed => ({
           kind: "item",
           name: `${member.name}.${index}`,
@@ -310,7 +312,7 @@ function contentOfReviewed(reviewed: Reviewed): Content | undefined {
     case "member":
       return reviewed.member.kind === "actor" ? reviewed.member.content : undefined;
     case "item":
-      return reviewed.member.items[reviewed.index];
+      return undefined;
     default:
       return unreachable(reviewed);
   }
@@ -326,7 +328,7 @@ interface EvaluatedSample {
 
 function evaluate(
   stage: Stage,
-  input: Pick<FrameInput, "boxes" | "lines">,
+  input: Pick<FrameInput, "boxes" | "counts" | "lines">,
   time: Time,
   events: Events,
   at: number,
@@ -336,8 +338,8 @@ function evaluate(
   let targets: Readonly<Record<string, unknown>>;
   try {
     out = frame(stage, { time, events, ...input });
-    errors = check(stage, out.targets).map(formatStageError);
-    targets = writtenOut(stage, out.targets);
+    errors = check(stage, out.targets, input.counts).map(formatStageError);
+    targets = writtenOut(stage, out.targets, input.counts);
   } catch (error) {
     return { at, targets: {}, visible: undefined, errors: [errorText(error)] };
   }
@@ -364,7 +366,7 @@ function errorText(error: unknown): string {
 /** Runs the stage at each requested ms, as a player plays it. */
 function sampleStageFrames(
   stage: Stage,
-  input: Pick<FrameInput, "boxes" | "lines">,
+  input: Pick<FrameInput, "boxes" | "counts" | "lines">,
   ms: readonly number[],
 ): readonly EvaluatedSample[] {
   let latest: EvaluatedSample | undefined;
@@ -472,6 +474,7 @@ function stageMemberFindings(
   rest: RestReader,
   unmeasured: boolean,
   frame: FrameSize | undefined,
+  counts: Readonly<Record<string, number>> | undefined,
 ): readonly string[] {
   const found: string[] = [];
   if (unmeasured)
@@ -480,7 +483,7 @@ function stageMemberFindings(
     );
 
   if (evaluated.some(({ errors }) => errors.length > 0)) return found;
-  for (const reviewed of reviewedOf(stage)) {
+  for (const reviewed of reviewedOf(stage, counts)) {
     const { member } = reviewed;
     const prints = evaluated.map(({ targets }) => fingerprint(valueOfReview(targets, reviewed)));
     const unmoved = prints.every((print) => print === prints[0]);
@@ -780,10 +783,13 @@ export function reviewSceneModule(
     return { kind: "reviewed", findings };
   }
 
-  const evaluated = sampleStageFrames(stage, measuredInput(stage, module.measured), ms);
+  const input = measuredInput(stage, module.measured);
+  const evaluated = sampleStageFrames(stage, input, ms);
   const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
   const byAt = new Map(evaluated.map((sample) => [sample.at, sample] as const));
-  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
+  const byName = new Map(
+    reviewedOf(stage, input.counts).map((reviewed) => [reviewed.name, reviewed] as const),
+  );
   const beats = module.beats ?? [];
   const ownerOfPath = (path: string): Reviewed | undefined => {
     const dotted = path.replace(/\[(\d+)\]/g, ".$1");
@@ -831,7 +837,15 @@ export function reviewSceneModule(
     findings: [
       ...frameEvaluationFindings(evaluated),
       ...valueFindings.map((finding) => labelled(stage, finding)),
-      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured, module.measured?.frame),
+      ...stageMemberFindings(
+        stage,
+        beats,
+        evaluated,
+        rest,
+        unmeasured,
+        module.measured?.frame,
+        input.counts,
+      ),
       ...stagePathFindings(stage, rest),
     ],
   };

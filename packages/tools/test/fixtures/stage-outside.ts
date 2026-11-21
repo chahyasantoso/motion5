@@ -6,7 +6,7 @@ const go = beat("go", 1000, { after: intro });
 const out = beat("out", 600, { after: go });
 
 const dot = box("dot");
-const word = text("word", "AB", { split: "letters" });
+const word = text("word", { split: "letters" });
 
 /** The dot moves in `intro` and `out`, outside the `go` stretch it shows in. */
 export default sceneBuilder({ length: out.to })

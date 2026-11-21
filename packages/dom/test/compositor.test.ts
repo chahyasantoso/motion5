@@ -6,7 +6,6 @@ import {
   formatStageError,
   frame,
   listPose,
-  many,
   poseOf,
   restReader,
   sceneBuilder,
@@ -43,7 +42,7 @@ const stage = compiled(
   sceneBuilder({ length: 1000 })
     .element(box("scrolled"))
     .motion(curve.in(range))
-    .element(many("cards", 3))
+    .element(box("cards", { parts: true }))
     .motion(stagger(curve, { spread: 0.4 }).in(range))
     .element(box("clocked"))
     .motion(
@@ -59,7 +58,7 @@ const stage = compiled(
 
 const MAX = 2000;
 const names = new Set(["scrolled", "cards", "clocked", "skewed"]);
-const input = { boxes: {}, lines: {}, rest: restReader(), names };
+const input = { boxes: {}, counts: { cards: 3 }, lines: {}, rest: restReader(), names };
 const tracks = scrollTracks(stage, input, MAX);
 
 function between(samples: readonly TrackSample[], y: number): TrackSample["fields"] {
@@ -137,7 +136,7 @@ const reveal = (back: "reverse" | "stay" | "replay", name: string = back) =>
 const rise = motion((t: Time): Pose2d => ({ y: 30 * (1 - t.progress), opacity: t.progress }));
 const triggered = compiled(
   sceneBuilder({ length: 1000 })
-    .element(many("cards", 3))
+    .element(box("cards", { parts: true }))
     .motion(stagger(rise, { spread: 0.3 }).in(reveal("reverse"), ease.cubicOut))
     .element(box("stays"))
     .motion(rise.in(reveal("stay")))
@@ -156,6 +155,7 @@ const triggered = compiled(
 );
 const triggerInput = {
   boxes: {},
+  counts: { cards: 3 },
   lines: {},
   rest: restReader(),
   names: new Set(["cards", "stays", "replays", "taken", "clocked"]),

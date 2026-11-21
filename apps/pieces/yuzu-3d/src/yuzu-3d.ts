@@ -12,7 +12,7 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, bind, box, many, object, sceneBuilder, stagger, text, travel } from "@gerak/stage";
+import { beat, bind, box, object, sceneBuilder, stagger, text, travel } from "@gerak/stage";
 
 /** Cold-Pressed Sparkling Yuzu, with the drink as a Three.js can travelling between the page's slots. */
 
@@ -33,16 +33,14 @@ const canvas = box("canvas");
 
 const drink = object("drink", { view: { canvas, lens } });
 const heroAura = box("heroAura");
-const headline = text("headline", "Bright citrus pressed fresh every cold morning", {
-  split: "words",
-});
+const headline = text("headline", { split: "words" });
 const heroSub = box("heroSub");
 const heroCta = box("heroCta");
-const featureCards = many("featureCards", 3);
+const featureCards = box("featureCards", { parts: true });
 const storyProgress = box("storyProgress");
 const storyStep1 = box("storyStep1");
 const storyStep2 = box("storyStep2");
-const galleryCards = many("galleryCards", 4);
+const galleryCards = box("galleryCards", { parts: true });
 
 const intro = beat("intro", 700);
 const subIntro = beat("subIntro", 500, { at: 160 });

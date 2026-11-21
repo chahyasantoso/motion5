@@ -8,14 +8,7 @@ import {
   type Time,
   unreachable,
 } from "@gerak/core";
-import {
-  castBuilder,
-  type Content,
-  type Expect,
-  type ItemContent,
-  type Members,
-  type Stretch,
-} from "../author/cast";
+import { castBuilder, type Content, type Expect, type Members, type Stretch } from "../author/cast";
 import { NO_REST, restReader, type Rest, type RestReader } from "../author/layout";
 import type { LayoutsInput, Limits, SceneContext, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
@@ -38,7 +31,6 @@ export type Member = {
   | { readonly kind: "actor"; readonly content: Content }
   | {
       readonly kind: "list";
-      readonly items: readonly ItemContent[];
       readonly split?: "letters" | "words" | undefined;
     }
   | { readonly kind: "group" }
@@ -214,9 +206,7 @@ function contentOf(name: string, content: Content, errors: StageError[]): Conten
   switch (content.kind) {
     case "box":
     case "text":
-    case "stroke":
-    case "morph":
-      return itemOf(name, content, errors);
+      return Object.freeze(content);
     case "readout": {
       const { format } = content;
       const checked = (time: Time): string => {
@@ -227,16 +217,6 @@ function contentOf(name: string, content: Content, errors: StageError[]): Conten
       };
       return Object.freeze({ kind: "readout", format: checked });
     }
-    default:
-      return unreachable(content);
-  }
-}
-
-function itemOf(name: string, content: ItemContent, errors: StageError[]): ItemContent | undefined {
-  switch (content.kind) {
-    case "box":
-    case "text":
-      return Object.freeze(content);
     case "stroke": {
       const { path } = content;
       if (typeof path === "function") {
@@ -313,20 +293,15 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
             members.push(Object.freeze({ ...base, kind: "actor", content }));
           break;
         }
-        case "list": {
-          const items = spec.items.flatMap(
-            (item, index) => itemOf(`${name}.${index}`, item, errors) ?? [],
-          );
+        case "list":
           members.push(
             Object.freeze({
               ...base,
               kind: "list",
-              items: Object.freeze(items),
               ...(spec.split === undefined ? {} : { split: spec.split }),
             }),
           );
           break;
-        }
         case "object":
           members.push(Object.freeze({ ...base, kind: "object" }));
           break;
@@ -412,8 +387,6 @@ function compileLimits(
 }
 
 function signatureOf(durationMs: number, members: readonly Member[]): string {
-  const contentKey = (content: Content): string =>
-    content.kind === "text" ? `text:${content.value}` : content.kind;
   const serializedMembers = members.map((member) => {
     const own = [
       member.name,
@@ -424,9 +397,9 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
     ];
     switch (member.kind) {
       case "actor":
-        return [...own, contentKey(member.content)];
+        return [...own, member.content.kind];
       case "list":
-        return [...own, member.items.map(contentKey)];
+        return [...own, member.split ?? "parts"];
       case "group":
       case "object":
         return own;

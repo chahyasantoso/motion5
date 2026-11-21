@@ -18,6 +18,8 @@ export interface FrameInput {
   readonly time: Time;
   readonly events?: Events | undefined;
   readonly boxes?: Readonly<Record<string, RestReader>> | undefined;
+  /** Part count per list element, from the mount's binding or the cache's `<name>.<index>` boxes. */
+  readonly counts?: Readonly<Record<string, number>> | undefined;
   /** Visual line index per item of a split text list, measured from layout on a page mount. */
   readonly lines?: Readonly<Record<string, readonly number[]>> | undefined;
   /** Only these elements run; the rest are left out of `targets`. */
@@ -62,6 +64,26 @@ export function listPose(value: unknown, index: number, count: number): Pose2d |
     : undefined;
 }
 
+/** Each list member's part count from `<name>.<index>` boxes in `rest`, or `lines` when unboxed. */
+export function partCounts(
+  stage: Stage,
+  rest: RestReader,
+  lines?: Readonly<Record<string, readonly number[]>>,
+): Readonly<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  for (const member of stage.members) {
+    if (member.kind !== "list") continue;
+    let count = lines?.[member.name]?.length ?? 0;
+    for (const key of rest.keys()) {
+      if (!key.startsWith(`${member.name}.`)) continue;
+      const index = Number(key.slice(member.name.length + 1));
+      if (Number.isInteger(index) && index >= 0 && index + 1 > count) count = index + 1;
+    }
+    if (count > 0) counts[member.name] = count;
+  }
+  return Object.freeze(counts);
+}
+
 /** Runs the scene once; no checks, so it costs the scene and one visibility lookup. */
 export function frame(stage: Stage, input: FrameInput): FrameOutput {
   const events = input.events ?? NO_EVENTS;
@@ -76,6 +98,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
     rest,
     layouts,
     carry: carryFor(stage.layouts.pick, layouts, rest, events, time),
+    ...(input.counts === undefined ? {} : { counts: input.counts }),
     ...(input.lines === undefined ? {} : { lines: input.lines }),
     ...(input.only === undefined ? {} : { only: input.only }),
     ...(input.moves === undefined ? {} : { moves: input.moves }),
@@ -91,6 +114,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
 export function check(
   stage: Stage,
   targets: Readonly<Record<string, unknown>>,
+  counts?: Readonly<Record<string, number>>,
 ): readonly StageError[] {
   const errors: StageError[] = [];
   const named = new Set<string>();
@@ -113,12 +137,14 @@ export function check(
           mismatch(
             `is a list: give it \`(index, count) => pose\`, got ${Array.isArray(value) ? "an array" : typeof value}.`,
           );
-        else
-          for (let index = 0; index < member.items.length; index += 1)
-            if (listPose(value, index, member.items.length) === undefined) {
+        else {
+          const count = counts?.[member.name] ?? 1;
+          for (let index = 0; index < count; index += 1)
+            if (listPose(value, index, count) === undefined) {
               mismatch(`answered no pose object for item ${index}.`);
               break;
             }
+        }
         break;
       default:
         return unreachable(member);

@@ -64,9 +64,7 @@ import { beat, box, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stag
 import { boxInViewport } from "@gerak/stage/render";
 
 const reveal = beat("reveal", { scroll: [scrollPoint(0), scrollPoint(400)] });
-const headline = text("headline", "Fresh pressed citrus every morning", {
-  split: "words",
-  });
+const headline = text("headline", { split: "words" });
 const card = box("card");
 const stickySlot = box("stickySlot");
 const fixedPin = box("fixedPin");

@@ -345,7 +345,11 @@ describe("gerak review expectations and shape mismatches", () => {
   it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
     const broken = defineStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ row: m.many(2), dot: m.box() }),
+      cast: (m) => ({ row: m.many(), dot: m.box() }),
+      rest: {
+        "row.0": { x: 0, y: 0, width: 10, height: 10 },
+        "row.1": { x: 20, y: 0, width: 10, height: 10 },
+      },
       scene: () => ({
         row: (i) => {
           if (i === 1) throw new Error("boom");
@@ -379,7 +383,7 @@ describe("gerak review expectations and shape mismatches", () => {
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
     const mismatch = rawStage({
       beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ dots: m.many(2) }),
+      cast: (m: CastBuilder<"show">) => ({ dots: m.many() }),
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(

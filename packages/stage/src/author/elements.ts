@@ -1,10 +1,15 @@
-import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
+import { type Cubic2d, type Lens3d, type Time } from "@gerak/core";
 import { makeScrollPoint, type ScrollPoint } from "./beat";
-import type { ItemContent, Path } from "./cast";
+import type { Path } from "./cast";
 
 /** What stays true of an element in any scene: whether pointer events reach it. */
 export interface ElementOptions {
   readonly watch?: boolean | undefined;
+}
+
+/** Options of `box`: whether it binds to a list of parts. */
+export interface BoxOptions extends ElementOptions {
+  readonly parts?: boolean | undefined;
 }
 
 /** Options of `text`: how to split it into parts. */
@@ -29,7 +34,12 @@ export interface Edges {
 
 /** What an element is, before its edges. */
 export type ElementBody =
-  | { readonly kind: "box"; readonly name: string; readonly options: ElementOptions }
+  | {
+      readonly kind: "box";
+      readonly name: string;
+      readonly parts?: boolean | undefined;
+      readonly options: ElementOptions;
+    }
   | {
       readonly kind: "shape";
       readonly name: string;
@@ -39,14 +49,8 @@ export type ElementBody =
   | {
       readonly kind: "text";
       readonly name: string;
-      readonly content: string | ((time: Time) => string);
+      readonly content?: ((time: Time) => string) | undefined;
       readonly split: "letters" | "words" | undefined;
-      readonly options: ElementOptions;
-    }
-  | {
-      readonly kind: "many";
-      readonly name: string;
-      readonly items: readonly ItemContent[];
       readonly options: ElementOptions;
     }
   | {
@@ -126,9 +130,14 @@ function optionsOf(options: ElementOptions | undefined): ElementOptions {
   });
 }
 
-/** A page element styled by CSS. */
-export function box(name: string, options?: ElementOptions): Element {
-  return edged({ kind: "box", name: named("box", name), options: optionsOf(options) });
+/** A page element styled by CSS; `parts: true` binds it to a list of parts. */
+export function box(name: string, options?: BoxOptions): Element {
+  return edged({
+    kind: "box",
+    name: named("box", name),
+    ...(options?.parts === true ? { parts: true } : {}),
+    options: optionsOf(options),
+  });
 }
 
 function isMorph(value: ShapeSource): value is MorphSource {
@@ -148,81 +157,37 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
   });
 }
 
-/** Text, or text a function of time writes; `split` gives a string a part per letter or word. */
+/** Text in the markup, or text a function of time writes; `split` gives one part per letter or word. */
+export function text(name: string, options?: TextOptions): Element;
 export function text(
   name: string,
-  content: string | ((time: Time) => string),
-  options?: TextOptions,
-): Element {
-  const split = options?.split;
-  if (split !== undefined && typeof content !== "string")
-    throw new TypeError(`text "${name}": only a string can be split into parts.`);
-  return edged({
-    kind: "text",
-    name: named("text", name),
-    content,
-    split,
-    options: optionsOf(options),
-  });
-}
-
-function itemOf(owner: string, index: number, made: Element): ItemContent {
-  if (Object.keys(made.options).length > 0)
-    throw new TypeError(`many "${owner}": an item takes no options; put them on the list.`);
-  switch (made.kind) {
-    case "box":
-      return { kind: "box" };
-    case "shape":
-      return made.outline.kind === "path"
-        ? { kind: "stroke", path: made.outline.path }
-        : { kind: "morph", shapes: Object.freeze([made.outline.base, ...made.outline.targets]) };
-    case "text":
-      if (typeof made.content !== "string" || made.split !== undefined)
-        throw new TypeError(`many "${owner}": item ${index} must be a plain string text.`);
-      return { kind: "text", value: made.content };
-    case "many":
-    case "group":
-      throw new TypeError(
-        `many "${owner}": item ${index} is a ${made.kind}; use a box, shape or text.`,
-      );
-    default:
-      return unreachable(made);
-  }
-}
-
-/** A row of numbered parts: `count` boxes, or one part per item, each made by `make`. */
-export function many(name: string, count: number, options?: ElementOptions): Element;
-export function many<T>(
-  name: string,
-  items: readonly T[],
-  make: (item: T, index: number) => Element,
+  content: (time: Time) => string,
   options?: ElementOptions,
 ): Element;
-export function many<T>(
+export function text(
   name: string,
-  source: number | readonly T[],
-  third?: ElementOptions | ((item: T, index: number) => Element),
-  fourth?: ElementOptions,
+  second?: TextOptions | ((time: Time) => string),
+  third?: ElementOptions,
 ): Element {
-  const own = named("many", name);
-  if (typeof source === "number") {
-    if (!(Number.isInteger(source) && source >= 0))
-      throw new RangeError(`many "${own}": count must be a whole number >= 0, not ${source}.`);
-    const options = typeof third === "function" ? undefined : third;
+  const own = named("text", name);
+  if (typeof second === "function") {
+    if (third !== undefined && Reflect.get(third, "split") !== undefined)
+      throw new TypeError(`text "${own}": a readout cannot be split into parts.`);
     return edged({
-      kind: "many",
+      kind: "text",
       name: own,
-      items: Object.freeze(Array.from({ length: source }, (): ItemContent => ({ kind: "box" }))),
-      options: optionsOf(options),
+      content: second,
+      split: undefined,
+      options: optionsOf(third),
     });
   }
-  if (typeof third !== "function")
-    throw new TypeError(`many "${own}": a list of items needs a function making each.`);
+  if (second !== undefined && (typeof second !== "object" || second === null))
+    throw new TypeError(`text "${own}": the markup holds a text element's string.`);
   return edged({
-    kind: "many",
+    kind: "text",
     name: own,
-    items: Object.freeze(source.map((item, index) => itemOf(own, index, third(item, index)))),
-    options: optionsOf(fourth),
+    split: second?.split,
+    options: optionsOf(second),
   });
 }
 

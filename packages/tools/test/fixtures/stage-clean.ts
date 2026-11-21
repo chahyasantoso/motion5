@@ -21,7 +21,7 @@ export function stageClean(
   options: { rest?: Rest; length?: number; mark?: Path } = {},
 ): SceneBuilder {
   const dot = box("dot");
-  const word = text("word", "AB", { split: "letters" });
+  const word = text("word", { split: "letters" });
   const mark = options.mark === undefined ? box("mark") : shape("mark", options.mark);
   const stage = group("stage", [dot, word, mark]);
   const atGo = motion(

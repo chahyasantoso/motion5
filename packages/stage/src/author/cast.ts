@@ -1,4 +1,4 @@
-import { unreachable, type Cubic2d, type Time } from "@gerak/core";
+import type { Cubic2d, Time } from "@gerak/core";
 import type { RestReader } from "./layout";
 
 /** What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it. */
@@ -10,13 +10,10 @@ export type Path = readonly Cubic2d[] | ((rest: RestReader) => readonly Cubic2d[
 /** What an actor shows; `morph` holds its base outline first, then each target outline. */
 export type Content =
   | { readonly kind: "box" }
-  | { readonly kind: "text"; readonly value: string }
+  | { readonly kind: "text" }
   | { readonly kind: "readout"; readonly format: (time: Time) => string }
   | { readonly kind: "stroke"; readonly path: Path }
   | { readonly kind: "morph"; readonly shapes: readonly (readonly Cubic2d[])[] };
-
-/** What a list item shows: any content but a readout. */
-export type ItemContent = Exclude<Content, { readonly kind: "readout" }>;
 
 /** When a member shows, as `.on` takes it: one beat, or every beat from the first to the second. */
 export type OnStretch<B extends string = string> = B | readonly [B, B];
@@ -66,7 +63,6 @@ export interface ActorSpec<B extends string = string, C extends Content = Conten
 /** A row of items posed by index; the scene gives it `(index, count) => pose`. */
 export interface ListSpec<B extends string = string> extends Modifiers<B, ListSpec<B>> {
   readonly kind: "list";
-  readonly items: readonly ItemContent[];
   readonly split?: "letters" | "words" | undefined;
   readonly meta: Meta<B>;
 }
@@ -97,23 +93,16 @@ export type Members<B extends string = string> = Readonly<Record<string, Spec<B>
 
 /** The builders `cast: (m) => ({ ... })` receives. */
 export interface CastBuilder<B extends string = string> {
-  box(): ActorSpec<B, ItemContent>;
-  text(value: string): ActorSpec<B, ItemContent>;
-  /** Text the stage writes each frame from time; not allowed in a list. */
+  box(): ActorSpec<B>;
+  text(): ActorSpec<B>;
+  /** Text the stage writes each frame from time. */
   readout(format: (time: Time) => string): ActorSpec<B, Extract<Content, { kind: "readout" }>>;
-  stroke(path: Path): ActorSpec<B, ItemContent>;
+  stroke(path: Path): ActorSpec<B>;
   /** An outline the pose's `shape` blends: 0 is `base`, 1 is `targets[0]`, 1.5 is halfway to `targets[1]`. */
-  morph(
-    base: readonly Cubic2d[],
-    targets: readonly (readonly Cubic2d[])[],
-  ): ActorSpec<B, ItemContent>;
-  many(count: number): ListSpec<B>;
-  many<T>(
-    items: readonly T[],
-    make: (item: T, index: number) => ActorSpec<B, ItemContent>,
-  ): ListSpec<B>;
-  letters(text: string): ListSpec<B>;
-  words(text: string): ListSpec<B>;
+  morph(base: readonly Cubic2d[], targets: readonly (readonly Cubic2d[])[]): ActorSpec<B>;
+  many(): ListSpec<B>;
+  letters(): ListSpec<B>;
+  words(): ListSpec<B>;
   group<M extends Members<B>>(members: M): GroupSpec<B, M>;
   object(): ObjectSpec<B>;
 }
@@ -145,17 +134,12 @@ function actor<B extends string, C extends Content>(
   });
 }
 
-function list<B extends string>(
-  items: readonly ItemContent[],
-  meta: Meta<B> = {},
-  split?: "letters" | "words",
-): ListSpec<B> {
+function list<B extends string>(meta: Meta<B> = {}, split?: "letters" | "words"): ListSpec<B> {
   return Object.freeze({
     kind: "list",
-    items,
     ...(split === undefined ? {} : { split }),
     meta,
-    ...modifiers(meta, (next) => list<B>(items, next, split)),
+    ...modifiers(meta, (next) => list<B>(next, split)),
   });
 }
 
@@ -179,70 +163,17 @@ function objectSpec<B extends string>(meta: Meta<B> = {}): ObjectSpec<B> {
   });
 }
 
-/** The cast builders; a list item made by `many(items, make)` keeps its content only. */
+/** The cast builders; part counts and text come from the markup. */
 export function castBuilder<B extends string>(): CastBuilder<B> {
-  const text = (value: string): ActorSpec<B, ItemContent> => actor({ kind: "text", value });
-  function many<T>(
-    source: number | readonly T[],
-    make?: (item: T, index: number) => ActorSpec<B, Content>,
-  ): ListSpec<B> {
-    if (typeof source === "number") {
-      if (!(Number.isInteger(source) && source >= 0))
-        throw new RangeError(`many: count must be a whole number >= 0, not ${source}.`);
-      return list(Object.freeze(Array.from({ length: source }, () => ({ kind: "box" }) as const)));
-    }
-    if (make === undefined)
-      throw new TypeError("many: a list of items needs a function making each.");
-    return list(
-      Object.freeze(
-        source.map((item, index) => {
-          const made = make(item, index);
-          if (Object.keys(made.meta).length > 0)
-            throw new TypeError("many: an item takes no modifiers; put them on the list.");
-          const { content } = made;
-          switch (content.kind) {
-            case "readout":
-              throw new TypeError(
-                `many: item ${index} is a readout; a readout is a top-level actor.`,
-              );
-            case "box":
-            case "text":
-            case "stroke":
-            case "morph":
-              return content;
-            default:
-              return unreachable(content);
-          }
-        }),
-      ),
-    );
-  }
   return {
     box: () => actor({ kind: "box" }),
-    text,
+    text: () => actor({ kind: "text" }),
     readout: (format) => actor({ kind: "readout", format }),
     stroke: (path) => actor({ kind: "stroke", path }),
     morph: (base, targets) => actor({ kind: "morph", shapes: Object.freeze([base, ...targets]) }),
-    many,
-    letters: (value) => {
-      const segments = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(value);
-      return list(
-        Object.freeze([...segments].map(({ segment }) => text(segment).content)),
-        {},
-        "letters",
-      );
-    },
-    words: (value) =>
-      list(
-        Object.freeze(
-          value
-            .split(" ")
-            .filter((word) => word !== "")
-            .map((word) => text(word).content),
-        ),
-        {},
-        "words",
-      ),
+    many: () => list(),
+    letters: () => list({}, "letters"),
+    words: () => list({}, "words"),
     group: (members) => group(Object.freeze({ ...members })),
     object: () => objectSpec(),
   };

@@ -384,35 +384,39 @@ function resolvePageStage(input: StageInput): Stage {
   return stage;
 }
 
+function splitPieces(text: string, split: "letters" | "words"): readonly string[] {
+  switch (split) {
+    case "letters": {
+      const segments = new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text);
+      return [...segments].map(({ segment }) => segment);
+    }
+    case "words":
+      return text.split(/\s+/).filter((word) => word !== "");
+    default:
+      return unreachable(split);
+  }
+}
+
 function wrapSplitText(
   container: PageElement,
-  member: Extract<Member, { readonly kind: "list" }>,
+  name: string,
+  split: "letters" | "words",
   doc: PageDocument,
 ): { readonly items: readonly PageElement[]; readonly restore: () => void } {
   const hadNodes = container.childNodes !== undefined ? Array.from(container.childNodes) : [];
   const priorText = container.textContent;
+  const pieces = splitPieces(priorText ?? "", split);
   const spans: PageElement[] = [];
   const children: unknown[] = [];
-  member.items.forEach((item, index) => {
-    const span = needElement(doc.createElement("span"), `${member.name}.${index}`, "span");
-    switch (item.kind) {
-      case "text":
-        span.textContent = item.value;
-        break;
-      case "box":
-      case "stroke":
-      case "morph":
-        span.textContent = "";
-        break;
-      default:
-        return unreachable(item);
-    }
+  pieces.forEach((piece, index) => {
+    const span = needElement(doc.createElement("span"), `${name}.${index}`, "span");
+    span.textContent = piece;
     span.style.display = "inline-block";
-    if (member.split === "letters") span.style.whiteSpace = "pre";
+    if (split === "letters") span.style.whiteSpace = "pre";
     span.setAttribute?.("data-gerak-part", String(index));
     spans.push(span);
     children.push(span);
-    if (member.split === "words" && index + 1 < member.items.length) {
+    if (split === "words" && index + 1 < pieces.length) {
       children.push(doc.createTextNode ? doc.createTextNode(" ") : " ");
     }
   });
@@ -445,26 +449,16 @@ function bindList(
   const first = matches[0];
   if (first === undefined)
     throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
-  if (member.items.length === 0) return { member, node: first, items: [] };
   if (matches.length === 1) {
     const kids = childElementsOf(first);
-    if (kids.length === member.items.length) return { member, node: first, items: kids };
+    if (kids.length > 0) return { member, node: first, items: kids };
     const doc = documentOf(first, root);
-    if (kids.length === 0 && member.split !== undefined && doc !== undefined) {
-      const wrapped = wrapSplitText(first, member, doc);
+    if (member.split !== undefined && doc !== undefined) {
+      const wrapped = wrapSplitText(first, member.name, member.split, doc);
       return { member, node: first, items: wrapped.items, restore: wrapped.restore };
     }
-    if (member.split === undefined && member.items.length === 1) {
-      return { member, node: first, items: matches };
-    }
-    throw new Error(
-      `mount: "${member.name}" (${selector}) matched 1 element with ${kids.length} children, expected ${member.items.length}.`,
-    );
   }
-  if (matches.length === member.items.length) return { member, node: first, items: matches };
-  throw new Error(
-    `mount: "${member.name}" (${selector}) matched ${matches.length} nodes, expected ${member.items.length}.`,
-  );
+  return { member, node: first, items: matches };
 }
 
 function parentNodeOf(node: unknown): unknown {
@@ -697,6 +691,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     for (const target of targets) target.restore?.();
     throw error;
   }
+
+  const boundCounts: Record<string, number> = {};
+  for (const target of targets)
+    if (target.member.kind === "list") boundCounts[target.member.name] = target.items.length;
+  const currentCounts: Readonly<Record<string, number>> = Object.freeze(boundCounts);
 
   const globalView: PageScrollTarget | undefined = isScrollTarget(globalThis.window)
     ? globalThis.window
@@ -1142,6 +1141,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       time,
       events,
       boxes,
+      counts: currentCounts,
       lines: currentLines,
       moves,
       ...(only === undefined ? {} : { only }),
@@ -1161,7 +1161,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       }
     }
     if (options.checks === true) {
-      const errors = check(stage, out.targets);
+      const errors = check(stage, out.targets, currentCounts);
       if (errors.length > 0)
         throw new TypeError(`mount: ${errors.map(formatStageError).join(" ")}`);
     }
@@ -1205,12 +1205,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const visible = lastFrame?.visible[member.name] ?? true;
     switch (member.kind) {
       case "list": {
-        const count = member.items.length;
+        const count = target.items.length;
         target.items.forEach((item, index) => {
           applyVisibility(item, visible);
           if (!visible || value === undefined) return;
           const pose = listPose(value, index, count);
-          if (pose !== undefined) applyPose(item, member.items[index], pose);
+          if (pose !== undefined) applyPose(item, undefined, pose);
         });
         break;
       }
@@ -1293,8 +1293,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           if (member.content.kind === "readout" || member.content.kind === "morph") continue;
           break;
         case "list":
-          if (member.items.some((item) => item.kind === "morph")) continue;
-          break;
         case "group":
           break;
         default:
@@ -1306,6 +1304,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const reader = currentReader;
     const input = {
       boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
+      counts: currentCounts,
       lines: currentLines,
       rest: reader,
       names,

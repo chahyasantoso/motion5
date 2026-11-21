@@ -115,7 +115,7 @@ describe("single-scene element ownership", () => {
       /sharedBox.*firstScene.*secondScene/,
     );
 
-    const nested = text("nestedText", "Hi");
+    const nested = text("nestedText");
     sceneBuilder({ name: "alpha" }).element(group("wrap", [nested]));
     const freshSibling = box("freshSibling");
     expect(() =>

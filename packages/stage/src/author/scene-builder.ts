@@ -40,10 +40,8 @@ import {
 } from "./beat";
 import {
   castBuilder,
-  type ActorSpec,
   type CastBuilder,
   type Expect,
-  type ItemContent,
   type Members,
   type Spec,
   type Stretch,
@@ -517,11 +515,7 @@ function isElement(value: unknown): value is Element {
   const name: unknown = Reflect.get(value, "name");
   const opts: unknown = Reflect.get(value, "options");
   return (
-    (kind === "box" ||
-      kind === "shape" ||
-      kind === "text" ||
-      kind === "many" ||
-      kind === "group") &&
+    (kind === "box" || kind === "shape" || kind === "text" || kind === "group") &&
     typeof name === "string" &&
     name !== "" &&
     typeof opts === "object" &&
@@ -900,24 +894,6 @@ function expectOf(entry: Entry): Expect {
   return loops ? "ambient" : "settle";
 }
 
-function itemSpec(item: ItemContent, m: CastBuilder<string>): ActorSpec<string, ItemContent> {
-  switch (item.kind) {
-    case "box":
-      return m.box();
-    case "text":
-      return m.text(item.value);
-    case "stroke":
-      return m.stroke(item.path);
-    case "morph": {
-      const [base, ...targets] = item.shapes;
-      if (base === undefined) throw new TypeError("a morph needs a base outline.");
-      return m.morph(base, targets);
-    }
-    default:
-      return unreachable(item);
-  }
-}
-
 function baseSpec(
   element: SceneElement,
   m: CastBuilder<string>,
@@ -927,7 +903,7 @@ function baseSpec(
     case "object":
       return m.object();
     case "box":
-      return m.box();
+      return element.parts === true ? m.many() : m.box();
     case "shape": {
       const { outline } = element;
       return outline.kind === "path"
@@ -937,18 +913,16 @@ function baseSpec(
     case "text": {
       const { content, split } = element;
       if (typeof content === "function") return m.readout(content);
-      if (split === undefined) return m.text(content);
+      if (split === undefined) return m.text();
       switch (split) {
         case "letters":
-          return m.letters(content);
+          return m.letters();
         case "words":
-          return m.words(content);
+          return m.words();
         default:
           return unreachable(split);
       }
     }
-    case "many":
-      return m.many(element.items, (item) => itemSpec(item, m));
     case "group":
       return m.group(
         Object.fromEntries(element.children.map((child) => [child.name, children(child)])),
@@ -958,17 +932,18 @@ function baseSpec(
   }
 }
 
-function listCount(element: SceneElement): number | undefined {
-  const spec = baseSpec(element, castBuilder<string>(), () => castBuilder<string>().box());
-  switch (spec.kind) {
-    case "list":
-      return spec.items.length;
-    case "actor":
+function hasParts(element: SceneElement): boolean {
+  switch (element.kind) {
+    case "box":
+      return element.parts === true;
+    case "text":
+      return element.split !== undefined;
+    case "shape":
     case "group":
     case "object":
-      return undefined;
+      return false;
     default:
-      return unreachable(spec);
+      return unreachable(element);
   }
 }
 
@@ -1012,7 +987,7 @@ function castOf(state: State, m: CastBuilder<string>): Members {
 
 interface Plan {
   readonly name: string;
-  readonly count: number | undefined;
+  readonly parts: boolean;
   readonly object: boolean;
   readonly steps: readonly Step[];
 }
@@ -1021,6 +996,7 @@ interface Env {
   readonly plans: ReadonlyMap<string, Plan>;
   readonly rest: RestReader;
   readonly carry: Carry;
+  readonly counts: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
@@ -1166,8 +1142,8 @@ function readerOf(env: Env, time: Time, events: Events): MotionContext["read"] {
     const read = env.plans.get(name);
     if (read === undefined) throw new RangeError(`read: "${name}" is not an element of the piece.`);
     if (read.object) throw new RangeError(`read: "${name}" is an object; its pose is 3D.`);
-    const part = read.count === undefined ? undefined : (at?.index ?? 0);
-    const parts = at?.count ?? read.count;
+    const part = read.parts ? (at?.index ?? 0) : undefined;
+    const parts = read.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
     const when = at?.time ?? time;
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
@@ -1416,7 +1392,7 @@ function definitionOf(state: State): StageDefinition {
         element.name,
         {
           name: element.name,
-          count: listCount(element),
+          parts: hasParts(element),
           object: element.kind === "object",
           steps: (state.entries.get(element.name) ?? NO_ENTRY).steps,
         },
@@ -1444,6 +1420,7 @@ function definitionOf(state: State): StageDefinition {
         plans: plansOf(),
         rest: context.rest,
         carry: context.carry,
+        counts: context.counts,
         lines: context.lines,
         read: new Map(),
         moves: context.moves,
@@ -1455,7 +1432,7 @@ function definitionOf(state: State): StageDefinition {
         if (context.only !== undefined && !context.only.has(plan.name)) continue;
         out[plan.name] = plan.object
           ? stack3dOf(plan, env)(context.time, context.events)
-          : plan.count === undefined
+          : !plan.parts
             ? stackOf(plan, env, undefined, undefined)(context.time, context.events)
             : (index, count) => stackOf(plan, env, index, count)(context.time, context.events);
       }

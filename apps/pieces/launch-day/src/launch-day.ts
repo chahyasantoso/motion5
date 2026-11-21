@@ -1,5 +1,5 @@
 import { lanes, motion, type Motion, type Pose2d, type Time } from "@gerak/core";
-import { beat, box, group, many, sceneBuilder, text, type MotionContext } from "@gerak/stage";
+import { beat, box, group, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 import { kick } from "./moves/kick";
 import { jolt } from "./moves/jolt";
 import { lob } from "./moves/lob";
@@ -16,14 +16,14 @@ const stampFly = beat("stampFly", 600, { at: 2900 });
 const stampLand = beat("stampLand", 400, { at: 3500 });
 const burst = beat("burst", 800, { at: 3500 });
 
-const dateText = text("date", "LAUNCH DAY");
-const day = text("day", "14 MARCH");
-const one = text("one", "Fast");
-const two = text("two", "Light");
-const three = text("three", "Yours");
+const dateText = text("date");
+const day = text("day");
+const one = text("one");
+const two = text("two");
+const three = text("three");
 const ring = box("ring");
-const dust = many("dust", DUST_DX.length);
-const stamp = text("stamp", "LIVE");
+const dust = box("dust", { parts: true });
+const stamp = text("stamp");
 const world = group("world", [dateText, day, one, two, three, ring, dust, stamp]);
 
 /** A motion posing from a badge's own lane of the badges beat. */

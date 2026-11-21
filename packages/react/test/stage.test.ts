@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { motion, type Pose2d } from "@gerak/core";
-import { box, many, sceneBuilder } from "@gerak/stage";
+import { box, sceneBuilder } from "@gerak/stage";
 import { type FrameSource, type PageElement, type PageRoot, type PageStyle } from "@gerak/dom";
 import { Stage } from "@gerak/react";
 
@@ -98,7 +98,7 @@ describe("<Stage />", () => {
     } as const;
     const longer = sceneBuilder({ length: 2000 })
       .element(box("card"))
-      .element(many("extra", 1))
+      .element(box("extra", { parts: true }))
       .motion(motion((): Pose2d => ({ x: 20 })));
 
     let renderer: ReturnType<typeof create> | undefined;
