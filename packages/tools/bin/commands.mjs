@@ -10,6 +10,10 @@ export const COMMANDS = Object.freeze({
   },
   joints: { file: "motion-joints.mjs", summary: "list the joints of a glTF model" },
   live: { file: "motion-live.mjs", summary: "serve a scene in the live editor" },
+  measure: {
+    file: "motion-measure.mjs",
+    summary: "measure a page's cast into the cache the scene tools read",
+  },
   new: { file: "motion-new.mjs", summary: "scaffold a piece" },
   points: { file: "motion-points.mjs", summary: "resample a point list at an even spacing" },
   probe: { file: "motion-probe.mjs", summary: "measure elements of a page at given times" },

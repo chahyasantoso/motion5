@@ -62,6 +62,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`gerak render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.
+- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` beside it:
+  the frame, each cast element's rest box and placement, each split's lines and each element's cast parent, as its
+  mounts measured them. `sample`, `timeline` and `review` of a builder scene `<brief>/src/<name>.ts` read it with no
+  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included.
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list]`**: exact
   values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`.
 - **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.

@@ -6,6 +6,8 @@ export * from "./frames";
 export * from "./live";
 export * from "./page";
 export * from "./points";
+export * from "./measure";
+export * from "./measure-cache";
 export * from "./probe";
 export * from "./read";
 export * from "./render";

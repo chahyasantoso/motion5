@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   NO_EVENTS,
   mergeEvents,
@@ -18,6 +17,7 @@ import {
   formatStageError,
   frame,
   type Content,
+  type FrameInput,
   type FrameOutput,
   type Member,
   type RestReader,
@@ -28,7 +28,15 @@ import {
 import { drawStrokes } from "@gerak/stage/render";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { SCENE_LIMITS } from "./limits";
-import { readSceneModule, sampleScene, writtenOut, type Beat, type SceneModule } from "./scene";
+import { restOfCache } from "./measure-cache";
+import {
+  loadSceneFile,
+  measuredInput,
+  sampleScene,
+  writtenOut,
+  type Beat,
+  type SceneModule,
+} from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
 export interface SceneReviewRequest {
@@ -316,12 +324,18 @@ interface EvaluatedSample {
   readonly errors: readonly string[];
 }
 
-function evaluate(stage: Stage, time: Time, events: Events, at: number): EvaluatedSample {
+function evaluate(
+  stage: Stage,
+  input: Pick<FrameInput, "boxes" | "lines">,
+  time: Time,
+  events: Events,
+  at: number,
+): EvaluatedSample {
   let out: FrameOutput;
   let errors: string[];
   let targets: Readonly<Record<string, unknown>>;
   try {
-    out = frame(stage, { time, events });
+    out = frame(stage, { time, events, ...input });
     errors = check(stage, out.targets).map(formatStageError);
     targets = writtenOut(stage, out.targets);
   } catch (error) {
@@ -348,13 +362,17 @@ function errorText(error: unknown): string {
 }
 
 /** Runs the stage at each requested ms, as a player plays it. */
-function sampleStageFrames(stage: Stage, ms: readonly number[]): readonly EvaluatedSample[] {
+function sampleStageFrames(
+  stage: Stage,
+  input: Pick<FrameInput, "boxes" | "lines">,
+  ms: readonly number[],
+): readonly EvaluatedSample[] {
   let latest: EvaluatedSample | undefined;
   const driver = manualDriver({ durationMs: stage.durationMs });
   let at = 0;
   play(
     (time, events) => {
-      latest = evaluate(stage, time, events, at);
+      latest = evaluate(stage, input, time, events, at);
       return latest.targets;
     },
     driver,
@@ -363,7 +381,7 @@ function sampleStageFrames(stage: Stage, ms: readonly number[]): readonly Evalua
   return ms.map((next, index) => {
     at = next;
     if (!(index === 0 && next === 0 && latest !== undefined)) driver.seekMs(next);
-    return latest ?? evaluate(stage, driver.now(), NO_EVENTS, next);
+    return latest ?? evaluate(stage, input, driver.now(), NO_EVENTS, next);
   });
 }
 
@@ -757,7 +775,7 @@ export function reviewSceneModule(
     return { kind: "reviewed", findings };
   }
 
-  const evaluated = sampleStageFrames(stage, ms);
+  const evaluated = sampleStageFrames(stage, measuredInput(stage, module.measured), ms);
   const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
   const byAt = new Map(evaluated.map((sample) => [sample.at, sample] as const));
   const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
@@ -797,8 +815,9 @@ export function reviewSceneModule(
     ...lateCueFindings(module),
     ...(allFramesOk ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS) : []),
   ];
-  const rest = stageRestOf(stage);
+  const rest = module.measured === undefined ? stageRestOf(stage) : restOfCache(module.measured);
   const unmeasured =
+    module.measured === undefined &&
     stage.layouts.names.length > 1 &&
     stage.layouts.names.every((name) => (stage.layouts.readers[name]?.keys().length ?? 0) === 0);
 
@@ -818,7 +837,7 @@ export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {
   const file = resolve(request.file);
-  const module = readSceneModule(await import(pathToFileURL(file).href));
+  const module = await loadSceneFile(file);
   if ("reason" in module) return { kind: "usage", message: module.reason };
   return reviewSceneModule(module, request);
 }

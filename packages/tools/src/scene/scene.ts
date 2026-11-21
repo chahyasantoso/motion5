@@ -8,6 +8,8 @@ import {
   type Time,
   unreachable,
 } from "@gerak/core";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { manualDriver, play } from "@gerak/player";
 import {
   compileScene,
@@ -15,10 +17,13 @@ import {
   frame,
   isScene,
   listPose,
+  type FrameInput,
   type Limits,
   type Stage,
 } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
+import type { MeasureCache } from "../page/measure-cache";
+import { lookupCache, restOfCache } from "./measure-cache";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
 /** Review limits of one target. */
@@ -74,6 +79,8 @@ export interface SceneModule {
   readonly beats?: readonly Beat[];
   /** Compiled stage contract when the module default-exports `sceneBuilder(...)`. */
   readonly stage?: Stage;
+  /** What `gerak measure` measured of the scene's page, when it plays on one. */
+  readonly measured?: MeasureCache;
 }
 
 /** `land:ball@2234,click:stage@300(640,360)` or `go@500` in time order, or why it is not one. */
@@ -135,9 +142,24 @@ export function writtenOut(
   return out;
 }
 
-export function moduleFromStage(stage: Stage): SceneModule {
+/** The rest boxes and lines a frame of `stage` reads: the cache's, or none without a page. */
+export function measuredInput(
+  stage: Stage,
+  measured: MeasureCache | undefined,
+): Pick<FrameInput, "boxes" | "lines"> {
+  if (measured === undefined) return {};
+  const reader = restOfCache(measured);
+  return {
+    boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
+    lines: measured.lines,
+  };
+}
+
+export function moduleFromStage(stage: Stage, measured?: MeasureCache): SceneModule {
+  const input = measuredInput(stage, measured);
   return {
     stage,
+    ...(measured === undefined ? {} : { measured }),
     cues: stage.cues,
     limits: stage.limits,
     durationMs: stage.durationMs,
@@ -146,19 +168,43 @@ export function moduleFromStage(stage: Stage): SceneModule {
       from: span.from,
       to: span.to,
     })),
-    scene: (time, events) => writtenOut(stage, frame(stage, { time, events }).targets),
+    scene: (time, events) => writtenOut(stage, frame(stage, { time, events, ...input }).targets),
   };
 }
 
+/** Imports a scene file; a builder scene with a page reads that page's measure cache, or is refused without it. */
+export async function loadSceneFile(
+  file: string,
+): Promise<SceneModule | { readonly reason: string }> {
+  const path = resolve(file);
+  const value: unknown = await import(pathToFileURL(path).href);
+  const module = readSceneModule(value);
+  if ("reason" in module || module.stage === undefined) return module;
+  const cache = lookupCache(path);
+  switch (cache.kind) {
+    case "none":
+      return module;
+    case "read":
+      return readSceneModule(value, cache.cache);
+    case "refused":
+      return { reason: cache.message };
+    default:
+      return unreachable(cache);
+  }
+}
+
 /** Reads a `sceneBuilder` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
-export function readSceneModule(value: unknown): SceneModule | { readonly reason: string } {
+export function readSceneModule(
+  value: unknown,
+  measured?: MeasureCache,
+): SceneModule | { readonly reason: string } {
   const defaultExport: unknown = isScene(value) ? value : Reflect.get(Object(value), "default");
   if (isScene(defaultExport)) {
     const compiled = compileScene(defaultExport);
     if (!compiled.ok) {
       return { reason: compiled.errors.map(formatStageError).join("\n") };
     }
-    return moduleFromStage(compiled.stage);
+    return moduleFromStage(compiled.stage, measured);
   }
   const scene: unknown = Reflect.get(Object(value), "scene");
   if (defaultExport !== undefined && typeof scene !== "function") {
