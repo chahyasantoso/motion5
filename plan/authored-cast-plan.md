@@ -137,16 +137,16 @@ Each step is one commit or a few, green on `npm run check`, in this order:
      each object claimed by exactly one. `threeBinder(root, { objects, draw })` matches `getObjectByName` and replaces
      `bindScene3d`; the React 3D pieces call its `start` on their own player until step 7 mounts them.
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
-   Their tests go in the same commit. `pivot` and `section` are gone; what is left needs these decided first:
-   - **Part counts.** A part count is the markup's, known at mount (its matched nodes, or the letters or words it
-     wraps) or from the cache's `<name>.<index>` boxes, never at compile. So the compile-time split between an actor
-     and a list moves to the frame: `frame` takes each element's part count, and an element with one part is posed
-     as an actor. Open: whether every box may have parts, or a box declares it, since a list's motion reads its index.
-   - **`group`.** A box takes its place; the markup nests. A hidden parent hides its children through the DOM, and
-     headless review reads the parent from the cache's `parents`.
-   - **`rest` and `layouts`.** The cache owns rest, so the scene's `rest` and `layouts.rests` go. `layouts` names and
-     `pick` drive `carry`; keeping them means the mount writes `data-layout` on its root, measures each layout, and
-     the cache holds rest per layout. Open: keep layouts and `carry` that way, or remove both.
+   Their tests go in the same commit. `pivot` and `section` are gone.
+   - **Part counts are the markup's.** The scene declares that an element has parts, because its motion reads its
+     index: `box(name, { parts: true })`, or `text(name, { split })`. The count is the markup's (matched nodes, or
+     the letters or words the mount wraps) and reaches `frame` beside the rest boxes: from the mount's binding, or
+     from the cache's `<name>.<index>` boxes. Compile checks no count; `stagger` keeps building each part once per
+     `index/count`.
+   - **`group` goes.** A box takes its place and the markup nests. A hidden parent hides its children through the
+     DOM; headless review reads the parent from the cache's `parents`.
+   - **`rest` and `layouts` go.** The cache owns rest. The page arranges itself with CSS, and the mount re-measures.
+     `carry` stays, triggered by a re-measure: an element whose rest moves is carried from its old box to its new.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
    - `mount` grows from `mountPage`; its time source option is `now`. `"timed"` runs the seekable `clockDriver` over
      the scene's length, the whole scene each frame, with no compositor hand-off.

@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: ADR-198, `.include`, one-sided `.show`, element edges in place of `section`, `data-cast` binding in place of `el`, one mount in place of `mountStage`, `mountPage`, the skin, `stage.html` and `gerak import-svg`, `gerak measure` with a frame the markup sizes, binders (`threeBinder`, `nodes`), and `pivot`'s removal have landed on the branch; the rest of step 4 (part counts from the markup, `group`, `rest` and `layouts`) waits on the two decisions in the plan.**
+- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: ADR-198, `.include`, one-sided `.show`, element edges in place of `section`, `data-cast` binding in place of `el`, one mount in place of `mountStage`, `mountPage`, the skin, `stage.html` and `gerak import-svg`, `gerak measure` with a frame the markup sizes, binders (`threeBinder`, `nodes`), and `pivot`'s removal have landed on the branch; the rest of step 4 (part counts from the markup, `group` gone, `rest` and `layouts` gone with `carry` triggered by a re-measure) is next.**
 
 ## Open, and not scheduled
 
