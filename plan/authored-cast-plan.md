@@ -126,12 +126,15 @@ Each step is one commit or a few, green on `npm run check`, in this order:
 
 1. **ADR-198**, covering decisions 1 to 7, with the ADRs it supersedes in part (190, 193, 194, 197).
 2. **Measure.** `gerak measure` and the cache format; review and sample read it. The existing pieces still run.
-   - The frame size moves to the markup: the mount root's CSS `width` and `height` are the frame, measure records it,
-     and the scene's `frame` option goes; `"fit"` then reads the root's size.
+   - `gerak measure <brief>/<name>.html` reads each mount's `measure()` and writes `<name>.measure.json`: frame, rest
+     boxes with placement, lines, cast parents, and a digest of the page and its stylesheets. A builder scene
+     `<brief>/src/<name>.ts` whose page exists is refused without a cache matching that digest.
+   - The frame size is the markup's: a fitted root's CSS size; the scene's `frame` option is gone.
+   - An object's rest position and parent join the cache with the Three.js binder (step 3).
 3. **Binders.** The DOM and Three.js binders, `data-cast` matching and override maps; `el()` and `bindScene3d`'s map
    move behind them.
 4. **Markup owns structure.** `group`, `many`'s count, `text`'s string and `section` go; edges on every box element.
-   Their tests go in the same commit.
+   The scene's `rest` and `layouts` options go too: the cache owns rest. Their tests go in the same commit.
 5. **One mount.** `mount` with `clock` and `frame`; `mountStage`, `mountPage` and the skin go, with their tests.
    - `mount` grows from `mountPage`; its time source option is `now`. `"timed"` runs the seekable `clockDriver` over
      the scene's length, the whole scene each frame, with no compositor hand-off.

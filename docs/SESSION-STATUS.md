@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: ADR-198, `.include`, one-sided `.show`, element edges in place of `section`, `data-cast` binding in place of `el`, and one mount in place of `mountStage`, `mountPage`, the skin, `stage.html` and `gerak import-svg` have landed on the branch; measure, the `.glb` binder and removing `group`, `many`'s count, `text`'s string and `pivot` are next.**
+- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: ADR-198, `.include`, one-sided `.show`, element edges in place of `section`, `data-cast` binding in place of `el`, one mount in place of `mountStage`, `mountPage`, the skin, `stage.html` and `gerak import-svg`, and `gerak measure` with a frame the markup sizes have landed on the branch; the `.glb` binder, then removing `group`, `many`'s count, `text`'s string, `pivot`, `rest` and `layouts`, are next.**
 
 ## Open, and not scheduled
 
