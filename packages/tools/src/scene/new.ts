@@ -58,7 +58,12 @@ function plan(
   brief: string,
   three: boolean,
 ): readonly { readonly template: string; readonly path: string }[] {
-  if (!three) return [{ template: "stage.ts.template", path: `${brief}/src/${name}.ts` }];
+  if (!three)
+    return [
+      { template: "piece.html.template", path: `${brief}/${name}.html` },
+      { template: "stage.ts.template", path: `${brief}/src/${name}.ts` },
+      { template: "piece-main.ts.template", path: `${brief}/src/${name}-main.ts` },
+    ];
   return [
     { template: "page.three.html.template", path: `${brief}/${name}.html` },
     { template: "main.three.tsx.template", path: `${brief}/src/${name}-main.tsx` },
@@ -81,8 +86,8 @@ export function briefProblem(brief: string): string | undefined {
   return undefined;
 }
 
-/** Writes one stage module for `name` into `<root>/<brief>/src`, the brief being `name` unless given; with
- * `three`, a Three.js page, entry, component and scene instead. Or nothing at all. */
+/** Writes a page, scene module and main script for `name` into `<root>/<brief>` (the brief is `name` unless given);
+ * with `three`, a Three.js page, entry, component and scene. Or nothing at all. */
 export function scaffold(
   name: string,
   root: string,

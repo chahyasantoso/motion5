@@ -455,7 +455,7 @@ function stageMemberFindings(
   const found: string[] = [];
   if (unmeasured)
     found.push(
-      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
+      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "<brief>/<name>.html" --watch <member>`, or export `rests`.',
     );
 
   if (evaluated.some(({ errors }) => errors.length > 0)) return found;

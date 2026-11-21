@@ -102,7 +102,7 @@ describe("gerak init", () => {
     mkdirSync(join(dir, "web"));
     const { result } = init(join(dir, "web"), ["motion"]);
     expect(result.kind).toBe("written");
-    expect(existsSync(join(dir, "web", "motion", "stage.ts"))).toBe(true);
+    expect(existsSync(join(dir, "web", "motion", "live.ts"))).toBe(true);
     expect(JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).gerak.pieces).toBe(
       "web/motion",
     );
@@ -118,7 +118,7 @@ describe("gerak init", () => {
     const { code, result } = init(dir);
     expect(code).toBe(1);
     expect(result.kind).toBe("refused");
-    for (const name of ["pieces/stage.ts", SKILL, "AGENTS.md", "tsconfig.json", "gerak.pieces"])
+    for (const name of ["pieces/live.ts", SKILL, "AGENTS.md", "tsconfig.json", "gerak.pieces"])
       expect(result.message, name).toContain(name);
     expect(readFileSync(join(dir, "package.json"), "utf8")).toBe(before);
   });
@@ -156,14 +156,14 @@ describe("gerak init", () => {
     init(dir);
     mkdirSync(join(dir, "pieces", "demo"), { recursive: true });
     writeFileSync(join(dir, "pieces", "demo", "brief.md"), "brief\n");
-    writeFileSync(join(dir, "pieces", "stage.ts"), "changed\n");
+    writeFileSync(join(dir, "pieces", "live.ts"), "changed\n");
     writeFileSync(join(dir, "AGENTS.md"), "edited\n");
     writeFileSync(join(dir, "tsconfig.json"), '{"edited":true}\n');
     writeFileSync(join(dir, SKILL), "edited skill\n");
     const { code, result } = init(dir, ["--refresh"]);
     expect(code).toBe(0);
     expect(result.kind).toBe("written");
-    expect(readFileSync(join(dir, "pieces", "stage.ts"), "utf8")).toBe(pageFiles()["stage.ts"]);
+    expect(readFileSync(join(dir, "pieces", "live.ts"), "utf8")).toBe(pageFiles()["live.ts"]);
     expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toBe("edited\n");
     expect(readFileSync(join(dir, "tsconfig.json"), "utf8")).toBe('{"edited":true}\n');
     expect(readFileSync(join(dir, SKILL), "utf8")).toBe("edited skill\n");
@@ -226,7 +226,7 @@ describe("gerak init", () => {
   it("takes a folder whose name starts with two dots, and refuses a folder that is a file", () => {
     const dots = project("{}");
     expect(init(dots, ["..motion"]).result.kind).toBe("written");
-    expect(existsSync(join(dots, "..motion", "stage.html"))).toBe(true);
+    expect(existsSync(join(dots, "..motion", "live.html"))).toBe(true);
     const file = project("{}");
     writeFileSync(join(file, "pieces"), "");
     const { result } = init(file);

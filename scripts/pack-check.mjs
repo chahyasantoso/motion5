@@ -140,14 +140,12 @@ import { beat, box, sceneBuilder } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
-
 export default sceneBuilder()
   .element(box("box"))
   .motion(slide({ distance: 300, from: "left" }).in(go));
 `;
 
-/** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the stage page. */
+/** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the live and talk pages. */
 const SERVE_PAGES = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createServer } from "vite";
@@ -170,7 +168,7 @@ try {
   await server.listen();
   const base = server.resolvedUrls.local[0];
   const problems = [];
-  for (const path of ["stage.html", "stage.ts", "live.html", "live.ts", "talk.html", "talk.ts"]) {
+  for (const path of ["live.html", "live.ts", "talk.html", "talk.ts"]) {
     const response = await fetch(new URL(path, base));
     const body = await response.text();
     if (response.status !== 200) problems.push(path + " answered " + response.status);
@@ -323,9 +321,7 @@ function initError(project, exists = existsSync) {
   if (run.code !== 0) return firstErrorLine(run.out || run.err);
   const skill = ".claude/skills/make-motion/SKILL.md";
   const expected = [
-    ...["stage.html", "stage.ts", "live.html", "live.ts", "talk.html", "talk.ts"].map(
-      (name) => `pieces/${name}`,
-    ),
+    ...["live.html", "live.ts", "talk.html", "talk.ts"].map((name) => `pieces/${name}`),
     skill,
     "AGENTS.md",
     "tsconfig.json",
@@ -387,14 +383,6 @@ const arc = shape(
   }),
 );
 
-export const skin = {
-  css: [
-    '[data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }',
-    '[data-cast^="bars."] { width: 24px; height: 48px; background: #2a9 }',
-    '[data-path="arc"] { stroke: #f53; stroke-width: 4; fill: none }',
-  ].join("\\n"),
-};
-
 export default sceneBuilder({
   length: 3000,
 })
@@ -417,6 +405,31 @@ export default sceneBuilder({
   .motion(
     motion((time): Pose2d => ({ drawn: mix(0, 1, ease.quadOut(time.progress)) })).in(reveal),
   );
+`;
+
+/** The page of the core-only demo piece: the look and cast `CORE_PIECE` animates. */
+const CORE_PAGE = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>demo</title>
+    <style>
+      body { margin: 0; }
+      #frame { position: relative; width: 640px; height: 480px; }
+      [data-cast="dot"] { width: 40px; height: 40px; border-radius: 50%; background: #36c }
+      [data-cast="bars"] { width: 24px; height: 48px; background: #2a9; display: inline-block }
+      [data-cast="arc"] { stroke: #f53; stroke-width: 4; fill: none }
+    </style>
+  </head>
+  <body>
+    <div id="frame">
+      <div data-cast="dot"></div>
+      <div><span data-cast="bars"></span><span data-cast="bars"></span><span data-cast="bars"></span></div>
+      <svg width="640" height="480" style="position: absolute; left: 0; top: 0"><path data-cast="arc" d="M200 360 A120 120 0 0 1 440 360" /></svg>
+    </div>
+    <script type="module" src="/demo/src/demo-main.ts"></script>
+  </body>
+</html>
 `;
 
 function jsonOf(run) {
@@ -495,6 +508,7 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
     tscAfterNew.code === 0 ? undefined : firstErrorLine(tscAfterNew.out || tscAfterNew.err),
   );
   writeFileSync(demoFile, CORE_PIECE);
+  writeFileSync(join(dir, "pieces", "demo", "demo.html"), CORE_PAGE);
   const tscOnPiece = sh("npx --no-install tsc --noEmit", dir);
   check(
     "core-only tsc on piece",
@@ -510,7 +524,7 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
   );
   const framesDir = join(dir, "frames-core");
   const framed = sh(
-    'npx --no-install gerak frames "stage.html?piece=demo" --at 0,1200,3000 --out frames-core',
+    'npx --no-install gerak frames "demo/demo.html" --at 0,1200,3000 --out frames-core',
     dir,
   );
   const frameJson = jsonOf(framed);

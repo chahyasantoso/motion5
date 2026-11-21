@@ -8,6 +8,7 @@ import { stageOf, type LoadedStage, type PieceLookup } from "../stage-module";
 import { isClockDriver } from "./clock-driver";
 import { CodePanel } from "./code-panel";
 import { guard } from "./guard";
+import { applySceneStyles, loadPieceMarkup, pageOfPiece } from "../piece-markup";
 import { LiveStageView } from "./stage-view";
 import { extractMarks, scrubByWheel, Timeline } from "./timeline";
 
@@ -82,31 +83,6 @@ export function extractErrorMessage(payload: unknown): string {
   return typeof payload === "string" ? payload : "Vite error";
 }
 
-/** Injects all style tags from the scene HTML page at `page` (`/<brief>/<name>.html`) into a dedicated head style element. */
-export async function applySceneStyles(page: string): Promise<void> {
-  if (typeof fetch !== "function" || typeof document === "undefined") return;
-  try {
-    const response = await fetch(page);
-    if (!response.ok) return;
-    const html = await response.text();
-    const matches = html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi);
-    const rules: string[] = [];
-    for (const match of matches) {
-      const content = match[1];
-      if (content !== undefined) rules.push(content);
-    }
-    const existing = document.querySelector("style[data-live-scene-style]");
-    const style = existing instanceof HTMLStyleElement ? existing : document.createElement("style");
-    if (existing === null) {
-      style.setAttribute("data-live-scene-style", "");
-      document.head.appendChild(style);
-    }
-    style.textContent = rules.join("\n");
-  } catch {
-    // Stage styling falls back silently if fetching the HTML template fails.
-  }
-}
-
 /** A scene made of a component and a scene file. */
 export interface ComponentBundle {
   readonly kind: "component";
@@ -120,6 +96,8 @@ export interface StageBundle {
   readonly kind: "stage";
   readonly name: string;
   readonly loaded: LoadedStage;
+  /** The piece's page body, written once; its first element is the mount root. */
+  readonly markup: string;
 }
 
 export type SceneBundle = ComponentBundle | StageBundle;
@@ -129,7 +107,10 @@ export async function loadSceneBundle(lookup: PieceLookup, name: string): Promis
   if (lookup.stageFileOf(name).kind !== "none") {
     const loaded = await lookup.loadStageModule(name);
     if (typeof loaded === "string") throw new Error(loaded);
-    return { kind: "stage", name, loaded };
+    const file = lookup.stageFileOf(name);
+    const markup = await loadPieceMarkup(pageOfPiece(file.kind === "found" ? file.path : "", name));
+    if (markup.kind === "failed") throw new Error(markup.why);
+    return { kind: "stage", name, loaded, markup: markup.html };
   }
   const file = COMPONENT_FILES[name] ?? name;
   const component = lookup.componentFileOf(file);
@@ -142,8 +123,7 @@ export async function loadSceneBundle(lookup: PieceLookup, name: string): Promis
       break;
   }
   const url = component.path;
-  const brief = url.split("/")[1] ?? "";
-  await applySceneStyles(`/${brief}/${name}.html`);
+  await applySceneStyles(pageOfPiece(url, name));
   const mod = await lookup.loadComponentModule(url);
   if (!isRecord(mod)) throw new Error(`Module ${url} did not export an object.`);
   const Component = extractComponent(mod);
@@ -220,7 +200,14 @@ function shown(
         </PlayerHostProvider>
       );
     case "stage":
-      return <LiveStageView loaded={bundle.loaded} onError={onError} onDriver={onDriver} />;
+      return (
+        <LiveStageView
+          loaded={bundle.loaded}
+          markup={bundle.markup}
+          onError={onError}
+          onDriver={onDriver}
+        />
+      );
   }
 }
 
@@ -275,7 +262,13 @@ export const LiveApp: React.FC<LiveAppProps> = ({ initial, lookup }) => {
       const nextScene = extractMotionScene(detail);
       if (stamp >= errorStamp.current) setError(undefined);
       setBundle((prev) => {
-        if (nextStage !== undefined) return { kind: "stage", name: prev.name, loaded: nextStage };
+        if (nextStage !== undefined)
+          return {
+            kind: "stage",
+            name: prev.name,
+            loaded: nextStage,
+            markup: prev.kind === "stage" ? prev.markup : "",
+          };
         if (nextComponent === undefined) return prev;
         return {
           kind: "component",

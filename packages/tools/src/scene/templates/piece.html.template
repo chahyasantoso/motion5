@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>__NAME__</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      #frame {
+        display: grid;
+        place-items: center;
+        font-family: system-ui, sans-serif;
+      }
+      [data-cast="title"] {
+        font-size: 48px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="frame">
+      <div data-cast="title">__NAME__</div>
+    </div>
+    <script type="module" src="/__BRIEF__/src/__NAME__-main.ts"></script>
+  </body>
+</html>

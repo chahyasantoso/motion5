@@ -1,4 +1,5 @@
-import { mountStage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
+import { loadPieceMarkup, pageOfPiece } from "./piece-markup";
 import { pieceLookup, type ModuleGlob } from "./stage-module";
 import { levelOf } from "./talk-level";
 
@@ -22,7 +23,8 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
   const status = element("status");
 
   const name = new URLSearchParams(window.location.search).get("piece") ?? "";
-  const loaded = await pieceLookup(pieces, components).loadStageModule(name);
+  const lookup = pieceLookup(pieces, components);
+  const loaded = await lookup.loadStageModule(name);
 
   if (typeof loaded === "string") {
     root.textContent = loaded;
@@ -30,7 +32,23 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
     saveButton.hidden = true;
     return;
   }
-  const stage = mountStage(root, loaded.stage);
+  const file = lookup.stageFileOf(name);
+  const markup = await loadPieceMarkup(pageOfPiece(file.kind === "found" ? file.path : "", name));
+  if (markup.kind === "failed") {
+    root.textContent = markup.why;
+    startButton.hidden = true;
+    saveButton.hidden = true;
+    return;
+  }
+  root.innerHTML = markup.html;
+  const frame = root.firstElementChild;
+  if (!(frame instanceof HTMLElement)) {
+    root.textContent = "The piece's page has no element to mount over.";
+    startButton.hidden = true;
+    saveButton.hidden = true;
+    return;
+  }
+  const stage = mount(loaded.stage, { clock: "timed", frame: "fit", root: frame });
 
   saveButton.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(stage.events(), null, 1)], { type: "application/json" });

@@ -37,7 +37,11 @@ function appRoot(): string {
   return dir;
 }
 
-const STAGE_FILES = ["rope-word/src/rope-word.ts"];
+const STAGE_FILES = [
+  "rope-word/rope-word.html",
+  "rope-word/src/rope-word.ts",
+  "rope-word/src/rope-word-main.ts",
+];
 const FILES = [
   "rope-word/rope-word.html",
   "rope-word/src/rope-word-main.tsx",
@@ -46,7 +50,7 @@ const FILES = [
 ];
 
 describe("gerak new", () => {
-  it("writes one scene builder piece of one beat and one static actor, with no review finding", async () => {
+  it("writes a page, a scene builder of one beat and one static actor, and the main that mounts it, with no review finding", async () => {
     const dir = root();
     const result = scaffold("rope-word", dir);
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
@@ -61,7 +65,15 @@ describe("gerak new", () => {
     expect(module.stage?.members.map(({ name, kind }) => [name, kind])).toEqual([
       ["title", "actor"],
     ]);
-    expect(module.stage?.skins).toEqual({ dom: { kind: "inline", css: "" } });
+    expect(module.stage?.skins).toEqual({});
+    expect(written).not.toContain("skin");
+    const page = readFileSync(join(dir, "rope-word/rope-word.html"), "utf8");
+    expect(page).toContain('<div id="frame">');
+    expect(page).toContain('data-cast="title"');
+    expect(page).toContain('src="/rope-word/src/rope-word-main.ts"');
+    const main = readFileSync(join(dir, "rope-word/src/rope-word-main.ts"), "utf8");
+    expect(main).toContain('import scene from "./rope-word";');
+    expect(main).toContain('{ clock: "timed", frame: "fit", root }');
     expect(module.stage?.members.map(({ expect: kind }) => kind)).toEqual(["static"]);
     const samples = sampleScene(module, { kind: "time", ms: [0, 200, 800] });
     expect(samples.map((sample) => sample.targets)).toEqual(Array(3).fill({}));
@@ -125,7 +137,11 @@ describe("gerak new", () => {
     const dir = root();
     const piece = scaffold("rope-word", dir, { brief: "ropes" });
     if (piece.kind !== "written") throw new Error(piece.message);
-    expect(piece.files).toEqual([join(dir, "ropes/src/rope-word.ts")]);
+    expect(piece.files).toEqual(
+      ["ropes/rope-word.html", "ropes/src/rope-word.ts", "ropes/src/rope-word-main.ts"].map(
+        (file) => join(dir, file),
+      ),
+    );
     const three = scaffold("rope-box", dir, { three: true, brief: "ropes" });
     if (three.kind !== "written") throw new Error(three.message);
     expect(three.files).toEqual([

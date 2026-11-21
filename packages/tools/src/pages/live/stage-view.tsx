@@ -1,23 +1,26 @@
 import { useEffect, useRef, type FC } from "react";
-import { mountStage, type MountedStage } from "@gerak/dom";
+import { mount, type Mounted } from "@gerak/dom";
 import type { Driver } from "@gerak/player";
 import { compileScene, type Stage } from "@gerak/stage";
 import type { LoadedStage } from "../stage-module";
+import { isClockDriver } from "./clock-driver";
 
 export interface LiveStageViewProps {
   readonly loaded: LoadedStage;
+  /** The piece's page body; written once, and its first element is what the scene mounts over. */
+  readonly markup: string;
   readonly onError: (message: string) => void;
   /** Told of the driver of each run, the first and every replay. */
   readonly onDriver: (driver: Driver) => void;
 }
 
 interface Shown {
-  readonly mounted: MountedStage;
+  readonly mounted: Mounted;
   readonly shape: string;
 }
 
-/** Plays a stage module. Same cast, skin, and beats swap in place; other edits remount at the same time. */
-export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDriver }) => {
+/** Plays a stage module over its page. Same cast and beats swap in place; other edits remount at the same time. */
+export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, markup, onError, onDriver }) => {
   const container = useRef<HTMLDivElement>(null);
   const shown = useRef<Shown | undefined>(undefined);
   const currentScene = useRef(loaded.stage.scene);
@@ -27,6 +30,12 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
   useEffect(() => {
     const element = container.current;
     if (element === null) return;
+    if (element.firstElementChild === null) element.innerHTML = markup;
+    const root = element.firstElementChild;
+    if (root === null) {
+      onError("The piece's page has no element to mount over.");
+      return;
+    }
     currentScene.current = loaded.stage.scene;
     reported.current.clear();
 
@@ -49,7 +58,7 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
       }
     };
 
-    const compiled = compileScene(loaded.scene, { skin: loaded.skin, wrap: () => guardedScene });
+    const compiled = compileScene(loaded.scene, { wrap: () => guardedScene });
     if (!compiled.ok) return;
     const playing = compiled.stage;
     const shape = playing.signature;
@@ -59,16 +68,23 @@ export const LiveStageView: FC<LiveStageViewProps> = ({ loaded, onError, onDrive
         kept.mounted.replace(playing);
         return;
       }
-      const progress = kept?.mounted.driver.now().progress;
+      const old = kept?.mounted.driver;
+      const progress = isClockDriver(old) ? old.now().progress : undefined;
       kept?.mounted.dispose();
       shown.current = undefined;
-      const mounted = mountStage(element, playing, { onDriver, checks: true });
-      if (progress !== undefined) mounted.driver.seek(progress);
+      const mounted = mount(playing, {
+        clock: "timed",
+        frame: "fit",
+        root,
+        checks: true,
+        onDriver,
+      });
+      if (progress !== undefined && isClockDriver(mounted.driver)) mounted.driver.seek(progress);
       shown.current = { mounted, shape };
     } catch (error) {
       onError(error instanceof Error ? error.message : String(error));
     }
-  }, [loaded, onDriver, onError]);
+  }, [loaded, markup, onDriver, onError]);
 
   useEffect(
     () => () => {

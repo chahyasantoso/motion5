@@ -1,212 +1,123 @@
-import { createElement, type FC } from "react";
+import { createElement } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import { type FrameSource, type StageElement, type StageEvent, type StageStyle } from "@gerak/dom";
-// The renderer is tested on compiled stages, built with the stage package's own compiler input.
-import { compileStage } from "../../stage/src/run/compile";
-import { defineStage, type StageDefinition } from "../../stage/src/author/stage";
-import type { Members } from "../../stage/src/author/cast";
-import type { Stage as CompiledStage } from "@gerak/stage";
+import { motion, type Pose2d } from "@gerak/core";
+import { box, many, sceneBuilder } from "@gerak/stage";
+import { type FrameSource, type PageElement, type PageRoot, type PageStyle } from "@gerak/dom";
+import { Stage } from "@gerak/react";
 
-function staged<B extends string, M extends Members<B>, L extends string>(
-  def: StageDefinition<B, M, L>,
-): CompiledStage {
-  const result = compileStage(def);
-  if (!result.ok) throw new Error("Expected the stage to compile.");
-  return result.stage;
-}
-import { Stage, type StageProps } from "@gerak/react";
-
-class FakeStyle implements StageStyle {
-  readonly custom = new Map<string, string>();
-  setProperty(name: string, value: string): void {
-    this.custom.set(name, value);
-  }
-  removeProperty(name: string): void {
-    this.custom.delete(name);
-  }
+class FakeStyle implements PageStyle {
+  transform = "";
+  opacity = "";
+  zIndex = "";
+  transformOrigin = "";
+  transformBox = "";
+  filter = "";
+  clipPath = "";
+  strokeDasharray = "";
+  strokeDashoffset = "";
+  visibility = "";
+  display = "";
+  whiteSpace = "";
+  position = "";
+  setProperty(): void {}
+  removeProperty(): void {}
 }
 
-interface FakeDocument {
-  createElement(tag: "div" | "style" | "link"): FakeElement;
-  createElementNS(namespace: string, name: "svg" | "path"): FakeElement;
-}
-
-class FakeElement implements StageElement<FakeElement, FakeElement> {
-  readonly style: FakeStyle & StageStyle = new FakeStyle();
-  readonly attributes = new Map<string, string>();
-  readonly children: FakeElement[] = [];
-  readonly listeners = new Map<string, Set<(event: StageEvent) => void>>();
-  parent: FakeElement | undefined;
-  shadowRoot: FakeElement | undefined;
-  textContent: string | null = null;
-  innerHTML?: string;
-  tabIndex = -1;
+class FakeNode implements PageElement {
+  readonly style = new FakeStyle();
+  textContent: string | null = "";
   offsetLeft = 0;
   offsetTop = 0;
-  offsetWidth = 0;
-  offsetHeight = 0;
-  clientWidth = 0;
-  clientLeft = 0;
-  clientTop = 0;
-  clientHeight = 0;
-  readonly ownerDocument: FakeDocument;
+  offsetWidth = 100;
+  offsetHeight = 40;
+  constructor(readonly cast: string) {}
+  addEventListener(): void {}
+  removeEventListener(): void {}
+}
 
-  constructor(
-    readonly tagName: string,
-    document?: FakeDocument,
-  ) {
-    this.ownerDocument = document ?? {
-      createElement: (tag) => new FakeElement(tag, this.ownerDocument),
-      createElementNS: (_namespace, name) => new FakeElement(name, this.ownerDocument),
-    };
+class FakeRoot implements PageRoot {
+  constructor(readonly nodes: readonly FakeNode[]) {}
+  querySelector(selector: string): PageElement | null {
+    return this.nodes.find((node) => selector === `[data-cast="${node.cast}"]`) ?? null;
   }
-  attachShadow(): FakeElement {
-    const root = new FakeElement("#shadow", this.ownerDocument);
-    this.shadowRoot = root;
-    return root;
-  }
-  setAttribute(name: string, value: string): void {
-    this.attributes.set(name, value);
-  }
-  removeAttribute(name: string): void {
-    this.attributes.delete(name);
-  }
-  append(...nodes: FakeElement[]): void {
-    for (const node of nodes) {
-      node.parent = this;
-      this.children.push(node);
-    }
-  }
-  remove(): void {
-    const siblings = this.parent?.children;
-    if (siblings !== undefined) {
-      const idx = siblings.indexOf(this);
-      if (idx >= 0) siblings.splice(idx, 1);
-    }
-    this.parent = undefined;
-  }
-  addEventListener(type: string, listener: (event: StageEvent) => void): void {
-    this.listeners.set(type, (this.listeners.get(type) ?? new Set()).add(listener));
-  }
-  removeEventListener(type: string, listener: (event: StageEvent) => void): void {
-    this.listeners.get(type)?.delete(listener);
-  }
-  all(): FakeElement[] {
-    const below = [...this.children, ...(this.shadowRoot === undefined ? [] : [this.shadowRoot])];
-    return below.flatMap((child) => [child, ...child.all()]);
-  }
-  find(name: string): FakeElement {
-    const found = this.all().find((element) => element.attributes.get("data-cast") === name);
-    if (found === undefined) throw new Error(`No element named ${name}.`);
-    return found;
+  querySelectorAll(selector: string): readonly PageElement[] {
+    return this.nodes.filter((node) => selector === `[data-cast="${node.cast}"]`);
   }
 }
 
 const NO_FRAMES: FrameSource = { requestFrame: () => 1, cancelFrame: () => undefined };
 
-function renderStage(props: StageProps) {
-  const Component: FC<StageProps> = Stage;
-  return createElement(Component, props);
+function slid(distance: number, length = 1000) {
+  return sceneBuilder({ length })
+    .element(box("card"))
+    .motion(motion((): Pose2d => ({ x: distance })));
 }
 
 describe("<Stage />", () => {
-  it("mounts a StageDefinition and swaps compatible updates in place via replace", async () => {
-    const container = new FakeElement("div");
+  it("mounts a scene over its children and swaps a same-signature scene in place via replace", async () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
     const drivers: unknown[] = [];
-    const options = { frames: NO_FRAMES, onDriver: (driver: unknown) => drivers.push(driver) };
-
-    const stageOne = staged(
-      defineStage({
-        beats: { intro: [0, 1000] },
-        cast: (m) => ({ card: m.box() }),
-        scene: () => ({ card: { x: 10 } }),
-      }),
-    );
-    const stageTwo = staged(
-      defineStage({
-        beats: { intro: [0, 1000] },
-        cast: (m) => ({ card: m.box() }),
-        scene: () => ({ card: { x: 75 } }),
-      }),
-    );
+    const options = {
+      clock: "timed",
+      frames: NO_FRAMES,
+      onDriver: (driver: unknown) => drivers.push(driver),
+    } as const;
 
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(renderStage({ stage: stageOne, options }), {
-        createNodeMock: () => container,
+      renderer = create(createElement(Stage, { scene: slid(10), options }), {
+        createNodeMock: () => root,
       });
     });
-
-    const host = container.children[0];
-    const card = host?.shadowRoot?.find("card");
-    expect(card?.style.transform).toBe("translate3d(10px, 0px, 0px)");
+    expect(card.style.transform).toBe("translate3d(10px, 0px, 0px)");
     expect(drivers).toHaveLength(1);
 
     await act(() => {
-      renderer?.update(renderStage({ stage: stageTwo, options }));
+      renderer?.update(createElement(Stage, { scene: slid(75), options }));
     });
-
-    // Compatible stage updated via replace: same host/card nodes and same driver.
-    expect(container.children[0]).toBe(host);
-    expect(host?.shadowRoot?.find("card")).toBe(card);
-    expect(card?.style.transform).toBe("translate3d(75px, 0px, 0px)");
+    expect(card.style.transform).toBe("translate3d(75px, 0px, 0px)");
     expect(drivers).toHaveLength(1);
 
     await act(() => {
       renderer?.unmount();
     });
-    expect(container.children).toEqual([]);
+    expect(card.style.transform).toBe("");
   });
 
-  it("mounts a CompiledStage and remounts when cast or durationMs changes, cleaning up on unmount", async () => {
-    const container = new FakeElement("div");
+  it("remounts when the cast or length changes, and restores the nodes on unmount", async () => {
+    const card = new FakeNode("card");
+    const extra = new FakeNode("extra");
+    const root = new FakeRoot([card, extra]);
     const drivers: unknown[] = [];
-    const options = { frames: NO_FRAMES, onDriver: (driver: unknown) => drivers.push(driver) };
-
-    const first = compileStage(
-      defineStage({
-        beats: { intro: [0, 1000] },
-        cast: (m) => ({ card: m.box().watch() }),
-        scene: () => ({ card: { y: 5 } }),
-      }),
-    );
-    const second = staged(
-      defineStage({
-        beats: { intro: [0, 2000] },
-        cast: (m) => ({ card: m.box().watch(), extra: m.box() }),
-        scene: () => ({ extra: { x: 20 } }),
-      }),
-    );
-    if (!first.ok) throw new Error("Expected first stage to compile.");
+    const options = {
+      clock: "timed",
+      frames: NO_FRAMES,
+      onDriver: (driver: unknown) => drivers.push(driver),
+    } as const;
+    const longer = sceneBuilder({ length: 2000 })
+      .element(box("card"))
+      .element(many("extra", 1))
+      .motion(motion((): Pose2d => ({ x: 20 })));
 
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {
-      renderer = create(createElement(Stage, { stage: first.stage, options }), {
-        createNodeMock: () => container,
+      renderer = create(createElement(Stage, { scene: slid(5), options }), {
+        createNodeMock: () => root,
       });
     });
-
-    const firstHost = container.children[0];
-    const firstCard = firstHost?.shadowRoot?.find("card");
-    expect(firstCard?.style.transform).toBe("translate3d(0px, 5px, 0px)");
     expect(drivers).toHaveLength(1);
 
     await act(() => {
-      renderer?.update(renderStage({ stage: second, options }));
+      renderer?.update(createElement(Stage, { scene: longer, options }));
     });
-
-    const secondHost = container.children[0];
-    expect(secondHost).not.toBe(firstHost);
-    expect(firstCard?.listeners.get("pointerenter")?.size ?? 0).toBe(0);
-    expect(secondHost?.shadowRoot?.find("extra").style.transform).toBe(
-      "translate3d(20px, 0px, 0px)",
-    );
     expect(drivers).toHaveLength(2);
+    expect(extra.style.transform).toBe("translate3d(20px, 0px, 0px)");
 
     await act(() => {
       renderer?.unmount();
     });
-    expect(container.children).toEqual([]);
+    expect(extra.style.transform).toBe("");
   });
 });

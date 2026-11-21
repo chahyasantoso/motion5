@@ -73,7 +73,7 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   if (page === undefined || positional.length !== 1) return usage("Expected one page path.");
   if (!/^[\w./-]+(?:\?[\w.=&-]+)?$/.test(page) || page.startsWith("/") || page.includes(".."))
     return usage(
-      `Page ${page} must be a path inside the site, like timing.html or stage.html?piece=saved.`,
+      `Page ${page} must be a path inside the site, like timing.html or saved/saved.html.`,
     );
   const size = /^(\d+)x(\d+)$/.exec(flags.get("--size") ?? "1280x720");
   if (size === null) return usage("--size needs WIDTHxHEIGHT.");

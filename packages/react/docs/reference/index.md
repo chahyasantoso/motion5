@@ -14,5 +14,5 @@
 - **`OwnedDriver`** `type OwnedDriver = Driver & { dispose?(): void; }`: A driver a component owns, released when the component leaves.
 - **`PlayerHost`** `type PlayerHost = { createDriver?: <D extends OwnedDriver>(own: () => D) => D; guard?: <T extends object>(scene: Signal<T>, fallback?: T) => Signal<T> }`: What a page may take over from `usePlayer`: which driver runs the scene, and how a scene is wrapped.
 - **`Playing`** `type Playing<T, D> = { player: Player<T>; driver: D }`: What `usePlayer` gives: the `player` and the `driver` it plays on.
-- **`Stage`** `({ stage, options }: StageProps): ReactNode`: Plays a stage in a div that fills its parent; a stage with the same signature swaps in, others remount.
-- **`StageProps`** `type StageProps = { stage: StageInput; options?: StageOptions | undefined }`: What `<Stage />` plays: a compiled stage or what `sceneBuilder` returns, and mount options.
+- **`Stage`** `({ scene, options, children }: StageProps): ReactNode`: Mounts a scene over its children; a scene with the same signature swaps in, others remount.
+- **`StageProps`** `type StageProps = { scene: StageInput; options: StageMountOptions; children?: ReactNode }`: What `<Stage />` plays: a scene (or compiled stage) over its children, which hold the cast's markup.
