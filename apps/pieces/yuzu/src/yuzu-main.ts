@@ -1,4 +1,4 @@
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import scene from "./yuzu";
 
-mountPage(scene);
+mount(scene, { clock: "live" });

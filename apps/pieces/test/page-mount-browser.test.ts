@@ -59,7 +59,7 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
   writeFileSync(
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import { beat, box, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stage";
 import { boxInViewport } from "@gerak/stage/render";
 
@@ -79,7 +79,7 @@ const scene = sceneBuilder()
   .element(stickySlot)
   .element(fixedPin);
 
-const mounted = mountPage(scene);
+const mounted = mount(scene, { clock: "live" });
 Reflect.set(window, "__mountedPage", mounted);
 Reflect.set(window, "__boxInViewport", boxInViewport);
 `,
@@ -91,7 +91,7 @@ Reflect.set(window, "__boxInViewport", boxInViewport);
 beforeAll(removeLeftovers);
 afterAll(removeLeftovers);
 
-describe("mountPage in the browser", () => {
+describe("mount in the browser", () => {
   it("measures word lines across resize without changing part count and animates existing nodes on scroll", async () => {
     const scratch = writeScratchPage();
     await withPage(

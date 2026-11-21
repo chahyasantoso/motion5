@@ -54,7 +54,7 @@ function writeScratchPage(): { readonly html: string } {
   writeFileSync(
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import { beat, box, restReader, sceneBuilder } from "@gerak/stage";
 
 const hero = box("hero");
@@ -70,7 +70,7 @@ const scene = sceneBuilder()
     motion((t) => ({ y: 20 * t.progress })).in(inFeatures),
   );
 
-const mounted = mountPage(scene);
+const mounted = mount(scene, { clock: "live" });
 Reflect.set(window, "__mountedPage", mounted);
 Reflect.set(window, "__sections", { hero, features, story });
 Reflect.set(window, "__restReader", restReader);

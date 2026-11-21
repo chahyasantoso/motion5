@@ -1,11 +1,11 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import { beat, box, sceneBuilder, scrollPoint } from "@gerak/stage";
 
 // A motion that throws once scroll passes 2000 px, which the page has not reached.
 const late = beat("late", { scroll: [scrollPoint(1500), scrollPoint(2000)] });
 
-mountPage(
+mount(
   sceneBuilder({ name: "throws" })
     .element(box("late"))
     .motion(
@@ -14,5 +14,6 @@ mountPage(
         return { x: 100 * t.progress };
       }).in(late),
     ),
+  { clock: "live" },
 );
 Reflect.set(window, "__mounted", true);

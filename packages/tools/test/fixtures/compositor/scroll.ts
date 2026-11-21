@@ -1,5 +1,5 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import {
   beat,
   box,
@@ -23,7 +23,7 @@ const compiled = compileScene(
 );
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
-const mounted = mountPage(stage);
+const mounted = mount(stage, { clock: "live" });
 
 // A page's own scroll-driven animation, with no gerak in it, across the whole scroll range.
 const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");

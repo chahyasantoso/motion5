@@ -1,5 +1,5 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import {
   beat,
   box,
@@ -23,7 +23,7 @@ for (const back of NAMES)
 const compiled = compileScene(scene);
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
-const mounted = mountPage(stage);
+const mounted = mount(stage, { clock: "live" });
 
 // The engine's pose of each card now, for the browser test to hold the drawn one against.
 Reflect.set(window, "__expected", () => {

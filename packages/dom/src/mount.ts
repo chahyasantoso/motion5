@@ -10,6 +10,7 @@ import {
 } from "@gerak/core";
 import { play, type Driver, type Player } from "@gerak/player";
 import {
+  check,
   compileScene,
   formatStageError,
   frame as frameOf,
@@ -29,7 +30,14 @@ import {
   type Moves,
   type TriggerBeat,
 } from "@gerak/stage";
-import { morphAt, withPlacement, type BoxPlacement } from "@gerak/stage/render";
+import {
+  drawStrokes,
+  morphAt,
+  restOfBounds,
+  strokeBox,
+  withPlacement,
+  type BoxPlacement,
+} from "@gerak/stage/render";
 import {
   sampleNear,
   scrollTracks,
@@ -38,9 +46,10 @@ import {
   type Track,
   type TriggerTrack,
 } from "./compositor";
+import { clockDriver, type ClockDriver } from "./drivers";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
-import { applyPath, applyValue, type RenderStyle } from "./render";
+import { applyPath, applyValue, pathData, type RenderStyle } from "./render";
 import type { StageEvent, StageFonts, StageInput, StageValues } from "./stage";
 
 /** The style properties written or cleared while measuring and animating an existing page node. */
@@ -54,7 +63,7 @@ export interface PageStyle extends RenderStyle {
   whiteSpace?: string;
 }
 
-/** Minimal contract of a page DOM node animated by `mountPage`, real element or test double. */
+/** Minimal contract of a page DOM node animated by `mount`, real element or test double. */
 export interface PageElement {
   readonly style: PageStyle;
   textContent: string | null;
@@ -84,7 +93,7 @@ export interface PageElement {
   readonly ownerSVGElement?: unknown;
 }
 
-/** Container queried by `mountPage` to resolve selectors and listen for viewport pointer motion. */
+/** Container queried by `mount` to bind the cast and listen for viewport pointer motion. */
 export interface PageRoot {
   querySelector(selector: string): unknown;
   querySelectorAll(selector: string): ArrayLike<unknown>;
@@ -117,20 +126,35 @@ export interface PageScrollTarget {
   removeEventListener(type: string, listener: () => void): void;
 }
 
-/** Settings of `mountPage`: root to query, scroll target, frame source, clock, settle window, and driver hook. */
-export interface PageOptions {
-  /** Document or container holding the page's elements; defaults to `document`. */
+/** What a mount's time is: `"live"` runs on from mount, read by scroll, pointer and triggers;
+ * `"timed"` runs over the scene's length and seeks, for reels and capture. */
+export type MountClock = "live" | "timed";
+
+/** Where a mount draws: `"page"` in place, or `"fit"`, which sizes `root` to the scene's frame,
+ * clips it and scales it to fit the viewport about its top left. */
+export type MountFrame = "page" | "fit";
+
+/** Settings of `mount`: its clock and frame, the root it binds in, and the hooks tests and tools use. */
+export interface MountOptions {
+  readonly clock: MountClock;
+  /** Defaults to `"page"`. */
+  readonly frame?: MountFrame;
+  /** Document or container holding the cast; defaults to `document`, and `"fit"` needs an element. */
   readonly root?: PageRoot;
   readonly scrollTarget?: PageScrollTarget;
   readonly frames?: FrameSource;
   readonly settleMs?: number;
-  readonly clock?: () => number;
+  /** The live clock's time source in ms; defaults to `performance.now`. */
+  readonly now?: () => number;
   readonly viewport?: () => { readonly width: number; readonly height: number };
+  /** Told of the driver once, at mount; a timed mount's is a `ClockDriver`. */
   readonly onDriver?: (driver: Driver) => void;
+  /** Checks every frame's targets with `check` and throws on a mistake; for authoring pages. */
+  readonly checks?: boolean;
 }
 
-/** A playing page mount: its player, driver, measured rests and text lines, input logger, and cleanup. */
-export interface MountedPage {
+/** A playing mount: its player, driver, measured rests and text lines, input logger, and cleanup. */
+export interface Mounted {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
   /** Measured rest boxes by element name. */
@@ -138,7 +162,9 @@ export interface MountedPage {
   /** Visual line indices per split text element, updated on resize without changing part count. */
   readonly lines: Readonly<Record<string, readonly number[]>>;
   remeasure(): void;
-  /** Logs a named numeric sample on the live clock and wakes the settle window. */
+  /** Swaps in a scene with the same cast and length, keeping time. */
+  replace(next: StageInput): void;
+  /** Logs a named numeric sample at the clock's ms and wakes the settle window. */
   send(name: string, value: number, target?: string): void;
   /** Everything logged so far, oldest first: scroll, viewport pointer, watched pointer, and sent samples. */
   events(): Events;
@@ -163,7 +189,7 @@ interface PageDocument {
 type DrawnMember = Exclude<Member, { readonly kind: "object" }>;
 
 interface BoundTarget {
-  readonly member: DrawnMember;
+  member: DrawnMember;
   readonly node: PageElement;
   readonly items: readonly PageElement[];
   readonly restore?: (() => void) | undefined;
@@ -225,7 +251,7 @@ function isDomElement(value: unknown): value is Element {
 
 function needElement(value: unknown, memberName: string, selector: string): PageElement {
   if (isPageElement(value)) return value;
-  throw new Error(`mountPage: "${memberName}" (${selector}) matched no styleable page element.`);
+  throw new Error(`mount: "${memberName}" (${selector}) matched no styleable page element.`);
 }
 
 function childElementsOf(node: PageElement): readonly PageElement[] {
@@ -275,20 +301,18 @@ function resolvePageStage(input: StageInput): Stage {
   else if (isScene(input)) {
     const compiled = compileScene(input);
     if (!compiled.ok)
-      throw new Error(
-        `mountPage: invalid scene:\n${compiled.errors.map(formatStageError).join("\n")}`,
-      );
+      throw new Error(`mount: invalid scene:\n${compiled.errors.map(formatStageError).join("\n")}`);
     stage = compiled.stage;
-  } else throw new Error("mountPage: expected a stage or what `sceneBuilder` returns.");
+  } else throw new Error("mount: expected a stage or what `sceneBuilder` returns.");
 
   if (stage.skins.dom !== undefined)
-    throw new Error("mountPage: a page scene takes no skin; style the page with CSS.");
+    throw new Error("mount: a mounted scene takes no skin; style its markup with CSS.");
   const missing = stage.members
     .filter((member) => member.node === undefined && member.kind !== "object")
     .map((member) => `"${member.name}"`);
   if (missing.length > 0)
     throw new TypeError(
-      `mountPage: every element needs \`{ node: el(selector) }\` (missing ${missing.join(", ")}).`,
+      `mount: every element needs \`{ node: el(selector) }\` (missing ${missing.join(", ")}).`,
     );
   return stage;
 }
@@ -347,13 +371,13 @@ function bindList(
 ): BoundTarget {
   const rawMatches = Array.from(root.querySelectorAll(selector));
   if (rawMatches.length === 0)
-    throw new Error(`mountPage: "${member.name}" (${selector}) matched no node on the page.`);
+    throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
   const matches = rawMatches.map((node, index) =>
     needElement(node, `${member.name}[${index}]`, selector),
   );
   const first = matches[0];
   if (first === undefined)
-    throw new Error(`mountPage: "${member.name}" (${selector}) matched no node on the page.`);
+    throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
   if (member.items.length === 0) return { member, node: first, items: [] };
   if (matches.length === 1) {
     const kids = childElementsOf(first);
@@ -367,12 +391,12 @@ function bindList(
       return { member, node: first, items: matches };
     }
     throw new Error(
-      `mountPage: "${member.name}" (${selector}) matched 1 element with ${kids.length} children, expected ${member.items.length}.`,
+      `mount: "${member.name}" (${selector}) matched 1 element with ${kids.length} children, expected ${member.items.length}.`,
     );
   }
   if (matches.length === member.items.length) return { member, node: first, items: matches };
   throw new Error(
-    `mountPage: "${member.name}" (${selector}) matched ${matches.length} nodes, expected ${member.items.length}.`,
+    `mount: "${member.name}" (${selector}) matched ${matches.length} nodes, expected ${member.items.length}.`,
   );
 }
 
@@ -530,17 +554,33 @@ const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 const TRIGGER_SLACK_MS = 34;
 
 /** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
-export function mountPage(input: StageInput, options: PageOptions = {}): MountedPage {
-  const stage = resolvePageStage(input);
+/** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
+export function mount(input: StageInput, options: MountOptions): Mounted {
+  let stage = resolvePageStage(input);
   const root = options.root ?? (isPageRoot(globalThis.document) ? globalThis.document : undefined);
   if (root === undefined || !isPageRoot(root))
-    throw new Error("mountPage: no document or `options.root` to query.");
+    throw new Error("mount: no document or `options.root` to query.");
 
   const doc = isPageDocument(root)
     ? root
     : isPageDocument(root.ownerDocument)
       ? root.ownerDocument
       : undefined;
+  const framing = options.frame ?? "page";
+  let fitted: HTMLElement | undefined;
+  switch (framing) {
+    case "page":
+      break;
+    case "fit": {
+      const element: unknown = root;
+      if (typeof HTMLElement === "undefined" || !(element instanceof HTMLElement))
+        throw new Error('mount: `frame: "fit"` needs `root` to be an element.');
+      fitted = element;
+      break;
+    }
+    default:
+      return unreachable(framing);
+  }
   const targets: BoundTarget[] = [];
   const byName = new Map<string, BoundTarget>();
   const allNodes: PageElement[] = [];
@@ -557,9 +597,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
         case "group": {
           const raw = root.querySelector(selector);
           if (raw === null)
-            throw new Error(
-              `mountPage: "${member.name}" (${selector}) matched no node on the page.`,
-            );
+            throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
           const node = needElement(raw, member.name, selector);
           bound = { member, node, items: [] };
           allNodes.push(node);
@@ -625,6 +663,24 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     return { width: 1280, height: 720 };
   };
 
+  // A fitted root is the scene's frame in px, clipped, scaled about its top left to fit the viewport.
+  const sizeFrame = (): void => {
+    if (fitted === undefined) return;
+    Object.assign(fitted.style, {
+      width: `${stage.frame.width}px`,
+      height: `${stage.frame.height}px`,
+      overflow: "hidden",
+      transformOrigin: "0 0",
+    });
+  };
+  const scaleFrame = (): void => {
+    if (fitted === undefined) return;
+    const vp = readViewport();
+    const scale = Math.min(vp.width / stage.frame.width, vp.height / stage.frame.height);
+    fitted.style.transform = Number.isFinite(scale) && scale !== 1 ? `scale(${scale})` : "";
+  };
+  sizeFrame();
+
   let currentRest: Rest = {};
   let currentReader: RestReader = restReader();
   let currentLines: Readonly<Record<string, readonly number[]>> = {};
@@ -648,17 +704,22 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     >();
 
     // Inspect computed positions before mutating inline styles so sticky containers stay visible to siblings.
+    // A fitted root's cast is measured in frame px, from the root's unscaled top left.
+    const placeOf = (node: PageElement) =>
+      fitted === undefined ? inspectAncestors(node, stickyCache) : { isFixed: false };
     for (const node of allNodes) {
-      ancestors.set(node, inspectAncestors(node, stickyCache));
+      ancestors.set(node, placeOf(node));
     }
     for (const target of targets) {
       if (!ancestors.has(target.node)) {
-        ancestors.set(target.node, inspectAncestors(target.node, stickyCache));
+        ancestors.set(target.node, placeOf(target.node));
       }
     }
 
-    const scrollX = readScrollX();
-    const scrollY = readScrollY();
+    if (fitted !== undefined) fitted.style.transform = "";
+    const origin = fitted?.getBoundingClientRect();
+    const scrollX = origin === undefined ? readScrollX() : -origin.left;
+    const scrollY = origin === undefined ? readScrollY() : -origin.top;
     const nextRest: Record<string, Box> = {};
     const nextLines: Record<string, readonly number[]> = {};
 
@@ -764,7 +825,9 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
             return unreachable(member);
         }
       }
+      drawPaths(nextRest);
     } finally {
+      scaleFrame();
       for (const [el, prev] of savedSticky) {
         el.style.position = prev.position ?? "";
         el.style.top = prev.top ?? "";
@@ -780,12 +843,44 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     currentLines = Object.freeze(nextLines);
   };
 
+  // A shape's path is drawn from the measured boxes, written on its bound `<path>`, and rests at its bounds.
+  function drawPaths(boxes: Record<string, Box>): void {
+    const shapes = targets.filter(
+      (target) => target.member.kind === "actor" && target.member.content.kind === "stroke",
+    );
+    if (shapes.length === 0) return;
+    const drawn = drawStrokes(stage, restReader(boxes));
+    if (!drawn.ok) throw new Error(`mount: ${formatStageError(drawn.error)}`);
+    const [failure] = drawn.strokes.failures;
+    if (failure !== undefined)
+      throw new Error(`mount: the path of "${failure.name}" failed: ${String(failure.error)}`, {
+        cause: failure.error,
+      });
+    for (const { member, node } of shapes) {
+      const cubics = drawn.strokes.cubics.get(member.name);
+      if (cubics === undefined) continue;
+      node.setAttribute?.("d", pathData(cubics));
+      boxes[member.name] = restOfBounds(strokeBox(cubics));
+    }
+  }
+
   measure();
 
   const frames = options.frames ?? pageFrames();
-  const clock = options.clock ?? (() => globalThis.performance.now());
-  const start = clock();
-  const elapsed = (): number => Math.max(0, clock() - start);
+  const now = options.now ?? (() => globalThis.performance.now());
+  const start = now();
+  const elapsed = (): number => Math.max(0, now() - start);
+  // A timed mount runs on a seekable clock over the scene's length, each frame the whole scene.
+  let timed: ClockDriver | undefined;
+  switch (options.clock) {
+    case "live":
+      break;
+    case "timed":
+      timed = clockDriver({ duration: stage.durationMs, frames });
+      break;
+    default:
+      return unreachable(options.clock);
+  }
   const settleMs = options.settleMs ?? stage.settleMs ?? 2000;
   const ambient = stage.members.some((member) => member.expect === "ambient");
   let introMs = 0;
@@ -887,24 +982,27 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   };
 
   function schedule(): void {
-    if (live && frameHandle === undefined) frameHandle = frames.requestFrame(tick);
+    if (live && timed === undefined && frameHandle === undefined)
+      frameHandle = frames.requestFrame(tick);
   }
 
   if (lastScrollY !== 0) recorder.sample(INPUT_EVENTS.scroll, lastScrollY);
 
   const unwatch: (() => void)[] = [];
+  const watchNode = (name: string, node: PageElement): (() => void) =>
+    timed === undefined ? recorder.watch(name, node) : timed.watch(name, node);
   for (const target of targets) {
     const member = target.member;
     if (!member.watch) continue;
     switch (member.kind) {
       case "list":
         target.items.forEach((item, index) =>
-          unwatch.push(recorder.watch(`${member.name}.${index}`, item)),
+          unwatch.push(watchNode(`${member.name}.${index}`, item)),
         );
         break;
       case "actor":
       case "group":
-        unwatch.push(recorder.watch(member.name, target.node));
+        unwatch.push(watchNode(member.name, target.node));
         break;
       default:
         return unreachable(member);
@@ -914,7 +1012,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
   const onScroll = (): void => {
     syncScroll();
   };
-  scrollTarget?.addEventListener("scroll", onScroll, { passive: true });
+  if (timed === undefined) scrollTarget?.addEventListener("scroll", onScroll, { passive: true });
 
   const onPointerMove = (event: StageEvent): void => {
     if (event.clientX === undefined || event.clientY === undefined) return;
@@ -926,9 +1024,9 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     recorder.sample(INPUT_EVENTS.pointerY, y);
   };
   const pointerTarget = eventTargetOf(root, doc);
-  pointerTarget.add(onPointerMove);
+  if (timed === undefined) pointerTarget.add(onPointerMove);
 
-  const driver: Driver = {
+  const driver: Driver = timed ?? {
     now: (): Time => liveAt(elapsed()),
     events: (): Events => recorder.log,
     options,
@@ -974,6 +1072,11 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
         const text = member.content.format(time);
         if (target.node.textContent !== text) target.node.textContent = text;
       }
+    }
+    if (options.checks === true) {
+      const errors = check(stage, out.targets);
+      if (errors.length > 0)
+        throw new TypeError(`mount: ${errors.map(formatStageError).join(" ")}`);
     }
     lastFrame = out;
     return out.targets;
@@ -1084,6 +1187,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
     target.member.kind === "list" ? target.items : [target.node];
   const handOff = (): void => {
     release();
+    if (timed !== undefined || fitted !== undefined) return;
     if (Reflect.get(globalThis, COMPOSITOR_OFF) === true) return;
     if (Reflect.get(globalThis, HELD_CLOCK) === true) return;
     const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");
@@ -1247,11 +1351,25 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       return currentLines;
     },
     remeasure,
+    replace(next) {
+      const nextStage = resolvePageStage(next);
+      if (nextStage.signature !== stage.signature)
+        throw new Error("mount.replace: the next scene has a different cast or length.");
+      stage = nextStage;
+      for (const target of targets) {
+        const member = nextStage.members.find((each) => each.name === target.member.name);
+        if (member !== undefined && member.kind === target.member.kind) target.member = member;
+      }
+      sizeFrame();
+      remeasure();
+      player.replace(sceneSignal, nextStage.cues);
+    },
     send(name, value, target) {
       if (!live) return;
-      recorder.sample(name, value, target);
+      if (timed === undefined) recorder.sample(name, value, target);
+      else timed.send(name, value, target);
     },
-    events: () => recorder.log,
+    events: () => (timed === undefined ? recorder.log : timed.events()),
     dispose() {
       if (!live) return;
       live = false;
@@ -1272,6 +1390,7 @@ export function mountPage(input: StageInput, options: PageOptions = {}): Mounted
       release();
       recorder.dispose();
       player.dispose();
+      timed?.dispose();
       listeners.clear();
       for (const node of allNodes) {
         applyValue(node, {});

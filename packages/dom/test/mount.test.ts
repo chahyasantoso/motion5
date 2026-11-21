@@ -4,6 +4,7 @@ import {
   pointer,
   scroll,
   springTo,
+  toCubics,
   type Pose2d,
   type Pose3d,
 } from "@gerak/core";
@@ -16,16 +17,23 @@ import {
   object,
   sceneBuilder,
   scrollPoint,
+  shape,
   text,
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
-  mountPage,
+  mount,
+  type ClockDriver,
   type FrameSource,
   type PageElement,
   type PageRoot,
   type PageStyle,
 } from "../src";
+import type { Driver } from "@gerak/player";
+
+function isClock(driver: Driver): driver is ClockDriver {
+  return "seek" in driver && typeof driver.seek === "function";
+}
 
 class FakeStyle implements PageStyle {
   transform = "";
@@ -160,7 +168,7 @@ function fakeFrames(): FrameSource & { readonly queued: number; tick(ms: number)
   };
 }
 
-describe("mountPage", () => {
+describe("mount", () => {
   it("writes poses onto existing nodes via applyValue and creates no frames or elements", () => {
     const card = new FakeNode("card");
     card.offsetLeft = 20;
@@ -201,11 +209,12 @@ describe("mountPage", () => {
       .element(many("items", 2))
       .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 15 }));
 
-    const mounted = mountPage(scene, {
+    const mounted = mount(scene, {
       root,
       scrollTarget,
       frames,
-      clock: () => ms,
+      clock: "live",
+      now: () => ms,
       viewport: () => ({ width: 1000, height: 500 }),
     });
 
@@ -251,7 +260,7 @@ describe("mountPage", () => {
       .element(box("card"))
       .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
     const seen: unknown[] = [];
-    const mounted = mountPage(scene, { root, frames, clock: () => ms });
+    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
     mounted.player.subscribe("drink", (value) => seen.push(value));
     ms = 500;
     frames.tick(500);
@@ -262,17 +271,87 @@ describe("mountPage", () => {
     mounted.dispose();
   });
 
+  it("runs a timed clock over the scene's length that seeks, and hands the tools a ClockDriver", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    const frames = fakeFrames();
+    const spin = beat("spin", 1000);
+    const scene = sceneBuilder()
+      .element(box("card"))
+      .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
+    let handed: Driver | undefined;
+    const mounted = mount(scene, { root, frames, clock: "timed", onDriver: (d) => (handed = d) });
+    expect(handed).toBe(mounted.driver);
+    const clock = mounted.driver;
+    if (!isClock(clock)) throw new Error("expected a ClockDriver");
+    frames.tick(0);
+    frames.tick(500);
+    expect(card.style.transform).toBe("translate3d(40px, 0px, 0px)");
+    expect(mounted.driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 1000 });
+    clock.seek(1);
+    expect(card.style.transform).toBe("translate3d(80px, 0px, 0px)");
+    frames.tick(900);
+    expect(mounted.driver.now().progress).toBe(1);
+    mounted.dispose();
+  });
+
+  it("writes a shape's path on its bound node from the measured boxes, and rests it at the path's bounds", () => {
+    const from = new FakeNode("from");
+    from.offsetLeft = 0;
+    from.offsetTop = 0;
+    const line = new FakeNode("line");
+    const root = new FakeRoot([from, line]);
+    const scene = sceneBuilder({ length: 500 })
+      .element(box("from"))
+      .element(
+        shape("line", (rest) => {
+          const at = rest.get("from");
+          const still = { inX: 0, inY: 0, outX: 0, outY: 0 };
+          return toCubics([
+            { id: "a", x: at.x, y: at.y, ...still },
+            { id: "b", x: 200, y: 20, ...still },
+          ]);
+        }),
+      );
+    const mounted = mount(scene, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
+    expect(line.attributes.get("d")).toBe("M 50 20 C 50 20, 200 20, 200 20");
+    expect(mounted.rest["line"]).toEqual({ x: 125, y: 20, width: 150, height: 1 });
+    mounted.dispose();
+  });
+
+  it("swaps in a scene with the same cast and length, keeping time, and refuses another", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    let ms = 0;
+    const frames = fakeFrames();
+    const spin = beat("spin", 1000);
+    const moving = (distance: number) =>
+      sceneBuilder()
+        .element(box("card"))
+        .motion(motion((t): Pose2d => ({ x: distance * t.progress })).in(spin));
+    const mounted = mount(moving(80), { root, frames, clock: "live", now: () => ms });
+    ms = 500;
+    frames.tick(500);
+    expect(card.style.transform).toBe("translate3d(40px, 0px, 0px)");
+    mounted.replace(moving(200));
+    expect(card.style.transform).toBe("translate3d(100px, 0px, 0px)");
+    expect(() =>
+      mounted.replace(sceneBuilder().element(box("card")).element(box("other"))),
+    ).toThrow(/different cast/);
+    mounted.dispose();
+  });
+
   it("refuses a scene missing nodes, a compiled skin, or a missing selector", () => {
     const root = new FakeRoot([new FakeNode("card")]);
-    expect(() => mountPage(sceneBuilder({ length: 500 }).element(box("plain")), { root })).toThrow(
-      /"plain"/,
-    );
+    expect(() =>
+      mount(sceneBuilder({ length: 500 }).element(box("plain")), { clock: "live", root }),
+    ).toThrow(/"plain"/);
     const skinned = compileScene(sceneBuilder({ length: 500 }).element(box("card")), {
       skin: { css: "#card { width: 10px; }" },
     });
     if (!skinned.ok) throw new Error("expected skinned stage to compile");
-    expect(() => mountPage(skinned.stage, { root })).toThrow(/skin/i);
-    expect(() => mountPage(sceneBuilder().element(box("missing")), { root })).toThrow(
+    expect(() => mount(skinned.stage, { clock: "live", root })).toThrow(/skin/i);
+    expect(() => mount(sceneBuilder().element(box("missing")), { clock: "live", root })).toThrow(
       /"missing".*data-cast="missing"/,
     );
   });
@@ -283,7 +362,7 @@ describe("mountPage", () => {
     const root = new FakeRoot([meter, clockOut]);
     let ms = 0;
     const frames = fakeFrames();
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder()
         .element(box("meter"))
         .motion(bind({ x: (t, e) => scroll.y(t, e) }))
@@ -294,7 +373,7 @@ describe("mountPage", () => {
             {},
           ),
         ),
-      { root, frames, clock: () => ms },
+      { root, frames, clock: "live", now: () => ms },
     );
     ms = 250;
     mounted.send(INPUT_EVENTS.scroll, 75);
@@ -310,7 +389,7 @@ describe("mountPage", () => {
     const frames = fakeFrames();
     let runs = 0;
     let ms = 0;
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder()
         .element(box("meter"))
         .motion(
@@ -321,7 +400,7 @@ describe("mountPage", () => {
             },
           }),
         ),
-      { root, frames, clock: () => ms, viewport: () => ({ width: 100, height: 100 }) },
+      { root, frames, clock: "live", now: () => ms, viewport: () => ({ width: 100, height: 100 }) },
     );
     const before = runs;
     ms = 16;
@@ -339,11 +418,11 @@ describe("mountPage", () => {
     const headline = new FakeNode("headline");
     headline.textContent = "One two";
     const root = new FakeRoot([headline]);
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder({ length: 1000 })
         .element(text("headline", "One two", { split: "words" }))
         .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 })),
-      { root, frames: fakeFrames(), clock: () => 0 },
+      { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
     expect(root.createdCount).toBe(2);
     expect(headline.children).toHaveLength(2);
@@ -357,11 +436,11 @@ describe("mountPage", () => {
     const solo = new FakeNode("solo");
     solo.textContent = "HELLO";
     const root = new FakeRoot([solo]);
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder({ length: 500 })
         .element(text("solo", "HELLO", { split: "words" }))
         .motion(() => ({ x: 5 })),
-      { root, frames: fakeFrames(), clock: () => 0 },
+      { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
     expect(root.createdCount).toBe(1);
     expect(solo.children).toHaveLength(1);
@@ -372,11 +451,11 @@ describe("mountPage", () => {
 
     const rollbackRoot = new FakeRoot([new FakeNode("solo")]);
     expect(() =>
-      mountPage(
+      mount(
         sceneBuilder({ length: 500 })
           .element(text("solo", "HELLO", { split: "words" }))
           .element(box("missing")),
-        { root: rollbackRoot, frames: fakeFrames(), clock: () => 0 },
+        { root: rollbackRoot, frames: fakeFrames(), clock: "live", now: () => 0 },
       ),
     ).toThrow(/"missing"/);
     expect(rollbackRoot.nodes[0]?.textContent).toBe("");
@@ -400,11 +479,11 @@ describe("mountPage", () => {
     const story = box("story");
     const sb = beat("go", { scroll: [hero.top, story.top] });
 
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder()
         .element(box("card"))
         .motion(motion((t) => ({ x: 100 * t.progress })).in(sb)),
-      { root, frames: fakeFrames(), clock: () => 0 },
+      { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
 
     expect(mounted.rest["hero"]).toEqual({ x: 500, y: 300, width: 1000, height: 600 });
@@ -423,11 +502,11 @@ describe("mountPage", () => {
     const missingSec = box("absent");
     const missingBeat = beat("miss", { scroll: [missingSec.top, missingSec.end] });
     expect(() =>
-      mountPage(
+      mount(
         sceneBuilder()
           .element(text("solo", "HELLO", { split: "words" }))
           .motion(motion((t) => ({ x: 10 * t.progress })).in(missingBeat)),
-        { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: () => 0 },
+        { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: "live", now: () => 0 },
       ),
     ).toThrow(/"absent".*data-cast="absent"/);
     expect(failSolo.textContent).toBe("");
@@ -451,7 +530,7 @@ describe("mountPage", () => {
     };
     const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(200)] });
     let sceneCalls = 0;
-    const mounted = mountPage(
+    const mounted = mount(
       sceneBuilder()
         .element(box("card"))
         .motion(
@@ -460,7 +539,7 @@ describe("mountPage", () => {
             return { x: 100 * t.progress };
           }).in(sb),
         ),
-      { root, scrollTarget, frames: fakeFrames(), clock: () => 0 },
+      { root, scrollTarget, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
 
     expect(cardNode.style.transform).toBe("");
@@ -474,7 +553,7 @@ describe("mountPage", () => {
   });
 });
 
-describe("mountPage frames for a cause", () => {
+describe("mount frames for a cause", () => {
   const OFF = Symbol.for("@gerak/dom/clock-frames-off");
 
   type Run = {
@@ -563,11 +642,12 @@ describe("mountPage frames for a cause", () => {
         .motion(
           slide.in(beat("partBeat", 400, { when: scrollPoint(300).reached, back: "reverse" })),
         );
-      const mounted = mountPage(scene, {
+      const mounted = mount(scene, {
         root,
         scrollTarget,
         frames,
-        clock: () => ms,
+        clock: "live",
+        now: () => ms,
         viewport: () => ({ width: 1000, height: 500 }),
       });
       const styles: string[] = [];
@@ -617,7 +697,7 @@ describe("mountPage frames for a cause", () => {
   });
 });
 
-describe("mountPage frames for a cause, reading another element", () => {
+describe("mount frames for a cause, reading another element", () => {
   const OFF = Symbol.for("@gerak/dom/clock-frames-off");
 
   function play(off: boolean): string[] {
@@ -638,7 +718,7 @@ describe("mountPage frames for a cause, reading another element", () => {
             y: context?.read(leader).x ?? 0,
           })).in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })),
         );
-      const mounted = mountPage(scene, { root, frames, clock: () => ms });
+      const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
       const styles: string[] = [];
       for (ms = 16; ms <= 6000; ms += 16) {
         if (frames.queued > 0) frames.tick(ms);
