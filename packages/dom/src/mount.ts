@@ -1,6 +1,7 @@
 import {
   INPUT_EVENTS,
   clamp,
+  elapsedOf,
   liveAt,
   unreachable,
   type Events,
@@ -24,6 +25,7 @@ import {
   type FrameOutput,
   type Member,
   type Rest,
+  type RestAt,
   type RestReader,
   type SceneBuilder,
   type Stage,
@@ -949,6 +951,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   }
 
   measure();
+  const measures: RestAt[] = [{ at: 0, rest: currentReader }];
 
   const frames = options.frames ?? pageFrames();
   const now = options.now ?? (() => globalThis.performance.now());
@@ -1124,20 +1127,14 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
 
-  // Built again only when the page is measured again.
-  let boxesFor: RestReader | undefined;
-  let boxes: Readonly<Record<string, RestReader>> = {};
   const sceneSignal: Signal<StageValues> = (time, events) => {
-    if (boxesFor !== currentReader) {
-      boxesFor = currentReader;
-      boxes = Object.fromEntries(stage.layouts.names.map((name) => [name, currentReader]));
-    }
     const only = runOnly ?? engineOnly;
     const moves = new Map<string, Moves>();
     const ran = frameOf(stage, {
       time,
       events,
-      boxes,
+      rest: currentReader,
+      measures,
       counts: currentCounts,
       lines: currentLines,
       moves,
@@ -1291,7 +1288,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     if (names.size === 0) return;
     const reader = currentReader;
     const input = {
-      boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
       counts: currentCounts,
       lines: currentLines,
       rest: reader,
@@ -1381,13 +1377,38 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
 
   schedule();
 
+  const sameRest = (a: Rest, b: Rest): boolean => {
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    return keys.every((key) => {
+      const left = a[key];
+      const right = b[key];
+      return (
+        left !== undefined &&
+        right !== undefined &&
+        left.x === right.x &&
+        left.y === right.y &&
+        left.width === right.width &&
+        left.height === right.height
+      );
+    });
+  };
+
   const remeasure = (): void => {
     if (!live) return;
+    const prevRest = currentRest;
     release();
     measure();
+    if (!sameRest(prevRest, currentRest)) {
+      const at = timed === undefined ? elapsed() : (elapsedOf(timed.now().clock) ?? 0);
+      measures.push({ at, rest: currentReader });
+      activeUntil = Math.max(activeUntil, at + settleMs);
+      fresh = true;
+    }
     handOff();
     syncScroll();
     player.refresh();
+    schedule();
   };
 
   const onResize = (): void => remeasure();

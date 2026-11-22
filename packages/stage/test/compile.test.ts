@@ -8,16 +8,16 @@ import type { Members } from "../src/author/cast";
 const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
-function errorsOf<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function errorsOf<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): readonly StageError[] {
   const result = compileStage(definition);
   return result.ok ? [] : result.errors;
@@ -59,7 +59,6 @@ describe("compileStage", () => {
     ]);
     const word = stage.members[2];
     expect(word?.kind === "list" ? word.split : undefined).toBe("letters");
-    expect(stage.layouts.names).toEqual(["main"]);
   });
 
   it("tells a definition and a stage apart by kind, so a second copy of the package still works", () => {
@@ -116,7 +115,7 @@ describe("compileStage", () => {
     for (const error of errors) expect(formatStageError(error)).not.toBe("");
   });
 
-  it("refuses beats past durationMs or of no length, and a bad layout pick", () => {
+  it("refuses beats past durationMs or of no length", () => {
     expect(
       errorsOf(
         defineStage({
@@ -141,15 +140,6 @@ describe("compileStage", () => {
         reason: 'beat "empty" must be [from, to] ms with 0 <= from < to.',
       },
     ]);
-    const pick = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: () => ({}),
-        layouts: { names: ["one"], pick: () => Reflect.get({ two: "two" }, "two") },
-        scene: () => ({}),
-      }),
-    );
-    expect(pick.map(formatStageError).join()).toContain("layouts");
   });
 
   it("matches morph outlines once, base first", () => {

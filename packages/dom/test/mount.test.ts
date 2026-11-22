@@ -12,6 +12,7 @@ import {
   beat,
   bind,
   box,
+  carry,
   compileScene,
   object,
   sceneBuilder,
@@ -635,6 +636,36 @@ describe("mount", () => {
     expect(sceneCalls).toBe(callsBefore + 1);
     expect(cardNode.style.transform).toBe("translate3d(50px, 0px, 0px)");
     expect(mounted.events().some((e) => e.name === "scroll" && e.value === 100)).toBe(true);
+    mounted.dispose();
+  });
+
+  it("carries an element from its old rest box to its new one across remeasure", () => {
+    const card = new FakeNode("card");
+    const root = new FakeRoot([card]);
+    let ms = 0;
+    const frames = fakeFrames();
+    const scene = sceneBuilder({ length: 1000 })
+      .element(box("card"))
+      .motion(carry({ ms: 200 }));
+    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
+    frames.tick(0);
+    expect(card.style.transform).toBe("");
+
+    ms = 100;
+    card.offsetLeft = 200;
+    card.offsetTop = 40;
+    card.offsetWidth = 200;
+    card.offsetHeight = 80;
+    mounted.remeasure();
+    expect(card.style.transform).toBe("translate3d(-250px, -60px, 0px) scaleX(0.5) scaleY(0.5)");
+
+    ms = 200;
+    frames.tick(200);
+    expect(card.style.transform).toBe("translate3d(-125px, -30px, 0px) scaleX(0.75) scaleY(0.75)");
+
+    ms = 300;
+    frames.tick(300);
+    expect(card.style.transform).toBe("");
     mounted.dispose();
   });
 });

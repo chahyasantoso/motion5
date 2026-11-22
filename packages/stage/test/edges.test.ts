@@ -62,17 +62,15 @@ describe("an element's edges", () => {
       ["story", "static", '[data-cast="story"]'],
     ]);
 
-    const boxes = {
-      main: restReader({
-        hero: { x: 640, y: 360, width: 1280, height: 720 },
-        story: { x: 640, y: 1420, width: 1280, height: 1400 },
-      }),
-    };
+    const rest = restReader({
+      hero: { x: 640, y: 360, width: 1280, height: 720 },
+      story: { x: 640, y: 1420, width: 1280, height: 1400 },
+    });
     // story.top = 720; beat range is [50, 670] px. At scrollY = 360: (360 - 50) / 620 = 0.5 -> x = 50.
     const pose = poseOf(
       frame(stage, {
         time: at(100, stage.durationMs),
-        boxes,
+        rest,
         events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 360 }],
       }).targets["badge"],
     );

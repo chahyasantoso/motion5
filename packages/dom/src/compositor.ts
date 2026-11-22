@@ -66,9 +66,8 @@ export interface TriggerTrack extends Track {
   readonly beat: TriggerBeat;
 }
 
-/** What tracks are sampled from: the measured boxes, lines and rest, and the elements to try. */
+/** What tracks are sampled from: the measured lines and rest, and the elements to try. */
 export interface TrackInput {
-  readonly boxes: Readonly<Record<string, RestReader>>;
   readonly counts?: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>>;
   readonly rest: RestReader;
@@ -288,7 +287,7 @@ function runFrame(
   const { targets } = frame(stage, {
     time: liveAt(ms),
     events,
-    boxes: input.boxes,
+    rest: input.rest,
     ...(input.counts === undefined ? {} : { counts: input.counts }),
     lines: input.lines,
     only,

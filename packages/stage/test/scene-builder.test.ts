@@ -1,13 +1,4 @@
-import {
-  circlePath,
-  mergeEvents,
-  motion,
-  span,
-  timeAt,
-  type Events,
-  type Pose2d,
-  type Time,
-} from "@gerak/core";
+import { circlePath, motion, span, timeAt, type Events, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -19,9 +10,11 @@ import {
   frame,
   listPose,
   poseOf,
+  restReader,
   compileScene,
   isScene,
   sceneBuilder,
+  type RestAt,
   type SceneBuilder,
   shape,
   stagger,
@@ -144,14 +137,12 @@ describe("sceneBuilder: what a chain compiles to", () => {
     ).toBe(3000);
   });
 
-  it("takes cues and layouts from the builder", () => {
+  it("takes cues from the builder", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
-    const layouts = { names: ["one", "two"] as [string, string], pick: () => "two" };
-    const compiled = compileScene(sceneBuilder({ cues, layouts }).element(box("card")).show(enter));
+    const compiled = compileScene(sceneBuilder({ cues }).element(box("card")).show(enter));
     if (!compiled.ok) throw new Error("did not compile");
     const stage = compiled.stage;
-    expect(stage.layouts.names).toEqual(["one", "two"]);
-    expect(stage.cues).toEqual(mergeEvents(cues));
+    expect(stage.cues.map(({ name, at, target }) => ({ name, at, target }))).toEqual(cues);
   });
 });
 
@@ -415,10 +406,7 @@ describe("sceneBuilder: reading another element", () => {
   });
 
   it("carries the element through the scene's carry", () => {
-    const chain = sceneBuilder({
-      length: 2000,
-      layouts: { names: ["a", "b"], pick: () => "a" },
-    })
+    const chain = sceneBuilder({ length: 2000 })
       .element(box("ball"))
       .motion(carry({ ms: 300 }));
     expect(poseAt(chain, "ball", 100)).toBeDefined();
@@ -426,22 +414,19 @@ describe("sceneBuilder: reading another element", () => {
 
   it("carries a part of a list from the box named after the element and the part", () => {
     const dots = box("dots", { parts: true });
-    const chain = sceneBuilder({
-      length: 2000,
-      layouts: {
-        names: ["row", "wide"],
-        pick: (events) => (events.some(({ name }) => name === "wide") ? "wide" : "row"),
-        rests: {
-          row: { "dots.1": { x: 100, y: 100, width: 200, height: 100 } },
-          wide: { "dots.1": { x: 300, y: 200, width: 400, height: 200 } },
-        },
-      },
-    })
+    const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion(carry({ ms: 200 }));
+    const row = restReader({ "dots.1": { x: 100, y: 100, width: 200, height: 100 } });
+    const wide = restReader({ "dots.1": { x: 300, y: 200, width: 400, height: 200 } });
+    const measures: readonly RestAt[] = [
+      { at: 0, rest: row },
+      { at: 200, rest: wide },
+    ];
     const out = frame(compiled(chain), {
       time: at(300),
-      events: mergeEvents([{ name: "wide", at: 200 }]),
+      rest: wide,
+      measures,
     }).targets["dots"];
     expect([0, 1].map((index) => listPose(out, index, 2))).toEqual([
       {},

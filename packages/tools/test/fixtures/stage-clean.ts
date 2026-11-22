@@ -7,7 +7,6 @@ import {
   text,
   type MotionContext,
   type Path,
-  type Rest,
   type SceneBuilder,
 } from "@gerak/stage";
 
@@ -15,10 +14,8 @@ export const intro = beat("intro", 400);
 export const go = beat("go", 1000, { after: intro });
 export const out = beat("out", 600, { after: go });
 
-/** The clean piece, with the options a test varies: boxes, a length, and a stroke under the dot. */
-export function stageClean(
-  options: { rest?: Rest; length?: number; mark?: Path } = {},
-): SceneBuilder {
+/** The clean piece, with the options a test varies: a length and a stroke under the dot. */
+export function stageClean(options: { length?: number; mark?: Path } = {}): SceneBuilder {
   const dot = box("dot");
   const word = text("word", { split: "letters" });
   const mark = options.mark === undefined ? box("mark") : shape("mark", options.mark);
@@ -35,7 +32,6 @@ export function stageClean(
   ).in(intro);
   return sceneBuilder({
     length: options.length ?? out.to,
-    ...(options.rest === undefined ? {} : { rest: options.rest }),
   })
     .element(stage)
     .element(dot)

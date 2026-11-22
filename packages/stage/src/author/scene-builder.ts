@@ -47,16 +47,8 @@ import {
   type Stretch,
 } from "./cast";
 import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
-import type { Carry, CarryOptions, Rest, RestReader } from "./layout";
-import type {
-  LayoutsInput,
-  Limits,
-  ListPose,
-  Drive,
-  Moves,
-  SceneContext,
-  StageDefinition,
-} from "./stage";
+import type { Carry, CarryOptions, RestReader } from "./layout";
+import type { Limits, ListPose, Drive, Moves, SceneContext, StageDefinition } from "./stage";
 import { compileStage, type CompileResult, type Stage } from "../run/compile";
 
 /** What a motion reads each frame, beside the time it plays in. */
@@ -105,9 +97,6 @@ export interface SceneBuilderOptions {
   readonly cues?: Events | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
-  readonly layouts?: LayoutsInput | undefined;
-  /** Boxes the headless tools read in place of measured ones, by element name. */
-  readonly rest?: Rest | undefined;
 }
 
 /** A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable. */
@@ -659,7 +648,7 @@ function indexOf(context: MotionContext): { readonly index?: number } {
   return context.index === undefined ? {} : { index: context.index };
 }
 
-/** A motion giving the element's move from its box in the last layout to its box in the next.
+/** A motion giving the element's move from its old rest box to its new one after a re-measure.
  * A part of a list uses its box named `<element>.<index>`. */
 export function carry(options: CarryOptions): Motion<Pose2d, MotionContext> {
   return motion((_time, context?: MotionContext) => {
@@ -724,7 +713,7 @@ function owns(owner: SceneOwner, held: SceneOwner): boolean {
   return false;
 }
 
-const SCENE_OPTIONS = ["cues", "length", "layouts", "rest"] as const;
+const SCENE_OPTIONS = ["cues", "length"] as const;
 
 /** `.include` for a state: merges another scene's state into it. */
 function includeOf(state: State): SceneBuilder["include"] {
@@ -1391,7 +1380,7 @@ function definitionOf(state: State): StageDefinition {
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
       maxTriggerMs = inputBeat.ms;
   const settleMs = maxTriggerMs > 0 ? Math.max(2000, maxTriggerMs + 200) : undefined;
-  const { cues, layouts, rest } = state.options;
+  const { cues } = state.options;
   return {
     kind: "stage-definition",
     beats: Object.fromEntries(
@@ -1426,8 +1415,6 @@ function definitionOf(state: State): StageDefinition {
     },
     ...(durationMs === undefined ? {} : { durationMs }),
     ...(cues === undefined ? {} : { cues }),
-    ...(layouts === undefined ? {} : { layouts }),
-    ...(rest === undefined ? {} : { rest }),
     ...(settleMs === undefined ? {} : { settleMs }),
   };
 }

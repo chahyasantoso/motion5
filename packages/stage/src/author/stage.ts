@@ -1,7 +1,7 @@
 import type { Events, Pose2d, Pose3d, Span, Time } from "@gerak/core";
 import type { CastBuilder, Members } from "./cast";
 import type { ScrollBeat, TriggerBeat } from "./beat";
-import type { Carry, Rest, RestReader } from "./layout";
+import type { Carry, RestReader } from "./layout";
 
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
@@ -29,13 +29,12 @@ export function each<T>(items: readonly T[], pose: (item: T, index: number) => P
 export type Beats<B extends string = string> = Readonly<Record<B, Span>>;
 
 /** What the scene reads each frame. */
-export interface SceneContext<B extends string = string, L extends string = string> {
+export interface SceneContext<B extends string = string> {
   readonly time: Time;
   readonly beats: Beats<B>;
   readonly events: Events;
-  /** Rest boxes of the layout showing now. */
+  /** Measured rest boxes. */
   readonly rest: RestReader;
-  readonly layouts: Readonly<Record<L, RestReader>>;
   readonly carry: Carry;
   /** Part count per list element, from the mount's binding or the cache's `<name>.<index>` boxes. */
   readonly counts?: Readonly<Record<string, number>> | undefined;
@@ -60,13 +59,6 @@ export type Drive =
  * `maybe` when a motion read the clock or another element, or has no window. */
 export type Moves = "time" | "maybe";
 
-/** Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless. */
-export interface LayoutsInput<L extends string = string> {
-  readonly names: readonly [L, ...L[]];
-  readonly pick?: ((events: Events) => L) | undefined;
-  readonly rests?: Readonly<Record<L, Rest>> | undefined;
-}
-
 /** Review limits of one target, overriding the command's defaults. */
 export interface Limits {
   readonly jump?: number | undefined;
@@ -75,35 +67,28 @@ export interface Limits {
 }
 
 /** A piece as written: beats in ms, a cast, and a scene from time to poses. */
-export interface StageOptions<B extends string, M extends Members<B>, L extends string> {
+export interface StageOptions<B extends string, M extends Members<B>> {
   readonly beats: Readonly<Record<B, readonly [number, number]>>;
   /** Defaults to the last beat's end; longer holds the end. */
   readonly durationMs?: number | undefined;
   readonly cast: (m: CastBuilder<NoInfer<B>>) => M;
-  readonly rest?: Rest | undefined;
-  readonly layouts?: LayoutsInput<L> | undefined;
   readonly cues?: Events | undefined;
   readonly limits?: Readonly<Record<string, Limits>> | undefined;
   /** Minimum ms a page clock stays alive after an input event for triggers and springs to settle. */
   readonly settleMs?: number | undefined;
-  readonly scene: (context: SceneContext<NoInfer<B>, NoInfer<L>>) => Targets<NoInfer<M>>;
+  readonly scene: (context: SceneContext<NoInfer<B>>) => Targets<NoInfer<M>>;
 }
 
 /** A piece as `defineStage` returns it, before `compileStage` checks it. */
-export interface StageDefinition<
-  B extends string = string,
-  M extends Members<B> = Members<B>,
-  L extends string = string,
-> extends StageOptions<B, M, L> {
+export interface StageDefinition<B extends string = string, M extends Members<B> = Members<B>>
+  extends StageOptions<B, M> {
   readonly kind: "stage-definition";
 }
 
-/** Declares a piece; its beat and layout names type the cast's `on` and the scene's context. */
-export function defineStage<
-  const B extends string,
-  M extends Members<B>,
-  const L extends string = never,
->(options: StageOptions<B, M, L>): StageDefinition<B, M, L> {
+/** Declares a piece; its beat names type the cast's `on` and the scene's context. */
+export function defineStage<const B extends string, M extends Members<B>>(
+  options: StageOptions<B, M>,
+): StageDefinition<B, M> {
   return Object.freeze({ ...options, kind: "stage-definition" });
 }
 

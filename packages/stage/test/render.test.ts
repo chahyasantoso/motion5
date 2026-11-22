@@ -11,8 +11,8 @@ const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
 const EXTRA = rectPath({ x: 80, y: 0, width: 10, height: 10 });
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));

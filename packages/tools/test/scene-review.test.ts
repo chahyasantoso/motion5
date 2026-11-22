@@ -346,10 +346,6 @@ describe("gerak review expectations and shape mismatches", () => {
     const broken = defineStage({
       beats: { show: [0, 400] },
       cast: (m) => ({ row: m.many(), dot: m.box() }),
-      rest: {
-        "row.0": { x: 0, y: 0, width: 10, height: 10 },
-        "row.1": { x: 20, y: 0, width: 10, height: 10 },
-      },
       scene: () => ({
         row: (i) => {
           if (i === 1) throw new Error("boom");
@@ -357,7 +353,18 @@ describe("gerak review expectations and shape mismatches", () => {
         },
       }),
     });
-    expect(review(broken).findings).toEqual(["boom"]);
+    const cache: MeasureCache = {
+      page: "row.html",
+      digest: "",
+      frame: { width: 400, height: 300 },
+      rest: {
+        "row.0": { x: 0, y: 0, width: 10, height: 10, placement: { kind: "flow" } },
+        "row.1": { x: 20, y: 0, width: 10, height: 10, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    expect(review(broken, {}, cache).findings).toEqual(["boom"]);
   });
 
   it("judges an ambient member's bounds only where its box and frame are measured", () => {

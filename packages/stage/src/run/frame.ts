@@ -7,17 +7,19 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { NO_REST, type RestReader } from "../author/layout";
+import { NO_REST, type RestAt, type RestReader } from "../author/layout";
 import type { Drive, Moves } from "../author/stage";
 import { carryFor } from "./carry";
 import { isPlainRecord, type Stage } from "./compile";
 import type { StageError } from "./errors";
 
-/** One frame's inputs; `boxes` holds each layout's measured rest, else the piece's own rests are read. */
+/** One frame's inputs: the time, events, measured rest boxes, and re-measure history. */
 export interface FrameInput {
   readonly time: Time;
   readonly events?: Events | undefined;
-  readonly boxes?: Readonly<Record<string, RestReader>> | undefined;
+  readonly rest?: RestReader | undefined;
+  /** Each measurement in time order, so `carry` can move a member after a re-measure. */
+  readonly measures?: readonly RestAt[] | undefined;
   /** Part count per list element, from the mount's binding or the cache's `<name>.<index>` boxes. */
   readonly counts?: Readonly<Record<string, number>> | undefined;
   /** Visual line index per item of a split text list, measured from layout on a page mount. */
@@ -30,9 +32,8 @@ export interface FrameInput {
   readonly drives?: Map<string, Drive> | undefined;
 }
 
-/** One frame: the layout showing, who shows, and the scene's output as returned. */
+/** One frame: who shows, and the scene's output as returned. */
 export interface FrameOutput {
-  readonly layout: string;
   readonly visible: Readonly<Record<string, boolean>>;
   /** Unchecked; read it with `poseOf` and `listPose`, and pass it to `check` to find shape mistakes. */
   readonly targets: Readonly<Record<string, unknown>>;
@@ -87,17 +88,15 @@ export function partCounts(
 /** Runs the scene once; no checks, so it costs the scene and one visibility lookup. */
 export function frame(stage: Stage, input: FrameInput): FrameOutput {
   const events = input.events ?? NO_EVENTS;
-  const layouts = input.boxes ?? stage.layouts.readers;
-  const layout = stage.layouts.pick(events);
-  const rest = layouts[layout] ?? NO_REST;
+  const measures = input.measures ?? [];
+  const rest = input.rest ?? measures.at(-1)?.rest ?? NO_REST;
   const time = input.time;
   const targets = stage.scene({
     time,
     beats: stage.beats,
     events,
     rest,
-    layouts,
-    carry: carryFor(stage.layouts.pick, layouts, rest, events, time),
+    carry: carryFor(rest, measures, events, time),
     ...(input.counts === undefined ? {} : { counts: input.counts }),
     ...(input.lines === undefined ? {} : { lines: input.lines }),
     ...(input.only === undefined ? {} : { only: input.only }),
@@ -107,7 +106,7 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");
   const ms = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
-  return { layout, visible: stage.visibleAt(ms), targets };
+  return { visible: stage.visibleAt(ms), targets };
 }
 
 /** Every shape mistake in a frame's targets: arrays or non-poses, lists not given as functions, unknown names. */

@@ -12,7 +12,6 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { manualDriver, play } from "@gerak/player";
 import {
-  NO_REST,
   compileScene,
   formatStageError,
   frame,
@@ -145,19 +144,16 @@ export function writtenOut(
   return out;
 }
 
-/** The rest boxes, part counts and lines a frame of `stage` reads: the cache's, or the piece's without a page. */
+/** The rest boxes, part counts and lines a frame of `stage` reads from the measure cache. */
 export function measuredInput(
   stage: Stage,
   measured: MeasureCache | undefined,
-): Pick<FrameInput, "boxes" | "counts" | "lines"> {
-  if (measured === undefined) {
-    const rest = stage.layouts.readers[stage.layouts.pick(NO_EVENTS)] ?? NO_REST;
-    return { counts: partCounts(stage, rest) };
-  }
-  const reader = restOfCache(measured);
+): Pick<FrameInput, "counts" | "lines" | "rest"> {
+  if (measured === undefined) return {};
+  const rest = restOfCache(measured);
   return {
-    boxes: Object.fromEntries(stage.layouts.names.map((name) => [name, reader])),
-    counts: partCounts(stage, reader, measured.lines),
+    rest,
+    counts: partCounts(stage, rest, measured.lines),
     lines: measured.lines,
   };
 }

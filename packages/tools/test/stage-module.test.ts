@@ -11,19 +11,21 @@ import {
   unusedDefinition,
   type CastBuilder,
 } from "./stage-definitions";
+import type { MeasureCache } from "../src/page/measure-cache";
 import { reviewSceneModule } from "../src/scene/review";
 import * as clean from "./fixtures/stage-clean";
 import * as outside from "./fixtures/stage-outside";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
-function moduleOf(value: object): SceneModule {
-  const read = readModule(value);
+function moduleOf(value: object, measured?: MeasureCache): SceneModule {
+  const read = readModule(value, measured);
   if ("reason" in read) throw new Error(read.reason);
   return read;
 }
 
-const findings = (value: object) => reviewSceneModule(moduleOf(value), limits).findings;
+const findings = (value: object, measured?: MeasureCache) =>
+  reviewSceneModule(moduleOf(value, measured), limits).findings;
 
 const level = (from: number, to: number, y: number) =>
   toCubics([
@@ -57,13 +59,18 @@ describe("a stage module in the scene tools", () => {
     expect(read.stage?.members.map(({ name }) => name)).toEqual(["stage", "dot", "word", "mark"]);
   });
 
-  it("samples, handing the scene the module's rest or an empty one", () => {
+  it("samples, handing the scene the measure cache's rest or an empty one", () => {
     const [start, end] = sampleScene(moduleOf(clean), { kind: "time", ms: [0, 1500] });
     expect(start?.targets["dot"]).toEqual({ x: 0 });
     expect(end?.targets["dot"]).toEqual({ x: 100 });
-    const boxed = moduleOf(
-      defineStage({ ...cleanDefinition, rest: { dot: { x: 7, y: 0, width: 1, height: 1 } } }),
-    );
+    const boxed = moduleOf(clean, {
+      page: "clean.html",
+      digest: "",
+      frame: { width: 400, height: 300 },
+      rest: { dot: { x: 7, y: 0, width: 1, height: 1, placement: { kind: "flow" } } },
+      lines: {},
+      parents: {},
+    });
     expect(sampleScene(boxed, { kind: "time", ms: [0] })[0]?.targets["dot"]).toEqual({ x: 7 });
   });
 
@@ -77,11 +84,9 @@ describe("a stage module in the scene tools", () => {
     expect(start?.targets["dot"]).toEqual({ x: 0 });
   });
 
-  it("refuses a duration past its beats and a bad rest", () => {
+  it("refuses a duration past its beats", () => {
     const apart = readModule(defineStage({ ...cleanDefinition, durationMs: 1000 }));
     expect("reason" in apart && apart.reason).toMatch(/1400.*1000/);
-    const badRest = readModule(rawStage({ ...cleanDefinition, rest: { dot: { x: 1 } } }));
-    expect("reason" in badRest && badRest.reason).toMatch(/rest/);
     const agree = readModule(defineStage({ ...cleanDefinition, durationMs: 2000 }));
     expect("reason" in agree).toBe(false);
   });
@@ -91,51 +96,6 @@ describe("a stage module in the scene tools", () => {
     expect(read.beats).toBeUndefined();
     expect(read.stage).toBeUndefined();
     expect(reviewSceneModule(read, limits).findings.some((line) => /cast/.test(line))).toBe(false);
-  });
-});
-
-describe("a stage module with layouts in the scene tools", () => {
-  const box = (x: number) => ({ dot: { x, y: 0, width: 1, height: 1 } });
-  it("hands the scene the rest of the layout in force, before and after a cue", () => {
-    const read = moduleOf(
-      defineStage({
-        beats: cleanDefinition.beats,
-        cast: cleanDefinition.cast,
-        layouts: {
-          names: ["wide", "tall"],
-          pick: (events) => (events.some(({ name }) => name === "turn") ? "tall" : "wide"),
-          rests: { wide: box(10), tall: box(70) },
-        },
-        scene: cleanDefinition.scene,
-      }),
-    );
-    const [before, after] = sampleScene(read, { kind: "time", ms: [0, 100] }, ["dot"], undefined, [
-      { name: "turn", at: 50 },
-    ]);
-    expect(before?.targets["dot"]).toEqual({ x: 10 });
-    expect(after?.targets["dot"]).toEqual({ x: 70 });
-    expect(sampleScene(read, { kind: "time", ms: [100] })[0]?.targets["dot"]).toEqual({ x: 10 });
-  });
-
-  it("reports a layout answering an undeclared name, by that name", () => {
-    const names: readonly [string, ...string[]] = ["wide", "tall"];
-    const read = moduleOf(
-      defineStage({
-        beats: cleanDefinition.beats,
-        cast: cleanDefinition.cast,
-        layouts: {
-          names,
-          pick: (events) => (events.length > 0 ? "square" : "wide"),
-          rests: { wide: box(10), tall: box(70) },
-        },
-        scene: cleanDefinition.scene,
-      }),
-    );
-    expect(() =>
-      sampleScene(read, { kind: "time", ms: [100] }, undefined, undefined, [
-        { name: "turn", at: 50 },
-      ]),
-    ).toThrow(/"square"/);
   });
 });
 
@@ -179,18 +139,25 @@ describe("gerak review on a stage module", () => {
     expect(findings(clean)).toEqual([]);
   });
 
-  it("calls a path function once, with the module's rest, and reports one that reads its own box or fails", () => {
+  it("calls a path function once, with the measure cache's rest, and reports one that reads its own box or fails", () => {
     const handed: RestReader[] = [];
     const box = { x: 50, y: 20, width: 40, height: 10 };
     const fine = findings(
       defineStage({
         ...cleanDefinition,
-        rest: { dot: box },
         cast: markedBy((rest) => {
           handed.push(rest);
           return underWord(rest);
         }),
       }),
+      {
+        page: "clean.html",
+        digest: "",
+        frame: { width: 400, height: 300 },
+        rest: { dot: { ...box, placement: { kind: "flow" } } },
+        lines: {},
+        parents: {},
+      },
     );
     expect(fine).toEqual([]);
     expect(handed.map((rest) => rest.get("dot"))).toEqual([box]);
@@ -292,35 +259,6 @@ describe("gerak review on a stage module", () => {
     );
     expect(bad.filter((line) => /text/.test(line))).toEqual([
       'text of "clock" answered number, not a string at 0 ms',
-    ]);
-  });
-
-  it("says once that layouts are unmeasured without a browser, in place of a carried member never moved", () => {
-    const beats = { all: [0, 1000] } as const;
-    const unmeasured = findings(
-      defineStage({
-        beats,
-        cast: (m) => ({ card: m.box() }),
-        layouts: { names: ["list", "detail"] },
-        scene: () => ({ card: {} }),
-      }),
-    );
-    expect(unmeasured).toHaveLength(1);
-    expect(unmeasured[0]).toMatch(/not measured without a browser/);
-    const box = { x: 10, y: 10, width: 20, height: 20 };
-    const measured = findings(
-      defineStage({
-        beats,
-        cast: (m) => ({ card: m.box() }),
-        layouts: {
-          names: ["list", "detail"],
-          rests: { list: { card: box }, detail: { card: box } },
-        },
-        scene: () => ({ card: {} }),
-      }),
-    );
-    expect(measured).toEqual([
-      'cast member "card" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     ]);
   });
 

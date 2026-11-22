@@ -28,7 +28,6 @@ import {
 import { drawStrokes } from "@gerak/stage/render";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { SCENE_LIMITS } from "./limits";
-import { restOfCache } from "./measure-cache";
 import {
   loadSceneFile,
   measuredInput,
@@ -328,7 +327,7 @@ interface EvaluatedSample {
 
 function evaluate(
   stage: Stage,
-  input: Pick<FrameInput, "boxes" | "counts" | "lines">,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
   time: Time,
   events: Events,
   at: number,
@@ -366,7 +365,7 @@ function errorText(error: unknown): string {
 /** Runs the stage at each requested ms, as a player plays it. */
 function sampleStageFrames(
   stage: Stage,
-  input: Pick<FrameInput, "boxes" | "counts" | "lines">,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
   ms: readonly number[],
 ): readonly EvaluatedSample[] {
   let latest: EvaluatedSample | undefined;
@@ -490,16 +489,11 @@ function stageMemberFindings(
   beats: readonly Beat[],
   evaluated: readonly EvaluatedSample[],
   rest: RestReader,
-  unmeasured: boolean,
   frame: FrameSize | undefined,
   counts: Readonly<Record<string, number>> | undefined,
   parents: Readonly<Record<string, string>> | undefined,
 ): readonly string[] {
   const found: string[] = [];
-  if (unmeasured)
-    found.push(
-      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "<brief>/<name>.html" --watch <member>`, or export `rests`.',
-    );
 
   if (evaluated.some(({ errors }) => errors.length > 0)) return found;
   for (const reviewed of reviewedOf(stage, counts)) {
@@ -509,13 +503,13 @@ function stageMemberFindings(
 
     switch (member.expect) {
       case "settle":
-        if (reviewed.kind === "member" && !member.watch && unmoved && !unmeasured)
+        if (reviewed.kind === "member" && !member.watch && unmoved)
           found.push(
             `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
           );
         break;
       case "ambient":
-        if (reviewed.kind === "member" && !member.watch && unmoved && !unmeasured)
+        if (reviewed.kind === "member" && !member.watch && unmoved)
           found.push(
             `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
           );
@@ -761,10 +755,6 @@ export function measureSamples(module: SceneModule): Samples {
   return sampleScene(module, { kind: "time", ms });
 }
 
-function stageRestOf(stage: Stage): RestReader {
-  return stage.layouts.readers[stage.layouts.pick(NO_EVENTS)] ?? NO_REST;
-}
-
 export function reviewSceneModule(
   module: SceneModule,
   request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
@@ -834,11 +824,7 @@ export function reviewSceneModule(
     ...lateCueFindings(module),
     ...(allFramesOk ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS) : []),
   ];
-  const rest = module.measured === undefined ? stageRestOf(stage) : restOfCache(module.measured);
-  const unmeasured =
-    module.measured === undefined &&
-    stage.layouts.names.length > 1 &&
-    stage.layouts.names.every((name) => (stage.layouts.readers[name]?.keys().length ?? 0) === 0);
+  const rest = input.rest ?? NO_REST;
 
   return {
     kind: "reviewed",
@@ -850,7 +836,6 @@ export function reviewSceneModule(
         beats,
         evaluated,
         rest,
-        unmeasured,
         module.measured?.frame,
         input.counts,
         parents,

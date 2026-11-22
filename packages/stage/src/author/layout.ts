@@ -18,6 +18,12 @@ export interface RestReader {
   keys(): readonly string[];
 }
 
+/** What a mount measured at `at` ms on its clock. */
+export interface RestAt {
+  readonly at: number;
+  readonly rest: RestReader;
+}
+
 /** How a carried member takes the size of its target box. */
 export type CarryMode = "scale" | "clip" | "keep";
 
@@ -26,10 +32,10 @@ export interface CarryOptions {
   readonly ms: number;
   readonly ease?: Ease | undefined;
   readonly mode?: CarryMode | undefined;
-  readonly target?: ((events: Events, layout: RestReader) => Box) | undefined;
+  readonly target?: ((events: Events, rest: RestReader) => Box) | undefined;
 }
 
-/** Moves `member` from its box in the last layout to its box in the next, over `options.ms`. */
+/** Moves `member` from its old rest box to its new one after a re-measure, over `options.ms`. */
 export type Carry = (member: string, options: CarryOptions) => Pose2d;
 
 /** Zero box answered for a name never measured. */

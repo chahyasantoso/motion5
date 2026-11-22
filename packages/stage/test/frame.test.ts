@@ -1,4 +1,4 @@
-import { mergeEvents, timeAt, type Time } from "@gerak/core";
+import { timeAt, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   NO_REST,
@@ -9,6 +9,7 @@ import {
   frame,
   listPose,
   restReader,
+  type RestAt,
   type Stage,
 } from "../src";
 import { compileStage } from "../src/run/compile";
@@ -18,8 +19,8 @@ import type { Members } from "../src/author/cast";
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
@@ -151,27 +152,23 @@ describe("frame", () => {
     expect(beatAt(held.beats, held.durationMs, 9000)).toBe("a");
   });
 
-  it("picks the layout from events and reads measured boxes before the piece's own rests", () => {
+  it("reads measured rest boxes and carries a member across re-measures", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 1000] },
         cast: (m) => ({ card: m.box() }),
-        layouts: {
-          names: ["row", "wide"],
-          pick: (events) => (events.some(({ name }) => name === "wide") ? "wide" : "row"),
-          rests: {
-            row: { card: { x: 100, y: 100, width: 200, height: 100 } },
-            wide: { card: { x: 300, y: 200, width: 400, height: 200 } },
-          },
-        },
         scene: ({ carry, rest }) => ({
           card: { ...carry("card", { ms: 200 }), opacity: rest.get("card").width },
         }),
       }),
     );
-    const events = mergeEvents([{ name: "wide", at: 200 }]);
-    const out = frame(stage, { time: at(300), events });
-    expect(out.layout).toBe("wide");
+    const row = restReader({ card: { x: 100, y: 100, width: 200, height: 100 } });
+    const wide = restReader({ card: { x: 300, y: 200, width: 400, height: 200 } });
+    const measures: readonly RestAt[] = [
+      { at: 0, rest: row },
+      { at: 200, rest: wide },
+    ];
+    const out = frame(stage, { time: at(300), rest: wide, measures });
     expect(out.targets["card"]).toEqual({
       x: -100,
       y: -50,
@@ -179,12 +176,8 @@ describe("frame", () => {
       scaleY: 0.75,
       opacity: 400,
     });
-    const measured = frame(stage, {
-      time: at(300),
-      events,
-      boxes: { row: NO_REST, wide: restReader({}) },
-    });
-    expect(measured.targets["card"]).toEqual({ opacity: 0 });
+    const unmeasured = frame(stage, { time: at(300) });
+    expect(unmeasured.targets["card"]).toEqual({ opacity: 0 });
   });
 
   it("reads only the targets the scene gave, never a prototype's", () => {

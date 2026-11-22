@@ -9,8 +9,8 @@ import {
   unreachable,
 } from "@gerak/core";
 import { castBuilder, type Content, type Expect, type Members, type Stretch } from "../author/cast";
-import { NO_REST, restReader, type Rest, type RestReader } from "../author/layout";
-import type { LayoutsInput, Limits, SceneContext, StageDefinition } from "../author/stage";
+import type { RestReader } from "../author/layout";
+import type { Limits, SceneContext, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, windowOf, type Window } from "./timeline";
@@ -33,22 +33,12 @@ export type Member = {
     }
 );
 
-/** A stage's layouts; a piece with none has one named `main`. */
-export interface StageLayouts {
-  readonly names: readonly [string, ...string[]];
-  /** The layout showing after `events`; throws on an answer not in `names`. */
-  pick(events: Events): string;
-  /** Each layout's rest boxes as given in the piece, zero boxes when not given. */
-  readonly readers: Readonly<Record<string, RestReader>>;
-}
-
 /** A checked piece, the one contract renderers and tools read. */
 export interface Stage {
   readonly kind: "stage";
   readonly durationMs: number;
   readonly beats: Readonly<Record<string, Span>>;
   readonly members: readonly Member[];
-  readonly layouts: StageLayouts;
   readonly cues: Events;
   readonly limits: Readonly<Record<string, Limits>>;
   /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
@@ -91,12 +81,6 @@ function isCubics(value: unknown): value is readonly Cubic2d[] {
 
 function frozenCubics(cubics: readonly Cubic2d[]): readonly Cubic2d[] {
   return Object.freeze(cubics.map((cubic) => Object.freeze({ ...cubic })));
-}
-
-function isRest(rest: Rest): boolean {
-  return Object.values(rest).every(
-    (box) => finite(box.x) && finite(box.y) && finite(box.width) && finite(box.height),
-  );
 }
 
 interface Beats {
@@ -296,56 +280,6 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
   return Object.freeze(members);
 }
 
-function single(rest: RestReader): StageLayouts {
-  return Object.freeze({
-    names: Object.freeze(["main"] as const),
-    pick: () => "main",
-    readers: Object.freeze({ main: rest }),
-  });
-}
-
-function compileLayouts(
-  layouts: LayoutsInput | undefined,
-  rest: Rest | undefined,
-  errors: StageError[],
-): StageLayouts {
-  const fail = (reason: string): StageLayouts => {
-    errors.push({ kind: "invalid", field: "layouts", reason });
-    return single(NO_REST);
-  };
-  if (layouts === undefined) {
-    if (rest === undefined) return single(NO_REST);
-    return isRest(rest) ? single(restReader(rest)) : fail("`rest` boxes need finite numbers.");
-  }
-  if (rest !== undefined) return fail("give `layouts.rests`, not `rest`, with named layouts.");
-  const { names, rests } = layouts;
-  if (names.includes("") || new Set(names).size !== names.length)
-    return fail("`layouts.names` must name each layout once, none empty.");
-  const pick = (events: Events): string => {
-    if (layouts.pick === undefined) return names[0];
-    const answer: unknown = layouts.pick(events);
-    if (typeof answer === "string" && names.includes(answer)) return answer;
-    throw new RangeError(
-      `layouts.pick answered ${JSON.stringify(answer)}, not one of ${names.join(", ")}.`,
-    );
-  };
-  try {
-    pick(NO_EVENTS);
-  } catch (thrown) {
-    return fail(
-      `\`pick\` with no events: ${thrown instanceof Error ? thrown.message : String(thrown)}`,
-    );
-  }
-  const readers: Record<string, RestReader> = {};
-  for (const name of names) {
-    const own = rests?.[name];
-    if (own !== undefined && !isRest(own))
-      return fail(`\`layouts.rests\` boxes of "${name}" need finite numbers.`);
-    readers[name] = own === undefined ? NO_REST : restReader(own);
-  }
-  return Object.freeze({ names, pick, readers: Object.freeze(readers) });
-}
-
 function compileLimits(
   limits: Readonly<Record<string, Limits>>,
   errors: StageError[],
@@ -381,8 +315,8 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
 }
 
 /** Checks what types cannot in a piece and compiles it into a `Stage`, or lists every reason it cannot. */
-export function compileStage<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+export function compileStage<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): CompileResult {
   const errors: StageError[] = [];
   const beats = compileBeats(definition.beats, definition.durationMs, errors);
@@ -398,7 +332,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
       });
     }
   }
-  const layouts = compileLayouts(definition.layouts, definition.rest, errors);
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
   const { cues, settleMs, scene } = definition;
@@ -407,7 +340,6 @@ export function compileStage<B extends string, M extends Members<B>, L extends s
     durationMs: beats.durationMs,
     beats: beats.beats,
     members,
-    layouts,
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
     ...(settleMs === undefined ? {} : { settleMs }),

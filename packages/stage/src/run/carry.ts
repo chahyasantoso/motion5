@@ -8,7 +8,7 @@ import {
   type Pose2d,
   type Time,
 } from "@gerak/core";
-import type { Box, Carry, CarryMode, RestReader } from "../author/layout";
+import type { Box, Carry, CarryMode, RestAt, RestReader } from "../author/layout";
 
 interface Change {
   readonly at: number;
@@ -62,10 +62,25 @@ function poseFor(own: Box, given: Box, target: Box, progress: number, mode: Carr
   }
 }
 
+function restAt(fallback: RestReader, measures: readonly RestAt[], ms: number): RestReader {
+  let current = measures[0]?.rest ?? fallback;
+  for (const entry of measures) {
+    if (entry.at <= ms) current = entry.rest;
+    else break;
+  }
+  return current;
+}
+
+function eventsUpTo(events: Events, ms: number): Events {
+  let count = 0;
+  while (count < events.length && (events[count]?.at ?? Infinity) <= ms) count += 1;
+  return count === events.length ? events : events.slice(0, count);
+}
+
 function carried(
   own: Box,
-  at: (events: Events) => Box,
-  events: Events,
+  at: (ms: number) => Box,
+  points: readonly number[],
   time: Time,
   ms: number,
   ease: Ease,
@@ -73,27 +88,21 @@ function carried(
 ): Pose2d {
   if (!(Number.isFinite(ms) && ms > 0)) throw new RangeError("carry: ms must be above 0.");
   const now = elapsedOf(time.clock);
-  let happened = events.length;
-  if (now !== undefined) {
-    happened = 0;
-    while (happened < events.length && (events[happened]?.at ?? Infinity) <= now) happened += 1;
-  }
-  const after = (count: number): Box =>
-    at(count === events.length ? events : events.slice(0, count));
-  const settled = after(happened);
-  if (now === undefined) return poseFor(own, settled, settled, 1, mode);
+  if (now === undefined) return poseFor(own, own, own, 1, mode);
+  const settled = at(now);
 
   // Walks back only over the changes still settling at `now`.
   const changes: Change[] = [];
   let later = settled;
   let horizon = now;
-  for (let count = happened; count > 0; count -= 1) {
-    const event = events[count - 1];
-    if (event === undefined || event.at <= horizon - ms) break;
-    const before = after(count - 1);
+  for (let index = points.length - 1; index > 0; index -= 1) {
+    const point = points[index];
+    if (point === undefined || point <= horizon - ms) break;
+    const prev = points[index - 1] ?? 0;
+    const before = at(prev);
     if (!sameBox(before, later)) {
-      changes.push({ at: event.at, box: later });
-      horizon = event.at;
+      changes.push({ at: point, box: later });
+      horizon = point;
     }
     later = before;
   }
@@ -113,20 +122,27 @@ function carried(
   return poseFor(own, from, last.box, share(now, last), mode);
 }
 
-/** The scene's `carry` for one frame: boxes come from the layout `pick` answers after each event. */
+/** The scene's `carry` for one frame: boxes come from each measurement in `measures`. */
 export function carryFor(
-  pick: (events: Events) => string,
-  layouts: Readonly<Record<string, RestReader>>,
   rest: RestReader,
+  measures: readonly RestAt[],
   events: Events,
   time: Time,
 ): Carry {
   return (member, options) => {
-    const at = (past: Events): Box => {
-      const reader = layouts[pick(past)] ?? rest;
-      return options.target === undefined ? reader.get(member) : options.target(past, reader);
+    const now = elapsedOf(time.clock);
+    const stamps = new Set<number>([0]);
+    for (const entry of measures) if (now === undefined || entry.at <= now) stamps.add(entry.at);
+    if (options.target !== undefined)
+      for (const event of events) if (now === undefined || event.at <= now) stamps.add(event.at);
+    const points = [...stamps].sort((a, b) => a - b);
+    const at = (ms: number): Box => {
+      const reader = restAt(rest, measures, ms);
+      return options.target === undefined
+        ? reader.get(member)
+        : options.target(eventsUpTo(events, ms), reader);
     };
     const ease = options.ease ?? ((progress: number) => progress);
-    return carried(rest.get(member), at, events, time, options.ms, ease, options.mode ?? "scale");
+    return carried(rest.get(member), at, points, time, options.ms, ease, options.mode ?? "scale");
   };
 }

@@ -36,7 +36,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`TextOptions`** `type TextOptions = { split?: "letters" | "words" | undefined; watch?: boolean | undefined }`: Options of `text`: how to split it into parts.
 - **`bind`** `(fields: BoundFields): Motion<Pose2d, MotionContext>`: A motion setting each field from its signal at the scene's time.
 - **`bindEach`** `(fields: BoundEachFields): Motion<Pose2d, MotionContext>`: A motion setting each field of each part of a list element from that part's signal at the scene's time.
-- **`carry`** `(options: CarryOptions): Motion<Pose2d, MotionContext>`: A motion giving the element's move from its box in the last layout to its box in the next. A part of a list uses its box named `<element>.<index>`.
+- **`carry`** `(options: CarryOptions): Motion<Pose2d, MotionContext>`: A motion giving the element's move from its old rest box to its new one after a re-measure. A part of a list uses its box named `<element>.<index>`.
 - **`compileScene`** `(scene: SceneBuilder, options?: CompileSceneOptions): CompileResult`: The stage a scene plays as, or every reason it cannot.
 - **`isScene`** `(value: unknown): value is SceneBuilder`: Whether `value` is a piece written with `sceneBuilder`.
 - **`sceneBuilder`** `(options?: SceneBuilderOptions): SceneBuilder`: Starts a piece; `compileScene` turns the chain's value into the stage the renderers play.
@@ -55,7 +55,7 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`Principle`** `type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>`: Wraps the signal of every motion above it in a `.modify` call.
 - **`ReadAt`** `type ReadAt = { time?: Time; index?: number; count?: number }`: Where `read` looks: another time, or another part of a list.
 - **`SceneBuilder`** `type SceneBuilder = { kind: "scene"; element: { (element: ObjectElement): ObjectStep; (element: Element): ElementStep; }; include: (scene: SceneBuilder) => SceneBuilder }`: A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable.
-- **`SceneBuilderOptions`** `type SceneBuilderOptions = { name?: string | undefined; cues?: Events | undefined; length?: number | undefined; layouts?: LayoutsInput<string> | undefined; rest?: Readonly<Record<string, Box>> | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
+- **`SceneBuilderOptions`** `type SceneBuilderOptions = { name?: string | undefined; cues?: Events | undefined; length?: number | undefined }`: Options of `sceneBuilder`: what is true of the whole piece.
 - **`SceneMotion`** `type SceneMotion = (time: Time, context: MotionContext) => Pose2d`: A core `Motion`, or a plain function from time and context to a pose.
 - **`ShowWindow`** `type ShowWindow = Beat | readonly [from: Beat, to: Beat] | { readonly from: Beat; } | { readonly until: Beat; }`: A beat; two beats, from the start of the first to the end of the second; from a beat's start on; or until a beat's end.
 - **`StaggerBy`** `type StaggerBy = "index" | "line"`: Whether `stagger` orders lanes by part index or by measured visual line.
@@ -66,13 +66,13 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`ZERO_BOX`** `const ZERO_BOX: Box`: Zero box answered for a name never measured.
 - **`restReader`** `(rest?: Rest): RestReader`: A `RestReader` over `rest`.
 - **`Box`** `type Box = { x: number; y: number; width: number; height: number }`: Where a member rests once laid out: its centre and size in frame px.
-- **`Carry`** `type Carry = (member: string, options: CarryOptions) => Pose2d`: Moves `member` from its box in the last layout to its box in the next, over `options.ms`.
+- **`Carry`** `type Carry = (member: string, options: CarryOptions) => Pose2d`: Moves `member` from its old rest box to its new one after a re-measure, over `options.ms`.
 - **`CarryMode`** `type CarryMode = "scale" | "clip" | "keep"`: How a carried member takes the size of its target box.
-- **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, layout: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
+- **`CarryOptions`** `type CarryOptions = { ms: number; ease?: Ease | undefined; mode?: CarryMode | undefined; target?: ((events: Events, rest: RestReader) => Box) | undefined }`: Options of `carry`: transition length, easing, sizing, and an optional target box.
 - **`Rest`** `type Rest = { readonly [x: string]: Box; }`: Rest boxes by member name.
+- **`RestAt`** `type RestAt = { at: number; rest: RestReader }`: What a mount measured at `at` ms on its clock.
 - **`RestReader`** `type RestReader = { get: (name: string) => Box; has: (name: string) => boolean; keys: () => readonly string[] }`: Reads rest boxes; a name never measured answers a zero box.
 - **`Limits`** `type Limits = { jump?: number | undefined; turn?: number | undefined; ratio?: number | undefined }`: Review limits of one target, overriding the command's defaults.
-- **`LayoutsInput`** `type LayoutsInput<L> = { names: readonly [L, ...L[]]; pick?: ((events: Events) => L) | undefined; rests?: Readonly<Record<L, Readonly<Record<string, Box>>>> | undefined }`: Named layouts: `pick` answers which shows after the given events, and `rests` measures each headless.
 - **`ListPose`** `type ListPose = (index: number, count: number) => Pose2d`: A list's pose in the scene: the pose of item `index` of `count`.
 - **`Drive`** `type Drive = { readonly kind: "scroll"; readonly beats: readonly ScrollBeat[]; } | { readonly kind: "trigger"; readonly beat: TriggerBeat; } | { readonly kind: "more"; }`: What drives an element: only scroll, through scroll beats without `smooth`; only one trigger beat's progress; or more, such as the clock, a spring, events or another element.
 - **`Moves`** `type Moves = "time" | "maybe"`: How an element can change with no new input: `time` while a beat, trigger or spring is still running; `maybe` when a motion read the clock or another element, or has no window.

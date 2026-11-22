@@ -58,7 +58,7 @@ const stage = compiled(
 
 const MAX = 2000;
 const names = new Set(["scrolled", "cards", "clocked", "skewed"]);
-const input = { boxes: {}, counts: { cards: 3 }, lines: {}, rest: restReader(), names };
+const input = { counts: { cards: 3 }, lines: {}, rest: restReader(), names };
 const tracks = scrollTracks(stage, input, MAX);
 
 function between(samples: readonly TrackSample[], y: number): TrackSample["fields"] {
@@ -154,7 +154,6 @@ const triggered = compiled(
     ),
 );
 const triggerInput = {
-  boxes: {},
   counts: { cards: 3 },
   lines: {},
   rest: restReader(),

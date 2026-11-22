@@ -20,6 +20,7 @@ import {
   object,
   pose3dOf,
   poseOf,
+  restReader,
   sceneBuilder,
   travel,
   type SceneBuilder,
@@ -126,22 +127,22 @@ describe("travel on an object", () => {
   const canvas = box("gl");
   const slot = box("slot");
   // The canvas fills an 800x600 viewport; the slot sits right of centre and low.
-  const rest = {
+  const rest = restReader({
     gl: { x: 400, y: 300, width: 800, height: 600 },
     slot: { x: 620, y: 450, width: 80, height: 80 },
-  };
+  });
   const go = beat("go", 1000);
   const start = motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4 }));
 
   it("lands on the slot's centre as the lens sees it, at the depth it starts from", () => {
     const stage = compiled(
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("drink", { view: { canvas, lens } }))
         .motion(start, travel({ to: slot }).in(go)),
     );
     const size = { width: 800, height: 600 };
     const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
-    const landed = pose3dOf(frame(stage, { time: liveAt(1000) }).targets["drink"]);
+    const landed = pose3dOf(frame(stage, { time: liveAt(1000), rest }).targets["drink"]);
     const seen = project3d(
       { x: landed?.x ?? NaN, y: landed?.y ?? NaN, z: landed?.z ?? NaN },
       lens,
@@ -150,23 +151,23 @@ describe("travel on an object", () => {
     expect(seen.x).toBeCloseTo(620, 6);
     expect(seen.y).toBeCloseTo(450, 6);
     expect(seen.depth).toBeCloseTo(from.depth, 6);
-    const half = pose3dOf(frame(stage, { time: liveAt(500) }).targets["drink"]);
+    const half = pose3dOf(frame(stage, { time: liveAt(500), rest }).targets["drink"]);
     expect(half?.x).toBeCloseTo((0.5 + (landed?.x ?? NaN)) / 2, 9);
   });
 
   it("refuses a travel on an object with no view, an arc or fit, and a take", () => {
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("bare"))
         .motion(travel({ to: slot }).in(go)),
     ).toThrow(/travels only with/);
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("bent", { view: { canvas, lens } }))
         .motion(travel({ to: slot, arc: 40 }).in(go)),
     ).toThrow(/travels straight/);
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("taking", { view: { canvas, lens } }))
         .motion(travel({ to: slot }).in(go).take()),
     ).toThrow(/travels as a layer/);
