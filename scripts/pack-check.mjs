@@ -360,7 +360,7 @@ function installSubset(dir, packages, tarballs, lock, peers) {
 }
 
 const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, motion, type Pose2d } from "@gerak/core";
-import { beat, box, many, sceneBuilder, shape, type MotionContext } from "@gerak/stage";
+import { beat, box, sceneBuilder, shape, type MotionContext } from "@gerak/stage";
 
 const [first, second] = chain([1000, 1000], { overlap: 200 });
 const row = lanes([1, 1, 1], 0.25);
@@ -369,7 +369,7 @@ const follow = beat("follow", second.to - second.from, { at: second.from });
 const reveal = beat("reveal", 800, { at: 1400 });
 
 const dot = box("dot");
-const bars = many("bars", 3);
+const bars = box("bars", { parts: true });
 const arc = shape(
   "arc",
   arcPath({
@@ -513,6 +513,14 @@ function coreOnlyChecks(dir, tarballs, lock, check) {
   check(
     "core-only tsc on piece",
     tscOnPiece.code === 0 ? undefined : firstErrorLine(tscOnPiece.out || tscOnPiece.err),
+  );
+  const measured = sh('npx --no-install gerak measure "demo/demo.html"', dir);
+  const measureJson = jsonOf(measured);
+  check(
+    "core-only gerak measure",
+    measured.code === 0 && measureJson?.kind === "measured" && measureJson.pageErrors?.length === 0
+      ? undefined
+      : firstErrorLine(measured.out || measured.err),
   );
   const reviewed = sh("npx --no-install gerak review pieces/demo/src/demo.ts", dir);
   const reviewJson = jsonOf(reviewed);

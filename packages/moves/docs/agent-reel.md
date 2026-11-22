@@ -37,31 +37,32 @@ storyboard before it, and shots in place of one idea.
 
 ## The camera
 
-- The camera is a group, `group("world", [...])` skinned `position: absolute; inset: 0`, holding everything that sits
-  in the scene. Moving `world` moves the view: its `x` and `y` pan, its `scale` zooms about the frame's centre,
-  and a short decaying `rotation` or offset shakes. Write the camera as one `sequence<Pose2d>` of its moves by shot.
-  `x` and `y` are screen px, outside the zoom: to keep a pan of `x` on the same place at scale `s`, write `x * s`.
+- The camera is a container element in the page's HTML, `<div data-cast="world">` styled `position: absolute; inset: 0`,
+  holding every element the camera moves, bound with `box("world")`. Moving `world` moves the view: its `x` and `y`
+  pan, its `scale` zooms about the frame's centre, and a short decaying `rotation` or offset shakes. Write the camera
+  as one `sequence<Pose2d>` of its moves by shot. `x` and `y` are screen px, outside the zoom: to keep a pan of `x` on
+  the same place at scale `s`, write `x * s`.
 - A push in is `scale` rising with an ease that settles; a pan is `x` with ease at both ends; a shake is an
   `oscillation` under an `envelope`, under 300 ms.
-- **Zoom into a member at the frame's centre.** Pan it there first, or place it there in its skin; then the zoom is
+- **Zoom into a member at the frame's centre.** Pan it there first, or place it there in CSS; then the zoom is
   `scale` alone. A zoom about another point moves `x` and `y` by its distance from the centre times `scale - 1`,
   steps the review refuses as jumps.
 - **Zoom geometrically.** A large zoom grows `scale` as `to ** progress`, never `mix(1, to, progress)`: each frame then
   grows by the same factor, and the steps stay under the review's ratio limit. A zoom to 20 needs about 900 ms.
-- **Write the camera from the skin's own numbers, not `rest.get(...)`.** The review runs with no browser, where `rest`
-  returns `ZERO_BOX`, so a camera computed from it reads wrong there.
+- **Measure first, or author from known coordinates.** Headless `gerak review` reads `<name>.measure.json` once you run
+  `gerak measure <brief>/<name>.html`. Before measuring, `rest.get(...)` returns `ZERO_BOX`.
 - Elements the camera alone moves take no motion of their own, so they are static.
-- Text that must stay still while the camera moves (a caption, the call to action) sits outside `world`, as
-  `text(name, value, { split })`: a `box` with no text shows nothing to read.
+- Text that must stay still while the camera moves (a caption, the call to action) sits outside `<div data-cast="world">`,
+  as `text(name, { split })` with its string in the markup.
 
 ## Seamless transitions
 
 At every shot change one named member carries the eye from one shot into the next. Pick one kind per change and name it
 in the storyboard's "Carried in":
 
-- **Carry.** The member moves from its place in one shot to its place in the next: two layouts, one per shot, and
-  `carry` in `scene({ carry })` from [layout](../../stage/docs/agent-layout.md), with `cues` at the change.
-- **Morph.** A path member's outline becomes another: `m.morph(base, [next])` and the pose field `shape`
+- **Carry.** The member moves from its old box to its new one when the page changes and `mounted.remeasure()` runs:
+  `carry` in [layout](../../stage/docs/agent-layout.md).
+- **Morph.** A path member's outline becomes another: `shape(name, { base, targets: [next] })` and the pose field `shape`
   from 0 to 1 over the change; the outlines must match (`matchOutlines` says why not).
 - **Zoom through.** The camera pushes into the member until it fills the whole frame, corners included; the change
   falls on a frame that is all the member's colour, and the next shot opens on that colour and pulls back out of it.
@@ -76,8 +77,9 @@ of the shot boundary. A pan in the shot before can carry it out of the frame; ch
 
 ## Checking a reel
 
+- `npx gerak measure <brief>/<name>.html` whenever the page or CSS changes.
 - `npx gerak review <brief>/src/<name>.ts` as for any piece; read its findings per shot.
-- `npx gerak frames "stage.html?piece=<name>" --at <ms,ms,...>` at each shot's middle and 100 ms either side of each
+- `npx gerak frames "<brief>/<name>.html" --at <ms,ms,...>` at each shot's middle and 100 ms either side of each
   shot change; the carried member must be visible in both frames of each change.
-- Watch it once at full speed in `stage.html?piece=<name>`: the hook must land inside 3 s, each shot's idea must be
+- Watch it once at full speed in `<brief>/<name>.html` or `live.html?scene=<name>`: the hook must land inside 3 s, each shot's idea must be
   readable, and the call to action must hold still.

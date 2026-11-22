@@ -68,7 +68,7 @@ export interface ObjectOptions {
   readonly view?: ObjectView | undefined;
 }
 
-/** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `bindScene3d`, never by a DOM renderer. */
+/** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `threeBinder`, never by a DOM renderer. */
 export interface ObjectElement {
   readonly kind: "object";
   readonly name: string;

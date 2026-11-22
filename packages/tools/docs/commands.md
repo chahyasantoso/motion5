@@ -18,7 +18,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
 - **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `sceneBuilder` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
   is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, its
-  entry, a component binding the piece's objects with `bindScene3d`, and `<brief>/src/<name>-scene.ts`, a
+  entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
   `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
 - **`gerak review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
@@ -31,7 +31,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
-  function that throws. A step while an element, its group or its parts are hidden by `.show` is not a jump. An
+  function that throws. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
 - **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
