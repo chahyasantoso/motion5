@@ -7,27 +7,22 @@ A person or an agent making a page, a reel or a 3D piece builds its look in the 
 `section` and `el()` from the scene, adds binders that each renderer owns, a measure cache that headless tools read,
 scenes that include scenes, and one mount that takes a clock and a frame.
 
-Status: accepted by the owner 2026-11-21. The prune merged as PR 615. The refactor is on `feat/authored-cast`, not
-pushed, no pull request yet: steps 1, 2, 3, 5 and 6 are done, and of step 4 `pivot` and `section`. Resume at step 4.
+Status: accepted by the owner 2026-11-21. The prune merged as PR 615. The refactor is on `feat/authored-cast`, no pull
+request yet: steps 1 to 8 are done. Resume at step 9 (and `npm run pack:check`, cold review, PR 2).
 
 Read `AGENTS.md` first. Every rule there applies.
 
 ## Where things stand
 
-- Before this plan, a piece drew three ways: a skin on `mountStage`, `el(selector)` on `mountPage`, and
-  `bindScene3d` in renderer code. Steps 1 to 3, 5 and 6 replaced them: `mount(scene, { clock, frame, root, binders,
-  nodes })` binds `data-cast`, `threeBinder` binds objects, and `gerak measure` writes the cache headless tools read.
-- Still in the scene, and going in step 4: `group`, `many(name, count)`, `text`'s string, the `rest` and `layouts`
-  options. The engine still fixes an actor or a list at compile.
-- Pieces: `saved` and `launch-day` are page, motion module and main, mounted timed and fitted, and measured. `yuzu`
-  and `yuzu-3d` mount live and are measured. `overlay3d` and `character3d` are still React components that start
-  `threeBinder` on their own player; their pages mount nothing, so review refuses their scene files until step 7.
-  `timing`, `card` and `pile` are plain React scene modules and need no cache.
+- Steps 1 to 8 replaced `mountStage`, `mountPage`, the skin, `el(selector)`, `bindScene3d`, `group`, `many`, `text`'s
+  string, `pivot`, `section`, `rest`, `layouts` and `import-svg` with `mount(scene, { clock, frame, root, binders,
+  nodes })` binding `data-cast`, `threeBinder` binding objects, `.include`, one-sided `.show`, element edges,
+  markup-owned part counts and nesting, `carry` triggered on re-measure, and `gerak measure`.
+- Pieces: `saved`, `launch-day`, `overlay3d` and `character3d` are page, motion module and main, mounted timed and
+  measured. `yuzu` and `yuzu-3d` mount live and are measured. `timing`, `card` and `pile` are plain React scene
+  modules and need no cache. `performance/stage-baseline.json` is regenerated over the 6 kept pieces.
 - A page edit makes its cache stale: run `gerak measure <brief>/<name>.html` again, or review refuses the scene.
-- `scripts/pack-check.mjs` was edited for the demo page and has not been run since; run `npm run pack:check` before
-  the pull request.
-- The docs still name what is gone (`mountStage`, `mountPage`, the skin, `frame`, `pivot`, `import-svg`,
-  `bindScene3d`): `stage.md`, `page.md`, `agent-3d.md`, the guide and the commands page. Step 8 rewrites them.
+- Step 8 rewrote the docs and `scripts/pack-check.mjs`; run `npm run pack:check` before the pull request.
 
 ## Decisions
 
