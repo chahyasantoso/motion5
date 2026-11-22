@@ -381,7 +381,7 @@ function resolvePageStage(input: StageInput): Stage {
     .map((member) => `"${member.name}"`);
   if (missing.length > 0)
     throw new TypeError(
-      `mount: every element needs \`{ node: el(selector) }\` (missing ${missing.join(", ")}).`,
+      `mount: every DOM element needs a selector or node (missing ${missing.join(", ")}).`,
     );
   return stage;
 }
@@ -622,7 +622,6 @@ const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 const TRIGGER_SLACK_MS = 34;
 
-/** Animates existing page DOM nodes driven by one live clock combining scroll, pointer, and triggers. */
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
 export function mount(input: StageInput, options: MountOptions): Mounted {
   let stage = resolvePageStage(input);
