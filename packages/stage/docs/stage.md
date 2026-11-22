@@ -98,8 +98,8 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 ## Checking
 
 - Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` matches its markup and CSS.
-- `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review sees scroll motion from scripted `cues`; `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
-- `gerak review "<brief>/<name>.html" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames.
+- `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review treats scroll `cues` as discrete samples (keep step deltas small or use `gerak check "<brief>/<name>.html" --action scroll:px@ms` to test smooth scrolling in a browser); `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
+- `gerak check "<brief>/<name>.html" --watch '[data-cast="<name>"]' --to <ms>`: real Chromium frames against review limits.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.
 - Never open another piece's `src` files.
 

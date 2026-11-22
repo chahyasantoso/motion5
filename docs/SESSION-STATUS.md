@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: steps 1 to 8 have landed on the branch (ADR-198, `.include`, one-sided `.show`, element edges, `data-cast` matching and `threeBinder`, markup-owned part counts / hierarchy / rest boxes with `carry` on re-measure, single `mount`, `gerak measure`, `overlay3d`/`character3d` conversion and benchmark baseline, and doc/scaffold updates); `npm run pack:check`, the step 9 doc proof and NADI measure, cold review and opening PR 2 are next.**
+- **Authored cast (`plan/authored-cast-plan.md`), refactor pull request on `feat/authored-cast`: steps 1 to 9 have landed on the branch (ADR-198, `.include`, one-sided `.show`, element edges, `data-cast` matching and `threeBinder`, markup-owned part counts / hierarchy / rest boxes with `carry` on re-measure, single `mount`, `gerak measure`, `overlay3d`/`character3d` conversion and benchmark baseline, doc/scaffold updates, `npm run pack:check`, and the step 9 doc proof and NADI measure); cold review and PR 2 against `main` are next.**
 
 ## Open, and not scheduled
 

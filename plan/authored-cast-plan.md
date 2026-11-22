@@ -7,22 +7,25 @@ A person or an agent making a page, a reel or a 3D piece builds its look in the 
 `section` and `el()` from the scene, adds binders that each renderer owns, a measure cache that headless tools read,
 scenes that include scenes, and one mount that takes a clock and a frame.
 
-Status: accepted by the owner 2026-11-21. The prune merged as PR 615. The refactor is on `feat/authored-cast`, no pull
-request yet: steps 1 to 8 are done. Resume at step 9 (and `npm run pack:check`, cold review, PR 2).
+Status: accepted by the owner 2026-11-21. The prune merged as PR 615. The refactor is on `feat/authored-cast`: steps
+1 to 9 are done (`npm run pack:check` passed all 43 checks; step 9 doc proof and NADI measure on `gemini-4-hydrogen`
+medium passed), ready for cold review and PR 2.
 
 Read `AGENTS.md` first. Every rule there applies.
 
 ## Where things stand
 
-- Steps 1 to 8 replaced `mountStage`, `mountPage`, the skin, `el(selector)`, `bindScene3d`, `group`, `many`, `text`'s
+- Steps 1 to 9 replaced `mountStage`, `mountPage`, the skin, `el(selector)`, `bindScene3d`, `group`, `many`, `text`'s
   string, `pivot`, `section`, `rest`, `layouts` and `import-svg` with `mount(scene, { clock, frame, root, binders,
   nodes })` binding `data-cast`, `threeBinder` binding objects, `.include`, one-sided `.show`, element edges,
-  markup-owned part counts and nesting, `carry` triggered on re-measure, and `gerak measure`.
+  markup-owned part counts and hierarchy, `carry` triggered on re-measure, and `gerak measure`.
 - Pieces: `saved`, `launch-day`, `overlay3d` and `character3d` are page, motion module and main, mounted timed and
   measured. `yuzu` and `yuzu-3d` mount live and are measured. `timing`, `card` and `pile` are plain React scene
   modules and need no cache. `performance/stage-baseline.json` is regenerated over the 6 kept pieces.
 - A page edit makes its cache stale: run `gerak measure <brief>/<name>.html` again, or review refuses the scene.
-- Step 8 rewrote the docs and `scripts/pack-check.mjs`; run `npm run pack:check` before the pull request.
+- `npm run pack:check` passed all 43 checks; step 9 verified a fresh `gemini-4-hydrogen` (medium) agent building a
+  page and reel from docs alone (`landing` and `promo`) plus the NADI run (`36` calls, `4.0 min` vs plain HTML `30`
+  calls, `4.1 min`), and added `pop`/`unfold` options, live `elapsedOf`, and discrete `cues` notes to the docs.
 
 ## Decisions
 
