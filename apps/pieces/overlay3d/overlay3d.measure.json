@@ -1,0 +1,39 @@
+{
+ "page": "overlay3d.html",
+ "digest": "d6773ed8311cc178",
+ "frame": {
+  "width": 1280,
+  "height": 720
+ },
+ "rest": {
+  "pin": {
+   "x": 74.515625,
+   "y": 12,
+   "width": 149.03125,
+   "height": 24,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "tip": {
+   "x": 36.5859375,
+   "y": 12,
+   "width": 73.171875,
+   "height": 24,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "caption": {
+   "x": 5,
+   "y": 3,
+   "width": 10,
+   "height": 6,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {},
+ "parents": {}
+}

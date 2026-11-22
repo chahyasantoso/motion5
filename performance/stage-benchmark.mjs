@@ -20,6 +20,7 @@ const flag = (name) => {
 
 const stageApi = await import("@gerak/stage");
 const renderApi = await import("@gerak/stage/render").catch(() => ({}));
+const toolsScene = await import("@gerak/tools/scene");
 const { timeAt } = await import("@gerak/core");
 
 async function stageFiles() {
@@ -36,7 +37,8 @@ async function stageFiles() {
     for (const name of names) {
       if (!name.endsWith(".ts")) continue;
       const text = await readFile(join(src, name), "utf8");
-      if (text.includes("export default defineStage")) files.push(join(src, name));
+      if (text.includes("sceneBuilder(") && text.includes("export default"))
+        files.push(join(src, name));
     }
   }
   return files.sort();
@@ -48,50 +50,37 @@ function consumeValue(value) {
   return value === undefined ? 0 : 1;
 }
 
-/** One frame through whichever stage API is installed, reading everything a renderer would. */
-function frameRunner(stage) {
-  if (typeof stageApi.frame === "function") {
-    const { frame, listPose } = stageApi;
-    const { morphAt } = renderApi;
-    return (time) => {
-      const out = frame(stage, { time });
-      let read = 0;
-      for (const member of stage.members) {
-        if (!out.visible[member.name]) continue;
-        const value = out.targets[member.name];
-        switch (member.kind) {
-          case "list":
-            for (let index = 0; index < member.items.length; index += 1) {
-              const pose = listPose(value, index, member.items.length);
-              const item = member.items[index];
-              if (item?.kind === "morph") read += morphAt(item, pose).length;
-              read += pose === undefined ? 0 : 1;
-            }
-            break;
-          case "actor":
-            if (member.content.kind === "morph") read += morphAt(member.content, value).length;
-            if (member.content.kind === "readout") read += member.content.format(time).length;
-            read += consumeValue(value);
-            break;
-          case "group":
-            read += consumeValue(value);
-            break;
-          default:
-            throw new Error(`unknown member kind ${member.kind}`);
-        }
-      }
-      return read;
-    };
-  }
-  const { evaluateFrame } = stageApi;
+/** One frame through the compiled stage, reading everything a renderer would. */
+function frameRunner(stage, input = {}) {
+  const { frame, listPose } = stageApi;
+  const { morphAt } = renderApi;
   return (time) => {
-    const out = evaluateFrame(stage, { time });
-    if (!out.ok) throw new Error(JSON.stringify(out.errors));
+    const out = frame(stage, { time, ...input });
     let read = 0;
-    for (const value of Object.values(out.poses)) read += consumeValue(value);
-    for (const cubics of Object.values(out.morphs)) read += cubics.length;
-    for (const text of Object.values(out.readouts)) read += text.length;
-    for (const shown of Object.values(out.visibility)) read += shown ? 1 : 0;
+    for (const member of stage.members) {
+      if (!out.visible[member.name]) continue;
+      const value = out.targets[member.name];
+      switch (member.kind) {
+        case "list": {
+          const count = input.counts?.[member.name] ?? 1;
+          for (let index = 0; index < count; index += 1) {
+            const pose = listPose(value, index, count);
+            read += pose === undefined ? 0 : 1;
+          }
+          break;
+        }
+        case "actor":
+          if (member.content.kind === "morph") read += morphAt(member.content, value).length;
+          if (member.content.kind === "readout") read += member.content.format(time).length;
+          read += consumeValue(value);
+          break;
+        case "object":
+          read += consumeValue(value);
+          break;
+        default:
+          throw new Error(`unknown member kind ${member.kind}`);
+      }
+    }
     return read;
   };
 }
@@ -114,71 +103,68 @@ function timeRounds(run, times) {
   return Math.round(median(rounds) * 10) / 10;
 }
 
-function compiled(definition, name) {
-  const result = stageApi.compileStage(definition);
+function compiled(scene, name, options) {
+  const result = stageApi.compileScene(scene, options);
   if (!result.ok)
     throw new Error(`${name}: ${result.errors.map(stageApi.formatStageError).join("; ")}`);
   return result.stage;
 }
 
 /** The scene's outputs at each time, recorded through one real pass. */
-function recordOutputs(definition, times, name) {
+function recordOutputs(scene, input, times, name) {
   const outputs = [];
-  const recording = compiled(
-    {
-      ...definition,
-      scene: (context) => {
-        const output = definition.scene(context);
-        outputs.push(output);
-        return output;
-      },
+  const recording = compiled(scene, name, {
+    wrap: (run) => (context) => {
+      const output = run(context);
+      outputs.push(output);
+      return output;
     },
-    name,
-  );
-  const run = frameRunner(recording);
+  });
+  const run = frameRunner(recording, input);
   for (const time of times) run(time);
-  return outputs.slice(0, times.length).map((output) => settled(recording, output));
+  return outputs.slice(0, times.length).map((output) => settled(recording, output, input.counts));
 }
 
 /** An output whose list functions answer recorded poses, so a replay leaves the piece's work out. */
-function settled(stage, output) {
-  if (!Array.isArray(stage.members)) return output;
+function settled(stage, output, counts) {
   const out = { ...output };
   for (const member of stage.members) {
     const value = output[member.name];
     if (member.kind !== "list" || typeof value !== "function") continue;
-    const poses = member.items.map((_, index) => value(index, member.items.length));
+    const count = counts?.[member.name] ?? 1;
+    const poses = Array.from({ length: count }, (_, index) => value(index, count));
     out[member.name] = (index) => poses[index];
   }
   return out;
 }
 
-/** The definition with its scene replaced by a replay of `outputs`, so a frame costs only the stage. */
-function replayed(definition, outputs) {
+/** The scene compiled with a replay of `outputs`, so a frame costs only the stage. */
+function replayed(scene, outputs, name) {
   let next = 0;
-  return {
-    ...definition,
-    scene: () => {
+  return compiled(scene, name, {
+    wrap: () => () => {
       const output = outputs[next % outputs.length];
       next += 1;
       return output;
     },
-  };
+  });
 }
 
 const results = {};
 for (const file of await stageFiles()) {
   const name = relative(PIECES, file).replaceAll("\\", "/");
-  const definition = (await import(pathToFileURL(file).href)).default;
-  const stage = compiled(definition, name);
-  const durationMs = stage.durationMs ?? stage.beats.durationMs;
+  const scene = (await import(pathToFileURL(file).href)).default;
+  const stage = compiled(scene, name);
+  const cache = toolsScene.lookupCache(file);
+  const input = toolsScene.measuredInput(stage, cache.kind === "read" ? cache.cache : undefined);
+  const durationMs = stage.durationMs;
   const base = { progress: 0, clock: { kind: "timed", elapsed: 0, length: durationMs } };
   const times = [];
   for (let ms = 0; ms <= durationMs; ms += STEP_MS) times.push(timeAt(base, ms));
-  const outputs = recordOutputs(definition, times, name);
+  const outputs = recordOutputs(scene, input, times, name);
   results[name] = {
-    frame: timeRounds(frameRunner(stage), times),
-    stage: timeRounds(frameRunner(compiled(replayed(definition, outputs), name)), times),
+    frame: timeRounds(frameRunner(stage, input), times),
+    stage: timeRounds(frameRunner(replayed(scene, outputs, name), input), times),
   };
 }
 

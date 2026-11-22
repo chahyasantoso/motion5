@@ -9,7 +9,12 @@
       }
       .stage {
         position: relative;
+        width: 1280px;
+        height: 720px;
         overflow: hidden;
+      }
+      .stage canvas {
+        display: block;
       }
       .callout {
         position: absolute;
@@ -46,7 +51,11 @@
     </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/overlay3d/src/overlay3d-main.tsx"></script>
+    <div id="stage" class="stage">
+      <div data-cast="pin" class="callout callout-pin">corner of the cube</div>
+      <div data-cast="tip" class="callout callout-tip">arm tip</div>
+      <div data-cast="caption" class="callout callout-caption"><span id="words"></span></div>
+    </div>
+    <script type="module" src="/overlay3d/src/overlay3d-main.ts"></script>
   </body>
 </html>

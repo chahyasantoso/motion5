@@ -14,10 +14,13 @@
         height: 720px;
         overflow: hidden;
       }
+      .stage canvas {
+        display: block;
+      }
     </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/character3d/src/character3d-main.tsx"></script>
+    <div id="stage" class="stage"></div>
+    <script type="module" src="/character3d/src/character3d-main.ts"></script>
   </body>
 </html>
