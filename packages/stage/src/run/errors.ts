@@ -3,7 +3,6 @@ import { unreachable } from "@gerak/core";
 /** Everything `compileStage`, `check` and stroke resolution can refuse. */
 export type StageError =
   | { readonly kind: "invalid"; readonly field: string; readonly reason: string }
-  | { readonly kind: "duplicate_member"; readonly name: string }
   | { readonly kind: "reserved_dot"; readonly name: string }
   | { readonly kind: "unknown_beat"; readonly member: string; readonly beat: string }
   | {
@@ -33,8 +32,6 @@ export function formatStageError(error: StageError): string {
   switch (error.kind) {
     case "invalid":
       return `${error.field}: ${error.reason}`;
-    case "duplicate_member":
-      return `cast: "${error.name}" is named twice; every member name is unique, group children included.`;
     case "reserved_dot":
       return `cast: "${error.name}" holds ".", which names list items.`;
     case "unknown_beat":

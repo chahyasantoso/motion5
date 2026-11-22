@@ -2,7 +2,6 @@ import { motion, type Pose2d, type Time } from "@gerak/core";
 import {
   beat,
   box,
-  group,
   sceneBuilder,
   shape,
   text,
@@ -23,7 +22,7 @@ export function stageClean(
   const dot = box("dot");
   const word = text("word", { split: "letters" });
   const mark = options.mark === undefined ? box("mark") : shape("mark", options.mark);
-  const stage = group("stage", [dot, word, mark]);
+  const stage = box("stage");
   const atGo = motion(
     (time: Time, context?: MotionContext): Pose2d => ({
       x: (context?.rest.get("dot").x ?? 0) + 100 * time.progress,

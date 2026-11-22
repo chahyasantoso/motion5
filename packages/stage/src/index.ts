@@ -15,7 +15,6 @@ export {
 } from "./author/beat";
 export {
   box,
-  group,
   object,
   shape,
   text,

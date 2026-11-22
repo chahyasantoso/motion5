@@ -8,7 +8,6 @@ import {
   compileScene,
   formatStageError,
   frame,
-  group,
   poseOf,
   restReader,
   sceneBuilder,
@@ -107,23 +106,13 @@ describe("single-scene element ownership", () => {
     expect(compiled(branchB).members).toHaveLength(2);
   });
 
-  it("refuses an element shared across two different scenes, directly or inside a group, naming both", () => {
+  it("refuses an element shared across two different scenes, naming both", () => {
     const sharedBox = box("sharedBox");
     sceneBuilder({ name: "firstScene" }).element(sharedBox);
 
     expect(() => sceneBuilder({ name: "secondScene" }).element(sharedBox)).toThrow(
       /sharedBox.*firstScene.*secondScene/,
     );
-
-    const nested = text("nestedText");
-    sceneBuilder({ name: "alpha" }).element(group("wrap", [nested]));
-    const freshSibling = box("freshSibling");
-    expect(() =>
-      sceneBuilder({ name: "beta" }).element(group("otherWrap", [freshSibling, nested])),
-    ).toThrow(/nestedText.*alpha.*beta/);
-
-    // Atomic rollback: failed registration must not claim freshSibling for beta.
-    expect(() => sceneBuilder({ name: "gamma" }).element(freshSibling)).not.toThrow();
 
     // Whitespace scene names fall back to sequential default scene labels.
     const blankTarget = box("blankTarget");

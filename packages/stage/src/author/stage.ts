@@ -6,29 +6,13 @@ import type { Carry, Rest, RestReader } from "./layout";
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
 
-/** Every member name of a cast, group children included. */
-export type MemberName<M> = {
-  [K in keyof M & string]:
-    | K
-    | (M[K] extends { readonly kind: "group"; readonly members: infer G } ? MemberName<G> : never);
-}[keyof M & string];
-
-/** The member named `K` in a cast, looked up inside groups too. */
-export type MemberOf<M, K> = K extends keyof M
-  ? M[K]
-  : {
-      [G in keyof M]: M[G] extends { readonly kind: "group"; readonly members: infer H }
-        ? MemberOf<H, K>
-        : never;
-    }[keyof M];
-
-/** What the scene returns: a pose per actor or group, a `ListPose` per list, a `Pose3d` per object, all named flat. */
+/** What the scene returns: a pose per actor, a `ListPose` per list, a `Pose3d` per object. */
 export type Targets<M> = string extends keyof M
   ? Readonly<Record<string, Pose2d | Pose3d | ListPose | undefined>>
   : {
-      readonly [K in MemberName<M>]?: MemberOf<M, K> extends { readonly kind: "list" }
+      readonly [K in keyof M & string]?: M[K] extends { readonly kind: "list" }
         ? ListPose
-        : MemberOf<M, K> extends { readonly kind: "object" }
+        : M[K] extends { readonly kind: "object" }
           ? Pose3d
           : Pose2d;
     };

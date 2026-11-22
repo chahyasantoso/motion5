@@ -17,7 +17,6 @@ import {
   carry,
   formatStageError,
   frame,
-  group,
   listPose,
   poseOf,
   compileScene,
@@ -72,7 +71,6 @@ describe("elements", () => {
     expect(shape("b", circlePath({ cx: 0, cy: 0, r: 5 })).kind).toBe("shape");
     expect(text("c").kind).toBe("text");
     expect(box("d", { parts: true }).kind).toBe("box");
-    expect(group("e", [box("f")]).kind).toBe("group");
     expect(box("a").name).toBe("a");
   });
 
@@ -144,27 +142,6 @@ describe("sceneBuilder: what a chain compiles to", () => {
     expect(
       compiled(sceneBuilder({ length: 3000 }).element(box("card")).show(enter)).durationMs,
     ).toBe(3000);
-  });
-
-  it("nests group children and keeps them flat in the scene", () => {
-    const left = box("left");
-    const rig = group("rig", [left, box("right")]);
-    const stage = compiled(
-      sceneBuilder()
-        .element(rig)
-        .motion(slideX(10).in(enter))
-        .element(left)
-        .motion(grow(3).in(enter)),
-    );
-    expect(stage.members.map((member) => [member.name, member.parent])).toEqual([
-      ["rig", -1],
-      ["left", 0],
-      ["right", 0],
-    ]);
-    const out = frame(stage, { time: at(400) }).targets;
-    expect(poseOf(out["rig"])?.x).toBe(10);
-    expect(poseOf(out["left"])?.scale).toBe(3);
-    expect(out["right"]).toBeUndefined();
   });
 
   it("takes cues and layouts from the builder", () => {
@@ -482,10 +459,6 @@ describe("sceneBuilder: refusals", () => {
   it("accepts the same element again, selected later", () => {
     const x = box("x");
     expect(() => sceneBuilder().element(x).element(box("y")).element(x)).not.toThrow();
-  });
-
-  it("refuses a duplicate name inside a group", () => {
-    expect(() => sceneBuilder().element(group("g", [box("x"), box("x")]))).toThrow(/"x"/);
   });
 
   it("refuses a loop of reads at build, naming every element in it", () => {

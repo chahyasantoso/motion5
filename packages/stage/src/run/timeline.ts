@@ -3,10 +3,9 @@ import type { Span } from "@gerak/core";
 /** Ms a member shows, start included and end excluded; an end at the piece's last ms holds past it. */
 export type Window = readonly [from: number, to: number];
 
-/** What `visibleAt` needs of a member: its name, parent index and own windows. */
+/** What `visibleAt` needs of a member: its name and own windows. */
 export interface Shown {
   readonly name: string;
-  readonly parent: number;
   readonly on?: readonly Window[] | undefined;
 }
 
@@ -37,17 +36,12 @@ export function beatAt(
 }
 
 function recordAt(members: readonly Shown[], ms: number): Readonly<Record<string, boolean>> {
-  const shown: boolean[] = [];
   const record: Record<string, boolean> = {};
-  members.forEach((member, index) => {
-    const own = inside(member.on, ms) && (member.parent < 0 || shown[member.parent] === true);
-    shown[index] = own;
-    record[member.name] = own;
-  });
+  for (const member of members) record[member.name] = inside(member.on, ms);
   return Object.freeze(record);
 }
 
-/** Which members show at a ms, computed once per span between window ends; parents come before children. */
+/** Which members show at a ms, computed once per span between window ends. */
 export function visibility(
   members: readonly Shown[],
 ): (ms: number) => Readonly<Record<string, boolean>> {

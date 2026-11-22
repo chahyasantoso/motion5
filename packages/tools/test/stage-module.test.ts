@@ -40,11 +40,10 @@ const underWord = (rest: RestReader) => {
 const markedBy =
   (path: (rest: RestReader) => ReturnType<typeof level>) =>
   (m: CastBuilder<"intro" | "go" | "out">) => ({
-    stage: m.group({
-      dot: m.box().on("go"),
-      word: m.letters(),
-      mark: m.stroke(path).static(),
-    }),
+    stage: m.box().static(),
+    dot: m.box().on("go"),
+    word: m.letters(),
+    mark: m.stroke(path).static(),
   });
 
 describe("a stage module in the scene tools", () => {
@@ -145,11 +144,10 @@ describe("gerak review of a member still ringing", () => {
     defineStage({
       beats: { intro: [0, 400], go: [400, 1400], out: [1400, 2000] },
       cast: (m) => ({
-        stage: m.group({
-          dot: m.box().on(...on),
-          word: m.letters(),
-          mark: m.box().static(),
-        }),
+        stage: m.box().static(),
+        dot: m.box().on(...on),
+        word: m.letters(),
+        mark: m.box().static(),
       }),
       scene: ({ time, beats }) => ({
         dot: { x: Math.sin(time.progress * 200) },
@@ -223,17 +221,16 @@ describe("gerak review on a stage module", () => {
       defineStage({
         ...cleanDefinition,
         cast: (m) => ({
-          stage: m.group({
-            dot: m.box().on("go"),
-            word: m.letters(),
-            mark: m
-              .stroke((rest) => {
-                widths.push(rest.get("line").width);
-                return level(0, rest.get("line").width + 1, 0);
-              })
-              .static(),
-            line: m.stroke(level(0, 10, 0)).static(),
-          }),
+          stage: m.box().static(),
+          dot: m.box().on("go"),
+          word: m.letters(),
+          mark: m
+            .stroke((rest) => {
+              widths.push(rest.get("line").width);
+              return level(0, rest.get("line").width + 1, 0);
+            })
+            .static(),
+          line: m.stroke(level(0, 10, 0)).static(),
         }),
       }),
     );
@@ -243,12 +240,11 @@ describe("gerak review on a stage module", () => {
       defineStage({
         ...cleanDefinition,
         cast: (m) => ({
-          stage: m.group({
-            dot: m.box().on("go"),
-            word: m.letters(),
-            a: m.stroke((rest) => level(0, rest.get("b").width + 1, 0)).static(),
-            b: m.stroke((rest) => level(0, rest.get("a").width + 1, 0)).static(),
-          }),
+          stage: m.box().static(),
+          dot: m.box().on("go"),
+          word: m.letters(),
+          a: m.stroke((rest) => level(0, rest.get("b").width + 1, 0)).static(),
+          b: m.stroke((rest) => level(0, rest.get("a").width + 1, 0)).static(),
         }),
       }),
     );
@@ -353,15 +349,31 @@ describe("gerak review on a stage module", () => {
       }),
     );
     expect(shown.some((line) => /dot\.x jumps/.test(line))).toBe(true);
-    const nested = findings(
+    const nestedModule = readModule(
       defineStage({
         beats,
         cast: (m) => ({
-          outer: m.group({ dust: m.many().on("late"), solo: m.box() }).on("late"),
+          outer: m.box().on("late"),
+          dust: m.many(),
+          solo: m.box(),
         }),
-        scene: ({ time }) => ({ outer: {}, dust: () => hop(time), solo: hop(time) }),
+        scene: ({ time }) => ({
+          outer: { x: time.progress },
+          dust: () => hop(time),
+          solo: hop(time),
+        }),
       }),
+      {
+        page: "nested.html",
+        digest: "",
+        frame: { width: 400, height: 300 },
+        rest: {},
+        lines: {},
+        parents: { "dust.0": "outer", solo: "outer" },
+      },
     );
+    if ("reason" in nestedModule) throw new Error(nestedModule.reason);
+    const nested = reviewSceneModule(nestedModule, limits).findings;
     expect(nested.some((line) => /jumps/.test(line))).toBe(false);
   });
 

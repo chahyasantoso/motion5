@@ -39,15 +39,15 @@ export interface Meta<B extends string = string> {
 
 /** Modifiers every member takes; each returns a new member. */
 export interface Modifiers<B extends string, S> {
-  /** Shows the member only during these stretches; children show only while it does. */
+  /** Shows the member only during these stretches. */
   on(...stretches: OnStretch<B>[]): S;
   /** Shows the member only during these stretches, as compiled. */
   showing(stretches: readonly Stretch<B>[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
-  /** The scene never poses it; a group's children keep their own expectation. */
+  /** The scene never poses it. */
   static(): S;
-  /** It keeps moving, like snow; a group's children and a list's items inherit it. */
+  /** It keeps moving, like snow; a list's items inherit it. */
   ambient(): S;
   settle(): S;
 }
@@ -67,14 +67,6 @@ export interface ListSpec<B extends string = string> extends Modifiers<B, ListSp
   readonly meta: Meta<B>;
 }
 
-/** A container whose pose moves its children; children are named flat beside it in the scene. */
-export interface GroupSpec<B extends string = string, M extends Members<B> = Members<B>>
-  extends Modifiers<B, GroupSpec<B, M>> {
-  readonly kind: "group";
-  readonly members: M;
-  readonly meta: Meta<B>;
-}
-
 /** A Three.js object: the scene gives it a `Pose3d`, and no DOM renderer draws it. */
 export interface ObjectSpec<B extends string = string> extends Modifiers<B, ObjectSpec<B>> {
   readonly kind: "object";
@@ -82,11 +74,7 @@ export interface ObjectSpec<B extends string = string> extends Modifiers<B, Obje
 }
 
 /** Any member as written. */
-export type Spec<B extends string = string> =
-  | ActorSpec<B>
-  | ListSpec<B>
-  | GroupSpec<B>
-  | ObjectSpec<B>;
+export type Spec<B extends string = string> = ActorSpec<B> | ListSpec<B> | ObjectSpec<B>;
 
 /** Members by name. */
 export type Members<B extends string = string> = Readonly<Record<string, Spec<B>>>;
@@ -103,7 +91,6 @@ export interface CastBuilder<B extends string = string> {
   many(): ListSpec<B>;
   letters(): ListSpec<B>;
   words(): ListSpec<B>;
-  group<M extends Members<B>>(members: M): GroupSpec<B, M>;
   object(): ObjectSpec<B>;
 }
 
@@ -143,18 +130,6 @@ function list<B extends string>(meta: Meta<B> = {}, split?: "letters" | "words")
   });
 }
 
-function group<B extends string, M extends Members<B>>(
-  members: M,
-  meta: Meta<B> = {},
-): GroupSpec<B, M> {
-  return Object.freeze({
-    kind: "group",
-    members,
-    meta,
-    ...modifiers(meta, (next) => group<B, M>(members, next)),
-  });
-}
-
 function objectSpec<B extends string>(meta: Meta<B> = {}): ObjectSpec<B> {
   return Object.freeze({
     kind: "object",
@@ -174,7 +149,6 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
     many: () => list(),
     letters: () => list({}, "letters"),
     words: () => list({}, "words"),
-    group: (members) => group(Object.freeze({ ...members })),
     object: () => objectSpec(),
   };
 }

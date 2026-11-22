@@ -6,7 +6,6 @@ import {
   compileScene,
   formatStageError,
   frame,
-  group,
   listPose,
   sceneBuilder,
   scrollPoint,
@@ -38,10 +37,10 @@ describe("page scene compilation", () => {
     const title = text("title", { split: "words" });
     const line = shape("line", circlePath({ cx: 0, cy: 0, r: 5 }));
     const items = box("items", { parts: true });
-    const wrap = group("wrap", [card]);
     const stage = compiled(
       sceneBuilder()
-        .element(wrap)
+        .element(box("wrap"))
+        .element(card)
         .element(title)
         .element(line)
         .element(items)

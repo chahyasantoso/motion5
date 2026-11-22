@@ -32,11 +32,10 @@ const beats = { intro: [0, 400], go: [400, 1400], out: [1400, 2000] } as const;
 export const cleanDefinition = defineStage({
   beats,
   cast: (m) => ({
-    stage: m.group({
-      dot: m.box().on("go"),
-      word: m.letters(),
-      mark: m.box().static(),
-    }),
+    stage: m.box().static(),
+    dot: m.box().on("go"),
+    word: m.letters(),
+    mark: m.box().static(),
   }),
   scene: ({ time, beats: b, rest }) => {
     const go = b.go.of(time).progress;
@@ -52,7 +51,10 @@ export const cleanDefinition = defineStage({
 export const unusedDefinition = defineStage({
   beats,
   cast: (m) => ({
-    stage: m.group({ dot: m.box().on("go"), word: m.letters(), spare: m.box() }),
+    stage: m.box().static(),
+    dot: m.box().on("go"),
+    word: m.letters(),
+    spare: m.box(),
   }),
   scene: ({ time, beats: b }) => {
     const go = b.go.of(time).progress;

@@ -52,12 +52,6 @@ export type ElementBody =
       readonly content?: ((time: Time) => string) | undefined;
       readonly split: "letters" | "words" | undefined;
       readonly options: ElementOptions;
-    }
-  | {
-      readonly kind: "group";
-      readonly name: string;
-      readonly children: readonly Element[];
-      readonly options: ElementOptions;
     };
 
 /** An element of a piece, made once with a name; `kind` says what it is. */
@@ -202,19 +196,5 @@ export function object(name: string, options?: ObjectOptions): ObjectElement {
     kind: "object",
     name: named("object", name),
     view: view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens }),
-  });
-}
-
-/** A container: its pose moves its children, and each child keeps its own motions. */
-export function group(
-  name: string,
-  children: readonly Element[],
-  options?: ElementOptions,
-): Element {
-  return edged({
-    kind: "group",
-    name: named("group", name),
-    children: Object.freeze([...children]),
-    options: optionsOf(options),
   });
 }

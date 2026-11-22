@@ -49,7 +49,7 @@ describe("frame", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100] },
-        cast: (m) => ({ box: m.box(), dots: m.many(), card: m.group({}) }),
+        cast: (m) => ({ box: m.box(), dots: m.many(), card: m.box() }),
         scene: () => ({}),
       }),
     );
@@ -68,14 +68,14 @@ describe("frame", () => {
     ]);
   });
 
-  it("shows members by their stretches, start included and end excluded, a group hiding its children, the last beat holding", () => {
+  it("shows members by their stretches, start included and end excluded, the last beat holding", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100], b: [200, 300], c: [300, 1000] },
         cast: (m) => ({
           always: m.box(),
           early: m.box().on("a"),
-          gap: m.group({ child: m.box() }).on("b"),
+          gap: m.box().on("b"),
           tail: m.box().on("c"),
         }),
         scene: () => ({}),
@@ -88,7 +88,7 @@ describe("frame", () => {
     expect(shown(0)).toEqual(["always", "early"]);
     expect(shown(100)).toEqual(["always"]);
     expect(shown(150)).toEqual(["always"]);
-    expect(shown(200)).toEqual(["always", "gap", "child"]);
+    expect(shown(200)).toEqual(["always", "gap"]);
     expect(shown(300)).toEqual(["always", "tail"]);
     expect(shown(5000)).toEqual(["always", "tail"]);
     expect(stage.visibleAt(150)).toBe(stage.visibleAt(160));
@@ -100,7 +100,8 @@ describe("frame", () => {
         beats: { a: [0, 120], b: [80, 400], c: [390, 600] },
         cast: (m) => ({
           one: m.box().on("a", "c"),
-          two: m.group({ three: m.box().on("b") }).on(["a", "b"]),
+          two: m.box().on(["a", "b"]),
+          three: m.box().on("b"),
         }),
         scene: () => ({}),
       }),
@@ -108,7 +109,6 @@ describe("frame", () => {
     const within = (ranges: readonly (readonly [number, number])[], ms: number) =>
       ranges.some(([from, to]) => ms >= from && (ms < to || to >= 600));
     for (let ms = -5; ms <= 700; ms += 1) {
-      const two = within([[0, 400]], ms);
       expect(stage.visibleAt(ms)).toEqual({
         one: within(
           [
@@ -117,8 +117,8 @@ describe("frame", () => {
           ],
           ms,
         ),
-        two,
-        three: two && within([[80, 400]], ms),
+        two: within([[0, 400]], ms),
+        three: within([[80, 400]], ms),
       });
     }
   });

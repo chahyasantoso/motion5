@@ -1,5 +1,5 @@
 import { lanes, motion, type Motion, type Pose2d, type Time } from "@gerak/core";
-import { beat, box, group, sceneBuilder, text, type MotionContext } from "@gerak/stage";
+import { beat, box, sceneBuilder, text, type MotionContext } from "@gerak/stage";
 import { kick } from "./moves/kick";
 import { jolt } from "./moves/jolt";
 import { lob } from "./moves/lob";
@@ -24,7 +24,7 @@ const three = text("three");
 const ring = box("ring");
 const dust = box("dust", { parts: true });
 const stamp = text("stamp");
-const world = group("world", [dateText, day, one, two, three, ring, dust, stamp]);
+const world = box("world");
 
 /** A motion posing from a badge's own lane of the badges beat. */
 const inLane = (lane: number, pose: (time: Time) => Pose2d): Motion<Pose2d> =>

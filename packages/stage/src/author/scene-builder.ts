@@ -515,7 +515,7 @@ function isElement(value: unknown): value is Element {
   const name: unknown = Reflect.get(value, "name");
   const opts: unknown = Reflect.get(value, "options");
   return (
-    (kind === "box" || kind === "shape" || kind === "text" || kind === "group") &&
+    (kind === "box" || kind === "shape" || kind === "text") &&
     typeof name === "string" &&
     name !== "" &&
     typeof opts === "object" &&
@@ -790,8 +790,6 @@ function validateRegistration(
       `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
     );
   staged.set(element.name, element);
-  if (element.kind === "group")
-    for (const child of element.children) validateRegistration(elements, owner, child, staged);
 }
 
 function register(
@@ -894,11 +892,7 @@ function expectOf(entry: Entry): Expect {
   return loops ? "ambient" : "settle";
 }
 
-function baseSpec(
-  element: SceneElement,
-  m: CastBuilder<string>,
-  children: (child: Element) => Spec,
-): Spec {
+function baseSpec(element: SceneElement, m: CastBuilder<string>): Spec {
   switch (element.kind) {
     case "object":
       return m.object();
@@ -923,10 +917,6 @@ function baseSpec(
           return unreachable(split);
       }
     }
-    case "group":
-      return m.group(
-        Object.fromEntries(element.children.map((child) => [child.name, children(child)])),
-      );
     default:
       return unreachable(element);
   }
@@ -939,7 +929,6 @@ function hasParts(element: SceneElement): boolean {
     case "text":
       return element.split !== undefined;
     case "shape":
-    case "group":
     case "object":
       return false;
     default:
@@ -956,13 +945,10 @@ function castOf(state: State, m: CastBuilder<string>): Members {
             throw new TypeError(
               `sceneBuilder: a motion reads "${read}", which is not an element of the piece.`,
             );
-  const nested = new Set<string>();
-  for (const element of state.elements.values())
-    if (element.kind === "group") for (const child of element.children) nested.add(child.name);
   const specOf = (element: SceneElement): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
     const { watch } = element.kind === "object" ? {} : element.options;
-    let out = baseSpec(element, m, (child) => specOf(child));
+    let out = baseSpec(element, m);
     if (entry.show.length > 0) out = out.showing(entry.show);
     if (watch !== undefined) out = out.watch(watch);
     const expect = expectOf(entry);
@@ -980,7 +966,7 @@ function castOf(state: State, m: CastBuilder<string>): Members {
   const members: Record<string, Spec> = {};
   for (const name of state.order) {
     const element = state.elements.get(name);
-    if (element !== undefined && !nested.has(name)) members[name] = specOf(element);
+    if (element !== undefined) members[name] = specOf(element);
   }
   return members;
 }

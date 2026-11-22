@@ -15,16 +15,14 @@ import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, windowOf, type Window } from "./timeline";
 
-/** One compiled member; `Stage.members` lists them parents first. List items are named `<list>.<index>`. */
+/** One compiled member; list items are named `<list>.<index>`. */
 export type Member = {
   readonly name: string;
-  /** Index of the enclosing group in `Stage.members`, or -1 at the top. */
-  readonly parent: number;
   readonly expect: Expect;
   readonly watch: boolean;
   /** Selector of the DOM nodes this member binds to: `[data-cast="<name>"]`; an object has none. */
   readonly node?: string | undefined;
-  /** Ms the member shows, its own or its group's; absent means always. */
+  /** Ms the member shows; absent means always. */
   readonly on?: readonly Window[] | undefined;
 } & (
   | { readonly kind: "object" }
@@ -33,7 +31,6 @@ export type Member = {
       readonly kind: "list";
       readonly split?: "letters" | "words" | undefined;
     }
-  | { readonly kind: "group" }
 );
 
 /** A stage's layouts; a piece with none has one named `main`. */
@@ -138,13 +135,6 @@ function compileBeats(
   const beats: Record<string, Span> = {};
   for (const [name, [from, to]] of pairs) beats[name] = span(from, to);
   return { beats: Object.freeze(beats), durationMs };
-}
-
-interface Inherited {
-  readonly parent: number;
-  readonly on: readonly Window[] | undefined;
-  readonly watch: boolean;
-  readonly expect: Expect;
 }
 
 function windowsOf(
@@ -268,59 +258,41 @@ export function castSelector(name: string): string {
 
 function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonly Member[] {
   const members: Member[] = [];
-  const seen = new Set<string>();
-  const visit = (record: Members, from: Inherited): void => {
-    for (const [name, spec] of Object.entries(record)) {
-      if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
-      if (seen.has(name)) errors.push({ kind: "duplicate_member", name });
-      seen.add(name);
-      const on =
-        spec.meta.on === undefined ? from.on : windowsOf(name, spec.meta.on, beats, errors);
-      const expect = spec.meta.expect ?? from.expect;
-      const node = spec.kind === "object" ? undefined : castSelector(name);
-      const base = {
-        name,
-        parent: from.parent,
-        expect,
-        watch: spec.meta.watch ?? from.watch,
-        ...(node === undefined ? {} : { node }),
-        ...(on === undefined ? {} : { on }),
-      };
-      switch (spec.kind) {
-        case "actor": {
-          const content = contentOf(name, spec.content, errors);
-          if (content !== undefined)
-            members.push(Object.freeze({ ...base, kind: "actor", content }));
-          break;
-        }
-        case "list":
-          members.push(
-            Object.freeze({
-              ...base,
-              kind: "list",
-              ...(spec.split === undefined ? {} : { split: spec.split }),
-            }),
-          );
-          break;
-        case "object":
-          members.push(Object.freeze({ ...base, kind: "object" }));
-          break;
-        case "group": {
-          members.push(Object.freeze({ ...base, kind: "group" }));
-          visit(spec.members, {
-            parent: members.length - 1,
-            on,
-            watch: base.watch,
-            expect: expect === "ambient" ? "ambient" : "settle",
-          });
-          break;
-        }
-        default:
-          return unreachable(spec);
+  for (const [name, spec] of Object.entries(cast)) {
+    if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
+    const on =
+      spec.meta.on === undefined ? undefined : windowsOf(name, spec.meta.on, beats, errors);
+    const expect = spec.meta.expect ?? "settle";
+    const node = spec.kind === "object" ? undefined : castSelector(name);
+    const base = {
+      name,
+      expect,
+      watch: spec.meta.watch ?? false,
+      ...(node === undefined ? {} : { node }),
+      ...(on === undefined ? {} : { on }),
+    };
+    switch (spec.kind) {
+      case "actor": {
+        const content = contentOf(name, spec.content, errors);
+        if (content !== undefined) members.push(Object.freeze({ ...base, kind: "actor", content }));
+        break;
       }
+      case "list":
+        members.push(
+          Object.freeze({
+            ...base,
+            kind: "list",
+            ...(spec.split === undefined ? {} : { split: spec.split }),
+          }),
+        );
+        break;
+      case "object":
+        members.push(Object.freeze({ ...base, kind: "object" }));
+        break;
+      default:
+        return unreachable(spec);
     }
-  };
-  visit(cast, { parent: -1, on: undefined, watch: false, expect: "settle" });
+  }
   return Object.freeze(members);
 }
 
@@ -391,7 +363,6 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
     const own = [
       member.name,
       member.kind,
-      member.parent,
       member.watch,
       ...(member.node === undefined ? [] : [member.node]),
     ];
@@ -400,7 +371,6 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
         return [...own, member.content.kind];
       case "list":
         return [...own, member.split ?? "parts"];
-      case "group":
       case "object":
         return own;
       default:

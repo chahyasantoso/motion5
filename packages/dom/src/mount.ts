@@ -66,7 +66,7 @@ export interface StageFonts {
   removeEventListener(type: "loadingdone", listener: () => void): void;
 }
 
-/** A frame's targets as the scene returned them: a pose per actor or group, a function per list. */
+/** A frame's targets as the scene returned them: a pose per actor or object, a function per list. */
 export type StageValues = Readonly<Record<string, unknown>>;
 
 /** What `mount` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
@@ -667,8 +667,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       switch (member.kind) {
         case "object":
           continue;
-        case "actor":
-        case "group": {
+        case "actor": {
           const raw = found()[0];
           if (raw === undefined)
             throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
@@ -895,8 +894,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
             );
             break;
           }
-          case "actor":
-          case "group": {
+          case "actor": {
             const info = ancestors.get(target.node) ?? { isFixed: false };
             nextRest[member.name] = boxForNode(
               rectOf(target.node),
@@ -1087,7 +1085,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         );
         break;
       case "actor":
-      case "group":
         unwatch.push(watchNode(member.name, target.node));
         break;
       default:
@@ -1222,14 +1219,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           if (pose !== undefined) applyPose(target.node, member.content, pose);
         }
         break;
-      case "group":
-        applyVisibility(target.node, visible);
-        if (!visible || value === undefined) return;
-        {
-          const pose = poseOf(value);
-          if (pose !== undefined) applyPose(target.node, undefined, pose);
-        }
-        break;
       default:
         return unreachable(member);
     }
@@ -1293,7 +1282,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           if (member.content.kind === "readout" || member.content.kind === "morph") continue;
           break;
         case "list":
-        case "group":
           break;
         default:
           unreachable(member);

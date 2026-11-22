@@ -127,7 +127,6 @@ export function check(
     };
     switch (member.kind) {
       case "actor":
-      case "group":
       case "object":
         if (poseOf(value) === undefined)
           mismatch(`needs a pose object, got ${Array.isArray(value) ? "an array" : typeof value}.`);

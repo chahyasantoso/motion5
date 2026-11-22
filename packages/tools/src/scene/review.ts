@@ -401,9 +401,26 @@ function valueOfReview(targets: Readonly<Record<string, unknown>>, reviewed: Rev
   }
 }
 
-/** Whether a member or item shows: a list item shows while its list does. */
-function shown(sample: EvaluatedSample, reviewed: Reviewed): boolean {
-  return sample.visible?.[reviewed.member.name] !== false;
+/** Whether a member or item shows: a list item shows while its list does, and a child while its parent in the cache does. */
+function shown(
+  sample: EvaluatedSample,
+  reviewed: Reviewed,
+  parents?: Readonly<Record<string, string>>,
+): boolean {
+  if (sample.visible?.[reviewed.member.name] === false) return false;
+  const seen = new Set<string>([reviewed.name, reviewed.member.name]);
+  for (
+    let name =
+      parents?.[reviewed.name] ??
+      parents?.[reviewed.member.name] ??
+      parents?.[`${reviewed.member.name}.0`];
+    name !== undefined && !seen.has(name);
+    name = parents?.[name]
+  ) {
+    seen.add(name);
+    if (sample.visible?.[name] === false) return false;
+  }
+  return true;
 }
 
 /** Each mistake once, at the first ms it happens: shapes, unknown targets, failing readouts. */
@@ -425,12 +442,13 @@ function ambientBoundsFindings(
   reviewed: Reviewed,
   evaluated: readonly EvaluatedSample[],
   rest: RestReader,
+  parents?: Readonly<Record<string, string>>,
 ): readonly string[] {
   if (reviewed.kind === "member" && reviewed.member.kind !== "actor") return [];
   if (!rest.has(reviewed.name)) return [];
   const box = rest.get(reviewed.name);
   for (const sample of evaluated) {
-    if (!shown(sample, reviewed)) continue;
+    if (!shown(sample, reviewed, parents)) continue;
     const pose = valueOfReview(sample.targets, reviewed);
     if (typeof pose !== "object" || pose === null || Array.isArray(pose)) continue;
     const x: unknown = Reflect.get(pose, "x");
@@ -475,6 +493,7 @@ function stageMemberFindings(
   unmeasured: boolean,
   frame: FrameSize | undefined,
   counts: Readonly<Record<string, number>> | undefined,
+  parents: Readonly<Record<string, string>> | undefined,
 ): readonly string[] {
   const found: string[] = [];
   if (unmeasured)
@@ -490,30 +509,18 @@ function stageMemberFindings(
 
     switch (member.expect) {
       case "settle":
-        if (
-          reviewed.kind === "member" &&
-          member.kind !== "group" &&
-          !member.watch &&
-          unmoved &&
-          !unmeasured
-        )
+        if (reviewed.kind === "member" && !member.watch && unmoved && !unmeasured)
           found.push(
             `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
           );
         break;
       case "ambient":
-        if (
-          reviewed.kind === "member" &&
-          member.kind !== "group" &&
-          !member.watch &&
-          unmoved &&
-          !unmeasured
-        )
+        if (reviewed.kind === "member" && !member.watch && unmoved && !unmeasured)
           found.push(
             `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
           );
         if (frame !== undefined)
-          found.push(...ambientBoundsFindings(frame, reviewed, evaluated, rest));
+          found.push(...ambientBoundsFindings(frame, reviewed, evaluated, rest, parents));
         break;
       case "static":
         break;
@@ -540,7 +547,7 @@ function stageMemberFindings(
       return before === undefined ||
         now === undefined ||
         print === prints[index - 1] ||
-        shown(now, reviewed)
+        shown(now, reviewed, parents)
         ? []
         : [{ from: before.at, at: now.at }];
     });
@@ -801,10 +808,11 @@ export function reviewSceneModule(
     }
     return undefined;
   };
+  const parents = module.measured?.parents;
   const hidden = (path: string, at: number): boolean => {
     const owner = ownerOfPath(path);
     const sample = byAt.get(at);
-    return owner !== undefined && sample !== undefined && !shown(sample, owner);
+    return owner !== undefined && sample !== undefined && !shown(sample, owner, parents);
   };
   const ongoing = (name: string): boolean => {
     const reviewed = byName.get(name);
@@ -845,6 +853,7 @@ export function reviewSceneModule(
         unmeasured,
         module.measured?.frame,
         input.counts,
+        parents,
       ),
       ...stagePathFindings(stage, rest),
     ],

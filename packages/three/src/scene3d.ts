@@ -57,7 +57,6 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
             break;
           }
           case "actor":
-          case "group":
           case "list":
             break;
           default:

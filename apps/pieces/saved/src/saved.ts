@@ -1,6 +1,6 @@
 import { motion, reversed, type Motion, type Pose2d, type Time } from "@gerak/core";
 import { fade, pop, slide } from "@gerak/moves";
-import { beat, box, group, sceneBuilder, text } from "@gerak/stage";
+import { beat, box, sceneBuilder, text } from "@gerak/stage";
 
 const markIn = beat("markIn", 260, { at: 0 });
 const wordIn = beat("wordIn", 310, { at: 90 });
@@ -9,7 +9,7 @@ const wordOut = beat("wordOut", 280, { at: 1220 });
 
 const mark = box("mark");
 const word = text("word");
-const pill = group("pill", [mark, word]);
+const pill = box("pill");
 
 /** A motion playing `inner` backwards over its beat. */
 const backwards = (inner: (time: Time) => Pose2d): Motion<Pose2d> =>
