@@ -770,9 +770,43 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   let currentRest: Rest = {};
   let currentReader: RestReader = restReader();
   let currentLines: Readonly<Record<string, readonly number[]>> = {};
+  // The elements the engine runs while the browser plays the rest; undefined when it plays none.
+  let engineOnly: ReadonlySet<string> | undefined;
+  let handed = new Map<string, Animation[]>();
+  let triggerRuns: TriggerRun[] = [];
+  let handedBuilt = false;
+  let handedDeps: ReadonlySet<string> = new Set();
+  let handedMaxScroll = 0;
+  let handedRest: Rest = {};
+  let handedLines: Readonly<Record<string, readonly number[]>> = {};
 
   const measure = (): void => {
     const savedTransforms = new Map<PageElement, string | undefined>();
+    const savedAnimations: {
+      readonly animation: Animation;
+      readonly effect: AnimationEffect | null;
+      readonly restoreTime: boolean;
+      readonly currentTime: CSSNumberish | null;
+      readonly playState: AnimationPlayState;
+    }[] = [];
+    const docTimeline: unknown =
+      doc !== undefined
+        ? Reflect.get(doc, "timeline")
+        : typeof document !== "undefined"
+          ? document.timeline
+          : undefined;
+    for (const animations of handed.values()) {
+      for (const animation of animations) {
+        savedAnimations.push({
+          animation,
+          effect: animation.effect,
+          restoreTime: docTimeline !== undefined && animation.timeline === docTimeline,
+          currentTime: animation.currentTime,
+          playState: animation.playState,
+        });
+        animation.effect = null;
+      }
+    }
     const savedSticky = new Map<
       Element & { readonly style: PageStyle },
       {
@@ -921,6 +955,14 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         el.style.left = prev.left ?? "";
       }
       for (const [node, prev] of savedTransforms) node.style.transform = prev ?? "";
+      for (const saved of savedAnimations) {
+        saved.animation.effect = saved.effect;
+        if (saved.restoreTime) {
+          if (saved.currentTime !== null) saved.animation.currentTime = saved.currentTime;
+          if (saved.playState === "running") saved.animation.play();
+          else if (saved.playState === "paused") saved.animation.pause();
+        }
+      }
     }
 
     currentRest = Object.freeze(nextRest);
@@ -991,10 +1033,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   let frameMoves = new Map<string, Moves>();
   let frameOnly: ReadonlySet<string> | undefined;
   let runOnly: ReadonlySet<string> | undefined;
-  // The elements the engine runs while the browser plays the rest; undefined when it plays none.
-  let engineOnly: ReadonlySet<string> | undefined;
-  let handed = new Map<string, Animation[]>();
-  let triggerRuns: TriggerRun[] = [];
   // Set once the hand-off is defined below; a frame before then has no trigger to follow.
   let syncTriggers = (): void => undefined;
   const lastMoves = (): ReadonlyMap<string, Moves> => {
@@ -1232,6 +1270,8 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     handed = new Map();
     triggerRuns = [];
     engineOnly = undefined;
+    handedBuilt = false;
+    handedDeps = new Set();
   };
   syncTriggers = (): void => {
     if (triggerRuns.length === 0) return;
@@ -1258,6 +1298,10 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   };
   const nodesOf = (target: BoundTarget): readonly PageElement[] =>
     target.member.kind === "list" ? target.items : [target.node];
+  const readMaxScroll = (): number => {
+    const source = doc?.documentElement;
+    return isDomElement(source) ? source.scrollHeight - source.clientHeight : 0;
+  };
   const handOff = (): void => {
     release();
     if (timed !== undefined || fitted !== undefined) return;
@@ -1267,7 +1311,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const source = doc?.documentElement;
     if (typeof Timeline !== "function" || !isDomElement(source)) return;
     if (scrollTarget === undefined || scrollTarget !== doc?.defaultView) return;
-    const maxScroll = source.scrollHeight - source.clientHeight;
+    const maxScroll = readMaxScroll();
     const names = new Set<string>();
     for (const target of targets) {
       const { member } = target;
@@ -1294,10 +1338,18 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     };
     let scrolled: ReadonlyMap<string, Track> = new Map();
     let triggered: ReadonlyMap<string, TriggerTrack> = new Map();
+    const deps = new Set<string>();
     try {
-      scrolled = maxScroll > 0 ? scrollTracks(stage, input, maxScroll) : new Map();
+      const scrollResult =
+        maxScroll > 0
+          ? scrollTracks(stage, input, maxScroll)
+          : { tracks: new Map<string, Track>(), deps: new Set<string>() };
+      scrolled = scrollResult.tracks;
+      for (const dep of scrollResult.deps) deps.add(dep);
       const left = new Set([...names].filter((name) => !scrolled.has(name)));
-      triggered = triggerTracks(stage, { ...input, names: left });
+      const triggerResult = triggerTracks(stage, { ...input, names: left });
+      triggered = triggerResult.tracks;
+      for (const dep of triggerResult.deps) deps.add(dep);
     } catch {
       // A motion that throws at a place the page has not reached stays the engine's to report.
       return;
@@ -1366,6 +1418,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     }
     triggerRuns = [...runs.values()];
     if (next.size === 0) return;
+    handedBuilt = true;
+    handedDeps = deps;
+    handedMaxScroll = maxScroll;
+    handedRest = currentRest;
+    handedLines = currentLines;
     handed = next;
     engineOnly = new Set(
       stage.members.map((member) => member.name).filter((name) => !handed.has(name)),
@@ -1376,7 +1433,33 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
 
   schedule();
 
-  const sameRest = (a: Rest, b: Rest): boolean => {
+  const samePlacement = (a: BoxPlacement, b: BoxPlacement): boolean => {
+    switch (a.kind) {
+      case "flow":
+      case "fixed":
+        return b.kind === a.kind;
+      case "sticky":
+        return b.kind === "sticky" && a.minY === b.minY && a.maxY === b.maxY && a.pinY === b.pinY;
+      default:
+        return unreachable(a);
+    }
+  };
+
+  const sameBox = (left: Box | undefined, right: Box | undefined): boolean => {
+    if (left === undefined || right === undefined) return left === right;
+    return (
+      left.x === right.x &&
+      left.y === right.y &&
+      left.width === right.width &&
+      left.height === right.height &&
+      samePlacement(placementOf(left), placementOf(right))
+    );
+  };
+
+  const sameLines = (
+    a: Readonly<Record<string, readonly number[]>>,
+    b: Readonly<Record<string, readonly number[]>>,
+  ): boolean => {
     const keys = Object.keys(a);
     if (keys.length !== Object.keys(b).length) return false;
     return keys.every((key) => {
@@ -1385,29 +1468,57 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       return (
         left !== undefined &&
         right !== undefined &&
-        left.x === right.x &&
-        left.y === right.y &&
-        left.width === right.width &&
-        left.height === right.height
+        left.length === right.length &&
+        left.every((line, index) => line === right[index])
       );
     });
   };
 
-  const remeasure = (): void => {
+  const sameRest = (a: Rest, b: Rest): boolean => {
+    const keys = Object.keys(a);
+    if (keys.length !== Object.keys(b).length) return false;
+    return keys.every((key) => sameBox(a[key], b[key]));
+  };
+
+  let remeasureQueued = false;
+  const cancelRemeasure = (): void => {
+    remeasureQueued = false;
+  };
+
+  const remeasure = (forceHandOff = false): void => {
     if (!live) return;
+    cancelRemeasure();
     const prevRest = currentRest;
-    release();
+    if (forceHandOff) release();
     measure();
+    const nextMaxScroll = readMaxScroll();
     if (!sameRest(prevRest, currentRest)) {
       const at = timed === undefined ? elapsed() : (elapsedOf(timed.now().clock) ?? 0);
       measures.push({ at, rest: currentReader });
       activeUntil = Math.max(activeUntil, at + settleMs);
       fresh = true;
     }
-    handOff();
+    const depsUnchanged =
+      !forceHandOff &&
+      handedBuilt &&
+      nextMaxScroll === handedMaxScroll &&
+      sameLines(handedLines, currentLines) &&
+      [...handedDeps].every((name) => sameBox(handedRest[name], currentRest[name]));
     syncScroll();
+    if (!depsUnchanged) handOff();
+    else if (triggerRuns.length > 0) syncTriggers();
     player.refresh();
     schedule();
+  };
+
+  const scheduleRemeasure = (): void => {
+    if (!live || remeasureQueued) return;
+    remeasureQueued = true;
+    queueMicrotask(() => {
+      if (!live || !remeasureQueued) return;
+      remeasureQueued = false;
+      remeasure();
+    });
   };
 
   const onResize = (): void => remeasure();
@@ -1426,7 +1537,9 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   void fonts?.ready.then(fontsLoaded);
 
   const observer =
-    typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => remeasure()) : undefined;
+    typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => scheduleRemeasure())
+      : undefined;
   if (observer !== undefined) {
     if (isDomElement(root.documentElement)) observer.observe(root.documentElement);
     else if (isDomElement(root)) observer.observe(root);
@@ -1482,7 +1595,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     get lines() {
       return currentLines;
     },
-    remeasure,
+    remeasure: () => remeasure(),
     measure: measurement,
     replace(next) {
       const nextStage = resolvePageStage(next);
@@ -1493,7 +1606,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         const member = nextStage.members.find((each) => each.name === target.member.name);
         if (member !== undefined && member.kind === target.member.kind) target.member = member;
       }
-      remeasure();
+      remeasure(true);
       for (const stop of stops) stop();
       player.replace(sceneSignal, nextStage.cues);
       stops = binders.map((binder) => binder.start(player, stage));
@@ -1507,6 +1620,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     dispose() {
       if (!live) return;
       live = false;
+      cancelRemeasure();
       if (frameHandle !== undefined) frames.cancelFrame(frameHandle);
       frameHandle = undefined;
       scrollTarget?.removeEventListener("scroll", onScroll);

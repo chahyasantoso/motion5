@@ -66,6 +66,12 @@ export interface TriggerTrack extends Track {
   readonly beat: TriggerBeat;
 }
 
+/** Sampled compositor tracks together with the measured rest box names they depend on. */
+export interface SampledTracks<T extends Track = Track> {
+  readonly tracks: Map<string, T>;
+  readonly deps: ReadonlySet<string>;
+}
+
 /** What tracks are sampled from: the measured lines and rest, and the elements to try. */
 export interface TrackInput {
   readonly counts?: Readonly<Record<string, number>> | undefined;
@@ -169,6 +175,43 @@ function fewest(
   return kept;
 }
 
+/** Wraps `rest` so every box lookup records the read rest key in `deps`. */
+function trackRest(rest: RestReader, deps: Set<string>): RestReader {
+  return {
+    get: (name: string) => {
+      deps.add(name);
+      return rest.get(name);
+    },
+    has: (name: string) => {
+      deps.add(name);
+      return rest.has(name);
+    },
+    keys: () => {
+      const list = rest.keys();
+      for (const key of list) deps.add(key);
+      return list;
+    },
+  };
+}
+
+function mergeIntervals(
+  raw: readonly (readonly [number, number])[],
+): readonly (readonly [number, number])[] {
+  if (raw.length === 0) return [];
+  const sorted = [...raw].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const first = sorted[0];
+  if (first === undefined) return [];
+  const merged: [number, number][] = [[first[0], first[1]]];
+  for (let i = 1; i < sorted.length; i += 1) {
+    const next = sorted[i];
+    const prev = merged.at(-1);
+    if (next === undefined || prev === undefined) continue;
+    if (next[0] <= prev[1]) prev[1] = Math.max(prev[1], next[1]);
+    else merged.push([next[0], next[1]]);
+  }
+  return merged;
+}
+
 /** Samples elements along `[0, length]`, adding samples where lines miss the scene; one `fits`
  * rejects on any sample, or that sets a field the browser does not play, is left out. */
 function sampleTracks(
@@ -179,15 +222,18 @@ function sampleTracks(
   edges: readonly number[],
   run: (at: number, only: ReadonlySet<string>) => Sampled,
   fits: (name: string, at: number, sampled: Sampled) => boolean,
+  intervals?: readonly (readonly [number, number])[],
+  budget?: { taken: number },
 ): Map<string, Track> {
   const members = new Map(stage.members.map((member) => [member.name, member]));
   const alive = new Set([...names].filter((name) => members.has(name)));
   const anchors = new Map<string, Anchor | undefined>();
   const samples = new Map<string, TrackSample[][]>();
-  let taken = 0;
+  const counter = budget ?? { taken: 0 };
+  if (alive.size === 0 || length / gridStep > MAX_SAMPLES / 2) return new Map();
 
   const sample = (at: number, only: ReadonlySet<string>): Map<string, Posed> => {
-    taken += 1;
+    counter.taken += 1;
     const sampled = run(at, only);
     const posed = new Map<string, Posed>();
     for (const name of only) {
@@ -217,10 +263,19 @@ function sampleTracks(
     samples.set(name, lists);
   };
 
-  const placed = new Set<number>();
-  for (let at = 0; at < length; at += gridStep) placed.add(at);
+  const placed = new Set<number>([0, length]);
+  if (intervals === undefined) {
+    for (let at = 0; at < length; at += gridStep) placed.add(at);
+  } else {
+    for (const [lo, hi] of intervals) {
+      const start = Math.max(0, lo);
+      const end = Math.min(length, hi);
+      placed.add(start);
+      placed.add(end);
+      for (let at = start; at < end; at += gridStep) placed.add(at);
+    }
+  }
   for (const at of edges) if (at > 0 && at < length) placed.add(at);
-  placed.add(length);
   const grid = [...placed].sort((a, b) => a - b);
   if (grid.length > MAX_SAMPLES / 2) return new Map();
   for (const at of grid) {
@@ -230,7 +285,7 @@ function sampleTracks(
 
   const finest = gridStep / 32;
   const refine = (name: string, a: number, b: number, depth: number): void => {
-    if (!alive.has(name) || b - a <= finest || taken > MAX_SAMPLES || depth > 24) return;
+    if (!alive.has(name) || b - a <= finest || counter.taken > MAX_SAMPLES || depth > 24) return;
     const lists = samples.get(name);
     if (lists === undefined) return;
     const mid = (a + b) / 2;
@@ -258,7 +313,7 @@ function sampleTracks(
     }
 
   const tracks = new Map<string, Track>();
-  if (taken > MAX_SAMPLES) return tracks;
+  if (counter.taken > MAX_SAMPLES) return tracks;
   for (const name of alive) {
     const lists = samples.get(name);
     if (lists === undefined) continue;
@@ -301,35 +356,115 @@ function runFrame(
   return { poses, moves, drives };
 }
 
-/** The tracks of the named elements whose motions read only the scroll position, sampled across the
- * page's scroll range `[0, maxScroll]`. */
+function scrollDrive(
+  drive: Drive | undefined,
+): Extract<Drive, { readonly kind: "scroll" }> | undefined {
+  if (drive === undefined) return undefined;
+  switch (drive.kind) {
+    case "scroll":
+      return drive;
+    case "trigger":
+    case "more":
+      return undefined;
+    default:
+      return unreachable(drive);
+  }
+}
+
+function triggerDrive(
+  drive: Drive | undefined,
+): Extract<Drive, { readonly kind: "trigger" }> | undefined {
+  if (drive === undefined) return undefined;
+  switch (drive.kind) {
+    case "trigger":
+      return drive;
+    case "scroll":
+    case "more":
+      return undefined;
+    default:
+      return unreachable(drive);
+  }
+}
+
+/** The tracks of the named elements whose motions read only the scroll position, sampled across
+ * each element's active scroll intervals inside `[0, maxScroll]`, with read rest box names. */
 export function scrollTracks(
   stage: Stage,
   input: TrackInput,
   maxScroll: number,
-): Map<string, Track> {
-  return sampleTracks(
-    stage,
-    input.names,
-    maxScroll,
-    GRID_PX,
-    scrollEdges(stage, input),
-    (y, only) => runFrame(stage, input, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
-    (name, _, sampled) => sampled.drives.get(name)?.kind === "scroll" && !sampled.moves.has(name),
-  );
-}
-
-/** Where the scroll beats of the named elements start and end, so samples land on their edges. */
-function scrollEdges(stage: Stage, input: TrackInput): readonly number[] {
+): SampledTracks<Track> {
+  if (input.names.size === 0 || maxScroll <= 0 || maxScroll / GRID_PX > MAX_SAMPLES / 2) {
+    return { tracks: new Map(), deps: new Set() };
+  }
   const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
-  const edges = new Set<number>();
-  for (const drive of found.drives.values())
-    if (drive.kind === "scroll")
-      for (const beat of drive.beats) {
-        edges.add(beat.from.at(input.rest));
-        edges.add(beat.to.at(input.rest));
+  const elementBeatDeps = new Map<string, Set<string>>();
+  const groups = new Map<
+    string,
+    {
+      readonly names: Set<string>;
+      readonly intervals: readonly (readonly [number, number])[];
+      readonly edges: Set<number>;
+    }
+  >();
+  for (const name of input.names) {
+    const drive = scrollDrive(found.drives.get(name));
+    if (drive === undefined || found.moves.has(name)) continue;
+    const beatDeps = new Set<string>();
+    const spy = trackRest(input.rest, beatDeps);
+    const raw: [number, number][] = [];
+    const elEdges = new Set<number>();
+    for (const beat of drive.beats) {
+      const start = beat.from.at(spy);
+      const end = beat.to.at(spy);
+      if (end > start) {
+        const lo = Math.max(0, start);
+        const hi = Math.min(maxScroll, end);
+        if (lo > 0 && lo < maxScroll) elEdges.add(lo);
+        if (hi > 0 && hi < maxScroll) elEdges.add(hi);
+        if (lo < hi) raw.push([lo, hi]);
+      } else if (start >= 0 && start < maxScroll) {
+        if (start > 0) elEdges.add(start);
+        const hi = Math.min(maxScroll, start + GRID_PX);
+        if (hi > 0 && hi < maxScroll) elEdges.add(hi);
+        if (start < hi) raw.push([start, hi]);
       }
-  return [...edges];
+    }
+    const intervals = mergeIntervals(raw);
+    elementBeatDeps.set(name, beatDeps);
+    const signature = intervals.map(([a, b]) => `${a}:${b}`).join(",");
+    const group = groups.get(signature) ?? { names: new Set(), intervals, edges: new Set() };
+    group.names.add(name);
+    for (const edge of elEdges) group.edges.add(edge);
+    groups.set(signature, group);
+  }
+  const allTracks = new Map<string, Track>();
+  const deps = new Set<string>();
+  const budget = { taken: 0 };
+  for (const group of groups.values()) {
+    const groupRestDeps = new Set<string>();
+    const groupInput: TrackInput = { ...input, rest: trackRest(input.rest, groupRestDeps) };
+    const groupTracks = sampleTracks(
+      stage,
+      group.names,
+      maxScroll,
+      GRID_PX,
+      [...group.edges],
+      (y, only) =>
+        runFrame(stage, groupInput, 0, [{ name: INPUT_EVENTS.scroll, at: 0, value: y }], only),
+      (name, _, sampled) =>
+        scrollDrive(sampled.drives.get(name)) !== undefined && !sampled.moves.has(name),
+      group.intervals,
+      budget,
+    );
+    if (budget.taken > MAX_SAMPLES) return { tracks: new Map(), deps: new Set() };
+    if (groupTracks.size === 0) continue;
+    for (const [name, track] of groupTracks) {
+      allTracks.set(name, track);
+      for (const dep of elementBeatDeps.get(name) ?? []) deps.add(dep);
+    }
+    for (const dep of groupRestDeps) deps.add(dep);
+  }
+  return { tracks: allTracks, deps };
 }
 
 /** Whether every part shows its first sample before the trigger fires, with no clock note. */
@@ -345,22 +480,25 @@ function restsAtStart(member: Member, track: Track, before: Sampled): boolean {
   });
 }
 
-/** The tracks of the named elements whose motions read only one trigger beat's progress, sampled across
- * the beat's ms; the pose before the trigger fires must equal the pose at its start. */
-export function triggerTracks(stage: Stage, input: TrackInput): Map<string, TriggerTrack> {
+/** Trigger-driven tracks of `input.names` and their read rest box names, sampled across each beat's ms. */
+export function triggerTracks(stage: Stage, input: TrackInput): SampledTracks<TriggerTrack> {
+  if (input.names.size === 0) return { tracks: new Map(), deps: new Set() };
   const found = runFrame(stage, input, 0, NO_EVENTS, input.names);
   const byBeat = new Map<TriggerBeat, Set<string>>();
   for (const name of input.names) {
-    const drive = found.drives.get(name);
-    if (drive?.kind !== "trigger") continue;
+    const drive = triggerDrive(found.drives.get(name));
+    if (drive === undefined) continue;
     const names = byBeat.get(drive.beat) ?? new Set<string>();
     names.add(name);
     byBeat.set(drive.beat, names);
   }
   const members = new Map(stage.members.map((member) => [member.name, member]));
   const out = new Map<string, TriggerTrack>();
+  const deps = new Set<string>();
   for (const [beat, names] of byBeat) {
-    const threshold = beat.when.point.at(input.rest);
+    const beatDeps = new Set<string>();
+    const trackedInput: TrackInput = { ...input, rest: trackRest(input.rest, beatDeps) };
+    const threshold = beat.when.point.at(trackedInput.rest);
     const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
     const tracks = sampleTracks(
       stage,
@@ -368,23 +506,26 @@ export function triggerTracks(stage: Stage, input: TrackInput): Map<string, Trig
       beat.ms,
       beat.ms / TRIGGER_GRID,
       [],
-      (ms, only) => runFrame(stage, input, ms, crossed, only),
+      (ms, only) => runFrame(stage, trackedInput, ms, crossed, only),
       (name, ms, sampled) => {
-        const drive = sampled.drives.get(name);
-        if (drive?.kind !== "trigger" || drive.beat !== beat) return false;
+        const drive = triggerDrive(sampled.drives.get(name));
+        if (drive === undefined || drive.beat !== beat) return false;
         // While the trigger runs it moves with time; once done, any clock note is the motion's own.
         return ms < beat.ms || !sampled.moves.has(name);
       },
     );
-    const before = threshold > 0 ? runFrame(stage, input, 0, NO_EVENTS, names) : undefined;
+    const before = threshold > 0 ? runFrame(stage, trackedInput, 0, NO_EVENTS, names) : undefined;
+    let keptAny = false;
     for (const [name, track] of tracks) {
       const member = members.get(name);
       if (member === undefined) continue;
       if (before !== undefined && !restsAtStart(member, track, before)) continue;
       out.set(name, { ...track, beat });
+      keptAny = true;
     }
+    if (keptAny) for (const dep of beatDeps) deps.add(dep);
   }
-  return out;
+  return { tracks: out, deps };
 }
 
 /** The fields a part ever moves off their rest value. */

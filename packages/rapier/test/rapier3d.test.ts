@@ -373,4 +373,61 @@ describe("one snapshot format", () => {
     sim.events(liveAt(0));
     expect(sim.events(liveAt(800))).toEqual(events);
   });
+
+  it("fast-forwards a late 3D spawn at 120 s to match a 0 ms spawn and rewinds cleanly", () => {
+    const options = {
+      spawn: (event: MotionEvent, world: Spawner3d) => {
+        if (event.name === "drop") {
+          world.addBody({
+            id: `ball@${event.at}`,
+            shape: { kind: "sphere", radius: 0.4 },
+            x: event.x ?? 0,
+            y: 2,
+            z: 0,
+            restitution: 0.4,
+          });
+        }
+      },
+    };
+    const build = (world: PhysicsWorld3d) => {
+      world.setGravity(0, -9.81, 0);
+      world.addCollider("floor", { kind: "floor", y: 0 });
+    };
+    const late: Events = [
+      { name: "scroll", at: 10_000, value: 200 },
+      { name: "scroll", at: 50_000, value: 600 },
+      { name: "drop", at: 120_000, x: 0.5 },
+    ];
+    const zero: Events = [{ name: "drop", at: 0, x: 0.5 }];
+    const sim = simulate(create(), build, options);
+    const zeroSim = simulate(create(), build, options);
+
+    const began = performance.now();
+    const at500 = sim.at(liveAt(120_500), late);
+    const took = performance.now() - began;
+    expect(took).toBeLessThan(50);
+    expect(at500["ball@120000"]).toEqual(zeroSim.at(liveAt(500), zero)["ball@0"]);
+
+    const at1500 = sim.at(liveAt(121_500), late);
+    expect(at1500["ball@120000"]).toEqual(zeroSim.at(liveAt(1500), zero)["ball@0"]);
+
+    const lateContacts = sim.events(liveAt(121_500), late);
+    const zeroContacts = zeroSim.events(liveAt(1500), zero);
+    expect(lateContacts.length).toBeGreaterThan(0);
+    expect(lateContacts).toHaveLength(zeroContacts.length);
+    lateContacts.forEach((contact, index) => {
+      const expected = zeroContacts[index]!;
+      expect(contact.at - expected.at).toBeCloseTo(120_000, 6);
+      expect(contact.other).toBe(expected.other);
+    });
+
+    expect(sim.at(liveAt(120_100), late)["ball@120000"]).toEqual(
+      zeroSim.at(liveAt(100), zero)["ball@0"],
+    );
+    expect(sim.at(liveAt(121_500), late)).toEqual(at1500);
+    const earlier: Events = [{ name: "drop", at: 60_000, x: -0.5 }, ...late];
+    const fresh = simulate(create(), build, options);
+    expect(sim.at(liveAt(121_500), earlier)).toEqual(fresh.at(liveAt(121_500), earlier));
+    expect(sim.events(liveAt(121_500), earlier)).toEqual(fresh.events(liveAt(121_500), earlier));
+  });
 });

@@ -47,10 +47,11 @@ Headless tools advance scroll via `cues` or `npx gerak frames ... --action scrol
 
 On a `"live"` `"page"` mount and on each remeasure, `mount` hands Chromium the elements whose motion it can work out ahead of time, as Web Animations; Chromium plays animations of `transform` and `opacity` on its compositor thread, so they keep up with the scroll while the page's script is busy.
 
-- **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one `ScrollTimeline` over the document's whole scroll range.
+- **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one `ScrollTimeline` over the document's whole scroll range, sampled inside its active scroll intervals.
 - **Trigger-driven:** every motion on the element plays in one trigger beat, and its pose before the trigger fires equals its pose at the start. It plays on the document timeline; on each input the mount asks the beat which way it runs and how far it has come, so `reverse`, `stay` and `replay` stay the beat's to decide.
 - Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock, `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modify`, `.show` or `.ambient()` keeps it in the engine, as does a `smooth` scroll beat.
 - Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine, and so it does while the page tools hold the clock.
+- `ResizeObserver` callbacks coalesce onto a single microtask, and a remeasure skips rebuilding compositor animations when `maxScroll`, `lines`, and the measured boxes read by handed tracks are unchanged.
 
 ## Sections and CSS layout
 
@@ -67,7 +68,7 @@ Every box element's `.top` and `.end` are scroll points on its measured box (sup
 
 ## Rests, parts, and measured lines
 
-`mount` temporarily clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), then remeasures on `ResizeObserver`, viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box changes records a measurement timestamp so `carry` can transition it to its new box.
+`mount` temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
 
 `box(name, { parts: true })` and `text(name, { split: "words" | "letters" })` read part counts from the markup:
 

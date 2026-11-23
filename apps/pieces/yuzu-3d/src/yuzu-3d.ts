@@ -75,7 +75,7 @@ const leanTurn = (degrees: number) =>
     return { rotation: lean, rotationY: 90 * p };
   });
 
-export default sceneBuilder({ name: "yuzu-3d" })
+export default sceneBuilder({ name: "yuzu-3d", length: 1300 })
   .element(heroAura)
   .motion(
     bind({

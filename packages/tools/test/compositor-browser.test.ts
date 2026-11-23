@@ -146,6 +146,52 @@ describe("yuzu's scroll-driven elements on the browser's scroll timeline", () =>
     for (const selector of [...SCROLLED, ...TRIGGERED, ...ENGINE])
       expect(animated(rows, selector)).toBe(0);
   }, 120000);
+
+  it("keeps existing compositor animations attached when a non-dependency cast element resizes", async () => {
+    const { value, pageErrors } = await withPage(
+      {
+        page: "yuzu/yuzu.html",
+        width: 1280,
+        height: 720,
+        source,
+        clock: "real",
+      },
+      async ({ page }) => {
+        await page.waitForTimeout(1200);
+        return page.evaluate(async () => {
+          const frame = () => new Promise<void>((done) => requestAnimationFrame(() => done()));
+          const storyProgress = document.querySelector("#story-progress");
+          const featureCard = document.querySelector("#features .feature-card");
+          const heroAura = document.querySelector<HTMLElement>("#hero-aura");
+          if (storyProgress === null || featureCard === null || heroAura === null) {
+            throw new Error("missing expected yuzu cast nodes");
+          }
+          const initialScrollAnim = storyProgress.getAnimations()[0];
+          const initialTriggerAnim = featureCard.getAnimations()[0];
+          heroAura.style.width = "300px";
+          heroAura.style.height = "300px";
+          await frame();
+          await frame();
+          await frame();
+          return {
+            hasInitial: initialScrollAnim !== undefined && initialTriggerAnim !== undefined,
+            sameScrollAnim: storyProgress.getAnimations()[0] === initialScrollAnim,
+            sameTriggerAnim: featureCard.getAnimations()[0] === initialTriggerAnim,
+            scrollCount: storyProgress.getAnimations().length,
+            triggerCount: featureCard.getAnimations().length,
+          };
+        });
+      },
+    );
+    expect(pageErrors).toEqual([]);
+    expect(value).toEqual({
+      hasInitial: true,
+      sameScrollAnim: true,
+      sameTriggerAnim: true,
+      scrollCount: 1,
+      triggerCount: 1,
+    });
+  }, 120000);
 });
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/compositor/", import.meta.url));

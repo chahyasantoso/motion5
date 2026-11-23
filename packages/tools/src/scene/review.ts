@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  INPUT_EVENTS,
   NO_EVENTS,
+  liveAt,
   mergeEvents,
   pathBounds,
   quaternionFromEuler3d,
@@ -17,6 +19,7 @@ import {
   formatStageError,
   frame,
   type Content,
+  type Drive,
   type FrameInput,
   type FrameOutput,
   type Member,
@@ -322,6 +325,7 @@ interface EvaluatedSample {
   /** The scene's targets with each list's poses written out, one per item. */
   readonly targets: Readonly<Record<string, unknown>>;
   readonly visible: Readonly<Record<string, boolean>> | undefined;
+  readonly drives: ReadonlyMap<string, Drive>;
   readonly errors: readonly string[];
 }
 
@@ -335,12 +339,13 @@ function evaluate(
   let out: FrameOutput;
   let errors: string[];
   let targets: Readonly<Record<string, unknown>>;
+  const drives = new Map<string, Drive>();
   try {
-    out = frame(stage, { time, events, ...input });
+    out = frame(stage, { time, events, ...input, drives });
     errors = check(stage, out.targets, input.counts).map(formatStageError);
     targets = writtenOut(stage, out.targets, input.counts);
   } catch (error) {
-    return { at, targets: {}, visible: undefined, errors: [errorText(error)] };
+    return { at, targets: {}, visible: undefined, drives: new Map(), errors: [errorText(error)] };
   }
   for (const member of stage.members) {
     if (member.kind !== "actor" || member.content.kind !== "readout") continue;
@@ -355,7 +360,7 @@ function evaluate(
       errors.push(`text of "${member.name}" ${detail}`);
     }
   }
-  return { at, targets, visible: out.visible, errors };
+  return { at, targets, visible: out.visible, drives, errors };
 }
 
 function errorText(error: unknown): string {
@@ -483,16 +488,83 @@ function stretchOf(beats: readonly Beat[], [from, to]: Window): { start: Beat; e
   return { start, end };
 }
 
+/** Probes synthetic input samples for an unmoved settle member under its own reported driver. */
+function movedUnderDriver(
+  stage: Stage,
+  reviewed: Reviewed,
+  drive: Drive,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
+  baseline: string,
+): boolean {
+  const rest = input.rest ?? NO_REST;
+  const differs = (time: Time, events: Events): boolean => {
+    try {
+      const out = frame(stage, {
+        time,
+        events,
+        ...input,
+        only: new Set([reviewed.member.name]),
+      });
+      const targets = writtenOut(stage, out.targets, input.counts);
+      return fingerprint(valueOfReview(targets, reviewed)) !== baseline;
+    } catch {
+      return false;
+    }
+  };
+  switch (drive.kind) {
+    case "scroll":
+      for (const item of drive.beats) {
+        const from = item.from.at(rest);
+        const to = item.to.at(rest);
+        const probes = to > from ? [from, (from + to) / 2, to] : [from, from + 1];
+        for (const y of probes) {
+          if (differs(liveAt(0), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+        }
+      }
+      return false;
+    case "trigger": {
+      const threshold = drive.beat.when.point.at(rest);
+      if (threshold > 0 && differs(liveAt(0), NO_EVENTS)) return true;
+      const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+      return (
+        differs(liveAt(0), crossed) ||
+        differs(liveAt(drive.beat.ms / 2), crossed) ||
+        differs(liveAt(drive.beat.ms), crossed)
+      );
+    }
+    case "more": {
+      const maxBottom = Math.max(
+        1000,
+        ...rest.keys().map((key) => {
+          const box = rest.get(key);
+          return box.y + box.height / 2;
+        }),
+      );
+      for (let k = 1; k <= 8; k += 1) {
+        const y = (maxBottom * k) / 8;
+        if (differs(liveAt(1000), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+      }
+      return differs(liveAt(500), [
+        { name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
+        { name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
+      ]);
+    }
+    default:
+      return unreachable(drive);
+  }
+}
+
 /** Checks expectations (`"settle"`, `"ambient"`, `"static"`), shapes on non-morphs, and changes outside stretches. */
 function stageMemberFindings(
   stage: Stage,
   beats: readonly Beat[],
   evaluated: readonly EvaluatedSample[],
-  rest: RestReader,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
   frame: FrameSize | undefined,
-  counts: Readonly<Record<string, number>> | undefined,
   parents: Readonly<Record<string, string>> | undefined,
 ): readonly string[] {
+  const rest = input.rest ?? NO_REST;
+  const counts = input.counts;
   const found: string[] = [];
 
   if (evaluated.some(({ errors }) => errors.length > 0)) return found;
@@ -503,10 +575,19 @@ function stageMemberFindings(
 
     switch (member.expect) {
       case "settle":
-        if (reviewed.kind === "member" && !member.watch && unmoved)
-          found.push(
-            `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
-          );
+        if (reviewed.kind === "member" && !member.watch && unmoved) {
+          const drive = evaluated
+            .find((sample) => sample.drives.has(member.name))
+            ?.drives.get(member.name);
+          if (
+            drive === undefined ||
+            !movedUnderDriver(stage, reviewed, drive, input, prints[0] ?? "")
+          ) {
+            found.push(
+              `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
+            );
+          }
+        }
         break;
       case "ambient":
         if (reviewed.kind === "member" && !member.watch && unmoved)
@@ -831,15 +912,7 @@ export function reviewSceneModule(
     findings: [
       ...frameEvaluationFindings(evaluated),
       ...valueFindings.map((finding) => labelled(stage, finding)),
-      ...stageMemberFindings(
-        stage,
-        beats,
-        evaluated,
-        rest,
-        module.measured?.frame,
-        input.counts,
-        parents,
-      ),
+      ...stageMemberFindings(stage, beats, evaluated, input, module.measured?.frame, parents),
       ...stagePathFindings(stage, rest),
     ],
   };

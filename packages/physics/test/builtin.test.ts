@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { liveAt, seeded } from "@gerak/core";
+import { liveAt, seeded, type MotionEvent } from "@gerak/core";
 import { builtinWorld, simulate, type PhysicsWorld } from "@gerak/physics";
 import { conformance } from "./conformance";
 
@@ -63,6 +63,57 @@ describe("simulate's checkpoints", () => {
     );
     expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 10 }]).ball?.x).toBe(10);
     expect(sim.at(liveAt(100), [{ name: "drop", at: 0, value: 40 }]).ball?.x).toBe(40);
+  });
+
+  it("fast-forwards idle pre-spawn steps without stepping or checkpointing an empty world", () => {
+    const build = (world: PhysicsWorld) => {
+      world.setGravity(0, 1500);
+      world.addCollider("floor", { kind: "floor", y: 600 });
+    };
+    const spawn = (event: MotionEvent, world: { addBody: PhysicsWorld["addBody"] }) => {
+      if (event.name !== "drop") return;
+      world.addBody({
+        id: "ball",
+        shape: { kind: "circle", radius: 15 },
+        x: 300,
+        y: 100,
+        restitution: 0.4,
+      });
+    };
+    let steps = 0;
+    let snapshots = 0;
+    const raw = builtinWorld();
+    const counted: PhysicsWorld = {
+      addBody: (body) => raw.addBody(body),
+      addCollider: (id, collider, surface) => raw.addCollider(id, collider, surface),
+      setGravity: (x, y) => raw.setGravity(x, y),
+      step: (seconds) => {
+        steps += 1;
+        raw.step(seconds);
+      },
+      body: (id) => raw.body(id),
+      drainContacts: () => raw.drainContacts(),
+      snapshot: () => {
+        snapshots += 1;
+        return raw.snapshot();
+      },
+      restore: (snapshot) => raw.restore(snapshot),
+    };
+    const sim = simulate(counted, build, { dt: 1 / 120, spawn });
+    const zeroSim = simulate(builtinWorld(), build, { dt: 1 / 120, spawn });
+    const events: MotionEvent[] = [
+      { name: "scroll", at: 10_000, value: 100 },
+      { name: "scroll", at: 50_000, value: 400 },
+      { name: "scroll", at: 90_000, value: 800 },
+      { name: "drop", at: 120_000 },
+    ];
+    const began = performance.now();
+    const state = sim.at(liveAt(120_500), events);
+    const took = performance.now() - began;
+    expect(steps).toBe(60);
+    expect(snapshots).toBeLessThanOrEqual(4);
+    expect(state).toEqual(zeroSim.at(liveAt(500), [{ name: "drop", at: 0 }]));
+    expect(took).toBeLessThan(50);
   });
 });
 

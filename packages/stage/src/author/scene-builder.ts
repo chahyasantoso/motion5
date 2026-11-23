@@ -572,7 +572,7 @@ function travelled3d(
 }
 
 /** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
- * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
+ * `fit: "fill"`; with no window it sits there on every clock. */
 export function travel(options: TravelOptions): TravelMotion {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
@@ -1174,9 +1174,8 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
           }
           noteDrive(env.drives, plan.name, MORE);
           const prev = below(time, events);
-          // On a live or untimed clock a travel with no window sits on its slot, as an element's does.
-          const ran =
-            step.window === undefined && time.clock.kind !== "timed" ? withProgress(time, 1) : time;
+          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
+          const ran = step.window === undefined ? withProgress(time, 1) : time;
           const holder: { view: ObjectView; below: Pose3d; out: Pose3d | undefined } = {
             view: step.view,
             below: prev,
@@ -1309,11 +1308,8 @@ function stackOf(
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
           if (step.travels) BELOW_POSE.set(used, prev);
-          // On a live or untimed clock a travel with no window sits on its slot; a timed scene sweeps it.
-          const ran =
-            step.travels && step.window === undefined && time.clock.kind !== "timed"
-              ? withProgress(time, 1)
-              : time;
+          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
+          const ran = step.travels && step.window === undefined ? withProgress(time, 1) : time;
           const pose =
             moves === undefined
               ? step.run(ran, used)

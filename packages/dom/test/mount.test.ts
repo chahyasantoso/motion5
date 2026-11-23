@@ -852,3 +852,355 @@ describe("mount frames for a cause, reading another element", () => {
     expect(play(false)).toEqual(play(true));
   });
 });
+
+describe("compositor remeasure stability and ResizeObserver coalescing", () => {
+  class FakeTimeline {}
+  class FakeScrollTimeline extends FakeTimeline {}
+  class FakeAnimation {
+    effect: object | null = {};
+    readonly timeline: unknown;
+    currentTime: number | null = 0;
+    playState: AnimationPlayState = "paused";
+    playbackRate = 1;
+    cancelled = 0;
+    constructor(timeline: unknown) {
+      this.timeline = timeline;
+    }
+    play(): void {
+      this.playState = "running";
+    }
+    pause(): void {
+      this.playState = "paused";
+    }
+    cancel(): void {
+      this.cancelled += 1;
+    }
+  }
+  class FakeDomNode extends FakeNode {
+    scrollHeight = 2000;
+    clientHeight = 500;
+    animateCalls = 0;
+    measureCalls = 0;
+    lastAnimation: FakeAnimation | undefined;
+    readonly docTimeline: FakeTimeline;
+    constructor(id: string, docTimeline: FakeTimeline, classes: readonly string[] = []) {
+      super(id, classes);
+      this.docTimeline = docTimeline;
+    }
+    getBoundingClientRect() {
+      this.measureCalls += 1;
+      return {
+        left: this.offsetLeft,
+        top: this.offsetTop,
+        width: this.offsetWidth,
+        height: this.offsetHeight,
+      };
+    }
+    animate(_keyframes: unknown, options: { readonly timeline?: unknown }): FakeAnimation {
+      this.animateCalls += 1;
+      const anim = new FakeAnimation(options.timeline ?? this.docTimeline);
+      this.lastAnimation = anim;
+      return anim;
+    }
+  }
+
+  async function withDomGlobals<T>(
+    run: (triggerResize: () => void, setPinTop: (px: number) => void) => T | Promise<T>,
+  ): Promise<T> {
+    const prevElement = Reflect.get(globalThis, "Element");
+    const prevTimeline = Reflect.get(globalThis, "AnimationTimeline");
+    const prevScrollTimeline = Reflect.get(globalThis, "ScrollTimeline");
+    const prevObserver = Reflect.get(globalThis, "ResizeObserver");
+    const prevComputed = Reflect.get(globalThis, "getComputedStyle");
+    let pinTop = 0;
+    const callbacks: (() => void)[] = [];
+    class FakeResizeObserver {
+      private readonly cb: () => void;
+      constructor(cb: () => void) {
+        this.cb = cb;
+        callbacks.push(cb);
+      }
+      observe(): void {}
+      disconnect(): void {
+        const index = callbacks.indexOf(this.cb);
+        if (index >= 0) callbacks.splice(index, 1);
+      }
+    }
+    Reflect.set(globalThis, "Element", FakeDomNode);
+    Reflect.set(globalThis, "AnimationTimeline", FakeTimeline);
+    Reflect.set(globalThis, "ScrollTimeline", FakeScrollTimeline);
+    Reflect.set(globalThis, "ResizeObserver", FakeResizeObserver);
+    Reflect.set(globalThis, "getComputedStyle", (el: unknown) => {
+      if (el instanceof FakeDomNode && el.id === "stickyBox") {
+        return { position: "sticky", top: `${pinTop}px`, marginBottom: "0px" };
+      }
+      return { position: "static", paddingBottom: "0px", borderBottomWidth: "0px" };
+    });
+    try {
+      return await run(
+        () => {
+          for (const cb of [...callbacks]) cb();
+        },
+        (px: number) => {
+          pinTop = px;
+        },
+      );
+    } finally {
+      if (prevElement === undefined) Reflect.deleteProperty(globalThis, "Element");
+      else Reflect.set(globalThis, "Element", prevElement);
+      if (prevTimeline === undefined) Reflect.deleteProperty(globalThis, "AnimationTimeline");
+      else Reflect.set(globalThis, "AnimationTimeline", prevTimeline);
+      if (prevScrollTimeline === undefined) Reflect.deleteProperty(globalThis, "ScrollTimeline");
+      else Reflect.set(globalThis, "ScrollTimeline", prevScrollTimeline);
+      if (prevObserver === undefined) Reflect.deleteProperty(globalThis, "ResizeObserver");
+      else Reflect.set(globalThis, "ResizeObserver", prevObserver);
+      if (prevComputed === undefined) Reflect.deleteProperty(globalThis, "getComputedStyle");
+      else Reflect.set(globalThis, "getComputedStyle", prevComputed);
+    }
+  }
+
+  function makeDomHarness(docTimeline: FakeTimeline, nodes: readonly FakeDomNode[], scrollY = 0) {
+    const docEl = new FakeDomNode("html", docTimeline);
+    const view = {
+      scrollY,
+      innerWidth: 1000,
+      innerHeight: 500,
+      addEventListener(): void {},
+      removeEventListener(): void {},
+    };
+    const doc = {
+      documentElement: docEl,
+      defaultView: view,
+      timeline: docTimeline,
+      createElement: (tag: string) => new FakeDomNode(`created-${tag}`, docTimeline),
+    };
+    const root: PageRoot = {
+      ownerDocument: doc,
+      defaultView: view,
+      documentElement: docEl,
+      querySelector: (selector: string) => nodes.find((n) => n.matches(selector)) ?? null,
+      querySelectorAll: (selector: string) => nodes.filter((n) => n.matches(selector)),
+    };
+    return { docEl, view, root };
+  }
+
+  it("skips compositor rebuilds on non-dependency resize, rebuilds on dep/maxScroll/lines/replace, and coalesces ResizeObserver", async () => {
+    await withDomGlobals(async (triggerResize) => {
+      const docTimeline = new FakeTimeline();
+      const widget = new FakeDomNode("widget", docTimeline);
+      const sec = new FakeDomNode("sec", docTimeline);
+      sec.offsetTop = 200;
+      sec.offsetHeight = 600;
+      const bar = new FakeDomNode("bar", docTimeline);
+      const cards = new FakeDomNode("cards", docTimeline);
+      cards.textContent = "alpha beta";
+      const word0 = new FakeDomNode("w0", docTimeline);
+      const word1 = new FakeDomNode("w1", docTimeline);
+      word0.offsetTop = 0;
+      word1.offsetTop = 0;
+      cards.children.push(word0, word1);
+
+      const { docEl, view, root } = makeDomHarness(docTimeline, [widget, sec, bar, cards]);
+      const frames = fakeFrames();
+      const slide = motion((t): Pose2d => ({ x: 100 * t.progress }));
+      const makeScene = (scale: number) => {
+        const secBox = box("sec");
+        const scrollBeat = beat("scroll", { scroll: [secBox.top, secBox.end] });
+        return sceneBuilder({ length: 1000 })
+          .element(box("widget"))
+          .motion(bind({ y: () => 0 }))
+          .element(box("bar"))
+          .motion(motion((t): Pose2d => ({ x: 100 * scale * t.progress })).in(scrollBeat))
+          .element(text("cards", { split: "words" }))
+          .motion(slide.in(scrollBeat));
+      };
+
+      const mounted = mount(makeScene(1), {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "live",
+        now: () => 0,
+      });
+
+      const barAnim1 = bar.lastAnimation;
+      expect(bar.animateCalls).toBe(1);
+      expect(cards.animateCalls).toBe(0);
+      expect(word0.animateCalls).toBe(1);
+      expect(barAnim1?.cancelled).toBe(0);
+
+      // Burst of ResizeObserver callbacks on non-dependency widget coalesces to 1 measure and 0 handoff rebuilds.
+      const measuresBeforeBurst = widget.measureCalls;
+      widget.offsetWidth = 220;
+      triggerResize();
+      triggerResize();
+      triggerResize();
+      expect(widget.measureCalls).toBe(measuresBeforeBurst);
+      await Promise.resolve();
+      expect(widget.measureCalls).toBe(measuresBeforeBurst + 1);
+      expect(bar.animateCalls).toBe(1);
+      expect(barAnim1?.cancelled).toBe(0);
+      expect(bar.lastAnimation).toBe(barAnim1);
+
+      // Resizing a dependency box (`sec`) triggers a rebuild.
+      sec.offsetHeight = 800;
+      mounted.remeasure();
+      expect(bar.animateCalls).toBe(2);
+      expect(barAnim1?.cancelled).toBe(1);
+
+      // Changing `maxScroll` triggers a rebuild.
+      const barAnim2 = bar.lastAnimation;
+      docEl.scrollHeight = 2500;
+      mounted.remeasure();
+      expect(bar.animateCalls).toBe(3);
+      expect(barAnim2?.cancelled).toBe(1);
+
+      // Changing split `lines` triggers a rebuild.
+      const barAnim3 = bar.lastAnimation;
+      word1.offsetTop = 30;
+      mounted.remeasure();
+      expect(bar.animateCalls).toBe(4);
+      expect(barAnim3?.cancelled).toBe(1);
+
+      // Calling `replace()` forces a rebuild even when rest boxes, lines, and maxScroll are unchanged.
+      const barAnim4 = bar.lastAnimation;
+      mounted.replace(makeScene(2));
+      expect(bar.animateCalls).toBe(5);
+      expect(barAnim4?.cancelled).toBe(1);
+
+      // Pending ResizeObserver work cancels cleanly on dispose.
+      const measuresBeforeDispose = widget.measureCalls;
+      triggerResize();
+      mounted.dispose();
+      await Promise.resolve();
+      expect(widget.measureCalls).toBe(measuresBeforeDispose);
+      expect(frames.queued).toBe(0);
+    });
+  });
+
+  it("detects sticky placement changes in sameRest and handedDeps even when box dimensions are unchanged", async () => {
+    await withDomGlobals((_triggerResize, setPinTop) => {
+      const docTimeline = new FakeTimeline();
+      const parent = new FakeDomNode("stickyParent", docTimeline);
+      parent.offsetTop = 100;
+      parent.offsetHeight = 900;
+      const sticky = new FakeDomNode("stickyBox", docTimeline);
+      sticky.offsetTop = 100;
+      sticky.offsetHeight = 200;
+      sticky.parentElement = parent;
+      const target = new FakeDomNode("target", docTimeline);
+      const { view, root } = makeDomHarness(docTimeline, [sticky, target]);
+      const frames = fakeFrames();
+      let ms = 0;
+
+      const scene = sceneBuilder({ length: 1000 })
+        .element(box("stickyBox"))
+        .motion(carry({ ms: 200 }))
+        .element(box("target"))
+        .motion(
+          motion(
+            (
+              t,
+              context?: { readonly rest: { get(name: string): { readonly y: number } } },
+            ): Pose2d => ({
+              x: 50 * t.progress + (context?.rest.get("stickyBox").y ?? 0) * 0,
+            }),
+          ).in(beat("s", { scroll: [scrollPoint(0), scrollPoint(500)] })),
+        );
+
+      const mounted = mount(scene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "live",
+        settleMs: 50,
+        now: () => ms,
+      });
+
+      frames.tick(0);
+      frames.tick(16);
+      const animBefore = target.lastAnimation;
+      expect(mounted.measure().rest["stickyBox"]?.placement).toEqual({
+        kind: "sticky",
+        minY: 100,
+        maxY: 800,
+        pinY: 100,
+      });
+
+      ms = 100;
+      setPinTop(40);
+      mounted.remeasure();
+      expect(mounted.measure().rest["stickyBox"]?.placement).toEqual({
+        kind: "sticky",
+        minY: 60,
+        maxY: 760,
+        pinY: 140,
+      });
+      // `sameBox`/`sameRest` must see the placement delta: both `activeUntil` and `handOff()` react.
+      frames.tick(116);
+      expect(frames.queued).toBeGreaterThan(0);
+      expect(target.animateCalls).toBe(2);
+      expect(animBefore?.cancelled).toBe(1);
+      mounted.dispose();
+    });
+  });
+
+  it("detaches and restores document-timeline trigger animations across non-dependency remeasure", async () => {
+    await withDomGlobals(() => {
+      const docTimeline = new FakeTimeline();
+      const observedEffects: (object | null | undefined)[] = [];
+      class RecordingNode extends FakeDomNode {
+        override getBoundingClientRect() {
+          observedEffects.push(panel.lastAnimation?.effect);
+          return super.getBoundingClientRect();
+        }
+      }
+      const widget = new FakeDomNode("widget", docTimeline);
+      const panel = new RecordingNode("panel", docTimeline);
+      const { view, root } = makeDomHarness(docTimeline, [widget, panel]);
+      const frames = fakeFrames();
+      let ms = 0;
+
+      const reveal = beat("reveal", 600, { when: scrollPoint(200).reached, back: "stay" });
+      const scene = sceneBuilder({ length: 1000 })
+        .element(box("widget"))
+        .motion(bind({ y: () => 0 }))
+        .element(box("panel"))
+        .motion(motion((t): Pose2d => ({ opacity: t.progress })).in(reveal));
+
+      const mounted = mount(scene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "live",
+        now: () => ms,
+      });
+
+      const anim = panel.lastAnimation;
+      expect(panel.animateCalls).toBe(1);
+      expect(anim?.playState).toBe("paused");
+      expect(anim?.effect).not.toBeNull();
+
+      ms = 16;
+      view.scrollY = 300;
+      frames.tick(16);
+      expect(anim?.playState).toBe("running");
+
+      ms = 250;
+      if (anim !== undefined) anim.currentTime = 234;
+      observedEffects.length = 0;
+      widget.offsetWidth = 240;
+      mounted.remeasure();
+
+      expect(observedEffects).toContain(null);
+      expect(panel.animateCalls).toBe(1);
+      expect(panel.lastAnimation).toBe(anim);
+      expect(anim?.cancelled).toBe(0);
+      expect(anim?.effect).not.toBeNull();
+      expect(anim?.currentTime).toBe(234);
+      expect(anim?.playState).toBe("running");
+
+      mounted.dispose();
+    });
+  });
+});

@@ -69,6 +69,7 @@ async function bootstrap(): Promise<void> {
 
   const studio = createCookieStudio(node);
   const models = await loadCookieWorld(studio.world);
+  await studio.renderer.compileAsync(studio.world, studio.camera);
 
   const mounted = mount(cookieScene, {
     clock: "live",

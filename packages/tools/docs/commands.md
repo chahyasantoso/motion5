@@ -6,7 +6,7 @@ Run from your project's folder. A page is a path inside the site with no leading
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
 `1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
-`(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
+`(x,y)` after the ms for a point on the element; repeatable `--action` flags join in order, and a selector the page lacks fails at once.
 
 - **`gerak init [folder] [--refresh]`**: sets up your project, found as the nearest `package.json`: writes the
   page files into `folder` (default `pieces`, from where you run), `"gerak": { "pieces": "<folder>" }` into the
@@ -31,7 +31,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
-  function that throws. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
+  function that throws. Unmoved `"settle"` members driven by scroll, trigger, or input signals are probed across their
+  reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
 - **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
@@ -48,8 +49,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
-- **`gerak fps <page> [--to ms] [--size WxH] [--show]`**: runs the page on the machine's real clock for `--to` ms
-  (default 10000) and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
+- **`gerak fps <page> [--to ms] [--size WxH] [--action list] [--show]`**: runs the page on the machine's real clock for `--to` ms
+  (default 10000), executing any `--action` sequence in real time, and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
   second per 500 ms window, frame gaps over 16.7 and 33.4 ms, the five slowest frames split into `scene`, `write` and
   `rest` ms, and the WebGL renderer. Headless frames run uncapped (`vsync: false`); `--show` opens a window with a counter.
 - **`gerak compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at

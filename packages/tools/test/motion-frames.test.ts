@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseFramesArgs } from "../src/page/frames";
-import { fromCaller } from "../src/page/page";
+import { fromCaller, readPageArgs } from "../src/page/page";
 import { callerPiecesRoot } from "../src/page/root";
 
 const PIECES_ROOT = callerPiecesRoot();
@@ -146,5 +146,48 @@ describe("parseFramesArgs --crop and --zoom", () => {
         "0,0,10,10",
       ]).kind,
     ).toBe("usage");
+  });
+});
+
+describe("readPageArgs repeated --action flags", () => {
+  it("joins repeated --action flags in order and rejects malformed or out-of-order ones", () => {
+    const joined = readPageArgs(
+      ["a.html", "--action", "scroll:200@100", "--action", "click:.btn@300"],
+      [],
+    );
+    expect(joined.kind).toBe("ok");
+    if (joined.kind === "ok") {
+      expect(joined.target.actions).toEqual([
+        { kind: "scroll", px: 200, at: 100 },
+        { kind: "click", selector: ".btn", at: 300 },
+      ]);
+    }
+
+    const framesParsed = parseFramesArgs([
+      "a.html",
+      "--at",
+      "0,500",
+      "--action",
+      "scroll:200@100",
+      "--action",
+      "hover:.card@250",
+    ]);
+    expect(framesParsed.kind).toBe("frames");
+    if (framesParsed.kind === "frames") {
+      expect(framesParsed.actions).toEqual([
+        { kind: "scroll", px: 200, at: 100 },
+        { kind: "hover", selector: ".card", at: 250 },
+      ]);
+    }
+
+    expect(
+      readPageArgs(["a.html", "--action", "scroll:200@300", "--action", "click:.btn@100"], []).kind,
+    ).toBe("usage");
+    expect(readPageArgs(["a.html", "--action", "scroll:200@100", "--action", ""], []).kind).toBe(
+      "usage",
+    );
+    expect(readPageArgs(["a.html", "--action", "scroll:200@100", "--action"], []).kind).toBe(
+      "usage",
+    );
   });
 });
