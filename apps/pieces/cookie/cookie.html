@@ -11,24 +11,26 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./cookie.css" />
+    <link rel="preload" as="fetch" crossorigin href="./references/warm-batch-jar.glb" />
+    <link rel="preload" as="fetch" crossorigin href="./references/warm-batch-cookie.glb" />
   </head>
   <body>
     <canvas data-cast="stageCanvas" class="stage-canvas" aria-hidden="true"></canvas>
 
-    <header class="site-header">
-      <nav class="site-nav" aria-label="Primary">
-        <a href="#flavours">Flavours</a>
-        <a href="#craft">Craft</a>
-        <a href="#jar">Fill a Jar</a>
-      </nav>
-      <a href="#" class="brand-wordmark">Warm Batch</a>
-      <a href="#jar" class="jar-pill">Your Jar (0)</a>
-    </header>
-
     <main>
       <section data-cast="heroStage" class="hero-stage" aria-label="Warm Batch Hero">
         <div class="hero-sticky">
-          <div class="hero-horizon" aria-hidden="true"></div>
+          <div data-cast="heroWarmWash" class="hero-warm-wash" aria-hidden="true"></div>
+          <div data-cast="heroHorizon" class="hero-horizon" aria-hidden="true"></div>
+          <header class="site-header">
+            <nav class="site-nav" aria-label="Primary">
+              <a href="#flavours">Flavours</a>
+              <a href="#craft">Craft</a>
+              <a href="#builder">Fill a Jar</a>
+            </nav>
+            <a href="#" class="brand-wordmark">Warm Batch</a>
+            <a href="#builder" class="jar-pill">Your Jar (0)</a>
+          </header>
           <div class="hero-inner">
             <div data-cast="heroCopy" class="hero-copy">
               <p class="hero-eyebrow">Small-batch glass jars · Baked every morning</p>
@@ -38,7 +40,7 @@
                 glass.
               </p>
               <div class="hero-actions">
-                <a href="#jar" data-cast="heroCta" class="cta-pill">
+                <a href="#flavours" data-cast="heroCta" class="cta-pill">
                   <span>Fill your jar</span>
                   <span class="cta-arrow" aria-hidden="true">→</span>
                 </a>
@@ -48,30 +50,606 @@
 
             <div data-cast="slotHeroJar" class="slot-hero-jar" aria-hidden="true"></div>
           </div>
-          <p data-cast="scrollCue" class="scroll-cue">
-            Scroll to unseal the jar <span aria-hidden="true">↓</span>
-          </p>
-        </div>
-      </section>
 
-      <section class="offer-section" id="jar" aria-label="Morning Jar Offer">
-        <div data-cast="offerBanner" class="offer-banner">
-          <div class="offer-copy">
-            <p class="offer-kicker">Morning Batch</p>
-            <h2 class="offer-title">Six in a jar for $28, baked every morning.</h2>
-          </div>
-          <div data-cast="offerSeal" class="offer-seal" aria-label="Baked fresh daily seal">
-            <span class="seal-top">WARM BATCH</span>
-            <span class="seal-num">06</span>
-            <span class="seal-bottom">FRESH DAILY</span>
+          <div id="jar" data-cast="offerBanner" class="offer-banner" aria-label="Morning Jar Offer">
+            <div class="offer-copy">
+              <p class="offer-kicker">Morning Batch</p>
+              <h2 class="offer-title">Six in a jar for $28, baked every morning.</h2>
+            </div>
+            <div data-cast="offerSeal" class="offer-seal" aria-label="Baked fresh daily seal">
+              <span class="seal-top">WARM BATCH</span>
+              <span class="seal-num">06</span>
+              <span class="seal-bottom">FRESH DAILY</span>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="flavours" class="next-band" aria-label="Flavour Preview">
-        <div class="next-band-inner">
-          <p class="next-band-kicker">FLAVOURS</p>
-          <p class="next-band-copy">Four warm batches, fresh off the tray.</p>
+      <section
+        id="flavours"
+        data-cast="spotlightStage"
+        class="spotlight-stage"
+        aria-label="Flavour Spotlight"
+      >
+        <div class="spotlight-sticky">
+          <div
+            data-cast="spotlightTint0"
+            class="spotlight-tint tint-brown-butter"
+            aria-hidden="true"
+          ></div>
+          <div
+            data-cast="spotlightTint1"
+            class="spotlight-tint tint-matcha"
+            aria-hidden="true"
+          ></div>
+          <div
+            data-cast="spotlightTint2"
+            class="spotlight-tint tint-double-dark"
+            aria-hidden="true"
+          ></div>
+          <div
+            data-cast="spotlightTint3"
+            class="spotlight-tint tint-pecan"
+            aria-hidden="true"
+          ></div>
+
+          <div class="spotlight-frame">
+            <p class="spotlight-kicker">FLAVOURS</p>
+
+            <div class="flavor-title-stack">
+              <h2 data-cast="flavorTitle0" class="flavor-title">Brown Butter<br />Choc Chip</h2>
+              <h2 data-cast="flavorTitle1" class="flavor-title">Matcha<br />White Choc</h2>
+              <h2 data-cast="flavorTitle2" class="flavor-title">Double Dark<br />Sea Salt</h2>
+              <h2 data-cast="flavorTitle3" class="flavor-title">Toasted Pecan<br />Oat</h2>
+            </div>
+
+            <div class="flavor-stage-col">
+              <div data-cast="slotFlavorCookie" class="slot-flavor-cookie" aria-hidden="true"></div>
+              <div data-cast="flavorShadow" class="flavor-shadow" aria-hidden="true"></div>
+            </div>
+
+            <div class="spotlight-counter" aria-label="Flavour number">
+              <span class="counter-active-stack">
+                <span data-cast="flavorNum0" class="counter-active">01</span>
+                <span data-cast="flavorNum1" class="counter-active">02</span>
+                <span data-cast="flavorNum2" class="counter-active">03</span>
+                <span data-cast="flavorNum3" class="counter-active">04</span>
+              </span>
+              <span class="counter-total">/ 04</span>
+            </div>
+
+            <div class="flavor-note-stack">
+              <div data-cast="flavorNote0" class="flavor-note" data-active="true">
+                <p class="flavor-note-kicker">the browned-butter one</p>
+                <p class="flavor-note-desc">
+                  Toasted milk solids, puddles of 62% dark chocolate, flaky Maldon salt.
+                </p>
+                <button type="button" class="cta-pill cta-pill-sm" data-flavor-add="0">
+                  Add to jar · $5.00
+                </button>
+              </div>
+
+              <div data-cast="flavorNote1" class="flavor-note">
+                <p class="flavor-note-kicker">the earthy sweet one</p>
+                <p class="flavor-note-desc">
+                  Stone-milled Uji matcha dough folded with caramelized white chocolate chunks.
+                </p>
+                <button type="button" class="cta-pill cta-pill-sm" data-flavor-add="1">
+                  Add to jar · $5.50
+                </button>
+              </div>
+
+              <div data-cast="flavorNote2" class="flavor-note">
+                <p class="flavor-note-kicker">the deep cocoa one</p>
+                <p class="flavor-note-desc">
+                  Dutch-process Valrhona cocoa dough, bittersweet chunks, crisp sea salt finish.
+                </p>
+                <button type="button" class="cta-pill cta-pill-sm" data-flavor-add="2">
+                  Add to jar · $5.25
+                </button>
+              </div>
+
+              <div data-cast="flavorNote3" class="flavor-note">
+                <p class="flavor-note-kicker">the spiced crunch one</p>
+                <p class="flavor-note-desc">
+                  Brown-sugar rolled oats, roasted buttered pecans, warm cinnamon crumb.
+                </p>
+                <button type="button" class="cta-pill cta-pill-sm" data-flavor-add="3">
+                  Add to jar · $5.00
+                </button>
+              </div>
+            </div>
+
+            <nav class="spotlight-rail" aria-label="Jump to flavour">
+              <button
+                type="button"
+                class="spotlight-dot"
+                data-cast="flavorDot0"
+                data-flavor-jump="0"
+                data-active="true"
+                aria-label="View Brown Butter Choc Chip"
+              ></button>
+              <button
+                type="button"
+                class="spotlight-dot"
+                data-cast="flavorDot1"
+                data-flavor-jump="1"
+                aria-label="View Matcha White Choc"
+              ></button>
+              <button
+                type="button"
+                class="spotlight-dot"
+                data-cast="flavorDot2"
+                data-flavor-jump="2"
+                aria-label="View Double Dark Sea Salt"
+              ></button>
+              <button
+                type="button"
+                class="spotlight-dot"
+                data-cast="flavorDot3"
+                data-flavor-jump="3"
+                aria-label="View Toasted Pecan Oat"
+              ></button>
+            </nav>
+          </div>
+        </div>
+      </section>
+
+      <section id="craft" data-cast="craftStage" class="craft-stage" aria-label="How We Bake">
+        <div class="craft-sticky">
+          <div class="craft-top">
+            <div data-cast="craftHeading" class="craft-heading">
+              <p class="craft-kicker">HOW WE BAKE</p>
+              <h2 class="craft-title">Slow-browned butter, hand-folded chunks, warm into glass.</h2>
+            </div>
+
+            <div class="craft-progress-wrap">
+              <span class="craft-progress-label">01 — 04 · MORNING RITUAL</span>
+              <div class="craft-progress-track" aria-hidden="true">
+                <div data-cast="craftProgressFill" class="craft-progress-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <div data-cast="craftViewport" class="craft-viewport">
+            <div data-cast="craftTrack" class="craft-track">
+              <article data-cast="craftCard0" class="craft-card">
+                <div class="craft-card-top">
+                  <span class="craft-card-num">01</span>
+                  <svg
+                    class="craft-card-icon"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 36 36"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <rect
+                      x="11"
+                      y="5"
+                      width="14"
+                      height="3.5"
+                      rx="1.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M10 8.5H26L27.5 12V28C27.5 29.6569 26.1569 31 24.5 31H11.5C9.84315 31 8.5 29.6569 8.5 28V12L10 8.5Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <ellipse
+                      cx="18"
+                      cy="25.5"
+                      rx="6"
+                      ry="2"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                    <ellipse
+                      cx="18"
+                      cy="20.5"
+                      rx="6"
+                      ry="2"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                    <ellipse
+                      cx="18"
+                      cy="15.5"
+                      rx="6"
+                      ry="2"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                  </svg>
+                </div>
+                <div class="craft-card-body">
+                  <h3 class="craft-card-title">Build your jar</h3>
+                  <p class="craft-card-copy">
+                    Pick any six warm flavours—all brown butter, or a tasting flight across every
+                    tray.
+                  </p>
+                </div>
+                <span class="craft-card-tag">6 COOKIES · YOUR MIX</span>
+              </article>
+
+              <article data-cast="craftCard1" class="craft-card">
+                <div class="craft-card-top">
+                  <span class="craft-card-num">02</span>
+                  <svg
+                    class="craft-card-icon"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 36 36"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M13 13C13 10.5 15 9.5 15 7"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M18 12.5C18 10 20 9 20 6.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M23 13C23 10.5 25 9.5 25 7"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M6.5 18H26.5L25 25.5C24.5 27.8 22.5 29.5 20.1 29.5H12.9C10.5 29.5 8.5 27.8 8 25.5L6.5 18Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M26.5 19.5H31.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <div class="craft-card-body">
+                  <h3 class="craft-card-title">Baked that morning</h3>
+                  <p class="craft-card-copy">
+                    Butter browned until nutty, dough chilled overnight, and baked in 24-cookie runs
+                    at dawn.
+                  </p>
+                </div>
+                <span class="craft-card-tag">05:30 AM · SMALL BATCH</span>
+              </article>
+
+              <article data-cast="craftCard2" class="craft-card">
+                <div class="craft-card-top">
+                  <span class="craft-card-num">03</span>
+                  <svg
+                    class="craft-card-icon"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 36 36"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="18"
+                      cy="20"
+                      r="9.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M14.5 17.5L16 16.5L17 18L15.2 19L14.5 17.5Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M20 21.5L21.8 20.8L22.4 22.5L20.5 23L20 21.5Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linejoin="round"
+                    />
+                    <circle cx="15.5" cy="23.5" r="1" fill="currentColor" />
+                    <circle cx="21" cy="17" r="1" fill="currentColor" />
+                    <path
+                      d="M14 7.5C14 6 15.5 5.2 15.5 3.8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M21 7.5C21 6 22.5 5.2 22.5 3.8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <div class="craft-card-body">
+                  <h3 class="craft-card-title">Sealed warm in glass</h3>
+                  <p class="craft-card-copy">
+                    Lifted straight off the tray into thick apothecary glass while the dark
+                    chocolate still puddles.
+                  </p>
+                </div>
+                <span class="craft-card-tag">72°C · SEALED IN GLASS</span>
+              </article>
+
+              <article data-cast="craftCard3" class="craft-card">
+                <div class="craft-card-top">
+                  <span class="craft-card-num">04</span>
+                  <svg
+                    class="craft-card-icon"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 36 36"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="18"
+                      cy="15.5"
+                      r="8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <circle
+                      cx="18"
+                      cy="15.5"
+                      r="4.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-dasharray="2 2"
+                    />
+                    <path
+                      d="M14.5 22.5L12.5 31L18 28.2L23.5 31L21.5 22.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div class="craft-card-body">
+                  <h3 class="craft-card-title">Picked up or dropped off</h3>
+                  <p class="craft-card-copy">
+                    Warm to your doorstep before noon, or waiting by the counter with a stamped lid
+                    seal.
+                  </p>
+                </div>
+                <span class="craft-card-tag">SAME MORNING · FRESH</span>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="builder"
+        data-cast="builderStage"
+        class="builder-stage"
+        aria-label="Six-Cookie Jar Builder"
+      >
+        <div class="builder-sticky">
+          <div class="builder-horizon" aria-hidden="true"></div>
+          <div class="builder-grid">
+            <div class="builder-visual">
+              <div data-cast="builderHeading" class="builder-heading">
+                <p class="builder-kicker">BUILD YOUR JAR</p>
+                <h2 class="builder-title">Six warm cookies, sealed to order.</h2>
+                <p class="builder-status" data-builder-status>
+                  Pick 4+ warm cookies to seal your jar
+                </p>
+              </div>
+              <div data-cast="slotBuilderJar" class="slot-builder-jar" aria-hidden="true"></div>
+            </div>
+
+            <div class="builder-panel">
+              <div class="builder-panel-head">
+                <div class="builder-panel-meta">
+                  <span class="builder-panel-kicker">YOUR MORNING JAR</span>
+                  <span class="builder-count" data-builder-count>0 / 6</span>
+                  <button
+                    type="button"
+                    class="builder-clear-btn"
+                    data-builder-clear
+                    disabled
+                    aria-hidden="true"
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div class="builder-pips" aria-hidden="true">
+                  <span class="slot-pip" data-slot-pip="0" aria-hidden="true"></span>
+                  <span class="slot-pip" data-slot-pip="1" aria-hidden="true"></span>
+                  <span class="slot-pip" data-slot-pip="2" aria-hidden="true"></span>
+                  <span class="slot-pip" data-slot-pip="3" aria-hidden="true"></span>
+                  <span class="slot-pip" data-slot-pip="4" aria-hidden="true"></span>
+                  <span class="slot-pip" data-slot-pip="5" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="builder-rows">
+                <div class="builder-row">
+                  <div class="builder-row-info">
+                    <span
+                      class="builder-swatch swatch-brown-butter"
+                      style="--swatch: #c58d56"
+                      aria-hidden="true"
+                    ></span>
+                    <div class="builder-row-text">
+                      <span class="builder-row-name">Brown Butter Choc Chip</span>
+                      <span class="builder-row-price">$5.00 each</span>
+                    </div>
+                  </div>
+                  <div class="builder-stepper">
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-remove="0"
+                      aria-label="Remove Brown Butter Choc Chip"
+                    >
+                      −
+                    </button>
+                    <span class="stepper-qty" data-builder-qty="0">0</span>
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-add="0"
+                      aria-label="Add Brown Butter Choc Chip"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div class="builder-row">
+                  <div class="builder-row-info">
+                    <span
+                      class="builder-swatch swatch-matcha"
+                      style="--swatch: #7f9965"
+                      aria-hidden="true"
+                    ></span>
+                    <div class="builder-row-text">
+                      <span class="builder-row-name">Matcha White Choc</span>
+                      <span class="builder-row-price">$5.50 each</span>
+                    </div>
+                  </div>
+                  <div class="builder-stepper">
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-remove="1"
+                      aria-label="Remove Matcha White Choc"
+                    >
+                      −
+                    </button>
+                    <span class="stepper-qty" data-builder-qty="1">0</span>
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-add="1"
+                      aria-label="Add Matcha White Choc"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div class="builder-row">
+                  <div class="builder-row-info">
+                    <span
+                      class="builder-swatch swatch-double-dark"
+                      style="--swatch: #4e2e20"
+                      aria-hidden="true"
+                    ></span>
+                    <div class="builder-row-text">
+                      <span class="builder-row-name">Double Dark Sea Salt</span>
+                      <span class="builder-row-price">$5.25 each</span>
+                    </div>
+                  </div>
+                  <div class="builder-stepper">
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-remove="2"
+                      aria-label="Remove Double Dark Sea Salt"
+                    >
+                      −
+                    </button>
+                    <span class="stepper-qty" data-builder-qty="2">0</span>
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-add="2"
+                      aria-label="Add Double Dark Sea Salt"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div class="builder-row">
+                  <div class="builder-row-info">
+                    <span
+                      class="builder-swatch swatch-pecan-oat"
+                      style="--swatch: #b77c49"
+                      aria-hidden="true"
+                    ></span>
+                    <div class="builder-row-text">
+                      <span class="builder-row-name">Toasted Pecan Oat</span>
+                      <span class="builder-row-price">$5.00 each</span>
+                    </div>
+                  </div>
+                  <div class="builder-stepper">
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-remove="3"
+                      aria-label="Remove Toasted Pecan Oat"
+                    >
+                      −
+                    </button>
+                    <span class="stepper-qty" data-builder-qty="3">0</span>
+                    <button
+                      type="button"
+                      class="stepper-btn"
+                      data-builder-add="3"
+                      aria-label="Add Toasted Pecan Oat"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="builder-panel-foot">
+                <div class="builder-total-block">
+                  <span class="builder-total-label" data-builder-total-label>ESTIMATED BATCH</span>
+                  <strong class="builder-total" data-builder-total>$0.00</strong>
+                </div>
+                <div class="builder-actions">
+                  <button type="button" class="cta-pill cta-pill-ghost" data-builder-mix>
+                    Baker’s mix
+                  </button>
+                  <button
+                    type="button"
+                    class="cta-pill"
+                    data-cast="builderSealBtn"
+                    data-builder-seal
+                    disabled
+                  >
+                    Add 4 more to seal
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="closing" class="closing-teaser" aria-label="Warm Batch Closing Preview">
+        <div class="closing-teaser-inner">
+          <p class="closing-teaser-kicker">HUNGRY YET?</p>
+          <h2 class="closing-teaser-title">Warm from the oven, every morning.</h2>
+          <p class="closing-teaser-sub">Small-batch cookie jars, sealed in glass daily.</p>
         </div>
       </section>
     </main>

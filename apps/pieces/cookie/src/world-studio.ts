@@ -36,7 +36,7 @@ export function createCookieStudio(canvas: HTMLCanvasElement): CookieStudio {
   const keyLight = new THREE.DirectionalLight(0xfff6e8, 2.1);
   keyLight.position.set(3.2, 5.4, 3.8);
   keyLight.castShadow = true;
-  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.mapSize.set(1024, 1024);
   keyLight.shadow.camera.near = 1;
   keyLight.shadow.camera.far = 16;
   keyLight.shadow.camera.left = -3;
