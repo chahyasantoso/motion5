@@ -1,0 +1,124 @@
+{
+ "page": "cookie.html",
+ "digest": "6cd0ce90a648a26a",
+ "frame": {
+  "width": 1440,
+  "height": 900
+ },
+ "rest": {
+  "stageCanvas": {
+   "x": 720,
+   "y": 450,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "fixed"
+   }
+  },
+  "heroHeadline.0": {
+   "x": 190.8671875,
+   "y": 216.015625,
+   "width": 261.734375,
+   "height": 74.46875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroHeadline.1": {
+   "x": 432.8984375,
+   "y": 216.015625,
+   "width": 198.828125,
+   "height": 74.46875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroHeadline.2": {
+   "x": 154.5703125,
+   "y": 290.484375,
+   "width": 189.140625,
+   "height": 74.46875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroHeadline.3": {
+   "x": 338.6953125,
+   "y": 290.484375,
+   "width": 155.609375,
+   "height": 74.46875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroHeadline": {
+   "x": 340,
+   "y": 253.25,
+   "width": 560,
+   "height": 148.9375,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroSub": {
+   "x": 340,
+   "y": 379.46875,
+   "width": 560,
+   "height": 59.5,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroCta": {
+   "x": 140.90625,
+   "y": 467.71875,
+   "width": 161.8125,
+   "height": 49,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "offerBanner": {
+   "x": 720,
+   "y": 802,
+   "width": 1256,
+   "height": 184,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "offerSeal": {
+   "x": 1244,
+   "y": 802,
+   "width": 112,
+   "height": 112,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotHeroJar": {
+   "x": 1076,
+   "y": 326,
+   "width": 608,
+   "height": 440,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {
+  "heroHeadline": [
+   0,
+   0,
+   1,
+   1
+  ]
+ },
+ "parents": {
+  "heroHeadline.0": "heroHeadline",
+  "heroHeadline.1": "heroHeadline",
+  "heroHeadline.2": "heroHeadline",
+  "heroHeadline.3": "heroHeadline",
+  "offerSeal": "offerBanner"
+ }
+}
