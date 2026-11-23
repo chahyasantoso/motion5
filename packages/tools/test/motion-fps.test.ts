@@ -37,6 +37,37 @@ describe("parseFpsArgs", () => {
   it("refuses an unknown flag", () => {
     expect(parseFpsArgs(["a.html", "--nope", "1"]).kind).toBe("usage");
   });
+
+  it("reads single and repeated --action flags and refuses invalid ones", () => {
+    const single = parseFpsArgs(["a.html", "--action", "scroll:200@100,click:.btn@300"]);
+    expect(single).toMatchObject({
+      kind: "fps",
+      actions: [
+        { kind: "scroll", px: 200, at: 100 },
+        { kind: "click", selector: ".btn", at: 300 },
+      ],
+    });
+
+    const repeated = parseFpsArgs([
+      "a.html",
+      "--action",
+      "scroll:200@100",
+      "--action",
+      "click:.btn@300",
+    ]);
+    expect(repeated).toMatchObject({
+      kind: "fps",
+      actions: [
+        { kind: "scroll", px: 200, at: 100 },
+        { kind: "click", selector: ".btn", at: 300 },
+      ],
+    });
+
+    expect(parseFpsArgs(["a.html", "--action", "bad"]).kind).toBe("usage");
+    expect(
+      parseFpsArgs(["a.html", "--action", "scroll:200@300", "--action", "click:.btn@100"]).kind,
+    ).toBe("usage");
+  });
 });
 
 describe("summarize", () => {

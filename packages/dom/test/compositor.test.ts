@@ -59,7 +59,7 @@ const stage = compiled(
 const MAX = 2000;
 const names = new Set(["scrolled", "cards", "clocked", "skewed"]);
 const input = { counts: { cards: 3 }, lines: {}, rest: restReader(), names };
-const tracks = scrollTracks(stage, input, MAX);
+const { tracks } = scrollTracks(stage, input, MAX);
 
 function between(samples: readonly TrackSample[], y: number): TrackSample["fields"] {
   const after = samples.findIndex((s) => s.at >= y);
@@ -159,7 +159,7 @@ const triggerInput = {
   rest: restReader(),
   names: new Set(["cards", "stays", "replays", "taken", "clocked"]),
 };
-const triggerSet = triggerTracks(triggered, triggerInput);
+const { tracks: triggerSet } = triggerTracks(triggered, triggerInput);
 
 describe("what the browser plays from a trigger beat", () => {
   it("takes elements that read only one trigger's progress, for each way back", () => {
@@ -205,7 +205,116 @@ describe("what the sampler refuses", () => {
         ),
     );
     const names = new Set(["counted"]);
-    expect(scrollTracks(counted, { ...input, names }, 1_000_000).size).toBe(0);
+    expect(scrollTracks(counted, { ...input, names }, 1_000_000).tracks.size).toBe(0);
     expect(runs).toBeLessThan(10);
+  });
+});
+
+describe("beat-scoped sampling and rest dependencies", () => {
+  it("reports exact rest dependencies from beat edges and context.rest reads while ignoring non-handed elements", () => {
+    const secA = box("secA");
+    const secB = box("secB");
+    const triggerSec = box("triggerSec");
+    const unusedBox = box("unusedBox");
+    const scrollBeat = beat("s", { scroll: [secA.top, secB.end] });
+    const trigBeat = beat("t", 400, { when: triggerSec.top.reached, back: "stay" });
+    const piece = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(box("sEl"))
+        .motion(
+          motion(
+            (t: Time, ctx?: { readonly rest: { get(n: string): { readonly width: number } } }) => ({
+              x: t.progress * 100 + (ctx?.rest.get("slotInMotion").width ?? 0),
+            }),
+          ).in(scrollBeat),
+        )
+        .element(box("tEl"))
+        .motion(motion((t: Time): Pose2d => ({ y: t.progress * 50 })).in(trigBeat))
+        .element(box("engineEl"))
+        .motion(
+          motion(
+            (_t: Time, ctx?: { readonly rest: { get(n: string): { readonly x: number } } }) => ({
+              x: ctx?.rest.get("unusedBox").x ?? 0,
+            }),
+          ),
+        )
+        .element(unusedBox),
+    );
+    const measured = restReader({
+      secA: { x: 500, y: 300, width: 1000, height: 200 },
+      secB: { x: 500, y: 900, width: 1000, height: 200 },
+      triggerSec: { x: 500, y: 1200, width: 1000, height: 200 },
+      slotInMotion: { x: 100, y: 100, width: 40, height: 40 },
+      unusedBox: { x: 50, y: 50, width: 50, height: 50 },
+    });
+    const allNames = new Set(["sEl", "tEl", "engineEl", "unusedBox"]);
+    const sRes = scrollTracks(piece, { lines: {}, rest: measured, names: allNames }, 2000);
+    expect([...sRes.tracks.keys()]).toEqual(["sEl"]);
+    expect([...sRes.deps].sort()).toEqual(["secA", "secB", "slotInMotion"]);
+
+    const left = new Set(["tEl", "engineEl", "unusedBox"]);
+    const tRes = triggerTracks(piece, { lines: {}, rest: measured, names: left });
+    expect([...tRes.tracks.keys()]).toEqual(["tEl"]);
+    expect([...tRes.deps]).toEqual(["triggerSec"]);
+  });
+
+  it("samples a 20,000 px scroll range only inside active beats, matching frame() including .take() and zero-width beats", () => {
+    let calls = 0;
+    const active = beat("active", { scroll: [scrollPoint(4000), scrollPoint(4400)] });
+    const stepSec = box("stepSec");
+    const zeroWidth = beat("step", { scroll: [stepSec.top, stepSec.end] });
+    const stepped = beat("stepped", { scroll: [scrollPoint(12000), scrollPoint(12200)] });
+    const piece = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(box("mover"))
+        .motion(
+          motion((t: Time): Pose2d => {
+            calls += 1;
+            return { y: 100 * Math.sin((Math.PI * t.progress) / 2) };
+          }).in(active),
+        )
+        .element(box("jumper"))
+        .motion(
+          motion((t: Time): Pose2d => ({ x: 80 * t.progress }))
+            .in(stepped)
+            .take(),
+        )
+        .element(box("snap"))
+        .motion(motion((t: Time): Pose2d => ({ opacity: 1 - 0.5 * t.progress })).in(zeroWidth)),
+    );
+    const maxScroll = 20_000;
+    const zeroRest = restReader({ stepSec: { x: 500, y: 8000, width: 1000, height: 0 } });
+    const scoped = scrollTracks(
+      piece,
+      { lines: {}, rest: zeroRest, names: new Set(["mover", "jumper", "snap"]) },
+      maxScroll,
+    );
+    expect(calls).toBeLessThan(120);
+    expect([...scoped.tracks.keys()].sort()).toEqual(["jumper", "mover", "snap"]);
+
+    for (const y of [
+      0, 3999, 4000, 4123, 4400, 7999, 8000, 8001, 11999, 12000, 12100, 12200, 20000,
+    ]) {
+      const { targets } = frame(piece, {
+        time: liveAt(0),
+        rest: zeroRest,
+        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+      });
+      for (const name of ["mover", "jumper", "snap"] as const) {
+        const samples = scoped.tracks.get(name)?.parts[0] ?? [];
+        const line = between(samples, y);
+        const pose = poseOf(targets[name]);
+        expect(Math.abs(line.x - (pose?.x ?? 0)), `${name}.x @ ${y}`).toBeLessThanOrEqual(
+          TRACK_TOLERANCE.x,
+        );
+        expect(Math.abs(line.y - (pose?.y ?? 0)), `${name}.y @ ${y}`).toBeLessThanOrEqual(
+          TRACK_TOLERANCE.y,
+        );
+        expect(
+          Math.abs(line.opacity - (pose?.opacity ?? 1)),
+          `${name}.opacity @ ${y}`,
+        ).toBeLessThanOrEqual(TRACK_TOLERANCE.opacity);
+      }
+    }
   });
 });

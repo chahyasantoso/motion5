@@ -59,7 +59,7 @@ const midTilt = (degrees: number) =>
     return { rotation: p <= 0 || p >= 1 ? 0 : degrees * Math.sin(Math.PI * p) };
   });
 
-export default sceneBuilder({ name: "yuzu" })
+export default sceneBuilder({ name: "yuzu", length: 1300 })
   .element(heroAura)
   .motion(
     bind({

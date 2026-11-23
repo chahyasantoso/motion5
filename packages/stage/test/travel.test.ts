@@ -99,7 +99,7 @@ describe("travel", () => {
     expect(() => travel({ to: slot, fit: "cover" })).toThrow(TypeError);
   });
 
-  it("sits on its slot on a live clock with no window, and sweeps across a timed scene", () => {
+  it("sits on its slot with no window across live, timed, and untimed clocks", () => {
     const slot = box("slot");
     const stage = compiled(
       sceneBuilder({ length: 400 })
@@ -111,16 +111,19 @@ describe("travel", () => {
       slot: { x: 500, y: 400, width: 50, height: 100 },
     });
     for (const ms of [0, 200, 400]) {
-      const live: Time = { progress: 0, clock: { kind: "live", elapsed: ms } };
-      const pose = poseOf(frame(stage, { time: live, rest }).targets["drink"]);
-      expect(pose?.x).toBeCloseTo(400, 9);
-      expect(pose?.y).toBeCloseTo(200, 9);
-      expect(pose?.scaleX).toBeCloseTo(0.5, 9);
+      const clocks: readonly Time[] = [
+        { progress: 0, clock: { kind: "live", elapsed: ms } },
+        at(ms, 400),
+        { progress: ms / 400, clock: { kind: "untimed" } },
+      ];
+      for (const time of clocks) {
+        const pose = poseOf(frame(stage, { time, rest }).targets["drink"]);
+        expect(pose?.x).toBeCloseTo(400, 9);
+        expect(pose?.y).toBeCloseTo(200, 9);
+        expect(pose?.scaleX).toBeCloseTo(0.5, 9);
+        expect(pose?.scaleY).toBeCloseTo(0.5, 9);
+      }
     }
-    expect(poseOf(frame(stage, { time: at(0, 400), rest }).targets["drink"])).toEqual({});
-    const half = poseOf(frame(stage, { time: at(200, 400), rest }).targets["drink"]);
-    expect(half?.x).toBeCloseTo(200, 9);
-    expect(half?.scaleX).toBeCloseTo(0.75, 9);
   });
 
   it("bows perpendicular to travel with arc, holding 0 bow at both ends and handling zero-distance", () => {

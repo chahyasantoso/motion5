@@ -280,8 +280,44 @@ export function simulate<
       stale = false;
       states = undefined;
     }
+    let spawnedHere = false;
+    if (starts.size === 0 && head < target) {
+      if (options.spawn === undefined) {
+        head = target;
+        reached = Math.max(reached, head);
+        states = undefined;
+      } else {
+        const byStep = new Map<number, MotionEvent[]>();
+        for (const event of known) {
+          const step = Math.floor(event.at / stepMs + 1e-9);
+          if (step < head || step >= target) continue;
+          const list = byStep.get(step);
+          if (list === undefined) byStep.set(step, [event]);
+          else list.push(event);
+        }
+        for (const step of [...byStep.keys()].sort((a, b) => a - b)) {
+          head = step;
+          adding = step;
+          for (const event of byStep.get(step) ?? []) options.spawn(event, { addBody });
+          if (starts.size > 0) {
+            spawnedHere = true;
+            states = undefined;
+            break;
+          }
+          head = step + 1;
+          reached = Math.max(reached, head);
+          states = undefined;
+        }
+        if (starts.size === 0) {
+          head = target;
+          reached = Math.max(reached, head);
+          states = undefined;
+        }
+      }
+    }
     while (head < target) {
-      spawnAt(head);
+      if (spawnedHere) spawnedHere = false;
+      else spawnAt(head);
       world.step(dt);
       head += 1;
       states = undefined;

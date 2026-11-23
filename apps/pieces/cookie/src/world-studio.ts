@@ -31,7 +31,7 @@ export function createCookieStudio(canvas: HTMLCanvasElement): CookieStudio {
   renderer.toneMappingExposure = 1.05;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const keyLight = new THREE.DirectionalLight(0xfff6e8, 2.1);
   keyLight.position.set(3.2, 5.4, 3.8);

@@ -1,11 +1,12 @@
 import type { Page } from "playwright-core";
+import type { PageAction } from "./actions";
 import { readPageArgs, withPage, type PageSource } from "./page";
 
-const USAGE = "Usage: gerak fps <page> [--to ms] [--size WxH] [--show]";
+const USAGE = "Usage: gerak fps <page> [--to ms] [--size WxH] [--action list] [--show]";
 const WINDOW_MS = 500;
 const DEFAULT_TO = 10000;
 
-/** What `gerak fps` measures: a page, how long to watch it in ms, and whether to show the window. */
+/** What `gerak fps` measures: a page, how long to watch it in ms, optional actions, and whether to show the window. */
 export interface FpsRequest {
   readonly kind: "fps";
   readonly page: string;
@@ -14,6 +15,7 @@ export interface FpsRequest {
   readonly source: PageSource;
   readonly to: number;
   readonly show: boolean;
+  readonly actions?: readonly PageAction[];
 }
 
 /** The request read from the command line, or the usage text. */
@@ -54,7 +56,7 @@ export interface FpsReport {
   readonly pageErrors: readonly string[];
 }
 
-/** Reads `<page> [--to ms] [--size WxH] [--root dir | --url address] [--show]`. */
+/** Reads `<page> [--to ms] [--size WxH] [--root dir | --url address] [--action list] [--show]`. */
 export function parseFpsArgs(argv: readonly string[]): FpsArgs {
   const usage = (message: string): FpsArgs => ({ kind: "usage", message: `${message} ${USAGE}` });
   const show = argv.includes("--show");
@@ -64,7 +66,6 @@ export function parseFpsArgs(argv: readonly string[]): FpsArgs {
   );
   if (read.kind === "usage") return usage(read.message);
   const { target, flags } = read;
-  if (target.actions !== undefined) return usage("--action does not go with gerak fps.");
   let to = DEFAULT_TO;
   if (flags.has("--to")) {
     const text = flags.get("--to");
@@ -79,6 +80,7 @@ export function parseFpsArgs(argv: readonly string[]): FpsArgs {
     source: target.source,
     to,
     show,
+    ...(target.actions === undefined ? {} : { actions: target.actions }),
   };
 }
 
@@ -240,6 +242,7 @@ export async function measureFps(request: FpsRequest): Promise<FpsReport> {
       source: request.source,
       clock: "real",
       show: request.show,
+      ...(request.actions === undefined ? {} : { actions: request.actions }),
       prepare: async (page) => {
         await page.addInitScript(record);
       },

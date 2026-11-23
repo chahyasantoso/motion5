@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { elapsedOf, type Time } from "@gerak/core";
+import { elapsedOf, motion, pointer, scroll, type Pose2d, type Time } from "@gerak/core";
+import { beat, bind, box, sceneBuilder, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MeasureCache } from "../src/page/measure-cache";
 import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
@@ -395,6 +396,69 @@ describe("gerak review expectations and shape mismatches", () => {
     });
     expect(review(mismatch).findings).toContain(
       'scene: "dots" is a list: give it `(index, count) => pose`, got an array.',
+    );
+  });
+
+  it("exempts scroll-beat, trigger-beat, and input-driven settle members that move under their driver", () => {
+    const sec = box("sec");
+    const sb = beat("scroll", { scroll: [sec.top, sec.end] });
+    const tb = beat("trigger", 400, { when: scrollPoint(300).reached, back: "reverse" });
+    const smoothBeat = beat("smooth", { scroll: [scrollPoint(0), scrollPoint(500)], smooth: true });
+    const slide = motion((t: Time): Pose2d => ({ x: 80 * t.progress }));
+    const measured: MeasureCache = {
+      page: "scroll.html",
+      digest: "",
+      frame: { width: 1000, height: 600 },
+      rest: {
+        sec: { x: 500, y: 800, width: 1000, height: 600, placement: { kind: "flow" } },
+        "sList.0": { x: 10, y: 10, width: 10, height: 10, placement: { kind: "flow" } },
+        "sList.1": { x: 30, y: 10, width: 10, height: 10, placement: { kind: "flow" } },
+        "tList.0": { x: 10, y: 40, width: 10, height: 10, placement: { kind: "flow" } },
+        "tList.1": { x: 30, y: 40, width: 10, height: 10, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    const scene = sceneBuilder({ length: 1000 })
+      .element(box("sActor"))
+      .motion(slide.in(sb))
+      .element(box("sList", { parts: true }))
+      .motion(stagger(slide, { spread: 0.2 }).in(sb))
+      .element(box("tActor"))
+      .motion(slide.in(tb))
+      .element(box("tList", { parts: true }))
+      .motion(stagger(slide, { spread: 0.2 }).in(tb))
+      .element(box("pointed"))
+      .motion(bind({ x: (t, e) => pointer.x(t, e) * 40 }))
+      .element(box("scrolledBind"))
+      .motion(bind({ y: (t, e) => scroll.y(t, e) * 0.2 }))
+      .element(box("smoothed"))
+      .motion(slide.in(smoothBeat));
+
+    expect(review(scene, {}, measured).findings).toEqual([]);
+  });
+
+  it("still flags genuinely static settle members even inside scroll or trigger beats", () => {
+    const sb = beat("scroll", { scroll: [scrollPoint(100), scrollPoint(500)] });
+    const tb = beat("trigger", 400, { when: scrollPoint(300).reached, back: "stay" });
+    const noop = motion((): Pose2d => ({ x: 0 }));
+    const scene = sceneBuilder({ length: 1000 })
+      .element(box("staticScroll"))
+      .motion(noop.in(sb))
+      .element(box("staticTrigger"))
+      .motion(noop.in(tb))
+      .element(box("staticUnwindowed"))
+      .motion(noop);
+
+    const findings = review(scene).findings;
+    expect(findings).toContain(
+      'cast member "staticScroll" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+    expect(findings).toContain(
+      'cast member "staticTrigger" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+    expect(findings).toContain(
+      'cast member "staticUnwindowed" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
   });
 });

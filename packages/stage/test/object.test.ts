@@ -155,6 +155,36 @@ describe("travel on an object", () => {
     expect(half?.x).toBeCloseTo((0.5 + (landed?.x ?? NaN)) / 2, 9);
   });
 
+  it("sits on its slot with no window across live, timed, and untimed clocks", () => {
+    const ownCanvas = box("gl");
+    const ownSlot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("drink", { view: { canvas: ownCanvas, lens } }))
+        .motion(start, travel({ to: ownSlot })),
+    );
+    const size = { width: 800, height: 600 };
+    const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
+    for (const ms of [0, 500, 1000]) {
+      const clocks: readonly Time[] = [
+        liveAt(ms),
+        { progress: ms / 1000, clock: { kind: "timed", elapsed: ms, length: 1000 } },
+        { progress: ms / 1000, clock: { kind: "untimed" } },
+      ];
+      for (const time of clocks) {
+        const landed = pose3dOf(frame(stage, { time, rest }).targets["drink"]);
+        const seen = project3d(
+          { x: landed?.x ?? NaN, y: landed?.y ?? NaN, z: landed?.z ?? NaN },
+          lens,
+          size,
+        );
+        expect(seen.x).toBeCloseTo(620, 6);
+        expect(seen.y).toBeCloseTo(450, 6);
+        expect(seen.depth).toBeCloseTo(from.depth, 6);
+      }
+    }
+  });
+
   it("refuses a travel on an object with no view, an arc or fit, and a take", () => {
     expect(() =>
       sceneBuilder()

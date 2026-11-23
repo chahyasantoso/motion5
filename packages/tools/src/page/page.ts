@@ -59,14 +59,17 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   const usage = (message: string): ReadArgs => ({ kind: "usage", message });
   const positional: string[] = [];
   const flags = new Map<string, string | undefined>();
+  const rawActions: (string | undefined)[] = [];
   for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i]!;
+    const arg = argv[i];
+    if (arg === undefined) continue;
     if (!arg.startsWith("--")) {
       positional.push(arg);
       continue;
     }
     if (![...SHARED_FLAGS, ...allowed].includes(arg)) return usage(`Unknown flag ${arg}.`);
-    flags.set(arg, argv[i + 1]);
+    if (arg === "--action") rawActions.push(argv[i + 1]);
+    else flags.set(arg, argv[i + 1]);
     i += 1;
   }
   const page = positional[0];
@@ -84,10 +87,16 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
     return usage("--root needs a folder.");
   if (flags.has("--url") && (url === undefined || !/^https?:\/\/[^\s]+$/.test(url)))
     return usage("--url needs an http or https address.");
-  const actionText = flags.get("--action");
+  if (rawActions.some((entry) => entry === undefined || entry.trim() === ""))
+    return usage("--action needs kind:target@ms.");
+  const actionText =
+    rawActions.length === 0
+      ? undefined
+      : rawActions.filter((entry) => entry !== undefined).join(",");
+  if (actionText !== undefined) flags.set("--action", actionText);
   const actions = actionText === undefined ? [] : parseActions(actionText);
   if ("reason" in actions) return usage(actions.reason);
-  if (flags.has("--action") && actions.length === 0) return usage("--action needs kind:target@ms.");
+  if (rawActions.length > 0 && actions.length === 0) return usage("--action needs kind:target@ms.");
   let source: PageSource;
   if (url !== undefined) source = { kind: "url", base: url.endsWith("/") ? url : `${url}/` };
   else {
