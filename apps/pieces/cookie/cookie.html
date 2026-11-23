@@ -645,13 +645,69 @@
         </div>
       </section>
 
-      <section id="closing" class="closing-teaser" aria-label="Warm Batch Closing Preview">
-        <div class="closing-teaser-inner">
-          <p class="closing-teaser-kicker">HUNGRY YET?</p>
-          <h2 class="closing-teaser-title">Warm from the oven, every morning.</h2>
-          <p class="closing-teaser-sub">Small-batch cookie jars, sealed in glass daily.</p>
+      <footer
+        id="closing"
+        data-cast="closingStage"
+        class="closing-stage"
+        aria-label="Warm Batch Closing"
+      >
+        <div class="closing-bg" aria-hidden="true"></div>
+        <div class="closing-horizon" aria-hidden="true"></div>
+
+        <div class="closing-inner">
+          <div class="closing-top">
+            <div class="closing-copy-col">
+              <p class="closing-kicker">HUNGRY YET?</p>
+              <h2 data-cast="closingHeadline" class="closing-title">
+                Warm from the oven, sealed for your morning.
+              </h2>
+              <svg
+                class="closing-flourish-svg"
+                width="260"
+                height="20"
+                viewBox="0 0 260 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path data-cast="closingFlourish" class="closing-flourish-path" />
+              </svg>
+              <p data-cast="closingCopy" class="closing-sub">
+                Small-batch brown-butter cookies baked at 5:30 AM daily, packed six to an apothecary
+                jar, and sealed warm in glass before noon.
+              </p>
+              <div data-cast="closingActions" class="closing-actions">
+                <a href="#builder" data-closing-builder-cta class="cta-pill">
+                  <span>Build your jar</span>
+                  <span class="cta-arrow" aria-hidden="true">↑</span>
+                </a>
+                <a href="#flavours" data-closing-flavors-cta class="cta-pill cta-pill-ghost">
+                  Browse flavours
+                </a>
+              </div>
+              <p class="closing-hours">BAKED DAILY AT 05:30 AM · 6 COOKIES · $28 MORNING JAR</p>
+            </div>
+
+            <div class="closing-visual">
+              <div data-cast="slotClosingJar" class="slot-closing-jar" aria-hidden="true"></div>
+            </div>
+          </div>
+
+          <div class="closing-meta">
+            <span class="closing-meta-note">Roasted cocoa &amp; oat cream · Sealed at 72°C</span>
+            <nav class="closing-nav" aria-label="Footer">
+              <a href="#" data-closing-top-cta>Top</a>
+              <a href="#flavours" data-closing-flavors-cta>Flavours</a>
+              <a href="#craft">Craft</a>
+              <a href="#builder" data-closing-builder-cta>Fill a Jar</a>
+            </nav>
+            <span class="closing-meta-brand">Warm Batch · Morning Ritual</span>
+          </div>
         </div>
-      </section>
+
+        <div class="closing-wordmark-wrap" aria-hidden="true">
+          <p data-cast="closingWordmark" class="closing-wordmark">WARM BATCH</p>
+        </div>
+      </footer>
     </main>
 
     <script type="module" src="./src/cookie-main.ts"></script>

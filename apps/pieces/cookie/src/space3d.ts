@@ -45,6 +45,14 @@ export interface BuilderSlotGeometry {
   readonly visibleH: number;
 }
 
+export interface ClosingSlotGeometry {
+  readonly center: Point3d;
+  readonly fitScale: number;
+  readonly stageTop: number;
+  readonly stageEnd: number;
+  readonly visibleH: number;
+}
+
 const VIEW_WORLD_H = 2 * (LENS.z ?? 5.2) * Math.tan((LENS.fov * Math.PI) / 360);
 const JAR_SILHOUETTE_W = JAR_METRICS.radius * 2.08;
 const JAR_SILHOUETTE_H = JAR_METRICS.height + 0.26;
@@ -270,5 +278,47 @@ export function builderSlotWorld(rest?: RestReader, scrollY = 0): BuilderSlotGeo
     stageEnd,
     pinMax,
     visibleH: stickyH,
+  };
+}
+
+export function closingSlotWorld(rest?: RestReader, scrollY = 0): ClosingSlotGeometry {
+  const canvasSize = canvasSizeOf(rest);
+  const stageBox = rest?.get(CAST.closingStage);
+  const slotBox = rest?.get(CAST.slotClosingJar);
+
+  const hasStage = stageBox !== undefined && stageBox.height > 0;
+  const hasSlot = slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
+
+  const stageTop = hasStage
+    ? stageBox.y - stageBox.height / 2
+    : FALLBACK_BUILDER_TOP + FALLBACK_BUILDER_HEIGHT;
+  const stageHeight = hasStage ? stageBox.height : 860;
+  const stageEnd = stageTop + stageHeight;
+
+  const slotX = hasSlot ? slotBox.x : canvasSize.width * 0.72;
+  const slotCenterY = hasSlot ? slotBox.y : stageTop + 310;
+  const viewportY = slotCenterY - scrollY;
+
+  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvasSize).depth;
+  const center = unproject3d({ x: slotX, y: viewportY }, LENS, canvasSize, depth);
+
+  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
+  const fitScale = hasSlot
+    ? clamp(
+        Math.min(
+          (slotBox.width * unitsPerPx * 0.92) / JAR_SILHOUETTE_W,
+          (slotBox.height * unitsPerPx * 0.94) / JAR_SILHOUETTE_H,
+        ),
+        0.52,
+        1.12,
+      )
+    : 0.88;
+
+  return {
+    center,
+    fitScale,
+    stageTop,
+    stageEnd,
+    visibleH: canvasSize.height,
   };
 }

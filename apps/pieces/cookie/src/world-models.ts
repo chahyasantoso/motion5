@@ -129,9 +129,9 @@ function buildCookieInstance(
   return instance;
 }
 
-function buildBuilderJarRibbon(): THREE.Group {
+function buildJarRibbon(castName: string): THREE.Group {
   const ribbon = new THREE.Group();
-  ribbon.name = CAST.builderJarRibbon;
+  ribbon.name = castName;
   ribbon.position.set(0, 1.23, 0);
 
   const satinMaterial = new THREE.MeshPhysicalMaterial({
@@ -228,6 +228,20 @@ function applyFlavorVariant(
   }
 }
 
+function attachJarShadow(jarModel: THREE.Object3D): void {
+  const shadowCatcher = new THREE.Mesh(
+    new THREE.CircleGeometry(1.15, 48),
+    new THREE.ShadowMaterial({ opacity: 0.14, depthWrite: false }),
+  );
+  shadowCatcher.rotation.x = -Math.PI / 2;
+  shadowCatcher.position.y = 0.002;
+  shadowCatcher.receiveShadow = true;
+  shadowCatcher.renderOrder = 0;
+  jarModel.add(shadowCatcher);
+}
+
+const CLOSING_STACK_FLAVORS: readonly number[] = [0, 1, 2, 3, 0, 1];
+
 export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieWorld> {
   const loader = new GLTFLoader();
   const jarUrl = new URL("../references/warm-batch-jar.glb", import.meta.url).href;
@@ -238,8 +252,9 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     loadGltf(loader, cookieUrl),
   ]);
 
-  // Clone the clean jar model before adding preview cookies to the hero jar.
+  // Clone clean jar models before adding preview cookies to the hero jar.
   const builderJarModel = jarGltf.scene.clone(true);
+  const closingJarModel = jarGltf.scene.clone(true);
 
   const jarRoot = new THREE.Group();
   jarRoot.name = CAST.jarRoot;
@@ -249,17 +264,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   jarModel.position.set(0, JAR_MODEL_OFFSET_Y, 0);
   enhanceJarMaterials(jarModel);
   jarRoot.add(jarModel);
-
-  // Attach the contact shadow under the jar base so it travels cleanly across viewports.
-  const shadowCatcher = new THREE.Mesh(
-    new THREE.CircleGeometry(1.15, 48),
-    new THREE.ShadowMaterial({ opacity: 0.14, depthWrite: false }),
-  );
-  shadowCatcher.rotation.x = -Math.PI / 2;
-  shadowCatcher.position.y = 0.002;
-  shadowCatcher.receiveShadow = true;
-  shadowCatcher.renderOrder = 0;
-  jarModel.add(shadowCatcher);
+  attachJarShadow(jarModel);
 
   const jarLid = jarModel.getObjectByName("JarLid");
   if (!jarLid) {
@@ -282,24 +287,35 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   builderJarModel.position.set(0, JAR_MODEL_OFFSET_Y, 0);
   enhanceJarMaterials(builderJarModel);
   builderJarRoot.add(builderJarModel);
-
-  const builderShadowCatcher = new THREE.Mesh(
-    new THREE.CircleGeometry(1.15, 48),
-    new THREE.ShadowMaterial({ opacity: 0.14, depthWrite: false }),
-  );
-  builderShadowCatcher.rotation.x = -Math.PI / 2;
-  builderShadowCatcher.position.y = 0.002;
-  builderShadowCatcher.receiveShadow = true;
-  builderShadowCatcher.renderOrder = 0;
-  builderJarModel.add(builderShadowCatcher);
+  attachJarShadow(builderJarModel);
 
   const builderJarLid = builderJarModel.getObjectByName("JarLid");
   if (!builderJarLid) {
     throw new Error("Missing JarLid node in cloned builder jar");
   }
 
-  const builderJarRibbon = buildBuilderJarRibbon();
+  const builderJarRibbon = buildJarRibbon(CAST.builderJarRibbon);
   builderJarModel.add(builderJarRibbon);
+
+  const closingJarRoot = new THREE.Group();
+  closingJarRoot.name = CAST.closingJarRoot;
+  closingJarModel.position.set(0, JAR_MODEL_OFFSET_Y, 0);
+  enhanceJarMaterials(closingJarModel);
+  closingJarRoot.add(closingJarModel);
+  attachJarShadow(closingJarModel);
+
+  for (let i = 0; i < CLOSING_STACK_FLAVORS.length; i += 1) {
+    const flavorIdx = CLOSING_STACK_FLAVORS[i] ?? 0;
+    const flavor = FLAVORS[flavorIdx];
+    if (!flavor) {
+      continue;
+    }
+    const cookie = buildCookieInstance(cookieGltf.scene, flavor, FLAVOR_SALT_TINTS[flavorIdx]);
+    cookie.position.set(i % 2 === 0 ? -0.02 : 0.02, 0.14 + i * 0.145, ((i % 3) - 1) * 0.014);
+    cookie.rotation.set(((i % 3) - 1) * 0.03, i * 0.75, i % 2 === 0 ? -0.03 : 0.03);
+    closingJarModel.add(cookie);
+  }
+  closingJarModel.add(buildJarRibbon("closingJarRibbon"));
 
   const heroFlavor = FLAVORS[0];
   if (!heroFlavor) {
@@ -318,6 +334,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   world.add(jarRoot);
   world.add(cookieHero);
   world.add(builderJarRoot);
+  world.add(closingJarRoot);
 
   const objects: Record<string, THREE.Object3D> = {
     [CAST.jarRoot]: jarRoot,
@@ -326,6 +343,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     [CAST.builderJarRoot]: builderJarRoot,
     [CAST.builderJarLid]: builderJarLid,
     [CAST.builderJarRibbon]: builderJarRibbon,
+    [CAST.closingJarRoot]: closingJarRoot,
   };
 
   for (const entry of SHOWCASE_FLAVORS) {

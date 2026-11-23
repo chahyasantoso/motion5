@@ -1,6 +1,6 @@
 {
  "page": "cookie.html",
- "digest": "79430ce3d983d1c9",
+ "digest": "a2f1e3948b75ca1e",
  "frame": {
   "width": 1440,
   "height": 900
@@ -602,6 +602,231 @@
     "maxY": 9050,
     "pinY": 216
    }
+  },
+  "closingStage": {
+   "x": 720,
+   "y": 10350.5390625,
+   "width": 1440,
+   "height": 801.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotClosingJar": {
+   "x": 1059.1875,
+   "y": 10258,
+   "width": 577.59375,
+   "height": 440,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.0": {
+   "x": 168.0625,
+   "y": 10114.3125,
+   "width": 152.125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.1": {
+   "x": 314.140625,
+   "y": 10114.3125,
+   "width": 120.8125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.2": {
+   "x": 422.6796875,
+   "y": 10114.3125,
+   "width": 77.046875,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.3": {
+   "x": 534.546875,
+   "y": 10114.3125,
+   "width": 127.46875,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.4": {
+   "x": 167.421875,
+   "y": 10171.71875,
+   "width": 150.84375,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.5": {
+   "x": 288.421875,
+   "y": 10171.71875,
+   "width": 71.9375,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.6": {
+   "x": 390.3125,
+   "y": 10171.71875,
+   "width": 112.625,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.7": {
+   "x": 202.9765625,
+   "y": 10229.125,
+   "width": 221.953125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline": {
+   "x": 372,
+   "y": 10171.71875,
+   "width": 560,
+   "height": 172.21875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingFlourish": {
+   "x": 129,
+   "y": 8.5,
+   "width": 250,
+   "height": 13,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingCopy": {
+   "x": 372,
+   "y": 10335.609375,
+   "width": 560,
+   "height": 51.5625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingActions": {
+   "x": 269.3984375,
+   "y": 10401.890625,
+   "width": 354.796875,
+   "height": 49,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.0": {
+   "x": 200.703125,
+   "y": 10697.0390625,
+   "width": 176.375,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.1": {
+   "x": 347.6484375,
+   "y": 10697.0390625,
+   "width": 117.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.2": {
+   "x": 469.9453125,
+   "y": 10697.0390625,
+   "width": 127.078125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.3": {
+   "x": 610.234375,
+   "y": 10697.0390625,
+   "width": 153.5,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.4": {
+   "x": 698.0859375,
+   "y": 10697.0390625,
+   "width": 22.203125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.5": {
+   "x": 770.84375,
+   "y": 10697.0390625,
+   "width": 123.3125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.6": {
+   "x": 891.2578125,
+   "y": 10697.0390625,
+   "width": 117.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.7": {
+   "x": 1008.6796875,
+   "y": 10697.0390625,
+   "width": 117.328125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.8": {
+   "x": 1126.1484375,
+   "y": 10697.0390625,
+   "width": 117.609375,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.9": {
+   "x": 1256.2109375,
+   "y": 10697.0390625,
+   "width": 142.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark": {
+   "x": 719.9921875,
+   "y": 10697.0390625,
+   "width": 1214.953125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
   }
  },
  "lines": {
@@ -610,6 +835,28 @@
    0,
    1,
    1
+  ],
+  "closingHeadline": [
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   1,
+   2
+  ],
+  "closingWordmark": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ]
  },
  "parents": {
@@ -658,6 +905,30 @@
   "craftCard3": "craftTrack",
   "slotBuilderJar": "builderStage",
   "builderSealBtn": "builderStage",
-  "builderHeading": "builderStage"
+  "builderHeading": "builderStage",
+  "slotClosingJar": "closingStage",
+  "closingHeadline.0": "closingHeadline",
+  "closingHeadline.1": "closingHeadline",
+  "closingHeadline.2": "closingHeadline",
+  "closingHeadline.3": "closingHeadline",
+  "closingHeadline.4": "closingHeadline",
+  "closingHeadline.5": "closingHeadline",
+  "closingHeadline.6": "closingHeadline",
+  "closingHeadline.7": "closingHeadline",
+  "closingHeadline": "closingStage",
+  "closingFlourish": "closingStage",
+  "closingCopy": "closingStage",
+  "closingActions": "closingStage",
+  "closingWordmark.0": "closingWordmark",
+  "closingWordmark.1": "closingWordmark",
+  "closingWordmark.2": "closingWordmark",
+  "closingWordmark.3": "closingWordmark",
+  "closingWordmark.4": "closingWordmark",
+  "closingWordmark.5": "closingWordmark",
+  "closingWordmark.6": "closingWordmark",
+  "closingWordmark.7": "closingWordmark",
+  "closingWordmark.8": "closingWordmark",
+  "closingWordmark.9": "closingWordmark",
+  "closingWordmark": "closingStage"
  }
 }

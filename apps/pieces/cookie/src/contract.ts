@@ -79,6 +79,14 @@ export interface CastNames {
   readonly builderCrumb9: string;
   readonly builderCrumb10: string;
   readonly builderCrumb11: string;
+  readonly closingStage: string;
+  readonly closingHeadline: string;
+  readonly closingFlourish: string;
+  readonly closingCopy: string;
+  readonly closingActions: string;
+  readonly slotClosingJar: string;
+  readonly closingWordmark: string;
+  readonly closingJarRoot: string;
 }
 
 export const CAST: CastNames = {
@@ -160,6 +168,14 @@ export const CAST: CastNames = {
   builderCrumb9: "builderCrumb9",
   builderCrumb10: "builderCrumb10",
   builderCrumb11: "builderCrumb11",
+  closingStage: "closingStage",
+  closingHeadline: "closingHeadline",
+  closingFlourish: "closingFlourish",
+  closingCopy: "closingCopy",
+  closingActions: "closingActions",
+  slotClosingJar: "slotClosingJar",
+  closingWordmark: "closingWordmark",
+  closingJarRoot: "closingJarRoot",
 };
 
 export const BUILDER_COOKIE_CASTS: readonly string[] = [

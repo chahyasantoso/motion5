@@ -459,6 +459,42 @@ async function bootstrap(): Promise<void> {
     cleanupListeners.push(() => heroCtaEl.removeEventListener("click", onCtaClick));
   }
 
+  const builderStageEl = document.querySelector(`[data-cast="${CAST.builderStage}"]`);
+  for (const el of document.querySelectorAll("[data-closing-builder-cta]")) {
+    const onClick = (event: Event): void => {
+      event.preventDefault();
+      if (!builderStageEl) {
+        return;
+      }
+      const top = builderStageEl.getBoundingClientRect().top + window.scrollY;
+      animateScrollTo(Math.max(0, Math.ceil(top)), 950);
+    };
+    el.addEventListener("click", onClick);
+    cleanupListeners.push(() => el.removeEventListener("click", onClick));
+  }
+
+  for (const el of document.querySelectorAll("[data-closing-flavors-cta]")) {
+    const onClick = (event: Event): void => {
+      event.preventDefault();
+      if (!spotlightStageEl) {
+        return;
+      }
+      const { stageTop } = spotlightPinMetrics(spotlightStageEl);
+      animateScrollTo(Math.ceil(stageTop) + 2, 1050);
+    };
+    el.addEventListener("click", onClick);
+    cleanupListeners.push(() => el.removeEventListener("click", onClick));
+  }
+
+  for (const el of document.querySelectorAll("[data-closing-top-cta]")) {
+    const onClick = (event: Event): void => {
+      event.preventDefault();
+      animateScrollTo(0, 1250);
+    };
+    el.addEventListener("click", onClick);
+    cleanupListeners.push(() => el.removeEventListener("click", onClick));
+  }
+
   for (const zone of SPOTLIGHT_ZONES) {
     const dotEl = dotNodes[zone];
     if (!dotEl) {
