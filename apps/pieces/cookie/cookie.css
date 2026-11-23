@@ -27,7 +27,7 @@ body {
   color: var(--ink-cocoa);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 a {
@@ -101,11 +101,22 @@ a {
   background-color: var(--accent-caramel);
 }
 
-.hero {
+.hero-stage {
   position: relative;
-  min-height: 600px;
-  padding: 24px 32px 72px;
-  overflow: hidden;
+  min-height: 2050px;
+  background: transparent;
+}
+
+.hero-sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 56px 32px 72px;
+  overflow: clip;
+  background: transparent;
 }
 
 .hero-horizon {
@@ -122,12 +133,14 @@ a {
 }
 
 .hero-inner {
+  width: 100%;
   max-width: 1320px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   align-items: center;
   gap: 40px;
+  background: transparent;
 }
 
 .hero-copy {
@@ -205,6 +218,20 @@ a {
   position: relative;
   width: 100%;
   min-height: 440px;
+  background: transparent;
+  pointer-events: none;
+}
+
+.scroll-cue {
+  position: relative;
+  z-index: 2;
+  margin: 12px auto 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-cocoa-soft);
+  text-align: center;
   pointer-events: none;
 }
 
@@ -213,7 +240,7 @@ a {
   z-index: 2;
   max-width: 1320px;
   margin: 0 auto;
-  padding: 28px 32px 84px;
+  padding: 28px 32px 64px;
 }
 
 .offer-banner {
@@ -279,13 +306,59 @@ a {
   color: var(--bg-cream);
 }
 
+.next-band {
+  position: relative;
+  z-index: 2;
+  max-width: 1320px;
+  margin: 0 auto 84px;
+  padding: 0 32px;
+}
+
+.next-band-inner {
+  min-height: 460px;
+  border-radius: 32px;
+  background-color: var(--tint-brown-butter);
+  border: 1px solid rgba(61, 34, 22, 0.08);
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+}
+
+.next-band-kicker {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-cocoa-soft);
+}
+
+.next-band-copy {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.65rem, 3vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink-cocoa);
+  max-width: 26ch;
+}
+
 @media (max-width: 1024px) {
   .site-header {
     padding: 20px 24px;
   }
 
-  .hero {
-    padding: 16px 24px 64px;
+  .hero-stage {
+    min-height: 1900px;
+  }
+
+  .hero-sticky {
+    padding: 40px 24px 64px;
   }
 
   .hero-inner {
@@ -297,7 +370,12 @@ a {
   }
 
   .offer-section {
-    padding: 24px 24px 72px;
+    padding: 24px 24px 56px;
+  }
+
+  .next-band {
+    padding: 0 24px;
+    margin-bottom: 72px;
   }
 }
 
@@ -307,19 +385,35 @@ a {
     font-size: 0.85rem;
   }
 
-  .hero {
-    min-height: auto;
-    padding: 12px 24px 48px;
+  .hero-stage {
+    min-height: 1750px;
+  }
+
+  .hero-sticky {
+    min-height: 100vh;
+    padding: 20px 24px 48px;
   }
 
   .hero-inner {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 16px;
   }
 
   .hero-copy {
-    padding: 8px 0 0;
+    padding: 4px 0 0;
     max-width: 100%;
+  }
+
+  .hero-eyebrow {
+    margin: 0 0 10px;
+  }
+
+  .hero-headline {
+    margin: 0 0 14px;
+  }
+
+  .hero-sub {
+    margin: 0 0 20px;
   }
 
   .slot-hero-jar {
@@ -335,12 +429,18 @@ a {
     padding: 28px 28px;
     border-radius: 26px;
   }
+
+  .next-band-inner {
+    min-height: 380px;
+    border-radius: 26px;
+    padding: 40px 28px;
+  }
 }
 
 @media (max-width: 480px) {
   .site-header {
     grid-template-columns: auto 1fr;
-    padding: 16px 18px;
+    padding: 14px 18px;
   }
 
   .site-nav {
@@ -357,16 +457,47 @@ a {
     font-size: 0.84rem;
   }
 
-  .hero {
-    padding: 10px 18px 40px;
+  .hero-sticky {
+    min-height: 100vh;
+    padding: 14px 18px 44px;
+  }
+
+  .hero-inner {
+    gap: 12px;
+  }
+
+  .hero-eyebrow {
+    margin: 0 0 8px;
+    font-size: 0.78rem;
+  }
+
+  .hero-headline {
+    margin: 0 0 10px;
+    font-size: clamp(2.15rem, 8.5vw, 2.65rem);
+  }
+
+  .hero-sub {
+    margin: 0 0 16px;
+    font-size: 0.96rem;
+    line-height: 1.45;
+  }
+
+  .cta-pill {
+    padding: 12px 22px;
+    font-size: 0.92rem;
   }
 
   .slot-hero-jar {
     min-height: 300px;
   }
 
+  .scroll-cue {
+    margin-top: 8px;
+    font-size: 0.76rem;
+  }
+
   .offer-section {
-    padding: 18px 18px 56px;
+    padding: 18px 18px 44px;
   }
 
   .offer-banner {
@@ -379,5 +510,15 @@ a {
   .offer-seal {
     width: 92px;
     height: 92px;
+  }
+
+  .next-band {
+    padding: 0 18px;
+    margin-bottom: 56px;
+  }
+
+  .next-band-inner {
+    min-height: 340px;
+    padding: 32px 22px;
   }
 }

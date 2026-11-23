@@ -1,6 +1,6 @@
 {
  "page": "cookie.html",
- "digest": "6cd0ce90a648a26a",
+ "digest": "729dc9b9094730e3",
  "frame": {
   "width": 1440,
   "height": 900
@@ -15,72 +15,126 @@
     "kind": "fixed"
    }
   },
+  "heroStage": {
+   "x": 720,
+   "y": 1107,
+   "width": 1440,
+   "height": 2050,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroCopy": {
+   "x": 340,
+   "y": 358,
+   "width": 560,
+   "height": 404.4375,
+   "placement": {
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 276
+   }
+  },
   "heroHeadline.0": {
    "x": 190.8671875,
-   "y": 216.015625,
+   "y": 248.015625,
    "width": 261.734375,
    "height": 74.46875,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 166.015625
    }
   },
   "heroHeadline.1": {
    "x": 432.8984375,
-   "y": 216.015625,
+   "y": 248.015625,
    "width": 198.828125,
    "height": 74.46875,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 166.015625
    }
   },
   "heroHeadline.2": {
    "x": 154.5703125,
-   "y": 290.484375,
+   "y": 322.484375,
    "width": 189.140625,
    "height": 74.46875,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 240.484375
    }
   },
   "heroHeadline.3": {
    "x": 338.6953125,
-   "y": 290.484375,
+   "y": 322.484375,
    "width": 155.609375,
    "height": 74.46875,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 240.484375
    }
   },
   "heroHeadline": {
    "x": 340,
-   "y": 253.25,
+   "y": 285.25,
    "width": 560,
    "height": 148.9375,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 203.25
    }
   },
   "heroSub": {
    "x": 340,
-   "y": 379.46875,
+   "y": 411.46875,
    "width": 560,
    "height": 59.5,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 329.46875
    }
   },
   "heroCta": {
    "x": 140.90625,
-   "y": 467.71875,
+   "y": 499.71875,
    "width": 161.8125,
    "height": 49,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 417.71875
+   }
+  },
+  "scrollCue": {
+   "x": 719.9921875,
+   "y": 598.5,
+   "width": 210.515625,
+   "height": 17,
+   "placement": {
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 516.5
    }
   },
   "offerBanner": {
    "x": 720,
-   "y": 802,
+   "y": 2252,
    "width": 1256,
    "height": 184,
    "placement": {
@@ -89,7 +143,7 @@
   },
   "offerSeal": {
    "x": 1244,
-   "y": 802,
+   "y": 2252,
    "width": 112,
    "height": 112,
    "placement": {
@@ -98,11 +152,14 @@
   },
   "slotHeroJar": {
    "x": 1076,
-   "y": 326,
+   "y": 358,
    "width": 608,
    "height": 440,
    "placement": {
-    "kind": "flow"
+    "kind": "sticky",
+    "minY": 82,
+    "maxY": 1232,
+    "pinY": 276
    }
   }
  },
@@ -115,10 +172,16 @@
   ]
  },
  "parents": {
+  "heroCopy": "heroStage",
   "heroHeadline.0": "heroHeadline",
   "heroHeadline.1": "heroHeadline",
   "heroHeadline.2": "heroHeadline",
   "heroHeadline.3": "heroHeadline",
-  "offerSeal": "offerBanner"
+  "heroHeadline": "heroCopy",
+  "heroSub": "heroCopy",
+  "heroCta": "heroCopy",
+  "scrollCue": "heroStage",
+  "offerSeal": "offerBanner",
+  "slotHeroJar": "heroStage"
  }
 }

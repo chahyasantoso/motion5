@@ -17,7 +17,7 @@ interface PreviewPlacement {
 }
 
 const PREVIEW_PLACEMENTS: readonly PreviewPlacement[] = [
-  { flavorIndex: 0, x: -0.02, y: 0.15, z: 0.01, rotX: 0.03, rotY: 0.2, rotZ: -0.03 },
+  { flavorIndex: 3, x: -0.02, y: 0.15, z: 0.01, rotX: 0.03, rotY: 0.2, rotZ: -0.03 },
   { flavorIndex: 1, x: 0.03, y: 0.29, z: -0.01, rotX: -0.04, rotY: 1.5, rotZ: 0.04 },
   { flavorIndex: 2, x: -0.02, y: 0.43, z: 0.02, rotX: 0.03, rotY: 2.7, rotZ: -0.04 },
 ];
@@ -137,7 +137,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     jarModel.add(cookie);
   }
 
-  const heroFlavor = FLAVORS[3] ?? FLAVORS[0];
+  const heroFlavor = FLAVORS[0];
   if (!heroFlavor) {
     throw new Error("FLAVORS must define at least one flavor");
   }

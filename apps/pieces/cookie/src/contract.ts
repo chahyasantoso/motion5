@@ -2,6 +2,9 @@ import type { Lens3d } from "@gerak/core";
 
 export interface CastNames {
   readonly stageCanvas: string;
+  readonly heroStage: string;
+  readonly heroCopy: string;
+  readonly scrollCue: string;
   readonly slotHeroJar: string;
   readonly heroHeadline: string;
   readonly heroSub: string;
@@ -15,6 +18,9 @@ export interface CastNames {
 
 export const CAST: CastNames = {
   stageCanvas: "stageCanvas",
+  heroStage: "heroStage",
+  heroCopy: "heroCopy",
+  scrollCue: "scrollCue",
   slotHeroJar: "slotHeroJar",
   heroHeadline: "heroHeadline",
   heroSub: "heroSub",
