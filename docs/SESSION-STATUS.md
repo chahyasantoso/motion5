@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Authoring ergonomics (`plan/authoring-ergonomics-plan.md`), continuing with PR 4 (`subject-first scene(...)` and `element.moves(...)`), followed by multi-shot reels (`plan/reels-plan.md`), and Visual Studio (`plan/studio-plan.md`).**
+- **Authoring ergonomics (`plan/authoring-ergonomics-plan.md`), continuing with PR 4 (`subject-first scene(...)` and `element.moves(...)`), then the 76–104 ms frame about 110 ms after `cookie` loads (`@gerak/dom` compositor setup in `missAt`/`fewest` plus Three.js first-draw uploads, also on main), followed by multi-shot reels (`plan/reels-plan.md`), and Visual Studio (`plan/studio-plan.md`).**
 
 ## Open, and not scheduled
 
