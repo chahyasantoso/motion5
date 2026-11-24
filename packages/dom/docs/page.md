@@ -20,6 +20,7 @@ const card = box("card");
 - Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, report 3D `casts()`, count 3D list parts and measure `object` elements; `mount` publishes `Binder.casts()` via `BINDER_CASTS` before scene binding validates nodes and verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
 - Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
+- Dispose on `pagehide` only when `event.persisted` is false, never on `beforeunload`: a page the browser keeps in its back/forward cache comes back without rerunning scripts, so a disposed mount stays motionless.
 
 ## Clock and frame modes
 

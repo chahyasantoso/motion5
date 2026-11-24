@@ -460,22 +460,20 @@ async function bootstrap(): Promise<void> {
 
   syncActiveFlavor();
 
-  window.addEventListener(
-    "beforeunload",
-    () => {
-      cancelHeroScroll();
-      window.removeEventListener("scroll", onScroll);
-      document.removeEventListener("scroll", onScroll);
-      unsubscribePlayer();
-      stopJar();
-      for (const off of cleanupListeners) {
-        off();
-      }
-      mounted.dispose();
-      studio.dispose();
-    },
-    { once: true },
-  );
+  // A page kept in the back/forward cache resumes as it was, so it is torn down only when it is discarded.
+  const onPageHide = (event: PageTransitionEvent): void => {
+    if (event.persisted) return;
+    window.removeEventListener("pagehide", onPageHide);
+    cancelHeroScroll();
+    window.removeEventListener("scroll", onScroll);
+    document.removeEventListener("scroll", onScroll);
+    unsubscribePlayer();
+    stopJar();
+    for (const off of cleanupListeners) off();
+    mounted.dispose();
+    studio.dispose();
+  };
+  window.addEventListener("pagehide", onPageHide);
 }
 
 void ready(bootstrap());
