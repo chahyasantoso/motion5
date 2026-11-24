@@ -1,16 +1,10 @@
-import {
-  compileScene,
-  formatStageError,
-  isScene,
-  type SceneBuilder,
-  type Stage,
-} from "@gerak/stage";
+import { compileScene, formatStageError, isScene, type Scene, type Stage } from "@gerak/stage";
 
 /** A stage module as the pieces' pages play it. */
 export interface LoadedStage {
   readonly kind: "stage";
   readonly stage: Stage;
-  readonly scene: SceneBuilder;
+  readonly scene: Scene;
   readonly exports: Readonly<Record<string, unknown>>;
 }
 

@@ -28,7 +28,7 @@ import {
   type Rest,
   type RestAt,
   type RestReader,
-  type SceneBuilder,
+  type Scene,
   type Stage,
   type Moves,
   type TriggerBeat,
@@ -74,7 +74,7 @@ export interface StageFonts {
 export type StageValues = Readonly<Record<string, unknown>>;
 
 /** What `mount` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
-export type StageInput = Stage | SceneBuilder;
+export type StageInput = Stage | Scene;
 
 /** The style properties written or cleared while measuring and animating an existing page node. */
 export interface PageStyle extends RenderStyle {
