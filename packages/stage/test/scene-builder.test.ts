@@ -82,6 +82,18 @@ describe("elements", () => {
     const typedClock = text<TestCast>("clock", () => "0");
     const typedRing = shape<TestCast>("ring", circlePath({ cx: 0, cy: 0, r: 5 }));
     const typedJar = object<TestCast>("jar");
+    const literalName: "card" = box("card").name;
+    const typedCardName: TestCast = typedCard.name;
+    const literalList = box("cards", { parts: true });
+    const literalParts: true = literalList.parts;
+    const literalObj = object("jarList", { parts: true });
+    const literalObjParts: true = literalObj.parts;
+    expect([literalName, typedCardName, literalParts, literalObjParts]).toEqual([
+      "card",
+      "card",
+      true,
+      true,
+    ]);
     expect([
       typedCard.name,
       typedTitle.name,

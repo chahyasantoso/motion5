@@ -8,7 +8,7 @@ import {
   type ViewSize3d,
 } from "@gerak/core";
 import { boxInViewport, placementOf, type Box, type RestReader } from "@gerak/stage";
-import { JAR_METRICS, LENS, STAGE_SIZE, type CastName } from "./contract.ts";
+import { JAR_METRICS, LENS, STAGE_SIZE, type DomCast } from "./contract.ts";
 
 export interface SlotWorld {
   readonly center: Point3d;
@@ -33,8 +33,8 @@ export interface BuilderSlotGeometry extends SlotWorld {
 }
 
 interface SlotSpec {
-  readonly stageCast: CastName;
-  readonly slotCast: CastName;
+  readonly stageCast: DomCast;
+  readonly slotCast: DomCast;
   readonly fallbackTop: number;
   readonly fallbackHeight: number;
   readonly xShare: number;
@@ -43,8 +43,8 @@ interface SlotSpec {
   readonly clampVisible?: boolean;
 }
 
-const STAGE_CANVAS_CAST: CastName = "stageCanvas";
-const SLOT_FLAVOR_COOKIE_CAST: CastName = "slotFlavorCookie";
+const STAGE_CANVAS_CAST: DomCast = "stageCanvas";
+const SLOT_FLAVOR_COOKIE_CAST: DomCast = "slotFlavorCookie";
 
 const JAR_SILHOUETTE_W = JAR_METRICS.radius * 2.08;
 const JAR_SILHOUETTE_H = JAR_METRICS.height + 0.26;

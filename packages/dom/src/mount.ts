@@ -181,7 +181,13 @@ export interface MountOptions {
   readonly binders?: readonly Binder[];
 }
 
-/** What draws a scene's object elements beside the mount: claims, lifecycle start, optional resize, counts, measure. */
+/** Whether a bound cast target is a single element/object or a multi-part list. */
+export type BinderCastKind = "single" | "list";
+
+/** Global registry where mounts publish binder-discovered cast names even if scene validation fails. */
+export const BINDER_CASTS = Symbol.for("@gerak/dom/binder-casts");
+
+/** What draws a scene's object elements beside the mount: claims, lifecycle start, optional resize, counts, measure, casts. */
 export interface Binder {
   /** Whether it draws the object element `name`. */
   claims(name: string): boolean;
@@ -196,6 +202,8 @@ export interface Binder {
     names?: readonly string[],
     lists?: ReadonlySet<string>,
   ) => Readonly<Record<string, ObjectBounds3d>>;
+  /** Declares known 3D cast names and whether each is a single object or a list. */
+  readonly casts?: () => Readonly<Record<string, BinderCastKind>>;
 }
 
 /** Names each object element of `stage` that no binder, or more than one, claims. */
@@ -638,8 +646,29 @@ const TRIGGER_SLACK_MS = 34;
 
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
 export function mount(input: StageInput, options: MountOptions): Mounted {
-  let stage = resolvePageStage(input);
   const binders = options.binders ?? [];
+  const bindersWithCasts = binders.filter(
+    (binder): binder is Binder & { readonly casts: NonNullable<Binder["casts"]> } =>
+      binder.casts !== undefined,
+  );
+  const binderCastEntry =
+    bindersWithCasts.length === 0
+      ? undefined
+      : {
+          read: (): Readonly<Record<string, BinderCastKind>> => {
+            const out: Record<string, BinderCastKind> = {};
+            for (const binder of bindersWithCasts) Object.assign(out, binder.casts());
+            return Object.freeze(out);
+          },
+        };
+  if (binderCastEntry !== undefined) {
+    const existing: unknown = Reflect.get(globalThis, BINDER_CASTS);
+    const entries: unknown[] = Array.isArray(existing) ? existing : [];
+    Reflect.set(globalThis, BINDER_CASTS, entries);
+    entries.push(binderCastEntry);
+  }
+
+  let stage = resolvePageStage(input);
   checkBinders(stage, binders);
   const root = options.root ?? (isPageRoot(globalThis.document) ? globalThis.document : undefined);
   if (root === undefined || !isPageRoot(root))
@@ -683,9 +712,14 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         case "object":
           continue;
         case "actor": {
-          const raw = found()[0];
+          const matches = found();
+          const raw = matches[0];
           if (raw === undefined)
             throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
+          if (matches.length > 1)
+            throw new Error(
+              `mount: "${member.name}" (${selector}) matched ${matches.length} nodes; pass \`parts: true\` to animate a list.`,
+            );
           const node = needElement(raw, member.name, selector);
           bound = { member, node, items: [] };
           allNodes.push(node);
@@ -1735,6 +1769,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       fitted?.removeAttribute("data-gerak-frame");
       const at = mounts.indexOf(mounted);
       if (at >= 0) mounts.splice(at, 1);
+      if (binderCastEntry !== undefined) {
+        const listedCasts: unknown = Reflect.get(globalThis, BINDER_CASTS);
+        if (Array.isArray(listedCasts)) {
+          const castIndex = listedCasts.indexOf(binderCastEntry);
+          if (castIndex >= 0) listedCasts.splice(castIndex, 1);
+        }
+      }
     },
   };
   mounts.push(mounted);

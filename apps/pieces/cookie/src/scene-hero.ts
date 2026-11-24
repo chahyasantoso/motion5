@@ -13,26 +13,28 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, box, object, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
-import { HERO_COOKIE_JAR_LOCAL, type CastName } from "./contract.ts";
+import { beat, box, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
+import { HERO_COOKIE_JAR_LOCAL } from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { heroJarSlotWorld, isHeroHandoffActive, spotlightSlotWorld } from "./space3d.ts";
 
-const stageCanvas = box<CastName>("stageCanvas");
-const heroStage = box<CastName>("heroStage");
-const heroWarmWash = box<CastName>("heroWarmWash");
-const heroHorizon = box<CastName>("heroHorizon");
-const heroCopy = box<CastName>("heroCopy");
-const slotHeroJar = box<CastName>("slotHeroJar");
-const heroHeadline = text<CastName>("heroHeadline", { split: "words" });
-const heroSub = box<CastName>("heroSub");
-const heroCta = box<CastName>("heroCta", { watch: true });
-const offerBanner = box<CastName>("offerBanner");
-const offerSeal = box<CastName>("offerSeal");
-
-const jarRoot = object<CastName>("jarRoot");
-const jarLid = object<CastName>("jarLid");
-const cookieHero = object<CastName>("cookieHero");
+const {
+  stageCanvas,
+  heroStage,
+  heroWarmWash,
+  heroHorizon,
+  heroCopy,
+  slotHeroJar,
+  heroSub,
+  offerBanner,
+  offerSeal,
+  jarRoot,
+  jarLid,
+  cookieHero,
+} = cast;
+const heroHeadline = text(cast.heroHeadline.name, { split: "words" });
+const heroCta = box(cast.heroCta.name, { watch: true });
 
 const heroEnter = beat("heroEnter", 520);
 const jarSettle = beat("jarSettle", 520);
@@ -56,7 +58,7 @@ const cookieLift = beat("cookieLift", {
 const ctaHovered = state(
   false,
   (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: "heroCta" satisfies CastName },
+  { target: heroCta.name },
 );
 const ctaPeek = shared(
   springTo(ctaHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),

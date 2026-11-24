@@ -1,16 +1,9 @@
 import { clamp, ease, mix, motion, type Pose2d, type Time } from "@gerak/core";
-import { beat, box, sceneBuilder, type MotionContext } from "@gerak/stage";
-import { STAGE_SIZE, type CastName } from "./contract.ts";
+import { beat, sceneBuilder, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
+import { STAGE_SIZE } from "./contract.ts";
 
-const craftStage = box<CastName>("craftStage");
-const craftHeading = box<CastName>("craftHeading");
-const craftProgressFill = box<CastName>("craftProgressFill");
-const craftViewport = box<CastName>("craftViewport");
-const craftTrack = box<CastName>("craftTrack");
-const craftCards = box<CastName>("craftCards", { parts: true });
-
-const craftTrackCast: CastName = "craftTrack";
-const craftViewportCast: CastName = "craftViewport";
+const { craftStage, craftHeading, craftProgressFill, craftViewport, craftTrack, craftCards } = cast;
 
 const craftEnter = beat("craftEnter", {
   scroll: [craftStage.top.minus(460), craftStage.top.minus(40)],
@@ -35,8 +28,8 @@ const craftProgressMotion = motion(
 );
 
 const craftTrackMotion = motion((t: Time, context?: MotionContext): Pose2d => {
-  const trackW = context?.rest.get(craftTrackCast)?.width ?? 1920;
-  const viewportW = context?.rest.get(craftViewportCast)?.width ?? STAGE_SIZE.width;
+  const trackW = context?.rest.get(craftTrack.name)?.width ?? 1920;
+  const viewportW = context?.rest.get(craftViewport.name)?.width ?? STAGE_SIZE.width;
   const travel = Math.max(0, trackW - viewportW);
   return {
     x: mix(0, -travel, t.progress),

@@ -65,11 +65,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`gerak render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.
-- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` and `<name>.cast.d.ts` (`export type CastName = ...`) beside it:
+- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` and `<name>.cast.ts` (`cast` handles, `DomCast`, `ObjectCast`, `CastName`) beside it:
   the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
-  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them. `sample`, `timeline` and `review` of a
-  builder scene `<brief>/src/<name>.ts` read it with no
-  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache on demand).
+  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them (`<name>.cast.ts` is also synced from static HTML + `Binder.casts()` even when a stale scene throws during `mount`, and on HTML edits in `gerak live`). `sample`, `timeline` and `review` of a
+  builder scene `<brief>/src/<name>.ts` read `.measure.json` with no
+  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache or missing `.cast.ts` on demand).
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list] [--measure]`**: exact
   values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`. `--measure` refreshes a missing or stale measure cache before sampling.
 - **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.

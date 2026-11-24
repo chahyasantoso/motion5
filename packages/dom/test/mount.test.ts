@@ -35,6 +35,7 @@ import {
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
+  BINDER_CASTS,
   mount,
   MOUNTS,
   ready,
@@ -742,6 +743,59 @@ describe("mount", () => {
     expect(explicitWord.style.transform).toBe("translate3d(7px, 1px, 0px)");
     expect(explicitWord.children[0]?.style.transform).toBe("");
     explicitMounted.dispose();
+  });
+
+  it("refuses a non-parts box matching multiple DOM nodes and records Binder.casts before mount errors", () => {
+    const a = new FakeNode("cardA");
+    a.setAttribute("data-cast", "cards");
+    const b = new FakeNode("cardB");
+    b.setAttribute("data-cast", "cards");
+    expect(() =>
+      mount(sceneBuilder({ length: 500 }).element(box("cards")), {
+        root: new FakeRoot([a, b]),
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => 0,
+      }),
+    ).toThrow(/"cards".*parts: true/);
+
+    const jarBinder: Binder = {
+      claims: (name) => name === "jar",
+      casts: () => ({ jar: "single", cookies: "list" }),
+      start: () => () => undefined,
+    };
+    expect(() =>
+      mount(sceneBuilder({ length: 500 }).element(box("missingDom")), {
+        root: new FakeRoot([]),
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => 0,
+        binders: [jarBinder],
+      }),
+    ).toThrow(/missingDom/);
+    const recorded: unknown = Reflect.get(globalThis, BINDER_CASTS);
+    expect(Array.isArray(recorded) && recorded.length > 0).toBe(true);
+    const merged: Record<string, string> = {};
+    if (Array.isArray(recorded)) {
+      for (const entry of recorded) {
+        const readFn: unknown = Reflect.get(Object(entry), "read");
+        if (typeof readFn === "function") Object.assign(merged, Reflect.apply(readFn, entry, []));
+      }
+      recorded.length = 0;
+    }
+    expect(merged).toEqual({ jar: "single", cookies: "list" });
+
+    const single = new FakeNode("cardA");
+    const mounted = mount(sceneBuilder({ length: 500 }).element(box("cardA")), {
+      root: new FakeRoot([single]),
+      frames: fakeFrames(),
+      clock: "live",
+      now: () => 0,
+      binders: [jarBinder],
+    });
+    expect(Reflect.get(globalThis, BINDER_CASTS)).toHaveLength(1);
+    mounted.dispose();
+    expect(Reflect.get(globalThis, BINDER_CASTS)).toHaveLength(0);
   });
 });
 

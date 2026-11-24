@@ -19,7 +19,7 @@ import {
   isSpotlightZone,
   spotlightTargetForZone,
   spotlightZoneForProgress,
-  type CastName,
+  type DomCast,
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
@@ -27,7 +27,7 @@ import { spotlightSlotWorld } from "./space3d.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
 
-const castSelector = (name: CastName): string => `[data-cast="${name}"]`;
+const castSelector = (name: DomCast): string => `[data-cast="${name}"]`;
 
 async function bootstrap(): Promise<void> {
   const canvasSelector = castSelector("stageCanvas");
@@ -524,7 +524,7 @@ async function bootstrap(): Promise<void> {
     cleanupListeners.push(() => builderSealBtn.removeEventListener("click", toggleSealJar));
   }
 
-  const unsubscribePlayer = mounted.player.subscribe("flavorShadow" satisfies CastName, () => {
+  const unsubscribePlayer = mounted.player.subscribe("flavorShadow" satisfies DomCast, () => {
     syncActiveFlavor();
   });
 

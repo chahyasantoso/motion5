@@ -92,7 +92,7 @@ export interface MorphSource {
 /** What `shape` draws: a path, or a morph. */
 export type ShapeSource = Path | MorphSource;
 
-function named(maker: string, name: string): string {
+function named<N extends string>(maker: string, name: N): N {
   if (typeof name !== "string" || name === "")
     throw new TypeError(`${maker}: an element needs a name.`);
   return name;
@@ -160,13 +160,23 @@ function optionsOf(options: ElementOptions | undefined): ElementOptions {
 }
 
 /** A page element styled by CSS; `parts: true` binds it to a list of parts. */
-export function box<N extends string = string>(name: N, options?: BoxOptions): Element {
-  return edged({
-    kind: "box",
-    name: named("box", name),
-    ...(options?.parts === true ? { parts: true } : {}),
-    options: optionsOf(options),
-  });
+export function box<N extends string = string>(
+  name: N,
+  options: BoxOptions & { readonly parts: true },
+): Element & { readonly name: N; readonly parts: true };
+export function box<N extends string = string>(
+  name: N,
+  options?: BoxOptions,
+): Element & { readonly name: N };
+export function box<N extends string = string>(
+  name: N,
+  options?: BoxOptions,
+): Element & { readonly name: N; readonly parts?: true } {
+  const own = named("box", name);
+  const opts = optionsOf(options);
+  return options?.parts === true
+    ? edged({ kind: "box", name: own, parts: true, options: opts })
+    : edged({ kind: "box", name: own, options: opts });
 }
 
 function isMorph(value: ShapeSource): value is MorphSource {
@@ -178,7 +188,7 @@ export function shape<N extends string = string>(
   name: N,
   outline: ShapeSource,
   options?: ElementOptions,
-): Element {
+): Element & { readonly name: N } {
   const drawn: Outline = isMorph(outline)
     ? { kind: "morph", base: outline.base, targets: outline.targets }
     : { kind: "path", path: outline };
@@ -191,17 +201,20 @@ export function shape<N extends string = string>(
 }
 
 /** Text in the markup, or text a function of time writes; `split` gives one part per letter or word. */
-export function text<N extends string = string>(name: N, options?: TextOptions): Element;
+export function text<N extends string = string>(
+  name: N,
+  options?: TextOptions,
+): Element & { readonly name: N };
 export function text<N extends string = string>(
   name: N,
   content: (time: Time) => string,
   options?: ElementOptions,
-): Element;
+): Element & { readonly name: N };
 export function text<N extends string = string>(
   name: N,
   second?: TextOptions | ((time: Time) => string),
   third?: ElementOptions,
-): Element {
+): Element & { readonly name: N } {
   const own = named("text", name);
   if (typeof second === "function") {
     if (third !== undefined && Reflect.get(third, "split") !== undefined)
@@ -225,16 +238,27 @@ export function text<N extends string = string>(
 }
 
 /** A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children. */
-export function object<N extends string = string>(name: N, options?: ObjectOptions): ObjectElement {
+export function object<N extends string = string>(
+  name: N,
+  options: ObjectOptions & { readonly parts: true },
+): ObjectElement & { readonly name: N; readonly parts: true };
+export function object<N extends string = string>(
+  name: N,
+  options?: ObjectOptions,
+): ObjectElement & { readonly name: N };
+export function object<N extends string = string>(
+  name: N,
+  options?: ObjectOptions,
+): ObjectElement & { readonly name: N; readonly parts?: true } {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))
     throw new TypeError(
       `object "${name}": \`view\` needs a \`canvas\` box and a \`lens\` with a fov.`,
     );
-  return Object.freeze({
-    kind: "object",
-    name: named("object", name),
-    view: view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens }),
-    ...(options?.parts === true ? { parts: true } : {}),
-  });
+  const own = named("object", name);
+  const resolvedView =
+    view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens });
+  return options?.parts === true
+    ? Object.freeze({ kind: "object", name: own, view: resolvedView, parts: true })
+    : Object.freeze({ kind: "object", name: own, view: resolvedView });
 }

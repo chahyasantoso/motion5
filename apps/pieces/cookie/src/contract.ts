@@ -1,5 +1,5 @@
 import { unreachable, type Lens3d, type Point3d } from "@gerak/core";
-export type { CastName } from "../cookie.cast";
+export type { CastName, DomCast, ObjectCast } from "../cookie.cast.ts";
 
 export const BUILDER_CAPACITY = 6;
 export const BUILDER_EXIT_POOL = 3;

@@ -7,11 +7,8 @@ import {
   BUILDER_EXIT_POOL,
   FLAVORS,
   JAR_MODEL_OFFSET_Y,
-  type CastName,
   type FlavorSpec,
 } from "./contract.ts";
-
-const castName = <N extends CastName>(name: N): N => name;
 
 export interface LoadedCookieWorld {
   readonly objects: Readonly<Record<string, ObjectTarget3d>>;
@@ -260,7 +257,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   const closingJarModel = jarGltf.scene.clone(true);
 
   const jarRoot = new THREE.Group();
-  jarRoot.name = castName("jarRoot");
+  jarRoot.name = "jarRoot";
 
   // Offset the jar vertically so jarRoot origin centers the full jar-plus-lid silhouette.
   const jarModel = jarGltf.scene;
@@ -286,7 +283,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   }
 
   const builderJarRoot = new THREE.Group();
-  builderJarRoot.name = castName("builderJarRoot");
+  builderJarRoot.name = "builderJarRoot";
   builderJarModel.position.set(0, JAR_MODEL_OFFSET_Y, 0);
   enhanceJarMaterials(builderJarModel);
   builderJarRoot.add(builderJarModel);
@@ -297,11 +294,11 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     throw new Error("Missing JarLid node in cloned builder jar");
   }
 
-  const builderJarRibbon = buildJarRibbon(castName("builderJarRibbon"));
+  const builderJarRibbon = buildJarRibbon("builderJarRibbon");
   builderJarModel.add(builderJarRibbon);
 
   const closingJarRoot = new THREE.Group();
-  closingJarRoot.name = castName("closingJarRoot");
+  closingJarRoot.name = "closingJarRoot";
   closingJarModel.position.set(0, JAR_MODEL_OFFSET_Y, 0);
   enhanceJarMaterials(closingJarModel);
   closingJarRoot.add(closingJarModel);
@@ -326,7 +323,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   }
 
   const cookieHero = new THREE.Group();
-  cookieHero.name = castName("cookieHero");
+  cookieHero.name = "cookieHero";
   cookieHero.position.set(0, 0, 0);
 
   const heroCookieMesh = buildCookieInstance(cookieGltf.scene, heroFlavor);
@@ -340,13 +337,13 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   world.add(closingJarRoot);
 
   const objects: Record<string, ObjectTarget3d> = {
-    [castName("jarRoot")]: jarRoot,
-    [castName("jarLid")]: jarLid,
-    [castName("cookieHero")]: cookieHero,
-    [castName("builderJarRoot")]: builderJarRoot,
-    [castName("builderJarLid")]: builderJarLid,
-    [castName("builderJarRibbon")]: builderJarRibbon,
-    [castName("closingJarRoot")]: closingJarRoot,
+    jarRoot,
+    jarLid,
+    cookieHero,
+    builderJarRoot,
+    builderJarLid,
+    builderJarRibbon,
+    closingJarRoot,
   };
 
   const flavorCookieGroups: THREE.Object3D[] = [];
@@ -367,7 +364,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     world.add(group);
     flavorCookieGroups.push(group);
   }
-  objects[castName("flavorCookies")] = flavorCookieGroups;
+  objects["flavorCookies"] = flavorCookieGroups;
 
   // Pre-build all four flavor variants per builder and exit slot so switching allocates nothing.
   const builderCookieVariants: (readonly THREE.Object3D[])[] = [];
@@ -378,7 +375,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     world.add(group);
     builderCookieGroups.push(group);
   }
-  objects[castName("builderCookies")] = builderCookieGroups;
+  objects["builderCookies"] = builderCookieGroups;
 
   const builderExitCookieVariants: (readonly THREE.Object3D[])[] = [];
   const builderExitCookieGroups: THREE.Object3D[] = [];
@@ -391,10 +388,10 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     world.add(group);
     builderExitCookieGroups.push(group);
   }
-  objects[castName("builderExitCookies")] = builderExitCookieGroups;
+  objects["builderExitCookies"] = builderExitCookieGroups;
 
   const crumbGroup = new THREE.Group();
-  crumbGroup.name = castName("builderCrumbs");
+  crumbGroup.name = "builderCrumbs";
   const crumbMaterials = CRUMB_COLORS.map(
     (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86, metalness: 0.02 }),
   );

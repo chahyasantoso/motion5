@@ -16,27 +16,30 @@ import {
   type Time,
   type Transition,
 } from "@gerak/core";
-import { box, object, sceneBuilder, type MotionContext } from "@gerak/stage";
+import { sceneBuilder, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
 import {
   FLAVOR_SELECT_EVENT,
   JAR_METRICS,
   SPOTLIGHT_ROLL_MS,
   isSpotlightZone,
   spotlightZoneForProgress,
-  type CastName,
   type SpotlightZone,
 } from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { isHeroHandoffActive, spotlightSlotWorld, type SpotlightSlotGeometry } from "./space3d.ts";
 
-const spotlightStage = box<CastName>("spotlightStage");
-const slotFlavorCookie = box<CastName>("slotFlavorCookie");
-const flavorShadow = box<CastName>("flavorShadow");
-const spotlightTints = box<CastName>("spotlightTints", { parts: true });
-const flavorTitles = box<CastName>("flavorTitles", { parts: true });
-const flavorNums = box<CastName>("flavorNums", { parts: true });
-const flavorNotes = box<CastName>("flavorNotes", { parts: true });
-const flavorDots = box<CastName>("flavorDots", { parts: true });
+const {
+  spotlightStage,
+  slotFlavorCookie,
+  flavorShadow,
+  spotlightTints,
+  flavorTitles,
+  flavorNums,
+  flavorNotes,
+  flavorDots,
+  flavorCookies,
+} = cast;
 
 const HIDDEN_COOKIE_POSE: Pose3d = { scale: 0 };
 
@@ -247,7 +250,7 @@ export const spotlightScene = sceneBuilder()
   .element(slotFlavorCookie)
   .element(flavorShadow)
   .motion(flavorShadowMotion)
-  .element(object<CastName>("flavorCookies", { parts: true }))
+  .element(flavorCookies)
   .motion(flavorCookiesMotion)
   .show([spotlightStage.top, spotlightStage.end])
   .limits({ jump: 0.9, turn: 45 })

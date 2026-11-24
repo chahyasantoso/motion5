@@ -35,9 +35,9 @@ On `main`, earlier 3D pieces (`avatar-3d`, `dragon-intro`) loaded `dragonling.gl
 
 | File | Single Responsibility |
 | --- | --- |
-| `src/contract.ts` | Pure data & types: `CastName` (re-exported from `../cookie.cast.d.ts`), `FLAVORS`, `STAGE_SIZE`, `LENS`, `JAR_METRICS`. No DOM or Three.js. |
+| `src/contract.ts` | Pure data & types: `CastName`, `DomCast`, and `ObjectCast` (re-exported from `../cookie.cast.ts`), `FLAVORS`, `STAGE_SIZE`, `LENS`, `JAR_METRICS`. No DOM or Three.js. |
 | `src/world-studio.ts` | Three.js `Scene`, `PerspectiveCamera` from `LENS`, `WebGLRenderer`, 3-point sunlit studio lights, resize/draw/dispose. |
-| `src/world-models.ts` | `GLTFLoader` loading for jar & cookie `.glb`s, sunlit `JarGlass` `MeshPhysicalMaterial`, jar-attached `ShadowMaterial` disc, `jarRoot` / `jarLid` / `cookieHero` assembly. |
+| `src/world-models.ts` | `GLTFLoader` loading for jar & cookie `.glb`s, sunlit `JarGlass` `MeshPhysicalMaterial`, jar-attached `ShadowMaterial` disc, `jarRoot` / `jarLid` / `cookieHero` assembly (producer of 3D `objects`, independent of cast files). |
 | `src/scene-hero.ts` | Pure `sceneBuilder()` fragment for the hero entrance and jar settle (no `length` or `cues`). |
 | `src/cookie.ts` | Root piece entry exporting `size`, `lens`, and `default` `sceneBuilder` combining section scenes via `.include()`. |
 | `src/cookie-main.ts` | Page bootstrap: `window.__motionReady`, studio + model load, `mount` + `threeBinder`, resize observer, initial draw. |

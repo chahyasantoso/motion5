@@ -26,14 +26,8 @@ import {
 } from "@gerak/core";
 import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
-import {
-  beat,
-  box,
-  object,
-  sceneBuilder,
-  type MotionContext,
-  type SceneBuilder,
-} from "@gerak/stage";
+import { beat, box, sceneBuilder, type MotionContext, type SceneBuilder } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
 import {
   BUILDER_ARC_MS,
   BUILDER_CAPACITY,
@@ -54,7 +48,6 @@ import {
   JAR_SEAL_EVENT,
   JAR_UNSEAL_EVENT,
   isSpotlightZone,
-  type CastName,
 } from "./contract.ts";
 import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { builderSlotWorld, type BuilderSlotGeometry } from "./space3d.ts";
@@ -106,14 +99,18 @@ const crumbSim = simulate(
   },
 );
 
-const builderStage = box<CastName>("builderStage");
-const builderHeading = box<CastName>("builderHeading");
-const slotBuilderJar = box<CastName>("slotBuilderJar");
-const builderSealBtn = box<CastName>("builderSealBtn", { watch: true });
-
-const builderJarRoot = object<CastName>("builderJarRoot");
-const builderJarLid = object<CastName>("builderJarLid");
-const builderJarRibbon = object<CastName>("builderJarRibbon");
+const {
+  builderStage,
+  builderHeading,
+  slotBuilderJar,
+  builderJarRoot,
+  builderJarLid,
+  builderJarRibbon,
+  builderCookies,
+  builderExitCookies,
+  builderCrumbs,
+} = cast;
+const builderSealBtn = box(cast.builderSealBtn.name, { watch: true });
 
 const builderEnter = beat("builderEnter", {
   scroll: [builderStage.top.minus(420), builderStage.top.minus(40)],
@@ -122,7 +119,7 @@ const builderEnter = beat("builderEnter", {
 const sealBtnHovered = state(
   false,
   (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: "builderSealBtn" satisfies CastName },
+  { target: builderSealBtn.name },
 );
 const sealPeek = shared(
   springTo(sealBtnHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),
@@ -784,15 +781,15 @@ export const builderScene: SceneBuilder = sceneBuilder()
   .motion(builderJarRibbonMotion)
   .show(builderWindow)
   .limits({ jump: 1.8, turn: 360 })
-  .element(object<CastName>("builderCookies", { parts: true }))
+  .element(builderCookies)
   .motion(builderCookiesMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(object<CastName>("builderExitCookies", { parts: true }))
+  .element(builderExitCookies)
   .motion(builderExitCookiesMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(object<CastName>("builderCrumbs", { parts: true }))
+  .element(builderCrumbs)
   .motion(builderCrumbsMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 180 });

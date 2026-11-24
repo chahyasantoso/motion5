@@ -29,11 +29,11 @@ export default sceneBuilder({ length: 1800 })
   .motion(stagger(rise, { spread: 0.3 }).in(enter));
 ```
 
-`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.d.ts` (`export type CastName = ...`); `live.html?scene=<name>` plays it in the live editor.
+`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.ts` (`export const cast`, `DomCast`, `ObjectCast`, `CastName`, also synced on HTML save in `gerak live`); `live.html?scene=<name>` plays it in the live editor.
 
 ## Elements
 
-Each is a value with a unique name, made once. Multi-file pieces can pass `<CastName>` from `<name>.cast.d.ts` to `box<CastName>`, `text<CastName>`, `shape<CastName>`, and `object<CastName>` for compile-time cast name checks.
+Each is a value with a unique name, made once. Multi-file pieces can import `{ cast }` directly from `<name>.cast.ts` (overriding only options like `{ split }` or `{ watch: true }` via `text(cast.x.name, ...)`, `box(cast.x.name, ...)`, `shape(cast.x.name, ...)`), or pass `<DomCast>` / `<ObjectCast>` to `box`, `text`, `shape`, and `object`.
 
 - `box(name, { parts?, watch? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`.
 - `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
@@ -97,7 +97,7 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 
 ## Checking
 
-- Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` and `<name>.cast.d.ts` match its markup and CSS (or pass `--measure` to `gerak review` / `gerak sample` to refresh on demand).
+- Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` and `<name>.cast.ts` match its markup and CSS (or pass `--measure` to `gerak review` / `gerak sample` to refresh on demand).
 - `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review treats scroll `cues` as discrete samples (keep step deltas small or use `gerak check "<brief>/<name>.html" --action scroll:px@ms` or `scroll:sel[±px]@ms` to test smooth scrolling in a browser); `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
 - `gerak check "<brief>/<name>.html" --watch '[data-cast="<name>"]' --to <ms>`: real Chromium frames against review limits.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.

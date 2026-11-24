@@ -16,8 +16,8 @@ const headline = text("headline", { split: "words" });
 const card = box("card");
 ```
 
-- `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches. Pass `nodes: { name: nodeOrList }` to override matching by name.
-- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, count 3D list parts and measure `object` elements; `mount` verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
+- `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches — and also refuses a non-parts `box(name)` matching multiple nodes (naming `parts: true`). Pass `nodes: { name: nodeOrList }` to override matching by name.
+- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, report 3D `casts()`, count 3D list parts and measure `object` elements; `mount` publishes `Binder.casts()` via `BINDER_CASTS` before scene binding validates nodes and verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
 - Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 

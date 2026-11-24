@@ -25,12 +25,8 @@ import {
   type Stage,
 } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
-import {
-  cachePathOf,
-  castTypesPathOf,
-  readMeasureCache,
-  type MeasureCache,
-} from "../page/measure-cache";
+import { castFilePathOf } from "../page/cast-file";
+import { cachePathOf, readMeasureCache, type MeasureCache } from "../page/measure-cache";
 import { lookupCache, pageOfSceneFile, restOfCache } from "./measure-cache";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
@@ -252,7 +248,7 @@ export async function loadSceneFile(
     options?.measure === true &&
     page !== undefined &&
     existsSync(page) &&
-    (cache.kind === "refused" || !existsSync(castTypesPathOf(page)))
+    (cache.kind === "refused" || !existsSync(castFilePathOf(page)))
   ) {
     const frame = measureFrameSize(page, value);
     const briefDir = dirname(page);

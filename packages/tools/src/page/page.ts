@@ -223,9 +223,15 @@ export async function withPage<T>(
     await page.goto(new URL(target.page, base).href, { waitUntil: "load" });
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
-    await page.evaluate(() =>
-      Promise.resolve(Reflect.get(window, "__motionReady")).then(() => undefined),
-    );
+    const readyError = await page.evaluate(async () => {
+      try {
+        await Promise.resolve(Reflect.get(window, "__motionReady"));
+        return undefined;
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    });
+    if (readyError !== undefined && !pageErrors.includes(readyError)) pageErrors.push(readyError);
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
     if (!real) {
       await page.clock.runFor(FIRST_FRAME_MS);

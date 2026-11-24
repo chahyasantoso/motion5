@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import ts from "typescript";
+import { syncHtmlCastFile } from "../page/cast-file";
 
 /** A single scanned numeric literal in source code. */
 export interface NumericLiteralSpan {
@@ -241,6 +242,7 @@ export interface MotionLiveServer {
   readonly watcher?:
     | {
         emit(event: "change", path: string): unknown;
+        on?(event: string, listener: (path: string) => void): unknown;
       }
     | undefined;
   readonly middlewares?:
@@ -308,6 +310,19 @@ export function motionLivePlugin(options?: {
         throw new Error("motionLivePlugin refuses a production server.");
       }
       const appRoot = options?.appRoot ?? server.config.root ?? process.cwd();
+      const resolvedRoot = resolve(appRoot);
+      const rootPrefix = resolvedRoot.endsWith(sep) ? resolvedRoot : `${resolvedRoot}${sep}`;
+      const syncHtml = (filePath: string): void => {
+        const resolved = resolve(filePath);
+        const matchesRoot =
+          process.platform === "win32"
+            ? resolved.toLowerCase().startsWith(rootPrefix.toLowerCase())
+            : resolved.startsWith(rootPrefix);
+        if (!resolved.endsWith(".html") || !matchesRoot) return;
+        syncHtmlCastFile(resolved);
+      };
+      server.watcher?.on?.("add", syncHtml);
+      server.watcher?.on?.("change", syncHtml);
       if (server.middlewares === undefined) {
         return;
       }
