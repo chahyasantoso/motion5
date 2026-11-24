@@ -37,7 +37,7 @@ async function stageFiles() {
     for (const name of names) {
       if (!name.endsWith(".ts")) continue;
       const text = await readFile(join(src, name), "utf8");
-      if (text.includes("scene(") && text.includes("export default")) files.push(join(src, name));
+      if (/\bscene\s*\(/.test(text) && text.includes("export default")) files.push(join(src, name));
     }
   }
   return files.sort();

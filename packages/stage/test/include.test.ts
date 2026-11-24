@@ -126,7 +126,7 @@ describe("scene: sub-scenes", () => {
     ).toBeCloseTo(60);
   });
 
-  it("refuses two scenes that both claim ownership via .element()", () => {
+  it("refuses two scenes that both bind one element", () => {
     const owned = box("owned");
     scene({ name: "firstOwner" }, owned);
     expect(() => scene({ name: "secondOwner" }, owned)).toThrow(/owned.*firstOwner.*secondOwner/);

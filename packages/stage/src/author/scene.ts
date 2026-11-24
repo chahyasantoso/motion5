@@ -86,6 +86,8 @@ import { compileStage, type CompileResult, type Stage } from "../run/compile";
 
 /** Options of `scene`: what is true of the whole piece. */
 export interface SceneOptions {
+  /** Absent: an element, binding or scene has a `kind`, options never do. */
+  readonly kind?: never;
   /** Optional scene label shown in ownership diagnostics. */
   readonly name?: string | undefined;
   readonly cues?: Events | undefined;
@@ -1986,7 +1988,7 @@ function startState(options: SceneOptions): State {
 function claimed(state: State, element: SceneElement): State {
   if (state.owned.has(element.name) && state.elements.get(element.name) === element)
     throw new TypeError(
-      `scene: ${describe(element)} is in "${state.owner.label}" twice; chain its calls on one binding.`,
+      `scene: ${describe(element)} is in "${state.owner.label}" twice, as an item or through a sub-scene; bind it once, in one place.`,
     );
   return select(state, element);
 }
@@ -2045,10 +2047,15 @@ export function scene(options: SceneOptions, ...items: readonly SceneItem[]): Sc
 export function scene(...items: readonly SceneItem[]): Scene;
 export function scene(...args: readonly (SceneOptions | SceneItem)[]): Scene {
   const [first] = args;
+  for (const arg of args)
+    if (typeof arg !== "object" || arg === null)
+      throw new TypeError(
+        `scene: an item is an element, its binding or a scene, not ${String(arg)}; filter conditional items out first.`,
+      );
   const options = first !== undefined && !("kind" in first) ? first : undefined;
   let state = startState(options ?? {});
   for (const item of options === undefined ? args : args.slice(1)) {
-    if (!("kind" in item)) throw new TypeError("scene: options come first, and only once.");
+    if (item.kind === undefined) throw new TypeError("scene: options come first, and only once.");
     switch (item.kind) {
       case "binding":
         state = bound(state, item);

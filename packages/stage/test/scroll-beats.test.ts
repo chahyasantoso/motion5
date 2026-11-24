@@ -112,7 +112,7 @@ describe("beat type and runtime refusals", () => {
     );
   });
 
-  it("refuses trigger beats and bad windows in .show(), and input beats in stayWith()", () => {
+  it("refuses trigger beats and bad windows in .shows(), and input beats in stayWith()", () => {
     const enter = beat("enter", 400);
     // @ts-expect-error .show takes clock beats or scroll windows, not trigger beats
     expect(() => scene({ length: 1000 }, box("tCard").shows(tb))).toThrow(TypeError);
@@ -557,7 +557,7 @@ describe("trigger beats over a long session", () => {
   });
 });
 
-describe("scroll-window .show()", () => {
+describe("scroll-window .shows()", () => {
   it("shows elements and objects during ScrollBeat, [from, to], { from }, and { until } windows", () => {
     const sec = box("sec");
     const sb = beat("sb", { scroll: [sec.top, sec.end] });
@@ -631,7 +631,7 @@ describe("scroll-window .show()", () => {
     expect(checkAt(100, 700).viaPair).toBe(false);
   });
 
-  it("registers edge elements referenced by scroll .show() as read-only across include()", () => {
+  it("registers edge elements referenced by scroll .shows() as read-only across sub-scenes", () => {
     const sharedSec = box("sharedSec");
     const ownerScene = scene(sharedSec.moves(slideX(40).in(beat("intro", 500))));
     const followerScene = scene(object("prop").shows([sharedSec.top, sharedSec.end]));
@@ -647,7 +647,7 @@ describe("scroll-window .show()", () => {
       }).visible["prop"],
     ).toBe(true);
 
-    // Two scenes owning `.show()` on the same element remain refused.
+    // Two scenes giving `.shows()` to the same element remain refused.
     const dup = box("dup");
     const dupShowA = scene(dup.shows({ from: scrollPoint(10) }));
     expect(() => {

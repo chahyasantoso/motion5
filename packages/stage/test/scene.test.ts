@@ -90,6 +90,18 @@ describe("scene", () => {
     expect(() => scene({}, late.moves(lift), early)).toThrow(/already belongs/);
   });
 
+  it("refuses an item that is not an element, binding or scene, naming it", () => {
+    const hidden = false;
+    // @ts-expect-error a conditional item that came out false
+    expect(() => scene(hidden && box("maybe"))).toThrow(/not false/);
+  });
+
+  it("does not read an element as options", () => {
+    // @ts-expect-error options never have a kind
+    const options: Parameters<typeof scene>[0] = { kind: "box" };
+    void options;
+  });
+
   it("refuses a limit set twice on one binding", () => {
     expect(() => scene({}, box("x").limits({ jump: 1 }).limits({ jump: 2 }))).toThrow(/twice/);
   });

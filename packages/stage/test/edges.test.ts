@@ -122,7 +122,7 @@ describe("single-scene element ownership", () => {
     const merged = compiled(scene({ name: "page" }, s3, s4));
     expect(merged.members.map((m) => m.name)).toEqual(["c", "shared", "d"]);
 
-    // Configuring `.element(shared)` in two scenes still enforces single-scene ownership.
+    // Binding `shared` in two scenes still enforces single-scene ownership.
     scene({ name: "ownerA" }, shared);
     expect(() => scene({ name: "ownerB" }, shared)).toThrow(/shared.*ownerA.*ownerB/);
   });

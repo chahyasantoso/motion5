@@ -54,7 +54,7 @@ What a piece is written with: `scene`, its elements, beats and motions. Reach fo
 - **`CompileSceneOptions`** `type CompileSceneOptions = { wrap?: ((run: Stage["scene"]) => Stage["scene"]) | undefined }`: How a scene compiles: a wrap around each frame's poses.
 - **`Scene`** `type Scene = { kind: "scene" }`: A piece made by `scene`; `compileScene` makes it playable, and another `scene` can take it in.
 - **`SceneItem`** `type SceneItem = Element | ObjectElement | ObjectBinding | Scene | ElementBinding`: What `scene` takes after its options: an element's binding, an element with no motion, or a scene.
-- **`SceneOptions`** `type SceneOptions = { name?: string | undefined; cues?: Events | undefined; length?: number | undefined }`: Options of `scene`: what is true of the whole piece.
+- **`SceneOptions`** `type SceneOptions = { kind?: never; name?: string | undefined; cues?: Events | undefined; length?: number | undefined }`: Options of `scene`: what is true of the whole piece.
 - **`SharedPose`** `type SharedPose = { x?: number; scale?: number; y?: number; rotation?: number; scaleX?: number; scaleY?: number; opacity?: number }`: The numeric fields shared by 2D and 3D poses: `x`, `y`, `rotation`, scales, and `opacity`.
 - **`StaggerBy`** `type StaggerBy = "index" | "line"`: Whether `stagger` orders lanes by part index or by measured visual line.
 - **`StaggerFrom`** `type StaggerFrom = "start" | "end" | "center" | "edges"`: Which part of a staggered list starts first.
