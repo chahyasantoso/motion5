@@ -1,5 +1,15 @@
-import { unreachable, type Lens3d, type Point3d } from "@gerak/core";
-export type { CastName, DomCast, ObjectCast } from "../cookie.cast.ts";
+import {
+  clamp,
+  project3d,
+  unproject3d,
+  unreachable,
+  viewSize3d,
+  type Lens3d,
+  type Point3d,
+} from "@gerak/core";
+import { placementOf, type RestReader, type Slot3d } from "@gerak/stage";
+import type { CastName, DomCast, ObjectCast } from "../cookie.cast.ts";
+export type { CastName, DomCast, ObjectCast };
 
 export const BUILDER_CAPACITY = 6;
 export const BUILDER_EXIT_POOL = 3;
@@ -148,3 +158,100 @@ export const HERO_COOKIE_JAR_LOCAL: Point3d = {
   y: JAR_MODEL_OFFSET_Y + 0.57,
   z: 0,
 };
+
+const JAR_SILHOUETTE_W = JAR_METRICS.radius * 2.08;
+const JAR_SILHOUETTE_H = JAR_METRICS.height + 0.26;
+const DEFAULT_DEPTH = project3d({ x: 0, y: 0, z: 0 }, LENS, STAGE_SIZE).depth;
+
+export interface StickyRange {
+  readonly stageTop: number;
+  readonly pinMax: number;
+  readonly pinSpan: number;
+  readonly visibleH: number;
+}
+
+export function stickyRangeOf(
+  rest: RestReader | undefined,
+  stageCast: DomCast,
+  slotCast: DomCast,
+  fallbackTop: number,
+  fallbackHeight: number,
+  clampVisible = true,
+): StickyRange {
+  const rawCanvas = rest?.get("stageCanvas");
+  const canvas =
+    rawCanvas !== undefined && rawCanvas.width > 0 && rawCanvas.height > 0 ? rawCanvas : STAGE_SIZE;
+  const stageBox = rest?.get(stageCast);
+  const rawSlot = rest?.get(slotCast);
+  const hasStage = stageBox !== undefined && stageBox.height > 0;
+  const slotBox =
+    rawSlot !== undefined && rawSlot.width > 0 && rawSlot.height > 0 ? rawSlot : undefined;
+
+  const fallback = hasStage ? stageBox.y - stageBox.height / 2 : fallbackTop;
+  const stageHeight = hasStage ? stageBox.height : fallbackHeight;
+  const visibleH = clampVisible ? Math.min(canvas.height, stageHeight) : canvas.height;
+
+  let stageTop = fallback;
+  let pinMax = fallback + stageHeight - visibleH;
+  if (slotBox !== undefined) {
+    const placement = placementOf(slotBox);
+    switch (placement.kind) {
+      case "sticky":
+        stageTop = placement.minY;
+        pinMax = placement.maxY;
+        break;
+      case "flow":
+      case "fixed":
+        break;
+      default:
+        unreachable(placement);
+    }
+  }
+  return { stageTop, pinMax, pinSpan: Math.max(1, pinMax - stageTop), visibleH };
+}
+
+export function isHeroHandoffActive(
+  rawScrollY: number,
+  smoothScrollY: number,
+  stageTop: number,
+): boolean {
+  if (rawScrollY < stageTop) return true;
+  if (rawScrollY >= stageTop + 120) return false;
+  return Math.abs(rawScrollY - smoothScrollY) > 4;
+}
+
+export function fitJarSlot(
+  slot: Slot3d | undefined,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (slot === undefined || !(slot.width > 0 && slot.height > 0)) return fallback;
+  return clamp(
+    Math.min((slot.width * 0.92) / JAR_SILHOUETTE_W, (slot.height * 0.94) / JAR_SILHOUETTE_H),
+    min,
+    max,
+  );
+}
+
+export function fitCookieSlot(slot: Slot3d | undefined): number {
+  if (slot === undefined || !(slot.width > 0 && slot.height > 0)) {
+    const w = STAGE_SIZE.width * 0.34;
+    const h = STAGE_SIZE.height * 0.48;
+    const unitsPerPx = viewSize3d(LENS, STAGE_SIZE, DEFAULT_DEPTH).unitsPerPx;
+    return clamp((Math.min(w, h) * unitsPerPx * 0.86) / (JAR_METRICS.cookieRadius * 2), 0.95, 2.05);
+  }
+  return clamp(
+    (Math.min(slot.width, slot.height) * 0.86) / (JAR_METRICS.cookieRadius * 2),
+    0.95,
+    2.05,
+  );
+}
+
+export function fallbackViewWidth(): number {
+  return viewSize3d(LENS, STAGE_SIZE, DEFAULT_DEPTH).width;
+}
+
+export function unprojectFallback(xShare: number, vpY: number): Point3d {
+  return unproject3d({ x: xShare * STAGE_SIZE.width, y: vpY }, LENS, STAGE_SIZE, DEFAULT_DEPTH);
+}

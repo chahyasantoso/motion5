@@ -5,13 +5,10 @@ import {
   Group,
   Mesh,
   MeshStandardMaterial,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
 } from "three";
 import { mount } from "@gerak/dom";
 import { compileScene, formatStageError } from "@gerak/stage";
-import { applyPose3d, threeBinder } from "@gerak/three";
+import { applyPose3d, createStage3d } from "@gerak/three";
 import piece, { lens } from "./yuzu-3d";
 
 const compiled = compileScene(piece);
@@ -20,12 +17,6 @@ const stage = compiled.stage;
 
 const canvas = document.getElementById("gl");
 if (!(canvas instanceof HTMLCanvasElement)) throw new Error("#gl canvas not found");
-
-const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-const world = new Scene();
-const camera = new PerspectiveCamera(lens.fov, 1, 0.1, 100);
-applyPose3d(camera, lens);
 
 // A can: a dark body with a citrus band and lid; the materials fade with the pose's opacity.
 const body = new MeshStandardMaterial({ color: 0x162218, roughness: 0.45, transparent: true });
@@ -38,16 +29,8 @@ lid.position.y = 1.29;
 can.add(shell, label, lid);
 const light = new DirectionalLight(0xffffff, 2.2);
 light.position.set(3, 5, 6);
-world.add(new AmbientLight(0xffffff, 0.7), light, can);
 
-const fit = (): void => {
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-};
-
-const draw = (): void => renderer.render(world, camera);
-const drink = threeBinder(world, {
+const stage3d = createStage3d(canvas, lens, {
   objects: {
     drink: (pose, visible) => {
       can.visible = visible;
@@ -56,7 +39,6 @@ const drink = threeBinder(world, {
       band.opacity = pose.opacity ?? 1;
     },
   },
-  resize: fit,
-  draw,
 });
-mount(stage, { clock: "live", binders: [drink] });
+stage3d.world.add(new AmbientLight(0xffffff, 0.7), light, can);
+mount(stage, { clock: "live", binders: [stage3d.binder] });

@@ -22,11 +22,13 @@ import {
   type LaneOrigin,
   type Lanes,
   type Motion,
+  type Point3d,
   type Pose2d,
   type Pose3d,
   type Signal,
   type Span,
   type Time,
+  type ViewSize3d,
   project3d,
   unproject3d,
   viewSize3d,
@@ -83,6 +85,7 @@ export interface MotionContext {
   /** The span the motion plays over, when it has one. */
   readonly span: Span | undefined;
   /** The pose the motions on `element` give at this scene time; `at` reads another time or part. */
+  read(element: ObjectElement, at?: ReadAt): Pose3d;
   read(element: Element | string, at?: ReadAt): Pose2d;
 }
 
@@ -606,6 +609,124 @@ function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOption
   return wrapped;
 }
 
+const SLOT_DEPTH_EPSILON = 1e-9;
+
+/** Projected viewport slot in 3D world space: world-unit center, width, height, view, and fit scale. */
+export interface Slot3d {
+  readonly center: Point3d;
+  readonly scale: number;
+  readonly width: number;
+  readonly height: number;
+  readonly view: ViewSize3d;
+}
+
+/** Options of `slot3d`: explicit depth along the view, fit mode, and scroll offset override. */
+export interface Slot3dOptions {
+  readonly depth?: number | undefined;
+  readonly fit?: "none" | "contain" | undefined;
+  readonly scrollY?: number | undefined;
+}
+
+function validateView(who: string, view: ObjectView): void {
+  if (
+    typeof view !== "object" ||
+    view === null ||
+    !isElement(view.canvas) ||
+    view.canvas.kind !== "box" ||
+    typeof view.lens !== "object" ||
+    view.lens === null ||
+    typeof view.lens.fov !== "number"
+  ) {
+    throw new TypeError(`${who}: \`view\` needs a \`canvas\` box and a \`lens\` with a fov.`);
+  }
+}
+
+function projectSlot3d(
+  to: Element,
+  view: ObjectView,
+  here: MotionContext,
+  options: {
+    readonly fit: "none" | "contain";
+    readonly start?: Point3d | undefined;
+    readonly depth?: number | undefined;
+    readonly scrollY?: number | undefined;
+  },
+): { readonly slot: Slot3d; readonly fitted: boolean } | undefined {
+  if (!here.rest.has(to.name) || !here.rest.has(view.canvas.name)) return undefined;
+  const scrollY = options.scrollY ?? scroll.y(here.time, here.events);
+  const slot = boxInViewport(here.rest.get(to.name), scrollY);
+  const canvas = boxInViewport(here.rest.get(view.canvas.name), scrollY);
+  if (!(canvas.width > 0 && canvas.height > 0)) return undefined;
+  const size = { width: canvas.width, height: canvas.height };
+  let depth: number;
+  if (options.depth !== undefined) {
+    if (!(options.depth > SLOT_DEPTH_EPSILON)) return undefined;
+    depth = options.depth;
+  } else {
+    const origin = options.start ?? { x: 0, y: 0, z: 0 };
+    const seen = project3d(origin, view.lens, size);
+    if (!seen.visible) return undefined;
+    depth = seen.depth;
+  }
+  const viewSize = viewSize3d(view.lens, size, depth);
+  const width = slot.width * viewSize.unitsPerPx;
+  const height = slot.height * viewSize.unitsPerPx;
+  const point = {
+    x: slot.x - (canvas.x - canvas.width / 2),
+    y: slot.y - (canvas.y - canvas.height / 2),
+  };
+  const center = unproject3d(point, view.lens, size, depth);
+  let scale = 1;
+  let fitted = false;
+  switch (options.fit) {
+    case "none":
+      break;
+    case "contain": {
+      if (width > 0 && height > 0) {
+        const partBounds =
+          here.index === undefined ? undefined : here.rest.object(`${here.element}.${here.index}`);
+        const bounds = partBounds ?? here.rest.object(here.element);
+        if (bounds !== undefined && bounds.width > 0 && bounds.height > 0) {
+          scale = Math.min(width / bounds.width, height / bounds.height);
+          fitted = true;
+        }
+      }
+      break;
+    }
+    default:
+      return unreachable(options.fit);
+  }
+  return {
+    slot: Object.freeze({ center, scale, width, height, view: viewSize }),
+    fitted,
+  };
+}
+
+/** Projects a page `slot` element through `view` into 3D world space for the active `context`. */
+export function slot3d(
+  slot: Element,
+  view: ObjectView,
+  context: MotionContext,
+  options: Slot3dOptions = {},
+): Slot3d | undefined {
+  if (!isElement(slot)) throw new TypeError("slot3d: `slot` must be an element.");
+  validateView("slot3d", view);
+  if (typeof context !== "object" || context === null || context.rest === undefined)
+    throw new TypeError("slot3d: `context` must be a scene MotionContext.");
+  const { depth, fit = "none", scrollY } = options;
+  if (depth !== undefined && !Number.isFinite(depth))
+    throw new RangeError(`slot3d: \`depth\` must be a finite number, not ${depth}.`);
+  if (scrollY !== undefined && !Number.isFinite(scrollY))
+    throw new RangeError(`slot3d: \`scrollY\` must be a finite number, not ${scrollY}.`);
+  if (fit !== "none" && fit !== "contain")
+    throw new TypeError(`slot3d: \`fit\` must be "none" or "contain", not ${String(fit)}.`);
+  return projectSlot3d(slot, view, context, {
+    fit,
+    ...(depth === undefined ? {} : { depth }),
+    ...(scrollY === undefined ? {} : { scrollY }),
+  })?.slot;
+}
+
 /** Object travel at progress `p` toward the slot on the canvas at its starting depth,
  * optionally fit by `"contain"`, or `undefined` when unmeasured or behind the lens. */
 function travelled3d(
@@ -616,55 +737,34 @@ function travelled3d(
   p: number,
   fit: "none" | "contain",
 ): Pose3d | undefined {
-  if (p === 0 || !here.rest.has(to.name) || !here.rest.has(view.canvas.name)) return undefined;
-  const scrollY = scroll.y(here.time, here.events);
-  const slot = boxInViewport(here.rest.get(to.name), scrollY);
-  const canvas = boxInViewport(here.rest.get(view.canvas.name), scrollY);
-  if (!(canvas.width > 0 && canvas.height > 0)) return undefined;
-  const size = { width: canvas.width, height: canvas.height };
-  const point = {
-    x: slot.x - (canvas.x - canvas.width / 2),
-    y: slot.y - (canvas.y - canvas.height / 2),
-  };
+  if (p === 0) return undefined;
   const start = { x: below.x ?? 0, y: below.y ?? 0, z: below.z ?? 0 };
-  const seen = project3d(start, view.lens, size);
-  if (!seen.visible) return undefined;
-  const end = unproject3d(point, view.lens, size, seen.depth);
+  const projected = projectSlot3d(to, view, here, { fit, start });
+  if (projected === undefined) return undefined;
+  const { slot: target, fitted } = projected;
   const pos: Pose3d =
     p === 1
-      ? end
-      : { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
-  switch (fit) {
-    case "none":
-      return pos;
-    case "contain": {
-      if (!(slot.width > 0 && slot.height > 0)) return pos;
-      const partBounds =
-        here.index === undefined ? undefined : here.rest.object(`${here.element}.${here.index}`);
-      const bounds = partBounds ?? here.rest.object(here.element);
-      if (bounds === undefined || !(bounds.width > 0 && bounds.height > 0)) return pos;
-      const units = viewSize3d(view.lens, size, seen.depth).unitsPerPx;
-      const toScale = Math.min(
-        (slot.width * units) / bounds.width,
-        (slot.height * units) / bounds.height,
-      );
-      const uniform = below.scale ?? 1;
-      if (below.scaleX !== undefined || below.scaleY !== undefined || below.scaleZ !== undefined) {
-        const fromX = uniform * (below.scaleX ?? 1);
-        const fromY = uniform * (below.scaleY ?? 1);
-        const fromZ = uniform * (below.scaleZ ?? 1);
-        return {
-          ...pos,
-          scaleX: p === 1 ? toScale : mix(fromX, toScale, p),
-          scaleY: p === 1 ? toScale : mix(fromY, toScale, p),
-          scaleZ: p === 1 ? toScale : mix(fromZ, toScale, p),
+      ? target.center
+      : {
+          x: mix(start.x, target.center.x, p),
+          y: mix(start.y, target.center.y, p),
+          z: mix(start.z, target.center.z, p),
         };
-      }
-      return { ...pos, scale: p === 1 ? toScale : mix(uniform, toScale, p) };
-    }
-    default:
-      return unreachable(fit);
+  if (!fitted) return pos;
+  const toScale = target.scale;
+  const uniform = below.scale ?? 1;
+  if (below.scaleX !== undefined || below.scaleY !== undefined || below.scaleZ !== undefined) {
+    const fromX = uniform * (below.scaleX ?? 1);
+    const fromY = uniform * (below.scaleY ?? 1);
+    const fromZ = uniform * (below.scaleZ ?? 1);
+    return {
+      ...pos,
+      scaleX: p === 1 ? toScale : mix(fromX, toScale, p),
+      scaleY: p === 1 ? toScale : mix(fromY, toScale, p),
+      scaleZ: p === 1 ? toScale : mix(fromZ, toScale, p),
+    };
   }
+  return { ...pos, scale: p === 1 ? toScale : mix(uniform, toScale, p) };
 }
 
 /** Moves an element from its current pose into `options.to`'s measured box over its beat; with no
@@ -1108,7 +1208,9 @@ interface Env {
   readonly counts: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
-  readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
+  readonly read2d: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
+  readonly read3d: Map<string, { readonly events: Events; readonly pose: Pose3d }>;
+  readonly reading: string[];
   /** Filled as elements run: which can change with the clock alone. */
   readonly moves: Map<string, Moves> | undefined;
   /** Filled as elements run: what drives each. */
@@ -1179,6 +1281,25 @@ function movesOf(
   return "maybe";
 }
 
+function wrapRead(
+  base: MotionContext["read"],
+  onRead: (target: string) => void,
+): MotionContext["read"] {
+  function read(element: ObjectElement, at?: ReadAt): Pose3d;
+  function read(element: Element | string, at?: ReadAt): Pose2d;
+  function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
+    if (typeof element !== "string" && element.kind === "object") {
+      const pose = base(element, at);
+      onRead(element.name);
+      return pose;
+    }
+    const pose = base(element, at);
+    onRead(typeof element === "string" ? element : element.name);
+    return pose;
+  }
+  return read;
+}
+
 /** The context a motion sees: its time tells the clock watcher, `carry` counts as `maybe`, reading
  * an element moves this one with it, and `other` hears a read of events, `carry` or `read`. */
 function watched(
@@ -1202,12 +1323,10 @@ function watched(
     },
     element: context.element,
     span: context.span,
-    read: (target, at) => {
-      const pose = context.read(target, at);
-      readOf(typeof target === "string" ? target : target.name);
+    read: wrapRead(context.read, (target) => {
+      readOf(target);
       other();
-      return pose;
-    },
+    }),
     ...(context.index === undefined ? {} : { index: context.index }),
     ...(context.count === undefined ? {} : { count: context.count }),
     ...(context.line === undefined ? {} : { line: context.line }),
@@ -1244,24 +1363,82 @@ function joinTravel(below: Pose2d, pose: Pose2d): Pose2d {
   return out;
 }
 
+function enterRead(env: Env, plan: Plan, index: number | undefined): void {
+  const token = plan.parts ? `${plan.name}.${index ?? 0}` : plan.name;
+  const start = env.reading.indexOf(token);
+  if (start >= 0) {
+    const cycle = [...env.reading.slice(start), token].join(" -> ");
+    throw new RangeError(`read: elements read each other in a loop: ${cycle}.`);
+  }
+  env.reading.push(token);
+}
+
+function evaluate2d(
+  plan: Plan,
+  env: Env,
+  index: number | undefined,
+  count: number | undefined,
+  time: Time,
+  events: Events,
+): Pose2d {
+  enterRead(env, plan, index);
+  try {
+    return stackOf(plan, env, index, count)(time, events);
+  } finally {
+    env.reading.pop();
+  }
+}
+
+function evaluate3d(
+  plan: Plan,
+  env: Env,
+  index: number | undefined,
+  count: number | undefined,
+  time: Time,
+  events: Events,
+): Pose3d {
+  enterRead(env, plan, index);
+  try {
+    return stack3dOf(plan, env, index, count)(time, events);
+  } finally {
+    env.reading.pop();
+  }
+}
+
 /** What `context.read` answers: another element's pose at this or another time or part, computed once a frame. */
 function readerOf(env: Env, time: Time, events: Events): MotionContext["read"] {
-  return (target, at) => {
-    const name = typeof target === "string" ? target : target.name;
-    const read = env.plans.get(name);
-    if (read === undefined) throw new RangeError(`read: "${name}" is not an element of the piece.`);
-    if (read.object) throw new RangeError(`read: "${name}" is an object; its pose is 3D.`);
-    const part = read.parts ? (at?.index ?? 0) : undefined;
-    const parts = read.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
+  function read(element: ObjectElement, at?: ReadAt): Pose3d;
+  function read(element: Element | string, at?: ReadAt): Pose2d;
+  function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
+    const wantObject = typeof element !== "string" && element.kind === "object";
+    const name = typeof element === "string" ? element : element.name;
+    const plan = env.plans.get(name);
+    if (plan === undefined) throw new RangeError(`read: "${name}" is not an element of the piece.`);
+    if (plan.object && !wantObject)
+      throw new RangeError(
+        `read: "${name}" is an object; its pose is 3D — pass the ObjectElement value.`,
+      );
+    if (!plan.object && wantObject)
+      throw new RangeError(`read: "${name}" is not an object; its pose is 2D.`);
+    const part = plan.parts ? (at?.index ?? 0) : undefined;
+    const parts = plan.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
     const when = at?.time ?? time;
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
-    const known = env.read.get(key);
+    if (wantObject) {
+      const known = env.read3d.get(key);
+      if (known !== undefined && known.events === events) return known.pose;
+      const pose = evaluate3d(plan, env, part, parts, when, events);
+      env.read3d.set(key, { events, pose });
+      return pose;
+    }
+    const known = env.read2d.get(key);
     if (known !== undefined && known.events === events) return known.pose;
-    const pose = stackOf(read, env, part, parts)(when, events);
-    env.read.set(key, { events, pose });
+    const pose = evaluate2d(plan, env, part, parts, when, events);
+    env.read2d.set(key, { events, pose });
     return pose;
-  };
+  }
+  return read;
 }
 
 function replacing3d(below: Pose3d, pose: Pose3d): Pose3d {
@@ -1551,7 +1728,9 @@ function definitionOf(state: State): StageDefinition {
         carry: context.carry,
         counts: context.counts,
         lines: context.lines,
-        read: new Map(),
+        read2d: new Map(),
+        read3d: new Map(),
+        reading: [],
         moves: context.moves,
         drives: context.drives,
       };
@@ -1561,11 +1740,11 @@ function definitionOf(state: State): StageDefinition {
         if (context.only !== undefined && !context.only.has(plan.name)) continue;
         out[plan.name] = plan.object
           ? !plan.parts
-            ? stack3dOf(plan, env, undefined, undefined)(context.time, context.events)
-            : (index, count) => stack3dOf(plan, env, index, count)(context.time, context.events)
+            ? evaluate3d(plan, env, undefined, undefined, context.time, context.events)
+            : (index, count) => evaluate3d(plan, env, index, count, context.time, context.events)
           : !plan.parts
-            ? stackOf(plan, env, undefined, undefined)(context.time, context.events)
-            : (index, count) => stackOf(plan, env, index, count)(context.time, context.events);
+            ? evaluate2d(plan, env, undefined, undefined, context.time, context.events)
+            : (index, count) => evaluate2d(plan, env, index, count, context.time, context.events);
       }
       return out;
     },

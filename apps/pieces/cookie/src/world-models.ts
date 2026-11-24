@@ -11,6 +11,7 @@ import {
 } from "./contract.ts";
 
 export interface LoadedCookieWorld {
+  readonly roots: readonly THREE.Object3D[];
   readonly objects: Readonly<Record<string, ObjectTarget3d>>;
   setBuilderCookieFlavor(slotIndex: number, flavorIndex: number): void;
   setBuilderExitCookieFlavor(exitSlot: number, flavorIndex: number): void;
@@ -242,7 +243,7 @@ function attachJarShadow(jarModel: THREE.Object3D): void {
 
 const CLOSING_STACK_FLAVORS: readonly number[] = [0, 1, 2, 3, 0, 1];
 
-export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieWorld> {
+export async function loadCookieWorld(): Promise<LoadedCookieWorld> {
   const loader = new GLTFLoader();
   const jarUrl = new URL("../references/warm-batch-jar.glb", import.meta.url).href;
   const cookieUrl = new URL("../references/warm-batch-cookie.glb", import.meta.url).href;
@@ -331,10 +332,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   heroCookieMesh.rotation.set(0, 0, 0);
   cookieHero.add(heroCookieMesh);
 
-  world.add(jarRoot);
-  world.add(cookieHero);
-  world.add(builderJarRoot);
-  world.add(closingJarRoot);
+  const roots: THREE.Object3D[] = [jarRoot, cookieHero, builderJarRoot, closingJarRoot];
 
   const objects: Record<string, ObjectTarget3d> = {
     jarRoot,
@@ -361,7 +359,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     mesh.rotation.x = Math.PI / 2;
     group.add(mesh);
 
-    world.add(group);
+    roots.push(group);
     flavorCookieGroups.push(group);
   }
   objects["flavorCookies"] = flavorCookieGroups;
@@ -372,7 +370,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   for (let slotIndex = 0; slotIndex < BUILDER_CAPACITY; slotIndex += 1) {
     const { group, variants } = buildFlavorSlotGroup(`builderCookie${slotIndex}`, cookieGltf.scene);
     builderCookieVariants.push(variants);
-    world.add(group);
+    roots.push(group);
     builderCookieGroups.push(group);
   }
   objects["builderCookies"] = builderCookieGroups;
@@ -385,7 +383,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
       cookieGltf.scene,
     );
     builderExitCookieVariants.push(variants);
-    world.add(group);
+    roots.push(group);
     builderExitCookieGroups.push(group);
   }
   objects["builderExitCookies"] = builderExitCookieGroups;
@@ -407,7 +405,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     crumb.receiveShadow = true;
     crumbGroup.add(crumb);
   }
-  world.add(crumbGroup);
+  roots.push(crumbGroup);
 
   const setBuilderCookieFlavor = (slotIndex: number, flavorIndex: number): void => {
     applyFlavorVariant(builderCookieVariants[slotIndex], flavorIndex);
@@ -417,5 +415,5 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     applyFlavorVariant(builderExitCookieVariants[exitSlot], flavorIndex);
   };
 
-  return { objects, setBuilderCookieFlavor, setBuilderExitCookieFlavor };
+  return { roots, objects, setBuilderCookieFlavor, setBuilderExitCookieFlavor };
 }

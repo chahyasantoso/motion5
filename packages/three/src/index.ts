@@ -7,3 +7,4 @@ export {
   type ThreeBinder,
   type ThreeBinderOptions,
 } from "./scene3d";
+export { createStage3d, type Stage3d, type Stage3dOptions } from "./stage3d";

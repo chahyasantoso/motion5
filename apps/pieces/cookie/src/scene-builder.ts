@@ -26,7 +26,17 @@ import {
 } from "@gerak/core";
 import { simulate } from "@gerak/physics";
 import { rapierEngine3d } from "@gerak/rapier";
-import { beat, box, sceneBuilder, type MotionContext, type SceneBuilder } from "@gerak/stage";
+import {
+  beat,
+  box,
+  object,
+  sceneBuilder,
+  slot3d,
+  travel,
+  type MotionContext,
+  type ObjectView,
+  type SceneBuilder,
+} from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
 import {
   BUILDER_ARC_MS,
@@ -41,16 +51,23 @@ import {
   BUILDER_SHIFT_MS,
   BUILDER_UNSEAL_MS,
   JAR_ADD_EVENT,
+  JAR_METRICS,
   JAR_MIX_EVENT,
   JAR_MODEL_OFFSET_Y,
   JAR_REMOVE_EVENT,
   JAR_RESET_EVENT,
   JAR_SEAL_EVENT,
   JAR_UNSEAL_EVENT,
+  LENS,
+  STAGE_SIZE,
+  fallbackViewWidth,
+  fitCookieSlot,
+  fitJarSlot,
   isSpotlightZone,
+  stickyRangeOf,
+  unprojectFallback,
 } from "./contract.ts";
 import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
-import { builderSlotWorld, type BuilderSlotGeometry } from "./space3d.ts";
 
 const createRapierWorld3d = await rapierEngine3d();
 
@@ -100,16 +117,19 @@ const crumbSim = simulate(
 );
 
 const {
+  stageCanvas,
   builderStage,
   builderHeading,
   slotBuilderJar,
-  builderJarRoot,
+  slotFlavorCookie,
   builderJarLid,
   builderJarRibbon,
   builderCookies,
   builderExitCookies,
   builderCrumbs,
 } = cast;
+const COOKIE_VIEW: ObjectView = { canvas: stageCanvas, lens: LENS };
+const builderJarRoot = object(cast.builderJarRoot.name, { view: COOKIE_VIEW });
 const builderSealBtn = box(cast.builderSealBtn.name, { watch: true });
 
 const builderEnter = beat("builderEnter", {
@@ -384,31 +404,17 @@ function readMixBounce(bState: BuilderState, nowMs: number): number {
   return arch(clamp(ageMs / totalMs, 0, 1));
 }
 
-interface BuilderJarTransform {
-  readonly center: Point3d;
-  readonly rotX: number;
-  readonly rotY: number;
-  readonly scale: number;
-}
-
-function builderJarTransform(
-  slot: BuilderSlotGeometry,
-  dx: number,
-  dy: number,
-  sealTrans: SealTransition,
-  mixBounce: number,
-): BuilderJarTransform {
-  const sealCompression = sealTrans.kind === "sealing" ? 0.035 * arch(sealTrans.u) : 0;
-  const mixScale = 1 + 0.022 * mixBounce;
+function builderOuterGeometry(context?: MotionContext): {
+  readonly heroScale: number;
+  readonly outerLeftX: number;
+} {
+  const builderSlot = context ? slot3d(slotBuilderJar, COOKIE_VIEW, context) : undefined;
+  const spotlightSlot = context ? slot3d(slotFlavorCookie, COOKIE_VIEW, context) : undefined;
+  const viewWidth = builderSlot?.view.width ?? spotlightSlot?.view.width ?? fallbackViewWidth();
+  const heroScale = fitCookieSlot(spotlightSlot);
   return {
-    center: {
-      x: slot.center.x + dx * 0.12,
-      y: slot.center.y - dy * 0.06 + 0.03 * mixBounce * slot.fitScale,
-      z: slot.center.z,
-    },
-    rotX: dy * 8,
-    rotY: dx * 16,
-    scale: slot.fitScale * (1 - sealCompression) * mixScale,
+    heroScale,
+    outerLeftX: -(viewWidth / 2) - JAR_METRICS.cookieRadius * heroScale - 0.35,
   };
 }
 
@@ -421,24 +427,30 @@ const builderHeadingMotion = motion((t: Time): Pose2d => {
 });
 
 const builderJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
-  const scrollY = context ? scroll.y(context.time, context.events) : 0;
-  const slot = builderSlotWorld(context?.rest, scrollY);
+  const slot = context ? slot3d(slotBuilderJar, COOKIE_VIEW, context) : undefined;
+  const fitScale = fitJarSlot(slot, 0.48, 1.08, 0.84);
   const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
   const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
   const sealTrans = readSealTransition(context);
+  const sealCompression = sealTrans.kind === "sealing" ? 0.035 * arch(sealTrans.u) : 0;
   const mixBounce = readMixBounce(bState, nowMs);
+  const mixScale = 1 + 0.022 * mixBounce;
   const dx = context ? pointerDeltaX(context.time, context.events) : 0;
   const dy = context ? pointerDeltaY(context.time, context.events) : 0;
-  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const scrollY = context ? scroll.y(context.time, context.events) : 0;
+  const range = stickyRangeOf(context?.rest, "builderStage", "slotBuilderJar", 8050, 1200);
+  const fallback = slot
+    ? { x: 0, y: 0, z: 0 }
+    : unprojectFallback(0.3, range.stageTop + STAGE_SIZE.height * 0.54 - scrollY);
 
   return {
-    x: jar.center.x,
-    y: jar.center.y,
-    z: jar.center.z,
+    x: fallback.x + dx * 0.12,
+    y: fallback.y - dy * 0.06 + 0.03 * mixBounce * fitScale,
+    z: fallback.z,
     rotation: 0,
-    rotationX: jar.rotX,
-    rotationY: jar.rotY,
-    scale: jar.scale,
+    rotationX: dy * 8,
+    rotationY: dx * 16,
+    scale: fitScale * (1 - sealCompression) * mixScale,
   };
 });
 
@@ -541,8 +553,6 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
   const restTiltX = ((slotIndex % 3) - 1) * 2;
   const restYaw = slotIndex * 42;
 
-  const scrollY = context ? scroll.y(context.time, context.events) : 0;
-  const slot = builderSlotWorld(context?.rest, scrollY);
   const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
   const entry = bState.slots[slotIndex];
   if (!entry) {
@@ -550,11 +560,13 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
   }
 
   const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-  const sealTrans = readSealTransition(context);
-  const mixBounce = readMixBounce(bState, nowMs);
-  const dx = context ? pointerDeltaX(context.time, context.events) : 0;
-  const dy = context ? pointerDeltaY(context.time, context.events) : 0;
-  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const jar = context ? context.read(builderJarRoot) : { scale: 0.84 };
+  const jarX = jar.x ?? 0;
+  const jarY = jar.y ?? 0;
+  const jarZ = jar.z ?? 0;
+  const jarRotY = jar.rotationY ?? 0;
+  const jarScale = jar.scale ?? 0.84;
+  const { heroScale, outerLeftX } = builderOuterGeometry(context);
 
   const shiftAgeMs = Math.max(0, nowMs - entry.shiftedAtMs);
   const shiftU = entry.prevSlotIndex !== slotIndex ? clamp(shiftAgeMs / BUILDER_SHIFT_MS, 0, 1) : 1;
@@ -563,12 +575,12 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
   }
   const localY = mix(slotLocalY(entry.prevSlotIndex), slotLocalY(slotIndex), ease.cubicOut(shiftU));
 
-  const rad = (jar.rotY * Math.PI) / 180;
+  const rad = (jarRotY * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
-  const targetX = jar.center.x + (localX * cos + localZ * sin) * jar.scale;
-  const targetY = jar.center.y + localY * jar.scale;
-  const targetZ = jar.center.z + (-localX * sin + localZ * cos) * jar.scale;
+  const targetX = jarX + (localX * cos + localZ * sin) * jarScale;
+  const targetY = jarY + localY * jarScale;
+  const targetZ = jarZ + (-localX * sin + localZ * cos) * jarScale;
 
   const ageMs = nowMs - entry.animStartMs;
   switch (entry.animKind) {
@@ -581,28 +593,28 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
       if (u < 1) {
         stillMoving();
       }
-      const rimY = jar.center.y + 0.76 * jar.scale;
+      const rimY = jarY + 0.76 * jarScale;
       if (u <= 0.58) {
         const p1 = ease.cubicOut(u / 0.58);
         return {
-          x: mix(slot.outerLeftX, jar.center.x, p1),
-          y: mix(jar.center.y + 0.84 * jar.scale, rimY, p1) + 0.18 * jar.scale * arch(p1),
-          z: jar.center.z + mix(0.28, 0.04 * jar.scale, p1),
+          x: mix(outerLeftX, jarX, p1),
+          y: mix(jarY + 0.84 * jarScale, rimY, p1) + 0.18 * jarScale * arch(p1),
+          z: jarZ + mix(0.28, 0.04 * jarScale, p1),
           rotation: mix(-24, 0, p1),
           rotationX: mix(90, 12, p1),
-          rotationY: mix(jar.rotY - 18, jar.rotY + restYaw, p1),
-          scale: mix(slot.heroScale, jar.scale, p1),
+          rotationY: mix(jarRotY - 18, jarRotY + restYaw, p1),
+          scale: mix(heroScale, jarScale, p1),
         };
       }
       const p2 = ease.cubicInOut((u - 0.58) / 0.42);
       return {
-        x: mix(jar.center.x, targetX, p2),
+        x: mix(jarX, targetX, p2),
         y: mix(rimY, targetY, p2),
-        z: mix(jar.center.z + 0.04 * jar.scale, targetZ, p2),
+        z: mix(jarZ + 0.04 * jarScale, targetZ, p2),
         rotation: mix(0, restTiltZ, p2),
         rotationX: mix(12, restTiltX, p2),
-        rotationY: jar.rotY + restYaw,
-        scale: jar.scale,
+        rotationY: jarRotY + restYaw,
+        scale: jarScale,
       };
     }
     case "shuffle": {
@@ -614,8 +626,8 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
           z: targetZ,
           rotation: restTiltZ,
           rotationX: restTiltX,
-          rotationY: jar.rotY + restYaw,
-          scale: jar.scale,
+          rotationY: jarRotY + restYaw,
+          scale: jarScale,
         };
       }
       const u = clamp(ageMs / BUILDER_MIX_MS, 0, 1);
@@ -624,15 +636,15 @@ const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d 
       }
       const lift = arch(u);
       const lateral =
-        Math.sin(u * Math.PI * 2) * 0.06 * jar.scale * lift * (slotIndex % 2 === 0 ? 1 : -1);
+        Math.sin(u * Math.PI * 2) * 0.06 * jarScale * lift * (slotIndex % 2 === 0 ? 1 : -1);
       return {
         x: targetX + lateral,
-        y: targetY + 0.62 * lift * jar.scale,
-        z: targetZ + 0.08 * lift * jar.scale,
+        y: targetY + 0.62 * lift * jarScale,
+        z: targetZ + 0.08 * lift * jarScale,
         rotation: mix(restTiltZ, restTiltZ * 2.5, lift),
         rotationX: mix(restTiltX, 24, lift),
-        rotationY: jar.rotY + restYaw + 360 * ease.cubicOut(u),
-        scale: jar.scale * (1 + 0.06 * lift),
+        rotationY: jarRotY + restYaw + 360 * ease.cubicOut(u),
+        scale: jarScale * (1 + 0.06 * lift),
       };
     }
     default:
@@ -645,8 +657,6 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
     return HIDDEN_POSE;
   }
   const poolSlot = context.index ?? 0;
-  const scrollY = scroll.y(context.time, context.events);
-  const slot = builderSlotWorld(context.rest, scrollY);
 
   const bState = builderState(context.time, context.events);
   const exitEntry = bState.exiting.find((entry) => entry.poolSlot === poolSlot);
@@ -661,39 +671,41 @@ const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pos
   }
   stillMoving();
 
-  const sealTrans = readSealTransition(context);
-  const mixBounce = readMixBounce(bState, nowMs);
-  const dx = pointerDeltaX(context.time, context.events);
-  const dy = pointerDeltaY(context.time, context.events);
-  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const jar = context.read(builderJarRoot);
+  const jarX = jar.x ?? 0;
+  const jarY = jar.y ?? 0;
+  const jarZ = jar.z ?? 0;
+  const jarRotY = jar.rotationY ?? 0;
+  const jarScale = jar.scale ?? 0.84;
+  const { heroScale, outerLeftX } = builderOuterGeometry(context);
 
   const u = clamp(ageMs / BUILDER_EXIT_MS, 0, 1);
-  const fromY = jar.center.y + slotLocalY(exitEntry.fromSlotIndex) * jar.scale;
-  const rimY = jar.center.y + 0.76 * jar.scale;
+  const fromY = jarY + slotLocalY(exitEntry.fromSlotIndex) * jarScale;
+  const rimY = jarY + 0.76 * jarScale;
   const restYaw = exitEntry.fromSlotIndex * 42;
 
   if (u <= 0.4) {
     const p1 = ease.cubicInOut(u / 0.4);
     return {
-      x: jar.center.x,
+      x: jarX,
       y: mix(fromY, rimY, p1),
-      z: jar.center.z + mix(0, 0.04 * jar.scale, p1),
+      z: jarZ + mix(0, 0.04 * jarScale, p1),
       rotation: 0,
       rotationX: mix(0, 14, p1),
-      rotationY: jar.rotY + restYaw,
-      scale: jar.scale,
+      rotationY: jarRotY + restYaw,
+      scale: jarScale,
     };
   }
 
   const p2 = ease.cubicIn((u - 0.4) / 0.6);
   return {
-    x: mix(jar.center.x, slot.outerLeftX, p2),
-    y: mix(rimY, jar.center.y + 0.84 * jar.scale, p2) + 0.18 * jar.scale * arch(p2),
-    z: jar.center.z + mix(0.04 * jar.scale, 0.28, p2),
+    x: mix(jarX, outerLeftX, p2),
+    y: mix(rimY, jarY + 0.84 * jarScale, p2) + 0.18 * jarScale * arch(p2),
+    z: jarZ + mix(0.04 * jarScale, 0.28, p2),
     rotation: mix(0, -24, p2),
     rotationX: mix(14, 90, p2),
-    rotationY: mix(jar.rotY + restYaw, jar.rotY - 18, p2),
-    scale: mix(jar.scale, slot.heroScale, p2),
+    rotationY: mix(jarRotY + restYaw, jarRotY - 18, p2),
+    scale: mix(jarScale, heroScale, p2),
   };
 });
 
@@ -714,8 +726,6 @@ const builderCrumbsMotion = motion((_t: Time, context?: MotionContext): Pose3d =
     return HIDDEN_POSE;
   }
   const crumbIndex = context.index ?? 0;
-  const scrollY = scroll.y(context.time, context.events);
-  const slot = builderSlotWorld(context.rest, scrollY);
 
   const burst = crumbBurst(context.time, context.events);
   if (!burst.active || burst.current <= 0) {
@@ -735,13 +745,8 @@ const builderCrumbsMotion = motion((_t: Time, context?: MotionContext): Pose3d =
     return HIDDEN_POSE;
   }
 
-  const bState = builderState(context.time, context.events);
-  const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
-  const sealTrans = readSealTransition(context);
-  const mixBounce = readMixBounce(bState, nowMs);
-  const dx = pointerDeltaX(context.time, context.events);
-  const dy = pointerDeltaY(context.time, context.events);
-  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const jar = context.read(builderJarRoot);
+  const jarScale = jar.scale ?? 0.84;
   const euler = eulerFromMatrix3d(matrixFromQuaternion(body.rotation));
 
   const fadeStart = BUILDER_CRUMB_MS * 0.65;
@@ -751,13 +756,13 @@ const builderCrumbsMotion = motion((_t: Time, context?: MotionContext): Pose3d =
       : 1;
 
   return {
-    x: jar.center.x + body.x * slot.fitScale,
-    y: jar.center.y + body.y * slot.fitScale,
-    z: jar.center.z + body.z * slot.fitScale,
+    x: (jar.x ?? 0) + body.x * jarScale,
+    y: (jar.y ?? 0) + body.y * jarScale,
+    z: (jar.z ?? 0) + body.z * jarScale,
     rotation: euler.rotation,
     rotationX: euler.rotationX,
     rotationY: euler.rotationY,
-    scale: slot.fitScale * fadeOutScale,
+    scale: jarScale * fadeOutScale,
   };
 });
 
@@ -770,7 +775,7 @@ export const builderScene: SceneBuilder = sceneBuilder()
   .element(builderHeading)
   .motion(builderHeadingMotion.in(builderEnter))
   .element(builderJarRoot)
-  .motion(builderJarRootMotion)
+  .motion(travel({ to: slotBuilderJar }), builderJarRootMotion)
   .show(builderWindow)
   .limits({ jump: 1.8, turn: 180 })
   .element(builderJarLid)

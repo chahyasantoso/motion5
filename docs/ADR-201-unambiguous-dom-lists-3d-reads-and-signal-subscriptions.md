@@ -1,11 +1,11 @@
-# ADR-201: Unambiguous DOM lists, generated cast modules, and selector scroll actions
+# ADR-201: Unambiguous DOM lists, generated cast modules, 3D reads & stage rig, and selector scroll actions
 
 **Date:** 2026-11-24
 **Status:** Accepted, 2026-11-24
 
 ## Context
 
-Three pieces of authoring and verification boilerplate kept recurring across multi-section 2D and
+Five pieces of authoring and verification boilerplate kept recurring across multi-section 2D and
 3D pieces:
 
 1. `bindList` in `@gerak/dom` switched on match count: multiple `[data-cast="<name>"]` nodes bound
@@ -22,6 +22,14 @@ Three pieces of authoring and verification boilerplate kept recurring across mul
    `--sizes 1440x900,390x844` could not land on the same section across desktop and mobile without
    hard-coding viewport-specific pixel coordinates, and refreshing `<name>.measure.json` required a
    separate manual `gerak measure` command before `gerak review <scene.ts>` or `gerak sample`.
+4. `travelled3d()` already projected DOM slots into 3D space through `boxInViewport`,
+   `project3d`, `unproject3d`, and `viewSize3d`, yet `context.read` refused `object` elements
+   (`ADR-197`) and no public helper exposed a slot's projected 3D frame, forcing custom 3D scenes to
+   duplicate slot projection math (`apps/pieces/cookie/src/space3d.ts`) and repeat parent
+   transforms across dependent 3D elements.
+5. Every Three.js piece re-implemented identical `Scene`, `PerspectiveCamera(lens.fov)`,
+   `applyPose3d(camera, lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, and `threeBinder`
+   setup boilerplate.
 
 ## Decision
 
@@ -59,6 +67,25 @@ Three pieces of authoring and verification boilerplate kept recurring across mul
      or stale `<name>.measure.json` or missing `<name>.cast.ts` before loading the scene, keeping
      default headless runs browser-free.
 
+4. **3D `context.read(object)` and `slot3d` projection (`@gerak/stage`).**
+   - `MotionContext.read` adds a typed `ObjectElement` overload returning `Pose3d` alongside the
+     existing `Element | string` overload returning `Pose2d`. Raw string `context.read("name")`
+     and 2D `Element` calls still refuse `object` targets (`RangeError`), and passing an `object`
+     proxy matching a 2D element is similarly refused.
+   - Frame evaluation maintains separate `read2d` and `read3d` memo caches, tracks active evaluation
+     tokens in `env.reading` to throw `RangeError` on 2D, 3D, mixed, self, or mutual list-part
+     cycles, and propagates `moves` / `drives` across 3D read edges uniformly.
+   - `slot3d(slot, view, context, { depth?, fit?, scrollY? })` and `travelled3d(...)` share
+     internal `projectSlot3d(...)`, returning world-unit `{ center, scale, width, height, view }`
+     (or `undefined` when unmeasured, behind the lens, or `depth <= 0`).
+
+5. **Opt-in `createStage3d` rig (`@gerak/three`).**
+   - `createStage3d(canvas, lens, options?)` creates a bare `Scene`, `PerspectiveCamera(lens.fov,
+     1, near, far)` posed via `applyPose3d(camera, lens)`, `WebGLRenderer({ canvas, alpha: true,
+     antialias: true })`, clamped-DPR `resize`, `draw`, `dispose`, and `threeBinder(world, {
+     objects, resize, draw })`, adding zero preset lights, materials, meshes, tone mapping, or
+     shadows (`ARCHITECTURE.md` §6 *no house look*).
+
 ## Consequences
 
 - `box(..., { parts: true })` behaves consistently from `1` to `N` elements regardless of inner DOM
@@ -67,9 +94,17 @@ Three pieces of authoring and verification boilerplate kept recurring across mul
   hand-written `CAST` dictionaries, zero `<CastName>` repetition, and zero rename deadlock.
 - Multi-viewport `--sizes` page checks and FPS runs target page sections uniformly via CSS
   selectors.
+- Follower 3D objects and projected 2D labels read parent `object` poses directly through
+  `context.read(object)` and share one slot projection calculation via `slot3d` and `travel`,
+  deleting custom projection helpers (`apps/pieces/cookie/src/space3d.ts`) and studio setup
+  boilerplate via `createStage3d`.
 
 ## Amends
 
+- [ADR-197](./ADR-197-objects-in-a-scene.md): Decision 1 is amended so `context.read(object)`
+  returns typed `Pose3d` (with runtime cycle refusal) and `slot3d` exposes single-owner
+  world-unit slot projection, while raw string `context.read("name")` stays 2D-typed and refuses
+  objects.
 - [ADR-198](./ADR-198-authored-cast.md): Decision 2 is refined so `box(..., { parts: true })` and
   explicit `options.nodes` arrays bind matched nodes directly without child descent and non-parts
   `box` refuses multiple DOM nodes; Decision 4 is refined with `<page>.cast.ts` emission (via
