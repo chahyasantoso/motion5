@@ -35,6 +35,8 @@ could not be written as several scenes.
    `length` belong to the scene that is mounted; including a scene that sets any of them is refused. **Superseded in part by [ADR-199](./ADR-199-responsive-3d-pages-and-transitions.md), 2026-11-24.** Sibling scenes combined with `.include()` may share read-only element references (`view.canvas`, `travel.to`, edge points, `stayWith`); two scenes claiming motion, show, or limit ownership of one element remain refused.
 6. **One-sided show.** `.show(beat)`, `.show([from, to])`, `.show({ from })` and `.show({ until })`. A timed scene
    ends after its last beat, plus `length` when given.
+
+**Amended by [ADR-200](./ADR-200-scroll-presence-3d-lists-and-multiviewport.md):** `.show(...)` also accepts `ScrollBeat`, `[ScrollPoint, ScrollPoint]`, `{ from: ScrollPoint }`, and `{ until: ScrollPoint }`, evaluated alongside timed windows by `frame()`.
 7. **One mount.** `mount(scene, { root, clock, frame, binders })` in `@gerak/dom` replaces `mountStage` and
    `mountPage`. `clock` is `"live"` (scroll, pointer and triggers) or `"timed"` (seekable). `frame` is `"page"` or
    `"fit"`, which sizes `root` to the scene's `frame`, clips it and scales it to its parent; a size on the mount would

@@ -41,6 +41,11 @@ function colliderForShape(shape: Shape3d): RAPIER.ColliderDesc {
         assertPositive(shape.height, "shape.height") / 2,
         assertPositive(shape.depth, "shape.depth") / 2,
       );
+    case "cylinder":
+      return RAPIER.ColliderDesc.cylinder(
+        assertPositive(shape.height, "shape.height") / 2,
+        assertPositive(shape.radius, "shape.radius"),
+      );
     default:
       return unreachable(shape);
   }
@@ -81,6 +86,15 @@ function colliderForStatic(collider: Collider3d): RAPIER.ColliderDesc {
         assertPositive(collider.width, "collider.width") / 2,
         assertPositive(collider.height, "collider.height") / 2,
         assertPositive(collider.depth, "collider.depth") / 2,
+      ).setTranslation(
+        assertFinite(collider.x, "collider.x"),
+        assertFinite(collider.y, "collider.y"),
+        assertFinite(collider.z, "collider.z"),
+      );
+    case "cylinder":
+      return RAPIER.ColliderDesc.cylinder(
+        assertPositive(collider.height, "collider.height") / 2,
+        assertPositive(collider.radius, "collider.radius"),
       ).setTranslation(
         assertFinite(collider.x, "collider.x"),
         assertFinite(collider.y, "collider.y"),

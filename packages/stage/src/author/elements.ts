@@ -66,9 +66,10 @@ export interface ObjectView {
   readonly lens: Lens3d;
 }
 
-/** Options of `object`: its view, which `travel` onto a page slot needs. */
+/** Options of `object`: its view for slot travel, and whether `parts: true` binds a list of objects. */
 export interface ObjectOptions {
   readonly view?: ObjectView | undefined;
+  readonly parts?: boolean | undefined;
 }
 
 /** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `threeBinder`, never by a DOM renderer. */
@@ -76,6 +77,7 @@ export interface ObjectElement {
   readonly kind: "object";
   readonly name: string;
   readonly view: ObjectView | undefined;
+  readonly parts?: boolean | undefined;
 }
 
 /** Any element of a piece: one a DOM renderer draws, or a Three.js object. */
@@ -218,7 +220,7 @@ export function text(
   });
 }
 
-/** A Three.js object; its origin is the `Object3D`'s, and it has no DOM node, content or pointer events. */
+/** A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children. */
 export function object(name: string, options?: ObjectOptions): ObjectElement {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))
@@ -229,5 +231,6 @@ export function object(name: string, options?: ObjectOptions): ObjectElement {
     kind: "object",
     name: named("object", name),
     view: view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens }),
+    ...(options?.parts === true ? { parts: true } : {}),
   });
 }

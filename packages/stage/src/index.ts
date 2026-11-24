@@ -1,4 +1,4 @@
-export { type Content, type Expect, type Path } from "./author/cast";
+export { type Content, type Expect, type Path, type ScrollWindow } from "./author/cast";
 export {
   beat,
   scrollPoint,
@@ -44,6 +44,8 @@ export {
   travel,
   type TravelMotion,
   type BoundEachFields,
+  type BoundEachFields3d,
+  type BoundEachSharedFields,
   type BoundFields,
   type CompileSceneOptions,
   type ElementStep,
@@ -56,6 +58,7 @@ export {
   type SceneBuilder,
   type SceneBuilderOptions,
   type SceneMotion,
+  type SharedPose,
   type ShowWindow,
   type StaggerBy,
   type StaggerFrom,
@@ -77,13 +80,21 @@ export {
   type RestReader,
 } from "./author/layout";
 export { boxInViewport, placementOf, type BoxPlacement } from "./render/placement";
-export { type Limits, type ListPose, type Drive, type Moves } from "./author/stage";
+export {
+  type Limits,
+  type ListPose,
+  type ListPose3d,
+  type Drive,
+  type Moves,
+} from "./author/stage";
 export { isStage, type CompileResult, type Member, type Stage } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";
 export {
   check,
   frame,
+  frameVisible,
   listPose,
+  listPose3d,
   partCounts,
   pose3dOf,
   poseOf,

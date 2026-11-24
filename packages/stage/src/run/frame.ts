@@ -1,12 +1,14 @@
 import {
   NO_EVENTS,
   elapsedOf,
+  scroll,
   unreachable,
   type Events,
   type Pose2d,
   type Pose3d,
   type Time,
 } from "@gerak/core";
+import type { ScrollWindow } from "../author/cast";
 import { NO_REST, type RestAt, type RestReader } from "../author/layout";
 import type { Drive, Moves } from "../author/stage";
 import { carryFor } from "./carry";
@@ -65,6 +67,13 @@ export function listPose(value: unknown, index: number, count: number): Pose2d |
     : undefined;
 }
 
+/** Item `index` of `count` from a 3D list's target, or undefined when the scene gave none. */
+export function listPose3d(value: unknown, index: number, count: number): Pose3d | undefined {
+  return typeof value === "function"
+    ? pose3dOf(Reflect.apply(value, undefined, [index, count]))
+    : undefined;
+}
+
 /** Each list member's part count from `<name>.<index>` boxes in `rest`, or `lines` when unboxed. */
 export function partCounts(
   stage: Stage,
@@ -85,7 +94,43 @@ export function partCounts(
   return Object.freeze(counts);
 }
 
-/** Runs the scene once; no checks, so it costs the scene and one visibility lookup. */
+const FRAME_VISIBLE = Symbol.for("@gerak/stage/frame-visible");
+
+function isVisibleRecord(value: unknown): value is Readonly<Record<string, boolean>> {
+  if (!isPlainRecord(value)) return false;
+  for (const shown of Object.values(value)) if (typeof shown !== "boolean") return false;
+  return true;
+}
+
+/** Attaches `visible` metadata to `targets` under a non-enumerable symbol. */
+export function withFrameVisible(
+  targets: Readonly<Record<string, unknown>>,
+  visible: Readonly<Record<string, boolean>>,
+): Readonly<Record<string, unknown>> {
+  return Object.defineProperty(targets, FRAME_VISIBLE, { value: visible, configurable: true });
+}
+
+/** Reads the per-member visibility map attached to a frame's `targets`, or undefined when absent. */
+export function frameVisible(targets: unknown): Readonly<Record<string, boolean>> | undefined {
+  if (!isPlainRecord(targets)) return undefined;
+  const visible: unknown = Reflect.get(targets, FRAME_VISIBLE);
+  return isVisibleRecord(visible) ? visible : undefined;
+}
+
+function holdsScroll(window: ScrollWindow, y: number, rest: RestReader): boolean {
+  switch (window.kind) {
+    case "range":
+      return y >= window.from.at(rest) && y < window.to.at(rest);
+    case "from":
+      return y >= window.from.at(rest);
+    case "until":
+      return y < window.until.at(rest);
+    default:
+      return unreachable(window);
+  }
+}
+
+/** Runs the scene once; single owner of `visible` across clock stretches and scroll windows. */
 export function frame(stage: Stage, input: FrameInput): FrameOutput {
   const events = input.events ?? NO_EVENTS;
   const measures = input.measures ?? [];
@@ -106,7 +151,21 @@ export function frame(stage: Stage, input: FrameInput): FrameOutput {
   if (!isPlainRecord(targets))
     throw new TypeError("scene must return an object of member names to poses.");
   const ms = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
-  return { visible: stage.visibleAt(ms), targets };
+  const clockVisible = stage.visibleAt(ms);
+  let visible = clockVisible;
+  if (stage.members.some((member) => member.onScroll !== undefined)) {
+    const y = scroll.y(time, events);
+    const merged: Record<string, boolean> = {};
+    for (const member of stage.members) {
+      const clockOk = clockVisible[member.name] ?? true;
+      const scrollOk =
+        member.onScroll === undefined ||
+        member.onScroll.some((window) => holdsScroll(window, y, rest));
+      merged[member.name] = clockOk && scrollOk;
+    }
+    visible = Object.freeze(merged);
+  }
+  return { visible, targets: withFrameVisible(targets, visible) };
 }
 
 /** Every shape mistake in a frame's targets: arrays or non-poses, lists not given as functions, unknown names. */
@@ -126,8 +185,24 @@ export function check(
     };
     switch (member.kind) {
       case "actor":
-      case "object":
         if (poseOf(value) === undefined)
+          mismatch(`needs a pose object, got ${Array.isArray(value) ? "an array" : typeof value}.`);
+        break;
+      case "object":
+        if (member.parts === true) {
+          if (typeof value !== "function")
+            mismatch(
+              `is a list: give it \`(index, count) => pose\`, got ${Array.isArray(value) ? "an array" : typeof value}.`,
+            );
+          else {
+            const count = counts?.[member.name] ?? 1;
+            for (let index = 0; index < count; index += 1)
+              if (listPose3d(value, index, count) === undefined) {
+                mismatch(`answered no pose object for item ${index}.`);
+                break;
+              }
+          }
+        } else if (pose3dOf(value) === undefined)
           mismatch(`needs a pose object, got ${Array.isArray(value) ? "an array" : typeof value}.`);
         break;
       case "list":

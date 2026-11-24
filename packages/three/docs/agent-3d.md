@@ -24,15 +24,15 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `mixPose3d` and stack them with `combine3d`. Both turn through real rotations, so a pose never flips when two axes
   turn. To spin past a full turn, mix the angle itself: `mixPose3d` takes the short way.
 - An object's motions stack as an element's do: layer motions combine by `combine3d`, a `.take()` motion replaces
-  its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.show(beat)` sets the
-  `Object3D`'s `visible`. A motion with no window gets the scene's time. A plain function `(time, context)`
+  its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.show(...)` (clock or scroll
+  windows) drives visibility from `frameVisible(player.values)` on each step. A motion with no window gets the scene's
+  time. A plain function `(time, context)`
   reads `context.time` and `context.events`, which `smear3d`, `velocity3d` and `trailTurn` take; a pose's
   `opacity` never sets `visible`.
 - An object's origin is the `Object3D`'s origin. To turn or squash about another point, place the mesh in a parent `THREE.Group` and pose the parent.
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
-- `threeBinder(world, { objects?, resize?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`, invokes optional `resize` before initial `measure()` and inside `remeasure()` before measuring DOM and 3D bounds, and measures local `Box3` rest `{ width, height, depth }` per bound `Object3D` via `.measure()`. For an `Object3D`, its position when bound is its rest, and turns and scales are written whole. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
-  (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). When passed in `mount`'s `binders`, every object must be claimed by exactly one binder or `mount` throws and names it. Many like objects are one object each; a chain that adds them in a loop holds
-  its value as `let piece: SceneBuilder = sceneBuilder(...)`, since `.element` answers a narrower step each time.
+- `threeBinder(world, { objects?, resize?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`, invokes optional `resize` before initial `measure()` and inside `remeasure()` before measuring DOM and 3D bounds, and measures local `Box3` rest `{ width, height, depth }` per bound `Object3D` via `.measure()`. For an `Object3D`, its position when bound is its rest, and turns and scales are written whole. For `object(name, { parts: true })`, `threeBinder` binds an `Object3D[]` override or the `children` of a named `THREE.Group`, calls the list's `(index, count) => Pose3d` target via `listPose3d`, reports part counts in `.counts()`, and writes per-part bounds `name.<i>` beside `name` in `.measure()`. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
+  (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). When passed in `mount`'s `binders`, every object must be claimed by exactly one binder or `mount` throws and names it.
 
 ## The principles in 3D
 
@@ -100,10 +100,11 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `world.addCollider(...)`, `world.addBody(...)`. World units, y up.
   - A body: `{ id, shape, x, y, z }`, with `vx`, `vy`, `vz`, a starting `rotation` quaternion `{ w, x, y, z }`, spins
     `wx`, `wy`, `wz` in degrees a second, `drag` (damping, so it settles before the final hold), `mass`,
-    `fixedRotation`, `restitution` and `friction`. `shape` is `{ kind: "sphere", radius }` or
-    `{ kind: "box", width, height, depth }`.
+    `fixedRotation`, `restitution` and `friction`. `shape` is `{ kind: "sphere", radius }`,
+    `{ kind: "box", width, height, depth }` or `{ kind: "cylinder", radius, height }`.
   - A fixed collider: `{ kind: "floor", y }`, `{ kind: "wall", axis: "x" | "z", at, side: "min" | "max" }` (a wall at
-    `at` keeping bodies on its `side`), or `{ kind: "box", x, y, z, width, height, depth }`; a surface
+    `at` keeping bodies on its `side`), `{ kind: "box", x, y, z, width, height, depth }` or
+    `{ kind: "cylinder", x, y, z, radius, height }`; a surface
     `{ restitution, friction }` is the third argument.
   - A tumbling body turns fast: lower drops, smaller spins and less bounce keep it within `--turn`.
 - **A character among bodies:** a character has no collider of its own. Give it fixed `"box"` colliders where its
@@ -168,6 +169,6 @@ sample, review and scrub with everything else.
 - `smear3d`'s `stretch` is a share per unit a second, where `smear` counts per 1000 px a second: a 3D body moves a
   few units a second.
 - Not yet scaffolded: React Three Fiber (`--r3f`).
-- Not yet: a 3D object inside a `parts` list, and pointer events on an object.
+- Not yet: pointer events on an object.
 - A pose's `opacity` turns its material transparent and has Three.js rebuild it, so it fades however it was
   first drawn.

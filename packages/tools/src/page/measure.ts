@@ -86,13 +86,20 @@ function merge(
       return {
         reason: `two mounts measure objects ${twiceObj.map((key) => `"${key}"`).join(", ")}.`,
       };
+    const twiceCounts = Object.keys(read.counts ?? {}).filter((key) => key in (out?.counts ?? {}));
+    if (twiceCounts.length > 0)
+      return {
+        reason: `two mounts measure counts ${twiceCounts.map((key) => `"${key}"`).join(", ")}.`,
+      };
     const mergedObjects = { ...(out.objects ?? {}), ...(read.objects ?? {}) };
+    const mergedCounts = { ...(out.counts ?? {}), ...(read.counts ?? {}) };
     out = {
       ...out,
       rest: { ...out.rest, ...read.rest },
       lines: { ...out.lines, ...read.lines },
       parents: { ...out.parents, ...read.parents },
       ...(Object.keys(mergedObjects).length === 0 ? {} : { objects: mergedObjects }),
+      ...(Object.keys(mergedCounts).length === 0 ? {} : { counts: mergedCounts }),
     };
   }
   return out ?? { reason: `${page} mounted no scene.` };

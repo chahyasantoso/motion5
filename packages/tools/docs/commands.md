@@ -21,24 +21,26 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
   `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
-- **`gerak review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
+  With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
-- **`gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
+- **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
+  `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`.
   For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
-  function that throws. Unmoved `"settle"` members driven by scroll, trigger, or input signals are probed across their
+  function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or watched DOM events (`enter`, `down`, `click`, `focus`) are probed across their
   reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
-- **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
+- **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
-  edge. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
+  edge. With `--sizes`, checks every viewport and prefixes finding lines with `[WIDTHxHEIGHT]`. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
   `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
 - **`gerak read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
   `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
@@ -65,7 +67,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   run, or a 640 px GIF at 25; needs `ffmpeg`.
 - **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` beside it:
   the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
-  3D `objects` bounds (`{ width, height, depth }`), as its mounts measured them. `sample`, `timeline` and `review` of a
+  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them. `sample`, `timeline` and `review` of a
   builder scene `<brief>/src/<name>.ts` read it with no
   browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included.
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list]`**: exact

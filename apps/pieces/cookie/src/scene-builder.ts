@@ -37,12 +37,10 @@ import {
 import {
   BUILDER_ARC_MS,
   BUILDER_CAPACITY,
-  BUILDER_COOKIE_CASTS,
-  BUILDER_CRUMB_CASTS,
   BUILDER_CRUMB_COUNT,
   BUILDER_CRUMB_MS,
-  BUILDER_EXIT_COOKIE_CASTS,
   BUILDER_EXIT_MS,
+  BUILDER_EXIT_POOL,
   BUILDER_MIN_SEAL,
   BUILDER_MIX_MS,
   BUILDER_SEAL_MS,
@@ -212,7 +210,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
       if (current.sealed || removeIndex < 0 || removeIndex >= current.slots.length) {
         return current;
       }
-      const poolSlot = current.nextExitPool % BUILDER_EXIT_COOKIE_CASTS.length;
+      const poolSlot = current.nextExitPool % BUILDER_EXIT_POOL;
       const nextSlots: BuilderSlotEntry[] = [];
       for (let i = 0; i < current.slots.length; i += 1) {
         const slotEntry = current.slots[i];
@@ -327,30 +325,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
   }
 });
 
-const PARKED_Z = 15;
-const PARKED_POSE: Pose3d = {
-  x: 0,
-  y: 0,
-  z: PARKED_Z,
-  rotation: 0,
-  rotationX: 0,
-  rotationY: 0,
-  scale: 1,
-};
-
-const HIDDEN_RIBBON_POSE: Pose3d = {
-  x: 0,
-  y: 0,
-  z: 0,
-  rotation: 0,
-  rotationX: 0,
-  rotationY: 0,
-  scale: 0,
-};
-
-function isBuilderVisible(scrollY: number, slot: BuilderSlotGeometry): boolean {
-  return scrollY >= slot.stageTop - slot.visibleH && scrollY <= slot.stageEnd + 180;
-}
+const HIDDEN_POSE: Pose3d = { scale: 0 };
 
 function slotLocalY(index: number): number {
   return 0.14 + index * 0.145 + JAR_MODEL_OFFSET_Y;
@@ -451,9 +426,6 @@ const builderHeadingMotion = motion((t: Time): Pose2d => {
 const builderJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
   const scrollY = context ? scroll.y(context.time, context.events) : 0;
   const slot = builderSlotWorld(context?.rest, scrollY);
-  if (!isBuilderVisible(scrollY, slot)) {
-    return PARKED_POSE;
-  }
   const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
   const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
   const sealTrans = readSealTransition(context);
@@ -522,7 +494,7 @@ const builderJarRibbonMotion = motion((_t: Time, context?: MotionContext): Pose3
 
   switch (sealTrans.kind) {
     case "none":
-      return HIDDEN_RIBBON_POSE;
+      return HIDDEN_POSE;
     case "sealing": {
       const ribU = clamp((sealTrans.u - 0.34) / 0.66, 0, 1);
       if (ribU <= 0) {
@@ -564,179 +536,169 @@ const builderJarRibbonMotion = motion((_t: Time, context?: MotionContext): Pose3
   }
 });
 
-function builderCookieMotion(slotIndex: number): Motion<Pose3d, MotionContext> {
+const builderCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
+  const slotIndex = context?.index ?? 0;
   const localX = slotIndex % 2 === 0 ? -0.025 : 0.025;
   const localZ = ((slotIndex % 3) - 1) * 0.014;
   const restTiltZ = slotIndex % 2 === 0 ? -1.8 : 1.8;
   const restTiltX = ((slotIndex % 3) - 1) * 2;
   const restYaw = slotIndex * 42;
 
-  return motion((_t: Time, context?: MotionContext): Pose3d => {
-    const scrollY = context ? scroll.y(context.time, context.events) : 0;
-    const slot = builderSlotWorld(context?.rest, scrollY);
-    if (!isBuilderVisible(scrollY, slot)) {
-      return PARKED_POSE;
-    }
-    const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
-    const entry = bState.slots[slotIndex];
-    if (!entry) {
-      return PARKED_POSE;
-    }
+  const scrollY = context ? scroll.y(context.time, context.events) : 0;
+  const slot = builderSlotWorld(context?.rest, scrollY);
+  const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
+  const entry = bState.slots[slotIndex];
+  if (!entry) {
+    return HIDDEN_POSE;
+  }
 
-    const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-    const sealTrans = readSealTransition(context);
-    const mixBounce = readMixBounce(bState, nowMs);
-    const dx = context ? pointerDeltaX(context.time, context.events) : 0;
-    const dy = context ? pointerDeltaY(context.time, context.events) : 0;
-    const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
+  const sealTrans = readSealTransition(context);
+  const mixBounce = readMixBounce(bState, nowMs);
+  const dx = context ? pointerDeltaX(context.time, context.events) : 0;
+  const dy = context ? pointerDeltaY(context.time, context.events) : 0;
+  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
 
-    const shiftAgeMs = Math.max(0, nowMs - entry.shiftedAtMs);
-    const shiftU =
-      entry.prevSlotIndex !== slotIndex ? clamp(shiftAgeMs / BUILDER_SHIFT_MS, 0, 1) : 1;
-    if (shiftU < 1) {
-      stillMoving();
-    }
-    const localY = mix(
-      slotLocalY(entry.prevSlotIndex),
-      slotLocalY(slotIndex),
-      ease.cubicOut(shiftU),
-    );
-
-    const rad = (jar.rotY * Math.PI) / 180;
-    const cos = Math.cos(rad);
-    const sin = Math.sin(rad);
-    const targetX = jar.center.x + (localX * cos + localZ * sin) * jar.scale;
-    const targetY = jar.center.y + localY * jar.scale;
-    const targetZ = jar.center.z + (-localX * sin + localZ * cos) * jar.scale;
-
-    const ageMs = nowMs - entry.animStartMs;
-    switch (entry.animKind) {
-      case "enter": {
-        if (ageMs < 0) {
-          stillMoving();
-          return PARKED_POSE;
-        }
-        const u = clamp(ageMs / BUILDER_ARC_MS, 0, 1);
-        if (u < 1) {
-          stillMoving();
-        }
-        const rimY = jar.center.y + 0.76 * jar.scale;
-        if (u <= 0.58) {
-          const p1 = ease.cubicOut(u / 0.58);
-          return {
-            x: mix(slot.outerLeftX, jar.center.x, p1),
-            y: mix(jar.center.y + 0.84 * jar.scale, rimY, p1) + 0.18 * jar.scale * arch(p1),
-            z: jar.center.z + mix(0.28, 0.04 * jar.scale, p1),
-            rotation: mix(-24, 0, p1),
-            rotationX: mix(90, 12, p1),
-            rotationY: mix(jar.rotY - 18, jar.rotY + restYaw, p1),
-            scale: mix(slot.heroScale, jar.scale, p1),
-          };
-        }
-        const p2 = ease.cubicInOut((u - 0.58) / 0.42);
-        return {
-          x: mix(jar.center.x, targetX, p2),
-          y: mix(rimY, targetY, p2),
-          z: mix(jar.center.z + 0.04 * jar.scale, targetZ, p2),
-          rotation: mix(0, restTiltZ, p2),
-          rotationX: mix(12, restTiltX, p2),
-          rotationY: jar.rotY + restYaw,
-          scale: jar.scale,
-        };
-      }
-      case "shuffle": {
-        if (ageMs < 0) {
-          stillMoving();
-          return {
-            x: targetX,
-            y: targetY,
-            z: targetZ,
-            rotation: restTiltZ,
-            rotationX: restTiltX,
-            rotationY: jar.rotY + restYaw,
-            scale: jar.scale,
-          };
-        }
-        const u = clamp(ageMs / BUILDER_MIX_MS, 0, 1);
-        if (u < 1) {
-          stillMoving();
-        }
-        const lift = arch(u);
-        const lateral =
-          Math.sin(u * Math.PI * 2) * 0.06 * jar.scale * lift * (slotIndex % 2 === 0 ? 1 : -1);
-        return {
-          x: targetX + lateral,
-          y: targetY + 0.62 * lift * jar.scale,
-          z: targetZ + 0.08 * lift * jar.scale,
-          rotation: mix(restTiltZ, restTiltZ * 2.5, lift),
-          rotationX: mix(restTiltX, 24, lift),
-          rotationY: jar.rotY + restYaw + 360 * ease.cubicOut(u),
-          scale: jar.scale * (1 + 0.06 * lift),
-        };
-      }
-      default:
-        return unreachable(entry.animKind);
-    }
-  });
-}
-
-function builderExitCookieMotion(poolSlot: number): Motion<Pose3d, MotionContext> {
-  return motion((_t: Time, context?: MotionContext): Pose3d => {
-    const scrollY = context ? scroll.y(context.time, context.events) : 0;
-    const slot = builderSlotWorld(context?.rest, scrollY);
-    if (!context || !isBuilderVisible(scrollY, slot)) {
-      return PARKED_POSE;
-    }
-
-    const bState = builderState(context.time, context.events);
-    const exitEntry = bState.exiting.find((entry) => entry.poolSlot === poolSlot);
-    if (!exitEntry) {
-      return PARKED_POSE;
-    }
-
-    const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
-    const ageMs = nowMs - exitEntry.startedAtMs;
-    if (ageMs < 0 || ageMs >= BUILDER_EXIT_MS) {
-      return PARKED_POSE;
-    }
+  const shiftAgeMs = Math.max(0, nowMs - entry.shiftedAtMs);
+  const shiftU = entry.prevSlotIndex !== slotIndex ? clamp(shiftAgeMs / BUILDER_SHIFT_MS, 0, 1) : 1;
+  if (shiftU < 1) {
     stillMoving();
+  }
+  const localY = mix(slotLocalY(entry.prevSlotIndex), slotLocalY(slotIndex), ease.cubicOut(shiftU));
 
-    const sealTrans = readSealTransition(context);
-    const mixBounce = readMixBounce(bState, nowMs);
-    const dx = pointerDeltaX(context.time, context.events);
-    const dy = pointerDeltaY(context.time, context.events);
-    const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const rad = (jar.rotY * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const targetX = jar.center.x + (localX * cos + localZ * sin) * jar.scale;
+  const targetY = jar.center.y + localY * jar.scale;
+  const targetZ = jar.center.z + (-localX * sin + localZ * cos) * jar.scale;
 
-    const u = clamp(ageMs / BUILDER_EXIT_MS, 0, 1);
-    const fromY = jar.center.y + slotLocalY(exitEntry.fromSlotIndex) * jar.scale;
-    const rimY = jar.center.y + 0.76 * jar.scale;
-    const restYaw = exitEntry.fromSlotIndex * 42;
-
-    if (u <= 0.4) {
-      const p1 = ease.cubicInOut(u / 0.4);
+  const ageMs = nowMs - entry.animStartMs;
+  switch (entry.animKind) {
+    case "enter": {
+      if (ageMs < 0) {
+        stillMoving();
+        return HIDDEN_POSE;
+      }
+      const u = clamp(ageMs / BUILDER_ARC_MS, 0, 1);
+      if (u < 1) {
+        stillMoving();
+      }
+      const rimY = jar.center.y + 0.76 * jar.scale;
+      if (u <= 0.58) {
+        const p1 = ease.cubicOut(u / 0.58);
+        return {
+          x: mix(slot.outerLeftX, jar.center.x, p1),
+          y: mix(jar.center.y + 0.84 * jar.scale, rimY, p1) + 0.18 * jar.scale * arch(p1),
+          z: jar.center.z + mix(0.28, 0.04 * jar.scale, p1),
+          rotation: mix(-24, 0, p1),
+          rotationX: mix(90, 12, p1),
+          rotationY: mix(jar.rotY - 18, jar.rotY + restYaw, p1),
+          scale: mix(slot.heroScale, jar.scale, p1),
+        };
+      }
+      const p2 = ease.cubicInOut((u - 0.58) / 0.42);
       return {
-        x: jar.center.x,
-        y: mix(fromY, rimY, p1),
-        z: jar.center.z + mix(0, 0.04 * jar.scale, p1),
-        rotation: 0,
-        rotationX: mix(0, 14, p1),
+        x: mix(jar.center.x, targetX, p2),
+        y: mix(rimY, targetY, p2),
+        z: mix(jar.center.z + 0.04 * jar.scale, targetZ, p2),
+        rotation: mix(0, restTiltZ, p2),
+        rotationX: mix(12, restTiltX, p2),
         rotationY: jar.rotY + restYaw,
         scale: jar.scale,
       };
     }
+    case "shuffle": {
+      if (ageMs < 0) {
+        stillMoving();
+        return {
+          x: targetX,
+          y: targetY,
+          z: targetZ,
+          rotation: restTiltZ,
+          rotationX: restTiltX,
+          rotationY: jar.rotY + restYaw,
+          scale: jar.scale,
+        };
+      }
+      const u = clamp(ageMs / BUILDER_MIX_MS, 0, 1);
+      if (u < 1) {
+        stillMoving();
+      }
+      const lift = arch(u);
+      const lateral =
+        Math.sin(u * Math.PI * 2) * 0.06 * jar.scale * lift * (slotIndex % 2 === 0 ? 1 : -1);
+      return {
+        x: targetX + lateral,
+        y: targetY + 0.62 * lift * jar.scale,
+        z: targetZ + 0.08 * lift * jar.scale,
+        rotation: mix(restTiltZ, restTiltZ * 2.5, lift),
+        rotationX: mix(restTiltX, 24, lift),
+        rotationY: jar.rotY + restYaw + 360 * ease.cubicOut(u),
+        scale: jar.scale * (1 + 0.06 * lift),
+      };
+    }
+    default:
+      return unreachable(entry.animKind);
+  }
+});
 
-    const p2 = ease.cubicIn((u - 0.4) / 0.6);
+const builderExitCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
+  if (!context) {
+    return HIDDEN_POSE;
+  }
+  const poolSlot = context.index ?? 0;
+  const scrollY = scroll.y(context.time, context.events);
+  const slot = builderSlotWorld(context.rest, scrollY);
+
+  const bState = builderState(context.time, context.events);
+  const exitEntry = bState.exiting.find((entry) => entry.poolSlot === poolSlot);
+  if (!exitEntry) {
+    return HIDDEN_POSE;
+  }
+
+  const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
+  const ageMs = nowMs - exitEntry.startedAtMs;
+  if (ageMs < 0 || ageMs >= BUILDER_EXIT_MS) {
+    return HIDDEN_POSE;
+  }
+  stillMoving();
+
+  const sealTrans = readSealTransition(context);
+  const mixBounce = readMixBounce(bState, nowMs);
+  const dx = pointerDeltaX(context.time, context.events);
+  const dy = pointerDeltaY(context.time, context.events);
+  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+
+  const u = clamp(ageMs / BUILDER_EXIT_MS, 0, 1);
+  const fromY = jar.center.y + slotLocalY(exitEntry.fromSlotIndex) * jar.scale;
+  const rimY = jar.center.y + 0.76 * jar.scale;
+  const restYaw = exitEntry.fromSlotIndex * 42;
+
+  if (u <= 0.4) {
+    const p1 = ease.cubicInOut(u / 0.4);
     return {
-      x: mix(jar.center.x, slot.outerLeftX, p2),
-      y: mix(rimY, jar.center.y + 0.84 * jar.scale, p2) + 0.18 * jar.scale * arch(p2),
-      z: jar.center.z + mix(0.04 * jar.scale, 0.28, p2),
-      rotation: mix(0, -24, p2),
-      rotationX: mix(14, 90, p2),
-      rotationY: mix(jar.rotY + restYaw, jar.rotY - 18, p2),
-      scale: mix(jar.scale, slot.heroScale, p2),
+      x: jar.center.x,
+      y: mix(fromY, rimY, p1),
+      z: jar.center.z + mix(0, 0.04 * jar.scale, p1),
+      rotation: 0,
+      rotationX: mix(0, 14, p1),
+      rotationY: jar.rotY + restYaw,
+      scale: jar.scale,
     };
-  });
-}
+  }
+
+  const p2 = ease.cubicIn((u - 0.4) / 0.6);
+  return {
+    x: mix(jar.center.x, slot.outerLeftX, p2),
+    y: mix(rimY, jar.center.y + 0.84 * jar.scale, p2) + 0.18 * jar.scale * arch(p2),
+    z: jar.center.z + mix(0.04 * jar.scale, 0.28, p2),
+    rotation: mix(0, -24, p2),
+    rotationX: mix(14, 90, p2),
+    rotationY: mix(jar.rotY + restYaw, jar.rotY - 18, p2),
+    scale: mix(jar.scale, slot.heroScale, p2),
+  };
+});
 
 let cachedCrumbSeal: { readonly sealId: number; readonly events: Events } | null = null;
 
@@ -750,60 +712,61 @@ function crumbEventsForSeal(sealId: number): Events {
   return cachedCrumbSeal.events;
 }
 
-function builderCrumbMotion(crumbIndex: number): Motion<Pose3d, MotionContext> {
-  return motion((_t: Time, context?: MotionContext): Pose3d => {
-    const scrollY = context ? scroll.y(context.time, context.events) : 0;
-    const slot = builderSlotWorld(context?.rest, scrollY);
-    if (!context || !isBuilderVisible(scrollY, slot)) {
-      return PARKED_POSE;
-    }
+const builderCrumbsMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
+  if (!context) {
+    return HIDDEN_POSE;
+  }
+  const crumbIndex = context.index ?? 0;
+  const scrollY = scroll.y(context.time, context.events);
+  const slot = builderSlotWorld(context.rest, scrollY);
 
-    const burst = crumbBurst(context.time, context.events);
-    if (!burst.active || burst.current <= 0) {
-      return PARKED_POSE;
-    }
+  const burst = crumbBurst(context.time, context.events);
+  if (!burst.active || burst.current <= 0) {
+    return HIDDEN_POSE;
+  }
 
-    const crumbAgeMs = burst.progress * BUILDER_CRUMB_TOTAL_MS - BUILDER_CRUMB_DELAY_MS;
-    if (crumbAgeMs < 0 || crumbAgeMs >= BUILDER_CRUMB_MS) {
-      return PARKED_POSE;
-    }
+  const crumbAgeMs = burst.progress * BUILDER_CRUMB_TOTAL_MS - BUILDER_CRUMB_DELAY_MS;
+  if (crumbAgeMs < 0 || crumbAgeMs >= BUILDER_CRUMB_MS) {
+    return HIDDEN_POSE;
+  }
 
-    const sealId = burst.current;
-    const body = crumbSim.at(liveAt(crumbAgeMs), crumbEventsForSeal(sealId))[
-      `crumb-${sealId}-${crumbIndex}`
-    ];
-    if (!body) {
-      return PARKED_POSE;
-    }
+  const sealId = burst.current;
+  const body = crumbSim.at(liveAt(crumbAgeMs), crumbEventsForSeal(sealId))[
+    `crumb-${sealId}-${crumbIndex}`
+  ];
+  if (!body) {
+    return HIDDEN_POSE;
+  }
 
-    const bState = builderState(context.time, context.events);
-    const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
-    const sealTrans = readSealTransition(context);
-    const mixBounce = readMixBounce(bState, nowMs);
-    const dx = pointerDeltaX(context.time, context.events);
-    const dy = pointerDeltaY(context.time, context.events);
-    const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
-    const euler = eulerFromMatrix3d(matrixFromQuaternion(body.rotation));
+  const bState = builderState(context.time, context.events);
+  const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
+  const sealTrans = readSealTransition(context);
+  const mixBounce = readMixBounce(bState, nowMs);
+  const dx = pointerDeltaX(context.time, context.events);
+  const dy = pointerDeltaY(context.time, context.events);
+  const jar = builderJarTransform(slot, dx, dy, sealTrans, mixBounce);
+  const euler = eulerFromMatrix3d(matrixFromQuaternion(body.rotation));
 
-    const fadeStart = BUILDER_CRUMB_MS * 0.65;
-    const fadeOutScale =
-      crumbAgeMs > fadeStart
-        ? 1 - ease.cubicIn(clamp((crumbAgeMs - fadeStart) / (BUILDER_CRUMB_MS - fadeStart), 0, 1))
-        : 1;
+  const fadeStart = BUILDER_CRUMB_MS * 0.65;
+  const fadeOutScale =
+    crumbAgeMs > fadeStart
+      ? 1 - ease.cubicIn(clamp((crumbAgeMs - fadeStart) / (BUILDER_CRUMB_MS - fadeStart), 0, 1))
+      : 1;
 
-    return {
-      x: jar.center.x + body.x * slot.fitScale,
-      y: jar.center.y + body.y * slot.fitScale,
-      z: jar.center.z + body.z * slot.fitScale,
-      rotation: euler.rotation,
-      rotationX: euler.rotationX,
-      rotationY: euler.rotationY,
-      scale: slot.fitScale * fadeOutScale,
-    };
-  });
-}
+  return {
+    x: jar.center.x + body.x * slot.fitScale,
+    y: jar.center.y + body.y * slot.fitScale,
+    z: jar.center.z + body.z * slot.fitScale,
+    rotation: euler.rotation,
+    rotationX: euler.rotationX,
+    rotationY: euler.rotationY,
+    scale: slot.fitScale * fadeOutScale,
+  };
+});
 
-let builder: SceneBuilder = sceneBuilder()
+const builderWindow = [builderStage.top.minus(1000), builderStage.end.plus(180)] as const;
+
+export const builderScene: SceneBuilder = sceneBuilder()
   .element(builderStage)
   .element(slotBuilderJar)
   .element(builderSealBtn)
@@ -811,45 +774,25 @@ let builder: SceneBuilder = sceneBuilder()
   .motion(builderHeadingMotion.in(builderEnter))
   .element(builderJarRoot)
   .motion(builderJarRootMotion)
+  .show(builderWindow)
   .limits({ jump: 1.8, turn: 180 })
   .element(builderJarLid)
   .motion(builderJarLidMotion)
+  .show(builderWindow)
   .limits({ jump: 1.8, turn: 180 })
   .element(builderJarRibbon)
   .motion(builderJarRibbonMotion)
-  .limits({ jump: 1.8, turn: 360 });
-
-for (let i = 0; i < BUILDER_COOKIE_CASTS.length; i += 1) {
-  const castName = BUILDER_COOKIE_CASTS[i];
-  if (!castName) {
-    continue;
-  }
-  builder = builder
-    .element(object(castName))
-    .motion(builderCookieMotion(i))
-    .limits({ jump: 2.5, turn: 360 });
-}
-
-for (let i = 0; i < BUILDER_EXIT_COOKIE_CASTS.length; i += 1) {
-  const castName = BUILDER_EXIT_COOKIE_CASTS[i];
-  if (!castName) {
-    continue;
-  }
-  builder = builder
-    .element(object(castName))
-    .motion(builderExitCookieMotion(i))
-    .limits({ jump: 2.5, turn: 360 });
-}
-
-for (let i = 0; i < BUILDER_CRUMB_CASTS.length; i += 1) {
-  const castName = BUILDER_CRUMB_CASTS[i];
-  if (!castName) {
-    continue;
-  }
-  builder = builder
-    .element(object(castName))
-    .motion(builderCrumbMotion(i))
-    .limits({ jump: 2.5, turn: 180 });
-}
-
-export const builderScene: SceneBuilder = builder;
+  .show(builderWindow)
+  .limits({ jump: 1.8, turn: 360 })
+  .element(object(CAST.builderCookies, { parts: true }))
+  .motion(builderCookiesMotion)
+  .show(builderWindow)
+  .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
+  .element(object(CAST.builderExitCookies, { parts: true }))
+  .motion(builderExitCookiesMotion)
+  .show(builderWindow)
+  .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
+  .element(object(CAST.builderCrumbs, { parts: true }))
+  .motion(builderCrumbsMotion)
+  .show(builderWindow)
+  .limits({ jump: 2.5, turn: 180 });

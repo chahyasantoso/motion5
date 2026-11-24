@@ -5,6 +5,38 @@ import { callerDir, piecesRoot } from "./root";
 import { pageServerConfig } from "./server";
 import { unreachable } from "./unreachable";
 
+/** A viewport width and height in CSS px. */
+export interface ViewportSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Formats `size` as `WIDTHxHEIGHT`. */
+export function formatSize(size: ViewportSize): string {
+  return `${size.width}x${size.height}`;
+}
+
+/** Parses `--sizes WIDTHxHEIGHT,...`, or returns why the value is malformed. */
+export function parseSizes(text: string | undefined): readonly ViewportSize[] | string {
+  if (text === undefined || text.trim() === "")
+    return "--sizes needs one or more WIDTHxHEIGHT entries.";
+  const seen = new Set<string>();
+  const sizes: ViewportSize[] = [];
+  for (const part of text.split(",")) {
+    const trimmed = part.trim();
+    const match = /^(\d+)x(\d+)$/.exec(trimmed);
+    if (match === null) return `--sizes needs WIDTHxHEIGHT entries, not "${trimmed}".`;
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    if (!(width > 0 && height > 0)) return `--sizes dimensions must be above 0, not "${trimmed}".`;
+    const label = `${width}x${height}`;
+    if (seen.has(label)) return `--sizes duplicate entry "${label}".`;
+    seen.add(label);
+    sizes.push({ width, height });
+  }
+  return sizes;
+}
+
 /** Where a page comes from: a folder this tool serves, or a server already running. */
 export type PageSource =
   | { readonly kind: "serve"; readonly root: string }

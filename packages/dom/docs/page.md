@@ -17,7 +17,7 @@ const card = box("card");
 ```
 
 - `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches. Pass `nodes: { name: nodeOrList }` to override matching by name.
-- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize and measure `object` elements; `mount` verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
+- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, count 3D list parts and measure `object` elements; `mount` verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
 - Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 
@@ -49,7 +49,7 @@ On a `"live"` `"page"` mount and on each remeasure, `mount` hands Chromium the e
 
 - **Scroll-driven:** every motion on the element plays in a scroll beat without `smooth`. It plays on one `ScrollTimeline` over the document's whole scroll range, sampled inside its active scroll intervals.
 - **Trigger-driven:** every motion on the element plays in one trigger beat, and its pose before the trigger fires equals its pose at the start. It plays on the document timeline; on each input the mount asks the beat which way it runs and how far it has come, so `reverse`, `stay` and `replay` stay the beat's to decide.
-- Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock, `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modify`, `.show` or `.ambient()` keeps it in the engine, as does a `smooth` scroll beat.
+- Either way the element sets only `x`, `y`, `rotation`, `scale`, `scaleX`, `scaleY` and `opacity` (with one fixed `anchor`), and its motions read nothing but their window's time and the measured boxes. A read of the clock, `events`, `carry` or another element, a `bind`, `travel`, `.loop`, `.modify`, a timed or scroll `.show`, or `.ambient()` keeps it in the engine, as does a `smooth` scroll beat.
 - Without `ScrollTimeline`, or with a `scrollTarget` other than the window, every element stays in the engine, and so it does while the page tools hold the clock.
 - `ResizeObserver` callbacks coalesce onto a single microtask, and a remeasure skips rebuilding compositor animations when `maxScroll`, `lines`, and the measured boxes read by handed tracks are unchanged.
 
@@ -68,7 +68,7 @@ Every box element's `.top`, `.end`, `.pinStart` and `.pinEnd` are scroll points 
 
 ## Rests, parts, and measured lines
 
-`mount` invokes any `Binder.resize()` callback, temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates) alongside any `Binder.measure()` 3D `ObjectBounds3d` into `Measurement.objects` and `RestReader.object`, coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
+`mount` invokes any `Binder.resize()` callback, temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates) alongside any `Binder.measure()` 3D `ObjectBounds3d` into `Measurement.objects` (and `Binder.counts()` part counts into `Measurement.counts`) and `RestReader.object`, coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
 
 `box(name, { parts: true })` and `text(name, { split: "words" | "letters" })` read part counts from the markup:
 

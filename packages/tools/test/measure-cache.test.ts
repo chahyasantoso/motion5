@@ -87,6 +87,24 @@ describe("the measure cache", () => {
         }),
       ),
     ).toEqual({ reason: 'the bounds of object "jar" are not a measured 3D box.' });
+
+    const withCounts = readMeasureCache(
+      JSON.stringify({
+        ...JSON.parse(cacheText("abc")),
+        counts: { crumbs: 12 },
+      }),
+    );
+    if ("reason" in withCounts) throw new Error(withCounts.reason);
+    expect(withCounts.counts).toEqual({ crumbs: 12 });
+
+    expect(
+      readMeasureCache(
+        JSON.stringify({
+          ...JSON.parse(cacheText("abc")),
+          counts: { crumbs: -1 },
+        }),
+      ),
+    ).toEqual({ reason: 'the part count of "crumbs" must be a non-negative integer.' });
   });
 
   it("refuses a builder scene whose page has no cache or changed, and reads a fresh one", async () => {

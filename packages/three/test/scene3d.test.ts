@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Object3D } from "three";
-import { motion, type Pose3d, type Time } from "@gerak/core";
+import { INPUT_EVENTS, motion, type Pose3d, type Time } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
   beat,
@@ -10,6 +10,7 @@ import {
   frame,
   object,
   sceneBuilder,
+  scrollPoint,
   type Stage,
 } from "@gerak/stage";
 import { threeBinder } from "../src/index";
@@ -166,5 +167,150 @@ describe("threeBinder", () => {
     );
     zeroBinder.start(zeroPlayer, zeroObjStage.stage);
     expect(zeroBinder.measure?.()).toEqual({});
+  });
+
+  it("drives Object3D.visible from frame() scroll-window .show() without calling stage.visibleAt", () => {
+    const scrollStageResult = compileScene(
+      sceneBuilder({ length: 1000 })
+        .element(object("orb"))
+        .motion(motion((): Pose3d => ({ y: 1 })))
+        .show([scrollPoint(100), scrollPoint(300)]),
+    );
+    if (!scrollStageResult.ok)
+      throw new Error(scrollStageResult.errors.map(formatStageError).join("\n"));
+    const stage = scrollStageResult.stage;
+
+    let scrollY = 0;
+    const listeners = new Set<() => void>();
+    const driver = {
+      now: (): Time => ({ progress: 0, clock: { kind: "live", elapsed: 0 } }),
+      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    };
+    const player = play((time, events) => frame(stage, { time, events }).targets, driver);
+    const root = new Object3D();
+    const orb = new Object3D();
+    orb.name = "orb";
+    root.add(orb);
+
+    threeBinder(root).start(player, stage);
+    expect(orb.visible).toBe(false);
+
+    scrollY = 150;
+    for (const listener of [...listeners]) listener();
+    expect(orb.visible).toBe(true);
+
+    scrollY = 300;
+    for (const listener of [...listeners]) listener();
+    expect(orb.visible).toBe(false);
+  });
+
+  it("binds 3D list objects to Object3D[] overrides and Group.children, reporting counts and per-part bounds", () => {
+    const a = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    a.position.set(1, 0, 0);
+    const b = new Mesh(new BoxGeometry(2, 2, 2), new MeshBasicMaterial());
+    b.position.set(2, 0, 0);
+
+    const trayGroup = new Group();
+    trayGroup.name = "tray";
+    const g0 = new Mesh(new BoxGeometry(0.5, 0.5, 0.5), new MeshBasicMaterial());
+    const g1 = new Mesh(new BoxGeometry(1.5, 1.5, 1.5), new MeshBasicMaterial());
+    trayGroup.add(g0, g1);
+
+    const root = new Object3D();
+    root.add(trayGroup);
+
+    const listStageResult = compileScene(
+      sceneBuilder({ length: 1000 })
+        .element(object("arrayItems", { parts: true }))
+        .motion((_t, ctx) => ({ x: ((ctx.index ?? 0) + 1) * 0.5 }))
+        .show([scrollPoint(100), scrollPoint(400)])
+        .element(object("tray", { parts: true }))
+        .motion((t, ctx) => ({ y: (ctx.index ?? 0) + t.progress })),
+    );
+    if (!listStageResult.ok)
+      throw new Error(listStageResult.errors.map(formatStageError).join("\n"));
+    const stage = listStageResult.stage;
+
+    const binder = threeBinder(root, { objects: { arrayItems: [a, b] } });
+    expect(binder.claims("arrayItems")).toBe(true);
+    expect(binder.claims("tray")).toBe(true);
+    expect(binder.counts?.(["arrayItems", "tray"])).toEqual({ arrayItems: 2, tray: 2 });
+    expect(binder.counts?.()).toEqual({ arrayItems: 2 });
+
+    let scrollY = 0;
+    const listeners = new Set<() => void>();
+    const driver = {
+      now: (): Time => ({ progress: 0.5, clock: { kind: "live", elapsed: 0 } }),
+      events: () => (scrollY === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }]),
+      subscribe: (listener: () => void) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    };
+    const counts = binder.counts?.(["arrayItems", "tray"]);
+    const player = play((time, events) => frame(stage, { time, events, counts }).targets, driver);
+    binder.start(player, stage);
+    expect(binder.counts?.()).toEqual({ arrayItems: 2, tray: 2 });
+
+    expect(a.visible).toBe(false);
+    expect(b.visible).toBe(false);
+    expect(g0.visible).toBe(true);
+    expect(g0.position.y).toBeCloseTo(0.5, 6);
+    expect(g1.position.y).toBeCloseTo(1.5, 6);
+
+    scrollY = 200;
+    for (const listener of [...listeners]) listener();
+    expect(a.visible).toBe(true);
+    expect(b.visible).toBe(true);
+    expect(a.position.x).toBeCloseTo(1.5, 6);
+    expect(b.position.x).toBeCloseTo(3, 6);
+
+    expect(binder.measure?.(["arrayItems", "tray"])).toEqual({
+      "arrayItems.0": { width: 1, height: 1, depth: 1 },
+      "arrayItems.1": { width: 2, height: 2, depth: 2 },
+      arrayItems: { width: 1, height: 1, depth: 1 },
+      "tray.0": { width: 0.5, height: 0.5, depth: 0.5 },
+      "tray.1": { width: 1.5, height: 1.5, depth: 1.5 },
+      tray: { width: 0.5, height: 0.5, depth: 0.5 },
+    });
+
+    // Refuses mismatched target shapes (array on non-parts object, writer on parts object).
+    const singleStage = compileScene(
+      sceneBuilder({ length: 500 })
+        .element(object("arr"))
+        .motion(() => ({ y: 0 })),
+    );
+    if (!singleStage.ok) throw new Error(singleStage.errors.map(formatStageError).join("\n"));
+    const pSingle = play(
+      (time, events) => frame(singleStage.stage, { time, events }).targets,
+      manualDriver({ durationMs: 500 }),
+    );
+    expect(() =>
+      threeBinder(new Object3D(), { objects: { arr: [new Object3D()] } }).start(
+        pSingle,
+        singleStage.stage,
+      ),
+    ).toThrow(TypeError);
+
+    const partsStage = compileScene(
+      sceneBuilder({ length: 500 })
+        .element(object("fn", { parts: true }))
+        .motion(() => ({ y: 0 })),
+    );
+    if (!partsStage.ok) throw new Error(partsStage.errors.map(formatStageError).join("\n"));
+    const pParts = play(
+      (time, events) => frame(partsStage.stage, { time, events, counts: { fn: 1 } }).targets,
+      manualDriver({ durationMs: 500 }),
+    );
+    expect(() =>
+      threeBinder(new Object3D(), { objects: { fn: () => undefined } }).start(
+        pParts,
+        partsStage.stage,
+      ),
+    ).toThrow(TypeError);
   });
 });

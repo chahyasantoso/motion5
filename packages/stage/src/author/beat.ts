@@ -109,12 +109,30 @@ export function measuredBy(point: ScrollPoint): object | undefined {
   return POINT_MEASURES.get(point)?.();
 }
 
-function isScrollPoint(value: unknown): value is ScrollPoint {
+/** Fixed scroll px if `point` was created with `scrollPoint(px)`, else `undefined`. */
+export function fixedPxOf(point: ScrollPoint): number | undefined {
+  return FIXED_PX.get(point);
+}
+
+/** Whether `value` is a `ScrollPoint` made by `scrollPoint` or an element edge. */
+export function isScrollPoint(value: unknown): value is ScrollPoint {
   return (
     typeof value === "object" &&
     value !== null &&
     Reflect.get(value, "kind") === "scroll-point" &&
     typeof Reflect.get(value, "at") === "function"
+  );
+}
+
+/** Whether `value` is a `ScrollBeat` created by `beat(name, { scroll })`. */
+export function isScrollBeat(value: unknown): value is ScrollBeat {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    Reflect.get(value, "kind") === "scroll-beat" &&
+    typeof Reflect.get(value, "name") === "string" &&
+    isScrollPoint(Reflect.get(value, "from")) &&
+    isScrollPoint(Reflect.get(value, "to"))
   );
 }
 

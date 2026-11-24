@@ -2,8 +2,19 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { elapsedOf, motion, pointer, scroll, type Pose2d, type Time } from "@gerak/core";
-import { beat, bind, box, sceneBuilder, scrollPoint, stagger } from "@gerak/stage";
+import {
+  elapsedOf,
+  motion,
+  pointer,
+  scroll,
+  state,
+  transition,
+  type Events,
+  type Pose2d,
+  type Pose3d,
+  type Time,
+} from "@gerak/core";
+import { beat, bind, box, object, sceneBuilder, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MeasureCache } from "../src/page/measure-cache";
 import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
@@ -25,7 +36,7 @@ const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
 function review(
   module: unknown,
-  options: { to?: number } = {},
+  options: { to?: number; events?: Events } = {},
   measured?: MeasureCache,
 ): SceneReviewResult {
   const read = readModule(module, measured);
@@ -460,5 +471,122 @@ describe("gerak review expectations and shape mismatches", () => {
     expect(findings).toContain(
       'cast member "staticUnwindowed" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
+  });
+
+  it("expands 3D list objects from MeasureCache.counts during reviewSceneModule and sampleScene", () => {
+    const enter = beat("enter", 400);
+    const cache: MeasureCache = {
+      page: "list3d.html",
+      digest: "",
+      frame: { width: 1000, height: 600 },
+      rest: {},
+      lines: {},
+      parents: {},
+      counts: { cookies: 3 },
+    };
+    const clean3d = sceneBuilder({ length: 1000 })
+      .element(object("cookies", { parts: true }))
+      .motion(
+        stagger(
+          motion((t: Time): Pose3d => ({ z: 0.5 * t.progress })),
+          { spread: 0.5 },
+        ).in(enter),
+      );
+    expect(review(clean3d, {}, cache).findings).toEqual([]);
+
+    const jumping3d = sceneBuilder({ length: 1000 })
+      .element(object("cookies", { parts: true }))
+      .motion((t, ctx) => ({
+        z: ctx.index === 1 && t.progress >= 0.4 ? 200 : 0,
+      }));
+    const jumpFindings = review(jumping3d, {}, cache).findings;
+    expect(jumpFindings.some((line) => line.startsWith("cookies[1].z jumps"))).toBe(true);
+  });
+});
+
+describe("driver probing and --events in gerak review", () => {
+  it("probes sticky scroll placement ranges on unmoved settle members", () => {
+    const cache: MeasureCache = {
+      page: "sticky.html",
+      digest: "",
+      frame: { width: 1440, height: 900 },
+      rest: {
+        slot: {
+          x: 900,
+          y: 450,
+          width: 400,
+          height: 400,
+          placement: { kind: "sticky", minY: 1850, maxY: 4550, pinY: 450 },
+        },
+        footer: { x: 720, y: 10000, width: 1440, height: 800, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    const scene = sceneBuilder({ length: 400 })
+      .element(box("slot"))
+      .element(box("footer"))
+      .element(box("panel2"))
+      .motion((_t, ctx) => {
+        const y = scroll.y(ctx.time, ctx.events);
+        const p = (y - 1850) / (4550 - 1850);
+        return { opacity: p >= 0.48 && p < 0.74 ? 1 : 0 };
+      });
+    expect(review(scene, {}, cache).findings).toEqual([]);
+  });
+
+  it("probes watched target interaction events on unmoved settle members", () => {
+    const hovered = state(
+      false,
+      (cur, ev) => (ev.name === "enter" ? true : ev.name === "leave" ? false : cur),
+      { target: "btn" },
+    );
+    const scene = sceneBuilder({ length: 400 })
+      .element(box("btn", { watch: true }))
+      .element(box("lid"))
+      .motion((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 }));
+    expect(review(scene).findings).toEqual([]);
+  });
+
+  it("passes --events to reviewSceneModule and parses --events in CLI args", () => {
+    const count = state(0, (cur, ev) => (ev.name === "jar-add" ? cur + 1 : cur));
+    const countSpring = transition(count, { ms: 200 });
+    const cache: MeasureCache = {
+      page: "jar.html",
+      digest: "",
+      frame: { width: 1440, height: 900 },
+      rest: {},
+      lines: {},
+      parents: {},
+      counts: { cookies: 2 },
+    };
+    const scene = sceneBuilder({ length: 900 })
+      .element(object("cookies", { parts: true }))
+      .motion((_t, ctx) => {
+        const trans = countSpring(ctx.time, ctx.events);
+        return { y: trans.current === 0 ? 0 : trans.progress * 0.2 };
+      });
+
+    expect(review(scene, {}, cache).findings).toContain(
+      'cast member "cookies" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+    expect(
+      review(scene, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
+    ).toEqual([]);
+
+    expect(parseSceneReviewArgs(["s.ts", "--events", "jar-add=0@200,jar-seal=1@400"])).toEqual({
+      kind: "ok",
+      file: "s.ts",
+      hold: 500,
+      jump: 150,
+      turn: 150,
+      ratio: 1.5,
+      budget: 8,
+      events: [
+        { name: "jar-add", at: 200, value: 0 },
+        { name: "jar-seal", at: 400, value: 1 },
+      ],
+    });
+    expect(parseSceneReviewArgs(["s.ts", "--events", "bad-event"]).kind).toBe("usage");
   });
 });

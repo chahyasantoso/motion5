@@ -6,15 +6,20 @@ import type { Carry, RestReader } from "./layout";
 /** A list's pose in the scene: the pose of item `index` of `count`. */
 export type ListPose = (index: number, count: number) => Pose2d;
 
+/** A 3D list's pose in the scene: the 3D pose of item `index` of `count`. */
+export type ListPose3d = (index: number, count: number) => Pose3d;
+
 /** What the scene returns: a pose per actor, a `ListPose` per list, a `Pose3d` per object. */
 export type Targets<M> = string extends keyof M
-  ? Readonly<Record<string, Pose2d | Pose3d | ListPose | undefined>>
+  ? Readonly<Record<string, Pose2d | Pose3d | ListPose | ListPose3d | undefined>>
   : {
       readonly [K in keyof M & string]?: M[K] extends { readonly kind: "list" }
         ? ListPose
-        : M[K] extends { readonly kind: "object" }
-          ? Pose3d
-          : Pose2d;
+        : M[K] extends { readonly kind: "object"; readonly parts: true }
+          ? ListPose3d
+          : M[K] extends { readonly kind: "object" }
+            ? Pose3d
+            : Pose2d;
     };
 
 /** A list pose from per-item data: item `index` takes `pose(items[index], index)`, one past the data none. */

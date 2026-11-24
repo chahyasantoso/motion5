@@ -21,11 +21,14 @@ import {
   box,
   carry,
   compileScene,
+  frameVisible,
+  listPose3d,
   object,
   pose3dOf,
   sceneBuilder,
   scrollPoint,
   shape,
+  stagger,
   text,
   travel,
   type MotionContext,
@@ -1375,5 +1378,154 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
     expect(frames.queued).toBe(0);
 
     mounted.dispose();
+  });
+
+  it("hides DOM and Three.js scroll-show elements outside scroll windows without breaking sibling compositor handoff", async () => {
+    await withDomGlobals(() => {
+      const docTimeline = new FakeTimeline();
+      const gated = new FakeDomNode("gated", docTimeline);
+      const handed = new FakeDomNode("handed", docTimeline);
+      const { view, root } = makeDomHarness(docTimeline, [gated, handed]);
+      const frames = fakeFrames();
+      let ms = 0;
+
+      let orbVisible = true;
+      const orbBinder: Binder = {
+        claims: (name) => name === "orb",
+        start: (player) =>
+          player.subscribe("orb", () => {
+            orbVisible = frameVisible(player.values)?.["orb"] ?? true;
+          }),
+      };
+
+      const scrollRange = beat("scrollRange", { scroll: [scrollPoint(0), scrollPoint(800)] });
+      const scene = sceneBuilder({ length: 1000 })
+        .element(box("gated"))
+        .motion(motion((t): Pose2d => ({ x: 50 * t.progress })).in(scrollRange))
+        .show([scrollPoint(100), scrollPoint(300)])
+        .element(box("handed"))
+        .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(scrollRange))
+        .element(object("orb"))
+        .motion(motion((t): Pose3d => ({ y: 1 + t.progress })))
+        .show([scrollPoint(100), scrollPoint(300)]);
+
+      const mounted = mount(scene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "live",
+        now: () => ms,
+        binders: [orbBinder],
+      });
+
+      // Scroll-show disqualifies `gated` from compositor handoff while unaffected `handed` hands off.
+      expect(gated.animateCalls).toBe(0);
+      expect(handed.animateCalls).toBe(1);
+      expect(gated.style.visibility).toBe("hidden");
+      expect(orbVisible).toBe(false);
+
+      ms = 100;
+      view.scrollY = 200;
+      frames.tick(100);
+      expect(gated.style.visibility).toBe("");
+      expect(orbVisible).toBe(true);
+
+      // Even past settle/intro, an engine-driven scroll change updates visibility cleanly.
+      ms = 2500;
+      view.scrollY = 350;
+      frames.tick(2500);
+      expect(gated.style.visibility).toBe("hidden");
+      expect(orbVisible).toBe(false);
+
+      mounted.dispose();
+    });
+  });
+
+  it("merges Binder.counts for 3D list objects, passes checks: true, and saves counts in Measurement", async () => {
+    await withDomGlobals(() => {
+      const docTimeline = new FakeTimeline();
+      const label = new FakeDomNode("label", docTimeline);
+      const { view, root } = makeDomHarness(docTimeline, [label]);
+      const frames = fakeFrames();
+
+      const partPoses: (readonly (Pose3d | undefined)[])[] = [];
+      let latestVisible = true;
+      const crumbsBinder: Binder = {
+        claims: (name) => name === "crumbs",
+        counts: () => ({ crumbs: 3 }),
+        start: (player) =>
+          player.subscribe("crumbs", (value) => {
+            latestVisible = frameVisible(player.values)?.["crumbs"] ?? true;
+            partPoses.push([0, 1, 2].map((i) => listPose3d(value, i, 3)));
+          }),
+      };
+
+      const spin = beat("spin", 1000);
+      const scene = sceneBuilder({ length: 1000 })
+        .element(box("label"))
+        .element(object("crumbs", { parts: true }))
+        .motion(
+          stagger(
+            motion((t): Pose3d => ({ z: 2 * t.progress })),
+            { spread: 1 },
+          ).in(spin),
+        )
+        .show([scrollPoint(50), scrollPoint(500)]);
+
+      const mounted = mount(scene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "timed",
+        checks: true,
+        binders: [crumbsBinder],
+      });
+
+      expect(isClock(mounted.driver)).toBe(true);
+      if (isClock(mounted.driver)) mounted.driver.seek(0.5);
+      expect(latestVisible).toBe(false);
+      expect(partPoses.at(-1)?.map((p) => p?.z)).toEqual([2, 1, 0]);
+      expect(mounted.measure().counts).toEqual({ crumbs: 3 });
+
+      mounted.dispose();
+
+      // Also verify live mount drives bindEach and updates scroll visibility on live scroll events.
+      const livePoses: (readonly (Pose3d | undefined)[])[] = [];
+      let liveVisible = true;
+      const liveBinder: Binder = {
+        claims: (name) => name === "crumbs",
+        counts: () => ({ crumbs: 3 }),
+        start: (player) =>
+          player.subscribe("crumbs", (value) => {
+            liveVisible = frameVisible(player.values)?.["crumbs"] ?? true;
+            livePoses.push([0, 1, 2].map((i) => listPose3d(value, i, 3)));
+          }),
+      };
+      const liveScene = sceneBuilder({ length: 1000 })
+        .element(box("label"))
+        .element(object("crumbs", { parts: true }))
+        .motion(
+          stagger(
+            motion((t): Pose3d => ({ z: 2 * t.progress })),
+            { spread: 1 },
+          ).in(spin),
+        )
+        .show([scrollPoint(50), scrollPoint(500)]);
+
+      const liveMounted = mount(liveScene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "live",
+        checks: true,
+        binders: [liveBinder],
+      });
+      expect(liveVisible).toBe(false);
+      view.scrollY = 200;
+      frames.tick(500);
+      expect(liveVisible).toBe(true);
+      expect(livePoses.at(-1)?.every((p) => p !== undefined)).toBe(true);
+      liveMounted.dispose();
+    });
   });
 });

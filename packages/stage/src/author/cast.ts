@@ -1,4 +1,5 @@
 import type { Cubic2d, Time } from "@gerak/core";
+import type { ScrollPoint } from "./beat";
 import type { RestReader } from "./layout";
 
 /** What review expects of a member: it moves and settles, it keeps moving, or the scene never poses it. */
@@ -30,9 +31,16 @@ export function stretchOf<B extends string>(on: OnStretch<B>): Stretch<B> {
   return Object.freeze({ kind: "beats", from, to });
 }
 
+/** When a member shows in scroll px: bounded `[from, to)`, `{ from }`, or `{ until }`. */
+export type ScrollWindow =
+  | { readonly kind: "range"; readonly from: ScrollPoint; readonly to: ScrollPoint }
+  | { readonly kind: "from"; readonly from: ScrollPoint }
+  | { readonly kind: "until"; readonly until: ScrollPoint };
+
 /** A member's modifiers as written. */
 export interface Meta<B extends string = string> {
   readonly on?: readonly Stretch<B>[] | undefined;
+  readonly onScroll?: readonly ScrollWindow[] | undefined;
   readonly watch?: boolean | undefined;
   readonly expect?: Expect | undefined;
 }
@@ -43,6 +51,8 @@ export interface Modifiers<B extends string, S> {
   on(...stretches: OnStretch<B>[]): S;
   /** Shows the member only during these stretches, as compiled. */
   showing(stretches: readonly Stretch<B>[]): S;
+  /** Shows the member only during these scroll windows. */
+  showingScroll(windows: readonly ScrollWindow[]): S;
   /** Streams pointer events on the member into `scene({ events })`. */
   watch(enabled?: boolean): S;
   /** The scene never poses it. */
@@ -67,9 +77,10 @@ export interface ListSpec<B extends string = string> extends Modifiers<B, ListSp
   readonly meta: Meta<B>;
 }
 
-/** A Three.js object: the scene gives it a `Pose3d`, and no DOM renderer draws it. */
+/** A Three.js object or object list: the scene gives it a `Pose3d` or `(index, count) => Pose3d`. */
 export interface ObjectSpec<B extends string = string> extends Modifiers<B, ObjectSpec<B>> {
   readonly kind: "object";
+  readonly parts?: boolean | undefined;
   readonly meta: Meta<B>;
 }
 
@@ -92,6 +103,7 @@ export interface CastBuilder<B extends string = string> {
   letters(): ListSpec<B>;
   words(): ListSpec<B>;
   object(): ObjectSpec<B>;
+  objects(): ObjectSpec<B>;
 }
 
 function modifiers<B extends string, S>(
@@ -102,6 +114,7 @@ function modifiers<B extends string, S>(
   return {
     on: (...stretches) => next({ on: Object.freeze(stretches.map(stretchOf)) }),
     showing: (stretches) => next({ on: Object.freeze([...stretches]) }),
+    showingScroll: (windows) => next({ onScroll: Object.freeze([...windows]) }),
     watch: (enabled = true) => next({ watch: enabled }),
     static: () => next({ expect: "static" }),
     ambient: () => next({ expect: "ambient" }),
@@ -130,11 +143,12 @@ function list<B extends string>(meta: Meta<B> = {}, split?: "letters" | "words")
   });
 }
 
-function objectSpec<B extends string>(meta: Meta<B> = {}): ObjectSpec<B> {
+function objectSpec<B extends string>(meta: Meta<B> = {}, parts?: boolean): ObjectSpec<B> {
   return Object.freeze({
     kind: "object",
+    ...(parts === true ? { parts: true } : {}),
     meta,
-    ...modifiers(meta, (next) => objectSpec<B>(next)),
+    ...modifiers(meta, (next) => objectSpec<B>(next, parts)),
   });
 }
 
@@ -150,5 +164,6 @@ export function castBuilder<B extends string>(): CastBuilder<B> {
     letters: () => list({}, "letters"),
     words: () => list({}, "words"),
     object: () => objectSpec(),
+    objects: () => objectSpec({}, true),
   };
 }

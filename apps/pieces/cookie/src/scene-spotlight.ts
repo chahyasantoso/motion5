@@ -33,7 +33,7 @@ const spotlightStage = box(CAST.spotlightStage);
 const slotFlavorCookie = box(CAST.slotFlavorCookie);
 const flavorShadow = box(CAST.flavorShadow);
 
-const PARKED_Z = 15;
+const HIDDEN_COOKIE_POSE: Pose3d = { scale: 0 };
 
 interface FlavorSpotlightItem {
   readonly zone: SpotlightZone;
@@ -42,7 +42,6 @@ interface FlavorSpotlightItem {
   readonly num: string;
   readonly note: string;
   readonly dot: string;
-  readonly cookie: string;
 }
 
 const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
@@ -53,7 +52,6 @@ const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
     num: CAST.flavorNum0,
     note: CAST.flavorNote0,
     dot: CAST.flavorDot0,
-    cookie: CAST.flavorCookie0,
   },
   {
     zone: 1,
@@ -62,7 +60,6 @@ const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
     num: CAST.flavorNum1,
     note: CAST.flavorNote1,
     dot: CAST.flavorDot1,
-    cookie: CAST.flavorCookie1,
   },
   {
     zone: 2,
@@ -71,7 +68,6 @@ const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
     num: CAST.flavorNum2,
     note: CAST.flavorNote2,
     dot: CAST.flavorDot2,
-    cookie: CAST.flavorCookie2,
   },
   {
     zone: 3,
@@ -80,7 +76,6 @@ const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
     num: CAST.flavorNum3,
     note: CAST.flavorNote3,
     dot: CAST.flavorDot3,
-    cookie: CAST.flavorCookie3,
   },
 ];
 
@@ -230,84 +225,72 @@ const flavorShadowMotion = motion((_t: Time, context?: MotionContext): Pose2d =>
   };
 });
 
-function flavorCookieMotion(zone: SpotlightZone): Motion<Pose3d, MotionContext> {
-  return motion((_t: Time, context?: MotionContext): Pose3d => {
-    const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
-    const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
-    const { center, fitScale, enterTravelX, exitTravelX, stageTop } = slot;
+const flavorCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
+  const index = context?.index ?? 0;
+  const zone: SpotlightZone = isSpotlightZone(index) ? index : 0;
+  const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
+  const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
+  const { center, fitScale, enterTravelX, exitTravelX, stageTop } = slot;
 
-    if (isHeroHandoffActive(scrollY, smoothScrollY, stageTop)) {
-      return {
-        x: center.x,
-        y: center.y,
-        z: PARKED_Z,
-        rotation: 0,
-        rotationX: 0,
-        rotationY: 0,
-        scale: fitScale,
-      };
+  if (isHeroHandoffActive(scrollY, smoothScrollY, stageTop)) {
+    return HIDDEN_COOKIE_POSE;
+  }
+
+  const isActive = zone === state.active;
+  const isOutgoing = zone === state.outgoing && rollProgress < 1;
+
+  if (!isActive && !isOutgoing) {
+    return HIDDEN_COOKIE_POSE;
+  }
+
+  const dir = state.direction;
+  let dx = 0;
+  let bankY = 0;
+  let settled = 1;
+
+  if (isActive) {
+    if (state.outgoing !== -1 && rollProgress < 1) {
+      const u = ease.cubicOut(rollProgress);
+      const startOffset = dir > 0 ? enterTravelX : -exitTravelX;
+      dx = mix(startOffset, 0, u);
+      bankY = -24 * dir * arch(u);
+      settled = ease.cubicOut(clamp((u - 0.7) / 0.3, 0, 1));
     }
+  } else {
+    const u = ease.cubicIn(rollProgress);
+    const endOffset = dir > 0 ? -exitTravelX : enterTravelX;
+    dx = mix(0, endOffset, u);
+    bankY = 24 * dir * arch(u);
+    settled = 1 - ease.cubicIn(clamp(u / 0.3, 0, 1));
+  }
 
-    const isActive = zone === state.active;
-    const isOutgoing = zone === state.outgoing && rollProgress < 1;
+  const entryCalm = zone === 0 ? clamp((scrollY - stageTop) / 40, 0, 1) : 1;
+  const tiltWeight = settled * entryCalm;
+  const pdx = context ? pointerDeltaX(context.time, context.events) : 0;
+  const pdy = context ? pointerDeltaY(context.time, context.events) : 0;
+  const rollRadius = JAR_METRICS.cookieRadius * fitScale;
+  const rotation = -(dx / rollRadius) * (180 / Math.PI);
 
-    if (!isActive && !isOutgoing) {
-      return {
-        x: center.x,
-        y: center.y,
-        z: PARKED_Z,
-        rotation: 0,
-        rotationX: 0,
-        rotationY: 0,
-        scale: fitScale,
-      };
-    }
-
-    const dir = state.direction;
-    let dx = 0;
-    let bankY = 0;
-    let settled = 1;
-
-    if (isActive) {
-      if (state.outgoing !== -1 && rollProgress < 1) {
-        const u = ease.cubicOut(rollProgress);
-        const startOffset = dir > 0 ? enterTravelX : -exitTravelX;
-        dx = mix(startOffset, 0, u);
-        bankY = -24 * dir * arch(u);
-        settled = ease.cubicOut(clamp((u - 0.7) / 0.3, 0, 1));
-      }
-    } else {
-      const u = ease.cubicIn(rollProgress);
-      const endOffset = dir > 0 ? -exitTravelX : enterTravelX;
-      dx = mix(0, endOffset, u);
-      bankY = 24 * dir * arch(u);
-      settled = 1 - ease.cubicIn(clamp(u / 0.3, 0, 1));
-    }
-
-    const entryCalm = zone === 0 ? clamp((scrollY - stageTop) / 40, 0, 1) : 1;
-    const tiltWeight = settled * entryCalm;
-    const pdx = context ? pointerDeltaX(context.time, context.events) : 0;
-    const pdy = context ? pointerDeltaY(context.time, context.events) : 0;
-    const rollRadius = JAR_METRICS.cookieRadius * fitScale;
-    const rotation = -(dx / rollRadius) * (180 / Math.PI);
-
-    return {
-      x: center.x + dx,
-      y: center.y,
-      z: center.z,
-      rotation,
-      rotationX: pdy * 16 * tiltWeight,
-      rotationY: bankY + pdx * 22 * tiltWeight,
-      scale: fitScale,
-    };
-  });
-}
+  return {
+    x: center.x + dx,
+    y: center.y,
+    z: center.z,
+    rotation,
+    rotationX: pdy * 16 * tiltWeight,
+    rotationY: bankY + pdx * 22 * tiltWeight,
+    scale: fitScale,
+  };
+});
 
 let builder: SceneBuilder = sceneBuilder()
   .element(spotlightStage)
   .element(slotFlavorCookie)
   .element(flavorShadow)
-  .motion(flavorShadowMotion);
+  .motion(flavorShadowMotion)
+  .element(object(CAST.flavorCookies, { parts: true }))
+  .motion(flavorCookiesMotion)
+  .show([spotlightStage.top, spotlightStage.end])
+  .limits({ jump: 0.9, turn: 45 });
 
 for (const item of FLAVOR_ITEMS) {
   builder = builder
@@ -320,10 +303,7 @@ for (const item of FLAVOR_ITEMS) {
     .element(box(item.note))
     .motion(copyRevealMotion(item.zone, 16, -14))
     .element(box(item.dot))
-    .motion(dotMotion(item.zone))
-    .element(object(item.cookie))
-    .motion(flavorCookieMotion(item.zone))
-    .limits({ jump: 0.9, turn: 45 });
+    .motion(dotMotion(item.zone));
 }
 
 export const spotlightScene: SceneBuilder = builder;
