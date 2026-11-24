@@ -1,9 +1,8 @@
-import { clamp, ease, seeded } from "@gerak/core";
+import { clamp, ease } from "@gerak/core";
 import { mount, ready } from "@gerak/dom";
 import { restReader } from "@gerak/stage";
 import {
   BUILDER_CAPACITY,
-  BUILDER_EXIT_POOL,
   BUILDER_JAR_PRICE,
   BUILDER_MIN_SEAL,
   FLAVORS,
@@ -23,6 +22,7 @@ import {
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
+import { builderState, type BuilderState } from "./scene-builder.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
 
@@ -96,12 +96,6 @@ async function bootstrap(): Promise<void> {
     applyActiveFlavor(lastActiveZone === -1 ? 3 : lastActiveZone);
   };
 
-  const jarSlots: SpotlightZone[] = [];
-  let sealed = false;
-  let sealId = 0;
-  let exitPoolCursor = 0;
-  let mixCounter = 0;
-
   const jarPills = Array.from(document.querySelectorAll(".jar-pill"));
   const builderCountEl = document.querySelector("[data-builder-count]");
   const builderTotalEl = document.querySelector("[data-builder-total]");
@@ -131,7 +125,9 @@ async function bootstrap(): Promise<void> {
     }
   };
 
-  const syncJarUi = (): void => {
+  const syncJarUi = (jar: BuilderState): void => {
+    const { sealed } = jar;
+    const jarSlots = jar.slots.map((slot) => slot.flavor);
     const count = jarSlots.length;
     const isFull = count >= BUILDER_CAPACITY;
     const canSeal = !sealed && count >= BUILDER_MIN_SEAL;
@@ -246,116 +242,47 @@ async function bootstrap(): Promise<void> {
     }
   };
 
+  const syncJarModels = (jar: BuilderState): void => {
+    jar.slots.forEach((slot, index) => models.setBuilderCookieFlavor(index, slot.flavor));
+    for (const exit of jar.exiting) models.setBuilderExitCookieFlavor(exit.poolSlot, exit.flavor);
+  };
+
+  const stopJar = mounted.player.observe(builderState, (next) => {
+    syncJarModels(next);
+    syncJarUi(next);
+  });
+  const jarNow = (): BuilderState => builderState(mounted.driver.now(), mounted.events());
+
   const addFlavorToJar = (zone: SpotlightZone): void => {
-    if (sealed || jarSlots.length >= BUILDER_CAPACITY) {
-      return;
-    }
-    const slotIndex = jarSlots.length;
-    models.setBuilderCookieFlavor(slotIndex, zone);
-    jarSlots.push(zone);
+    const jar = jarNow();
+    if (jar.sealed || jar.slots.length >= BUILDER_CAPACITY) return;
     mounted.send(JAR_ADD_EVENT, zone);
-    syncJarUi();
   };
 
   const removeFlavorFromJar = (zone: SpotlightZone): void => {
-    if (sealed) {
-      return;
-    }
-    const removeIdx = jarSlots.lastIndexOf(zone);
-    if (removeIdx === -1) {
-      return;
-    }
-    models.setBuilderExitCookieFlavor(exitPoolCursor % BUILDER_EXIT_POOL, zone);
-    exitPoolCursor += 1;
-    jarSlots.splice(removeIdx, 1);
-    for (let k = 0; k < jarSlots.length; k += 1) {
-      const flavor = jarSlots[k];
-      if (flavor !== undefined) {
-        models.setBuilderCookieFlavor(k, flavor);
-      }
-    }
+    const jar = jarNow();
+    const removeIdx = jar.slots.map((slot) => slot.flavor).lastIndexOf(zone);
+    if (jar.sealed || removeIdx === -1) return;
     mounted.send(JAR_REMOVE_EVENT, removeIdx);
-    syncJarUi();
-  };
-
-  const buildSmartMix = (
-    targetCount: number,
-    seedBase: number,
-    previous: readonly SpotlightZone[],
-  ): SpotlightZone[] => {
-    const rand = seeded(seedBase);
-    const pool: SpotlightZone[] = [...SPOTLIGHT_ZONES];
-    for (let i = pool.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(rand() * (i + 1));
-      const a = pool[i];
-      const b = pool[j];
-      if (a !== undefined && b !== undefined) {
-        pool[i] = b;
-        pool[j] = a;
-      }
-    }
-    const next: SpotlightZone[] = [];
-    for (let i = 0; i < targetCount; i += 1) {
-      const pick = pool[i % pool.length] ?? 0;
-      next.push(pick);
-    }
-    if (previous.length === targetCount && targetCount > 0) {
-      let unchanged = true;
-      for (let i = 0; i < targetCount; i += 1) {
-        if (next[i] !== previous[i]) {
-          unchanged = false;
-          break;
-        }
-      }
-      if (unchanged) {
-        const first = next[0] ?? 0;
-        const rotated = SPOTLIGHT_ZONES[(first + 1) % SPOTLIGHT_ZONES.length] ?? 0;
-        next[0] = rotated;
-      }
-    }
-    return next;
   };
 
   const fillBakersMix = (): void => {
-    if (sealed) {
-      return;
-    }
-    mixCounter += 1;
-    const targetCount = jarSlots.length === 0 ? BUILDER_CAPACITY : jarSlots.length;
-    const nextFlavors = buildSmartMix(targetCount, mixCounter * 97, jarSlots);
-    jarSlots.length = 0;
-    for (let k = 0; k < nextFlavors.length; k += 1) {
-      const flavor = nextFlavors[k] ?? 0;
-      jarSlots.push(flavor);
-      models.setBuilderCookieFlavor(k, flavor);
-    }
-    mounted.send(JAR_MIX_EVENT, targetCount);
-    syncJarUi();
+    const jar = jarNow();
+    if (jar.sealed) return;
+    mounted.send(JAR_MIX_EVENT, jar.slots.length === 0 ? BUILDER_CAPACITY : jar.slots.length);
   };
 
   const clearJar = (): void => {
-    if (sealed || jarSlots.length === 0) {
-      return;
-    }
-    jarSlots.length = 0;
+    const jar = jarNow();
+    if (jar.sealed || jar.slots.length === 0) return;
     mounted.send(JAR_RESET_EVENT, 0);
-    syncJarUi();
   };
 
   const toggleSealJar = (): void => {
-    if (!sealed && jarSlots.length >= BUILDER_MIN_SEAL) {
-      sealed = true;
-      sealId += 1;
-      mounted.send(JAR_SEAL_EVENT, sealId);
-      syncJarUi();
-    } else if (sealed) {
-      sealed = false;
-      mounted.send(JAR_UNSEAL_EVENT, 0);
-      syncJarUi();
-    }
+    const jar = jarNow();
+    if (jar.sealed) mounted.send(JAR_UNSEAL_EVENT, 0);
+    else if (jar.slots.length >= BUILDER_MIN_SEAL) mounted.send(JAR_SEAL_EVENT, jar.sealId + 1);
   };
-
-  syncJarUi();
 
   const cleanupListeners: (() => void)[] = [];
   let scrollRafId: number | null = null;
@@ -540,6 +467,7 @@ async function bootstrap(): Promise<void> {
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("scroll", onScroll);
       unsubscribePlayer();
+      stopJar();
       for (const off of cleanupListeners) {
         off();
       }

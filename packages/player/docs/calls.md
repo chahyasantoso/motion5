@@ -7,6 +7,7 @@ A scene is `(time, events) => targets`; `play` runs it on a driver.
 ```ts
 const player = play(scene, clock(), { cues });
 player.on("catch", () => sound.play());
+const stop = player.observe(jarState, (jar) => renderJar(jar));
 
 const driver = manualDriver({ durationMs });
 play(scene, driver);

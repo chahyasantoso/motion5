@@ -258,6 +258,24 @@ export function useValue<T extends object, K extends keyof T, V>(
   );
 }
 
+/** Reads a signal over the player's time and events into a render, again only when it changes by `Object.is`.
+ * Define the signal outside the component; `undefined` before the player exists. */
+export function useSignal<T extends object, V>(
+  player: Player<T> | undefined,
+  signal: Signal<V>,
+): V | undefined {
+  const [held, setHeld] = useState<
+    { readonly player: Player<T>; readonly signal: Signal<V>; readonly value: V } | undefined
+  >(undefined);
+  useEffect(() => {
+    if (player === undefined) return undefined;
+    return player.observe(signal, (value) => setHeld({ player, signal, value }));
+  }, [player, signal]);
+  return held !== undefined && held.player === player && held.signal === signal
+    ? held.value
+    : undefined;
+}
+
 /** Logs the events of the element the ref lands on to `driver` as `target`'s; put it on an element that stays still. */
 export function useWatch(driver: EventDriver | undefined, target: string): RefCallback<Element> {
   const [element, setElement] = useState<Element | null>(null);

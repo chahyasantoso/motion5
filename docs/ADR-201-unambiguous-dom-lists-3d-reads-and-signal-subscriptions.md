@@ -1,4 +1,4 @@
-# ADR-201: Unambiguous DOM lists, generated cast modules, 3D reads & stage rig, and selector scroll actions
+# ADR-201: Unambiguous DOM lists, generated cast modules, 3D reads & stage rig, selector scroll actions, and signal subscriptions
 
 **Date:** 2026-11-24
 **Status:** Accepted, 2026-11-24
@@ -30,6 +30,10 @@ Five pieces of authoring and verification boilerplate kept recurring across mult
 5. Every Three.js piece re-implemented identical `Scene`, `PerspectiveCamera(lens.fov)`,
    `applyPose3d(camera, lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, and `threeBinder`
    setup boilerplate.
+
+6. Page UI outside the cast (counts, button `disabled`, mesh materials) had no way to follow a
+   scene's `state(...)`, so `apps/pieces/cookie/src/cookie-main.ts` kept a second mutable copy of
+   the jar beside the scene's `builderState`.
 
 ## Decision
 
@@ -86,6 +90,16 @@ Five pieces of authoring and verification boilerplate kept recurring across mult
      objects, resize, draw })`, adding zero preset lights, materials, meshes, tone mapping, or
      shadows (`ARCHITECTURE.md` §6 *no house look*).
 
+6. **Signal subscriptions (`@gerak/player`, `@gerak/react`).**
+   - `Player.observe(signal, listener)` calls `listener` with `signal(time, events)` at once and
+     after each step whose value differs by `Object.is`, before targets' subscribers, reading the
+     same merged, time-filtered events the scene reads, so a seek back undoes later events.
+   - `useSignal(player, signal)` in `@gerak/react` renders that value through `observe`.
+   - `Mounted` gains no `subscribe`: `mounted.player.observe` is the one path, since the player
+     alone knows which events the scene sees at a time.
+   - Scene state stays a `state(start, rule)` fold; page code sends events and renders what the
+     fold answers, never keeping a copy.
+
 ## Consequences
 
 - `box(..., { parts: true })` behaves consistently from `1` to `N` elements regardless of inner DOM
@@ -98,9 +112,13 @@ Five pieces of authoring and verification boilerplate kept recurring across mult
   `context.read(object)` and share one slot projection calculation via `slot3d` and `travel`,
   deleting custom projection helpers (`apps/pieces/cookie/src/space3d.ts`) and studio setup
   boilerplate via `createStage3d`.
+- Page UI and Three.js materials follow scene state through `player.observe`, so a piece keeps one
+  state machine; `cookie-main.ts` sends jar events and renders `builderState`.
 
 ## Amends
 
+- [ADR-154](./ADR-154-the-player.md): the player adds `observe(signal, listener)` beside per-target
+  `subscribe`, and `@gerak/react` adds `useSignal` beside `useValue`.
 - [ADR-197](./ADR-197-objects-in-a-scene.md): Decision 1 is amended so `context.read(object)`
   returns typed `Pose3d` (with runtime cycle refusal) and `slot3d` exposes single-owner
   world-unit slot projection, while raw string `context.read("name")` stays 2D-typed and refuses

@@ -14,6 +14,7 @@ const Letter = ({ player, i, char }: { player: Player<Frame> | undefined; i: num
   return <span ref={useTarget(player, "letters", render)}>{char}</span>;
 };
 const landed = useValue(playing?.player, "ball", (pose) => (pose.y ?? 0) === 0);
+const jar = useSignal(playing?.player, jarState);
 const hit = useWatch(playing?.driver, "card");
 const centre = centreIn(dot, stage);
 ```

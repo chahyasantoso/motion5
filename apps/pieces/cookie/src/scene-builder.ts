@@ -63,58 +63,66 @@ import {
   fallbackViewWidth,
   fitCookieSlot,
   fitJarSlot,
+  SPOTLIGHT_ZONES,
   isSpotlightZone,
   stickyRangeOf,
+  type SpotlightZone,
   unprojectFallback,
 } from "./contract.ts";
 import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 
 const createRapierWorld3d = await rapierEngine3d();
 
-const crumbSim = simulate(
-  createRapierWorld3d(),
-  (w) => {
-    w.setGravity(0, -9.8, 0);
-    w.addCollider(
-      "table",
-      { kind: "floor", y: JAR_MODEL_OFFSET_Y },
-      { restitution: 0.42, friction: 0.6 },
-    );
-  },
-  {
-    dt: 1 / 60,
-    checkpointMs: 500,
-    spawn: (event, spawner) => {
-      if (event.name !== JAR_SEAL_EVENT || typeof event.value !== "number" || event.value <= 0) {
-        return;
-      }
-      const sealId = Math.trunc(event.value);
-      for (let i = 0; i < BUILDER_CRUMB_COUNT; i += 1) {
-        const rand = seeded(sealId * 100 + i);
-        const angle = (i / BUILDER_CRUMB_COUNT) * Math.PI * 2 + (rand() - 0.5) * 0.45;
-        const radialSpeed = 0.75 + rand() * 1.15;
-        const vy = 2.2 + rand() * 1.9;
-        const radius = 0.024 + (i % 3) * 0.008;
-        spawner.addBody({
-          id: `crumb-${sealId}-${i}`,
-          shape: { kind: "sphere", radius },
-          x: Math.cos(angle) * 0.14,
-          y: 0.56 + JAR_MODEL_OFFSET_Y,
-          z: Math.sin(angle) * 0.14,
-          vx: Math.cos(angle) * radialSpeed,
-          vy,
-          vz: Math.sin(angle) * radialSpeed,
-          wx: (rand() - 0.5) * 720,
-          wy: (rand() - 0.5) * 720,
-          wz: (rand() - 0.5) * 720,
-          restitution: 0.42,
-          friction: 0.6,
-          drag: 0.2,
-        });
-      }
+function crumbSimulation() {
+  return simulate(
+    createRapierWorld3d(),
+    (w) => {
+      w.setGravity(0, -9.8, 0);
+      w.addCollider(
+        "table",
+        { kind: "floor", y: JAR_MODEL_OFFSET_Y },
+        { restitution: 0.42, friction: 0.6 },
+      );
     },
-  },
-);
+    {
+      dt: 1 / 60,
+      checkpointMs: 500,
+      spawn: (event, spawner) => {
+        if (event.name !== JAR_SEAL_EVENT || typeof event.value !== "number" || event.value <= 0) {
+          return;
+        }
+        const sealId = Math.trunc(event.value);
+        for (let i = 0; i < BUILDER_CRUMB_COUNT; i += 1) {
+          const rand = seeded(sealId * 100 + i);
+          const angle = (i / BUILDER_CRUMB_COUNT) * Math.PI * 2 + (rand() - 0.5) * 0.45;
+          const radialSpeed = 0.75 + rand() * 1.15;
+          const vy = 2.2 + rand() * 1.9;
+          const radius = 0.024 + (i % 3) * 0.008;
+          spawner.addBody({
+            id: `crumb-${sealId}-${i}`,
+            shape: { kind: "sphere", radius },
+            x: Math.cos(angle) * 0.14,
+            y: 0.56 + JAR_MODEL_OFFSET_Y,
+            z: Math.sin(angle) * 0.14,
+            vx: Math.cos(angle) * radialSpeed,
+            vy,
+            vz: Math.sin(angle) * radialSpeed,
+            wx: (rand() - 0.5) * 720,
+            wy: (rand() - 0.5) * 720,
+            wz: (rand() - 0.5) * 720,
+            restitution: 0.42,
+            friction: 0.6,
+            drag: 0.2,
+          });
+        }
+      },
+    },
+  );
+}
+
+const crumbSim = crumbSimulation();
+// Runs one burst on a spare world at load, so the physics engine's first-contact code is ready before a seal.
+crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [{ name: JAR_SEAL_EVENT, at: 0, value: 1 }]);
 
 const {
   stageCanvas,
@@ -148,23 +156,26 @@ const sealPeek = shared(
 type BuilderSlotAnimKind = "enter" | "shuffle";
 type SealTransitionKind = "none" | "sealing" | "unsealing";
 
-interface BuilderSlotEntry {
+export interface BuilderSlotEntry {
+  readonly flavor: SpotlightZone;
   readonly animKind: BuilderSlotAnimKind;
   readonly animStartMs: number;
   readonly prevSlotIndex: number;
   readonly shiftedAtMs: number;
 }
 
-interface BuilderExitEntry {
+export interface BuilderExitEntry {
+  readonly flavor: SpotlightZone;
   readonly poolSlot: number;
   readonly fromSlotIndex: number;
   readonly startedAtMs: number;
 }
 
-interface BuilderState {
+export interface BuilderState {
   readonly slots: readonly BuilderSlotEntry[];
   readonly exiting: readonly BuilderExitEntry[];
   readonly nextExitPool: number;
+  readonly mixes: number;
   readonly sealed: boolean;
   readonly sealId: number;
   readonly sealTransitionKind: SealTransitionKind;
@@ -174,6 +185,7 @@ const INITIAL_BUILDER_STATE: BuilderState = {
   slots: [],
   exiting: [],
   nextExitPool: 0,
+  mixes: 0,
   sealed: false,
   sealId: 0,
   sealTransitionKind: "none",
@@ -196,7 +208,33 @@ function pruneExiting(
   return kept;
 }
 
-const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event) => {
+/** A shuffled mix of `count` flavors from `seed`, never the same order as a full `previous` of that count. */
+function smartMix(
+  count: number,
+  seed: number,
+  previous: readonly SpotlightZone[],
+): SpotlightZone[] {
+  const rand = seeded(seed);
+  const pool: SpotlightZone[] = [...SPOTLIGHT_ZONES];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rand() * (i + 1));
+    const a = pool[i];
+    const b = pool[j];
+    if (a !== undefined && b !== undefined) {
+      pool[i] = b;
+      pool[j] = a;
+    }
+  }
+  const next: SpotlightZone[] = [];
+  for (let i = 0; i < count; i += 1) next.push(pool[i % pool.length] ?? 0);
+  const unchanged =
+    previous.length === count && count > 0 && next.every((zone, i) => zone === previous[i]);
+  if (unchanged) next[0] = SPOTLIGHT_ZONES[((next[0] ?? 0) + 1) % SPOTLIGHT_ZONES.length] ?? 0;
+  return next;
+}
+
+/** The jar: which flavor sits in each slot, which are leaving, and whether it is sealed. */
+export const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event) => {
   switch (event.name) {
     case JAR_ADD_EVENT: {
       if (
@@ -213,6 +251,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         slots: [
           ...current.slots,
           {
+            flavor: event.value,
             animKind: "enter",
             animStartMs: event.at,
             prevSlotIndex: nextIndex,
@@ -228,6 +267,8 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         return current;
       }
       const poolSlot = current.nextExitPool % BUILDER_EXIT_POOL;
+      const removed = current.slots[removeIndex];
+      if (removed === undefined) return current;
       const nextSlots: BuilderSlotEntry[] = [];
       for (let i = 0; i < current.slots.length; i += 1) {
         const slotEntry = current.slots[i];
@@ -250,6 +291,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         exiting: [
           ...pruneExiting(current.exiting, event.at, poolSlot),
           {
+            flavor: removed.flavor,
             poolSlot,
             fromSlotIndex: removeIndex,
             startedAtMs: event.at,
@@ -264,10 +306,17 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
       }
       const rawCount = typeof event.value === "number" ? Math.round(event.value) : BUILDER_CAPACITY;
       const targetCount = clamp(rawCount, 1, BUILDER_CAPACITY);
+      const mixes = current.mixes + 1;
+      const flavors = smartMix(
+        targetCount,
+        mixes * 97,
+        current.slots.map((slot) => slot.flavor),
+      );
       if (current.slots.length === 0) {
         const nextSlots: BuilderSlotEntry[] = [];
         for (let i = 0; i < targetCount; i += 1) {
           nextSlots.push({
+            flavor: flavors[i] ?? 0,
             animKind: "enter",
             animStartMs: event.at + i * 65,
             prevSlotIndex: i,
@@ -278,6 +327,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
           ...current,
           slots: nextSlots,
           exiting: pruneExiting(current.exiting, event.at),
+          mixes,
         };
       }
       const nextSlots: BuilderSlotEntry[] = [];
@@ -287,6 +337,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
           continue;
         }
         nextSlots.push({
+          flavor: flavors[i] ?? existing.flavor,
           animKind: "shuffle",
           animStartMs: event.at + i * 40,
           prevSlotIndex: i,
@@ -297,6 +348,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         ...current,
         slots: nextSlots,
         exiting: pruneExiting(current.exiting, event.at),
+        mixes,
       };
     }
     case JAR_SEAL_EVENT: {
@@ -332,6 +384,7 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         slots: [],
         exiting: [],
         nextExitPool: current.nextExitPool,
+        mixes: current.mixes,
         sealed: false,
         sealId: current.sealId,
         sealTransitionKind: "none",
