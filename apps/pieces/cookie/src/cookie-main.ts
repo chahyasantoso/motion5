@@ -247,35 +247,39 @@ async function bootstrap(): Promise<void> {
     for (const exit of jar.exiting) models.setBuilderExitCookieFlavor(exit.poolSlot, exit.flavor);
   };
 
-  let jar = builderState(mounted.player.time, mounted.events());
   const stopJar = mounted.player.observe(builderState, (next) => {
-    jar = next;
     syncJarModels(next);
     syncJarUi(next);
   });
+  const jarNow = (): BuilderState => builderState(mounted.driver.now(), mounted.events());
 
   const addFlavorToJar = (zone: SpotlightZone): void => {
+    const jar = jarNow();
     if (jar.sealed || jar.slots.length >= BUILDER_CAPACITY) return;
     mounted.send(JAR_ADD_EVENT, zone);
   };
 
   const removeFlavorFromJar = (zone: SpotlightZone): void => {
+    const jar = jarNow();
     const removeIdx = jar.slots.map((slot) => slot.flavor).lastIndexOf(zone);
     if (jar.sealed || removeIdx === -1) return;
     mounted.send(JAR_REMOVE_EVENT, removeIdx);
   };
 
   const fillBakersMix = (): void => {
+    const jar = jarNow();
     if (jar.sealed) return;
     mounted.send(JAR_MIX_EVENT, jar.slots.length === 0 ? BUILDER_CAPACITY : jar.slots.length);
   };
 
   const clearJar = (): void => {
+    const jar = jarNow();
     if (jar.sealed || jar.slots.length === 0) return;
     mounted.send(JAR_RESET_EVENT, 0);
   };
 
   const toggleSealJar = (): void => {
+    const jar = jarNow();
     if (jar.sealed) mounted.send(JAR_UNSEAL_EVENT, 0);
     else if (jar.slots.length >= BUILDER_MIN_SEAL) mounted.send(JAR_SEAL_EVENT, jar.sealId + 1);
   };
