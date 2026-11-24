@@ -30,7 +30,7 @@ storyboard before it, and shots in place of one idea.
   beat for each transition when it spans its own ms: `hookToStory: [2600, 3200]`.
 - Keep each shot's scene work local to its beat: one function per shot, written from 0, placed with `sequence`. A
   shot never reads another shot's time.
-- An element belongs to the shots it is seen in: `.show([hook, story])` shows it across both. A carried element's
+- An element belongs to the shots it is seen in: `.shows([hook, story])` shows it across both. A carried element's
   window spans both shots of its change.
 - B-roll is a cutaway to the piece's own material: a detail of the product, the hook's object from another side, a
   word from the script. Never borrowed footage and never another piece's members.

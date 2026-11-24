@@ -15,7 +15,7 @@ inside the motion.
 1. **A piece is a `sceneBuilder` chain.** Elements (`box`, `shape`, `text`, `many`, `group`) and beats (`beat`) are
    values made once with a unique name. `.element(e)` selects an element; `.motion(...)` appends motions to its list,
    `.modify(principle)` wraps everything above it, `.show(beat | [from, to])` sets when it exists, and `.limits(...)`
-   sets its review limits. An element may be selected again later.
+   sets its review limits. An element may be selected again later. **Superseded in part by [ADR-202](./ADR-202-subject-first-scenes.md), 2026-11-24.** A piece is `scene([options,] ...items)`; each element is bound once through `.moves`, `.modifies`, `.shows` and `.limits`, and `sceneBuilder` is deleted.
 2. **A motion is a core `Motion`:** a function of time with `.in(beat, ease?)`, `.loop(ms)`, `.take()` and
    `.ambient()`. Every move returns one. Motions on an element join by each field's rule; a take replaces its fields
    from its beat's start. Timing names beats only.

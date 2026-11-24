@@ -197,7 +197,7 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-190 — Stage v3, one member list and list poses by index — Accepted, 2026-11-18 — superseded in part
 - ADR-191 — Shapes and curves — Accepted, 2026-11-18
 - ADR-192 — Principles, plain moves and state — Accepted, 2026-11-19 — superseded in part
-- ADR-193 — Scene builder — Accepted, 2026-11-20
+- ADR-193 — Scene builder — Accepted, 2026-11-20 — superseded in part
 - ADR-194 — Pages — Accepted, 2026-11-20 — superseded in part
 - ADR-195 — Page frames run for a cause — Accepted, 2026-11-20
 - ADR-196 — The browser plays motion it can work out ahead of time — Accepted, 2026-11-20
@@ -206,3 +206,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-199 — Live compositor stability, cross-scene composition, responsive 3D and transitions — Accepted, 2026-11-24
 - ADR-200 — Scroll presence, 3D lists, cylinder physics, and multi-viewport checks — Accepted, 2026-11-24
 - ADR-201 — Unambiguous DOM lists, generated cast modules, 3D reads & stage rig, selector scroll actions, and signal subscriptions — Accepted, 2026-11-24
+- ADR-202 — Subject-first scenes — Accepted, 2026-11-24

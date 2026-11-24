@@ -4,7 +4,7 @@
 
 People and agents making multi-section 2D and 3D web pieces author markup, subject-first scene sentences, interactive UI state, and multi-viewport checks without hand-written cast dictionaries, manual 3D slot projection, duplicated mutable UI stores, stateful `.element(...)` builder cursors, or per-viewport pixel scroll numbers. The code removes the `count === 1` list-binding ambiguity in `@gerak/dom`, generates `<name>.cast.ts` modules from HTML and `Binder.casts()` via Vite watcher + deadlock-free `gerak measure`, adds 3D `context.read(object)` and `slot3d(...)` projection in `@gerak/stage`, adds `createStage3d(...)` in `@gerak/three`, adds `player.observe(signal, listener)` in `@gerak/player` (and `useSignal` in `@gerak/react`), adds selector-based scroll actions (`scroll:<selector>@ms`) and `--measure` refresh in `@gerak/tools`, and replaces `sceneBuilder().element(x).motion(...)` with subject-first `scene([options,] ...entries)` and `element.moves(...).modifies(...).shows(...).limits(...)` across the workspace.
 
-Status: planned 2026-11-24 on `feat/authoring-ergonomics` from `main` after PR #617 and PR #621 merged. Four pull requests in order.
+Status: PRs 1–3 merged as #622, #623 and #624; PR 4 on `feat/authoring-ergonomics-pr4`. Four pull requests in order.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 

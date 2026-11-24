@@ -6,7 +6,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
 
 ## The loop
 
-1. `npx gerak new <name> --three` writes a page (`<name>.html`), its entry, a React component and `<name>-scene.ts`, a `sceneBuilder`
+1. `npx gerak new <name> --three` writes a page (`<name>.html`), its entry, a React component and `<name>-scene.ts`, a `scene`
    piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast without repeating renderer/camera boilerplate, use `createStage3d(canvas, lens, { near?, far?, maxPixelRatio?, objects?, fallbackSize? })` (which wires an empty `Scene`, `PerspectiveCamera(lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, `dispose`, and `threeBinder`, adding zero preset lights, materials, tone mapping, or shadows) and pass `stage3d.binder` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
 2. Write the piece. An object takes motions that return `Pose3d`: `{ x, y, z, rotation, rotationX, rotationY,
    scale, scaleX, scaleY, scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px. A 2D motion
@@ -24,7 +24,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `mixPose3d` and stack them with `combine3d`. Both turn through real rotations, so a pose never flips when two axes
   turn. To spin past a full turn, mix the angle itself: `mixPose3d` takes the short way.
 - An object's motions stack as an element's do: layer motions combine by `combine3d`, a `.take()` motion replaces
-  its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.show(...)` (clock or scroll
+  its fields from the start of its window, `.in(beat, ease)` plays it over a beat, and `.shows(...)` (clock or scroll
   windows) drives visibility from `frameVisible(player.values)` on each step. A motion with no window gets the scene's
   time. A plain function `(time, context)`
   reads `context.time` and `context.events`, which `smear3d`, `velocity3d` and `trailTurn` take; a pose's

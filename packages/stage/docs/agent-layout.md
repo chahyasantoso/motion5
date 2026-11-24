@@ -13,11 +13,12 @@ The page's HTML and CSS own the layout. When a viewport resize, font load, DOM m
 
 ```ts
 import { ease } from "@gerak/core";
-import { box, carry, sceneBuilder } from "@gerak/stage";
+import { box, carry, scene } from "@gerak/stage";
 
-export default sceneBuilder({ length: 2500 })
-  .element(box("card", { watch: true }))
-  .motion(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" }));
+export default scene(
+  { length: 2500 },
+  box("card", { watch: true }).moves(carry({ ms: 450, ease: ease.cubicOut, mode: "scale" })),
+);
 ```
 
 - **Routes / absent boxes:** Members hidden (`display: none`) in the DOM report zero width/height and are omitted from scaling between visible/absent boxes.

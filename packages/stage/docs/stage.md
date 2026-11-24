@@ -7,13 +7,13 @@ Read this page whole before making a piece. It says how a piece is built and pla
 Three files under `<pieces>/<brief>/`:
 
 - `<pieces>/<brief>/<name>.html`: HTML and CSS own the look, layout, text, nesting and `transform-origin`, tagging animated elements with `data-cast="<name>"`.
-- `<pieces>/<brief>/src/<name>.ts`: `export default sceneBuilder(options).element(e).motion(m) ...` — only the cast names and their motion.
+- `<pieces>/<brief>/src/<name>.ts`: `export default scene(options, e.moves(m), ...)` — only the cast names and their motion.
 - `<pieces>/<brief>/src/<name>-main.ts`: `mount(scene, { clock, frame, root, binders, nodes })`.
 
 ```ts
 import { ease, motion, type Pose2d, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
-import { beat, box, sceneBuilder, stagger, text } from "@gerak/stage";
+import { beat, box, scene, stagger, text } from "@gerak/stage";
 
 const enter = beat("enter", 600);
 const card = box("card");
@@ -21,12 +21,12 @@ const dot = box("dot");
 const word = text("word", { split: "letters" });
 const rise = motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) }));
 
-export default sceneBuilder({ length: 1800 })
-  .element(card)
-  .element(dot)
-  .motion(drop({ distance: 80 }).in(enter, ease.cubicOut))
-  .element(word)
-  .motion(stagger(rise, { spread: 0.3 }).in(enter));
+export default scene(
+  { length: 1800 },
+  card,
+  dot.moves(drop({ distance: 80 }).in(enter, ease.cubicOut)),
+  word.moves(stagger(rise, { spread: 0.3 }).in(enter)),
+);
 ```
 
 `gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.ts` (`export const cast`, `DomCast`, `ObjectCast`, `CastName`, also synced on HTML save in `gerak live`); `live.html?scene=<name>` plays it in the live editor.
@@ -42,26 +42,33 @@ Each is a value with a unique name, made once. Multi-file pieces can import `{ c
 
 A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
-An element has one owner scene that gives it `.motion(...)`, `.show(...)` or `.limits(...)`; `sceneBuilder` refuses two scenes that claim ownership of the same element, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across `.include()` boundaries. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
+An element is bound once, in one scene: `scene` refuses an element bound twice, directly or through a sub-scene, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across sub-scenes. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
 ## Beats
 
-- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and `.show` windows use; `length` ends the piece later than its last beat (required for timed scenes with only scroll or trigger beats).
+- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and `.shows` windows use; `length` ends the piece later than its last beat (required for timed scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
 - Edges: every DOM element (`box`, `text`, `shape`) exposes `.top`, `.end`, `.pinStart` and `.pinEnd` scroll points on its measured box (with `.plus(px)`, `.minus(px)` and `.reached`); `.pinStart` and `.pinEnd` read sticky `minY`/`maxY` (falling back to `.top`/`.end`). A scroll or trigger beat that reads an edge adds a read-only reference to that element unless owned locally.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after. `smooth: true` or `smooth: { stiffness, damping }` maps `springTo(scroll.y)` instead, so the motion trails the scroll and settles on it; headless it reads `scroll.y`.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 
-Scenes can share beats, states and signals. `.include(scene)` merges another scene's elements, beats and motions onto this one's clock; it refuses two elements of one name, and a scene that sets `cues` or `length`, which only the mounted scene sets.
+Scenes can share beats, states and signals. A scene passed to `scene(...)` as an item merges its elements, beats and motions onto the new one's clock; it refuses two elements of one name, a sub-scene taken in twice, and a sub-scene that sets `cues` or `length`, which only the mounted scene sets.
 
-## The chain
+## A scene
 
-- `.element(e)` selects an element; it may be selected again later.
-- `.motion(...)` appends motions to its list; `.modify(principle)` wraps everything above it in the list.
-- `.show(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
-- `.limits({ jump, turn, ratio })` sets its review limits.
+`scene([options,] ...items)` makes a piece; `options` is `{ name?, length?, cues? }`. Each item is one of:
 
-Only `.motion` and `.modify` order matters.
+- a binding: `e.moves(...)`, `e.modifies(...)`, `e.shows(...)` or `e.limits(...)`, chained in any order;
+- an element with no motion, such as a slot or a section another motion reads;
+- another scene, merged onto this one's clock.
+
+On an element, and on each binding it returns:
+
+- `.moves(...)` appends motions to its list; `.modifies(principle)` wraps every motion written before it.
+- `.shows(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
+- `.limits({ jump, turn, ratio })` sets its review limits; each field once.
+
+Each call returns a new binding and never changes the element, so a list spreads: `scene(options, ...cards.map((card) => card.moves(rise)))`. Only the order of `.moves` and `.modifies` matters.
 
 ## Motions
 
@@ -93,7 +100,7 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 
 ## Events and re-measure
 
-- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in `sceneBuilder` options script them.
+- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in `scene`'s options script them.
 - When page CSS or viewport changes and the mount re-measures (`ResizeObserver`, `resize`, font load, or `mounted.remeasure()`), `carry` transitions any element whose rest box moved from its old box to its new one.
 
 ## Checking

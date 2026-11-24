@@ -38,8 +38,8 @@ On `main`, earlier 3D pieces (`avatar-3d`, `dragon-intro`) loaded `dragonling.gl
 | `src/contract.ts` | Pure data, types & sticky slot helpers: `CastName`, `DomCast`, and `ObjectCast` (re-exported from `../cookie.cast.ts`), `FLAVORS`, `STAGE_SIZE`, `LENS`, `JAR_METRICS`, `stickyRangeOf`, `fitJarSlot`, `fitCookieSlot`. No DOM or Three.js. |
 | `src/world-studio.ts` | Configures `createStage3d` (`LENS`, `STAGE_SIZE`, `objects`), ACES filmic tone mapping, shadows, and 3-point sunlit studio lights. |
 | `src/world-models.ts` | `GLTFLoader` loading for jar & cookie `.glb`s, sunlit `JarGlass` `MeshPhysicalMaterial`, jar-attached `ShadowMaterial` disc, and `roots` + `objects` assembly (producer of 3D `objects`, independent of cast files). |
-| `src/scene-hero.ts` | Pure `sceneBuilder()` fragment for the hero entrance and jar settle (no `length` or `cues`). |
-| `src/cookie.ts` | Root piece entry exporting `size`, `lens`, and `default` `sceneBuilder` combining section scenes via `.include()`. |
+| `src/scene-hero.ts` | Pure `scene(...)` fragment for the hero entrance and jar settle (no `length` or `cues`). |
+| `src/cookie.ts` | Root piece entry exporting `size`, `lens`, and `default` `scene(...)` combining the section scenes as items. |
 | `src/cookie-main.ts` | Page bootstrap: `ready()`, `loadCookieWorld()` + `createCookieStudio()`, `mount` with `studio.binder`, interactive jar controls. |
 
 ## Roadmap (Order A: Hero Jar → Rolling Flavour Spotlight → Craft → Builder → Closing)
