@@ -73,50 +73,56 @@ import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 
 const createRapierWorld3d = await rapierEngine3d();
 
-const crumbSim = simulate(
-  createRapierWorld3d(),
-  (w) => {
-    w.setGravity(0, -9.8, 0);
-    w.addCollider(
-      "table",
-      { kind: "floor", y: JAR_MODEL_OFFSET_Y },
-      { restitution: 0.42, friction: 0.6 },
-    );
-  },
-  {
-    dt: 1 / 60,
-    checkpointMs: 500,
-    spawn: (event, spawner) => {
-      if (event.name !== JAR_SEAL_EVENT || typeof event.value !== "number" || event.value <= 0) {
-        return;
-      }
-      const sealId = Math.trunc(event.value);
-      for (let i = 0; i < BUILDER_CRUMB_COUNT; i += 1) {
-        const rand = seeded(sealId * 100 + i);
-        const angle = (i / BUILDER_CRUMB_COUNT) * Math.PI * 2 + (rand() - 0.5) * 0.45;
-        const radialSpeed = 0.75 + rand() * 1.15;
-        const vy = 2.2 + rand() * 1.9;
-        const radius = 0.024 + (i % 3) * 0.008;
-        spawner.addBody({
-          id: `crumb-${sealId}-${i}`,
-          shape: { kind: "sphere", radius },
-          x: Math.cos(angle) * 0.14,
-          y: 0.56 + JAR_MODEL_OFFSET_Y,
-          z: Math.sin(angle) * 0.14,
-          vx: Math.cos(angle) * radialSpeed,
-          vy,
-          vz: Math.sin(angle) * radialSpeed,
-          wx: (rand() - 0.5) * 720,
-          wy: (rand() - 0.5) * 720,
-          wz: (rand() - 0.5) * 720,
-          restitution: 0.42,
-          friction: 0.6,
-          drag: 0.2,
-        });
-      }
+function crumbSimulation() {
+  return simulate(
+    createRapierWorld3d(),
+    (w) => {
+      w.setGravity(0, -9.8, 0);
+      w.addCollider(
+        "table",
+        { kind: "floor", y: JAR_MODEL_OFFSET_Y },
+        { restitution: 0.42, friction: 0.6 },
+      );
     },
-  },
-);
+    {
+      dt: 1 / 60,
+      checkpointMs: 500,
+      spawn: (event, spawner) => {
+        if (event.name !== JAR_SEAL_EVENT || typeof event.value !== "number" || event.value <= 0) {
+          return;
+        }
+        const sealId = Math.trunc(event.value);
+        for (let i = 0; i < BUILDER_CRUMB_COUNT; i += 1) {
+          const rand = seeded(sealId * 100 + i);
+          const angle = (i / BUILDER_CRUMB_COUNT) * Math.PI * 2 + (rand() - 0.5) * 0.45;
+          const radialSpeed = 0.75 + rand() * 1.15;
+          const vy = 2.2 + rand() * 1.9;
+          const radius = 0.024 + (i % 3) * 0.008;
+          spawner.addBody({
+            id: `crumb-${sealId}-${i}`,
+            shape: { kind: "sphere", radius },
+            x: Math.cos(angle) * 0.14,
+            y: 0.56 + JAR_MODEL_OFFSET_Y,
+            z: Math.sin(angle) * 0.14,
+            vx: Math.cos(angle) * radialSpeed,
+            vy,
+            vz: Math.sin(angle) * radialSpeed,
+            wx: (rand() - 0.5) * 720,
+            wy: (rand() - 0.5) * 720,
+            wz: (rand() - 0.5) * 720,
+            restitution: 0.42,
+            friction: 0.6,
+            drag: 0.2,
+          });
+        }
+      },
+    },
+  );
+}
+
+const crumbSim = crumbSimulation();
+// Runs one burst on a spare world at load, so the physics engine's first-contact code is ready before a seal.
+crumbSimulation().at(liveAt(BUILDER_CRUMB_MS), [{ name: JAR_SEAL_EVENT, at: 0, value: 1 }]);
 
 const {
   stageCanvas,
