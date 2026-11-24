@@ -2,7 +2,7 @@
 
 ## Goal
 
-People and agents making multi-section 2D and 3D web pieces author markup, subject-first scene sentences, interactive UI state, and multi-viewport checks without hand-written cast dictionaries, manual 3D slot projection, duplicated mutable UI stores, stateful `.element(...)` builder cursors, or per-viewport pixel scroll numbers. The code removes the `count === 1` list-binding ambiguity in `@gerak/dom`, generates `<name>.cast.ts` modules from HTML and `Binder.casts()` via Vite watcher + deadlock-free `gerak measure`, adds 3D `context.read(object)` and `slot3d(...)` projection in `@gerak/stage`, adds `createStage3d(...)` in `@gerak/three`, adds `mounted.subscribe(signal, listener)` in `@gerak/dom` (and `useSignal` in `@gerak/react`), adds selector-based scroll actions (`scroll:<selector>@ms`) and `--measure` refresh in `@gerak/tools`, and replaces `sceneBuilder().element(x).motion(...)` with subject-first `scene([options,] ...entries)` and `element.moves(...).modifies(...).shows(...).limits(...)` across the workspace.
+People and agents making multi-section 2D and 3D web pieces author markup, subject-first scene sentences, interactive UI state, and multi-viewport checks without hand-written cast dictionaries, manual 3D slot projection, duplicated mutable UI stores, stateful `.element(...)` builder cursors, or per-viewport pixel scroll numbers. The code removes the `count === 1` list-binding ambiguity in `@gerak/dom`, generates `<name>.cast.ts` modules from HTML and `Binder.casts()` via Vite watcher + deadlock-free `gerak measure`, adds 3D `context.read(object)` and `slot3d(...)` projection in `@gerak/stage`, adds `createStage3d(...)` in `@gerak/three`, adds `player.observe(signal, listener)` in `@gerak/player` (and `useSignal` in `@gerak/react`), adds selector-based scroll actions (`scroll:<selector>@ms`) and `--measure` refresh in `@gerak/tools`, and replaces `sceneBuilder().element(x).motion(...)` with subject-first `scene([options,] ...entries)` and `element.moves(...).modifies(...).shows(...).limits(...)` across the workspace.
 
 Status: planned 2026-11-24 on `feat/authoring-ergonomics` from `main` after PR #617 and PR #621 merged. Four pull requests in order.
 
@@ -54,13 +54,13 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   - Adds **zero** lights, materials, meshes, tone-mapping presets, or shadows unless configured on `world` by the caller, preserving `ARCHITECTURE.md` §6 (*no house look*).
 - Adopt `createStage3d` in `apps/pieces/yuzu-3d/src/yuzu-3d-main.ts` and `apps/pieces/cookie/src/world-studio.ts`.
 
-### 5. Single-owner UI subscriptions (`@gerak/dom`, `@gerak/react`)
+### 5. Single-owner UI subscriptions (`@gerak/player`, `@gerak/react`)
 
 - Keep `@gerak/core`'s event-folded `state(start, rule)` as the sole owner of scene state (never mutable external stores inside scenes, preserving seek determinism, `transition`/`springTo` step history, and frame-exact rendering).
-- Add `mounted.subscribe<T>(signal: Signal<T>, listener: (value: T) => void): () => void` to `Mounted` in `packages/dom/src/mount.ts`:
-  - Evaluates `signal(player.time, driverEvents)` synchronously on registration and after every player step, calling `listener(next)` only when `!Object.is(next, previous)`.
-  - Add matching `useSignal<T>(player, signal)` in `@gerak/react` if absent, reading from the same player step.
-- Refactor `apps/pieces/cookie/` to export `builderState` from `src/scene-builder.ts` (including flavor per slot in `BuilderSlotEntry`) and drive `cookie-main.ts` UI text, pips, disabled buttons, and Three.js cookie flavor swaps from `mounted.subscribe(builderState, ...)`, deleting the duplicate mutable `jarSlots` / `sealed` state machine in `cookie-main.ts`.
+- Add `Player.observe<V>(signal: Signal<V>, listener: (value: V) => void): () => void` in `@gerak/player`, the one owner of which events a scene sees at a time; `Mounted` gains no facade and pages call `mounted.player.observe(...)`:
+  - Evaluates `signal(time, events)` with the scene's merged, time-filtered events on registration and after every step, before targets' subscribers, calling `listener(next)` only when `!Object.is(next, previous)`.
+  - Add `useSignal<V>(player, signal)` in `@gerak/react` over `observe`.
+- Refactor `apps/pieces/cookie/` to export `builderState` from `src/scene-builder.ts` (flavor per slot and per exiting cookie, and a `mixes` count seeding the smart mix) and drive `cookie-main.ts` UI text, pips, disabled buttons, and Three.js cookie flavor swaps from `mounted.player.observe(builderState, ...)`, deleting the duplicate mutable `jarSlots` / `sealed` state machine in `cookie-main.ts`.
 
 ### 6. Selector-based scroll actions and `--measure` refresh (`@gerak/tools`)
 
@@ -103,21 +103,21 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 | --- | --- | --- |
 | PR 1: Unambiguous DOM lists, generated cast modules & CLI actions | 1, 2, 6 | `box(..., { parts: true })` with 1 item binds the item (not its children) while non-parts `box` refuses `> 1` nodes; `<name>.cast.ts` exports `cast`, `DomCast`, `ObjectCast`, `CastName` via Vite HTML watcher + deadlock-free `gerak measure` + `Binder.casts()`; `scroll:<selector>@ms` works across `--sizes 1440x900,390x844`; `gerak review --measure` refreshes stale caches or missing cast modules; `cookie` adopts `cookie.cast.ts`, drops `CAST` from `contract.ts` and `CastName` from `world-models.ts`, and collapses 24 indexed DOM casts into 6 lists |
 | PR 2: 3D `context.read(object)`, `slot3d` & `createStage3d` | 3, 4 | `context.read(object)` composes 3D follower poses and refuses cycles; `slot3d` matches `travelled3d` across sticky/flow slots; `createStage3d` powers `yuzu-3d` and `cookie`; `cookie/src/space3d.ts` is deleted with zero visual regression |
-| PR 3: `mounted.subscribe(signal)` & single-owner `cookie` state | 5 | `mounted.subscribe(state, fn)` fires on initial mount, live events, and timed seeks; `cookie-main.ts` deletes its duplicate `jarSlots`/`sealed` store and syncs UI + 3D flavors purely from `builderState` |
+| PR 3: `player.observe(signal)` & single-owner `cookie` state | 5 | `mounted.player.observe(state, fn)` fires on initial mount, live events, and timed seeks; `cookie-main.ts` deletes its duplicate `jarSlots`/`sealed` store and syncs UI + 3D flavors purely from `builderState` |
 | PR 4: Subject-first `scene(...)` & `element.moves(...)` across workspace | 7 | `scene([options,] ...entries)` and `x.moves(...).modifies(...).shows(...).limits(...)` replace `sceneBuilder` / `.element` / `.include` across packages, pieces, examples, scaffolds, skills, and docs with zero frame diff |
 
 ## Tests first, per slice
 
 - PR 1: `box("cards", { parts: true })` with a single `<article data-cast="cards"><h3>Title</h3><p>Body</p></article>` binds `[article]` (`count === 1`), non-parts `box("cards")` matching `> 1` nodes throws naming `parts: true`, while `text("headline", { split: "words" })` still splits/binds child spans; `options.nodes` with a 1-element array binds that element; `Binder.casts()` reports `objects` + bound lists and `mount` publishes it before validation errors; `scanHtmlCasts`, `formatCastModule`, `syncHtmlCastFile`, Vite HTML watcher, and `gerak measure` emit deterministic `<name>.cast.ts` (still updating `.cast.ts` even when `mount()` throws or async `ready()` rejects); `parseActions` parses `scroll:#sec@200`, `scroll:#section-1@200`, `scroll:[data-cast="sec"]+40@200`, and `scroll:800@200`, failing fast when a selector is absent or invalid on the page; `gerak review --measure` updates a stale cache and reviews cleanly.
 - PR 2: `context.read(leaderObj)` returns `Pose3d` at current and offset times and throws `RangeError` on 2D/3D read cycles; `slot3d(slot, view, ctx, { fit: "contain" })` returns identical `{ center, scale }` to `travel({ to: slot, fit: "contain" })` across flow, fixed, and sticky placements; `createStage3d` syncs camera FOV/pose to `lens`, resizes cleanly, and registers `threeBinder`.
-- PR 3: `mounted.subscribe(counterState, fn)` invokes `fn` once initially, skips unchanged frames (`Object.is`), fires on `mounted.send(...)`, and rewinds cleanly when a `"timed"` driver seeks backward; `useSignal` matches in React.
+- PR 3: `player.observe(counterState, fn)` invokes `fn` once initially, skips unchanged frames (`Object.is`), fires on a logged event, runs before targets' subscribers, and rewinds cleanly when a `"timed"` driver seeks backward; `useSignal` matches in React.
 - PR 4: `x.moves(...)` never mutates `x`; `card.moves(a).modifies(p).moves(b).shows(w).limits(l)` preserves layering, `.take()`, principle wrapping, show windows, and duplicate-limit refusal; `scene({ name }, subA, subB, staticEl)` merges sub-scenes onto one clock and refuses duplicate ownership across entries; type test verifies `object` `.moves(...)` rejects 2D-only motions (except `travel`) and `box` `.moves(...)` rejects `Pose3d` motions.
 
 ## Proof and measure
 
 - PR 1: `apps/pieces/cookie/` adopts `cookie.cast.ts` across all 5 section scenes, drops `CastName` from `world-models.ts`, drops 24 indexed DOM cast entries down to 6 `parts: true` lists, and deletes `CAST` / `CastNames` from `src/contract.ts`; `gerak review apps/pieces/cookie/src/cookie.ts` and `gerak check cookie/cookie.html --sizes 1440x900,390x844 --action 'scroll:[data-cast="builderStage"]@400'` pass on both viewports.
 - PR 2: `apps/pieces/cookie/src/space3d.ts` is deleted; desktop (`1440x900`) and mobile (`390x844`) `gerak frames` across hero, spotlight, craft, builder, and closing match pre-refactor framing.
-- PR 3: `apps/pieces/cookie/src/cookie-main.ts` shrinks by ~150 lines with zero mutable `jarSlots`/`sealed` duplication, passing `gerak review apps/pieces/cookie/src/cookie.ts --to 5200 --events ...` and `gerak fps cookie/cookie.html --to 3500 --action ...` (`worst < 50 ms`, `pageErrors: []`).
+- PR 3: `apps/pieces/cookie/src/cookie-main.ts` shrinks by ~75 lines with zero mutable `jarSlots`/`sealed` duplication, passing `gerak review apps/pieces/cookie/src/cookie.ts --to 5200 --events ...` and `gerak fps cookie/cookie.html --to 3500 --action ...` (`worst < 50 ms`, `pageErrors: []`).
 - PR 4: sampled frames and `gerak review` outputs across `apps/pieces/` and `apps/examples/` match their pre-PR-4 baselines identically; `npm run check` and `npm run pack:check` pass with zero remaining references to `sceneBuilder` in live code or docs.
 
 ## Docs and record
