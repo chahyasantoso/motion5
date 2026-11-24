@@ -7,7 +7,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
 ## The loop
 
 1. `npx gerak new <name> --three` writes a page (`<name>.html`), its entry, a React component and `<name>-scene.ts`, a `sceneBuilder`
-   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast, pass `binders: [threeBinder(world, { objects, draw })]` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
+   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast, pass `binders: [threeBinder(world, { objects, resize, draw })]` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
 2. Write the piece. An object takes motions that return `Pose3d`: `{ x, y, z, rotation, rotationX, rotationY,
    scale, scaleX, scaleY, scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px. A 2D motion
    on an object, or a 3D one on a box, does not compile.
@@ -30,7 +30,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `opacity` never sets `visible`.
 - An object's origin is the `Object3D`'s origin. To turn or squash about another point, place the mesh in a parent `THREE.Group` and pose the parent.
 - Every 2D move works in 3D through `lift2d(pose, { unitsPerPx })`: it scales px to units and flips y.
-- `threeBinder(world, { objects?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`. For an `Object3D`, its position when bound is its rest, and turns and scales are written whole. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
+- `threeBinder(world, { objects?, resize?, draw? })` matches each scene `object` by `world.getObjectByName(name)` or by the override map `objects[name]`, invokes optional `resize` before initial `measure()` and inside `remeasure()` before measuring DOM and 3D bounds, and measures local `Box3` rest `{ width, height, depth }` per bound `Object3D` via `.measure()`. For an `Object3D`, its position when bound is its rest, and turns and scales are written whole. `objects` also accepts a writer `(pose, visible) => void` for anything not posed whole, such as a bone, or a model whose `custom` numbers drive morph targets
   (`(pose) => applyPose3d(model, pose, undefined, morphTargets(model))`). When passed in `mount`'s `binders`, every object must be claimed by exactly one binder or `mount` throws and names it. Many like objects are one object each; a chain that adds them in a loop holds
   its value as `let piece: SceneBuilder = sceneBuilder(...)`, since `.element` answers a narrower step each time.
 
@@ -91,10 +91,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
   `follow({ start: 0, on: { mouthOpen: "value" } })(time, events)`, with the samples (`talk.json`, imported with
   `with { type: "json" }`) exported as `cues`. Morph targets are custom numbers: `morphTargets(gltf.scene)` from
   `"@gerak/three"` is the fourth argument to `applyPose3d`, and `pose.custom` names the targets, clamped to `[0, 1]`.
-- **Readiness:** a page that awaits an async asset before calling `mount` sets `window.__motionReady` to a promise before
-  anything awaits, resolves it once mounted and rendered synchronously
-  (never from `requestAnimationFrame`: the page tools pause the clock), and rejects it from the loader's error
-  callback, so the frame tools fail at once on a missing model instead of timing out.
+- **Readiness:** a page that awaits an async asset before calling `mount` registers `ready(bootstrap())` from `"@gerak/dom"`, warming shaders synchronously via `renderer.compile(world, camera)` + `draw()` + `renderer.getContext().finish()` (never `compileAsync` or `requestAnimationFrame`: timer-polled waits stall paused-clock page tools) so the promise settles right after mounting, and rejects from the loader's error callback, so the frame tools fail at once on a missing model instead of timing out.
 
 ## Bodies in depth
 
@@ -144,8 +141,8 @@ sample, review and scrub with everything else.
 - **Values that are not poses** (words shown, a lid's shut, a share): return them as `custom` numbers on a label's or
   an object's pose and read them on the page in `mounted.player.subscribe` or a writer; the review judges them as ratios.
 - **Onto a page slot:** an object with `object(name, { view: { canvas, lens } })`, where `canvas` is a box bound to
-  the page's canvas node and `lens` the page's lens, takes `travel({ to: slot })`: it moves to the slot's centre on
-  the canvas at the depth along the lens it starts from. `arc`, `fit` and `.take()` are for 2D elements, and its
+  the page's canvas node and `lens` the page's lens, takes `travel({ to: slot, fit? })`: it moves to the slot's centre on
+  the canvas at the depth along the lens it starts from, and `viewSize3d(lens, stage, depth)` from `"@gerak/core"` computes the viewport span in world units at that depth. `fit` accepts `"none"` (default) or `"contain"` (uniform scaling from `viewSize3d` and measured `rest.object(name)` bounds); `arc`, `fit: "fill"` and `.take()` are refused on objects, and its
   `Object3D` rests at the world origin, since its position is measured from there.
 - **Order on a step:** `threeBinder` writes and draws in one player listener, taken when it binds; a listener
   subscribed after it runs after the draw. The rest it reads is the `Object3D`'s position at that moment.

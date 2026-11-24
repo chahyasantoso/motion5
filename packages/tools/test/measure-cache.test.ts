@@ -63,10 +63,30 @@ describe("the measure cache", () => {
     const rest = restOfCache(read);
     expect(rest.get("card")).toEqual({ x: 50, y: 40, width: 100, height: 80 });
     expect(rest.keys()).toEqual(["card", "pin"]);
+    expect(rest.object("jar")).toBeUndefined();
     expect(readMeasureCache("{}")).toEqual({ reason: "`page` is not a string." });
     expect(
       readMeasureCache(cacheText("abc").replace('"kind":"flow"', '"kind":"floating"')),
     ).toEqual({ reason: 'the box of "card" is not a measured box.' });
+
+    const withObjects = readMeasureCache(
+      JSON.stringify({
+        ...JSON.parse(cacheText("abc")),
+        objects: { jar: { width: 1.2, height: 1.5, depth: 1.2 } },
+      }),
+    );
+    if ("reason" in withObjects) throw new Error(withObjects.reason);
+    expect(withObjects.objects).toEqual({ jar: { width: 1.2, height: 1.5, depth: 1.2 } });
+    expect(restOfCache(withObjects).object("jar")).toEqual({ width: 1.2, height: 1.5, depth: 1.2 });
+
+    expect(
+      readMeasureCache(
+        JSON.stringify({
+          ...JSON.parse(cacheText("abc")),
+          objects: { jar: { width: -1, height: 1, depth: 1 } },
+        }),
+      ),
+    ).toEqual({ reason: 'the bounds of object "jar" are not a measured 3D box.' });
   });
 
   it("refuses a builder scene whose page has no cache or changed, and reads a fresh one", async () => {

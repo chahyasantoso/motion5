@@ -24,6 +24,7 @@ import {
   type Content,
   type FrameOutput,
   type Member,
+  type ObjectBounds3d,
   type Rest,
   type RestAt,
   type RestReader,
@@ -179,12 +180,16 @@ export interface MountOptions {
   readonly binders?: readonly Binder[];
 }
 
-/** What draws a scene's object elements beside the mount: which it claims, and how it starts on the player. */
+/** What draws a scene's object elements beside the mount: claims, lifecycle start, optional resize and measure. */
 export interface Binder {
   /** Whether it draws the object element `name`. */
   claims(name: string): boolean;
   /** Writes what it claims from `player` on every step; returns the stop. */
   start(player: Player<StageValues>, stage: Stage): () => void;
+  /** Resizes the binder's surface before layout and 3D bounds are measured. */
+  readonly resize?: () => void;
+  /** Measures rest bounds `{ width, height, depth }` for the named bound 3D objects. */
+  readonly measure?: (names?: readonly string[]) => Readonly<Record<string, ObjectBounds3d>>;
 }
 
 /** Names each object element of `stage` that no binder, or more than one, claims. */
@@ -209,7 +214,7 @@ export interface MeasuredBox {
   readonly placement: BoxPlacement;
 }
 
-/** What a mount measured, as plain data: the frame, each rest box, each split's lines, each element's parent. */
+/** What a mount measured, as plain data: frame, rest boxes, split lines, element parents, and optional 3D sizes. */
 export interface Measurement {
   /** A fitted root's size, or the viewport's on a page. */
   readonly frame: { readonly width: number; readonly height: number };
@@ -217,6 +222,7 @@ export interface Measurement {
   readonly lines: Readonly<Record<string, readonly number[]>>;
   /** The nearest cast element holding each one, by name; an element with none is absent. */
   readonly parents: Readonly<Record<string, string>>;
+  readonly objects?: Readonly<Record<string, ObjectBounds3d>>;
 }
 
 /** Where every live mount on a page is listed, for the page tools that read what it measured. */
@@ -768,6 +774,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   };
 
   let currentRest: Rest = {};
+  let currentObjects: Readonly<Record<string, ObjectBounds3d>> = {};
   let currentReader: RestReader = restReader();
   let currentLines: Readonly<Record<string, readonly number[]>> = {};
   // The elements the engine runs while the browser plays the rest; undefined when it plays none.
@@ -965,8 +972,22 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       }
     }
 
+    const objectNames = stage.members
+      .filter((member) => member.kind === "object")
+      .map((member) => member.name);
+    const nextObjects: Record<string, ObjectBounds3d> = {};
+    if (objectNames.length > 0) {
+      for (const binder of binders) {
+        const claimed = objectNames.filter((name) => binder.claims(name));
+        if (claimed.length === 0) continue;
+        const measured = binder.measure?.(claimed);
+        if (measured === undefined) continue;
+        for (const [name, bounds] of Object.entries(measured)) nextObjects[name] = bounds;
+      }
+    }
     currentRest = Object.freeze(nextRest);
-    currentReader = restReader(currentRest);
+    currentObjects = Object.freeze(nextObjects);
+    currentReader = restReader(currentRest, currentObjects);
     currentLines = Object.freeze(nextLines);
   };
 
@@ -991,6 +1012,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     }
   }
 
+  const resizeBinders = (): void => {
+    for (const binder of binders) binder.resize?.();
+  };
+
+  resizeBinders();
   measure();
   const measures: RestAt[] = [{ at: 0, rest: currentReader }];
 
@@ -1490,6 +1516,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     cancelRemeasure();
     const prevRest = currentRest;
     if (forceHandOff) release();
+    resizeBinders();
     measure();
     const nextMaxScroll = readMaxScroll();
     if (!sameRest(prevRest, currentRest)) {
@@ -1579,7 +1606,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       if (parent !== undefined) parents[name] = parent;
     }
     const frame = fitted === undefined ? readViewport() : fittedSize(fitted);
-    return { frame, rest, lines: currentLines, parents };
+    return {
+      frame,
+      rest,
+      lines: currentLines,
+      parents,
+      ...(Object.keys(currentObjects).length === 0 ? {} : { objects: currentObjects }),
+    };
   };
 
   const listed: unknown = Reflect.get(globalThis, MOUNTS);

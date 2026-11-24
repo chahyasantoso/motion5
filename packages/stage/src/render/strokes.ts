@@ -53,6 +53,7 @@ function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): Res
       return Object.hasOwn(boxes, name);
     },
     keys: (): readonly string[] => keys,
+    object: () => undefined,
   });
 }
 

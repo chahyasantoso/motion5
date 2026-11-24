@@ -28,6 +28,7 @@ import {
   type Time,
   project3d,
   unproject3d,
+  viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
@@ -165,6 +166,7 @@ type Travel3dStep = {
   readonly kind: "travel3d";
   readonly run: TravelMotion;
   readonly view: ObjectView;
+  readonly fit: "none" | "contain";
   readonly span: Span | undefined;
   readonly window: InWindow | undefined;
   readonly loops: boolean;
@@ -191,6 +193,7 @@ interface State {
   readonly owner: SceneOwner;
   readonly options: SceneBuilderOptions;
   readonly elements: ReadonlyMap<string, SceneElement>;
+  readonly owned: ReadonlySet<string>;
   readonly order: readonly string[];
   readonly entries: ReadonlyMap<string, Entry>;
   readonly beats: ReadonlyMap<string, Beat>;
@@ -206,10 +209,15 @@ const READS = new WeakMap<object, readonly string[]>();
 const TRAVEL_TARGETS = new WeakMap<object, readonly Element[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
 const BELOW_POSE = new WeakMap<MotionContext, Pose2d>();
-/** An object's travel: its view and the pose under it, and the world position the travel answers. */
+/** An object's travel: its view, prior pose, fit mode, and resolved 3D target pose. */
 const OBJECT_TRAVEL = new WeakMap<
   MotionContext,
-  { readonly view: ObjectView; readonly below: Pose3d; out: Pose3d | undefined }
+  {
+    readonly view: ObjectView;
+    readonly below: Pose3d;
+    readonly fit: "none" | "contain";
+    out: Pose3d | undefined;
+  }
 >();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 
@@ -494,8 +502,8 @@ export interface TravelOptions {
   readonly to: Element;
   /** Perpendicular bow at mid-travel in px, 0 at both ends (default 0). */
   readonly arc?: number | undefined;
-  /** `"contain"` (default) scales evenly to fit inside the slot, centred; `"fill"` stretches to its box. */
-  readonly fit?: "contain" | "fill" | undefined;
+  /** How it fits: `"contain"` (2D default, 3D opt-in), `"fill"` (2D only), or `"none"` (3D default). */
+  readonly fit?: "contain" | "fill" | "none" | undefined;
 }
 
 function isElement(value: unknown): value is Element {
@@ -544,14 +552,15 @@ function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOption
   return wrapped;
 }
 
-/** An object's travel at progress `p`: toward the slot's centre on the canvas at its starting depth;
- * undefined while a box is unmeasured or the start is behind the lens. */
+/** Object travel at progress `p` toward the slot on the canvas at its starting depth,
+ * optionally fit by `"contain"`, or `undefined` when unmeasured or behind the lens. */
 function travelled3d(
   view: ObjectView,
   below: Pose3d,
   here: MotionContext,
   to: Element,
   p: number,
+  fit: "none" | "contain",
 ): Pose3d | undefined {
   if (p === 0 || !here.rest.has(to.name) || !here.rest.has(view.canvas.name)) return undefined;
   const scrollY = scroll.y(here.time, here.events);
@@ -567,25 +576,59 @@ function travelled3d(
   const seen = project3d(start, view.lens, size);
   if (!seen.visible) return undefined;
   const end = unproject3d(point, view.lens, size, seen.depth);
-  if (p === 1) return end;
-  return { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
+  const pos: Pose3d =
+    p === 1
+      ? end
+      : { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
+  switch (fit) {
+    case "none":
+      return pos;
+    case "contain": {
+      if (!(slot.width > 0 && slot.height > 0)) return pos;
+      const bounds = here.rest.object(here.element);
+      if (bounds === undefined || !(bounds.width > 0 && bounds.height > 0)) return pos;
+      const units = viewSize3d(view.lens, size, seen.depth).unitsPerPx;
+      const toScale = Math.min(
+        (slot.width * units) / bounds.width,
+        (slot.height * units) / bounds.height,
+      );
+      const uniform = below.scale ?? 1;
+      if (below.scaleX !== undefined || below.scaleY !== undefined || below.scaleZ !== undefined) {
+        const fromX = uniform * (below.scaleX ?? 1);
+        const fromY = uniform * (below.scaleY ?? 1);
+        const fromZ = uniform * (below.scaleZ ?? 1);
+        return {
+          ...pos,
+          scaleX: p === 1 ? toScale : mix(fromX, toScale, p),
+          scaleY: p === 1 ? toScale : mix(fromY, toScale, p),
+          scaleZ: p === 1 ? toScale : mix(fromZ, toScale, p),
+        };
+      }
+      return { ...pos, scale: p === 1 ? toScale : mix(uniform, toScale, p) };
+    }
+    default:
+      return unreachable(fit);
+  }
 }
 
-/** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
- * `fit: "fill"`; with no window it sits there on every clock. */
+/** Moves an element from its current pose into `options.to`'s measured box over its beat; with no
+ * window it sits there on every clock (live, timed, and untimed). */
 export function travel(options: TravelOptions): TravelMotion {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
-  const { to, arc: bend = 0, fit = "contain" } = options;
+  const { to, arc: bend = 0, fit } = options;
   if (!Number.isFinite(bend))
     throw new RangeError(`travel: \`arc\` must be a finite number of px, not ${bend}.`);
-  if (fit !== "contain" && fit !== "fill")
-    throw new TypeError(`travel: \`fit\` must be "contain" or "fill", not ${String(fit)}.`);
+  if (fit !== undefined && fit !== "contain" && fit !== "fill" && fit !== "none")
+    throw new TypeError(
+      `travel: \`fit\` must be "contain", "fill", or "none", not ${String(fit)}.`,
+    );
+  const fit2d = fit ?? "contain";
   const base = motion((time, context?: MotionContext): Pose2d => {
     const here = need(context, "travel");
     const object = OBJECT_TRAVEL.get(here);
     if (object !== undefined) {
-      object.out = travelled3d(object.view, object.below, here, to, time.progress);
+      object.out = travelled3d(object.view, object.below, here, to, time.progress, object.fit);
       return {};
     }
     const prev = BELOW_POSE.get(here);
@@ -612,14 +655,17 @@ export function travel(options: TravelOptions): TravelMotion {
         y += (dx / length) * push;
       }
     }
-    if (!(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)) {
+    if (
+      fit2d === "none" ||
+      !(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)
+    ) {
       return { x, y };
     }
     const across = target.width / own.width;
     const down = target.height / own.height;
     let toScaleX: number;
     let toScaleY: number;
-    switch (fit) {
+    switch (fit2d) {
       case "contain":
         toScaleX = Math.min(across, down);
         toScaleY = toScaleX;
@@ -629,7 +675,7 @@ export function travel(options: TravelOptions): TravelMotion {
         toScaleY = down;
         break;
       default:
-        return unreachable(fit);
+        return unreachable(fit2d);
     }
     const uniform = prev?.scale ?? 1;
     const fromScaleX = uniform * (prev?.scaleX ?? 1);
@@ -641,7 +687,10 @@ export function travel(options: TravelOptions): TravelMotion {
       scaleY: p === 1 ? toScaleY : mix(fromScaleY, toScaleY, p),
     };
   });
-  return travelMotion(base, Object.freeze({ to, arc: bend, fit }));
+  return travelMotion(
+    base,
+    Object.freeze({ to, arc: bend, ...(fit === undefined ? {} : { fit }) }),
+  );
 }
 
 function indexOf(context: MotionContext): { readonly index?: number } {
@@ -741,6 +790,20 @@ function includeOf(state: State): SceneBuilder["include"] {
         );
       elements.set(name, element);
     }
+    for (const name of other.owned) {
+      if (state.owned.has(name)) {
+        const held = state.elements.get(name);
+        throw new TypeError(
+          `sceneBuilder: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${state.owner.label}".`,
+        );
+      }
+    }
+    const entries = new Map(state.entries);
+    for (const [name, entry] of other.entries) {
+      if (state.owned.has(name) && !other.owned.has(name)) continue;
+      entries.set(name, entry);
+    }
+    const owned = new Set([...state.owned, ...other.owned]);
     const beats = new Map(state.beats);
     const inputBeats = new Map(state.inputBeats);
     for (const beat of other.beats.values()) withBeat(beats, inputBeats, beat);
@@ -748,8 +811,9 @@ function includeOf(state: State): SceneBuilder["include"] {
     const next: State = {
       ...state,
       elements,
+      owned,
       order: [...state.order, ...other.order.filter((name) => !state.order.includes(name))],
-      entries: new Map([...state.entries, ...other.entries]),
+      entries,
       beats,
       inputBeats,
       current: undefined,
@@ -760,6 +824,19 @@ function includeOf(state: State): SceneBuilder["include"] {
     INCLUDED_IN.set(other.owner, state.owner);
     return kept({ kind: "scene", element: elementOf(next), include: includeOf(next) }, next);
   };
+}
+
+function validateReference(
+  elements: ReadonlyMap<string, SceneElement>,
+  element: SceneElement,
+  staged: Map<string, SceneElement>,
+): void {
+  const held = elements.get(element.name) ?? staged.get(element.name);
+  if (held !== undefined && held !== element)
+    throw new TypeError(
+      `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
+    );
+  if (!elements.has(element.name)) staged.set(element.name, element);
 }
 
 function validateRegistration(
@@ -1176,15 +1253,30 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
           const prev = below(time, events);
           // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
           const ran = step.window === undefined ? withProgress(time, 1) : time;
-          const holder: { view: ObjectView; below: Pose3d; out: Pose3d | undefined } = {
+          const holder: {
+            readonly view: ObjectView;
+            readonly below: Pose3d;
+            readonly fit: "none" | "contain";
+            out: Pose3d | undefined;
+          } = {
             view: step.view,
             below: prev,
+            fit: step.fit,
             out: undefined,
           };
           OBJECT_TRAVEL.set(context, holder);
           step.run(ran, context);
           const out = holder.out;
-          return out === undefined ? prev : { ...prev, ...out };
+          if (out === undefined) return prev;
+          if (out.scale !== undefined) {
+            const { scaleX: _sx, scaleY: _sy, scaleZ: _sz, ...kept } = prev;
+            return { ...kept, ...out };
+          }
+          if (out.scaleX !== undefined || out.scaleY !== undefined || out.scaleZ !== undefined) {
+            const { scale: _s, ...kept } = prev;
+            return { ...kept, ...out };
+          }
+          return { ...prev, ...out };
         };
         break;
       case "motion3d":
@@ -1530,10 +1622,24 @@ function objectStep(state: State): ObjectStep {
               throw new TypeError(
                 `sceneBuilder: object "${name}" travels only with \`object(name, { view: { canvas, lens } })\`.`,
               );
-            if ((run.travel.arc ?? 0) !== 0 || (run.travel.fit ?? "contain") !== "contain")
+            if ((run.travel.arc ?? 0) !== 0)
               throw new TypeError(
-                `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` and \`fit\` are for elements.`,
+                `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` is for elements.`,
               );
+            const rawFit = run.travel.fit ?? "none";
+            let fit: "none" | "contain";
+            switch (rawFit) {
+              case "none":
+              case "contain":
+                fit = rawFit;
+                break;
+              case "fill":
+                throw new TypeError(
+                  `sceneBuilder: object "${name}" scales uniformly only; \`fit: "fill"\` is for elements.`,
+                );
+              default:
+                return unreachable(rawFit);
+            }
             if (traits.joins === "take")
               throw new TypeError(
                 `sceneBuilder: object "${name}" travels as a layer; \`.take()\` is for its other motions.`,
@@ -1543,6 +1649,7 @@ function objectStep(state: State): ObjectStep {
               kind: "travel3d",
               run,
               view,
+              fit,
               span: traits.span,
               window: traits.window,
               loops: traits.loops,
@@ -1552,13 +1659,12 @@ function objectStep(state: State): ObjectStep {
         });
         const elements = new Map(state.elements);
         const staged = new Map<string, SceneElement>();
-        for (const target of measured) validateRegistration(elements, state.owner, target, staged);
+        for (const target of measured) validateReference(elements, target, staged);
         const base = changed(state, { steps: [...entry.steps, ...added] });
         const order = [...base.order];
         const entries = new Map(base.entries);
         for (const [added, element] of staged) {
           elements.set(added, element);
-          OWNERS.set(element, state.owner);
           if (!order.includes(added)) order.push(added);
           if (!entries.has(added)) entries.set(added, NO_ENTRY);
         }
@@ -1607,7 +1713,7 @@ function step(state: State): ElementStep {
         const elements = new Map(state.elements);
         const newTargets = new Map<string, Element>();
         for (const target of travelTargets) {
-          validateRegistration(elements, state.owner, target, newTargets);
+          validateReference(elements, target, newTargets);
         }
         const [, entry] = entryOf(state);
         const base = changed(state, { steps: [...entry.steps, ...added] });
@@ -1637,7 +1743,6 @@ function step(state: State): ElementStep {
           throw new RangeError(
             `sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`,
           );
-        for (const addedElement of newTargets.values()) OWNERS.set(addedElement, state.owner);
         return step(next);
       },
       modify: (principle: Principle) => {
@@ -1654,10 +1759,14 @@ function step(state: State): ElementStep {
 function select(state: State, element: SceneElement): State {
   const elements = new Map(state.elements);
   register(elements, state.owner, element);
+  const owned = state.owned.has(element.name)
+    ? state.owned
+    : new Set([...state.owned, element.name]);
   const first = !state.order.includes(element.name);
   return {
     ...state,
     elements,
+    owned,
     order: first ? [...state.order, element.name] : state.order,
     entries: state.entries.has(element.name)
       ? state.entries
@@ -1677,6 +1786,7 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     owner: Object.freeze({ label }),
     options,
     elements: new Map(),
+    owned: new Set(),
     order: [],
     entries: new Map(),
     beats: new Map(),

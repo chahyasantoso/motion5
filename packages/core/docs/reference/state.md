@@ -21,3 +21,6 @@ State from events: a fold of the event log up to a time, and values that spring 
 - **`easeTo`** `<S>(source: State<S>, pick: (state: S) => number, options: EaseToOptions): Signal<number>`: The number `pick` reads from `state`, easing at each change from where it is to the new number, `delayMs` later and over `ms`; without a clock, the latest number.
 - **`EaseToOptions`** `type EaseToOptions = { ms: UpDown; delayMs?: UpDown; ease?: Ease }`: Settings of an `easeTo`: `ms`, `delayMs` (default 0) and `ease` (default linear).
 - **`UpDown`** `type UpDown = number | { readonly up: number; readonly down: number; }`: A time in ms, or one for a change upwards and one for a change downwards.
+- **`transition`** `<S>(source: State<S>, options: TransitionOptions<S>): Signal<Transition<S>> (+1 overloads)`: Eased transition progress across discrete changes of `source` (or `pick(source)`).
+- **`Transition`** `type Transition<S> = { current: S; previous: S; progress: number; active: boolean }`: A discrete transition's current and prior value, eased progress (`0..1`), and active flag.
+- **`TransitionOptions`** `type TransitionOptions<S> = { ms: number | ((from: S, to: S) => number); ease?: Ease | undefined }`: Settings of `transition`: duration in ms (or per `(from, to)`) and an optional easing curve.

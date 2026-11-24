@@ -42,13 +42,13 @@ Each is a value with a unique name, made once.
 
 A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
-An element belongs to one scene; `sceneBuilder` refuses an element added to two scenes and names both.
+An element has one owner scene that gives it `.motion(...)`, `.show(...)` or `.limits(...)`; `sceneBuilder` refuses two scenes that claim ownership of the same element, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across `.include()` boundaries. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
 ## Beats
 
 - Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and `.show` windows use; `length` ends the piece later than its last beat (required for timed scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
-- Edges: every box element's `.top` and `.end` are scroll points on its measured box (with `.plus(px)`, `.minus(px)` and `.reached`); a scroll or trigger beat that reads one adds the element to the scene.
+- Edges: every DOM element (`box`, `text`, `shape`) exposes `.top`, `.end`, `.pinStart` and `.pinEnd` scroll points on its measured box (with `.plus(px)`, `.minus(px)` and `.reached`); `.pinStart` and `.pinEnd` read sticky `minY`/`maxY` (falling back to `.top`/`.end`). A scroll or trigger beat that reads an edge adds a read-only reference to that element unless owned locally.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after. `smooth: true` or `smooth: { stiffness, damping }` maps `springTo(scroll.y)` instead, so the motion trails the scroll and settles on it; headless it reads `scroll.y`.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 
@@ -78,14 +78,14 @@ Helpers:
 - `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat; `by: "line"` starts parts on the same measured `line` together.
 - `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
 - `carry({ ms, ease, mode, target? })`: moves an element from its old rest box to its new one after a re-measure (see [layout](./agent-layout.md)).
-- `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. With no window it sits on the slot on every clock (live, timed, and untimed); sweeping requires `.in(beat)`. Referencing `slot` registers it statically on the stage.
+- `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; on 2D elements `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. On 3D `object` elements `fit` accepts `"none"` (default) or `"contain"` (uniform scale from `viewSize3d` and measured `rest.object(element)` bounds); pixel `arc` and `fit: "fill"` are refused. With no window it sits on the slot on every clock (live, timed, and untimed); sweeping requires `.in(beat)`. Referencing `slot` registers a read-only geometry dependency.
 
 Two elements that react to one thing share one signal; wrap it in `shared` when several read it.
 
 ## Space and drawing
 
 - **The frame:** `frame: "page"` (default) animates nodes where the page lays them out. `frame: "fit"` reads `root`'s CSS size as the stage frame, clips overflow, and scales it about its top-left corner to fit its parent or the viewport.
-- **Rest:** where the page's CSS puts an element. `x` and `y` move it from there. `gerak measure <brief>/<name>.html` writes `<name>.measure.json` with the frame, rest boxes, lines and DOM parents so headless tools read the same geometry.
+- **Rest:** where the page's CSS puts an element. `x` and `y` move it from there. `placementOf(box)`, `boxInViewport(box, scrollY)`, and `BoxPlacement` compute measured flow, fixed, or sticky viewport positions. `gerak measure <brief>/<name>.html` writes `<name>.measure.json` with the frame, rest boxes, lines, DOM parents, and 3D `objects` bounds so headless tools read the same geometry.
 - **Turning:** `rotation` and `scale` act about the element's CSS `transform-origin` (overridden by pose `anchor` while a motion sets one). A DOM parent element carries its nested children with it when moved, scaled or hidden.
 - **Strokes:** `drawn` and `drawnFrom` dash a `<path>` by length. A dash of a few px is barely visible; `stroke-linecap: round` in CSS shows it as a dot.
 - More on layout, order, text spacing and CSS values: [drawing](../../dom/docs/drawing.md).

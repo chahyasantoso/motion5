@@ -56,3 +56,8 @@ function isTime(value: unknown): value is Time {
 export function stillMoving(): void {
   told?.("time");
 }
+
+/** Replays a recorded `ClockUse` to the active `watchClock` listener, if any. */
+export function notifyClockUse(use: ClockUse): void {
+  told?.(use);
+}

@@ -1,12 +1,19 @@
 import {
   INPUT_EVENTS,
+  aim,
   motion,
   pointer,
   scroll,
+  shared,
   springTo,
+  state,
   toCubics,
+  transition,
+  viewSize3d,
+  type Lens3d,
   type Pose2d,
   type Pose3d,
+  type Time,
 } from "@gerak/core";
 import {
   beat,
@@ -15,15 +22,19 @@ import {
   carry,
   compileScene,
   object,
+  pose3dOf,
   sceneBuilder,
   scrollPoint,
   shape,
   text,
+  travel,
+  type MotionContext,
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
   mount,
   MOUNTS,
+  ready,
   type Binder,
   type ClockDriver,
   type FrameSource,
@@ -1202,5 +1213,167 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
 
       mounted.dispose();
     });
+  });
+
+  it("calls Binder.resize before measuring, stores Binder.measure in Measurement.objects, and sets __motionReady via ready()", async () => {
+    const prevReady: unknown = Reflect.get(globalThis, "__motionReady");
+    try {
+      const resolved = ready(Promise.resolve("done"));
+      expect(Reflect.get(globalThis, "__motionReady")).toBe(resolved);
+      await expect(resolved).resolves.toBeUndefined();
+
+      const rejected = ready(Promise.reject(new Error("boom")));
+      await expect(rejected).rejects.toThrow("boom");
+    } finally {
+      if (prevReady === undefined) Reflect.deleteProperty(globalThis, "__motionReady");
+      else Reflect.set(globalThis, "__motionReady", prevReady);
+    }
+
+    await withDomGlobals(() => {
+      const docTimeline = new FakeTimeline();
+      const eventsOrder: string[] = [];
+      class OrderedNode extends FakeDomNode {
+        override getBoundingClientRect() {
+          eventsOrder.push(`dom:${this.id}`);
+          return super.getBoundingClientRect();
+        }
+      }
+      const canvasNode = new OrderedNode("gl", docTimeline);
+      canvasNode.offsetWidth = 800;
+      canvasNode.offsetHeight = 600;
+      const slotNode = new OrderedNode("slot", docTimeline);
+      slotNode.offsetWidth = 200;
+      slotNode.offsetHeight = 200;
+      const { view, root } = makeDomHarness(docTimeline, [canvasNode, slotNode]);
+      const frames = fakeFrames();
+
+      const lens: Lens3d = {
+        x: 0,
+        y: 0,
+        z: 5,
+        ...aim({ x: 0, y: 0, z: 5 }, { x: 0, y: 0, z: 0 }),
+        fov: 40,
+      };
+      const objCanvas = box("gl");
+      const objSlot = box("slot");
+      const scene = sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(travel({ to: objSlot, fit: "contain" }))
+        .element(object("prop"))
+        .motion(motion((): Pose3d => ({ y: 0 })));
+
+      let seenCanNames: readonly string[] | undefined;
+      let seenPropNames: readonly string[] | undefined;
+      const canBinder: Binder = {
+        claims: (name) => name === "can",
+        start: () => () => undefined,
+        resize: () => {
+          eventsOrder.push("binder:resize");
+        },
+        measure: (names) => {
+          seenCanNames = names;
+          eventsOrder.push("binder:measure");
+          return { can: { width: 1.5, height: 3, depth: 1.5 } };
+        },
+      };
+      const propBinder: Binder = {
+        claims: (name) => name === "prop",
+        start: () => () => undefined,
+        measure: (names) => {
+          seenPropNames = names;
+          return { prop: { width: 1, height: 1, depth: 1 } };
+        },
+      };
+
+      const mounted = mount(scene, {
+        root,
+        scrollTarget: view,
+        frames,
+        clock: "timed",
+        binders: [canBinder, propBinder],
+      });
+
+      expect(seenCanNames).toEqual(["can"]);
+      expect(seenPropNames).toEqual(["prop"]);
+      expect(mounted.measure().objects).toEqual({
+        can: { width: 1.5, height: 3, depth: 1.5 },
+        prop: { width: 1, height: 1, depth: 1 },
+      });
+      // `binder.resize` must run before DOM `getBoundingClientRect()` on initial mount.
+      expect(eventsOrder.indexOf("binder:resize")).toBeLessThan(eventsOrder.indexOf("dom:gl"));
+
+      eventsOrder.length = 0;
+      mounted.remeasure();
+      // `binder.resize` must also run before DOM `getBoundingClientRect()` on `remeasure()`.
+      expect(eventsOrder.indexOf("binder:resize")).toBeGreaterThanOrEqual(0);
+      expect(eventsOrder.indexOf("binder:resize")).toBeLessThan(eventsOrder.indexOf("dom:gl"));
+      expect(eventsOrder).toContain("binder:measure");
+      // Scene frame computes exact uniform `fit: "contain"` scale from measured 3D bounds and `viewSize3d`.
+      const expectedScale = (200 * viewSize3d(lens, { width: 800, height: 600 }, 5).unitsPerPx) / 3;
+      expect(pose3dOf(mounted.player.values["can"])?.scale).toBeCloseTo(expectedScale, 6);
+
+      mounted.dispose();
+    });
+  });
+
+  it("keeps updating every reader of a shared transition past settleMs until settled without further input", () => {
+    const first = new FakeNode("first");
+    const second = new FakeNode("second");
+    const root = new FakeRoot([first, second]);
+    let ms = 0;
+    const frames = fakeFrames();
+    const view = {
+      scrollY: 0,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    };
+
+    const flag = state(false, (cur, ev) => (ev.name === "go" ? true : cur));
+    const trans = shared(transition(flag, { ms: 300 }));
+    const fadeMotion = motion((_t: Time, ctx?: MotionContext): Pose2d => {
+      if (!ctx) return { opacity: 0 };
+      const v = trans(ctx.time, ctx.events);
+      return { opacity: v.current ? v.progress : 0 };
+    });
+
+    const scene = sceneBuilder()
+      .element(box("first"))
+      .motion(fadeMotion)
+      .element(box("second"))
+      .motion(fadeMotion);
+
+    const mounted = mount(scene, {
+      root,
+      scrollTarget: view,
+      frames,
+      clock: "live",
+      settleMs: 100,
+      now: () => ms,
+    });
+
+    frames.tick(0);
+    ms = 10;
+    mounted.send("go", 1);
+    frames.tick(10);
+    expect(Number(first.style.opacity)).toBeCloseTo(0, 6);
+    expect(Number(second.style.opacity)).toBeCloseTo(0, 6);
+
+    // Step past settleMs (10 + 100 = 110) with no new inputs; both readers must advance together.
+    ms = 160;
+    frames.tick(160);
+    expect(Number(first.style.opacity)).toBeCloseTo(0.5, 6);
+    expect(Number(second.style.opacity)).toBeCloseTo(0.5, 6);
+    expect(frames.queued).toBeGreaterThan(0);
+
+    // Past 300 ms transition end (10 + 300 = 310), both settle to 1 and scheduling stops.
+    ms = 320;
+    frames.tick(320);
+    expect(Number(first.style.opacity)).toBeCloseTo(1, 6);
+    expect(Number(second.style.opacity)).toBeCloseTo(1, 6);
+    ms = 340;
+    frames.tick(340);
+    expect(frames.queued).toBe(0);
+
+    mounted.dispose();
   });
 });

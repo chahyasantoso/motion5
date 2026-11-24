@@ -3,17 +3,18 @@ import {
   arch,
   clamp,
   ease,
-  elapsedOf,
   mix,
   motion,
-  rawTime,
   scroll,
-  stillMoving,
-  type Events,
+  shared,
+  state,
+  transition,
   type Motion,
   type Pose2d,
   type Pose3d,
+  type Signal,
   type Time,
+  type Transition,
 } from "@gerak/core";
 import { box, object, sceneBuilder, type MotionContext, type SceneBuilder } from "@gerak/stage";
 import {
@@ -86,7 +87,6 @@ const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
 interface SpotlightRollState {
   readonly active: SpotlightZone;
   readonly outgoing: SpotlightZone | -1;
-  readonly rollStartMs: number | undefined;
   readonly direction: 1 | -1;
 }
 
@@ -97,85 +97,64 @@ interface SpotlightFrame {
   readonly slot: SpotlightSlotGeometry;
 }
 
-const INITIAL_ROLL_STATE: SpotlightRollState = {
-  active: 0,
-  outgoing: -1,
-  rollStartMs: undefined,
-  direction: 1,
+const IDLE_TRANSITION: Transition<SpotlightZone | -1> = {
+  current: -1,
+  previous: -1,
+  progress: 1,
+  active: false,
 };
 
-function foldSpotlightState(
-  events: Events,
-  nowMs: number | undefined,
+let rollSignalCache: {
+  readonly key: string;
+  readonly signal: Signal<Transition<SpotlightZone | -1>>;
+} | null = null;
+
+function spotlightTransition(
   stageTop: number,
   pinMax: number,
   pinSpan: number,
-): SpotlightRollState {
-  let cur: SpotlightRollState = INITIAL_ROLL_STATE;
-
-  for (let i = 0; i < events.length; i += 1) {
-    const ev = events[i];
-    if (!ev) {
-      break;
-    }
-    if (nowMs !== undefined && ev.at > nowMs) {
-      break;
-    }
-
+): Signal<Transition<SpotlightZone | -1>> {
+  const key = `${stageTop}:${pinMax}:${pinSpan}`;
+  if (rollSignalCache?.key === key) {
+    return rollSignalCache.signal;
+  }
+  const zoneState = state<SpotlightZone | -1>(-1, (cur, ev) => {
     if (ev.name === FLAVOR_SELECT_EVENT) {
-      if (ev.value !== undefined && isSpotlightZone(ev.value) && ev.value !== cur.active) {
-        cur = {
-          active: ev.value,
-          outgoing: cur.active,
-          rollStartMs: ev.at,
-          direction: ev.value > cur.active ? 1 : -1,
-        };
-      }
-      continue;
+      return ev.value !== undefined && isSpotlightZone(ev.value) ? ev.value : cur;
     }
-
     if (ev.name === INPUT_EVENTS.scroll && ev.value !== undefined) {
       const y = ev.value;
-      if (y < stageTop) {
-        if (cur.active !== 0 || cur.outgoing !== -1 || cur.rollStartMs !== undefined) {
-          cur = INITIAL_ROLL_STATE;
-        }
-      } else if (y <= pinMax) {
-        const progress = clamp((y - stageTop) / pinSpan, 0, 1);
-        const zone = spotlightZoneForProgress(progress);
-        if (zone !== cur.active) {
-          cur = {
-            active: zone,
-            outgoing: cur.active,
-            rollStartMs: ev.at,
-            direction: zone > cur.active ? 1 : -1,
-          };
-        }
-      }
+      if (y < stageTop) return -1;
+      if (y <= pinMax) return spotlightZoneForProgress(clamp((y - stageTop) / pinSpan, 0, 1));
     }
-  }
-
-  return cur;
+    return cur;
+  });
+  const signal = shared(
+    transition(zoneState, {
+      ms: (from, to) => (from === -1 || to === -1 ? 0 : SPOTLIGHT_ROLL_MS),
+    }),
+  );
+  rollSignalCache = { key, signal };
+  return signal;
 }
 
 function readSpotlightFrame(context?: MotionContext): SpotlightFrame {
   const scrollY = context ? scroll.y(context.time, context.events) : 0;
   const slot = spotlightSlotWorld(context?.rest, scrollY);
-  const nowMs = context ? elapsedOf(rawTime(context.time).clock) : undefined;
-  const rollState = context
-    ? foldSpotlightState(context.events, nowMs, slot.stageTop, slot.pinMax, slot.pinSpan)
-    : INITIAL_ROLL_STATE;
+  const trans = context
+    ? spotlightTransition(slot.stageTop, slot.pinMax, slot.pinSpan)(context.time, context.events)
+    : IDLE_TRANSITION;
+  const active: SpotlightZone = trans.current === -1 ? 0 : trans.current;
+  const outgoing: SpotlightZone | -1 = trans.active && trans.previous !== -1 ? trans.previous : -1;
+  const direction: 1 | -1 = outgoing !== -1 && active < outgoing ? -1 : 1;
+  const rollProgress = trans.active ? trans.progress : 1;
 
-  let rollProgress = 1;
-  if (rollState.rollStartMs !== undefined && nowMs !== undefined) {
-    const elapsed = nowMs - rollState.rollStartMs;
-    if (elapsed < SPOTLIGHT_ROLL_MS) {
-      stillMoving();
-      rollProgress = clamp(elapsed / SPOTLIGHT_ROLL_MS, 0, 1);
-    }
-  }
-
-  return { state: rollState, rollProgress, scrollY, slot };
+  return {
+    state: { active, outgoing, direction },
+    rollProgress,
+    scrollY,
+    slot,
+  };
 }
 
 function tintMotion(zone: SpotlightZone): Motion<Pose2d, MotionContext> {

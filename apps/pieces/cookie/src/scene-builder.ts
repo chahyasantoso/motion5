@@ -15,6 +15,7 @@ import {
   springTo,
   state,
   stillMoving,
+  transition,
   unreachable,
   type Events,
   type Motion,
@@ -152,7 +153,6 @@ interface BuilderState {
   readonly sealed: boolean;
   readonly sealId: number;
   readonly sealTransitionKind: SealTransitionKind;
-  readonly sealTransitionAtMs: number | undefined;
 }
 
 const INITIAL_BUILDER_STATE: BuilderState = {
@@ -162,7 +162,6 @@ const INITIAL_BUILDER_STATE: BuilderState = {
   sealed: false,
   sealId: 0,
   sealTransitionKind: "none",
-  sealTransitionAtMs: undefined,
 };
 
 function pruneExiting(
@@ -298,7 +297,6 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         sealed: true,
         sealId: Math.trunc(event.value),
         sealTransitionKind: "sealing",
-        sealTransitionAtMs: event.at,
       };
     }
     case JAR_UNSEAL_EVENT: {
@@ -309,7 +307,6 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         ...current,
         sealed: false,
         sealTransitionKind: "unsealing",
-        sealTransitionAtMs: event.at,
       };
     }
     case JAR_RESET_EVENT: {
@@ -323,7 +320,6 @@ const builderState = state<BuilderState>(INITIAL_BUILDER_STATE, (current, event)
         sealed: false,
         sealId: current.sealId,
         sealTransitionKind: "none",
-        sealTransitionAtMs: undefined,
       };
     }
     default:
@@ -360,38 +356,46 @@ function slotLocalY(index: number): number {
   return 0.14 + index * 0.145 + JAR_MODEL_OFFSET_Y;
 }
 
+const BUILDER_CRUMB_DELAY_MS = 140;
+const BUILDER_CRUMB_TOTAL_MS = BUILDER_CRUMB_DELAY_MS + BUILDER_CRUMB_MS;
+
+const sealTransition = shared(
+  transition(builderState, (b) => b.sealTransitionKind, {
+    ms: (_from, to) => {
+      switch (to) {
+        case "none":
+          return 0;
+        case "sealing":
+          return BUILDER_SEAL_MS;
+        case "unsealing":
+          return BUILDER_UNSEAL_MS;
+        default:
+          return unreachable(to);
+      }
+    },
+  }),
+);
+
+const crumbBurst = shared(
+  transition(builderState, (b) => (b.sealed ? b.sealId : 0), {
+    ms: (_from, to) => (to > 0 ? BUILDER_CRUMB_TOTAL_MS : 0),
+  }),
+);
+
 interface SealTransition {
   readonly kind: SealTransitionKind;
   readonly u: number;
 }
 
-function readSealTransition(bState: BuilderState, nowMs: number): SealTransition {
-  switch (bState.sealTransitionKind) {
-    case "none":
-      return { kind: "none", u: 0 };
-    case "sealing": {
-      if (bState.sealTransitionAtMs === undefined) {
-        return { kind: "sealing", u: 1 };
-      }
-      const ageMs = Math.max(0, nowMs - bState.sealTransitionAtMs);
-      if (ageMs < BUILDER_SEAL_MS) {
-        stillMoving();
-      }
-      return { kind: "sealing", u: clamp(ageMs / BUILDER_SEAL_MS, 0, 1) };
-    }
-    case "unsealing": {
-      if (bState.sealTransitionAtMs === undefined) {
-        return { kind: "unsealing", u: 1 };
-      }
-      const ageMs = Math.max(0, nowMs - bState.sealTransitionAtMs);
-      if (ageMs < BUILDER_UNSEAL_MS) {
-        stillMoving();
-      }
-      return { kind: "unsealing", u: clamp(ageMs / BUILDER_UNSEAL_MS, 0, 1) };
-    }
-    default:
-      return unreachable(bState.sealTransitionKind);
+function readSealTransition(context?: MotionContext): SealTransition {
+  if (!context) {
+    return { kind: "none", u: 0 };
   }
+  const trans = sealTransition(context.time, context.events);
+  if (trans.current === "none") {
+    return { kind: "none", u: 0 };
+  }
+  return { kind: trans.current, u: trans.progress };
 }
 
 function readMixBounce(bState: BuilderState, nowMs: number): number {
@@ -452,7 +456,7 @@ const builderJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d 
   }
   const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
   const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-  const sealTrans = readSealTransition(bState, nowMs);
+  const sealTrans = readSealTransition(context);
   const mixBounce = readMixBounce(bState, nowMs);
   const dx = context ? pointerDeltaX(context.time, context.events) : 0;
   const dy = context ? pointerDeltaY(context.time, context.events) : 0;
@@ -470,14 +474,12 @@ const builderJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d 
 });
 
 const builderJarLidMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
-  const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
-  const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
   const peek = context ? sealPeek(context.time, context.events) : 0;
   const openX = 0.64 - 0.1 * peek;
   const openY = 0.08 - 0.04 * peek;
   const openRotZ = -28 + 6 * peek;
 
-  const sealTrans = readSealTransition(bState, nowMs);
+  const sealTrans = readSealTransition(context);
   switch (sealTrans.kind) {
     case "none":
       return {
@@ -516,9 +518,7 @@ const builderJarLidMotion = motion((_t: Time, context?: MotionContext): Pose3d =
 });
 
 const builderJarRibbonMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
-  const bState = context ? builderState(context.time, context.events) : INITIAL_BUILDER_STATE;
-  const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-  const sealTrans = readSealTransition(bState, nowMs);
+  const sealTrans = readSealTransition(context);
 
   switch (sealTrans.kind) {
     case "none":
@@ -584,7 +584,7 @@ function builderCookieMotion(slotIndex: number): Motion<Pose3d, MotionContext> {
     }
 
     const nowMs = context ? (elapsedOf(rawTime(context.time).clock) ?? 0) : 0;
-    const sealTrans = readSealTransition(bState, nowMs);
+    const sealTrans = readSealTransition(context);
     const mixBounce = readMixBounce(bState, nowMs);
     const dx = context ? pointerDeltaX(context.time, context.events) : 0;
     const dy = context ? pointerDeltaY(context.time, context.events) : 0;
@@ -701,7 +701,7 @@ function builderExitCookieMotion(poolSlot: number): Motion<Pose3d, MotionContext
     }
     stillMoving();
 
-    const sealTrans = readSealTransition(bState, nowMs);
+    const sealTrans = readSealTransition(context);
     const mixBounce = readMixBounce(bState, nowMs);
     const dx = pointerDeltaX(context.time, context.events);
     const dy = pointerDeltaY(context.time, context.events);
@@ -758,35 +758,27 @@ function builderCrumbMotion(crumbIndex: number): Motion<Pose3d, MotionContext> {
       return PARKED_POSE;
     }
 
-    const bState = builderState(context.time, context.events);
-    if (
-      !bState.sealed ||
-      bState.sealTransitionKind !== "sealing" ||
-      bState.sealTransitionAtMs === undefined
-    ) {
+    const burst = crumbBurst(context.time, context.events);
+    if (!burst.active || burst.current <= 0) {
       return PARKED_POSE;
     }
 
-    const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
-    const ageSinceSealMs = Math.max(0, nowMs - bState.sealTransitionAtMs);
-    const crumbAgeMs = ageSinceSealMs - 140;
-    if (crumbAgeMs < 0) {
-      stillMoving();
+    const crumbAgeMs = burst.progress * BUILDER_CRUMB_TOTAL_MS - BUILDER_CRUMB_DELAY_MS;
+    if (crumbAgeMs < 0 || crumbAgeMs >= BUILDER_CRUMB_MS) {
       return PARKED_POSE;
     }
-    if (crumbAgeMs >= BUILDER_CRUMB_MS) {
-      return PARKED_POSE;
-    }
-    stillMoving();
 
-    const body = crumbSim.at(liveAt(crumbAgeMs), crumbEventsForSeal(bState.sealId))[
-      `crumb-${bState.sealId}-${crumbIndex}`
+    const sealId = burst.current;
+    const body = crumbSim.at(liveAt(crumbAgeMs), crumbEventsForSeal(sealId))[
+      `crumb-${sealId}-${crumbIndex}`
     ];
     if (!body) {
       return PARKED_POSE;
     }
 
-    const sealTrans = readSealTransition(bState, nowMs);
+    const bState = builderState(context.time, context.events);
+    const nowMs = elapsedOf(rawTime(context.time).clock) ?? 0;
+    const sealTrans = readSealTransition(context);
     const mixBounce = readMixBounce(bState, nowMs);
     const dx = pointerDeltaX(context.time, context.events);
     const dy = pointerDeltaY(context.time, context.events);

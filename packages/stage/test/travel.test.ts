@@ -99,6 +99,21 @@ describe("travel", () => {
     expect(() => travel({ to: slot, fit: "cover" })).toThrow(TypeError);
   });
 
+  it("supports fit: none without scaling", () => {
+    const slot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 400 })
+        .element(box("drink"))
+        .motion(travel({ to: slot, fit: "none" })),
+    );
+    const rest = restReader({
+      drink: { x: 100, y: 200, width: 100, height: 200 },
+      slot: { x: 500, y: 400, width: 50, height: 50 },
+    });
+    const pose = poseOf(frame(stage, { time: at(400, 400), rest }).targets["drink"]);
+    expect(pose).toEqual({ x: 400, y: 200 });
+  });
+
   it("sits on its slot with no window across live, timed, and untimed clocks", () => {
     const slot = box("slot");
     const stage = compiled(
@@ -378,7 +393,7 @@ describe("travel", () => {
     expect(zeroSlotPose?.scaleY).toBeUndefined();
   });
 
-  it("auto-registers slot targets statically and enforces single-scene ownership", () => {
+  it("auto-registers slot targets statically, allows shared read-only slots, and rolls back on collision", () => {
     const enter = beat("enter", 400);
     const autoSlot = box("autoSlot");
     const explicitSlot = box("explicitSlot");
@@ -393,34 +408,37 @@ describe("travel", () => {
     expect(stage.members.find((m) => m.name === "autoSlot")?.expect).toBe("static");
     expect(stage.members.find((m) => m.name === "explicitSlot")?.expect).toBe("static");
 
-    // Claimed in firstScene via travel -> secondScene cannot reuse via .element or travel.
-    sceneBuilder({ name: "firstScene" })
+    // Read-only `travel({ to: sharedSlot })` can be shared across sibling scenes and one owner.
+    const s1 = sceneBuilder({ name: "firstScene" })
       .element(box("one"))
       .motion(travel({ to: sharedSlot }).in(enter));
-    expect(() => sceneBuilder({ name: "secondScene" }).element(sharedSlot)).toThrow(
-      /sharedSlot.*firstScene.*secondScene/,
-    );
-    const freshSlot = box("freshSlot");
-    expect(() =>
-      sceneBuilder({ name: "thirdScene" })
-        .element(box("three"))
-        .motion(travel({ to: freshSlot }).in(enter), travel({ to: sharedSlot }).in(enter)),
-    ).toThrow(/sharedSlot.*firstScene.*thirdScene/);
-    // Atomic rollback: freshSlot must remain unclaimed after thirdScene failed.
-    expect(() => sceneBuilder({ name: "fourthScene" }).element(freshSlot)).not.toThrow();
+    const s2 = sceneBuilder({ name: "secondScene" })
+      .element(box("two"))
+      .motion(travel({ to: sharedSlot }).in(enter));
+    const s3 = sceneBuilder({ name: "thirdScene" }).element(sharedSlot);
+    const merged = compiled(sceneBuilder().include(s1).include(s2).include(s3));
+    expect(merged.members.filter((m) => m.name === "sharedSlot")).toHaveLength(1);
 
-    // Two elements named "hero", an edge and a slot, in the same `.motion(...)` call throws TypeError.
+    // Configuring `.element(sharedSlot)` in another scene still throws, naming both owners.
+    expect(() => sceneBuilder({ name: "fourthScene" }).element(sharedSlot)).toThrow(
+      /sharedSlot.*thirdScene.*fourthScene/,
+    );
+
+    // Atomic rollback: two colliding elements in one `.motion(...)` leaves `freshSlot` unowned.
+    const freshSlot = box("freshSlot");
     const collidingHero = box("hero");
     const collidingSlot = box("hero");
     expect(() =>
-      sceneBuilder()
+      sceneBuilder({ name: "atomicFail" })
         .element(box("mover"))
         .motion(
+          travel({ to: freshSlot }).in(enter),
           travel({ to: collidingSlot }).in(
             beat("move", { scroll: [collidingHero.top, collidingHero.end] }),
           ),
         ),
     ).toThrow(TypeError);
+    expect(() => sceneBuilder({ name: "afterRollback" }).element(freshSlot)).not.toThrow();
   });
 
   it("supports stagger on lists, .take() windows, fractional scales, flow/0x0 slots", () => {

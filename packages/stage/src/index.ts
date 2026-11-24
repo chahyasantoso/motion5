@@ -70,10 +70,13 @@ export {
   type Carry,
   type CarryMode,
   type CarryOptions,
+  type ObjectBounds3d,
+  type ObjectRest,
   type Rest,
   type RestAt,
   type RestReader,
 } from "./author/layout";
+export { boxInViewport, placementOf, type BoxPlacement } from "./render/placement";
 export { type Limits, type ListPose, type Drive, type Moves } from "./author/stage";
 export { isStage, type CompileResult, type Member, type Stage } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";

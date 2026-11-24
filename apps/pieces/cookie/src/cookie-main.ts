@@ -1,5 +1,6 @@
-import { clamp, ease, seeded } from "@gerak/core";
-import { mount } from "@gerak/dom";
+import { clamp, ease, seeded, unreachable } from "@gerak/core";
+import { mount, ready } from "@gerak/dom";
+import { placementOf } from "@gerak/stage";
 import { threeBinder } from "@gerak/three";
 import {
   BUILDER_CAPACITY,
@@ -23,15 +24,8 @@ import {
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
-import { stickyPinBounds } from "./space3d.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
-
-declare global {
-  interface Window {
-    __motionReady?: Promise<void>;
-  }
-}
 
 const FLAVOR_NOTE_CASTS: readonly string[] = [
   CAST.flavorNote0,
@@ -53,14 +47,6 @@ interface SpotlightPinMetrics {
   readonly pinSpan: number;
 }
 
-function spotlightPinMetrics(stageEl: Element): SpotlightPinMetrics {
-  const rect = stageEl.getBoundingClientRect();
-  const stageTop = rect.top + window.scrollY;
-  const viewportH = window.innerHeight || STAGE_SIZE.height;
-  const { pinMax, pinSpan } = stickyPinBounds(stageTop, rect.height, viewportH);
-  return { stageTop, pinMax, pinSpan };
-}
-
 async function bootstrap(): Promise<void> {
   const node = document.querySelector(`[data-cast="${CAST.stageCanvas}"]`);
   if (!(node instanceof HTMLCanvasElement)) {
@@ -69,13 +55,16 @@ async function bootstrap(): Promise<void> {
 
   const studio = createCookieStudio(node);
   const models = await loadCookieWorld(studio.world);
-  await studio.renderer.compileAsync(studio.world, studio.camera);
+  studio.renderer.compile(studio.world, studio.camera);
+  studio.draw();
+  studio.renderer.getContext().finish();
 
   const mounted = mount(cookieScene, {
     clock: "live",
     binders: [
       threeBinder(studio.world, {
         objects: models.objects,
+        resize: studio.resize,
         draw: studio.draw,
       }),
     ],
@@ -87,6 +76,35 @@ async function bootstrap(): Promise<void> {
     document.querySelector(`[data-cast="${name}"]`),
   );
   const dotNodes = FLAVOR_DOT_CASTS.map((name) => document.querySelector(`[data-cast="${name}"]`));
+
+  const spotlightPinMetrics = (): SpotlightPinMetrics | null => {
+    const slotBox = mounted.rest[CAST.slotFlavorCookie];
+    if (slotBox) {
+      const placement = placementOf(slotBox);
+      switch (placement.kind) {
+        case "sticky":
+          return {
+            stageTop: placement.minY,
+            pinMax: placement.maxY,
+            pinSpan: Math.max(1, placement.maxY - placement.minY),
+          };
+        case "flow":
+        case "fixed":
+          break;
+        default:
+          return unreachable(placement);
+      }
+    }
+    if (!spotlightStageEl) {
+      return null;
+    }
+    const rect = spotlightStageEl.getBoundingClientRect();
+    const stageTop = rect.top + window.scrollY;
+    const viewportH = window.innerHeight || STAGE_SIZE.height;
+    const stickyH = Math.min(viewportH, rect.height);
+    const pinMax = stageTop + rect.height - stickyH;
+    return { stageTop, pinMax, pinSpan: Math.max(1, pinMax - stageTop) };
+  };
 
   let lastActiveZone: SpotlightZone | -1 = -1;
 
@@ -116,10 +134,11 @@ async function bootstrap(): Promise<void> {
   };
 
   const syncActiveFlavor = (): void => {
-    if (!spotlightStageEl) {
+    const metrics = spotlightPinMetrics();
+    if (!metrics) {
       return;
     }
-    const { stageTop, pinMax, pinSpan } = spotlightPinMetrics(spotlightStageEl);
+    const { stageTop, pinMax, pinSpan } = metrics;
     const y = window.scrollY;
     if (y < stageTop) {
       applyActiveFlavor(0);
@@ -450,11 +469,11 @@ async function bootstrap(): Promise<void> {
   if (heroCtaEl) {
     const onCtaClick = (event: Event): void => {
       event.preventDefault();
-      if (!spotlightStageEl) {
+      const metrics = spotlightPinMetrics();
+      if (!metrics) {
         return;
       }
-      const { stageTop } = spotlightPinMetrics(spotlightStageEl);
-      animateScrollTo(Math.ceil(stageTop) + 2, 1250);
+      animateScrollTo(Math.ceil(metrics.stageTop) + 2, 1250);
     };
     heroCtaEl.addEventListener("click", onCtaClick);
     cleanupListeners.push(() => heroCtaEl.removeEventListener("click", onCtaClick));
@@ -477,11 +496,11 @@ async function bootstrap(): Promise<void> {
   for (const el of document.querySelectorAll("[data-closing-flavors-cta]")) {
     const onClick = (event: Event): void => {
       event.preventDefault();
-      if (!spotlightStageEl) {
+      const metrics = spotlightPinMetrics();
+      if (!metrics) {
         return;
       }
-      const { stageTop } = spotlightPinMetrics(spotlightStageEl);
-      animateScrollTo(Math.ceil(stageTop) + 2, 1050);
+      animateScrollTo(Math.ceil(metrics.stageTop) + 2, 1050);
     };
     el.addEventListener("click", onClick);
     cleanupListeners.push(() => el.removeEventListener("click", onClick));
@@ -503,10 +522,11 @@ async function bootstrap(): Promise<void> {
     }
     const onClick = (): void => {
       cancelHeroScroll();
-      if (!spotlightStageEl) {
+      const metrics = spotlightPinMetrics();
+      if (!metrics) {
         return;
       }
-      const { stageTop, pinSpan } = spotlightPinMetrics(spotlightStageEl);
+      const { stageTop, pinSpan } = metrics;
       const targetScrollY = Math.max(0, stageTop + pinSpan * spotlightTargetForZone(zone));
       window.scrollTo({ top: targetScrollY, behavior: "instant" });
       mounted.send(FLAVOR_SELECT_EVENT, zone);
@@ -577,24 +597,12 @@ async function bootstrap(): Promise<void> {
   window.addEventListener("scroll", onScroll, { passive: true });
   document.addEventListener("scroll", onScroll, { passive: true });
 
-  const syncLayout = (): void => {
-    studio.resize();
-    mounted.remeasure();
-    syncActiveFlavor();
-    studio.draw();
-  };
-
-  syncLayout();
-
-  const observer = new ResizeObserver(syncLayout);
-  observer.observe(document.body);
-  observer.observe(node);
+  syncActiveFlavor();
 
   window.addEventListener(
     "beforeunload",
     () => {
       cancelHeroScroll();
-      observer.disconnect();
       window.removeEventListener("scroll", onScroll);
       document.removeEventListener("scroll", onScroll);
       unsubscribePlayer();
@@ -608,4 +616,4 @@ async function bootstrap(): Promise<void> {
   );
 }
 
-window.__motionReady = bootstrap();
+void ready(bootstrap());

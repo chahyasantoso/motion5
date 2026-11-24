@@ -4,6 +4,7 @@ import {
   motion,
   orbit,
   project3d,
+  viewSize3d,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -185,7 +186,7 @@ describe("travel on an object", () => {
     }
   });
 
-  it("refuses a travel on an object with no view, an arc or fit, and a take", () => {
+  it("refuses a travel on an object with no view, an arc, fit fill, and a take, while allowing fit none and contain", () => {
     expect(() =>
       sceneBuilder()
         .element(object("bare"))
@@ -198,8 +199,117 @@ describe("travel on an object", () => {
     ).toThrow(/travels straight/);
     expect(() =>
       sceneBuilder()
+        .element(object("filled", { view: { canvas, lens } }))
+        .motion(travel({ to: slot, fit: "fill" }).in(go)),
+    ).toThrow(/fit/);
+    expect(() =>
+      sceneBuilder()
         .element(object("taking", { view: { canvas, lens } }))
         .motion(travel({ to: slot }).in(go).take()),
     ).toThrow(/travels as a layer/);
+    expect(() =>
+      sceneBuilder()
+        .element(object("noneOk", { view: { canvas, lens } }))
+        .motion(travel({ to: slot, fit: "none" }).in(go)),
+    ).not.toThrow();
+  });
+
+  it("scales uniformly to contain the CSS slot at desktop and mobile sizes when fit is contain", () => {
+    const objCanvas = box("gl");
+    const objSlot = box("slot");
+    const fitScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4, scale: 0.5 })),
+          travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
+        ),
+    );
+    const bounds = { width: 1.2, height: 2.4, depth: 1.2 };
+    const startDepth = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, {
+      width: 1440,
+      height: 900,
+    }).depth;
+
+    for (const [vpW, vpH, slotW, slotH] of [
+      [1440, 900, 320, 480],
+      [390, 844, 180, 220],
+    ] as const) {
+      const r = restReader(
+        {
+          gl: { x: vpW / 2, y: vpH / 2, width: vpW, height: vpH },
+          slot: { x: vpW * 0.65, y: vpH * 0.45, width: slotW, height: slotH },
+        },
+        { can: bounds },
+      );
+      const u = viewSize3d(lens, { width: vpW, height: vpH }, startDepth).unitsPerPx;
+      const expectedScale = Math.min((slotW * u) / bounds.width, (slotH * u) / bounds.height);
+      const end = pose3dOf(frame(fitScene, { time: liveAt(1000), rest: r }).targets["can"]);
+      expect(end?.scale).toBeCloseTo(expectedScale, 6);
+      const mid = pose3dOf(frame(fitScene, { time: liveAt(500), rest: r }).targets["can"]);
+      expect(mid?.scale).toBeCloseTo((0.5 + expectedScale) / 2, 6);
+    }
+
+    // Without measured object bounds, fit contain gracefully moves position without setting scale.
+    const unmeasured = pose3dOf(frame(fitScene, { time: liveAt(1000), rest }).targets["can"]);
+    expect(unmeasured?.scale).toBe(0.5);
+
+    // fit: "none" preserves prior scale and per-axis scales even when measured bounds exist.
+    const keepScaleScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.75, scaleZ: 0.5 })),
+          travel({ to: objSlot, fit: "none" }).in(beat("move", 1000)),
+        ),
+    );
+    const rDesk = restReader(
+      {
+        gl: { x: 720, y: 450, width: 1440, height: 900 },
+        slot: { x: 900, y: 400, width: 320, height: 480 },
+      },
+      { can: bounds },
+    );
+    const keepPose = pose3dOf(
+      frame(keepScaleScene, { time: liveAt(1000), rest: rDesk }).targets["can"],
+    );
+    expect(keepPose?.scale).toBe(2);
+    expect(keepPose?.scaleX).toBe(1.5);
+    expect(keepPose?.scaleY).toBe(0.75);
+    expect(keepPose?.scaleZ).toBe(0.5);
+
+    // fit: "contain" folds prior uniform and per-axis scales cleanly without dropping or double-applying scale.
+    const axisContainScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.5 })),
+          travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
+        ),
+    );
+    const axisStartDepth = project3d({ x: 0, y: 0, z: 0 }, lens, {
+      width: 1440,
+      height: 900,
+    }).depth;
+    const toScaleAxis = Math.min(
+      (320 * viewSize3d(lens, { width: 1440, height: 900 }, axisStartDepth).unitsPerPx) /
+        bounds.width,
+      (480 * viewSize3d(lens, { width: 1440, height: 900 }, axisStartDepth).unitsPerPx) /
+        bounds.height,
+    );
+    const midAxis = pose3dOf(
+      frame(axisContainScene, { time: liveAt(500), rest: rDesk }).targets["can"],
+    );
+    expect(midAxis?.scale).toBeUndefined();
+    expect(midAxis?.scaleX).toBeCloseTo((3 + toScaleAxis) / 2, 6);
+    expect(midAxis?.scaleY).toBeCloseTo((1 + toScaleAxis) / 2, 6);
+    expect(midAxis?.scaleZ).toBeCloseTo((2 + toScaleAxis) / 2, 6);
+    const endAxis = pose3dOf(
+      frame(axisContainScene, { time: liveAt(1000), rest: rDesk }).targets["can"],
+    );
+    expect(endAxis?.scale).toBeUndefined();
+    expect(endAxis?.scaleX).toBeCloseTo(toScaleAxis, 6);
+    expect(endAxis?.scaleY).toBeCloseTo(toScaleAxis, 6);
+    expect(endAxis?.scaleZ).toBeCloseTo(toScaleAxis, 6);
   });
 });

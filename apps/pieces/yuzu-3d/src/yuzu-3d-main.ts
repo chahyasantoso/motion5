@@ -45,8 +45,6 @@ const fit = (): void => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 };
-fit();
-window.addEventListener("resize", fit);
 
 const draw = (): void => renderer.render(world, camera);
 const drink = threeBinder(world, {
@@ -58,7 +56,7 @@ const drink = threeBinder(world, {
       band.opacity = pose.opacity ?? 1;
     },
   },
+  resize: fit,
   draw,
 });
-const mounted = mount(stage, { clock: "live", binders: [drink] });
-window.addEventListener("resize", draw);
+mount(stage, { clock: "live", binders: [drink] });
