@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-24, Asia/Jakarta.
-- **Read against:** `feat/cookie-gaps-3`, branched from `feat/authored-cast` after PR 620.
+- **Read against:** `feat/authoring-ergonomics`, branched from `main` after PR 617 and PR 621.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Cookie gaps (`plan/cookie-gaps-plan.md`), PR 3 on `feat/cookie-gaps-3`: Decisions 10–11 implemented on branch (3D `cylinder` physics, scroll-window `.show()` with single-owner `frame().visible`, `object(..., { parts: true })` 3D lists, and multi-viewport `--sizes` CLI), adopted in `apps/pieces/cookie/` with zero `PARKED_Z` and 3D list casts; ready for PR review.**
+- **Authoring ergonomics (`plan/authoring-ergonomics-plan.md`), starting with PR 1 on `feat/authoring-ergonomics` (unambiguous DOM `parts: true` binding, generated `<name>.cast.d.ts`, `scroll:<selector>@ms` actions and `gerak review --measure`), followed by PRs 2–4 (`context.read(object)`, `slot3d`, `createStage3d`, `mounted.subscribe`, and subject-first `scene(...)` + `element.moves(...)`), multi-shot reels (`plan/reels-plan.md`), and Visual Studio (`plan/studio-plan.md`).**
 
 ## Open, and not scheduled
 
