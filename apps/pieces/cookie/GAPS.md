@@ -30,7 +30,7 @@ Tracks architectural triage and real authoring friction discovered while buildin
 
 ## Project vs Framework Boundary (`contract.ts` & `cookie-main.ts`)
 
-- **`src/contract.ts` stays 100% project-level:** It owns Warm Batch domain configuration (`CAST` element names, `FLAVORS` copy/pricing/tints, `STAGE_SIZE`, `LENS`, `JAR_METRICS`). Moving site vocabulary or flavor tables into Gerak packages would introduce project coupling and a house look (explicitly excluded by `ARCHITECTURE.md` §6).
+- **`src/contract.ts` stays 100% project-level:** It owns Warm Batch domain configuration (`CastName`, `DomCast`, and `ObjectCast` re-exported from `../cookie.cast.ts`, `FLAVORS` copy/pricing/tints, `STAGE_SIZE`, `LENS`, `JAR_METRICS`). Moving site vocabulary or flavor tables into Gerak packages would introduce project coupling and a house look (explicitly excluded by `ARCHITECTURE.md` §6).
 - **`@gerak/core` stays strictly pure:** Neither `contract.ts` nor `cookie-main.ts` belongs in `@gerak/core`. Core owns pure time, curves, signals, 3D math, and state folds — zero `window`, DOM, `ResizeObserver`, or Three.js types.
 - **`src/cookie-main.ts` splits between project wiring and `G-07` renderer helpers:** Three.js studio construction (`world-studio.ts`), `.glb` assembly (`world-models.ts`), and page startup stay per-project, while only the two generic Gerak integration seams (`window.__motionReady` typing/registration in `@gerak/dom` and `binder.resize` synchronization in `@gerak/dom` + `@gerak/three`) warrant small framework helpers (`G-07`).
 

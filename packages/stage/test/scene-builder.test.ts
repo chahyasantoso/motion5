@@ -9,6 +9,7 @@ import {
   formatStageError,
   frame,
   listPose,
+  object,
   poseOf,
   restReader,
   compileScene,
@@ -72,6 +73,44 @@ describe("elements", () => {
     expect(() => text("t", "hi")).toThrow(TypeError);
     // @ts-expect-error a readout takes ElementOptions, not split
     expect(() => text("t", () => "x", { split: "letters" })).toThrow(TypeError);
+  });
+
+  it("accepts optional cast name type parameters on box, text, shape, and object", () => {
+    type TestCast = "card" | "headline" | "clock" | "ring" | "jar";
+    const typedCard = box<TestCast>("card");
+    const typedTitle = text<TestCast>("headline", { split: "words" });
+    const typedClock = text<TestCast>("clock", () => "0");
+    const typedRing = shape<TestCast>("ring", circlePath({ cx: 0, cy: 0, r: 5 }));
+    const typedJar = object<TestCast>("jar");
+    const literalName: "card" = box("card").name;
+    const typedCardName: TestCast = typedCard.name;
+    const literalList = box("cards", { parts: true });
+    const literalParts: true = literalList.parts;
+    const literalObj = object("jarList", { parts: true });
+    const literalObjParts: true = literalObj.parts;
+    expect([literalName, typedCardName, literalParts, literalObjParts]).toEqual([
+      "card",
+      "card",
+      true,
+      true,
+    ]);
+    expect([
+      typedCard.name,
+      typedTitle.name,
+      typedClock.name,
+      typedRing.name,
+      typedJar.name,
+    ]).toEqual(["card", "headline", "clock", "ring", "jar"]);
+    // @ts-expect-error unknown cast name refused on box
+    box<TestCast>("typo");
+    // @ts-expect-error unknown cast name refused on text
+    text<TestCast>("typo", { split: "words" });
+    // @ts-expect-error unknown cast name refused on text readout
+    text<TestCast>("typo", () => "0");
+    // @ts-expect-error unknown cast name refused on shape
+    shape<TestCast>("typo", circlePath({ cx: 0, cy: 0, r: 5 }));
+    // @ts-expect-error unknown cast name refused on object
+    object<TestCast>("typo");
   });
 });
 

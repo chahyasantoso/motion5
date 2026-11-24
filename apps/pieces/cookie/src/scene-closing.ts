@@ -9,17 +9,8 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import {
-  beat,
-  box,
-  object,
-  sceneBuilder,
-  shape,
-  stagger,
-  text,
-  type MotionContext,
-} from "@gerak/stage";
-import { CAST } from "./contract.ts";
+import { beat, sceneBuilder, shape, stagger, text, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
 import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { closingSlotWorld } from "./space3d.ts";
 
@@ -29,14 +20,10 @@ const CLOSING_FLOURISH_PATH = toCubics([
   { id: "end", x: 254, y: 11, inX: -42, inY: 4, outX: 0, outY: 0 },
 ]);
 
-const closingStage = box(CAST.closingStage);
-const slotClosingJar = box(CAST.slotClosingJar);
-const closingHeadline = text(CAST.closingHeadline, { split: "words" });
-const closingFlourish = shape(CAST.closingFlourish, CLOSING_FLOURISH_PATH);
-const closingCopy = box(CAST.closingCopy);
-const closingActions = box(CAST.closingActions);
-const closingWordmark = text(CAST.closingWordmark, { split: "letters" });
-const closingJarRoot = object(CAST.closingJarRoot);
+const { closingStage, slotClosingJar, closingCopy, closingActions, closingJarRoot } = cast;
+const closingHeadline = text(cast.closingHeadline.name, { split: "words" });
+const closingFlourish = shape(cast.closingFlourish.name, CLOSING_FLOURISH_PATH);
+const closingWordmark = text(cast.closingWordmark.name, { split: "letters" });
 
 const closingReveal = beat("closingReveal", 720, {
   when: closingStage.top.minus(480).reached,

@@ -16,9 +16,9 @@ import {
   type Time,
   type Transition,
 } from "@gerak/core";
-import { box, object, sceneBuilder, type MotionContext, type SceneBuilder } from "@gerak/stage";
+import { sceneBuilder, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
 import {
-  CAST,
   FLAVOR_SELECT_EVENT,
   JAR_METRICS,
   SPOTLIGHT_ROLL_MS,
@@ -29,55 +29,24 @@ import {
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { isHeroHandoffActive, spotlightSlotWorld, type SpotlightSlotGeometry } from "./space3d.ts";
 
-const spotlightStage = box(CAST.spotlightStage);
-const slotFlavorCookie = box(CAST.slotFlavorCookie);
-const flavorShadow = box(CAST.flavorShadow);
+const {
+  spotlightStage,
+  slotFlavorCookie,
+  flavorShadow,
+  spotlightTints,
+  flavorTitles,
+  flavorNums,
+  flavorNotes,
+  flavorDots,
+  flavorCookies,
+} = cast;
 
 const HIDDEN_COOKIE_POSE: Pose3d = { scale: 0 };
 
-interface FlavorSpotlightItem {
-  readonly zone: SpotlightZone;
-  readonly tint: string;
-  readonly title: string;
-  readonly num: string;
-  readonly note: string;
-  readonly dot: string;
+function zoneOf(context?: MotionContext): SpotlightZone {
+  const index = context?.index ?? 0;
+  return isSpotlightZone(index) ? index : 0;
 }
-
-const FLAVOR_ITEMS: readonly FlavorSpotlightItem[] = [
-  {
-    zone: 0,
-    tint: CAST.spotlightTint0,
-    title: CAST.flavorTitle0,
-    num: CAST.flavorNum0,
-    note: CAST.flavorNote0,
-    dot: CAST.flavorDot0,
-  },
-  {
-    zone: 1,
-    tint: CAST.spotlightTint1,
-    title: CAST.flavorTitle1,
-    num: CAST.flavorNum1,
-    note: CAST.flavorNote1,
-    dot: CAST.flavorDot1,
-  },
-  {
-    zone: 2,
-    tint: CAST.spotlightTint2,
-    title: CAST.flavorTitle2,
-    num: CAST.flavorNum2,
-    note: CAST.flavorNote2,
-    dot: CAST.flavorDot2,
-  },
-  {
-    zone: 3,
-    tint: CAST.spotlightTint3,
-    title: CAST.flavorTitle3,
-    num: CAST.flavorNum3,
-    note: CAST.flavorNote3,
-    dot: CAST.flavorDot3,
-  },
-];
 
 interface SpotlightRollState {
   readonly active: SpotlightZone;
@@ -152,26 +121,22 @@ function readSpotlightFrame(context?: MotionContext): SpotlightFrame {
   };
 }
 
-function tintMotion(zone: SpotlightZone): Motion<Pose2d, MotionContext> {
-  return motion((_t: Time, context?: MotionContext): Pose2d => {
-    const { state, rollProgress } = readSpotlightFrame(context);
-    if (zone === state.active) {
-      const u = state.outgoing === -1 ? 1 : ease.sineInOut(rollProgress);
-      return { opacity: u };
-    }
-    if (zone === state.outgoing && rollProgress < 1) {
-      return { opacity: 1 - ease.sineInOut(rollProgress) };
-    }
-    return { opacity: 0 };
-  });
-}
+const tintMotion = motion((_t: Time, context?: MotionContext): Pose2d => {
+  const zone = zoneOf(context);
+  const { state, rollProgress } = readSpotlightFrame(context);
+  if (zone === state.active) {
+    const u = state.outgoing === -1 ? 1 : ease.sineInOut(rollProgress);
+    return { opacity: u };
+  }
+  if (zone === state.outgoing && rollProgress < 1) {
+    return { opacity: 1 - ease.sineInOut(rollProgress) };
+  }
+  return { opacity: 0 };
+});
 
-function copyRevealMotion(
-  zone: SpotlightZone,
-  enterY: number,
-  exitY: number,
-): Motion<Pose2d, MotionContext> {
+function copyRevealMotion(enterY: number, exitY: number): Motion<Pose2d, MotionContext> {
   return motion((_t: Time, context?: MotionContext): Pose2d => {
+    const zone = zoneOf(context);
     const { state, rollProgress } = readSpotlightFrame(context);
     const dir = state.direction;
     if (zone === state.active) {
@@ -189,26 +154,25 @@ function copyRevealMotion(
   });
 }
 
-function dotMotion(zone: SpotlightZone): Motion<Pose2d, MotionContext> {
-  return motion((_t: Time, context?: MotionContext): Pose2d => {
-    const { state, rollProgress } = readSpotlightFrame(context);
-    if (zone === state.active) {
-      const u = state.outgoing === -1 ? 1 : ease.cubicOut(rollProgress);
-      return {
-        scale: mix(0.78, 1.38, u),
-        opacity: mix(0.34, 1.0, u),
-      };
-    }
-    if (zone === state.outgoing && rollProgress < 1) {
-      const u = ease.cubicOut(rollProgress);
-      return {
-        scale: mix(1.38, 0.78, u),
-        opacity: mix(1.0, 0.34, u),
-      };
-    }
-    return { scale: 0.78, opacity: 0.34 };
-  });
-}
+const dotMotion = motion((_t: Time, context?: MotionContext): Pose2d => {
+  const zone = zoneOf(context);
+  const { state, rollProgress } = readSpotlightFrame(context);
+  if (zone === state.active) {
+    const u = state.outgoing === -1 ? 1 : ease.cubicOut(rollProgress);
+    return {
+      scale: mix(0.78, 1.38, u),
+      opacity: mix(0.34, 1.0, u),
+    };
+  }
+  if (zone === state.outgoing && rollProgress < 1) {
+    const u = ease.cubicOut(rollProgress);
+    return {
+      scale: mix(1.38, 0.78, u),
+      opacity: mix(1.0, 0.34, u),
+    };
+  }
+  return { scale: 0.78, opacity: 0.34 };
+});
 
 const flavorShadowMotion = motion((_t: Time, context?: MotionContext): Pose2d => {
   const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
@@ -226,8 +190,7 @@ const flavorShadowMotion = motion((_t: Time, context?: MotionContext): Pose2d =>
 });
 
 const flavorCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
-  const index = context?.index ?? 0;
-  const zone: SpotlightZone = isSpotlightZone(index) ? index : 0;
+  const zone = zoneOf(context);
   const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
   const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
   const { center, fitScale, enterTravelX, exitTravelX, stageTop } = slot;
@@ -282,28 +245,22 @@ const flavorCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d =
   };
 });
 
-let builder: SceneBuilder = sceneBuilder()
+export const spotlightScene = sceneBuilder()
   .element(spotlightStage)
   .element(slotFlavorCookie)
   .element(flavorShadow)
   .motion(flavorShadowMotion)
-  .element(object(CAST.flavorCookies, { parts: true }))
+  .element(flavorCookies)
   .motion(flavorCookiesMotion)
   .show([spotlightStage.top, spotlightStage.end])
-  .limits({ jump: 0.9, turn: 45 });
-
-for (const item of FLAVOR_ITEMS) {
-  builder = builder
-    .element(box(item.tint))
-    .motion(tintMotion(item.zone))
-    .element(box(item.title))
-    .motion(copyRevealMotion(item.zone, 28, -28))
-    .element(box(item.num))
-    .motion(copyRevealMotion(item.zone, 20, -20))
-    .element(box(item.note))
-    .motion(copyRevealMotion(item.zone, 16, -14))
-    .element(box(item.dot))
-    .motion(dotMotion(item.zone));
-}
-
-export const spotlightScene: SceneBuilder = builder;
+  .limits({ jump: 0.9, turn: 45 })
+  .element(spotlightTints)
+  .motion(tintMotion)
+  .element(flavorTitles)
+  .motion(copyRevealMotion(28, -28))
+  .element(flavorNums)
+  .motion(copyRevealMotion(20, -20))
+  .element(flavorNotes)
+  .motion(copyRevealMotion(16, -14))
+  .element(flavorDots)
+  .motion(dotMotion);

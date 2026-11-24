@@ -314,8 +314,8 @@ describe("the page tools while they hold the clock", () => {
         height: 600,
         source: { kind: "serve", root: FIXTURES },
         actions: [
-          { kind: "scroll", px: 700, at: 300 },
-          { kind: "scroll", px: 400, at: 1700 },
+          { kind: "scroll", target: { kind: "px", px: 700 }, at: 300 },
+          { kind: "scroll", target: { kind: "px", px: 400 }, at: 1700 },
         ],
       },
       async (session) => {

@@ -4,7 +4,7 @@
   --ink-cocoa: #3d2216;
   --ink-cocoa-deep: #2c1810;
   --ink-cocoa-soft: #5c3a2b;
-  --accent-caramel: #c86d3b;
+  --accent-caramel: #94461d;
   --surface-linen: #efe7db;
   --tint-brown-butter: #f4e6d4;
   --tint-matcha: #e6ece1;
@@ -1043,7 +1043,8 @@ a {
 }
 
 .stepper-btn:disabled {
-  opacity: 0.36;
+  border-color: rgba(61, 34, 22, 0.14);
+  color: #7c5c4c;
   cursor: not-allowed;
 }
 
@@ -1129,7 +1130,9 @@ a {
 }
 
 .builder-actions .cta-pill:disabled {
-  opacity: 0.45;
+  background-color: #dfd5c7;
+  border-color: rgba(61, 34, 22, 0.18);
+  color: var(--ink-cocoa-soft);
   cursor: not-allowed;
 }
 

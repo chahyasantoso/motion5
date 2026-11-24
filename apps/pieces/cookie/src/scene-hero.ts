@@ -13,26 +13,28 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, box, object, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
-import { CAST, HERO_COOKIE_JAR_LOCAL } from "./contract.ts";
+import { beat, box, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
+import { cast } from "../cookie.cast.ts";
+import { HERO_COOKIE_JAR_LOCAL } from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { heroJarSlotWorld, isHeroHandoffActive, spotlightSlotWorld } from "./space3d.ts";
 
-const stageCanvas = box(CAST.stageCanvas);
-const heroStage = box(CAST.heroStage);
-const heroWarmWash = box(CAST.heroWarmWash);
-const heroHorizon = box(CAST.heroHorizon);
-const heroCopy = box(CAST.heroCopy);
-const slotHeroJar = box(CAST.slotHeroJar);
-const heroHeadline = text(CAST.heroHeadline, { split: "words" });
-const heroSub = box(CAST.heroSub);
-const heroCta = box(CAST.heroCta, { watch: true });
-const offerBanner = box(CAST.offerBanner);
-const offerSeal = box(CAST.offerSeal);
-
-const jarRoot = object(CAST.jarRoot);
-const jarLid = object(CAST.jarLid);
-const cookieHero = object(CAST.cookieHero);
+const {
+  stageCanvas,
+  heroStage,
+  heroWarmWash,
+  heroHorizon,
+  heroCopy,
+  slotHeroJar,
+  heroSub,
+  offerBanner,
+  offerSeal,
+  jarRoot,
+  jarLid,
+  cookieHero,
+} = cast;
+const heroHeadline = text(cast.heroHeadline.name, { split: "words" });
+const heroCta = box(cast.heroCta.name, { watch: true });
 
 const heroEnter = beat("heroEnter", 520);
 const jarSettle = beat("jarSettle", 520);
@@ -56,7 +58,7 @@ const cookieLift = beat("cookieLift", {
 const ctaHovered = state(
   false,
   (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: CAST.heroCta },
+  { target: heroCta.name },
 );
 const ctaPeek = shared(
   springTo(ctaHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),

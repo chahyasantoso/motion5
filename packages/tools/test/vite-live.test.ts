@@ -442,4 +442,58 @@ describe("canAttachLiveEndpoints and motionLivePlugin", () => {
     ).toBe(true);
     expect(readFileSync(sceneFile, "utf8")).toBe("const x = 760;");
   });
+
+  it("syncs <name>.cast.ts on html watcher events while keeping existing 3D objects", () => {
+    const appRoot = makeTempDir();
+    const pieceDir = join(appRoot, "card");
+    mkdirSync(pieceDir, { recursive: true });
+    const htmlPath = join(pieceDir, "card.html");
+    const castPath = join(pieceDir, "card.cast.ts");
+    const outsideDir = makeTempDir();
+    const outsideHtml = join(outsideDir, "outside.html");
+    writeFileSync(
+      htmlPath,
+      '<div data-cast="hero"></div><span data-cast="dots"></span><span data-cast="dots"></span>',
+    );
+    writeFileSync(outsideHtml, '<div data-cast="outside"></div>');
+    writeFileSync(
+      castPath,
+      [
+        'import { box, object } from "@gerak/stage";',
+        "",
+        "export const cast = {",
+        '  hero: box("hero"),',
+        '  jarRoot: object("jarRoot"),',
+        "} as const;",
+        "",
+      ].join("\n"),
+    );
+
+    const listeners = new Map<string, (path: string) => void>();
+    const plugin = motionLivePlugin({ appRoot });
+    plugin.configureServer({
+      config: { command: "serve", root: appRoot },
+      watcher: {
+        on(event, listener) {
+          listeners.set(event, listener);
+        },
+        emit() {},
+      },
+      middlewares: { use() {} },
+    });
+
+    listeners.get("change")?.(htmlPath);
+    const updated = readFileSync(castPath, "utf8");
+    expect(updated).toContain('hero: box("hero")');
+    expect(updated).toContain('dots: box("dots", { parts: true })');
+    expect(updated).toContain('jarRoot: object("jarRoot")');
+
+    // Ignores HTML outside appRoot and empty HTML without existing cast files.
+    listeners.get("add")?.(outsideHtml);
+    expect(() => readFileSync(join(outsideDir, "outside.cast.ts"), "utf8")).toThrow();
+    const emptyHtml = join(pieceDir, "plain.html");
+    writeFileSync(emptyHtml, "<div>Plain</div>");
+    listeners.get("add")?.(emptyHtml);
+    expect(() => readFileSync(join(pieceDir, "plain.cast.ts"), "utf8")).toThrow();
+  });
 });

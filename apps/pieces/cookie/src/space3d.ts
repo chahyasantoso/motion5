@@ -8,7 +8,7 @@ import {
   type ViewSize3d,
 } from "@gerak/core";
 import { boxInViewport, placementOf, type Box, type RestReader } from "@gerak/stage";
-import { CAST, JAR_METRICS, LENS, STAGE_SIZE } from "./contract.ts";
+import { JAR_METRICS, LENS, STAGE_SIZE, type DomCast } from "./contract.ts";
 
 export interface SlotWorld {
   readonly center: Point3d;
@@ -33,8 +33,8 @@ export interface BuilderSlotGeometry extends SlotWorld {
 }
 
 interface SlotSpec {
-  readonly stageCast: string;
-  readonly slotCast: string;
+  readonly stageCast: DomCast;
+  readonly slotCast: DomCast;
   readonly fallbackTop: number;
   readonly fallbackHeight: number;
   readonly xShare: number;
@@ -42,6 +42,9 @@ interface SlotSpec {
   readonly pinnedAt: "start" | "clamp";
   readonly clampVisible?: boolean;
 }
+
+const STAGE_CANVAS_CAST: DomCast = "stageCanvas";
+const SLOT_FLAVOR_COOKIE_CAST: DomCast = "slotFlavorCookie";
 
 const JAR_SILHOUETTE_W = JAR_METRICS.radius * 2.08;
 const JAR_SILHOUETTE_H = JAR_METRICS.height + 0.26;
@@ -98,7 +101,7 @@ function resolveSlot(
   readonly canvas: { readonly width: number; readonly height: number };
   readonly slotBox: Box | undefined;
 } {
-  const rawCanvas = rest?.get(CAST.stageCanvas);
+  const rawCanvas = rest?.get(STAGE_CANVAS_CAST);
   const canvas = rawCanvas && rawCanvas.width > 0 && rawCanvas.height > 0 ? rawCanvas : STAGE_SIZE;
   const stageBox = rest?.get(spec.stageCast);
   const rawSlot = rest?.get(spec.slotCast);
@@ -170,8 +173,8 @@ function resolveSlot(
 
 export function heroJarSlotWorld(rest?: RestReader, scrollY = 0): SlotWorld {
   const { slot, slotBox } = resolveSlot(rest, scrollY, {
-    stageCast: CAST.heroStage,
-    slotCast: CAST.slotHeroJar,
+    stageCast: "heroStage",
+    slotCast: "slotHeroJar",
     fallbackTop: 0,
     fallbackHeight: HERO_HEIGHT,
     xShare: 0.72,
@@ -183,8 +186,8 @@ export function heroJarSlotWorld(rest?: RestReader, scrollY = 0): SlotWorld {
 
 export function spotlightSlotWorld(rest?: RestReader, scrollY = 0): SpotlightSlotGeometry {
   const { slot, canvas, slotBox } = resolveSlot(rest, scrollY, {
-    stageCast: CAST.spotlightStage,
-    slotCast: CAST.slotFlavorCookie,
+    stageCast: "spotlightStage",
+    slotCast: SLOT_FLAVOR_COOKIE_CAST,
     fallbackTop: HERO_HEIGHT,
     fallbackHeight: SPOTLIGHT_HEIGHT,
     xShare: 0.62,
@@ -204,8 +207,8 @@ export function spotlightSlotWorld(rest?: RestReader, scrollY = 0): SpotlightSlo
 
 export function builderSlotWorld(rest?: RestReader, scrollY = 0): BuilderSlotGeometry {
   const { slot, canvas, slotBox } = resolveSlot(rest, scrollY, {
-    stageCast: CAST.builderStage,
-    slotCast: CAST.slotBuilderJar,
+    stageCast: "builderStage",
+    slotCast: "slotBuilderJar",
     fallbackTop: BUILDER_TOP,
     fallbackHeight: BUILDER_HEIGHT,
     xShare: 0.3,
@@ -213,15 +216,15 @@ export function builderSlotWorld(rest?: RestReader, scrollY = 0): BuilderSlotGeo
     pinnedAt: "clamp",
   });
   const fitScale = fitJar(slotBox, slot.view.unitsPerPx, 0.48, 1.08, 0.84);
-  const heroScale = fitCookie(rest?.get(CAST.slotFlavorCookie), canvas, slot.view.unitsPerPx);
+  const heroScale = fitCookie(rest?.get(SLOT_FLAVOR_COOKIE_CAST), canvas, slot.view.unitsPerPx);
   const outerLeftX = -(slot.view.width / 2) - JAR_METRICS.cookieRadius * heroScale - 0.35;
   return { ...slot, fitScale, heroScale, outerLeftX };
 }
 
 export function closingSlotWorld(rest?: RestReader, scrollY = 0): SlotWorld {
   const { slot, slotBox } = resolveSlot(rest, scrollY, {
-    stageCast: CAST.closingStage,
-    slotCast: CAST.slotClosingJar,
+    stageCast: "closingStage",
+    slotCast: "slotClosingJar",
     fallbackTop: BUILDER_TOP + BUILDER_HEIGHT,
     fallbackHeight: 860,
     xShare: 0.72,

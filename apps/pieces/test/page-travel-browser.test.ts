@@ -37,7 +37,7 @@ describe("yuzu landing page with travel and slots in Chromium", () => {
         width: 1280,
         height: 720,
         source: PIECES_SOURCE,
-        actions: [{ kind: "scroll", px: 900, at: 100 }],
+        actions: [{ kind: "scroll", target: { kind: "px", px: 900 }, at: 100 }],
       },
       async ({ page, advanceTo }) => {
         expect(

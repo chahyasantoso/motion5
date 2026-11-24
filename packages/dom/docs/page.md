@@ -16,8 +16,8 @@ const headline = text("headline", { split: "words" });
 const card = box("card");
 ```
 
-- `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches. Pass `nodes: { name: nodeOrList }` to override matching by name.
-- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, count 3D list parts and measure `object` elements; `mount` verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
+- `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches — and also refuses a non-parts `box(name)` matching multiple nodes (naming `parts: true`). Pass `nodes: { name: nodeOrList }` to override matching by name.
+- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize, report 3D `casts()`, count 3D list parts and measure `object` elements; `mount` publishes `Binder.casts()` via `BINDER_CASTS` before scene binding validates nodes and verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
 - Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 
@@ -41,7 +41,7 @@ A live mount runs one clock (`liveAt`) feeding scroll, pointer and watched eleme
 - A frame after an input runs the whole scene. A frame with no new input runs only the elements that move with time alone: a clock beat not ended, a running trigger, a `smooth` beat or `springTo` not yet settled, a loop; and, until `settleMs` after the last input or re-measure, a motion that read the clock, `carry` or another element.
 - The mount never smooths the page's own scrolling.
 
-Headless tools advance scroll via `cues` or `npx gerak frames ... --action scroll:px@ms`.
+Headless tools advance scroll via `cues` or `npx gerak frames ... --action scroll:px@ms` (or `scroll:selector[±px]@ms`).
 
 ## Motion the browser plays
 
@@ -70,10 +70,10 @@ Every box element's `.top`, `.end`, `.pinStart` and `.pinEnd` are scroll points 
 
 `mount` invokes any `Binder.resize()` callback, temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates) alongside any `Binder.measure()` 3D `ObjectBounds3d` into `Measurement.objects` (and `Binder.counts()` part counts into `Measurement.counts`) and `RestReader.object`, coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
 
-`box(name, { parts: true })` and `text(name, { split: "words" | "letters" })` read part counts from the markup:
+`box(name, { parts: true })`, `text(name, { split: "words" | "letters" })`, and explicit `options.nodes[name]` arrays read part counts from the markup:
 
-- Multiple `[data-cast="<name>"]` nodes bind directly as parts `0..count-1`.
-- One `[data-cast="<name>"]` node with child elements binds its child elements as parts; otherwise, `text(name, { split })` wraps its `textContent` in `<span>` nodes on mount and restores the original text on `dispose()`.
+- `box(name, { parts: true })` and explicit `options.nodes[name]` arrays always bind matched or supplied `[data-cast="<name>"]` nodes directly as parts `0..count-1` (`1..N`), without descending into child elements.
+- `text(name, { split })` binds multiple `[data-cast="<name>"]` nodes directly; on a single container node with child elements it binds those children as parts, and otherwise wraps its `textContent` in `<span>` nodes on mount and restores the original text on `dispose()`.
 - Each list part's `MotionContext` receives its layout row in `context.line` (0 headless, recomputed on resize without changing part count).
 - `stagger(motion, { spread, from?, by: "line" })` orders lanes by measured `line` so parts on the same visual line move together.
 

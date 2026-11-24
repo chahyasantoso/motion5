@@ -1,7 +1,14 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import {
+  castFilePathOf,
+  formatCastModule,
+  readCastFileObjects,
+  scanHtmlCasts,
+  syncHtmlCastFile,
+} from "../src/page/cast-file";
 import { cachePathOf, pageDigest, readMeasureCache } from "../src/page/measure-cache";
 import { lookupCache, pageOfSceneFile, restOfCache } from "../src/scene/measure-cache";
 import { loadSceneFile } from "../src/scene/scene";
@@ -130,5 +137,119 @@ describe("the measure cache", () => {
     const { page, scene } = brief();
     rmSync(page);
     expect(lookupCache(scene)).toEqual({ kind: "none" });
+  });
+
+  it("scans HTML casts, formats deterministic <name>.cast.ts modules, and syncs preserving objects", () => {
+    expect(castFilePathOf(join("p", "card", "card.html"))).toBe(join("p", "card", "card.cast.ts"));
+    expect(
+      scanHtmlCasts(
+        [
+          '<!-- <div data-cast="commented"></div> -->',
+          '<style>[data-cast="styled"] { color: red; }</style>',
+          "<script>const x = '<div data-cast=\"scripted\"></div>';</script>",
+          '<section data-cast="heroStage">',
+          '  <article data-cast="cards">1</article>',
+          '  <article data-cast="cards">2</article>',
+          "  <span data-cast='singleNote'>ok</span>",
+          '  <i data-cast=""></i>',
+          "</section>",
+        ].join("\n"),
+      ),
+    ).toEqual({
+      heroStage: "single",
+      cards: "list",
+      singleNote: "single",
+    });
+
+    expect(formatCastModule({ dom: {}, objects: {} })).toBe(
+      [
+        "export const cast = {} as const;",
+        "",
+        "export type DomCast = never;",
+        "export type ObjectCast = never;",
+        "export type CastName = DomCast | ObjectCast;",
+        "",
+      ].join("\n"),
+    );
+
+    const formatted = formatCastModule({
+      dom: { "hero-box": "single", cards: "list", jar: "single" },
+      objects: { jar: "list", cookies: "list", lid: "single" },
+    });
+    expect(formatted).toBe(
+      [
+        'import { box, object } from "@gerak/stage";',
+        "",
+        "export const cast = {",
+        '  cards: box("cards", { parts: true }),',
+        '  cookies: object("cookies", { parts: true }),',
+        '  "hero-box": box("hero-box"),',
+        '  jar: box("jar"),',
+        '  lid: object("lid"),',
+        "} as const;",
+        "",
+        'export type DomCast = "cards" | "hero-box" | "jar";',
+        'export type ObjectCast = "cookies" | "lid";',
+        "export type CastName = DomCast | ObjectCast;",
+        "",
+      ].join("\n"),
+    );
+    expect(readCastFileObjects(formatted)).toEqual({
+      cookies: "list",
+      lid: "single",
+    });
+
+    const longDom: Record<string, "single"> = {};
+    for (const key of [
+      "heroStage",
+      "heroHeadline",
+      "heroSub",
+      "heroCta",
+      "spotlightStage",
+      "spotlightTints",
+      "craftStage",
+      "craftCards",
+    ])
+      longDom[key] = "single";
+    expect(formatCastModule({ dom: longDom, objects: {} })).toContain(
+      [
+        "export type DomCast =",
+        '  | "craftCards"',
+        '  | "craftStage"',
+        '  | "heroCta"',
+        '  | "heroHeadline"',
+        '  | "heroStage"',
+        '  | "heroSub"',
+        '  | "spotlightStage"',
+        '  | "spotlightTints";',
+      ].join("\n"),
+    );
+
+    const { page } = brief();
+    const castPath = castFilePathOf(page);
+    writeFileSync(
+      castPath,
+      formatCastModule({ dom: { card: "single" }, objects: { jar: "single", crumbs: "list" } }),
+    );
+    writeFileSync(
+      page,
+      '<div data-cast="card"></div><span data-cast="dots"></span><span data-cast="dots"></span>',
+    );
+    expect(syncHtmlCastFile(page)).toBe(castPath);
+    const written = readFileSync(castPath, "utf8");
+    expect(written).toContain('card: box("card"),');
+    expect(written).toContain('dots: box("dots", { parts: true }),');
+    expect(written).toContain('jar: object("jar"),');
+    expect(written).toContain('crumbs: object("crumbs", { parts: true }),');
+    const writtenMtimeMs = statSync(castPath).mtimeMs;
+    expect(syncHtmlCastFile(page)).toBe(castPath);
+    expect(statSync(castPath).mtimeMs).toBe(writtenMtimeMs);
+
+    // No-op when HTML without casts has no existing .cast.ts.
+    const emptyRoot = mkdtempSync(join(tmpdir(), "cast-empty-"));
+    made.push(emptyRoot);
+    const plainHtml = join(emptyRoot, "plain.html");
+    writeFileSync(plainHtml, "<div>Nothing</div>");
+    expect(syncHtmlCastFile(plainHtml)).toBeUndefined();
   });
 });

@@ -158,7 +158,7 @@ describe("readPageArgs repeated --action flags", () => {
     expect(joined.kind).toBe("ok");
     if (joined.kind === "ok") {
       expect(joined.target.actions).toEqual([
-        { kind: "scroll", px: 200, at: 100 },
+        { kind: "scroll", target: { kind: "px", px: 200 }, at: 100 },
         { kind: "click", selector: ".btn", at: 300 },
       ]);
     }
@@ -175,7 +175,7 @@ describe("readPageArgs repeated --action flags", () => {
     expect(framesParsed.kind).toBe("frames");
     if (framesParsed.kind === "frames") {
       expect(framesParsed.actions).toEqual([
-        { kind: "scroll", px: 200, at: 100 },
+        { kind: "scroll", target: { kind: "px", px: 200 }, at: 100 },
         { kind: "hover", selector: ".card", at: 250 },
       ]);
     }

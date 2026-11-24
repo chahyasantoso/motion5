@@ -67,6 +67,18 @@ describe("gerak review on a scene file", () => {
       ratio: 1.5,
       budget: 8,
     });
+    expect(parseSceneReviewArgs(["s.ts", "--measure", "--to", "900"])).toEqual({
+      kind: "ok",
+      file: "s.ts",
+      to: 900,
+      measure: true,
+      hold: 500,
+      jump: 150,
+      turn: 150,
+      ratio: 1.5,
+      budget: 8,
+    });
+    expect(parseSceneReviewArgs(["s.ts", "--measure", "--measure"]).kind).toBe("usage");
     expect(parseSceneReviewArgs(["s.ts", "--jump", "-1"]).kind).toBe("usage");
   });
 

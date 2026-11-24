@@ -47,6 +47,7 @@ export interface SceneReviewRequest {
   readonly file: string;
   readonly to?: number;
   readonly events?: Events;
+  readonly measure?: boolean;
   readonly hold: number;
   /** Largest step of a position in one frame, in the scene's units. */
   readonly jump: number;
@@ -72,7 +73,7 @@ export interface SceneReviewResult {
 }
 
 const USAGE =
-  "usage: gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
+  "usage: gerak review <scene.ts> [--to ms] [--events list] [--measure] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
 
 /** A path ending in .ts or .tsx is a scene file, reviewed from its values with no page. */
 export function isSceneFile(argv: readonly string[]): boolean {
@@ -88,8 +89,15 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
   const [file, ...rest] = argv;
   if (file === undefined) return usage("A scene file is needed.");
   const flags = new Map<string, string>();
-  for (let index = 0; index < rest.length; index += 2) {
+  let measure = false;
+  for (let index = 0; index < rest.length; ) {
     const flag = rest[index];
+    if (flag === "--measure") {
+      if (measure) return usage("Repeated flag --measure.");
+      measure = true;
+      index += 1;
+      continue;
+    }
     const value = rest[index + 1];
     if (
       flag === undefined ||
@@ -98,6 +106,7 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
       return usage(`Unknown argument ${flag ?? ""}.`);
     if (value === undefined) return usage(`${flag} needs a value.`);
     flags.set(flag, value);
+    index += 2;
   }
   const number = (flag: string, fallback?: number): number | undefined => {
     const text = flags.get(flag);
@@ -131,6 +140,7 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
     budget,
     ...(to === undefined ? {} : { to }),
     ...(parsedEvents !== undefined && !("reason" in parsedEvents) ? { events: parsedEvents } : {}),
+    ...(measure ? { measure: true } : {}),
   };
 }
 
@@ -1008,7 +1018,10 @@ export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {
   const file = resolve(request.file);
-  const module = await loadSceneFile(file);
+  const module = await loadSceneFile(
+    file,
+    request.measure === true ? { measure: true } : undefined,
+  );
   if ("reason" in module) return { kind: "usage", message: module.reason };
   return reviewSceneModule(module, request);
 }

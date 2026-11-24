@@ -29,8 +29,10 @@ export {
   type PointerLike,
 } from "./events";
 export {
+  BINDER_CASTS,
   mount,
   type Binder,
+  type BinderCastKind,
   MOUNTS,
   type MeasuredBox,
   type Measurement,

@@ -205,3 +205,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-198 — Authored cast — Accepted, 2026-11-21 — superseded in part
 - ADR-199 — Live compositor stability, cross-scene composition, responsive 3D and transitions — Accepted, 2026-11-24
 - ADR-200 — Scroll presence, 3D lists, cylinder physics, and multi-viewport checks — Accepted, 2026-11-24
+- ADR-201 — Unambiguous DOM lists, generated cast modules, and selector scroll actions — Accepted, 2026-11-24

@@ -98,7 +98,7 @@ describe("mount in the browser", () => {
         width: 800,
         height: 600,
         source: PIECES_SOURCE,
-        actions: [{ kind: "scroll", px: 200, at: 200 }],
+        actions: [{ kind: "scroll", target: { kind: "px", px: 200 }, at: 200 }],
       },
       async (session) => {
         const { page } = session;
@@ -214,5 +214,74 @@ describe("mount in the browser", () => {
         }
       },
     );
+  }, 30000);
+
+  it("executes selector scroll actions with offset and fails fast when selector is missing", async () => {
+    const scratch = writeScratchPage();
+    const { value, pageErrors } = await withPage(
+      {
+        page: scratch.html,
+        width: 800,
+        height: 600,
+        source: PIECES_SOURCE,
+        actions: [
+          {
+            kind: "scroll",
+            target: { kind: "selector", selector: "#pin-wrap", offsetPx: 40 },
+            at: 100,
+          },
+        ],
+      },
+      async (session) => {
+        const expectedTop = await session.page.evaluate(() => {
+          const el = document.querySelector("#pin-wrap");
+          if (!el) throw new Error("missing #pin-wrap");
+          return Math.max(0, el.getBoundingClientRect().top + window.scrollY + 40);
+        });
+        await session.advanceTo(150);
+        const scrollY = await session.page.evaluate(() => window.scrollY);
+        return { expectedTop, scrollY };
+      },
+    );
+    expect(pageErrors).toEqual([]);
+    expect(Math.abs(value.scrollY - value.expectedTop)).toBeLessThanOrEqual(1);
+
+    await expect(
+      withPage(
+        {
+          page: scratch.html,
+          width: 800,
+          height: 600,
+          source: PIECES_SOURCE,
+          actions: [
+            {
+              kind: "scroll",
+              target: { kind: "selector", selector: "#missing-sec", offsetPx: 0 },
+              at: 50,
+            },
+          ],
+        },
+        async (session) => session.advanceTo(100),
+      ),
+    ).rejects.toThrow(/#missing-sec/);
+
+    await expect(
+      withPage(
+        {
+          page: scratch.html,
+          width: 800,
+          height: 600,
+          source: PIECES_SOURCE,
+          actions: [
+            {
+              kind: "scroll",
+              target: { kind: "selector", selector: "[data-cast=", offsetPx: 0 },
+              at: 50,
+            },
+          ],
+        },
+        async (session) => session.advanceTo(100),
+      ),
+    ).rejects.toThrow(/invalid selector/i);
   }, 30000);
 });

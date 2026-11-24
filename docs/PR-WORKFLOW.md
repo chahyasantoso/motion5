@@ -23,9 +23,7 @@ Record the exact tested SHA and run link. A green submission commit is not evide
 
 ## Sizing and review
 
-Target fewer than twenty semantic files and one meaningful invariant. More than twenty-five commits or a second revert means recut the slice. Review duplicate ownership, validity of tests, runtime flags or aliases, public exports, hidden behavior in formatting, credential boundaries, and documentation drift.
-
-Semantic files are distinct paths in the PR diff, excluding lockfiles, generated build output, and files touched only by a formatting commit. State the measured count once in the PR body, not in another status matrix.
+Keep each PR to a clear, reviewable invariant; more than twenty-five commits or a second revert means recut the slice. Review duplicate ownership, validity of tests, runtime flags or aliases, public exports, hidden behavior in formatting, credential boundaries, and documentation drift.
 
 ## Merge and revert
 

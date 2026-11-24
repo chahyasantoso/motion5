@@ -236,6 +236,7 @@ describe("threeBinder", () => {
     const stage = listStageResult.stage;
 
     const binder = threeBinder(root, { objects: { arrayItems: [a, b] } });
+    expect(binder.casts?.()).toEqual({ arrayItems: "list" });
     expect(binder.claims("arrayItems")).toBe(true);
     expect(binder.claims("tray")).toBe(true);
     expect(binder.counts?.(["arrayItems", "tray"])).toEqual({ arrayItems: 2, tray: 2 });
@@ -255,6 +256,7 @@ describe("threeBinder", () => {
     const player = play((time, events) => frame(stage, { time, events, counts }).targets, driver);
     binder.start(player, stage);
     expect(binder.counts?.()).toEqual({ arrayItems: 2, tray: 2 });
+    expect(binder.casts?.()).toEqual({ arrayItems: "list", tray: "list" });
 
     expect(a.visible).toBe(false);
     expect(b.visible).toBe(false);

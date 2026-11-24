@@ -35,6 +35,7 @@ import {
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 import {
+  BINDER_CASTS,
   mount,
   MOUNTS,
   ready,
@@ -681,6 +682,120 @@ describe("mount", () => {
     frames.tick(300);
     expect(card.style.transform).toBe("");
     mounted.dispose();
+  });
+
+  it("binds box(parts: true) to matched elements even with 1 item having children, while keeping text(split) and explicit nodes distinct", () => {
+    const singleCard = new FakeNode("singleCard");
+    singleCard.setAttribute("data-cast", "cards");
+    const h3 = new FakeNode("h3");
+    const p = new FakeNode("p");
+    singleCard.children.push(h3, p);
+
+    const headline = new FakeNode("headline");
+    const word0 = new FakeNode("word0");
+    const word1 = new FakeNode("word1");
+    headline.children.push(word0, word1);
+
+    const plain = new FakeNode("plain");
+    plain.textContent = "One two";
+
+    const root = new FakeRoot([singleCard, headline, plain]);
+    const scene = sceneBuilder({ length: 500 })
+      .element(box("cards", { parts: true }))
+      .motion((_t, ctx) => ({ x: 10 + (ctx?.index ?? 0) * 5, y: ctx?.count ?? 0 }))
+      .element(text("headline", { split: "words" }))
+      .motion((_t, ctx) => ({ x: 20 + (ctx?.index ?? 0) * 10 }))
+      .element(text("plain", { split: "words" }))
+      .motion((_t, ctx) => ({ y: 30 + (ctx?.index ?? 0) * 10 }));
+
+    const mounted = mount(scene, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
+    expect(singleCard.style.transform).toBe("translate3d(10px, 1px, 0px)");
+    expect(h3.style.transform).toBe("");
+    expect(p.style.transform).toBe("");
+    expect(mounted.measure().rest["cards.0"]).toBeDefined();
+    expect(mounted.measure().rest["cards"]).toBeDefined();
+    expect(word0.style.transform).toBe("translate3d(20px, 0px, 0px)");
+    expect(word1.style.transform).toBe("translate3d(30px, 0px, 0px)");
+    expect(headline.style.transform).toBe("");
+    expect(plain.children).toHaveLength(2);
+    expect(plain.children[0]?.style.transform).toBe("translate3d(0px, 30px, 0px)");
+    mounted.dispose();
+    expect(plain.textContent).toBe("One two");
+
+    const explicitCard = new FakeNode("explicitCard");
+    explicitCard.children.push(new FakeNode("nestedA"), new FakeNode("nestedB"));
+    const explicitWord = new FakeNode("explicitWord");
+    explicitWord.children.push(new FakeNode("nestedSpan"));
+    const explicitScene = sceneBuilder({ length: 500 })
+      .element(box("cards", { parts: true }))
+      .motion((_t, ctx) => ({ x: 5, y: ctx?.count ?? 0 }))
+      .element(text("headline", { split: "words" }))
+      .motion((_t, ctx) => ({ x: 7, y: ctx?.count ?? 0 }));
+    const explicitMounted = mount(explicitScene, {
+      root: new FakeRoot([]),
+      frames: fakeFrames(),
+      clock: "live",
+      now: () => 0,
+      nodes: { cards: [explicitCard], headline: [explicitWord] },
+    });
+    expect(explicitCard.style.transform).toBe("translate3d(5px, 1px, 0px)");
+    expect(explicitCard.children[0]?.style.transform).toBe("");
+    expect(explicitWord.style.transform).toBe("translate3d(7px, 1px, 0px)");
+    expect(explicitWord.children[0]?.style.transform).toBe("");
+    explicitMounted.dispose();
+  });
+
+  it("refuses a non-parts box matching multiple DOM nodes and records Binder.casts before mount errors", () => {
+    const a = new FakeNode("cardA");
+    a.setAttribute("data-cast", "cards");
+    const b = new FakeNode("cardB");
+    b.setAttribute("data-cast", "cards");
+    expect(() =>
+      mount(sceneBuilder({ length: 500 }).element(box("cards")), {
+        root: new FakeRoot([a, b]),
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => 0,
+      }),
+    ).toThrow(/"cards".*parts: true/);
+
+    const jarBinder: Binder = {
+      claims: (name) => name === "jar",
+      casts: () => ({ jar: "single", cookies: "list" }),
+      start: () => () => undefined,
+    };
+    expect(() =>
+      mount(sceneBuilder({ length: 500 }).element(box("missingDom")), {
+        root: new FakeRoot([]),
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => 0,
+        binders: [jarBinder],
+      }),
+    ).toThrow(/missingDom/);
+    const recorded: unknown = Reflect.get(globalThis, BINDER_CASTS);
+    expect(Array.isArray(recorded) && recorded.length > 0).toBe(true);
+    const merged: Record<string, string> = {};
+    if (Array.isArray(recorded)) {
+      for (const entry of recorded) {
+        const readFn: unknown = Reflect.get(Object(entry), "read");
+        if (typeof readFn === "function") Object.assign(merged, Reflect.apply(readFn, entry, []));
+      }
+      recorded.length = 0;
+    }
+    expect(merged).toEqual({ jar: "single", cookies: "list" });
+
+    const single = new FakeNode("cardA");
+    const mounted = mount(sceneBuilder({ length: 500 }).element(box("cardA")), {
+      root: new FakeRoot([single]),
+      frames: fakeFrames(),
+      clock: "live",
+      now: () => 0,
+      binders: [jarBinder],
+    });
+    expect(Reflect.get(globalThis, BINDER_CASTS)).toHaveLength(1);
+    mounted.dispose();
+    expect(Reflect.get(globalThis, BINDER_CASTS)).toHaveLength(0);
   });
 });
 

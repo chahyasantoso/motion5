@@ -19,6 +19,21 @@ describe("parseSampleArgs", () => {
       file: "s.ts",
       request: { kind: "progress", progress: [0, 0.5, 1] },
     });
+    expect(parseSampleArgs(["s.ts", "--measure", "--at", "0"])).toEqual({
+      kind: "ok",
+      file: "s.ts",
+      request: { kind: "time", ms: [0] },
+      measure: true,
+    });
+    expect(parseSampleArgs(["s.ts", "--watch", "ball.x", "--measure"])).toEqual({
+      kind: "watch",
+      file: "s.ts",
+      path: "ball.x",
+      from: 0,
+      every: 16,
+      measure: true,
+    });
+    expect(parseSampleArgs(["s.ts", "--measure", "--measure", "--at", "0"]).kind).toBe("usage");
   });
 
   it("reads fields", () => {

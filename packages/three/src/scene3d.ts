@@ -18,7 +18,7 @@ export interface ThreeBinderOptions {
   readonly draw?: () => void;
 }
 
-/** What a mount runs to draw and measure object elements: claims, start, and optional resize, counts, measure. */
+/** What a mount runs to draw and measure object elements: claims, start, and optional resize, counts, measure, casts. */
 export interface ThreeBinder {
   /** Whether it draws the object element `name`. */
   claims(name: string): boolean;
@@ -33,6 +33,8 @@ export interface ThreeBinder {
     names?: readonly string[],
     lists?: ReadonlySet<string>,
   ): Readonly<Record<string, ObjectBounds3d>>;
+  /** Declares known 3D cast names and whether each is a single object or a `parts: true` list. */
+  casts?(): Readonly<Record<string, "single" | "list">>;
 }
 
 const IDENTITY_MATRIX = new Matrix4();
@@ -111,6 +113,33 @@ export function threeBinder(root: Object3D, options: ThreeBinderOptions = {}): T
   let started = false;
   return {
     claims: (name) => targetOf(name) !== undefined,
+    casts(): Readonly<Record<string, "single" | "list">> {
+      const out: Record<string, "single" | "list"> = {};
+      for (const name of Object.keys(objects)) {
+        const target = targetOf(name);
+        if (target === undefined) continue;
+        const classified = classifyTarget(target);
+        switch (classified.kind) {
+          case "list":
+            out[name] = "list";
+            break;
+          case "node":
+            out[name] = boundListNames.has(name) ? "list" : "single";
+            break;
+          case "writer":
+            out[name] = "single";
+            break;
+          default:
+            return unreachable(classified);
+        }
+      }
+      for (const name of boundNames) {
+        if (!Object.hasOwn(out, name)) {
+          out[name] = boundListNames.has(name) ? "list" : "single";
+        }
+      }
+      return Object.freeze(out);
+    },
     ...(resize === undefined ? {} : { resize }),
     counts(names?: readonly string[]): Readonly<Record<string, number>> {
       const candidates =
