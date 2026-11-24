@@ -72,7 +72,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache or missing `.cast.ts` on demand).
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list] [--measure]`**: exact
   values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`. `--measure` refreshes a missing or stale measure cache before sampling.
-- **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
+- **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest, under a bar per shot
+  made with `shot`.
 - **`gerak points <points.json> --spacing px [--prefix p]`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
 - **`gerak joints <model.glb|model.gltf> [--out file]`**: writes `<model>.joints.json` beside a skinned glTF: every bone's world rest
   point and parent, for `jointOf(table.joints, name)` in a scene module.

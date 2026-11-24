@@ -39,6 +39,7 @@ export {
   compileScene,
   isScene,
   scene,
+  shot,
   slot3d,
   stagger,
   stayWith,
@@ -53,6 +54,8 @@ export {
   type Scene,
   type SceneItem,
   type SceneOptions,
+  type Shot,
+  type ShotOptions,
   type SharedPose,
   type StaggerBy,
   type StaggerFrom,
@@ -96,6 +99,7 @@ export {
   type ListPose3d,
   type Drive,
   type Moves,
+  type ShotSummary,
 } from "./author/stage";
 export { isStage, type CompileResult, type Member, type Stage } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";

@@ -207,3 +207,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-200 — Scroll presence, 3D lists, cylinder physics, and multi-viewport checks — Accepted, 2026-11-24
 - ADR-201 — Unambiguous DOM lists, generated cast modules, 3D reads & stage rig, selector scroll actions, and signal subscriptions — Accepted, 2026-11-24
 - ADR-202 — Subject-first scenes — Accepted, 2026-11-24
+- ADR-203 — Multi-shot reels, safe zones and audio render — Accepted, 2026-11-24

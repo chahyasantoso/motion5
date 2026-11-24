@@ -10,6 +10,12 @@ export type TimelineResult =
       readonly step: number;
       readonly end: number;
       readonly rows: readonly TimelineRow[];
+      /** The scene's shots, in order, each drawn as a bar of `=` above the targets. */
+      readonly shots?: readonly {
+        readonly name: string;
+        readonly from: number;
+        readonly to: number;
+      }[];
     }
   | { readonly kind: "not-timed"; readonly reasons: readonly string[] };
 
@@ -46,7 +52,12 @@ export function renderTimeline(timeline: TimelineResult): string {
     case "not-timed":
       return timeline.reasons.join("\n");
     case "timeline": {
-      const width = Math.max(...timeline.rows.map(({ node }) => node.length), 4);
+      const shots = timeline.shots ?? [];
+      const width = Math.max(
+        ...timeline.rows.map(({ node }) => node.length),
+        ...shots.map(({ name }) => name.length),
+        4,
+      );
       const column = (at: number) => Math.round((at / timeline.end) * (BAR_WIDTH - 1));
       const lines = timeline.rows.map((row) => {
         switch (row.kind) {
@@ -64,7 +75,13 @@ export function renderTimeline(timeline: TimelineResult): string {
         }
       });
       const scale = `${"".padEnd(width)} 0 ms${`${timeline.end} ms`.padStart(BAR_WIDTH - 4)}`;
-      return [scale, ...lines].join("\n");
+      const shotLines = shots.map((shot) => {
+        const from = column(shot.from);
+        const to = Math.max(from, column(Math.min(shot.to, timeline.end)));
+        const bar = " ".repeat(from) + "=".repeat(to - from + 1) + " ".repeat(BAR_WIDTH - to - 1);
+        return `${shot.name.padEnd(width)} ${bar}  shot ${shot.from}-${shot.to} ms`;
+      });
+      return [scale, ...shotLines, ...lines].join("\n");
     }
     default:
       return unreachable(timeline);

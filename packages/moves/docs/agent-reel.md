@@ -24,14 +24,19 @@ storyboard before it, and shots in place of one idea.
      names one: a reel has no hard cut.
    - Every shot holds its idea at least 1.2 s, and the call to action at least 2 s, with nothing else moving.
 
-## Shots as beats
+## Shots
 
-- Name the beats by the shots as `beat` values (`beat("hook", 3000)`, `beat("story", 4000, { after: hook })`, …). Add a
-  beat for each transition when it spans its own ms: `hookToStory: [2600, 3200]`.
-- Keep each shot's scene work local to its beat: one function per shot, written from 0, placed with `sequence`. A
-  shot never reads another shot's time.
-- An element belongs to the shots it is seen in: `.shows([hook, story])` shows it across both. A carried element's
-  window spans both shots of its change.
+- Write each shot as its own scene with its beats from 0, and play them in order with `shot`:
+  `scene({ name: "launch" }, world.moves(camera), shot(hook), shot(story, { overlap: 600 }), shot(call))`. Making one
+  shot longer moves every shot after it.
+- A shot lasts until its last clock beat ends; `length` sets it, and `until` ends it on a scene ms, such as a beat cue's
+  `at`, so a cut lands on the music. `overlap` starts a shot that many ms before the last one ends, and both show
+  meanwhile: the transition's window.
+- Inside a shot, time and events start at 0 when the shot does. `context.read` of another shot's member reads it at the
+  scene's time, so a shot never needs another shot's ms.
+- A shot's members show only during the shot unless they `.shows(...)` a wider window of their own beats. A member seen
+  across shots (the camera, a caption bar, a carried object) belongs to the reel, not to a shot, and is written on the
+  reel's clock; a carried object may instead be two members, one per shot, drawn the same at the cut.
 - B-roll is a cutaway to the piece's own material: a detail of the product, the hook's object from another side, a
   word from the script. Never borrowed footage and never another piece's members.
 

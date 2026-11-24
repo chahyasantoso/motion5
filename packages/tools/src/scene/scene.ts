@@ -386,7 +386,16 @@ export function sceneTimeline(module: SceneModule, events: Events = NO_EVENTS): 
       }),
     ),
   );
-  return { kind: "timeline", step: STEP_MS, end, rows };
+  const shots = module.stage?.shots ?? [];
+  return {
+    kind: "timeline",
+    step: STEP_MS,
+    end,
+    rows,
+    ...(shots.length === 0
+      ? {}
+      : { shots: shots.map(({ name, from, to }) => ({ name, from, to })) }),
+  };
 }
 
 /** What `--watch` asks: one value by `path`, from `from` to `to` ms (the scene's end when absent) every `every` ms. */
