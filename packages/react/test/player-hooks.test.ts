@@ -2,13 +2,14 @@ import { createElement, type FC } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { clockDriver, type RenderTarget } from "@gerak/dom";
-import { type Time } from "@gerak/core";
+import { eventLog, state, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
 import { manualDriver, type ManualDriver } from "@gerak/player";
 import {
   PlayerHostProvider,
   driverKeeper,
   usePlayer,
+  useSignal,
   useTarget,
   useValue,
   type PlayerHost,
@@ -94,6 +95,33 @@ describe("player hooks", () => {
     probe.driver.seek(1);
     expect(JSON.stringify(probe.element.style)).toBe(before);
     expect(player).toBeDefined();
+  });
+});
+
+describe("useSignal", () => {
+  it("renders a signal's value at once and again only when an event changes it", async () => {
+    const log = eventLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const createDriver = () => driver;
+    const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
+    const seen: (number | undefined)[] = [];
+    const Probe: FC = () => {
+      const playing = usePlayer(scene, createDriver);
+      seen.push(useSignal(playing?.player, taps));
+      return null;
+    };
+    await act(() => {
+      create(createElement(Probe));
+    });
+    expect(seen.at(-1)).toBe(0);
+    const settled = seen.length;
+    await act(() => driver.seekMs(200));
+    expect(seen.length).toBe(settled);
+    log.add({ name: "tap", at: 300 });
+    await act(() => driver.seekMs(400));
+    expect(seen.at(-1)).toBe(1);
+    await act(() => driver.seekMs(100));
+    expect(seen.at(-1)).toBe(0);
   });
 });
 

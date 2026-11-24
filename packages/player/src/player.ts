@@ -25,6 +25,9 @@ export interface Player<T extends object> {
   readonly values: T;
   /** Calls `listener` with the target's value now and after every step, until the returned function runs. */
   subscribe<K extends keyof T>(target: K, listener: (value: T[K]) => void): () => void;
+  /** Calls `listener` with `signal`'s value now and after each step that changes it, before targets' subscribers.
+   * It reads the scene's time and events, so a seek back undoes later events. */
+  observe<V>(signal: Signal<V>, listener: (value: V) => void): () => void;
   /** Reruns the scene at the current time, for inputs it reads from outside such as a measured layout. */
   refresh(): void;
   /** Swaps the scene, and the cues when given, then reruns at the current time; the driver and listeners stay. */
@@ -63,6 +66,7 @@ export function play<T extends object>(
   let values = current(time, events());
   let reached = elapsedOf(time.clock);
   const listeners = new Set<() => void>();
+  const observers = new Set<(all: Events) => void>();
   const handlers = new Map<string, Set<(event: MotionEvent) => void>>();
   const announce = (all: Events): void => {
     const now = elapsedOf(time.clock);
@@ -80,12 +84,14 @@ export function play<T extends object>(
       const started = performance.now();
       values = current(time, all);
       const scened = performance.now();
+      for (const observer of [...observers]) observer(all);
       for (const notify of [...listeners]) notify();
       const written = performance.now();
       performance.measure("gerak:scene", { start: started, end: scened });
       performance.measure("gerak:write", { start: scened, end: written });
     } else {
       values = current(time, all);
+      for (const observer of [...observers]) observer(all);
       for (const notify of [...listeners]) notify();
     }
     announce(all);
@@ -106,6 +112,20 @@ export function play<T extends object>(
         listeners.delete(notify);
       };
     },
+    observe(signal, listener) {
+      let last = signal(time, events());
+      const observer = (all: Events): void => {
+        const next = signal(time, all);
+        if (Object.is(next, last)) return;
+        last = next;
+        listener(next);
+      };
+      observers.add(observer);
+      listener(last);
+      return () => {
+        observers.delete(observer);
+      };
+    },
     refresh: step,
     replace(next, nextCues) {
       current = next;
@@ -123,6 +143,7 @@ export function play<T extends object>(
     dispose() {
       leave();
       listeners.clear();
+      observers.clear();
       handlers.clear();
     },
   };

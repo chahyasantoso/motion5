@@ -4,6 +4,7 @@ export {
   PlayerHostProvider,
   driverKeeper,
   usePlayer,
+  useSignal,
   useTarget,
   useValue,
   useWatch,

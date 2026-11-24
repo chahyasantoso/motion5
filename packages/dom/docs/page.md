@@ -36,6 +36,7 @@ A live mount runs one clock (`liveAt`) feeding scroll, pointer and watched eleme
 - Pointer movement over the page samples normalized viewport coordinates `INPUT_EVENTS.pointerX` and `INPUT_EVENTS.pointerY` from 0 to 1 (`pointer.x`, `pointer.y`).
 - Elements with `watch: true` log `enter`, `leave`, `down`, `up`, `click`, `focus` and `blur`.
 - `mounted.send(name, value, target?)` logs a sample at the current clock time, and `mounted.events()` returns the recorded log.
+- `mounted.player.observe(signal, listener)` calls `listener` with a `state(...)` or other signal now and after each step that changes it, before the page draws that step. Page UI outside the cast reads the scene's own state this way instead of keeping a copy; a seek back undoes later events.
 - The mount owns the inline `transform`, `opacity`, `z-index`, `transform-origin`, `transform-box`, `filter` and `clip-path` of every node it animates, setting each only when its text changes; it leaves `transform-origin` and `transform-box` untouched unless a pose specifies an `anchor`.
 - An input only logs its sample and asks for a frame; the scene runs and writes once per animation frame, however many inputs arrived in it.
 - A frame after an input runs the whole scene. A frame with no new input runs only the elements that move with time alone: a clock beat not ended, a running trigger, a `smooth` beat or `springTo` not yet settled, a loop; and, until `settleMs` after the last input or re-measure, a motion that read the clock, `carry` or another element.

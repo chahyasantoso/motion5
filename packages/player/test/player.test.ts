@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atProgress, eventLog, liveAt, type Time } from "@gerak/core";
+import { atProgress, eventLog, liveAt, state, type Time } from "@gerak/core";
 import { hop } from "@gerak/moves";
 import { manualDriver, play } from "@gerak/player";
 
@@ -268,5 +268,69 @@ describe("play over a long growing log", () => {
     const late = Math.min(steps(500), steps(500), steps(500));
     expect(player.values.count).toBe(log.events.length);
     expect(late).toBeLessThan(early * 4);
+  });
+});
+
+describe("observe", () => {
+  const counter = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
+  const timed = () => {
+    const log = eventLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    return { log, driver, player: play(() => ({}), driver) };
+  };
+
+  it("calls the listener at once with the signal's value", () => {
+    const { player } = timed();
+    const seen: number[] = [];
+    player.observe(counter, (count) => seen.push(count));
+    expect(seen).toEqual([0]);
+  });
+
+  it("calls again only when a step changes the value", () => {
+    const { log, driver, player } = timed();
+    const seen: number[] = [];
+    player.observe(counter, (count) => seen.push(count));
+    driver.seekMs(100);
+    driver.seekMs(200);
+    log.add({ name: "tap", at: 300 });
+    driver.seekMs(300);
+    driver.seekMs(400);
+    expect(seen).toEqual([0, 1]);
+  });
+
+  it("reads the events the scene sees, so a seek back undoes later events and cues count", () => {
+    const log = eventLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const player = play(() => ({}), driver, { cues: [{ name: "tap", at: 100 }] });
+    const seen: number[] = [];
+    player.observe(counter, (count) => seen.push(count));
+    log.add({ name: "tap", at: 500 });
+    driver.seekMs(200);
+    driver.seekMs(600);
+    driver.seekMs(50);
+    expect(seen).toEqual([0, 1, 2, 0]);
+  });
+
+  it("runs before the targets' subscribers on each step", () => {
+    const log = eventLog();
+    const driver = { ...manualDriver({ durationMs: 1000 }), events: () => log.events };
+    const player = play((time: Time) => ({ box: { x: time.progress } }), driver);
+    const order: string[] = [];
+    player.observe(counter, () => order.push("observe"));
+    player.subscribe("box", () => order.push("target"));
+    order.length = 0;
+    log.add({ name: "tap", at: 100 });
+    driver.seekMs(100);
+    expect(order).toEqual(["observe", "target"]);
+  });
+
+  it("stops when the returned function runs", () => {
+    const { log, driver, player } = timed();
+    const seen: number[] = [];
+    const stop = player.observe(counter, (count) => seen.push(count));
+    stop();
+    log.add({ name: "tap", at: 100 });
+    driver.seekMs(100);
+    expect(seen).toEqual([0]);
   });
 });
