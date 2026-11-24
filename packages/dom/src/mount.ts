@@ -455,6 +455,7 @@ function bindList(
   selector: string,
   rawMatches: readonly unknown[],
   root: PageRoot,
+  explicitArray = false,
 ): BoundTarget {
   if (rawMatches.length === 0)
     throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
@@ -464,11 +465,11 @@ function bindList(
   const first = matches[0];
   if (first === undefined)
     throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
-  if (matches.length === 1) {
+  if (!explicitArray && member.split !== undefined && matches.length === 1) {
     const kids = childElementsOf(first);
     if (kids.length > 0) return { member, node: first, items: kids };
     const doc = documentOf(first, root);
-    if (member.split !== undefined && doc !== undefined) {
+    if (doc !== undefined) {
       const wrapped = wrapSplitText(first, member.name, member.split, doc);
       return { member, node: first, items: wrapped.items, restore: wrapped.restore };
     }
@@ -690,10 +691,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           allNodes.push(node);
           break;
         }
-        case "list":
-          bound = bindList(member, selector, found(), root);
+        case "list": {
+          const explicitArray = given !== undefined && !isPageElement(given);
+          bound = bindList(member, selector, found(), root, explicitArray);
           allNodes.push(...bound.items);
           break;
+        }
         default:
           return unreachable(member);
       }

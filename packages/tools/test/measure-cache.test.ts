@@ -2,7 +2,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { cachePathOf, pageDigest, readMeasureCache } from "../src/page/measure-cache";
+import { formatCastTypes } from "../src/page/measure";
+import {
+  cachePathOf,
+  castTypesPathOf,
+  pageDigest,
+  readMeasureCache,
+} from "../src/page/measure-cache";
 import { lookupCache, pageOfSceneFile, restOfCache } from "../src/scene/measure-cache";
 import { loadSceneFile } from "../src/scene/scene";
 
@@ -130,5 +136,39 @@ describe("the measure cache", () => {
     const { page, scene } = brief();
     rmSync(page);
     expect(lookupCache(scene)).toEqual({ kind: "none" });
+  });
+
+  it("formats deterministic <name>.cast.d.ts unions sorted without part suffixes", () => {
+    expect(castTypesPathOf(join("p", "card", "card.html"))).toBe(
+      join("p", "card", "card.cast.d.ts"),
+    );
+    expect(formatCastTypes([])).toBe("export type CastName = never;\n");
+    expect(formatCastTypes(["card", "card.0", "title", "card", "alpha"])).toBe(
+      'export type CastName = "alpha" | "card" | "title";\n',
+    );
+    const many = [
+      "heroStage",
+      "heroHeadline",
+      "heroSub",
+      "heroCta",
+      "spotlightStage",
+      "spotlightTints",
+      "craftStage",
+      "craftCards",
+    ];
+    expect(formatCastTypes(many)).toBe(
+      [
+        "export type CastName =",
+        '  | "craftCards"',
+        '  | "craftStage"',
+        '  | "heroCta"',
+        '  | "heroHeadline"',
+        '  | "heroStage"',
+        '  | "heroSub"',
+        '  | "spotlightStage"',
+        '  | "spotlightTints";',
+        "",
+      ].join("\n"),
+    );
   });
 });

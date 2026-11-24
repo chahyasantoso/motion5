@@ -1,6 +1,12 @@
 import { writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { cachePathOf, pageDigest, readMeasureCache, type MeasureCache } from "./measure-cache";
+import { basename, dirname, join } from "node:path";
+import {
+  cachePathOf,
+  castTypesPathOf,
+  pageDigest,
+  readMeasureCache,
+  type MeasureCache,
+} from "./measure-cache";
 import { readPageArgs, withPage, type PageTarget } from "./page";
 
 /** Parsed `gerak measure` arguments, or the usage text. */
@@ -13,12 +19,34 @@ export type MeasureResult =
   | {
       readonly kind: "measured";
       readonly file: string;
+      readonly typesFile: string;
       readonly names: readonly string[];
       readonly pageErrors: readonly string[];
     }
   | { readonly kind: "refused"; readonly message: string; readonly pageErrors: readonly string[] };
 
 const USAGE = "usage: gerak measure <brief>/<name>.html [--size WxH] [--root dir]";
+const LINE_LIMIT = 100;
+
+/** Formats deterministic, Prettier-aligned `export type CastName = ...` declarations for base cast names. */
+export function formatCastTypes(names: Iterable<string>): string {
+  const unique = new Set<string>();
+  for (const name of names) {
+    if (name !== "" && !name.includes(".")) unique.add(name);
+  }
+  const sorted = [...unique].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (sorted.length === 0) return "export type CastName = never;\n";
+  const literals = sorted.map((name) => JSON.stringify(name));
+  const single = `export type CastName = ${literals.join(" | ")};`;
+  if (single.length <= LINE_LIMIT) return `${single}\n`;
+  return [
+    "export type CastName =",
+    ...literals.map(
+      (literal, index) => `  | ${literal}${index === literals.length - 1 ? ";" : ""}`,
+    ),
+    "",
+  ].join("\n");
+}
 
 /** Reads `<page> [--size WxH] [--root dir]`; a page measured into a cache must be served from a folder. */
 export function parseMeasureArgs(argv: readonly string[]): MeasureArgs {
@@ -33,7 +61,7 @@ export function parseMeasureArgs(argv: readonly string[]): MeasureArgs {
   return { kind: "ok", ...read.target };
 }
 
-/** Opens the page once, reads what every mount on it measured, and writes the cache beside it. */
+/** Opens the page once, reads what every mount on it measured, and writes the cache and cast types beside it. */
 export async function measurePage(request: PageTarget): Promise<MeasureResult> {
   const { source } = request;
   if (source.kind !== "serve")
@@ -42,23 +70,39 @@ export async function measurePage(request: PageTarget): Promise<MeasureResult> {
     await advanceTo(0);
     return page.evaluate(() => {
       const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-      if (!Array.isArray(listed)) return [];
-      return listed.flatMap((mounted: unknown) => {
-        const measure: unknown = Reflect.get(Object(mounted), "measure");
-        return typeof measure === "function"
-          ? [JSON.stringify(Reflect.apply(measure, mounted, []))]
-          : [];
-      });
+      const mounts = Array.isArray(listed)
+        ? listed.flatMap((mounted: unknown) => {
+            const measure: unknown = Reflect.get(Object(mounted), "measure");
+            return typeof measure === "function"
+              ? [JSON.stringify(Reflect.apply(measure, mounted, []))]
+              : [];
+          })
+        : [];
+      const domCasts = Array.from(document.querySelectorAll("[data-cast]"), (el) =>
+        el.getAttribute("data-cast"),
+      ).filter((cast): cast is string => typeof cast === "string" && cast !== "");
+      return { mounts, domCasts };
     });
   });
-  if (value.length === 0)
+  if (value.mounts.length === 0)
     return { kind: "refused", message: `${request.page} mounted no scene.`, pageErrors };
-  const digest = pageDigest(join(source.root, request.page));
-  const merged = merge(request.page, digest, value);
+  const pageFile = join(source.root, request.page);
+  const digest = pageDigest(pageFile);
+  const merged = merge(request.page, digest, value.mounts);
   if ("reason" in merged) return { kind: "refused", message: merged.reason, pageErrors };
-  const file = cachePathOf(join(source.root, request.page));
+  const file = cachePathOf(pageFile);
+  const typesFile = castTypesPathOf(pageFile);
   writeFileSync(file, `${JSON.stringify(merged, null, 1)}\n`);
-  return { kind: "measured", file, names: Object.keys(merged.rest), pageErrors };
+  writeFileSync(
+    typesFile,
+    formatCastTypes([
+      ...value.domCasts,
+      ...Object.keys(merged.rest),
+      ...Object.keys(merged.objects ?? {}),
+      ...Object.keys(merged.counts ?? {}),
+    ]),
+  );
+  return { kind: "measured", file, typesFile, names: Object.keys(merged.rest), pageErrors };
 }
 
 /** One cache from each mount's measure: one frame, and each name measured by one mount only. */

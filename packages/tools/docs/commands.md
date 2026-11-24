@@ -5,7 +5,7 @@ Run from your project's folder. A page is a path inside the site with no leading
 `--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
 `1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
-`--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
+`--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px|sel[±px]@ms` (resolving `sel`'s document top `+ ±px` in the active viewport; negative offsets follow `]`, `)`, or space), with
 `(x,y)` after the ms for a point on the element; repeatable `--action` flags join in order, and a selector the page lacks fails at once.
 
 - **`gerak init [folder] [--refresh]`**: sets up your project, found as the nearest `package.json`: writes the
@@ -25,7 +25,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
-- **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
+- **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
@@ -65,13 +65,13 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`gerak render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.
-- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` beside it:
+- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` and `<name>.cast.d.ts` (`export type CastName = ...`) beside it:
   the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
   3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them. `sample`, `timeline` and `review` of a
   builder scene `<brief>/src/<name>.ts` read it with no
-  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included.
-- **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list]`**: exact
-  values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`.
+  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache on demand).
+- **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list] [--measure]`**: exact
+  values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`. `--measure` refreshes a missing or stale measure cache before sampling.
 - **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.
 - **`gerak points <points.json> --spacing px [--prefix p]`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
 - **`gerak joints <model.glb|model.gltf> [--out file]`**: writes `<model>.joints.json` beside a skinned glTF: every bone's world rest

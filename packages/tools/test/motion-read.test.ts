@@ -89,6 +89,58 @@ describe("page actions with a point", () => {
       { kind: "hover", selector: ".card", at: 400 },
     ]);
   });
+
+  it("parses pixel and selector scroll targets with optional pixel offsets", async () => {
+    const { parseActions } = await import("../src/page/actions");
+    expect(
+      parseActions(
+        'scroll:800@100,scroll:#sec@200,scroll:#section-1@250,scroll:.card-2@260,scroll:h2.step-01@270,scroll:#section-1+40@300,scroll:#section-1 -40@350,scroll:[data-cast="sec"]+40@400,scroll:[data-cast="builderStage"]-120@500,scroll:section:nth-of-type(2)-40@600',
+      ),
+    ).toEqual([
+      { kind: "scroll", target: { kind: "px", px: 800 }, at: 100 },
+      { kind: "scroll", target: { kind: "selector", selector: "#sec", offsetPx: 0 }, at: 200 },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: "#section-1", offsetPx: 0 },
+        at: 250,
+      },
+      { kind: "scroll", target: { kind: "selector", selector: ".card-2", offsetPx: 0 }, at: 260 },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: "h2.step-01", offsetPx: 0 },
+        at: 270,
+      },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: "#section-1", offsetPx: 40 },
+        at: 300,
+      },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: "#section-1", offsetPx: -40 },
+        at: 350,
+      },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: '[data-cast="sec"]', offsetPx: 40 },
+        at: 400,
+      },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: '[data-cast="builderStage"]', offsetPx: -120 },
+        at: 500,
+      },
+      {
+        kind: "scroll",
+        target: { kind: "selector", selector: "section:nth-of-type(2)", offsetPx: -40 },
+        at: 600,
+      },
+    ]);
+    expect(parseActions("scroll:-50@200")).toHaveProperty("reason");
+    expect(parseActions("scroll:+40@200")).toHaveProperty("reason");
+    expect(parseActions("scroll:@100")).toHaveProperty("reason");
+    expect(parseActions("scroll:   @100")).toHaveProperty("reason");
+  });
 });
 
 describe("gerak read turns", () => {

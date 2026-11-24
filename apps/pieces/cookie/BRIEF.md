@@ -35,7 +35,7 @@ On `main`, earlier 3D pieces (`avatar-3d`, `dragon-intro`) loaded `dragonling.gl
 
 | File | Single Responsibility |
 | --- | --- |
-| `src/contract.ts` | Pure data & types: `CAST` names, `FLAVORS`, `STAGE_SIZE`, `LENS`, `JAR_METRICS`. No DOM or Three.js. |
+| `src/contract.ts` | Pure data & types: `CastName` (re-exported from `../cookie.cast.d.ts`), `FLAVORS`, `STAGE_SIZE`, `LENS`, `JAR_METRICS`. No DOM or Three.js. |
 | `src/world-studio.ts` | Three.js `Scene`, `PerspectiveCamera` from `LENS`, `WebGLRenderer`, 3-point sunlit studio lights, resize/draw/dispose. |
 | `src/world-models.ts` | `GLTFLoader` loading for jar & cookie `.glb`s, sunlit `JarGlass` `MeshPhysicalMaterial`, jar-attached `ShadowMaterial` disc, `jarRoot` / `jarLid` / `cookieHero` assembly. |
 | `src/scene-hero.ts` | Pure `sceneBuilder()` fragment for the hero entrance and jar settle (no `length` or `cues`). |

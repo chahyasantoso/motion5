@@ -14,25 +14,25 @@ import {
   type Time,
 } from "@gerak/core";
 import { beat, box, object, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
-import { CAST, HERO_COOKIE_JAR_LOCAL } from "./contract.ts";
+import { HERO_COOKIE_JAR_LOCAL, type CastName } from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { heroJarSlotWorld, isHeroHandoffActive, spotlightSlotWorld } from "./space3d.ts";
 
-const stageCanvas = box(CAST.stageCanvas);
-const heroStage = box(CAST.heroStage);
-const heroWarmWash = box(CAST.heroWarmWash);
-const heroHorizon = box(CAST.heroHorizon);
-const heroCopy = box(CAST.heroCopy);
-const slotHeroJar = box(CAST.slotHeroJar);
-const heroHeadline = text(CAST.heroHeadline, { split: "words" });
-const heroSub = box(CAST.heroSub);
-const heroCta = box(CAST.heroCta, { watch: true });
-const offerBanner = box(CAST.offerBanner);
-const offerSeal = box(CAST.offerSeal);
+const stageCanvas = box<CastName>("stageCanvas");
+const heroStage = box<CastName>("heroStage");
+const heroWarmWash = box<CastName>("heroWarmWash");
+const heroHorizon = box<CastName>("heroHorizon");
+const heroCopy = box<CastName>("heroCopy");
+const slotHeroJar = box<CastName>("slotHeroJar");
+const heroHeadline = text<CastName>("heroHeadline", { split: "words" });
+const heroSub = box<CastName>("heroSub");
+const heroCta = box<CastName>("heroCta", { watch: true });
+const offerBanner = box<CastName>("offerBanner");
+const offerSeal = box<CastName>("offerSeal");
 
-const jarRoot = object(CAST.jarRoot);
-const jarLid = object(CAST.jarLid);
-const cookieHero = object(CAST.cookieHero);
+const jarRoot = object<CastName>("jarRoot");
+const jarLid = object<CastName>("jarLid");
+const cookieHero = object<CastName>("cookieHero");
 
 const heroEnter = beat("heroEnter", 520);
 const jarSettle = beat("jarSettle", 520);
@@ -56,7 +56,7 @@ const cookieLift = beat("cookieLift", {
 const ctaHovered = state(
   false,
   (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: CAST.heroCta },
+  { target: "heroCta" satisfies CastName },
 );
 const ctaPeek = shared(
   springTo(ctaHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),

@@ -23,13 +23,13 @@ could not be written as several scenes.
    bound to several nodes has one part per node, `<name>.<index>`. `text(name, { split })` takes no string: the DOM
    binder binds the child elements the author wrote, or wraps the parts on mount. A readout keeps its function.
    `shape` keeps its path. Where an element turns is CSS `transform-origin` in the DOM and the origin of an
-   `Object3D`; a pose's `anchor` turns about a side of the measured box while a motion sets it.
+   `Object3D`; a pose's `anchor` turns about a side of the measured box while a motion sets it. **Refined by [ADR-201](./ADR-201-unambiguous-dom-lists-3d-reads-and-signal-subscriptions.md), 2026-11-24.** `box(name, { parts: true })` and explicit `options.nodes` arrays always bind matched elements directly (`1..N`) without descending into a single node's children; `text(name, { split })` alone binds or wraps single-container children.
 3. **Every box element has edges.** `box`, `text` and `shape` expose `.top` and `.end` as scroll points, with `.plus`,
    `.minus` and `.reached`. An object has none. **Refined by [ADR-199](./ADR-199-responsive-3d-pages-and-transitions.md), 2026-11-24.** Every DOM element (`box`, `text`, `shape`) also exposes `.pinStart` and `.pinEnd`, reading measured sticky `minY` and `maxY` with `.top`/`.end` fallback.
 4. **The measure cache.** `gerak measure <page>` opens the page once in headless Chromium and writes
    `<page>.measure.json` beside it: per name its parts, rest boxes, edges, parent, pivot and line per part; per
    object its rest position and parent. `review`, `sample` and every headless tool read it, and refuse a piece with no
-   cache, or a cache older than its markup, naming the command that writes it.
+   cache, or a cache older than its markup, naming the command that writes it. **Refined by [ADR-201](./ADR-201-unambiguous-dom-lists-3d-reads-and-signal-subscriptions.md), 2026-11-24.** `gerak measure <page>` also writes `<page>.cast.d.ts` (`export type CastName = ...`) beside `<page>.measure.json`, and `gerak review <scene.ts> --measure` and `gerak sample <scene.ts> --measure` refresh a missing or stale cache on demand.
 5. **Scenes include scenes.** `sceneBuilder().include(scene)` merges another scene's elements, beats and chain onto one
    clock. No scene has its own time. Two scenes claiming one element, or one name, are refused. `frame`, `cues` and
    `length` belong to the scene that is mounted; including a scene that sets any of them is refused. **Superseded in part by [ADR-199](./ADR-199-responsive-3d-pages-and-transitions.md), 2026-11-24.** Sibling scenes combined with `.include()` may share read-only element references (`view.canvas`, `travel.to`, edge points, `stayWith`); two scenes claiming motion, show, or limit ownership of one element remain refused.

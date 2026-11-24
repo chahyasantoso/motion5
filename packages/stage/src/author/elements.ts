@@ -160,7 +160,7 @@ function optionsOf(options: ElementOptions | undefined): ElementOptions {
 }
 
 /** A page element styled by CSS; `parts: true` binds it to a list of parts. */
-export function box(name: string, options?: BoxOptions): Element {
+export function box<N extends string = string>(name: N, options?: BoxOptions): Element {
   return edged({
     kind: "box",
     name: named("box", name),
@@ -174,7 +174,11 @@ function isMorph(value: ShapeSource): value is MorphSource {
 }
 
 /** A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`. */
-export function shape(name: string, outline: ShapeSource, options?: ElementOptions): Element {
+export function shape<N extends string = string>(
+  name: N,
+  outline: ShapeSource,
+  options?: ElementOptions,
+): Element {
   const drawn: Outline = isMorph(outline)
     ? { kind: "morph", base: outline.base, targets: outline.targets }
     : { kind: "path", path: outline };
@@ -187,14 +191,14 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
 }
 
 /** Text in the markup, or text a function of time writes; `split` gives one part per letter or word. */
-export function text(name: string, options?: TextOptions): Element;
-export function text(
-  name: string,
+export function text<N extends string = string>(name: N, options?: TextOptions): Element;
+export function text<N extends string = string>(
+  name: N,
   content: (time: Time) => string,
   options?: ElementOptions,
 ): Element;
-export function text(
-  name: string,
+export function text<N extends string = string>(
+  name: N,
   second?: TextOptions | ((time: Time) => string),
   third?: ElementOptions,
 ): Element {
@@ -221,7 +225,7 @@ export function text(
 }
 
 /** A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children. */
-export function object(name: string, options?: ObjectOptions): ObjectElement {
+export function object<N extends string = string>(name: N, options?: ObjectOptions): ObjectElement {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))
     throw new TypeError(

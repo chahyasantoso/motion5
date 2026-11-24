@@ -682,6 +682,67 @@ describe("mount", () => {
     expect(card.style.transform).toBe("");
     mounted.dispose();
   });
+
+  it("binds box(parts: true) to matched elements even with 1 item having children, while keeping text(split) and explicit nodes distinct", () => {
+    const singleCard = new FakeNode("singleCard");
+    singleCard.setAttribute("data-cast", "cards");
+    const h3 = new FakeNode("h3");
+    const p = new FakeNode("p");
+    singleCard.children.push(h3, p);
+
+    const headline = new FakeNode("headline");
+    const word0 = new FakeNode("word0");
+    const word1 = new FakeNode("word1");
+    headline.children.push(word0, word1);
+
+    const plain = new FakeNode("plain");
+    plain.textContent = "One two";
+
+    const root = new FakeRoot([singleCard, headline, plain]);
+    const scene = sceneBuilder({ length: 500 })
+      .element(box("cards", { parts: true }))
+      .motion((_t, ctx) => ({ x: 10 + (ctx?.index ?? 0) * 5, y: ctx?.count ?? 0 }))
+      .element(text("headline", { split: "words" }))
+      .motion((_t, ctx) => ({ x: 20 + (ctx?.index ?? 0) * 10 }))
+      .element(text("plain", { split: "words" }))
+      .motion((_t, ctx) => ({ y: 30 + (ctx?.index ?? 0) * 10 }));
+
+    const mounted = mount(scene, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
+    expect(singleCard.style.transform).toBe("translate3d(10px, 1px, 0px)");
+    expect(h3.style.transform).toBe("");
+    expect(p.style.transform).toBe("");
+    expect(mounted.measure().rest["cards.0"]).toBeDefined();
+    expect(mounted.measure().rest["cards"]).toBeDefined();
+    expect(word0.style.transform).toBe("translate3d(20px, 0px, 0px)");
+    expect(word1.style.transform).toBe("translate3d(30px, 0px, 0px)");
+    expect(headline.style.transform).toBe("");
+    expect(plain.children).toHaveLength(2);
+    expect(plain.children[0]?.style.transform).toBe("translate3d(0px, 30px, 0px)");
+    mounted.dispose();
+    expect(plain.textContent).toBe("One two");
+
+    const explicitCard = new FakeNode("explicitCard");
+    explicitCard.children.push(new FakeNode("nestedA"), new FakeNode("nestedB"));
+    const explicitWord = new FakeNode("explicitWord");
+    explicitWord.children.push(new FakeNode("nestedSpan"));
+    const explicitScene = sceneBuilder({ length: 500 })
+      .element(box("cards", { parts: true }))
+      .motion((_t, ctx) => ({ x: 5, y: ctx?.count ?? 0 }))
+      .element(text("headline", { split: "words" }))
+      .motion((_t, ctx) => ({ x: 7, y: ctx?.count ?? 0 }));
+    const explicitMounted = mount(explicitScene, {
+      root: new FakeRoot([]),
+      frames: fakeFrames(),
+      clock: "live",
+      now: () => 0,
+      nodes: { cards: [explicitCard], headline: [explicitWord] },
+    });
+    expect(explicitCard.style.transform).toBe("translate3d(5px, 1px, 0px)");
+    expect(explicitCard.children[0]?.style.transform).toBe("");
+    expect(explicitWord.style.transform).toBe("translate3d(7px, 1px, 0px)");
+    expect(explicitWord.children[0]?.style.transform).toBe("");
+    explicitMounted.dispose();
+  });
 });
 
 describe("mount frames for a cause", () => {

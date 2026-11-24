@@ -7,7 +7,6 @@ import {
   BUILDER_EXIT_POOL,
   BUILDER_JAR_PRICE,
   BUILDER_MIN_SEAL,
-  CAST,
   FLAVORS,
   FLAVOR_SELECT_EVENT,
   JAR_ADD_EVENT,
@@ -20,6 +19,7 @@ import {
   isSpotlightZone,
   spotlightTargetForZone,
   spotlightZoneForProgress,
+  type CastName,
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
@@ -27,24 +27,13 @@ import { spotlightSlotWorld } from "./space3d.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
 
-const FLAVOR_NOTE_CASTS: readonly string[] = [
-  CAST.flavorNote0,
-  CAST.flavorNote1,
-  CAST.flavorNote2,
-  CAST.flavorNote3,
-];
-
-const FLAVOR_DOT_CASTS: readonly string[] = [
-  CAST.flavorDot0,
-  CAST.flavorDot1,
-  CAST.flavorDot2,
-  CAST.flavorDot3,
-];
+const castSelector = (name: CastName): string => `[data-cast="${name}"]`;
 
 async function bootstrap(): Promise<void> {
-  const node = document.querySelector(`[data-cast="${CAST.stageCanvas}"]`);
+  const canvasSelector = castSelector("stageCanvas");
+  const node = document.querySelector(canvasSelector);
   if (!(node instanceof HTMLCanvasElement)) {
-    throw new Error(`Missing canvas element [data-cast="${CAST.stageCanvas}"]`);
+    throw new Error(`Missing canvas element ${canvasSelector}`);
   }
 
   const studio = createCookieStudio(node);
@@ -64,11 +53,9 @@ async function bootstrap(): Promise<void> {
     ],
   });
 
-  const heroCtaEl = document.querySelector(`[data-cast="${CAST.heroCta}"]`);
-  const noteNodes = FLAVOR_NOTE_CASTS.map((name) =>
-    document.querySelector(`[data-cast="${name}"]`),
-  );
-  const dotNodes = FLAVOR_DOT_CASTS.map((name) => document.querySelector(`[data-cast="${name}"]`));
+  const heroCtaEl = document.querySelector(castSelector("heroCta"));
+  const noteNodes = Array.from(document.querySelectorAll(castSelector("flavorNotes")));
+  const dotNodes = Array.from(document.querySelectorAll(castSelector("flavorDots")));
 
   let lastActiveZone: SpotlightZone | -1 = -1;
 
@@ -436,7 +423,7 @@ async function bootstrap(): Promise<void> {
     cleanupListeners.push(() => heroCtaEl.removeEventListener("click", onCtaClick));
   }
 
-  const builderStageEl = document.querySelector(`[data-cast="${CAST.builderStage}"]`);
+  const builderStageEl = document.querySelector(castSelector("builderStage"));
   for (const el of document.querySelectorAll("[data-closing-builder-cta]")) {
     const onClick = (event: Event): void => {
       event.preventDefault();
@@ -537,7 +524,7 @@ async function bootstrap(): Promise<void> {
     cleanupListeners.push(() => builderSealBtn.removeEventListener("click", toggleSealJar));
   }
 
-  const unsubscribePlayer = mounted.player.subscribe(CAST.flavorShadow, () => {
+  const unsubscribePlayer = mounted.player.subscribe("flavorShadow" satisfies CastName, () => {
     syncActiveFlavor();
   });
 

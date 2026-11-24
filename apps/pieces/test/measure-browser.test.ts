@@ -1,8 +1,8 @@
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { callerPiecesRoot, measurePage, readMeasureCache } from "@gerak/tools/page";
-import { lookupCache } from "@gerak/tools/scene";
+import { loadSceneFile, lookupCache, reviewSceneFile } from "@gerak/tools/scene";
 
 const PIECES_ROOT = callerPiecesRoot();
 const NAME = "measure-scratch";
@@ -79,6 +79,91 @@ mount(scene, { clock: "live" });
       placement: { kind: "flow" },
     });
     expect(cache.parents).toEqual({ title: "card" });
+    expect(readFileSync(join(dir, `${NAME}.cast.d.ts`), "utf8")).toBe(
+      'export type CastName = "card" | "title";\n',
+    );
     expect(lookupCache(join(dir, "src", `${NAME}.ts`)).kind).toBe("read");
+
+    // Mutate HTML (adding an un-animated data-cast node) so cache becomes stale, then refresh via --measure.
+    writeFileSync(
+      join(dir, `${NAME}.html`),
+      `<!doctype html>
+<html lang="en">
+  <head>
+    <style>
+      body { margin: 0; }
+      [data-cast="card"] { position: absolute; left: 100px; top: 50px; width: 220px; height: 120px; }
+      [data-cast="title"] { margin: 10px; height: 20px; }
+    </style>
+  </head>
+  <body>
+    <div data-cast="card"><div data-cast="title">Hi</div></div>
+    <div data-cast="badge">New</div>
+    <script type="module" src="/${NAME}/src/main.ts"></script>
+  </body>
+</html>
+`,
+    );
+    writeFileSync(
+      join(dir, "src", `${NAME}.ts`),
+      `import { motion } from "@gerak/core";
+import { beat, box, sceneBuilder } from "@gerak/stage";
+const enter = beat("enter", 400);
+export default sceneBuilder({ length: 1000 })
+  .element(box("card"))
+  .motion(motion((t) => ({ x: 40 * t.progress })).in(enter))
+  .element(box("title"))
+  .motion(motion((t) => ({ y: 20 * t.progress })).in(enter));
+`,
+    );
+    const scenePath = join(dir, "src", `${NAME}.ts`);
+    expect(lookupCache(scenePath).kind).toBe("refused");
+
+    const reviewed = await reviewSceneFile({
+      file: scenePath,
+      hold: 500,
+      jump: 150,
+      turn: 150,
+      ratio: 1.5,
+      budget: 8,
+      measure: true,
+    });
+    expect(reviewed).toEqual({ kind: "reviewed", findings: [] });
+    expect(readFileSync(join(dir, `${NAME}.cast.d.ts`), "utf8")).toBe(
+      'export type CastName = "badge" | "card" | "title";\n',
+    );
+    const refreshedCache = readMeasureCache(
+      readFileSync(join(dir, `${NAME}.measure.json`), "utf8"),
+    );
+    if ("reason" in refreshedCache) throw new Error(refreshedCache.reason);
+    expect(refreshedCache.frame).toEqual({ width: 800, height: 600 });
+    expect(refreshedCache.rest["card"]?.width).toBe(220);
+
+    // Mutate HTML again and verify loadSceneFile(..., { measure: true }) refreshes stale cache.
+    writeFileSync(
+      join(dir, `${NAME}.html`),
+      readFileSync(join(dir, `${NAME}.html`), "utf8").replace("width: 220px", "width: 240px"),
+    );
+    expect(lookupCache(scenePath).kind).toBe("refused");
+    const loaded = await loadSceneFile(scenePath, { measure: true });
+    if ("reason" in loaded) throw new Error(loaded.reason);
+    expect(loaded.measured?.rest["card"]?.width).toBe(240);
+    expect(loaded.measured?.frame).toEqual({ width: 800, height: 600 });
+
+    // Skip re-measuring when both the cache and cast types are already fresh.
+    const cacheFile = join(dir, `${NAME}.measure.json`);
+    const typesFile = join(dir, `${NAME}.cast.d.ts`);
+    const beforeMtimeMs = statSync(cacheFile).mtimeMs;
+    const cachedAgain = await loadSceneFile(scenePath, { measure: true });
+    if ("reason" in cachedAgain) throw new Error(cachedAgain.reason);
+    expect(statSync(cacheFile).mtimeMs).toBe(beforeMtimeMs);
+
+    // Regenerate when the cast declaration file is absent despite a fresh cache.
+    rmSync(typesFile);
+    const regenerated = await loadSceneFile(scenePath, { measure: true });
+    if ("reason" in regenerated) throw new Error(regenerated.reason);
+    expect(readFileSync(typesFile, "utf8")).toBe(
+      'export type CastName = "badge" | "card" | "title";\n',
+    );
   });
 });

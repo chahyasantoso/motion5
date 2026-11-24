@@ -15,7 +15,7 @@ describe("measureFps with --action on a real clock", () => {
         source: { kind: "serve", root: COMPOSITOR_FIXTURES },
         clock: "real",
         actions: [
-          { kind: "scroll", px: 700, at: 50 },
+          { kind: "scroll", target: { kind: "px", px: 700 }, at: 50 },
           { kind: "click", selector: "#bar", at: 150 },
         ],
       },
@@ -48,7 +48,7 @@ describe("measureFps with --action on a real clock", () => {
       to: 600,
       show: false,
       actions: [
-        { kind: "scroll", px: 700, at: 100 },
+        { kind: "scroll", target: { kind: "px", px: 700 }, at: 100 },
         { kind: "click", selector: "#bar", at: 250 },
       ],
     });

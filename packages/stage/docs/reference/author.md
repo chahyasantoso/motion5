@@ -18,10 +18,10 @@ What a piece is written with: `sceneBuilder`, its elements, beats and motions. R
 - **`TriggerBack`** `type TriggerBack = "reverse" | "stay" | "replay"`: What scrolling back past a trigger point does: reverse cleanly, stay at its end, or reset to replay.
 - **`TriggerBeat`** `type TriggerBeat = { kind: "trigger-beat"; name: string; ms: number; when: ScrollReached; back: TriggerBack; of: (time: Time, ease?: Ease, context?: BeatContext) => Time; active: (time: Time, context?: BeatContext) => boolean; moving: (time: Time, context?: BeatContext) => boolean; heading: (time: Time, context?: BeatContext) => -1 | 0 | 1 }`: A named clock beat started when scroll passes `when.point`, with explicit `back` behaviour.
 - **`TriggerPlace`** `type TriggerPlace = { when: ScrollReached; back: TriggerBack }`: Settings of a triggered clock beat: `when` scroll passes a point, and what scrolling `back` does.
-- **`box`** `(name: string, options?: BoxOptions): Element`: A page element styled by CSS; `parts: true` binds it to a list of parts.
-- **`object`** `(name: string, options?: ObjectOptions): ObjectElement`: A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children.
-- **`shape`** `(name: string, outline: ShapeSource, options?: ElementOptions): Element`: A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`.
-- **`text`** `(name: string, options?: TextOptions): Element (+1 overloads)`: Text in the markup, or text a function of time writes; `split` gives one part per letter or word.
+- **`box`** `<N extends string = string>(name: N, options?: BoxOptions): Element`: A page element styled by CSS; `parts: true` binds it to a list of parts.
+- **`object`** `<N extends string = string>(name: N, options?: ObjectOptions): ObjectElement`: A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children.
+- **`shape`** `<N extends string = string>(name: N, outline: ShapeSource, options?: ElementOptions): Element`: A drawn path, or a morph between outlines: 0 is `base`, 1 is `targets[0]`.
+- **`text`** `<N extends string = string>(name: N, options?: TextOptions): Element (+1 overloads)`: Text in the markup, or text a function of time writes; `split` gives one part per letter or word.
 - **`BoxOptions`** `type BoxOptions = { parts?: boolean | undefined; watch?: boolean | undefined }`: Options of `box`: whether it binds to a list of parts.
 - **`Element`** `type Element = ElementBody & Edges`: An element of a piece, made once with a name; `kind` says what it is.
 - **`Edges`** `type Edges = { top: ScrollPoint; end: ScrollPoint; pinStart: ScrollPoint; pinEnd: ScrollPoint }`: An element's measured edges as scroll points: top, end, and sticky pin start/end.

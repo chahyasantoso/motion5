@@ -14,7 +14,10 @@ if (args.kind === "usage") {
 } else if (!/\.tsx?$/.test(args.file)) {
   print({ kind: "usage", message: `${args.file} is not a .ts scene file.` });
 } else {
-  const module = await loadSceneFile(args.file);
+  const module = await loadSceneFile(
+    args.file,
+    args.measure === true ? { measure: true } : undefined,
+  );
   if ("reason" in module) print({ kind: "usage", message: module.reason });
   else if (args.kind === "watch") print(watchScene(module, args, args.events));
   else

@@ -43,7 +43,7 @@ describe("parseFpsArgs", () => {
     expect(single).toMatchObject({
       kind: "fps",
       actions: [
-        { kind: "scroll", px: 200, at: 100 },
+        { kind: "scroll", target: { kind: "px", px: 200 }, at: 100 },
         { kind: "click", selector: ".btn", at: 300 },
       ],
     });
@@ -58,7 +58,7 @@ describe("parseFpsArgs", () => {
     expect(repeated).toMatchObject({
       kind: "fps",
       actions: [
-        { kind: "scroll", px: 200, at: 100 },
+        { kind: "scroll", target: { kind: "px", px: 200 }, at: 100 },
         { kind: "click", selector: ".btn", at: 300 },
       ],
     });

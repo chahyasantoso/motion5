@@ -8,7 +8,8 @@ import {
   type Time,
   unreachable,
 } from "@gerak/core";
-import { resolve } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { manualDriver, play } from "@gerak/player";
 import {
@@ -24,8 +25,13 @@ import {
   type Stage,
 } from "@gerak/stage";
 import { parseNumbers } from "../page/args";
-import type { MeasureCache } from "../page/measure-cache";
-import { lookupCache, restOfCache } from "./measure-cache";
+import {
+  cachePathOf,
+  castTypesPathOf,
+  readMeasureCache,
+  type MeasureCache,
+} from "../page/measure-cache";
+import { lookupCache, pageOfSceneFile, restOfCache } from "./measure-cache";
 import { STEP_MS, changeRows, type TimelineResult } from "../timeline/timeline";
 
 /** Review limits of one target. */
@@ -200,15 +206,71 @@ export function moduleFromStage(stage: Stage, measured?: MeasureCache): SceneMod
   };
 }
 
+function positiveDimension(
+  value: unknown,
+): { readonly width: number; readonly height: number } | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const width: unknown = Reflect.get(value, "width");
+  const height: unknown = Reflect.get(value, "height");
+  return typeof width === "number" &&
+    Number.isFinite(width) &&
+    width > 0 &&
+    typeof height === "number" &&
+    Number.isFinite(height) &&
+    height > 0
+    ? { width, height }
+    : undefined;
+}
+
+function measureFrameSize(
+  page: string,
+  moduleValue: unknown,
+): { readonly width: number; readonly height: number } {
+  const cacheFile = cachePathOf(page);
+  if (existsSync(cacheFile)) {
+    const existing = readMeasureCache(readFileSync(cacheFile, "utf8"));
+    if (!("reason" in existing) && existing.frame.width > 0 && existing.frame.height > 0)
+      return existing.frame;
+  }
+  return (
+    positiveDimension(Reflect.get(Object(moduleValue), "size")) ?? { width: 1280, height: 720 }
+  );
+}
+
 /** Imports a scene file; a builder scene with a page reads that page's measure cache, or is refused without it. */
 export async function loadSceneFile(
   file: string,
+  options?: { readonly measure?: boolean },
 ): Promise<SceneModule | { readonly reason: string }> {
   const path = resolve(file);
   const value: unknown = await import(pathToFileURL(path).href);
   const module = readSceneModule(value);
   if ("reason" in module || module.stage === undefined) return module;
-  const cache = lookupCache(path);
+  const page = pageOfSceneFile(path);
+  let cache = lookupCache(path);
+  if (
+    options?.measure === true &&
+    page !== undefined &&
+    existsSync(page) &&
+    (cache.kind === "refused" || !existsSync(castTypesPathOf(page)))
+  ) {
+    const frame = measureFrameSize(page, value);
+    const briefDir = dirname(page);
+    const { measurePage } = await import("../page/measure");
+    const measured = await measurePage({
+      page: `${basename(briefDir)}/${basename(page)}`,
+      width: frame.width,
+      height: frame.height,
+      source: { kind: "serve", root: dirname(briefDir) },
+    });
+    if (measured.kind === "refused") return { reason: measured.message };
+    if (measured.pageErrors.length > 0) {
+      return {
+        reason: `${basename(page)} had page errors during measure: ${measured.pageErrors.join("; ")}`,
+      };
+    }
+    cache = lookupCache(path);
+  }
   switch (cache.kind) {
     case "none":
       return module;
@@ -346,6 +408,7 @@ export type SampleArgs =
       readonly kind: "watch";
       readonly file: string;
       readonly events?: Events;
+      readonly measure?: boolean;
     } & WatchRequest)
   | {
       readonly kind: "ok";
@@ -354,14 +417,19 @@ export type SampleArgs =
       readonly nodes?: readonly string[];
       readonly fields?: readonly string[];
       readonly events?: Events;
+      readonly measure?: boolean;
     }
   | { readonly kind: "usage"; readonly message: string };
 
 const SAMPLE_USAGE =
-  "usage: gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...]";
+  "usage: gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events name:target@ms,name=value@ms,...] [--measure]";
 
 /** The `--watch` request in `flags`, or the usage text when it is mixed with another way to sample or malformed. */
-function parseWatch(file: string, flags: ReadonlyMap<string, string | undefined>): SampleArgs {
+function parseWatch(
+  file: string,
+  flags: ReadonlyMap<string, string | undefined>,
+  measure: boolean,
+): SampleArgs {
   const usage = (message: string): SampleArgs => ({
     kind: "usage",
     message: `${message} ${SAMPLE_USAGE}`,
@@ -397,6 +465,7 @@ function parseWatch(file: string, flags: ReadonlyMap<string, string | undefined>
     every,
     ...(to === undefined ? {} : { to }),
     ...(events === undefined ? {} : { events }),
+    ...(measure ? { measure: true } : {}),
   };
 }
 
@@ -482,11 +551,17 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const usage = (message: string): SampleArgs => ({ kind: "usage", message });
   const files: string[] = [];
   const flags = new Map<string, string | undefined>();
+  let measure = false;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === undefined) break;
     if (!arg.startsWith("--")) {
       files.push(arg);
+      continue;
+    }
+    if (arg === "--measure") {
+      if (measure) return usage(`Repeated flag --measure. ${SAMPLE_USAGE}`);
+      measure = true;
       continue;
     }
     if (
@@ -510,7 +585,7 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
   const file = files[0];
   if (file === undefined || files.length !== 1)
     return usage(`Expected one scene file. ${SAMPLE_USAGE}`);
-  if (flags.has("--watch")) return parseWatch(file, flags);
+  if (flags.has("--watch")) return parseWatch(file, flags, measure);
   for (const flag of ["--from", "--to", "--every"])
     if (flags.has(flag)) return usage(`${flag} goes with --watch. ${SAMPLE_USAGE}`);
   const hasAt = flags.has("--at");
@@ -553,5 +628,6 @@ export function parseSampleArgs(argv: readonly string[]): SampleArgs {
     ...(events === undefined || "reason" in events ? {} : { events }),
     ...(nodes === undefined ? {} : { nodes }),
     ...(fields === undefined ? {} : { fields }),
+    ...(measure ? { measure: true } : {}),
   };
 }

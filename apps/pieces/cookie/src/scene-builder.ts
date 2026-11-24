@@ -46,7 +46,6 @@ import {
   BUILDER_SEAL_MS,
   BUILDER_SHIFT_MS,
   BUILDER_UNSEAL_MS,
-  CAST,
   JAR_ADD_EVENT,
   JAR_MIX_EVENT,
   JAR_MODEL_OFFSET_Y,
@@ -55,6 +54,7 @@ import {
   JAR_SEAL_EVENT,
   JAR_UNSEAL_EVENT,
   isSpotlightZone,
+  type CastName,
 } from "./contract.ts";
 import { pointerDeltaX, pointerDeltaY } from "./inputs.ts";
 import { builderSlotWorld, type BuilderSlotGeometry } from "./space3d.ts";
@@ -106,14 +106,14 @@ const crumbSim = simulate(
   },
 );
 
-const builderStage = box(CAST.builderStage);
-const builderHeading = box(CAST.builderHeading);
-const slotBuilderJar = box(CAST.slotBuilderJar);
-const builderSealBtn = box(CAST.builderSealBtn, { watch: true });
+const builderStage = box<CastName>("builderStage");
+const builderHeading = box<CastName>("builderHeading");
+const slotBuilderJar = box<CastName>("slotBuilderJar");
+const builderSealBtn = box<CastName>("builderSealBtn", { watch: true });
 
-const builderJarRoot = object(CAST.builderJarRoot);
-const builderJarLid = object(CAST.builderJarLid);
-const builderJarRibbon = object(CAST.builderJarRibbon);
+const builderJarRoot = object<CastName>("builderJarRoot");
+const builderJarLid = object<CastName>("builderJarLid");
+const builderJarRibbon = object<CastName>("builderJarRibbon");
 
 const builderEnter = beat("builderEnter", {
   scroll: [builderStage.top.minus(420), builderStage.top.minus(40)],
@@ -122,7 +122,7 @@ const builderEnter = beat("builderEnter", {
 const sealBtnHovered = state(
   false,
   (hovered, event) => (event.name === "enter" ? true : event.name === "leave" ? false : hovered),
-  { target: CAST.builderSealBtn },
+  { target: "builderSealBtn" satisfies CastName },
 );
 const sealPeek = shared(
   springTo(sealBtnHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),
@@ -784,15 +784,15 @@ export const builderScene: SceneBuilder = sceneBuilder()
   .motion(builderJarRibbonMotion)
   .show(builderWindow)
   .limits({ jump: 1.8, turn: 360 })
-  .element(object(CAST.builderCookies, { parts: true }))
+  .element(object<CastName>("builderCookies", { parts: true }))
   .motion(builderCookiesMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(object(CAST.builderExitCookies, { parts: true }))
+  .element(object<CastName>("builderExitCookies", { parts: true }))
   .motion(builderExitCookiesMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(object(CAST.builderCrumbs, { parts: true }))
+  .element(object<CastName>("builderCrumbs", { parts: true }))
   .motion(builderCrumbsMotion)
   .show(builderWindow)
   .limits({ jump: 2.5, turn: 180 });

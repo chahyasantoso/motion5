@@ -47,6 +47,11 @@ export function cachePathOf(page: string): string {
   return join(dirname(page), `${basename(page, ".html")}.measure.json`);
 }
 
+/** The cast-name declaration file of a page `<dir>/<name>.html`: `<dir>/<name>.cast.d.ts`. */
+export function castTypesPathOf(page: string): string {
+  return join(dirname(page), `${basename(page, ".html")}.cast.d.ts`);
+}
+
 /** A digest of the page and every stylesheet beside it: what a measure depends on. */
 export function pageDigest(page: string): string {
   const hash = createHash("sha256").update(readFileSync(page));

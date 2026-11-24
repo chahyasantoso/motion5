@@ -29,13 +29,13 @@ export default sceneBuilder({ length: 1800 })
   .motion(stagger(rise, { spread: 0.3 }).in(enter));
 ```
 
-`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json`; `live.html?scene=<name>` plays it in the live editor.
+`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.d.ts` (`export type CastName = ...`); `live.html?scene=<name>` plays it in the live editor.
 
 ## Elements
 
-Each is a value with a unique name, made once.
+Each is a value with a unique name, made once. Multi-file pieces can pass `<CastName>` from `<name>.cast.d.ts` to `box<CastName>`, `text<CastName>`, `shape<CastName>`, and `object<CastName>` for compile-time cast name checks.
 
-- `box(name, { parts?, watch? })`: a page element. With `parts: true`, it binds multiple `[data-cast="<name>"]` nodes (or one container's child elements) as numbered parts `<name>.<index>`.
+- `box(name, { parts?, watch? })`: a page element. With `parts: true`, it binds all matched `[data-cast="<name>"]` nodes (`1..N`) directly as numbered parts `<name>.<index>`.
 - `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
 - `shape(name, path, { watch? })`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
 - `object(name, { parts?, view? })`: a Three.js object (`Object3D` or writer) posed in `Pose3d` world units — or with `{ parts: true }`, an `Object3D[]` or `Group.children` list posed by `(index, count) => Pose3d` — drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
@@ -97,8 +97,8 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 
 ## Checking
 
-- Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` matches its markup and CSS.
-- `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review treats scroll `cues` as discrete samples (keep step deltas small or use `gerak check "<brief>/<name>.html" --action scroll:px@ms` to test smooth scrolling in a browser); `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
+- Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` and `<name>.cast.d.ts` match its markup and CSS (or pass `--measure` to `gerak review` / `gerak sample` to refresh on demand).
+- `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review treats scroll `cues` as discrete samples (keep step deltas small or use `gerak check "<brief>/<name>.html" --action scroll:px@ms` or `scroll:sel[±px]@ms` to test smooth scrolling in a browser); `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
 - `gerak check "<brief>/<name>.html" --watch '[data-cast="<name>"]' --to <ms>`: real Chromium frames against review limits.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.
 - Never open another piece's `src` files.
