@@ -23,6 +23,13 @@ function carriedIn3d(dimension: Dimension): boolean {
   return dimension === "3d" || dimension === "both";
 }
 
+/** The numbers a 3D pose carries: the rows whose dimension is `3d` or `both`, in table order. */
+export const POSE_3D_NUMBERS: readonly CarriedBy<"3d" | "both">[] = Object.freeze(
+  FIELD_NAMES.filter((name): name is CarriedBy<"3d" | "both"> =>
+    carriedIn3d(VALUE_FIELDS[name].dimension),
+  ),
+);
+
 /** The turns a 3D pose carries: the 3D rows judged as turns; they compose as one rotation rather than by their rows. */
 export const TURNS: readonly Turn3d[] = Object.freeze(
   FIELD_NAMES.filter(

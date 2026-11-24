@@ -1,5 +1,5 @@
 import { tool } from "./load.mjs";
-const { checkMotion, describeFinding, parseCheckArgs } = await import(tool("page/check"));
+const { checkMotion, describeCheckLines, parseCheckArgs } = await import(tool("page/check"));
 
 const args = parseCheckArgs(process.argv.slice(2));
 if (args.kind === "usage") {
@@ -8,7 +8,7 @@ if (args.kind === "usage") {
 } else
   try {
     const result = await checkMotion(args);
-    console.log(JSON.stringify({ ...result, lines: result.findings.map(describeFinding) }));
+    console.log(JSON.stringify({ ...result, lines: describeCheckLines(result) }));
     if (result.findings.length > 0 || result.pageErrors.length > 0) process.exitCode = 1;
   } catch (error) {
     console.log(

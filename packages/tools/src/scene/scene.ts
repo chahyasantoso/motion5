@@ -17,6 +17,7 @@ import {
   frame,
   isScene,
   listPose,
+  listPose3d,
   partCounts,
   type FrameInput,
   type Limits,
@@ -137,9 +138,28 @@ export function writtenOut(
   const out: Record<string, unknown> = { ...targets };
   for (const member of stage.members) {
     const value = targets[member.name];
-    if (member.kind !== "list" || typeof value !== "function") continue;
-    const count = counts?.[member.name] ?? 1;
-    out[member.name] = Array.from({ length: count }, (_, index) => listPose(value, index, count));
+    if (typeof value !== "function") continue;
+    switch (member.kind) {
+      case "list": {
+        const count = counts?.[member.name] ?? 1;
+        out[member.name] = Array.from({ length: count }, (_, index) =>
+          listPose(value, index, count),
+        );
+        break;
+      }
+      case "object": {
+        if (member.parts !== true) break;
+        const count = counts?.[member.name] ?? 1;
+        out[member.name] = Array.from({ length: count }, (_, index) =>
+          listPose3d(value, index, count),
+        );
+        break;
+      }
+      case "actor":
+        break;
+      default:
+        return unreachable(member);
+    }
   }
   return out;
 }
@@ -151,9 +171,13 @@ export function measuredInput(
 ): Pick<FrameInput, "counts" | "lines" | "rest"> {
   if (measured === undefined) return {};
   const rest = restOfCache(measured);
+  const counts = {
+    ...partCounts(stage, rest, measured.lines),
+    ...(measured.counts ?? {}),
+  };
   return {
     rest,
-    counts: partCounts(stage, rest, measured.lines),
+    counts,
     lines: measured.lines,
   };
 }

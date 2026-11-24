@@ -48,8 +48,6 @@ const closingWordmarkBeat = beat("closingWordmarkBeat", 820, {
   back: "reverse",
 });
 
-const PARKED_Z = 15;
-
 const wordRise = motion(
   (t: Time): Pose2d => ({
     y: mix(20, 0, t.progress),
@@ -85,17 +83,6 @@ const flourishDraw = motion((t: Time): Pose2d => {
 const closingJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
   const scrollY = context ? scroll.y(context.time, context.events) : 0;
   const slot = closingSlotWorld(context?.rest, scrollY);
-  if (scrollY < slot.stageTop - slot.visibleH - 120) {
-    return {
-      x: 0,
-      y: 0,
-      z: PARKED_Z,
-      rotation: 0,
-      rotationX: 0,
-      rotationY: 0,
-      scale: 1,
-    };
-  }
   const enterP = ease.cubicOut(
     clamp((scrollY - (slot.stageTop - slot.visibleH * 0.9)) / (slot.visibleH * 0.55), 0, 1),
   );
@@ -129,4 +116,5 @@ export const closingScene = sceneBuilder()
   )
   .element(closingJarRoot)
   .motion(closingJarRootMotion)
+  .show({ from: closingStage.top.minus(1100) })
   .limits({ jump: 1.8, turn: 180 });

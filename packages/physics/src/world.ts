@@ -82,7 +82,7 @@ export interface Quaternion3d {
   readonly z: number;
 }
 
-/** A 3D body's shape: a sphere by radius, or a box by width, height and depth, centred on the body. */
+/** A 3D body's shape: a sphere by radius, a box by size, or a Y-axis cylinder by radius and height. */
 export type Shape3d =
   | { readonly kind: "sphere"; readonly radius: number }
   | {
@@ -90,9 +90,10 @@ export type Shape3d =
       readonly width: number;
       readonly height: number;
       readonly depth: number;
-    };
+    }
+  | { readonly kind: "cylinder"; readonly radius: number; readonly height: number };
 
-/** A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, or a static box. */
+/** A fixed 3D collider: a horizontal floor at `y`, an `x`/`z` boundary wall, a static box, or a Y-axis cylinder. */
 export type Collider3d =
   | { readonly kind: "floor"; readonly y: number }
   | {
@@ -109,6 +110,14 @@ export type Collider3d =
       readonly width: number;
       readonly height: number;
       readonly depth: number;
+    }
+  | {
+      readonly kind: "cylinder";
+      readonly x: number;
+      readonly y: number;
+      readonly z: number;
+      readonly radius: number;
+      readonly height: number;
     };
 
 /** A 3D body to add: starting position in world units, initial quaternion, and velocities (degrees/s). */

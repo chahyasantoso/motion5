@@ -36,6 +36,8 @@ Supersedes ADR-190's clause that pose `"3d"` is gone until a renderer needs it.
   fresh agents that read only the docs and `overlay3d`, and each fact they learned by trial is now in
   `@gerak/three`'s 3D page. Their frames match the earlier ones within run-to-run noise.
 - A list target (`props`, `bones`) becomes one object per entry; there are no objects inside groups or lists yet.
+
+**Amended by [ADR-200](./ADR-200-scroll-presence-3d-lists-and-multiviewport.md):** `object(name, { parts: true, view? })` adds 3D list objects bound to `Object3D[]` or `Group.children`, and `threeBinder` reads merged clock + scroll visibility via `frameVisible(player.values)`.
 - `yuzu-3d` puts a Three.js can on the landing page, travelling between the same slots as yuzu's drink.
 
 ## Rejected

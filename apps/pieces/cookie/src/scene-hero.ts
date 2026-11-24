@@ -62,7 +62,7 @@ const ctaPeek = shared(
   springTo(ctaHovered, (hovered) => (hovered ? 1 : 0), { stiffness: 220, damping: 20 }),
 );
 
-const PARKED_Z = 15;
+const HERO_HIDDEN_POSE: Pose3d = { scale: 0 };
 
 function handoffProgress(scrollY: number, heroTop: number, spotlightTop: number): number {
   const span = Math.max(1, spotlightTop - heroTop);
@@ -123,15 +123,7 @@ const jarRootMotion = motion((t: Time, context?: MotionContext): Pose3d => {
   const p = handoffProgress(smoothScrollY, heroSlot.stageTop, spotlight.stageTop);
 
   if (p >= 0.92 || !isHeroHandoffActive(rawScrollY, smoothScrollY, spotlight.stageTop)) {
-    return {
-      x: heroSlot.pinnedCenter.x,
-      y: heroSlot.pinnedCenter.y - 3.7,
-      z: PARKED_Z,
-      rotation: 0,
-      rotationX: 0,
-      rotationY: 0,
-      scale: heroSlot.fitScale,
-    };
+    return HERO_HIDDEN_POSE;
   }
 
   const unseal = ease.cubicInOut(clamp(p / 0.34, 0, 1));
@@ -189,15 +181,7 @@ const cookieHeroMotion = motion((t: Time, context?: MotionContext): Pose3d => {
   const spotlight = spotlightSlotWorld(context?.rest, rawScrollY);
 
   if (!isHeroHandoffActive(rawScrollY, smoothScrollY, spotlight.stageTop)) {
-    return {
-      x: spotlight.pinnedCenter.x,
-      y: spotlight.pinnedCenter.y,
-      z: PARKED_Z,
-      rotation: 0,
-      rotationX: 90,
-      rotationY: 0,
-      scale: spotlight.fitScale,
-    };
+    return HERO_HIDDEN_POSE;
   }
 
   const p = handoffProgress(smoothScrollY, heroSlot.stageTop, spotlight.stageTop);
@@ -246,6 +230,8 @@ const cookieHeroMotion = motion((t: Time, context?: MotionContext): Pose3d => {
   };
 });
 
+const heroVisibleWindow = { until: heroStage.end.plus(120) };
+
 export const heroScene = sceneBuilder()
   .element(stageCanvas)
   .element(heroStage)
@@ -266,6 +252,7 @@ export const heroScene = sceneBuilder()
   .motion(offerSealExit.in(offerExitDom))
   .element(jarRoot)
   .motion(jarRootMotion)
+  .show(heroVisibleWindow)
   .limits({ jump: 0.45, turn: 35 })
   .element(jarLid)
   .motion(
@@ -273,7 +260,9 @@ export const heroScene = sceneBuilder()
     lidUnseal.in(jarUnseal),
     lidStepAside.in(cookieLift),
   )
+  .show(heroVisibleWindow)
   .limits({ jump: 0.45, turn: 35 })
   .element(cookieHero)
   .motion(cookieHeroMotion)
+  .show(heroVisibleWindow)
   .limits({ jump: 0.45, turn: 35 });

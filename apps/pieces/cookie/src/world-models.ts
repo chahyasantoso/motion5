@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
+import type { ObjectTarget3d } from "@gerak/three";
 import {
-  BUILDER_COOKIE_CASTS,
-  BUILDER_CRUMB_CASTS,
-  BUILDER_EXIT_COOKIE_CASTS,
+  BUILDER_CAPACITY,
+  BUILDER_CRUMB_COUNT,
+  BUILDER_EXIT_POOL,
   CAST,
   FLAVORS,
   JAR_MODEL_OFFSET_Y,
@@ -11,7 +12,7 @@ import {
 } from "./contract.ts";
 
 export interface LoadedCookieWorld {
-  readonly objects: Readonly<Record<string, THREE.Object3D>>;
+  readonly objects: Readonly<Record<string, ObjectTarget3d>>;
   setBuilderCookieFlavor(slotIndex: number, flavorIndex: number): void;
   setBuilderExitCookieFlavor(exitSlot: number, flavorIndex: number): void;
 }
@@ -39,10 +40,10 @@ interface ShowcaseFlavorEntry {
 }
 
 const SHOWCASE_FLAVORS: readonly ShowcaseFlavorEntry[] = [
-  { castName: CAST.flavorCookie0, flavorIndex: 0 },
-  { castName: CAST.flavorCookie1, flavorIndex: 1, saltTint: "#F4EAD5" },
-  { castName: CAST.flavorCookie2, flavorIndex: 2 },
-  { castName: CAST.flavorCookie3, flavorIndex: 3, saltTint: "#DFB484" },
+  { castName: "flavorCookie0", flavorIndex: 0 },
+  { castName: "flavorCookie1", flavorIndex: 1, saltTint: "#F4EAD5" },
+  { castName: "flavorCookie2", flavorIndex: 2 },
+  { castName: "flavorCookie3", flavorIndex: 3, saltTint: "#DFB484" },
 ];
 
 const FLAVOR_SALT_TINTS: readonly (string | undefined)[] = [
@@ -336,7 +337,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
   world.add(builderJarRoot);
   world.add(closingJarRoot);
 
-  const objects: Record<string, THREE.Object3D> = {
+  const objects: Record<string, ObjectTarget3d> = {
     [CAST.jarRoot]: jarRoot,
     [CAST.jarLid]: jarLid,
     [CAST.cookieHero]: cookieHero,
@@ -346,6 +347,7 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     [CAST.closingJarRoot]: closingJarRoot,
   };
 
+  const flavorCookieGroups: THREE.Object3D[] = [];
   for (const entry of SHOWCASE_FLAVORS) {
     const flavor = FLAVORS[entry.flavorIndex];
     if (!flavor) {
@@ -361,51 +363,52 @@ export async function loadCookieWorld(world: THREE.Scene): Promise<LoadedCookieW
     group.add(mesh);
 
     world.add(group);
-    objects[entry.castName] = group;
+    flavorCookieGroups.push(group);
   }
+  objects[CAST.flavorCookies] = flavorCookieGroups;
 
   // Pre-build all four flavor variants per builder and exit slot so switching allocates nothing.
   const builderCookieVariants: (readonly THREE.Object3D[])[] = [];
-  for (let slotIndex = 0; slotIndex < BUILDER_COOKIE_CASTS.length; slotIndex += 1) {
-    const castName = BUILDER_COOKIE_CASTS[slotIndex];
-    if (!castName) {
-      continue;
-    }
-    const { group, variants } = buildFlavorSlotGroup(castName, cookieGltf.scene);
+  const builderCookieGroups: THREE.Object3D[] = [];
+  for (let slotIndex = 0; slotIndex < BUILDER_CAPACITY; slotIndex += 1) {
+    const { group, variants } = buildFlavorSlotGroup(`builderCookie${slotIndex}`, cookieGltf.scene);
     builderCookieVariants.push(variants);
     world.add(group);
-    objects[castName] = group;
+    builderCookieGroups.push(group);
   }
+  objects[CAST.builderCookies] = builderCookieGroups;
 
   const builderExitCookieVariants: (readonly THREE.Object3D[])[] = [];
-  for (let exitSlot = 0; exitSlot < BUILDER_EXIT_COOKIE_CASTS.length; exitSlot += 1) {
-    const castName = BUILDER_EXIT_COOKIE_CASTS[exitSlot];
-    if (!castName) {
-      continue;
-    }
-    const { group, variants } = buildFlavorSlotGroup(castName, cookieGltf.scene);
+  const builderExitCookieGroups: THREE.Object3D[] = [];
+  for (let exitSlot = 0; exitSlot < BUILDER_EXIT_POOL; exitSlot += 1) {
+    const { group, variants } = buildFlavorSlotGroup(
+      `builderExitCookie${exitSlot}`,
+      cookieGltf.scene,
+    );
     builderExitCookieVariants.push(variants);
     world.add(group);
-    objects[castName] = group;
+    builderExitCookieGroups.push(group);
   }
+  objects[CAST.builderExitCookies] = builderExitCookieGroups;
 
+  const crumbGroup = new THREE.Group();
+  crumbGroup.name = CAST.builderCrumbs;
   const crumbMaterials = CRUMB_COLORS.map(
     (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86, metalness: 0.02 }),
   );
-  for (let i = 0; i < BUILDER_CRUMB_CASTS.length; i += 1) {
-    const castName = BUILDER_CRUMB_CASTS[i];
+  for (let i = 0; i < BUILDER_CRUMB_COUNT; i += 1) {
     const mat = crumbMaterials[i % crumbMaterials.length];
-    if (!castName || !mat) {
+    if (!mat) {
       continue;
     }
     const radius = 0.024 + (i % 3) * 0.008;
     const crumb = new THREE.Mesh(new THREE.DodecahedronGeometry(radius, 0), mat);
-    crumb.name = castName;
+    crumb.name = `builderCrumb${i}`;
     crumb.castShadow = true;
     crumb.receiveShadow = true;
-    world.add(crumb);
-    objects[castName] = crumb;
+    crumbGroup.add(crumb);
   }
+  world.add(crumbGroup);
 
   const setBuilderCookieFlavor = (slotIndex: number, flavorIndex: number): void => {
     applyFlavorVariant(builderCookieVariants[slotIndex], flavorIndex);

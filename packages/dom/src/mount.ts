@@ -39,6 +39,7 @@ import {
   restOfBounds,
   strokeBox,
   placementOf,
+  withFrameVisible,
   withPlacement,
   type BoxPlacement,
 } from "@gerak/stage/render";
@@ -180,7 +181,7 @@ export interface MountOptions {
   readonly binders?: readonly Binder[];
 }
 
-/** What draws a scene's object elements beside the mount: claims, lifecycle start, optional resize and measure. */
+/** What draws a scene's object elements beside the mount: claims, lifecycle start, optional resize, counts, measure. */
 export interface Binder {
   /** Whether it draws the object element `name`. */
   claims(name: string): boolean;
@@ -188,8 +189,13 @@ export interface Binder {
   start(player: Player<StageValues>, stage: Stage): () => void;
   /** Resizes the binder's surface before layout and 3D bounds are measured. */
   readonly resize?: () => void;
+  /** Reports part counts per bound 3D list object (`Object3D[]` overrides or `Group.children`). */
+  readonly counts?: (names?: readonly string[]) => Readonly<Record<string, number>>;
   /** Measures rest bounds `{ width, height, depth }` for the named bound 3D objects. */
-  readonly measure?: (names?: readonly string[]) => Readonly<Record<string, ObjectBounds3d>>;
+  readonly measure?: (
+    names?: readonly string[],
+    lists?: ReadonlySet<string>,
+  ) => Readonly<Record<string, ObjectBounds3d>>;
 }
 
 /** Names each object element of `stage` that no binder, or more than one, claims. */
@@ -214,7 +220,7 @@ export interface MeasuredBox {
   readonly placement: BoxPlacement;
 }
 
-/** What a mount measured, as plain data: frame, rest boxes, split lines, element parents, and optional 3D sizes. */
+/** What a mount measured, as plain data: frame, rest boxes, split lines, parents, 3D sizes and 3D list counts. */
 export interface Measurement {
   /** A fitted root's size, or the viewport's on a page. */
   readonly frame: { readonly width: number; readonly height: number };
@@ -223,6 +229,7 @@ export interface Measurement {
   /** The nearest cast element holding each one, by name; an element with none is absent. */
   readonly parents: Readonly<Record<string, string>>;
   readonly objects?: Readonly<Record<string, ObjectBounds3d>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 /** Where every live mount on a page is listed, for the page tools that read what it measured. */
@@ -698,10 +705,43 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     throw error;
   }
 
+  const objectListNames: string[] = [];
+  for (const member of stage.members) {
+    switch (member.kind) {
+      case "object":
+        if (member.parts === true) objectListNames.push(member.name);
+        break;
+      case "actor":
+      case "list":
+        break;
+      default:
+        unreachable(member);
+    }
+  }
+  const objectListSet = new Set(objectListNames);
+  const readObjectCounts = (): Readonly<Record<string, number>> => {
+    if (objectListNames.length === 0) return {};
+    const counts: Record<string, number> = {};
+    for (const binder of binders) {
+      const claimed = objectListNames.filter((name) => binder.claims(name));
+      if (claimed.length === 0) continue;
+      const got = binder.counts?.(claimed);
+      if (got === undefined) continue;
+      for (const name of claimed) {
+        const count = got[name];
+        if (typeof count === "number") counts[name] = count;
+      }
+    }
+    return Object.freeze(counts);
+  };
   const boundCounts: Record<string, number> = {};
   for (const target of targets)
     if (target.member.kind === "list") boundCounts[target.member.name] = target.items.length;
-  const currentCounts: Readonly<Record<string, number>> = Object.freeze(boundCounts);
+  let currentObjectCounts = readObjectCounts();
+  let currentCounts: Readonly<Record<string, number>> = Object.freeze({
+    ...boundCounts,
+    ...currentObjectCounts,
+  });
 
   const globalView: PageScrollTarget | undefined = isScrollTarget(globalThis.window)
     ? globalThis.window
@@ -980,10 +1020,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       for (const binder of binders) {
         const claimed = objectNames.filter((name) => binder.claims(name));
         if (claimed.length === 0) continue;
-        const measured = binder.measure?.(claimed);
+        const measured = binder.measure?.(claimed, objectListSet);
         if (measured === undefined) continue;
         for (const [name, bounds] of Object.entries(measured)) nextObjects[name] = bounds;
       }
+      currentObjectCounts = readObjectCounts();
+      currentCounts = Object.freeze({ ...boundCounts, ...currentObjectCounts });
     }
     currentRest = Object.freeze(nextRest);
     currentObjects = Object.freeze(nextObjects);
@@ -1209,7 +1251,10 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const out =
       only === undefined || lastFrame === undefined
         ? ran
-        : { ...ran, targets: { ...lastFrame.targets, ...ran.targets } };
+        : {
+            ...ran,
+            targets: withFrameVisible({ ...lastFrame.targets, ...ran.targets }, ran.visible),
+          };
     for (const target of targets) {
       const { member } = target;
       if (member.kind === "actor" && member.content.kind === "readout") {
@@ -1341,7 +1386,8 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const names = new Set<string>();
     for (const target of targets) {
       const { member } = target;
-      if (member.on !== undefined || member.expect === "ambient") continue;
+      if (member.on !== undefined || member.onScroll !== undefined || member.expect === "ambient")
+        continue;
       if (!nodesOf(target).every(isDomElement)) continue;
       switch (member.kind) {
         case "actor":
@@ -1612,6 +1658,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       lines: currentLines,
       parents,
       ...(Object.keys(currentObjects).length === 0 ? {} : { objects: currentObjects }),
+      ...(Object.keys(currentObjectCounts).length === 0 ? {} : { counts: currentObjectCounts }),
     };
   };
 

@@ -39,6 +39,7 @@ export interface MeasureCache {
   readonly lines: Readonly<Record<string, readonly number[]>>;
   readonly parents: Readonly<Record<string, string>>;
   readonly objects?: Readonly<Record<string, MeasuredObjectBounds>>;
+  readonly counts?: Readonly<Record<string, number>>;
 }
 
 /** The cache file of a page `<dir>/<name>.html`: `<dir>/<name>.measure.json`. */
@@ -151,6 +152,17 @@ export function readMeasureCache(text: string): MeasureCache | { readonly reason
       objectOf[name] = bounds;
     }
   }
+  const rawCounts = raw["counts"];
+  let countOf: Record<string, number> | undefined;
+  if (rawCounts !== undefined) {
+    if (!isRecord(rawCounts)) return { reason: "`counts` must be an object." };
+    countOf = {};
+    for (const [name, value] of Object.entries(rawCounts)) {
+      if (typeof value !== "number" || !Number.isInteger(value) || value < 0)
+        return { reason: `the part count of "${name}" must be a non-negative integer.` };
+      countOf[name] = value;
+    }
+  }
   return {
     page,
     digest,
@@ -159,5 +171,6 @@ export function readMeasureCache(text: string): MeasureCache | { readonly reason
     lines: lineOf,
     parents: parentOf,
     ...(objectOf !== undefined && Object.keys(objectOf).length > 0 ? { objects: objectOf } : {}),
+    ...(countOf !== undefined && Object.keys(countOf).length > 0 ? { counts: countOf } : {}),
   };
 }

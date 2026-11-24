@@ -38,7 +38,7 @@ Each is a value with a unique name, made once.
 - `box(name, { parts?, watch? })`: a page element. With `parts: true`, it binds multiple `[data-cast="<name>"]` nodes (or one container's child elements) as numbered parts `<name>.<index>`.
 - `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
 - `shape(name, path, { watch? })`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
-- `object(name, { view? })`: a Three.js object posed in `Pose3d` world units, drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
+- `object(name, { parts?, view? })`: a Three.js object (`Object3D` or writer) posed in `Pose3d` world units — or with `{ parts: true }`, an `Object3D[]` or `Group.children` list posed by `(index, count) => Pose3d` — drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
 
 A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
@@ -58,7 +58,7 @@ Scenes can share beats, states and signals. `.include(scene)` merges another sce
 
 - `.element(e)` selects an element; it may be selected again later.
 - `.motion(...)` appends motions to its list; `.modify(principle)` wraps everything above it in the list.
-- `.show(beat | [from, to] | { from } | { until })` shows it only then: during a beat, across beats, from a beat's start on, or until a beat's end; hidden, it and its DOM descendants are hidden and may jump.
+- `.show(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
 - `.limits({ jump, turn, ratio })` sets its review limits.
 
 Only `.motion` and `.modify` order matters.
@@ -74,8 +74,8 @@ A motion is a core `Motion` or a plain `(time, context) => pose`.
 
 Helpers:
 
-- `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part.
-- `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat; `by: "line"` starts parts on the same measured `line` together.
+- `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part; also typed for 3D lists on `object(..., { parts: true })`.
+- `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat (on 2D lists or 3D `object` lists); `by: "line"` starts parts on the same measured `line` together.
 - `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
 - `carry({ ms, ease, mode, target? })`: moves an element from its old rest box to its new one after a re-measure (see [layout](./agent-layout.md)).
 - `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; on 2D elements `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. On 3D `object` elements `fit` accepts `"none"` (default) or `"contain"` (uniform scale from `viewSize3d` and measured `rest.object(element)` bounds); pixel `arc` and `fit: "fill"` are refused. With no window it sits on the slot on every clock (live, timed, and untimed); sweeping requires `.in(beat)`. Referencing `slot` registers a read-only geometry dependency.

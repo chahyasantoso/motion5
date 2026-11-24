@@ -947,29 +947,34 @@
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "flavorCookie0": {
+  "flavorCookies.0": {
    "width": 0.8400000035762787,
    "height": 0.8399999737739563,
    "depth": 0.18047979474067705
   },
-  "flavorCookie1": {
+  "flavorCookies": {
    "width": 0.8400000035762787,
    "height": 0.8399999737739563,
    "depth": 0.18047979474067705
   },
-  "flavorCookie2": {
+  "flavorCookies.1": {
    "width": 0.8400000035762787,
    "height": 0.8399999737739563,
    "depth": 0.18047979474067705
   },
-  "flavorCookie3": {
+  "flavorCookies.2": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "flavorCookies.3": {
    "width": 0.8400000035762787,
    "height": 0.8399999737739563,
    "depth": 0.18047979474067705
   },
   "builderJarRoot": {
-   "width": 2.3911208236812103,
-   "height": 1.9468993175660403,
+   "width": 2.299999952316284,
+   "height": 1.3600000143051147,
    "depth": 2.299999952316284
   },
   "builderJarLid": {
@@ -982,107 +987,122 @@
    "height": 0.42273872812729973,
    "depth": 1.1011347212370235
   },
-  "builderCookie0": {
+  "builderCookies.0": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCookie1": {
+  "builderCookies": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCookie2": {
+  "builderCookies.1": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCookie3": {
+  "builderCookies.2": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCookie4": {
+  "builderCookies.3": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCookie5": {
+  "builderCookies.4": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderExitCookie0": {
+  "builderCookies.5": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderExitCookie1": {
+  "builderExitCookies.0": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderExitCookie2": {
+  "builderExitCookies": {
    "width": 0.8400000035762787,
    "height": 0.18047979474067688,
    "depth": 0.8399999737739563
   },
-  "builderCrumb0": {
+  "builderExitCookies.1": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderExitCookies.2": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCrumbs.0": {
    "width": 0.04484027251601219,
    "height": 0.04484027251601219,
    "depth": 0.04484027251601219
   },
-  "builderCrumb1": {
+  "builderCrumbs": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs.1": {
    "width": 0.05978703126311302,
    "height": 0.05978703126311302,
    "depth": 0.05978703126311302
   },
-  "builderCrumb2": {
+  "builderCrumbs.2": {
    "width": 0.07473378628492355,
    "height": 0.07473378628492355,
    "depth": 0.07473378628492355
   },
-  "builderCrumb3": {
+  "builderCrumbs.3": {
    "width": 0.04484027251601219,
    "height": 0.04484027251601219,
    "depth": 0.04484027251601219
   },
-  "builderCrumb4": {
+  "builderCrumbs.4": {
    "width": 0.05978703126311302,
    "height": 0.05978703126311302,
    "depth": 0.05978703126311302
   },
-  "builderCrumb5": {
+  "builderCrumbs.5": {
    "width": 0.07473378628492355,
    "height": 0.07473378628492355,
    "depth": 0.07473378628492355
   },
-  "builderCrumb6": {
+  "builderCrumbs.6": {
    "width": 0.04484027251601219,
    "height": 0.04484027251601219,
    "depth": 0.04484027251601219
   },
-  "builderCrumb7": {
+  "builderCrumbs.7": {
    "width": 0.05978703126311302,
    "height": 0.05978703126311302,
    "depth": 0.05978703126311302
   },
-  "builderCrumb8": {
+  "builderCrumbs.8": {
    "width": 0.07473378628492355,
    "height": 0.07473378628492355,
    "depth": 0.07473378628492355
   },
-  "builderCrumb9": {
+  "builderCrumbs.9": {
    "width": 0.04484027251601219,
    "height": 0.04484027251601219,
    "depth": 0.04484027251601219
   },
-  "builderCrumb10": {
+  "builderCrumbs.10": {
    "width": 0.05978703126311302,
    "height": 0.05978703126311302,
    "depth": 0.05978703126311302
   },
-  "builderCrumb11": {
+  "builderCrumbs.11": {
    "width": 0.07473378628492355,
    "height": 0.07473378628492355,
    "depth": 0.07473378628492355
@@ -1092,5 +1112,11 @@
    "height": 1.5979999971389771,
    "depth": 2.299999952316284
   }
+ },
+ "counts": {
+  "flavorCookies": 4,
+  "builderCookies": 6,
+  "builderExitCookies": 3,
+  "builderCrumbs": 12
  }
 }

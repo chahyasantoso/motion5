@@ -8,7 +8,14 @@ import {
   type Time,
   unreachable,
 } from "@gerak/core";
-import { castBuilder, type Content, type Expect, type Members, type Stretch } from "../author/cast";
+import {
+  castBuilder,
+  type Content,
+  type Expect,
+  type Members,
+  type ScrollWindow,
+  type Stretch,
+} from "../author/cast";
 import type { RestReader } from "../author/layout";
 import type { Limits, SceneContext, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
@@ -24,8 +31,10 @@ export type Member = {
   readonly node?: string | undefined;
   /** Ms the member shows; absent means always. */
   readonly on?: readonly Window[] | undefined;
+  /** Scroll px ranges the member shows during; absent means always. */
+  readonly onScroll?: readonly ScrollWindow[] | undefined;
 } & (
-  | { readonly kind: "object" }
+  | { readonly kind: "object"; readonly parts?: boolean | undefined }
   | { readonly kind: "actor"; readonly content: Content }
   | {
       readonly kind: "list";
@@ -246,6 +255,10 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
     if (name.includes(".")) errors.push({ kind: "reserved_dot", name });
     const on =
       spec.meta.on === undefined ? undefined : windowsOf(name, spec.meta.on, beats, errors);
+    const onScroll =
+      spec.meta.onScroll !== undefined && spec.meta.onScroll.length > 0
+        ? Object.freeze([...spec.meta.onScroll])
+        : undefined;
     const expect = spec.meta.expect ?? "settle";
     const node = spec.kind === "object" ? undefined : castSelector(name);
     const base = {
@@ -254,6 +267,7 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
       watch: spec.meta.watch ?? false,
       ...(node === undefined ? {} : { node }),
       ...(on === undefined ? {} : { on }),
+      ...(onScroll === undefined ? {} : { onScroll }),
     };
     switch (spec.kind) {
       case "actor": {
@@ -271,7 +285,13 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
         );
         break;
       case "object":
-        members.push(Object.freeze({ ...base, kind: "object" }));
+        members.push(
+          Object.freeze({
+            ...base,
+            kind: "object",
+            ...(spec.parts === true ? { parts: true } : {}),
+          }),
+        );
         break;
       default:
         return unreachable(spec);
@@ -306,7 +326,7 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
       case "list":
         return [...own, member.split ?? "parts"];
       case "object":
-        return own;
+        return member.parts === true ? [...own, "parts"] : own;
       default:
         return unreachable(member);
     }

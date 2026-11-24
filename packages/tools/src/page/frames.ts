@@ -12,6 +12,10 @@ export interface FramesRequest extends PageTarget {
   /** A short reason to print under each frame, in step with `at`. */
   readonly labels?: readonly string[];
   readonly out?: string;
+  /** Optional override path for the contact sheet PNG. */
+  readonly sheetPath?: string;
+  /** Optional header label drawn across the top of the contact sheet. */
+  readonly sheetLabel?: string;
   /** A folder of earlier frames to compare these against once they are written. */
   readonly compare?: string;
   /** Capture only this region of the stage, in the stage's px. */
@@ -224,16 +228,20 @@ function dataUrl(path: string): string {
 function sheetHtml(
   frames: readonly { readonly at: number; readonly path: string }[],
   labels: readonly string[],
+  sheetLabel?: string,
 ): string {
+  const header =
+    sheetLabel === undefined || sheetLabel === "" ? "" : `<header>${sheetLabel}</header>`;
   const cells = frames.map(
     ({ at, path }, index) =>
       `<figure><img src="${dataUrl(path)}"><figcaption>${at} ms${labels[index] === undefined ? "" : ` ${labels[index]}`}</figcaption></figure>`,
   );
   return `<style>
     body { margin: 0; display: grid; grid-template-columns: repeat(${SHEET_COLUMNS}, ${SHEET_CELL_WIDTH}px); gap: 4px; background: #fff; }
+    header { grid-column: 1 / -1; font: 700 13px monospace; padding: 4px 6px; border-bottom: 1px solid #ddd; }
     figure { margin: 0; } img { width: 100%; display: block; }
     figcaption { font: 12px monospace; padding: 2px 4px; }
-  </style>${cells.join("")}`;
+  </style>${header}${cells.join("")}`;
 }
 
 /** A PNG drawn `zoom` times larger on a canvas in `scaler`, each source pixel a plain square. */
@@ -283,8 +291,10 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     const sheetPage = await browser.newPage({
       viewport: { width: SHEET_COLUMNS * (SHEET_CELL_WIDTH + 4), height: 100 },
     });
-    await sheetPage.setContent(sheetHtml(frames, request.labels ?? []), { waitUntil: "load" });
-    const sheet = join(out, "sheet.png");
+    await sheetPage.setContent(sheetHtml(frames, request.labels ?? [], request.sheetLabel), {
+      waitUntil: "load",
+    });
+    const sheet = request.sheetPath ?? join(out, "sheet.png");
     writeFileSync(sheet, await sheetPage.screenshot({ fullPage: true }));
     return { frames, sheet };
   });

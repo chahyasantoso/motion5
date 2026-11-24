@@ -62,7 +62,7 @@ export {
 } from "./fields/pose";
 export { combine3d, lift2d } from "./fields/pose3d";
 export { mixPoint3d, mixPose3d } from "./blend/mix3d";
-export { type Pose3d } from "./fields/pose3d";
+export { POSE_3D_NUMBERS, type Pose3d } from "./fields/pose3d";
 export {
   aim,
   orbit,

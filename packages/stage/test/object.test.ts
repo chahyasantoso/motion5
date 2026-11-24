@@ -4,6 +4,7 @@ import {
   motion,
   orbit,
   project3d,
+  scroll,
   viewSize3d,
   type Lens3d,
   type Pose2d,
@@ -13,16 +14,20 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   beat,
+  bindEach,
   box,
   check,
   compileScene,
   formatStageError,
   frame,
+  listPose,
+  listPose3d,
   object,
   pose3dOf,
   poseOf,
   restReader,
   sceneBuilder,
+  stagger,
   travel,
   type SceneBuilder,
   type Stage,
@@ -311,5 +316,114 @@ describe("travel on an object", () => {
     expect(endAxis?.scaleX).toBeCloseTo(toScaleAxis, 6);
     expect(endAxis?.scaleY).toBeCloseTo(toScaleAxis, 6);
     expect(endAxis?.scaleZ).toBeCloseTo(toScaleAxis, 6);
+  });
+});
+
+describe("3D list objects", () => {
+  const spin = beat("spin", 1000);
+  const rise3d = motion((t: Time): Pose3d => ({ z: 2 * t.progress, rotationY: 90 * t.progress }));
+
+  it("compiles object(..., { parts: true }), distinguishes signature, returns ListPose3d, and checks parts", () => {
+    const single = compiled(
+      sceneBuilder({ length: 1000 }).element(object("cookies")).motion(rise3d),
+    );
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("cookies", { parts: true }))
+        .motion(stagger(rise3d, { spread: 1 }).in(spin)),
+    );
+    const member = stage.members.find((m) => m.name === "cookies");
+    expect(member?.kind).toBe("object");
+    expect(member?.kind === "object" && member.parts).toBe(true);
+    expect(stage.signature).not.toBe(single.signature);
+
+    const out = frame(stage, { time: liveAt(500), counts: { cookies: 3 } });
+    expect([0, 1, 2].map((i) => listPose3d(out.targets["cookies"], i, 3)?.z)).toEqual([2, 1, 0]);
+    expect(check(stage, out.targets, { cookies: 3 })).toEqual([]);
+    expect(check(stage, { cookies: [{ z: 1 }] }, { cookies: 3 }).map(formatStageError)).toContain(
+      'scene: "cookies" is a list: give it `(index, count) => pose`, got an array.',
+    );
+    expect(
+      check(stage, { cookies: (i: number) => (i === 1 ? 7 : {}) }, { cookies: 3 }).map(
+        formatStageError,
+      ),
+    ).toContain('scene: "cookies" answered no pose object for item 1.');
+  });
+
+  it("supports stagger factories and bindEach over shared and 3D-only fields while rejecting crossed dimensions", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("chips", { parts: true }))
+        .motion(
+          stagger(
+            (i, count) =>
+              motion((t: Time): Pose3d => ({ z: (i + 1) * t.progress, rotationX: count * 10 })),
+            { spread: 0.5, from: "center" },
+          ).in(spin),
+        )
+        .element(object("bound3d", { parts: true }))
+        .motion(
+          bindEach({
+            x: (i) => () => i * 2,
+            z: (i) => (t) => -i + scroll.y(t, []),
+            rotationY: (i) => () => i * 15,
+            scaleZ: () => () => 0.5,
+          }),
+        )
+        .element(box("boundSharedOn2d", { parts: true }))
+        .motion(bindEach({ x: (i) => () => i * 10, scale: () => () => 2 }))
+        .element(object("boundSharedOn3d", { parts: true }))
+        .motion(bindEach({ x: (i) => () => i * 0.5, scale: () => () => 1.5 })),
+    );
+
+    const bad2d = sceneBuilder().element(box("bad2d", { parts: true }));
+    // @ts-expect-error z is 3D-only and refused on a box
+    bad2d.motion(bindEach({ z: () => () => 1 }));
+    const bad3d = sceneBuilder().element(object("bad3d", { parts: true }));
+    // @ts-expect-error drawn is 2D-only and refused on an object
+    bad3d.motion(bindEach({ drawn: () => () => 0.5 }));
+
+    const out = frame(stage, {
+      time: liveAt(500),
+      counts: { chips: 3, bound3d: 2, boundSharedOn2d: 2, boundSharedOn3d: 2 },
+    });
+    const center = listPose3d(out.targets["chips"], 1, 3);
+    const edge = listPose3d(out.targets["chips"], 0, 3);
+    expect(center?.z ?? 0).toBeGreaterThan(0);
+    expect(edge?.rotationX).toBe(30);
+    expect(listPose3d(out.targets["bound3d"], 1, 2)).toEqual({
+      x: 2,
+      z: -1,
+      rotationY: 15,
+      scaleZ: 0.5,
+    });
+    expect(listPose(out.targets["boundSharedOn2d"], 1, 2)).toEqual({ x: 10, scale: 2 });
+    expect(listPose3d(out.targets["boundSharedOn3d"], 1, 2)).toEqual({ x: 0.5, scale: 1.5 });
+  });
+
+  it("travels each 3D list part with fit contain using per-part rest bounds and falling back to parent bounds", () => {
+    const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 8, azimuth: 0, elevation: 0 });
+    const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
+    const gl = box("gl");
+    const slot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("tray", { parts: true, view: { canvas: gl, lens } }))
+        .motion(travel({ to: slot, fit: "contain" }).in(spin)),
+    );
+    const rest = restReader(
+      {
+        gl: { x: 500, y: 300, width: 1000, height: 600 },
+        slot: { x: 700, y: 300, width: 200, height: 200 },
+      },
+      {
+        tray: { width: 2, height: 2, depth: 2 },
+        "tray.0": { width: 1, height: 1, depth: 1 },
+      },
+    );
+    const targets = frame(stage, { time: liveAt(1000), rest, counts: { tray: 2 } }).targets;
+    const p0 = listPose3d(targets["tray"], 0, 2);
+    const p1 = listPose3d(targets["tray"], 1, 2);
+    expect((p0?.scale ?? 0) / (p1?.scale ?? 1)).toBeCloseTo(2, 6);
   });
 });

@@ -38,10 +38,7 @@ export interface CastNames {
   readonly flavorDot1: string;
   readonly flavorDot2: string;
   readonly flavorDot3: string;
-  readonly flavorCookie0: string;
-  readonly flavorCookie1: string;
-  readonly flavorCookie2: string;
-  readonly flavorCookie3: string;
+  readonly flavorCookies: string;
   readonly craftStage: string;
   readonly craftHeading: string;
   readonly craftProgressFill: string;
@@ -58,27 +55,9 @@ export interface CastNames {
   readonly builderJarRoot: string;
   readonly builderJarLid: string;
   readonly builderJarRibbon: string;
-  readonly builderCookie0: string;
-  readonly builderCookie1: string;
-  readonly builderCookie2: string;
-  readonly builderCookie3: string;
-  readonly builderCookie4: string;
-  readonly builderCookie5: string;
-  readonly builderExitCookie0: string;
-  readonly builderExitCookie1: string;
-  readonly builderExitCookie2: string;
-  readonly builderCrumb0: string;
-  readonly builderCrumb1: string;
-  readonly builderCrumb2: string;
-  readonly builderCrumb3: string;
-  readonly builderCrumb4: string;
-  readonly builderCrumb5: string;
-  readonly builderCrumb6: string;
-  readonly builderCrumb7: string;
-  readonly builderCrumb8: string;
-  readonly builderCrumb9: string;
-  readonly builderCrumb10: string;
-  readonly builderCrumb11: string;
+  readonly builderCookies: string;
+  readonly builderExitCookies: string;
+  readonly builderCrumbs: string;
   readonly closingStage: string;
   readonly closingHeadline: string;
   readonly closingFlourish: string;
@@ -127,10 +106,7 @@ export const CAST: CastNames = {
   flavorDot1: "flavorDot1",
   flavorDot2: "flavorDot2",
   flavorDot3: "flavorDot3",
-  flavorCookie0: "flavorCookie0",
-  flavorCookie1: "flavorCookie1",
-  flavorCookie2: "flavorCookie2",
-  flavorCookie3: "flavorCookie3",
+  flavorCookies: "flavorCookies",
   craftStage: "craftStage",
   craftHeading: "craftHeading",
   craftProgressFill: "craftProgressFill",
@@ -147,27 +123,9 @@ export const CAST: CastNames = {
   builderJarRoot: "builderJarRoot",
   builderJarLid: "builderJarLid",
   builderJarRibbon: "builderJarRibbon",
-  builderCookie0: "builderCookie0",
-  builderCookie1: "builderCookie1",
-  builderCookie2: "builderCookie2",
-  builderCookie3: "builderCookie3",
-  builderCookie4: "builderCookie4",
-  builderCookie5: "builderCookie5",
-  builderExitCookie0: "builderExitCookie0",
-  builderExitCookie1: "builderExitCookie1",
-  builderExitCookie2: "builderExitCookie2",
-  builderCrumb0: "builderCrumb0",
-  builderCrumb1: "builderCrumb1",
-  builderCrumb2: "builderCrumb2",
-  builderCrumb3: "builderCrumb3",
-  builderCrumb4: "builderCrumb4",
-  builderCrumb5: "builderCrumb5",
-  builderCrumb6: "builderCrumb6",
-  builderCrumb7: "builderCrumb7",
-  builderCrumb8: "builderCrumb8",
-  builderCrumb9: "builderCrumb9",
-  builderCrumb10: "builderCrumb10",
-  builderCrumb11: "builderCrumb11",
+  builderCookies: "builderCookies",
+  builderExitCookies: "builderExitCookies",
+  builderCrumbs: "builderCrumbs",
   closingStage: "closingStage",
   closingHeadline: "closingHeadline",
   closingFlourish: "closingFlourish",
@@ -178,37 +136,8 @@ export const CAST: CastNames = {
   closingJarRoot: "closingJarRoot",
 };
 
-export const BUILDER_COOKIE_CASTS: readonly string[] = [
-  CAST.builderCookie0,
-  CAST.builderCookie1,
-  CAST.builderCookie2,
-  CAST.builderCookie3,
-  CAST.builderCookie4,
-  CAST.builderCookie5,
-];
-
-export const BUILDER_EXIT_COOKIE_CASTS: readonly string[] = [
-  CAST.builderExitCookie0,
-  CAST.builderExitCookie1,
-  CAST.builderExitCookie2,
-];
-
-export const BUILDER_CRUMB_CASTS: readonly string[] = [
-  CAST.builderCrumb0,
-  CAST.builderCrumb1,
-  CAST.builderCrumb2,
-  CAST.builderCrumb3,
-  CAST.builderCrumb4,
-  CAST.builderCrumb5,
-  CAST.builderCrumb6,
-  CAST.builderCrumb7,
-  CAST.builderCrumb8,
-  CAST.builderCrumb9,
-  CAST.builderCrumb10,
-  CAST.builderCrumb11,
-];
-
 export const BUILDER_CAPACITY = 6;
+export const BUILDER_EXIT_POOL = 3;
 export const BUILDER_MIN_SEAL = 4;
 export const BUILDER_JAR_PRICE = 28;
 export const BUILDER_CRUMB_COUNT = 12;
