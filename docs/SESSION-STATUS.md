@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-24, Asia/Jakarta.
-- **Read against:** `feat/authoring-ergonomics-pr4`, branched from `main` after PR 624.
+- **Read against:** `perf/cookie-load-frame`, branched from `main` after PR 625.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **The 76–104 ms frame about 110 ms after `cookie` loads (`@gerak/dom` compositor setup in `missAt`/`fewest` plus Three.js first-draw uploads, also on main before PR 624), followed by multi-shot reels (`plan/reels-plan.md`), and Visual Studio (`plan/studio-plan.md`).**
+- **Multi-shot reels (`plan/reels-plan.md`), then Visual Studio (`plan/studio-plan.md`).**
 
 ## Open, and not scheduled
 

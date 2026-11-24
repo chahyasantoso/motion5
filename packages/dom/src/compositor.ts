@@ -141,30 +141,40 @@ function missAt(a: TrackSample, b: TrackSample, mid: TrackSample): number {
   return worst;
 }
 
-/** The fewest samples whose straight lines stay within tolerance of every sample, keeping those at `pinned`. */
-function fewest(
+/** The fewest samples whose lines stay within tolerance of every sample, keeping `pinned`; a line grows
+ * while its slope stays in every field's window, so each sample is read once per line. */
+export function fewest(
   samples: readonly TrackSample[],
   pinned: ReadonlySet<number>,
 ): readonly TrackSample[] {
   const first = samples[0];
   if (first === undefined) return [];
   const kept: TrackSample[] = [first];
+  const low = FIELDS.map(() => -Infinity);
+  const high = FIELDS.map(() => Infinity);
   let from = 0;
   while (from < samples.length - 1) {
+    const a = samples[from];
+    if (a === undefined) break;
+    low.fill(-Infinity);
+    high.fill(Infinity);
     let to = from + 1;
-    for (
-      let next = to + 1;
-      next < samples.length && !pinned.has(samples[to]?.at ?? NaN);
-      next += 1
-    ) {
-      const a = samples[from];
+    for (let next = to + 1; next < samples.length; next += 1) {
+      const mid = samples[to];
       const b = samples[next];
-      if (a === undefined || b === undefined) break;
+      if (mid === undefined || b === undefined || pinned.has(mid.at)) break;
+      const span = mid.at - a.at;
+      const reach = b.at - a.at;
+      if (!(span > 0 && reach > span)) break;
       let fits = true;
-      for (let k = from + 1; k < next && fits; k += 1) {
-        const mid = samples[k];
-        if (mid !== undefined && missAt(a, b, mid) > FIT) fits = false;
-      }
+      FIELDS.forEach((field, index) => {
+        const slack = FIT * TRACK_TOLERANCE[field];
+        const rise = mid.fields[field] - a.fields[field];
+        low[index] = Math.max(low[index] ?? -Infinity, (rise - slack) / span);
+        high[index] = Math.min(high[index] ?? Infinity, (rise + slack) / span);
+        const slope = (b.fields[field] - a.fields[field]) / reach;
+        if (slope < (low[index] ?? -Infinity) || slope > (high[index] ?? Infinity)) fits = false;
+      });
       if (!fits) break;
       to = next;
     }
