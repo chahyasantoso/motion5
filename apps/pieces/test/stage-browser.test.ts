@@ -14,13 +14,11 @@ let copies = 0;
 /** A scene of one actor that slides in from the left over the whole piece. */
 function fixture(distance: number): string {
   return `import { slide } from "@gerak/moves";
-import { beat, box, sceneBuilder } from "@gerak/stage";
+import { beat, box, scene } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export default sceneBuilder()
-  .element(box("box"))
-  .motion(slide({ distance: ${distance}, from: "left" }).in(go));
+export default scene(box("box").moves(slide({ distance: ${distance}, from: "left" }).in(go)));
 `;
 }
 

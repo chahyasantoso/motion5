@@ -40,8 +40,8 @@ describe("gerak measure", () => {
     );
     writeFileSync(
       join(dir, "src", `${NAME}.ts`),
-      `import { box, sceneBuilder } from "@gerak/stage";
-export default sceneBuilder({ length: 500 }).element(box("card")).element(box("title"));
+      `import { box, scene } from "@gerak/stage";
+export default scene({ length: 500 }, box("card"), box("title"));
 `,
     );
     writeFileSync(
@@ -120,13 +120,13 @@ mount(scene, { clock: "live" });
     writeFileSync(
       join(dir, "src", `${NAME}.ts`),
       `import { motion } from "@gerak/core";
-import { beat, box, sceneBuilder, text } from "@gerak/stage";
+import { beat, box, scene, text } from "@gerak/stage";
 const enter = beat("enter", 400);
-export default sceneBuilder({ length: 1000 })
-  .element(box("card"))
-  .motion(motion((t) => ({ x: 40 * t.progress })).in(enter))
-  .element(text("title", { split: "words" }))
-  .motion(motion((t) => ({ y: 20 * t.progress })).in(enter));
+export default scene(
+  { length: 1000 },
+  box("card").moves(motion((t) => ({ x: 40 * t.progress })).in(enter)),
+  text("title", { split: "words" }).moves(motion((t) => ({ y: 20 * t.progress })).in(enter)),
+);
 `,
     );
     writeFileSync(

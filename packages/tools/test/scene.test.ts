@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INPUT_EVENTS, motion, pointer, type Pose2d, type Time } from "@gerak/core";
-import { beat, bind, box, sceneBuilder, scrollPoint } from "@gerak/stage";
+import { beat, bind, box, scene, scrollPoint } from "@gerak/stage";
 import {
   parseEvents,
   readSceneModule,
@@ -165,18 +165,19 @@ describe("events with a point", () => {
   it("replays recorded pointer-x and scroll samples identically in sampleScene", () => {
     const hero = beat("hero", { scroll: [scrollPoint(100), scrollPoint(500)] });
     const card = box("card");
-    const piece = sceneBuilder({
-      length: 1000,
-      cues: [
-        { name: INPUT_EVENTS.scroll, at: 200, value: 300 },
-        { name: INPUT_EVENTS.pointerX, at: 300, value: 0.75 },
-      ],
-    })
-      .element(card)
-      .motion(
+    const piece = scene(
+      {
+        length: 1000,
+        cues: [
+          { name: INPUT_EVENTS.scroll, at: 200, value: 300 },
+          { name: INPUT_EVENTS.pointerX, at: 300, value: 0.75 },
+        ],
+      },
+      card.moves(
         motion((time: Time): Pose2d => ({ y: time.progress * 100 })).in(hero),
         bind({ x: (time, events) => pointer.x(time, events) * 100 }),
-      );
+      ),
+    );
     const mod = moduleOf({ default: piece });
     const first = sampleScene(mod, { kind: "time", ms: [0, 200, 300, 800] });
     const second = [...sampleScene(mod, { kind: "time", ms: [800, 300, 200, 0] })].reverse();

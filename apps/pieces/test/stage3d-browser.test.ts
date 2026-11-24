@@ -46,7 +46,7 @@ function writeStage3dScratchPage(): { readonly html: string } {
     join(srcDir, "main.ts"),
     `import { aim, motion, orbit, type Lens3d, type Pose3d, type Time } from "@gerak/core";
 import { mount } from "@gerak/dom";
-import { beat, compileScene, formatStageError, object, sceneBuilder } from "@gerak/stage";
+import { beat, compileScene, formatStageError, object, scene } from "@gerak/stage";
 import { applyPose3d, createStage3d } from "@gerak/three";
 import { NoToneMapping, Object3D, PerspectiveCamera } from "three";
 
@@ -87,9 +87,10 @@ stage3d.world.add(cube);
 
 const move = beat("move", 1000);
 const compiled = compileScene(
-  sceneBuilder({ length: 1000 })
-    .element(object("cube"))
-    .motion(motion((t: Time): Pose3d => ({ x: 2 * t.progress, rotationY: 90 * t.progress })).in(move)),
+  scene(
+    { length: 1000 },
+    object("cube").moves(motion((t: Time): Pose3d => ({ x: 2 * t.progress, rotationY: 90 * t.progress })).in(move)),
+  ),
 );
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\\n"));
 

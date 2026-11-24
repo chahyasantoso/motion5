@@ -17,17 +17,17 @@ import {
   formatStageError,
   frame,
   restReader,
-  sceneBuilder,
+  scene,
   scrollPoint,
   travel,
   type MotionContext,
   type Moves,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -48,11 +48,10 @@ function movesAt(
 describe("what a frame reports as moving with time alone", () => {
   it("a clock beat while it has not ended, and a loop always", () => {
     const stage = compiled(
-      sceneBuilder()
-        .element(box("intro"))
-        .motion(slide.in(beat("introBeat", 300)))
-        .element(box("looped"))
-        .motion(slide.loop(500)),
+      scene(
+        box("intro").moves(slide.in(beat("introBeat", 300))),
+        box("looped").moves(slide.loop(500)),
+      ),
     );
     expect(movesAt(stage, 100).get("intro")).toBe("time");
     expect(movesAt(stage, 400).has("intro")).toBe(false);
@@ -61,13 +60,13 @@ describe("what a frame reports as moving with time alone", () => {
 
   it("a scroll beat never, a smooth one while its spring settles", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("plain"))
-        .motion(slide.in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })))
-        .element(box("smoothed"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("plain").moves(slide.in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] }))),
+        box("smoothed").moves(
           slide.in(beat("smooth", { scroll: [scrollPoint(0), scrollPoint(400)], smooth: true })),
         ),
+      ),
     );
     const log = eventLog();
     log.add({ name: INPUT_EVENTS.scroll, at: 100, value: 300 });
@@ -79,9 +78,12 @@ describe("what a frame reports as moving with time alone", () => {
   it("a trigger while its clock part runs, for each way back", () => {
     for (const back of ["reverse", "stay", "replay"] as const) {
       const stage = compiled(
-        sceneBuilder({ length: 1000 })
-          .element(box("revealed"))
-          .motion(slide.in(beat(`t-${back}`, 400, { when: scrollPoint(200).reached, back }))),
+        scene(
+          { length: 1000 },
+          box("revealed").moves(
+            slide.in(beat(`t-${back}`, 400, { when: scrollPoint(200).reached, back })),
+          ),
+        ),
       );
       const log = eventLog();
       expect(movesAt(stage, 50, log.events).has("revealed")).toBe(false);
@@ -95,31 +97,27 @@ describe("what a frame reports as moving with time alone", () => {
     const leader = box("leader");
     const sprung = springTo(pointer.x, (x) => x);
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(leader)
-        .motion(slide.in(beat("lead", 100)))
-        .element(box("pointed"))
-        .motion(bind({ x: (t, e) => pointer.x(t, e) * 100 }))
-        .element(box("sprung"))
-        .motion(bind({ x: (t, e) => sprung(t, e) * 100 }))
-        .element(box("ticking"))
-        .motion(bind({ x: (t) => elapsedOf(t.clock) ?? 0 }))
-        .element(box("clocked"))
-        .motion(
+      scene(
+        { length: 1000 },
+        leader.moves(slide.in(beat("lead", 100))),
+        box("pointed").moves(bind({ x: (t, e) => pointer.x(t, e) * 100 })),
+        box("sprung").moves(bind({ x: (t, e) => sprung(t, e) * 100 })),
+        box("ticking").moves(bind({ x: (t) => elapsedOf(t.clock) ?? 0 })),
+        box("clocked").moves(
           motion(
             (_t: Time, context?: MotionContext): Pose2d => ({
               x: context === undefined ? 0 : (elapsedOf(context.time.clock) ?? 0),
             }),
           ).in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })),
-        )
-        .element(box("follower"))
-        .motion(
+        ),
+        box("follower").moves(
           motion(
             (_t: Time, context?: MotionContext): Pose2d => ({
               x: context === undefined ? 0 : (context.read(leader).x ?? 0),
             }),
           ).in(beat("range2", { scroll: [scrollPoint(0), scrollPoint(400)] })),
         ),
+      ),
     );
     const log = eventLog();
     log.add({ name: INPUT_EVENTS.pointerX, at: 1000, value: 0.9 });
@@ -135,11 +133,7 @@ describe("what a frame reports as moving with time alone", () => {
 
   it("a travel with no window as moving only with input", () => {
     const slot = box("slot");
-    const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("drink"))
-        .motion(travel({ to: slot })),
-    );
+    const stage = compiled(scene({ length: 1000 }, box("drink").moves(travel({ to: slot }))));
     const rest = restReader({
       drink: { x: 0, y: 0, width: 10, height: 10 },
       slot: { x: 50, y: 50, width: 10, height: 10 },
@@ -151,11 +145,7 @@ describe("what a frame reports as moving with time alone", () => {
 
   it("runs only the elements named, and leaves the rest out", () => {
     const stage = compiled(
-      sceneBuilder()
-        .element(box("a"))
-        .motion(slide.in(beat("ab", 100)))
-        .element(box("b"))
-        .motion(slide.in(beat("bb", 100))),
+      scene(box("a").moves(slide.in(beat("ab", 100))), box("b").moves(slide.in(beat("bb", 100)))),
     );
     const out = frame(stage, { time: live(50), only: new Set(["b"]) });
     expect(Object.keys(out.targets)).toEqual(["b"]);

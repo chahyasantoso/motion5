@@ -55,7 +55,7 @@ function writeScratchPage(): { readonly html: string } {
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
 import { mount } from "@gerak/dom";
-import { beat, box, restReader, sceneBuilder } from "@gerak/stage";
+import { beat, box, restReader, scene } from "@gerak/stage";
 
 const hero = box("hero");
 const features = box("features");
@@ -63,14 +63,14 @@ const story = box("story");
 const travelStory = beat("to-story", { scroll: [hero.top, story.top] });
 const inFeatures = beat("in-features", { scroll: [features.top, features.end] });
 
-const scene = sceneBuilder()
-  .element(box("badge"))
-  .motion(
+const piece = scene(
+  box("badge").moves(
     motion((t) => ({ x: 100 * t.progress })).in(travelStory),
     motion((t) => ({ y: 20 * t.progress })).in(inFeatures),
-  );
+  ),
+);
 
-const mounted = mount(scene, { clock: "live" });
+const mounted = mount(piece, { clock: "live" });
 Reflect.set(window, "__mountedPage", mounted);
 Reflect.set(window, "__sections", { hero, features, story });
 Reflect.set(window, "__restReader", restReader);

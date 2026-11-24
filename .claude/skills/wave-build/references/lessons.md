@@ -41,3 +41,6 @@ Add a line here only when a wave falls outside these ranges, or a new kind of wo
   better split into two waves.
 - 2026-11-19, principles plan B (every move to a plain function, 21 piece moves, 30 pieces, tests) on Sonnet at
   medium effort: 265k, 147 calls, 23 min, one builder for one API change; every piece sampled bit-exact.
+- 2026-11-24, authoring PR 4 (`sceneBuilder` chains to `scene(...)`, about 240 chains in 70 files) with no builder:
+  the lead's ts-morph codemod plus hand fixes for string-embedded scenes; samples bit-exact. Cold review on Sonnet
+  at medium effort: 99k, 28 calls, no behaviour bug and six nits.

@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 const PIECES = join(import.meta.dirname, "..", "..", "apps", "pieces");
 
 function isStagePiece(source: string): boolean {
-  return source.includes("sceneBuilder(") && source.includes("export default");
+  return /\bscene\s*\(/.test(source) && source.includes("export default");
 }
 
 /** Every builder piece, past the scratch pieces browser tests write and delete while this runs. */

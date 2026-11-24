@@ -13,7 +13,7 @@ import {
   type Time,
 } from "@gerak/core";
 import { follow } from "@gerak/moves";
-import { box, object, sceneBuilder } from "@gerak/stage";
+import { box, object, scene } from "@gerak/stage";
 import { posedJoints3d, type BonePose3d, type JointTable3d } from "@gerak/rig";
 
 /** How long the scene runs, in ms; `gerak sample` and `gerak review` read it. */
@@ -98,22 +98,22 @@ const callout = (point: { readonly x: number; readonly y: number; readonly z: nu
   return { x: at.x, y: at.y, opacity: fadeOf(at, centreDepth()) };
 };
 
-export default sceneBuilder({ name: "overlay3d", length: durationMs, cues })
-  .element(object("object"))
-  .motion(motion(objectAt))
-  .limits(LIMITS)
-  .element(object("base"))
-  .motion(motion((time: Time): Pose3d => bonesAt(time).base))
-  .limits(LIMITS)
-  .element(object("mid"))
-  .motion(motion((time: Time): Pose3d => bonesAt(time).mid))
-  .limits(LIMITS)
-  .element(box("pin"))
-  .motion(motion((time: Time) => callout(posedJoints3d(MARK_TABLE, {}, objectAt(time)).mark)))
-  .element(box("tip"))
-  .motion(motion((time: Time) => callout(posedJoints3d(ARM, bonesAt(time), objectAt(time)).tip)))
-  .element(box("caption"))
-  .motion((time: Time, context) => {
+export default scene(
+  { name: "overlay3d", length: durationMs, cues },
+  object("object").moves(motion(objectAt)).limits(LIMITS),
+  object("base")
+    .moves(motion((time: Time): Pose3d => bonesAt(time).base))
+    .limits(LIMITS),
+  object("mid")
+    .moves(motion((time: Time): Pose3d => bonesAt(time).mid))
+    .limits(LIMITS),
+  box("pin").moves(
+    motion((time: Time) => callout(posedJoints3d(MARK_TABLE, {}, objectAt(time)).mark)),
+  ),
+  box("tip").moves(
+    motion((time: Time) => callout(posedJoints3d(ARM, bonesAt(time), objectAt(time)).tip)),
+  ),
+  box("caption").moves((time: Time, context) => {
     const under = project3d(CAPTION_POINT, lens, stage);
     return {
       x: under.x,
@@ -121,7 +121,8 @@ export default sceneBuilder({ name: "overlay3d", length: durationMs, cues })
       opacity: under.visible ? 1 : 0,
       custom: { words: revealed(context.time, context.events) },
     };
-  });
+  }),
+);
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: durationMs });

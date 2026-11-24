@@ -25,7 +25,7 @@ import {
   listPose3d,
   object,
   pose3dOf,
-  sceneBuilder,
+  scene,
   scrollPoint,
   shape,
   stagger,
@@ -219,15 +219,13 @@ describe("mount", () => {
     };
 
     const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(400)] });
-    const scene = sceneBuilder()
-      .element(box("card", { watch: true }))
-      .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(sb))
-      .element(text("title"))
-      .motion(bind({ y: (t, e) => pointer.y(t, e) * 10 }))
-      .element(box("items", { parts: true }))
-      .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 15 }));
+    const piece = scene(
+      box("card", { watch: true }).moves(motion((t): Pose2d => ({ x: 80 * t.progress })).in(sb)),
+      text("title").moves(bind({ y: (t, e) => pointer.y(t, e) * 10 })),
+      box("items", { parts: true }).moves((_t, ctx) => ({ x: (ctx.index ?? 0) * 15 })),
+    );
 
-    const mounted = mount(scene, {
+    const mounted = mount(piece, {
       root,
       scrollTarget,
       frames,
@@ -272,11 +270,10 @@ describe("mount", () => {
     let ms = 0;
     const frames = fakeFrames();
     const spin = beat("spin", 1000);
-    const scene = sceneBuilder()
-      .element(object("drink"))
-      .motion(motion((t): Pose3d => ({ rotationY: 90 * t.progress })).in(spin))
-      .element(box("card"))
-      .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
+    const piece = scene(
+      object("drink").moves(motion((t): Pose3d => ({ rotationY: 90 * t.progress })).in(spin)),
+      box("card").moves(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin)),
+    );
     const seen: unknown[] = [];
     let stopped = 0;
     const drinks: Binder = {
@@ -289,7 +286,7 @@ describe("mount", () => {
         };
       },
     };
-    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms, binders: [drinks] });
+    const mounted = mount(piece, { root, frames, clock: "live", now: () => ms, binders: [drinks] });
     ms = 500;
     frames.tick(500);
     expect(root.createdCount).toBe(0);
@@ -306,12 +303,12 @@ describe("mount", () => {
     const parts = [new FakeNode("p0"), new FakeNode("p1")];
     const root = new FakeRoot([tagged, chosen, ...parts]);
     const frames = fakeFrames();
-    const scene = sceneBuilder({ length: 500 })
-      .element(box("card"))
-      .motion(() => ({ x: 7 }))
-      .element(box("dots", { parts: true }))
-      .motion((_t, ctx) => ({ y: ctx.index ?? 0 }));
-    const mounted = mount(scene, {
+    const piece = scene(
+      { length: 500 },
+      box("card").moves(() => ({ x: 7 })),
+      box("dots", { parts: true }).moves((_t, ctx) => ({ y: ctx.index ?? 0 })),
+    );
+    const mounted = mount(piece, {
       root,
       frames,
       clock: "live",
@@ -327,12 +324,12 @@ describe("mount", () => {
 
   it("refuses an object no binder claims, and one two binders claim, naming it", () => {
     const root = new FakeRoot([]);
-    const scene = sceneBuilder({ length: 500 }).element(object("drink"));
+    const piece = scene({ length: 500 }, object("drink"));
     const claiming: Binder = { claims: () => true, start: () => () => undefined };
-    expect(() => mount(scene, { root, clock: "live" })).toThrow(
+    expect(() => mount(piece, { root, clock: "live" })).toThrow(
       /no binder draws the object "drink"/,
     );
-    expect(() => mount(scene, { root, clock: "live", binders: [claiming, claiming] })).toThrow(
+    expect(() => mount(piece, { root, clock: "live", binders: [claiming, claiming] })).toThrow(
       /2 binders draw the object "drink"/,
     );
   });
@@ -342,11 +339,11 @@ describe("mount", () => {
     const root = new FakeRoot([card]);
     const frames = fakeFrames();
     const spin = beat("spin", 1000);
-    const scene = sceneBuilder()
-      .element(box("card"))
-      .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin));
+    const piece = scene(
+      box("card").moves(motion((t): Pose2d => ({ x: 80 * t.progress })).in(spin)),
+    );
     let handed: Driver | undefined;
-    const mounted = mount(scene, { root, frames, clock: "timed", onDriver: (d) => (handed = d) });
+    const mounted = mount(piece, { root, frames, clock: "timed", onDriver: (d) => (handed = d) });
     expect(handed).toBe(mounted.driver);
     const clock = mounted.driver;
     if (!isClock(clock)) throw new Error("expected a ClockDriver");
@@ -367,19 +364,19 @@ describe("mount", () => {
     from.offsetTop = 0;
     const line = new FakeNode("line");
     const root = new FakeRoot([from, line]);
-    const scene = sceneBuilder({ length: 500 })
-      .element(box("from"))
-      .element(
-        shape("line", (rest) => {
-          const at = rest.get("from");
-          const still = { inX: 0, inY: 0, outX: 0, outY: 0 };
-          return toCubics([
-            { id: "a", x: at.x, y: at.y, ...still },
-            { id: "b", x: 200, y: 20, ...still },
-          ]);
-        }),
-      );
-    const mounted = mount(scene, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
+    const piece = scene(
+      { length: 500 },
+      box("from"),
+      shape("line", (rest) => {
+        const at = rest.get("from");
+        const still = { inX: 0, inY: 0, outX: 0, outY: 0 };
+        return toCubics([
+          { id: "a", x: at.x, y: at.y, ...still },
+          { id: "b", x: 200, y: 20, ...still },
+        ]);
+      }),
+    );
+    const mounted = mount(piece, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
     expect(line.attributes.get("d")).toBe("M 50 20 C 50 20, 200 20, 200 20");
     expect(mounted.rest["line"]).toEqual({ x: 125, y: 20, width: 150, height: 1 });
     mounted.dispose();
@@ -392,18 +389,14 @@ describe("mount", () => {
     const frames = fakeFrames();
     const spin = beat("spin", 1000);
     const moving = (distance: number) =>
-      sceneBuilder()
-        .element(box("card"))
-        .motion(motion((t): Pose2d => ({ x: distance * t.progress })).in(spin));
+      scene(box("card").moves(motion((t): Pose2d => ({ x: distance * t.progress })).in(spin)));
     const mounted = mount(moving(80), { root, frames, clock: "live", now: () => ms });
     ms = 500;
     frames.tick(500);
     expect(card.style.transform).toBe("translate3d(40px, 0px, 0px)");
     mounted.replace(moving(200));
     expect(card.style.transform).toBe("translate3d(100px, 0px, 0px)");
-    expect(() =>
-      mounted.replace(sceneBuilder().element(box("card")).element(box("other"))),
-    ).toThrow(/different cast/);
+    expect(() => mounted.replace(scene(box("card"), box("other")))).toThrow(/different cast/);
     mounted.dispose();
   });
 
@@ -421,11 +414,8 @@ describe("mount", () => {
       item.parentElement = card;
     }
     const root = new FakeRoot([card, title, ...items]);
-    const scene = sceneBuilder({ length: 500 })
-      .element(box("card"))
-      .element(box("title"))
-      .element(box("items", { parts: true }));
-    const mounted = mount(scene, {
+    const piece = scene({ length: 500 }, box("card"), box("title"), box("items", { parts: true }));
+    const mounted = mount(piece, {
       root,
       frames: fakeFrames(),
       clock: "live",
@@ -450,10 +440,10 @@ describe("mount", () => {
 
   it("refuses a scene missing nodes or a missing selector", () => {
     const root = new FakeRoot([new FakeNode("card")]);
-    expect(() =>
-      mount(sceneBuilder({ length: 500 }).element(box("plain")), { clock: "live", root }),
-    ).toThrow(/"plain"/);
-    expect(() => mount(sceneBuilder().element(box("missing")), { clock: "live", root })).toThrow(
+    expect(() => mount(scene({ length: 500 }, box("plain")), { clock: "live", root })).toThrow(
+      /"plain"/,
+    );
+    expect(() => mount(scene(box("missing")), { clock: "live", root })).toThrow(
       /"missing".*data-cast="missing"/,
     );
   });
@@ -465,16 +455,10 @@ describe("mount", () => {
     let ms = 0;
     const frames = fakeFrames();
     const mounted = mount(
-      sceneBuilder()
-        .element(box("meter"))
-        .motion(bind({ x: (t, e) => scroll.y(t, e) }))
-        .element(
-          text(
-            "clock",
-            (t) => `${Math.round(t.clock.kind === "live" ? t.clock.elapsed : 0)}ms`,
-            {},
-          ),
-        ),
+      scene(
+        box("meter").moves(bind({ x: (t, e) => scroll.y(t, e) })),
+        text("clock", (t) => `${Math.round(t.clock.kind === "live" ? t.clock.elapsed : 0)}ms`, {}),
+      ),
       { root, frames, clock: "live", now: () => ms },
     );
     ms = 250;
@@ -492,9 +476,8 @@ describe("mount", () => {
     let runs = 0;
     let ms = 0;
     const mounted = mount(
-      sceneBuilder()
-        .element(box("meter"))
-        .motion(
+      scene(
+        box("meter").moves(
           bind({
             x: (t, e) => {
               runs += 1;
@@ -502,6 +485,7 @@ describe("mount", () => {
             },
           }),
         ),
+      ),
       { root, frames, clock: "live", now: () => ms, viewport: () => ({ width: 100, height: 100 }) },
     );
     const before = runs;
@@ -521,9 +505,10 @@ describe("mount", () => {
     headline.textContent = "One two";
     const root = new FakeRoot([headline]);
     const mounted = mount(
-      sceneBuilder({ length: 1000 })
-        .element(text("headline", { split: "words" }))
-        .motion((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 })),
+      scene(
+        { length: 1000 },
+        text("headline", { split: "words" }).moves((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 })),
+      ),
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
     expect(root.createdCount).toBe(2);
@@ -539,9 +524,10 @@ describe("mount", () => {
     solo.textContent = "HELLO";
     const root = new FakeRoot([solo]);
     const mounted = mount(
-      sceneBuilder({ length: 500 })
-        .element(text("solo", { split: "words" }))
-        .motion(() => ({ x: 5 })),
+      scene(
+        { length: 500 },
+        text("solo", { split: "words" }).moves(() => ({ x: 5 })),
+      ),
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
     expect(root.createdCount).toBe(1);
@@ -553,12 +539,12 @@ describe("mount", () => {
 
     const rollbackRoot = new FakeRoot([new FakeNode("solo")]);
     expect(() =>
-      mount(
-        sceneBuilder({ length: 500 })
-          .element(text("solo", { split: "words" }))
-          .element(box("missing")),
-        { root: rollbackRoot, frames: fakeFrames(), clock: "live", now: () => 0 },
-      ),
+      mount(scene({ length: 500 }, text("solo", { split: "words" }), box("missing")), {
+        root: rollbackRoot,
+        frames: fakeFrames(),
+        clock: "live",
+        now: () => 0,
+      }),
     ).toThrow(/"missing"/);
     expect(rollbackRoot.nodes[0]?.textContent).toBe("");
   });
@@ -582,9 +568,7 @@ describe("mount", () => {
     const sb = beat("go", { scroll: [hero.top, story.top] });
 
     const mounted = mount(
-      sceneBuilder()
-        .element(box("card"))
-        .motion(motion((t) => ({ x: 100 * t.progress })).in(sb)),
+      scene(box("card").moves(motion((t) => ({ x: 100 * t.progress })).in(sb))),
       { root, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
 
@@ -605,9 +589,11 @@ describe("mount", () => {
     const missingBeat = beat("miss", { scroll: [missingSec.top, missingSec.end] });
     expect(() =>
       mount(
-        sceneBuilder()
-          .element(text("solo", { split: "words" }))
-          .motion(motion((t) => ({ x: 10 * t.progress })).in(missingBeat)),
+        scene(
+          text("solo", { split: "words" }).moves(
+            motion((t) => ({ x: 10 * t.progress })).in(missingBeat),
+          ),
+        ),
         { root: new FakeRoot([failSolo]), frames: fakeFrames(), clock: "live", now: () => 0 },
       ),
     ).toThrow(/"absent".*data-cast="absent"/);
@@ -633,14 +619,14 @@ describe("mount", () => {
     const sb = beat("go", { scroll: [scrollPoint(0), scrollPoint(200)] });
     let sceneCalls = 0;
     const mounted = mount(
-      sceneBuilder()
-        .element(box("card"))
-        .motion(
+      scene(
+        box("card").moves(
           motion((t) => {
             sceneCalls += 1;
             return { x: 100 * t.progress };
           }).in(sb),
         ),
+      ),
       { root, scrollTarget, frames: fakeFrames(), clock: "live", now: () => 0 },
     );
 
@@ -659,10 +645,8 @@ describe("mount", () => {
     const root = new FakeRoot([card]);
     let ms = 0;
     const frames = fakeFrames();
-    const scene = sceneBuilder({ length: 1000 })
-      .element(box("card"))
-      .motion(carry({ ms: 200 }));
-    const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
+    const piece = scene({ length: 1000 }, box("card").moves(carry({ ms: 200 })));
+    const mounted = mount(piece, { root, frames, clock: "live", now: () => ms });
     frames.tick(0);
     expect(card.style.transform).toBe("");
 
@@ -700,15 +684,17 @@ describe("mount", () => {
     plain.textContent = "One two";
 
     const root = new FakeRoot([singleCard, headline, plain]);
-    const scene = sceneBuilder({ length: 500 })
-      .element(box("cards", { parts: true }))
-      .motion((_t, ctx) => ({ x: 10 + (ctx?.index ?? 0) * 5, y: ctx?.count ?? 0 }))
-      .element(text("headline", { split: "words" }))
-      .motion((_t, ctx) => ({ x: 20 + (ctx?.index ?? 0) * 10 }))
-      .element(text("plain", { split: "words" }))
-      .motion((_t, ctx) => ({ y: 30 + (ctx?.index ?? 0) * 10 }));
+    const piece = scene(
+      { length: 500 },
+      box("cards", { parts: true }).moves((_t, ctx) => ({
+        x: 10 + (ctx?.index ?? 0) * 5,
+        y: ctx?.count ?? 0,
+      })),
+      text("headline", { split: "words" }).moves((_t, ctx) => ({ x: 20 + (ctx?.index ?? 0) * 10 })),
+      text("plain", { split: "words" }).moves((_t, ctx) => ({ y: 30 + (ctx?.index ?? 0) * 10 })),
+    );
 
-    const mounted = mount(scene, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
+    const mounted = mount(piece, { root, frames: fakeFrames(), clock: "live", now: () => 0 });
     expect(singleCard.style.transform).toBe("translate3d(10px, 1px, 0px)");
     expect(h3.style.transform).toBe("");
     expect(p.style.transform).toBe("");
@@ -726,11 +712,11 @@ describe("mount", () => {
     explicitCard.children.push(new FakeNode("nestedA"), new FakeNode("nestedB"));
     const explicitWord = new FakeNode("explicitWord");
     explicitWord.children.push(new FakeNode("nestedSpan"));
-    const explicitScene = sceneBuilder({ length: 500 })
-      .element(box("cards", { parts: true }))
-      .motion((_t, ctx) => ({ x: 5, y: ctx?.count ?? 0 }))
-      .element(text("headline", { split: "words" }))
-      .motion((_t, ctx) => ({ x: 7, y: ctx?.count ?? 0 }));
+    const explicitScene = scene(
+      { length: 500 },
+      box("cards", { parts: true }).moves((_t, ctx) => ({ x: 5, y: ctx?.count ?? 0 })),
+      text("headline", { split: "words" }).moves((_t, ctx) => ({ x: 7, y: ctx?.count ?? 0 })),
+    );
     const explicitMounted = mount(explicitScene, {
       root: new FakeRoot([]),
       frames: fakeFrames(),
@@ -751,7 +737,7 @@ describe("mount", () => {
     const b = new FakeNode("cardB");
     b.setAttribute("data-cast", "cards");
     expect(() =>
-      mount(sceneBuilder({ length: 500 }).element(box("cards")), {
+      mount(scene({ length: 500 }, box("cards")), {
         root: new FakeRoot([a, b]),
         frames: fakeFrames(),
         clock: "live",
@@ -765,7 +751,7 @@ describe("mount", () => {
       start: () => () => undefined,
     };
     expect(() =>
-      mount(sceneBuilder({ length: 500 }).element(box("missingDom")), {
+      mount(scene({ length: 500 }, box("missingDom")), {
         root: new FakeRoot([]),
         frames: fakeFrames(),
         clock: "live",
@@ -786,7 +772,7 @@ describe("mount", () => {
     expect(merged).toEqual({ jar: "single", cookies: "list" });
 
     const single = new FakeNode("cardA");
-    const mounted = mount(sceneBuilder({ length: 500 }).element(box("cardA")), {
+    const mounted = mount(scene({ length: 500 }, box("cardA")), {
       root: new FakeRoot([single]),
       frames: fakeFrames(),
       clock: "live",
@@ -854,21 +840,20 @@ describe("mount frames for a cause", () => {
       });
       const range = beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] });
       const smooth = beat("smooth", { scroll: [scrollPoint(0), scrollPoint(400)], smooth: true });
-      const scene = sceneBuilder()
-        .element(box("intro"))
-        .motion(slide.in(beat("introBeat", 300)))
-        .element(box("scrolled"))
-        .motion(slide.in(range))
-        .element(box("smoothed"))
-        .motion(slide.in(smooth))
-        .element(box("revealed"))
-        .motion(slide.in(beat("rev", 500, { when: scrollPoint(200).reached, back: "reverse" })))
-        .element(box("stayed"))
-        .motion(slide.in(beat("sta", 400, { when: scrollPoint(150).reached, back: "stay" })))
-        .element(box("replayed"))
-        .motion(slide.in(beat("rep", 300, { when: scrollPoint(250).reached, back: "replay" })))
-        .element(box("clocked"))
-        .motion(
+      const piece = scene(
+        box("intro").moves(slide.in(beat("introBeat", 300))),
+        box("scrolled").moves(slide.in(range)),
+        box("smoothed").moves(slide.in(smooth)),
+        box("revealed").moves(
+          slide.in(beat("rev", 500, { when: scrollPoint(200).reached, back: "reverse" })),
+        ),
+        box("stayed").moves(
+          slide.in(beat("sta", 400, { when: scrollPoint(150).reached, back: "stay" })),
+        ),
+        box("replayed").moves(
+          slide.in(beat("rep", 300, { when: scrollPoint(250).reached, back: "replay" })),
+        ),
+        box("clocked").moves(
           motion(
             (_t, context?: { readonly time: { readonly clock: { readonly kind: string } } }) => ({
               rotation:
@@ -877,18 +862,15 @@ describe("mount frames for a cause", () => {
                   : 0,
             }),
           ).in(range),
-        )
-        .element(box("pointed"))
-        .motion(bind({ x: (t, e) => pointer.x(t, e) * 100 }))
-        .element(box("sprung"))
-        .motion(bind({ x: (t, e) => sprung(t, e) * 100 }))
-        .element(box("still"))
-        .motion(counted.in(beat("stillBeat", 100)))
-        .element(box("parts", { parts: true }))
-        .motion(
+        ),
+        box("pointed").moves(bind({ x: (t, e) => pointer.x(t, e) * 100 })),
+        box("sprung").moves(bind({ x: (t, e) => sprung(t, e) * 100 })),
+        box("still").moves(counted.in(beat("stillBeat", 100))),
+        box("parts", { parts: true }).moves(
           slide.in(beat("partBeat", 400, { when: scrollPoint(300).reached, back: "reverse" })),
-        );
-      const mounted = mount(scene, {
+        ),
+      );
+      const mounted = mount(piece, {
         root,
         scrollTarget,
         frames,
@@ -955,16 +937,15 @@ describe("mount frames for a cause, reading another element", () => {
       const frames = fakeFrames();
       let ms = 0;
       const leader = box("leader");
-      const scene = sceneBuilder()
-        .element(leader)
-        .motion(motion((t): Pose2d => ({ x: 100 * t.progress })).loop(700))
-        .element(box("follower"))
-        .motion(
+      const piece = scene(
+        leader.moves(motion((t): Pose2d => ({ x: 100 * t.progress })).loop(700)),
+        box("follower").moves(
           motion((_t, context?: { read(target: typeof leader): Pose2d }) => ({
             y: context?.read(leader).x ?? 0,
           })).in(beat("range", { scroll: [scrollPoint(0), scrollPoint(400)] })),
-        );
-      const mounted = mount(scene, { root, frames, clock: "live", now: () => ms });
+        ),
+      );
+      const mounted = mount(piece, { root, frames, clock: "live", now: () => ms });
       const styles: string[] = [];
       for (ms = 16; ms <= 6000; ms += 16) {
         if (frames.queued > 0) frames.tick(ms);
@@ -1135,13 +1116,12 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       const makeScene = (scale: number) => {
         const secBox = box("sec");
         const scrollBeat = beat("scroll", { scroll: [secBox.top, secBox.end] });
-        return sceneBuilder({ length: 1000 })
-          .element(box("widget"))
-          .motion(bind({ y: () => 0 }))
-          .element(box("bar"))
-          .motion(motion((t): Pose2d => ({ x: 100 * scale * t.progress })).in(scrollBeat))
-          .element(text("cards", { split: "words" }))
-          .motion(slide.in(scrollBeat));
+        return scene(
+          { length: 1000 },
+          box("widget").moves(bind({ y: () => 0 })),
+          box("bar").moves(motion((t): Pose2d => ({ x: 100 * scale * t.progress })).in(scrollBeat)),
+          text("cards", { split: "words" }).moves(slide.in(scrollBeat)),
+        );
       };
 
       const mounted = mount(makeScene(1), {
@@ -1222,11 +1202,10 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       const frames = fakeFrames();
       let ms = 0;
 
-      const scene = sceneBuilder({ length: 1000 })
-        .element(box("stickyBox"))
-        .motion(carry({ ms: 200 }))
-        .element(box("target"))
-        .motion(
+      const piece = scene(
+        { length: 1000 },
+        box("stickyBox").moves(carry({ ms: 200 })),
+        box("target").moves(
           motion(
             (
               t,
@@ -1235,9 +1214,10 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
               x: 50 * t.progress + (context?.rest.get("stickyBox").y ?? 0) * 0,
             }),
           ).in(beat("s", { scroll: [scrollPoint(0), scrollPoint(500)] })),
-        );
+        ),
+      );
 
-      const mounted = mount(scene, {
+      const mounted = mount(piece, {
         root,
         scrollTarget: view,
         frames,
@@ -1291,13 +1271,13 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       let ms = 0;
 
       const reveal = beat("reveal", 600, { when: scrollPoint(200).reached, back: "stay" });
-      const scene = sceneBuilder({ length: 1000 })
-        .element(box("widget"))
-        .motion(bind({ y: () => 0 }))
-        .element(box("panel"))
-        .motion(motion((t): Pose2d => ({ opacity: t.progress })).in(reveal));
+      const piece = scene(
+        { length: 1000 },
+        box("widget").moves(bind({ y: () => 0 })),
+        box("panel").moves(motion((t): Pose2d => ({ opacity: t.progress })).in(reveal)),
+      );
 
-      const mounted = mount(scene, {
+      const mounted = mount(piece, {
         root,
         scrollTarget: view,
         frames,
@@ -1374,11 +1354,13 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       };
       const objCanvas = box("gl");
       const objSlot = box("slot");
-      const scene = sceneBuilder({ length: 1000 })
-        .element(object("can", { view: { canvas: objCanvas, lens } }))
-        .motion(travel({ to: objSlot, fit: "contain" }))
-        .element(object("prop"))
-        .motion(motion((): Pose3d => ({ y: 0 })));
+      const piece = scene(
+        { length: 1000 },
+        object("can", { view: { canvas: objCanvas, lens } }).moves(
+          travel({ to: objSlot, fit: "contain" }),
+        ),
+        object("prop").moves(motion((): Pose3d => ({ y: 0 }))),
+      );
 
       let seenCanNames: readonly string[] | undefined;
       let seenPropNames: readonly string[] | undefined;
@@ -1403,7 +1385,7 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
         },
       };
 
-      const mounted = mount(scene, {
+      const mounted = mount(piece, {
         root,
         scrollTarget: view,
         frames,
@@ -1454,13 +1436,9 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       return { opacity: v.current ? v.progress : 0 };
     });
 
-    const scene = sceneBuilder()
-      .element(box("first"))
-      .motion(fadeMotion)
-      .element(box("second"))
-      .motion(fadeMotion);
+    const piece = scene(box("first").moves(fadeMotion), box("second").moves(fadeMotion));
 
-    const mounted = mount(scene, {
+    const mounted = mount(piece, {
       root,
       scrollTarget: view,
       frames,
@@ -1514,17 +1492,18 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       };
 
       const scrollRange = beat("scrollRange", { scroll: [scrollPoint(0), scrollPoint(800)] });
-      const scene = sceneBuilder({ length: 1000 })
-        .element(box("gated"))
-        .motion(motion((t): Pose2d => ({ x: 50 * t.progress })).in(scrollRange))
-        .show([scrollPoint(100), scrollPoint(300)])
-        .element(box("handed"))
-        .motion(motion((t): Pose2d => ({ x: 80 * t.progress })).in(scrollRange))
-        .element(object("orb"))
-        .motion(motion((t): Pose3d => ({ y: 1 + t.progress })))
-        .show([scrollPoint(100), scrollPoint(300)]);
+      const piece = scene(
+        { length: 1000 },
+        box("gated")
+          .moves(motion((t): Pose2d => ({ x: 50 * t.progress })).in(scrollRange))
+          .shows([scrollPoint(100), scrollPoint(300)]),
+        box("handed").moves(motion((t): Pose2d => ({ x: 80 * t.progress })).in(scrollRange)),
+        object("orb")
+          .moves(motion((t): Pose3d => ({ y: 1 + t.progress })))
+          .shows([scrollPoint(100), scrollPoint(300)]),
+      );
 
-      const mounted = mount(scene, {
+      const mounted = mount(piece, {
         root,
         scrollTarget: view,
         frames,
@@ -1576,18 +1555,20 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       };
 
       const spin = beat("spin", 1000);
-      const scene = sceneBuilder({ length: 1000 })
-        .element(box("label"))
-        .element(object("crumbs", { parts: true }))
-        .motion(
-          stagger(
-            motion((t): Pose3d => ({ z: 2 * t.progress })),
-            { spread: 1 },
-          ).in(spin),
-        )
-        .show([scrollPoint(50), scrollPoint(500)]);
+      const piece = scene(
+        { length: 1000 },
+        box("label"),
+        object("crumbs", { parts: true })
+          .moves(
+            stagger(
+              motion((t): Pose3d => ({ z: 2 * t.progress })),
+              { spread: 1 },
+            ).in(spin),
+          )
+          .shows([scrollPoint(50), scrollPoint(500)]),
+      );
 
-      const mounted = mount(scene, {
+      const mounted = mount(piece, {
         root,
         scrollTarget: view,
         frames,
@@ -1616,16 +1597,18 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
             livePoses.push([0, 1, 2].map((i) => listPose3d(value, i, 3)));
           }),
       };
-      const liveScene = sceneBuilder({ length: 1000 })
-        .element(box("label"))
-        .element(object("crumbs", { parts: true }))
-        .motion(
-          stagger(
-            motion((t): Pose3d => ({ z: 2 * t.progress })),
-            { spread: 1 },
-          ).in(spin),
-        )
-        .show([scrollPoint(50), scrollPoint(500)]);
+      const liveScene = scene(
+        { length: 1000 },
+        box("label"),
+        object("crumbs", { parts: true })
+          .moves(
+            stagger(
+              motion((t): Pose3d => ({ z: 2 * t.progress })),
+              { spread: 1 },
+            ).in(spin),
+          )
+          .shows([scrollPoint(50), scrollPoint(500)]),
+      );
 
       const liveMounted = mount(liveScene, {
         root,

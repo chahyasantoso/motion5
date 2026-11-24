@@ -1,5 +1,5 @@
 import { clamp, ease, mix, motion, type Pose2d, type Time } from "@gerak/core";
-import { beat, sceneBuilder, type MotionContext } from "@gerak/stage";
+import { beat, scene, type MotionContext } from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
 import { STAGE_SIZE } from "./contract.ts";
 
@@ -49,14 +49,11 @@ const craftCardMotion = motion((t: Time, context?: MotionContext): Pose2d => {
   };
 });
 
-export const craftScene = sceneBuilder()
-  .element(craftStage)
-  .element(craftViewport)
-  .element(craftHeading)
-  .motion(craftHeadingMotion.in(craftEnter))
-  .element(craftProgressFill)
-  .motion(craftProgressMotion.in(craftScroll))
-  .element(craftTrack)
-  .motion(craftTrackMotion.in(craftScroll))
-  .element(craftCards)
-  .motion(craftCardMotion.in(craftScroll));
+export const craftScene = scene(
+  craftStage,
+  craftViewport,
+  craftHeading.moves(craftHeadingMotion.in(craftEnter)),
+  craftProgressFill.moves(craftProgressMotion.in(craftScroll)),
+  craftTrack.moves(craftTrackMotion.in(craftScroll)),
+  craftCards.moves(craftCardMotion.in(craftScroll)),
+);

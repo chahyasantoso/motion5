@@ -8,7 +8,7 @@ Give an element `watch: true` and fold its events with core's `state`; a motion 
 
 ```ts
 import { springTo, state } from "@gerak/core";
-import { bind, box, sceneBuilder } from "@gerak/stage";
+import { bind, box, scene } from "@gerak/stage";
 
 const card = box("card", { watch: true });
 const over = state(false, (was, e) => (e.name === "enter" ? true : e.name === "leave" ? false : was), {
@@ -16,7 +16,7 @@ const over = state(false, (was, e) => (e.name === "enter" ? true : e.name === "l
 });
 const lift = springTo(over, (on) => (on ? -14 : 0));
 
-export default sceneBuilder({ length: 900 }).element(card).motion(bind({ y: lift }));
+export default scene({ length: 900 }, card.moves(bind({ y: lift })));
 ```
 
 With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
@@ -31,14 +31,15 @@ Pass deterministic scripted events in the scene's `cues` option:
 
 ```ts
 import { drop, DROP_LANDING } from "@gerak/moves";
-import { beat, box, sceneBuilder } from "@gerak/stage";
+import { beat, box, scene } from "@gerak/stage";
 
 const fall = beat("fall", 800);
 const HIT_MS = fall.from + DROP_LANDING * (fall.to - fall.from);
 
-export default sceneBuilder({ length: 1400, cues: [{ name: "hit", at: HIT_MS, target: "box" }] })
-  .element(box("box"))
-  .motion(drop({ distance: 120, squash: 0.15 }).in(fall));
+export default scene(
+  { length: 1400, cues: [{ name: "hit", at: HIT_MS, target: "box" }] },
+  box("box").moves(drop({ distance: 120, squash: 0.15 }).in(fall)),
+);
 ```
 
 - `player.on(name, listener)` notifies listeners as forward playback crosses an event (seeking backwards does not fire).

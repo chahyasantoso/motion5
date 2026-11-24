@@ -16,7 +16,7 @@ import {
   type Time,
   type Transition,
 } from "@gerak/core";
-import { sceneBuilder, slot3d, type MotionContext, type ObjectView } from "@gerak/stage";
+import { scene, slot3d, type MotionContext, type ObjectView } from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
 import {
   FLAVOR_SELECT_EVENT,
@@ -270,22 +270,17 @@ const flavorCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d =
   };
 });
 
-export const spotlightScene = sceneBuilder()
-  .element(spotlightStage)
-  .element(slotFlavorCookie)
-  .element(flavorShadow)
-  .motion(flavorShadowMotion)
-  .element(flavorCookies)
-  .motion(flavorCookiesMotion)
-  .show([spotlightStage.top, spotlightStage.end])
-  .limits({ jump: 0.9, turn: 45 })
-  .element(spotlightTints)
-  .motion(tintMotion)
-  .element(flavorTitles)
-  .motion(copyRevealMotion(28, -28))
-  .element(flavorNums)
-  .motion(copyRevealMotion(20, -20))
-  .element(flavorNotes)
-  .motion(copyRevealMotion(16, -14))
-  .element(flavorDots)
-  .motion(dotMotion);
+export const spotlightScene = scene(
+  spotlightStage,
+  slotFlavorCookie,
+  flavorShadow.moves(flavorShadowMotion),
+  flavorCookies
+    .moves(flavorCookiesMotion)
+    .shows([spotlightStage.top, spotlightStage.end])
+    .limits({ jump: 0.9, turn: 45 }),
+  spotlightTints.moves(tintMotion),
+  flavorTitles.moves(copyRevealMotion(28, -28)),
+  flavorNums.moves(copyRevealMotion(20, -20)),
+  flavorNotes.moves(copyRevealMotion(16, -14)),
+  flavorDots.moves(dotMotion),
+);

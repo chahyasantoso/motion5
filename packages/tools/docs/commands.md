@@ -16,10 +16,10 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
-- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `sceneBuilder` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
+- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `scene` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
   is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, its
   entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
-  `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
+  `scene` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
 - **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
@@ -30,11 +30,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
   `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`.
-  For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
-  adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
+  For a `scene` piece a finding that names a time also names the beat there, and it
+  adds: an element whose value changes outside its `.shows` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
   function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or watched DOM events (`enter`, `down`, `click`, `focus`) are probed across their
-  reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
+  reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
 - **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`

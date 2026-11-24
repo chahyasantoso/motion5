@@ -12,7 +12,7 @@ import {
 import {
   beat,
   object,
-  sceneBuilder,
+  scene,
   shape,
   slot3d,
   stagger,
@@ -104,22 +104,18 @@ const closingJarRootMotion = motion((_t: Time, context?: MotionContext): Pose3d 
   };
 });
 
-export const closingScene = sceneBuilder()
-  .element(closingStage)
-  .element(slotClosingJar)
-  .element(closingHeadline)
-  .motion(stagger(wordRise, { spread: 0.24 }).in(closingReveal, ease.cubicOut))
-  .element(closingFlourish)
-  .motion(flourishDraw.in(closingReveal))
-  .element(closingCopy)
-  .motion(delayedFadeRise(0.16, 18).in(closingReveal, ease.cubicOut))
-  .element(closingActions)
-  .motion(delayedFadeRise(0.28, 20).in(closingReveal, ease.cubicOut))
-  .element(closingWordmark)
-  .motion(
+export const closingScene = scene(
+  closingStage,
+  slotClosingJar,
+  closingHeadline.moves(stagger(wordRise, { spread: 0.24 }).in(closingReveal, ease.cubicOut)),
+  closingFlourish.moves(flourishDraw.in(closingReveal)),
+  closingCopy.moves(delayedFadeRise(0.16, 18).in(closingReveal, ease.cubicOut)),
+  closingActions.moves(delayedFadeRise(0.28, 20).in(closingReveal, ease.cubicOut)),
+  closingWordmark.moves(
     stagger(letterRise, { spread: 0.22, from: "center" }).in(closingWordmarkBeat, ease.cubicOut),
-  )
-  .element(closingJarRoot)
-  .motion(travel({ to: slotClosingJar }), closingJarRootMotion)
-  .show({ from: closingStage.top.minus(1100) })
-  .limits({ jump: 1.8, turn: 180 });
+  ),
+  closingJarRoot
+    .moves(travel({ to: slotClosingJar }), closingJarRootMotion)
+    .shows({ from: closingStage.top.minus(1100) })
+    .limits({ jump: 1.8, turn: 180 }),
+);

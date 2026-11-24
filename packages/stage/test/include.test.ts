@@ -9,32 +9,29 @@ import {
   object,
   poseOf,
   restReader,
-  sceneBuilder,
+  scene,
   travel,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 
 const at = (ms: number, length = 2000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
 const slide = (to: number) => motion((time: Time): Pose2d => ({ x: to * time.progress }));
 
-describe("sceneBuilder: .include", () => {
+describe("scene: sub-scenes", () => {
   it("merges another scene's elements, beats and motions onto one clock", () => {
     const enter = beat("enter", 400);
     const later = beat("later", 400, { after: enter });
-    const hero = sceneBuilder().element(box("title")).motion(slide(100).in(enter));
-    const page = sceneBuilder({ length: 1000 })
-      .element(box("card"))
-      .motion(slide(50).in(later))
-      .include(hero);
+    const hero = scene(box("title").moves(slide(100).in(enter)));
+    const page = scene({ length: 1000 }, box("card").moves(slide(50).in(later)), hero);
     const stage = compiled(page);
     expect(stage.members.map((member) => member.name)).toEqual(["card", "title"]);
     expect(Object.keys(stage.beats).sort()).toEqual(["enter", "later"]);
@@ -43,37 +40,34 @@ describe("sceneBuilder: .include", () => {
     expect(poseOf(out["card"])?.x).toBeCloseTo(50);
   });
 
-  it("lets the including scene give motions to an included scene's element", () => {
+  it("refuses motions on an element an included scene already holds", () => {
     const enter = beat("enter", 400);
     const title = box("title");
-    const hero = sceneBuilder().element(title);
-    const page = sceneBuilder().include(hero).element(title).motion(slide(80).in(enter));
-    expect(poseOf(frame(compiled(page), { time: at(400) }).targets["title"])?.x).toBeCloseTo(80);
+    const hero = scene(title);
+    expect(() => scene(hero, title.moves(slide(80).in(enter)))).toThrow(/twice/);
   });
 
   it("refuses two scenes whose elements share a name, naming both", () => {
-    const one = sceneBuilder({ name: "one" }).element(box("card"));
-    const two = sceneBuilder({ name: "two" }).element(box("card"));
-    expect(() => one.include(two)).toThrow(
-      /"card" \(box\) of scene "two" takes the name of "card"/,
-    );
+    const one = scene({ name: "one" }, box("card"));
+    const two = scene({ name: "two" }, box("card"));
+    expect(() => scene(one, two)).toThrow(/"card" \(box\) of scene "two" takes the name of "card"/);
   });
 
   it("refuses a scene that sets what only the mounted scene sets", () => {
-    const hero = sceneBuilder({ name: "hero", length: 900 }).element(box("title"));
-    expect(() => sceneBuilder().include(hero)).toThrow(/scene "hero" sets `length`/);
+    const hero = scene({ name: "hero", length: 900 }, box("title"));
+    expect(() => scene(hero)).toThrow(/scene "hero" sets `length`/);
   });
 
   it("refuses a scene included twice", () => {
-    const hero = sceneBuilder({ name: "hero" }).element(box("title"));
-    sceneBuilder({ name: "page" }).include(hero);
-    expect(() => sceneBuilder().include(hero)).toThrow(/already included in "page"/);
+    const hero = scene({ name: "hero" }, box("title"));
+    scene({ name: "page" }, hero);
+    expect(() => scene(hero)).toThrow(/already included in "page"/);
   });
 
   it("refuses a beat that means two windows across scenes", () => {
-    const hero = sceneBuilder().element(box("a")).show(beat("enter", 400));
-    const page = sceneBuilder().element(box("b")).show(beat("enter", 600));
-    expect(() => page.include(hero)).toThrow(/beat "enter"/);
+    const hero = scene(box("a").shows(beat("enter", 400)));
+    const page = scene(box("b").shows(beat("enter", 600)));
+    expect(() => scene(page, hero)).toThrow(/beat "enter"/);
   });
 
   it("allows sibling scenes to share read-only canvas, edge, and travel slot references in either include order", () => {
@@ -95,47 +89,46 @@ describe("sceneBuilder: .include", () => {
     });
 
     // Scene 1 reads sharedCanvas via object.view, sharedSlot via 3D travel, and sharedSection via edge beat.
-    const objScene = sceneBuilder({ name: "objScene" })
-      .element(object("can", { view: { canvas: sharedCanvas, lens } }))
-      .motion(travel({ to: sharedSlot }))
-      .element(box("tag"))
-      .motion(slide(20).in(beat("sec", { scroll: [sharedSection.top, sharedSection.end] })));
+    const objScene = scene(
+      { name: "objScene" },
+      object("can", { view: { canvas: sharedCanvas, lens } }).moves(travel({ to: sharedSlot })),
+      box("tag").moves(
+        slide(20).in(beat("sec", { scroll: [sharedSection.top, sharedSection.end] })),
+      ),
+    );
 
     // Scene 2 owns sharedCanvas (gives it a motion!) and also reads sharedSlot and sharedSection.
-    const uiScene = sceneBuilder({ name: "uiScene" })
-      .element(sharedCanvas)
-      .motion(slide(40).in(enter))
-      .element(box("badge"))
-      .motion(
+    const uiScene = scene(
+      { name: "uiScene" },
+      sharedCanvas.moves(slide(40).in(enter)),
+      box("badge").moves(
         travel({ to: sharedSlot }).in(enter),
         slide(10).in(beat("sec2", { scroll: [sharedSection.top, sharedSection.end] })),
-      );
+      ),
+    );
 
     // Order A: reader included first, then owner -> owner's Entry must not be overwritten!
-    const orderA = compiled(sceneBuilder({ length: 1000 }).include(objScene).include(uiScene));
+    const orderA = compiled(scene({ length: 1000 }, objScene, uiScene));
     expect(poseOf(frame(orderA, { time: at(400, 1000), rest }).targets["canvas"])?.x).toBeCloseTo(
       40,
     );
 
     // Order B: owner included first, then reader -> reader's NO_ENTRY must not overwrite owner's Entry!
     const ownedCanvas = box("ownedCanvas");
-    const readerB = sceneBuilder({ name: "readerB" })
-      .element(object("canB", { view: { canvas: ownedCanvas, lens } }))
-      .motion(travel({ to: sharedSlot }));
-    const ownerB = sceneBuilder({ name: "ownerB" })
-      .element(ownedCanvas)
-      .motion(slide(60).in(enter));
-    const orderB = compiled(sceneBuilder({ length: 1000 }).include(ownerB).include(readerB));
+    const readerB = scene(
+      { name: "readerB" },
+      object("canB", { view: { canvas: ownedCanvas, lens } }).moves(travel({ to: sharedSlot })),
+    );
+    const ownerB = scene({ name: "ownerB" }, ownedCanvas.moves(slide(60).in(enter)));
+    const orderB = compiled(scene({ length: 1000 }, ownerB, readerB));
     expect(
       poseOf(frame(orderB, { time: at(400, 1000), rest }).targets["ownedCanvas"])?.x,
     ).toBeCloseTo(60);
   });
 
-  it("refuses two scenes that both claim ownership via .element()", () => {
+  it("refuses two scenes that both bind one element", () => {
     const owned = box("owned");
-    sceneBuilder({ name: "firstOwner" }).element(owned);
-    expect(() => sceneBuilder({ name: "secondOwner" }).element(owned)).toThrow(
-      /owned.*firstOwner.*secondOwner/,
-    );
+    scene({ name: "firstOwner" }, owned);
+    expect(() => scene({ name: "secondOwner" }, owned)).toThrow(/owned.*firstOwner.*secondOwner/);
   });
 });

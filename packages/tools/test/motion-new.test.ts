@@ -56,7 +56,7 @@ describe("gerak new", () => {
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(STAGE_FILES.map((file) => join(dir, file)));
     const written = readFileSync(join(dir, "rope-word/src/rope-word.ts"), "utf8");
-    expect(written).toContain("sceneBuilder");
+    expect(written).toContain("scene(");
     expect(written).not.toContain("defineStage");
     const imported = await import(pathToFileURL(join(dir, "rope-word/src/rope-word.ts")).href);
     const module = readSceneModule(imported);

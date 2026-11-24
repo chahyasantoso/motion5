@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
 import { motion, type Pose2d } from "@gerak/core";
-import { box, sceneBuilder } from "@gerak/stage";
+import { box, scene } from "@gerak/stage";
 import { type FrameSource, type PageElement, type PageRoot, type PageStyle } from "@gerak/dom";
 import { Stage } from "@gerak/react";
 
@@ -49,9 +49,7 @@ class FakeRoot implements PageRoot {
 const NO_FRAMES: FrameSource = { requestFrame: () => 1, cancelFrame: () => undefined };
 
 function slid(distance: number, length = 1000) {
-  return sceneBuilder({ length })
-    .element(box("card"))
-    .motion(motion((): Pose2d => ({ x: distance })));
+  return scene({ length }, box("card").moves(motion((): Pose2d => ({ x: distance }))));
 }
 
 describe("<Stage />", () => {
@@ -96,10 +94,11 @@ describe("<Stage />", () => {
       frames: NO_FRAMES,
       onDriver: (driver: unknown) => drivers.push(driver),
     } as const;
-    const longer = sceneBuilder({ length: 2000 })
-      .element(box("card"))
-      .element(box("extra", { parts: true }))
-      .motion(motion((): Pose2d => ({ x: 20 })));
+    const longer = scene(
+      { length: 2000 },
+      box("card"),
+      box("extra", { parts: true }).moves(motion((): Pose2d => ({ x: 20 }))),
+    );
 
     let renderer: ReturnType<typeof create> | undefined;
     await act(() => {

@@ -10,11 +10,11 @@ import {
   listPose,
   poseOf,
   restReader,
-  sceneBuilder,
+  scene,
   scrollPoint,
   stagger,
   travel,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 import { boxInViewport, withPlacement } from "../src/render";
@@ -24,8 +24,8 @@ const at = (ms: number, length = 1000): Time => ({
   clock: { kind: "timed", elapsed: ms, length },
 });
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -50,9 +50,7 @@ describe("travel", () => {
     const drink = box("drink");
     const move = beat("move", 400);
     const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(drink)
-        .motion(travel({ to: heroSlot, fit: "fill" }).in(move)),
+      scene({ length: 400 }, drink.moves(travel({ to: heroSlot, fit: "fill" }).in(move))),
     );
 
     const rest = restReader({
@@ -79,9 +77,7 @@ describe("travel", () => {
   it("scales evenly to fit inside the slot, centred, by default", () => {
     const slot = box("slot");
     const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(box("drink"))
-        .motion(travel({ to: slot }).in(beat("move", 400))),
+      scene({ length: 400 }, box("drink").moves(travel({ to: slot }).in(beat("move", 400)))),
     );
     const rest = restReader({
       drink: { x: 100, y: 200, width: 100, height: 200 },
@@ -102,9 +98,7 @@ describe("travel", () => {
   it("supports fit: none without scaling", () => {
     const slot = box("slot");
     const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(box("drink"))
-        .motion(travel({ to: slot, fit: "none" })),
+      scene({ length: 400 }, box("drink").moves(travel({ to: slot, fit: "none" }))),
     );
     const rest = restReader({
       drink: { x: 100, y: 200, width: 100, height: 200 },
@@ -116,11 +110,7 @@ describe("travel", () => {
 
   it("sits on its slot with no window across live, timed, and untimed clocks", () => {
     const slot = box("slot");
-    const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(box("drink"))
-        .motion(travel({ to: slot })),
-    );
+    const stage = compiled(scene({ length: 400 }, box("drink").moves(travel({ to: slot }))));
     const rest = restReader({
       drink: { x: 100, y: 200, width: 100, height: 200 },
       slot: { x: 500, y: 400, width: 50, height: 100 },
@@ -149,16 +139,14 @@ describe("travel", () => {
     const b1 = beat("b1", 400);
 
     const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(orb)
-        .motion(travel({ to: slot, arc: 80 }).in(b1))
-        .element(still)
-        .motion(travel({ to: same, arc: -60 }).in(b1)),
+      scene(
+        { length: 400 },
+        orb.moves(travel({ to: slot, arc: 80 }).in(b1)),
+        still.moves(travel({ to: same, arc: -60 }).in(b1)),
+      ),
     );
     const stageNeg = compiled(
-      sceneBuilder({ length: 400 })
-        .element(box("orbNeg"))
-        .motion(travel({ to: box("slotNeg"), arc: -80 }).in(b1)),
+      scene({ length: 400 }, box("orbNeg").moves(travel({ to: box("slotNeg"), arc: -80 }).in(b1))),
     );
 
     const rest = restReader({
@@ -202,14 +190,16 @@ describe("travel", () => {
     const b2 = beat("b2", 400, { at: 600 });
 
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(drink)
-        .motion(motion((t: Time): Pose2d => ({ opacity: 0.7, rotation: 12, scale: 0.5 })).in(b1))
-        .motion(travel({ to: slotA }).in(b1))
-        .motion(travel({ to: slotB, arc: -60 }).in(b2))
-        .element(zeroDrink)
-        .motion(motion((): Pose2d => ({ scale: 0 })).in(b1))
-        .motion(travel({ to: slotB }).in(b2)),
+      scene(
+        { length: 1000 },
+        drink
+          .moves(motion((t: Time): Pose2d => ({ opacity: 0.7, rotation: 12, scale: 0.5 })).in(b1))
+          .moves(travel({ to: slotA }).in(b1))
+          .moves(travel({ to: slotB, arc: -60 }).in(b2)),
+        zeroDrink
+          .moves(motion((): Pose2d => ({ scale: 0 })).in(b1))
+          .moves(travel({ to: slotB }).in(b2)),
+      ),
     );
 
     const rest = restReader({
@@ -270,9 +260,12 @@ describe("travel", () => {
     const toStory = beat("toStory", { scroll: [features.top, story.top] });
 
     const stage = compiled(
-      sceneBuilder()
-        .element(drink)
-        .motion(travel({ to: slotFeatures }).in(toFeatures), travel({ to: slotStory }).in(toStory)),
+      scene(
+        drink.moves(
+          travel({ to: slotFeatures }).in(toFeatures),
+          travel({ to: slotStory }).in(toStory),
+        ),
+      ),
     );
 
     const desktopRest = restReader({
@@ -363,11 +356,7 @@ describe("travel", () => {
     const pointSlot = box("pointSlot");
     const mover = box("mover");
     const b1 = beat("b1", 400);
-    const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(mover)
-        .motion(travel({ to: pointSlot }).in(b1)),
-    );
+    const stage = compiled(scene({ length: 400 }, mover.moves(travel({ to: pointSlot }).in(b1))));
 
     expect(
       poseOf(
@@ -400,45 +389,49 @@ describe("travel", () => {
     const sharedSlot = box("sharedSlot");
 
     const stage = compiled(
-      sceneBuilder({ length: 400 })
-        .element(box("a"))
-        .motion(travel({ to: autoSlot }).in(enter), travel({ to: explicitSlot }).in(enter))
-        .element(explicitSlot),
+      scene(
+        { length: 400 },
+        box("a").moves(travel({ to: autoSlot }).in(enter), travel({ to: explicitSlot }).in(enter)),
+        explicitSlot,
+      ),
     );
     expect(stage.members.find((m) => m.name === "autoSlot")?.expect).toBe("static");
     expect(stage.members.find((m) => m.name === "explicitSlot")?.expect).toBe("static");
 
     // Read-only `travel({ to: sharedSlot })` can be shared across sibling scenes and one owner.
-    const s1 = sceneBuilder({ name: "firstScene" })
-      .element(box("one"))
-      .motion(travel({ to: sharedSlot }).in(enter));
-    const s2 = sceneBuilder({ name: "secondScene" })
-      .element(box("two"))
-      .motion(travel({ to: sharedSlot }).in(enter));
-    const s3 = sceneBuilder({ name: "thirdScene" }).element(sharedSlot);
-    const merged = compiled(sceneBuilder().include(s1).include(s2).include(s3));
+    const s1 = scene(
+      { name: "firstScene" },
+      box("one").moves(travel({ to: sharedSlot }).in(enter)),
+    );
+    const s2 = scene(
+      { name: "secondScene" },
+      box("two").moves(travel({ to: sharedSlot }).in(enter)),
+    );
+    const s3 = scene({ name: "thirdScene" }, sharedSlot);
+    const merged = compiled(scene(s1, s2, s3));
     expect(merged.members.filter((m) => m.name === "sharedSlot")).toHaveLength(1);
 
-    // Configuring `.element(sharedSlot)` in another scene still throws, naming both owners.
-    expect(() => sceneBuilder({ name: "fourthScene" }).element(sharedSlot)).toThrow(
+    // Binding `sharedSlot` in another scene still throws, naming both owners.
+    expect(() => scene({ name: "fourthScene" }, sharedSlot)).toThrow(
       /sharedSlot.*thirdScene.*fourthScene/,
     );
 
-    // Atomic rollback: two colliding elements in one `.motion(...)` leaves `freshSlot` unowned.
+    // Atomic rollback: two colliding elements in one `.moves(...)` leaves `freshSlot` unowned.
     const freshSlot = box("freshSlot");
     const collidingHero = box("hero");
     const collidingSlot = box("hero");
     expect(() =>
-      sceneBuilder({ name: "atomicFail" })
-        .element(box("mover"))
-        .motion(
+      scene(
+        { name: "atomicFail" },
+        box("mover").moves(
           travel({ to: freshSlot }).in(enter),
           travel({ to: collidingSlot }).in(
             beat("move", { scroll: [collidingHero.top, collidingHero.end] }),
           ),
         ),
+      ),
     ).toThrow(TypeError);
-    expect(() => sceneBuilder({ name: "afterRollback" }).element(freshSlot)).not.toThrow();
+    expect(() => scene({ name: "afterRollback" }, freshSlot)).not.toThrow();
   });
 
   it("supports stagger on lists, .take() windows, fractional scales, flow/0x0 slots", () => {
@@ -454,22 +447,22 @@ describe("travel", () => {
     const flowMover = box("flowMover");
 
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(items)
-        .motion(stagger(travel({ to: listSlot }), { spread: 0.2 }).in(b1))
-        .element(hero)
-        .motion(motion((): Pose2d => ({ scale: 1 / 3 })).in(b1))
-        .motion(travel({ to: slotA }).in(b1))
-        .motion(travel({ to: slotB }).take().in(b2))
-        .element(zeroFollower)
-        .motion(motion((): Pose2d => ({ scale: 2 })))
-        .motion(travel({ to: zeroSlot }).in(b1))
-        .element(flowMover)
-        .motion(
+      scene(
+        { length: 1000 },
+        items.moves(stagger(travel({ to: listSlot }), { spread: 0.2 }).in(b1)),
+        hero
+          .moves(motion((): Pose2d => ({ scale: 1 / 3 })).in(b1))
+          .moves(travel({ to: slotA }).in(b1))
+          .moves(travel({ to: slotB }).take().in(b2)),
+        zeroFollower
+          .moves(motion((): Pose2d => ({ scale: 2 })))
+          .moves(travel({ to: zeroSlot }).in(b1)),
+        flowMover.moves(
           travel({ to: slotA }).in(
             beat("scrollMove", { scroll: [scrollPoint(0), scrollPoint(200)] }),
           ),
         ),
+      ),
     );
     expect(stage.members.find((m) => m.name === "listSlot")?.expect).toBe("static");
 

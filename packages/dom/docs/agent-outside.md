@@ -38,7 +38,7 @@ export function Hero() {
 }
 ```
 
-Or bind targets on a raw player directly without `sceneBuilder`: define `scene` and `clock` outside the component, or `usePlayer` restarts:
+Or bind targets on a raw player directly without `scene`: define `scene` and `clock` outside the component, or `usePlayer` restarts:
 
 ```tsx
 const playing = usePlayer(scene, clock);
@@ -46,4 +46,4 @@ const title = useTarget(playing?.player, "title");
 return <div ref={title} onClick={() => playing?.driver.replay()} />;
 ```
 
-`useTarget` writes a pose every step with no render; its third argument writes anything else. To pass the player to a child, type the prop `Player<ReturnType<typeof scene>> | undefined`, `Player` from `"@gerak/player"`. On a plain page without `sceneBuilder`, `play(scene, clock())` and `player.subscribe("title", (pose) => applyValue(element, pose))`.
+`useTarget` writes a pose every step with no render; its third argument writes anything else. To pass the player to a child, type the prop `Player<ReturnType<typeof scene>> | undefined`, `Player` from `"@gerak/player"`. On a plain page without `scene`, `play(scene, clock())` and `player.subscribe("title", (pose) => applyValue(element, pose))`.
