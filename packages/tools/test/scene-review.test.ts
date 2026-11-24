@@ -324,6 +324,9 @@ describe("gerak review costs", () => {
 
 describe("gerak review of shots", () => {
   it("reviews a reel of shots clean, each title holding at the end of its shot", () => {
+    const read = readModule(stageShots);
+    if ("reason" in read) throw new Error(read.reason);
+    expect(read.stage?.shots?.map(({ name }) => name)).toEqual(["hook", "story", "call"]);
     expect(review(stageShots).findings).toEqual([]);
   });
 });

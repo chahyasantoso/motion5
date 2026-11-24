@@ -16,10 +16,13 @@ one another.
    - `shot(scene, { name?, length?, until?, overlap? })` is a `SceneItem`. `scene` places each shot after the one
      before it: it starts at the previous shot's end minus `overlap` (never below 0), and lasts `length`, or until the
      scene ms `until`, or until its last clock beat ends. `scene` refuses `length` with `until`, an `until` at or
-     before the shot's start, a shot with no clock beat and no `length`, and a shot that holds shots.
+     before the shot's start, a shot with no clock beat and no `length`, a shot that holds shots, and a shot with a
+     scroll or trigger beat or a scroll `.shows` window, since a shot plays on the clock. A scene holding shots may
+     join another scene only while that one has no shots, and later shots follow its last.
    - Inside a shot, motions get the shot's time: ms since the shot started (never below 0), progress across its
-     length, and events with each `at` moved back by its start. `context.read` of a member in another shot, or of a
-     member of the reel, converts back to the scene's time, so a shot never needs another shot's ms.
+     length, and events with each `at` moved back by its start, moved again whenever a growing log grows.
+     `context.read` of a member in another shot, or of a member of the reel, converts back to the scene's time, so a
+     shot never needs another shot's ms.
    - The shot's clock beats become `<shot>.<beat>` on the scene's clock, and a beat named after the shot spans it, so
      `stage.beats`, the default length and `.shows` windows read scene ms.
    - Each member a shot owns shows only during the shot unless it shows a window of its own. During an overlap both

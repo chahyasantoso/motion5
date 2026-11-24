@@ -1,4 +1,4 @@
-import { motion, state, type Pose2d, type Time } from "@gerak/core";
+import { eventLog, motion, state, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -8,6 +8,7 @@ import {
   frame,
   poseOf,
   scene,
+  scrollPoint,
   shot,
   type MotionContext,
   type Scene,
@@ -147,6 +148,47 @@ describe("shot", () => {
     );
     const stage = compiled(scene(shot(lead), shot(follow, { length: 500, overlap: 500 })));
     expect(xOf(stage, "follower", 750)).toBeCloseTo(75);
+  });
+
+  it("hands a shot an event logged after it first ran, from a growing log", () => {
+    const taps = state(0, (count, event) => (event.name === "tap" ? count + 1 : count));
+    const counting = scene(
+      { name: "count" },
+      box("tally").moves(
+        motion(
+          (_t: Time, context?: MotionContext): Pose2d =>
+            context === undefined ? {} : { x: taps(context.time, context.events) },
+        ),
+      ),
+    );
+    const stage = compiled(scene(shot(sliding("hook", 600)), shot(counting, { length: 400 })));
+    const log = eventLog();
+    const tally = (ms: number) =>
+      poseOf(frame(stage, { time: at(ms, 1000), events: log.events }).targets["tally"])?.x;
+    expect(tally(700)).toBe(0);
+    log.add({ name: "tap", at: 750 });
+    expect(tally(800)).toBe(1);
+  });
+
+  it("keeps a reel's shots in place when the reel joins a scene with no shots of its own", () => {
+    const reel = scene(shot(sliding("a", 500)), shot(sliding("b", 500)));
+    const stage = compiled(scene(box("frame"), reel, shot(sliding("c", 300))));
+    expect(stage.shots?.map(({ name, from, to }) => [name, from, to])).toEqual([
+      ["a", 0, 500],
+      ["b", 500, 1000],
+      ["c", 1000, 1300],
+    ]);
+    expect(() => scene(shot(sliding("d", 400)), scene(shot(sliding("e", 400))))).toThrow(
+      /holds shots/,
+    );
+  });
+
+  it("refuses scroll and trigger beats inside a shot", () => {
+    const scrolled = scene(
+      { name: "scrolled" },
+      box("s").moves(slide.in(beat("wheel", { scroll: [scrollPoint(0), scrollPoint(400)] }))),
+    );
+    expect(() => scene(shot(scrolled, { length: 500 }))).toThrow(/scroll and trigger/);
   });
 
   it("refuses a shot inside a shot", () => {

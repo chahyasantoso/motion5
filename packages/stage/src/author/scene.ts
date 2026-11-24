@@ -33,6 +33,7 @@ import {
   project3d,
   rawTime,
   unproject3d,
+  versionOf,
   viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
@@ -222,8 +223,13 @@ const OBJECT_TRAVEL = new WeakMap<
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 /** The scene time each shot time was made from. */
 const SCENE_TIMES = new WeakMap<Time, Time>();
+/** An event list moved to a shot's clock, and the version of the growing log it was moved from. */
+interface MovedEvents {
+  readonly version: number | undefined;
+  readonly events: Events;
+}
 /** Each event list moved to a shot's clock, by shot start, and the list each moved one came from. */
-const SHOT_EVENTS = new WeakMap<Events, Map<number, Events>>();
+const SHOT_EVENTS = new WeakMap<Events, Map<number, MovedEvents>>();
 const SCENE_EVENTS = new WeakMap<Events, Events>();
 
 interface MotionBody<P = Pose2d> {
@@ -895,6 +901,10 @@ function included(state: State, scene: unknown): State {
 /** The state with `other`'s elements, beats and motions merged in, on one clock. */
 function includedState(state: State, other: State): State {
   const named = `scene "${other.owner.label}"`;
+  if (other.shots.length > 0 && (state.shots.length > 0 || state.cursor > 0))
+    throw new TypeError(
+      `scene: ${named} holds shots, and so does "${state.owner.label}"; give every shot to one scene.`,
+    );
   if (owns(state.owner, other.owner))
     throw new TypeError(`scene: ${named} is already in "${state.owner.label}".`);
   const merged = INCLUDED_IN.get(other.owner);
@@ -942,6 +952,7 @@ function includedState(state: State, other: State): State {
     inputBeats,
     current: undefined,
     shotClocks: new Map([...state.shotClocks, ...other.shotClocks]),
+    cursor: Math.max(state.cursor, other.cursor),
     shots: [
       ...state.shots,
       ...other.shots.map((each, offset) => ({ ...each, index: state.shots.length + offset })),
@@ -976,6 +987,15 @@ function shotted(state: State, taken: Shot): State {
   const name = taken.options.name ?? other.owner.label;
   if (other.shots.length > 0)
     throw new TypeError(`shot "${name}": a shot holds no shots; give each shot to the reel.`);
+  if (other.inputBeats.size > 0)
+    throw new TypeError(
+      `shot "${name}": a shot plays on the clock; scroll and trigger beats (${[...other.inputBeats.keys()].join(", ")}) belong to the reel.`,
+    );
+  for (const [member, entry] of other.entries)
+    if (entry.scrollShow.length > 0)
+      throw new TypeError(
+        `shot "${name}": "${member}" shows by scroll; a shot plays on the clock, so give its scroll windows to the reel.`,
+      );
   if (length !== undefined && until !== undefined)
     throw new TypeError(`shot "${name}": give \`until\` or \`length\`, not both.`);
   if (!(overlap >= 0)) throw new RangeError(`shot "${name}": \`overlap\` is ms, 0 or more.`);
@@ -1533,11 +1553,12 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
 /** `events` with each `at` moved back by the shot's start, made once per list and shot start. */
 function shotEvents(events: Events, clock: ShotClock | undefined): Events {
   if (clock === undefined || clock.from === 0) return events;
-  const byStart = SHOT_EVENTS.get(events) ?? new Map<number, Events>();
+  const byStart = SHOT_EVENTS.get(events) ?? new Map<number, MovedEvents>();
+  const version = versionOf(events);
   const known = byStart.get(clock.from);
-  if (known !== undefined) return known;
+  if (known !== undefined && known.version === version) return known.events;
   const moved = events.map((event) => ({ ...event, at: event.at - clock.from }));
-  byStart.set(clock.from, moved);
+  byStart.set(clock.from, { version, events: moved });
   SHOT_EVENTS.set(events, byStart);
   SCENE_EVENTS.set(moved, events);
   return moved;
@@ -1545,7 +1566,8 @@ function shotEvents(events: Events, clock: ShotClock | undefined): Events {
 
 function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): MotionContext["read"] {
   const time = sceneTime(local, plan.clock, env.total);
-  const events = SCENE_EVENTS.get(localEvents) ?? localEvents;
+  const events =
+    plan.clock === undefined ? localEvents : (SCENE_EVENTS.get(localEvents) ?? localEvents);
   function read(element: ObjectElement, at?: ReadAt): Pose3d;
   function read(element: Element | string, at?: ReadAt): Pose2d;
   function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
