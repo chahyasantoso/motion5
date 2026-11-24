@@ -16,7 +16,7 @@ import {
 import {
   beat,
   box,
-  sceneBuilder,
+  scene,
   slot3d,
   stagger,
   text,
@@ -296,37 +296,26 @@ const cookieHeroMotion = motion((t: Time, context?: MotionContext): Pose3d => {
 
 const heroVisibleWindow = { until: heroStage.end.plus(120) };
 
-export const heroScene = sceneBuilder()
-  .element(stageCanvas)
-  .element(heroStage)
-  .element(slotHeroJar)
-  .element(heroWarmWash)
-  .motion(heroWarmWashIn.in(heroAtmosphere))
-  .element(heroHorizon)
-  .motion(heroHorizonExit.in(heroAtmosphere))
-  .element(heroCopy)
-  .element(heroHeadline)
-  .motion(stagger(wordRise, { spread: 0.28 }).in(heroEnter, ease.cubicOut))
-  .element(heroSub)
-  .motion(fadeRise.in(heroEnter, ease.cubicOut))
-  .element(heroCta)
-  .motion(fadeRise.in(jarSettle, ease.cubicOut))
-  .element(offerBanner)
-  .element(offerSeal)
-  .motion(offerSealExit.in(offerExitDom))
-  .element(jarRoot)
-  .motion(jarRootMotion)
-  .show(heroVisibleWindow)
-  .limits({ jump: 0.45, turn: 35 })
-  .element(jarLid)
-  .motion(
-    lidSettle.in(jarSettle, ease.cubicOut),
-    lidUnseal.in(jarUnseal),
-    lidStepAside.in(cookieLift),
-  )
-  .show(heroVisibleWindow)
-  .limits({ jump: 0.45, turn: 35 })
-  .element(cookieHero)
-  .motion(cookieHeroMotion)
-  .show(heroVisibleWindow)
-  .limits({ jump: 0.45, turn: 35 });
+export const heroScene = scene(
+  stageCanvas,
+  heroStage,
+  slotHeroJar,
+  heroWarmWash.moves(heroWarmWashIn.in(heroAtmosphere)),
+  heroHorizon.moves(heroHorizonExit.in(heroAtmosphere)),
+  heroCopy,
+  heroHeadline.moves(stagger(wordRise, { spread: 0.28 }).in(heroEnter, ease.cubicOut)),
+  heroSub.moves(fadeRise.in(heroEnter, ease.cubicOut)),
+  heroCta.moves(fadeRise.in(jarSettle, ease.cubicOut)),
+  offerBanner,
+  offerSeal.moves(offerSealExit.in(offerExitDom)),
+  jarRoot.moves(jarRootMotion).shows(heroVisibleWindow).limits({ jump: 0.45, turn: 35 }),
+  jarLid
+    .moves(
+      lidSettle.in(jarSettle, ease.cubicOut),
+      lidUnseal.in(jarUnseal),
+      lidStepAside.in(cookieLift),
+    )
+    .shows(heroVisibleWindow)
+    .limits({ jump: 0.45, turn: 35 }),
+  cookieHero.moves(cookieHeroMotion).shows(heroVisibleWindow).limits({ jump: 0.45, turn: 35 }),
+);

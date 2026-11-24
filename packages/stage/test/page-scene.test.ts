@@ -7,12 +7,12 @@ import {
   formatStageError,
   frame,
   listPose,
-  sceneBuilder,
+  scene,
   scrollPoint,
   shape,
   stagger,
   text,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 import { boxInViewport, withPlacement } from "../src/render";
@@ -22,8 +22,8 @@ const at = (ms: number, length = 1000): Time => ({
   clock: { kind: "timed", elapsed: ms, length },
 });
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -38,13 +38,13 @@ describe("page scene compilation", () => {
     const line = shape("line", circlePath({ cx: 0, cy: 0, r: 5 }));
     const items = box("items", { parts: true });
     const stage = compiled(
-      sceneBuilder()
-        .element(box("wrap"))
-        .element(card)
-        .element(title)
-        .element(line)
-        .element(items)
-        .motion(slideX(10).in(beat("sb", { scroll: [scrollPoint(0), scrollPoint(500)] }))),
+      scene(
+        box("wrap"),
+        card,
+        title,
+        line,
+        items.moves(slideX(10).in(beat("sb", { scroll: [scrollPoint(0), scrollPoint(500)] }))),
+      ),
     );
     expect(stage.members.map((member) => [member.name, member.node])).toEqual([
       ["wrap", '[data-cast="wrap"]'],
@@ -60,7 +60,7 @@ describe("page scene compilation", () => {
   it("compiles a page scene with only scroll or trigger beats and no length", () => {
     const scrollBeat = beat("s", { scroll: [scrollPoint(0), scrollPoint(400)] });
     const hero = box("hero");
-    const stage = compiled(sceneBuilder().element(hero).motion(slideX(50).in(scrollBeat)));
+    const stage = compiled(scene(hero.moves(slideX(50).in(scrollBeat))));
     expect(stage.durationMs).toBeGreaterThan(0);
     const out = frame(stage, {
       time: at(100, stage.durationMs),
@@ -79,17 +79,17 @@ describe("lines and stagger by line", () => {
     let actorLine: number | undefined = -1;
     const partLines: (number | undefined)[] = [];
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(card)
-        .motion((_time, context) => {
+      scene(
+        { length: 1000 },
+        card.moves((_time, context) => {
           actorLine = context.line;
           return {};
-        })
-        .element(headline)
-        .motion((_time, context) => {
+        }),
+        headline.moves((_time, context) => {
           if (context.index !== undefined) partLines[context.index] = context.line;
           return { x: (context.line ?? 0) * 10 };
         }),
+      ),
     );
     const out = frame(stage, { time: at(0) }).targets;
     [0, 1, 2, 3].forEach((index) => listPose(out["headline"], index, 4));
@@ -103,9 +103,7 @@ describe("lines and stagger by line", () => {
     });
     const enter = beat("enter", 1000);
     const stage = compiled(
-      sceneBuilder()
-        .element(headline)
-        .motion(stagger(slideX(100), { spread: 1, by: "line" }).in(enter)),
+      scene(headline.moves(stagger(slideX(100), { spread: 1, by: "line" }).in(enter))),
     );
 
     const xs = (ms: number, lines?: Readonly<Record<string, readonly number[]>>): number[] => {
@@ -134,9 +132,7 @@ describe("lines and stagger by line", () => {
     const sample = (from: "start" | "end" | "center" | "edges"): number[] => {
       const words = text("words", { split: "words" });
       const stage = compiled(
-        sceneBuilder()
-          .element(words)
-          .motion(stagger(slideX(100), { spread: 1, from, by: "line" }).in(enter)),
+        scene(words.moves(stagger(slideX(100), { spread: 1, from, by: "line" }).in(enter))),
       );
       const out = frame(stage, { time: at(500, 1000), lines }).targets["words"];
       return [0, 1, 2, 3].map((index) => listPose(out, index, 4)?.x ?? -1);

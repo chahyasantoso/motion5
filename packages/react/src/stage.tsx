@@ -20,7 +20,7 @@ export interface StageProps {
 
 function compiled(input: StageInput): CompiledStage {
   if (isStage(input)) return input;
-  if (!isScene(input)) throw new Error("Stage: expected a stage or what `sceneBuilder` returns.");
+  if (!isScene(input)) throw new Error("Stage: expected a stage or what `scene` returns.");
   const result = compileScene(input);
   if (result.ok) return result.stage;
   throw new Error(`Stage: invalid scene:\n${result.errors.map(formatStageError).join("\n")}`);

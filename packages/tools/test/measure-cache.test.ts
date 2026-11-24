@@ -28,7 +28,7 @@ function brief(): { readonly page: string; readonly scene: string } {
   const scene = join(root, "card", "src", "card.ts");
   writeFileSync(
     scene,
-    'import { box, sceneBuilder } from "@gerak/stage";\nexport default sceneBuilder({ length: 500 }).element(box("card"));\n',
+    'import { box, scene } from "@gerak/stage";\nexport default scene({ length: 500 }, box("card"));\n',
   );
   return { page, scene };
 }

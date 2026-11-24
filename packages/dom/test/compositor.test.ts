@@ -8,10 +8,10 @@ import {
   listPose,
   poseOf,
   restReader,
-  sceneBuilder,
+  scene,
   scrollPoint,
   stagger,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
@@ -23,8 +23,8 @@ import {
   type TrackSample,
 } from "../src/compositor";
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -39,21 +39,19 @@ const curve = motion(
 );
 
 const stage = compiled(
-  sceneBuilder({ length: 1000 })
-    .element(box("scrolled"))
-    .motion(curve.in(range))
-    .element(box("cards", { parts: true }))
-    .motion(stagger(curve, { spread: 0.4 }).in(range))
-    .element(box("clocked"))
-    .motion(
+  scene(
+    { length: 1000 },
+    box("scrolled").moves(curve.in(range)),
+    box("cards", { parts: true }).moves(stagger(curve, { spread: 0.4 }).in(range)),
+    box("clocked").moves(
       motion(
         (t: Time, context?: { readonly time: Time }): Pose2d => ({
           x: t.progress + (context?.time.progress ?? 0),
         }),
       ).in(range),
-    )
-    .element(box("skewed"))
-    .motion(motion((t: Time): Pose2d => ({ skewX: 10 * t.progress })).in(range)),
+    ),
+    box("skewed").moves(motion((t: Time): Pose2d => ({ skewX: 10 * t.progress })).in(range)),
+  ),
 );
 
 const MAX = 2000;
@@ -135,23 +133,22 @@ const reveal = (back: "reverse" | "stay" | "replay", name: string = back) =>
   beat(`reveal-${name}`, 600, { when: scrollPoint(500).reached, back });
 const rise = motion((t: Time): Pose2d => ({ y: 30 * (1 - t.progress), opacity: t.progress }));
 const triggered = compiled(
-  sceneBuilder({ length: 1000 })
-    .element(box("cards", { parts: true }))
-    .motion(stagger(rise, { spread: 0.3 }).in(reveal("reverse"), ease.cubicOut))
-    .element(box("stays"))
-    .motion(rise.in(reveal("stay")))
-    .element(box("replays"))
-    .motion(rise.in(reveal("replay")))
-    .element(box("taken"))
-    .motion(rise.in(reveal("stay", "taken")).take())
-    .element(box("clocked"))
-    .motion(
+  scene(
+    { length: 1000 },
+    box("cards", { parts: true }).moves(
+      stagger(rise, { spread: 0.3 }).in(reveal("reverse"), ease.cubicOut),
+    ),
+    box("stays").moves(rise.in(reveal("stay"))),
+    box("replays").moves(rise.in(reveal("replay"))),
+    box("taken").moves(rise.in(reveal("stay", "taken")).take()),
+    box("clocked").moves(
       motion(
         (t: Time, context?: { readonly time: Time }): Pose2d => ({
           y: t.progress + (context?.time.progress ?? 0),
         }),
       ).in(reveal("stay", "clocked")),
     ),
+  ),
 );
 const triggerInput = {
   counts: { cards: 3 },
@@ -195,14 +192,15 @@ describe("what the sampler refuses", () => {
   it("gives up on a scroll range too long to sample before running the scene across it", () => {
     let runs = 0;
     const counted = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("counted"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("counted").moves(
           motion((t: Time): Pose2d => {
             runs += 1;
             return { x: t.progress };
           }).in(range),
         ),
+      ),
     );
     const names = new Set(["counted"]);
     expect(scrollTracks(counted, { ...input, names }, 1_000_000).tracks.size).toBe(0);
@@ -219,26 +217,25 @@ describe("beat-scoped sampling and rest dependencies", () => {
     const scrollBeat = beat("s", { scroll: [secA.top, secB.end] });
     const trigBeat = beat("t", 400, { when: triggerSec.top.reached, back: "stay" });
     const piece = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("sEl"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("sEl").moves(
           motion(
             (t: Time, ctx?: { readonly rest: { get(n: string): { readonly width: number } } }) => ({
               x: t.progress * 100 + (ctx?.rest.get("slotInMotion").width ?? 0),
             }),
           ).in(scrollBeat),
-        )
-        .element(box("tEl"))
-        .motion(motion((t: Time): Pose2d => ({ y: t.progress * 50 })).in(trigBeat))
-        .element(box("engineEl"))
-        .motion(
+        ),
+        box("tEl").moves(motion((t: Time): Pose2d => ({ y: t.progress * 50 })).in(trigBeat)),
+        box("engineEl").moves(
           motion(
             (_t: Time, ctx?: { readonly rest: { get(n: string): { readonly x: number } } }) => ({
               x: ctx?.rest.get("unusedBox").x ?? 0,
             }),
           ),
-        )
-        .element(unusedBox),
+        ),
+        unusedBox,
+      ),
     );
     const measured = restReader({
       secA: { x: 500, y: 300, width: 1000, height: 200 },
@@ -265,22 +262,23 @@ describe("beat-scoped sampling and rest dependencies", () => {
     const zeroWidth = beat("step", { scroll: [stepSec.top, stepSec.end] });
     const stepped = beat("stepped", { scroll: [scrollPoint(12000), scrollPoint(12200)] });
     const piece = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("mover"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("mover").moves(
           motion((t: Time): Pose2d => {
             calls += 1;
             return { y: 100 * Math.sin((Math.PI * t.progress) / 2) };
           }).in(active),
-        )
-        .element(box("jumper"))
-        .motion(
+        ),
+        box("jumper").moves(
           motion((t: Time): Pose2d => ({ x: 80 * t.progress }))
             .in(stepped)
             .take(),
-        )
-        .element(box("snap"))
-        .motion(motion((t: Time): Pose2d => ({ opacity: 1 - 0.5 * t.progress })).in(zeroWidth)),
+        ),
+        box("snap").moves(
+          motion((t: Time): Pose2d => ({ opacity: 1 - 0.5 * t.progress })).in(zeroWidth),
+        ),
+      ),
     );
     const maxScroll = 20_000;
     const zeroRest = restReader({ stepSec: { x: 500, y: 8000, width: 1000, height: 0 } });

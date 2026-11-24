@@ -12,7 +12,7 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, bind, box, object, sceneBuilder, stagger, text, travel } from "@gerak/stage";
+import { beat, bind, box, object, scene, stagger, text, travel } from "@gerak/stage";
 
 /** Cold-Pressed Sparkling Yuzu, with the drink as a Three.js can travelling between the page's slots. */
 
@@ -75,51 +75,44 @@ const leanTurn = (degrees: number) =>
     return { rotation: lean, rotationY: 90 * p };
   });
 
-export default sceneBuilder({ name: "yuzu-3d", length: 1300 })
-  .element(heroAura)
-  .motion(
+export default scene(
+  { name: "yuzu-3d", length: 1300 },
+  heroAura.moves(
     bind({
       x: (t, e) => (auraX(t, e) - 0.5) * 44,
       y: (t, e) => (auraY(t, e) - 0.5) * 32 - clamp(scroll.y(t, e) * 0.08, 0, 80),
     }),
-  )
-  .element(headline)
-  .motion(stagger(riseFade(22), { spread: 0.32, by: "line" }).in(intro, ease.cubicOut))
-  .element(heroSub)
-  .motion(riseFade(18).in(subIntro, ease.cubicOut))
-  .element(heroCta)
-  .motion(riseFade(16).in(subIntro, ease.cubicOut))
-  .element(drink)
-  .motion(
-    travel({ to: slotHero }),
-    riseFade3d.in(intro, ease.cubicOut),
-    travel({ to: slotFeatures }).in(toFeatures, ease.sineInOut),
-    leanTurn(-8).in(toFeatures),
-    travel({ to: slotStory }).in(toStory, ease.sineInOut),
-    leanTurn(8).in(toStory),
-  )
-  .limits({ jump: 0.6, turn: 30 })
-  .element(featureCards)
-  .motion(stagger(riseFade(28), { spread: 0.28 }).in(featuresReveal, ease.cubicOut))
-  .element(storyProgress)
-  .motion(
+  ),
+  headline.moves(stagger(riseFade(22), { spread: 0.32, by: "line" }).in(intro, ease.cubicOut)),
+  heroSub.moves(riseFade(18).in(subIntro, ease.cubicOut)),
+  heroCta.moves(riseFade(16).in(subIntro, ease.cubicOut)),
+  drink
+    .moves(
+      travel({ to: slotHero }),
+      riseFade3d.in(intro, ease.cubicOut),
+      travel({ to: slotFeatures }).in(toFeatures, ease.sineInOut),
+      leanTurn(-8).in(toFeatures),
+      travel({ to: slotStory }).in(toStory, ease.sineInOut),
+      leanTurn(8).in(toStory),
+    )
+    .limits({ jump: 0.6, turn: 30 }),
+  featureCards.moves(stagger(riseFade(28), { spread: 0.28 }).in(featuresReveal, ease.cubicOut)),
+  storyProgress.moves(
     motion((t: Time): Pose2d => ({ scaleX: mix(0.08, 1, t.progress), anchor: "left" })).in(
       storyPin,
     ),
-  )
-  .element(storyStep1)
-  .motion(
+  ),
+  storyStep1.moves(
     motion((t: Time): Pose2d => {
       const fade = clamp((t.progress - 0.25) / 0.15, 0, 1);
       return { y: -18 * fade, opacity: 1 - fade };
     }).in(storyPin),
-  )
-  .element(storyStep2)
-  .motion(
+  ),
+  storyStep2.moves(
     motion((t: Time): Pose2d => {
       const appear = ease.cubicOut(clamp((t.progress - 0.36) / 0.14, 0, 1));
       return { y: 18 * (1 - appear), opacity: appear };
     }).in(storyPin),
-  )
-  .element(galleryCards)
-  .motion(stagger(riseFade(24), { spread: 0.25 }).in(galleryReveal, ease.cubicOut));
+  ),
+  galleryCards.moves(stagger(riseFade(24), { spread: 0.25 }).in(galleryReveal, ease.cubicOut)),
+);

@@ -30,12 +30,12 @@ import {
   beat,
   box,
   object,
-  sceneBuilder,
+  scene,
   slot3d,
   travel,
   type MotionContext,
   type ObjectView,
-  type SceneBuilder,
+  type Scene,
 } from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
 import {
@@ -821,33 +821,27 @@ const builderCrumbsMotion = motion((_t: Time, context?: MotionContext): Pose3d =
 
 const builderWindow = [builderStage.top.minus(1000), builderStage.end.plus(180)] as const;
 
-export const builderScene: SceneBuilder = sceneBuilder()
-  .element(builderStage)
-  .element(slotBuilderJar)
-  .element(builderSealBtn)
-  .element(builderHeading)
-  .motion(builderHeadingMotion.in(builderEnter))
-  .element(builderJarRoot)
-  .motion(travel({ to: slotBuilderJar }), builderJarRootMotion)
-  .show(builderWindow)
-  .limits({ jump: 1.8, turn: 180 })
-  .element(builderJarLid)
-  .motion(builderJarLidMotion)
-  .show(builderWindow)
-  .limits({ jump: 1.8, turn: 180 })
-  .element(builderJarRibbon)
-  .motion(builderJarRibbonMotion)
-  .show(builderWindow)
-  .limits({ jump: 1.8, turn: 360 })
-  .element(builderCookies)
-  .motion(builderCookiesMotion)
-  .show(builderWindow)
-  .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(builderExitCookies)
-  .motion(builderExitCookiesMotion)
-  .show(builderWindow)
-  .limits({ jump: 2.5, turn: 360, ratio: 2.1 })
-  .element(builderCrumbs)
-  .motion(builderCrumbsMotion)
-  .show(builderWindow)
-  .limits({ jump: 2.5, turn: 180 });
+export const builderScene: Scene = scene(
+  builderStage,
+  slotBuilderJar,
+  builderSealBtn,
+  builderHeading.moves(builderHeadingMotion.in(builderEnter)),
+  builderJarRoot
+    .moves(travel({ to: slotBuilderJar }), builderJarRootMotion)
+    .shows(builderWindow)
+    .limits({ jump: 1.8, turn: 180 }),
+  builderJarLid.moves(builderJarLidMotion).shows(builderWindow).limits({ jump: 1.8, turn: 180 }),
+  builderJarRibbon
+    .moves(builderJarRibbonMotion)
+    .shows(builderWindow)
+    .limits({ jump: 1.8, turn: 360 }),
+  builderCookies
+    .moves(builderCookiesMotion)
+    .shows(builderWindow)
+    .limits({ jump: 2.5, turn: 360, ratio: 2.1 }),
+  builderExitCookies
+    .moves(builderExitCookiesMotion)
+    .shows(builderWindow)
+    .limits({ jump: 2.5, turn: 360, ratio: 2.1 }),
+  builderCrumbs.moves(builderCrumbsMotion).shows(builderWindow).limits({ jump: 2.5, turn: 180 }),
+);

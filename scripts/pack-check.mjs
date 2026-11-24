@@ -136,13 +136,11 @@ export function typeCheckFiles(specifiers) {
 
 /** A minimal stage module for the check's one brief. */
 const DEMO_PIECE = `import { slide } from "@gerak/moves";
-import { beat, box, sceneBuilder } from "@gerak/stage";
+import { beat, box, scene } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export default sceneBuilder()
-  .element(box("box"))
-  .motion(slide({ distance: 300, from: "left" }).in(go));
+export default scene(box("box").moves(slide({ distance: 300, from: "left" }).in(go)));
 `;
 
 /** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the live and talk pages. */
@@ -360,7 +358,7 @@ function installSubset(dir, packages, tarballs, lock, peers) {
 }
 
 const CORE_PIECE = `import { arcPath, chain, ease, lanes, mix, motion, type Pose2d } from "@gerak/core";
-import { beat, box, sceneBuilder, shape, type MotionContext } from "@gerak/stage";
+import { beat, box, scene, shape, type MotionContext } from "@gerak/stage";
 
 const [first, second] = chain([1000, 1000], { overlap: 200 });
 const row = lanes([1, 1, 1], 0.25);
@@ -383,28 +381,25 @@ const arc = shape(
   }),
 );
 
-export default sceneBuilder({
-  length: 3000,
-})
-  .element(dot)
-  .motion(
+export default scene(
+  { length: 3000 },
+  dot.moves(
     motion((time): Pose2d => {
       const p = ease.cubicOut(time.progress);
       return { x: mix(-160, 0, p), opacity: mix(0, 1, p) };
     }).in(intro),
-  )
-  .element(bars)
-  .motion(
+  ),
+  bars.moves(
     motion(
       (time, context?: MotionContext): Pose2d => ({
         y: mix(60, 0, ease.sineOut(row.of(time, context?.index ?? 0).progress)),
       }),
     ).in(follow),
-  )
-  .element(arc)
-  .motion(
+  ),
+  arc.moves(
     motion((time): Pose2d => ({ drawn: mix(0, 1, ease.quadOut(time.progress)) })).in(reveal),
-  );
+  ),
+);
 `;
 
 /** The page of the core-only demo piece: the look and cast `CORE_PIECE` animates. */

@@ -107,7 +107,7 @@ Two elements that react to one thing share one signal; wrap it in `shared` when 
 ## Reference
 
 <!-- generated:reference:start -->
-- [author](./reference/author.md): What a piece is written with: `sceneBuilder`, its elements, beats and motions. Reach for it whenever you write a piece.
+- [author](./reference/author.md): What a piece is written with: `scene`, its elements, beats and motions. Reach for it whenever you write a piece.
 - [run](./reference/run.md): What renderers and tools run a piece with: `compileScene`'s `Stage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.
 - [render](./reference/render.md): Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.
 - [dom](./reference/dom.md): Browser CSS custom property helpers exported from `@gerak/stage/dom` (`cssVariables`, `isTokenName`).

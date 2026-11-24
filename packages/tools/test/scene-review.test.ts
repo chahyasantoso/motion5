@@ -14,7 +14,7 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, bind, box, object, sceneBuilder, scrollPoint, stagger } from "@gerak/stage";
+import { beat, bind, box, object, scene, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MeasureCache } from "../src/page/measure-cache";
 import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
@@ -442,38 +442,32 @@ describe("gerak review expectations and shape mismatches", () => {
       lines: {},
       parents: {},
     };
-    const scene = sceneBuilder({ length: 1000 })
-      .element(box("sActor"))
-      .motion(slide.in(sb))
-      .element(box("sList", { parts: true }))
-      .motion(stagger(slide, { spread: 0.2 }).in(sb))
-      .element(box("tActor"))
-      .motion(slide.in(tb))
-      .element(box("tList", { parts: true }))
-      .motion(stagger(slide, { spread: 0.2 }).in(tb))
-      .element(box("pointed"))
-      .motion(bind({ x: (t, e) => pointer.x(t, e) * 40 }))
-      .element(box("scrolledBind"))
-      .motion(bind({ y: (t, e) => scroll.y(t, e) * 0.2 }))
-      .element(box("smoothed"))
-      .motion(slide.in(smoothBeat));
+    const piece = scene(
+      { length: 1000 },
+      box("sActor").moves(slide.in(sb)),
+      box("sList", { parts: true }).moves(stagger(slide, { spread: 0.2 }).in(sb)),
+      box("tActor").moves(slide.in(tb)),
+      box("tList", { parts: true }).moves(stagger(slide, { spread: 0.2 }).in(tb)),
+      box("pointed").moves(bind({ x: (t, e) => pointer.x(t, e) * 40 })),
+      box("scrolledBind").moves(bind({ y: (t, e) => scroll.y(t, e) * 0.2 })),
+      box("smoothed").moves(slide.in(smoothBeat)),
+    );
 
-    expect(review(scene, {}, measured).findings).toEqual([]);
+    expect(review(piece, {}, measured).findings).toEqual([]);
   });
 
   it("still flags genuinely static settle members even inside scroll or trigger beats", () => {
     const sb = beat("scroll", { scroll: [scrollPoint(100), scrollPoint(500)] });
     const tb = beat("trigger", 400, { when: scrollPoint(300).reached, back: "stay" });
     const noop = motion((): Pose2d => ({ x: 0 }));
-    const scene = sceneBuilder({ length: 1000 })
-      .element(box("staticScroll"))
-      .motion(noop.in(sb))
-      .element(box("staticTrigger"))
-      .motion(noop.in(tb))
-      .element(box("staticUnwindowed"))
-      .motion(noop);
+    const piece = scene(
+      { length: 1000 },
+      box("staticScroll").moves(noop.in(sb)),
+      box("staticTrigger").moves(noop.in(tb)),
+      box("staticUnwindowed").moves(noop),
+    );
 
-    const findings = review(scene).findings;
+    const findings = review(piece).findings;
     expect(findings).toContain(
       'cast member "staticScroll" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
@@ -496,21 +490,23 @@ describe("gerak review expectations and shape mismatches", () => {
       parents: {},
       counts: { cookies: 3 },
     };
-    const clean3d = sceneBuilder({ length: 1000 })
-      .element(object("cookies", { parts: true }))
-      .motion(
+    const clean3d = scene(
+      { length: 1000 },
+      object("cookies", { parts: true }).moves(
         stagger(
           motion((t: Time): Pose3d => ({ z: 0.5 * t.progress })),
           { spread: 0.5 },
         ).in(enter),
-      );
+      ),
+    );
     expect(review(clean3d, {}, cache).findings).toEqual([]);
 
-    const jumping3d = sceneBuilder({ length: 1000 })
-      .element(object("cookies", { parts: true }))
-      .motion((t, ctx) => ({
+    const jumping3d = scene(
+      { length: 1000 },
+      object("cookies", { parts: true }).moves((t, ctx) => ({
         z: ctx.index === 1 && t.progress >= 0.4 ? 200 : 0,
-      }));
+      })),
+    );
     const jumpFindings = review(jumping3d, {}, cache).findings;
     expect(jumpFindings.some((line) => line.startsWith("cookies[1].z jumps"))).toBe(true);
   });
@@ -535,16 +531,17 @@ describe("driver probing and --events in gerak review", () => {
       lines: {},
       parents: {},
     };
-    const scene = sceneBuilder({ length: 400 })
-      .element(box("slot"))
-      .element(box("footer"))
-      .element(box("panel2"))
-      .motion((_t, ctx) => {
+    const piece = scene(
+      { length: 400 },
+      box("slot"),
+      box("footer"),
+      box("panel2").moves((_t, ctx) => {
         const y = scroll.y(ctx.time, ctx.events);
         const p = (y - 1850) / (4550 - 1850);
         return { opacity: p >= 0.48 && p < 0.74 ? 1 : 0 };
-      });
-    expect(review(scene, {}, cache).findings).toEqual([]);
+      }),
+    );
+    expect(review(piece, {}, cache).findings).toEqual([]);
   });
 
   it("probes watched target interaction events on unmoved settle members", () => {
@@ -553,11 +550,12 @@ describe("driver probing and --events in gerak review", () => {
       (cur, ev) => (ev.name === "enter" ? true : ev.name === "leave" ? false : cur),
       { target: "btn" },
     );
-    const scene = sceneBuilder({ length: 400 })
-      .element(box("btn", { watch: true }))
-      .element(box("lid"))
-      .motion((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 }));
-    expect(review(scene).findings).toEqual([]);
+    const piece = scene(
+      { length: 400 },
+      box("btn", { watch: true }),
+      box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 })),
+    );
+    expect(review(piece).findings).toEqual([]);
   });
 
   it("passes --events to reviewSceneModule and parses --events in CLI args", () => {
@@ -572,18 +570,19 @@ describe("driver probing and --events in gerak review", () => {
       parents: {},
       counts: { cookies: 2 },
     };
-    const scene = sceneBuilder({ length: 900 })
-      .element(object("cookies", { parts: true }))
-      .motion((_t, ctx) => {
+    const piece = scene(
+      { length: 900 },
+      object("cookies", { parts: true }).moves((_t, ctx) => {
         const trans = countSpring(ctx.time, ctx.events);
         return { y: trans.current === 0 ? 0 : trans.progress * 0.2 };
-      });
+      }),
+    );
 
-    expect(review(scene, {}, cache).findings).toContain(
+    expect(review(piece, {}, cache).findings).toContain(
       'cast member "cookies" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
     expect(
-      review(scene, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
+      review(piece, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
     ).toEqual([]);
 
     expect(parseSceneReviewArgs(["s.ts", "--events", "jar-add=0@200,jar-seal=1@400"])).toEqual({

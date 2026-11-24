@@ -28,21 +28,21 @@ import {
   pose3dOf,
   poseOf,
   restReader,
-  sceneBuilder,
+  scene,
   slot3d,
   stagger,
   travel,
   type Drive,
   type MotionContext,
   type Moves,
-  type SceneBuilder,
+  type Scene,
   type Slot3d,
   type Stage,
 } from "../src";
 import { withPlacement } from "../src/render";
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -54,11 +54,10 @@ const slide = motion((t: Time): Pose2d => ({ x: 100 * t.progress }));
 describe("an object in a scene", () => {
   it("compiles with kind object beside a box, with no node and no content", () => {
     const stage = compiled(
-      sceneBuilder()
-        .element(object("cube"))
-        .motion(turn.in(beat("spin", 1000)))
-        .element(box("label"))
-        .motion(slide.in(beat("spin", 1000))),
+      scene(
+        object("cube").moves(turn.in(beat("spin", 1000))),
+        box("label").moves(slide.in(beat("spin", 1000))),
+      ),
     );
     const cube = stage.members.find((member) => member.name === "cube");
     expect(cube?.kind).toBe("object");
@@ -69,11 +68,10 @@ describe("an object in a scene", () => {
   it("answers a Pose3d, layering by each field's rule and taking with take()", () => {
     const spin = beat("spin", 1000);
     const stage = compiled(
-      sceneBuilder()
-        .element(object("cube"))
-        .motion(turn.in(spin), lift.in(spin))
-        .element(object("taken"))
-        .motion(turn.in(spin), lift.in(beat("late", 400, { at: 600 })).take()),
+      scene(
+        object("cube").moves(turn.in(spin), lift.in(spin)),
+        object("taken").moves(turn.in(spin), lift.in(beat("late", 400, { at: 600 })).take()),
+      ),
     );
     const at500 = frame(stage, { time: liveAt(500) }).targets;
     expect(poseOf(at500["cube"])).toEqual({ rotationY: 45, z: 0, y: 0.5 });
@@ -85,10 +83,12 @@ describe("an object in a scene", () => {
 
   it("shows only in its .show windows", () => {
     const stage = compiled(
-      sceneBuilder({ length: 2000 })
-        .element(object("cube"))
-        .motion(turn.in(beat("spin", 1000)))
-        .show(beat("spin", 1000)),
+      scene(
+        { length: 2000 },
+        object("cube")
+          .moves(turn.in(beat("spin", 1000)))
+          .shows(beat("spin", 1000)),
+      ),
     );
     expect(frame(stage, { time: liveAt(500) }).visible["cube"]).toBe(true);
     expect(frame(stage, { time: liveAt(1500) }).visible["cube"]).toBe(false);
@@ -96,40 +96,39 @@ describe("an object in a scene", () => {
 
   it("needs no node in a page scene", () => {
     const result = compileScene(
-      sceneBuilder()
-        .element(object("cube"))
-        .motion(turn.in(beat("spin", 1000)))
-        .element(box("label"))
-        .motion(slide.in(beat("spin", 1000))),
+      scene(
+        object("cube").moves(turn.in(beat("spin", 1000))),
+        box("label").moves(slide.in(beat("spin", 1000))),
+      ),
     );
     expect(result.ok).toBe(true);
   });
 
   it("refuses a 2D motion on an object and a 3D motion on a box, in types and at run time", () => {
-    const scene = sceneBuilder().element(object("cube"));
+    const cube = object("cube");
     // @ts-expect-error: an object takes 3D motions.
-    scene.motion(slide);
+    cube.moves(slide);
     // @ts-expect-error: a box takes 2D motions.
-    sceneBuilder().element(box("label")).motion(turn);
-    expect(() => scene.motion(turn)).not.toThrow();
+    scene(box("label").moves(turn));
+    expect(() => scene(cube.moves(turn))).not.toThrow();
   });
 
   it("types a plain function motion on an object from its context", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("cube"))
-        .motion((time, context) => ({ y: time.progress + context.events.length })),
+      scene(
+        { length: 1000 },
+        object("cube").moves((time, context) => ({ y: time.progress + context.events.length })),
+      ),
     );
     expect(pose3dOf(frame(stage, { time: liveAt(0) }).targets["cube"])).toEqual({ y: 0 });
   });
 
   it("refuses a read of an object's pose from an element", () => {
     const stage = compiled(
-      sceneBuilder()
-        .element(object("cube"))
-        .motion(turn.in(beat("spin", 1000)))
-        .element(box("label"))
-        .motion((_t, context) => ({ x: context.read("cube").x ?? 0 })),
+      scene(
+        object("cube").moves(turn.in(beat("spin", 1000))),
+        box("label").moves((_t, context) => ({ x: context.read("cube").x ?? 0 })),
+      ),
     );
     expect(() => frame(stage, { time: liveAt(100) })).toThrow(/is an object; its pose is 3D/);
   });
@@ -150,9 +149,7 @@ describe("travel on an object", () => {
 
   it("lands on the slot's centre as the lens sees it, at the depth it starts from", () => {
     const stage = compiled(
-      sceneBuilder()
-        .element(object("drink", { view: { canvas, lens } }))
-        .motion(start, travel({ to: slot }).in(go)),
+      scene(object("drink", { view: { canvas, lens } }).moves(start, travel({ to: slot }).in(go))),
     );
     const size = { width: 800, height: 600 };
     const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
@@ -173,9 +170,13 @@ describe("travel on an object", () => {
     const ownCanvas = box("gl");
     const ownSlot = box("slot");
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("drink", { view: { canvas: ownCanvas, lens } }))
-        .motion(start, travel({ to: ownSlot })),
+      scene(
+        { length: 1000 },
+        object("drink", { view: { canvas: ownCanvas, lens } }).moves(
+          start,
+          travel({ to: ownSlot }),
+        ),
+      ),
     );
     const size = { width: 800, height: 600 };
     const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
@@ -200,30 +201,28 @@ describe("travel on an object", () => {
   });
 
   it("refuses a travel on an object with no view, an arc, fit fill, and a take, while allowing fit none and contain", () => {
+    expect(() => scene(object("bare").moves(travel({ to: slot }).in(go)))).toThrow(
+      /travels only with/,
+    );
     expect(() =>
-      sceneBuilder()
-        .element(object("bare"))
-        .motion(travel({ to: slot }).in(go)),
-    ).toThrow(/travels only with/);
-    expect(() =>
-      sceneBuilder()
-        .element(object("bent", { view: { canvas, lens } }))
-        .motion(travel({ to: slot, arc: 40 }).in(go)),
+      scene(object("bent", { view: { canvas, lens } }).moves(travel({ to: slot, arc: 40 }).in(go))),
     ).toThrow(/travels straight/);
     expect(() =>
-      sceneBuilder()
-        .element(object("filled", { view: { canvas, lens } }))
-        .motion(travel({ to: slot, fit: "fill" }).in(go)),
+      scene(
+        object("filled", { view: { canvas, lens } }).moves(
+          travel({ to: slot, fit: "fill" }).in(go),
+        ),
+      ),
     ).toThrow(/fit/);
     expect(() =>
-      sceneBuilder()
-        .element(object("taking", { view: { canvas, lens } }))
-        .motion(travel({ to: slot }).in(go).take()),
+      scene(object("taking", { view: { canvas, lens } }).moves(travel({ to: slot }).in(go).take())),
     ).toThrow(/travels as a layer/);
     expect(() =>
-      sceneBuilder()
-        .element(object("noneOk", { view: { canvas, lens } }))
-        .motion(travel({ to: slot, fit: "none" }).in(go)),
+      scene(
+        object("noneOk", { view: { canvas, lens } }).moves(
+          travel({ to: slot, fit: "none" }).in(go),
+        ),
+      ),
     ).not.toThrow();
   });
 
@@ -231,12 +230,13 @@ describe("travel on an object", () => {
     const objCanvas = box("gl");
     const objSlot = box("slot");
     const fitScene = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("can", { view: { canvas: objCanvas, lens } }))
-        .motion(
+      scene(
+        { length: 1000 },
+        object("can", { view: { canvas: objCanvas, lens } }).moves(
           motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4, scale: 0.5 })),
           travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
         ),
+      ),
     );
     const bounds = { width: 1.2, height: 2.4, depth: 1.2 };
     const startDepth = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, {
@@ -269,12 +269,13 @@ describe("travel on an object", () => {
 
     // fit: "none" preserves prior scale and per-axis scales even when measured bounds exist.
     const keepScaleScene = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("can", { view: { canvas: objCanvas, lens } }))
-        .motion(
+      scene(
+        { length: 1000 },
+        object("can", { view: { canvas: objCanvas, lens } }).moves(
           motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.75, scaleZ: 0.5 })),
           travel({ to: objSlot, fit: "none" }).in(beat("move", 1000)),
         ),
+      ),
     );
     const rDesk = restReader(
       {
@@ -293,12 +294,13 @@ describe("travel on an object", () => {
 
     // fit: "contain" folds prior uniform and per-axis scales cleanly without dropping or double-applying scale.
     const axisContainScene = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("can", { view: { canvas: objCanvas, lens } }))
-        .motion(
+      scene(
+        { length: 1000 },
+        object("can", { view: { canvas: objCanvas, lens } }).moves(
           motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.5 })),
           travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
         ),
+      ),
     );
     const axisStartDepth = project3d({ x: 0, y: 0, z: 0 }, lens, {
       width: 1440,
@@ -332,13 +334,12 @@ describe("3D list objects", () => {
   const rise3d = motion((t: Time): Pose3d => ({ z: 2 * t.progress, rotationY: 90 * t.progress }));
 
   it("compiles object(..., { parts: true }), distinguishes signature, returns ListPose3d, and checks parts", () => {
-    const single = compiled(
-      sceneBuilder({ length: 1000 }).element(object("cookies")).motion(rise3d),
-    );
+    const single = compiled(scene({ length: 1000 }, object("cookies").moves(rise3d)));
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("cookies", { parts: true }))
-        .motion(stagger(rise3d, { spread: 1 }).in(spin)),
+      scene(
+        { length: 1000 },
+        object("cookies", { parts: true }).moves(stagger(rise3d, { spread: 1 }).in(spin)),
+      ),
     );
     const member = stage.members.find((m) => m.name === "cookies");
     expect(member?.kind).toBe("object");
@@ -360,36 +361,36 @@ describe("3D list objects", () => {
 
   it("supports stagger factories and bindEach over shared and 3D-only fields while rejecting crossed dimensions", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("chips", { parts: true }))
-        .motion(
+      scene(
+        { length: 1000 },
+        object("chips", { parts: true }).moves(
           stagger(
             (i, count) =>
               motion((t: Time): Pose3d => ({ z: (i + 1) * t.progress, rotationX: count * 10 })),
             { spread: 0.5, from: "center" },
           ).in(spin),
-        )
-        .element(object("bound3d", { parts: true }))
-        .motion(
+        ),
+        object("bound3d", { parts: true }).moves(
           bindEach({
             x: (i) => () => i * 2,
             z: (i) => (t) => -i + scroll.y(t, []),
             rotationY: (i) => () => i * 15,
             scaleZ: () => () => 0.5,
           }),
-        )
-        .element(box("boundSharedOn2d", { parts: true }))
-        .motion(bindEach({ x: (i) => () => i * 10, scale: () => () => 2 }))
-        .element(object("boundSharedOn3d", { parts: true }))
-        .motion(bindEach({ x: (i) => () => i * 0.5, scale: () => () => 1.5 })),
+        ),
+        box("boundSharedOn2d", { parts: true }).moves(
+          bindEach({ x: (i) => () => i * 10, scale: () => () => 2 }),
+        ),
+        object("boundSharedOn3d", { parts: true }).moves(
+          bindEach({ x: (i) => () => i * 0.5, scale: () => () => 1.5 }),
+        ),
+      ),
     );
 
-    const bad2d = sceneBuilder().element(box("bad2d", { parts: true }));
     // @ts-expect-error z is 3D-only and refused on a box
-    bad2d.motion(bindEach({ z: () => () => 1 }));
-    const bad3d = sceneBuilder().element(object("bad3d", { parts: true }));
+    box("bad2d", { parts: true }).moves(bindEach({ z: () => () => 1 }));
     // @ts-expect-error drawn is 2D-only and refused on an object
-    bad3d.motion(bindEach({ drawn: () => () => 0.5 }));
+    object("bad3d", { parts: true }).moves(bindEach({ drawn: () => () => 0.5 }));
 
     const out = frame(stage, {
       time: liveAt(500),
@@ -415,9 +416,12 @@ describe("3D list objects", () => {
     const gl = box("gl");
     const slot = box("slot");
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("tray", { parts: true, view: { canvas: gl, lens } }))
-        .motion(travel({ to: slot, fit: "contain" }).in(spin)),
+      scene(
+        { length: 1000 },
+        object("tray", { parts: true, view: { canvas: gl, lens } }).moves(
+          travel({ to: slot, fit: "contain" }).in(spin),
+        ),
+      ),
     );
     const rest = restReader(
       {
@@ -442,9 +446,9 @@ describe("context.read(object)", () => {
     const follower = object("follower");
     const spin = beat("spin", 1000);
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(leader)
-        .motion(
+      scene(
+        { length: 1000 },
+        leader.moves(
           motion(
             (t: Time): Pose3d => ({
               x: 2 * t.progress,
@@ -454,9 +458,8 @@ describe("context.read(object)", () => {
               scale: 1 + t.progress,
             }),
           ).in(spin),
-        )
-        .element(follower)
-        .motion((_t, context) => {
+        ),
+        follower.moves((_t, context) => {
           const now = context.read(leader);
           const earlier = context.read(leader, { time: timeAt(context.time, 250) });
           return {
@@ -467,6 +470,7 @@ describe("context.read(object)", () => {
             scale: earlier.scale ?? 1,
           };
         }),
+      ),
     );
 
     const moves = new Map<string, Moves>();
@@ -489,13 +493,12 @@ describe("context.read(object)", () => {
     const orb = object("orb");
     const label = box("label");
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(orb)
-        .motion(
+      scene(
+        { length: 1000 },
+        orb.moves(
           motion((t: Time): Pose3d => ({ x: t.progress * 1.2, y: 0.4, z: 0 })).in(beat("go", 1000)),
-        )
-        .element(label)
-        .motion((_t, context) => {
+        ),
+        label.moves((_t, context) => {
           const pose = context.read(orb);
           const pt = project3d({ x: pose.x ?? 0, y: pose.y ?? 0, z: pose.z ?? 0 }, lens, {
             width: 800,
@@ -503,6 +506,7 @@ describe("context.read(object)", () => {
           });
           return { x: pt.x, y: pt.y, opacity: pt.visible ? 1 : 0 };
         }),
+      ),
     );
 
     const expected = project3d({ x: 0.6, y: 0.4, z: 0 }, lens, { width: 800, height: 600 });
@@ -519,21 +523,21 @@ describe("context.read(object)", () => {
     const marker = box("marker");
     const go = beat("go", 1000);
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(cookies)
-        .motion(
+      scene(
+        { length: 1000 },
+        cookies.moves(
           motion((t: Time, context?: MotionContext): Pose3d => {
             const index = context?.index ?? 0;
             if (index === 0) return { x: t.progress, y: 1, scale: 1.5 };
             const prev = context?.read(cookies, { index: index - 1, count: context.count ?? 2 });
             return { x: (prev?.x ?? 0) + 0.5, y: prev?.y ?? 0, scale: prev?.scale ?? 1 };
           }).in(go),
-        )
-        .element(marker)
-        .motion((_t, context) => {
+        ),
+        marker.moves((_t, context) => {
           const part1 = context.read(cookies, { index: 1, count: 2 });
           return { x: (part1.x ?? 0) * 100, y: (part1.scale ?? 0) * 10 };
         }),
+      ),
     );
 
     const out = frame(stage, { time: liveAt(500), counts: { cookies: 2 } });
@@ -543,11 +547,11 @@ describe("context.read(object)", () => {
 
   it("refuses mismatched kinds and unknown targets with RangeError", () => {
     const wrongKindBox = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("orb"))
-        .motion(() => ({ x: 1 }))
-        .element(box("caller"))
-        .motion((_t, context) => ({ x: context.read(box("orb")).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        object("orb").moves(() => ({ x: 1 })),
+        box("caller").moves((_t, context) => ({ x: context.read(box("orb")).x ?? 0 })),
+      ),
     );
     expect(() => frame(wrongKindBox, { time: liveAt(100) })).toThrow(RangeError);
     expect(() => frame(wrongKindBox, { time: liveAt(100) })).toThrow(
@@ -555,11 +559,11 @@ describe("context.read(object)", () => {
     );
 
     const wrongKindObj = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("card"))
-        .motion(() => ({ x: 1 }))
-        .element(object("caller"))
-        .motion((_t, context) => ({ x: context.read(object("card")).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        box("card").moves(() => ({ x: 1 })),
+        object("caller").moves((_t, context) => ({ x: context.read(object("card")).x ?? 0 })),
+      ),
     );
     expect(() => frame(wrongKindObj, { time: liveAt(100) })).toThrow(RangeError);
     expect(() => frame(wrongKindObj, { time: liveAt(100) })).toThrow(
@@ -567,9 +571,10 @@ describe("context.read(object)", () => {
     );
 
     const missing = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(object("caller"))
-        .motion((_t, context) => ({ x: context.read(object("ghost")).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        object("caller").moves((_t, context) => ({ x: context.read(object("ghost")).x ?? 0 })),
+      ),
     );
     expect(() => frame(missing, { time: liveAt(100) })).toThrow(RangeError);
     expect(() => frame(missing, { time: liveAt(100) })).toThrow(/is not an element/);
@@ -579,11 +584,11 @@ describe("context.read(object)", () => {
     const a = object("a");
     const b = object("b");
     const cycle3d = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(a)
-        .motion((_t, ctx) => ({ x: (ctx.read(b).x ?? 0) + 1 }))
-        .element(b)
-        .motion((_t, ctx) => ({ x: (ctx.read(a).x ?? 0) + 1 })),
+      scene(
+        { length: 1000 },
+        a.moves((_t, ctx) => ({ x: (ctx.read(b).x ?? 0) + 1 })),
+        b.moves((_t, ctx) => ({ x: (ctx.read(a).x ?? 0) + 1 })),
+      ),
     );
     expect(() => frame(cycle3d, { time: liveAt(100) })).toThrow(RangeError);
     expect(() => frame(cycle3d, { time: liveAt(100) })).toThrow(/loop|cycle|reads itself/i);
@@ -591,31 +596,33 @@ describe("context.read(object)", () => {
     const flat = box("flat");
     const mesh = object("mesh");
     const cycleMixed = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(flat)
-        .motion((_t, ctx) => ({ x: ctx.read(mesh).x ?? 0 }))
-        .element(mesh)
-        .motion((_t, ctx) => ({ x: ctx.read(flat).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        flat.moves((_t, ctx) => ({ x: ctx.read(mesh).x ?? 0 })),
+        mesh.moves((_t, ctx) => ({ x: ctx.read(flat).x ?? 0 })),
+      ),
     );
     expect(() => frame(cycleMixed, { time: liveAt(100) })).toThrow(RangeError);
 
     const self = object("self");
     const selfRead = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(self)
-        .motion((_t, ctx) => ({ x: ctx.read(self, { time: timeAt(ctx.time, 0) }).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        self.moves((_t, ctx) => ({ x: ctx.read(self, { time: timeAt(ctx.time, 0) }).x ?? 0 })),
+      ),
     );
     expect(() => frame(selfRead, { time: liveAt(100) })).toThrow(RangeError);
 
     const ring = object("ring", { parts: true });
     const listCycle = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(ring)
-        .motion((_t, ctx) => {
+      scene(
+        { length: 1000 },
+        ring.moves((_t, ctx) => {
           const i = ctx.index ?? 0;
           const other = i === 0 ? 1 : 0;
           return { x: ctx.read(ring, { index: other, count: 2 }).x ?? 0 };
         }),
+      ),
     );
     expect(() =>
       listPose3d(
@@ -630,10 +637,11 @@ describe("context.read(object)", () => {
     const anchor = object("anchor");
     const follower = object("follower");
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(anchor)
-        .element(follower)
-        .motion((_t, ctx) => ({ x: ctx.read(anchor).x ?? 0 })),
+      scene(
+        { length: 1000 },
+        anchor,
+        follower.moves((_t, ctx) => ({ x: ctx.read(anchor).x ?? 0 })),
+      ),
     );
     const moves = new Map<string, Moves>();
     const drives = new Map<string, Drive>();
@@ -664,15 +672,14 @@ describe("slot3d", () => {
     const travelled = object("travelled", { view });
     const probed = object("probed");
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(flowSlot)
-        .element(fixedSlot)
-        .element(stickySlot)
-        .element(canvas)
-        .element(travelled)
-        .motion(travel({ to: stickySlot, fit: "contain" }))
-        .element(probed)
-        .motion((_t, ctx) => {
+      scene(
+        { length: 1000 },
+        flowSlot,
+        fixedSlot,
+        stickySlot,
+        canvas,
+        travelled.moves(travel({ to: stickySlot, fit: "contain" })),
+        probed.moves((_t, ctx) => {
           results.flow = slot3d(flowSlot, view, ctx, { fit: "contain" });
           results.fixed = slot3d(fixedSlot, view, ctx, { fit: "contain" });
           results.sticky = slot3d(stickySlot, view, ctx, { fit: "contain" });
@@ -683,6 +690,7 @@ describe("slot3d", () => {
           results.noneFit = slot3d(stickySlot, view, ctx);
           return results.sticky ? { ...results.sticky.center, scale: results.sticky.scale } : {};
         }),
+      ),
     );
 
     const bounds = { width: 1.2, height: 2.4, depth: 1.2 };
@@ -745,17 +753,18 @@ describe("slot3d", () => {
 
     const listObj = object("listObj", { parts: true });
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(slot)
-        .element(localCanvas)
-        .element(listObj)
-        .motion((_t, ctx) => {
+      scene(
+        { length: 1000 },
+        slot,
+        localCanvas,
+        listObj.moves((_t, ctx) => {
           capturedCtx = ctx;
           const res = slot3d(slot, localView, ctx, { fit: "contain" });
           if (ctx.index === 0) part0Scale = res?.scale ?? -1;
           else part1Scale = res?.scale ?? -1;
           return res ? { ...res.center, scale: res.scale } : {};
         }),
+      ),
     );
 
     const restUnmeasured = restReader({ gl: { x: 400, y: 300, width: 800, height: 600 } });

@@ -9,7 +9,6 @@ import {
   listPose,
   object,
   scene,
-  sceneBuilder,
   stagger,
   text,
   type Scene,
@@ -32,64 +31,9 @@ const fade = motion((t: Time): Pose2d => ({ opacity: t.progress }));
 const spin = motion((t: Time): Pose3d => ({ rotationY: 90 * t.progress }));
 const doubled = (signal: (time: Time, events: readonly never[]) => Pose2d) => signal;
 
-function samples(stage: Stage): unknown[] {
-  const out: unknown[] = [];
-  for (const ms of [0, 150, 400, 650, 900, 1000]) {
-    const { targets } = frame(stage, { time: clock(ms) });
-    const row: Record<string, unknown> = {};
-    for (const member of stage.members) {
-      const value = targets[member.name];
-      row[member.name] =
-        member.kind === "list" ? [0, 1, 2].map((index) => listPose(value, index, 3)) : value;
-    }
-    out.push(row);
-  }
-  return out;
-}
-
 describe("scene", () => {
   const intro = beat("intro", 400);
   const outro = beat("outro", 500, { at: 500 });
-
-  it("plays what the same calls on sceneBuilder play, at every sample", () => {
-    const cast = () => ({
-      card: box("card"),
-      dots: box("dots", { parts: true }),
-      title: text("title"),
-      jar: object("jar"),
-    });
-    const { card, dots, title, jar } = cast();
-    const again = cast();
-    const written = scene(
-      { name: "parity", length: 1000 },
-      card
-        .moves(slide.in(intro))
-        .modifies((signal) => (time, events) => ({ ...signal(time, events), scale: 2 }))
-        .moves(lift.in(outro))
-        .shows({ until: outro })
-        .limits({ jump: 300 }),
-      dots.moves(stagger(fade.in(intro), { spread: 0.4 })),
-      title,
-      jar.moves(spin.in(outro)),
-    );
-    const chained = sceneBuilder({ name: "parity-chain", length: 1000 })
-      .element(again.card)
-      .motion(slide.in(intro))
-      .modify((signal) => (time, events) => ({ ...signal(time, events), scale: 2 }))
-      .motion(lift.in(outro))
-      .show({ until: outro })
-      .limits({ jump: 300 })
-      .element(again.dots)
-      .motion(stagger(fade.in(intro), { spread: 0.4 }))
-      .element(again.title)
-      .element(again.jar)
-      .motion(spin.in(outro));
-    const a = compiled(written);
-    const b = compiled(chained);
-    expect(a.signature).toBe(b.signature);
-    expect(a.limits).toEqual(b.limits);
-    expect(samples(a)).toEqual(samples(b));
-  });
 
   it("never changes the element: each call returns a new binding", () => {
     const card = box("card");

@@ -12,10 +12,10 @@ import {
   placementOf,
   poseOf,
   restReader,
-  sceneBuilder,
+  scene,
   scrollPoint,
   text,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 import { withPlacement } from "../src/render";
@@ -25,8 +25,8 @@ const at = (ms: number, length = 2000): Time => ({
   clock: { kind: "timed", elapsed: ms, length },
 });
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -55,9 +55,7 @@ describe("an element's edges", () => {
     const trigBeat = beat("trig", 400, { when: story.end.minus(100).reached, back: "stay" });
 
     const stage = compiled(
-      sceneBuilder()
-        .element(box("badge"))
-        .motion(slideX(100).in(spanBeat), slideX(50).in(trigBeat)),
+      scene(box("badge").moves(slideX(100).in(spanBeat), slideX(50).in(trigBeat))),
     );
     expect(stage.members.map((member) => [member.name, member.expect, member.node])).toEqual([
       ["badge", "settle", '[data-cast="badge"]'],
@@ -85,69 +83,48 @@ describe("an element's edges", () => {
     const heroB = box("hero");
     const b1 = beat("b1", { scroll: [heroA.top, heroA.end] });
     const b2 = beat("b2", { scroll: [heroB.top, heroB.end] });
-    expect(() =>
-      sceneBuilder().element(box("card")).motion(slideX(10).in(b1), slideX(20).in(b2)),
-    ).toThrow(TypeError);
-    expect(() => sceneBuilder().element(box("hero")).motion(slideX(10).in(b1))).toThrow(TypeError);
-    expect(compiled(sceneBuilder().element(heroA).motion(slideX(10).in(b1))).members).toHaveLength(
-      1,
-    );
+    expect(() => scene(box("card").moves(slideX(10).in(b1), slideX(20).in(b2)))).toThrow(TypeError);
+    expect(() => scene(box("hero").moves(slideX(10).in(b1)))).toThrow(TypeError);
+    expect(compiled(scene(heroA.moves(slideX(10).in(b1)))).members).toHaveLength(1);
   });
 });
 
 describe("single-scene element ownership", () => {
-  it("allows reusing an element inside one chain and branching from the same scene root", () => {
-    const hero = box("hero");
-    const enter = beat("enter", 400);
-    const root = sceneBuilder({ name: "landing" }).element(hero);
-    const branchA = root.motion(slideX(10).in(enter));
-    const branchB = root.element(box("cta")).element(hero).motion(slideX(20).in(enter));
-
-    expect(compiled(branchA).members).toHaveLength(1);
-    expect(compiled(branchB).members).toHaveLength(2);
-  });
-
   it("refuses an element shared across two different scenes, naming both", () => {
     const sharedBox = box("sharedBox");
-    sceneBuilder({ name: "firstScene" }).element(sharedBox);
+    scene({ name: "firstScene" }, sharedBox);
 
-    expect(() => sceneBuilder({ name: "secondScene" }).element(sharedBox)).toThrow(
+    expect(() => scene({ name: "secondScene" }, sharedBox)).toThrow(
       /sharedBox.*firstScene.*secondScene/,
     );
 
     // Whitespace scene names fall back to sequential default scene labels.
     const blankTarget = box("blankTarget");
-    sceneBuilder({ name: "   " }).element(blankTarget);
-    expect(() => sceneBuilder().element(blankTarget)).toThrow(/scene \d+/);
+    scene({ name: "   " }, blankTarget);
+    expect(() => scene(blankTarget)).toThrow(/scene \d+/);
   });
 
   it("allows scenes to share beats, states, signals, and read-only edge references", () => {
     const sharedBeat = beat("scroll", { scroll: [scrollPoint(0), scrollPoint(400)] });
     const sharedMotion = bind({ y: (t, e) => scroll.y(t, e) * 0.5 });
     const s1 = compiled(
-      sceneBuilder({ name: "one" })
-        .element(box("a"))
-        .motion(slideX(10).in(sharedBeat), sharedMotion),
+      scene({ name: "one" }, box("a").moves(slideX(10).in(sharedBeat), sharedMotion)),
     );
     const s2 = compiled(
-      sceneBuilder({ name: "two" })
-        .element(box("b"))
-        .motion(slideX(20).in(sharedBeat), sharedMotion),
+      scene({ name: "two" }, box("b").moves(slideX(20).in(sharedBeat), sharedMotion)),
     );
     expect([s1.members.length, s2.members.length]).toEqual([1, 1]);
 
     const shared = box("shared");
     const edgeBeat = beat("edge", { scroll: [shared.top, shared.end] });
-    const s3 = sceneBuilder({ name: "three" }).element(box("c")).motion(slideX(10).in(edgeBeat));
-    const s4 = sceneBuilder({ name: "four" }).element(box("d")).motion(slideX(20).in(edgeBeat));
-    const merged = compiled(sceneBuilder({ name: "page" }).include(s3).include(s4));
+    const s3 = scene({ name: "three" }, box("c").moves(slideX(10).in(edgeBeat)));
+    const s4 = scene({ name: "four" }, box("d").moves(slideX(20).in(edgeBeat)));
+    const merged = compiled(scene({ name: "page" }, s3, s4));
     expect(merged.members.map((m) => m.name)).toEqual(["c", "shared", "d"]);
 
     // Configuring `.element(shared)` in two scenes still enforces single-scene ownership.
-    sceneBuilder({ name: "ownerA" }).element(shared);
-    expect(() => sceneBuilder({ name: "ownerB" }).element(shared)).toThrow(
-      /shared.*ownerA.*ownerB/,
-    );
+    scene({ name: "ownerA" }, shared);
+    expect(() => scene({ name: "ownerB" }, shared)).toThrow(/shared.*ownerA.*ownerB/);
   });
 
   it("re-exports boxInViewport and placementOf and resolves sticky pinStart and pinEnd edges", () => {
@@ -179,7 +156,7 @@ describe("single-scene element ownership", () => {
     }
 
     const pinBeat = beat("pin", { scroll: [section.pinStart, section.pinEnd] });
-    const stage = compiled(sceneBuilder().element(box("card")).motion(slideX(100).in(pinBeat)));
+    const stage = compiled(scene(box("card").moves(slideX(100).in(pinBeat))));
     expect(stage.members.map((m) => [m.name, m.expect])).toEqual([
       ["card", "settle"],
       ["section", "static"],

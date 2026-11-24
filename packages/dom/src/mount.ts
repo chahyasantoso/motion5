@@ -73,7 +73,7 @@ export interface StageFonts {
 /** A frame's targets as the scene returned them: a pose per actor or object, a function per list. */
 export type StageValues = Readonly<Record<string, unknown>>;
 
-/** What `mount` and `<Stage>` take: a compiled stage, or what `sceneBuilder` returns. */
+/** What `mount` and `<Stage>` take: a compiled stage, or what `scene` returns. */
 export type StageInput = Stage | Scene;
 
 /** The style properties written or cleared while measuring and animating an existing page node. */
@@ -395,7 +395,7 @@ function resolvePageStage(input: StageInput): Stage {
     if (!compiled.ok)
       throw new Error(`mount: invalid scene:\n${compiled.errors.map(formatStageError).join("\n")}`);
     stage = compiled.stage;
-  } else throw new Error("mount: expected a stage or what `sceneBuilder` returns.");
+  } else throw new Error("mount: expected a stage or what `scene` returns.");
 
   const missing = stage.members
     .filter((member) => member.node === undefined && member.kind !== "object")

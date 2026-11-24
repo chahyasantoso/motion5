@@ -1,6 +1,6 @@
 import { motion, reversed, type Motion, type Pose2d, type Time } from "@gerak/core";
 import { fade, pop, slide } from "@gerak/moves";
-import { beat, box, sceneBuilder, text } from "@gerak/stage";
+import { beat, box, scene, text } from "@gerak/stage";
 
 const markIn = beat("markIn", 260, { at: 0 });
 const wordIn = beat("wordIn", 310, { at: 90 });
@@ -16,19 +16,18 @@ const backwards = (inner: (time: Time) => Pose2d): Motion<Pose2d> =>
   motion((time) => inner(reversed(time)));
 
 /** The mark pops in, the word slides in behind it, and both lift away to the top. */
-export default sceneBuilder()
-  .element(pill)
-  .element(mark)
-  .motion(
+export default scene(
+  pill,
+  mark.moves(
     pop({ overshoot: 0.15 }).in(markIn),
     fade().in(markIn),
     backwards(slide({ distance: 8, from: "top" })).in(markOut),
     backwards(fade()).in(markOut),
-  )
-  .element(word)
-  .motion(
+  ),
+  word.moves(
     slide({ distance: 14, from: "left" }).in(wordIn),
     fade().in(wordIn),
     backwards(slide({ distance: 8, from: "top" })).in(wordOut),
     backwards(fade()).in(wordOut),
-  );
+  ),
+);

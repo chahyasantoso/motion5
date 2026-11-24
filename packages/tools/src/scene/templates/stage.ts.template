@@ -1,6 +1,6 @@
-import { beat, box, sceneBuilder } from "@gerak/stage";
+import { beat, box, scene } from "@gerak/stage";
 
 const show = beat("show", 800);
 const title = box("title");
 
-export default sceneBuilder().element(title).show(show);
+export default scene(title.shows(show));

@@ -324,13 +324,13 @@ export interface ReadAt {
 /** A core `Motion`, or a plain function from time and context to a pose. */
 export type SceneMotion = (time: Time, context: MotionContext) => Pose2d;
 
-/** Wraps the signal of every motion above it in a `.modify` call. */
+/** Wraps the signal of every motion written before it in a `.modifies` call. */
 export type Principle = (signal: Signal<Pose2d>) => Signal<Pose2d>;
 
 /** A motion on an object: a core `Motion` over `Pose3d`, or a plain function from time and context to one. */
 export type SceneMotion3d = (time: Time, context: MotionContext) => Pose3d;
 
-/** Wraps the 3D signal of every motion above it on an object in a `.modify` call. */
+/** Wraps the 3D signal of every motion written before it on an object in a `.modifies` call. */
 export type Principle3d = (signal: Signal<Pose3d>) => Signal<Pose3d>;
 
 /** A clock beat or scroll beat; `[from, to]` of either; `{ from }`; or `{ until }`. */
@@ -396,6 +396,8 @@ export interface ObjectBinding {
   readonly kind: "object-binding";
   readonly element: ObjectElement;
   readonly steps: readonly ObjectBindingStep[];
+  /** Appends motions: layer motions add by each field's rule, a `take` motion replaces its fields. */
+  moves(...motions: readonly SceneMotion3d[]): ObjectBinding;
   /** Appends motions, a `travel` onto a page slot among them. */
   moves(...motions: readonly (SceneMotion3d | TravelMotion)[]): ObjectBinding;
   /** Wraps every motion before it in `principle`. */
@@ -416,6 +418,7 @@ export interface ElementMethods {
 
 /** The binding methods every object carries. */
 export interface ObjectMethods {
+  moves(...motions: readonly SceneMotion3d[]): ObjectBinding;
   moves(...motions: readonly (SceneMotion3d | TravelMotion)[]): ObjectBinding;
   modifies(principle: Principle3d): ObjectBinding;
   shows(...windows: readonly ShowWindow[]): ObjectBinding;

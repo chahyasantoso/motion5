@@ -9,21 +9,25 @@ import {
   formatStageError,
   frame,
   object,
-  sceneBuilder,
+  scene,
   scrollPoint,
   type Stage,
 } from "@gerak/stage";
 import { threeBinder } from "../src/index";
 
 const spin = beat("spin", 1000);
-const scene = sceneBuilder({ length: 2000 })
-  .element(object("cube"))
-  .motion(motion((t: Time): Pose3d => ({ x: 2 * t.progress, rotationY: 90 * t.progress })).in(spin))
-  .show(spin)
-  .element(box("label"));
+const piece = scene(
+  { length: 2000 },
+  object("cube")
+    .moves(
+      motion((t: Time): Pose3d => ({ x: 2 * t.progress, rotationY: 90 * t.progress })).in(spin),
+    )
+    .shows(spin),
+  box("label"),
+);
 
 function compiled(): Stage {
-  const result = compileScene(scene);
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -87,7 +91,7 @@ describe("threeBinder", () => {
   });
 
   it("draws once when the piece has no object", () => {
-    const flat = sceneBuilder({ length: 500 }).element(box("only"));
+    const flat = scene({ length: 500 }, box("only"));
     const result = compileScene(flat);
     if (!result.ok) throw new Error(result.errors.map(formatStageError).join("; "));
     const player = play(
@@ -140,9 +144,10 @@ describe("threeBinder", () => {
     });
 
     // After start(), calling measure() with no arguments measures bound Object3D members.
-    const objScene = sceneBuilder({ length: 500 })
-      .element(object("crate"))
-      .motion(motion((): Pose3d => ({ scale: 0 })));
+    const objScene = scene(
+      { length: 500 },
+      object("crate").moves(motion((): Pose3d => ({ scale: 0 }))),
+    );
     const compiledObj = compileScene(objScene);
     if (!compiledObj.ok) throw new Error(compiledObj.errors.map(formatStageError).join("\n"));
     const driver = manualDriver({ durationMs: 500 });
@@ -158,7 +163,7 @@ describe("threeBinder", () => {
     // Prototype keys on `objects` are not claimed, and a 0-object started stage measures empty.
     expect(binder.claims("toString")).toBe(false);
     expect(binder.claims("constructor")).toBe(false);
-    const zeroObjStage = compileScene(sceneBuilder({ length: 500 }).element(box("only")));
+    const zeroObjStage = compileScene(scene({ length: 500 }, box("only")));
     if (!zeroObjStage.ok) throw new Error(zeroObjStage.errors.map(formatStageError).join("\n"));
     const zeroBinder = threeBinder(root);
     const zeroPlayer = play(
@@ -171,10 +176,12 @@ describe("threeBinder", () => {
 
   it("drives Object3D.visible from frame() scroll-window .show() without calling stage.visibleAt", () => {
     const scrollStageResult = compileScene(
-      sceneBuilder({ length: 1000 })
-        .element(object("orb"))
-        .motion(motion((): Pose3d => ({ y: 1 })))
-        .show([scrollPoint(100), scrollPoint(300)]),
+      scene(
+        { length: 1000 },
+        object("orb")
+          .moves(motion((): Pose3d => ({ y: 1 })))
+          .shows([scrollPoint(100), scrollPoint(300)]),
+      ),
     );
     if (!scrollStageResult.ok)
       throw new Error(scrollStageResult.errors.map(formatStageError).join("\n"));
@@ -224,12 +231,13 @@ describe("threeBinder", () => {
     root.add(trayGroup);
 
     const listStageResult = compileScene(
-      sceneBuilder({ length: 1000 })
-        .element(object("arrayItems", { parts: true }))
-        .motion((_t, ctx) => ({ x: ((ctx.index ?? 0) + 1) * 0.5 }))
-        .show([scrollPoint(100), scrollPoint(400)])
-        .element(object("tray", { parts: true }))
-        .motion((t, ctx) => ({ y: (ctx.index ?? 0) + t.progress })),
+      scene(
+        { length: 1000 },
+        object("arrayItems", { parts: true })
+          .moves((_t, ctx) => ({ x: ((ctx.index ?? 0) + 1) * 0.5 }))
+          .shows([scrollPoint(100), scrollPoint(400)]),
+        object("tray", { parts: true }).moves((t, ctx) => ({ y: (ctx.index ?? 0) + t.progress })),
+      ),
     );
     if (!listStageResult.ok)
       throw new Error(listStageResult.errors.map(formatStageError).join("\n"));
@@ -282,9 +290,10 @@ describe("threeBinder", () => {
 
     // Refuses mismatched target shapes (array on non-parts object, writer on parts object).
     const singleStage = compileScene(
-      sceneBuilder({ length: 500 })
-        .element(object("arr"))
-        .motion(() => ({ y: 0 })),
+      scene(
+        { length: 500 },
+        object("arr").moves(() => ({ y: 0 })),
+      ),
     );
     if (!singleStage.ok) throw new Error(singleStage.errors.map(formatStageError).join("\n"));
     const pSingle = play(
@@ -299,9 +308,10 @@ describe("threeBinder", () => {
     ).toThrow(TypeError);
 
     const partsStage = compileScene(
-      sceneBuilder({ length: 500 })
-        .element(object("fn", { parts: true }))
-        .motion(() => ({ y: 0 })),
+      scene(
+        { length: 500 },
+        object("fn", { parts: true }).moves(() => ({ y: 0 })),
+      ),
     );
     if (!partsStage.ok) throw new Error(partsStage.errors.map(formatStageError).join("\n"));
     const pParts = play(

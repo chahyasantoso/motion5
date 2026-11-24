@@ -52,7 +52,7 @@ const CORE_INTROS = {
 /** Stage's groups in learning order and their 1-line reference summaries. */
 const STAGE_INTROS = {
   author:
-    "What a piece is written with: `sceneBuilder`, its elements, beats and motions. Reach for it whenever you write a piece.",
+    "What a piece is written with: `scene`, its elements, beats and motions. Reach for it whenever you write a piece.",
   run: "What renderers and tools run a piece with: `compileScene`'s `Stage`, `frame` and `check`, and the closed `StageError`. Reach for it when you run, test or review a piece.",
   render:
     "Outlines for renderers, from `@gerak/stage/render`: drawing strokes in order, blending morphs, matching outlines.",

@@ -8,17 +8,17 @@ import {
   formatStageError,
   frame,
   listPose,
-  sceneBuilder,
+  scene,
   scrollPoint,
   stagger,
   type Drive,
   type MotionContext,
-  type SceneBuilder,
+  type Scene,
   type Stage,
 } from "../src";
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
@@ -44,11 +44,11 @@ function drivesAt(stage: Stage, y: number): ReadonlyMap<string, Drive["kind"]> {
 describe("what a frame reports as driving each element", () => {
   it("scroll for a motion in a plain scroll beat, staggered parts included", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("plain"))
-        .motion(slide.in(range))
-        .element(box("parts", { parts: true }))
-        .motion(stagger(slide, { spread: 0.3 }).in(range)),
+      scene(
+        { length: 1000 },
+        box("plain").moves(slide.in(range)),
+        box("parts", { parts: true }).moves(stagger(slide, { spread: 0.3 }).in(range)),
+      ),
     );
     for (const y of [0, 200, 400]) {
       expect(drivesAt(stage, y).get("plain")).toBe("scroll");
@@ -58,20 +58,20 @@ describe("what a frame reports as driving each element", () => {
 
   it("a trigger beat as its own drive; a smooth scroll beat, a clock beat, a bind or a principle as more", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("smoothed"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("smoothed").moves(
           slide.in(beat("smooth", { scroll: [scrollPoint(0), scrollPoint(400)], smooth: true })),
-        )
-        .element(box("clocked"))
-        .motion(slide.in(beat("intro", 300)))
-        .element(box("triggered"))
-        .motion(slide.in(beat("reveal", 300, { when: scrollPoint(100).reached, back: "stay" })))
-        .element(box("bound"))
-        .motion(bind({ x: (t, e) => pointer.x(t, e) }))
-        .element(box("principled"))
-        .motion(slide.in(range))
-        .modify((signal) => signal),
+        ),
+        box("clocked").moves(slide.in(beat("intro", 300))),
+        box("triggered").moves(
+          slide.in(beat("reveal", 300, { when: scrollPoint(100).reached, back: "stay" })),
+        ),
+        box("bound").moves(bind({ x: (t, e) => pointer.x(t, e) })),
+        box("principled")
+          .moves(slide.in(range))
+          .modifies((signal) => signal),
+      ),
     );
     const only = drivesAt(stage, 200);
     expect(only.get("triggered")).toBe("trigger");
@@ -91,15 +91,13 @@ describe("what a frame reports as driving each element", () => {
       x: t.progress + (context?.read("plain").x ?? 0),
     });
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("plain"))
-        .motion(slide.in(range))
-        .element(box("events"))
-        .motion(motion(readsEvents).in(range))
-        .element(box("carry"))
-        .motion(motion(readsCarry).in(range))
-        .element(box("other"))
-        .motion(motion(readsOther).in(range)),
+      scene(
+        { length: 1000 },
+        box("plain").moves(slide.in(range)),
+        box("events").moves(motion(readsEvents).in(range)),
+        box("carry").moves(motion(readsCarry).in(range)),
+        box("other").moves(motion(readsOther).in(range)),
+      ),
     );
     const only = drivesAt(stage, 200);
     expect(only.get("plain")).toBe("scroll");
@@ -108,14 +106,14 @@ describe("what a frame reports as driving each element", () => {
 
   it("more for an element whose motions play in two kinds of beat, or two triggers", () => {
     const stage = compiled(
-      sceneBuilder({ length: 1000 })
-        .element(box("mixed"))
-        .motion(slide.in(range), slide.in(beat("intro", 300)))
-        .element(box("twoTriggers"))
-        .motion(
+      scene(
+        { length: 1000 },
+        box("mixed").moves(slide.in(range), slide.in(beat("intro", 300))),
+        box("twoTriggers").moves(
           slide.in(beat("first", 300, { when: scrollPoint(100).reached, back: "stay" })),
           slide.in(beat("second", 300, { when: scrollPoint(200).reached, back: "stay" })),
         ),
+      ),
     );
     expect(drivesAt(stage, 200).get("mixed")).toBe("more");
     expect(drivesAt(stage, 200).get("twoTriggers")).toBe("more");

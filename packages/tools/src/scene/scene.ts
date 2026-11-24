@@ -81,7 +81,7 @@ export interface SceneModule {
   /** Review limits by target name, the first segment of a path; empty when the module gives none. */
   readonly limits: Readonly<Record<string, TargetLimits>>;
   readonly beats?: readonly Beat[];
-  /** Compiled stage contract when the module default-exports `sceneBuilder(...)`. */
+  /** Compiled stage contract when the module default-exports `scene(...)`. */
   readonly stage?: Stage;
   /** What `gerak measure` measured of the scene's page, when it plays on one. */
   readonly measured?: MeasureCache;
@@ -279,7 +279,7 @@ export async function loadSceneFile(
   }
 }
 
-/** Reads a `sceneBuilder` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
+/** Reads a `scene` default export or a plain `{ scene, durationMs }` module, or returns a reason. */
 export function readSceneModule(
   value: unknown,
   measured?: MeasureCache,
@@ -294,7 +294,7 @@ export function readSceneModule(
   }
   const scene: unknown = Reflect.get(Object(value), "scene");
   if (defaultExport !== undefined && typeof scene !== "function") {
-    return { reason: "A piece's default export must be created with `sceneBuilder(...)`." };
+    return { reason: "A piece's default export must be made with `scene(...)`." };
   }
   const cues: unknown = Reflect.get(Object(value), "cues");
   if (cues !== undefined && !(Array.isArray(cues) && cues.every(isMotionEvent)))

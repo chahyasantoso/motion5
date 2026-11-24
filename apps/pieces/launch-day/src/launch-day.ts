@@ -1,5 +1,5 @@
 import { lanes, motion, type Motion, type Pose2d, type Time } from "@gerak/core";
-import { beat, box, sceneBuilder, text, type MotionContext } from "@gerak/stage";
+import { beat, box, scene, text, type MotionContext } from "@gerak/stage";
 import { kick } from "./moves/kick";
 import { jolt } from "./moves/jolt";
 import { lob } from "./moves/lob";
@@ -42,32 +42,24 @@ const badge = (lane: number, dx: number): readonly Motion<Pose2d>[] => [
   inLane(lane, squish({ squash: 0.28, wobbles: 2 })).in(badges),
 ];
 
-export default sceneBuilder({ length: 5400 })
-  .element(world)
-  .motion(motion(jolt({ distance: 12, count: 4 })).in(burst))
-  .element(dateText)
-  .motion(
+export default scene(
+  { length: 5400 },
+  world.moves(motion(jolt({ distance: 12, count: 4 })).in(burst)),
+  dateText.moves(
     motion(lob({ dx: -700, dy: -420, apex: 0, facing: "heading" })).in(date),
     motion(squish({ squash: 0.2, wobbles: 2 })).in(dateLand),
-  )
-  .element(day)
-  .motion(
+  ),
+  day.moves(
     motion(lob({ dx: 700, dy: -420, apex: 0, facing: "heading" })).in(date),
     motion(squish({ squash: 0.12, wobbles: 2 })).in(dateLand),
-  )
-  .element(one)
-  .motion(...badge(0, -700))
-  .element(two)
-  .motion(...badge(1, 0))
-  .element(three)
-  .motion(...badge(2, 700))
-  .element(ring)
-  .motion(motion(shockwave({ grow: 14 })).in(burst))
-  .element(dust)
-  .show(burst)
-  .motion(dustKick.in(burst))
-  .element(stamp)
-  .motion(
+  ),
+  one.moves(...badge(0, -700)),
+  two.moves(...badge(1, 0)),
+  three.moves(...badge(2, 700)),
+  ring.moves(motion(shockwave({ grow: 14 })).in(burst)),
+  dust.shows(burst).moves(dustKick.in(burst)),
+  stamp.moves(
     motion(lob({ dx: 0, dy: -700, apex: 120, facing: "upright" })).in(stampFly),
     motion(squish({ squash: 0.35, wobbles: 3 })).in(stampLand),
-  );
+  ),
+);

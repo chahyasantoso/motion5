@@ -93,9 +93,6 @@ export interface SceneOptions {
   readonly length?: number | undefined;
 }
 
-/** Options of `sceneBuilder`. */
-export type SceneBuilderOptions = SceneOptions;
-
 /** A piece made by `scene`; `compileScene` makes it playable, and another `scene` can take it in. */
 export interface Scene {
   readonly kind: "scene";
@@ -103,40 +100,6 @@ export interface Scene {
 
 /** What `scene` takes after its options: an element's binding, an element with no motion, or a scene. */
 export type SceneItem = ElementBinding | ObjectBinding | Element | ObjectElement | Scene;
-
-/** A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable. */
-export interface SceneBuilder extends Scene {
-  element(element: ObjectElement): ObjectStep;
-  element(element: Element): ElementStep;
-  /** Merges `scene`'s elements, beats and motions into this one, on one clock; nothing is selected after. */
-  include(scene: SceneBuilder): SceneBuilder;
-}
-
-/** A piece with one element selected; the order of `.motion` and `.modify` calls matters. */
-export interface ElementStep extends SceneBuilder {
-  /** Appends motions: layer motions add by each field's rule, a `take` motion replaces its fields. */
-  motion(...motions: readonly SceneMotion[]): ElementStep;
-  /** Wraps everything above it in the element's list in `principle`. */
-  modify(principle: Principle): ElementStep;
-  /** Shows the element only during these windows: a beat, or `[from, to]` for one stretch across beats. */
-  show(...windows: readonly ShowWindow[]): ElementStep;
-  /** Sets review limits of this element; each field once. */
-  limits(limits: Limits): ElementStep;
-}
-
-/** A piece with an object selected: its motions and principles are 3D; the order of calls matters. */
-export interface ObjectStep extends SceneBuilder {
-  /** Appends motions: layer motions add by each field's rule, a `take` motion replaces its fields. */
-  motion(...motions: readonly SceneMotion3d[]): ObjectStep;
-  /** Appends motions, a `travel` onto a page slot among them. */
-  motion(...motions: readonly (SceneMotion3d | TravelMotion)[]): ObjectStep;
-  /** Wraps everything above it in the object's list in `principle`. */
-  modify(principle: Principle3d): ObjectStep;
-  /** Shows the object only during these windows: a beat, or `[from, to]` for one stretch across beats. */
-  show(...windows: readonly ShowWindow[]): ObjectStep;
-  /** Sets review limits of this object, in world units; each field once. */
-  limits(limits: Limits): ObjectStep;
-}
 
 type MotionStep = {
   readonly kind: "motion";
@@ -877,36 +840,27 @@ function owns(owner: SceneOwner, held: SceneOwner): boolean {
 
 const SCENE_OPTIONS = ["cues", "length"] as const;
 
-/** `.include` for a state: merges another scene's state into it. */
-function includeOf(state: State): SceneBuilder["include"] {
-  return (scene) => {
-    const next = included(state, scene);
-    return kept({ kind: "scene", element: elementOf(next), include: includeOf(next) }, next);
-  };
-}
-
 /** The state with another scene's elements, beats and motions merged in, on one clock. */
 function included(state: State, scene: unknown): State {
   const other = isScene(scene) ? stateOf(scene) : undefined;
-  if (other === undefined)
-    throw new TypeError("sceneBuilder: `.include` takes what `sceneBuilder` returns.");
+  if (other === undefined) throw new TypeError("scene: a sub-scene is what `scene` returns.");
   const named = `scene "${other.owner.label}"`;
   if (owns(state.owner, other.owner))
-    throw new TypeError(`sceneBuilder: ${named} is already in "${state.owner.label}".`);
+    throw new TypeError(`scene: ${named} is already in "${state.owner.label}".`);
   const merged = INCLUDED_IN.get(other.owner);
   if (merged !== undefined)
-    throw new TypeError(`sceneBuilder: ${named} is already included in "${merged.label}".`);
+    throw new TypeError(`scene: ${named} is already included in "${merged.label}".`);
   for (const option of SCENE_OPTIONS)
     if (other.options[option] !== undefined)
       throw new TypeError(
-        `sceneBuilder: ${named} sets \`${option}\`; only the scene that is mounted sets it.`,
+        `scene: ${named} sets \`${option}\`; only the scene that is mounted sets it.`,
       );
   const elements = new Map(state.elements);
   for (const [name, element] of other.elements) {
     const held = elements.get(name);
     if (held !== undefined && held !== element)
       throw new TypeError(
-        `sceneBuilder: ${describe(element)} of ${named} takes the name of ${describe(held)}.`,
+        `scene: ${describe(element)} of ${named} takes the name of ${describe(held)}.`,
       );
     elements.set(name, element);
   }
@@ -914,7 +868,7 @@ function included(state: State, scene: unknown): State {
     if (state.owned.has(name)) {
       const held = state.elements.get(name);
       throw new TypeError(
-        `sceneBuilder: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${state.owner.label}".`,
+        `scene: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${state.owner.label}".`,
       );
     }
   }
@@ -940,7 +894,7 @@ function included(state: State, scene: unknown): State {
   };
   const loop = loopOf(next.entries);
   if (loop !== undefined)
-    throw new RangeError(`sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`);
+    throw new RangeError(`scene: elements read each other in a loop: ${loop.join(", ")}.`);
   INCLUDED_IN.set(other.owner, state.owner);
   return next;
 }
@@ -953,7 +907,7 @@ function validateReference(
   const held = elements.get(element.name) ?? staged.get(element.name);
   if (held !== undefined && held !== element)
     throw new TypeError(
-      `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
+      `scene: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
   if (!elements.has(element.name)) staged.set(element.name, element);
 }
@@ -967,12 +921,12 @@ function validateRegistration(
   const held = elements.get(element.name) ?? staged.get(element.name);
   if (held !== undefined && held !== element)
     throw new TypeError(
-      `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
+      `scene: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
   const existingOwner = OWNERS.get(element);
   if (existingOwner !== undefined && !owns(owner, existingOwner))
     throw new TypeError(
-      `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
+      `scene: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
     );
   staged.set(element.name, element);
 }
@@ -1013,12 +967,12 @@ function withBeat(
 ): void {
   if (inputBeats.has(beat.name))
     throw new RangeError(
-      `sceneBuilder: beat "${beat.name}" cannot be both a clock beat and a scroll or trigger beat.`,
+      `scene: beat "${beat.name}" cannot be both a clock beat and a scroll or trigger beat.`,
     );
   const held = beats.get(beat.name);
   if (held !== undefined && (held.from !== beat.from || held.to !== beat.to))
     throw new RangeError(
-      `sceneBuilder: beat "${beat.name}" is ${held.from}-${held.to} ms in one place and ${beat.from}-${beat.to} ms in another.`,
+      `scene: beat "${beat.name}" is ${held.from}-${held.to} ms in one place and ${beat.from}-${beat.to} ms in another.`,
     );
   beats.set(beat.name, beat);
 }
@@ -1030,12 +984,12 @@ function withInputBeat(
 ): void {
   if (beats.has(beat.name))
     throw new RangeError(
-      `sceneBuilder: beat "${beat.name}" cannot be both a clock beat and a scroll or trigger beat.`,
+      `scene: beat "${beat.name}" cannot be both a clock beat and a scroll or trigger beat.`,
     );
   const held = inputBeats.get(beat.name);
   if (held !== undefined && held !== beat)
     throw new RangeError(
-      `sceneBuilder: beat "${beat.name}" is already defined by another scroll or trigger beat.`,
+      `scene: beat "${beat.name}" is already defined by another scroll or trigger beat.`,
     );
   inputBeats.set(beat.name, beat);
 }
@@ -1128,7 +1082,7 @@ function castOf(state: State, m: CastBuilder<string>): Members {
         for (const read of step.reads)
           if (!state.elements.has(read))
             throw new TypeError(
-              `sceneBuilder: a motion reads "${read}", which is not an element of the piece.`,
+              `scene: a motion reads "${read}", which is not an element of the piece.`,
             );
   const specOf = (element: SceneElement): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
@@ -1425,7 +1379,7 @@ function stack3dOf(
     switch (step.kind) {
       case "motion":
       case "modify":
-        throw new TypeError(`sceneBuilder: "${plan.name}" is an object and takes only 3D motions.`);
+        throw new TypeError(`scene: "${plan.name}" is an object and takes only 3D motions.`);
       case "modify3d": {
         const principled = step.principle(below);
         stack = (time, events) => {
@@ -1567,9 +1521,7 @@ function stackOf(
       case "motion3d":
       case "travel3d":
       case "modify3d":
-        throw new TypeError(
-          `sceneBuilder: "${plan.name}" is not an object and takes no 3D motion.`,
-        );
+        throw new TypeError(`scene: "${plan.name}" is not an object and takes no 3D motion.`);
       case "motion":
         stack = (time, events) => {
           const partLines = index === undefined ? undefined : env.lines?.[plan.name];
@@ -1721,7 +1673,7 @@ function entryOf(state: State): [string, Entry] {
   const { current } = state;
   const entry = current === undefined ? undefined : state.entries.get(current);
   if (current === undefined || entry === undefined)
-    throw new TypeError("sceneBuilder: select an element with `.element` first.");
+    throw new TypeError("scene: no element is bound here.");
   return [current, entry];
 }
 
@@ -1754,27 +1706,16 @@ function stateOf(value: object): State | undefined {
   return isState(state) ? state : undefined;
 }
 
-/** `.element` for a state: an object selects a 3D step, any other element a 2D one. */
-function elementOf(state: State): SceneBuilder["element"] {
-  function element(element: ObjectElement): ObjectStep;
-  function element(element: Element): ElementStep;
-  function element(element: SceneElement): ObjectStep | ElementStep {
-    const next = select(state, element);
-    return element.kind === "object" ? objectStep(next) : step(next);
-  }
-  return element;
-}
-
 function fixedRangeOk(from: ScrollPoint, to: ScrollPoint): void {
   const fixedFrom = fixedPxOf(from);
   const fixedTo = fixedPxOf(to);
   if (fixedFrom !== undefined && fixedTo !== undefined && fixedTo <= fixedFrom)
     throw new RangeError(
-      `sceneBuilder: \`.show\` scroll range ${fixedFrom} to ${fixedTo} px must increase.`,
+      `scene: \`.shows\` scroll range ${fixedFrom} to ${fixedTo} px must increase.`,
     );
 }
 
-/** The state after `.show(...windows)` on the selected element. */
+/** The state after `.shows(...windows)` on the bound element. */
 function shown(state: State, windows: readonly ShowWindow[]): State {
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
@@ -1787,7 +1728,7 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
   const used = (end: unknown): Beat => {
     const beat = beatOf(end);
     if (beat === undefined)
-      throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+      throw new TypeError("scene: `.shows` takes beats made by `beat`, or scroll windows.");
     withBeat(beats, inputBeats, beat);
     return beat;
   };
@@ -1795,12 +1736,10 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
   const scrollShow: ScrollWindow[] = [];
   for (const window of windows) {
     if (typeof window !== "object" || window === null)
-      throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+      throw new TypeError("scene: `.shows` takes beats made by `beat`, or scroll windows.");
     if (Array.isArray(window)) {
       if (window.length !== 2)
-        throw new TypeError(
-          "sceneBuilder: `.show([from, to])` takes two beats or two scroll points.",
-        );
+        throw new TypeError("scene: `.shows([from, to])` takes two beats or two scroll points.");
       const first: unknown = window[0];
       const second: unknown = window[1];
       if (isScrollPoint(first) && isScrollPoint(second)) {
@@ -1832,7 +1771,7 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
       else stretches.push({ kind: "until", until: used(window.until).name });
       continue;
     }
-    throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+    throw new TypeError("scene: `.shows` takes beats made by `beat`, or scroll windows.");
   }
   const elements = new Map(state.elements);
   const staged = new Map<string, SceneElement>();
@@ -1858,12 +1797,12 @@ function shown(state: State, windows: readonly ShowWindow[]): State {
   return { ...base, elements, order, entries, beats, inputBeats };
 }
 
-/** The state after `.limits(limits)` on the selected element. */
+/** The state after `.limits(limits)` on the bound element. */
 function limited(state: State, limits: Limits): State {
   const [name, entry] = entryOf(state);
   for (const field of ["jump", "turn", "ratio"] as const)
     if (limits[field] !== undefined && entry.limits[field] !== undefined)
-      throw new TypeError(`sceneBuilder: "${name}" sets limit \`${field}\` twice.`);
+      throw new TypeError(`scene: "${name}" sets limit \`${field}\` twice.`);
   const merged = {
     ...entry.limits,
     ...Object.fromEntries(Object.entries(limits).filter(([, value]) => value !== undefined)),
@@ -1871,7 +1810,7 @@ function limited(state: State, limits: Limits): State {
   return changed(state, { limits: merged });
 }
 
-/** The state after a 3D `.motion(...motions)` on the selected object. */
+/** The state after a 3D `.moves(...motions)` on the bound object. */
 function moved3d(state: State, motions: readonly (SceneMotion3d | TravelMotion)[]): State {
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
@@ -1880,7 +1819,7 @@ function moved3d(state: State, motions: readonly (SceneMotion3d | TravelMotion)[
   const measured: Element[] = [];
   const added = motions.map((run): Motion3dStep | Travel3dStep => {
     if ((READS.get(run) ?? []).length > 0)
-      throw new TypeError("sceneBuilder: `stayWith` is for elements, not objects.");
+      throw new TypeError("scene: `stayWith` is for elements, not objects.");
     const traits = traitsOf(run);
     const beat = beatOf(traits.span);
     if (beat !== undefined) withBeat(beats, inputBeats, beat);
@@ -1892,11 +1831,11 @@ function moved3d(state: State, motions: readonly (SceneMotion3d | TravelMotion)[
       const view = self?.kind === "object" ? self.view : undefined;
       if (view === undefined)
         throw new TypeError(
-          `sceneBuilder: object "${name}" travels only with \`object(name, { view: { canvas, lens } })\`.`,
+          `scene: object "${name}" travels only with \`object(name, { view: { canvas, lens } })\`.`,
         );
       if ((run.travel.arc ?? 0) !== 0)
         throw new TypeError(
-          `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` is for elements.`,
+          `scene: object "${name}" travels straight to the slot's centre; \`arc\` is for elements.`,
         );
       const rawFit = run.travel.fit ?? "none";
       let fit: "none" | "contain";
@@ -1907,14 +1846,14 @@ function moved3d(state: State, motions: readonly (SceneMotion3d | TravelMotion)[
           break;
         case "fill":
           throw new TypeError(
-            `sceneBuilder: object "${name}" scales uniformly only; \`fit: "fill"\` is for elements.`,
+            `scene: object "${name}" scales uniformly only; \`fit: "fill"\` is for elements.`,
           );
         default:
           return unreachable(rawFit);
       }
       if (traits.joins === "take")
         throw new TypeError(
-          `sceneBuilder: object "${name}" travels as a layer; \`.take()\` is for its other motions.`,
+          `scene: object "${name}" travels as a layer; \`.take()\` is for its other motions.`,
         );
       measured.push(run.travel.to, view.canvas);
       return {
@@ -1943,7 +1882,7 @@ function moved3d(state: State, motions: readonly (SceneMotion3d | TravelMotion)[
   return { ...base, elements, order, entries, beats, inputBeats };
 }
 
-/** The state after a 2D `.motion(...motions)` on the selected element. */
+/** The state after a 2D `.moves(...motions)` on the bound element. */
 function moved(state: State, motions: readonly SceneMotion[]): State {
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
@@ -1995,46 +1934,14 @@ function moved(state: State, motions: readonly SceneMotion[]): State {
   };
   const loop = loopOf(next.entries);
   if (loop !== undefined)
-    throw new RangeError(`sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`);
+    throw new RangeError(`scene: elements read each other in a loop: ${loop.join(", ")}.`);
   return next;
 }
 
-/** The state with `added` at the end of the selected element's steps. */
+/** The state with `added` at the end of the bound element's steps. */
 function appendStep(state: State, added: Step): State {
   const [, entry] = entryOf(state);
   return changed(state, { steps: [...entry.steps, added] });
-}
-
-function objectStep(state: State): ObjectStep {
-  return kept(
-    {
-      kind: "scene",
-      element: elementOf(state),
-      include: includeOf(state),
-      motion: (...motions: readonly (SceneMotion3d | TravelMotion)[]) =>
-        objectStep(moved3d(state, motions)),
-      modify: (principle: Principle3d) =>
-        objectStep(appendStep(state, { kind: "modify3d", principle })),
-      show: (...windows: readonly ShowWindow[]) => objectStep(shown(state, windows)),
-      limits: (limits: Limits) => objectStep(limited(state, limits)),
-    },
-    state,
-  );
-}
-
-function step(state: State): ElementStep {
-  return kept(
-    {
-      kind: "scene",
-      element: elementOf(state),
-      include: includeOf(state),
-      motion: (...motions: readonly SceneMotion[]) => step(moved(state, motions)),
-      modify: (principle: Principle) => step(appendStep(state, { kind: "modify", principle })),
-      show: (...windows: readonly ShowWindow[]) => step(shown(state, windows)),
-      limits: (limits: Limits) => step(limited(state, limits)),
-    },
-    state,
-  );
 }
 
 function select(state: State, element: SceneElement): State {
@@ -2075,15 +1982,9 @@ function startState(options: SceneOptions): State {
   };
 }
 
-/** Starts a piece; `compileScene` turns the chain's value into the stage the renderers play. */
-export function sceneBuilder(options: SceneOptions = {}): SceneBuilder {
-  const state = startState(options);
-  return kept({ kind: "scene", element: elementOf(state), include: includeOf(state) }, state);
-}
-
 /** The state with `element` selected, refusing one this scene already holds. */
 function claimed(state: State, element: SceneElement): State {
-  if (state.owned.has(element.name))
+  if (state.owned.has(element.name) && state.elements.get(element.name) === element)
     throw new TypeError(
       `scene: ${describe(element)} is in "${state.owner.label}" twice; chain its calls on one binding.`,
     );
@@ -2171,7 +2072,7 @@ export function scene(...args: readonly (SceneOptions | SceneItem)[]): Scene {
   return kept({ kind: "scene" }, { ...state, current: undefined });
 }
 
-/** Whether `value` is a piece written with `sceneBuilder`. */
+/** Whether `value` is a piece made by `scene`. */
 export function isScene(value: unknown): value is Scene {
   return typeof value === "object" && value !== null && stateOf(value) !== undefined;
 }
@@ -2184,8 +2085,7 @@ export interface CompileSceneOptions {
 /** The stage a scene plays as, or every reason it cannot. */
 export function compileScene(scene: Scene, options: CompileSceneOptions = {}): CompileResult {
   const state = stateOf(scene);
-  if (state === undefined)
-    throw new TypeError("compileScene: expected what `sceneBuilder` returns.");
+  if (state === undefined) throw new TypeError("compileScene: expected what `scene` returns.");
   const result = compileStage(definitionOf(state));
   const { wrap } = options;
   if (!result.ok || wrap === undefined) return result;

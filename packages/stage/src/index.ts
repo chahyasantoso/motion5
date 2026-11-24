@@ -39,7 +39,6 @@ export {
   compileScene,
   isScene,
   scene,
-  sceneBuilder,
   slot3d,
   stagger,
   stayWith,
@@ -51,18 +50,14 @@ export {
   type BoundEachSharedFields,
   type BoundFields,
   type CompileSceneOptions,
-  type ElementStep,
-  type ObjectStep,
   type Scene,
-  type SceneBuilder,
   type SceneItem,
   type SceneOptions,
-  type SceneBuilderOptions,
   type SharedPose,
   type StaggerBy,
   type StaggerFrom,
   type StaggerOptions,
-} from "./author/scene-builder";
+} from "./author/scene";
 export type {
   BindingStep,
   ElementBinding,

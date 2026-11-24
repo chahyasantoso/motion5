@@ -7,20 +7,23 @@ import {
   formatStageError,
   frame,
   poseOf,
-  sceneBuilder,
+  scene,
   scrollPoint,
 } from "@gerak/stage";
 
 const rise = motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress), opacity: t.progress }));
 const NAMES = ["reverse", "stay", "replay"] as const;
 
-let scene = sceneBuilder({ name: "triggers" });
-for (const back of NAMES)
-  scene = scene
-    .element(box(back))
-    .motion(rise.in(beat(`reveal-${back}`, 1000, { when: scrollPoint(300).reached, back })));
+const piece = scene(
+  { name: "triggers" },
+  ...NAMES.map((back) =>
+    box(back).moves(
+      rise.in(beat(`reveal-${back}`, 1000, { when: scrollPoint(300).reached, back })),
+    ),
+  ),
+);
 
-const compiled = compileScene(scene);
+const compiled = compileScene(piece);
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
 const mounted = mount(stage, { clock: "live" });

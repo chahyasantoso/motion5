@@ -1,6 +1,6 @@
 import { clockDriver } from "@gerak/dom";
 import { aim, motion, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/core";
-import { beat, box, object, sceneBuilder } from "@gerak/stage";
+import { beat, box, object, scene } from "@gerak/stage";
 
 /** How long the scene runs, in ms. */
 const LENGTH = 800;
@@ -30,11 +30,11 @@ const pinned = (time: Time) => {
   return { x: at.x, y: at.y, opacity: at.visible ? 1 : 0 };
 };
 
-export default sceneBuilder({ name: "__NAME__", length: LENGTH })
-  .element(object("box"))
-  .motion(motion(boxAt).in(whole))
-  .element(box("label"))
-  .motion(motion(pinned).in(whole));
+export default scene(
+  { name: "__NAME__", length: LENGTH },
+  object("box").moves(motion(boxAt).in(whole)),
+  box("label").moves(motion(pinned).in(whole)),
+);
 
 /** The scene's clock on the page's frames. */
 export const clock = () => clockDriver({ duration: LENGTH });

@@ -14,9 +14,9 @@ import {
   restReader,
   compileScene,
   isScene,
-  sceneBuilder,
+  scene,
   type RestAt,
-  type SceneBuilder,
+  type Scene,
   shape,
   stagger,
   stayWith,
@@ -27,14 +27,14 @@ import {
 const at = (ms: number, length = 2000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled(scene: SceneBuilder): Stage {
-  const result = compileScene(scene);
+function compiled(piece: Scene): Stage {
+  const result = compileScene(piece);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
-function poseAt(scene: SceneBuilder, name: string, ms: number): Pose2d | undefined {
-  return poseOf(frame(compiled(scene), { time: at(ms) }).targets[name]);
+function poseAt(piece: Scene, name: string, ms: number): Pose2d | undefined {
+  return poseOf(frame(compiled(piece), { time: at(ms) }).targets[name]);
 }
 
 const slideX = (distance: number) =>
@@ -114,18 +114,15 @@ describe("elements", () => {
   });
 });
 
-describe("sceneBuilder: what a chain compiles to", () => {
+describe("scene: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
   const card = box("card", { watch: true });
   const word = text("word", { split: "letters" });
-  const chain = sceneBuilder()
-    .element(card)
-    .motion(slideX(100).in(enter))
-    .show(enter, hold)
-    .limits({ jump: 50 })
-    .element(dot)
-    .element(word)
-    .motion(grow(2).loop(500));
+  const chain = scene(
+    card.moves(slideX(100).in(enter)).shows(enter, hold).limits({ jump: 50 }),
+    dot,
+    word.moves(grow(2).loop(500)),
+  );
 
   it("is a scene that compiles to a stage", () => {
     expect(isScene(chain)).toBe(true);
@@ -150,11 +147,11 @@ describe("sceneBuilder: what a chain compiles to", () => {
 
   it("shows an element from a beat's start on, or from the start until a beat's end", () => {
     const stage = compiled(
-      sceneBuilder({ length: 3000 })
-        .element(box("late"))
-        .show({ from: hold })
-        .element(box("early"))
-        .show({ until: enter }),
+      scene(
+        { length: 3000 },
+        box("late").shows({ from: hold }),
+        box("early").shows({ until: enter }),
+      ),
     );
     expect(stage.members.map((member) => member.on)).toEqual([
       [[500, Number.POSITIVE_INFINITY]],
@@ -171,36 +168,31 @@ describe("sceneBuilder: what a chain compiles to", () => {
   });
 
   it("takes the length from the options when given", () => {
-    expect(
-      compiled(sceneBuilder({ length: 3000 }).element(box("card")).show(enter)).durationMs,
-    ).toBe(3000);
+    expect(compiled(scene({ length: 3000 }, box("card").shows(enter))).durationMs).toBe(3000);
   });
 
   it("takes cues from the builder", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
-    const compiled = compileScene(sceneBuilder({ cues }).element(box("card")).show(enter));
+    const compiled = compileScene(scene({ cues }, box("card").shows(enter)));
     if (!compiled.ok) throw new Error("did not compile");
     const stage = compiled.stage;
     expect(stage.cues.map(({ name, at, target }) => ({ name, at, target }))).toEqual(cues);
   });
 });
 
-describe("sceneBuilder: inference", () => {
+describe("scene: inference", () => {
   it("makes an element with no motion static, a looping one ambient and the rest settle", () => {
     const a = box("a");
     const b = box("b");
     const c = box("c");
     const d = box("d");
     const stage = compiled(
-      sceneBuilder()
-        .element(a)
-        .show(enter)
-        .element(b)
-        .motion(slideX(1).in(enter))
-        .element(c)
-        .motion(slideX(1).in(enter), grow(2).loop(900))
-        .element(d)
-        .motion((time) => ({ x: time.progress })),
+      scene(
+        a.shows(enter),
+        b.moves(slideX(1).in(enter)),
+        c.moves(slideX(1).in(enter), grow(2).loop(900)),
+        d.moves((time) => ({ x: time.progress })),
+      ),
     );
     expect(stage.members.map((member) => member.expect)).toEqual([
       "static",
@@ -211,10 +203,10 @@ describe("sceneBuilder: inference", () => {
   });
 });
 
-describe("sceneBuilder: ambient motions", () => {
+describe("scene: ambient motions", () => {
   it("makes an element ambient when a motion says ambient, with no period", () => {
     const a = box("a");
-    const stage = compiled(sceneBuilder().element(a).motion(slideX(1).in(enter).ambient()));
+    const stage = compiled(scene(a.moves(slideX(1).in(enter).ambient())));
     expect(stage.members.map((member) => member.expect)).toEqual(["ambient"]);
   });
 });
@@ -224,15 +216,13 @@ describe("stagger", () => {
   const run = beat("run", 1000);
   const win = beat("win", 1000, { at: 1000 });
   const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
-  const xs = (definition: SceneBuilder, ms: number): (number | undefined)[] => {
+  const xs = (definition: Scene, ms: number): (number | undefined)[] => {
     const out = frame(compiled(definition), { time: at(ms, 3000) }).targets;
     return [0, 1, 2].map((index) => listPose(out["word"], index, 3)?.x);
   };
 
   it("gives the first and last part their lanes, from the start", () => {
-    const chain = sceneBuilder({ length: 3000 })
-      .element(makeWord())
-      .motion(stagger(ramp, { spread: 1 }).in(run));
+    const chain = scene({ length: 3000 }, makeWord().moves(stagger(ramp, { spread: 1 }).in(run)));
     expect(xs(chain, 0)).toEqual([0, 0, 0]);
     expect(xs(chain, 500)).toEqual([1, 0.5, 0]);
     expect(xs(chain, 1000)).toEqual([1, 1, 1]);
@@ -241,9 +231,10 @@ describe("stagger", () => {
   it("starts from the end, the centre and the edges when asked", () => {
     const from = (order: "end" | "center" | "edges") =>
       xs(
-        sceneBuilder({ length: 3000 })
-          .element(makeWord())
-          .motion(stagger(ramp, { spread: 1, from: order }).in(run)),
+        scene(
+          { length: 3000 },
+          makeWord().moves(stagger(ramp, { spread: 1, from: order }).in(run)),
+        ),
         500,
       );
     expect(from("end")).toEqual([0, 0.5, 1]);
@@ -252,9 +243,7 @@ describe("stagger", () => {
   });
 
   it("stays inside the span of the motion it plays", () => {
-    const chain = sceneBuilder({ length: 3000 })
-      .element(makeWord())
-      .motion(stagger(ramp.in(win), { spread: 1 }));
+    const chain = scene({ length: 3000 }, makeWord().moves(stagger(ramp.in(win), { spread: 1 })));
     expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
     expect(xs(chain, 500)).toEqual([0, 0, 0]);
     expect(xs(chain, 1500)).toEqual([1, 0.5, 0]);
@@ -262,37 +251,33 @@ describe("stagger", () => {
   });
 
   it("plays the motion unchanged on an element without parts", () => {
-    const chain = sceneBuilder({ length: 2000 })
-      .element(box("a"))
-      .motion(stagger(ramp, { spread: 1 }));
+    const chain = scene({ length: 2000 }, box("a").moves(stagger(ramp, { spread: 1 })));
     expect(poseAt(chain, "a", 1000)?.x).toBe(0.5);
-    const inside = sceneBuilder({ length: 3000 })
-      .element(box("a"))
-      .motion(stagger(ramp.in(win), { spread: 1 }));
+    const inside = scene({ length: 3000 }, box("a").moves(stagger(ramp.in(win), { spread: 1 })));
     expect(poseAt(inside, "a", 1500)?.x).toBe(0.5);
   });
 
   it("builds each part's motion from its index and plays it in that part's lane", () => {
-    const chain = sceneBuilder({ length: 3000 })
-      .element(makeWord())
-      .motion(stagger((index) => slideX(index + 1), { spread: 1 }).in(run));
+    const chain = scene(
+      { length: 3000 },
+      makeWord().moves(stagger((index) => slideX(index + 1), { spread: 1 }).in(run)),
+    );
     expect(xs(chain, 500)).toEqual([1, 1, 0]);
     expect(xs(chain, 1000)).toEqual([1, 2, 3]);
   });
 
   it("takes the span of a motion built from its index", () => {
-    const chain = sceneBuilder({ length: 3000 })
-      .element(makeWord())
-      .motion(stagger(() => ramp.in(win), { spread: 1 }));
+    const chain = scene(
+      { length: 3000 },
+      makeWord().moves(stagger(() => ramp.in(win), { spread: 1 })),
+    );
     expect(Object.keys(compiled(chain).beats)).toEqual(["win"]);
     expect(xs(chain, 1500)).toEqual([1, 0.5, 0]);
   });
 
   it("keeps a loop, so its element is ambient, and a take", () => {
     const stage = compiled(
-      sceneBuilder({ length: 3000 })
-        .element(makeWord())
-        .motion(stagger(ramp.loop(500), { spread: 1 })),
+      scene({ length: 3000 }, makeWord().moves(stagger(ramp.loop(500), { spread: 1 }))),
     );
     expect(stage.members[0]?.expect).toBe("ambient");
     expect(stagger(ramp.take(), { spread: 1 }).joins).toBe("take");
@@ -302,23 +287,22 @@ describe("stagger", () => {
 describe("bindEach", () => {
   it("binds a field of each part to the signal of its index", () => {
     const dots = box("dots", { parts: true });
-    const chain = sceneBuilder({ length: 2000 })
-      .element(dots)
-      .motion(
+    const chain = scene(
+      { length: 2000 },
+      dots.moves(
         bindEach({
           y: (index) => (time) => time.progress * 10 * (index + 1),
           rotation: () => () => 9,
         }),
-      );
+      ),
+    );
     const out = frame(compiled(chain), { time: at(1000) }).targets;
     expect([0, 1, 2].map((index) => listPose(out["dots"], index, 3)?.y)).toEqual([5, 10, 15]);
     expect(listPose(out["dots"], 1, 3)?.rotation).toBe(9);
   });
 
   it("refuses an element without parts", () => {
-    const chain = sceneBuilder({ length: 2000 })
-      .element(box("a"))
-      .motion(bindEach({ y: () => () => 1 }));
+    const chain = scene({ length: 2000 }, box("a").moves(bindEach({ y: () => () => 1 })));
     expect(() => poseAt(chain, "a", 0)).toThrow(TypeError);
   });
 });
@@ -326,12 +310,10 @@ describe("bindEach", () => {
 describe("show with two beats", () => {
   it("compiles [from, to] to one stretch and still takes separate beats", () => {
     const late = beat("late", 100, { at: 2000 });
-    const stage = compiled(
-      sceneBuilder().element(box("a")).show([enter, hold]).element(box("b")).show(late),
-    );
+    const stage = compiled(scene(box("a").shows([enter, hold]), box("b").shows(late)));
     expect(stage.members[0]?.on).toEqual([[0, 1100]]);
     expect(Object.keys(stage.beats)).toEqual(["enter", "hold", "late"]);
-    const mixed = compiled(sceneBuilder().element(box("a")).show([enter, hold], late));
+    const mixed = compiled(scene(box("a").shows([enter, hold], late)));
     expect(mixed.members[0]?.on).toEqual([
       [0, 1100],
       [2000, Number.POSITIVE_INFINITY],
@@ -339,32 +321,37 @@ describe("show with two beats", () => {
   });
 });
 
-describe("sceneBuilder: layering", () => {
+describe("scene: layering", () => {
   it("adds x and multiplies scale across layer motions", () => {
-    const chain = sceneBuilder()
-      .element(box("a"))
-      .motion(slideX(100).in(enter), slideX(40).in(enter), grow(2).in(enter), grow(3).in(enter));
+    const chain = scene(
+      box("a").moves(
+        slideX(100).in(enter),
+        slideX(40).in(enter),
+        grow(2).in(enter),
+        grow(3).in(enter),
+      ),
+    );
     expect(poseAt(chain, "a", 0)).toEqual({ x: 0, scale: 1 });
     expect(poseAt(chain, "a", 400)).toEqual({ x: 140, scale: 6 });
     expect(poseAt(chain, "a", 200)).toEqual({ x: 70, scale: 1.5 * 2 });
   });
 
   it("holds an animation's start before its beat and its end after it", () => {
-    const chain = sceneBuilder().element(box("a")).motion(slideX(100).in(hold)).show(enter);
+    const chain = scene(box("a").moves(slideX(100).in(hold)).shows(enter));
     expect(poseAt(chain, "a", 100)?.x).toBe(0);
     expect(poseAt(chain, "a", 1500)?.x).toBe(100);
   });
 
   it("lets a take motion replace only its fields, only from the start of its span", () => {
-    const chain = sceneBuilder()
-      .element(box("a"))
-      .motion(
+    const chain = scene(
+      box("a").moves(
         slideX(100).in(enter),
         grow(2).in(enter),
         motion((): Pose2d => ({ x: -5 }))
           .in(hold)
           .take(),
-      );
+      ),
+    );
     expect(poseAt(chain, "a", 400)).toEqual({ x: 100, scale: 2 });
     expect(poseAt(chain, "a", 499)).toEqual({ x: 100, scale: 2 });
     expect(poseAt(chain, "a", 500)).toEqual({ x: -5, scale: 2 });
@@ -372,27 +359,28 @@ describe("sceneBuilder: layering", () => {
   });
 
   it("wraps everything above a modify and not what follows", () => {
-    const chain = sceneBuilder()
-      .element(box("a"))
-      .motion(slideX(100).in(enter))
-      .modify((signal) => (time, events) => {
-        const pose = signal(time, events);
-        return { ...pose, x: (pose.x ?? 0) * 2 };
-      })
-      .motion(slideX(10).in(enter));
+    const chain = scene(
+      box("a")
+        .moves(slideX(100).in(enter))
+        .modifies((signal) => (time, events) => {
+          const pose = signal(time, events);
+          return { ...pose, x: (pose.x ?? 0) * 2 };
+        })
+        .moves(slideX(10).in(enter)),
+    );
     expect(poseAt(chain, "a", 400)?.x).toBe(210);
   });
 });
 
-describe("sceneBuilder: lists", () => {
+describe("scene: lists", () => {
   it("gives a list element's poses per index and count", () => {
     const dots = box("dots", { parts: true });
     const word = text("word", { split: "letters" });
-    const chain = sceneBuilder({ length: 2000 })
-      .element(dots)
-      .motion((time, context) => ({ x: (context.index ?? 0) * 10 + (context.count ?? 0) }))
-      .element(word)
-      .motion((time, context) => ({ y: (context.index ?? 0) + time.progress }));
+    const chain = scene(
+      { length: 2000 },
+      dots.moves((time, context) => ({ x: (context.index ?? 0) * 10 + (context.count ?? 0) })),
+      word.moves((time, context) => ({ y: (context.index ?? 0) + time.progress })),
+    );
     const stage = compiled(chain);
     const out = frame(stage, { time: at(1000) }).targets;
     expect([0, 1, 2].map((index) => listPose(out["dots"], index, 3)?.x)).toEqual([3, 13, 23]);
@@ -400,15 +388,14 @@ describe("sceneBuilder: lists", () => {
   });
 });
 
-describe("sceneBuilder: reading another element", () => {
+describe("scene: reading another element", () => {
   it("stayWith adds the travel of the read element since the start of its own span", () => {
     const hand = box("hand");
     const ball = box("ball");
-    const chain = sceneBuilder()
-      .element(hand)
-      .motion(slideX(100).in(span(0, 1000)))
-      .element(ball)
-      .motion(grow(1).in(enter), stayWith(hand).in(span(500, 1000)));
+    const chain = scene(
+      hand.moves(slideX(100).in(span(0, 1000))),
+      ball.moves(grow(1).in(enter), stayWith(hand).in(span(500, 1000))),
+    );
     expect(poseAt(chain, "ball", 400)?.x).toBe(0);
     expect(poseAt(chain, "ball", 500)?.x).toBe(0);
     expect(poseAt(chain, "ball", 750)?.x).toBe(25);
@@ -418,44 +405,42 @@ describe("sceneBuilder: reading another element", () => {
 
   it("lets a motion read another element's pose through the context", () => {
     const hand = box("hand");
-    const chain = sceneBuilder({ length: 2000 })
-      .element(hand)
-      .motion(slideX(100).in(span(0, 1000)))
-      .element(box("ball"))
-      .motion((time, context) => ({ y: (context.read(hand).x ?? 0) + 1 }));
+    const chain = scene(
+      { length: 2000 },
+      hand.moves(slideX(100).in(span(0, 1000))),
+      box("ball").moves((time, context) => ({ y: (context.read(hand).x ?? 0) + 1 })),
+    );
     expect(poseAt(chain, "ball", 500)?.y).toBe(51);
   });
 
   it("reads a pose a modify changed", () => {
     const hand = box("hand");
-    const chain = sceneBuilder({ length: 2000 })
-      .element(hand)
-      .motion(slideX(100).in(span(0, 1000)))
-      .modify((signal) => (time, events) => ({ x: (signal(time, events).x ?? 0) + 7 }))
-      .element(box("ball"))
-      .motion(stayWith(hand).in(span(0, 1000)));
+    const chain = scene(
+      { length: 2000 },
+      hand
+        .moves(slideX(100).in(span(0, 1000)))
+        .modifies((signal) => (time, events) => ({ x: (signal(time, events).x ?? 0) + 7 })),
+      box("ball").moves(stayWith(hand).in(span(0, 1000))),
+    );
     expect(poseAt(chain, "ball", 1000)?.x).toBe(100);
   });
 
   it("binds fields to signals at scene time", () => {
-    const chain = sceneBuilder({ length: 2000 })
-      .element(box("ball"))
-      .motion(bind({ y: (time) => time.progress * 100, rotation: () => 9 }));
+    const chain = scene(
+      { length: 2000 },
+      box("ball").moves(bind({ y: (time) => time.progress * 100, rotation: () => 9 })),
+    );
     expect(poseAt(chain, "ball", 1000)).toEqual({ y: 50, rotation: 9 });
   });
 
   it("carries the element through the scene's carry", () => {
-    const chain = sceneBuilder({ length: 2000 })
-      .element(box("ball"))
-      .motion(carry({ ms: 300 }));
+    const chain = scene({ length: 2000 }, box("ball").moves(carry({ ms: 300 })));
     expect(poseAt(chain, "ball", 100)).toBeDefined();
   });
 
   it("carries a part of a list from the box named after the element and the part", () => {
     const dots = box("dots", { parts: true });
-    const chain = sceneBuilder({ length: 2000 })
-      .element(dots)
-      .motion(carry({ ms: 200 }));
+    const chain = scene({ length: 2000 }, dots.moves(carry({ ms: 200 })));
     const row = restReader({ "dots.1": { x: 100, y: 100, width: 200, height: 100 } });
     const wide = restReader({ "dots.1": { x: 300, y: 200, width: 400, height: 200 } });
     const measures: readonly RestAt[] = [
@@ -474,74 +459,45 @@ describe("sceneBuilder: reading another element", () => {
   });
 });
 
-describe("sceneBuilder: refusals", () => {
+describe("scene: refusals", () => {
   it("refuses a second element with a name already used, naming both", () => {
-    const chain = sceneBuilder().element(box("x"));
-    expect(() => chain.element(text("x"))).toThrow(/"x" \(box\).*"x" \(text\)/);
-  });
-
-  it("accepts the same element again, selected later", () => {
-    const x = box("x");
-    expect(() => sceneBuilder().element(x).element(box("y")).element(x)).not.toThrow();
+    expect(() => scene(box("x"), text("x"))).toThrow(/"x" \(box\).*"x" \(text\)/);
   });
 
   it("refuses a loop of reads at build, naming every element in it", () => {
     const a = box("a");
     const b = box("b");
     const c = box("c");
-    const chain = sceneBuilder()
-      .element(a)
-      .motion(stayWith(b))
-      .element(b)
-      .motion(stayWith(c))
-      .element(c);
-    expect(() => chain.motion(stayWith(a))).toThrow(/a.*b.*c|a.*c.*b/);
-    expect(() => sceneBuilder().element(a).motion(stayWith(a))).toThrow(/"?a"?/);
+    expect(() => scene(a.moves(stayWith(b)), b.moves(stayWith(c)), c.moves(stayWith(a)))).toThrow(
+      /a.*b.*c|a.*c.*b/,
+    );
+    expect(() => scene(a.moves(stayWith(a)))).toThrow(/"?a"?/);
   });
 
   it("refuses a read of an element the chain never selects when compiled", () => {
     const result = compileScene(
-      sceneBuilder()
-        .element(box("a"))
-        .motion(stayWith(box("ghost")))
-        .show(enter),
+      scene(
+        box("a")
+          .moves(stayWith(box("ghost")))
+          .shows(enter),
+      ),
     );
     expect(result.ok).toBe(false);
   });
 
   it("refuses a limit field set twice on one element", () => {
-    expect(() => sceneBuilder().element(box("x")).limits({ jump: 1 }).limits({ jump: 2 })).toThrow(
-      /jump/,
-    );
-    expect(() =>
-      sceneBuilder().element(box("x")).limits({ jump: 1 }).limits({ turn: 2 }),
-    ).not.toThrow();
+    expect(() => scene(box("x").limits({ jump: 1 }).limits({ jump: 2 }))).toThrow(/jump/);
+    expect(() => scene(box("x").limits({ jump: 1 }).limits({ turn: 2 }))).not.toThrow();
   });
 
   it("refuses a beat name used for two different spans", () => {
-    expect(() => sceneBuilder().element(box("x")).show(enter).show(beat("enter", 999))).toThrow(
-      /enter/,
-    );
+    expect(() => scene(box("x").shows(enter).shows(beat("enter", 999)))).toThrow(/enter/);
   });
 });
 
-describe("sceneBuilder: order", () => {
-  it("does not offer motion, modify, show or limits before an element", () => {
-    // @ts-expect-error a motion needs an element first
-    expect(() => sceneBuilder().motion(slideX(1))).toThrow();
-  });
-
-  it("is immutable: each call returns a new builder", () => {
-    const base = sceneBuilder().element(box("a")).show(enter);
-    const more = base.element(box("b"));
-    expect(compiled(base).members).toHaveLength(1);
-    expect(compiled(more).members).toHaveLength(2);
-  });
-});
-
-describe("sceneBuilder: across copies and chains", () => {
+describe("scene: across copies and chains", () => {
   it("reads a scene another copy of the package made, by its global key", () => {
-    const made = sceneBuilder({ length: 500 }).element(box("a"));
+    const made = scene({ length: 500 }, box("a"));
     const key = Symbol.for("@gerak/stage/scene");
     const elsewhere = Object.freeze(
       Object.defineProperty({ kind: "scene" }, key, { value: Reflect.get(made, key) }),
@@ -558,15 +514,13 @@ describe("sceneBuilder: across copies and chains", () => {
     });
     const span = beat("span", 1000);
     const links = Array.from({ length: 14 }, (_, index) => box(`link${index}`));
-    let chain = sceneBuilder({ length: 1000 })
-      .element(links[0] ?? box("none"))
-      .motion(counted.in(span));
-    for (let index = 1; index < links.length; index += 1) {
-      const link = links[index];
-      const before = links[index - 1];
-      if (link === undefined || before === undefined) continue;
-      chain = chain.element(link).motion(stayWith(before).in(span));
-    }
+    const [first, ...rest] = links;
+    if (first === undefined) throw new Error("no links");
+    const chain = scene(
+      { length: 1000 },
+      first.moves(counted.in(span)),
+      ...rest.map((link, index) => link.moves(stayWith(links[index] ?? first).in(span))),
+    );
     const result = compileScene(chain);
     if (!result.ok) throw new Error("did not compile");
     calls = 0;

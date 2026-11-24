@@ -60,7 +60,7 @@ function writeScratchPage(): { readonly name: string; readonly html: string } {
     join(srcDir, "main.ts"),
     `import { motion } from "@gerak/core";
 import { mount } from "@gerak/dom";
-import { beat, box, sceneBuilder, scrollPoint, stagger, text } from "@gerak/stage";
+import { beat, box, scene, scrollPoint, stagger, text } from "@gerak/stage";
 import { boxInViewport } from "@gerak/stage/render";
 
 const reveal = beat("reveal", { scroll: [scrollPoint(0), scrollPoint(400)] });
@@ -69,15 +69,14 @@ const card = box("card");
 const stickySlot = box("stickySlot");
 const fixedPin = box("fixedPin");
 
-const scene = sceneBuilder()
-  .element(headline)
-  .motion(stagger(motion((t) => ({ y: 20 * (1 - t.progress) })), { spread: 1, by: "line" }).in(reveal))
-  .element(card)
-  .motion(motion((t) => ({ x: 100 * t.progress })).in(reveal))
-  .element(stickySlot)
-  .element(fixedPin);
+const piece = scene(
+  headline.moves(stagger(motion((t) => ({ y: 20 * (1 - t.progress) })), { spread: 1, by: "line" }).in(reveal)),
+  card.moves(motion((t) => ({ x: 100 * t.progress })).in(reveal)),
+  stickySlot,
+  fixedPin,
+);
 
-const mounted = mount(scene, { clock: "live" });
+const mounted = mount(piece, { clock: "live" });
 Reflect.set(window, "__mountedPage", mounted);
 Reflect.set(window, "__boxInViewport", boxInViewport);
 `,

@@ -36,7 +36,7 @@ export function stageOf(value: unknown): LoadedStage | string {
   const exports: Readonly<Record<string, unknown>> = isRecord(value) ? value : {};
   const candidate: unknown = isScene(value) ? value : Reflect.get(exports, "default");
   if (!isScene(candidate)) {
-    return "A piece must default-export `sceneBuilder(...)`.";
+    return "A piece must default-export `scene(...)`.";
   }
   const compiled = compileScene(candidate);
   if (!compiled.ok) {

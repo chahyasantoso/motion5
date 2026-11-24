@@ -42,11 +42,11 @@ function writeScratchPage(holder: { readonly width: number; readonly height: num
   writeFileSync(
     join(dir, "src", "main.ts"),
     `import { mount } from "@gerak/dom";
-import { box, sceneBuilder } from "@gerak/stage";
+import { box, scene } from "@gerak/stage";
 
 const root = document.getElementById("frame");
 if (root === null) throw new Error("#frame not found");
-const mounted = mount(sceneBuilder({ length: 500 }).element(box("dot")), {
+const mounted = mount(scene({ length: 500 }, box("dot")), {
   clock: "timed",
   frame: "fit",
   root,

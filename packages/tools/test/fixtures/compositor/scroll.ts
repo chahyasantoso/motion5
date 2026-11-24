@@ -7,7 +7,7 @@ import {
   formatStageError,
   frame,
   poseOf,
-  sceneBuilder,
+  scene,
   scrollPoint,
 } from "@gerak/stage";
 
@@ -15,11 +15,11 @@ const across = beat("across", { scroll: [scrollPoint(200), scrollPoint(1200)] })
 const reveal = beat("reveal", 1000, { when: scrollPoint(300).reached, back: "stay" });
 
 const compiled = compileScene(
-  sceneBuilder({ name: "scroll" })
-    .element(box("bar"))
-    .motion(motion((t: Time): Pose2d => ({ x: 300 * t.progress })).in(across))
-    .element(box("card"))
-    .motion(motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) })).in(reveal)),
+  scene(
+    { name: "scroll" },
+    box("bar").moves(motion((t: Time): Pose2d => ({ x: 300 * t.progress })).in(across)),
+    box("card").moves(motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) })).in(reveal)),
+  ),
 );
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
