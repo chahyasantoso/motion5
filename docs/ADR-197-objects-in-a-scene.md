@@ -15,7 +15,7 @@ a 3D object at all.
    world units. It has no node, rest box, skin, content, pivot or pointer events; a page scene needs no `node` for
    it. `.element(object)` answers an `ObjectStep` whose `.motion` takes 3D motions and whose `.modify` takes 3D
    principles; layer motions join by `combine3d`, `take` replaces. `Pose2d` refuses the 3D-only fields, so a 3D
-   motion on a box and a 2D one on an object fail to type-check. `context.read` refuses an object.
+   motion on a box and a 2D one on an object fail to type-check. `context.read` refuses an object. **Amended in part by [ADR-201](./ADR-201-unambiguous-dom-lists-3d-reads-and-signal-subscriptions.md), 2026-11-24:** `context.read(object)` returns typed `Pose3d` (with runtime loop refusal) and `slot3d` exposes single-owner world-unit slot projection, while raw string `context.read("name")` stays 2D-typed and refuses objects.
 2. **Both mounts skip it.** `mountStage` keeps its place in member order and draws nothing; `mountPage` binds no node
    for it and never hands it to the browser.
 3. **`bindScene3d`.** `@gerak/three` exports `bindScene3d(player, scene, objects, draw)`. On each player step it

@@ -60,14 +60,14 @@ Layers, each using only the ones below it and each in its own folder. A piece st
 | --- | --- |
 | What a value is at a time | the scene, built from `core` and optionally `moves` |
 | Fields, time, eases, spans, lanes, envelopes, paths, 3D maths and blends | `@gerak/core` |
-| Elements, beats, `sceneBuilder`, layouts and `carry` | `@gerak/stage` |
+| Elements, beats, `sceneBuilder`, `slot3d`, layouts and `carry` | `@gerak/stage` |
 | Named moves, couplings and signal parts | `@gerak/moves` |
 | Bones, chains, FK, IK and frames, 2D and 3D | `@gerak/rig`, bound to Three.js skeletons by `@gerak/rig-three` |
 | Bodies, contacts and a seekable simulation | `@gerak/physics`, backed by `@gerak/rapier` |
 | Which moment is shown, and who hears a value or a cue | `@gerak/player` |
 | Where time comes from on a page: a clock, scroll, events | the drivers in `@gerak/dom` |
 | The CSS a pose becomes | `@gerak/dom` |
-| A pose on a Three.js object | `@gerak/three` |
+| A pose on a Three.js object and opt-in `createStage3d` rig | `@gerak/three` |
 | Binding a player to React | `@gerak/react` (and `@gerak/three/react`) |
 | Reading, checking, editing live and photographing motion | `@gerak/tools` |
 

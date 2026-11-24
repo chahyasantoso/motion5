@@ -68,7 +68,7 @@ Only `.motion` and `.modify` order matters.
 A motion is a core `Motion` or a plain `(time, context) => pose`.
 
 - `time` is the motion's own: inside `.in(beat)` it runs 0 to 1 across the beat, holding its start before and its end after. Without `.in` it spans the piece.
-- `context` holds `time` (the scene's), `events`, `rest` (measured boxes), `carry`, `element`, `read`, plus `index`, `count` and `line` (measured row on a page mount, 0 headless) on a part.
+- `context` holds `time` (the scene's), `events`, `rest` (measured boxes), `carry`, `element`, `read` (`context.read(element)` returns `Pose2d`; `context.read(object)` returns `Pose3d` with runtime loop/cycle refusal across 2D, 3D, mixed, and list-part reads; raw string `context.read("name")` stays 2D-only and refuses objects), plus `index`, `count` and `line` (measured row on a page mount, 0 headless) on a part.
 - **Layering:** an element's motions run in list order and join by core's field rules. A `.take()` motion replaces the fields it sets from its beat's start.
 - **Inferred:** nothing in the list is static; a `.loop` or `.ambient()` motion is ambient; anything else settles and must come to rest.
 
@@ -79,6 +79,7 @@ Helpers:
 - `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
 - `carry({ ms, ease, mode, target? })`: moves an element from its old rest box to its new one after a re-measure (see [layout](./agent-layout.md)).
 - `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; on 2D elements `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. On 3D `object` elements `fit` accepts `"none"` (default) or `"contain"` (uniform scale from `viewSize3d` and measured `rest.object(element)` bounds); pixel `arc` and `fit: "fill"` are refused. With no window it sits on the slot on every clock (live, timed, and untimed); sweeping requires `.in(beat)`. Referencing `slot` registers a read-only geometry dependency.
+- `slot3d(slot, view, context, { depth?, fit?, scrollY? })`: shares the same viewport-slot projection as `travel` and returns world-unit `{ center, scale, width, height, view }` (or `undefined` when unmeasured, behind the lens, or `depth <= 0`).
 
 Two elements that react to one thing share one signal; wrap it in `shared` when several read it.
 

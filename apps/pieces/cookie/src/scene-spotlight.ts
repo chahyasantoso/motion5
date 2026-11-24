@@ -16,20 +16,27 @@ import {
   type Time,
   type Transition,
 } from "@gerak/core";
-import { sceneBuilder, type MotionContext } from "@gerak/stage";
+import { sceneBuilder, slot3d, type MotionContext, type ObjectView } from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
 import {
   FLAVOR_SELECT_EVENT,
   JAR_METRICS,
+  LENS,
   SPOTLIGHT_ROLL_MS,
+  STAGE_SIZE,
+  fallbackViewWidth,
+  fitCookieSlot,
+  isHeroHandoffActive,
   isSpotlightZone,
   spotlightZoneForProgress,
+  stickyRangeOf,
+  unprojectFallback,
   type SpotlightZone,
 } from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
-import { isHeroHandoffActive, spotlightSlotWorld, type SpotlightSlotGeometry } from "./space3d.ts";
 
 const {
+  stageCanvas,
   spotlightStage,
   slotFlavorCookie,
   flavorShadow,
@@ -40,6 +47,7 @@ const {
   flavorDots,
   flavorCookies,
 } = cast;
+const COOKIE_VIEW: ObjectView = { canvas: stageCanvas, lens: LENS };
 
 const HIDDEN_COOKIE_POSE: Pose3d = { scale: 0 };
 
@@ -58,7 +66,7 @@ interface SpotlightFrame {
   readonly state: SpotlightRollState;
   readonly rollProgress: number;
   readonly scrollY: number;
-  readonly slot: SpotlightSlotGeometry;
+  readonly stageTop: number;
 }
 
 const IDLE_TRANSITION: Transition<SpotlightZone | -1> = {
@@ -104,9 +112,9 @@ function spotlightTransition(
 
 function readSpotlightFrame(context?: MotionContext): SpotlightFrame {
   const scrollY = context ? scroll.y(context.time, context.events) : 0;
-  const slot = spotlightSlotWorld(context?.rest, scrollY);
+  const range = stickyRangeOf(context?.rest, "spotlightStage", "slotFlavorCookie", 2050, 3600);
   const trans = context
-    ? spotlightTransition(slot.stageTop, slot.pinMax, slot.pinSpan)(context.time, context.events)
+    ? spotlightTransition(range.stageTop, range.pinMax, range.pinSpan)(context.time, context.events)
     : IDLE_TRANSITION;
   const active: SpotlightZone = trans.current === -1 ? 0 : trans.current;
   const outgoing: SpotlightZone | -1 = trans.active && trans.previous !== -1 ? trans.previous : -1;
@@ -117,7 +125,7 @@ function readSpotlightFrame(context?: MotionContext): SpotlightFrame {
     state: { active, outgoing, direction },
     rollProgress,
     scrollY,
-    slot,
+    stageTop: range.stageTop,
   };
 }
 
@@ -175,10 +183,10 @@ const dotMotion = motion((_t: Time, context?: MotionContext): Pose2d => {
 });
 
 const flavorShadowMotion = motion((_t: Time, context?: MotionContext): Pose2d => {
-  const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
+  const { state, rollProgress, scrollY, stageTop } = readSpotlightFrame(context);
   const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
-  if (isHeroHandoffActive(scrollY, smoothScrollY, slot.stageTop)) {
-    const approach = ease.cubicOut(clamp((smoothScrollY - (slot.stageTop - 220)) / 220, 0, 1));
+  if (isHeroHandoffActive(scrollY, smoothScrollY, stageTop)) {
+    const approach = ease.cubicOut(clamp((smoothScrollY - (stageTop - 220)) / 220, 0, 1));
     return { scaleX: mix(0.7, 1.0, approach), opacity: approach };
   }
   const rolling = state.outgoing !== -1 && rollProgress < 1 ? arch(rollProgress) : 0;
@@ -191,13 +199,30 @@ const flavorShadowMotion = motion((_t: Time, context?: MotionContext): Pose2d =>
 
 const flavorCookiesMotion = motion((_t: Time, context?: MotionContext): Pose3d => {
   const zone = zoneOf(context);
-  const { state, rollProgress, scrollY, slot } = readSpotlightFrame(context);
+  const { state, rollProgress, scrollY, stageTop } = readSpotlightFrame(context);
   const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
-  const { center, fitScale, enterTravelX, exitTravelX, stageTop } = slot;
 
   if (isHeroHandoffActive(scrollY, smoothScrollY, stageTop)) {
     return HIDDEN_COOKIE_POSE;
   }
+
+  const projected = context
+    ? slot3d(slotFlavorCookie, COOKIE_VIEW, context, { fit: "contain" })
+    : undefined;
+  const center =
+    projected?.center ?? unprojectFallback(0.62, stageTop + STAGE_SIZE.height * 0.5 - scrollY);
+  const hasCookieBounds =
+    context !== undefined &&
+    (context.rest.object(`${context.element}.${zone}`) !== undefined ||
+      context.rest.object(context.element) !== undefined);
+  const fitScale =
+    projected !== undefined && hasCookieBounds
+      ? clamp(projected.scale * 0.86, 0.95, 2.05)
+      : fitCookieSlot(projected);
+  const halfViewW = (projected?.view.width ?? fallbackViewWidth()) / 2;
+  const scaledRadius = JAR_METRICS.cookieRadius * fitScale;
+  const enterTravelX = Math.max(0, halfViewW - center.x) + scaledRadius + 0.9;
+  const exitTravelX = Math.max(0, halfViewW + center.x) + scaledRadius + 1.1;
 
   const isActive = zone === state.active;
   const isOutgoing = zone === state.outgoing && rollProgress < 1;

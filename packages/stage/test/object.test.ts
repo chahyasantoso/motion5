@@ -1,10 +1,12 @@
 import {
+  INPUT_EVENTS,
   aim,
   liveAt,
   motion,
   orbit,
   project3d,
   scroll,
+  timeAt,
   viewSize3d,
   type Lens3d,
   type Pose2d,
@@ -27,11 +29,17 @@ import {
   poseOf,
   restReader,
   sceneBuilder,
+  slot3d,
   stagger,
   travel,
+  type Drive,
+  type MotionContext,
+  type Moves,
   type SceneBuilder,
+  type Slot3d,
   type Stage,
 } from "../src";
+import { withPlacement } from "../src/render";
 
 function compiled(scene: SceneBuilder): Stage {
   const result = compileScene(scene);
@@ -425,5 +433,388 @@ describe("3D list objects", () => {
     const p0 = listPose3d(targets["tray"], 0, 2);
     const p1 = listPose3d(targets["tray"], 1, 2);
     expect((p0?.scale ?? 0) / (p1?.scale ?? 1)).toBeCloseTo(2, 6);
+  });
+});
+
+describe("context.read(object)", () => {
+  it("reads an object's Pose3d from another object at current and offset times", () => {
+    const leader = object("leader");
+    const follower = object("follower");
+    const spin = beat("spin", 1000);
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(leader)
+        .motion(
+          motion(
+            (t: Time): Pose3d => ({
+              x: 2 * t.progress,
+              y: 1 + t.progress,
+              z: -t.progress,
+              rotationY: 90 * t.progress,
+              scale: 1 + t.progress,
+            }),
+          ).in(spin),
+        )
+        .element(follower)
+        .motion((_t, context) => {
+          const now = context.read(leader);
+          const earlier = context.read(leader, { time: timeAt(context.time, 250) });
+          return {
+            x: (now.x ?? 0) + 10,
+            y: earlier.y ?? 0,
+            z: now.z ?? 0,
+            rotationY: now.rotationY ?? 0,
+            scale: earlier.scale ?? 1,
+          };
+        }),
+    );
+
+    const moves = new Map<string, Moves>();
+    const drives = new Map<string, Drive>();
+    const out = frame(stage, { time: liveAt(500), moves, drives });
+    expect(pose3dOf(out.targets["follower"])).toEqual({
+      x: 11,
+      y: 1.25,
+      z: -0.5,
+      rotationY: 45,
+      scale: 1.25,
+    });
+    expect(moves.get("follower")).toBe("time");
+    expect(drives.get("follower")).toEqual({ kind: "more" });
+  });
+
+  it("lets a 2D label read an object's Pose3d and project it with project3d", () => {
+    const eye = { x: 0, y: 0, z: 6 };
+    const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
+    const orb = object("orb");
+    const label = box("label");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(orb)
+        .motion(
+          motion((t: Time): Pose3d => ({ x: t.progress * 1.2, y: 0.4, z: 0 })).in(beat("go", 1000)),
+        )
+        .element(label)
+        .motion((_t, context) => {
+          const pose = context.read(orb);
+          const pt = project3d({ x: pose.x ?? 0, y: pose.y ?? 0, z: pose.z ?? 0 }, lens, {
+            width: 800,
+            height: 600,
+          });
+          return { x: pt.x, y: pt.y, opacity: pt.visible ? 1 : 0 };
+        }),
+    );
+
+    const expected = project3d({ x: 0.6, y: 0.4, z: 0 }, lens, { width: 800, height: 600 });
+    const out = frame(stage, { time: liveAt(500) });
+    expect(poseOf(out.targets["label"])).toEqual({
+      x: expected.x,
+      y: expected.y,
+      opacity: 1,
+    });
+  });
+
+  it("reads a 3D list part by index and count, including an earlier part of the same list", () => {
+    const cookies = object("cookies", { parts: true });
+    const marker = box("marker");
+    const go = beat("go", 1000);
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(cookies)
+        .motion(
+          motion((t: Time, context?: MotionContext): Pose3d => {
+            const index = context?.index ?? 0;
+            if (index === 0) return { x: t.progress, y: 1, scale: 1.5 };
+            const prev = context?.read(cookies, { index: index - 1, count: context.count ?? 2 });
+            return { x: (prev?.x ?? 0) + 0.5, y: prev?.y ?? 0, scale: prev?.scale ?? 1 };
+          }).in(go),
+        )
+        .element(marker)
+        .motion((_t, context) => {
+          const part1 = context.read(cookies, { index: 1, count: 2 });
+          return { x: (part1.x ?? 0) * 100, y: (part1.scale ?? 0) * 10 };
+        }),
+    );
+
+    const out = frame(stage, { time: liveAt(500), counts: { cookies: 2 } });
+    expect(listPose3d(out.targets["cookies"], 1, 2)).toEqual({ x: 1, y: 1, scale: 1.5 });
+    expect(poseOf(out.targets["marker"])).toEqual({ x: 100, y: 15 });
+  });
+
+  it("refuses mismatched kinds and unknown targets with RangeError", () => {
+    const wrongKindBox = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("orb"))
+        .motion(() => ({ x: 1 }))
+        .element(box("caller"))
+        .motion((_t, context) => ({ x: context.read(box("orb")).x ?? 0 })),
+    );
+    expect(() => frame(wrongKindBox, { time: liveAt(100) })).toThrow(RangeError);
+    expect(() => frame(wrongKindBox, { time: liveAt(100) })).toThrow(
+      /is an object; its pose is 3D/,
+    );
+
+    const wrongKindObj = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(box("card"))
+        .motion(() => ({ x: 1 }))
+        .element(object("caller"))
+        .motion((_t, context) => ({ x: context.read(object("card")).x ?? 0 })),
+    );
+    expect(() => frame(wrongKindObj, { time: liveAt(100) })).toThrow(RangeError);
+    expect(() => frame(wrongKindObj, { time: liveAt(100) })).toThrow(
+      /is not an object; its pose is 2D/,
+    );
+
+    const missing = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("caller"))
+        .motion((_t, context) => ({ x: context.read(object("ghost")).x ?? 0 })),
+    );
+    expect(() => frame(missing, { time: liveAt(100) })).toThrow(RangeError);
+    expect(() => frame(missing, { time: liveAt(100) })).toThrow(/is not an element/);
+  });
+
+  it("refuses 3D-3D, 2D-3D, self-read, and list-part mutual read cycles", () => {
+    const a = object("a");
+    const b = object("b");
+    const cycle3d = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(a)
+        .motion((_t, ctx) => ({ x: (ctx.read(b).x ?? 0) + 1 }))
+        .element(b)
+        .motion((_t, ctx) => ({ x: (ctx.read(a).x ?? 0) + 1 })),
+    );
+    expect(() => frame(cycle3d, { time: liveAt(100) })).toThrow(RangeError);
+    expect(() => frame(cycle3d, { time: liveAt(100) })).toThrow(/loop|cycle|reads itself/i);
+
+    const flat = box("flat");
+    const mesh = object("mesh");
+    const cycleMixed = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(flat)
+        .motion((_t, ctx) => ({ x: ctx.read(mesh).x ?? 0 }))
+        .element(mesh)
+        .motion((_t, ctx) => ({ x: ctx.read(flat).x ?? 0 })),
+    );
+    expect(() => frame(cycleMixed, { time: liveAt(100) })).toThrow(RangeError);
+
+    const self = object("self");
+    const selfRead = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(self)
+        .motion((_t, ctx) => ({ x: ctx.read(self, { time: timeAt(ctx.time, 0) }).x ?? 0 })),
+    );
+    expect(() => frame(selfRead, { time: liveAt(100) })).toThrow(RangeError);
+
+    const ring = object("ring", { parts: true });
+    const listCycle = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(ring)
+        .motion((_t, ctx) => {
+          const i = ctx.index ?? 0;
+          const other = i === 0 ? 1 : 0;
+          return { x: ctx.read(ring, { index: other, count: 2 }).x ?? 0 };
+        }),
+    );
+    expect(() =>
+      listPose3d(
+        frame(listCycle, { time: liveAt(100), counts: { ring: 2 } }).targets["ring"],
+        0,
+        2,
+      ),
+    ).toThrow(RangeError);
+  });
+
+  it("propagates maybe moves and more drives when reading a static object", () => {
+    const anchor = object("anchor");
+    const follower = object("follower");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(anchor)
+        .element(follower)
+        .motion((_t, ctx) => ({ x: ctx.read(anchor).x ?? 0 })),
+    );
+    const moves = new Map<string, Moves>();
+    const drives = new Map<string, Drive>();
+    frame(stage, { time: liveAt(200), moves, drives });
+    expect(moves.get("follower")).toBe("maybe");
+    expect(drives.get("follower")).toEqual({ kind: "more" });
+  });
+});
+
+describe("slot3d", () => {
+  const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 8, azimuth: 20, elevation: 10 });
+  const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
+  const canvas = box("gl");
+  const view = { canvas, lens };
+
+  it("matches travel({ fit: 'contain' }) across flow, fixed, and sticky placements", () => {
+    const flowSlot = box("flowSlot");
+    const fixedSlot = box("fixedSlot");
+    const stickySlot = box("stickySlot");
+    const results: {
+      flow?: Slot3d | undefined;
+      fixed?: Slot3d | undefined;
+      sticky?: Slot3d | undefined;
+      stickyPinned?: Slot3d | undefined;
+      noneFit?: Slot3d | undefined;
+    } = {};
+
+    const travelled = object("travelled", { view });
+    const probed = object("probed");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(flowSlot)
+        .element(fixedSlot)
+        .element(stickySlot)
+        .element(canvas)
+        .element(travelled)
+        .motion(travel({ to: stickySlot, fit: "contain" }))
+        .element(probed)
+        .motion((_t, ctx) => {
+          results.flow = slot3d(flowSlot, view, ctx, { fit: "contain" });
+          results.fixed = slot3d(fixedSlot, view, ctx, { fit: "contain" });
+          results.sticky = slot3d(stickySlot, view, ctx, { fit: "contain" });
+          results.stickyPinned = slot3d(stickySlot, view, ctx, {
+            fit: "contain",
+            scrollY: 100,
+          });
+          results.noneFit = slot3d(stickySlot, view, ctx);
+          return results.sticky ? { ...results.sticky.center, scale: results.sticky.scale } : {};
+        }),
+    );
+
+    const bounds = { width: 1.2, height: 2.4, depth: 1.2 };
+    const rest = restReader(
+      {
+        gl: withPlacement({ x: 720, y: 450, width: 1440, height: 900 }, { kind: "fixed" }),
+        flowSlot: withPlacement({ x: 360, y: 920, width: 220, height: 320 }, { kind: "flow" }),
+        fixedSlot: withPlacement({ x: 1100, y: 240, width: 180, height: 260 }, { kind: "fixed" }),
+        stickySlot: withPlacement(
+          { x: 980, y: 560, width: 320, height: 480 },
+          { kind: "sticky", minY: 100, maxY: 800, pinY: 420 },
+        ),
+      },
+      { travelled: bounds, probed: bounds },
+    );
+
+    for (const scrollY of [0, 450, 950]) {
+      const out = frame(stage, {
+        time: liveAt(500),
+        rest,
+        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: scrollY }],
+      });
+      const travelPose = pose3dOf(out.targets["travelled"]);
+      expect(results.sticky).toBeDefined();
+      expect(results.sticky?.center.x).toBeCloseTo(travelPose?.x ?? NaN, 9);
+      expect(results.sticky?.center.y).toBeCloseTo(travelPose?.y ?? NaN, 9);
+      expect(results.sticky?.center.z).toBeCloseTo(travelPose?.z ?? NaN, 9);
+      expect(results.sticky?.scale).toBeCloseTo(travelPose?.scale ?? NaN, 9);
+      const expectedDepth = project3d({ x: 0, y: 0, z: 0 }, lens, {
+        width: 1440,
+        height: 900,
+      }).depth;
+      const expectedView = viewSize3d(lens, { width: 1440, height: 900 }, expectedDepth);
+      expect(results.sticky?.width).toBeCloseTo(320 * expectedView.unitsPerPx, 9);
+      expect(results.sticky?.height).toBeCloseTo(480 * expectedView.unitsPerPx, 9);
+      expect(results.flow?.view).toEqual(expectedView);
+      expect(results.fixed?.center.y).toBeGreaterThan(0);
+      expect(results.noneFit?.scale).toBe(1);
+    }
+
+    frame(stage, {
+      time: liveAt(500),
+      rest,
+      events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 0 }],
+    });
+    expect(results.sticky?.center.y).not.toBeCloseTo(results.stickyPinned?.center.y ?? 0, 2);
+  });
+
+  it("handles explicit depth, per-part bounds, missing rests, behind-lens, and invalid arguments", () => {
+    const slot = box("slot");
+    const localCanvas = box("gl");
+    const localView = { canvas: localCanvas, lens };
+    let unmeasured: Slot3d | undefined = undefined;
+    let unmeasuredScale: Slot3d | undefined = undefined;
+    let shallow: Slot3d | undefined = undefined;
+    let behindLens: Slot3d | undefined = undefined;
+    let part0Scale = 0;
+    let part1Scale = 0;
+    let capturedCtx: MotionContext | undefined;
+
+    const listObj = object("listObj", { parts: true });
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(slot)
+        .element(localCanvas)
+        .element(listObj)
+        .motion((_t, ctx) => {
+          capturedCtx = ctx;
+          const res = slot3d(slot, localView, ctx, { fit: "contain" });
+          if (ctx.index === 0) part0Scale = res?.scale ?? -1;
+          else part1Scale = res?.scale ?? -1;
+          return res ? { ...res.center, scale: res.scale } : {};
+        }),
+    );
+
+    const restUnmeasured = restReader({ gl: { x: 400, y: 300, width: 800, height: 600 } });
+    const outUnmeasured = frame(stage, {
+      time: liveAt(0),
+      rest: restUnmeasured,
+      counts: { listObj: 1 },
+    });
+    listPose3d(outUnmeasured.targets["listObj"], 0, 1);
+    if (capturedCtx === undefined) throw new Error("expected captured context");
+    unmeasured = slot3d(slot, localView, capturedCtx);
+    expect(unmeasured).toBeUndefined();
+
+    const restNoObj = restReader({
+      gl: { x: 400, y: 300, width: 800, height: 600 },
+      slot: { x: 400, y: 300, width: 200, height: 200 },
+    });
+    const outNoObj = frame(stage, { time: liveAt(0), rest: restNoObj, counts: { listObj: 1 } });
+    listPose3d(outNoObj.targets["listObj"], 0, 1);
+    unmeasuredScale = slot3d(slot, localView, capturedCtx, { fit: "contain" });
+    expect(unmeasuredScale?.scale).toBe(1);
+
+    const restParts = restReader(
+      {
+        gl: { x: 500, y: 300, width: 1000, height: 600 },
+        slot: { x: 700, y: 300, width: 200, height: 200 },
+      },
+      {
+        listObj: { width: 2, height: 2, depth: 2 },
+        "listObj.0": { width: 1, height: 1, depth: 1 },
+      },
+    );
+    const outParts = frame(stage, { time: liveAt(0), rest: restParts, counts: { listObj: 2 } });
+    listPose3d(outParts.targets["listObj"], 0, 2);
+    listPose3d(outParts.targets["listObj"], 1, 2);
+    expect(part0Scale / part1Scale).toBeCloseTo(2, 6);
+
+    shallow = slot3d(slot, localView, capturedCtx, { depth: 0 });
+    expect(shallow).toBeUndefined();
+
+    const behindView = {
+      canvas: localCanvas,
+      lens: { x: 0, y: 0, z: -5, rotationY: 0, fov: 40 },
+    };
+    behindLens = slot3d(slot, behindView, capturedCtx);
+    expect(behindLens).toBeUndefined();
+
+    const ctx = capturedCtx;
+    expect(() => slot3d(slot, localView, ctx, { depth: Number.NaN })).toThrow(RangeError);
+    expect(() => slot3d(slot, localView, ctx, { scrollY: Number.POSITIVE_INFINITY })).toThrow(
+      RangeError,
+    );
+    expect(() => {
+      // @ts-expect-error slot must be an Element
+      slot3d(listObj, localView, ctx);
+    }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error fit "fill" is refused by slot3d
+      slot3d(slot, localView, ctx, { fit: "fill" });
+    }).toThrow(TypeError);
   });
 });

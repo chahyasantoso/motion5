@@ -1,7 +1,6 @@
 import { clamp, ease, seeded } from "@gerak/core";
 import { mount, ready } from "@gerak/dom";
 import { restReader } from "@gerak/stage";
-import { threeBinder } from "@gerak/three";
 import {
   BUILDER_CAPACITY,
   BUILDER_EXIT_POOL,
@@ -19,11 +18,11 @@ import {
   isSpotlightZone,
   spotlightTargetForZone,
   spotlightZoneForProgress,
+  stickyRangeOf,
   type DomCast,
   type SpotlightZone,
 } from "./contract.ts";
 import cookieScene from "./cookie.ts";
-import { spotlightSlotWorld } from "./space3d.ts";
 import { loadCookieWorld } from "./world-models.ts";
 import { createCookieStudio } from "./world-studio.ts";
 
@@ -36,21 +35,16 @@ async function bootstrap(): Promise<void> {
     throw new Error(`Missing canvas element ${canvasSelector}`);
   }
 
-  const studio = createCookieStudio(node);
-  const models = await loadCookieWorld(studio.world);
+  const models = await loadCookieWorld();
+  const studio = createCookieStudio(node, models.objects);
+  studio.world.add(...models.roots);
   studio.renderer.compile(studio.world, studio.camera);
   studio.draw();
   studio.renderer.getContext().finish();
 
   const mounted = mount(cookieScene, {
     clock: "live",
-    binders: [
-      threeBinder(studio.world, {
-        objects: models.objects,
-        resize: studio.resize,
-        draw: studio.draw,
-      }),
-    ],
+    binders: [studio.binder],
   });
 
   const heroCtaEl = document.querySelector(castSelector("heroCta"));
@@ -84,8 +78,11 @@ async function bootstrap(): Promise<void> {
     }
   };
 
+  const spotlightRange = () =>
+    stickyRangeOf(restReader(mounted.rest), "spotlightStage", "slotFlavorCookie", 2050, 3600);
+
   const syncActiveFlavor = (): void => {
-    const { stageTop, pinMax, pinSpan } = spotlightSlotWorld(restReader(mounted.rest));
+    const { stageTop, pinMax, pinSpan } = spotlightRange();
     const y = window.scrollY;
     if (y < stageTop) {
       applyActiveFlavor(0);
@@ -416,7 +413,7 @@ async function bootstrap(): Promise<void> {
   if (heroCtaEl) {
     const onCtaClick = (event: Event): void => {
       event.preventDefault();
-      const { stageTop } = spotlightSlotWorld(restReader(mounted.rest));
+      const { stageTop } = spotlightRange();
       animateScrollTo(Math.ceil(stageTop) + 2, 1250);
     };
     heroCtaEl.addEventListener("click", onCtaClick);
@@ -440,7 +437,7 @@ async function bootstrap(): Promise<void> {
   for (const el of document.querySelectorAll("[data-closing-flavors-cta]")) {
     const onClick = (event: Event): void => {
       event.preventDefault();
-      const { stageTop } = spotlightSlotWorld(restReader(mounted.rest));
+      const { stageTop } = spotlightRange();
       animateScrollTo(Math.ceil(stageTop) + 2, 1050);
     };
     el.addEventListener("click", onClick);
@@ -463,7 +460,7 @@ async function bootstrap(): Promise<void> {
     }
     const onClick = (): void => {
       cancelHeroScroll();
-      const { stageTop, pinSpan } = spotlightSlotWorld(restReader(mounted.rest));
+      const { stageTop, pinSpan } = spotlightRange();
       const targetScrollY = Math.max(0, stageTop + pinSpan * spotlightTargetForZone(zone));
       window.scrollTo({ top: targetScrollY, behavior: "instant" });
       mounted.send(FLAVOR_SELECT_EVENT, zone);

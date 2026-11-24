@@ -13,11 +13,28 @@ import {
   type Pose3d,
   type Time,
 } from "@gerak/core";
-import { beat, box, sceneBuilder, stagger, text, type MotionContext } from "@gerak/stage";
+import {
+  beat,
+  box,
+  sceneBuilder,
+  slot3d,
+  stagger,
+  text,
+  type MotionContext,
+  type ObjectView,
+} from "@gerak/stage";
 import { cast } from "../cookie.cast.ts";
-import { HERO_COOKIE_JAR_LOCAL } from "./contract.ts";
+import {
+  HERO_COOKIE_JAR_LOCAL,
+  LENS,
+  STAGE_SIZE,
+  fitCookieSlot,
+  fitJarSlot,
+  isHeroHandoffActive,
+  stickyRangeOf,
+  unprojectFallback,
+} from "./contract.ts";
 import { heroCookieScrollY, pointerDeltaX, pointerDeltaY } from "./inputs.ts";
-import { heroJarSlotWorld, isHeroHandoffActive, spotlightSlotWorld } from "./space3d.ts";
 
 const {
   stageCanvas,
@@ -26,6 +43,7 @@ const {
   heroHorizon,
   heroCopy,
   slotHeroJar,
+  slotFlavorCookie,
   heroSub,
   offerBanner,
   offerSeal,
@@ -35,6 +53,7 @@ const {
 } = cast;
 const heroHeadline = text(cast.heroHeadline.name, { split: "words" });
 const heroCta = box(cast.heroCta.name, { watch: true });
+const COOKIE_VIEW: ObjectView = { canvas: stageCanvas, lens: LENS };
 
 const heroEnter = beat("heroEnter", 520);
 const jarSettle = beat("jarSettle", 520);
@@ -116,29 +135,62 @@ const heroWarmWashIn = motion(
   }),
 );
 
-const jarRootMotion = motion((t: Time, context?: MotionContext): Pose3d => {
-  const settle = ease.cubicOut(jarSettle.of(t).progress);
+function heroSlotState(context: MotionContext | undefined) {
   const rawScrollY = context ? scroll.y(context.time, context.events) : 0;
   const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
-  const heroSlot = heroJarSlotWorld(context?.rest, rawScrollY);
-  const spotlight = spotlightSlotWorld(context?.rest, rawScrollY);
-  const p = handoffProgress(smoothScrollY, heroSlot.stageTop, spotlight.stageTop);
+  const heroRange = stickyRangeOf(context?.rest, "heroStage", "slotHeroJar", 0, 2050);
+  const spotlightRange = stickyRangeOf(
+    context?.rest,
+    "spotlightStage",
+    "slotFlavorCookie",
+    2050,
+    3600,
+  );
+  const heroScrollY = Math.min(rawScrollY, heroRange.pinMax);
+  const heroSlot = context
+    ? slot3d(slotHeroJar, COOKIE_VIEW, context, { scrollY: heroScrollY })
+    : undefined;
+  return {
+    rawScrollY,
+    smoothScrollY,
+    heroStageTop: heroRange.stageTop,
+    spotlightStageTop: spotlightRange.stageTop,
+    heroFitScale: fitJarSlot(heroSlot, 0.45, 1.28, 0.92),
+    heroPinnedCenter:
+      heroSlot?.center ??
+      unprojectFallback(0.72, heroRange.stageTop + STAGE_SIZE.height * 0.46 - heroScrollY),
+    dx: context ? pointerDeltaX(context.time, context.events) : 0,
+    dy: context ? pointerDeltaY(context.time, context.events) : 0,
+  };
+}
 
-  if (p >= 0.92 || !isHeroHandoffActive(rawScrollY, smoothScrollY, spotlight.stageTop)) {
+const jarRootMotion = motion((t: Time, context?: MotionContext): Pose3d => {
+  const settle = ease.cubicOut(jarSettle.of(t).progress);
+  const {
+    rawScrollY,
+    smoothScrollY,
+    heroStageTop,
+    spotlightStageTop,
+    heroFitScale,
+    heroPinnedCenter,
+    dx,
+    dy,
+  } = heroSlotState(context);
+  const p = handoffProgress(smoothScrollY, heroStageTop, spotlightStageTop);
+
+  if (p >= 0.92 || !isHeroHandoffActive(rawScrollY, smoothScrollY, spotlightStageTop)) {
     return HERO_HIDDEN_POSE;
   }
 
   const unseal = ease.cubicInOut(clamp(p / 0.34, 0, 1));
   const sink = ease.sineInOut(clamp((p - 0.26) / 0.64, 0, 1));
   const calm = 1 - clamp(p / 0.32, 0, 1);
-  const dx = context ? pointerDeltaX(context.time, context.events) : 0;
-  const dy = context ? pointerDeltaY(context.time, context.events) : 0;
-  const scale = mix(heroSlot.fitScale * 0.94, heroSlot.fitScale, settle);
+  const scale = mix(heroFitScale * 0.94, heroFitScale, settle);
 
   return {
-    x: heroSlot.pinnedCenter.x + dx * 0.14 * calm,
-    y: heroSlot.pinnedCenter.y - dy * 0.08 * calm - 3.7 * sink,
-    z: heroSlot.pinnedCenter.z,
+    x: heroPinnedCenter.x + dx * 0.14 * calm,
+    y: heroPinnedCenter.y - dy * 0.08 * calm - 3.7 * sink,
+    z: heroPinnedCenter.z,
     rotation: 0,
     rotationX: mix(0, 6, unseal) + dy * 9 * calm,
     rotationY: mix(-12, 0, settle) + mix(0, 16, unseal) + dx * 18 * calm,
@@ -177,37 +229,47 @@ const lidStepAside = motion((t: Time): Pose3d => {
 // Lifts flat out of the jar neck, then glides face-on to align with flavorCookie0 at handoff.
 const cookieHeroMotion = motion((t: Time, context?: MotionContext): Pose3d => {
   const settle = ease.cubicOut(jarSettle.of(t).progress);
-  const rawScrollY = context ? scroll.y(context.time, context.events) : 0;
-  const smoothScrollY = context ? heroCookieScrollY(context.time, context.events) : 0;
-  const heroSlot = heroJarSlotWorld(context?.rest, rawScrollY);
-  const spotlight = spotlightSlotWorld(context?.rest, rawScrollY);
+  const {
+    rawScrollY,
+    smoothScrollY,
+    heroStageTop,
+    spotlightStageTop,
+    heroFitScale,
+    heroPinnedCenter,
+    dx,
+    dy,
+  } = heroSlotState(context);
 
-  if (!isHeroHandoffActive(rawScrollY, smoothScrollY, spotlight.stageTop)) {
+  if (!isHeroHandoffActive(rawScrollY, smoothScrollY, spotlightStageTop)) {
     return HERO_HIDDEN_POSE;
   }
 
-  const p = handoffProgress(smoothScrollY, heroSlot.stageTop, spotlight.stageTop);
+  const spotlightSlot = context
+    ? slot3d(slotFlavorCookie, COOKIE_VIEW, context, { scrollY: spotlightStageTop })
+    : undefined;
+  const spotlightFitScale = fitCookieSlot(spotlightSlot);
+  const spotlightCenter = spotlightSlot?.center ?? unprojectFallback(0.62, STAGE_SIZE.height * 0.5);
+
+  const p = handoffProgress(smoothScrollY, heroStageTop, spotlightStageTop);
   const calm = 1 - clamp(p / 0.35, 0, 1);
-  const dx = context ? pointerDeltaX(context.time, context.events) : 0;
-  const dy = context ? pointerDeltaY(context.time, context.events) : 0;
   const peek = context ? ctaPeek(context.time, context.events) : 0;
 
-  const jarScale = mix(heroSlot.fitScale * 0.94, heroSlot.fitScale, settle);
+  const jarScale = mix(heroFitScale * 0.94, heroFitScale, settle);
   const jarRotY = mix(-12, 0, settle) + dx * 18 * calm;
   const jarCenter: Point3d = {
-    x: heroSlot.pinnedCenter.x + dx * 0.14 * calm,
-    y: heroSlot.pinnedCenter.y - dy * 0.08 * calm,
-    z: heroSlot.pinnedCenter.z,
+    x: heroPinnedCenter.x + dx * 0.14 * calm,
+    y: heroPinnedCenter.y - dy * 0.08 * calm,
+    z: heroPinnedCenter.z,
   };
   const restPos = cookieJarRestWorld(jarCenter, jarScale, jarRotY);
-  const liftY = 0.92 * heroSlot.fitScale;
-  const liftZ = 0.08 * heroSlot.fitScale;
+  const liftY = 0.92 * heroFitScale;
+  const liftZ = 0.08 * heroFitScale;
 
   if (p <= 0.24) {
     const u = ease.cubicInOut(clamp(p / 0.24, 0, 1));
     return {
       x: restPos.x,
-      y: restPos.y + liftY * u + 0.03 * peek * (1 - u) * heroSlot.fitScale,
+      y: restPos.y + liftY * u + 0.03 * peek * (1 - u) * heroFitScale,
       z: restPos.z + liftZ * u,
       rotation: 0,
       rotationX: mix(0, 14, u),
@@ -222,13 +284,13 @@ const cookieHeroMotion = motion((t: Time, context?: MotionContext): Pose3d => {
   const liftTopZ = restPos.z + liftZ;
 
   return {
-    x: mix(liftTopX, spotlight.pinnedCenter.x, u),
-    y: mix(liftTopY, spotlight.pinnedCenter.y, u) + 0.14 * arch(u),
-    z: mix(liftTopZ, spotlight.pinnedCenter.z, u) + 0.28 * arch(u),
+    x: mix(liftTopX, spotlightCenter.x, u),
+    y: mix(liftTopY, spotlightCenter.y, u) + 0.14 * arch(u),
+    z: mix(liftTopZ, spotlightCenter.z, u) + 0.28 * arch(u),
     rotation: 0,
     rotationX: mix(14, 90, u),
     rotationY: 0,
-    scale: mix(heroSlot.fitScale, spotlight.fitScale, u),
+    scale: mix(heroFitScale, spotlightFitScale, u),
   };
 });
 

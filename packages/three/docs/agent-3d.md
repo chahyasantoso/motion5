@@ -7,7 +7,7 @@ is a code scene like any other; only its poses and its binder change. Names are 
 ## The loop
 
 1. `npx gerak new <name> --three` writes a page (`<name>.html`), its entry, a React component and `<name>-scene.ts`, a `sceneBuilder`
-   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast, pass `binders: [threeBinder(world, { objects, resize, draw })]` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
+   piece with one `object("box")` and one `box("label")` pinned over it, starting `threeBinder(world, { draw }).start(player, stage)`. To measure and play DOM and 3D together under one cast without repeating renderer/camera boilerplate, use `createStage3d(canvas, lens, { near?, far?, maxPixelRatio?, objects?, fallbackSize? })` (which wires an empty `Scene`, `PerspectiveCamera(lens)`, `WebGLRenderer`, DPR-clamped `resize`, `draw`, `dispose`, and `threeBinder`, adding zero preset lights, materials, tone mapping, or shadows) and pass `stage3d.binder` to `mount(piece, { clock, root, binders })` over `data-cast` elements on the page.
 2. Write the piece. An object takes motions that return `Pose3d`: `{ x, y, z, rotation, rotationX, rotationY,
    scale, scaleX, scaleY, scaleZ, opacity }`, y up, turns in degrees, distances in world units, not px. A 2D motion
    on an object, or a 3D one on a box, does not compile.
@@ -122,9 +122,7 @@ Words, captions and callouts over a 3D scene are boxes in the same piece, pinned
 sample, review and scrub with everything else.
 
 - **The lens is the piece's.** Export the stage's size `{ width, height }` and `lens: Lens3d` (a camera `Pose3d` plus `fov`, vertical degrees). Size `.stage` and the WebGL renderer to those dimensions and build the `PerspectiveCamera` from `lens`; a page with its own `fov` drifts every label.
-- **A label reads no object.** `context.read` refuses an object, since its pose is 3D. Write the object's pose as a
-  plain function of time and give the same function to the object's motion and the label's, so both answer from
-  one source.
+- **Reading an object:** `context.read(object)` returns typed `Pose3d` for both follower 3D objects and 2D DOM labels (`project3d` from `"@gerak/core"`), with runtime cycle refusal across 2D, 3D, mixed, and list-part reads. Raw string `context.read("name")` stays 2D-typed and refuses objects.
 - **A point to pixels:** `project3d(point, lens, stage)` from `"@gerak/core"` answers `{ x, y, depth, visible }`,
   px from the stage's top left. Return `{ x, y, opacity }` for the label; the element's top-left corner lands there,
   so offset it in CSS to centre a bubble or put its tail on the point.
@@ -144,7 +142,7 @@ sample, review and scrub with everything else.
 - **Onto a page slot:** an object with `object(name, { view: { canvas, lens } })`, where `canvas` is a box bound to
   the page's canvas node and `lens` the page's lens, takes `travel({ to: slot, fit? })`: it moves to the slot's centre on
   the canvas at the depth along the lens it starts from, and `viewSize3d(lens, stage, depth)` from `"@gerak/core"` computes the viewport span in world units at that depth. `fit` accepts `"none"` (default) or `"contain"` (uniform scaling from `viewSize3d` and measured `rest.object(name)` bounds); `arc`, `fit: "fill"` and `.take()` are refused on objects, and its
-  `Object3D` rests at the world origin, since its position is measured from there.
+  `Object3D` rests at the world origin, since its position is measured from there. Custom motions that need a slot's projected world-unit center, width, height, or `ViewSize3d` call `slot3d(slot, view, context, { depth?, fit?, scrollY? })` from `"@gerak/stage"`, which shares the exact same projection helper as `travel`.
 - **Order on a step:** `threeBinder` writes and draws in one player listener, taken when it binds; a listener
   subscribed after it runs after the draw. The rest it reads is the `Object3D`'s position at that moment.
 - **An object on a bone:** `attach(skeleton, "<bone>", object, { at, turn })` from `"@gerak/rig-three"` makes
