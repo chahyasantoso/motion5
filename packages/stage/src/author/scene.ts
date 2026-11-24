@@ -3,6 +3,7 @@ import {
   POSE_3D_NUMBERS,
   VALUE_FIELDS,
   arch,
+  clamp,
   combine,
   combine3d,
   elapsedOf,
@@ -30,12 +31,14 @@ import {
   type Time,
   type ViewSize3d,
   project3d,
+  rawTime,
   unproject3d,
   viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
   WINDOW_EVENTS,
+  beat,
   fixedPxOf,
   isInputBeat,
   isScrollBeat,
@@ -76,6 +79,7 @@ import type { Carry, CarryOptions, RestReader } from "./layout";
 import type {
   Limits,
   ListPose,
+  ShotSummary,
   ListPose3d,
   Drive,
   Moves,
@@ -101,7 +105,36 @@ export interface Scene {
 }
 
 /** What `scene` takes after its options: an element's binding, an element with no motion, or a scene. */
-export type SceneItem = ElementBinding | ObjectBinding | Element | ObjectElement | Scene;
+export type SceneItem = ElementBinding | ObjectBinding | Element | ObjectElement | Scene | Shot;
+
+/** Options of `shot`: its name, its length or the scene ms it ends at, and how far it starts before the last ends. */
+export interface ShotOptions {
+  readonly name?: string | undefined;
+  /** The shot's length in ms; defaults to the end of its last clock beat. */
+  readonly length?: number | undefined;
+  /** The scene ms the shot ends at, such as a beat cue's `at`; not with `length`. */
+  readonly until?: number | undefined;
+  /** How many ms the shot starts before the one before it ends; both show meanwhile. */
+  readonly overlap?: number | undefined;
+}
+
+/** A scene written from 0 that `scene` plays after the shot before it. */
+export interface Shot {
+  readonly kind: "shot";
+  readonly scene: Scene;
+  readonly options: ShotOptions;
+}
+
+/** A shot of `scene`: inside it, time and events start at 0 when the shot starts. */
+export function shot(scene: Scene, options: ShotOptions = {}): Shot {
+  return Object.freeze({ kind: "shot", scene, options: Object.freeze({ ...options }) });
+}
+
+/** Where a shot sits on the scene's clock. */
+interface ShotClock {
+  readonly from: number;
+  readonly length: number;
+}
 
 type MotionStep = {
   readonly kind: "motion";
@@ -161,6 +194,11 @@ interface State {
   readonly beats: ReadonlyMap<string, Beat>;
   readonly inputBeats: ReadonlyMap<string, ScrollBeat | TriggerBeat>;
   readonly current: string | undefined;
+  /** The shot clock of every element a shot owns. */
+  readonly shotClocks: ReadonlyMap<string, ShotClock>;
+  readonly shots: readonly ShotSummary[];
+  /** Where the next shot starts, in ms. */
+  readonly cursor: number;
 }
 
 const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], scrollShow: [], limits: {} });
@@ -182,6 +220,11 @@ const OBJECT_TRAVEL = new WeakMap<
   }
 >();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
+/** The scene time each shot time was made from. */
+const SCENE_TIMES = new WeakMap<Time, Time>();
+/** Each event list moved to a shot's clock, by shot start, and the list each moved one came from. */
+const SHOT_EVENTS = new WeakMap<Events, Map<number, Events>>();
+const SCENE_EVENTS = new WeakMap<Events, Events>();
 
 interface MotionBody<P = Pose2d> {
   readonly fn: (time: Time, context?: MotionContext) => P;
@@ -846,6 +889,11 @@ const SCENE_OPTIONS = ["cues", "length"] as const;
 function included(state: State, scene: unknown): State {
   const other = isScene(scene) ? stateOf(scene) : undefined;
   if (other === undefined) throw new TypeError("scene: a sub-scene is what `scene` returns.");
+  return includedState(state, other);
+}
+
+/** The state with `other`'s elements, beats and motions merged in, on one clock. */
+function includedState(state: State, other: State): State {
   const named = `scene "${other.owner.label}"`;
   if (owns(state.owner, other.owner))
     throw new TypeError(`scene: ${named} is already in "${state.owner.label}".`);
@@ -893,12 +941,97 @@ function included(state: State, scene: unknown): State {
     beats,
     inputBeats,
     current: undefined,
+    shotClocks: new Map([...state.shotClocks, ...other.shotClocks]),
+    shots: [
+      ...state.shots,
+      ...other.shots.map((each, offset) => ({ ...each, index: state.shots.length + offset })),
+    ],
   };
   const loop = loopOf(next.entries);
   if (loop !== undefined)
     throw new RangeError(`scene: elements read each other in a loop: ${loop.join(", ")}.`);
   INCLUDED_IN.set(other.owner, state.owner);
   return next;
+}
+
+/** `stretch` with each beat name it holds renamed by `rename`. */
+function renamedStretch(stretch: Stretch, rename: (name: string) => string): Stretch {
+  switch (stretch.kind) {
+    case "beats":
+      return { kind: "beats", from: rename(stretch.from), to: rename(stretch.to) };
+    case "from":
+      return { kind: "from", from: rename(stretch.from) };
+    case "until":
+      return { kind: "until", until: rename(stretch.until) };
+    default:
+      return unreachable(stretch);
+  }
+}
+
+/** The state with `taken` played after the shot before it, on its own clock from 0. */
+function shotted(state: State, taken: Shot): State {
+  const other = isScene(taken.scene) ? stateOf(taken.scene) : undefined;
+  if (other === undefined) throw new TypeError("shot: a shot takes what `scene` returns.");
+  const { length, until, overlap = 0 } = taken.options;
+  const name = taken.options.name ?? other.owner.label;
+  if (other.shots.length > 0)
+    throw new TypeError(`shot "${name}": a shot holds no shots; give each shot to the reel.`);
+  if (length !== undefined && until !== undefined)
+    throw new TypeError(`shot "${name}": give \`until\` or \`length\`, not both.`);
+  if (!(overlap >= 0)) throw new RangeError(`shot "${name}": \`overlap\` is ms, 0 or more.`);
+  const from = Math.max(0, state.cursor - overlap);
+  const ends = [...other.beats.values()].map((each) => each.to);
+  const span =
+    until !== undefined
+      ? until - from
+      : (length ?? (ends.length > 0 ? Math.max(...ends) : undefined));
+  if (span === undefined)
+    throw new TypeError(`shot "${name}": it has no clock beat; give it a \`length\`.`);
+  if (!(span > 0))
+    throw new RangeError(
+      until !== undefined
+        ? `shot "${name}": \`until\` ${until} ms is at or before its start, ${from} ms.`
+        : `shot "${name}": its length must be above 0 ms.`,
+    );
+  const rename = (beatName: string): string => `${name}.${beatName}`;
+  const beats = new Map<string, Beat>();
+  for (const each of other.beats.values())
+    beats.set(
+      rename(each.name),
+      beat(rename(each.name), each.to - each.from, { at: each.from + from }),
+    );
+  beats.set(name, beat(name, span, { at: from }));
+  const clock: ShotClock = { from, length: span };
+  const shotClocks = new Map(other.shotClocks);
+  const entries = new Map<string, Entry>();
+  for (const [member, entry] of other.entries) {
+    if (!other.owned.has(member)) {
+      entries.set(member, entry);
+      continue;
+    }
+    shotClocks.set(member, clock);
+    const shown = entry.show.map((stretch) => renamedStretch(stretch, rename));
+    entries.set(member, {
+      ...entry,
+      show:
+        shown.length === 0 && entry.scrollShow.length === 0
+          ? [{ kind: "beats", from: name, to: name }]
+          : shown,
+    });
+  }
+  const moved: State = {
+    ...other,
+    options: { ...other.options, length: undefined },
+    beats,
+    entries,
+    shotClocks,
+  };
+  const next = includedState(state, moved);
+  return {
+    ...next,
+    cursor: from + span,
+    shots: [...next.shots, { name, index: next.shots.length, from, to: from + span, overlap }],
+  };
 }
 
 function validateReference(
@@ -1118,6 +1251,7 @@ interface Plan {
   readonly parts: boolean;
   readonly object: boolean;
   readonly steps: readonly Step[];
+  readonly clock: ShotClock | undefined;
 }
 
 interface Env {
@@ -1134,6 +1268,8 @@ interface Env {
   readonly moves: Map<string, Moves> | undefined;
   /** Filled as elements run: what drives each. */
   readonly drives: Map<string, Drive> | undefined;
+  /** The scene's length in ms, for a shot's share of an untimed progress. */
+  readonly total: number | undefined;
 }
 
 const MORE: Drive = Object.freeze({ kind: "more" });
@@ -1302,7 +1438,12 @@ function evaluate2d(
 ): Pose2d {
   enterRead(env, plan, index);
   try {
-    return stackOf(plan, env, index, count)(time, events);
+    return stackOf(
+      plan,
+      env,
+      index,
+      count,
+    )(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
   } finally {
     env.reading.pop();
   }
@@ -1318,42 +1459,122 @@ function evaluate3d(
 ): Pose3d {
   enterRead(env, plan, index);
   try {
-    return stack3dOf(plan, env, index, count)(time, events);
+    return stack3dOf(
+      plan,
+      env,
+      index,
+      count,
+    )(shotTime(time, plan.clock, env.total), shotEvents(events, plan.clock));
   } finally {
     env.reading.pop();
   }
 }
 
 /** What `context.read` answers: another element's pose at this or another time or part, computed once a frame. */
-function readerOf(env: Env, time: Time, events: Events): MotionContext["read"] {
+/** The scene's time behind a shot's time: the one it was made from, or `time` moved back by the shot's start. */
+function sceneTime(time: Time, clock: ShotClock | undefined, total: number | undefined): Time {
+  if (clock === undefined) return time;
+  const known = SCENE_TIMES.get(rawTime(time));
+  if (known !== undefined) return known;
+  const raw = rawTime(time).clock;
+  switch (raw.kind) {
+    case "timed": {
+      const length = total ?? clock.from + clock.length;
+      const elapsed = raw.elapsed + clock.from;
+      return { progress: clamp(elapsed / length, 0, 1), clock: { kind: "timed", elapsed, length } };
+    }
+    case "live":
+      return { progress: 0, clock: { kind: "live", elapsed: raw.elapsed + clock.from } };
+    case "untimed":
+      return total === undefined
+        ? time
+        : { progress: (clock.from + time.progress * clock.length) / total, clock: raw };
+    default:
+      return unreachable(raw);
+  }
+}
+
+/** A shot's time: ms since the shot started (never below 0), and progress across its length. */
+function shotTime(time: Time, clock: ShotClock | undefined, total: number | undefined): Time {
+  if (clock === undefined) return time;
+  const raw = time.clock;
+  let local: Time;
+  switch (raw.kind) {
+    case "timed": {
+      const elapsed = Math.max(0, raw.elapsed - clock.from);
+      local = {
+        progress: clamp(elapsed / clock.length, 0, 1),
+        clock: { kind: "timed", elapsed, length: clock.length },
+      };
+      break;
+    }
+    case "live":
+      local = {
+        progress: 0,
+        clock: { kind: "live", elapsed: Math.max(0, raw.elapsed - clock.from) },
+      };
+      break;
+    case "untimed":
+      local =
+        total === undefined
+          ? time
+          : {
+              progress: clamp((time.progress * total - clock.from) / clock.length, 0, 1),
+              clock: raw,
+            };
+      break;
+    default:
+      return unreachable(raw);
+  }
+  SCENE_TIMES.set(local, time);
+  return local;
+}
+
+/** `events` with each `at` moved back by the shot's start, made once per list and shot start. */
+function shotEvents(events: Events, clock: ShotClock | undefined): Events {
+  if (clock === undefined || clock.from === 0) return events;
+  const byStart = SHOT_EVENTS.get(events) ?? new Map<number, Events>();
+  const known = byStart.get(clock.from);
+  if (known !== undefined) return known;
+  const moved = events.map((event) => ({ ...event, at: event.at - clock.from }));
+  byStart.set(clock.from, moved);
+  SHOT_EVENTS.set(events, byStart);
+  SCENE_EVENTS.set(moved, events);
+  return moved;
+}
+
+function readerOf(env: Env, plan: Plan, local: Time, localEvents: Events): MotionContext["read"] {
+  const time = sceneTime(local, plan.clock, env.total);
+  const events = SCENE_EVENTS.get(localEvents) ?? localEvents;
   function read(element: ObjectElement, at?: ReadAt): Pose3d;
   function read(element: Element | string, at?: ReadAt): Pose2d;
   function read(element: ObjectElement | Element | string, at?: ReadAt): Pose3d | Pose2d {
     const wantObject = typeof element !== "string" && element.kind === "object";
     const name = typeof element === "string" ? element : element.name;
-    const plan = env.plans.get(name);
-    if (plan === undefined) throw new RangeError(`read: "${name}" is not an element of the piece.`);
-    if (plan.object && !wantObject)
+    const target = env.plans.get(name);
+    if (target === undefined)
+      throw new RangeError(`read: "${name}" is not an element of the piece.`);
+    if (target.object && !wantObject)
       throw new RangeError(
         `read: "${name}" is an object; its pose is 3D — pass the ObjectElement value.`,
       );
-    if (!plan.object && wantObject)
+    if (!target.object && wantObject)
       throw new RangeError(`read: "${name}" is not an object; its pose is 2D.`);
-    const part = plan.parts ? (at?.index ?? 0) : undefined;
-    const parts = plan.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
-    const when = at?.time ?? time;
+    const part = target.parts ? (at?.index ?? 0) : undefined;
+    const parts = target.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
+    const when = at?.time === undefined ? time : sceneTime(at.time, plan.clock, env.total);
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
     if (wantObject) {
       const known = env.read3d.get(key);
       if (known !== undefined && known.events === events) return known.pose;
-      const pose = evaluate3d(plan, env, part, parts, when, events);
+      const pose = evaluate3d(target, env, part, parts, when, events);
       env.read3d.set(key, { events, pose });
       return pose;
     }
     const known = env.read2d.get(key);
     if (known !== undefined && known.events === events) return known.pose;
-    const pose = evaluate2d(plan, env, part, parts, when, events);
+    const pose = evaluate2d(target, env, part, parts, when, events);
     env.read2d.set(key, { events, pose });
     return pose;
   }
@@ -1400,7 +1621,7 @@ function stack3dOf(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, time, events),
+            read: readerOf(env, plan, time, events),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
@@ -1448,7 +1669,7 @@ function stack3dOf(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, time, events),
+            read: readerOf(env, plan, time, events),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
           };
@@ -1535,7 +1756,7 @@ function stackOf(
             carry: env.carry,
             element: plan.name,
             span: step.span,
-            read: readerOf(env, time, events),
+            read: readerOf(env, plan, time, events),
             ...(index === undefined ? {} : { index }),
             ...(count === undefined ? {} : { count }),
             ...(line === undefined ? {} : { line }),
@@ -1618,6 +1839,7 @@ function definitionOf(state: State): StageDefinition {
           parts: hasParts(element),
           object: element.kind === "object",
           steps: (state.entries.get(element.name) ?? NO_ENTRY).steps,
+          clock: state.shotClocks.get(element.name),
         },
       ]),
     );
@@ -1638,8 +1860,10 @@ function definitionOf(state: State): StageDefinition {
     ),
     limits: limitsOf(state),
     cast: (m) => castOf(state, m),
+    ...(state.shots.length === 0 ? {} : { shots: state.shots }),
     scene: (context: SceneContext) => {
       const env: Env = {
+        total: durationMs,
         plans: plansOf(),
         rest: context.rest,
         carry: context.carry,
@@ -1981,6 +2205,9 @@ function startState(options: SceneOptions): State {
     beats: new Map(),
     inputBeats: new Map(),
     current: undefined,
+    shotClocks: new Map(),
+    shots: [],
+    cursor: 0,
   };
 }
 
@@ -2071,6 +2298,9 @@ export function scene(...args: readonly (SceneOptions | SceneItem)[]): Scene {
         break;
       case "scene":
         state = included(state, item);
+        break;
+      case "shot":
+        state = shotted(state, item);
         break;
       default:
         return unreachable(item);

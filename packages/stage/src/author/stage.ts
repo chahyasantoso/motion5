@@ -72,6 +72,15 @@ export interface Limits {
 }
 
 /** A piece as written: beats in ms, a cast, and a scene from time to poses. */
+/** One shot of a scene made with `shot`: its name, place in order, and its ms on the scene's clock. */
+export interface ShotSummary {
+  readonly name: string;
+  readonly index: number;
+  readonly from: number;
+  readonly to: number;
+  readonly overlap: number;
+}
+
 export interface StageOptions<B extends string, M extends Members<B>> {
   readonly beats: Readonly<Record<B, readonly [number, number]>>;
   /** Defaults to the last beat's end; longer holds the end. */
@@ -81,6 +90,8 @@ export interface StageOptions<B extends string, M extends Members<B>> {
   readonly limits?: Readonly<Record<string, Limits>> | undefined;
   /** Minimum ms a page clock stays alive after an input event for triggers and springs to settle. */
   readonly settleMs?: number | undefined;
+  /** The shots made with `shot`, in order. */
+  readonly shots?: readonly ShotSummary[] | undefined;
   readonly scene: (context: SceneContext<NoInfer<B>>) => Targets<NoInfer<M>>;
 }
 

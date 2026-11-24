@@ -31,6 +31,7 @@ import * as moving from "./fixtures/review-moving-scene";
 import * as growing from "./fixtures/review-growing-scene";
 import * as constant from "./fixtures/review-constant-scene";
 import * as stageClean from "./fixtures/stage-clean";
+import * as stageShots from "./fixtures/stage-shots";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
@@ -318,6 +319,12 @@ describe("gerak review costs", () => {
     expect(over({ ...constant, limits: { ball: { jump: 1000 } } })).toHaveLength(1);
     expect(over(stageClean)).toHaveLength(1);
     expect(review(constant).findings.filter((line) => line.includes("budget"))).toEqual([]);
+  });
+});
+
+describe("gerak review of shots", () => {
+  it("reviews a reel of shots clean, each title holding at the end of its shot", () => {
+    expect(review(stageShots).findings).toEqual([]);
   });
 });
 

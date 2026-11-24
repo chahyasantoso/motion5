@@ -60,7 +60,11 @@ Scenes can share beats, states and signals. A scene passed to `scene(...)` as an
 
 - a binding: `e.moves(...)`, `e.modifies(...)`, `e.shows(...)` or `e.limits(...)`, chained in any order;
 - an element with no motion, such as a slot or a section another motion reads;
-- another scene, merged onto this one's clock.
+- another scene, merged onto this one's clock;
+- `shot(scene, { name?, length?, until?, overlap? })`: a scene written from 0 that plays after the shot before it. Its
+  beats become `<shot>.<beat>` on the scene's clock, its length is its last beat's end (or `length`, or `until` a scene
+  ms), and `overlap` starts it early. Inside it, time and events start at 0; its members show only during it unless
+  they show wider. `stage.shots` lists each shot's `{ name, index, from, to, overlap }`.
 
 On an element, and on each binding it returns:
 

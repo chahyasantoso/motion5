@@ -64,6 +64,17 @@ describe("scene tools", () => {
     const still = sceneTimeline(moduleOf({ scene: () => ({ p: { x: 1 } }), durationMs: 100 }));
     expect(still).toMatchObject({ kind: "timeline", rows: [{ kind: "still", node: "p" }] });
   });
+
+  it("draws each shot of a reel above its targets", async () => {
+    const read = readSceneModule(await import("./fixtures/stage-shots"));
+    if ("reason" in read) throw new Error(read.reason);
+    const lines = renderTimeline(sceneTimeline(read)).split("\n");
+    expect(lines.filter((line) => line.includes(" shot "))).toEqual([
+      expect.stringMatching(/^hook +=+ +shot 0-1200 ms$/),
+      expect.stringMatching(/^story +=+ +shot 1000-2500 ms$/),
+      expect.stringMatching(/^call +=+ +shot 2500-4100 ms$/),
+    ]);
+  });
 });
 
 describe("scene tools and events", () => {

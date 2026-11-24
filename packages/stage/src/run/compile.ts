@@ -17,7 +17,7 @@ import {
   type Stretch,
 } from "../author/cast";
 import type { RestReader } from "../author/layout";
-import type { Limits, SceneContext, StageDefinition } from "../author/stage";
+import type { Limits, SceneContext, ShotSummary, StageDefinition } from "../author/stage";
 import type { StageError } from "./errors";
 import { matchOutlines } from "./outlines";
 import { visibility, windowOf, type Window } from "./timeline";
@@ -52,6 +52,8 @@ export interface Stage {
   readonly limits: Readonly<Record<string, Limits>>;
   /** Minimum settle window in ms after input events on a page mount, when triggered beats need longer. */
   readonly settleMs?: number | undefined;
+  /** The shots made with `shot`, in order, with their ms on this stage's clock. */
+  readonly shots?: readonly ShotSummary[] | undefined;
   readonly scene: (context: SceneContext) => unknown;
   /** Which members show at `ms`, by name; one shared record per stretch of time. */
   readonly visibleAt: (ms: number) => Readonly<Record<string, boolean>>;
@@ -354,7 +356,7 @@ export function compileStage<B extends string, M extends Members<B>>(
   }
   const limits = compileLimits(definition.limits ?? {}, errors);
   if (errors.length > 0 || beats === undefined) return { ok: false, errors: Object.freeze(errors) };
-  const { cues, settleMs, scene } = definition;
+  const { cues, settleMs, shots, scene } = definition;
   const stage: Stage = Object.freeze({
     kind: "stage",
     durationMs: beats.durationMs,
@@ -363,6 +365,7 @@ export function compileStage<B extends string, M extends Members<B>>(
     cues: cues === undefined ? NO_EVENTS : mergeEvents(cues),
     limits,
     ...(settleMs === undefined ? {} : { settleMs }),
+    ...(shots === undefined || shots.length === 0 ? {} : { shots }),
     scene: (context: SceneContext): unknown => Reflect.apply(scene, undefined, [context]),
     visibleAt: visibility(members),
     signature: signatureOf(beats.durationMs, members),
