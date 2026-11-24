@@ -17,7 +17,7 @@ const card = box("card");
 ```
 
 - `mount` matches `[data-cast="<name>"]` inside `root` (`document` by default) and throws, naming the element, if no node matches. Pass `nodes: { name: nodeOrList }` to override matching by name.
-- Pass `binders: [threeBinder(world, { ... })]` to draw `object` elements; `mount` verifies every `object` in the scene is claimed by one binder.
+- Pass `binders: [threeBinder(world, { objects, resize, draw })]` to draw, resize and measure `object` elements; `mount` verifies every `object` in the scene is claimed by one binder. Async page setup calls `ready(promise)` from `@gerak/dom` so `window.__motionReady` is registered with one typed owner.
 - Plain `box`, `shape` and non-readout `text` leave CSS and HTML text intact (`shape` sets the `<path>`'s `d` attribute from its path); only a readout `text(name, (time) => string)` updates `textContent`.
 - Calling `.dispose()` cancels listeners and the animation loop and clears inline values written by gerak.
 
@@ -60,7 +60,7 @@ Site CSS owns page layout; `mount` never alters layout geometry.
 - **Pinned section:** wrap a `position: sticky` inner container (`top: 0` or a px offset) inside a tall outer section wrapper. Scroll beats span the outer wrapper while content pins inside the sticky inner container.
 - **Fixed layer:** place viewport-locked layers inside a `position: fixed` container (`inset: 0; pointer-events: none` in CSS).
 
-Every box element's `.top` and `.end` are scroll points on its measured box (supporting `.plus(px)`, `.minus(px)` and `.reached`). A scroll or trigger beat that reads them adds the element to the scene, with no motions if it has none; `mount` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
+Every box element's `.top`, `.end`, `.pinStart` and `.pinEnd` are scroll points on its measured box (supporting `.plus(px)`, `.minus(px)` and `.reached`). A scroll or trigger beat that reads them adds a read-only element reference to the scene, with no motions if it has none; `mount` measures its document box into `rest` (`flow`, matching `minY`/`maxY`/`pinY` when sticky) and remeasures on resize.
 
 - **Slot:** a static element bound to an empty CSS-placed node (`box("slotHero")` on `<div data-cast="slotHero" class="slot">`) with no motions.
 - **`travel({ to: slot, arc?, fit? })`:** moves and scales an element from its current pose (or rest) to `slot`'s measured viewport box over its beat, bending perpendicularly by `arc` px at mid-travel, across `flow`, `sticky` and `fixed` layers at any viewport size. It keeps its proportions unless `fit: "fill"`, and with no window it sits on the slot.
@@ -68,7 +68,7 @@ Every box element's `.top` and `.end` are scroll points on its measured box (sup
 
 ## Rests, parts, and measured lines
 
-`mount` temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates), coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
+`mount` invokes any `Binder.resize()` callback, temporarily detaches active compositor animation effects and clears its own inline transforms to measure each node's CSS rest box (`flow` and `sticky` in document coordinates, `fixed` in viewport coordinates) alongside any `Binder.measure()` 3D `ObjectBounds3d` into `Measurement.objects` and `RestReader.object`, coalescing `ResizeObserver` callbacks onto a single microtask and also remeasuring on viewport `resize`, font load or `mounted.remeasure()`. Any element whose rest box or placement changes records a measurement timestamp so `carry` can transition it to its new box, while compositor handoff is rebuilt only if `maxScroll`, `lines`, or any rest box dependency of handed tracks changed.
 
 `box(name, { parts: true })` and `text(name, { split: "words" | "letters" })` read part counts from the markup:
 
@@ -79,4 +79,4 @@ Every box element's `.top` and `.end` are scroll points on its measured box (sup
 
 ## Ownership
 
-An element belongs to one scene; `sceneBuilder` refuses an element placed in two scenes and names both. Scenes may share beats, states and signals; `.include(scene)` merges several into the one a page mounts.
+An element has one owner scene that configures its motions, `.show()`, or `.limits()`; `sceneBuilder` refuses two scenes that claim ownership of one element, while read-only geometry references may be shared across `.include()`. Scenes may share beats, states and signals; `.include(scene)` merges several into the one a page mounts.

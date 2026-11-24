@@ -5,9 +5,11 @@ import {
   beat,
   bind,
   box,
+  boxInViewport,
   compileScene,
   formatStageError,
   frame,
+  placementOf,
   poseOf,
   restReader,
   sceneBuilder,
@@ -16,6 +18,7 @@ import {
   type SceneBuilder,
   type Stage,
 } from "../src";
+import { withPlacement } from "../src/render";
 
 const at = (ms: number, length = 2000): Time => ({
   progress: length <= 0 ? 0 : ms / length,
@@ -118,7 +121,7 @@ describe("single-scene element ownership", () => {
     expect(() => sceneBuilder().element(blankTarget)).toThrow(/scene \d+/);
   });
 
-  it("allows scenes to share beats, states and signals, but not an element read for its edges", () => {
+  it("allows scenes to share beats, states, signals, and read-only edge references", () => {
     const sharedBeat = beat("scroll", { scroll: [scrollPoint(0), scrollPoint(400)] });
     const sharedMotion = bind({ y: (t, e) => scroll.y(t, e) * 0.5 });
     const s1 = compiled(
@@ -135,9 +138,59 @@ describe("single-scene element ownership", () => {
 
     const shared = box("shared");
     const edgeBeat = beat("edge", { scroll: [shared.top, shared.end] });
-    sceneBuilder({ name: "three" }).element(box("c")).motion(slideX(10).in(edgeBeat));
-    expect(() =>
-      sceneBuilder({ name: "four" }).element(box("d")).motion(slideX(10).in(edgeBeat)),
-    ).toThrow(/shared.*three.*four/);
+    const s3 = sceneBuilder({ name: "three" }).element(box("c")).motion(slideX(10).in(edgeBeat));
+    const s4 = sceneBuilder({ name: "four" }).element(box("d")).motion(slideX(20).in(edgeBeat));
+    const merged = compiled(sceneBuilder({ name: "page" }).include(s3).include(s4));
+    expect(merged.members.map((m) => m.name)).toEqual(["c", "shared", "d"]);
+
+    // Configuring `.element(shared)` in two scenes still enforces single-scene ownership.
+    sceneBuilder({ name: "ownerA" }).element(shared);
+    expect(() => sceneBuilder({ name: "ownerB" }).element(shared)).toThrow(
+      /shared.*ownerA.*ownerB/,
+    );
+  });
+
+  it("re-exports boxInViewport and placementOf and resolves sticky pinStart and pinEnd edges", () => {
+    const section = box("section");
+    const stickyBox = withPlacement(
+      { x: 640, y: 800, width: 1280, height: 400 },
+      { kind: "sticky", minY: 600, maxY: 1600, pinY: 200 },
+    );
+    const flowBox = withPlacement({ x: 640, y: 800, width: 1280, height: 400 }, { kind: "flow" });
+    const fixedBox = withPlacement({ x: 640, y: 200, width: 1280, height: 400 }, { kind: "fixed" });
+
+    expect(placementOf(stickyBox)).toEqual({ kind: "sticky", minY: 600, maxY: 1600, pinY: 200 });
+    expect(boxInViewport(stickyBox, 900)).toEqual({ x: 640, y: 200, width: 1280, height: 400 });
+
+    const stickyRest = restReader({ section: stickyBox });
+    expect(section.pinStart.at(stickyRest)).toBe(600);
+    expect(section.pinEnd.at(stickyRest)).toBe(1600);
+    expect(section.pinStart.plus(50).at(stickyRest)).toBe(650);
+    expect(section.pinEnd.minus(100).at(stickyRest)).toBe(1500);
+    expect(section.pinStart.reached.point).toBe(section.pinStart);
+
+    for (const reader of [
+      NO_REST,
+      restReader({ section: flowBox }),
+      restReader({ section: fixedBox }),
+    ]) {
+      expect(section.pinStart.at(reader)).toBe(section.top.at(reader));
+      expect(section.pinEnd.at(reader)).toBe(section.end.at(reader));
+    }
+
+    const pinBeat = beat("pin", { scroll: [section.pinStart, section.pinEnd] });
+    const stage = compiled(sceneBuilder().element(box("card")).motion(slideX(100).in(pinBeat)));
+    expect(stage.members.map((m) => [m.name, m.expect])).toEqual([
+      ["card", "settle"],
+      ["section", "static"],
+    ]);
+    const mid = poseOf(
+      frame(stage, {
+        time: at(100, stage.durationMs),
+        rest: stickyRest,
+        events: [{ name: INPUT_EVENTS.scroll, at: 50, value: 1100 }],
+      }).targets["card"],
+    );
+    expect(mid?.x).toBeCloseTo(50, 9);
   });
 });

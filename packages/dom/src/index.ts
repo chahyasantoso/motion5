@@ -47,3 +47,4 @@ export {
   type PageScrollTarget,
   type PageStyle,
 } from "./mount";
+export { ready } from "./ready";

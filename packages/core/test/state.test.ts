@@ -7,6 +7,10 @@ import {
   liveAt,
   state,
   springTo,
+  transition,
+  watchClock,
+  watchedTime,
+  type ClockUse,
   type Events,
   type MotionEvent,
   type Time,
@@ -249,5 +253,190 @@ describe("refused settings", () => {
       { ms: 100, delayMs: -1 },
     ])
       expect(() => easeTo(source, pick, options)).toThrow(/easeTo/);
+  });
+});
+
+describe("transition", () => {
+  type Phase = "idle" | "open" | "closed";
+
+  const watchUses = <T>(fn: () => T): { readonly value: T; readonly uses: readonly ClockUse[] } => {
+    const uses: ClockUse[] = [];
+    const value = watchClock((use) => uses.push(use), fn);
+    return { value, uses };
+  };
+
+  it("holds start settled, eases across active transitions with stillMoving(), and settles at ms", () => {
+    const phase = state<Phase>("idle", (_cur, ev) =>
+      ev.name === "open" ? "open" : ev.name === "close" ? "closed" : _cur,
+    );
+    const sig = transition(phase, { ms: 400, ease: ease.cubicOut });
+    const events: Events = [{ name: "open", at: 1000 }];
+
+    const before = watchUses(() => sig(watchedTime(liveAt(900)), events));
+    expect(before.value).toEqual({
+      current: "idle",
+      previous: "idle",
+      progress: 1,
+      active: false,
+    });
+    expect(before.uses).toEqual([]);
+
+    const mid = watchUses(() => sig(watchedTime(liveAt(1200)), events));
+    expect(mid.value.current).toBe("open");
+    expect(mid.value.previous).toBe("idle");
+    expect(mid.value.active).toBe(true);
+    expect(mid.value.progress).toBeCloseTo(ease.cubicOut(0.5), 9);
+    expect(mid.uses).toEqual(["time"]);
+
+    const done = watchUses(() => sig(watchedTime(liveAt(1400)), events));
+    expect(done.value).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 1,
+      active: false,
+    });
+    expect(done.uses).toEqual([]);
+  });
+
+  it("handles mid-transition interruptions, asymmetric durations, 0 ms steps, return-to-start, timed clocks, and backward seeking", () => {
+    const phase = state<Phase>("idle", (_cur, ev) =>
+      ev.name === "open"
+        ? "open"
+        : ev.name === "close"
+          ? "closed"
+          : ev.name === "reset"
+            ? "idle"
+            : _cur,
+    );
+    const sig = transition(phase, {
+      ms: (from, to) =>
+        from === "idle" && to === "open" ? 500 : to === "idle" && from === "open" ? 0 : 200,
+    });
+    const events: Events = [
+      { name: "open", at: 100 },
+      { name: "close", at: 300 },
+      { name: "open", at: 1000 },
+      { name: "reset", at: 1500 },
+    ];
+
+    expect(sig(liveAt(200), events)).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 0.2,
+      active: true,
+    });
+    // Interrupted mid-flight at 300 -> starts closed transition cleanly at progress 0 -> 0.5 at 400.
+    expect(sig(liveAt(400), events)).toEqual({
+      current: "closed",
+      previous: "open",
+      progress: 0.5,
+      active: true,
+    });
+    // Works identically on timed clocks.
+    expect(
+      sig({ progress: 400 / 2000, clock: { kind: "timed", elapsed: 400, length: 2000 } }, events),
+    ).toEqual({
+      current: "closed",
+      previous: "open",
+      progress: 0.5,
+      active: true,
+    });
+    // Seeking backward stays pure in (time, events).
+    expect(sig(liveAt(200), events)).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 0.2,
+      active: true,
+    });
+    // Seeking forward again sees settled closed before third event, active 3rd event, then return to start.
+    expect(sig(liveAt(600), events)).toEqual({
+      current: "closed",
+      previous: "open",
+      progress: 1,
+      active: false,
+    });
+    expect(sig(liveAt(1100), events)).toEqual({
+      current: "open",
+      previous: "closed",
+      progress: 0.5,
+      active: true,
+    });
+    expect(sig(liveAt(1500), events)).toEqual({
+      current: "idle",
+      previous: "open",
+      progress: 1,
+      active: false,
+    });
+
+    const instant = transition(phase, { ms: () => 0 });
+    const res = watchUses(() => instant(watchedTime(liveAt(100)), [{ name: "open", at: 100 }]));
+    expect(res.value).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 1,
+      active: false,
+    });
+    expect(res.uses).toEqual([]);
+  });
+
+  it("resets cleanly on out-of-order eventLog insertion and refuses missing options after pick", () => {
+    const phase = state<Phase>("idle", (_cur, ev) => (ev.name === "open" ? "open" : _cur));
+    const sig = transition(phase, { ms: 400 });
+    const log = eventLog();
+    log.add({ name: "open", at: 200 });
+    expect(sig(liveAt(400), log.events)).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 0.5,
+      active: true,
+    });
+    // Inserting an earlier event alters the step list identity and recomputes from the new timestamp.
+    log.add({ name: "open", at: 100 });
+    expect(sig(liveAt(400), log.events)).toEqual({
+      current: "open",
+      previous: "idle",
+      progress: 0.75,
+      active: true,
+    });
+    expect(() => Reflect.apply(transition, undefined, [phase, (s: Phase) => s])).toThrow(TypeError);
+  });
+
+  it("supports the pick overload, ignores unchanged picked values, and settles on untimed clocks", () => {
+    const compound = state({ zone: 0, hover: false }, (cur, ev) => {
+      if (ev.name === "hover") return { ...cur, hover: true };
+      if (ev.name === "zone" && typeof ev.value === "number") return { ...cur, zone: ev.value };
+      return cur;
+    });
+    const sig = transition(compound, (s) => s.zone, { ms: 200 });
+    const events: Events = [
+      { name: "zone", at: 100, value: 2 },
+      { name: "hover", at: 150 },
+    ];
+
+    // Hover event changes `compound` at 150, but `pick` stays 2, so transition keeps started-at 100!
+    expect(sig(liveAt(200), events)).toEqual({
+      current: 2,
+      previous: 0,
+      progress: 0.5,
+      active: true,
+    });
+
+    const untimed = watchUses(() => sig({ progress: 0.2, clock: UNTIMED }, events));
+    expect(untimed.value).toEqual({
+      current: 2,
+      previous: 0,
+      progress: 1,
+      active: false,
+    });
+    expect(untimed.uses).toEqual([]);
+  });
+
+  it("refuses negative or non-finite ms upfront and from callbacks", () => {
+    const phase = state("a", (_c, e) => e.name);
+    for (const ms of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => transition(phase, { ms })).toThrow(RangeError);
+    }
+    const badCb = transition(phase, { ms: () => -5 });
+    expect(() => badCb(liveAt(20), [{ name: "b", at: 10 }])).toThrow(RangeError);
   });
 });

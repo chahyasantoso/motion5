@@ -191,6 +191,10 @@ function trackRest(rest: RestReader, deps: Set<string>): RestReader {
       for (const key of list) deps.add(key);
       return list;
     },
+    object: (name: string) => {
+      deps.add(name);
+      return rest.object(name);
+    },
   };
 }
 

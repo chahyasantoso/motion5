@@ -1,4 +1,5 @@
-import { type Cubic2d, type Lens3d, type Time } from "@gerak/core";
+import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
+import { placementOf } from "../render/placement";
 import { makeScrollPoint, type ScrollPoint } from "./beat";
 import type { Path } from "./cast";
 
@@ -26,10 +27,12 @@ export type Outline =
       readonly targets: readonly (readonly Cubic2d[])[];
     };
 
-/** An element's measured edges as scroll points: the top and the bottom of its rest box. */
+/** An element's measured edges as scroll points: top, end, and sticky pin start/end. */
 export interface Edges {
   readonly top: ScrollPoint;
   readonly end: ScrollPoint;
+  readonly pinStart: ScrollPoint;
+  readonly pinEnd: ScrollPoint;
 }
 
 /** What an element is, before its edges. */
@@ -93,7 +96,7 @@ function named(maker: string, name: string): string {
   return name;
 }
 
-/** `made` with `.top` and `.end`, each a scroll point on its measured rest box that names it. */
+/** `made` with `.top`, `.end`, `.pinStart`, and `.pinEnd` scroll points on its rest box. */
 function edged<T extends ElementBody>(made: T): T & Edges {
   const name = made.name;
   let element: (T & Edges) | undefined;
@@ -112,7 +115,37 @@ function edged<T extends ElementBody>(made: T): T & Edges {
     undefined,
     self,
   );
-  const full: T & Edges = { ...made, top, end };
+  const pickEdge = (edge: "start" | "end", start: number, finish: number): number => {
+    switch (edge) {
+      case "start":
+        return start;
+      case "end":
+        return finish;
+      default:
+        return unreachable(edge);
+    }
+  };
+  const pinEdge = (edge: "start" | "end"): ScrollPoint =>
+    makeScrollPoint(
+      (rest) => {
+        const box = rest.get(name);
+        const placement = placementOf(box);
+        switch (placement.kind) {
+          case "sticky":
+            return pickEdge(edge, placement.minY, placement.maxY);
+          case "flow":
+          case "fixed":
+            return pickEdge(edge, box.y - box.height / 2, box.y + box.height / 2);
+          default:
+            return unreachable(placement);
+        }
+      },
+      undefined,
+      self,
+    );
+  const pinStart = pinEdge("start");
+  const pinEnd = pinEdge("end");
+  const full: T & Edges = { ...made, top, end, pinStart, pinEnd };
   element = Object.freeze(full);
   return full;
 }

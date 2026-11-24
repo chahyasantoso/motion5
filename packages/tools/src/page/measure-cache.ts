@@ -22,6 +22,13 @@ export interface MeasuredBox {
   readonly placement: MeasuredPlacement;
 }
 
+/** Measured local rest dimensions of a 3D object in world units. */
+export interface MeasuredObjectBounds {
+  readonly width: number;
+  readonly height: number;
+  readonly depth: number;
+}
+
 /** A page's measure cache: the page and its digest when measured, and what its mounts measured. */
 export interface MeasureCache {
   readonly page: string;
@@ -31,6 +38,7 @@ export interface MeasureCache {
   readonly rest: Readonly<Record<string, MeasuredBox>>;
   readonly lines: Readonly<Record<string, readonly number[]>>;
   readonly parents: Readonly<Record<string, string>>;
+  readonly objects?: Readonly<Record<string, MeasuredObjectBounds>>;
 }
 
 /** The cache file of a page `<dir>/<name>.html`: `<dir>/<name>.measure.json`. */
@@ -83,6 +91,21 @@ function boxFrom(value: unknown): MeasuredBox | undefined {
   return placement === undefined ? undefined : { x, y, width, height, placement };
 }
 
+function objectBoundsFrom(value: unknown): MeasuredObjectBounds | undefined {
+  if (!isRecord(value)) return undefined;
+  const { width, height, depth } = value;
+  if (
+    !isNumber(width) ||
+    !isNumber(height) ||
+    !isNumber(depth) ||
+    width < 0 ||
+    height < 0 ||
+    depth < 0
+  )
+    return undefined;
+  return { width, height, depth };
+}
+
 /** The cache a file's text holds, or why it is not one. */
 export function readMeasureCache(text: string): MeasureCache | { readonly reason: string } {
   let raw: unknown;
@@ -116,6 +139,18 @@ export function readMeasureCache(text: string): MeasureCache | { readonly reason
     if (typeof value !== "string") return { reason: `the parent of "${name}" is not a name.` };
     parentOf[name] = value;
   }
+  const rawObjects = raw["objects"];
+  let objectOf: Record<string, MeasuredObjectBounds> | undefined;
+  if (rawObjects !== undefined) {
+    if (!isRecord(rawObjects)) return { reason: "`objects` must be an object." };
+    objectOf = {};
+    for (const [name, value] of Object.entries(rawObjects)) {
+      const bounds = objectBoundsFrom(value);
+      if (bounds === undefined)
+        return { reason: `the bounds of object "${name}" are not a measured 3D box.` };
+      objectOf[name] = bounds;
+    }
+  }
   return {
     page,
     digest,
@@ -123,5 +158,6 @@ export function readMeasureCache(text: string): MeasureCache | { readonly reason
     rest: boxes,
     lines: lineOf,
     parents: parentOf,
+    ...(objectOf !== undefined && Object.keys(objectOf).length > 0 ? { objects: objectOf } : {}),
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Object3D } from "three";
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, Object3D } from "three";
 import { motion, type Pose3d, type Time } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
 import {
@@ -100,5 +100,71 @@ describe("threeBinder", () => {
       },
     }).start(player, result.stage);
     expect(draws).toBe(1);
+  });
+
+  it("exposes resize and measures local rest ObjectBounds3d ignoring live transforms and hidden children", () => {
+    const root = new Object3D();
+    const crate = new Group();
+    crate.name = "crate";
+    const child = new Mesh(new BoxGeometry(2, 4, 1), new MeshBasicMaterial());
+    child.position.set(1, 0, 0);
+    const secondChild = new Mesh(new BoxGeometry(1, 2, 3), new MeshBasicMaterial());
+    secondChild.position.set(-1, 0, 0);
+    const hidden = new Mesh(new BoxGeometry(40, 40, 40), new MeshBasicMaterial());
+    hidden.visible = false;
+    crate.add(child, secondChild, hidden);
+    // Simulate a parked/scaled animated root transform that must not corrupt rest bounds.
+    crate.position.set(10, -5, 15);
+    crate.rotation.set(0.4, 1.1, 0.2);
+    crate.scale.set(0, 0, 0);
+
+    const empty = new Object3D();
+    empty.name = "empty";
+    root.add(crate, empty);
+
+    let resizes = 0;
+    const binder = threeBinder(root, {
+      objects: { ghost: () => undefined },
+      resize: () => {
+        resizes += 1;
+      },
+    });
+    binder.resize?.();
+    expect(resizes).toBe(1);
+
+    // Explicitly requested names work before start(), skipping writers and empty nodes.
+    const measuredExplicit = binder.measure?.(["crate", "ghost", "empty"]);
+    expect(measuredExplicit).toEqual({
+      crate: { width: 3.5, height: 4, depth: 3 },
+    });
+
+    // After start(), calling measure() with no arguments measures bound Object3D members.
+    const objScene = sceneBuilder({ length: 500 })
+      .element(object("crate"))
+      .motion(motion((): Pose3d => ({ scale: 0 })));
+    const compiledObj = compileScene(objScene);
+    if (!compiledObj.ok) throw new Error(compiledObj.errors.map(formatStageError).join("\n"));
+    const driver = manualDriver({ durationMs: 500 });
+    const player = play(
+      (time, events) => frame(compiledObj.stage, { time, events }).targets,
+      driver,
+    );
+    binder.start(player, compiledObj.stage);
+    expect(binder.measure?.()).toEqual({
+      crate: { width: 3.5, height: 4, depth: 3 },
+    });
+
+    // Prototype keys on `objects` are not claimed, and a 0-object started stage measures empty.
+    expect(binder.claims("toString")).toBe(false);
+    expect(binder.claims("constructor")).toBe(false);
+    const zeroObjStage = compileScene(sceneBuilder({ length: 500 }).element(box("only")));
+    if (!zeroObjStage.ok) throw new Error(zeroObjStage.errors.map(formatStageError).join("\n"));
+    const zeroBinder = threeBinder(root);
+    const zeroPlayer = play(
+      (time, events) => frame(zeroObjStage.stage, { time, events }).targets,
+      manualDriver({ durationMs: 500 }),
+    );
+    zeroBinder.start(zeroPlayer, zeroObjStage.stage);
+    expect(zeroBinder.measure?.()).toEqual({});
   });
 });

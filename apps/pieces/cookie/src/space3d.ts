@@ -1,324 +1,233 @@
-import { clamp, project3d, unproject3d, type Point3d } from "@gerak/core";
-import type { RestReader } from "@gerak/stage";
+import {
+  clamp,
+  project3d,
+  unproject3d,
+  unreachable,
+  viewSize3d,
+  type Point3d,
+  type ViewSize3d,
+} from "@gerak/core";
+import { boxInViewport, placementOf, type Box, type RestReader } from "@gerak/stage";
 import { CAST, JAR_METRICS, LENS, STAGE_SIZE } from "./contract.ts";
 
-export interface CanvasSize {
-  readonly width: number;
-  readonly height: number;
-}
-
-export interface StickyPinBounds {
-  readonly stickyH: number;
-  readonly pinMax: number;
-  readonly pinSpan: number;
-}
-
-export interface HeroJarSlotGeometry {
+export interface SlotWorld {
   readonly center: Point3d;
   readonly pinnedCenter: Point3d;
   readonly fitScale: number;
   readonly stageTop: number;
+  readonly stageEnd: number;
   readonly pinMax: number;
   readonly pinSpan: number;
+  readonly visibleH: number;
+  readonly view: ViewSize3d;
 }
 
-export interface SpotlightSlotGeometry {
-  readonly center: Point3d;
-  readonly pinnedCenter: Point3d;
-  readonly fitScale: number;
+export interface SpotlightSlotGeometry extends SlotWorld {
   readonly enterTravelX: number;
   readonly exitTravelX: number;
-  readonly stageTop: number;
-  readonly pinMax: number;
-  readonly pinSpan: number;
-  readonly visibleH: number;
 }
 
-export interface BuilderSlotGeometry {
-  readonly center: Point3d;
-  readonly fitScale: number;
+export interface BuilderSlotGeometry extends SlotWorld {
   readonly heroScale: number;
   readonly outerLeftX: number;
-  readonly stageTop: number;
-  readonly stageEnd: number;
-  readonly pinMax: number;
-  readonly visibleH: number;
 }
 
-export interface ClosingSlotGeometry {
-  readonly center: Point3d;
-  readonly fitScale: number;
-  readonly stageTop: number;
-  readonly stageEnd: number;
-  readonly visibleH: number;
+interface SlotSpec {
+  readonly stageCast: string;
+  readonly slotCast: string;
+  readonly fallbackTop: number;
+  readonly fallbackHeight: number;
+  readonly xShare: number;
+  readonly yOffset: (viewH: number) => number;
+  readonly pinnedAt: "start" | "clamp";
+  readonly clampVisible?: boolean;
 }
 
-const VIEW_WORLD_H = 2 * (LENS.z ?? 5.2) * Math.tan((LENS.fov * Math.PI) / 360);
 const JAR_SILHOUETTE_W = JAR_METRICS.radius * 2.08;
 const JAR_SILHOUETTE_H = JAR_METRICS.height + 0.26;
-const FALLBACK_HERO_HEIGHT = 2050;
-const FALLBACK_SPOTLIGHT_HEIGHT = 3600;
-const FALLBACK_BUILDER_TOP = FALLBACK_HERO_HEIGHT + FALLBACK_SPOTLIGHT_HEIGHT + 2400;
-const FALLBACK_BUILDER_HEIGHT = 1200;
-
-export function canvasSizeOf(rest?: RestReader): CanvasSize {
-  const raw = rest?.get(CAST.stageCanvas);
-  if (raw && raw.width > 0 && raw.height > 0) {
-    return { width: raw.width, height: raw.height };
-  }
-  return STAGE_SIZE;
-}
-
-export function stickyPinBounds(
-  stageTop: number,
-  stageHeight: number,
-  viewportH: number,
-): StickyPinBounds {
-  const stickyH = Math.min(viewportH, stageHeight);
-  const pinMax = stageTop + stageHeight - stickyH;
-  const pinSpan = Math.max(1, pinMax - stageTop);
-  return { stickyH, pinMax, pinSpan };
-}
+const HERO_HEIGHT = 2050;
+const SPOTLIGHT_HEIGHT = 3600;
+const BUILDER_TOP = HERO_HEIGHT + SPOTLIGHT_HEIGHT + 2400;
+const BUILDER_HEIGHT = 1200;
 
 export function isHeroHandoffActive(
   rawScrollY: number,
   smoothScrollY: number,
   stageTop: number,
 ): boolean {
-  if (rawScrollY < stageTop) {
-    return true;
-  }
-  if (rawScrollY >= stageTop + 120) {
-    return false;
-  }
+  if (rawScrollY < stageTop) return true;
+  if (rawScrollY >= stageTop + 120) return false;
   return Math.abs(rawScrollY - smoothScrollY) > 4;
 }
 
-// Resolves a sticky slot's viewport Y across pre-pin, pinned, and post-pin scroll phases.
-export function stickySlotViewportY(
-  slotTop: number,
-  stageTop: number,
-  stageHeight: number,
-  viewportH: number,
-  scrollY: number,
+function fitJar(
+  slot: Box | undefined,
+  unitsPerPx: number,
+  min: number,
+  max: number,
+  fallback: number,
 ): number {
-  const { pinMax } = stickyPinBounds(stageTop, stageHeight, viewportH);
-  const localTop = slotTop - stageTop;
-  if (scrollY <= stageTop) {
-    return slotTop - scrollY;
-  }
-  if (scrollY < pinMax) {
-    return localTop;
-  }
-  return localTop - (scrollY - pinMax);
-}
-
-export function heroJarSlotWorld(rest?: RestReader, scrollY = 0): HeroJarSlotGeometry {
-  const canvasSize = canvasSizeOf(rest);
-  const stageBox = rest?.get(CAST.heroStage);
-  const slotBox = rest?.get(CAST.slotHeroJar);
-
-  const hasStage = stageBox !== undefined && stageBox.height > 0;
-  const hasSlot = slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
-
-  const stageTop = hasStage ? stageBox.y - stageBox.height / 2 : 0;
-  const stageHeight = hasStage ? stageBox.height : FALLBACK_HERO_HEIGHT;
-  const { pinMax, pinSpan } = stickyPinBounds(stageTop, stageHeight, canvasSize.height);
-
-  const slotX = hasSlot ? slotBox.x : canvasSize.width * 0.72;
-  const slotCenterY = hasSlot ? slotBox.y : stageTop + canvasSize.height * 0.46;
-  const viewportY = stickySlotViewportY(
-    slotCenterY,
-    stageTop,
-    stageHeight,
-    canvasSize.height,
-    scrollY,
-  );
-
-  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvasSize).depth;
-  const center = unproject3d({ x: slotX, y: viewportY }, LENS, canvasSize, depth);
-  const pinnedViewportY = stickySlotViewportY(
-    slotCenterY,
-    stageTop,
-    stageHeight,
-    canvasSize.height,
-    Math.min(scrollY, pinMax),
-  );
-  const pinnedCenter = unproject3d({ x: slotX, y: pinnedViewportY }, LENS, canvasSize, depth);
-
-  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
-  const fitScale = hasSlot
-    ? clamp(
-        Math.min(
-          (slotBox.width * unitsPerPx * 0.92) / JAR_SILHOUETTE_W,
-          (slotBox.height * unitsPerPx * 0.94) / JAR_SILHOUETTE_H,
-        ),
-        0.45,
-        1.28,
-      )
-    : 0.92;
-
-  return { center, pinnedCenter, fitScale, stageTop, pinMax, pinSpan };
-}
-
-function spotlightCookieScale(rest: RestReader | undefined, canvasSize: CanvasSize): number {
-  const stageBox = rest?.get(CAST.spotlightStage);
-  const slotBox = rest?.get(CAST.slotFlavorCookie);
-  const hasStage = stageBox !== undefined && stageBox.height > 0;
-  const hasSlot = hasStage && slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
-  const slotWidth = hasSlot ? slotBox.width : canvasSize.width * 0.34;
-  const slotHeight = hasSlot ? slotBox.height : canvasSize.height * 0.48;
-  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
+  if (!slot || !(slot.width > 0 && slot.height > 0)) return fallback;
   return clamp(
-    Math.min(slotWidth * unitsPerPx * 0.86, slotHeight * unitsPerPx * 0.86) /
-      (JAR_METRICS.cookieRadius * 2),
-    0.95,
-    2.05,
+    Math.min(
+      (slot.width * unitsPerPx * 0.92) / JAR_SILHOUETTE_W,
+      (slot.height * unitsPerPx * 0.94) / JAR_SILHOUETTE_H,
+    ),
+    min,
+    max,
   );
+}
+
+function fitCookie(
+  slot: Box | undefined,
+  canvas: { readonly width: number; readonly height: number },
+  unitsPerPx: number,
+): number {
+  const valid = slot !== undefined && slot.width > 0 && slot.height > 0;
+  const w = valid ? slot.width : canvas.width * 0.34;
+  const h = valid ? slot.height : canvas.height * 0.48;
+  return clamp((Math.min(w, h) * unitsPerPx * 0.86) / (JAR_METRICS.cookieRadius * 2), 0.95, 2.05);
+}
+
+function resolveSlot(
+  rest: RestReader | undefined,
+  scrollY: number,
+  spec: SlotSpec,
+): {
+  readonly slot: SlotWorld;
+  readonly canvas: { readonly width: number; readonly height: number };
+  readonly slotBox: Box | undefined;
+} {
+  const rawCanvas = rest?.get(CAST.stageCanvas);
+  const canvas = rawCanvas && rawCanvas.width > 0 && rawCanvas.height > 0 ? rawCanvas : STAGE_SIZE;
+  const stageBox = rest?.get(spec.stageCast);
+  const rawSlot = rest?.get(spec.slotCast);
+  const hasStage = stageBox !== undefined && stageBox.height > 0;
+  const slotBox =
+    rawSlot !== undefined && rawSlot.width > 0 && rawSlot.height > 0 ? rawSlot : undefined;
+
+  const fallbackTop = hasStage ? stageBox.y - stageBox.height / 2 : spec.fallbackTop;
+  const stageHeight = hasStage ? stageBox.height : spec.fallbackHeight;
+  const stageEnd = fallbackTop + stageHeight;
+  const visibleH =
+    spec.clampVisible === false ? canvas.height : Math.min(canvas.height, stageHeight);
+
+  let stageTop = fallbackTop;
+  let pinMax = fallbackTop + stageHeight - visibleH;
+  if (slotBox) {
+    const placement = placementOf(slotBox);
+    switch (placement.kind) {
+      case "sticky":
+        stageTop = placement.minY;
+        pinMax = placement.maxY;
+        break;
+      case "flow":
+      case "fixed":
+        break;
+      default:
+        unreachable(placement);
+    }
+  }
+  const pinSpan = Math.max(1, pinMax - stageTop);
+
+  let pinnedScroll: number;
+  switch (spec.pinnedAt) {
+    case "start":
+      pinnedScroll = stageTop;
+      break;
+    case "clamp":
+      pinnedScroll = Math.min(scrollY, pinMax);
+      break;
+    default:
+      return unreachable(spec.pinnedAt);
+  }
+  const fallbackPoint = (s: number) => ({
+    x: spec.xShare * canvas.width,
+    y: stageTop + spec.yOffset(canvas.height) - s,
+  });
+  const vp = slotBox ? boxInViewport(slotBox, scrollY) : fallbackPoint(scrollY);
+  const pinnedVp = slotBox ? boxInViewport(slotBox, pinnedScroll) : fallbackPoint(pinnedScroll);
+
+  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvas).depth;
+  const view = viewSize3d(LENS, canvas, depth);
+
+  return {
+    slot: {
+      center: unproject3d(vp, LENS, canvas, depth),
+      pinnedCenter: unproject3d(pinnedVp, LENS, canvas, depth),
+      fitScale: 1,
+      stageTop,
+      stageEnd,
+      pinMax,
+      pinSpan,
+      visibleH,
+      view,
+    },
+    canvas,
+    slotBox,
+  };
+}
+
+export function heroJarSlotWorld(rest?: RestReader, scrollY = 0): SlotWorld {
+  const { slot, slotBox } = resolveSlot(rest, scrollY, {
+    stageCast: CAST.heroStage,
+    slotCast: CAST.slotHeroJar,
+    fallbackTop: 0,
+    fallbackHeight: HERO_HEIGHT,
+    xShare: 0.72,
+    yOffset: (h) => h * 0.46,
+    pinnedAt: "clamp",
+  });
+  return { ...slot, fitScale: fitJar(slotBox, slot.view.unitsPerPx, 0.45, 1.28, 0.92) };
 }
 
 export function spotlightSlotWorld(rest?: RestReader, scrollY = 0): SpotlightSlotGeometry {
-  const canvasSize = canvasSizeOf(rest);
-  const stageBox = rest?.get(CAST.spotlightStage);
-  const slotBox = rest?.get(CAST.slotFlavorCookie);
-
-  const hasStage = stageBox !== undefined && stageBox.height > 0;
-  const hasSlot = hasStage && slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
-
-  const stageTop = hasStage ? stageBox.y - stageBox.height / 2 : FALLBACK_HERO_HEIGHT;
-  const stageHeight = hasStage ? stageBox.height : FALLBACK_SPOTLIGHT_HEIGHT;
-  const { stickyH, pinMax, pinSpan } = stickyPinBounds(stageTop, stageHeight, canvasSize.height);
-
-  const slotX = hasSlot ? slotBox.x : canvasSize.width * 0.62;
-  const slotCenterY = hasSlot ? slotBox.y : stageTop + canvasSize.height * 0.5;
-
-  const pinnedY = stickySlotViewportY(
-    slotCenterY,
-    stageTop,
-    stageHeight,
-    canvasSize.height,
-    stageTop,
-  );
-  const viewportY = stickySlotViewportY(
-    slotCenterY,
-    stageTop,
-    stageHeight,
-    canvasSize.height,
-    scrollY,
-  );
-
-  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvasSize).depth;
-  const pinnedCenter = unproject3d({ x: slotX, y: pinnedY }, LENS, canvasSize, depth);
-  const center = unproject3d({ x: slotX, y: viewportY }, LENS, canvasSize, depth);
-
-  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
-  const fitScale = spotlightCookieScale(rest, canvasSize);
-  const halfViewW = (unitsPerPx * canvasSize.width) / 2;
+  const { slot, canvas, slotBox } = resolveSlot(rest, scrollY, {
+    stageCast: CAST.spotlightStage,
+    slotCast: CAST.slotFlavorCookie,
+    fallbackTop: HERO_HEIGHT,
+    fallbackHeight: SPOTLIGHT_HEIGHT,
+    xShare: 0.62,
+    yOffset: (h) => h * 0.5,
+    pinnedAt: "start",
+  });
+  const fitScale = fitCookie(slotBox, canvas, slot.view.unitsPerPx);
+  const halfViewW = slot.view.width / 2;
   const scaledRadius = JAR_METRICS.cookieRadius * fitScale;
-  const enterTravelX = Math.max(0, halfViewW - pinnedCenter.x) + scaledRadius + 0.9;
-  const exitTravelX = Math.max(0, halfViewW + pinnedCenter.x) + scaledRadius + 1.1;
-
   return {
-    center,
-    pinnedCenter,
+    ...slot,
     fitScale,
-    enterTravelX,
-    exitTravelX,
-    stageTop,
-    pinMax,
-    pinSpan,
-    visibleH: stickyH,
+    enterTravelX: Math.max(0, halfViewW - slot.pinnedCenter.x) + scaledRadius + 0.9,
+    exitTravelX: Math.max(0, halfViewW + slot.pinnedCenter.x) + scaledRadius + 1.1,
   };
 }
 
 export function builderSlotWorld(rest?: RestReader, scrollY = 0): BuilderSlotGeometry {
-  const canvasSize = canvasSizeOf(rest);
-  const stageBox = rest?.get(CAST.builderStage);
-  const slotBox = rest?.get(CAST.slotBuilderJar);
-
-  const hasStage = stageBox !== undefined && stageBox.height > 0;
-  const hasSlot = slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
-
-  const stageTop = hasStage ? stageBox.y - stageBox.height / 2 : FALLBACK_BUILDER_TOP;
-  const stageHeight = hasStage ? stageBox.height : FALLBACK_BUILDER_HEIGHT;
-  const stageEnd = stageTop + stageHeight;
-  const { stickyH, pinMax } = stickyPinBounds(stageTop, stageHeight, canvasSize.height);
-
-  const slotX = hasSlot ? slotBox.x : canvasSize.width * 0.3;
-  const slotCenterY = hasSlot ? slotBox.y : stageTop + canvasSize.height * 0.54;
-  const viewportY =
-    canvasSize.width <= 768
-      ? slotCenterY - scrollY
-      : stickySlotViewportY(slotCenterY, stageTop, stageHeight, canvasSize.height, scrollY);
-
-  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvasSize).depth;
-  const center = unproject3d({ x: slotX, y: viewportY }, LENS, canvasSize, depth);
-
-  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
-  const fitScale = hasSlot
-    ? clamp(
-        Math.min(
-          (slotBox.width * unitsPerPx * 0.92) / JAR_SILHOUETTE_W,
-          (slotBox.height * unitsPerPx * 0.94) / JAR_SILHOUETTE_H,
-        ),
-        0.48,
-        1.08,
-      )
-    : 0.84;
-  const heroScale = spotlightCookieScale(rest, canvasSize);
-  const halfViewW = (unitsPerPx * canvasSize.width) / 2;
-  const outerLeftX = -halfViewW - JAR_METRICS.cookieRadius * heroScale - 0.35;
-
-  return {
-    center,
-    fitScale,
-    heroScale,
-    outerLeftX,
-    stageTop,
-    stageEnd,
-    pinMax,
-    visibleH: stickyH,
-  };
+  const { slot, canvas, slotBox } = resolveSlot(rest, scrollY, {
+    stageCast: CAST.builderStage,
+    slotCast: CAST.slotBuilderJar,
+    fallbackTop: BUILDER_TOP,
+    fallbackHeight: BUILDER_HEIGHT,
+    xShare: 0.3,
+    yOffset: (h) => h * 0.54,
+    pinnedAt: "clamp",
+  });
+  const fitScale = fitJar(slotBox, slot.view.unitsPerPx, 0.48, 1.08, 0.84);
+  const heroScale = fitCookie(rest?.get(CAST.slotFlavorCookie), canvas, slot.view.unitsPerPx);
+  const outerLeftX = -(slot.view.width / 2) - JAR_METRICS.cookieRadius * heroScale - 0.35;
+  return { ...slot, fitScale, heroScale, outerLeftX };
 }
 
-export function closingSlotWorld(rest?: RestReader, scrollY = 0): ClosingSlotGeometry {
-  const canvasSize = canvasSizeOf(rest);
-  const stageBox = rest?.get(CAST.closingStage);
-  const slotBox = rest?.get(CAST.slotClosingJar);
-
-  const hasStage = stageBox !== undefined && stageBox.height > 0;
-  const hasSlot = slotBox !== undefined && slotBox.width > 0 && slotBox.height > 0;
-
-  const stageTop = hasStage
-    ? stageBox.y - stageBox.height / 2
-    : FALLBACK_BUILDER_TOP + FALLBACK_BUILDER_HEIGHT;
-  const stageHeight = hasStage ? stageBox.height : 860;
-  const stageEnd = stageTop + stageHeight;
-
-  const slotX = hasSlot ? slotBox.x : canvasSize.width * 0.72;
-  const slotCenterY = hasSlot ? slotBox.y : stageTop + 310;
-  const viewportY = slotCenterY - scrollY;
-
-  const depth = project3d({ x: 0, y: 0, z: 0 }, LENS, canvasSize).depth;
-  const center = unproject3d({ x: slotX, y: viewportY }, LENS, canvasSize, depth);
-
-  const unitsPerPx = VIEW_WORLD_H / canvasSize.height;
-  const fitScale = hasSlot
-    ? clamp(
-        Math.min(
-          (slotBox.width * unitsPerPx * 0.92) / JAR_SILHOUETTE_W,
-          (slotBox.height * unitsPerPx * 0.94) / JAR_SILHOUETTE_H,
-        ),
-        0.52,
-        1.12,
-      )
-    : 0.88;
-
-  return {
-    center,
-    fitScale,
-    stageTop,
-    stageEnd,
-    visibleH: canvasSize.height,
-  };
+export function closingSlotWorld(rest?: RestReader, scrollY = 0): SlotWorld {
+  const { slot, slotBox } = resolveSlot(rest, scrollY, {
+    stageCast: CAST.closingStage,
+    slotCast: CAST.slotClosingJar,
+    fallbackTop: BUILDER_TOP + BUILDER_HEIGHT,
+    fallbackHeight: 860,
+    xShare: 0.72,
+    yOffset: () => 310,
+    pinnedAt: "clamp",
+    clampVisible: false,
+  });
+  return { ...slot, fitScale: fitJar(slotBox, slot.view.unitsPerPx, 0.52, 1.12, 0.88) };
 }

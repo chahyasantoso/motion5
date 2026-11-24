@@ -49,5 +49,5 @@ export function restOfCache(cache: MeasureCache): RestReader {
   const boxes: Record<string, Box> = {};
   for (const [name, { placement, ...box }] of Object.entries(cache.rest))
     boxes[name] = withPlacement(box, placement);
-  return restReader(boxes);
+  return restReader(boxes, cache.objects);
 }

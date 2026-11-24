@@ -1,4 +1,4 @@
-import { motion, timeAt, type Pose2d, type Time } from "@gerak/core";
+import { aim, motion, timeAt, type Lens3d, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -6,8 +6,11 @@ import {
   compileScene,
   formatStageError,
   frame,
+  object,
   poseOf,
+  restReader,
   sceneBuilder,
+  travel,
   type SceneBuilder,
   type Stage,
 } from "../src";
@@ -71,5 +74,68 @@ describe("sceneBuilder: .include", () => {
     const hero = sceneBuilder().element(box("a")).show(beat("enter", 400));
     const page = sceneBuilder().element(box("b")).show(beat("enter", 600));
     expect(() => page.include(hero)).toThrow(/beat "enter"/);
+  });
+
+  it("allows sibling scenes to share read-only canvas, edge, and travel slot references in either include order", () => {
+    const sharedCanvas = box("canvas");
+    const sharedSection = box("section");
+    const sharedSlot = box("slot");
+    const enter = beat("enter", 400);
+    const lens: Lens3d = {
+      x: 0,
+      y: 0,
+      z: 5,
+      ...aim({ x: 0, y: 0, z: 5 }, { x: 0, y: 0, z: 0 }),
+      fov: 40,
+    };
+    const rest = restReader({
+      canvas: { x: 400, y: 300, width: 800, height: 600 },
+      section: { x: 400, y: 500, width: 800, height: 1000 },
+      slot: { x: 500, y: 300, width: 100, height: 100 },
+    });
+
+    // Scene 1 reads sharedCanvas via object.view, sharedSlot via 3D travel, and sharedSection via edge beat.
+    const objScene = sceneBuilder({ name: "objScene" })
+      .element(object("can", { view: { canvas: sharedCanvas, lens } }))
+      .motion(travel({ to: sharedSlot }))
+      .element(box("tag"))
+      .motion(slide(20).in(beat("sec", { scroll: [sharedSection.top, sharedSection.end] })));
+
+    // Scene 2 owns sharedCanvas (gives it a motion!) and also reads sharedSlot and sharedSection.
+    const uiScene = sceneBuilder({ name: "uiScene" })
+      .element(sharedCanvas)
+      .motion(slide(40).in(enter))
+      .element(box("badge"))
+      .motion(
+        travel({ to: sharedSlot }).in(enter),
+        slide(10).in(beat("sec2", { scroll: [sharedSection.top, sharedSection.end] })),
+      );
+
+    // Order A: reader included first, then owner -> owner's Entry must not be overwritten!
+    const orderA = compiled(sceneBuilder({ length: 1000 }).include(objScene).include(uiScene));
+    expect(poseOf(frame(orderA, { time: at(400, 1000), rest }).targets["canvas"])?.x).toBeCloseTo(
+      40,
+    );
+
+    // Order B: owner included first, then reader -> reader's NO_ENTRY must not overwrite owner's Entry!
+    const ownedCanvas = box("ownedCanvas");
+    const readerB = sceneBuilder({ name: "readerB" })
+      .element(object("canB", { view: { canvas: ownedCanvas, lens } }))
+      .motion(travel({ to: sharedSlot }));
+    const ownerB = sceneBuilder({ name: "ownerB" })
+      .element(ownedCanvas)
+      .motion(slide(60).in(enter));
+    const orderB = compiled(sceneBuilder({ length: 1000 }).include(ownerB).include(readerB));
+    expect(
+      poseOf(frame(orderB, { time: at(400, 1000), rest }).targets["ownedCanvas"])?.x,
+    ).toBeCloseTo(60);
+  });
+
+  it("refuses two scenes that both claim ownership via .element()", () => {
+    const owned = box("owned");
+    sceneBuilder({ name: "firstOwner" }).element(owned);
+    expect(() => sceneBuilder({ name: "secondOwner" }).element(owned)).toThrow(
+      /owned.*firstOwner.*secondOwner/,
+    );
   });
 });

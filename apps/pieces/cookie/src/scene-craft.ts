@@ -19,7 +19,7 @@ const craftEnter = beat("craftEnter", {
 });
 
 const craftScroll = beat("craftScroll", {
-  scroll: [craftStage.top, craftStage.end.minus(1000)],
+  scroll: [craftViewport.pinStart, craftViewport.pinEnd],
 });
 
 const craftHeadingMotion = motion((t: Time): Pose2d => {
