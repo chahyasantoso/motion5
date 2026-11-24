@@ -8,7 +8,6 @@ import {
   formatStageError,
   frame,
   listPose,
-  many,
   sceneBuilder,
   scrollPoint,
   stagger,
@@ -38,8 +37,7 @@ function drivesAt(stage: Stage, y: number): ReadonlyMap<string, Drive["kind"]> {
   // A list's parts run when its answer is asked for each part.
   for (const member of stage.members)
     if (member.kind === "list")
-      for (let index = 0; index < member.items.length; index += 1)
-        listPose(targets[member.name], index, member.items.length);
+      for (let index = 0; index < 3; index += 1) listPose(targets[member.name], index, 3);
   return new Map([...drives].map(([name, drive]) => [name, drive.kind]));
 }
 
@@ -49,7 +47,7 @@ describe("what a frame reports as driving each element", () => {
       sceneBuilder({ length: 1000 })
         .element(box("plain"))
         .motion(slide.in(range))
-        .element(many("parts", 3))
+        .element(box("parts", { parts: true }))
         .motion(stagger(slide, { spread: 0.3 }).in(range)),
     );
     for (const y of [0, 200, 400]) {

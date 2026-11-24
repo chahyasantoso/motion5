@@ -1,10 +1,9 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import {
   beat,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
   poseOf,
@@ -18,13 +17,13 @@ const NAMES = ["reverse", "stay", "replay"] as const;
 let scene = sceneBuilder({ name: "triggers" });
 for (const back of NAMES)
   scene = scene
-    .element(box(back, { node: el(`#${back}`) }))
+    .element(box(back))
     .motion(rise.in(beat(`reveal-${back}`, 1000, { when: scrollPoint(300).reached, back })));
 
 const compiled = compileScene(scene);
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
-const mounted = mountPage(stage);
+const mounted = mount(stage, { clock: "live" });
 
 // The engine's pose of each card now, for the browser test to hold the drawn one against.
 Reflect.set(window, "__expected", () => {

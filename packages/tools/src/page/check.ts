@@ -1,7 +1,14 @@
 import { unreachable } from "./unreachable";
 import { blend, contrastNeeded, contrastRatio, parseColour, type Colour } from "./contrast";
 import type { Box } from "./frames";
-import { readPageArgs, withPage, type PageTarget } from "./page";
+import {
+  formatSize,
+  parseSizes,
+  readPageArgs,
+  withPage,
+  type PageTarget,
+  type ViewportSize,
+} from "./page";
 
 /** What `gerak check` tolerates: `overlap` frames, final `hold` in ms, and centre `jump` between two frames in px. */
 export interface Limits {
@@ -65,6 +72,7 @@ export interface CheckRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
   readonly limits: Limits;
+  readonly sizes?: readonly ViewportSize[];
 }
 
 /** Parsed `gerak check` arguments, or the usage text. */
@@ -72,17 +80,28 @@ export type CheckArgs =
   | ({ readonly kind: "ok" } & CheckRequest)
   | { readonly kind: "usage"; readonly message: string };
 
+/** One viewport's `gerak check` outcome when `--sizes` runs several viewports. */
+export interface ViewportCheckResult {
+  readonly size: string;
+  readonly width: number;
+  readonly height: number;
+  readonly frames: number;
+  readonly findings: readonly Finding[];
+  readonly pageErrors: readonly string[];
+}
+
 /** What `gerak check` found: the `frames` sampled, the `findings` (none means clean) and the page's errors. */
 export interface CheckResult {
   readonly kind: "checked";
   readonly frames: number;
   readonly findings: readonly Finding[];
   readonly pageErrors: readonly string[];
+  readonly viewports?: readonly ViewportCheckResult[];
 }
 
 const STEP_MS = 16;
 const USAGE =
-  "usage: gerak check <page> --watch selector,selector --to ms [--overlap frames] [--hold ms] [--jump px]";
+  "usage: gerak check <page> --watch selector,selector --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]";
 
 function onStage(box: Box, stage: { readonly width: number; readonly height: number }): boolean {
   return (
@@ -220,11 +239,24 @@ export function describeFinding(finding: Finding): string {
   }
 }
 
-/** Reads `<page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`, or answers the usage text. */
+/** Finding lines for a check result, prefixed with `[WIDTHxHEIGHT]` on multi-viewport runs. */
+export function describeCheckLines(result: CheckResult): readonly string[] {
+  if (result.viewports === undefined) return result.findings.map(describeFinding);
+  return result.viewports.flatMap((vp) =>
+    vp.findings.map((finding) => `[${vp.size}] ${describeFinding(finding)}`),
+  );
+}
+
+/** Reads `<page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`, or answers usage. */
 export function parseCheckArgs(argv: readonly string[]): CheckArgs {
   const usage = (message: string): CheckArgs => ({ kind: "usage", message: `${message} ${USAGE}` });
-  const read = readPageArgs(argv, ["--watch", "--to", "--overlap", "--hold", "--jump"]);
+  const read = readPageArgs(argv, ["--watch", "--to", "--overlap", "--hold", "--jump", "--sizes"]);
   if (read.kind === "usage") return usage(read.message);
+  if (read.flags.has("--sizes") && read.flags.has("--size"))
+    return usage("Pass --size or --sizes, not both.");
+  const sizes = read.flags.has("--sizes") ? parseSizes(read.flags.get("--sizes")) : undefined;
+  if (typeof sizes === "string") return usage(sizes);
+  const firstSize = sizes?.[0];
   const watch =
     read.flags
       .get("--watch")
@@ -244,7 +276,15 @@ export function parseCheckArgs(argv: readonly string[]): CheckArgs {
   if (to === undefined) return usage("--to needs the run's end, in ms.");
   if (overlap === undefined || hold === undefined || jump === undefined)
     return usage("--overlap, --hold and --jump need non-negative numbers.");
-  return { kind: "ok", ...read.target, watch, to, limits: { overlap, hold, jump } };
+  return {
+    kind: "ok",
+    ...read.target,
+    ...(firstSize === undefined ? {} : { width: firstSize.width, height: firstSize.height }),
+    ...(sizes === undefined ? {} : { sizes }),
+    watch,
+    to,
+    limits: { overlap, hold, jump },
+  };
 }
 
 /** Text on the last frame too faint against what is behind it, or cut off by the stage or a clipping parent. */
@@ -285,7 +325,33 @@ text,tspan{fill:transparent!important;stroke:transparent!important}`;
 
 /** Samples every watched element each 16 ms up to `to`, then reports what `analyse` finds. */
 export async function checkMotion(request: CheckRequest): Promise<CheckResult> {
-  return (await sampleMotion(request)).result;
+  if (request.sizes === undefined) return (await sampleMotion(request)).result;
+  const { sizes, ...base } = request;
+  const viewports: ViewportCheckResult[] = [];
+  for (const size of sizes) {
+    const { result } = await sampleMotion({
+      ...base,
+      width: size.width,
+      height: size.height,
+    });
+    viewports.push({
+      size: formatSize(size),
+      width: size.width,
+      height: size.height,
+      frames: result.frames,
+      findings: result.findings,
+      pageErrors: result.pageErrors,
+    });
+  }
+  return {
+    kind: "checked",
+    frames: viewports.reduce((sum, entry) => sum + entry.frames, 0),
+    findings: viewports.flatMap((entry) => entry.findings),
+    pageErrors: viewports.flatMap((entry) =>
+      entry.pageErrors.map((error) => `[${entry.size}] ${error}`),
+    ),
+    viewports,
+  };
 }
 
 /** `checkMotion` that also hands back the 16 ms samples it judged. */

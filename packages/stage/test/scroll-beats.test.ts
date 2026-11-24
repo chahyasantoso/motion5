@@ -18,8 +18,11 @@ import {
   compileScene,
   formatStageError,
   frame,
+  frameVisible,
   listPose,
+  object,
   poseOf,
+  restReader,
   sceneBuilder,
   scrollPoint,
   stagger,
@@ -114,11 +117,23 @@ describe("beat type and runtime refusals", () => {
     );
   });
 
-  it("refuses scroll and trigger beats in .show() and stayWith()", () => {
-    // @ts-expect-error .show takes clock beats, not scroll beats
-    expect(() => sceneBuilder({ length: 1000 }).element(card).show(sb)).toThrow(TypeError);
-    // @ts-expect-error .show takes clock beats, not trigger beats
-    expect(() => sceneBuilder({ length: 1000 }).element(card).show(tb)).toThrow(TypeError);
+  it("refuses trigger beats and bad windows in .show(), and input beats in stayWith()", () => {
+    const enter = beat("enter", 400);
+    // @ts-expect-error .show takes clock beats or scroll windows, not trigger beats
+    expect(() => sceneBuilder({ length: 1000 }).element(box("tCard")).show(tb)).toThrow(TypeError);
+    expect(() =>
+      // @ts-expect-error .show refuses trigger beats in { from }
+      sceneBuilder({ length: 1000 }).element(box("fromCard")).show({ from: tb }),
+    ).toThrow(TypeError);
+    expect(() =>
+      // @ts-expect-error .show refuses mixing clock beats and scroll points
+      sceneBuilder({ length: 1000 }).element(box("mixCard")).show([enter, p]),
+    ).toThrow(TypeError);
+    expect(() =>
+      sceneBuilder({ length: 1000 })
+        .element(box("revCard"))
+        .show([scrollPoint(500), scrollPoint(100)]),
+    ).toThrow(RangeError);
     expect(() =>
       sceneBuilder({ length: 1000 })
         .element(box("other"))
@@ -202,7 +217,7 @@ describe("scroll beats", () => {
       poseAt(taken, "card", 100, [{ name: INPUT_EVENTS.scroll, at: 100, value: 400 }])?.x,
     ).toBe(40);
 
-    const makeWord = () => text("word", "ABC", { split: "letters" });
+    const makeWord = () => text("word", { split: "letters" });
     const staggeredOuter = compiled(
       sceneBuilder({ length: 2000 })
         .element(makeWord())
@@ -381,7 +396,7 @@ describe("trigger beats", () => {
     expect(poseAt(loopedDirect, "card", 750, session)?.x).toBeCloseTo(50, 9);
     expect(poseAt(loopedDirect, "card", 1250, session)?.x).toBeCloseTo(50, 9);
 
-    const word = text("word", "ABC", { split: "letters" });
+    const word = text("word", { split: "letters" });
     const staggeredTrig = compiled(
       sceneBuilder({ length: 3000 })
         .element(word)
@@ -560,5 +575,121 @@ describe("trigger beats over a long session", () => {
     next += 20000;
     const late = Math.min(window(), window(), window());
     expect(late).toBeLessThan(early * 4);
+  });
+});
+
+describe("scroll-window .show()", () => {
+  it("shows elements and objects during ScrollBeat, [from, to], { from }, and { until } windows", () => {
+    const sec = box("sec");
+    const sb = beat("sb", { scroll: [sec.top, sec.end] });
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("viaBeat"))
+        .show(sb)
+        .element(box("viaPair"))
+        .show([scrollPoint(100), scrollPoint(300)], [scrollPoint(500), scrollPoint(700)])
+        .element(object("viaFrom"))
+        .show({ from: sec.end })
+        .element(box("viaUntil"))
+        .show({ until: scrollPoint(250) })
+        .element(box("combined"))
+        .show(beat("early", 500), [scrollPoint(100), scrollPoint(300)]),
+    );
+    const rest = restReader({ sec: { x: 500, y: 300, width: 1000, height: 200 } });
+    // `sec.top` = 200, `sec.end` = 400.
+    const checkAt = (ms: number, y: number) => {
+      const out = frame(stage, {
+        time: at(ms, 1000),
+        rest,
+        events: y === 0 ? [] : [{ name: INPUT_EVENTS.scroll, at: 0, value: y }],
+      });
+      expect(frameVisible(out.targets)).toEqual(out.visible);
+      expect(Object.keys(out.targets)).not.toContain("frameVisible");
+      return out.visible;
+    };
+
+    expect(checkAt(100, 0)).toEqual({
+      sec: true,
+      viaBeat: false,
+      viaPair: false,
+      viaFrom: false,
+      viaUntil: true,
+      combined: false,
+    });
+    expect(checkAt(100, 200)).toEqual({
+      sec: true,
+      viaBeat: true,
+      viaPair: true,
+      viaFrom: false,
+      viaUntil: true,
+      combined: true,
+    });
+    expect(checkAt(100, 300)).toEqual({
+      sec: true,
+      viaBeat: true,
+      viaPair: false,
+      viaFrom: false,
+      viaUntil: false,
+      combined: false,
+    });
+    expect(checkAt(100, 400)).toEqual({
+      sec: true,
+      viaBeat: false,
+      viaPair: false,
+      viaFrom: true,
+      viaUntil: false,
+      combined: false,
+    });
+    expect(checkAt(600, 200)).toEqual({
+      sec: true,
+      viaBeat: true,
+      viaPair: true,
+      viaFrom: false,
+      viaUntil: true,
+      combined: false,
+    });
+    expect(checkAt(100, 550).viaPair).toBe(true);
+    expect(checkAt(100, 700).viaPair).toBe(false);
+  });
+
+  it("registers edge elements referenced by scroll .show() as read-only across include()", () => {
+    const sharedSec = box("sharedSec");
+    const ownerScene = sceneBuilder()
+      .element(sharedSec)
+      .motion(slideX(40).in(beat("intro", 500)));
+    const followerScene = sceneBuilder()
+      .element(object("prop"))
+      .show([sharedSec.top, sharedSec.end]);
+    const combined = compiled(sceneBuilder().include(ownerScene).include(followerScene));
+    expect(combined.members.filter((m) => m.name === "sharedSec")).toHaveLength(1);
+    const rest = restReader({ sharedSec: { x: 500, y: 300, width: 1000, height: 200 } });
+    expect(frame(combined, { time: at(250, 500), rest }).visible["prop"]).toBe(false);
+    expect(
+      frame(combined, {
+        time: at(250, 500),
+        rest,
+        events: [{ name: INPUT_EVENTS.scroll, at: 0, value: 250 }],
+      }).visible["prop"],
+    ).toBe(true);
+
+    // Two scenes owning `.show()` on the same element remain refused.
+    const dup = box("dup");
+    const dupShowA = sceneBuilder()
+      .element(dup)
+      .show({ from: scrollPoint(10) });
+    expect(() => {
+      const dupShowB = sceneBuilder()
+        .element(dup)
+        .show({ from: scrollPoint(20) });
+      sceneBuilder().include(dupShowA).include(dupShowB);
+    }).toThrow(/already belongs/);
+  });
+
+  it("keeps clock-only stages returning stage.visibleAt(ms) directly", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 1000 }).element(box("a")).show(beat("enter", 400)),
+    );
+    const out = frame(stage, { time: at(100, 1000) });
+    expect(out.visible).toBe(stage.visibleAt(100));
   });
 });

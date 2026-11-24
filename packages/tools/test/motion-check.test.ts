@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_LIMITS, analyse, auditText, parseCheckArgs, type Frame } from "../src/page/check";
+import {
+  DEFAULT_LIMITS,
+  analyse,
+  auditText,
+  describeCheckLines,
+  parseCheckArgs,
+  type Frame,
+} from "../src/page/check";
 import { blend, contrastNeeded, contrastRatio, parseColour } from "../src/page/contrast";
 import { callerPiecesRoot } from "../src/page/root";
 
@@ -97,12 +104,77 @@ describe("gerak check arguments", () => {
       limits: { ...DEFAULT_LIMITS, hold: 300 },
       source: PIECES_SOURCE,
     });
+    expect(
+      parseCheckArgs(["a.html", "--watch", ".dot", "--to", "1000", "--sizes", "1440x900,390x844"]),
+    ).toEqual({
+      kind: "ok",
+      page: "a.html",
+      width: 1440,
+      height: 900,
+      sizes: [
+        { width: 1440, height: 900 },
+        { width: 390, height: 844 },
+      ],
+      watch: [".dot"],
+      to: 1000,
+      limits: DEFAULT_LIMITS,
+      source: PIECES_SOURCE,
+    });
+  });
+
+  it("formats single- and multi-viewport check lines", () => {
+    const jump = { kind: "jump", element: ".dot[0]", at: 320, px: 200 } as const;
+    expect(
+      describeCheckLines({
+        kind: "checked",
+        frames: 10,
+        findings: [jump],
+        pageErrors: [],
+      }),
+    ).toEqual([".dot[0] jumps 200 px at 320 ms"]);
+
+    expect(
+      describeCheckLines({
+        kind: "checked",
+        frames: 20,
+        findings: [jump],
+        pageErrors: ["[390x844] boom"],
+        viewports: [
+          { size: "1440x900", width: 1440, height: 900, frames: 10, findings: [], pageErrors: [] },
+          {
+            size: "390x844",
+            width: 390,
+            height: 844,
+            frames: 10,
+            findings: [jump],
+            pageErrors: ["boom"],
+          },
+        ],
+      }),
+    ).toEqual(["[390x844] .dot[0] jumps 200 px at 320 ms"]);
   });
 
   it.each([
     ["no watch list", ["a.html", "--to", "100"]],
     ["no end", ["a.html", "--watch", ".a"]],
     ["a bad limit", ["a.html", "--watch", ".a", "--to", "100", "--jump", "far"]],
+    [
+      "--size and --sizes together",
+      [
+        "a.html",
+        "--watch",
+        ".a",
+        "--to",
+        "100",
+        "--size",
+        "1280x720",
+        "--sizes",
+        "1440x900,390x844",
+      ],
+    ],
+    ["empty --sizes", ["a.html", "--watch", ".a", "--to", "100", "--sizes", ""]],
+    ["malformed --sizes", ["a.html", "--watch", ".a", "--to", "100", "--sizes", "1440x900,bad"]],
+    ["zero viewport dimension", ["a.html", "--watch", ".a", "--to", "100", "--sizes", "0x900"]],
   ])("refuses %s", (_name, argv) => {
     expect(parseCheckArgs(argv).kind).toBe("usage");
   });

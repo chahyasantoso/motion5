@@ -6,6 +6,7 @@ import {
   orbit,
   project3d,
   unproject3d,
+  viewSize3d,
   type Lens3d,
   type Point2d,
   type Point3d,
@@ -75,5 +76,42 @@ describe("unproject3d", () => {
 
   it("refuses a depth at or behind the lens", () => {
     expect(() => unproject3d({ x: 0, y: 0 }, lens, stageSize, 0)).toThrow(RangeError);
+  });
+});
+
+describe("viewSize3d", () => {
+  it("matches the world span between unprojected viewport corners across FOVs, depths, and sizes", () => {
+    for (const fov of [30, 36, 55]) {
+      const eye = orbit({ target: { x: 0, y: 0.4, z: 0 }, radius: 6, azimuth: 15, elevation: 12 });
+      const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0.4, z: 0 }), fov };
+      for (const stageSize of [
+        { width: 1440, height: 900 },
+        { width: 390, height: 844 },
+      ]) {
+        for (const depth of [1.5, 5.2, 12]) {
+          const size = viewSize3d(lens, stageSize, depth);
+          const tl = unproject3d({ x: 0, y: 0 }, lens, stageSize, depth);
+          const tr = unproject3d({ x: stageSize.width, y: 0 }, lens, stageSize, depth);
+          const bl = unproject3d({ x: 0, y: stageSize.height }, lens, stageSize, depth);
+          const unprojectedW = Math.hypot(tr.x - tl.x, tr.y - tl.y, tr.z - tl.z);
+          const unprojectedH = Math.hypot(bl.x - tl.x, bl.y - tl.y, bl.z - tl.z);
+          expect(size.width).toBeCloseTo(unprojectedW, 9);
+          expect(size.height).toBeCloseTo(unprojectedH, 9);
+          expect(size.unitsPerPx).toBeCloseTo(size.height / stageSize.height, 12);
+          expect(size.unitsPerPx).toBeCloseTo(size.width / stageSize.width, 12);
+        }
+      }
+    }
+  });
+
+  it("refuses invalid fov, depth, or stage size", () => {
+    const lens: Lens3d = { x: 0, y: 0, z: 5, fov: 40 };
+    const stageSize = { width: 1440, height: 900 };
+    expect(() => viewSize3d({ ...lens, fov: 0 }, stageSize, 5)).toThrow(RangeError);
+    expect(() => viewSize3d({ ...lens, fov: 180 }, stageSize, 5)).toThrow(RangeError);
+    expect(() => viewSize3d(lens, stageSize, 0)).toThrow(RangeError);
+    expect(() => viewSize3d(lens, stageSize, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+    expect(() => viewSize3d(lens, { width: 0, height: 900 }, 5)).toThrow(RangeError);
+    expect(() => viewSize3d(lens, { width: 1440, height: -1 }, 5)).toThrow(RangeError);
   });
 });

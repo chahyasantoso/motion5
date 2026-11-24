@@ -27,6 +27,12 @@ function isPlacement(value: unknown): value is BoxPlacement {
   );
 }
 
+/** How `box` is placed on the page: flow unless `withPlacement` gave it another. */
+export function placementOf(box: Box): BoxPlacement {
+  const raw: unknown = Reflect.get(box, BOX_PLACEMENT);
+  return isPlacement(raw) ? raw : FLOW;
+}
+
 /** Attaches page scroll placement metadata onto `box` as a non-enumerable property. */
 export function withPlacement(box: Box, placement: BoxPlacement): Box {
   const placed = { x: box.x, y: box.y, width: box.width, height: box.height };
@@ -36,8 +42,7 @@ export function withPlacement(box: Box, placement: BoxPlacement): Box {
 
 /** The box's center and size in viewport coordinates at `scrollY` px. */
 export function boxInViewport(box: Box, scrollY: number): Box {
-  const raw: unknown = Reflect.get(box, BOX_PLACEMENT);
-  const placement = isPlacement(raw) ? raw : FLOW;
+  const placement = placementOf(box);
   switch (placement.kind) {
     case "flow":
       return { x: box.x, y: box.y - scrollY, width: box.width, height: box.height };

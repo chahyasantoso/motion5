@@ -1,7 +1,5 @@
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { tool } from "./load.mjs";
-const { parseSampleArgs, readSceneModule, sampleScene, watchScene } = await import(
+const { loadSceneFile, parseSampleArgs, sampleScene, watchScene } = await import(
   tool("scene/scene")
 );
 
@@ -16,7 +14,7 @@ if (args.kind === "usage") {
 } else if (!/\.tsx?$/.test(args.file)) {
   print({ kind: "usage", message: `${args.file} is not a .ts scene file.` });
 } else {
-  const module = readSceneModule(await import(pathToFileURL(resolve(args.file)).href));
+  const module = await loadSceneFile(args.file);
   if ("reason" in module) print({ kind: "usage", message: module.reason });
   else if (args.kind === "watch") print(watchScene(module, args, args.events));
   else

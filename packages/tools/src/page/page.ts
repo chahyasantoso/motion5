@@ -5,6 +5,38 @@ import { callerDir, piecesRoot } from "./root";
 import { pageServerConfig } from "./server";
 import { unreachable } from "./unreachable";
 
+/** A viewport width and height in CSS px. */
+export interface ViewportSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+/** Formats `size` as `WIDTHxHEIGHT`. */
+export function formatSize(size: ViewportSize): string {
+  return `${size.width}x${size.height}`;
+}
+
+/** Parses `--sizes WIDTHxHEIGHT,...`, or returns why the value is malformed. */
+export function parseSizes(text: string | undefined): readonly ViewportSize[] | string {
+  if (text === undefined || text.trim() === "")
+    return "--sizes needs one or more WIDTHxHEIGHT entries.";
+  const seen = new Set<string>();
+  const sizes: ViewportSize[] = [];
+  for (const part of text.split(",")) {
+    const trimmed = part.trim();
+    const match = /^(\d+)x(\d+)$/.exec(trimmed);
+    if (match === null) return `--sizes needs WIDTHxHEIGHT entries, not "${trimmed}".`;
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    if (!(width > 0 && height > 0)) return `--sizes dimensions must be above 0, not "${trimmed}".`;
+    const label = `${width}x${height}`;
+    if (seen.has(label)) return `--sizes duplicate entry "${label}".`;
+    seen.add(label);
+    sizes.push({ width, height });
+  }
+  return sizes;
+}
+
 /** Where a page comes from: a folder this tool serves, or a server already running. */
 export type PageSource =
   | { readonly kind: "serve"; readonly root: string }
@@ -59,21 +91,24 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
   const usage = (message: string): ReadArgs => ({ kind: "usage", message });
   const positional: string[] = [];
   const flags = new Map<string, string | undefined>();
+  const rawActions: (string | undefined)[] = [];
   for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i]!;
+    const arg = argv[i];
+    if (arg === undefined) continue;
     if (!arg.startsWith("--")) {
       positional.push(arg);
       continue;
     }
     if (![...SHARED_FLAGS, ...allowed].includes(arg)) return usage(`Unknown flag ${arg}.`);
-    flags.set(arg, argv[i + 1]);
+    if (arg === "--action") rawActions.push(argv[i + 1]);
+    else flags.set(arg, argv[i + 1]);
     i += 1;
   }
   const page = positional[0];
   if (page === undefined || positional.length !== 1) return usage("Expected one page path.");
   if (!/^[\w./-]+(?:\?[\w.=&-]+)?$/.test(page) || page.startsWith("/") || page.includes(".."))
     return usage(
-      `Page ${page} must be a path inside the site, like timing.html or stage.html?piece=saved.`,
+      `Page ${page} must be a path inside the site, like timing.html or saved/saved.html.`,
     );
   const size = /^(\d+)x(\d+)$/.exec(flags.get("--size") ?? "1280x720");
   if (size === null) return usage("--size needs WIDTHxHEIGHT.");
@@ -84,10 +119,16 @@ export function readPageArgs(argv: readonly string[], allowed: readonly string[]
     return usage("--root needs a folder.");
   if (flags.has("--url") && (url === undefined || !/^https?:\/\/[^\s]+$/.test(url)))
     return usage("--url needs an http or https address.");
-  const actionText = flags.get("--action");
+  if (rawActions.some((entry) => entry === undefined || entry.trim() === ""))
+    return usage("--action needs kind:target@ms.");
+  const actionText =
+    rawActions.length === 0
+      ? undefined
+      : rawActions.filter((entry) => entry !== undefined).join(",");
+  if (actionText !== undefined) flags.set("--action", actionText);
   const actions = actionText === undefined ? [] : parseActions(actionText);
   if ("reason" in actions) return usage(actions.reason);
-  if (flags.has("--action") && actions.length === 0) return usage("--action needs kind:target@ms.");
+  if (rawActions.length > 0 && actions.length === 0) return usage("--action needs kind:target@ms.");
   let source: PageSource;
   if (url !== undefined) source = { kind: "url", base: url.endsWith("/") ? url : `${url}/` };
   else {

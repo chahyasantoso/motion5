@@ -1,8 +1,6 @@
-import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { tool } from "./load.mjs";
 const { renderTimeline } = await import(tool("timeline/timeline"));
-const { parseEvents, readSceneModule, sceneTimeline } = await import(tool("scene/scene"));
+const { loadSceneFile, parseEvents, sceneTimeline } = await import(tool("scene/scene"));
 
 const [file, ...rest] = process.argv.slice(2);
 const events = rest[0] === "--events" && rest.length === 2 ? parseEvents(rest[1] ?? "") : [];
@@ -17,7 +15,7 @@ if (
   console.log(events.reason);
   process.exitCode = 1;
 } else {
-  const module = readSceneModule(await import(pathToFileURL(resolve(file)).href));
+  const module = await loadSceneFile(file);
   if ("reason" in module) {
     console.log(module.reason);
     process.exitCode = 1;

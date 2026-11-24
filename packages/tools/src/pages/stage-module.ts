@@ -1,9 +1,7 @@
 import {
   compileScene,
   formatStageError,
-  isDomSkin,
   isScene,
-  type DomSkinInput,
   type SceneBuilder,
   type Stage,
 } from "@gerak/stage";
@@ -13,8 +11,6 @@ export interface LoadedStage {
   readonly kind: "stage";
   readonly stage: Stage;
   readonly scene: SceneBuilder;
-  /** The module's `skin` export, which the DOM renderer draws with. */
-  readonly skin: DomSkinInput | undefined;
   readonly exports: Readonly<Record<string, unknown>>;
 }
 
@@ -48,11 +44,7 @@ export function stageOf(value: unknown): LoadedStage | string {
   if (!isScene(candidate)) {
     return "A piece must default-export `sceneBuilder(...)`.";
   }
-  const given: unknown = Reflect.get(exports, "skin");
-  if (given !== undefined && !isDomSkin(given))
-    return "A piece's `skin` export must be `{ css }`, with `css` and `defs` both strings or both URLs.";
-  const skin = given;
-  const compiled = compileScene(candidate, { skin });
+  const compiled = compileScene(candidate);
   if (!compiled.ok) {
     return compiled.errors.map(formatStageError).join("\n");
   }
@@ -60,7 +52,6 @@ export function stageOf(value: unknown): LoadedStage | string {
     kind: "stage",
     stage: compiled.stage,
     scene: candidate,
-    skin,
     exports,
   };
 }

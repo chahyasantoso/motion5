@@ -22,7 +22,7 @@ export default sceneBuilder({ length: 900 }).element(card).motion(bind({ y: lift
 With `@gerak/moves`, `follow({ start: 0, on: { enter: -14, leave: 0 }, target: "card" })` is the same spring from an event table.
 
 - `events` holds every event up to the current time, oldest first: `{ name, at, target }` in ms, plus pointer `(x, y)` relative to the watched element's top-left corner.
-- Watch a still wrapper `group` if the moving child leaves under the cursor.
+- Watch a still wrapper element if the moving child leaves under the cursor.
 - Derive answers strictly from `(time, events)` rather than mutable component variables so replays, scrubbing, and `gerak review --action hover:.card-hit@1000` match identically.
 
 ## Inside the scene (`cues`)

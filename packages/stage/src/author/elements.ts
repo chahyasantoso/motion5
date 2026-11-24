@@ -1,27 +1,16 @@
 import { unreachable, type Cubic2d, type Lens3d, type Time } from "@gerak/core";
-import type { ItemContent, NodeBinding, Path, Pivot } from "./cast";
+import { placementOf } from "../render/placement";
+import { makeScrollPoint, type ScrollPoint } from "./beat";
+import type { Path } from "./cast";
 
-/** Binds an element or section to an existing DOM node matched by CSS `selector`. */
-export function el(selector: string): NodeBinding {
-  if (typeof selector !== "string" || selector.trim() === "")
-    throw new TypeError("el: selector must be a non-empty CSS selector string.");
-  return Object.freeze({ kind: "node", selector });
-}
-
-function isNodeBinding(value: unknown): value is NodeBinding {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Reflect.get(value, "kind") === "node" &&
-    typeof Reflect.get(value, "selector") === "string"
-  );
-}
-
-/** What stays true of an element in any scene: where it turns, whether pointer events reach it, and its page node. */
+/** What stays true of an element in any scene: whether pointer events reach it. */
 export interface ElementOptions {
-  readonly pivot?: Pivot | undefined;
   readonly watch?: boolean | undefined;
-  readonly node?: NodeBinding | undefined;
+}
+
+/** Options of `box`: whether it binds to a list of parts. */
+export interface BoxOptions extends ElementOptions {
+  readonly parts?: boolean | undefined;
 }
 
 /** Options of `text`: how to split it into parts. */
@@ -38,9 +27,22 @@ export type Outline =
       readonly targets: readonly (readonly Cubic2d[])[];
     };
 
-/** An element of a piece, made once with a name; `kind` says what it is. */
-export type Element =
-  | { readonly kind: "box"; readonly name: string; readonly options: ElementOptions }
+/** An element's measured edges as scroll points: top, end, and sticky pin start/end. */
+export interface Edges {
+  readonly top: ScrollPoint;
+  readonly end: ScrollPoint;
+  readonly pinStart: ScrollPoint;
+  readonly pinEnd: ScrollPoint;
+}
+
+/** What an element is, before its edges. */
+export type ElementBody =
+  | {
+      readonly kind: "box";
+      readonly name: string;
+      readonly parts?: boolean | undefined;
+      readonly options: ElementOptions;
+    }
   | {
       readonly kind: "shape";
       readonly name: string;
@@ -50,22 +52,13 @@ export type Element =
   | {
       readonly kind: "text";
       readonly name: string;
-      readonly content: string | ((time: Time) => string);
+      readonly content?: ((time: Time) => string) | undefined;
       readonly split: "letters" | "words" | undefined;
       readonly options: ElementOptions;
-    }
-  | {
-      readonly kind: "many";
-      readonly name: string;
-      readonly items: readonly ItemContent[];
-      readonly options: ElementOptions;
-    }
-  | {
-      readonly kind: "group";
-      readonly name: string;
-      readonly children: readonly Element[];
-      readonly options: ElementOptions;
     };
+
+/** An element of a piece, made once with a name; `kind` says what it is. */
+export type Element = ElementBody & Edges;
 
 /** Where an object is drawn: the element bound to the page's canvas, and the fixed lens the page draws through. */
 export interface ObjectView {
@@ -73,16 +66,18 @@ export interface ObjectView {
   readonly lens: Lens3d;
 }
 
-/** Options of `object`: its view, which `travel` onto a page slot needs. */
+/** Options of `object`: its view for slot travel, and whether `parts: true` binds a list of objects. */
 export interface ObjectOptions {
   readonly view?: ObjectView | undefined;
+  readonly parts?: boolean | undefined;
 }
 
-/** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `bindScene3d`, never by a DOM renderer. */
+/** A Three.js object of a piece, posed in `Pose3d` world units and drawn by `threeBinder`, never by a DOM renderer. */
 export interface ObjectElement {
   readonly kind: "object";
   readonly name: string;
   readonly view: ObjectView | undefined;
+  readonly parts?: boolean | undefined;
 }
 
 /** Any element of a piece: one a DOM renderer draws, or a Three.js object. */
@@ -103,20 +98,75 @@ function named(maker: string, name: string): string {
   return name;
 }
 
+/** `made` with `.top`, `.end`, `.pinStart`, and `.pinEnd` scroll points on its rest box. */
+function edged<T extends ElementBody>(made: T): T & Edges {
+  const name = made.name;
+  let element: (T & Edges) | undefined;
+  const self = (): object => {
+    if (element === undefined)
+      throw new Error(`"${name}": its edges were read before it was made.`);
+    return element;
+  };
+  const top = makeScrollPoint(
+    (rest) => rest.get(name).y - rest.get(name).height / 2,
+    undefined,
+    self,
+  );
+  const end = makeScrollPoint(
+    (rest) => rest.get(name).y + rest.get(name).height / 2,
+    undefined,
+    self,
+  );
+  const pickEdge = (edge: "start" | "end", start: number, finish: number): number => {
+    switch (edge) {
+      case "start":
+        return start;
+      case "end":
+        return finish;
+      default:
+        return unreachable(edge);
+    }
+  };
+  const pinEdge = (edge: "start" | "end"): ScrollPoint =>
+    makeScrollPoint(
+      (rest) => {
+        const box = rest.get(name);
+        const placement = placementOf(box);
+        switch (placement.kind) {
+          case "sticky":
+            return pickEdge(edge, placement.minY, placement.maxY);
+          case "flow":
+          case "fixed":
+            return pickEdge(edge, box.y - box.height / 2, box.y + box.height / 2);
+          default:
+            return unreachable(placement);
+        }
+      },
+      undefined,
+      self,
+    );
+  const pinStart = pinEdge("start");
+  const pinEnd = pinEdge("end");
+  const full: T & Edges = { ...made, top, end, pinStart, pinEnd };
+  element = Object.freeze(full);
+  return full;
+}
+
 function optionsOf(options: ElementOptions | undefined): ElementOptions {
-  const { pivot, watch, node } = options ?? {};
-  if (node !== undefined && !isNodeBinding(node))
-    throw new TypeError("element: `node` must be made by `el(selector)`.");
+  const { watch } = options ?? {};
   return Object.freeze({
-    ...(pivot === undefined ? {} : { pivot: Object.freeze({ x: pivot.x, y: pivot.y }) }),
     ...(watch === undefined ? {} : { watch }),
-    ...(node === undefined ? {} : { node }),
   });
 }
 
-/** A page element styled by CSS. */
-export function box(name: string, options?: ElementOptions): Element {
-  return Object.freeze({ kind: "box", name: named("box", name), options: optionsOf(options) });
+/** A page element styled by CSS; `parts: true` binds it to a list of parts. */
+export function box(name: string, options?: BoxOptions): Element {
+  return edged({
+    kind: "box",
+    name: named("box", name),
+    ...(options?.parts === true ? { parts: true } : {}),
+    options: optionsOf(options),
+  });
 }
 
 function isMorph(value: ShapeSource): value is MorphSource {
@@ -128,7 +178,7 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
   const drawn: Outline = isMorph(outline)
     ? { kind: "morph", base: outline.base, targets: outline.targets }
     : { kind: "path", path: outline };
-  return Object.freeze({
+  return edged({
     kind: "shape",
     name: named("shape", name),
     outline: Object.freeze(drawn),
@@ -136,85 +186,41 @@ export function shape(name: string, outline: ShapeSource, options?: ElementOptio
   });
 }
 
-/** Text, or text a function of time writes; `split` gives a string a part per letter or word. */
+/** Text in the markup, or text a function of time writes; `split` gives one part per letter or word. */
+export function text(name: string, options?: TextOptions): Element;
 export function text(
   name: string,
-  content: string | ((time: Time) => string),
-  options?: TextOptions,
-): Element {
-  const split = options?.split;
-  if (split !== undefined && typeof content !== "string")
-    throw new TypeError(`text "${name}": only a string can be split into parts.`);
-  return Object.freeze({
-    kind: "text",
-    name: named("text", name),
-    content,
-    split,
-    options: optionsOf(options),
-  });
-}
-
-function itemOf(owner: string, index: number, made: Element): ItemContent {
-  if (Object.keys(made.options).length > 0)
-    throw new TypeError(`many "${owner}": an item takes no options; put them on the list.`);
-  switch (made.kind) {
-    case "box":
-      return { kind: "box" };
-    case "shape":
-      return made.outline.kind === "path"
-        ? { kind: "stroke", path: made.outline.path }
-        : { kind: "morph", shapes: Object.freeze([made.outline.base, ...made.outline.targets]) };
-    case "text":
-      if (typeof made.content !== "string" || made.split !== undefined)
-        throw new TypeError(`many "${owner}": item ${index} must be a plain string text.`);
-      return { kind: "text", value: made.content };
-    case "many":
-    case "group":
-      throw new TypeError(
-        `many "${owner}": item ${index} is a ${made.kind}; use a box, shape or text.`,
-      );
-    default:
-      return unreachable(made);
-  }
-}
-
-/** A row of numbered parts: `count` boxes, or one part per item, each made by `make`. */
-export function many(name: string, count: number, options?: ElementOptions): Element;
-export function many<T>(
-  name: string,
-  items: readonly T[],
-  make: (item: T, index: number) => Element,
+  content: (time: Time) => string,
   options?: ElementOptions,
 ): Element;
-export function many<T>(
+export function text(
   name: string,
-  source: number | readonly T[],
-  third?: ElementOptions | ((item: T, index: number) => Element),
-  fourth?: ElementOptions,
+  second?: TextOptions | ((time: Time) => string),
+  third?: ElementOptions,
 ): Element {
-  const own = named("many", name);
-  if (typeof source === "number") {
-    if (!(Number.isInteger(source) && source >= 0))
-      throw new RangeError(`many "${own}": count must be a whole number >= 0, not ${source}.`);
-    const options = typeof third === "function" ? undefined : third;
-    return Object.freeze({
-      kind: "many",
+  const own = named("text", name);
+  if (typeof second === "function") {
+    if (third !== undefined && Reflect.get(third, "split") !== undefined)
+      throw new TypeError(`text "${own}": a readout cannot be split into parts.`);
+    return edged({
+      kind: "text",
       name: own,
-      items: Object.freeze(Array.from({ length: source }, (): ItemContent => ({ kind: "box" }))),
-      options: optionsOf(options),
+      content: second,
+      split: undefined,
+      options: optionsOf(third),
     });
   }
-  if (typeof third !== "function")
-    throw new TypeError(`many "${own}": a list of items needs a function making each.`);
-  return Object.freeze({
-    kind: "many",
+  if (second !== undefined && (typeof second !== "object" || second === null))
+    throw new TypeError(`text "${own}": the markup holds a text element's string.`);
+  return edged({
+    kind: "text",
     name: own,
-    items: Object.freeze(source.map((item, index) => itemOf(own, index, third(item, index)))),
-    options: optionsOf(fourth),
+    split: second?.split,
+    options: optionsOf(second),
   });
 }
 
-/** A Three.js object; its origin is the `Object3D`'s, and it has no node, skin, content, pivot or pointer events. */
+/** A Three.js object; `parts: true` binds it to an `Object3D[]` or `Group`'s children. */
 export function object(name: string, options?: ObjectOptions): ObjectElement {
   const view = options?.view;
   if (view !== undefined && (typeof view.lens.fov !== "number" || view.canvas.kind !== "box"))
@@ -225,19 +231,6 @@ export function object(name: string, options?: ObjectOptions): ObjectElement {
     kind: "object",
     name: named("object", name),
     view: view === undefined ? undefined : Object.freeze({ canvas: view.canvas, lens: view.lens }),
-  });
-}
-
-/** A container: its pose moves its children, and each child keeps its own motions. */
-export function group(
-  name: string,
-  children: readonly Element[],
-  options?: ElementOptions,
-): Element {
-  return Object.freeze({
-    kind: "group",
-    name: named("group", name),
-    children: Object.freeze([...children]),
-    options: optionsOf(options),
+    ...(options?.parts === true ? { parts: true } : {}),
   });
 }

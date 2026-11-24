@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
 import {
+  INPUT_EVENTS,
   NO_EVENTS,
+  liveAt,
   mergeEvents,
   pathBounds,
   quaternionFromEuler3d,
@@ -17,8 +18,10 @@ import {
   check,
   formatStageError,
   frame,
+  placementOf,
   type Content,
-  type DomSkin,
+  type Drive,
+  type FrameInput,
   type FrameOutput,
   type Member,
   type RestReader,
@@ -29,12 +32,21 @@ import {
 import { drawStrokes } from "@gerak/stage/render";
 import { DEFAULT_LIMITS, describeFinding, restFindings } from "../page/check";
 import { SCENE_LIMITS } from "./limits";
-import { readSceneModule, sampleScene, writtenOut, type Beat, type SceneModule } from "./scene";
+import {
+  loadSceneFile,
+  measuredInput,
+  parseEvents,
+  sampleScene,
+  writtenOut,
+  type Beat,
+  type SceneModule,
+} from "./scene";
 import { STEP_MS } from "../timeline/timeline";
 
 export interface SceneReviewRequest {
   readonly file: string;
   readonly to?: number;
+  readonly events?: Events;
   readonly hold: number;
   /** Largest step of a position in one frame, in the scene's units. */
   readonly jump: number;
@@ -60,7 +72,7 @@ export interface SceneReviewResult {
 }
 
 const USAGE =
-  "usage: gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
+  "usage: gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]";
 
 /** A path ending in .ts or .tsx is a scene file, reviewed from its values with no page. */
 export function isSceneFile(argv: readonly string[]): boolean {
@@ -81,7 +93,7 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
     const value = rest[index + 1];
     if (
       flag === undefined ||
-      !["--to", "--hold", "--jump", "--turn", "--ratio", "--budget"].includes(flag)
+      !["--to", "--events", "--hold", "--jump", "--turn", "--ratio", "--budget"].includes(flag)
     )
       return usage(`Unknown argument ${flag ?? ""}.`);
     if (value === undefined) return usage(`${flag} needs a value.`);
@@ -94,6 +106,12 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
     return text !== "" && Number.isFinite(value) && value >= 0 ? value : undefined;
   };
   const to = number("--to");
+  const rawEvents = flags.get("--events");
+  const parsedEvents = rawEvents === undefined ? undefined : parseEvents(rawEvents);
+  if (flags.has("--events")) {
+    if (parsedEvents === undefined) return usage("--events needs a list.");
+    if ("reason" in parsedEvents) return usage(parsedEvents.reason);
+  }
   const hold = number("--hold", DEFAULT_LIMITS.hold);
   const jump = number("--jump", DEFAULT_LIMITS.jump);
   const turn = number("--turn", SCENE_LIMITS.turn);
@@ -103,7 +121,17 @@ export function parseSceneReviewArgs(argv: readonly string[]): SceneReviewArgs {
   if (flags.has("--to") && to === undefined) return usage("--to needs the run's end, in ms.");
   if (hold === undefined || jump === undefined || turn === undefined || ratio === undefined)
     return usage("--hold, --jump, --turn and --ratio need non-negative numbers.");
-  return { kind: "ok", file, hold, jump, turn, ratio, budget, ...(to === undefined ? {} : { to }) };
+  return {
+    kind: "ok",
+    file,
+    hold,
+    jump,
+    turn,
+    ratio,
+    budget,
+    ...(to === undefined ? {} : { to }),
+    ...(parsedEvents !== undefined && !("reason" in parsedEvents) ? { events: parsedEvents } : {}),
+  };
 }
 
 /** Every number in a value, by path: `ball.x`, `letters[2].rotationY`. */
@@ -219,12 +247,16 @@ export function reviewValues(
         .filter((path) => /(^|.)rotation[XY]$/.test(path) && kindOf(path) === "turn")
         .map(ownerOf),
     );
+    const from = samples[index - 1]?.at ?? 0;
+    const at = samples[index]?.at ?? 0;
     for (const owner of turned3d) {
       const step = turnBetween(before, now, owner);
-      if (step > limitsFor(limits, perTarget, targetOf(owner)).turn)
-        jumps.push(
-          `${owner} turns ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
-        );
+      if (
+        step > limitsFor(limits, perTarget, targetOf(owner)).turn &&
+        !hidden(owner, from) &&
+        !hidden(owner, at)
+      )
+        jumps.push(`${owner} turns ${Math.round(step * 100) / 100} at ${at} ms`);
     }
     for (const [path, value] of now) {
       const earlier = before.get(path);
@@ -236,12 +268,8 @@ export function reviewValues(
         value,
         limitsFor(limits, perTarget, targetOf(path)),
       );
-      const from = samples[index - 1]?.at ?? 0;
-      const at = samples[index]?.at ?? 0;
       if (step > limit && !hidden(path, from) && !hidden(path, at))
-        jumps.push(
-          `${path} jumps ${Math.round(step * 100) / 100} at ${samples[index]?.at ?? 0} ms`,
-        );
+        jumps.push(`${path} jumps ${Math.round(step * 100) / 100} at ${at} ms`);
     }
   });
   const names = [...new Set(samples.flatMap(({ targets }) => Object.keys(targets)))].filter(
@@ -275,26 +303,46 @@ type Reviewed =
   | {
       readonly kind: "item";
       readonly name: string;
-      readonly member: Extract<Member, { readonly kind: "list" }>;
+      readonly member:
+        | Extract<Member, { readonly kind: "list" }>
+        | Extract<Member, { readonly kind: "object" }>;
       readonly index: number;
     };
 
+function expandReviewedParts(
+  own: Reviewed,
+  member: Extract<Member, { readonly kind: "list" }> | Extract<Member, { readonly kind: "object" }>,
+  counts: Readonly<Record<string, number>> | undefined,
+): readonly Reviewed[] {
+  const count = counts?.[member.name] ?? 1;
+  return [
+    own,
+    ...Array.from(
+      { length: count },
+      (_, index): Reviewed => ({
+        kind: "item",
+        name: `${member.name}.${index}`,
+        member,
+        index,
+      }),
+    ),
+  ];
+}
+
 /** Every member and list item of a stage, parents first. */
-function reviewedOf(stage: Stage): readonly Reviewed[] {
+function reviewedOf(stage: Stage, counts?: Readonly<Record<string, number>>): readonly Reviewed[] {
   return stage.members.flatMap((member): readonly Reviewed[] => {
     const own: Reviewed = { kind: "member", name: member.name, member };
-    if (member.kind !== "list") return [own];
-    return [
-      own,
-      ...member.items.map(
-        (_, index): Reviewed => ({
-          kind: "item",
-          name: `${member.name}.${index}`,
-          member,
-          index,
-        }),
-      ),
-    ];
+    switch (member.kind) {
+      case "actor":
+        return [own];
+      case "list":
+        return expandReviewedParts(own, member, counts);
+      case "object":
+        return member.parts === true ? expandReviewedParts(own, member, counts) : [own];
+      default:
+        return unreachable(member);
+    }
   });
 }
 
@@ -303,7 +351,7 @@ function contentOfReviewed(reviewed: Reviewed): Content | undefined {
     case "member":
       return reviewed.member.kind === "actor" ? reviewed.member.content : undefined;
     case "item":
-      return reviewed.member.items[reviewed.index];
+      return undefined;
     default:
       return unreachable(reviewed);
   }
@@ -314,19 +362,27 @@ interface EvaluatedSample {
   /** The scene's targets with each list's poses written out, one per item. */
   readonly targets: Readonly<Record<string, unknown>>;
   readonly visible: Readonly<Record<string, boolean>> | undefined;
+  readonly drives: ReadonlyMap<string, Drive>;
   readonly errors: readonly string[];
 }
 
-function evaluate(stage: Stage, time: Time, events: Events, at: number): EvaluatedSample {
+function evaluate(
+  stage: Stage,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
+  time: Time,
+  events: Events,
+  at: number,
+): EvaluatedSample {
   let out: FrameOutput;
   let errors: string[];
   let targets: Readonly<Record<string, unknown>>;
+  const drives = new Map<string, Drive>();
   try {
-    out = frame(stage, { time, events });
-    errors = check(stage, out.targets).map(formatStageError);
-    targets = writtenOut(stage, out.targets);
+    out = frame(stage, { time, events, ...input, drives });
+    errors = check(stage, out.targets, input.counts).map(formatStageError);
+    targets = writtenOut(stage, out.targets, input.counts);
   } catch (error) {
-    return { at, targets: {}, visible: undefined, errors: [errorText(error)] };
+    return { at, targets: {}, visible: undefined, drives: new Map(), errors: [errorText(error)] };
   }
   for (const member of stage.members) {
     if (member.kind !== "actor" || member.content.kind !== "readout") continue;
@@ -341,7 +397,7 @@ function evaluate(stage: Stage, time: Time, events: Events, at: number): Evaluat
       errors.push(`text of "${member.name}" ${detail}`);
     }
   }
-  return { at, targets, visible: out.visible, errors };
+  return { at, targets, visible: out.visible, drives, errors };
 }
 
 function errorText(error: unknown): string {
@@ -349,22 +405,27 @@ function errorText(error: unknown): string {
 }
 
 /** Runs the stage at each requested ms, as a player plays it. */
-function sampleStageFrames(stage: Stage, ms: readonly number[]): readonly EvaluatedSample[] {
+function sampleStageFrames(
+  stage: Stage,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
+  ms: readonly number[],
+  events: Events = NO_EVENTS,
+): readonly EvaluatedSample[] {
   let latest: EvaluatedSample | undefined;
   const driver = manualDriver({ durationMs: stage.durationMs });
   let at = 0;
   play(
-    (time, events) => {
-      latest = evaluate(stage, time, events, at);
+    (time, seen) => {
+      latest = evaluate(stage, input, time, seen, at);
       return latest.targets;
     },
     driver,
-    { cues: stage.cues },
+    { cues: mergeEvents(stage.cues, events) },
   );
   return ms.map((next, index) => {
     at = next;
     if (!(index === 0 && next === 0 && latest !== undefined)) driver.seekMs(next);
-    return latest ?? evaluate(stage, driver.now(), NO_EVENTS, next);
+    return latest ?? evaluate(stage, input, driver.now(), NO_EVENTS, next);
   });
 }
 
@@ -382,9 +443,26 @@ function valueOfReview(targets: Readonly<Record<string, unknown>>, reviewed: Rev
   }
 }
 
-/** Whether a member or item shows: a list item shows while its list does. */
-function shown(sample: EvaluatedSample, reviewed: Reviewed): boolean {
-  return sample.visible?.[reviewed.member.name] !== false;
+/** Whether a member or item shows: a list item shows while its list does, and a child while its parent in the cache does. */
+function shown(
+  sample: EvaluatedSample,
+  reviewed: Reviewed,
+  parents?: Readonly<Record<string, string>>,
+): boolean {
+  if (sample.visible?.[reviewed.member.name] === false) return false;
+  const seen = new Set<string>([reviewed.name, reviewed.member.name]);
+  for (
+    let name =
+      parents?.[reviewed.name] ??
+      parents?.[reviewed.member.name] ??
+      parents?.[`${reviewed.member.name}.0`];
+    name !== undefined && !seen.has(name);
+    name = parents?.[name]
+  ) {
+    seen.add(name);
+    if (sample.visible?.[name] === false) return false;
+  }
+  return true;
 }
 
 /** Each mistake once, at the first ms it happens: shapes, unknown targets, failing readouts. */
@@ -397,34 +475,38 @@ function frameEvaluationFindings(evaluated: readonly EvaluatedSample[]): readonl
   );
 }
 
-/** An ambient member that leaves the frame while it shows. */
+/** The measured frame's size, which ambient members stay inside. */
+type FrameSize = { readonly width: number; readonly height: number };
+
+/** An ambient member that leaves the measured frame while it shows. */
 function ambientBoundsFindings(
-  stage: Stage,
+  frame: FrameSize,
   reviewed: Reviewed,
   evaluated: readonly EvaluatedSample[],
   rest: RestReader,
+  parents?: Readonly<Record<string, string>>,
 ): readonly string[] {
   if (reviewed.kind === "member" && reviewed.member.kind !== "actor") return [];
   if (!rest.has(reviewed.name)) return [];
   const box = rest.get(reviewed.name);
   for (const sample of evaluated) {
-    if (!shown(sample, reviewed)) continue;
+    if (!shown(sample, reviewed, parents)) continue;
     const pose = valueOfReview(sample.targets, reviewed);
     if (typeof pose !== "object" || pose === null || Array.isArray(pose)) continue;
     const x: unknown = Reflect.get(pose, "x");
     const y: unknown = Reflect.get(pose, "y");
     if (typeof x === "number" && Number.isFinite(x)) {
       const px = box.x + x;
-      if (px < 0 || px > stage.frame.width)
+      if (px < 0 || px > frame.width)
         return [
-          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (x=${Math.round(px * 100) / 100}, frame width ${stage.frame.width}).`,
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (x=${Math.round(px * 100) / 100}, frame width ${frame.width}).`,
         ];
     }
     if (typeof y === "number" && Number.isFinite(y)) {
       const py = box.y + y;
-      if (py < 0 || py > stage.frame.height)
+      if (py < 0 || py > frame.height)
         return [
-          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (y=${Math.round(py * 100) / 100}, frame height ${stage.frame.height}).`,
+          `ambient member "${reviewed.name}" leaves stage bounds at ${sample.at} ms (y=${Math.round(py * 100) / 100}, frame height ${frame.height}).`,
         ];
     }
   }
@@ -444,51 +526,143 @@ function stretchOf(beats: readonly Beat[], [from, to]: Window): { start: Beat; e
   return { start, end };
 }
 
+const WATCH_PROBE_EVENTS = ["enter", "down", "click", "focus"] as const;
+
+/** Probes synthetic input samples for an unmoved settle member under its own reported driver. */
+function movedUnderDriver(
+  stage: Stage,
+  reviewed: Reviewed,
+  drive: Drive,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
+  baseline: string,
+): boolean {
+  const rest = input.rest ?? NO_REST;
+  const differs = (time: Time, events: Events): boolean => {
+    try {
+      const out = frame(stage, {
+        time,
+        events,
+        ...input,
+        only: new Set([reviewed.member.name]),
+      });
+      const targets = writtenOut(stage, out.targets, input.counts);
+      return fingerprint(valueOfReview(targets, reviewed)) !== baseline;
+    } catch {
+      return false;
+    }
+  };
+  switch (drive.kind) {
+    case "scroll":
+      for (const item of drive.beats) {
+        const from = item.from.at(rest);
+        const to = item.to.at(rest);
+        const probes = to > from ? [from, (from + to) / 2, to] : [from, from + 1];
+        for (const y of probes) {
+          if (differs(liveAt(0), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+        }
+      }
+      return false;
+    case "trigger": {
+      const threshold = drive.beat.when.point.at(rest);
+      if (threshold > 0 && differs(liveAt(0), NO_EVENTS)) return true;
+      const crossed: Events = [{ name: INPUT_EVENTS.scroll, at: 0, value: threshold }];
+      return (
+        differs(liveAt(0), crossed) ||
+        differs(liveAt(drive.beat.ms / 2), crossed) ||
+        differs(liveAt(drive.beat.ms), crossed)
+      );
+    }
+    case "more": {
+      const maxBottom = Math.max(
+        1000,
+        ...rest.keys().map((key) => {
+          const box = rest.get(key);
+          return box.y + box.height / 2;
+        }),
+      );
+      const scrollProbes = new Set<number>();
+      const steps = Math.max(16, Math.min(64, Math.ceil(maxBottom / 250)));
+      for (let k = 1; k <= steps; k += 1) scrollProbes.add((maxBottom * k) / steps);
+      for (const key of rest.keys()) {
+        const placement = placementOf(rest.get(key));
+        switch (placement.kind) {
+          case "sticky":
+            scrollProbes.add(placement.minY);
+            scrollProbes.add(placement.maxY);
+            for (const f of [0.125, 0.375, 0.625, 0.875])
+              scrollProbes.add(placement.minY + (placement.maxY - placement.minY) * f);
+            break;
+          case "flow":
+          case "fixed":
+            break;
+          default:
+            unreachable(placement);
+        }
+      }
+      for (const y of scrollProbes) {
+        if (differs(liveAt(1000), [{ name: INPUT_EVENTS.scroll, at: 0, value: y }])) return true;
+      }
+      if (
+        differs(liveAt(500), [
+          { name: INPUT_EVENTS.pointerX, at: 0, value: 0.9 },
+          { name: INPUT_EVENTS.pointerY, at: 0, value: 0.9 },
+        ])
+      )
+        return true;
+      for (const watched of stage.members) {
+        if (!watched.watch) continue;
+        for (const name of WATCH_PROBE_EVENTS)
+          if (differs(liveAt(500), [{ name, at: 0, target: watched.name }])) return true;
+      }
+      return false;
+    }
+    default:
+      return unreachable(drive);
+  }
+}
+
 /** Checks expectations (`"settle"`, `"ambient"`, `"static"`), shapes on non-morphs, and changes outside stretches. */
 function stageMemberFindings(
   stage: Stage,
   beats: readonly Beat[],
   evaluated: readonly EvaluatedSample[],
-  rest: RestReader,
-  unmeasured: boolean,
+  input: Pick<FrameInput, "counts" | "lines" | "rest">,
+  frame: FrameSize | undefined,
+  parents: Readonly<Record<string, string>> | undefined,
 ): readonly string[] {
+  const rest = input.rest ?? NO_REST;
+  const counts = input.counts;
   const found: string[] = [];
-  if (unmeasured)
-    found.push(
-      'its layouts are not measured without a browser, so "never moved" is not checked here for any member; review it in the browser, `gerak review "stage.html?piece=<name>" --watch <member>`, or export `rests`.',
-    );
 
   if (evaluated.some(({ errors }) => errors.length > 0)) return found;
-  for (const reviewed of reviewedOf(stage)) {
+  for (const reviewed of reviewedOf(stage, counts)) {
     const { member } = reviewed;
     const prints = evaluated.map(({ targets }) => fingerprint(valueOfReview(targets, reviewed)));
     const unmoved = prints.every((print) => print === prints[0]);
 
     switch (member.expect) {
       case "settle":
-        if (
-          reviewed.kind === "member" &&
-          member.kind !== "group" &&
-          !member.watch &&
-          unmoved &&
-          !unmeasured
-        )
-          found.push(
-            `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
-          );
+        if (reviewed.kind === "member" && !member.watch && unmoved) {
+          const drive = evaluated
+            .find((sample) => sample.drives.has(member.name))
+            ?.drives.get(member.name);
+          if (
+            drive === undefined ||
+            !movedUnderDriver(stage, reviewed, drive, input, prints[0] ?? "")
+          ) {
+            found.push(
+              `cast member "${reviewed.name}" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.`,
+            );
+          }
+        }
         break;
       case "ambient":
-        if (
-          reviewed.kind === "member" &&
-          member.kind !== "group" &&
-          !member.watch &&
-          unmoved &&
-          !unmeasured
-        )
+        if (reviewed.kind === "member" && !member.watch && unmoved)
           found.push(
             `ambient member "${reviewed.name}" never moves; an ambient member keeps moving.`,
           );
-        found.push(...ambientBoundsFindings(stage, reviewed, evaluated, rest));
+        if (frame !== undefined)
+          found.push(...ambientBoundsFindings(frame, reviewed, evaluated, rest, parents));
         break;
       case "static":
         break;
@@ -515,7 +689,7 @@ function stageMemberFindings(
       return before === undefined ||
         now === undefined ||
         print === prints[index - 1] ||
-        shown(now, reviewed)
+        shown(now, reviewed, parents)
         ? []
         : [{ from: before.at, at: now.at }];
     });
@@ -531,58 +705,6 @@ function stageMemberFindings(
     }
   }
   return found;
-}
-
-const SKIN_NAME = /\[data-(cast|path)\s*=\s*(?:"([^"]*)"|'([^']*)'|([\w.-]+))\s*\]/g;
-
-function readDomSkin(dom: DomSkin | undefined): {
-  readonly css?: string;
-  readonly errors: readonly string[];
-} {
-  if (dom === undefined) return { errors: [] };
-  switch (dom.kind) {
-    case "inline":
-      return { css: dom.css, errors: [] };
-    case "url": {
-      const errors: string[] = [];
-      let css: string | undefined;
-      if (dom.css.protocol === "file:") {
-        try {
-          css = readFileSync(fileURLToPath(dom.css), "utf8");
-        } catch (error) {
-          errors.push(`skin css "${dom.css.href}" could not be read: ${errorText(error)}`);
-        }
-      }
-      if (dom.defs !== undefined && dom.defs.protocol === "file:") {
-        try {
-          readFileSync(fileURLToPath(dom.defs), "utf8");
-        } catch (error) {
-          errors.push(`skin defs "${dom.defs.href}" could not be read: ${errorText(error)}`);
-        }
-      }
-      return { ...(css === undefined ? {} : { css }), errors };
-    }
-    default:
-      return unreachable(dom);
-  }
-}
-
-/** Checks DOM skin `[data-cast]` and `[data-path]` rules against the cast. */
-function stageSkinFindings(stage: Stage): readonly string[] {
-  const { css, errors } = readDomSkin(stage.skins.dom);
-  const found = new Set<string>(errors);
-  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
-  const plain = (css ?? "").replace(/\/\*[\s\S]*?\*\//g, "");
-  for (const [, kind, double, single, bare] of plain.matchAll(SKIN_NAME)) {
-    const named = double ?? single ?? bare;
-    if (named === undefined) continue;
-    const reviewed = byName.get(named);
-    const content = reviewed === undefined ? undefined : contentOfReviewed(reviewed);
-    if (reviewed === undefined) found.add(`skin rule names "${named}", which is not in the cast.`);
-    else if (kind === "path" && content?.kind !== "stroke" && content?.kind !== "morph")
-      found.add(`skin rule styles "${named}" as a stroke, but it has no path.`);
-  }
-  return [...found];
 }
 
 /** Draws every path against the rest boxes and finds loops, self-reads and failures. */
@@ -671,9 +793,19 @@ function soughtOrder(ms: readonly number[]): readonly number[] {
 
 /** One finding per target whose value at some ms differs when sought out of order from when played to in
  * order: the scene keeps state between frames, so scrubbing shows what playing never did. */
-function seekFindings(module: SceneModule, played: Samples): readonly string[] {
+function seekFindings(
+  module: SceneModule,
+  played: Samples,
+  events: Events = NO_EVENTS,
+): readonly string[] {
   const byMs = new Map(played.map((sample) => [sample.at, sample.targets] as const));
-  const sought = sampleScene(module, { kind: "time", ms: soughtOrder(played.map(({ at }) => at)) });
+  const sought = sampleScene(
+    module,
+    { kind: "time", ms: soughtOrder(played.map(({ at }) => at)) },
+    undefined,
+    undefined,
+    events,
+  );
   const found = new Map<string, number>();
   for (const { at, targets } of sought) {
     const reached = byMs.get(at);
@@ -700,9 +832,13 @@ function lateCueFindings(module: SceneModule): readonly string[] {
 }
 
 /** The ms each of `ms` costs: a seek, which runs the scene once, on one fresh player, in the order given. */
-function timedSteps(module: SceneModule, ms: readonly number[]): readonly number[] {
+function timedSteps(
+  module: SceneModule,
+  ms: readonly number[],
+  events: Events = NO_EVENTS,
+): readonly number[] {
   const driver = manualDriver({ durationMs: module.durationMs });
-  play(module.scene, driver, { cues: mergeEvents(module.cues) });
+  play(module.scene, driver, { cues: mergeEvents(module.cues, events) });
   return ms.map((at) => {
     const start = performance.now();
     driver.seekMs(at);
@@ -757,11 +893,12 @@ function costFindings(
   module: SceneModule,
   ms: readonly number[],
   budget: number,
+  events: Events = NO_EVENTS,
 ): readonly string[] {
-  const runs = [0, 1, 2].map(() => timedSteps(module, ms));
+  const runs = [0, 1, 2].map(() => timedSteps(module, ms, events));
   const inOrder = ms.map((_, index) => median(runs.map((run) => run[index] ?? 0)));
   const order = soughtOrder(ms);
-  const seeks = timedSteps(module, order);
+  const seeks = timedSteps(module, order, events);
   return [
     ...growthFindings(inOrder, ms),
     ...budgetFindings(
@@ -781,20 +918,17 @@ export function measureSamples(module: SceneModule): Samples {
   return sampleScene(module, { kind: "time", ms });
 }
 
-function stageRestOf(stage: Stage): RestReader {
-  return stage.layouts.readers[stage.layouts.pick(NO_EVENTS)] ?? NO_REST;
-}
-
 export function reviewSceneModule(
   module: SceneModule,
-  request: Pick<SceneReviewRequest, "to"> & Limits & { readonly budget?: number },
+  request: Pick<SceneReviewRequest, "to" | "events"> & Limits & { readonly budget?: number },
 ): SceneReviewResult {
   const end = request.to ?? module.durationMs;
+  const extraEvents = request.events ?? NO_EVENTS;
   const ms: number[] = [];
   for (let at = 0; at <= end; at += STEP_MS) ms.push(at);
   const stage = module.stage;
   if (stage === undefined) {
-    const samples = sampleScene(module, { kind: "time", ms });
+    const samples = sampleScene(module, { kind: "time", ms }, undefined, undefined, extraEvents);
     const findings = [
       ...reviewValues(
         samples,
@@ -803,17 +937,20 @@ export function reviewSceneModule(
         () => false,
         module.limits,
       ),
-      ...seekFindings(module, samples),
+      ...seekFindings(module, samples, extraEvents),
       ...lateCueFindings(module),
-      ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS),
+      ...costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS, extraEvents),
     ];
     return { kind: "reviewed", findings };
   }
 
-  const evaluated = sampleStageFrames(stage, ms);
+  const input = measuredInput(stage, module.measured);
+  const evaluated = sampleStageFrames(stage, input, ms, extraEvents);
   const samples: Samples = evaluated.map(({ at, targets }) => ({ at, targets }));
   const byAt = new Map(evaluated.map((sample) => [sample.at, sample] as const));
-  const byName = new Map(reviewedOf(stage).map((reviewed) => [reviewed.name, reviewed] as const));
+  const byName = new Map(
+    reviewedOf(stage, input.counts).map((reviewed) => [reviewed.name, reviewed] as const),
+  );
   const beats = module.beats ?? [];
   const ownerOfPath = (path: string): Reviewed | undefined => {
     const dotted = path.replace(/\[(\d+)\]/g, ".$1");
@@ -825,10 +962,11 @@ export function reviewSceneModule(
     }
     return undefined;
   };
+  const parents = module.measured?.parents;
   const hidden = (path: string, at: number): boolean => {
     const owner = ownerOfPath(path);
     const sample = byAt.get(at);
-    return owner !== undefined && sample !== undefined && !shown(sample, owner);
+    return owner !== undefined && sample !== undefined && !shown(sample, owner, parents);
   };
   const ongoing = (name: string): boolean => {
     const reviewed = byName.get(name);
@@ -846,22 +984,20 @@ export function reviewSceneModule(
   const allFramesOk = evaluated.every((sample) => sample.errors.length === 0);
   const valueFindings = [
     ...reviewValues(samples, request, hidden, ongoing, stage.limits),
-    ...(allFramesOk ? seekFindings(module, samples) : []),
+    ...(allFramesOk ? seekFindings(module, samples, extraEvents) : []),
     ...lateCueFindings(module),
-    ...(allFramesOk ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS) : []),
+    ...(allFramesOk
+      ? costFindings(module, ms, request.budget ?? DEFAULT_BUDGET_MS, extraEvents)
+      : []),
   ];
-  const rest = stageRestOf(stage);
-  const unmeasured =
-    stage.layouts.names.length > 1 &&
-    stage.layouts.names.every((name) => (stage.layouts.readers[name]?.keys().length ?? 0) === 0);
+  const rest = input.rest ?? NO_REST;
 
   return {
     kind: "reviewed",
     findings: [
       ...frameEvaluationFindings(evaluated),
       ...valueFindings.map((finding) => labelled(stage, finding)),
-      ...stageMemberFindings(stage, beats, evaluated, rest, unmeasured),
-      ...stageSkinFindings(stage),
+      ...stageMemberFindings(stage, beats, evaluated, input, module.measured?.frame, parents),
       ...stagePathFindings(stage, rest),
     ],
   };
@@ -872,7 +1008,7 @@ export async function reviewSceneFile(
   request: SceneReviewRequest,
 ): Promise<SceneReviewResult | { readonly kind: "usage"; readonly message: string }> {
   const file = resolve(request.file);
-  const module = readSceneModule(await import(pathToFileURL(file).href));
+  const module = await loadSceneFile(file);
   if ("reason" in module) return { kind: "usage", message: module.reason };
   return reviewSceneModule(module, request);
 }

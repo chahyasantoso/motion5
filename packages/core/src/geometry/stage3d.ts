@@ -67,6 +67,39 @@ export function orbit(options: {
  * field of view in degrees. */
 export type Lens3d = Pose3d & { readonly fov: number };
 
+function focalAndAspect(
+  who: string,
+  lens: Lens3d,
+  stage: { readonly width: number; readonly height: number },
+): { readonly focal: number; readonly aspect: number } {
+  if (!(lens.fov > 0 && lens.fov < 180))
+    throw new RangeError(`${who}: fov must be above 0 and below 180.`);
+  if (!(stage.width > 0 && stage.height > 0))
+    throw new RangeError(`${who}: the stage needs a size.`);
+  return { focal: 1 / Math.tan((lens.fov * Math.PI) / 360), aspect: stage.width / stage.height };
+}
+
+/** World-unit span and pixel scale across `stage` at `depth` in front of `lens`. */
+export interface ViewSize3d {
+  readonly width: number;
+  readonly height: number;
+  readonly unitsPerPx: number;
+}
+
+/** Visible world-unit width, height, and units per CSS px at `depth` in front of `lens`. */
+export function viewSize3d(
+  lens: Lens3d,
+  stage: { readonly width: number; readonly height: number },
+  depth: number,
+): ViewSize3d {
+  const { focal, aspect } = focalAndAspect("viewSize3d", lens, stage);
+  if (!(depth > EPSILON) || !Number.isFinite(depth))
+    throw new RangeError("viewSize3d: depth must be in front of the lens.");
+  const height = (2 * depth) / focal;
+  const width = height * aspect;
+  return { width, height, unitsPerPx: height / stage.height };
+}
+
 /** Where a world point lands on a stage, in px from its top left, as a perspective camera draws it; `depth` runs
  * along the view, and `visible` is false behind the lens. */
 export function project3d(
@@ -74,12 +107,9 @@ export function project3d(
   lens: Lens3d,
   stage: { readonly width: number; readonly height: number },
 ): { readonly x: number; readonly y: number; readonly depth: number; readonly visible: boolean } {
-  if (!(lens.fov > 0 && lens.fov < 180))
-    throw new RangeError("project3d: fov must be above 0 and below 180.");
   if (![point.x, point.y, point.z].every(Number.isFinite))
     throw new RangeError("project3d: the point must be finite.");
-  if (!(stage.width > 0 && stage.height > 0))
-    throw new RangeError("project3d: the stage needs a size.");
+  const { focal, aspect } = focalAndAspect("project3d", lens, stage);
   const turn = matrixFromEuler3d({
     rotation: lens.rotation ?? 0,
     rotationX: lens.rotationX ?? 0,
@@ -91,8 +121,6 @@ export function project3d(
   const right = turn[0] * dx + turn[3] * dy + turn[6] * dz;
   const up = turn[1] * dx + turn[4] * dy + turn[7] * dz;
   const depth = -(turn[2] * dx + turn[5] * dy + turn[8] * dz);
-  const focal = 1 / Math.tan((lens.fov * Math.PI) / 360);
-  const aspect = stage.width / stage.height;
   const across = depth > EPSILON ? (right * focal) / (aspect * depth) : 0;
   const down = depth > EPSILON ? (up * focal) / depth : 0;
   return {
@@ -110,19 +138,14 @@ export function unproject3d(
   stage: { readonly width: number; readonly height: number },
   depth: number,
 ): Point3d {
-  if (!(lens.fov > 0 && lens.fov < 180))
-    throw new RangeError("unproject3d: fov must be above 0 and below 180.");
+  const { focal, aspect } = focalAndAspect("unproject3d", lens, stage);
   if (!(depth > EPSILON) || !Number.isFinite(depth))
     throw new RangeError("unproject3d: depth must be in front of the lens.");
-  if (!(stage.width > 0 && stage.height > 0))
-    throw new RangeError("unproject3d: the stage needs a size.");
   const turn = matrixFromEuler3d({
     rotation: lens.rotation ?? 0,
     rotationX: lens.rotationX ?? 0,
     rotationY: lens.rotationY ?? 0,
   });
-  const focal = 1 / Math.tan((lens.fov * Math.PI) / 360);
-  const aspect = stage.width / stage.height;
   const across = (point.x / stage.width) * 2 - 1;
   const down = 1 - (point.y / stage.height) * 2;
   const right = (across * aspect * depth) / focal;

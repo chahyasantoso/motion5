@@ -6,44 +6,41 @@ Run from your project's folder. A page is a path inside the site with no leading
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
 `1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px@ms`, with
-`(x,y)` after the ms for a point on the element; a selector the page lacks fails at once.
+`(x,y)` after the ms for a point on the element; repeatable `--action` flags join in order, and a selector the page lacks fails at once.
 
 - **`gerak init [folder] [--refresh]`**: sets up your project, found as the nearest `package.json`: writes the
   page files into `folder` (default `pieces`, from where you run), `"gerak": { "pieces": "<folder>" }` into the
   `package.json`, the make-motion skill into `.claude/skills/make-motion/`, `AGENTS.md` and `tsconfig.json`. It refuses, naming
   each file, and writes nothing when any of them exists or the `package.json` already names `gerak.pieces`.
-  `--refresh` rewrites only the six page files of the pieces folder, and nothing else.
+  `--refresh` rewrites only the four page files of the pieces folder, and nothing else.
 - **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
-- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/src/<name>.ts`, one `sceneBuilder` piece (the brief
-  is the name unless `--in` names another; open as `stage.html?piece=<name>`); `--three` writes `<brief>/<name>.html`, its
-  entry, a component binding the piece's objects with `bindScene3d`, and `<brief>/src/<name>-scene.ts`, a
+- **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `sceneBuilder` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
+  is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, its
+  entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
   `sceneBuilder` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
-- **`gerak import-svg <file.svg> --name <piece> [--root dir] [--margin px] [--force]`** (or **`--into <piece> --at x,y --prefix <word> [--scale s] [--root dir]`**): `--name` writes `<root>/<piece>/src/<piece>.ts`, a
-  `sceneBuilder` piece of the SVG's shapes as flat parts in frame px (the frame is the viewBox with `--margin` px of room on every side), one static `.element(shape(name, path))`
-  per shape in document order named from its `inkscape:label` or `id`, with fill, stroke, opacity and paint order in the
-  skin and gradients in the skin's `defs`. It prints one JSON object: the members, the defs count, the frame, and
-  `leftOut`, every element it cannot carry with the reason (text, image, filter, mask, clipPath, marker,
-  `foreignObject`, a pattern it cannot place, a stroke scaled unevenly). It refuses to overwrite without `--force`.
-- **`gerak review <page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
   prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
+  With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
-- **`gerak review <scene.ts> [--to ms] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
+- **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms]`**: no page: samples
   every field of every target each 16 ms and finds a step over its limit in one frame or a step slower than `--budget` (default 8 ms) (positions over `--jump`, default
   150 for px; turns the short way round over `--turn`, default 150; scales and opacity over `--ratio`, default 1.5), a
   final hold under `--hold`, and a target still moving at the end. For a 3D scene give `--jump` in world units.
+  `--events` injects synthetic `name=value@ms` or `name:target@ms` events alongside `cues`.
   For a `sceneBuilder` piece a finding that names a time also names the beat there, and it
   adds: an element whose value changes outside its `.show` windows (before the first, in a gap, or after the last),
   frame `shape_mismatch` errors, a path that reads its own box, paths that read each other in a loop, and a readout
-  function that throws. A step while an element, its group or its parts are hidden by `.show` is not a jump. An
+  function that throws. Unmoved `"settle"` members driven by scroll, sticky ranges, trigger, pointer, or watched DOM events (`enter`, `down`, `click`, `focus`) are probed across their
+  reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.show` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
-- **`gerak check <page> --watch sel,sel --to ms [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
+- **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
-  edge. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
+  edge. With `--sizes`, checks every viewport and prefixes finding lines with `[WIDTHxHEIGHT]`. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
   `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
 - **`gerak read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
   `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
@@ -54,12 +51,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   dirA dirB` compares two folders with no page. Each shared `frame-*.png` prints `<ms> ms  mean <m>  over32 <p>%`:
   the mean difference over R, G and B out of 255, and the share of pixels whose channel mean differs by over 32.
   Frames one side lacks, or of different sizes, are named; it reports and never fails. Reads 8-bit RGB/RGBA PNGs.
-- **`gerak fps <page> [--to ms] [--size WxH] [--show]`**: runs the page on the machine's real clock for `--to` ms
-  (default 10000) and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
+- **`gerak fps <page> [--to ms] [--size WxH] [--action list] [--show]`**: runs the page on the machine's real clock for `--to` ms
+  (default 10000), executing any `--action` sequence in real time, and prints `{ kind: "fps", windows, over16, over33, worst, renderer, software, vsync }`: frames per
   second per 500 ms window, frame gaps over 16.7 and 33.4 ms, the five slowest frames split into `scene`, `write` and
   `rest` ms, and the WebGL renderer. Headless frames run uncapped (`vsync: false`); `--show` opens a window with a counter.
 - **`gerak compare <page> --reference <svg> [--at ms] [--margin px] [--size WxH] [--out dir]`**: the page's stage frame at `--at` (default 0), at
-  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, as the import's margin, at
+  its frame size, against the SVG drawn from its `viewBox` grown by `--margin` px on every side, at
   that size; each pixel is compared with the nearest within one pixel both ways, so smoothing is forgiven and a missing
   part is not. Writes `piece.png`, `reference.png`,
   `side-by-side.png` and `difference.png` (brighter is more different), and prints `{ kind: "compared", mean, members,
@@ -68,6 +65,11 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak probe <page> --at ms,ms --select sel`**: each match's box, centre, transform, colours, opacity, z-index.
 - **`gerak render <page> --to ms [--out file] [--format gif]`**: an MP4 at 62.5 frames a second, the same bytes each
   run, or a 640 px GIF at 25; needs `ffmpeg`.
+- **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` beside it:
+  the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
+  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them. `sample`, `timeline` and `review` of a
+  builder scene `<brief>/src/<name>.ts` read it with no
+  browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included.
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list]`**: exact
   values with no browser (`--watch` prints a dotted field's trajectory); reads the module's `cues`.
 - **`gerak timeline <scene.ts> [--events list]`**: one bar per target from its first change to its rest.

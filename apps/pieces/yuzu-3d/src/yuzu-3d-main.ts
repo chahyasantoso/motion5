@@ -9,9 +9,9 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import { compileScene, formatStageError } from "@gerak/stage";
-import { applyPose3d, bindScene3d } from "@gerak/three";
+import { applyPose3d, threeBinder } from "@gerak/three";
 import piece, { lens } from "./yuzu-3d";
 
 const compiled = compileScene(piece);
@@ -45,15 +45,10 @@ const fit = (): void => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 };
-fit();
-window.addEventListener("resize", fit);
 
-const mounted = mountPage(stage);
 const draw = (): void => renderer.render(world, camera);
-bindScene3d(
-  mounted.player,
-  stage,
-  {
+const drink = threeBinder(world, {
+  objects: {
     drink: (pose, visible) => {
       can.visible = visible;
       applyPose3d(can, pose);
@@ -61,6 +56,7 @@ bindScene3d(
       band.opacity = pose.opacity ?? 1;
     },
   },
+  resize: fit,
   draw,
-);
-window.addEventListener("resize", draw);
+});
+mount(stage, { clock: "live", binders: [drink] });

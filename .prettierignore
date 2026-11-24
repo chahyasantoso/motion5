@@ -14,3 +14,4 @@ apps/pieces/references/*.json
 
 # A hand-made piece kept exactly as it was written.
 packages/tools/test/fixtures/showreel-original
+*.measure.json

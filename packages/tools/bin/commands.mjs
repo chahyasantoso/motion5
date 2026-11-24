@@ -4,16 +4,16 @@ export const COMMANDS = Object.freeze({
   compare: { file: "motion-compare.mjs", summary: "compare a page's frame with a reference SVG" },
   fps: { file: "motion-fps.mjs", summary: "measure a page's frame rate" },
   frames: { file: "motion-frames.mjs", summary: "capture a page's frames, crops and onion skins" },
-  "import-svg": {
-    file: "motion-import-svg.mjs",
-    summary: "turn an SVG file into a piece or add it to one",
-  },
   init: {
     file: "motion-init.mjs",
     summary: "set up a project: pieces folder, pages, skill and AGENTS.md",
   },
   joints: { file: "motion-joints.mjs", summary: "list the joints of a glTF model" },
   live: { file: "motion-live.mjs", summary: "serve a scene in the live editor" },
+  measure: {
+    file: "motion-measure.mjs",
+    summary: "measure a page's cast into the cache the scene tools read",
+  },
   new: { file: "motion-new.mjs", summary: "scaffold a piece" },
   points: { file: "motion-points.mjs", summary: "resample a point list at an even spacing" },
   probe: { file: "motion-probe.mjs", summary: "measure elements of a page at given times" },

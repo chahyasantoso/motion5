@@ -30,7 +30,7 @@ const pinned = (time: Time) => {
   return { x: at.x, y: at.y, opacity: at.visible ? 1 : 0 };
 };
 
-export default sceneBuilder({ name: "__NAME__", length: LENGTH, frame: size })
+export default sceneBuilder({ name: "__NAME__", length: LENGTH })
   .element(object("box"))
   .motion(motion(boxAt).in(whole))
   .element(box("label"))

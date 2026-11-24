@@ -140,14 +140,12 @@ describe("what a frame reports as moving with time alone", () => {
         .element(box("drink"))
         .motion(travel({ to: slot })),
     );
-    const boxes = {
-      main: restReader({
-        drink: { x: 0, y: 0, width: 10, height: 10 },
-        slot: { x: 50, y: 50, width: 10, height: 10 },
-      }),
-    };
+    const rest = restReader({
+      drink: { x: 0, y: 0, width: 10, height: 10 },
+      slot: { x: 50, y: 50, width: 10, height: 10 },
+    });
     const moves = new Map<string, Moves>();
-    frame(stage, { time: live(100), boxes, moves });
+    frame(stage, { time: live(100), rest, moves });
     expect(moves.has("drink")).toBe(false);
   });
 

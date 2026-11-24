@@ -11,8 +11,8 @@ const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
 const EXTRA = rectPath({ x: 80, y: 0, width: 10, height: 10 });
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
@@ -56,14 +56,13 @@ describe("drawStrokes", () => {
             rectPath({ x: rest.get("leader").x, y: 0, width: 4, height: 4 }),
           ),
           leader: m.stroke(line),
-          marks: m.many([line], (each) => m.stroke(each)),
         }),
         scene: () => ({}),
       }),
     );
     const drawn = drawStrokes(stage, NO_REST);
     if (!drawn.ok) throw new Error(formatStageError(drawn.error));
-    expect([...drawn.strokes.cubics.keys()]).toEqual(["leader", "marks.0", "follower"]);
+    expect([...drawn.strokes.cubics.keys()]).toEqual(["leader", "follower"]);
     expect(drawn.strokes.rest.get("leader").x).toBe(strokeBox(line).x + strokeBox(line).width / 2);
     expect(drawn.strokes.failures).toEqual([]);
   });

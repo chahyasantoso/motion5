@@ -1,5 +1,6 @@
 import {
   POSE_2D_NUMBERS,
+  POSE_3D_NUMBERS,
   VALUE_FIELDS,
   arch,
   combine,
@@ -28,35 +29,36 @@ import {
   type Time,
   project3d,
   unproject3d,
+  viewSize3d,
 } from "@gerak/core";
 import { boxInViewport } from "../render/placement";
 import {
   WINDOW_EVENTS,
+  fixedPxOf,
   isInputBeat,
-  sectionsOfPoint,
+  isScrollBeat,
+  isScrollPoint,
+  measuredBy,
   type Beat,
   type ScrollBeat,
-  type SectionBinding,
+  type ScrollPoint,
   type TriggerBeat,
 } from "./beat";
 import {
   castBuilder,
-  type ActorSpec,
   type CastBuilder,
   type Expect,
-  type ItemContent,
   type Members,
+  type ScrollWindow,
   type Spec,
   type Stretch,
 } from "./cast";
 import type { Element, ObjectElement, ObjectView, SceneElement } from "./elements";
-import type { Carry, CarryOptions, Frame, Rest, RestReader } from "./layout";
+import type { Carry, CarryOptions, RestReader } from "./layout";
 import type {
-  CompiledSection,
-  DomSkinInput,
-  LayoutsInput,
   Limits,
   ListPose,
+  ListPose3d,
   Drive,
   Moves,
   SceneContext,
@@ -107,13 +109,9 @@ export type Principle3d = (signal: Signal<Pose3d>) => Signal<Pose3d>;
 export interface SceneBuilderOptions {
   /** Optional scene label shown in ownership diagnostics. */
   readonly name?: string | undefined;
-  readonly frame?: Frame | undefined;
   readonly cues?: Events | undefined;
   /** The piece's length in ms; defaults to the end of the last beat. */
   readonly length?: number | undefined;
-  readonly layouts?: LayoutsInput | undefined;
-  /** Boxes the headless tools read in place of measured ones, by element or section name. */
-  readonly rest?: Rest | undefined;
 }
 
 /** A piece being written; `.element` selects what to give motions, and `compileScene` makes it playable. */
@@ -121,6 +119,8 @@ export interface SceneBuilder {
   readonly kind: "scene";
   element(element: ObjectElement): ObjectStep;
   element(element: Element): ElementStep;
+  /** Merges `scene`'s elements, beats and motions into this one, on one clock; nothing is selected after. */
+  include(scene: SceneBuilder): SceneBuilder;
 }
 
 /** A piece with one element selected; the order of `.motion` and `.modify` calls matters. */
@@ -149,8 +149,16 @@ export interface ObjectStep extends SceneBuilder {
   limits(limits: Limits): ObjectStep;
 }
 
-/** A beat, or two beats: from the start of the first to the end of the second. */
-export type ShowWindow = Beat | readonly [from: Beat, to: Beat];
+/** A clock beat or scroll beat; `[from, to]` of either; `{ from }`; or `{ until }`. */
+export type ShowWindow =
+  | Beat
+  | ScrollBeat
+  | readonly [from: Beat, to: Beat]
+  | readonly [from: ScrollPoint, to: ScrollPoint]
+  | { readonly from: Beat }
+  | { readonly until: Beat }
+  | { readonly from: ScrollPoint }
+  | { readonly until: ScrollPoint };
 
 type MotionStep = {
   readonly kind: "motion";
@@ -176,6 +184,7 @@ type Travel3dStep = {
   readonly kind: "travel3d";
   readonly run: TravelMotion;
   readonly view: ObjectView;
+  readonly fit: "none" | "contain";
   readonly span: Span | undefined;
   readonly window: InWindow | undefined;
   readonly loops: boolean;
@@ -191,6 +200,7 @@ type Step =
 interface Entry {
   readonly steps: readonly Step[];
   readonly show: readonly Stretch[];
+  readonly scrollShow: readonly ScrollWindow[];
   readonly limits: Limits;
 }
 
@@ -202,15 +212,15 @@ interface State {
   readonly owner: SceneOwner;
   readonly options: SceneBuilderOptions;
   readonly elements: ReadonlyMap<string, SceneElement>;
+  readonly owned: ReadonlySet<string>;
   readonly order: readonly string[];
   readonly entries: ReadonlyMap<string, Entry>;
   readonly beats: ReadonlyMap<string, Beat>;
   readonly inputBeats: ReadonlyMap<string, ScrollBeat | TriggerBeat>;
-  readonly sections: ReadonlyMap<string, SectionBinding>;
   readonly current: string | undefined;
 }
 
-const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], limits: {} });
+const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], scrollShow: [], limits: {} });
 
 let nextSceneId = 0;
 const OWNERS = new WeakMap<SceneElement, SceneOwner>();
@@ -218,20 +228,25 @@ const READS = new WeakMap<object, readonly string[]>();
 const TRAVEL_TARGETS = new WeakMap<object, readonly Element[]>();
 const PART_LINES = new WeakMap<MotionContext, readonly number[]>();
 const BELOW_POSE = new WeakMap<MotionContext, Pose2d>();
-/** An object's travel: its view and the pose under it, and the world position the travel answers. */
+/** An object's travel: its view, prior pose, fit mode, and resolved 3D target pose. */
 const OBJECT_TRAVEL = new WeakMap<
   MotionContext,
-  { readonly view: ObjectView; readonly below: Pose3d; out: Pose3d | undefined }
+  {
+    readonly view: ObjectView;
+    readonly below: Pose3d;
+    readonly fit: "none" | "contain";
+    out: Pose3d | undefined;
+  }
 >();
 const MOTION_BODY = Symbol.for("@gerak/core/motion-body");
 
-interface MotionBody {
-  readonly fn: (time: Time, context?: MotionContext) => Pose2d;
+interface MotionBody<P = Pose2d> {
+  readonly fn: (time: Time, context?: MotionContext) => P;
   readonly ease: Ease | undefined;
   readonly period: number | undefined;
 }
 
-function isMotionBody(value: unknown): value is MotionBody {
+function isMotionBody<P>(value: unknown): value is MotionBody<P> {
   if (typeof value !== "object" || value === null) return false;
   const fn: unknown = Reflect.get(value, "fn");
   const ease: unknown = Reflect.get(value, "ease");
@@ -243,9 +258,9 @@ function isMotionBody(value: unknown): value is MotionBody {
   );
 }
 
-function motionBodyOf(run: Motion<Pose2d, MotionContext>): MotionBody | undefined {
+function motionBodyOf<P>(run: Motion<P, MotionContext>): MotionBody<P> | undefined {
   const body: unknown = Reflect.get(run, MOTION_BODY);
-  return isMotionBody(body) ? body : undefined;
+  return isMotionBody<P>(body) ? body : undefined;
 }
 
 function need(context: MotionContext | undefined, who: string): MotionContext {
@@ -254,11 +269,11 @@ function need(context: MotionContext | undefined, who: string): MotionContext {
   return context;
 }
 
-function withMeta(
-  base: Motion<Pose2d, MotionContext>,
+function withMeta<P extends Pose2d | Pose3d>(
+  base: Motion<P, MotionContext>,
   reads: readonly string[],
   targets: readonly Element[],
-): Motion<Pose2d, MotionContext> {
+): Motion<P, MotionContext> {
   const wrapped = Object.assign((time: Time, context?: MotionContext) => base(time, context), {
     span: base.span,
     window: base.window,
@@ -294,13 +309,56 @@ export function bind(fields: BoundFields): Motion<Pose2d, MotionContext> {
   });
 }
 
-/** The fields `bindEach` sets: each maps a part's index to its signal. */
+type SharedNumberKey = Extract<(typeof POSE_2D_NUMBERS)[number], (typeof POSE_3D_NUMBERS)[number]>;
+type Only2dKey = Exclude<(typeof POSE_2D_NUMBERS)[number], SharedNumberKey>;
+type Only3dKey = Exclude<(typeof POSE_3D_NUMBERS)[number], SharedNumberKey>;
+
+/** The numeric fields shared by 2D and 3D poses: `x`, `y`, `rotation`, scales, and `opacity`. */
+export type SharedPose = { readonly [K in SharedNumberKey]?: number };
+
+/** The shared fields `bindEach` sets: valid on both 2D list elements and 3D list objects. */
+export type BoundEachSharedFields = {
+  readonly [K in SharedNumberKey]?: (index: number) => Signal<number>;
+} & { readonly [K in Only2dKey | Only3dKey]?: never };
+
+/** The 2D fields `bindEach` sets: each maps a part's index to its signal. */
 export type BoundEachFields = {
   readonly [K in (typeof POSE_2D_NUMBERS)[number]]?: (index: number) => Signal<number>;
-};
+} & { readonly [K in Only3dKey]?: never };
 
-/** A motion setting each field of each part of a list element from that part's signal at the scene's time. */
-export function bindEach(fields: BoundEachFields): Motion<Pose2d, MotionContext> {
+/** The 3D fields `bindEach` sets on an `object(..., { parts: true })`: each maps a part's index to its signal. */
+export type BoundEachFields3d = {
+  readonly [K in (typeof POSE_3D_NUMBERS)[number]]?: (index: number) => Signal<number>;
+} & { readonly [K in Only2dKey]?: never };
+
+/** A motion setting each field of each part of a 2D or 3D list from that part's signal at the scene's time. */
+export function bindEach(fields: BoundEachSharedFields): Motion<SharedPose, MotionContext>;
+export function bindEach(fields: BoundEachFields): Motion<Pose2d, MotionContext>;
+export function bindEach(fields: BoundEachFields3d): Motion<Pose3d, MotionContext>;
+export function bindEach(
+  fields: BoundEachSharedFields | BoundEachFields | BoundEachFields3d,
+):
+  | Motion<SharedPose, MotionContext>
+  | Motion<Pose2d, MotionContext>
+  | Motion<Pose3d, MotionContext> {
+  if (
+    fields.z !== undefined ||
+    fields.rotationX !== undefined ||
+    fields.rotationY !== undefined ||
+    fields.scaleZ !== undefined
+  ) {
+    return motion<Pose3d, MotionContext>((_time, context?: MotionContext) => {
+      const { time, events, index } = need(context, "bindEach");
+      if (index === undefined)
+        throw new TypeError("bindEach: this element has no parts; use `bind` instead.");
+      const out: { -readonly [K in (typeof POSE_3D_NUMBERS)[number]]?: number } = {};
+      for (const key of POSE_3D_NUMBERS) {
+        const signal = fields[key];
+        if (signal !== undefined) out[key] = signal(index)(time, events);
+      }
+      return out;
+    });
+  }
   return motion((_time, context?: MotionContext) => {
     const { time, events, index } = need(context, "bindEach");
     if (index === undefined)
@@ -347,38 +405,34 @@ function orderLines(values: readonly number[], from: StaggerFrom): readonly numb
   }
 }
 
-function isMotion(
-  value:
-    | Motion<Pose2d, MotionContext>
-    | ((index: number, count: number) => Motion<Pose2d, MotionContext>),
-): value is Motion<Pose2d, MotionContext> {
+function isMotion<P extends Pose2d | Pose3d>(
+  value: Motion<P, MotionContext> | ((index: number, count: number) => Motion<P, MotionContext>),
+): value is Motion<P, MotionContext> {
   return "joins" in value;
 }
 
-/** Plays `inner` on each part of a list element in its own lane; without parts it plays as it is.
- * A function builds each part's motion from `(index, count)`; its traits come from `(0, 1)`. */
-export function stagger(
-  inner: Motion<Pose2d, MotionContext>,
+/** Plays `inner` on each list part (2D or 3D) in its own lane; with no parts it plays as is.
+ * A function builds each part from `(index, count)`. */
+export function stagger<P extends Pose2d | Pose3d>(
+  inner: Motion<P, MotionContext>,
   options: StaggerOptions,
-): Motion<Pose2d, MotionContext>;
-export function stagger(
-  inner: (index: number, count: number) => Motion<Pose2d, MotionContext>,
+): Motion<P, MotionContext>;
+export function stagger<P extends Pose2d | Pose3d>(
+  inner: (index: number, count: number) => Motion<P, MotionContext>,
   options: StaggerOptions,
-): Motion<Pose2d, MotionContext>;
-export function stagger(
-  inner:
-    | Motion<Pose2d, MotionContext>
-    | ((index: number, count: number) => Motion<Pose2d, MotionContext>),
+): Motion<P, MotionContext>;
+export function stagger<P extends Pose2d | Pose3d>(
+  inner: Motion<P, MotionContext> | ((index: number, count: number) => Motion<P, MotionContext>),
   options: StaggerOptions,
-): Motion<Pose2d, MotionContext> {
+): Motion<P, MotionContext> {
   const build = isMotion(inner) ? () => inner : inner;
   const first = build(0, 1);
   const { span, window } = first;
   const outer = span ?? window;
   const by = options.by ?? "index";
   const from = options.from ?? "start";
-  const parts = new Map<string, Motion<Pose2d, MotionContext>>();
-  const partOf = (index: number, count: number): Motion<Pose2d, MotionContext> => {
+  const parts = new Map<string, Motion<P, MotionContext>>();
+  const partOf = (index: number, count: number): Motion<P, MotionContext> => {
     const key = `${index}/${count}`;
     const held = parts.get(key) ?? build(index, count);
     parts.set(key, held);
@@ -427,11 +481,7 @@ export function stagger(
   };
   const place = (time: Time, own: Span | undefined): Time =>
     own === undefined ? time : timeAt(time, own.at(time.progress));
-  const runBody = (
-    part: Motion<Pose2d, MotionContext>,
-    time: Time,
-    context: MotionContext,
-  ): Pose2d => {
+  const runBody = (part: Motion<P, MotionContext>, time: Time, context: MotionContext): P => {
     const body = motionBodyOf(part);
     if (body === undefined) return part(time, context);
     const cycled = body.period === undefined ? time : loop(body.period).of(time);
@@ -506,8 +556,8 @@ export interface TravelOptions {
   readonly to: Element;
   /** Perpendicular bow at mid-travel in px, 0 at both ends (default 0). */
   readonly arc?: number | undefined;
-  /** `"contain"` (default) scales evenly to fit inside the slot, centred; `"fill"` stretches to its box. */
-  readonly fit?: "contain" | "fill" | undefined;
+  /** How it fits: `"contain"` (2D default, 3D opt-in), `"fill"` (2D only), or `"none"` (3D default). */
+  readonly fit?: "contain" | "fill" | "none" | undefined;
 }
 
 function isElement(value: unknown): value is Element {
@@ -516,11 +566,7 @@ function isElement(value: unknown): value is Element {
   const name: unknown = Reflect.get(value, "name");
   const opts: unknown = Reflect.get(value, "options");
   return (
-    (kind === "box" ||
-      kind === "shape" ||
-      kind === "text" ||
-      kind === "many" ||
-      kind === "group") &&
+    (kind === "box" || kind === "shape" || kind === "text") &&
     typeof name === "string" &&
     name !== "" &&
     typeof opts === "object" &&
@@ -560,14 +606,15 @@ function travelMotion(base: Motion<Pose2d, MotionContext>, options: TravelOption
   return wrapped;
 }
 
-/** An object's travel at progress `p`: toward the slot's centre on the canvas at its starting depth;
- * undefined while a box is unmeasured or the start is behind the lens. */
+/** Object travel at progress `p` toward the slot on the canvas at its starting depth,
+ * optionally fit by `"contain"`, or `undefined` when unmeasured or behind the lens. */
 function travelled3d(
   view: ObjectView,
   below: Pose3d,
   here: MotionContext,
   to: Element,
   p: number,
+  fit: "none" | "contain",
 ): Pose3d | undefined {
   if (p === 0 || !here.rest.has(to.name) || !here.rest.has(view.canvas.name)) return undefined;
   const scrollY = scroll.y(here.time, here.events);
@@ -583,25 +630,61 @@ function travelled3d(
   const seen = project3d(start, view.lens, size);
   if (!seen.visible) return undefined;
   const end = unproject3d(point, view.lens, size, seen.depth);
-  if (p === 1) return end;
-  return { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
+  const pos: Pose3d =
+    p === 1
+      ? end
+      : { x: mix(start.x, end.x, p), y: mix(start.y, end.y, p), z: mix(start.z, end.z, p) };
+  switch (fit) {
+    case "none":
+      return pos;
+    case "contain": {
+      if (!(slot.width > 0 && slot.height > 0)) return pos;
+      const partBounds =
+        here.index === undefined ? undefined : here.rest.object(`${here.element}.${here.index}`);
+      const bounds = partBounds ?? here.rest.object(here.element);
+      if (bounds === undefined || !(bounds.width > 0 && bounds.height > 0)) return pos;
+      const units = viewSize3d(view.lens, size, seen.depth).unitsPerPx;
+      const toScale = Math.min(
+        (slot.width * units) / bounds.width,
+        (slot.height * units) / bounds.height,
+      );
+      const uniform = below.scale ?? 1;
+      if (below.scaleX !== undefined || below.scaleY !== undefined || below.scaleZ !== undefined) {
+        const fromX = uniform * (below.scaleX ?? 1);
+        const fromY = uniform * (below.scaleY ?? 1);
+        const fromZ = uniform * (below.scaleZ ?? 1);
+        return {
+          ...pos,
+          scaleX: p === 1 ? toScale : mix(fromX, toScale, p),
+          scaleY: p === 1 ? toScale : mix(fromY, toScale, p),
+          scaleZ: p === 1 ? toScale : mix(fromZ, toScale, p),
+        };
+      }
+      return { ...pos, scale: p === 1 ? toScale : mix(uniform, toScale, p) };
+    }
+    default:
+      return unreachable(fit);
+  }
 }
 
-/** Moves an element from its current pose into `options.to`'s measured box over its beat, evenly scaled unless
- * `fit: "fill"`; with no window on a live or untimed clock it sits there. */
+/** Moves an element from its current pose into `options.to`'s measured box over its beat; with no
+ * window it sits there on every clock (live, timed, and untimed). */
 export function travel(options: TravelOptions): TravelMotion {
   if (typeof options !== "object" || options === null || !isElement(options.to))
     throw new TypeError("travel: `to` must be a target element.");
-  const { to, arc: bend = 0, fit = "contain" } = options;
+  const { to, arc: bend = 0, fit } = options;
   if (!Number.isFinite(bend))
     throw new RangeError(`travel: \`arc\` must be a finite number of px, not ${bend}.`);
-  if (fit !== "contain" && fit !== "fill")
-    throw new TypeError(`travel: \`fit\` must be "contain" or "fill", not ${String(fit)}.`);
+  if (fit !== undefined && fit !== "contain" && fit !== "fill" && fit !== "none")
+    throw new TypeError(
+      `travel: \`fit\` must be "contain", "fill", or "none", not ${String(fit)}.`,
+    );
+  const fit2d = fit ?? "contain";
   const base = motion((time, context?: MotionContext): Pose2d => {
     const here = need(context, "travel");
     const object = OBJECT_TRAVEL.get(here);
     if (object !== undefined) {
-      object.out = travelled3d(object.view, object.below, here, to, time.progress);
+      object.out = travelled3d(object.view, object.below, here, to, time.progress, object.fit);
       return {};
     }
     const prev = BELOW_POSE.get(here);
@@ -628,14 +711,17 @@ export function travel(options: TravelOptions): TravelMotion {
         y += (dx / length) * push;
       }
     }
-    if (!(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)) {
+    if (
+      fit2d === "none" ||
+      !(own.width > 0 && own.height > 0 && target.width > 0 && target.height > 0)
+    ) {
       return { x, y };
     }
     const across = target.width / own.width;
     const down = target.height / own.height;
     let toScaleX: number;
     let toScaleY: number;
-    switch (fit) {
+    switch (fit2d) {
       case "contain":
         toScaleX = Math.min(across, down);
         toScaleY = toScaleX;
@@ -645,7 +731,7 @@ export function travel(options: TravelOptions): TravelMotion {
         toScaleY = down;
         break;
       default:
-        return unreachable(fit);
+        return unreachable(fit2d);
     }
     const uniform = prev?.scale ?? 1;
     const fromScaleX = uniform * (prev?.scaleX ?? 1);
@@ -657,14 +743,17 @@ export function travel(options: TravelOptions): TravelMotion {
       scaleY: p === 1 ? toScaleY : mix(fromScaleY, toScaleY, p),
     };
   });
-  return travelMotion(base, Object.freeze({ to, arc: bend, fit }));
+  return travelMotion(
+    base,
+    Object.freeze({ to, arc: bend, ...(fit === undefined ? {} : { fit }) }),
+  );
 }
 
 function indexOf(context: MotionContext): { readonly index?: number } {
   return context.index === undefined ? {} : { index: context.index };
 }
 
-/** A motion giving the element's move from its box in the last layout to its box in the next.
+/** A motion giving the element's move from its old rest box to its new one after a re-measure.
  * A part of a list uses its box named `<element>.<index>`. */
 export function carry(options: CarryOptions): Motion<Pose2d, MotionContext> {
   return motion((_time, context?: MotionContext) => {
@@ -719,14 +808,95 @@ function describe(element: SceneElement): string {
   return `"${element.name}" (${element.kind})`;
 }
 
-/** The selector of the page node an element is bound to; an object has none. */
-function selectorOf(element: SceneElement): string | undefined {
-  return element.kind === "object" ? undefined : element.options.node?.selector;
+/** The owner each included scene's owner was merged into. */
+const INCLUDED_IN = new WeakMap<SceneOwner, SceneOwner>();
+
+/** Whether `owner` is `held` or took it in, directly or through scenes it included. */
+function owns(owner: SceneOwner, held: SceneOwner): boolean {
+  for (let at: SceneOwner | undefined = held; at !== undefined; at = INCLUDED_IN.get(at))
+    if (at === owner) return true;
+  return false;
+}
+
+const SCENE_OPTIONS = ["cues", "length"] as const;
+
+/** `.include` for a state: merges another scene's state into it. */
+function includeOf(state: State): SceneBuilder["include"] {
+  return (scene) => {
+    const other = isScene(scene) ? stateOf(scene) : undefined;
+    if (other === undefined)
+      throw new TypeError("sceneBuilder: `.include` takes what `sceneBuilder` returns.");
+    const named = `scene "${other.owner.label}"`;
+    if (owns(state.owner, other.owner))
+      throw new TypeError(`sceneBuilder: ${named} is already in "${state.owner.label}".`);
+    const merged = INCLUDED_IN.get(other.owner);
+    if (merged !== undefined)
+      throw new TypeError(`sceneBuilder: ${named} is already included in "${merged.label}".`);
+    for (const option of SCENE_OPTIONS)
+      if (other.options[option] !== undefined)
+        throw new TypeError(
+          `sceneBuilder: ${named} sets \`${option}\`; only the scene that is mounted sets it.`,
+        );
+    const elements = new Map(state.elements);
+    for (const [name, element] of other.elements) {
+      const held = elements.get(name);
+      if (held !== undefined && held !== element)
+        throw new TypeError(
+          `sceneBuilder: ${describe(element)} of ${named} takes the name of ${describe(held)}.`,
+        );
+      elements.set(name, element);
+    }
+    for (const name of other.owned) {
+      if (state.owned.has(name)) {
+        const held = state.elements.get(name);
+        throw new TypeError(
+          `sceneBuilder: element ${held === undefined ? `"${name}"` : describe(held)} already belongs to "${state.owner.label}".`,
+        );
+      }
+    }
+    const entries = new Map(state.entries);
+    for (const [name, entry] of other.entries) {
+      if (state.owned.has(name) && !other.owned.has(name)) continue;
+      entries.set(name, entry);
+    }
+    const owned = new Set([...state.owned, ...other.owned]);
+    const beats = new Map(state.beats);
+    const inputBeats = new Map(state.inputBeats);
+    for (const beat of other.beats.values()) withBeat(beats, inputBeats, beat);
+    for (const beat of other.inputBeats.values()) withInputBeat(beats, inputBeats, beat);
+    const next: State = {
+      ...state,
+      elements,
+      owned,
+      order: [...state.order, ...other.order.filter((name) => !state.order.includes(name))],
+      entries,
+      beats,
+      inputBeats,
+      current: undefined,
+    };
+    const loop = loopOf(next.entries);
+    if (loop !== undefined)
+      throw new RangeError(`sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`);
+    INCLUDED_IN.set(other.owner, state.owner);
+    return kept({ kind: "scene", element: elementOf(next), include: includeOf(next) }, next);
+  };
+}
+
+function validateReference(
+  elements: ReadonlyMap<string, SceneElement>,
+  element: SceneElement,
+  staged: Map<string, SceneElement>,
+): void {
+  const held = elements.get(element.name) ?? staged.get(element.name);
+  if (held !== undefined && held !== element)
+    throw new TypeError(
+      `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
+    );
+  if (!elements.has(element.name)) staged.set(element.name, element);
 }
 
 function validateRegistration(
   elements: ReadonlyMap<string, SceneElement>,
-  sections: ReadonlyMap<string, SectionBinding>,
   owner: SceneOwner,
   element: SceneElement,
   staged: Map<string, SceneElement>,
@@ -737,40 +907,28 @@ function validateRegistration(
       `sceneBuilder: element ${describe(held)} is already in the piece; ${describe(element)} cannot take its name.`,
     );
   const existingOwner = OWNERS.get(element);
-  if (existingOwner !== undefined && existingOwner !== owner)
+  if (existingOwner !== undefined && !owns(owner, existingOwner))
     throw new TypeError(
       `sceneBuilder: element ${describe(element)} already belongs to "${existingOwner.label}" and cannot join "${owner.label}".`,
     );
-  const sec = sections.get(element.name);
-  if (sec !== undefined && selectorOf(element) !== sec.selector)
-    throw new TypeError(
-      `sceneBuilder: element ${describe(element)} collides with section "${sec.name}" (${sec.selector}).`,
-    );
   staged.set(element.name, element);
-  if (element.kind === "group")
-    for (const child of element.children)
-      validateRegistration(elements, sections, owner, child, staged);
 }
 
 function register(
   elements: Map<string, SceneElement>,
-  sections: ReadonlyMap<string, SectionBinding>,
   owner: SceneOwner,
   element: SceneElement,
 ): void {
   const staged = new Map<string, SceneElement>();
-  validateRegistration(elements, sections, owner, element, staged);
+  validateRegistration(elements, owner, element, staged);
   for (const [name, entry] of staged) {
     elements.set(name, entry);
     OWNERS.set(entry, owner);
   }
 }
 
-function addSections(
-  sections: Map<string, SectionBinding>,
-  elements: ReadonlyMap<string, SceneElement>,
-  window: ScrollBeat | TriggerBeat,
-): void {
+/** The elements whose edges a scroll or trigger beat reads; using one adds it to the piece. */
+function edgeElementsOf(window: ScrollBeat | TriggerBeat): readonly Element[] {
   let points;
   switch (window.kind) {
     case "scroll-beat":
@@ -782,21 +940,7 @@ function addSections(
     default:
       return unreachable(window);
   }
-  for (const point of points) {
-    for (const sec of sectionsOfPoint(point)) {
-      const prior = sections.get(sec.name);
-      if (prior !== undefined && prior.selector !== sec.selector)
-        throw new RangeError(
-          `sceneBuilder: section "${sec.name}" uses selector "${prior.selector}" in one beat and "${sec.selector}" in another.`,
-        );
-      const colliding = elements.get(sec.name);
-      if (colliding !== undefined && selectorOf(colliding) !== sec.selector)
-        throw new TypeError(
-          `sceneBuilder: section "${sec.name}" (${sec.selector}) collides with element ${describe(colliding)}.`,
-        );
-      sections.set(sec.name, sec);
-    }
-  }
+  return points.map(measuredBy).filter(isElement);
 }
 
 function withBeat(
@@ -870,34 +1014,12 @@ function expectOf(entry: Entry): Expect {
   return loops ? "ambient" : "settle";
 }
 
-function itemSpec(item: ItemContent, m: CastBuilder<string>): ActorSpec<string, ItemContent> {
-  switch (item.kind) {
-    case "box":
-      return m.box();
-    case "text":
-      return m.text(item.value);
-    case "stroke":
-      return m.stroke(item.path);
-    case "morph": {
-      const [base, ...targets] = item.shapes;
-      if (base === undefined) throw new TypeError("a morph needs a base outline.");
-      return m.morph(base, targets);
-    }
-    default:
-      return unreachable(item);
-  }
-}
-
-function baseSpec(
-  element: SceneElement,
-  m: CastBuilder<string>,
-  children: (child: Element) => Spec,
-): Spec {
+function baseSpec(element: SceneElement, m: CastBuilder<string>): Spec {
   switch (element.kind) {
     case "object":
-      return m.object();
+      return element.parts === true ? m.objects() : m.object();
     case "box":
-      return m.box();
+      return element.parts === true ? m.many() : m.box();
     case "shape": {
       const { outline } = element;
       return outline.kind === "path"
@@ -907,38 +1029,32 @@ function baseSpec(
     case "text": {
       const { content, split } = element;
       if (typeof content === "function") return m.readout(content);
-      if (split === undefined) return m.text(content);
+      if (split === undefined) return m.text();
       switch (split) {
         case "letters":
-          return m.letters(content);
+          return m.letters();
         case "words":
-          return m.words(content);
+          return m.words();
         default:
           return unreachable(split);
       }
     }
-    case "many":
-      return m.many(element.items, (item) => itemSpec(item, m));
-    case "group":
-      return m.group(
-        Object.fromEntries(element.children.map((child) => [child.name, children(child)])),
-      );
     default:
       return unreachable(element);
   }
 }
 
-function listCount(element: SceneElement): number | undefined {
-  const spec = baseSpec(element, castBuilder<string>(), () => castBuilder<string>().box());
-  switch (spec.kind) {
-    case "list":
-      return spec.items.length;
-    case "actor":
-    case "group":
+function hasParts(element: SceneElement): boolean {
+  switch (element.kind) {
+    case "box":
     case "object":
-      return undefined;
+      return element.parts === true;
+    case "text":
+      return element.split !== undefined;
+    case "shape":
+      return false;
     default:
-      return unreachable(spec);
+      return unreachable(element);
   }
 }
 
@@ -951,17 +1067,13 @@ function castOf(state: State, m: CastBuilder<string>): Members {
             throw new TypeError(
               `sceneBuilder: a motion reads "${read}", which is not an element of the piece.`,
             );
-  const nested = new Set<string>();
-  for (const element of state.elements.values())
-    if (element.kind === "group") for (const child of element.children) nested.add(child.name);
   const specOf = (element: SceneElement): Spec => {
     const entry = state.entries.get(element.name) ?? NO_ENTRY;
-    const { pivot, watch, node } = element.kind === "object" ? {} : element.options;
-    let out = baseSpec(element, m, (child) => specOf(child));
-    if (entry.show.length > 0) out = out.on(...entry.show);
+    const { watch } = element.kind === "object" ? {} : element.options;
+    let out = baseSpec(element, m);
+    if (entry.show.length > 0) out = out.showing(entry.show);
+    if (entry.scrollShow.length > 0) out = out.showingScroll(entry.scrollShow);
     if (watch !== undefined) out = out.watch(watch);
-    if (pivot !== undefined) out = out.pivot(pivot);
-    if (node !== undefined) out = out.node(node);
     const expect = expectOf(entry);
     switch (expect) {
       case "static":
@@ -977,14 +1089,14 @@ function castOf(state: State, m: CastBuilder<string>): Members {
   const members: Record<string, Spec> = {};
   for (const name of state.order) {
     const element = state.elements.get(name);
-    if (element !== undefined && !nested.has(name)) members[name] = specOf(element);
+    if (element !== undefined) members[name] = specOf(element);
   }
   return members;
 }
 
 interface Plan {
   readonly name: string;
-  readonly count: number | undefined;
+  readonly parts: boolean;
   readonly object: boolean;
   readonly steps: readonly Step[];
 }
@@ -993,6 +1105,7 @@ interface Env {
   readonly plans: ReadonlyMap<string, Plan>;
   readonly rest: RestReader;
   readonly carry: Carry;
+  readonly counts: Readonly<Record<string, number>> | undefined;
   readonly lines: Readonly<Record<string, readonly number[]>> | undefined;
   /** Poses `read` already computed this frame, by element, part and time. */
   readonly read: Map<string, { readonly events: Events; readonly pose: Pose2d }>;
@@ -1138,8 +1251,8 @@ function readerOf(env: Env, time: Time, events: Events): MotionContext["read"] {
     const read = env.plans.get(name);
     if (read === undefined) throw new RangeError(`read: "${name}" is not an element of the piece.`);
     if (read.object) throw new RangeError(`read: "${name}" is an object; its pose is 3D.`);
-    const part = read.count === undefined ? undefined : (at?.index ?? 0);
-    const parts = at?.count ?? read.count;
+    const part = read.parts ? (at?.index ?? 0) : undefined;
+    const parts = read.parts ? (at?.count ?? env.counts?.[name] ?? 1) : undefined;
     const when = at?.time ?? time;
     const length = when.clock.kind === "timed" ? when.clock.length : "";
     const key = `${name}|${part}|${parts}|${when.clock.kind}|${elapsedOf(when.clock)}|${length}|${when.progress}`;
@@ -1160,7 +1273,12 @@ function replacing3d(below: Pose3d, pose: Pose3d): Pose3d {
 }
 
 /** An object's motions as one 3D signal: the same notes, windows and joins as an element's, over `Pose3d`. */
-function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
+function stack3dOf(
+  plan: Plan,
+  env: Env,
+  index: number | undefined,
+  count: number | undefined,
+): Signal<Pose3d> {
   let stack: Signal<Pose3d> = () => ({});
   for (const step of plan.steps) {
     const below = stack;
@@ -1187,6 +1305,8 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
             element: plan.name,
             span: step.span,
             read: readerOf(env, time, events),
+            ...(index === undefined ? {} : { index }),
+            ...(count === undefined ? {} : { count }),
           };
           const moves = env.moves;
           if (moves !== undefined) {
@@ -1195,18 +1315,32 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
           }
           noteDrive(env.drives, plan.name, MORE);
           const prev = below(time, events);
-          // On a live or untimed clock a travel with no window sits on its slot, as an element's does.
-          const ran =
-            step.window === undefined && time.clock.kind !== "timed" ? withProgress(time, 1) : time;
-          const holder: { view: ObjectView; below: Pose3d; out: Pose3d | undefined } = {
+          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
+          const ran = step.window === undefined ? withProgress(time, 1) : time;
+          const holder: {
+            readonly view: ObjectView;
+            readonly below: Pose3d;
+            readonly fit: "none" | "contain";
+            out: Pose3d | undefined;
+          } = {
             view: step.view,
             below: prev,
+            fit: step.fit,
             out: undefined,
           };
           OBJECT_TRAVEL.set(context, holder);
           step.run(ran, context);
           const out = holder.out;
-          return out === undefined ? prev : { ...prev, ...out };
+          if (out === undefined) return prev;
+          if (out.scale !== undefined) {
+            const { scaleX: _sx, scaleY: _sy, scaleZ: _sz, ...kept } = prev;
+            return { ...kept, ...out };
+          }
+          if (out.scaleX !== undefined || out.scaleY !== undefined || out.scaleZ !== undefined) {
+            const { scale: _s, ...kept } = prev;
+            return { ...kept, ...out };
+          }
+          return { ...prev, ...out };
         };
         break;
       case "motion3d":
@@ -1219,6 +1353,8 @@ function stack3dOf(plan: Plan, env: Env): Signal<Pose3d> {
             element: plan.name,
             span: step.span,
             read: readerOf(env, time, events),
+            ...(index === undefined ? {} : { index }),
+            ...(count === undefined ? {} : { count }),
           };
           const moves = env.moves;
           const drives = env.drives;
@@ -1330,11 +1466,8 @@ function stackOf(
           if (partLines !== undefined) PART_LINES.set(used, partLines);
           const prev = below(time, events);
           if (step.travels) BELOW_POSE.set(used, prev);
-          // On a live or untimed clock a travel with no window sits on its slot; a timed scene sweeps it.
-          const ran =
-            step.travels && step.window === undefined && time.clock.kind !== "timed"
-              ? withProgress(time, 1)
-              : time;
+          // A travel with no window sits on its slot on every clock; sweeping requires `.in(beat)`.
+          const ran = step.travels && step.window === undefined ? withProgress(time, 1) : time;
           const pose =
             moves === undefined
               ? step.run(ran, used)
@@ -1378,7 +1511,7 @@ function limitsOf(state: State): Record<string, Limits> {
   return limits;
 }
 
-function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefinition {
+function definitionOf(state: State): StageDefinition {
   const ends = [...state.beats.values()].map((beat) => beat.to);
   const durationMs = state.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined);
   let plans: ReadonlyMap<string, Plan> | undefined;
@@ -1388,7 +1521,7 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         element.name,
         {
           name: element.name,
-          count: listCount(element),
+          parts: hasParts(element),
           object: element.kind === "object",
           steps: (state.entries.get(element.name) ?? NO_ENTRY).steps,
         },
@@ -1396,18 +1529,12 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
     );
     return plans;
   };
-  const isPage =
-    state.sections.size > 0 ||
-    [...state.elements.values()].some((element) => selectorOf(element) !== undefined);
-  const compiledSections: readonly CompiledSection[] = [...state.sections.values()].map(
-    ({ name, selector }) => Object.freeze({ name, node: selector }),
-  );
   let maxTriggerMs = 0;
   for (const inputBeat of state.inputBeats.values())
     if (inputBeat.kind === "trigger-beat" && inputBeat.ms > maxTriggerMs)
       maxTriggerMs = inputBeat.ms;
   const settleMs = maxTriggerMs > 0 ? Math.max(2000, maxTriggerMs + 200) : undefined;
-  const { frame, cues, layouts, rest } = state.options;
+  const { cues } = state.options;
   return {
     kind: "stage-definition",
     beats: Object.fromEntries(
@@ -1422,32 +1549,29 @@ function definitionOf(state: State, skin: DomSkinInput | undefined): StageDefini
         plans: plansOf(),
         rest: context.rest,
         carry: context.carry,
+        counts: context.counts,
         lines: context.lines,
         read: new Map(),
         moves: context.moves,
         drives: context.drives,
       };
-      const out: Record<string, Pose2d | Pose3d | ListPose> = {};
+      const out: Record<string, Pose2d | Pose3d | ListPose | ListPose3d> = {};
       for (const plan of env.plans.values()) {
         if (plan.steps.length === 0) continue;
         if (context.only !== undefined && !context.only.has(plan.name)) continue;
         out[plan.name] = plan.object
-          ? stack3dOf(plan, env)(context.time, context.events)
-          : plan.count === undefined
+          ? !plan.parts
+            ? stack3dOf(plan, env, undefined, undefined)(context.time, context.events)
+            : (index, count) => stack3dOf(plan, env, index, count)(context.time, context.events)
+          : !plan.parts
             ? stackOf(plan, env, undefined, undefined)(context.time, context.events)
             : (index, count) => stackOf(plan, env, index, count)(context.time, context.events);
       }
       return out;
     },
     ...(durationMs === undefined ? {} : { durationMs }),
-    ...(frame === undefined ? {} : { frame }),
-    ...(skin === undefined ? {} : { skins: { dom: skin } }),
     ...(cues === undefined ? {} : { cues }),
-    ...(layouts === undefined ? {} : { layouts }),
-    ...(rest === undefined ? {} : { rest }),
-    ...(isPage ? { isPage: true } : {}),
     ...(settleMs === undefined ? {} : { settleMs }),
-    ...(compiledSections.length > 0 ? { sections: compiledSections } : {}),
   };
 }
 
@@ -1479,8 +1603,7 @@ function isState(value: unknown): value is State {
     Reflect.get(value, "elements") instanceof Map &&
     Reflect.get(value, "entries") instanceof Map &&
     Reflect.get(value, "beats") instanceof Map &&
-    Reflect.get(value, "inputBeats") instanceof Map &&
-    Reflect.get(value, "sections") instanceof Map
+    Reflect.get(value, "inputBeats") instanceof Map
   );
 }
 
@@ -1500,21 +1623,97 @@ function elementOf(state: State): SceneBuilder["element"] {
   return element;
 }
 
+function fixedRangeOk(from: ScrollPoint, to: ScrollPoint): void {
+  const fixedFrom = fixedPxOf(from);
+  const fixedTo = fixedPxOf(to);
+  if (fixedFrom !== undefined && fixedTo !== undefined && fixedTo <= fixedFrom)
+    throw new RangeError(
+      `sceneBuilder: \`.show\` scroll range ${fixedFrom} to ${fixedTo} px must increase.`,
+    );
+}
+
 /** The state after `.show(...windows)` on the selected element. */
 function shown(state: State, windows: readonly ShowWindow[]): State {
   const beats = new Map(state.beats);
   const inputBeats = new Map(state.inputBeats);
-  const stretches = windows.map((window): Stretch => {
-    const [from, to] = "name" in window ? [window, window] : window;
-    for (const end of [from, to]) {
-      if (beatOf(end) === undefined)
-        throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`.");
-      withBeat(beats, inputBeats, end);
+  const referenced: Element[] = [];
+  const collect = (point: ScrollPoint): ScrollPoint => {
+    const owner = measuredBy(point);
+    if (isElement(owner)) referenced.push(owner);
+    return point;
+  };
+  const used = (end: unknown): Beat => {
+    const beat = beatOf(end);
+    if (beat === undefined)
+      throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+    withBeat(beats, inputBeats, beat);
+    return beat;
+  };
+  const stretches: Stretch[] = [];
+  const scrollShow: ScrollWindow[] = [];
+  for (const window of windows) {
+    if (typeof window !== "object" || window === null)
+      throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+    if (Array.isArray(window)) {
+      if (window.length !== 2)
+        throw new TypeError(
+          "sceneBuilder: `.show([from, to])` takes two beats or two scroll points.",
+        );
+      const first: unknown = window[0];
+      const second: unknown = window[1];
+      if (isScrollPoint(first) && isScrollPoint(second)) {
+        fixedRangeOk(first, second);
+        scrollShow.push({ kind: "range", from: collect(first), to: collect(second) });
+      } else {
+        stretches.push({ kind: "beats", from: used(first).name, to: used(second).name });
+      }
+      continue;
     }
-    return from === to ? from.name : [from.name, to.name];
-  });
+    if (isScrollBeat(window)) {
+      withInputBeat(beats, inputBeats, window);
+      for (const edge of edgeElementsOf(window)) referenced.push(edge);
+      scrollShow.push({ kind: "range", from: window.from, to: window.to });
+      continue;
+    }
+    if ("name" in window) {
+      stretches.push({ kind: "beats", from: used(window).name, to: window.name });
+      continue;
+    }
+    if ("from" in window) {
+      if (isScrollPoint(window.from)) scrollShow.push({ kind: "from", from: collect(window.from) });
+      else stretches.push({ kind: "from", from: used(window.from).name });
+      continue;
+    }
+    if ("until" in window) {
+      if (isScrollPoint(window.until))
+        scrollShow.push({ kind: "until", until: collect(window.until) });
+      else stretches.push({ kind: "until", until: used(window.until).name });
+      continue;
+    }
+    throw new TypeError("sceneBuilder: `.show` takes beats made by `beat`, or scroll windows.");
+  }
+  const elements = new Map(state.elements);
+  const staged = new Map<string, SceneElement>();
+  for (const target of referenced) validateReference(elements, target, staged);
   const [, entry] = entryOf(state);
-  return { ...changed(state, { show: [...entry.show, ...stretches] }), beats, inputBeats };
+  const base = changed(state, {
+    ...(stretches.length > 0 ? { show: [...entry.show, ...stretches] } : {}),
+    ...(scrollShow.length > 0 ? { scrollShow: [...entry.scrollShow, ...scrollShow] } : {}),
+  });
+  let order = base.order;
+  let entries = base.entries;
+  if (staged.size > 0) {
+    const nextOrder = [...order];
+    const nextEntries = new Map(entries);
+    for (const [addedName, addedElement] of staged) {
+      elements.set(addedName, addedElement);
+      if (!nextOrder.includes(addedName)) nextOrder.push(addedName);
+      if (!nextEntries.has(addedName)) nextEntries.set(addedName, NO_ENTRY);
+    }
+    order = nextOrder;
+    entries = nextEntries;
+  }
+  return { ...base, elements, order, entries, beats, inputBeats };
 }
 
 /** The state after `.limits(limits)` on the selected element. */
@@ -1535,10 +1734,10 @@ function objectStep(state: State): ObjectStep {
     {
       kind: "scene",
       element: elementOf(state),
+      include: includeOf(state),
       motion: (...motions: readonly (SceneMotion3d | TravelMotion)[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
-        const sections = new Map(state.sections);
         const [name, entry] = entryOf(state);
         const self = state.elements.get(name);
         const measured: Element[] = [];
@@ -1550,7 +1749,7 @@ function objectStep(state: State): ObjectStep {
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
           if (isInputBeat(traits.window)) {
             withInputBeat(beats, inputBeats, traits.window);
-            addSections(sections, state.elements, traits.window);
+            for (const edge of edgeElementsOf(traits.window)) measured.push(edge);
           }
           if ("travel" in run) {
             const view = self?.kind === "object" ? self.view : undefined;
@@ -1558,10 +1757,24 @@ function objectStep(state: State): ObjectStep {
               throw new TypeError(
                 `sceneBuilder: object "${name}" travels only with \`object(name, { view: { canvas, lens } })\`.`,
               );
-            if ((run.travel.arc ?? 0) !== 0 || (run.travel.fit ?? "contain") !== "contain")
+            if ((run.travel.arc ?? 0) !== 0)
               throw new TypeError(
-                `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` and \`fit\` are for elements.`,
+                `sceneBuilder: object "${name}" travels straight to the slot's centre; \`arc\` is for elements.`,
               );
+            const rawFit = run.travel.fit ?? "none";
+            let fit: "none" | "contain";
+            switch (rawFit) {
+              case "none":
+              case "contain":
+                fit = rawFit;
+                break;
+              case "fill":
+                throw new TypeError(
+                  `sceneBuilder: object "${name}" scales uniformly only; \`fit: "fill"\` is for elements.`,
+                );
+              default:
+                return unreachable(rawFit);
+            }
             if (traits.joins === "take")
               throw new TypeError(
                 `sceneBuilder: object "${name}" travels as a layer; \`.take()\` is for its other motions.`,
@@ -1571,6 +1784,7 @@ function objectStep(state: State): ObjectStep {
               kind: "travel3d",
               run,
               view,
+              fit,
               span: traits.span,
               window: traits.window,
               loops: traits.loops,
@@ -1580,18 +1794,16 @@ function objectStep(state: State): ObjectStep {
         });
         const elements = new Map(state.elements);
         const staged = new Map<string, SceneElement>();
-        for (const target of measured)
-          validateRegistration(elements, sections, state.owner, target, staged);
+        for (const target of measured) validateReference(elements, target, staged);
         const base = changed(state, { steps: [...entry.steps, ...added] });
         const order = [...base.order];
         const entries = new Map(base.entries);
         for (const [added, element] of staged) {
           elements.set(added, element);
-          OWNERS.set(element, state.owner);
           if (!order.includes(added)) order.push(added);
           if (!entries.has(added)) entries.set(added, NO_ENTRY);
         }
-        return objectStep({ ...base, elements, order, entries, beats, inputBeats, sections });
+        return objectStep({ ...base, elements, order, entries, beats, inputBeats });
       },
       modify: (principle: Principle3d) => {
         const [, entry] = entryOf(state);
@@ -1611,10 +1823,10 @@ function step(state: State): ElementStep {
     {
       kind: "scene",
       element: elementOf(state),
+      include: includeOf(state),
       motion: (...motions: readonly SceneMotion[]) => {
         const beats = new Map(state.beats);
         const inputBeats = new Map(state.inputBeats);
-        const sections = new Map(state.sections);
         const travelTargets: Element[] = [];
         const added = motions.map((run): MotionStep => {
           const traits = traitsOf(run);
@@ -1622,7 +1834,7 @@ function step(state: State): ElementStep {
           if (beat !== undefined) withBeat(beats, inputBeats, beat);
           if (isInputBeat(traits.window)) {
             withInputBeat(beats, inputBeats, traits.window);
-            addSections(sections, state.elements, traits.window);
+            for (const edge of edgeElementsOf(traits.window)) travelTargets.push(edge);
           }
           const reads = READS.get(run) ?? [];
           if (reads.length > 0 && traits.span === undefined && traits.window !== undefined)
@@ -1636,7 +1848,7 @@ function step(state: State): ElementStep {
         const elements = new Map(state.elements);
         const newTargets = new Map<string, Element>();
         for (const target of travelTargets) {
-          validateRegistration(elements, sections, state.owner, target, newTargets);
+          validateReference(elements, target, newTargets);
         }
         const [, entry] = entryOf(state);
         const base = changed(state, { steps: [...entry.steps, ...added] });
@@ -1660,14 +1872,12 @@ function step(state: State): ElementStep {
           entries,
           beats,
           inputBeats,
-          sections,
         };
         const loop = loopOf(next.entries);
         if (loop !== undefined)
           throw new RangeError(
             `sceneBuilder: elements read each other in a loop: ${loop.join(", ")}.`,
           );
-        for (const addedElement of newTargets.values()) OWNERS.set(addedElement, state.owner);
         return step(next);
       },
       modify: (principle: Principle) => {
@@ -1683,11 +1893,15 @@ function step(state: State): ElementStep {
 
 function select(state: State, element: SceneElement): State {
   const elements = new Map(state.elements);
-  register(elements, state.sections, state.owner, element);
+  register(elements, state.owner, element);
+  const owned = state.owned.has(element.name)
+    ? state.owned
+    : new Set([...state.owned, element.name]);
   const first = !state.order.includes(element.name);
   return {
     ...state,
     elements,
+    owned,
     order: first ? [...state.order, element.name] : state.order,
     entries: state.entries.has(element.name)
       ? state.entries
@@ -1707,14 +1921,14 @@ export function sceneBuilder(options: SceneBuilderOptions = {}): SceneBuilder {
     owner: Object.freeze({ label }),
     options,
     elements: new Map(),
+    owned: new Set(),
     order: [],
     entries: new Map(),
     beats: new Map(),
     inputBeats: new Map(),
-    sections: new Map(),
     current: undefined,
   };
-  return kept({ kind: "scene", element: elementOf(state) }, state);
+  return kept({ kind: "scene", element: elementOf(state), include: includeOf(state) }, state);
 }
 
 /** Whether `value` is a piece written with `sceneBuilder`. */
@@ -1722,9 +1936,8 @@ export function isScene(value: unknown): value is SceneBuilder {
   return typeof value === "object" && value !== null && stateOf(value) !== undefined;
 }
 
-/** How a scene compiles: the DOM skin its renderer draws with, and a wrap around each frame's poses. */
+/** How a scene compiles: a wrap around each frame's poses. */
 export interface CompileSceneOptions {
-  readonly skin?: DomSkinInput | undefined;
   readonly wrap?: ((run: Stage["scene"]) => Stage["scene"]) | undefined;
 }
 
@@ -1736,7 +1949,7 @@ export function compileScene(
   const state = stateOf(scene);
   if (state === undefined)
     throw new TypeError("compileScene: expected what `sceneBuilder` returns.");
-  const result = compileStage(definitionOf(state, options.skin));
+  const result = compileStage(definitionOf(state));
   const { wrap } = options;
   if (!result.ok || wrap === undefined) return result;
   return { ok: true, stage: Object.freeze({ ...result.stage, scene: wrap(result.stage.scene) }) };

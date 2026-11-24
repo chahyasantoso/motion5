@@ -1,0 +1,1122 @@
+{
+ "page": "cookie.html",
+ "digest": "a2f1e3948b75ca1e",
+ "frame": {
+  "width": 1440,
+  "height": 900
+ },
+ "rest": {
+  "stageCanvas": {
+   "x": 720,
+   "y": 450,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "fixed"
+   }
+  },
+  "heroStage": {
+   "x": 720,
+   "y": 925,
+   "width": 1440,
+   "height": 1850,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotHeroJar": {
+   "x": 993.59375,
+   "y": 556,
+   "width": 772.8125,
+   "height": 504,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 556
+   }
+  },
+  "heroWarmWash": {
+   "x": 720,
+   "y": 450,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 450
+   }
+  },
+  "heroHorizon": {
+   "x": 720,
+   "y": 865,
+   "width": 1670.375,
+   "height": 290,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 865
+   }
+  },
+  "heroCopy": {
+   "x": 317.59375,
+   "y": 410,
+   "width": 515.1875,
+   "height": 327.96875,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 410
+   }
+  },
+  "heroHeadline.0": {
+   "x": 184.4609375,
+   "y": 317.5078125,
+   "width": 248.921875,
+   "height": 68.984375,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 317.5078125
+   }
+  },
+  "heroHeadline.1": {
+   "x": 415.3359375,
+   "y": 317.5078125,
+   "width": 189.921875,
+   "height": 68.984375,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 317.5078125
+   }
+  },
+  "heroHeadline.2": {
+   "x": 150.1875,
+   "y": 386.4921875,
+   "width": 180.375,
+   "height": 68.984375,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 386.4921875
+   }
+  },
+  "heroHeadline.3": {
+   "x": 326.1171875,
+   "y": 386.4921875,
+   "width": 148.578125,
+   "height": 68.984375,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 386.4921875
+   }
+  },
+  "heroHeadline": {
+   "x": 317.59375,
+   "y": 352,
+   "width": 515.1875,
+   "height": 137.96875,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 352
+   }
+  },
+  "heroSub": {
+   "x": 317.59375,
+   "y": 463.984375,
+   "width": 515.1875,
+   "height": 54,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 463.984375
+   }
+  },
+  "heroCta": {
+   "x": 138.1015625,
+   "y": 538.484375,
+   "width": 156.203125,
+   "height": 47,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 538.484375
+   }
+  },
+  "offerBanner": {
+   "x": 720,
+   "y": 816,
+   "width": 1320,
+   "height": 104,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 816
+   }
+  },
+  "offerSeal": {
+   "x": 1318,
+   "y": 816,
+   "width": 68,
+   "height": 68,
+   "placement": {
+    "kind": "sticky",
+    "minY": 0,
+    "maxY": 950,
+    "pinY": 816
+   }
+  },
+  "spotlightStage": {
+   "x": 720,
+   "y": 3650,
+   "width": 1440,
+   "height": 3600,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotFlavorCookie": {
+   "x": 1002.15625,
+   "y": 2224.4375,
+   "width": 480,
+   "height": 430,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 374.4375
+   }
+  },
+  "flavorShadow": {
+   "x": 1002.15625,
+   "y": 2445.4375,
+   "width": 290,
+   "height": 36,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 595.4375
+   }
+  },
+  "spotlightTint0": {
+   "x": 720,
+   "y": 2300,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 450
+   }
+  },
+  "flavorTitle0": {
+   "x": 362.15625,
+   "y": 2236.4375,
+   "width": 548.3125,
+   "height": 133.25,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 386.4375
+   }
+  },
+  "flavorNum0": {
+   "x": 123.546875,
+   "y": 2676,
+   "width": 71.09375,
+   "height": 56,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 826
+   }
+  },
+  "flavorNote0": {
+   "x": 895.3125,
+   "y": 2638.4375,
+   "width": 430,
+   "height": 135.125,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 788.4375
+   }
+  },
+  "flavorDot0": {
+   "x": 1366,
+   "y": 2264,
+   "width": 12,
+   "height": 12,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 414
+   }
+  },
+  "spotlightTint1": {
+   "x": 720,
+   "y": 2300,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 450
+   }
+  },
+  "flavorTitle1": {
+   "x": 362.15625,
+   "y": 2236.4375,
+   "width": 548.3125,
+   "height": 133.25,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 386.4375
+   }
+  },
+  "flavorNum1": {
+   "x": 123.546875,
+   "y": 2676,
+   "width": 71.09375,
+   "height": 56,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 826
+   }
+  },
+  "flavorNote1": {
+   "x": 895.3125,
+   "y": 2638.4375,
+   "width": 430,
+   "height": 135.125,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 788.4375
+   }
+  },
+  "flavorDot1": {
+   "x": 1366,
+   "y": 2288,
+   "width": 12,
+   "height": 12,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 438
+   }
+  },
+  "spotlightTint2": {
+   "x": 720,
+   "y": 2300,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 450
+   }
+  },
+  "flavorTitle2": {
+   "x": 362.15625,
+   "y": 2236.4375,
+   "width": 548.3125,
+   "height": 133.25,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 386.4375
+   }
+  },
+  "flavorNum2": {
+   "x": 123.546875,
+   "y": 2676,
+   "width": 71.09375,
+   "height": 56,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 826
+   }
+  },
+  "flavorNote2": {
+   "x": 895.3125,
+   "y": 2638.4375,
+   "width": 430,
+   "height": 135.125,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 788.4375
+   }
+  },
+  "flavorDot2": {
+   "x": 1366,
+   "y": 2312,
+   "width": 12,
+   "height": 12,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 462
+   }
+  },
+  "spotlightTint3": {
+   "x": 720,
+   "y": 2300,
+   "width": 1440,
+   "height": 900,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 450
+   }
+  },
+  "flavorTitle3": {
+   "x": 362.15625,
+   "y": 2236.4375,
+   "width": 548.3125,
+   "height": 133.25,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 386.4375
+   }
+  },
+  "flavorNum3": {
+   "x": 123.546875,
+   "y": 2676,
+   "width": 71.09375,
+   "height": 56,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 826
+   }
+  },
+  "flavorNote3": {
+   "x": 895.3125,
+   "y": 2638.4375,
+   "width": 430,
+   "height": 135.125,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 788.4375
+   }
+  },
+  "flavorDot3": {
+   "x": 1366,
+   "y": 2336,
+   "width": 12,
+   "height": 12,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1850,
+    "maxY": 4550,
+    "pinY": 486
+   }
+  },
+  "craftStage": {
+   "x": 720,
+   "y": 6950,
+   "width": 1440,
+   "height": 3000,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "craftViewport": {
+   "x": 720,
+   "y": 6009.84375,
+   "width": 1440,
+   "height": 408,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 559.84375
+   }
+  },
+  "craftHeading": {
+   "x": 432,
+   "y": 5678,
+   "width": 680,
+   "height": 183.6875,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 228
+   }
+  },
+  "craftProgressFill": {
+   "x": 1258,
+   "y": 5763.84375,
+   "width": 180,
+   "height": 4,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 313.84375
+   }
+  },
+  "craftTrack": {
+   "x": 982,
+   "y": 6005.84375,
+   "width": 1964,
+   "height": 360,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 555.84375
+   }
+  },
+  "craftCard0": {
+   "x": 280,
+   "y": 6005.84375,
+   "width": 440,
+   "height": 360,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 555.84375
+   }
+  },
+  "craftCard1": {
+   "x": 748,
+   "y": 6005.84375,
+   "width": 440,
+   "height": 360,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 555.84375
+   }
+  },
+  "craftCard2": {
+   "x": 1216,
+   "y": 6005.84375,
+   "width": 440,
+   "height": 360,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 555.84375
+   }
+  },
+  "craftCard3": {
+   "x": 1684,
+   "y": 6005.84375,
+   "width": 440,
+   "height": 360,
+   "placement": {
+    "kind": "sticky",
+    "minY": 5450,
+    "maxY": 7550,
+    "pinY": 555.84375
+   }
+  },
+  "builderStage": {
+   "x": 720,
+   "y": 9200,
+   "width": 1440,
+   "height": 1500,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotBuilderJar": {
+   "x": 396,
+   "y": 8997.015625,
+   "width": 672,
+   "height": 440,
+   "placement": {
+    "kind": "sticky",
+    "minY": 8450,
+    "maxY": 9050,
+    "pinY": 547.015625
+   }
+  },
+  "builderSealBtn": {
+   "x": 1239,
+   "y": 9092.5,
+   "width": 224,
+   "height": 49,
+   "placement": {
+    "kind": "sticky",
+    "minY": 8450,
+    "maxY": 9050,
+    "pinY": 642.5
+   }
+  },
+  "builderHeading": {
+   "x": 330,
+   "y": 8666,
+   "width": 540,
+   "height": 166.03125,
+   "placement": {
+    "kind": "sticky",
+    "minY": 8450,
+    "maxY": 9050,
+    "pinY": 216
+   }
+  },
+  "closingStage": {
+   "x": 720,
+   "y": 10350.5390625,
+   "width": 1440,
+   "height": 801.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotClosingJar": {
+   "x": 1059.1875,
+   "y": 10258,
+   "width": 577.59375,
+   "height": 440,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.0": {
+   "x": 168.0625,
+   "y": 10114.3125,
+   "width": 152.125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.1": {
+   "x": 314.140625,
+   "y": 10114.3125,
+   "width": 120.8125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.2": {
+   "x": 422.6796875,
+   "y": 10114.3125,
+   "width": 77.046875,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.3": {
+   "x": 534.546875,
+   "y": 10114.3125,
+   "width": 127.46875,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.4": {
+   "x": 167.421875,
+   "y": 10171.71875,
+   "width": 150.84375,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.5": {
+   "x": 288.421875,
+   "y": 10171.71875,
+   "width": 71.9375,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.6": {
+   "x": 390.3125,
+   "y": 10171.71875,
+   "width": 112.625,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline.7": {
+   "x": 202.9765625,
+   "y": 10229.125,
+   "width": 221.953125,
+   "height": 57.40625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingHeadline": {
+   "x": 372,
+   "y": 10171.71875,
+   "width": 560,
+   "height": 172.21875,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingFlourish": {
+   "x": 129,
+   "y": 8.5,
+   "width": 250,
+   "height": 13,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingCopy": {
+   "x": 372,
+   "y": 10335.609375,
+   "width": 560,
+   "height": 51.5625,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingActions": {
+   "x": 269.3984375,
+   "y": 10401.890625,
+   "width": 354.796875,
+   "height": 49,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.0": {
+   "x": 200.703125,
+   "y": 10697.0390625,
+   "width": 176.375,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.1": {
+   "x": 347.6484375,
+   "y": 10697.0390625,
+   "width": 117.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.2": {
+   "x": 469.9453125,
+   "y": 10697.0390625,
+   "width": 127.078125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.3": {
+   "x": 610.234375,
+   "y": 10697.0390625,
+   "width": 153.5,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.4": {
+   "x": 698.0859375,
+   "y": 10697.0390625,
+   "width": 22.203125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.5": {
+   "x": 770.84375,
+   "y": 10697.0390625,
+   "width": 123.3125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.6": {
+   "x": 891.2578125,
+   "y": 10697.0390625,
+   "width": 117.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.7": {
+   "x": 1008.6796875,
+   "y": 10697.0390625,
+   "width": 117.328125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.8": {
+   "x": 1126.1484375,
+   "y": 10697.0390625,
+   "width": 117.609375,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark.9": {
+   "x": 1256.2109375,
+   "y": 10697.0390625,
+   "width": 142.515625,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "closingWordmark": {
+   "x": 719.9921875,
+   "y": 10697.0390625,
+   "width": 1214.953125,
+   "height": 162.078125,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {
+  "heroHeadline": [
+   0,
+   0,
+   1,
+   1
+  ],
+  "closingHeadline": [
+   0,
+   0,
+   0,
+   0,
+   1,
+   1,
+   1,
+   2
+  ],
+  "closingWordmark": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ "parents": {
+  "slotHeroJar": "heroStage",
+  "heroWarmWash": "heroStage",
+  "heroHorizon": "heroStage",
+  "heroCopy": "heroStage",
+  "heroHeadline.0": "heroHeadline",
+  "heroHeadline.1": "heroHeadline",
+  "heroHeadline.2": "heroHeadline",
+  "heroHeadline.3": "heroHeadline",
+  "heroHeadline": "heroCopy",
+  "heroSub": "heroCopy",
+  "heroCta": "heroCopy",
+  "offerBanner": "heroStage",
+  "offerSeal": "offerBanner",
+  "slotFlavorCookie": "spotlightStage",
+  "flavorShadow": "spotlightStage",
+  "spotlightTint0": "spotlightStage",
+  "flavorTitle0": "spotlightStage",
+  "flavorNum0": "spotlightStage",
+  "flavorNote0": "spotlightStage",
+  "flavorDot0": "spotlightStage",
+  "spotlightTint1": "spotlightStage",
+  "flavorTitle1": "spotlightStage",
+  "flavorNum1": "spotlightStage",
+  "flavorNote1": "spotlightStage",
+  "flavorDot1": "spotlightStage",
+  "spotlightTint2": "spotlightStage",
+  "flavorTitle2": "spotlightStage",
+  "flavorNum2": "spotlightStage",
+  "flavorNote2": "spotlightStage",
+  "flavorDot2": "spotlightStage",
+  "spotlightTint3": "spotlightStage",
+  "flavorTitle3": "spotlightStage",
+  "flavorNum3": "spotlightStage",
+  "flavorNote3": "spotlightStage",
+  "flavorDot3": "spotlightStage",
+  "craftViewport": "craftStage",
+  "craftHeading": "craftStage",
+  "craftProgressFill": "craftStage",
+  "craftTrack": "craftViewport",
+  "craftCard0": "craftTrack",
+  "craftCard1": "craftTrack",
+  "craftCard2": "craftTrack",
+  "craftCard3": "craftTrack",
+  "slotBuilderJar": "builderStage",
+  "builderSealBtn": "builderStage",
+  "builderHeading": "builderStage",
+  "slotClosingJar": "closingStage",
+  "closingHeadline.0": "closingHeadline",
+  "closingHeadline.1": "closingHeadline",
+  "closingHeadline.2": "closingHeadline",
+  "closingHeadline.3": "closingHeadline",
+  "closingHeadline.4": "closingHeadline",
+  "closingHeadline.5": "closingHeadline",
+  "closingHeadline.6": "closingHeadline",
+  "closingHeadline.7": "closingHeadline",
+  "closingHeadline": "closingStage",
+  "closingFlourish": "closingStage",
+  "closingCopy": "closingStage",
+  "closingActions": "closingStage",
+  "closingWordmark.0": "closingWordmark",
+  "closingWordmark.1": "closingWordmark",
+  "closingWordmark.2": "closingWordmark",
+  "closingWordmark.3": "closingWordmark",
+  "closingWordmark.4": "closingWordmark",
+  "closingWordmark.5": "closingWordmark",
+  "closingWordmark.6": "closingWordmark",
+  "closingWordmark.7": "closingWordmark",
+  "closingWordmark.8": "closingWordmark",
+  "closingWordmark.9": "closingWordmark",
+  "closingWordmark": "closingStage"
+ },
+ "objects": {
+  "jarRoot": {
+   "width": 2.299999952316284,
+   "height": 1.6579999971389772,
+   "depth": 2.299999952316284
+  },
+  "jarLid": {
+   "width": 0.9800000190734863,
+   "height": 0.33799999579787254,
+   "depth": 0.9800000190734863
+  },
+  "cookieHero": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "flavorCookies.0": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "flavorCookies": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "flavorCookies.1": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "flavorCookies.2": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "flavorCookies.3": {
+   "width": 0.8400000035762787,
+   "height": 0.8399999737739563,
+   "depth": 0.18047979474067705
+  },
+  "builderJarRoot": {
+   "width": 2.299999952316284,
+   "height": 1.3600000143051147,
+   "depth": 2.299999952316284
+  },
+  "builderJarLid": {
+   "width": 0.9800000190734863,
+   "height": 0.33799999579787254,
+   "depth": 0.9800000190734863
+  },
+  "builderJarRibbon": {
+   "width": 0.9559999704360962,
+   "height": 0.42273872812729973,
+   "depth": 1.1011347212370235
+  },
+  "builderCookies.0": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies.1": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies.2": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies.3": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies.4": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCookies.5": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderExitCookies.0": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderExitCookies": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderExitCookies.1": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderExitCookies.2": {
+   "width": 0.8400000035762787,
+   "height": 0.18047979474067688,
+   "depth": 0.8399999737739563
+  },
+  "builderCrumbs.0": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs.1": {
+   "width": 0.05978703126311302,
+   "height": 0.05978703126311302,
+   "depth": 0.05978703126311302
+  },
+  "builderCrumbs.2": {
+   "width": 0.07473378628492355,
+   "height": 0.07473378628492355,
+   "depth": 0.07473378628492355
+  },
+  "builderCrumbs.3": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs.4": {
+   "width": 0.05978703126311302,
+   "height": 0.05978703126311302,
+   "depth": 0.05978703126311302
+  },
+  "builderCrumbs.5": {
+   "width": 0.07473378628492355,
+   "height": 0.07473378628492355,
+   "depth": 0.07473378628492355
+  },
+  "builderCrumbs.6": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs.7": {
+   "width": 0.05978703126311302,
+   "height": 0.05978703126311302,
+   "depth": 0.05978703126311302
+  },
+  "builderCrumbs.8": {
+   "width": 0.07473378628492355,
+   "height": 0.07473378628492355,
+   "depth": 0.07473378628492355
+  },
+  "builderCrumbs.9": {
+   "width": 0.04484027251601219,
+   "height": 0.04484027251601219,
+   "depth": 0.04484027251601219
+  },
+  "builderCrumbs.10": {
+   "width": 0.05978703126311302,
+   "height": 0.05978703126311302,
+   "depth": 0.05978703126311302
+  },
+  "builderCrumbs.11": {
+   "width": 0.07473378628492355,
+   "height": 0.07473378628492355,
+   "depth": 0.07473378628492355
+  },
+  "closingJarRoot": {
+   "width": 2.299999952316284,
+   "height": 1.5979999971389771,
+   "depth": 2.299999952316284
+  }
+ },
+ "counts": {
+  "flavorCookies": 4,
+  "builderCookies": 6,
+  "builderExitCookies": 3,
+  "builderCrumbs": 12
+ }
+}

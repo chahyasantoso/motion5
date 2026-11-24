@@ -1,13 +1,4 @@
-import {
-  circlePath,
-  mergeEvents,
-  motion,
-  span,
-  timeAt,
-  type Events,
-  type Pose2d,
-  type Time,
-} from "@gerak/core";
+import { circlePath, motion, span, timeAt, type Events, type Pose2d, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   beat,
@@ -17,13 +8,13 @@ import {
   carry,
   formatStageError,
   frame,
-  group,
   listPose,
-  many,
   poseOf,
+  restReader,
   compileScene,
   isScene,
   sceneBuilder,
+  type RestAt,
   type SceneBuilder,
   shape,
   stagger,
@@ -71,22 +62,24 @@ describe("elements", () => {
   it("hold a name and a kind", () => {
     expect(box("a").kind).toBe("box");
     expect(shape("b", circlePath({ cx: 0, cy: 0, r: 5 })).kind).toBe("shape");
-    expect(text("c", "hi").kind).toBe("text");
-    expect(many("d", 3).kind).toBe("many");
-    expect(group("e", [box("f")]).kind).toBe("group");
+    expect(text("c").kind).toBe("text");
+    expect(box("d", { parts: true }).kind).toBe("box");
     expect(box("a").name).toBe("a");
   });
 
-  it("refuse split on text a function writes", () => {
+  it("refuse a string on text, or split on a readout", () => {
+    // @ts-expect-error the markup holds a text element's string
+    expect(() => text("t", "hi")).toThrow(TypeError);
+    // @ts-expect-error a readout takes ElementOptions, not split
     expect(() => text("t", () => "x", { split: "letters" })).toThrow(TypeError);
   });
 });
 
 describe("sceneBuilder: what a chain compiles to", () => {
   const dot = shape("dot", circlePath({ cx: 0, cy: 0, r: 5 }));
-  const card = box("card", { pivot: { x: 4, y: 6 }, watch: true });
-  const word = text("word", "HEY", { split: "letters" });
-  const chain = sceneBuilder({ frame: { width: 800, height: 400 } })
+  const card = box("card", { watch: true });
+  const word = text("word", { split: "letters" });
+  const chain = sceneBuilder()
     .element(card)
     .motion(slideX(100).in(enter))
     .show(enter, hold)
@@ -110,12 +103,24 @@ describe("sceneBuilder: what a chain compiles to", () => {
     ]);
     const cardMember = stage.members[0];
     expect(cardMember?.watch).toBe(true);
-    expect(cardMember?.pivot).toEqual({ x: 4, y: 6 });
     expect(cardMember?.on).toEqual([
       [0, 400],
       [500, Number.POSITIVE_INFINITY],
     ]);
-    expect(stage.frame).toEqual({ width: 800, height: 400 });
+  });
+
+  it("shows an element from a beat's start on, or from the start until a beat's end", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 3000 })
+        .element(box("late"))
+        .show({ from: hold })
+        .element(box("early"))
+        .show({ until: enter }),
+    );
+    expect(stage.members.map((member) => member.on)).toEqual([
+      [[500, Number.POSITIVE_INFINITY]],
+      [[0, 400]],
+    ]);
   });
 
   it("gathers the beats used by in and show, the length from the latest end, and the limits", () => {
@@ -132,41 +137,12 @@ describe("sceneBuilder: what a chain compiles to", () => {
     ).toBe(3000);
   });
 
-  it("nests group children and keeps them flat in the scene", () => {
-    const left = box("left");
-    const rig = group("rig", [left, box("right")]);
-    const stage = compiled(
-      sceneBuilder()
-        .element(rig)
-        .motion(slideX(10).in(enter))
-        .element(left)
-        .motion(grow(3).in(enter)),
-    );
-    expect(stage.members.map((member) => [member.name, member.parent])).toEqual([
-      ["rig", -1],
-      ["left", 0],
-      ["right", 0],
-    ]);
-    const out = frame(stage, { time: at(400) }).targets;
-    expect(poseOf(out["rig"])?.x).toBe(10);
-    expect(poseOf(out["left"])?.scale).toBe(3);
-    expect(out["right"]).toBeUndefined();
-  });
-
-  it("takes its skin at compile time, and cues and layouts from the options", () => {
+  it("takes cues from the builder", () => {
     const cues: Events = [{ name: "tap", at: 100, target: "card" }];
-    const layouts = { names: ["one", "two"] as [string, string], pick: () => "two" };
-    const compiledWithSkin = compileScene(
-      sceneBuilder({ cues, layouts }).element(box("card")).show(enter),
-      {
-        skin: { css: "a{}" },
-      },
-    );
-    if (!compiledWithSkin.ok) throw new Error("did not compile");
-    const stage = compiledWithSkin.stage;
-    expect(stage.skins.dom).toEqual({ kind: "inline", css: "a{}" });
-    expect(stage.layouts.names).toEqual(["one", "two"]);
-    expect(stage.cues).toEqual(mergeEvents(cues));
+    const compiled = compileScene(sceneBuilder({ cues }).element(box("card")).show(enter));
+    if (!compiled.ok) throw new Error("did not compile");
+    const stage = compiled.stage;
+    expect(stage.cues.map(({ name, at, target }) => ({ name, at, target }))).toEqual(cues);
   });
 });
 
@@ -205,7 +181,7 @@ describe("sceneBuilder: ambient motions", () => {
 });
 
 describe("stagger", () => {
-  const makeWord = () => text("word", "ABC", { split: "letters" });
+  const makeWord = () => text("word", { split: "letters" });
   const run = beat("run", 1000);
   const win = beat("win", 1000, { at: 1000 });
   const ramp = motion((time: Time): Pose2d => ({ x: time.progress }));
@@ -286,7 +262,7 @@ describe("stagger", () => {
 
 describe("bindEach", () => {
   it("binds a field of each part to the signal of its index", () => {
-    const dots = many("dots", 3);
+    const dots = box("dots", { parts: true });
     const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion(
@@ -371,8 +347,8 @@ describe("sceneBuilder: layering", () => {
 
 describe("sceneBuilder: lists", () => {
   it("gives a list element's poses per index and count", () => {
-    const dots = many("dots", 3);
-    const word = text("word", "ABC", { split: "letters" });
+    const dots = box("dots", { parts: true });
+    const word = text("word", { split: "letters" });
     const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion((time, context) => ({ x: (context.index ?? 0) * 10 + (context.count ?? 0) }))
@@ -382,12 +358,6 @@ describe("sceneBuilder: lists", () => {
     const out = frame(stage, { time: at(1000) }).targets;
     expect([0, 1, 2].map((index) => listPose(out["dots"], index, 3)?.x)).toEqual([3, 13, 23]);
     expect([0, 1, 2].map((index) => listPose(out["word"], index, 3)?.y)).toEqual([0.5, 1.5, 2.5]);
-  });
-
-  it("takes items from a list of data", () => {
-    const rows = many("rows", ["a", "b"], (item) => text("ignored", item));
-    const stage = compiled(sceneBuilder().element(rows).motion(slideX(1).in(enter)));
-    expect(stage.members[0]?.kind).toBe("list");
   });
 });
 
@@ -436,33 +406,27 @@ describe("sceneBuilder: reading another element", () => {
   });
 
   it("carries the element through the scene's carry", () => {
-    const chain = sceneBuilder({
-      length: 2000,
-      layouts: { names: ["a", "b"], pick: () => "a" },
-    })
+    const chain = sceneBuilder({ length: 2000 })
       .element(box("ball"))
       .motion(carry({ ms: 300 }));
     expect(poseAt(chain, "ball", 100)).toBeDefined();
   });
 
   it("carries a part of a list from the box named after the element and the part", () => {
-    const dots = many("dots", 2);
-    const chain = sceneBuilder({
-      length: 2000,
-      layouts: {
-        names: ["row", "wide"],
-        pick: (events) => (events.some(({ name }) => name === "wide") ? "wide" : "row"),
-        rests: {
-          row: { "dots.1": { x: 100, y: 100, width: 200, height: 100 } },
-          wide: { "dots.1": { x: 300, y: 200, width: 400, height: 200 } },
-        },
-      },
-    })
+    const dots = box("dots", { parts: true });
+    const chain = sceneBuilder({ length: 2000 })
       .element(dots)
       .motion(carry({ ms: 200 }));
+    const row = restReader({ "dots.1": { x: 100, y: 100, width: 200, height: 100 } });
+    const wide = restReader({ "dots.1": { x: 300, y: 200, width: 400, height: 200 } });
+    const measures: readonly RestAt[] = [
+      { at: 0, rest: row },
+      { at: 200, rest: wide },
+    ];
     const out = frame(compiled(chain), {
       time: at(300),
-      events: mergeEvents([{ name: "wide", at: 200 }]),
+      rest: wide,
+      measures,
     }).targets["dots"];
     expect([0, 1].map((index) => listPose(out, index, 2))).toEqual([
       {},
@@ -474,16 +438,12 @@ describe("sceneBuilder: reading another element", () => {
 describe("sceneBuilder: refusals", () => {
   it("refuses a second element with a name already used, naming both", () => {
     const chain = sceneBuilder().element(box("x"));
-    expect(() => chain.element(text("x", "hi"))).toThrow(/"x" \(box\).*"x" \(text\)/);
+    expect(() => chain.element(text("x"))).toThrow(/"x" \(box\).*"x" \(text\)/);
   });
 
   it("accepts the same element again, selected later", () => {
     const x = box("x");
     expect(() => sceneBuilder().element(x).element(box("y")).element(x)).not.toThrow();
-  });
-
-  it("refuses a duplicate name inside a group", () => {
-    expect(() => sceneBuilder().element(group("g", [box("x"), box("x")]))).toThrow(/"x"/);
   });
 
   it("refuses a loop of reads at build, naming every element in it", () => {

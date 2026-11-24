@@ -87,3 +87,5 @@ Report briefly when done: the file that plays it, the storyboard, how you checke
 | 2026-11-18 | gerak v3 follow-up (PR 601) | 126.2k | 18 | 6.9 min |
 | 2026-11-20 | plain HTML | 104.1k | 9 | 5.3 min |
 | 2026-11-20 | gerak scene builder (PR 604) | 156.7k | 25 | 8.4 min |
+| 2026-11-22 | plain HTML (Hydrogen medium) | — | 30 | 4.1 min |
+| 2026-11-22 | gerak authored cast (PR 2, Hydrogen medium) | — | 36 | 4.0 min |

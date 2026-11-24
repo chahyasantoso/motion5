@@ -4,6 +4,8 @@ import {
   motion,
   orbit,
   project3d,
+  scroll,
+  viewSize3d,
   type Lens3d,
   type Pose2d,
   type Pose3d,
@@ -12,15 +14,20 @@ import {
 import { describe, expect, it } from "vitest";
 import {
   beat,
+  bindEach,
   box,
   check,
   compileScene,
   formatStageError,
   frame,
+  listPose,
+  listPose3d,
   object,
   pose3dOf,
   poseOf,
+  restReader,
   sceneBuilder,
+  stagger,
   travel,
   type SceneBuilder,
   type Stage,
@@ -84,7 +91,7 @@ describe("an object in a scene", () => {
       sceneBuilder()
         .element(object("cube"))
         .motion(turn.in(beat("spin", 1000)))
-        .element(box("label", { node: { kind: "node", selector: "#label" } }))
+        .element(box("label"))
         .motion(slide.in(beat("spin", 1000))),
     );
     expect(result.ok).toBe(true);
@@ -126,22 +133,22 @@ describe("travel on an object", () => {
   const canvas = box("gl");
   const slot = box("slot");
   // The canvas fills an 800x600 viewport; the slot sits right of centre and low.
-  const rest = {
+  const rest = restReader({
     gl: { x: 400, y: 300, width: 800, height: 600 },
     slot: { x: 620, y: 450, width: 80, height: 80 },
-  };
+  });
   const go = beat("go", 1000);
   const start = motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4 }));
 
   it("lands on the slot's centre as the lens sees it, at the depth it starts from", () => {
     const stage = compiled(
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("drink", { view: { canvas, lens } }))
         .motion(start, travel({ to: slot }).in(go)),
     );
     const size = { width: 800, height: 600 };
     const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
-    const landed = pose3dOf(frame(stage, { time: liveAt(1000) }).targets["drink"]);
+    const landed = pose3dOf(frame(stage, { time: liveAt(1000), rest }).targets["drink"]);
     const seen = project3d(
       { x: landed?.x ?? NaN, y: landed?.y ?? NaN, z: landed?.z ?? NaN },
       lens,
@@ -150,25 +157,273 @@ describe("travel on an object", () => {
     expect(seen.x).toBeCloseTo(620, 6);
     expect(seen.y).toBeCloseTo(450, 6);
     expect(seen.depth).toBeCloseTo(from.depth, 6);
-    const half = pose3dOf(frame(stage, { time: liveAt(500) }).targets["drink"]);
+    const half = pose3dOf(frame(stage, { time: liveAt(500), rest }).targets["drink"]);
     expect(half?.x).toBeCloseTo((0.5 + (landed?.x ?? NaN)) / 2, 9);
   });
 
-  it("refuses a travel on an object with no view, an arc or fit, and a take", () => {
+  it("sits on its slot with no window across live, timed, and untimed clocks", () => {
+    const ownCanvas = box("gl");
+    const ownSlot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("drink", { view: { canvas: ownCanvas, lens } }))
+        .motion(start, travel({ to: ownSlot })),
+    );
+    const size = { width: 800, height: 600 };
+    const from = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, size);
+    for (const ms of [0, 500, 1000]) {
+      const clocks: readonly Time[] = [
+        liveAt(ms),
+        { progress: ms / 1000, clock: { kind: "timed", elapsed: ms, length: 1000 } },
+        { progress: ms / 1000, clock: { kind: "untimed" } },
+      ];
+      for (const time of clocks) {
+        const landed = pose3dOf(frame(stage, { time, rest }).targets["drink"]);
+        const seen = project3d(
+          { x: landed?.x ?? NaN, y: landed?.y ?? NaN, z: landed?.z ?? NaN },
+          lens,
+          size,
+        );
+        expect(seen.x).toBeCloseTo(620, 6);
+        expect(seen.y).toBeCloseTo(450, 6);
+        expect(seen.depth).toBeCloseTo(from.depth, 6);
+      }
+    }
+  });
+
+  it("refuses a travel on an object with no view, an arc, fit fill, and a take, while allowing fit none and contain", () => {
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("bare"))
         .motion(travel({ to: slot }).in(go)),
     ).toThrow(/travels only with/);
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
         .element(object("bent", { view: { canvas, lens } }))
         .motion(travel({ to: slot, arc: 40 }).in(go)),
     ).toThrow(/travels straight/);
     expect(() =>
-      sceneBuilder({ rest })
+      sceneBuilder()
+        .element(object("filled", { view: { canvas, lens } }))
+        .motion(travel({ to: slot, fit: "fill" }).in(go)),
+    ).toThrow(/fit/);
+    expect(() =>
+      sceneBuilder()
         .element(object("taking", { view: { canvas, lens } }))
         .motion(travel({ to: slot }).in(go).take()),
     ).toThrow(/travels as a layer/);
+    expect(() =>
+      sceneBuilder()
+        .element(object("noneOk", { view: { canvas, lens } }))
+        .motion(travel({ to: slot, fit: "none" }).in(go)),
+    ).not.toThrow();
+  });
+
+  it("scales uniformly to contain the CSS slot at desktop and mobile sizes when fit is contain", () => {
+    const objCanvas = box("gl");
+    const objSlot = box("slot");
+    const fitScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ x: 0.5, y: 0.2, z: -0.4, scale: 0.5 })),
+          travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
+        ),
+    );
+    const bounds = { width: 1.2, height: 2.4, depth: 1.2 };
+    const startDepth = project3d({ x: 0.5, y: 0.2, z: -0.4 }, lens, {
+      width: 1440,
+      height: 900,
+    }).depth;
+
+    for (const [vpW, vpH, slotW, slotH] of [
+      [1440, 900, 320, 480],
+      [390, 844, 180, 220],
+    ] as const) {
+      const r = restReader(
+        {
+          gl: { x: vpW / 2, y: vpH / 2, width: vpW, height: vpH },
+          slot: { x: vpW * 0.65, y: vpH * 0.45, width: slotW, height: slotH },
+        },
+        { can: bounds },
+      );
+      const u = viewSize3d(lens, { width: vpW, height: vpH }, startDepth).unitsPerPx;
+      const expectedScale = Math.min((slotW * u) / bounds.width, (slotH * u) / bounds.height);
+      const end = pose3dOf(frame(fitScene, { time: liveAt(1000), rest: r }).targets["can"]);
+      expect(end?.scale).toBeCloseTo(expectedScale, 6);
+      const mid = pose3dOf(frame(fitScene, { time: liveAt(500), rest: r }).targets["can"]);
+      expect(mid?.scale).toBeCloseTo((0.5 + expectedScale) / 2, 6);
+    }
+
+    // Without measured object bounds, fit contain gracefully moves position without setting scale.
+    const unmeasured = pose3dOf(frame(fitScene, { time: liveAt(1000), rest }).targets["can"]);
+    expect(unmeasured?.scale).toBe(0.5);
+
+    // fit: "none" preserves prior scale and per-axis scales even when measured bounds exist.
+    const keepScaleScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.75, scaleZ: 0.5 })),
+          travel({ to: objSlot, fit: "none" }).in(beat("move", 1000)),
+        ),
+    );
+    const rDesk = restReader(
+      {
+        gl: { x: 720, y: 450, width: 1440, height: 900 },
+        slot: { x: 900, y: 400, width: 320, height: 480 },
+      },
+      { can: bounds },
+    );
+    const keepPose = pose3dOf(
+      frame(keepScaleScene, { time: liveAt(1000), rest: rDesk }).targets["can"],
+    );
+    expect(keepPose?.scale).toBe(2);
+    expect(keepPose?.scaleX).toBe(1.5);
+    expect(keepPose?.scaleY).toBe(0.75);
+    expect(keepPose?.scaleZ).toBe(0.5);
+
+    // fit: "contain" folds prior uniform and per-axis scales cleanly without dropping or double-applying scale.
+    const axisContainScene = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("can", { view: { canvas: objCanvas, lens } }))
+        .motion(
+          motion((): Pose3d => ({ scale: 2, scaleX: 1.5, scaleY: 0.5 })),
+          travel({ to: objSlot, fit: "contain" }).in(beat("move", 1000)),
+        ),
+    );
+    const axisStartDepth = project3d({ x: 0, y: 0, z: 0 }, lens, {
+      width: 1440,
+      height: 900,
+    }).depth;
+    const toScaleAxis = Math.min(
+      (320 * viewSize3d(lens, { width: 1440, height: 900 }, axisStartDepth).unitsPerPx) /
+        bounds.width,
+      (480 * viewSize3d(lens, { width: 1440, height: 900 }, axisStartDepth).unitsPerPx) /
+        bounds.height,
+    );
+    const midAxis = pose3dOf(
+      frame(axisContainScene, { time: liveAt(500), rest: rDesk }).targets["can"],
+    );
+    expect(midAxis?.scale).toBeUndefined();
+    expect(midAxis?.scaleX).toBeCloseTo((3 + toScaleAxis) / 2, 6);
+    expect(midAxis?.scaleY).toBeCloseTo((1 + toScaleAxis) / 2, 6);
+    expect(midAxis?.scaleZ).toBeCloseTo((2 + toScaleAxis) / 2, 6);
+    const endAxis = pose3dOf(
+      frame(axisContainScene, { time: liveAt(1000), rest: rDesk }).targets["can"],
+    );
+    expect(endAxis?.scale).toBeUndefined();
+    expect(endAxis?.scaleX).toBeCloseTo(toScaleAxis, 6);
+    expect(endAxis?.scaleY).toBeCloseTo(toScaleAxis, 6);
+    expect(endAxis?.scaleZ).toBeCloseTo(toScaleAxis, 6);
+  });
+});
+
+describe("3D list objects", () => {
+  const spin = beat("spin", 1000);
+  const rise3d = motion((t: Time): Pose3d => ({ z: 2 * t.progress, rotationY: 90 * t.progress }));
+
+  it("compiles object(..., { parts: true }), distinguishes signature, returns ListPose3d, and checks parts", () => {
+    const single = compiled(
+      sceneBuilder({ length: 1000 }).element(object("cookies")).motion(rise3d),
+    );
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("cookies", { parts: true }))
+        .motion(stagger(rise3d, { spread: 1 }).in(spin)),
+    );
+    const member = stage.members.find((m) => m.name === "cookies");
+    expect(member?.kind).toBe("object");
+    expect(member?.kind === "object" && member.parts).toBe(true);
+    expect(stage.signature).not.toBe(single.signature);
+
+    const out = frame(stage, { time: liveAt(500), counts: { cookies: 3 } });
+    expect([0, 1, 2].map((i) => listPose3d(out.targets["cookies"], i, 3)?.z)).toEqual([2, 1, 0]);
+    expect(check(stage, out.targets, { cookies: 3 })).toEqual([]);
+    expect(check(stage, { cookies: [{ z: 1 }] }, { cookies: 3 }).map(formatStageError)).toContain(
+      'scene: "cookies" is a list: give it `(index, count) => pose`, got an array.',
+    );
+    expect(
+      check(stage, { cookies: (i: number) => (i === 1 ? 7 : {}) }, { cookies: 3 }).map(
+        formatStageError,
+      ),
+    ).toContain('scene: "cookies" answered no pose object for item 1.');
+  });
+
+  it("supports stagger factories and bindEach over shared and 3D-only fields while rejecting crossed dimensions", () => {
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("chips", { parts: true }))
+        .motion(
+          stagger(
+            (i, count) =>
+              motion((t: Time): Pose3d => ({ z: (i + 1) * t.progress, rotationX: count * 10 })),
+            { spread: 0.5, from: "center" },
+          ).in(spin),
+        )
+        .element(object("bound3d", { parts: true }))
+        .motion(
+          bindEach({
+            x: (i) => () => i * 2,
+            z: (i) => (t) => -i + scroll.y(t, []),
+            rotationY: (i) => () => i * 15,
+            scaleZ: () => () => 0.5,
+          }),
+        )
+        .element(box("boundSharedOn2d", { parts: true }))
+        .motion(bindEach({ x: (i) => () => i * 10, scale: () => () => 2 }))
+        .element(object("boundSharedOn3d", { parts: true }))
+        .motion(bindEach({ x: (i) => () => i * 0.5, scale: () => () => 1.5 })),
+    );
+
+    const bad2d = sceneBuilder().element(box("bad2d", { parts: true }));
+    // @ts-expect-error z is 3D-only and refused on a box
+    bad2d.motion(bindEach({ z: () => () => 1 }));
+    const bad3d = sceneBuilder().element(object("bad3d", { parts: true }));
+    // @ts-expect-error drawn is 2D-only and refused on an object
+    bad3d.motion(bindEach({ drawn: () => () => 0.5 }));
+
+    const out = frame(stage, {
+      time: liveAt(500),
+      counts: { chips: 3, bound3d: 2, boundSharedOn2d: 2, boundSharedOn3d: 2 },
+    });
+    const center = listPose3d(out.targets["chips"], 1, 3);
+    const edge = listPose3d(out.targets["chips"], 0, 3);
+    expect(center?.z ?? 0).toBeGreaterThan(0);
+    expect(edge?.rotationX).toBe(30);
+    expect(listPose3d(out.targets["bound3d"], 1, 2)).toEqual({
+      x: 2,
+      z: -1,
+      rotationY: 15,
+      scaleZ: 0.5,
+    });
+    expect(listPose(out.targets["boundSharedOn2d"], 1, 2)).toEqual({ x: 10, scale: 2 });
+    expect(listPose3d(out.targets["boundSharedOn3d"], 1, 2)).toEqual({ x: 0.5, scale: 1.5 });
+  });
+
+  it("travels each 3D list part with fit contain using per-part rest bounds and falling back to parent bounds", () => {
+    const eye = orbit({ target: { x: 0, y: 0, z: 0 }, radius: 8, azimuth: 0, elevation: 0 });
+    const lens: Lens3d = { ...eye, ...aim(eye, { x: 0, y: 0, z: 0 }), fov: 40 };
+    const gl = box("gl");
+    const slot = box("slot");
+    const stage = compiled(
+      sceneBuilder({ length: 1000 })
+        .element(object("tray", { parts: true, view: { canvas: gl, lens } }))
+        .motion(travel({ to: slot, fit: "contain" }).in(spin)),
+    );
+    const rest = restReader(
+      {
+        gl: { x: 500, y: 300, width: 1000, height: 600 },
+        slot: { x: 700, y: 300, width: 200, height: 200 },
+      },
+      {
+        tray: { width: 2, height: 2, depth: 2 },
+        "tray.0": { width: 1, height: 1, depth: 1 },
+      },
+    );
+    const targets = frame(stage, { time: liveAt(1000), rest, counts: { tray: 2 } }).targets;
+    const p0 = listPose3d(targets["tray"], 0, 2);
+    const p1 = listPose3d(targets["tray"], 1, 2);
+    expect((p0?.scale ?? 0) / (p1?.scale ?? 1)).toBeCloseTo(2, 6);
   });
 });

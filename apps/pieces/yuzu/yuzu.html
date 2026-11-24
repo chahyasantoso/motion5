@@ -8,7 +8,7 @@
   </head>
   <body>
     <div class="fixed-layer" aria-hidden="true">
-      <div id="drink" class="drink">
+      <div data-cast="drink" id="drink" class="drink">
         <svg
           viewBox="0 0 220 360"
           fill="none"
@@ -43,48 +43,52 @@
     </div>
 
     <main>
-      <section id="hero" class="section hero">
-        <div id="hero-aura" class="hero-aura" aria-hidden="true"></div>
+      <section data-cast="hero" id="hero" class="section hero">
+        <div data-cast="heroAura" id="hero-aura" class="hero-aura" aria-hidden="true"></div>
         <div class="container hero-grid">
           <div class="hero-copy">
             <span class="eyebrow">KOCHI CITRUS COLLECTIVE</span>
-            <h1 id="hero-headline">Bright citrus pressed fresh every cold morning</h1>
-            <p id="hero-sub" class="lead">
+            <h1 data-cast="headline" id="hero-headline">
+              Bright citrus pressed fresh every cold morning
+            </h1>
+            <p data-cast="heroSub" id="hero-sub" class="lead">
               Small-batch sparkling yuzu harvested at dawn in Kochi Prefecture and cold-pressed
               within six hours.
             </p>
-            <a id="hero-cta" class="cta" href="#features">Explore the harvest</a>
+            <a data-cast="heroCta" id="hero-cta" class="cta" href="#features"
+              >Explore the harvest</a
+            >
           </div>
           <div class="slot-frame hero-visual">
             <div class="slot-halo" aria-hidden="true"></div>
-            <div class="slot" aria-hidden="true"></div>
+            <div data-cast="slotHero" class="slot" aria-hidden="true"></div>
           </div>
         </div>
       </section>
 
-      <section id="features" class="section features">
+      <section data-cast="features" id="features" class="section features">
         <div class="container features-grid">
           <div class="slot-frame features-visual">
             <div class="slot-halo" aria-hidden="true"></div>
-            <div class="slot" aria-hidden="true"></div>
+            <div data-cast="slotFeatures" class="slot" aria-hidden="true"></div>
           </div>
           <div class="features-content">
             <span class="eyebrow">THREE BOTANICAL STANDARDS</span>
             <h2>Crafted for clarity and snap</h2>
             <div class="feature-list">
-              <article class="feature-card">
+              <article data-cast="featureCards" class="feature-card">
                 <span class="card-tag">01</span>
                 <h3>Whole Kochi Yuzu</h3>
                 <p>
                   First-press oil from winter rinds blended cleanly with bright high-altitude juice.
                 </p>
               </article>
-              <article class="feature-card">
+              <article data-cast="featureCards" class="feature-card">
                 <span class="card-tag">02</span>
                 <h3>Micro-Fine Carbonation</h3>
                 <p>Chilled mountain spring water infused for a brisk, fine-bubble finish.</p>
               </article>
-              <article class="feature-card">
+              <article data-cast="featureCards" class="feature-card">
                 <span class="card-tag">03</span>
                 <h3>Zero Added Sugar</h3>
                 <p>Dry botanical balance lifted solely by aromatic peel and pure citrus.</p>
@@ -94,18 +98,22 @@
         </div>
       </section>
 
-      <section id="story" class="section story">
+      <section data-cast="story" id="story" class="section story">
         <div class="story-sticky">
           <div class="container story-shell">
             <div class="story-top">
               <span class="eyebrow eyebrow-dark">FROM GROVE TO CAN</span>
               <div class="story-progress-track" aria-hidden="true">
-                <div id="story-progress" class="story-progress-fill"></div>
+                <div
+                  data-cast="storyProgress"
+                  id="story-progress"
+                  class="story-progress-fill"
+                ></div>
               </div>
             </div>
             <div class="story-grid">
               <div class="story-stages">
-                <article id="story-step-1" class="story-step">
+                <article data-cast="storyStep1" id="story-step-1" class="story-step">
                   <span class="step-kicker">STAGE 01 · DAWN HARVEST</span>
                   <h2>Picked only after the November frost</h2>
                   <p>
@@ -113,7 +121,7 @@
                     yuzu along the Umaji terraces before crates head downhill at first light.
                   </p>
                 </article>
-                <article id="story-step-2" class="story-step story-step-two">
+                <article data-cast="storyStep2" id="story-step-2" class="story-step story-step-two">
                   <span class="step-kicker">STAGE 02 · SINGLE COLD PRESS</span>
                   <h2>Pressed once beneath nitrogen seals</h2>
                   <p>
@@ -124,34 +132,34 @@
               </div>
               <div class="slot-frame story-visual">
                 <div class="slot-halo slot-halo-dark" aria-hidden="true"></div>
-                <div class="slot" aria-hidden="true"></div>
+                <div data-cast="slotStory" class="slot" aria-hidden="true"></div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="gallery" class="section gallery">
+      <section data-cast="gallery" id="gallery" class="section gallery">
         <div class="container">
           <span class="eyebrow">NOTES IN THE GLASS</span>
           <h2>Four cold tasting notes</h2>
           <div class="gallery-grid">
-            <article class="gallery-card">
+            <article data-cast="galleryCards" class="gallery-card">
               <span class="note-index">NOTE 01</span>
               <h3>Aroma</h3>
               <p>Crushed cedar bark, green mandarin zest, and winter mountain rain.</p>
             </article>
-            <article class="gallery-card">
+            <article data-cast="galleryCards" class="gallery-card">
               <span class="note-index">NOTE 02</span>
               <h3>Palate</h3>
               <p>Sharp high-mountain acidity lifted by dry floral pith bitterness.</p>
             </article>
-            <article class="gallery-card">
+            <article data-cast="galleryCards" class="gallery-card">
               <span class="note-index">NOTE 03</span>
               <h3>Finish</h3>
               <p>Clean mineral effervescence with zero lingering cane sweetness.</p>
             </article>
-            <article class="gallery-card">
+            <article data-cast="galleryCards" class="gallery-card">
               <span class="note-index">NOTE 04</span>
               <h3>Serve</h3>
               <p>Best poured at 4 C over clear block ice with expressed yuzu peel.</p>

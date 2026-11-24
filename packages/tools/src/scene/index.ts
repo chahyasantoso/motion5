@@ -1,6 +1,5 @@
 export * from "./scene";
 export * from "./new";
-export * from "./import-svg";
 export * from "./joints";
 export * from "./briefs";
 export * from "./page-files";
@@ -9,3 +8,4 @@ export * from "./init";
 export * from "./review";
 export * from "./limits";
 export * from "./installed";
+export * from "./measure-cache";

@@ -28,10 +28,10 @@ before the scroll happens; a GSAP tween or callback cannot. Chromium plays a Web
 4. **Keyframes are sampled from the scene.** The mount samples `frame()` on a grid (16 px of scroll, or 1/32 of a
    trigger's ms) and adds samples where straight lines miss the scene by more than 0.25 px, 0.1 degree, 0.001 scale or
    0.005 opacity, then keeps the fewest that stay within the tolerance. Every keyframe of a part names the same
-   transform functions in `cssTransform`'s order, so the browser blends each field along a straight line.
+   transform functions in `cssTransform`'s order, so the browser blends each field along a straight line. **Refined by [ADR-199](./ADR-199-responsive-3d-pages-and-transitions.md), 2026-11-23.** Scroll tracks sample the 16 px grid strictly inside each element's active scroll-beat intervals plus `0`, `maxScroll`, and beat edges.
 5. **Scroll elements play on one `ScrollTimeline` over the whole scroll range.** A keyframe at scroll `y` sits at
    offset `y / (scrollHeight - clientHeight)`, `fill: "both"`; a spike matched `scrollY` to the pixel at two viewport
-   sizes, so no `rangeStart` or `rangeEnd`. A remeasure cancels and rebuilds them.
+   sizes, so no `rangeStart` or `rangeEnd`. A remeasure cancels and rebuilds them. **Refined by [ADR-199](./ADR-199-responsive-3d-pages-and-transitions.md), 2026-11-23.** A remeasure coalesces `ResizeObserver` callbacks onto a single microtask and skips cancel-and-rebuild when `maxScroll`, `lines`, and all rest boxes read by handed tracks are unchanged.
 6. **Trigger elements play on the document timeline, steered by their beat.** On each input frame the mount asks the
    beat its progress and `heading` (1 forward, -1 back, 0 at rest), and sets the animations' time and playback rate
    when the heading changes or the animation is more than two frames from the beat's progress. `reverse`, `stay` and `replay` stay the trigger fold's alone.

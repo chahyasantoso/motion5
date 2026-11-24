@@ -2,8 +2,21 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { elapsedOf, type Time } from "@gerak/core";
+import {
+  elapsedOf,
+  motion,
+  pointer,
+  scroll,
+  state,
+  transition,
+  type Events,
+  type Pose2d,
+  type Pose3d,
+  type Time,
+} from "@gerak/core";
+import { beat, bind, box, object, sceneBuilder, scrollPoint, stagger } from "@gerak/stage";
 import { afterEach, describe, expect, it } from "vitest";
+import type { MeasureCache } from "../src/page/measure-cache";
 import { defineStage, rawStage, readModule, type CastBuilder } from "./stage-definitions";
 import {
   isSceneFile,
@@ -21,8 +34,12 @@ import * as stageClean from "./fixtures/stage-clean";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
-function review(module: unknown, options: { to?: number } = {}): SceneReviewResult {
-  const read = readModule(module);
+function review(
+  module: unknown,
+  options: { to?: number; events?: Events } = {},
+  measured?: MeasureCache,
+): SceneReviewResult {
+  const read = readModule(module, measured);
   if ("reason" in read) throw new Error(read.reason);
   return reviewSceneModule(read, { ...limits, ...options });
 }
@@ -154,52 +171,6 @@ describe("gerak review on a scene file", () => {
   });
 });
 
-describe("gerak review holds a skin to its cast", () => {
-  const stage = (css: string) =>
-    defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static(), dust: m.many(2).static() }),
-      skins: { dom: { css } },
-      scene: () => ({}),
-    });
-
-  it("finds a data-cast or data-path rule that names no member, once per name", () => {
-    const { findings } = review(
-      stage(
-        `[data-cast="box"] { z-index: 1; } [data-path="ghost"] { fill: red; } [data-cast="ghost"] { opacity: 0.5; } [data-cast="dust.1"] { color: red; } [data-cast='spook'] { color: blue; }`,
-      ),
-    );
-    expect(findings).toEqual([
-      'skin rule names "ghost", which is not in the cast.',
-      'skin rule names "spook", which is not in the cast.',
-    ]);
-  });
-
-  it("finds nothing in a skin that names its members, a list and its items, or none", () => {
-    expect(
-      review(
-        stage(
-          '[data-cast="box"] { z-index: 1; } [data-cast="dust"] { x: 1; } [data-cast="dust.0"] { x: 2; } [data-cast^="du"] { x: 3; }',
-        ),
-      ).findings,
-    ).toEqual([]);
-    expect(review(stage("")).findings).toEqual([]);
-  });
-
-  it("reads an unquoted name, skips comments, and finds a stroke rule on a member with no path", () => {
-    expect(
-      review(
-        stage(
-          '/* [data-cast="old"] */ [data-cast=bogus] { x: 1; } [data-path="box"] { fill: red; }',
-        ),
-      ).findings,
-    ).toEqual([
-      'skin rule names "bogus", which is not in the cast.',
-      'skin rule styles "box" as a stroke, but it has no path.',
-    ]);
-  });
-});
-
 describe("gerak review on a value's shape", () => {
   const line = [
     { id: "a", x0: 0, y0: 0, x1: 5, y1: 0, x2: 10, y2: 0, x3: 20, y3: 0 },
@@ -211,7 +182,6 @@ describe("gerak review on a value's shape", () => {
     defineStage({
       beats: { show: [0, 2000] },
       cast,
-      skins: { dom: { css: "" } },
       scene: ({ time }) => ({ mouth: { shape: Math.min(1, time.progress * 4) } }),
     });
 
@@ -339,36 +309,43 @@ describe("gerak review costs", () => {
   });
 });
 
-describe("gerak review expectations, shape mismatches, and url skins", () => {
+describe("gerak review expectations and shape mismatches", () => {
   const dirs: string[] = [];
   afterEach(() => {
     for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   });
 
-  it("enforces ambient limits and stage bounds while skipping settle rest check", () => {
+  it("enforces ambient limits and the measured frame's bounds while skipping settle rest check", () => {
+    const measured = (
+      frame: { readonly width: number; readonly height: number },
+      rest: MeasureCache["rest"] = {},
+    ): MeasureCache => ({ page: "orb.html", digest: "", frame, rest, lines: {}, parents: {} });
     const cleanAmbient = defineStage({
-      frame: { width: 400, height: 300 },
       beats: { loop: [0, 1000] },
       cast: (m) => ({ orb: m.box().ambient() }),
       scene: ({ time }) => ({
         orb: { x: 200 + 50 * Math.sin(time.progress * Math.PI * 2), y: 150 },
       }),
     });
-    expect(review(cleanAmbient).findings).toEqual([]);
+    expect(review(cleanAmbient, {}, measured({ width: 400, height: 300 })).findings).toEqual([]);
 
     const outOfBounds = defineStage({
-      frame: { width: 400, height: 300 },
       beats: { loop: [0, 1000] },
-      rest: { orb: { x: 100, y: 100, width: 20, height: 20 } },
       cast: (m) => ({ orb: m.box().ambient() }),
       scene: ({ time }) => ({ orb: { x: 350 * time.progress } }),
     });
+    const orbRest: MeasureCache["rest"] = {
+      orb: { x: 100, y: 100, width: 20, height: 20, placement: { kind: "flow" } },
+    };
+    const bounded = measured({ width: 400, height: 300 }, orbRest);
+    expect(
+      review(outOfBounds, {}, bounded).findings.some((line) => /leaves stage bounds/.test(line)),
+    ).toBe(true);
     expect(review(outOfBounds).findings.some((line) => /leaves stage bounds/.test(line))).toBe(
-      true,
+      false,
     );
 
     const jumpingAmbient = defineStage({
-      frame: { width: 800, height: 600 },
       beats: { loop: [0, 1000] },
       cast: (m) => ({ orb: m.box().ambient() }),
       limits: { orb: { jump: 10 } },
@@ -380,7 +357,7 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
   it("reports a list item that throws as a finding, and no never-moved noise beside it", () => {
     const broken = defineStage({
       beats: { show: [0, 400] },
-      cast: (m) => ({ row: m.many(2), dot: m.box() }),
+      cast: (m) => ({ row: m.many(), dot: m.box() }),
       scene: () => ({
         row: (i) => {
           if (i === 1) throw new Error("boom");
@@ -388,29 +365,44 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
         },
       }),
     });
-    expect(review(broken).findings).toEqual(["boom"]);
+    const cache: MeasureCache = {
+      page: "row.html",
+      digest: "",
+      frame: { width: 400, height: 300 },
+      rest: {
+        "row.0": { x: 0, y: 0, width: 10, height: 10, placement: { kind: "flow" } },
+        "row.1": { x: 20, y: 0, width: 10, height: 10, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    expect(review(broken, {}, cache).findings).toEqual(["boom"]);
   });
 
-  it("judges an ambient member's bounds only where its box is measured", () => {
+  it("judges an ambient member's bounds only where its box and frame are measured", () => {
     const unmeasured = defineStage({
       beats: { show: [0, 400] },
       cast: (m) => ({ flake: m.box().ambient() }),
       scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
     });
     expect(review(unmeasured).findings.filter((line) => /bounds/.test(line))).toEqual([]);
-    const measured = defineStage({
-      beats: { show: [0, 400] },
-      rest: { flake: { x: 5, y: 5, width: 4, height: 4 } },
-      cast: (m) => ({ flake: m.box().ambient() }),
-      scene: ({ time }) => ({ flake: { x: -10 + 5 * Math.sin(time.progress * 6) } }),
-    });
-    expect(review(measured).findings.filter((line) => /bounds/.test(line))).toHaveLength(1);
+    const cache: MeasureCache = {
+      page: "flake.html",
+      digest: "",
+      frame: { width: 100, height: 100 },
+      rest: { flake: { x: 5, y: 5, width: 4, height: 4, placement: { kind: "flow" } } },
+      lines: {},
+      parents: {},
+    };
+    expect(
+      review(unmeasured, {}, cache).findings.filter((line) => /bounds/.test(line)),
+    ).toHaveLength(1);
   });
 
   it("emits findings for frame shape_mismatch errors instead of throwing", () => {
     const mismatch = rawStage({
       beats: { show: [0, 400] },
-      cast: (m: CastBuilder<"show">) => ({ dots: m.many(2) }),
+      cast: (m: CastBuilder<"show">) => ({ dots: m.many() }),
       scene: () => ({ dots: [{ x: 0 }] }),
     });
     expect(review(mismatch).findings).toContain(
@@ -418,34 +410,183 @@ describe("gerak review expectations, shape mismatches, and url skins", () => {
     );
   });
 
-  it("reads local file: URLs for DomSkinCss css and defs", () => {
-    const dir = mkdtempSync(join(tmpdir(), "gerak-skin-url-"));
-    dirs.push(dir);
-    const cssFile = join(dir, "skin.css");
-    const defsFile = join(dir, "defs.svg");
-    writeFileSync(
-      cssFile,
-      '[data-cast="box"] { z-index: 1; } [data-cast="ghost"] { opacity: 0.5; }',
-      "utf8",
+  it("exempts scroll-beat, trigger-beat, and input-driven settle members that move under their driver", () => {
+    const sec = box("sec");
+    const sb = beat("scroll", { scroll: [sec.top, sec.end] });
+    const tb = beat("trigger", 400, { when: scrollPoint(300).reached, back: "reverse" });
+    const smoothBeat = beat("smooth", { scroll: [scrollPoint(0), scrollPoint(500)], smooth: true });
+    const slide = motion((t: Time): Pose2d => ({ x: 80 * t.progress }));
+    const measured: MeasureCache = {
+      page: "scroll.html",
+      digest: "",
+      frame: { width: 1000, height: 600 },
+      rest: {
+        sec: { x: 500, y: 800, width: 1000, height: 600, placement: { kind: "flow" } },
+        "sList.0": { x: 10, y: 10, width: 10, height: 10, placement: { kind: "flow" } },
+        "sList.1": { x: 30, y: 10, width: 10, height: 10, placement: { kind: "flow" } },
+        "tList.0": { x: 10, y: 40, width: 10, height: 10, placement: { kind: "flow" } },
+        "tList.1": { x: 30, y: 40, width: 10, height: 10, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    const scene = sceneBuilder({ length: 1000 })
+      .element(box("sActor"))
+      .motion(slide.in(sb))
+      .element(box("sList", { parts: true }))
+      .motion(stagger(slide, { spread: 0.2 }).in(sb))
+      .element(box("tActor"))
+      .motion(slide.in(tb))
+      .element(box("tList", { parts: true }))
+      .motion(stagger(slide, { spread: 0.2 }).in(tb))
+      .element(box("pointed"))
+      .motion(bind({ x: (t, e) => pointer.x(t, e) * 40 }))
+      .element(box("scrolledBind"))
+      .motion(bind({ y: (t, e) => scroll.y(t, e) * 0.2 }))
+      .element(box("smoothed"))
+      .motion(slide.in(smoothBeat));
+
+    expect(review(scene, {}, measured).findings).toEqual([]);
+  });
+
+  it("still flags genuinely static settle members even inside scroll or trigger beats", () => {
+    const sb = beat("scroll", { scroll: [scrollPoint(100), scrollPoint(500)] });
+    const tb = beat("trigger", 400, { when: scrollPoint(300).reached, back: "stay" });
+    const noop = motion((): Pose2d => ({ x: 0 }));
+    const scene = sceneBuilder({ length: 1000 })
+      .element(box("staticScroll"))
+      .motion(noop.in(sb))
+      .element(box("staticTrigger"))
+      .motion(noop.in(tb))
+      .element(box("staticUnwindowed"))
+      .motion(noop);
+
+    const findings = review(scene).findings;
+    expect(findings).toContain(
+      'cast member "staticScroll" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
     );
-    writeFileSync(defsFile, '<linearGradient id="g"/>', "utf8");
+    expect(findings).toContain(
+      'cast member "staticTrigger" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+    expect(findings).toContain(
+      'cast member "staticUnwindowed" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+  });
 
-    const withUrl = defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static() }),
-      skins: { dom: { css: pathToFileURL(cssFile), defs: pathToFileURL(defsFile) } },
-      scene: () => ({}),
-    });
-    expect(review(withUrl).findings).toEqual([
-      'skin rule names "ghost", which is not in the cast.',
-    ]);
+  it("expands 3D list objects from MeasureCache.counts during reviewSceneModule and sampleScene", () => {
+    const enter = beat("enter", 400);
+    const cache: MeasureCache = {
+      page: "list3d.html",
+      digest: "",
+      frame: { width: 1000, height: 600 },
+      rest: {},
+      lines: {},
+      parents: {},
+      counts: { cookies: 3 },
+    };
+    const clean3d = sceneBuilder({ length: 1000 })
+      .element(object("cookies", { parts: true }))
+      .motion(
+        stagger(
+          motion((t: Time): Pose3d => ({ z: 0.5 * t.progress })),
+          { spread: 0.5 },
+        ).in(enter),
+      );
+    expect(review(clean3d, {}, cache).findings).toEqual([]);
 
-    const missingUrl = defineStage({
-      beats: { show: [0, 400] },
-      cast: (m) => ({ box: m.box().static() }),
-      skins: { dom: { css: pathToFileURL(join(dir, "missing.css")) } },
-      scene: () => ({}),
+    const jumping3d = sceneBuilder({ length: 1000 })
+      .element(object("cookies", { parts: true }))
+      .motion((t, ctx) => ({
+        z: ctx.index === 1 && t.progress >= 0.4 ? 200 : 0,
+      }));
+    const jumpFindings = review(jumping3d, {}, cache).findings;
+    expect(jumpFindings.some((line) => line.startsWith("cookies[1].z jumps"))).toBe(true);
+  });
+});
+
+describe("driver probing and --events in gerak review", () => {
+  it("probes sticky scroll placement ranges on unmoved settle members", () => {
+    const cache: MeasureCache = {
+      page: "sticky.html",
+      digest: "",
+      frame: { width: 1440, height: 900 },
+      rest: {
+        slot: {
+          x: 900,
+          y: 450,
+          width: 400,
+          height: 400,
+          placement: { kind: "sticky", minY: 1850, maxY: 4550, pinY: 450 },
+        },
+        footer: { x: 720, y: 10000, width: 1440, height: 800, placement: { kind: "flow" } },
+      },
+      lines: {},
+      parents: {},
+    };
+    const scene = sceneBuilder({ length: 400 })
+      .element(box("slot"))
+      .element(box("footer"))
+      .element(box("panel2"))
+      .motion((_t, ctx) => {
+        const y = scroll.y(ctx.time, ctx.events);
+        const p = (y - 1850) / (4550 - 1850);
+        return { opacity: p >= 0.48 && p < 0.74 ? 1 : 0 };
+      });
+    expect(review(scene, {}, cache).findings).toEqual([]);
+  });
+
+  it("probes watched target interaction events on unmoved settle members", () => {
+    const hovered = state(
+      false,
+      (cur, ev) => (ev.name === "enter" ? true : ev.name === "leave" ? false : cur),
+      { target: "btn" },
+    );
+    const scene = sceneBuilder({ length: 400 })
+      .element(box("btn", { watch: true }))
+      .element(box("lid"))
+      .motion((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 }));
+    expect(review(scene).findings).toEqual([]);
+  });
+
+  it("passes --events to reviewSceneModule and parses --events in CLI args", () => {
+    const count = state(0, (cur, ev) => (ev.name === "jar-add" ? cur + 1 : cur));
+    const countSpring = transition(count, { ms: 200 });
+    const cache: MeasureCache = {
+      page: "jar.html",
+      digest: "",
+      frame: { width: 1440, height: 900 },
+      rest: {},
+      lines: {},
+      parents: {},
+      counts: { cookies: 2 },
+    };
+    const scene = sceneBuilder({ length: 900 })
+      .element(object("cookies", { parts: true }))
+      .motion((_t, ctx) => {
+        const trans = countSpring(ctx.time, ctx.events);
+        return { y: trans.current === 0 ? 0 : trans.progress * 0.2 };
+      });
+
+    expect(review(scene, {}, cache).findings).toContain(
+      'cast member "cookies" is never moved by the scene; move it, or mark it .static() and leave it out of the scene.',
+    );
+    expect(
+      review(scene, { events: [{ name: "jar-add", at: 100, value: 1 }] }, cache).findings,
+    ).toEqual([]);
+
+    expect(parseSceneReviewArgs(["s.ts", "--events", "jar-add=0@200,jar-seal=1@400"])).toEqual({
+      kind: "ok",
+      file: "s.ts",
+      hold: 500,
+      jump: 150,
+      turn: 150,
+      ratio: 1.5,
+      budget: 8,
+      events: [
+        { name: "jar-add", at: 200, value: 0 },
+        { name: "jar-seal", at: 400, value: 1 },
+      ],
     });
-    expect(review(missingUrl).findings[0]).toMatch(/could not be read/);
+    expect(parseSceneReviewArgs(["s.ts", "--events", "bad-event"]).kind).toBe("usage");
   });
 });

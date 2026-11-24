@@ -1,15 +1,7 @@
-export {
-  type Content,
-  type Expect,
-  type ItemContent,
-  type NodeBinding,
-  type Path,
-  type Pivot,
-} from "./author/cast";
+export { type Content, type Expect, type Path, type ScrollWindow } from "./author/cast";
 export {
   beat,
   scrollPoint,
-  section,
   type Beat,
   type BeatContext,
   type BeatPlace,
@@ -17,20 +9,19 @@ export {
   type ScrollBeatOptions,
   type ScrollPoint,
   type ScrollReached,
-  type Section,
   type TriggerBack,
   type TriggerBeat,
   type TriggerPlace,
 } from "./author/beat";
 export {
   box,
-  el,
-  group,
-  many,
   object,
   shape,
   text,
+  type BoxOptions,
   type Element,
+  type Edges,
+  type ElementBody,
   type ElementOptions,
   type ObjectElement,
   type ObjectOptions,
@@ -53,6 +44,8 @@ export {
   travel,
   type TravelMotion,
   type BoundEachFields,
+  type BoundEachFields3d,
+  type BoundEachSharedFields,
   type BoundFields,
   type CompileSceneOptions,
   type ElementStep,
@@ -65,6 +58,7 @@ export {
   type SceneBuilder,
   type SceneBuilderOptions,
   type SceneMotion,
+  type SharedPose,
   type ShowWindow,
   type StaggerBy,
   type StaggerFrom,
@@ -79,34 +73,29 @@ export {
   type Carry,
   type CarryMode,
   type CarryOptions,
-  type Frame,
+  type ObjectBounds3d,
+  type ObjectRest,
   type Rest,
+  type RestAt,
   type RestReader,
 } from "./author/layout";
+export { boxInViewport, placementOf, type BoxPlacement } from "./render/placement";
 export {
-  isDomSkin,
-  type CompiledSection,
-  type DomSkinInput,
   type Limits,
-  type LayoutsInput,
   type ListPose,
+  type ListPose3d,
   type Drive,
   type Moves,
 } from "./author/stage";
-export {
-  DEFAULT_FRAME,
-  isStage,
-  type CompileResult,
-  type DomSkin,
-  type Member,
-  type Stage,
-  type StageLayouts,
-} from "./run/compile";
+export { isStage, type CompileResult, type Member, type Stage } from "./run/compile";
 export { formatStageError, type StageError } from "./run/errors";
 export {
   check,
   frame,
+  frameVisible,
   listPose,
+  listPose3d,
+  partCounts,
   pose3dOf,
   poseOf,
   type FrameInput,

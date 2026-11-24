@@ -2,53 +2,29 @@
   "unit": "microseconds per frame",
   "stepMs": 16,
   "pieces": {
-    "delivered/src/delivered.ts": {
-      "frame": 5.9,
-      "stage": 1.1
+    "character3d/src/character3d-scene.ts": {
+      "frame": 173.1,
+      "stage": 0.3
     },
     "launch-day/src/launch-day.ts": {
-      "frame": 28.2,
-      "stage": 3.9
+      "frame": 11,
+      "stage": 0.4
     },
-    "nowplaying/src/nowplaying.ts": {
-      "frame": 30.4,
-      "stage": 3
-    },
-    "penguin/src/penguin-scene.ts": {
-      "frame": 37.5,
-      "stage": 35.3
-    },
-    "penguin/src/penguin.ts": {
-      "frame": 61.2,
-      "stage": 8.4
+    "overlay3d/src/overlay3d-scene.ts": {
+      "frame": 8.6,
+      "stage": 0.2
     },
     "saved/src/saved.ts": {
-      "frame": 6.8,
-      "stage": 0.8
+      "frame": 4.2,
+      "stage": 0.2
     },
-    "shop/src/shop.ts": {
-      "frame": 14.1,
-      "stage": 10.7
+    "yuzu-3d/src/yuzu-3d.ts": {
+      "frame": 32.6,
+      "stage": 1.1
     },
-    "showreel/src/showreel-c.ts": {
-      "frame": 4429.7,
-      "stage": 36.9
-    },
-    "showreel/src/showreel-d.ts": {
-      "frame": 5215.2,
-      "stage": 41.7
-    },
-    "showreel/src/showreel-e.ts": {
-      "frame": 5392.9,
-      "stage": 29.5
-    },
-    "showreel/src/showreel-f.ts": {
-      "frame": 3948.9,
-      "stage": 30.2
-    },
-    "tempo/src/tempo.ts": {
-      "frame": 3.9,
-      "stage": 1.4
+    "yuzu/src/yuzu.ts": {
+      "frame": 27.9,
+      "stage": 0.9
     }
   }
 }

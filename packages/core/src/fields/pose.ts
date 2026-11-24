@@ -185,7 +185,8 @@ export const VALUE_FIELDS = Object.freeze({
   }),
   shadowX: row({
     ...OFFSET,
-    meaning: "Moves the target's drop shadow right; its colour is the skin's `--gerak-shadow`.",
+    meaning:
+      "Moves the target's drop shadow right; its colour is the markup's CSS `--gerak-shadow`.",
     unit: "px",
     dimension: "2d",
   }),
@@ -204,7 +205,8 @@ export const VALUE_FIELDS = Object.freeze({
   }),
   hue: row({
     ...TURN,
-    meaning: "Turns the target's colour round the hue wheel, from the colour its skin gives it.",
+    meaning:
+      "Turns the target's colour round the hue wheel, from the colour the markup's CSS gives it.",
     unit: "deg",
     dimension: "2d",
   }),
@@ -212,7 +214,7 @@ export const VALUE_FIELDS = Object.freeze({
     ...OFFSET,
     judged: "ratio",
     meaning:
-      "Lightens the target's colour above 0 and darkens it below, from -1 to 1, from the colour its skin gives it.",
+      "Lightens the target's colour above 0 and darkens it below, from -1 to 1, from the colour the markup's CSS gives it.",
     unit: "number",
     dimension: "2d",
   }),
@@ -221,7 +223,7 @@ export const VALUE_FIELDS = Object.freeze({
     least: 0,
     judged: "ratio",
     meaning:
-      "Mixes the target's colour toward its skin's `--gerak-tint-to`: 0 is none, 1 all of it.",
+      "Mixes the target's colour toward the markup's CSS `--gerak-tint-to`: 0 is none, 1 all of it.",
     unit: "share",
     dimension: "2d",
   }),

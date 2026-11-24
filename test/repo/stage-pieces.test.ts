@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { compileScene, formatStageError, isDomSkin, isScene } from "@gerak/stage";
+import { compileScene, formatStageError, isScene } from "@gerak/stage";
 import { describe, expect, it } from "vitest";
 
 const PIECES = join(import.meta.dirname, "..", "..", "apps", "pieces");
@@ -46,12 +46,11 @@ describe("stage pieces", () => {
     for (const file of files) {
       const module: unknown = await import(pathToFileURL(file).href);
       const scene: unknown = Reflect.get(Object(module), "default");
-      const skin: unknown = Reflect.get(Object(module), "skin");
-      if (!isScene(scene) || (skin !== undefined && !isDomSkin(skin))) {
-        failures.push(`${file}: no scene, or a skin that is not { css }`);
+      if (!isScene(scene)) {
+        failures.push(`${file}: no scene`);
         continue;
       }
-      const compiled = compileScene(scene, { skin });
+      const compiled = compileScene(scene);
       if (!compiled.ok)
         failures.push(`${file}: ${compiled.errors.map(formatStageError).join("; ")}`);
     }

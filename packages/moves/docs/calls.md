@@ -42,7 +42,7 @@ Each move is `move(options)`, which answers a function of time: `move(options)(t
 `RangeError` when the move is built. A modifier takes the function it changes: `overshoot(options)(signal)(time)`. By use:
 
 - `exit`: **`smudge`**; `reversed(time)` from `@gerak/core` also turns any move into one
-- `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`**, **`fade`**, **`unfold`**, **`swing`**
+- `enter`: **`drop`**, **`hop`**, **`rise`**, **`slide`**, **`pop`** (`{ overshoot?: number }` in `0..1`, default `0.2`), **`fade`**, **`unfold`** (`{ from?: "top" | "bottom" | "left" | "right" }`), **`swing`**
 - `emphasis`: **`pulse`**, **`shake`**, **`wobble`**, **`nod`**
 - `reveal`: **`wipe`**, **`trace`**
 - `follow`: **`rope`**

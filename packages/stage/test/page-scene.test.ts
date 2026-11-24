@@ -4,12 +4,9 @@ import {
   beat,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
-  group,
   listPose,
-  many,
   sceneBuilder,
   scrollPoint,
   shape,
@@ -34,74 +31,35 @@ function compiled(scene: SceneBuilder): Stage {
 const slideX = (distance: number) =>
   motion((time: Time): Pose2d => ({ x: distance * time.progress }));
 
-describe("el and page scene compilation", () => {
-  it("builds frozen NodeBinding values and refuses empty selectors", () => {
-    const binding = el("#hero h1");
-    expect(binding).toEqual({ kind: "node", selector: "#hero h1" });
-    expect(Object.isFrozen(binding)).toBe(true);
-    expect(() => el("")).toThrow(TypeError);
-    expect(() => el("   ")).toThrow(TypeError);
-  });
-
-  it("compiles node bindings onto stage members and split kinds onto lists", () => {
-    const card = box("card", { node: el("#card") });
-    const title = text("title", "One two three", { split: "words", node: el("#title") });
-    const line = shape("line", circlePath({ cx: 0, cy: 0, r: 5 }), { node: el("#line") });
-    const items = many("items", 2, { node: el(".item") });
-    const wrap = group("wrap", [card], { node: el("#wrap") });
+describe("page scene compilation", () => {
+  it("binds every element to its [data-cast] nodes and compiles split kinds onto lists", () => {
+    const card = box("card");
+    const title = text("title", { split: "words" });
+    const line = shape("line", circlePath({ cx: 0, cy: 0, r: 5 }));
+    const items = box("items", { parts: true });
     const stage = compiled(
       sceneBuilder()
-        .element(wrap)
+        .element(box("wrap"))
+        .element(card)
         .element(title)
         .element(line)
         .element(items)
         .motion(slideX(10).in(beat("sb", { scroll: [scrollPoint(0), scrollPoint(500)] }))),
     );
     expect(stage.members.map((member) => [member.name, member.node])).toEqual([
-      ["wrap", "#wrap"],
-      ["card", "#card"],
-      ["title", "#title"],
-      ["line", "#line"],
-      ["items", ".item"],
+      ["wrap", '[data-cast="wrap"]'],
+      ["card", '[data-cast="card"]'],
+      ["title", '[data-cast="title"]'],
+      ["line", '[data-cast="line"]'],
+      ["items", '[data-cast="items"]'],
     ]);
     const titleMember = stage.members.find((member) => member.name === "title");
     expect(titleMember?.kind === "list" ? titleMember.split : undefined).toBe("words");
   });
 
-  it("refuses any element without a node in a page scene, naming each missing element", () => {
-    const hero = box("hero", { node: el("#hero") });
-    const loose = box("looseCard");
-    const inside = box("nestedMissing");
-    const wrapped = group("wrap", [inside], { node: el("#wrap") });
-    const result = compileScene(
-      sceneBuilder({ length: 1000 })
-        .element(hero)
-        .motion(slideX(10))
-        .element(loose)
-        .element(wrapped),
-    );
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      const message = result.errors.map(formatStageError).join("\n");
-      expect(message).toContain('"looseCard"');
-      expect(message).toContain('"nestedMissing"');
-    }
-  });
-
-  it("refuses a DOM skin on a page scene", () => {
-    const hero = box("hero", { node: el("#hero") });
-    const result = compileScene(sceneBuilder({ length: 1000 }).element(hero), {
-      skin: { css: "#hero { opacity: 0; }" },
-    });
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors.map(formatStageError).join("\n")).toMatch(/skin/i);
-    }
-  });
-
   it("compiles a page scene with only scroll or trigger beats and no length", () => {
     const scrollBeat = beat("s", { scroll: [scrollPoint(0), scrollPoint(400)] });
-    const hero = box("hero", { node: el("#hero") });
+    const hero = box("hero");
     const stage = compiled(sceneBuilder().element(hero).motion(slideX(50).in(scrollBeat)));
     expect(stage.durationMs).toBeGreaterThan(0);
     const out = frame(stage, {
@@ -114,11 +72,10 @@ describe("el and page scene compilation", () => {
 
 describe("lines and stagger by line", () => {
   it("gives line 0 headless on list parts and undefined on non-parts", () => {
-    const headline = text("headline", "Fresh pressed citrus every", {
+    const headline = text("headline", {
       split: "words",
-      node: el("#headline"),
     });
-    const card = box("card", { node: el("#card") });
+    const card = box("card");
     let actorLine: number | undefined = -1;
     const partLines: (number | undefined)[] = [];
     const stage = compiled(
@@ -141,9 +98,8 @@ describe("lines and stagger by line", () => {
   });
 
   it("staggers parts on the same line together when by is 'line', and reacts to resize lines", () => {
-    const headline = text("headline", "One two three four", {
+    const headline = text("headline", {
       split: "words",
-      node: el("#headline"),
     });
     const enter = beat("enter", 1000);
     const stage = compiled(
@@ -176,7 +132,7 @@ describe("lines and stagger by line", () => {
     const lines = { words: [0, 1, 1, 2] };
 
     const sample = (from: "start" | "end" | "center" | "edges"): number[] => {
-      const words = text("words", "A B C D", { split: "words", node: el("#words") });
+      const words = text("words", { split: "words" });
       const stage = compiled(
         sceneBuilder()
           .element(words)

@@ -98,7 +98,7 @@ const callout = (point: { readonly x: number; readonly y: number; readonly z: nu
   return { x: at.x, y: at.y, opacity: fadeOf(at, centreDepth()) };
 };
 
-export default sceneBuilder({ name: "overlay3d", length: durationMs, frame: stage, cues })
+export default sceneBuilder({ name: "overlay3d", length: durationMs, cues })
   .element(object("object"))
   .motion(motion(objectAt))
   .limits(LIMITS)

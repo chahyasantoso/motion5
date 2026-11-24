@@ -8,16 +8,16 @@ import type { Members } from "../src/author/cast";
 const SQUARE = rectPath({ x: 0, y: 0, width: 40, height: 40 });
 const CIRCLE = circlePath({ cx: 20, cy: 20, r: 20 });
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
   return result.stage;
 }
 
-function errorsOf<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function errorsOf<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): readonly StageError[] {
   const result = compileStage(definition);
   return result.ok ? [] : result.errors;
@@ -37,30 +37,28 @@ describe("defineStage options", () => {
 });
 
 describe("compileStage", () => {
-  it("compiles one flat member list, parents first, with list items as contents", () => {
+  it("compiles flat members with split on list members", () => {
     const stage = compiled(
       defineStage({
         beats: { enter: [0, 500], hold: [500, 1600] },
         cast: (m) => ({
-          card: m.group({ badge: m.text("READY"), word: m.letters("HI") }),
-          dust: m.many(3),
+          card: m.box(),
+          badge: m.text(),
+          word: m.letters(),
+          dust: m.many(),
         }),
         scene: () => ({}),
       }),
     );
     expect(stage.durationMs).toBe(1600);
-    expect(stage.members.map(({ name, kind, parent }) => [name, kind, parent])).toEqual([
-      ["card", "group", -1],
-      ["badge", "actor", 0],
-      ["word", "list", 0],
-      ["dust", "list", -1],
+    expect(stage.members.map(({ name, kind }) => [name, kind])).toEqual([
+      ["card", "actor"],
+      ["badge", "actor"],
+      ["word", "list"],
+      ["dust", "list"],
     ]);
     const word = stage.members[2];
-    expect(word?.kind === "list" ? word.items : undefined).toEqual([
-      { kind: "text", value: "H" },
-      { kind: "text", value: "I" },
-    ]);
-    expect(stage.layouts.names).toEqual(["main"]);
+    expect(word?.kind === "list" ? word.split : undefined).toBe("letters");
   });
 
   it("tells a definition and a stage apart by kind, so a second copy of the package still works", () => {
@@ -73,23 +71,22 @@ describe("compileStage", () => {
     expect(isStageDefinition(stage)).toBe(false);
   });
 
-  it("passes ambient down to children and items, and keeps static on the group alone", () => {
+  it("keeps static, ambient and settle expectations per member", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100] },
         cast: (m) => ({
-          weather: m.group({ flake: m.box(), still: m.box().static() }).ambient(),
-          sign: m.group({ arrow: m.box() }).static(),
-          snow: m.many(2).ambient(),
+          flake: m.box().ambient(),
+          still: m.box().static(),
+          arrow: m.box(),
+          snow: m.many().ambient(),
         }),
         scene: () => ({}),
       }),
     );
     expect(Object.fromEntries(stage.members.map(({ name, expect: e }) => [name, e]))).toEqual({
-      weather: "ambient",
       flake: "ambient",
       still: "static",
-      sign: "static",
       arrow: "settle",
       snow: "ambient",
     });
@@ -101,7 +98,6 @@ describe("compileStage", () => {
         beats: { a: [0, 100], b: [200, 300] },
         cast: (m) => ({
           "x.y": m.box(),
-          g: m.group({ dup: m.box() }),
           // @ts-expect-error: "missing" is not a beat, refused at compile time too
           dup: m.box().on("missing"),
           late: m.box().on(["b", "a"]),
@@ -111,7 +107,6 @@ describe("compileStage", () => {
       }),
     );
     expect(errors.map(({ kind }) => kind).sort()).toEqual([
-      "duplicate_member",
       "morph_mismatch",
       "reserved_dot",
       "reversed_stretch",
@@ -120,24 +115,7 @@ describe("compileStage", () => {
     for (const error of errors) expect(formatStageError(error)).not.toBe("");
   });
 
-  it("refuses a readout in a list, a bad pivot, beats past durationMs or of no length, and a bad layout pick", () => {
-    const readout = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        // @ts-expect-error: a readout cannot be a list item
-        cast: (m) => ({ row: m.many([0], () => m.readout(() => "x")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(readout.map(formatStageError).join()).toContain("many: item 0 is a readout");
-    const badPivot = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ a: m.box().pivot({ x: Number.NaN, y: 0 }) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(badPivot.map(formatStageError).join()).toContain("pivot");
+  it("refuses beats past durationMs or of no length", () => {
     expect(
       errorsOf(
         defineStage({
@@ -162,28 +140,6 @@ describe("compileStage", () => {
         reason: 'beat "empty" must be [from, to] ms with 0 <= from < to.',
       },
     ]);
-    const pick = errorsOf(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: () => ({}),
-        layouts: { names: ["one"], pick: () => Reflect.get({ two: "two" }, "two") },
-        scene: () => ({}),
-      }),
-    );
-    expect(pick.map(formatStageError).join()).toContain("layouts");
-  });
-
-  it("refuses modifiers on a list item, which only its list can carry", () => {
-    const errors = compileStage(
-      defineStage({
-        beats: { a: [0, 100] },
-        cast: (m) => ({ row: m.many([1], () => m.box().on("a")) }),
-        scene: () => ({}),
-      }),
-    );
-    expect(errors.ok ? "" : errors.errors.map(formatStageError).join()).toContain(
-      "an item takes no modifiers",
-    );
   });
 
   it("matches morph outlines once, base first", () => {
@@ -201,17 +157,19 @@ describe("compileStage", () => {
   });
 
   it("gives equal signatures to stages that mount on the same elements, and different ones otherwise", () => {
-    const make = (word: string, scale: number) =>
+    const make = (split: "letters" | "words", scale: number) =>
       compiled(
         defineStage({
           beats: { a: [0, 100] },
-          frame: { width: 100 * scale, height: 100 },
-          cast: (m) => ({ card: m.group({ title: m.text(word) }) }),
-          scene: () => ({ title: { scale } }),
+          cast: (m) => ({
+            card: m.box(),
+            title: split === "letters" ? m.letters() : m.words(),
+          }),
+          scene: () => ({ title: () => ({ scale }) }),
         }),
       ).signature;
-    expect(make("Hi", 1)).toBe(make("Hi", 2));
-    expect(make("Hi", 1)).not.toBe(make("Bye", 1));
+    expect(make("letters", 1)).toBe(make("letters", 2));
+    expect(make("letters", 1)).not.toBe(make("words", 1));
   });
 
   it("types beat names, list poses and unknown members", () => {
@@ -223,31 +181,25 @@ describe("compileStage", () => {
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ dots: m.many(3), card: m.group({ title: m.text("x") }) }),
+      cast: (m) => ({ dots: m.many(), card: m.box(), title: m.text() }),
       // @ts-expect-error: a list takes a function of the index, not an array
       scene: () => ({ dots: [{}, {}, {}] }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ dots: m.many(3), card: m.group({ title: m.text("x") }) }),
+      cast: (m) => ({ dots: m.many(), card: m.box(), title: m.text() }),
       scene: () => ({ dots: (i) => ({ x: i }), title: { x: 1 }, card: {} }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
-      scene: () => ({ row: (i) => ({ x: i }), inner: { y: 1 } }),
+      cast: (m) => ({ card: m.box(), row: m.letters() }),
+      scene: () => ({ row: (i) => ({ x: i }), card: { y: 1 } }),
     });
     defineStage({
       beats: { enter: [0, 100] },
-      cast: (m) => ({ card: m.group({ inner: m.group({ row: m.letters("ab") }) }) }),
-      // @ts-expect-error: a list inside nested groups still takes a function of the index
+      cast: (m) => ({ row: m.letters() }),
+      // @ts-expect-error: a list takes a function of the index
       scene: () => ({ row: { x: 1 } }),
-    });
-    defineStage({
-      beats: { enter: [0, 100] },
-      // @ts-expect-error: a readout cannot be a list item
-      cast: (m) => ({ row: m.many([1], () => m.readout(() => "x")) }),
-      scene: () => ({}),
     });
     expect(true).toBe(true);
   });

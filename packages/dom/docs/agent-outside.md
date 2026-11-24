@@ -1,33 +1,44 @@
 # Outside the stage
 
-Read this to play a piece outside this repository, or to move a real page's own elements instead of a stage module's.
+Read this to mount a scene outside this repository, or to bind a component's own elements directly.
 The loop is in [the agent guide](../../stage/docs/stage.md).
 
-## Outside this repository
+## On your own page
 
-`stage.html` lives in this repository, and the `npx gerak` commands come with the tools package. In your own project,
-install the packages (see the README), then run `npx gerak init` in your project: the pages and commands work there.
-To play a module on a page of your own, mount it yourself:
+In your own project, install the packages, then run `npx gerak init`: the live/talk pages and CLI commands work there.
+To play a module on a page of your own, tag its elements `data-cast="<name>"` and mount it yourself:
 
 ```ts
-import { mountStage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import piece from "./piece";
 
 const container = document.querySelector<HTMLElement>("#stage");
 if (container === null) throw new Error("No #stage element.");
-const stage = mountStage(container, piece);
+const mounted = mount(piece, { clock: "timed", frame: "fit", root: container });
 ```
 
-- The stage builds inside a shadow root, so `document.querySelector` does not find its members; read them through
-  `container.firstElementChild?.shadowRoot`.
-- To check a moment by hand, pause and seek: `stage.driver.pause()`, then `stage.driver.seek(progress)`, where
-  progress runs from 0 to 1 over the story, not in ms.
+- Nodes stay in normal DOM inside `container`, so CSS selectors and layout behave as ordinary markup.
+- To check a moment by hand on a timed clock, pause and seek: `mounted.driver.pause()`, then `mounted.driver.seek(progress)` (0 to 1), or inspect `mounted.measure()`.
 - When `@gerak/moves` is installed, a move's options with their ranges are in [the moves reference](../../moves/docs/reference/README.md). For core-only pieces, see [core.md](../../core/docs/core.md).
 
-## On a real site's elements
+## In React
 
-A stage module needs none of this. To bind a page's own elements, define `scene` and `clock` outside the component,
-or `usePlayer` restarts:
+Use `<Stage>` from `@gerak/react` over JSX carrying `data-cast="<name>"`:
+
+```tsx
+import { Stage } from "@gerak/react";
+import piece from "./piece";
+
+export function Hero() {
+  return (
+    <Stage scene={piece} options={{ clock: "live" }}>
+      <div data-cast="title">Hello</div>
+    </Stage>
+  );
+}
+```
+
+Or bind targets on a raw player directly without `sceneBuilder`: define `scene` and `clock` outside the component, or `usePlayer` restarts:
 
 ```tsx
 const playing = usePlayer(scene, clock);
@@ -35,9 +46,4 @@ const title = useTarget(playing?.player, "title");
 return <div ref={title} onClick={() => playing?.driver.replay()} />;
 ```
 
-`useTarget` writes a pose every step with no render; its third argument writes anything else, such as one pose out of
-a list (the reference's `useTarget` entry shows it). To pass the player to a child, type the prop
-`Player<ReturnType<typeof scene>> | undefined`, `Player` from `"@gerak/player"`. Target names are typed by literal, so
-bind a list of targets (`prop0`, `prop1`, ...) through one target holding a list, not names built from a template
-string. On a plain page, `play(scene, clock())` and
-`player.subscribe("title", (pose) => applyValue(element, pose))`.
+`useTarget` writes a pose every step with no render; its third argument writes anything else. To pass the player to a child, type the prop `Player<ReturnType<typeof scene>> | undefined`, `Player` from `"@gerak/player"`. On a plain page without `sceneBuilder`, `play(scene, clock())` and `player.subscribe("title", (pose) => applyValue(element, pose))`.

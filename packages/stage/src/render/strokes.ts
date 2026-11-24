@@ -1,4 +1,4 @@
-import { pathBounds, unreachable, type Cubic2d } from "@gerak/core";
+import { pathBounds, type Cubic2d } from "@gerak/core";
 import type { Content, Path } from "../author/cast";
 import { ZERO_BOX, restReader, type Box, type RestReader } from "../author/layout";
 import type { Stage } from "../run/compile";
@@ -53,6 +53,7 @@ function recording(boxes: Readonly<Record<string, Box>>, read: Set<string>): Res
       return Object.hasOwn(boxes, name);
     },
     keys: (): readonly string[] => keys,
+    object: () => undefined,
   });
 }
 
@@ -68,27 +69,15 @@ function inLoop(from: string, reads: ReadonlyMap<string, ReadonlySet<string>>): 
   return false;
 }
 
-/** The paths of a stage's strokes and morph bases, list items named `<list>.<index>`. */
+/** The paths of a stage's strokes and morph bases. */
 function pathsOf(stage: Stage): readonly (readonly [string, Path])[] {
   const paths: (readonly [string, Path])[] = [];
-  const add = (name: string, content: Content): void => {
-    if (content.kind === "stroke") paths.push([name, content.path]);
-    else if (content.kind === "morph") paths.push([name, content.shapes[0] ?? []]);
-  };
-  for (const member of stage.members)
-    switch (member.kind) {
-      case "actor":
-        add(member.name, member.content);
-        break;
-      case "list":
-        member.items.forEach((item, index) => add(`${member.name}.${index}`, item));
-        break;
-      case "group":
-      case "object":
-        break;
-      default:
-        unreachable(member);
-    }
+  for (const member of stage.members) {
+    if (member.kind !== "actor") continue;
+    const { content } = member;
+    if (content.kind === "stroke") paths.push([member.name, content.path]);
+    else if (content.kind === "morph") paths.push([member.name, content.shapes[0] ?? []]);
+  }
   return paths;
 }
 

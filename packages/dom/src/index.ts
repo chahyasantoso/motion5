@@ -29,24 +29,22 @@ export {
   type PointerLike,
 } from "./events";
 export {
-  mountPage,
-  type MountedPage,
+  mount,
+  type Binder,
+  MOUNTS,
+  type MeasuredBox,
+  type Measurement,
+  type Mounted,
+  type MountClock,
+  type MountFrame,
+  type MountOptions,
+  type StageEvent,
+  type StageFonts,
+  type StageInput,
+  type StageValues,
   type PageElement,
-  type PageOptions,
   type PageRoot,
   type PageScrollTarget,
   type PageStyle,
-} from "./page";
-export {
-  mountStage,
-  type MountedStage,
-  type StageElement,
-  type StageEvent,
-  type StageFonts,
-  type StageHost,
-  type StageInput,
-  type StageOptions,
-  type StageStroke,
-  type StageStyle,
-  type StageValues,
-} from "./stage";
+} from "./mount";
+export { ready } from "./ready";

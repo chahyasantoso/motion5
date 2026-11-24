@@ -4,63 +4,61 @@ Read this page whole before making a piece. It says how a piece is built and pla
 
 ## A piece
 
-One file under `<pieces>/<brief>/src/`:
+Three files under `<pieces>/<brief>/`:
 
-- `export default sceneBuilder(options).element(e).motion(m) ...`: what moves, and how.
-- `export const skin = { css, defs? }`: how the DOM draws it. `css` and `defs` are strings or `URL`s.
+- `<pieces>/<brief>/<name>.html`: HTML and CSS own the look, layout, text, nesting and `transform-origin`, tagging animated elements with `data-cast="<name>"`.
+- `<pieces>/<brief>/src/<name>.ts`: `export default sceneBuilder(options).element(e).motion(m) ...` — only the cast names and their motion.
+- `<pieces>/<brief>/src/<name>-main.ts`: `mount(scene, { clock, frame, root, binders, nodes })`.
 
 ```ts
 import { ease, motion, type Pose2d, type Time } from "@gerak/core";
 import { drop } from "@gerak/moves";
-import { beat, box, group, sceneBuilder, stagger, text } from "@gerak/stage";
-
-export const skin = { css: `[data-cast="dot"] { width: 36px; height: 36px; background: #f53; }` };
+import { beat, box, sceneBuilder, stagger, text } from "@gerak/stage";
 
 const enter = beat("enter", 600);
+const card = box("card");
 const dot = box("dot");
-const word = text("word", "HELLO", { split: "letters" });
+const word = text("word", { split: "letters" });
 const rise = motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) }));
 
 export default sceneBuilder({ length: 1800 })
-  .element(group("card", [dot, word]))
+  .element(card)
   .element(dot)
   .motion(drop({ distance: 80 }).in(enter, ease.cubicOut))
   .element(word)
   .motion(stagger(rise, { spread: 0.3 }).in(enter));
 ```
 
-`gerak new <name> [--in <brief>]` writes one; `stage.html?piece=<name>` plays it.
+`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json`; `live.html?scene=<name>` plays it in the live editor.
 
 ## Elements
 
 Each is a value with a unique name, made once.
 
-- `box(name)`: a page element; its look is the skin's.
-- `text(name, value, { split? })`: text. `split: "letters" | "words"` gives one part per letter or word. A function of time instead of a string writes the text each frame (a readout).
-- `shape(name, path)`: an SVG path, drawn in frame px. `path` may be a function of rest boxes. `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on through every target.
-- `many(name, count | items, make?)`: numbered parts.
-- `group(name, children)`: a container; its pose moves, turns and scales its children with it.
-- `object(name, { view? })`: a Three.js object, posed in `Pose3d` world units, drawn by `bindScene3d` and by no DOM renderer; it needs no `node` in a page scene. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
+- `box(name, { parts?, watch? })`: a page element. With `parts: true`, it binds multiple `[data-cast="<name>"]` nodes (or one container's child elements) as numbered parts `<name>.<index>`.
+- `text(name, { split?, watch? })`: text whose string lives in the markup; `split: "letters" | "words"` gives one part per letter or word. `text(name, (time) => string, { watch? })` writes a readout string each frame.
+- `shape(name, path, { watch? })`: an SVG `<path>` whose `d` attribute is drawn from `path` in frame px (`path` may also be a function of measured `rest` boxes). `shape(name, { base, targets })` is a morph: pose `shape` 0 is the base, 1 the first target, 1.5 halfway to the second, and so on.
+- `object(name, { parts?, view? })`: a Three.js object (`Object3D` or writer) posed in `Pose3d` world units — or with `{ parts: true }`, an `Object3D[]` or `Group.children` list posed by `(index, count) => Pose3d` — drawn by `threeBinder` in `mount`'s `binders`, never by a DOM renderer. [3D scenes](../../three/docs/agent-3d.md) say how it is written, bound, reviewed and sent onto a page slot.
 
-A part is `<name>.<index>`. Options: `pivot` (frame px; the point it turns and scales about, its centre without one), `watch` (pointer events reach it), `split`, and `node` (`el(selector)`, binding an existing node on a [page mount](../../dom/docs/page.md); in a page scene every element has one and no `skin` is passed).
+A part is `<name>.<index>`. Setting `watch: true` streams pointer events to the scene. On a [page mount](../../dom/docs/page.md), an element binds `[data-cast="<name>"]` inside `root` (or the overrides in `options.nodes`).
 
-A group's children are in the piece already. Call `.element(child)` only to give a child motions. An element belongs to one scene; `sceneBuilder` refuses an element added to two scenes and names both.
+An element has one owner scene that gives it `.motion(...)`, `.show(...)` or `.limits(...)`; `sceneBuilder` refuses two scenes that claim ownership of the same element, while read-only geometry references (`view.canvas`, `travel.to`, edge points, `stayWith`) may be shared across `.include()` boundaries. `RestReader.object(name)` reads measured `ObjectBounds3d` (`{ width, height, depth }`) alongside 2D rest boxes (`rest.get(name)`).
 
 ## Beats
 
-- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and windows use; `length` ends the piece later than its last beat (required for non-page scenes with only scroll or trigger beats).
+- Clock beat: `beat(name, ms, { at? } | { after, gap? })` is a named ms window. A piece's beats are the ones its motions and `.show` windows use; `length` ends the piece later than its last beat (required for timed scenes with only scroll or trigger beats).
 - Scroll point: `scrollPoint(px)` with `.plus(px)`, `.minus(px)` and `.reached`.
-- Section: `section(name, el(selector))` reads measured section edges as `.top` and `.end` scroll points (with `.plus(px)`, `.minus(px)` and `.reached`); using either in a scroll or trigger beat registers the section on the stage.
+- Edges: every DOM element (`box`, `text`, `shape`) exposes `.top`, `.end`, `.pinStart` and `.pinEnd` scroll points on its measured box (with `.plus(px)`, `.minus(px)` and `.reached`); `.pinStart` and `.pinEnd` read sticky `minY`/`maxY` (falling back to `.top`/`.end`). A scroll or trigger beat that reads an edge adds a read-only reference to that element unless owned locally.
 - Scroll beat: `beat(name, { scroll: [from, to] })` takes scroll points and maps folded `scroll.y` across them to progress 0 to 1, holding before and after. `smooth: true` or `smooth: { stiffness, damping }` maps `springTo(scroll.y)` instead, so the motion trails the scroll and settles on it; headless it reads `scroll.y`.
 - Trigger beat: `beat(name, ms, { when: point.reached, back })` starts a `ms` clock beat when scroll passes the point; `back: "reverse" | "stay" | "replay"` says what scrolling back past it does (no default).
 
-Scenes can share beats, states, signals and sections.
+Scenes can share beats, states and signals. `.include(scene)` merges another scene's elements, beats and motions onto this one's clock; it refuses two elements of one name, and a scene that sets `cues` or `length`, which only the mounted scene sets.
 
 ## The chain
 
 - `.element(e)` selects an element; it may be selected again later.
 - `.motion(...)` appends motions to its list; `.modify(principle)` wraps everything above it in the list.
-- `.show(beat | [from, to])` shows it only then; hidden, it is not drawn and may jump.
+- `.show(beat | scrollBeat | [from, to] | { from } | { until })` shows it only then: during a clock or scroll beat, across two beats or `scrollPoint`s, from a beat or scroll point on, or until one ends; hidden, it and its DOM descendants are hidden and may jump.
 - `.limits({ jump, turn, ratio })` sets its review limits.
 
 Only `.motion` and `.modify` order matters.
@@ -76,31 +74,32 @@ A motion is a core `Motion` or a plain `(time, context) => pose`.
 
 Helpers:
 
-- `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part.
-- `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat; `by: "line"` starts parts on the same measured `line` together.
+- `bind({ y: signal })`: fields from signals at scene time. `bindEach({ y: (i) => signal })`: one per part; also typed for 3D lists on `object(..., { parts: true })`.
+- `stagger(m | (i, n) => m, { spread, from?, by? })`: each part plays in its own lane of the beat (on 2D lists or 3D `object` lists); `by: "line"` starts parts on the same measured `line` together.
 - `stayWith(e)`: adds `e`'s travel since this motion's clock beat began (use a clock beat or no window). Elements reading each other in a loop are refused.
-- `carry({ ms, ease, mode })`: moves an element between layouts.
-- `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. With no window it sits on the slot from the start on a live or untimed clock, and sweeps across a timed scene. Referencing `slot` registers it statically on the stage.
+- `carry({ ms, ease, mode, target? })`: moves an element from its old rest box to its new one after a re-measure (see [layout](./agent-layout.md)).
+- `travel({ to: slot, arc?, fit? })`: moves and scales an element across its beat to `slot`'s measured viewport box, bending perpendicularly by `arc` px at mid-travel; on 2D elements `fit: "contain"` (default) scales evenly to fit inside the box, centred, and `"fill"` stretches to it. On 3D `object` elements `fit` accepts `"none"` (default) or `"contain"` (uniform scale from `viewSize3d` and measured `rest.object(element)` bounds); pixel `arc` and `fit: "fill"` are refused. With no window it sits on the slot on every clock (live, timed, and untimed); sweeping requires `.in(beat)`. Referencing `slot` registers a read-only geometry dependency.
 
 Two elements that react to one thing share one signal; wrap it in `shared` when several read it.
 
 ## Space and drawing
 
-- **The frame** is 1280 by 720 unless `frame` says otherwise. It clips what leaves it and scales to fit the window; `:host { background }` colours the surround.
-- **Rest** is where the skin's CSS puts an element. `x` and `y` move it from there. Headless tools read zero boxes unless the `rest` option gives them.
-- **Turning:** `rotation` and `scale` act about the element's pivot. A group turns its children about the group's pivot, so a camera is a group holding the scene: its `x`, `y` pan, `scale` zooms and `rotation` tilts, all about its pivot.
-- **Strokes:** `drawn` and `drawnFrom` dash a path by length. A dash of a few px is barely visible; `stroke-linecap: round` in the skin shows it as a dot.
+- **The frame:** `frame: "page"` (default) animates nodes where the page lays them out. `frame: "fit"` reads `root`'s CSS size as the stage frame, clips overflow, and scales it about its top-left corner to fit its parent or the viewport.
+- **Rest:** where the page's CSS puts an element. `x` and `y` move it from there. `placementOf(box)`, `boxInViewport(box, scrollY)`, and `BoxPlacement` compute measured flow, fixed, or sticky viewport positions. `gerak measure <brief>/<name>.html` writes `<name>.measure.json` with the frame, rest boxes, lines, DOM parents, and 3D `objects` bounds so headless tools read the same geometry.
+- **Turning:** `rotation` and `scale` act about the element's CSS `transform-origin` (overridden by pose `anchor` while a motion sets one). A DOM parent element carries its nested children with it when moved, scaled or hidden.
+- **Strokes:** `drawn` and `drawnFrom` dash a `<path>` by length. A dash of a few px is barely visible; `stroke-linecap: round` in CSS shows it as a dot.
 - More on layout, order, text spacing and CSS values: [drawing](../../dom/docs/drawing.md).
 
-## Events and layouts
+## Events and re-measure
 
-- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in the options script them.
-- `layouts: { names, pick }` picks a layout from events; each is styled under `[data-layout="<name>"]`. `carry` moves an element across a change.
+- An element with `watch: true` streams pointer events (`enter`, `leave`, `down`, `up`, `click`, `focus`, `blur`). Fold them with core's `state`; `cues` in `sceneBuilder` options script them.
+- When page CSS or viewport changes and the mount re-measures (`ResizeObserver`, `resize`, font load, or `mounted.remeasure()`), `carry` transitions any element whose rest box moved from its old box to its new one.
 
 ## Checking
 
-- `gerak review <file>`: compile errors, jumps, holds, elements that never move, skin rules naming no element, all headless. Headless review sees scroll motion from scripted `cues`; `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
-- `gerak review "stage.html?piece=<name>" --watch '[data-cast="<name>"]' --to <ms>`: a contact sheet of real frames.
+- Run `gerak measure <brief>/<name>.html` after creating or editing the page so `<name>.measure.json` matches its markup and CSS.
+- `gerak review <file>`: compile errors, jumps, holds, elements that never move, reading the measure cache headless. Headless review treats scroll `cues` as discrete samples (keep step deltas small or use `gerak check "<brief>/<name>.html" --action scroll:px@ms` to test smooth scrolling in a browser); `gerak sample <file> --events scroll=px@ms` passes scroll samples by hand.
+- `gerak check "<brief>/<name>.html" --watch '[data-cast="<name>"]' --to <ms>`: real Chromium frames against review limits.
 - `tsc --noEmit` clean. Never cast with `as` or `!`; type pose literals. Keep motions O(1) per frame: fold, never loop from 0 to now.
 - Never open another piece's `src` files.
 

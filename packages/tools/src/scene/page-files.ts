@@ -3,9 +3,9 @@ import { fileURLToPath } from "node:url";
 
 const PAGES = fileURLToPath(new URL("./templates/pages/", import.meta.url));
 
-const PAGE_NAMES = ["stage", "live", "talk"] as const;
+const PAGE_NAMES = ["live", "talk"] as const;
 
-/** The six files a pieces folder holds for the stage, live and talk pages, by file name. */
+/** The four files a pieces folder holds for the live and talk pages, by file name. */
 export function pageFiles(): Readonly<Record<string, string>> {
   const files: Record<string, string> = {};
   for (const name of PAGE_NAMES) {

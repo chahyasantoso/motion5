@@ -11,20 +11,44 @@ const PREFIX = "stage-scratch-";
 const STEP_TIMEOUT_MS = 5000;
 let copies = 0;
 
-/** A stage module of one actor that slides in from the left over the whole piece. */
+/** A scene of one actor that slides in from the left over the whole piece. */
 function fixture(distance: number): string {
   return `import { slide } from "@gerak/moves";
 import { beat, box, sceneBuilder } from "@gerak/stage";
 
 const go = beat("go", 2000);
 
-export const skin = { css: '[data-cast="box"] { width: 40px; height: 40px; background: #36c }' };
-
 export default sceneBuilder()
   .element(box("box"))
   .motion(slide({ distance: ${distance}, from: "left" }).in(go));
 `;
 }
+
+const PAGE = (name: string): string => `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${name}</title>
+    <style>
+      body { margin: 0; }
+      #frame { width: 640px; height: 360px; }
+      [data-cast="box"] { width: 40px; height: 40px; background: #36c; }
+    </style>
+  </head>
+  <body>
+    <div id="frame"><div data-cast="box"></div></div>
+    <script type="module" src="/${name}/src/${name}-main.ts"></script>
+  </body>
+</html>
+`;
+
+const MAIN = (name: string): string => `import { mount } from "@gerak/dom";
+import scene from "./${name}";
+
+const root = document.getElementById("frame");
+if (root === null) throw new Error("#frame not found");
+mount(scene, { clock: "timed", frame: "fit", root });
+`;
 
 function removeLeftovers(): void {
   for (const folder of readdirSync(PIECES_ROOT))
@@ -38,40 +62,21 @@ function scratch(distance: number): { readonly name: string; readonly file: stri
   const file = join(PIECES_ROOT, name, "src", `${name}.ts`);
   mkdirSync(join(PIECES_ROOT, name, "src"), { recursive: true });
   writeFileSync(file, fixture(distance), "utf8");
+  writeFileSync(join(PIECES_ROOT, name, `${name}.html`), PAGE(name), "utf8");
+  writeFileSync(join(PIECES_ROOT, name, "src", `${name}-main.ts`), MAIN(name), "utf8");
   return { name, file };
 }
 
 beforeAll(removeLeftovers);
 afterAll(removeLeftovers);
 
-describe("stage pages in the browser", () => {
-  it("shows a stage module on stage.html, and a plain message for a name it lacks", async () => {
-    const piece = scratch(300);
-    await withPage(
-      { page: `stage.html?piece=${piece.name}`, width: 640, height: 360, source: PIECES_SOURCE },
-      async ({ page }) => {
-        page.setDefaultTimeout(STEP_TIMEOUT_MS);
-        await page.locator('[data-cast="box"]').waitFor();
-        expect(await page.locator("[data-cast]").count()).toBe(1);
-      },
-    );
-    await withPage(
-      { page: "stage.html?piece=no-such-piece", width: 640, height: 360, source: PIECES_SOURCE },
-      async ({ page }) => {
-        page.setDefaultTimeout(STEP_TIMEOUT_MS);
-        await expect
-          .poll(() => page.locator("#root").textContent())
-          .toContain('No stage piece named "no-such-piece"');
-      },
-    );
-  }, 30000);
-
-  it("mounts the module gerak new writes, with its one actor at rest", async () => {
+describe("pieces in the browser", () => {
+  it("mounts the piece gerak new writes over its own page, with its one actor at rest", async () => {
     const name = `${PREFIX}new`;
     const result = scaffold(name, PIECES_ROOT);
     if (result.kind !== "written") throw new Error(result.message);
     await withPage(
-      { page: `stage.html?piece=${name}`, width: 640, height: 360, source: PIECES_SOURCE },
+      { page: `${name}/${name}.html`, width: 640, height: 360, source: PIECES_SOURCE },
       async ({ page }) => {
         page.setDefaultTimeout(STEP_TIMEOUT_MS);
         const title = page.locator('[data-cast="title"]');

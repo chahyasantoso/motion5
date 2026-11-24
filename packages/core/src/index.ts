@@ -62,8 +62,16 @@ export {
 } from "./fields/pose";
 export { combine3d, lift2d } from "./fields/pose3d";
 export { mixPoint3d, mixPose3d } from "./blend/mix3d";
-export { type Pose3d } from "./fields/pose3d";
-export { aim, orbit, project3d, unproject3d, type Lens3d } from "./geometry/stage3d";
+export { POSE_3D_NUMBERS, type Pose3d } from "./fields/pose3d";
+export {
+  aim,
+  orbit,
+  project3d,
+  unproject3d,
+  viewSize3d,
+  type Lens3d,
+  type ViewSize3d,
+} from "./geometry/stage3d";
 export type { Anchor2d, Cubic2d, Point2d, Point3d } from "./geometry/shapes";
 export { toCubics } from "./geometry/path";
 export { along } from "./path/along";
@@ -110,3 +118,4 @@ export { state, type State, type StateOptions, type Step } from "./state/state";
 export { INPUT_EVENTS, pointer, scroll, type PointerState, type ScrollState } from "./state/inputs";
 export { springTo, type SpringToOptions } from "./state/spring-to";
 export { easeTo, type EaseToOptions, type UpDown } from "./state/ease-to";
+export { transition, type Transition, type TransitionOptions } from "./state/transition";

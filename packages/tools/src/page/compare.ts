@@ -10,7 +10,7 @@ export interface CompareRequest extends PageTarget {
   readonly at: number;
   readonly reference: string;
   readonly out?: string;
-  /** Room around the drawing in px, as `gerak import-svg --margin` gave the piece. */
+  /** Room in px added on every side of the reference's viewBox. */
   readonly margin?: number;
 }
 
@@ -227,23 +227,20 @@ interface StageBoxes {
 }
 
 function readFrameSize(): StageRead | undefined {
-  const frame = document
-    .querySelector('[data-stage="host"]')
-    ?.shadowRoot?.querySelector('[data-stage="frame"]');
+  const frame = document.querySelector("[data-gerak-frame]");
   return frame instanceof HTMLElement
     ? { width: frame.offsetWidth, height: frame.offsetHeight }
     : undefined;
 }
 
 function readStageBoxes(): StageBoxes | undefined {
-  const root = document.querySelector('[data-stage="host"]')?.shadowRoot;
-  const frame = root?.querySelector('[data-stage="frame"]');
-  if (root === undefined || root === null || !(frame instanceof HTMLElement)) return undefined;
+  const frame = document.querySelector("[data-gerak-frame]");
+  if (!(frame instanceof HTMLElement)) return undefined;
   frame.style.transform = "";
   const here = frame.getBoundingClientRect();
   const scale = frame.offsetWidth === 0 ? 1 : here.width / frame.offsetWidth;
   const members: { name: string; box: Box }[] = [];
-  for (const element of root.querySelectorAll("[data-cast]")) {
+  for (const element of frame.querySelectorAll("[data-cast]")) {
     const rect = element.getBoundingClientRect();
     members.push({
       name: element.getAttribute("data-cast") ?? "",

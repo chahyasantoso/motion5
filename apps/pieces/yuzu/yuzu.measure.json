@@ -1,0 +1,349 @@
+{
+ "page": "yuzu.html",
+ "digest": "4dbccb2e1e6026be",
+ "frame": {
+  "width": 1280,
+  "height": 720
+ },
+ "rest": {
+  "heroAura": {
+   "x": 967.609375,
+   "y": 310.796875,
+   "width": 420,
+   "height": 420,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.0": {
+   "x": 163.3984375,
+   "y": 220.53125,
+   "width": 166.796875,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.1": {
+   "x": 334.6953125,
+   "y": 220.53125,
+   "width": 147.296875,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.2": {
+   "x": 182.2578125,
+   "y": 281.34375,
+   "width": 204.515625,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.3": {
+   "x": 366.421875,
+   "y": 281.34375,
+   "width": 135.3125,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.4": {
+   "x": 153.03125,
+   "y": 342.15625,
+   "width": 146.0625,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.5": {
+   "x": 296.046875,
+   "y": 342.15625,
+   "width": 111.46875,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline.6": {
+   "x": 193.96875,
+   "y": 402.96875,
+   "width": 227.9375,
+   "height": 60.8125,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "headline": {
+   "x": 316.1953125,
+   "y": 311.75,
+   "width": 472.390625,
+   "height": 243.25,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroSub": {
+   "x": 293.46875,
+   "y": 480.375,
+   "width": 426.9375,
+   "height": 54,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "heroCta": {
+   "x": 171.5078125,
+   "y": 552.625,
+   "width": 183.015625,
+   "height": 50.5,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "drink": {
+   "x": 110,
+   "y": 180,
+   "width": 220,
+   "height": 360,
+   "placement": {
+    "kind": "fixed"
+   }
+  },
+  "slotHero": {
+   "x": 985.59375,
+   "y": 360,
+   "width": 220,
+   "height": 360,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "hero": {
+   "x": 640,
+   "y": 360,
+   "width": 1280,
+   "height": 720,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "features": {
+   "x": 640,
+   "y": 1080,
+   "width": 1280,
+   "height": 720,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotFeatures": {
+   "x": 289.03125,
+   "y": 1080,
+   "width": 180,
+   "height": 295,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "story": {
+   "x": 640,
+   "y": 2232,
+   "width": 1280,
+   "height": 1584,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "slotStory": {
+   "x": 972.1875,
+   "y": 1840,
+   "width": 200,
+   "height": 328,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1440,
+    "maxY": 2304,
+    "pinY": 400
+   }
+  },
+  "featureCards.0": {
+   "x": 873.0390625,
+   "y": 1003.078125,
+   "width": 653.921875,
+   "height": 119,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "featureCards.1": {
+   "x": 873.0390625,
+   "y": 1136.078125,
+   "width": 653.921875,
+   "height": 119,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "featureCards.2": {
+   "x": 873.0390625,
+   "y": 1269.078125,
+   "width": 653.921875,
+   "height": 119,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "featureCards": {
+   "x": 873.0390625,
+   "y": 1003.078125,
+   "width": 653.921875,
+   "height": 119,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "storyProgress": {
+   "x": 640,
+   "y": 1641,
+   "width": 1120,
+   "height": 6,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1440,
+    "maxY": 2304,
+    "pinY": 201
+   }
+  },
+  "storyStep1": {
+   "x": 388.1953125,
+   "y": 1840,
+   "width": 616.390625,
+   "height": 234,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1440,
+    "maxY": 2304,
+    "pinY": 400
+   }
+  },
+  "storyStep2": {
+   "x": 388.1953125,
+   "y": 1840,
+   "width": 616.390625,
+   "height": 234,
+   "placement": {
+    "kind": "sticky",
+    "minY": 1440,
+    "maxY": 2304,
+    "pinY": 400
+   }
+  },
+  "galleryCards.0": {
+   "x": 355,
+   "y": 3365.578125,
+   "width": 550,
+   "height": 135,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "galleryCards.1": {
+   "x": 925,
+   "y": 3365.578125,
+   "width": 550,
+   "height": 135,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "galleryCards.2": {
+   "x": 355,
+   "y": 3520.578125,
+   "width": 550,
+   "height": 135,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "galleryCards.3": {
+   "x": 925,
+   "y": 3520.578125,
+   "width": 550,
+   "height": 135,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "galleryCards": {
+   "x": 355,
+   "y": 3365.578125,
+   "width": 550,
+   "height": 135,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "gallery": {
+   "x": 640,
+   "y": 3384,
+   "width": 1280,
+   "height": 720,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {
+  "headline": [
+   0,
+   0,
+   1,
+   1,
+   2,
+   2,
+   3
+  ],
+  "featureCards": [
+   0,
+   1,
+   2
+  ],
+  "galleryCards": [
+   0,
+   0,
+   1,
+   1
+  ]
+ },
+ "parents": {
+  "heroAura": "hero",
+  "headline.0": "headline",
+  "headline.1": "headline",
+  "headline.2": "headline",
+  "headline.3": "headline",
+  "headline.4": "headline",
+  "headline.5": "headline",
+  "headline.6": "headline",
+  "headline": "hero",
+  "heroSub": "hero",
+  "heroCta": "hero",
+  "slotHero": "hero",
+  "slotFeatures": "features",
+  "slotStory": "story",
+  "featureCards.0": "features",
+  "featureCards.1": "features",
+  "featureCards.2": "features",
+  "storyProgress": "story",
+  "storyStep1": "story",
+  "storyStep2": "story",
+  "galleryCards.0": "gallery",
+  "galleryCards.1": "gallery",
+  "galleryCards.2": "gallery",
+  "galleryCards.3": "gallery"
+ }
+}

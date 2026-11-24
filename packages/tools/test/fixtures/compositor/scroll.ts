@@ -1,10 +1,9 @@
 import { motion, type Pose2d, type Time } from "@gerak/core";
-import { mountPage } from "@gerak/dom";
+import { mount } from "@gerak/dom";
 import {
   beat,
   box,
   compileScene,
-  el,
   formatStageError,
   frame,
   poseOf,
@@ -17,14 +16,14 @@ const reveal = beat("reveal", 1000, { when: scrollPoint(300).reached, back: "sta
 
 const compiled = compileScene(
   sceneBuilder({ name: "scroll" })
-    .element(box("bar", { node: el("#bar") }))
+    .element(box("bar"))
     .motion(motion((t: Time): Pose2d => ({ x: 300 * t.progress })).in(across))
-    .element(box("card", { node: el("#card") }))
+    .element(box("card"))
     .motion(motion((t: Time): Pose2d => ({ y: 40 * (1 - t.progress) })).in(reveal)),
 );
 if (!compiled.ok) throw new Error(compiled.errors.map(formatStageError).join("\n"));
 const { stage } = compiled;
-const mounted = mountPage(stage);
+const mounted = mount(stage, { clock: "live" });
 
 // A page's own scroll-driven animation, with no gerak in it, across the whole scroll range.
 const Timeline: unknown = Reflect.get(globalThis, "ScrollTimeline");

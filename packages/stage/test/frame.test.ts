@@ -1,4 +1,4 @@
-import { mergeEvents, timeAt, type Time } from "@gerak/core";
+import { timeAt, type Time } from "@gerak/core";
 import { describe, expect, it } from "vitest";
 import {
   NO_REST,
@@ -9,6 +9,7 @@ import {
   frame,
   listPose,
   restReader,
+  type RestAt,
   type Stage,
 } from "../src";
 import { compileStage } from "../src/run/compile";
@@ -18,8 +19,8 @@ import type { Members } from "../src/author/cast";
 const at = (ms: number, length = 1000): Time =>
   timeAt({ progress: 0, clock: { kind: "timed", elapsed: 0, length } }, ms);
 
-function compiled<B extends string, M extends Members<B>, L extends string>(
-  definition: StageDefinition<B, M, L>,
+function compiled<B extends string, M extends Members<B>>(
+  definition: StageDefinition<B, M>,
 ): Stage {
   const result = compileStage(definition);
   if (!result.ok) throw new Error(result.errors.map(formatStageError).join("\n"));
@@ -31,7 +32,7 @@ describe("frame", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 1000] },
-        cast: (m) => ({ dots: m.many(3), word: m.letters("HEY") }),
+        cast: (m) => ({ dots: m.many(), word: m.letters() }),
         scene: ({ time }) => ({
           dots: (i) => ({ x: i * 10 + time.progress }),
           word: (i, n) => ({ opacity: i / n }),
@@ -42,14 +43,14 @@ describe("frame", () => {
     expect(listPose(out.targets["dots"], 2, 3)).toEqual({ x: 20.5 });
     expect(listPose(out.targets["word"], 1, 3)).toEqual({ opacity: 1 / 3 });
     expect(listPose(undefined, 0, 3)).toBeUndefined();
-    expect(check(stage, out.targets)).toEqual([]);
+    expect(check(stage, out.targets, { dots: 3, word: 3 })).toEqual([]);
   });
 
   it("checks shapes in one place: arrays, non-poses, lists not given as functions, unknown names", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100] },
-        cast: (m) => ({ box: m.box(), dots: m.many(2), card: m.group({}) }),
+        cast: (m) => ({ box: m.box(), dots: m.many(), card: m.box() }),
         scene: () => ({}),
       }),
     );
@@ -68,14 +69,14 @@ describe("frame", () => {
     ]);
   });
 
-  it("shows members by their stretches, start included and end excluded, a group hiding its children, the last beat holding", () => {
+  it("shows members by their stretches, start included and end excluded, the last beat holding", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 100], b: [200, 300], c: [300, 1000] },
         cast: (m) => ({
           always: m.box(),
           early: m.box().on("a"),
-          gap: m.group({ child: m.box() }).on("b"),
+          gap: m.box().on("b"),
           tail: m.box().on("c"),
         }),
         scene: () => ({}),
@@ -88,7 +89,7 @@ describe("frame", () => {
     expect(shown(0)).toEqual(["always", "early"]);
     expect(shown(100)).toEqual(["always"]);
     expect(shown(150)).toEqual(["always"]);
-    expect(shown(200)).toEqual(["always", "gap", "child"]);
+    expect(shown(200)).toEqual(["always", "gap"]);
     expect(shown(300)).toEqual(["always", "tail"]);
     expect(shown(5000)).toEqual(["always", "tail"]);
     expect(stage.visibleAt(150)).toBe(stage.visibleAt(160));
@@ -100,7 +101,8 @@ describe("frame", () => {
         beats: { a: [0, 120], b: [80, 400], c: [390, 600] },
         cast: (m) => ({
           one: m.box().on("a", "c"),
-          two: m.group({ three: m.box().on("b") }).on(["a", "b"]),
+          two: m.box().on(["a", "b"]),
+          three: m.box().on("b"),
         }),
         scene: () => ({}),
       }),
@@ -108,7 +110,6 @@ describe("frame", () => {
     const within = (ranges: readonly (readonly [number, number])[], ms: number) =>
       ranges.some(([from, to]) => ms >= from && (ms < to || to >= 600));
     for (let ms = -5; ms <= 700; ms += 1) {
-      const two = within([[0, 400]], ms);
       expect(stage.visibleAt(ms)).toEqual({
         one: within(
           [
@@ -117,8 +118,8 @@ describe("frame", () => {
           ],
           ms,
         ),
-        two,
-        three: two && within([[80, 400]], ms),
+        two: within([[0, 400]], ms),
+        three: within([[80, 400]], ms),
       });
     }
   });
@@ -151,27 +152,23 @@ describe("frame", () => {
     expect(beatAt(held.beats, held.durationMs, 9000)).toBe("a");
   });
 
-  it("picks the layout from events and reads measured boxes before the piece's own rests", () => {
+  it("reads measured rest boxes and carries a member across re-measures", () => {
     const stage = compiled(
       defineStage({
         beats: { a: [0, 1000] },
         cast: (m) => ({ card: m.box() }),
-        layouts: {
-          names: ["row", "wide"],
-          pick: (events) => (events.some(({ name }) => name === "wide") ? "wide" : "row"),
-          rests: {
-            row: { card: { x: 100, y: 100, width: 200, height: 100 } },
-            wide: { card: { x: 300, y: 200, width: 400, height: 200 } },
-          },
-        },
         scene: ({ carry, rest }) => ({
           card: { ...carry("card", { ms: 200 }), opacity: rest.get("card").width },
         }),
       }),
     );
-    const events = mergeEvents([{ name: "wide", at: 200 }]);
-    const out = frame(stage, { time: at(300), events });
-    expect(out.layout).toBe("wide");
+    const row = restReader({ card: { x: 100, y: 100, width: 200, height: 100 } });
+    const wide = restReader({ card: { x: 300, y: 200, width: 400, height: 200 } });
+    const measures: readonly RestAt[] = [
+      { at: 0, rest: row },
+      { at: 200, rest: wide },
+    ];
+    const out = frame(stage, { time: at(300), rest: wide, measures });
     expect(out.targets["card"]).toEqual({
       x: -100,
       y: -50,
@@ -179,12 +176,8 @@ describe("frame", () => {
       scaleY: 0.75,
       opacity: 400,
     });
-    const measured = frame(stage, {
-      time: at(300),
-      events,
-      boxes: { row: NO_REST, wide: restReader({}) },
-    });
-    expect(measured.targets["card"]).toEqual({ opacity: 0 });
+    const unmeasured = frame(stage, { time: at(300) });
+    expect(unmeasured.targets["card"]).toEqual({ opacity: 0 });
   });
 
   it("reads only the targets the scene gave, never a prototype's", () => {

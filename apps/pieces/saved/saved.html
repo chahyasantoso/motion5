@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>saved</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #f6f5f1;
+      }
+      #frame {
+        width: 400px;
+        height: 200px;
+        display: grid;
+        place-items: center;
+        background: #f6f5f1;
+        font-family: system-ui, sans-serif;
+      }
+      [data-cast="pill"] {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 18px 10px 12px;
+      }
+      [data-cast="mark"] {
+        width: 28px;
+        height: 28px;
+      }
+      [data-cast="word"] {
+        font-size: 22px;
+        font-weight: 600;
+        color: #23302a;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="frame">
+      <div data-cast="pill">
+        <svg data-cast="mark" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="12" fill="#2f9e6e" />
+          <path
+            d="M6.5 12.5l3.8 3.8 7.2-8"
+            fill="none"
+            stroke="#fff"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span data-cast="word">Saved</span>
+      </div>
+    </div>
+    <script type="module" src="/saved/src/saved-main.ts"></script>
+  </body>
+</html>

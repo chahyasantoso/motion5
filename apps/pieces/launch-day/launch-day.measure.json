@@ -1,0 +1,170 @@
+{
+ "page": "launch-day.html",
+ "digest": "202c93fa42cacf69",
+ "frame": {
+  "width": 1280,
+  "height": 720
+ },
+ "rest": {
+  "world": {
+   "x": 640,
+   "y": 360,
+   "width": 1280,
+   "height": 720,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "date": {
+   "x": 640,
+   "y": 170,
+   "width": 680,
+   "height": 120,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "day": {
+   "x": 640,
+   "y": 305,
+   "width": 680,
+   "height": 150,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "one": {
+   "x": 420,
+   "y": 475,
+   "width": 200,
+   "height": 70,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "two": {
+   "x": 640,
+   "y": 475,
+   "width": 200,
+   "height": 70,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "three": {
+   "x": 860,
+   "y": 475,
+   "width": 200,
+   "height": 70,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "ring": {
+   "x": 980,
+   "y": 585,
+   "width": 30,
+   "height": 30,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.0": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.1": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.2": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.3": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.4": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust.5": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "dust": {
+   "x": 980,
+   "y": 647,
+   "width": 14,
+   "height": 14,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "stamp": {
+   "x": 980,
+   "y": 585,
+   "width": 200,
+   "height": 90,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {
+  "dust": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ "parents": {
+  "date": "world",
+  "day": "world",
+  "one": "world",
+  "two": "world",
+  "three": "world",
+  "ring": "world",
+  "dust.0": "world",
+  "dust.1": "world",
+  "dust.2": "world",
+  "dust.3": "world",
+  "dust.4": "world",
+  "dust.5": "world",
+  "stamp": "world"
+ }
+}

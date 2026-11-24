@@ -1,0 +1,42 @@
+{
+ "page": "saved.html",
+ "digest": "4f53ac607b4880fa",
+ "frame": {
+  "width": 400,
+  "height": 200
+ },
+ "rest": {
+  "pill": {
+   "x": 200,
+   "y": 100,
+   "width": 127.40625,
+   "height": 50,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "mark": {
+   "x": 162.296875,
+   "y": 100,
+   "width": 28,
+   "height": 28,
+   "placement": {
+    "kind": "flow"
+   }
+  },
+  "word": {
+   "x": 216,
+   "y": 100,
+   "width": 59.40625,
+   "height": 30,
+   "placement": {
+    "kind": "flow"
+   }
+  }
+ },
+ "lines": {},
+ "parents": {
+  "mark": "pill",
+  "word": "pill"
+ }
+}
