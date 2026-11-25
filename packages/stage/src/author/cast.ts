@@ -67,6 +67,7 @@ export interface ActorSpec<B extends string = string, C extends Content = Conten
   extends Modifiers<B, ActorSpec<B, C>> {
   readonly kind: "actor";
   readonly content: C;
+  readonly media?: true | undefined;
   readonly meta: Meta<B>;
 }
 
@@ -92,7 +93,7 @@ export type Members<B extends string = string> = Readonly<Record<string, Spec<B>
 
 /** The builders `cast: (m) => ({ ... })` receives. */
 export interface CastBuilder<B extends string = string> {
-  box(): ActorSpec<B>;
+  box(options?: { readonly media?: boolean | undefined }): ActorSpec<B>;
   text(): ActorSpec<B>;
   /** Text the stage writes each frame from time. */
   readout(format: (time: Time) => string): ActorSpec<B, Extract<Content, { kind: "readout" }>>;
@@ -125,12 +126,14 @@ function modifiers<B extends string, S>(
 function actor<B extends string, C extends Content>(
   content: C,
   meta: Meta<B> = {},
+  media?: true,
 ): ActorSpec<B, C> {
   return Object.freeze({
     kind: "actor",
     content,
+    ...(media === true ? { media: true } : {}),
     meta,
-    ...modifiers(meta, (next) => actor<B, C>(content, next)),
+    ...modifiers(meta, (next) => actor<B, C>(content, next, media)),
   });
 }
 
@@ -155,7 +158,7 @@ function objectSpec<B extends string>(meta: Meta<B> = {}, parts?: boolean): Obje
 /** The cast builders; part counts and text come from the markup. */
 export function castBuilder<B extends string>(): CastBuilder<B> {
   return {
-    box: () => actor({ kind: "box" }),
+    box: (options) => actor({ kind: "box" }, {}, options?.media === true ? true : undefined),
     text: () => actor({ kind: "text" }),
     readout: (format) => actor({ kind: "readout", format }),
     stroke: (path) => actor({ kind: "stroke", path }),

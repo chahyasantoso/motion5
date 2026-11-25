@@ -82,6 +82,7 @@ export type ReadArgs =
 
 const CHANNELS = ["chrome", "msedge", undefined] as const;
 const FIRST_FRAME_MS = 17;
+const MEDIA_SETTLE_TIMEOUT_MS = 5000;
 
 /** Flags every page tool takes, beside its own. */
 const SHARED_FLAGS = ["--size", "--root", "--url", "--action"];
@@ -246,10 +247,54 @@ export async function withPage<T>(
       }
     });
     if (readyError !== undefined && !pageErrors.includes(readyError)) pageErrors.push(readyError);
+    let reportedMediaTimeout = false;
+    const settleMedia = async (atMs: number): Promise<void> => {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let timedOut = false;
+      const settled = page.evaluate(async () => {
+        const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+        if (!Array.isArray(listed) || listed.length === 0) return;
+        const pending: Promise<unknown>[] = [];
+        for (const mounted of listed) {
+          if (mounted === null || typeof mounted !== "object") continue;
+          const fn: unknown = Reflect.get(mounted, "settled");
+          if (typeof fn === "function") {
+            pending.push(Promise.resolve(Reflect.apply(fn, mounted, [])));
+          }
+        }
+        if (pending.length > 0) await Promise.all(pending);
+      });
+      // Ignore rejections caused by closing the page after a settle timeout.
+      const raced = settled.then(
+        () => "settled" as const,
+        (error: unknown) => {
+          if (timedOut) return "settled" as const;
+          throw error;
+        },
+      );
+      try {
+        const outcome = await Promise.race([
+          raced,
+          new Promise<"timeout">((resolve) => {
+            timer = setTimeout(() => {
+              timedOut = true;
+              resolve("timeout");
+            }, MEDIA_SETTLE_TIMEOUT_MS);
+          }),
+        ]);
+        if (outcome === "timeout" && !reportedMediaTimeout) {
+          reportedMediaTimeout = true;
+          pageErrors.push(`Media did not finish seeking at ${atMs} ms.`);
+        }
+      } finally {
+        if (timer !== undefined) clearTimeout(timer);
+      }
+    };
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
     if (!real) {
       await page.clock.runFor(FIRST_FRAME_MS);
       await page.evaluate(holdAnimations, 0);
+      await settleMedia(0);
     }
     const began = Date.now();
     let now = 0;
@@ -287,6 +332,7 @@ export async function withPage<T>(
         await page.clock.runFor(ms - now);
         await page.evaluate(holdAnimations, ms);
         now = ms;
+        await settleMedia(ms);
       },
     };
     const value = await visit(session);

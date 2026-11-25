@@ -81,6 +81,12 @@ one another.
      maximum finite `durationMs` from `Symbol.for("@gerak/dom/mounts")` on a timed mount. The result reports
      `width`, `height`, and `speed: { framesPerSecond, wallMs }`.
 
+4. **Synced media clips (`@gerak/stage`, `@gerak/dom`, `@gerak/tools`).**
+   - `box(name, { media: true })` (cannot combine with `parts: true`) binds a `<video>` or `<audio>` node (`HTMLMediaElement`, paused on mount). `@gerak/stage` (`mediaMs` in `packages/stage/src/run/frame.ts`) owns the playhead rule: `Math.max(0, ms - first)` ms since the element's first `.shows` window opened (`Math.max(0, ms)` with no window), clamped by `@gerak/dom` to `[0, node.duration]` when finite.
+   - `syncMedia` (`packages/dom/src/mount.ts`) delegates each frame's step to `mediaStep` (`packages/dom/src/media.ts`), hiding to pause. On a held clock (`Symbol.for("@gerak/dom/held-clock")`), it pauses, queues at most one pending seek (`pendingSeek`) per step when the target differs by more than `SEEK_EPSILON_S` (`0.0005` s), and applies it in `Mounted.settled()`, which resolves via `waitForMedia` once every bound node reaches `readyState >= 2` and `!seeking`. Page tools (`withPage` in `packages/tools/src/page/page.ts`) await `settled()` across `Symbol.for("@gerak/dom/mounts")` after the initial `0 ms` frame and every `advanceTo(ms)`, bounded by `MEDIA_SETTLE_TIMEOUT_MS = 5000` (5 s, reporting a `pageErrors` timeout once).
+   - On a running clock, `mediaStep` plays when moving forward at rate 1 (`target > previousTarget` and `(target - previousTarget) * 1000` within `FORWARD_TOLERANCE_MS = 50` ms of `realDt`), seeking before `play()` if paused or re-seeking on drift over `DRIFT_TOLERANCE_S` (`1 / 30` s); otherwise it pauses and seeks on deltas over `SEEK_EPSILON_S`.
+   - `Mounted.media()` reports `{ name, clipMs, from, to }[]` using `node.duration * 1000` and `mediaBounds(member.on, stage.durationMs)`. On the final frame of `sampleMotion` (`packages/tools/src/page/check.ts`), `gerak check` and `gerak review` emit `{ kind: "media-short", element, clipMs, shownMs }` for any clip with `clipMs < to - from`.
+
 ## Consequences
 
 - A reel is written shot by shot from 0; lengthening one shot moves every later one.
@@ -95,3 +101,5 @@ one another.
 - Measured 60 fps `1080x1920` render throughput on 2026-11-25: `22.9` frames/s on the 2D piece (`launch-day`, 325 frames,
   14,202 ms) and `19.9` frames/s on the 3D piece (`reel`, 721 frames, 36,142 ms), bounded by headless screenshot
   round-trips and software piping.
+- Media clips must be WebM (e.g. VP9) rather than H.264 MP4 because the Chromium build Playwright drives lacks proprietary H.264 decoding.
+- Seeking held clips on every sampled frame adds decode latency proportional to keyframe spacing (so clips should use short keyframe intervals such as `-g 15`) and fails if a clip stalls past the 5 s settle limit.

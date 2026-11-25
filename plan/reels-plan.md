@@ -4,7 +4,7 @@
 
 Creators and autonomous agents build, sequence, check, and export multi-shot vertical (`9:16` TikTok/Reels/Shorts) and widescreen (`16:9` YouTube) reels and explainers from modular scenes synced to voiceover or music, with word-by-word captions and screen-recorded clips, without hand-shifting timestamps when a shot's length changes. The code adds sequential `shot(subScene, options?)` composition inside `scene(...)` in `@gerak/stage`, audio beat and level extraction and transcript import as cues, platform safe-zone checks (`--safe-zone`) in `@gerak/tools`, exact `30`/`60 fps` H.264 MP4 rendering with several mixed audio tracks in `gerak render`, and `<video>` clips seeked to scene time by `@gerak/dom`.
 
-Status: amended 2026-11-24 after `plan/authoring-ergonomics-plan.md` merged; precedes `plan/studio-plan.md` (the video half of `plan/roadmap.md` Stage 18). Four pull requests in order; PR 1 on `feat/reels-pr1`.
+Status: all four PRs are built (PR 4 on `feat/reels-pr4`); precedes `plan/studio-plan.md` (the video half of `plan/roadmap.md` Stage 18).
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 

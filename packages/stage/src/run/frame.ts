@@ -12,7 +12,7 @@ import type { ScrollWindow } from "../author/cast";
 import { NO_REST, type RestAt, type RestReader } from "../author/layout";
 import type { Drive, Moves } from "../author/stage";
 import { carryFor } from "./carry";
-import { isPlainRecord, type Stage } from "./compile";
+import { isPlainRecord, type Member, type Stage } from "./compile";
 import type { StageError } from "./errors";
 
 /** One frame's inputs: the time, events, measured rest boxes, and re-measure history. */
@@ -128,6 +128,15 @@ function holdsScroll(window: ScrollWindow, y: number, rest: RestReader): boolean
     default:
       return unreachable(window);
   }
+}
+
+/** The ms into a media member's clip at scene ms `ms`: since its first window opened, never below 0. */
+export function mediaMs(member: Member, ms: number): number {
+  const on = member.on;
+  if (on === undefined || on.length === 0) return Math.max(0, ms);
+  let first = Infinity;
+  for (const [from] of on) if (from < first) first = from;
+  return Math.max(0, ms - first);
 }
 
 /** Runs the scene once; single owner of `visible` across clock stretches and scroll windows. */

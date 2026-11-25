@@ -5,8 +5,8 @@ are the complete shape. **Now** and **Next in line** carry exactly one bullet ea
 states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
-- **Captured:** 2026-11-24, Asia/Jakarta.
-- **Read against:** `feat/reels-pr1`, branched from `main` after PR 626.
+- **Captured:** 2026-11-25, Asia/Jakarta.
+- **Read against:** `feat/reels-pr4`, branched from `main` after PR 626.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Reels (`plan/reels-plan.md`): PR 3 (`gerak beats`, `gerak cues`, mixed-audio `gerak render`) is built on `feat/reels-pr3`; PR 4 (synced `<video>` clips) remains, then Visual Studio (`plan/studio-plan.md`).**
+- **Reels (`plan/reels-plan.md`) PR 4 is built on `feat/reels-pr4`; next is a render-speed PR (faster lossless capture, parallel capture across pages, frames on exact ms instead of the held clock's 16 ms grid where a 60 fps frame at 17 ms shows 16 ms, and the `test:frames` capture that differs between runs on `main`), then Visual Studio (`plan/studio-plan.md`).**
 
 ## Open, and not scheduled
 

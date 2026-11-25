@@ -23,9 +23,11 @@ export interface ElementOptions {
   readonly watch?: boolean | undefined;
 }
 
-/** Options of `box`: whether it binds to a list of parts. */
+/** Options of `box`: whether it binds to a list of parts, or a media clip. */
 export interface BoxOptions extends ElementOptions {
   readonly parts?: boolean | undefined;
+  /** Binds a `<video>` or `<audio>` whose playhead the scene owns. */
+  readonly media?: boolean | undefined;
 }
 
 /** Options of `text`: how to split it into parts. */
@@ -56,6 +58,7 @@ export type ElementBody =
       readonly kind: "box";
       readonly name: string;
       readonly parts?: boolean | undefined;
+      readonly media?: true | undefined;
       readonly options: ElementOptions;
     }
   | {
@@ -193,10 +196,17 @@ export function box<N extends string = string>(
 ): Element & { readonly name: N };
 export function box<N extends string = string>(name: N, options?: BoxOptions): Element {
   const own = named("box", name);
+  if (options?.parts === true && options?.media === true)
+    throw new TypeError(`box "${own}": \`media: true\` cannot be combined with \`parts: true\`.`);
   const opts = optionsOf(options);
   return options?.parts === true
     ? edged({ kind: "box", name: own, parts: true, options: opts })
-    : edged({ kind: "box", name: own, options: opts });
+    : edged({
+        kind: "box",
+        name: own,
+        ...(options?.media === true ? { media: true } : {}),
+        options: opts,
+      });
 }
 
 function isMorph(value: ShapeSource): value is MorphSource {

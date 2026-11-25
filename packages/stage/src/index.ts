@@ -106,6 +106,7 @@ export { formatStageError, type StageError } from "./run/errors";
 export {
   check,
   frame,
+  mediaMs,
   frameVisible,
   listPose,
   listPose3d,

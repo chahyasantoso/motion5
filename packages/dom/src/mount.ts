@@ -18,6 +18,7 @@ import {
   isScene,
   isStage,
   listPose,
+  mediaMs,
   poseOf,
   restReader,
   type Box,
@@ -54,6 +55,7 @@ import {
 import { clockDriver, type ClockDriver } from "./drivers";
 import { eventRecorder, type EventSource } from "./events";
 import { pageFrames, type FrameSource } from "./frames";
+import { mediaBounds, mediaStep, SEEK_EPSILON_S, waitForMedia } from "./media";
 import { applyPath, applyValue, pathData, type RenderStyle } from "./render";
 import type { PointerLike } from "./events";
 
@@ -262,6 +264,15 @@ export interface Mounted {
   send(name: string, value: number, target?: string): void;
   /** Everything logged so far, oldest first: scroll, viewport pointer, watched pointer, and sent samples. */
   events(): Events;
+  /** Resolves once every bound media node has `seeking === false` and `readyState >= 2`. */
+  settled(): Promise<void>;
+  /** Bound media elements with clip duration in ms and show window bounds in ms. */
+  media(): readonly {
+    readonly name: string;
+    readonly clipMs: number | undefined;
+    readonly from: number;
+    readonly to: number;
+  }[];
   dispose(): void;
 }
 
@@ -342,6 +353,10 @@ function isScrollTarget(value: unknown): value is PageScrollTarget {
 
 function isDomElement(value: unknown): value is Element {
   return typeof Element !== "undefined" && value instanceof Element;
+}
+
+function isMediaElement(value: unknown): value is HTMLMediaElement {
+  return typeof HTMLMediaElement !== "undefined" && value instanceof HTMLMediaElement;
 }
 
 function needElement(value: unknown, memberName: string, selector: string): PageElement {
@@ -642,8 +657,8 @@ function boxForNode(
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 // Tests set this to keep every element in the engine, to compare with what the browser plays.
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
-// The page tools set this while they hold the clock; every element stays in the engine, so what they read
-// is the pose `frame()` gives, with no browser frame to wait for.
+// Page tools set this while holding the clock: every element stays in the engine,
+// so they read `frame()` directly, and media seeks wait for `settled()`.
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 const TRIGGER_SLACK_MS = 34;
 
@@ -700,6 +715,15 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const targets: BoundTarget[] = [];
   const byName = new Map<string, BoundTarget>();
   const allNodes: PageElement[] = [];
+  const mediaStates = new Map<
+    BoundTarget,
+    {
+      readonly node: HTMLMediaElement;
+      previousTarget: number | undefined;
+      previousNow: number | undefined;
+      pendingSeek: number | undefined;
+    }
+  >();
 
   try {
     for (const member of stage.members) {
@@ -725,6 +749,19 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
             );
           const node = needElement(raw, member.name, selector);
           bound = { member, node, items: [] };
+          if (member.media === true) {
+            if (!isMediaElement(raw))
+              throw new Error(
+                `mount: "${member.name}" has media: true but [data-cast="${member.name}"] is not a <video> or <audio>.`,
+              );
+            raw.pause();
+            mediaStates.set(bound, {
+              node: raw,
+              previousTarget: undefined,
+              previousNow: undefined,
+              pendingSeek: undefined,
+            });
+          }
           allNodes.push(node);
           break;
         }
@@ -1156,6 +1193,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const hasReadout = targets.some(
     (target) => target.member.kind === "actor" && target.member.content.kind === "readout",
   );
+  const hasMedia = mediaStates.size > 0;
   const ambientNames = stage.members
     .filter((member) => member.expect === "ambient")
     .map((member) => member.name);
@@ -1169,6 +1207,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   let maybeNext = true;
   const movingNow = (withMaybe: boolean): Set<string> => {
     const names = new Set<string>(ambientNames);
+    for (const target of mediaStates.keys()) names.add(target.member.name);
     for (const [name, kind] of lastMoves())
       switch (kind) {
         case "time":
@@ -1213,7 +1252,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const now = elapsed();
     wholeNext = now < introMs;
     maybeNext = now < activeUntil;
-    if (live && (ambient || wholeNext || movingNow(maybeNext).size > 0)) schedule();
+    if (live && (ambient || wholeNext || hasMedia || movingNow(maybeNext).size > 0)) schedule();
   };
 
   function schedule(): void {
@@ -1274,8 +1313,10 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
 
   const hiddenByUs = new WeakSet<PageElement>();
   let lastFrame: FrameOutput | undefined;
+  let lastSceneMs = 0;
 
   const sceneSignal: Signal<StageValues> = (time, events) => {
+    lastSceneMs = elapsedOf(time.clock) ?? time.progress * stage.durationMs;
     const only = runOnly ?? engineOnly;
     const moves = new Map<string, Moves>();
     const ran = frameOf(stage, {
@@ -1339,6 +1380,54 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     if (content?.kind === "morph") applyPath(node, morphAt(content, pose));
   };
 
+  const syncMedia = (target: BoundTarget, visible: boolean): void => {
+    const state = mediaStates.get(target);
+    if (state === undefined) return;
+    const rawTarget = mediaMs(target.member, lastSceneMs) / 1000;
+    const duration = state.node.duration;
+    const targetSec = Number.isFinite(duration)
+      ? clamp(rawTarget, 0, Math.max(0, duration))
+      : rawTarget;
+    const currentNow = now();
+    const realDt =
+      state.previousNow === undefined ? 0 : Math.max(0, currentNow - state.previousNow);
+    const held = Reflect.get(globalThis, HELD_CLOCK) === true;
+    const step = mediaStep({
+      held,
+      visible,
+      target: targetSec,
+      previousTarget: visible ? state.previousTarget : undefined,
+      realDt,
+      currentTime:
+        held && state.pendingSeek !== undefined ? state.pendingSeek : state.node.currentTime,
+      paused: state.node.paused,
+    });
+    state.previousTarget = visible ? targetSec : undefined;
+    state.previousNow = currentNow;
+    if (held) {
+      if (!visible) state.pendingSeek = undefined;
+      else if (step.seek !== undefined) state.pendingSeek = step.seek;
+    } else if (step.seek !== undefined) {
+      state.node.currentTime = step.seek;
+    }
+    switch (step.playback) {
+      case "play":
+        void state.node.play().catch(() => {
+          if (Math.abs(state.node.currentTime - targetSec) > SEEK_EPSILON_S) {
+            state.node.currentTime = targetSec;
+          }
+        });
+        break;
+      case "pause":
+        state.node.pause();
+        break;
+      case "keep":
+        break;
+      default:
+        return unreachable(step.playback);
+    }
+  };
+
   const bindTarget = (target: BoundTarget, value: unknown): void => {
     const member = target.member;
     const ran = runOnly ?? engineOnly;
@@ -1352,6 +1441,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           break;
         case "actor":
           applyVisibility(target.node, shown);
+          syncMedia(target, shown);
           break;
         default:
           return unreachable(member);
@@ -1373,6 +1463,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       }
       case "actor":
         applyVisibility(target.node, visible);
+        syncMedia(target, visible);
         if (!visible || value === undefined) return;
         {
           const pose = poseOf(value);
@@ -1446,7 +1537,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       if (!nodesOf(target).every(isDomElement)) continue;
       switch (member.kind) {
         case "actor":
-          if (member.content.kind === "readout" || member.content.kind === "morph") continue;
+          if (
+            member.content.kind === "readout" ||
+            member.content.kind === "morph" ||
+            member.media === true
+          )
+            continue;
           break;
         case "list":
           break;
@@ -1720,6 +1816,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const listed: unknown = Reflect.get(globalThis, MOUNTS);
   const mounts: unknown[] = Array.isArray(listed) ? listed : [];
   Reflect.set(globalThis, MOUNTS, mounts);
+  const disposeListeners = new Set<() => void>();
 
   const mounted: Mounted = {
     player,
@@ -1742,6 +1839,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         const member = nextStage.members.find((each) => each.name === target.member.name);
         if (member !== undefined && member.kind === target.member.kind) target.member = member;
       }
+      for (const state of mediaStates.values()) {
+        state.previousTarget = undefined;
+        state.previousNow = undefined;
+        state.pendingSeek = undefined;
+      }
       remeasure(true);
       for (const stop of stops) stop();
       player.replace(sceneSignal, nextStage.cues);
@@ -1753,6 +1855,42 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       else timed.send(name, value, target);
     },
     events: () => (timed === undefined ? recorder.log : timed.events()),
+    settled() {
+      if (mediaStates.size === 0) return Promise.resolve();
+      const registerDispose = (listener: () => void): (() => void) => {
+        disposeListeners.add(listener);
+        return () => disposeListeners.delete(listener);
+      };
+      for (const state of mediaStates.values()) {
+        if (state.pendingSeek !== undefined) {
+          const seekTarget = state.pendingSeek;
+          state.pendingSeek = undefined;
+          state.node.currentTime = seekTarget;
+        }
+      }
+      return Promise.all(
+        [...mediaStates.values()].map(({ node }) => waitForMedia(node, registerDispose)),
+      ).then(() => undefined);
+    },
+    media() {
+      const clips: {
+        readonly name: string;
+        readonly clipMs: number | undefined;
+        readonly from: number;
+        readonly to: number;
+      }[] = [];
+      for (const [target, { node }] of mediaStates) {
+        const duration = node.duration;
+        const { from, to } = mediaBounds(target.member.on, stage.durationMs);
+        clips.push({
+          name: target.member.name,
+          clipMs: Number.isFinite(duration) ? duration * 1000 : undefined,
+          from,
+          to,
+        });
+      }
+      return clips;
+    },
     dispose() {
       if (!live) return;
       live = false;
@@ -1777,6 +1915,9 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       timed?.dispose();
       for (const stop of stops) stop();
       listeners.clear();
+      for (const listener of [...disposeListeners]) listener();
+      disposeListeners.clear();
+      for (const { node } of mediaStates.values()) node.pause();
       for (const node of allNodes) {
         applyValue(node, {});
         if (hiddenByUs.has(node)) {

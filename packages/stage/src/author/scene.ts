@@ -1191,7 +1191,9 @@ function baseSpec(element: SceneElement, m: CastBuilder<string>): Spec {
     case "object":
       return element.parts === true ? m.objects() : m.object();
     case "box":
-      return element.parts === true ? m.many() : m.box();
+      return element.parts === true
+        ? m.many()
+        : m.box(element.media === true ? { media: true } : undefined);
     case "shape": {
       const { outline } = element;
       return outline.kind === "path"
@@ -2237,6 +2239,10 @@ function startState(options: SceneOptions): State {
 
 /** The state with `element` selected, refusing one this scene already holds. */
 function claimed(state: State, element: SceneElement): State {
+  if (element.kind === "box" && element.parts === true && element.media === true)
+    throw new TypeError(
+      `scene: "${element.name}" cannot combine \`media: true\` with \`parts: true\`.`,
+    );
   if (state.owned.has(element.name) && state.elements.get(element.name) === element)
     throw new TypeError(
       `scene: ${describe(element)} is in "${state.owner.label}" twice, as an item or through a sub-scene; bind it once, in one place.`,
