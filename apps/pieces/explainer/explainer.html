@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>explainer</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0e1015;
+        display: grid;
+        place-items: center;
+      }
+
+      #frame {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #f5f1e8;
+        font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+        color: #14161c;
+      }
+
+      .layer-bg {
+        position: absolute;
+        inset: 0;
+      }
+
+      [data-cast="titleBg"],
+      [data-cast="demoBg"] {
+        background: #f5f1e8;
+        background-image:
+          linear-gradient(to right, rgba(20, 22, 28, 0.045) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(20, 22, 28, 0.045) 1px, transparent 1px);
+        background-size: 96px 90px;
+      }
+
+      [data-cast="closingBg"] {
+        background: #14161c;
+        background-image:
+          linear-gradient(to right, rgba(245, 241, 232, 0.045) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(245, 241, 232, 0.045) 1px, transparent 1px);
+        background-size: 96px 90px;
+      }
+
+      [data-cast="titleEyebrow"] {
+        position: absolute;
+        left: 160px;
+        top: 300px;
+        margin: 0;
+        font:
+          700 20px/1.2 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.14em;
+        color: #b83214;
+      }
+
+      [data-cast="titleHead"] {
+        position: absolute;
+        left: 160px;
+        top: 356px;
+        width: 1280px;
+        margin: 0;
+        font-size: 96px;
+        font-weight: 800;
+        line-height: 1.06;
+        letter-spacing: -0.03em;
+        color: #14161c;
+      }
+
+      [data-cast="titleRule"] {
+        position: absolute;
+        left: 160px;
+        top: 604px;
+        width: 180px;
+        height: 6px;
+        border-radius: 3px;
+        background: #e84d2a;
+        transform-origin: 0 50%;
+      }
+
+      [data-cast="titleSub"] {
+        position: absolute;
+        left: 160px;
+        top: 642px;
+        width: 1100px;
+        margin: 0;
+        font-size: 34px;
+        font-weight: 500;
+        line-height: 1.35;
+        color: #3d4352;
+      }
+
+      [data-cast="demoTag"] {
+        position: absolute;
+        left: 460px;
+        top: 76px;
+        margin: 0;
+        font:
+          700 18px/1.2 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.13em;
+        color: #3d4352;
+      }
+
+      [data-cast="deviceShell"] {
+        position: absolute;
+        left: 460px;
+        top: 124px;
+        width: 1000px;
+        padding: 0 20px 20px;
+        box-sizing: border-box;
+        background: #181b22;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 28px 64px rgba(20, 22, 28, 0.22);
+      }
+
+      .chrome-bar {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 4px;
+      }
+
+      .chrome-dots {
+        display: flex;
+        gap: 8px;
+      }
+
+      .chrome-dots i {
+        display: block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #353b4a;
+      }
+
+      .chrome-dots i:first-child {
+        background: #e84d2a;
+      }
+
+      .chrome-title {
+        font:
+          600 15px/1 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        color: #d6dbe6;
+      }
+
+      .chrome-meta {
+        font:
+          600 13px/1 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.08em;
+        color: #9ba3b4;
+      }
+
+      [data-cast="screen"] {
+        display: block;
+        width: 960px;
+        height: 540px;
+        border-radius: 10px;
+        background: #0e0e12;
+        object-fit: cover;
+      }
+
+      [data-cast="captionLabel"] {
+        position: absolute;
+        left: 200px;
+        top: 774px;
+        width: 1520px;
+        margin: 0;
+        text-align: center;
+        font:
+          700 18px/1.2 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.14em;
+        color: #b83214;
+      }
+
+      [data-cast="caption"] {
+        position: absolute;
+        left: 200px;
+        top: 816px;
+        width: 1520px;
+        margin: 0;
+        text-align: center;
+        font-size: 38px;
+        font-weight: 700;
+        line-height: 1.32;
+        color: #14161c;
+      }
+
+      [data-cast="closingKicker"] {
+        position: absolute;
+        left: 160px;
+        top: 320px;
+        margin: 0;
+        font:
+          700 20px/1.2 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        letter-spacing: 0.14em;
+        color: #ff7a59;
+      }
+
+      [data-cast="closingTitle"] {
+        position: absolute;
+        left: 160px;
+        top: 374px;
+        width: 1400px;
+        margin: 0;
+        font-size: 92px;
+        font-weight: 800;
+        line-height: 1.06;
+        letter-spacing: -0.03em;
+        color: #f5f1e8;
+      }
+
+      [data-cast="closingRule"] {
+        position: absolute;
+        left: 160px;
+        top: 516px;
+        width: 180px;
+        height: 6px;
+        border-radius: 3px;
+        background: #ff7a59;
+        transform-origin: 0 50%;
+      }
+
+      [data-cast="closingSub"] {
+        position: absolute;
+        left: 160px;
+        top: 554px;
+        width: 1200px;
+        margin: 0;
+        font:
+          500 32px/1.4 "Consolas",
+          "Cascadia Mono",
+          monospace;
+        color: #d0d5df;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="frame">
+      <div class="layer-bg" data-cast="titleBg"></div>
+      <p data-cast="titleEyebrow">GERAK · TIMED MOTION</p>
+      <h1 data-cast="titleHead">Deterministic motion for the web.</h1>
+      <div data-cast="titleRule"></div>
+      <p data-cast="titleSub">Pure scenes, exact frames, and synced browser captures.</p>
+
+      <div class="layer-bg" data-cast="demoBg"></div>
+      <p data-cast="demoTag">SCREEN RECORDING · TIMING.HTML</p>
+      <div data-cast="deviceShell">
+        <div class="chrome-bar">
+          <span class="chrome-dots"><i></i><i></i><i></i></span>
+          <span class="chrome-title">gerak live — timing/timing.html</span>
+          <span class="chrome-meta">960x540 · VP9</span>
+        </div>
+        <video data-cast="screen" muted playsinline preload="auto" src="media/screen.webm"></video>
+      </div>
+      <p data-cast="captionLabel">CAPTION STREAM</p>
+      <p data-cast="caption">
+        Every frame asks the scene. Motions lock to exact time. Video clips never drift.
+      </p>
+
+      <div class="layer-bg" data-cast="closingBg"></div>
+      <p data-cast="closingKicker">EXACT FRAMES · ZERO DRIFT</p>
+      <h2 data-cast="closingTitle">Build once. Render anywhere.</h2>
+      <div data-cast="closingRule"></div>
+      <p data-cast="closingSub">gerak check · gerak review · gerak render</p>
+    </div>
+    <script type="module" src="/explainer/src/explainer-main.ts"></script>
+  </body>
+</html>

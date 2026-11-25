@@ -1,0 +1,11 @@
+1
+00:00:02,400 --> 00:00:03,600
+Every frame asks the scene.
+
+2
+00:00:03,600 --> 00:00:04,900
+Motions lock to exact time.
+
+3
+00:00:04,900 --> 00:00:06,400
+Video clips never drift.
