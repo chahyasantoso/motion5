@@ -179,22 +179,58 @@ function stepAndHoldAnimations(ms: number): void {
   }
 }
 
-const cdpSessions = new WeakMap<Page, Promise<CDPSession>>();
+interface PageCdp {
+  readonly session: CDPSession;
+  world: Promise<number> | undefined;
+}
 
-/** Captures the viewport as a lossless PNG using Chromium's fast-encode path. */
-export async function captureFrame(page: Page): Promise<Buffer> {
-  let pending = cdpSessions.get(page);
+const pageCdps = new WeakMap<Page, Promise<PageCdp>>();
+
+/** Returns the cached CDP session and isolated-world state for `page`. */
+function pageCdp(page: Page): Promise<PageCdp> {
+  let pending = pageCdps.get(page);
   if (pending === undefined) {
     pending = page
       .context()
       .newCDPSession(page)
+      .then((session): PageCdp => ({ session, world: undefined }))
       .catch((error: unknown) => {
-        cdpSessions.delete(page);
+        pageCdps.delete(page);
         throw error;
       });
-    cdpSessions.set(page, pending);
+    pageCdps.set(page, pending);
   }
-  const session = await pending;
+  return pending;
+}
+
+/** Waits for one real rendered frame through an isolated world unaffected by the held clock. */
+async function waitForRealFrame(page: Page): Promise<void> {
+  const entry = await pageCdp(page);
+  if (entry.world === undefined) {
+    entry.world = (async () => {
+      const { frameTree } = await entry.session.send("Page.getFrameTree");
+      const { executionContextId } = await entry.session.send("Page.createIsolatedWorld", {
+        frameId: frameTree.frame.id,
+        worldName: "gerak-frame",
+      });
+      return executionContextId;
+    })().catch((error: unknown) => {
+      entry.world = undefined;
+      throw error;
+    });
+  }
+  const contextId = await entry.world;
+  const { exceptionDetails } = await entry.session.send("Runtime.evaluate", {
+    contextId,
+    awaitPromise: true,
+    expression: "new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))",
+  });
+  if (exceptionDetails !== undefined) throw new Error(exceptionDetails.text);
+}
+
+/** Captures the viewport as a lossless PNG using Chromium's fast-encode path. */
+export async function captureFrame(page: Page): Promise<Buffer> {
+  const { session } = await pageCdp(page);
   const { data } = await session.send("Page.captureScreenshot", {
     format: "png",
     optimizeForSpeed: true,
@@ -257,42 +293,60 @@ async function openPageSession(
     let timedOut = false;
     const settled = page.evaluate(async () => {
       const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-      if (!Array.isArray(listed) || listed.length === 0) return;
+      if (!Array.isArray(listed) || listed.length === 0) return false;
       const pending: Promise<unknown>[] = [];
+      let hasMedia = false;
       for (const mounted of listed) {
         if (mounted === null || typeof mounted !== "object") continue;
         const fn: unknown = Reflect.get(mounted, "settled");
         if (typeof fn === "function") {
           pending.push(Promise.resolve(Reflect.apply(fn, mounted, [])));
         }
+        const media: unknown = Reflect.get(mounted, "media");
+        if (typeof media === "function") {
+          const items: unknown = Reflect.apply(media, mounted, []);
+          if (Array.isArray(items) && items.length > 0) hasMedia = true;
+        }
       }
       if (pending.length > 0) await Promise.all(pending);
+      return hasMedia;
     });
     // Ignore rejections caused by closing the page after a settle timeout.
     const raced = settled.then(
-      () => "settled" as const,
+      (hasMedia) => ({ kind: "settled" as const, hasMedia }),
       (error: unknown) => {
-        if (timedOut) return "settled" as const;
+        if (timedOut) return { kind: "settled" as const, hasMedia: false };
         throw error;
       },
     );
+    let hasMedia = false;
     try {
       const outcome = await Promise.race([
         raced,
-        new Promise<"timeout">((resolve) => {
+        new Promise<{ readonly kind: "timeout" }>((resolve) => {
           timer = setTimeout(() => {
             timedOut = true;
-            resolve("timeout");
+            resolve({ kind: "timeout" });
           }, MEDIA_SETTLE_TIMEOUT_MS);
         }),
       ]);
-      if (outcome === "timeout" && !reportedMediaTimeout) {
-        reportedMediaTimeout = true;
-        pageErrors.push(`Media did not finish seeking at ${atMs} ms.`);
+      switch (outcome.kind) {
+        case "timeout":
+          if (!reportedMediaTimeout) {
+            reportedMediaTimeout = true;
+            pageErrors.push(`Media did not finish seeking at ${atMs} ms.`);
+          }
+          break;
+        case "settled":
+          hasMedia = outcome.hasMedia;
+          break;
+        default:
+          return unreachable(outcome);
       }
     } finally {
       if (timer !== undefined) clearTimeout(timer);
     }
+    if (hasMedia) await waitForRealFrame(page);
   };
   const runHeldTo = async (delta: number, atMs: number): Promise<void> => {
     await page.clock.runFor(delta);
