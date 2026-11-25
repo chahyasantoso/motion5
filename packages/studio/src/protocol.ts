@@ -12,6 +12,9 @@ export const COMMAND_EVENT = "gerak:command";
 /** The Vite socket event the canvas answers a command on. */
 export const REPLY_EVENT = "gerak:reply";
 
+/** The Vite socket event the server sends when a piece's recorded presets change. */
+export const PRESETS_EVENT = "gerak:presets";
+
 /** Who drives the canvas: nobody, the agent with the canvas mirroring it, or the agent on a hidden worker frame. */
 export type FollowState = "idle" | "following" | "detached";
 

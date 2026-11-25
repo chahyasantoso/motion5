@@ -17,8 +17,10 @@ const usage = [
   "  select <card-id>  select a card",
   "  inspect [<card-id>]  a card's live values",
   "  check [--sizes WxH,...] [--safe-zone platform] [--to ms]  check the page",
+  "  act '<action-list>' [--save-preset name]  run actions on the piece's page and print the events they log; --save-preset keeps them as a preset",
+  "  presets [--piece name] [--root dir]  list the piece's recorded presets; works without a studio",
   "  pins <list|show|add|resolve|clear> [--root dir]  the notes left on pieces; works without a studio",
-  "  every subcommand but open, pins and graph <piece> takes --root dir and --piece name",
+  "  every subcommand but open, pins, presets and graph <piece> takes --root dir and --piece name",
 ].join("\n");
 
 const [subcommand, ...rest] = process.argv.slice(2);
@@ -43,7 +45,7 @@ if (subcommand === "open") {
     );
   }
 } else if (
-  ["status", "focus", "viewport", "seek", "play", "select", "inspect", "check"].includes(
+  ["status", "focus", "viewport", "seek", "play", "select", "inspect", "check", "act"].includes(
     subcommand ?? "",
   ) ||
   (subcommand === "graph" &&
@@ -54,6 +56,11 @@ if (subcommand === "open") {
 ) {
   const { runBus } = await import(studio("bus-cli"));
   const { text, ok } = await runBus(subcommand, rest);
+  console.log(text);
+  if (!ok) process.exitCode = 1;
+} else if (subcommand === "presets") {
+  const { runPresets } = await import(studio("presets-cli"));
+  const { text, ok } = runPresets(rest);
   console.log(text);
   if (!ok) process.exitCode = 1;
 } else if (subcommand === "pins") {

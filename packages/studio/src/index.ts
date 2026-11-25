@@ -6,6 +6,7 @@ export * from "./protocol";
 export * from "./pins";
 export * from "./pin-store";
 export * from "./pins-cli";
+export * from "./presets-cli";
 export * from "./cli";
 export * from "./layout";
 export * from "./server/plugin";

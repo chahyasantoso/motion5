@@ -55,6 +55,16 @@ const accepted: readonly (readonly [string, readonly string[], StudioCommand])[]
     },
   ],
   ["graph", [], { kind: "graph" }],
+  [
+    "act",
+    ["click:.a@100,scroll:600@900"],
+    { kind: "act", actions: "click:.a@100,scroll:600@900", savePreset: undefined },
+  ],
+  [
+    "act",
+    ["click:.a@100", "--save-preset", "take-1"],
+    { kind: "act", actions: "click:.a@100", savePreset: "take-1" },
+  ],
 ];
 
 describe("gerak studio bus arguments", () => {
@@ -91,6 +101,11 @@ describe("gerak studio bus arguments", () => {
     ["check", ["--sizes", "bad"]],
     ["check", ["--to", "0"]],
     ["graph", ["extra"]],
+    ["act", []],
+    ["act", ["click:.a@1", "extra"]],
+    ["act", ["click:.a@1", "--save-preset", "Bad Name"]],
+    ["act", ["click:.a@1", "--save-preset", "-x"]],
+    ["act", ["nonsense"]],
     ["status", ["--root"]],
     ["unknown", []],
   ];

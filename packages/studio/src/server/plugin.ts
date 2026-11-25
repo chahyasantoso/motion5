@@ -1,12 +1,26 @@
 import { mkdirSync } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SAFE_ZONE_NAMES, safeZone } from "@gerak/tools/page";
+import {
+  PRESET_NAME,
+  SAFE_ZONE_NAMES,
+  listPresets,
+  readPreset,
+  safeZone,
+  writePreset,
+} from "@gerak/tools/page";
 import type { Plugin, ViteDevServer } from "vite";
-import { unreachable } from "@gerak/core";
+import { isMotionEvent, unreachable } from "@gerak/core";
 import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
-import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
+import {
+  BUS_PATH,
+  COMMAND_EVENT,
+  PRESETS_EVENT,
+  REPLY_EVENT,
+  type CommandEnvelope,
+} from "../protocol";
+import { runAct } from "./act";
 import { parseCommand } from "../command";
 import { addPin, pinsPath, readPins, resolvePin } from "../pin-store";
 import { parseNewPin } from "../pins";
@@ -146,6 +160,18 @@ export function studioPlugin(options: {
       server.watcher.on("change", pinsChanged);
       server.watcher.on("add", pinsChanged);
       server.watcher.on("unlink", pinsChanged);
+      const presetsDir = join(root, ".gerak", "presets");
+      const presetsChanged = (file: string): void => {
+        const path = resolve(file);
+        if (!path.startsWith(`${presetsDir}${sep}`)) return;
+        const piece = relative(presetsDir, path).split(sep)[0] ?? "*";
+        server.ws.send({ type: "custom", event: PRESETS_EVENT, data: { piece } });
+      };
+      mkdirSync(presetsDir, { recursive: true });
+      server.watcher.add(presetsDir);
+      server.watcher.on("change", presetsChanged);
+      server.watcher.on("add", presetsChanged);
+      server.watcher.on("unlink", presetsChanged);
       server.ws.on(REPLY_EVENT, (data: unknown) => {
         relay.receive(data);
       });
@@ -227,6 +253,37 @@ export function studioPlugin(options: {
               else json(200, { pin });
               return;
             }
+            case "GET /__gerak/presets": {
+              const name = url.searchParams.get("name");
+              if (name === null) {
+                json(200, { names: listPresets(root, piece) });
+                return;
+              }
+              const events = readPreset(root, piece, name);
+              if ("reason" in events) json(404, { error: events.reason });
+              else json(200, { events });
+              return;
+            }
+            case "PUT /__gerak/presets": {
+              const name = url.searchParams.get("name") ?? "";
+              if (!PRESET_NAME.test(name)) {
+                json(400, { error: `"${name}" is not a preset name.` });
+                return;
+              }
+              let body: unknown;
+              try {
+                body = JSON.parse(await bodyOf(req));
+              } catch {
+                json(400, { error: "The body is not JSON." });
+                return;
+              }
+              if (!Array.isArray(body) || !body.every(isMotionEvent)) {
+                json(400, { error: "The body is not a list of events." });
+                return;
+              }
+              json(200, { saved: writePreset(root, piece, name, body) });
+              return;
+            }
             case `POST ${BUS_PATH}`: {
               let body: unknown;
               try {
@@ -265,11 +322,27 @@ export function studioPlugin(options: {
                   json(200, await checks.run(result.graph, result.page, command, base));
                   return;
                 }
+                case "act": {
+                  const result = await pieceGraph(root, piece, load);
+                  if (result.kind !== "graph") {
+                    json(200, { kind: "failed", message: result.message });
+                    return;
+                  }
+                  const base = server.resolvedUrls?.local[0];
+                  if (base === undefined) {
+                    json(200, { kind: "failed", message: "The server has no address yet." });
+                    return;
+                  }
+                  json(
+                    200,
+                    await checks.exclusive(() =>
+                      runAct(options.browser, { root, piece, page: result.page, base, command }),
+                    ),
+                  );
+                  return;
+                }
                 case "status":
                 case "focus":
-                case "act":
-                  json(200, { kind: "failed", message: "act is not built yet." });
-                  return;
                 case "viewport":
                 case "seek":
                 case "play":

@@ -48,8 +48,9 @@ export function checkRequest(
   };
 }
 
-/** Runs checks one at a time on a shared browser, against a server's own base address. */
+/** Runs jobs one at a time on a shared browser; a check is one, against a server's own base address. */
 export function checkQueue(browser: SharedBrowser): {
+  exclusive<T>(job: () => Promise<T>): Promise<T>;
   run(
     graph: StudioGraph,
     page: string | undefined,
@@ -58,11 +59,17 @@ export function checkQueue(browser: SharedBrowser): {
   ): Promise<StudioReply>;
 } {
   let tail: Promise<unknown> = Promise.resolve();
+  const exclusive = <T>(job: () => Promise<T>): Promise<T> => {
+    const next = tail.then(job);
+    tail = next.catch(() => undefined);
+    return next;
+  };
   return {
+    exclusive,
     run(graph, page, command, base) {
       const made = checkRequest(graph, page, command);
       if (made.kind === "failed") return Promise.resolve(made);
-      const job = tail.then(async (): Promise<StudioReply> => {
+      return exclusive(async (): Promise<StudioReply> => {
         const result = await checkMotion({
           ...made.request,
           source: { kind: "url", base },
@@ -70,8 +77,6 @@ export function checkQueue(browser: SharedBrowser): {
         });
         return { kind: "check", result };
       });
-      tail = job.catch(() => undefined);
-      return job;
     },
   };
 }
