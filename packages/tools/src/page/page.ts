@@ -463,7 +463,7 @@ async function openSite(
       return { base: source.base, close: async () => undefined };
     case "serve": {
       const { createServer } = await import("vite");
-      const added = pageServerConfig(source.root);
+      const added = await pageServerConfig(source.root);
       const server = await createServer({
         root: source.root,
         logLevel: "silent",

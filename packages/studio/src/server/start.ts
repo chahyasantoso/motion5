@@ -26,7 +26,7 @@ export async function startStudio(options: {
   close(): Promise<void>;
 }> {
   const { createServer } = await import("vite");
-  const added = pageServerConfig(options.root);
+  const added = await pageServerConfig(options.root);
   const browser = sharedBrowser();
   const server = await createServer({
     root: options.root,

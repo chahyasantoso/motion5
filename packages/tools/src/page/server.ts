@@ -1,7 +1,6 @@
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { searchForWorkspaceRoot } from "vite";
 import { motionLivePlugin, type MotionLivePlugin } from "../vite/index";
 
 /** What a page server adds to the config of a pieces folder: the live plugin, dev optimizer settings and the folders it may serve. */
@@ -35,7 +34,8 @@ function resolvable(root: string, name: string): boolean {
 }
 
 /** The config every page server adds: `@gerak/tools` left unbundled for virtual modules, every dependency a page loads pre-bundled at start, and readable roots. */
-export function pageServerConfig(root: string): PageServerConfig {
+export async function pageServerConfig(root: string): Promise<PageServerConfig> {
+  const { searchForWorkspaceRoot } = await import("vite");
   return {
     plugins: [motionLivePlugin()],
     optimizeDeps: {
