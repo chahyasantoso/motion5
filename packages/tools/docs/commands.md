@@ -1,6 +1,6 @@
 # gerak commands
 
-Run from your project's folder. A page is a path inside the site with no leading `/`; the site is the pieces folder,
+Run from your project's folder. A page is a path inside the site with no leading `/`, and a page the server does not have is an error; the site is the pieces folder,
 `--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one, unless
 `--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
