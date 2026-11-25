@@ -4,6 +4,7 @@ export * from "./piece";
 export * from "./print";
 export * from "./protocol";
 export * from "./pins";
+export * from "./agent-port";
 export * from "./pin-store";
 export * from "./pins-cli";
 export * from "./presets-cli";
