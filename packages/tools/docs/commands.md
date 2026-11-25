@@ -42,7 +42,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
   edge. With `--sizes`, checks every viewport and prefixes finding lines with `[WIDTHxHEIGHT]`. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
   `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
-  `--safe-zone` reports each text glyph box and watched element whose box enters that platform's reserved margin, once per element and edge at the first 16 ms sample of a stay in the margin for longer than 12 sampled frames (192 ms) in a row, or at the end; without `--size` or `--sizes` it opens the platform's native size (1080x1920, YouTube 1920x1080), and at another size the margins scale with the stage.
+  `--safe-zone` reports each text glyph box and watched element whose box enters that platform's reserved margin, once per element and edge at the first 16 ms sample of a stay in the margin for longer than 12 sampled frames (192 ms) in a row, or at the end; without `--size` or `--sizes` it opens the platform's native size (1080x1920, YouTube 1920x1080), and at another size the margins scale with the stage; a box that enters all four margins is a full-frame layer and is not reported; text with the same name in one frame is named `... #2`, `... #3`.
 - **`gerak read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
   `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
   and a fitted `cubic-bezier`. A move splits where it turns back.

@@ -25,11 +25,11 @@ export interface SafeZone {
 export function safeZone(name: SafeZoneName): SafeZone {
   switch (name) {
     case "tiktok":
-      return { name, width: 1080, height: 1920, top: 140, right: 132, bottom: 320, left: 36 };
+      return { name, width: 1080, height: 1920, top: 220, right: 140, bottom: 480, left: 60 };
     case "reels":
-      return { name, width: 1080, height: 1920, top: 140, right: 120, bottom: 300, left: 36 };
+      return { name, width: 1080, height: 1920, top: 269, right: 65, bottom: 672, left: 65 };
     case "shorts":
-      return { name, width: 1080, height: 1920, top: 140, right: 128, bottom: 340, left: 36 };
+      return { name, width: 1080, height: 1920, top: 288, right: 192, bottom: 672, left: 48 };
     case "youtube":
       return { name, width: 1920, height: 1080, top: 54, right: 96, bottom: 54, left: 96 };
     default:
@@ -45,7 +45,7 @@ export function parseSafeZone(text: string | undefined): SafeZoneName | undefine
   return SAFE_ZONE_NAMES.find((name) => name === text);
 }
 
-/** Edges whose margin band the on-stage part of `box` enters, in top, right, bottom, left order; margins scale with the stage. */
+/** Edges whose margin band the on-stage part of `box` enters, in top, right, bottom, left order; margins scale with the stage; a box entering all four is a full-frame layer and gives none. */
 export function unsafeEdges(
   box: Box,
   zone: SafeZone,
@@ -63,5 +63,5 @@ export function unsafeEdges(
   if (right > stage.width - zone.right * across) edges.push("right");
   if (bottom > stage.height - zone.bottom * down) edges.push("bottom");
   if (left < zone.left * across) edges.push("left");
-  return edges;
+  return edges.length === 4 ? [] : edges;
 }

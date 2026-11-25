@@ -549,10 +549,14 @@ export async function sampleMotion(
             name: string;
             box: { x: number; y: number; width: number; height: number };
           }[] = [];
+          const seen = new Map<string, number>();
           if (final || zone)
             for (const element of document.body.querySelectorAll("*")) {
-              const text = glyphsOf(element);
-              if (text === undefined) continue;
+              const glyphs = glyphsOf(element);
+              if (glyphs === undefined) continue;
+              const count = (seen.get(glyphs.name) ?? 0) + 1;
+              seen.set(glyphs.name, count);
+              const text = count === 1 ? glyphs : { ...glyphs, name: `${glyphs.name} #${count}` };
               if (final) texts.push(text);
               if (zone) glyphBoxes.push({ name: text.name, box: text.box });
             }

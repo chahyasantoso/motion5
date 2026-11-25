@@ -76,6 +76,36 @@ describe("gerak check --safe-zone in browser", () => {
     expect(found).toEqual([]);
   });
 
+  it("keeps two texts with the same words as separate findings", async () => {
+    const root = mkdtempSync(join(tmpdir(), "gerak-safezone-"));
+    dirs.push(root);
+    writeFileSync(
+      join(root, "reel.html"),
+      `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; width: 1080px; height: 1920px; background: #fff; color: #111; overflow: hidden; }
+      body { font: 700 40px/1.2 sans-serif; }
+      .mark { position: absolute; left: 400px; top: 800px; width: 100px; height: 100px; background: #36c; }
+      p { position: absolute; margin: 0; left: 200px; white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <div class="mark"></div>
+    <p style="top: 1700px">Buy now</p>
+    <p style="top: 1780px">Buy now</p>
+  </body>
+</html>`,
+    );
+    const found = await zoneFindingsOf(root);
+    expect(found.map((finding) => finding.kind === "unsafe-zone" && finding.element)).toEqual([
+      'p "Buy now"',
+      'p "Buy now" #2',
+    ]);
+  });
+
   it("reports the step where text slides into the margin", async () => {
     const root = site(
       "Sliding",
@@ -87,8 +117,8 @@ describe("gerak check --safe-zone in browser", () => {
       (finding) => finding.kind === "unsafe-zone" && finding.edge === "bottom",
     );
     if (bottom?.kind !== "unsafe-zone") throw new Error("no bottom finding");
-    // The 48 px line box crosses y 1600 when top passes 1552, 690 ms into the slide.
-    expect(Math.abs(bottom.at - 690)).toBeLessThanOrEqual(16);
+    // The 48 px line box crosses y 1440 when top passes 1392, 490 ms into the slide.
+    expect(Math.abs(bottom.at - 490)).toBeLessThanOrEqual(16);
   });
 
   it("ignores a caption that slides in from below and rests at the centre", async () => {

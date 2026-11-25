@@ -19,9 +19,9 @@ describe("safe zone profiles", () => {
 
   it("holds each platform's frame and margins", () => {
     const table: Record<SafeZoneName, readonly number[]> = {
-      tiktok: [1080, 1920, 140, 132, 320, 36],
-      reels: [1080, 1920, 140, 120, 300, 36],
-      shorts: [1080, 1920, 140, 128, 340, 36],
+      tiktok: [1080, 1920, 220, 140, 480, 60],
+      reels: [1080, 1920, 269, 65, 672, 65],
+      shorts: [1080, 1920, 288, 192, 672, 48],
       youtube: [1920, 1080, 54, 96, 54, 96],
     };
     for (const name of SAFE_ZONE_NAMES) {
@@ -52,24 +52,28 @@ describe("unsafeEdges", () => {
   });
 
   it("lists several edges in top, right, bottom, left order", () => {
-    expect(unsafeEdges({ x: 0, y: 0, width: 1080, height: 1920 }, tiktok, TALL)).toEqual([
+    expect(unsafeEdges({ x: 0, y: 0, width: 1080, height: 1000 }, tiktok, TALL)).toEqual([
       "top",
       "right",
-      "bottom",
       "left",
     ]);
   });
 
+  it("does not judge a box that enters all four bands", () => {
+    expect(unsafeEdges({ x: 0, y: 0, width: 1080, height: 1920 }, tiktok, TALL)).toEqual([]);
+    expect(unsafeEdges({ x: -50, y: -50, width: 1200, height: 2000 }, tiktok, TALL)).toEqual([]);
+  });
+
   it("accepts a box inside the margins", () => {
-    expect(unsafeEdges({ x: 36, y: 140, width: 912, height: 1460 }, tiktok, TALL)).toEqual([]);
+    expect(unsafeEdges({ x: 60, y: 220, width: 880, height: 1220 }, tiktok, TALL)).toEqual([]);
   });
 
   it("scales the bands with the stage", () => {
     const half = { width: 540, height: 960 };
-    expect(unsafeEdges({ x: 100, y: 830, width: 50, height: 20 }, tiktok, half)).toEqual([
+    expect(unsafeEdges({ x: 100, y: 710, width: 50, height: 20 }, tiktok, half)).toEqual([
       "bottom",
     ]);
-    expect(unsafeEdges({ x: 100, y: 790, width: 50, height: 10 }, tiktok, half)).toEqual([]);
+    expect(unsafeEdges({ x: 100, y: 690, width: 50, height: 10 }, tiktok, half)).toEqual([]);
   });
 
   it("ignores a box with no area on stage and cuts a partly off box to the stage", () => {

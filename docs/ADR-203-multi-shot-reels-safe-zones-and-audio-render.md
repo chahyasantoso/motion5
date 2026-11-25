@@ -40,12 +40,12 @@ one another.
 
      | Platform | Frame | Top | Right | Bottom | Left | Source, checked 2026-11-25 |
      | -------- | ----- | --- | ----- | ------ | ---- | -------------------------- |
-     | `tiktok` | 1080x1920 | 140 | 132 | 320 | 36 | TikTok publishes safe-zone files, not px; third-party tools cite 240 top, 660 bottom, 120 sides (manypixels.co/blog/social-media-design/tiktok-ad-specs), or 480 bottom, 140 right, 220 top, 60 left (revid.ai/tiktok-safe-zone) |
-     | `reels` | 1080x1920 | 140 | 120 | 300 | 36 | Meta Business Help Center gives words, not px; guidance quoted as 14% top, 35% bottom, 6% sides, about 269, 672 and 65 px (lilachbullock.com/instagram-reels-safe-zone) |
-     | `shorts` | 1080x1920 | 140 | 128 | 340 | 36 | No official figure found; revid.ai/youtube-shorts-safe-zone gives 288 top, 672 bottom, 192 right, 48 left; adaptlypost.com/blog/social-media-safe-zones-2026-complete-guide gives 120 top, 300 bottom, 96 right |
+     | `tiktok` | 1080x1920 | 220 | 140 | 480 | 60 | TikTok publishes safe-zone files, not px; revid.ai/tiktok-safe-zone states 220 top, 480 bottom, 140 right, 60 left, checked 2026-11-25; manypixels.co/blog/social-media-design/tiktok-ad-specs cites 240 top, 660 bottom, 120 sides |
+     | `reels` | 1080x1920 | 269 | 65 | 672 | 65 | Meta guidance of 14% top, 35% bottom, 6% sides, which is 269, 672 and 65 px at 1080x1920; quoted by third-party guides, Meta's own page was not readable on 2026-11-25 (lilachbullock.com/instagram-reels-safe-zone) |
+     | `shorts` | 1080x1920 | 288 | 192 | 672 | 48 | No official figure found; revid.ai/youtube-shorts-safe-zone states 288 top, 672 bottom, 192 right, 48 left, checked 2026-11-25; adaptlypost.com/blog/social-media-safe-zones-2026-complete-guide gives 120 top, 300 bottom, 96 right |
      | `youtube` | 1920x1080 | 54 | 96 | 54 | 96 | No YouTube figure found; broadcast convention is 5% action-safe and 10% title-safe margins (dev.to/utilitylab/how-to-calculate-title-safe-and-action-safe-margins-for-video-1ifj); 54 px is 5% of the height |
 
-     The code values are the profiles; the sources above state wider figures for several platforms.
+     The code values are the stricter published guidance, each from the source named above on 2026-11-25. A box that enters all four bands once cut to the stage is a full-frame layer and is not judged.
    - `gerak check` and `gerak review` take `--safe-zone tiktok|reels|shorts|youtube`. With neither `--size` nor
      `--sizes`, the viewport is the platform's native size; with either, the margins scale.
    - Under the flag, every sampled 16 ms frame also measures each visible element's own text glyph box, named as the
