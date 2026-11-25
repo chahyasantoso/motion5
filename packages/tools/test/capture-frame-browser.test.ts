@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
-import { captureFrame, withPage, withPages } from "../src/page/page";
+import { captureFrame, withPage } from "../src/page/page";
 
 const DIRS: string[] = [];
 
 function tempSite(): string {
-  const dir = mkdtempSync(join(tmpdir(), "gerak-with-pages-"));
+  const dir = mkdtempSync(join(tmpdir(), "gerak-capture-frame-"));
   DIRS.push(dir);
   return dir;
 }
@@ -82,8 +82,8 @@ afterEach(() => {
   }
 });
 
-describe("captureFrame and withPages in browser", () => {
-  it("captureFrame returns a PNG whose decoded RGBA pixels match page.screenshot()", async () => {
+describe("captureFrame in browser", () => {
+  it("returns a PNG whose decoded RGBA pixels match page.screenshot()", async () => {
     const dir = tempSite();
     writeFileSync(
       join(dir, "sample.html"),
@@ -110,75 +110,5 @@ describe("captureFrame and withPages in browser", () => {
     expect(value.actual.width).toBe(value.expected.width);
     expect(value.actual.height).toBe(value.expected.height);
     expect(Buffer.from(value.actual.rgba).equals(Buffer.from(value.expected.rgba))).toBe(true);
-  }, 60_000);
-
-  it("withPages gives two independent sessions and merges page errors", async () => {
-    const dir = tempSite();
-    writeFileSync(
-      join(dir, "multi.html"),
-      `<!doctype html>
-<html>
-  <body style="margin:0">
-    <div id="time">0</div>
-    <script>
-      let start;
-      globalThis[Symbol.for("@gerak/dom/held-step")] = () => {
-        start ??= performance.now();
-        document.getElementById("time").textContent = String(Math.round(performance.now() - start));
-      };
-      window.addEventListener("gerak-fail", (e) => {
-        throw new Error(String(e.detail));
-      });
-      window.__fail = (msg) => {
-        window.dispatchEvent(new CustomEvent("gerak-fail", { detail: msg }));
-      };
-    </script>
-  </body>
-</html>`,
-    );
-
-    const { value, pageErrors } = await withPages(
-      { page: "multi.html", width: 160, height: 120, source: { kind: "serve", root: dir } },
-      2,
-      async (sessions) => {
-        expect(sessions).toHaveLength(2);
-        const [first, second] = sessions;
-        if (first === undefined || second === undefined) throw new Error("expected 2 sessions");
-        expect(first.page.context()).not.toBe(second.page.context());
-
-        await first.advanceTo(500);
-        const firstElapsedWhileSecondAtZero = await first.page.evaluate(() =>
-          Number(document.getElementById("time")?.textContent),
-        );
-        const secondElapsedAtZero = await second.page.evaluate(() =>
-          Number(document.getElementById("time")?.textContent),
-        );
-
-        await second.advanceTo(150);
-        const secondElapsedAt150 = await second.page.evaluate(() =>
-          Number(document.getElementById("time")?.textContent),
-        );
-
-        await first.page.evaluate(() =>
-          Reflect.apply(Reflect.get(window, "__fail"), undefined, ["err-a"]),
-        );
-        await second.page.evaluate(() =>
-          Reflect.apply(Reflect.get(window, "__fail"), undefined, ["err-b"]),
-        );
-        await first.advanceTo(520);
-        await second.advanceTo(170);
-
-        return {
-          firstElapsedWhileSecondAtZero,
-          secondElapsedAtZero,
-          secondElapsedAt150,
-        };
-      },
-    );
-
-    expect(value.firstElapsedWhileSecondAtZero).toBe(500);
-    expect(value.secondElapsedAtZero).toBe(0);
-    expect(value.secondElapsedAt150).toBe(150);
-    expect(pageErrors).toEqual(["err-a", "err-b"]);
   }, 60_000);
 });

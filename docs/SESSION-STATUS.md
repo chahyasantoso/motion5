@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **The render-speed PR is built on `feat/render-speed` (exact held-clock frame timestamps, fitted body scaling, lossless fast PNG capture, and parallel render workers defaulting to 1); Visual Studio (`plan/studio-plan.md`) comes next.**
+- **The render-speed PR is built on `feat/render-speed` (exact held-clock frame timestamps, fitted body scaling, and lossless fast PNG capture); Visual Studio (`plan/studio-plan.md`) comes next.**
 
 ## Open, and not scheduled
 

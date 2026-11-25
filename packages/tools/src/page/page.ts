@@ -202,16 +202,15 @@ export async function captureFrame(page: Page): Promise<Buffer> {
   return Buffer.from(data, "base64");
 }
 
-/** Opens one page in its own browser context, configures the clock, and runs frame 0. */
+/** Opens one page, configures the clock, and runs frame 0. */
 async function openPageSession(
   browser: Browser,
   base: string,
   target: PageTarget,
 ): Promise<{ readonly session: PageSession; readonly pageErrors: readonly string[] }> {
-  const context = await browser.newContext({
+  const page = await browser.newPage({
     viewport: { width: target.width, height: target.height },
   });
-  const page = await context.newPage();
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.addInitScript(seedRandom);
@@ -340,15 +339,11 @@ async function openPageSession(
   return { session, pageErrors };
 }
 
-/** Serves or reaches the page's site, opens `count` pages under a paused fake clock, and hands them to `visit`. */
-export async function withPages<T>(
+/** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
+export async function withPage<T>(
   target: PageTarget,
-  count: number,
-  visit: (sessions: readonly PageSession[]) => Promise<T>,
-): Promise<{ value: T; pageErrors: readonly string[] }> {
-  if (!Number.isInteger(count) || count < 1) {
-    throw new Error(`Expected at least one page, not ${count}.`);
-  }
+  visit: (session: PageSession) => Promise<T>,
+): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
   const { chromium } = await import("playwright-core");
   const site = await openSite(target.source);
   const base = site.base;
@@ -371,26 +366,13 @@ export async function withPages<T>(
     );
   }
   try {
-    const opened = await Promise.all(
-      Array.from({ length: count }, () => openPageSession(browser, base, target)),
-    );
-    const value = await visit(opened.map((entry) => entry.session));
-    return { value, pageErrors: opened.flatMap((entry) => entry.pageErrors) };
+    const { session, pageErrors } = await openPageSession(browser, base, target);
+    const value = await visit(session);
+    return { value, pageErrors };
   } finally {
     await browser.close();
     await site.close();
   }
-}
-
-/** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
-export async function withPage<T>(
-  target: PageTarget,
-  visit: (session: PageSession) => Promise<T>,
-): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
-  return withPages(target, 1, ([session]) => {
-    if (session === undefined) throw new Error("Expected one page session.");
-    return visit(session);
-  });
 }
 
 /** Waits in real time until the machine's clock reads `at` ms. */
