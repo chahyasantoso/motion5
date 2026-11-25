@@ -4,7 +4,7 @@
 
 Creators and autonomous agents build, sequence, check, and export multi-shot vertical (`9:16` TikTok/Reels/Shorts) and widescreen (`16:9` YouTube) reels and explainers from modular scenes synced to voiceover or music, with word-by-word captions and screen-recorded clips, without hand-shifting timestamps when a shot's length changes. The code adds sequential `shot(subScene, options?)` composition inside `scene(...)` in `@gerak/stage`, audio beat and level extraction and transcript import as cues, platform safe-zone checks (`--safe-zone`) in `@gerak/tools`, exact `30`/`60 fps` H.264 MP4 rendering with several mixed audio tracks in `gerak render`, and `<video>` clips seeked to scene time by `@gerak/dom`.
 
-Status: all four PRs are built (PR 4 on `feat/reels-pr4`); precedes `plan/studio-plan.md` (the video half of `plan/roadmap.md` Stage 18).
+Status: all four PRs are built (PR 4 on `feat/reels-pr4`); precedes `plan/studio-canvas-plan.md` (the video half of `plan/roadmap.md` Stage 18).
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
@@ -26,7 +26,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   - `until` ends the shot at an absolute scene ms, such as a beat cue's `at` from `gerak beats`, so a cut lands on the music; `scene` refuses `until` with `length`, and an `until` at or before the shot's start.
   - Each `shot(next, { overlap })` offsets every beat and cue inside `next` by `cursor - (overlap ?? 0)` (clamped `>= 0`) and advances `cursor` to the end of `next`, so lengthening Shot 1 shifts Shots 2..N automatically.
   - Every element owned by a shot without an explicit `.shows(...)` is automatically scoped to `.shows([shotStart, shotEnd])` so off-shot DOM and 3D casts hide cleanly outside their shot; during an `overlap` window both the outgoing and incoming shots are visible so dissolves, whip-pans, or `carry` match-cuts compose cleanly.
-  - Record ordered `shots: readonly ShotSummary[]` (`{ name, index, from, to, overlap }`) on compiled `Stage` so `gerak timeline`, `gerak review`, and Visual Studio (`plan/studio-plan.md`) display and solo individual shots.
+  - Record ordered `shots: readonly ShotSummary[]` (`{ name, index, from, to, overlap }`) on compiled `Stage` so `gerak timeline`, `gerak review`, and the Studio canvas (`plan/studio-canvas-plan.md`) display and solo individual shots.
   - Single owner of shot timing and automatic shot presence remains `@gerak/stage`.
 
 ### 2. Platform safe-zone checks and reel aspect presets (`@gerak/tools`)
