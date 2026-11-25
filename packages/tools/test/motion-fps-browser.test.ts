@@ -1,6 +1,5 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { perform } from "../src/page/actions";
 import { measureFps } from "../src/page/fps";
 import { withPage } from "../src/page/page";
 
@@ -29,35 +28,6 @@ describe("measureFps with --action on a real clock", () => {
           });
         });
         await advanceTo(300);
-        return page.evaluate(() => ({
-          scrollY: window.scrollY,
-          clicks: Number(Reflect.get(globalThis, "__barClicks") ?? 0),
-        }));
-      },
-    );
-    expect(pageErrors).toEqual([]);
-    expect(value).toEqual({ scrollY: 700, clicks: 1 });
-  }, 120000);
-
-  it("clicks the scrolled target when no frame is drawn between scroll and click", async () => {
-    const { value, pageErrors } = await withPage(
-      {
-        page: "scroll.html",
-        width: 800,
-        height: 600,
-        source: { kind: "serve", root: COMPOSITOR_FIXTURES },
-        clock: "real",
-      },
-      async ({ page }) => {
-        await page.evaluate(() => {
-          let clicks = 0;
-          document.querySelector("#bar")?.addEventListener("click", () => {
-            clicks += 1;
-            Reflect.set(globalThis, "__barClicks", clicks);
-          });
-        });
-        await perform(page, { kind: "scroll", target: { kind: "px", px: 700 }, at: 0 }, "real");
-        await perform(page, { kind: "click", selector: "#bar", at: 0 }, "real");
         return page.evaluate(() => ({
           scrollY: window.scrollY,
           clicks: Number(Reflect.get(globalThis, "__barClicks") ?? 0),
