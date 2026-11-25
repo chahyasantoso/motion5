@@ -35,7 +35,7 @@ export type Member = {
   readonly onScroll?: readonly ScrollWindow[] | undefined;
 } & (
   | { readonly kind: "object"; readonly parts?: boolean | undefined }
-  | { readonly kind: "actor"; readonly content: Content }
+  | { readonly kind: "actor"; readonly content: Content; readonly media?: true | undefined }
   | {
       readonly kind: "list";
       readonly split?: "letters" | "words" | undefined;
@@ -274,7 +274,15 @@ function compileCast(cast: Members, beats: Beats, errors: StageError[]): readonl
     switch (spec.kind) {
       case "actor": {
         const content = contentOf(name, spec.content, errors);
-        if (content !== undefined) members.push(Object.freeze({ ...base, kind: "actor", content }));
+        if (content !== undefined)
+          members.push(
+            Object.freeze({
+              ...base,
+              kind: "actor",
+              content,
+              ...(spec.media === true ? { media: true } : {}),
+            }),
+          );
         break;
       }
       case "list":
@@ -324,7 +332,9 @@ function signatureOf(durationMs: number, members: readonly Member[]): string {
     ];
     switch (member.kind) {
       case "actor":
-        return [...own, member.content.kind];
+        return member.media === true
+          ? [...own, member.content.kind, "media"]
+          : [...own, member.content.kind];
       case "list":
         return [...own, member.split ?? "parts"];
       case "object":
