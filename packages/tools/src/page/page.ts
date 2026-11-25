@@ -197,7 +197,7 @@ export async function captureFrame(page: Page): Promise<Buffer> {
   const session = await pending;
   const { data } = await session.send("Page.captureScreenshot", {
     format: "png",
-    optimizeForSpeed: true,
+    optimizeForSpeed: false,
   });
   return Buffer.from(data, "base64");
 }
