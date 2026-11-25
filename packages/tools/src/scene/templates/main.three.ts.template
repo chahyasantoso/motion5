@@ -1,0 +1,29 @@
+import { AmbientLight, BoxGeometry, DirectionalLight, Mesh, MeshStandardMaterial } from "three";
+import { mount } from "@gerak/dom";
+import { createStage3d } from "@gerak/three";
+import piece, { lens, size } from "./__NAME__-scene";
+
+const root = document.getElementById("frame");
+if (root === null) throw new Error("#frame not found");
+const canvas = document.getElementById("stage-canvas");
+if (!(canvas instanceof HTMLCanvasElement)) throw new Error("#stage-canvas not found");
+
+const stage3d = createStage3d(canvas, lens, { fallbackSize: size });
+const light = new DirectionalLight(0xffffff, 2);
+light.position.set(3, 5, 6);
+const mesh = new Mesh(new BoxGeometry(2, 2, 2), new MeshStandardMaterial());
+mesh.name = "box";
+stage3d.world.add(new AmbientLight(0xffffff, 0.5), light, mesh);
+
+const mounted = mount(piece, {
+  clock: "timed",
+  frame: "fit",
+  root,
+  binders: [stage3d.binder],
+});
+
+root.addEventListener("click", () => {
+  if ("replay" in mounted.driver && typeof mounted.driver.replay === "function") {
+    mounted.driver.replay();
+  }
+});

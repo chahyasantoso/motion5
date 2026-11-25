@@ -17,8 +17,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
   running until stopped, so start it in the background; page tools start their own server and need no `live`.
 - **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `scene` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
-  is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, its
-  entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
+  is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, `<brief>/src/<name>-main.ts`, which builds the world with `createStage3d` and mounts the piece with `mount`, and `<brief>/src/<name>-scene.ts`, a
   `scene` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
 - **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:

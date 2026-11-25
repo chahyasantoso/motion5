@@ -23,12 +23,9 @@ beforeAll(() => {
   for (const name of [PLAIN, SLOW]) {
     const path = join(PIECES_ROOT, name, "src", `${name}-scene.ts`);
     const text = readFileSync(path, "utf8");
-    const looping = text.replace(
-      "clockDriver({ duration: LENGTH })",
-      "clockDriver({ duration: LENGTH, repeat: 100 })",
-    );
-    if (looping === text) throw new Error("The scaffolded scene no longer has the clock line.");
-    writeFileSync(path, looping, "utf8");
+    const extended = text.replace("const LENGTH = 800;", "const LENGTH = 10000;");
+    if (extended === text) throw new Error("The scaffolded scene no longer has the LENGTH line.");
+    writeFileSync(path, extended, "utf8");
   }
   const file = join(PIECES_ROOT, SLOW, "src", `${SLOW}-scene.ts`);
   const source = readFileSync(file, "utf8");
