@@ -73,11 +73,12 @@ one another.
      cumulative count of words shown, plus a sibling `.words.json` array of single words (`<stem>.words.json`).
    - `gerak render` (`packages/tools/src/page/render.ts`) steps the paused clock at exact frame timestamps
      `Math.round((i * 1000) / fps)` while `(i * 1000) / fps <= to` for `--fps 60|30|25` (`mp4` default `60`; `gif` at
-     `640 px`, `25` only). Repeated `--audio file[@ms][:gain]` tracks are delayed (`adelay=<at>:all=1`), scaled
+     `640 px`, `25` only). Without `--size`, it resizes the viewport to the `measure().frame` of the first timed mount
+     (or the first mount) before capturing. Repeated `--audio file[@ms][:gain]` tracks are delayed (`adelay=<at>:all=1`), scaled
      (`volume=<gain>`), mixed (`amix=inputs=N:normalize=0:duration=longest` when > 1), padded (`apad`) and encoded as
      one AAC stream (`-c:a aac -b:a 192k`) trimmed with `-t` to `times.length / fps`. Omitting `--to` reads the
      maximum finite `durationMs` from `Symbol.for("@gerak/dom/mounts")` on a timed mount. The result reports
-     `speed: { framesPerSecond, wallMs }`.
+     `width`, `height`, and `speed: { framesPerSecond, wallMs }`.
 
 ## Consequences
 

@@ -60,11 +60,20 @@ describe("gerak render arguments", () => {
     const mp4Default = parseRenderArgs(["timing.html"]);
     expect(mp4Default).toMatchObject({
       kind: "ok",
+      size: "page",
       format: "mp4",
       fps: 60,
       audio: [],
     });
     if (mp4Default.kind === "ok") expect(mp4Default.to).toBeUndefined();
+
+    const withSize = parseRenderArgs(["timing.html", "--size", "108x192"]);
+    expect(withSize).toMatchObject({
+      kind: "ok",
+      size: "given",
+      width: 108,
+      height: 192,
+    });
 
     const gifDefault = parseRenderArgs(["timing.html", "--format", "gif"]);
     expect(gifDefault).toMatchObject({
@@ -278,6 +287,70 @@ describe.skipIf(!HAS_FFMPEG)("gerak render with ffmpeg and browser", () => {
       await expect(renderPage(parsedUnmounted)).rejects.toThrow(
         "--to is needed: the page has no timed mount.",
       );
+    }
+  }, 60_000);
+
+  it("sizes from the page's frame without --size, and lets --size win over it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gerak-render-framesize-"));
+    dirs.push(dir);
+    writeFileSync(
+      join(dir, "framed.html"),
+      `<!doctype html>
+<html>
+  <body style="margin:0;background:#112233">
+    <script>
+      const sym = Symbol.for("@gerak/dom/mounts");
+      const list = globalThis[sym] ?? (globalThis[sym] = []);
+      list.push({ durationMs: 300, measure: () => ({ frame: { width: 108, height: 192 } }) });
+    </script>
+  </body>
+</html>`,
+    );
+
+    const outPage = join(dir, "page.mp4");
+    const parsedPage = parseRenderArgs([
+      "framed.html",
+      "--root",
+      dir,
+      "--fps",
+      "25",
+      "--out",
+      outPage,
+    ]);
+    expect(parsedPage.kind).toBe("ok");
+    if (parsedPage.kind === "ok") {
+      const result = await renderPage(parsedPage);
+      expect(result.kind).toBe("rendered");
+      if (result.kind === "rendered") {
+        expect(result.width).toBe(108);
+        expect(result.height).toBe(192);
+      }
+      const video = probeStreams(outPage).filter((s) => s.codec_type === "video");
+      expect(video[0]).toMatchObject({ width: 108, height: 192 });
+    }
+
+    const outGiven = join(dir, "given.mp4");
+    const parsedGiven = parseRenderArgs([
+      "framed.html",
+      "--root",
+      dir,
+      "--size",
+      "96x96",
+      "--fps",
+      "25",
+      "--out",
+      outGiven,
+    ]);
+    expect(parsedGiven.kind).toBe("ok");
+    if (parsedGiven.kind === "ok") {
+      const result = await renderPage(parsedGiven);
+      expect(result.kind).toBe("rendered");
+      if (result.kind === "rendered") {
+        expect(result.width).toBe(96);
+        expect(result.height).toBe(96);
+      }
+      const video = probeStreams(outGiven).filter((s) => s.codec_type === "video");
+      expect(video[0]).toMatchObject({ width: 96, height: 96 });
     }
   }, 60_000);
 });

@@ -19,8 +19,9 @@ export interface AudioTrack {
   readonly gain: number;
 }
 
-/** What `gerak render` runs: the page, optional end `to` in ms, `fps`, `audio` tracks, `format`, and `out`. */
+/** What `gerak render` runs: the page, size mode, optional end `to` in ms, `fps`, `audio` tracks, `format`, and `out`. */
 export interface RenderRequest extends PageTarget {
+  readonly size: "given" | "page";
   readonly to?: number;
   readonly fps: RenderFps;
   readonly audio: readonly AudioTrack[];
@@ -33,11 +34,13 @@ export type RenderArgs =
   | ({ readonly kind: "ok" } & RenderRequest)
   | { readonly kind: "usage"; readonly message: string };
 
-/** Render output summary including timing and speed, or `no-ffmpeg` when `ffmpeg` is missing. */
+/** Render output summary including size, timing and speed, or `no-ffmpeg` when `ffmpeg` is missing. */
 export type RenderResult =
   | {
       readonly kind: "rendered";
       readonly path: string;
+      readonly width: number;
+      readonly height: number;
       readonly frames: number;
       readonly fps: RenderFps;
       readonly to: number;
@@ -146,6 +149,7 @@ export function parseRenderArgs(argv: readonly string[]): RenderArgs {
   return {
     kind: "ok",
     ...read.target,
+    size: read.flags.has("--size") ? "given" : "page",
     ...(to === undefined ? {} : { to }),
     fps,
     audio,
@@ -256,9 +260,57 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
   const path =
     request.out ?? join(mkdtempSync(join(tmpdir(), "motion-render-")), `render.${request.format}`);
   const { value, pageErrors } = await withPage(request, async ({ page, advanceTo }) => {
+    let width = request.width;
+    let height = request.height;
+    let advanced = false;
+    switch (request.size) {
+      case "given":
+        break;
+      case "page": {
+        await advanceTo(0);
+        advanced = true;
+        const frame = await page.evaluate(() => {
+          const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+          if (!Array.isArray(listed) || listed.length === 0) return undefined;
+          const readFrame = (
+            mounted: unknown,
+          ): { readonly width: number; readonly height: number } | undefined => {
+            const measure: unknown = Reflect.get(Object(mounted), "measure");
+            if (typeof measure !== "function") return undefined;
+            const measurement: unknown = Reflect.apply(measure, mounted, []);
+            const f: unknown = Reflect.get(Object(measurement), "frame");
+            if (f === null || typeof f !== "object") return undefined;
+            const w: unknown = Reflect.get(f, "width");
+            const h: unknown = Reflect.get(f, "height");
+            if (typeof w === "number" && w > 0 && typeof h === "number" && h > 0) {
+              return { width: Math.round(w), height: Math.round(h) };
+            }
+            return undefined;
+          };
+          for (const mounted of listed) {
+            const d: unknown = Reflect.get(Object(mounted), "durationMs");
+            if (typeof d === "number" && Number.isFinite(d)) {
+              const found = readFrame(mounted);
+              if (found !== undefined) return found;
+            }
+          }
+          return readFrame(listed[0]);
+        });
+        if (frame !== undefined && (frame.width !== width || frame.height !== height)) {
+          await page.setViewportSize(frame);
+          await advanceTo(0);
+          width = frame.width;
+          height = frame.height;
+        }
+        break;
+      }
+      default:
+        return unreachable(request.size);
+    }
+
     let to = request.to;
     if (to === undefined) {
-      await advanceTo(0);
+      if (!advanced) await advanceTo(0);
       const maxDuration = await page.evaluate(() => {
         const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
         if (!Array.isArray(listed)) return undefined;
@@ -303,13 +355,15 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
     const status = await done;
     const wallMs = Math.max(1, Math.round(performance.now() - startedAt));
     if (status !== 0) throw new Error(`ffmpeg failed: ${log.join("").slice(-600)}`);
-    return { frames: times.length, to, seconds, wallMs };
+    return { width, height, frames: times.length, to, seconds, wallMs };
   });
 
   const framesPerSecond = Math.round((value.frames / (value.wallMs / 1000)) * 10) / 10;
   return {
     kind: "rendered",
     path,
+    width: value.width,
+    height: value.height,
     frames: value.frames,
     fps: request.fps,
     to: value.to,
