@@ -280,7 +280,7 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     for (const at of request.at) {
       await advanceTo(at);
       const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
-      if (request.crop === undefined) writeFileSync(path, await captureFrame(page));
+      if (request.crop === undefined) writeFileSync(path, await page.screenshot());
       else {
         const clip = await page.screenshot({ clip: request.crop });
         writeFileSync(path, scaler === undefined ? clip : await enlarge(scaler, clip, zoom));
