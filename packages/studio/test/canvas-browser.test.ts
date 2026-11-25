@@ -239,6 +239,30 @@ describe("the canvas", () => {
     });
   }, 90000);
 
+  it("stays paused after a scrub that starts in the same frame as a pause", async () => {
+    await open("reel", { width: 1440, height: 900 }, async (page) => {
+      await ready(page);
+      const frame = await frameOf(page);
+      const box = await page.locator("[data-ruler]").boundingBox();
+      if (box === null) throw new Error("The ruler has no box.");
+      await page.evaluate(
+        ({ x, y }) => {
+          const pause = document.querySelector('button[aria-label="Pause"]');
+          const ruler = document.querySelector("[data-ruler]");
+          if (!(pause instanceof HTMLElement) || ruler === null) throw new Error("No controls.");
+          pause.click();
+          const at = { clientX: x, clientY: y, bubbles: true, pointerId: 1, isPrimary: true };
+          ruler.dispatchEvent(new PointerEvent("pointerdown", at));
+          ruler.dispatchEvent(new PointerEvent("pointerup", at));
+        },
+        { x: box.x + box.width * 0.25, y: box.y + box.height / 2 },
+      );
+      const first = await elapsedIn(frame);
+      await page.waitForTimeout(600);
+      expect(await elapsedIn(frame)).toBe(first);
+    });
+  }, 90000);
+
   it("keeps the last good frame under a banner when an edit throws", async () => {
     const piece = scratchPiece("scratch-canvas-throws");
     await open("scratch-canvas-throws", { width: 1440, height: 900 }, async (page) => {

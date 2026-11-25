@@ -222,7 +222,7 @@ export class Playhead {
   }
 
   beginScrub(): void {
-    this.resume = this.state.playing;
+    this.resume = this.mount()?.clock?.playing() ?? false;
   }
 
   endScrub(): void {
