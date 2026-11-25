@@ -9,6 +9,15 @@ import {
   type PageTarget,
   type ViewportSize,
 } from "./page";
+import {
+  SAFE_ZONE_USAGE,
+  parseSafeZone,
+  safeZone,
+  unsafeEdges,
+  type SafeEdge,
+  type SafeZone,
+  type SafeZoneName,
+} from "./safe-zone";
 
 /** What `gerak check` tolerates: `overlap` frames, final `hold` in ms, and centre `jump` between two frames in px. */
 export interface Limits {
@@ -24,7 +33,7 @@ export interface Limits {
 export const DEFAULT_LIMITS: Limits = Object.freeze({ overlap: 12, hold: 500, jump: 150 });
 
 /** One thing `gerak check` found, by `kind`: overlap, jump, short-hold, still-moving, low-contrast
- * (under 3:1 large text, 4.5:1 other) or cut-off. */
+ * (under 3:1 large text, 4.5:1 other), cut-off or unsafe-zone (in a platform's margin). */
 export type Finding =
   | {
       readonly kind: "overlap";
@@ -43,7 +52,14 @@ export type Finding =
       readonly ratio: number;
       readonly needs: number;
     }
-  | { readonly kind: "cut-off"; readonly element: string; readonly shown: number };
+  | { readonly kind: "cut-off"; readonly element: string; readonly shown: number }
+  | {
+      readonly kind: "unsafe-zone";
+      readonly element: string;
+      readonly zone: SafeZoneName;
+      readonly edge: SafeEdge;
+      readonly at: number;
+    };
 
 /** One sample at `at` ms: each watched element's name and box, and the watched elements it may touch. */
 export interface Frame {
@@ -67,12 +83,14 @@ export interface FinalText {
   readonly fontWeight: number;
 }
 
-/** What `gerak check` runs: the page, the `watch` selectors, the end `to` in ms and the `limits`; sampled every 16 ms. */
+/** What `gerak check` runs: the page, the `watch` selectors, end `to` in ms and `limits`, every 16 ms.
+ * With `safeZone`, text and watched boxes in that platform's reserved margins are reported. */
 export interface CheckRequest extends PageTarget {
   readonly watch: readonly string[];
   readonly to: number;
   readonly limits: Limits;
   readonly sizes?: readonly ViewportSize[];
+  readonly safeZone?: SafeZoneName;
 }
 
 /** Parsed `gerak check` arguments, or the usage text. */
@@ -101,7 +119,7 @@ export interface CheckResult {
 
 const STEP_MS = 16;
 const USAGE =
-  "usage: gerak check <page> --watch selector,selector --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]";
+  "usage: gerak check <page> --watch selector,selector --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--overlap frames] [--hold ms] [--jump px]";
 
 function onStage(box: Box, stage: { readonly width: number; readonly height: number }): boolean {
   return (
@@ -234,6 +252,8 @@ export function describeFinding(finding: Finding): string {
       return `${finding.element} has contrast ${finding.ratio}:1 against what is behind it on the last frame, under ${finding.needs}:1`;
     case "cut-off":
       return `${finding.element} shows only ${Math.round(finding.shown * 100)}% of its glyphs on the last frame`;
+    case "unsafe-zone":
+      return `${finding.element} enters the ${finding.zone} ${finding.edge} margin at ${finding.at} ms`;
     default:
       return unreachable(finding);
   }
@@ -247,16 +267,50 @@ export function describeCheckLines(result: CheckResult): readonly string[] {
   );
 }
 
-/** Reads `<page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`, or answers usage. */
+/** One finding per element and edge, at the first frame where its box enters the platform's margin. */
+export function zoneFindings(
+  frames: readonly Frame[],
+  zone: SafeZone,
+  stage: { readonly width: number; readonly height: number },
+): readonly Finding[] {
+  const seen = new Set<string>();
+  const findings: Finding[] = [];
+  for (const frame of frames)
+    for (const { name, box } of frame.elements)
+      for (const edge of unsafeEdges(box, zone, stage)) {
+        const key = `${edge} ${name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        findings.push({ kind: "unsafe-zone", element: name, zone: zone.name, edge, at: frame.at });
+      }
+  return findings;
+}
+
+/** Reads `<page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone name] [--overlap n]
+ * [--hold ms] [--jump px]`, or usage. Without a size, `--safe-zone` sets its own. */
 export function parseCheckArgs(argv: readonly string[]): CheckArgs {
   const usage = (message: string): CheckArgs => ({ kind: "usage", message: `${message} ${USAGE}` });
-  const read = readPageArgs(argv, ["--watch", "--to", "--overlap", "--hold", "--jump", "--sizes"]);
+  const read = readPageArgs(argv, [
+    "--watch",
+    "--to",
+    "--overlap",
+    "--hold",
+    "--jump",
+    "--sizes",
+    "--safe-zone",
+  ]);
   if (read.kind === "usage") return usage(read.message);
   if (read.flags.has("--sizes") && read.flags.has("--size"))
     return usage("Pass --size or --sizes, not both.");
   const sizes = read.flags.has("--sizes") ? parseSizes(read.flags.get("--sizes")) : undefined;
   if (typeof sizes === "string") return usage(sizes);
-  const firstSize = sizes?.[0];
+  const zoneName = read.flags.has("--safe-zone")
+    ? parseSafeZone(read.flags.get("--safe-zone"))
+    : undefined;
+  if (read.flags.has("--safe-zone") && zoneName === undefined) return usage(SAFE_ZONE_USAGE);
+  const firstSize =
+    sizes?.[0] ??
+    (zoneName === undefined || read.flags.has("--size") ? undefined : safeZone(zoneName));
   const watch =
     read.flags
       .get("--watch")
@@ -281,6 +335,7 @@ export function parseCheckArgs(argv: readonly string[]): CheckArgs {
     ...read.target,
     ...(firstSize === undefined ? {} : { width: firstSize.width, height: firstSize.height }),
     ...(sizes === undefined ? {} : { sizes }),
+    ...(zoneName === undefined ? {} : { safeZone: zoneName }),
     watch,
     to,
     limits: { overlap, hold, jump },
@@ -360,12 +415,13 @@ export async function sampleMotion(
 ): Promise<{ readonly result: CheckResult; readonly samples: readonly Frame[] }> {
   const { value, pageErrors } = await withPage(request, async ({ page, advanceTo }) => {
     const frames: Frame[] = [];
+    const zoneFrames: Frame[] = [];
     let texts: FinalText[] = [];
     for (let at = 0; at <= request.to; at += STEP_MS) {
       await advanceTo(at);
       const final = at + STEP_MS > request.to;
       const sampled = await page.evaluate(
-        ({ selectors, final }) => {
+        ({ selectors, final, zone }) => {
           const found: {
             name: string;
             box: { x: number; y: number; width: number; height: number };
@@ -422,57 +478,69 @@ export async function sampleMotion(
             fontSize: number;
             fontWeight: number;
           }[] = [];
-          if (final)
+          // The glyph box of an element's own text, cut to what shows and to the page, with how it is painted.
+          const glyphsOf = (element: Element) => {
+            const own = [...element.childNodes].filter(
+              (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "",
+            );
+            const first = own[0];
+            const last = own.at(-1);
+            if (first === undefined || last === undefined || visible(element) === undefined)
+              return undefined;
+            const range = document.createRange();
+            range.setStartBefore(first);
+            range.setEndAfter(last);
+            const glyphs = range.getBoundingClientRect();
+            const area = glyphs.width * glyphs.height;
+            const part = visiblePart(element, glyphs);
+            if (part === undefined || area === 0) return undefined;
+            const left = Math.max(part.x, 0);
+            const top = Math.max(part.y, 0);
+            const right = Math.min(part.x + part.width, innerWidth);
+            const bottom = Math.min(part.y + part.height, innerHeight);
+            if (right <= left || bottom <= top) return undefined;
+            // A parent clipping text is usually a mask; only the page's own edge cuts text off.
+            const onPage =
+              (Math.min(glyphs.right, innerWidth) - Math.max(glyphs.left, 0)) *
+              (Math.min(glyphs.bottom, innerHeight) - Math.max(glyphs.top, 0));
+            let opacity = 1;
+            for (let node: Element | null = element; node !== null; node = node.parentElement)
+              opacity *= Number(getComputedStyle(node).opacity);
+            const style = getComputedStyle(element);
+            const tag = element.tagName.toLowerCase();
+            const kind =
+              element.classList[0] === undefined ? tag : `${tag}.${element.classList[0]}`;
+            return {
+              name: `${kind} "${(element.textContent ?? "").trim().slice(0, 12)}"`,
+              box: { x: left, y: top, width: right - left, height: bottom - top },
+              shown: onPage / area,
+              colour: style.color,
+              opacity,
+              fontSize: Number.parseFloat(style.fontSize),
+              fontWeight: Number(style.fontWeight),
+            };
+          };
+          const glyphBoxes: {
+            name: string;
+            box: { x: number; y: number; width: number; height: number };
+          }[] = [];
+          if (final || zone)
             for (const element of document.body.querySelectorAll("*")) {
-              const own = [...element.childNodes].filter(
-                (node) =>
-                  node.nodeType === Node.TEXT_NODE && (node.textContent ?? "").trim() !== "",
-              );
-              const first = own[0];
-              const last = own.at(-1);
-              if (first === undefined || last === undefined || visible(element) === undefined)
-                continue;
-              const range = document.createRange();
-              range.setStartBefore(first);
-              range.setEndAfter(last);
-              const glyphs = range.getBoundingClientRect();
-              const area = glyphs.width * glyphs.height;
-              const part = visiblePart(element, glyphs);
-              if (part === undefined || area === 0) continue;
-              const left = Math.max(part.x, 0);
-              const top = Math.max(part.y, 0);
-              const right = Math.min(part.x + part.width, innerWidth);
-              const bottom = Math.min(part.y + part.height, innerHeight);
-              if (right <= left || bottom <= top) continue;
-              // A parent clipping text is usually a mask; only the page's own edge cuts text off.
-              const onPage =
-                (Math.min(glyphs.right, innerWidth) - Math.max(glyphs.left, 0)) *
-                (Math.min(glyphs.bottom, innerHeight) - Math.max(glyphs.top, 0));
-              let opacity = 1;
-              for (let node: Element | null = element; node !== null; node = node.parentElement)
-                opacity *= Number(getComputedStyle(node).opacity);
-              const style = getComputedStyle(element);
-              const tag = element.tagName.toLowerCase();
-              const kind =
-                element.classList[0] === undefined ? tag : `${tag}.${element.classList[0]}`;
-              texts.push({
-                name: `${kind} "${(element.textContent ?? "").trim().slice(0, 12)}"`,
-                box: { x: left, y: top, width: right - left, height: bottom - top },
-                shown: onPage / area,
-                colour: style.color,
-                opacity,
-                fontSize: Number.parseFloat(style.fontSize),
-                fontWeight: Number(style.fontWeight),
-              });
+              const text = glyphsOf(element);
+              if (text === undefined) continue;
+              if (final) texts.push(text);
+              if (zone) glyphBoxes.push({ name: text.name, box: text.box });
             }
-          return { found, texts };
+          return { found, texts, glyphBoxes };
         },
-        { selectors: request.watch, final },
+        { selectors: request.watch, final, zone: request.safeZone !== undefined },
       );
       frames.push({ at, elements: sampled.found });
+      if (request.safeZone !== undefined)
+        zoneFrames.push({ at, elements: [...sampled.found, ...sampled.glyphBoxes] });
       if (final) texts = sampled.texts;
     }
-    if (texts.length === 0) return { frames, texts, behind: [] };
+    if (texts.length === 0) return { frames, zoneFrames, texts, behind: [] };
     const hidden = await page.addStyleTag({ content: HIDE_TEXT });
     const shot = (await page.screenshot()).toString("base64");
     await hidden.evaluate((node) => node.parentNode?.removeChild(node));
@@ -506,7 +574,7 @@ export async function sampleMotion(
       },
       { shot, boxes: texts.map(({ box }) => box) },
     );
-    return { frames, texts, behind };
+    return { frames, zoneFrames, texts, behind };
   });
   return {
     samples: value.frames,
@@ -516,6 +584,9 @@ export async function sampleMotion(
       findings: [
         ...analyse(value.frames, request, request.limits),
         ...auditText(value.texts, value.behind),
+        ...(request.safeZone === undefined
+          ? []
+          : zoneFindings(value.zoneFrames, safeZone(request.safeZone), request)),
       ],
       pageErrors,
     },

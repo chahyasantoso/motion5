@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Reels (`plan/reels-plan.md`), continuing with PR 2 (`--safe-zone`), PR 3 (`gerak beats`, `gerak cues`, mixed-audio `gerak render`) and PR 4 (synced `<video>` clips), then Visual Studio (`plan/studio-plan.md`).**
+- **Reels (`plan/reels-plan.md`): PR 2 (`--safe-zone` for `gerak check` and `gerak review`) is built on `feat/reels-pr2`; PR 3 (`gerak beats`, `gerak cues`, mixed-audio `gerak render`) and PR 4 (synced `<video>` clips) remain, then Visual Studio (`plan/studio-plan.md`).**
 
 ## Open, and not scheduled
 
