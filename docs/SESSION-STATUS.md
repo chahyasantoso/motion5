@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `feat/studio-bus` on `main` after PR 642.
+- **Read against:** `main` after PR 643.
 
 ## Now
 
