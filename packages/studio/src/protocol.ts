@@ -97,9 +97,10 @@ export type StudioReply =
   | { readonly kind: "graph"; readonly graph: StudioGraph }
   | { readonly kind: "failed"; readonly message: string };
 
-/** A command on the socket, with the id its reply carries back. */
+/** A command on the socket for the canvas of `piece`, with the id its reply carries back. */
 export interface CommandEnvelope {
   readonly id: string;
+  readonly piece: string;
   readonly command: StudioCommand;
 }
 

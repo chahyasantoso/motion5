@@ -5,7 +5,7 @@ import type { Plugin, ViteDevServer } from "vite";
 import { unreachable } from "@gerak/core";
 import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
-import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT } from "../protocol";
+import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
 import { createRelay, parseCommand } from "./bus";
 
 /** The path the canvas page is served at. */
@@ -217,11 +217,8 @@ export function studioPlugin(options: {
                   nextId += 1;
                   const id = `${Date.now().toString(36)}-${nextId}`;
                   const answer = relay.wait(id, busTimeoutMs);
-                  server.ws.send({
-                    type: "custom",
-                    event: COMMAND_EVENT,
-                    data: { id, piece, command },
-                  });
+                  const envelope: CommandEnvelope = { id, piece, command };
+                  server.ws.send({ type: "custom", event: COMMAND_EVENT, data: envelope });
                   const reply = await answer;
                   if (reply === undefined)
                     json(504, {
