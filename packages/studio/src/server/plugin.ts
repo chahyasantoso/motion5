@@ -267,6 +267,9 @@ export function studioPlugin(options: {
                 }
                 case "status":
                 case "focus":
+                case "act":
+                  json(200, { kind: "failed", message: "act is not built yet." });
+                  return;
                 case "viewport":
                 case "seek":
                 case "play":
