@@ -57,17 +57,23 @@ async function ready(page: Page): Promise<void> {
   await page.waitForSelector('.canvas-area[data-framed="true"] [data-card-id]');
 }
 
-async function frameOf(page: Page): Promise<Frame> {
+/** The preview's frame once its page has mounted; a first load may reload once while Vite bundles a new dependency. */
+async function frameOf(page: Page, attempts = 3): Promise<Frame> {
   const handle = await page.waitForSelector("iframe[data-preview]");
   const frame = await handle.contentFrame();
   if (frame === null) throw new Error("The preview has no frame.");
-  await frame.waitForFunction(
-    `(() => { const m = window[${MOUNTS}]; return Array.isArray(m) && m.length > 0; })()`,
-    undefined,
-    {
-      timeout: 60000,
-    },
-  );
+  try {
+    await frame.waitForFunction(
+      `(() => { const m = window[${MOUNTS}]; return Array.isArray(m) && m.length > 0; })()`,
+      undefined,
+      { timeout: 60000 },
+    );
+  } catch (error) {
+    const detached = error instanceof Error && error.message.includes("detached");
+    if (!detached || attempts <= 1) throw error;
+    await page.waitForTimeout(500);
+    return frameOf(page, attempts - 1);
+  }
   return frame;
 }
 

@@ -22,6 +22,7 @@ export async function startStudio(options: {
     logLevel: "error",
     plugins: [...added.plugins, studioPlugin({ root: options.root })],
     optimizeDeps: {
+      entries: ["*/*.html"],
       exclude: [...added.optimizeDeps.exclude, "@gerak/studio"],
       include: [...added.optimizeDeps.include, "@xyflow/react"],
     },
