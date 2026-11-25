@@ -1,0 +1,9 @@
+:root {
+  --studio-canvas: #0d0e11;
+  --studio-text: #e8e9ed;
+}
+body {
+  margin: 0;
+  background: var(--studio-canvas);
+  color: var(--studio-text);
+}

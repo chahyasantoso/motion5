@@ -1,18 +1,34 @@
+import { existsSync } from "node:fs";
 import { relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { compileScene, formatStageError, isScene } from "@gerak/stage";
 import { provenanceOf } from "@gerak/stage/provenance";
-import { pieceFiles } from "@gerak/tools/scene";
+import { pageOfSceneFile, pieceFiles } from "@gerak/tools/scene";
 import { graphOf, type StudioGraph } from "./graph";
 import { readSources } from "./sources";
 
 /** A piece's graph, or why it has none. */
 export type GraphResult =
-  | { readonly kind: "graph"; readonly graph: StudioGraph; readonly file: string }
+  | {
+      readonly kind: "graph";
+      readonly graph: StudioGraph;
+      readonly file: string;
+      /** The piece's page as a path under the pieces folder, such as `reel/reel.html`. */
+      readonly page?: string | undefined;
+    }
   | { readonly kind: "refused"; readonly message: string };
 
-/** Loads the piece `name` under the pieces folder `root` and builds its graph. */
-export async function pieceGraph(root: string, name: string): Promise<GraphResult> {
+/** Imports a module by its file path. */
+export type ModuleLoader = (file: string) => Promise<unknown>;
+
+const importFile: ModuleLoader = (file) => import(pathToFileURL(file).href);
+
+/** Loads the piece `name` under the pieces folder `root` and builds its graph; `load` imports the scene file. */
+export async function pieceGraph(
+  root: string,
+  name: string,
+  load: ModuleLoader = importFile,
+): Promise<GraphResult> {
   const files = pieceFiles(root, name);
   const file = files[0];
   if (file === undefined)
@@ -25,7 +41,7 @@ export async function pieceGraph(root: string, name: string): Promise<GraphResul
       kind: "refused",
       message: `Two files hold a piece named "${name}": ${files.map((each) => relative(root, each)).join(" and ")}.`,
     };
-  const module: unknown = await import(pathToFileURL(file).href);
+  const module: unknown = await load(file);
   const value: unknown = Reflect.get(Object(module), "default");
   if (!isScene(value))
     return {
@@ -39,5 +55,13 @@ export async function pieceGraph(root: string, name: string): Promise<GraphResul
     { name, stage: compiled.stage, plan: provenanceOf(value) },
     readSources(file),
   );
-  return { kind: "graph", graph, file };
+  const page = pageOfSceneFile(file);
+  return {
+    kind: "graph",
+    graph,
+    file,
+    ...(page !== undefined && existsSync(page)
+      ? { page: relative(root, page).replaceAll("\\", "/") }
+      : {}),
+  };
 }

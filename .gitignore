@@ -20,3 +20,4 @@ apps/pieces/stage-scratch-*/
 
 # The skill the tools ship, written by the build.
 packages/tools/skill/
+.gerak/
