@@ -122,7 +122,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - A list or split text shows its part count and draws each part's box in the mini frame.
 - Mismatches are shown, never hidden, on the row and on the card: an element with no member gets an "unused cast" badge (listed under "Page only" in the scene card); a member with no element is red and carries the mount error; a stale measure cache shows "re-measure", which runs `gerak measure` as a job.
 - Picking: selecting a cast outlines its element in the player. The player's select button (`⌖`), or holding Alt, turns on select mode: hovering outlines the nearest `data-cast` element with its name, a click selects its cast and leaves select mode, and an element with no cast shows "not in the cast". Outside select mode the page takes clicks as usual. A 3D object is picked as its canvas element.
-- A page element that motions only read (a slot, a canvas, a section) is not a card: once the stage tells such elements apart from the cast (a separate plan), a scene card lists them under a collapsed "Marks" section, a code card's `reads:` chip names them, and hovering the chip outlines the box in the player.
+- A page element that motions only read (a slot, a canvas, a section) is not a card: once the stage tells such elements apart from the cast (`plan/marks-plan.md`), a scene card lists them under a collapsed "Marks" section, a code card's `reads:` chip names them, and hovering the chip outlines the box in the player.
 
 ### 11. The look is a card too
 
@@ -207,7 +207,7 @@ The agent plan (`plan/studio-agent-plan.md`) runs after PR 2 and before PR 3.
 - Setting a state's value from its card to try an input without doing it.
 - Picking a single 3D object inside a canvas element (a raycast pick hook on `threeBinder`).
 - Floating code editors beside the docked panel.
-- Telling marks apart from cast in `@gerak/stage` (`data-mark`, `context.marks`): its own plan.
+- Telling marks apart from cast in `@gerak/stage` (`data-mark`, `marks`): `plan/marks-plan.md`.
 - A free-form CSS or layout editor: moving, resizing or restyling elements beyond custom properties and plain text.
 - A look file or a typed look API.
 - Keyframe diamonds or sidecar keyframes (ADR-170).
