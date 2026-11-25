@@ -49,4 +49,32 @@ The tools package's `gerak` binary forwards `gerak studio` to this package when 
 npx gerak studio graph reel          # the graph as an outline
 npx gerak studio graph reel --json   # the graph as JSON
 npx gerak studio open reel           # the canvas, in a browser
+npx gerak studio open reel --headless   # the canvas in the session's own headless browser
 ```
+
+### Driving an open canvas
+
+`gerak studio open` writes `<pieces>/.gerak/studio.json` with the server's address. It removes the file on close
+and on Ctrl-C. Every command below reads that file and sends one command to the open canvas. Each command takes
+`--root dir` and `--piece name`, and prints the reply as JSON. A command exits with 1 when the reply is `failed`.
+
+```sh
+npx gerak studio status                        # piece, follow, focus, preset, safe zone, atMs, scrollY, playing, selected, problem
+npx gerak studio focus --shot 1                # a shot by name or index (solo and loop it), --scene <name>, or all
+npx gerak studio viewport tiktok               # a preset id, a preset's WxH, or a platform (its frame and safe zone)
+npx gerak studio seek --ms 3000                # or --scroll <px|selector>
+npx gerak studio play --from 0 --to 4000 --speed 0.5
+npx gerak studio select member:hookEyebrow     # the same selection the canvas shows
+npx gerak studio inspect                       # the selected card: pose, page box, rest box, 3D bounds, steps
+npx gerak studio check --sizes 390x844,1440x900 --safe-zone tiktok
+npx gerak studio graph                         # the open piece's graph as JSON
+```
+
+- **Follow.** A command that changes the canvas shows "Agent driving", and the canvas follows it. `status` and
+  `inspect` change nothing. A real click, key or wheel on the canvas or inside the preview page switches to
+  "Manual". After that, the agent's commands run on a hidden copy of the page, so they never move what the person
+  sees. "Resume follow" gives the canvas the agent's focus, size, selection and time.
+- **Check.** `check` runs on the server in one headless browser that the session keeps open. It watches every cast
+  element on the page, from 0 to the scene's length, at 1440×900 unless `--sizes` says otherwise.
+- **No canvas.** When no canvas page is open, a command fails after 10 s and tells you to run
+  `gerak studio open`. A headless session always has its canvas open.

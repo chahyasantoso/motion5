@@ -23,11 +23,12 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   - `focus --scene <name|all> | --shot <name|index|all>`, `viewport <WxH|tiktok|reels|shorts|youtube>`;
   - `seek --ms <n> | --scroll <px|selector>`, `play [--from ms] [--to ms] [--speed n]`;
   - `select <card-id>`, `inspect [<card-id>]`: live pose, DOM rect, 3D bounds, slot geometry and the member's `steps`;
-  - `check [--sizes WxH,...] [--safe-zone name]`, `render [--fps n] [--audio file[@ms][:gain]] [--out file]`: the canvas's job cards, run through the same endpoint, reading `<name>.render.json` with flags overriding it;
+  - `check [--sizes WxH,...] [--safe-zone name]`: run on the server in the session's one headless browser;
+  - `render [--fps n] [--audio file[@ms][:gain]] [--out file]`: the canvas's render job card through the same endpoint, reading `<name>.render.json` with flags overriding it; waits for that file (canvas plan PR 7);
   - `graph`: the live `StudioGraph`, the same value as `gerak studio graph <piece>`;
-  - `frame [--crop <card-id|x,y,w,h>] [--out file]`: a PNG only when a picture is asked for.
+  - `frame [--crop <card-id|x,y,w,h>] [--out file]`: a PNG only when a picture is asked for; comes with `render`.
 - Subcommands sit beside the canvas plan's `open` and `graph` under `gerak studio`. Card ids are the canvas's ids (`member:<name>`, `shot:<name>`, ...), so a CLI selection and a canvas selection are the same value.
-- `gerak studio --headless` starts the server and one persistent headless tab on the canvas when no browser is connected, so unattended runs get the same warm commands.
+- `gerak studio open <piece> --headless` starts the server and one persistent headless tab on the canvas, so unattended runs get the same warm commands.
 - Follow mode: while commands arrive, the canvas shows "Agent driving" and mirrors the agent's focus and playhead. Any human input on the canvas detaches it ("Manual, resume follow"), and the agent's commands continue on a hidden worker tab, so the two never fight over the playhead. The state is a closed union: `idle`, `following`, `detached`.
 
 ### 2. Pins on cards and on stage (`@gerak/studio`)
@@ -51,7 +52,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 | Slice | Decisions | Done when |
 | --- | --- | --- |
-| PR 1: `gerak studio` bus, follow mode and headless | 1 | `status`, `focus`, `viewport`, `seek`, `select`, `inspect`, `check`, `graph` round-trip against an open canvas and a `--headless` session in under 200 ms warm, and human input detaches follow without aborting the agent's check |
+| PR 1: `gerak studio` bus, follow mode and headless | 1 | landed: `status`, `focus`, `viewport`, `seek`, `play`, `select`, `inspect`, `graph` round-trip in under 200 ms warm; `check` runs warm (about 4.5 s on `reel`, sampling dominates); `render` and `frame` wait for canvas PR 7 |
 | PR 2: Pins and recorded presets | 2, 3 | pins persist, draw on cards, stage and ruler, and restore their moment; `gerak studio pins resolve` updates the canvas live; a recorded cookie burst replays in `gerak review --events @preset` |
 | PR 3: Prompt seams | 4 | `StudioPromptContext` and `pinOnlyAgentPort` ship with a mock `live` port, and the slots render with nothing mounted in them |
 
@@ -63,7 +64,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 ## Proof and measure
 
-- A fresh agent given only `gerak studio` and `gerak studio pins` resolves three pins across `cookie` (desktop and mobile) and a `9:16` reel (`--safe-zone tiktok`) with zero screenshots, each warm check under 100 ms.
+- A fresh agent given only `gerak studio` and `gerak studio pins` resolves three pins across `cookie` (desktop and mobile) and a `9:16` reel (`--safe-zone tiktok`) with zero screenshots, each warm command other than `check` under 200 ms.
 
 ## Docs and record
 
