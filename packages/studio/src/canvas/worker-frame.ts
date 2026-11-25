@@ -22,7 +22,7 @@ interface Size {
 }
 
 const FALLBACK_SIZE: Size = { width: 1440, height: 900 };
-const READY_WAIT_MS = 5000;
+const READY_WAIT_MS = 3000;
 
 function sizeOf(preview: PreviewChoice): Size {
   const preset = presetOf(preview.preset);

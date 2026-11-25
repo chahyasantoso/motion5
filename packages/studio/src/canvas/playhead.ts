@@ -23,6 +23,9 @@ interface Remembered {
 
 const FALLBACK_LENGTH = 1000;
 
+/** The inputs that count as a person using a page or the canvas. */
+export const INPUT_EVENTS = ["pointerdown", "keydown", "wheel"] as const;
+
 /** The one playhead of a canvas: reads the preview clock, drives it, and keeps time across reloads and hot swaps. */
 export class Playhead {
   private state: PlayheadState = {
@@ -35,6 +38,7 @@ export class Playhead {
     solo: undefined,
   };
   private readonly listeners = new Set<() => void>();
+  private readonly inputs = new Set<() => void>();
   private frame: HTMLIFrameElement | undefined;
   private win: Window | undefined;
   private doc: Document | undefined;
@@ -57,6 +61,14 @@ export class Playhead {
   };
 
   readonly snapshot = (): PlayheadState => this.state;
+
+  /** Calls `listener` on each trusted pointer, key or wheel input inside the page, until the returned function runs. */
+  readonly onInput = (listener: () => void): (() => void) => {
+    this.inputs.add(listener);
+    return () => {
+      this.inputs.delete(listener);
+    };
+  };
 
   private set(next: Partial<PlayheadState>): void {
     const merged = { ...this.state, ...next };
@@ -134,13 +146,18 @@ export class Playhead {
         ...(typeof line === "number" && line > 0 ? { line } : {}),
       });
     };
+    const input = (event: Event): void => {
+      if (event.isTrusted) for (const listener of [...this.inputs]) listener();
+    };
     win.addEventListener("motion:hot", hot);
     win.addEventListener("motion:error", failed);
     win.addEventListener("error", thrown);
+    for (const type of INPUT_EVENTS) win.addEventListener(type, input, true);
     this.unhook.push(() => {
       win.removeEventListener("motion:hot", hot);
       win.removeEventListener("motion:error", failed);
       win.removeEventListener("error", thrown);
+      for (const type of INPUT_EVENTS) win.removeEventListener(type, input, true);
     });
   }
 
@@ -284,11 +301,12 @@ export class Playhead {
 
   /** Plays the clock, optionally from `from` and pausing at `to`; `false` when the page has no timed clock. */
   playRange(from: number | undefined, to: number | undefined, speed: number | undefined): boolean {
-    const clock = this.mount()?.clock;
-    if (clock === undefined) return false;
+    const mount = this.mount();
+    const clock = mount?.clock;
+    if (mount === undefined || clock === undefined) return false;
     if (from !== undefined) this.seek(from);
     if (speed !== undefined) this.setRate(speed);
-    this.stopAt = to;
+    this.stopAt = to !== undefined && to < (mount.durationMs ?? this.state.length) ? to : undefined;
     clock.play();
     return true;
   }

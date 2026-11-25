@@ -170,7 +170,7 @@ function Canvas(props: {
     saver.setPreview(next);
     saver.save();
   };
-  const followState = useFollow(follow);
+  const followState = useFollow(follow, playhead);
   const { resume } = useBus({
     piece,
     page: data.page,

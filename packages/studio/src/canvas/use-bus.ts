@@ -4,7 +4,7 @@ import type { StudioGraph } from "../graph";
 import { COMMAND_EVENT, REPLY_EVENT, type FocusTarget, type StudioReply } from "../protocol";
 import { parseCommand } from "../command";
 import type { Problem, ZoneMargins } from "./api";
-import { runCommand, type CanvasControl } from "./commands";
+import { changesCanvas, runCommand, type CanvasControl } from "./commands";
 import type { PreviewChoice } from "./context";
 import type { Follow } from "./follow";
 import { inspectCard } from "./inspect";
@@ -153,6 +153,8 @@ export function useBus(inputs: BusInputs): { readonly resume: () => void } {
       const answer = async (): Promise<StudioReply> => {
         if (command === undefined) return { kind: "failed", message: "The command is not valid." };
         const now = latest.current;
+        if (!changesCanvas(command))
+          return runCommand(command, worker.current === undefined ? visible : hidden);
         now.follow.command();
         if (now.follow.snapshot() !== "detached" || now.page === null)
           return runCommand(command, visible);

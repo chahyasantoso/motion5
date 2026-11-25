@@ -81,7 +81,7 @@ describe("the canvas answers bus commands", () => {
         await page.waitForTimeout(500);
 
         const first = await statusOf();
-        expect(first).toMatchObject({ piece: "reel", follow: "following", focus: { kind: "all" } });
+        expect(first).toMatchObject({ piece: "reel", follow: "idle", focus: { kind: "all" } });
 
         const seeked = await send("reel", { kind: "seek", target: { kind: "ms", ms: 3000 } });
         expect(seeked.reply.kind).toBe("done");

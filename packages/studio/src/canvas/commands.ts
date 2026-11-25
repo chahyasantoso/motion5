@@ -73,6 +73,25 @@ function focusCard(
   }
 }
 
+/** Whether `command` moves or changes what the canvas shows; reads leave the follow state alone. */
+export function changesCanvas(command: StudioCommand): boolean {
+  switch (command.kind) {
+    case "status":
+    case "inspect":
+    case "graph":
+    case "check":
+      return false;
+    case "focus":
+    case "viewport":
+    case "seek":
+    case "play":
+    case "select":
+      return true;
+    default:
+      return unreachable(command);
+  }
+}
+
 /** Runs one bus command against the canvas and answers it. */
 export async function runCommand(
   command: StudioCommand,
@@ -113,6 +132,9 @@ export async function runCommand(
       return done(control);
     }
     case "play": {
+      const start = command.from ?? control.status().atMs;
+      if (command.to !== undefined && command.to <= start)
+        return failed(`--to ${command.to} must be after the start, ${start} ms.`);
       if (!control.play(command.from, command.to, command.speed))
         return failed("The page has no timed clock to play.");
       return done(control);

@@ -29,6 +29,9 @@ if (subcommand === "open") {
     process.exitCode = 1;
   } else {
     const started = await startStudio(parsed);
+    const stop = () => void started.close().finally(() => process.exit(0));
+    process.once("SIGINT", stop);
+    process.once("SIGTERM", stop);
     console.log(
       JSON.stringify({
         kind: "studio",

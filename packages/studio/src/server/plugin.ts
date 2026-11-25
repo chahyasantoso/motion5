@@ -115,7 +115,7 @@ export function studioPlugin(options: {
   readonly browser: SharedBrowser;
 }): Plugin {
   const root = resolve(options.root);
-  const busTimeoutMs = options.busTimeoutMs ?? 5000;
+  const busTimeoutMs = options.busTimeoutMs ?? 10000;
   const relay = createRelay();
   const checks = checkQueue(options.browser);
   let nextId = 0;

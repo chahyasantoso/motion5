@@ -24,10 +24,19 @@ export function sharedBrowser(): SharedBrowser {
     get() {
       if (pending === undefined) {
         launches += 1;
-        pending = launchBrowser({ headless: true }).catch((error: unknown) => {
-          pending = undefined;
-          throw error;
-        });
+        const launched = launchBrowser({ headless: true }).then(
+          (browser) => {
+            browser.on("disconnected", () => {
+              if (pending === launched) pending = undefined;
+            });
+            return browser;
+          },
+          (error: unknown) => {
+            pending = undefined;
+            throw error;
+          },
+        );
+        pending = launched;
       }
       return pending;
     },

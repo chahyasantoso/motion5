@@ -59,6 +59,9 @@ function seekOf(target: unknown): Extract<StudioCommand, { kind: "seek" }>["targ
   }
 }
 
+/** The largest page side a check may ask for, in px. */
+const MAX_SIDE = 8192;
+
 function sizesOf(
   value: unknown,
 ): Extract<StudioCommand, { kind: "check" }>["sizes"] | "bad" | undefined {
@@ -70,6 +73,7 @@ function sizesOf(
     const width = amount(each, "width", 1);
     const height = amount(each, "height", 1);
     if (typeof width !== "number" || typeof height !== "number") return "bad";
+    if (width > MAX_SIDE || height > MAX_SIDE) return "bad";
     sizes.push({ width, height });
   }
   return sizes;

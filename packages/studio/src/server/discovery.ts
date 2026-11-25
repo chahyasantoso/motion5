@@ -19,9 +19,9 @@ export function writeDiscovery(root: string, found: Discovery): void {
   writeFileSync(file, `${JSON.stringify({ url: found.url, piece: found.piece })}\n`);
 }
 
-/** Deletes the record; a missing file is fine. */
-export function removeDiscovery(root: string): void {
-  rmSync(discoveryPath(root), { force: true });
+/** Deletes the record when it still names `url`, so a later studio's record stays; a missing file is fine. */
+export function removeDiscovery(root: string, url: string): void {
+  if (readDiscovery(root)?.url === url) rmSync(discoveryPath(root), { force: true });
 }
 
 /** The recorded studio, or undefined when the file is missing or malformed. */

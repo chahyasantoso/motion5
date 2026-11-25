@@ -68,7 +68,7 @@ export async function startStudio(options: {
     url,
     launches: () => browser.launches,
     close: async () => {
-      removeDiscovery(options.root);
+      removeDiscovery(options.root, base);
       await browser.close();
       await server.close();
     },

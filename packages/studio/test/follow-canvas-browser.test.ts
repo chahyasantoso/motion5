@@ -70,10 +70,11 @@ describe("the agent follows the canvas until the person takes it", () => {
         await mounted(page);
         await page.waitForTimeout(500);
 
+        expect((await statusOf()).follow).toBe("idle");
+        await statusOf({ kind: "seek", target: { kind: "ms", ms: 1000 } });
         expect((await statusOf()).follow).toBe("following");
         await page.getByText("Agent driving").waitFor();
 
-        await statusOf({ kind: "seek", target: { kind: "ms", ms: 1000 } });
         const pane = await page.locator(".react-flow__pane").boundingBox();
         if (pane === null) throw new Error("The canvas has no pane.");
         await page.mouse.click(pane.x + 8, pane.y + pane.height / 2);
@@ -102,6 +103,28 @@ describe("the agent follows the canvas until the person takes it", () => {
         const after = await statusOf();
         expect(after.follow).toBe("following");
         expect(Math.abs(after.atMs - 2000)).toBeLessThanOrEqual(1);
+      },
+    );
+  }, 120000);
+
+  it("detaches on a real click inside the preview page", async () => {
+    await withPage(
+      {
+        page: "__gerak/studio?piece=reel",
+        width: 1440,
+        height: 900,
+        clock: "real",
+        source: { kind: "url", base },
+      },
+      async ({ page }) => {
+        await mounted(page);
+        await statusOf({ kind: "seek", target: { kind: "ms", ms: 500 } });
+        expect((await statusOf()).follow).toBe("following");
+        const box = await page.locator("iframe[data-preview]").boundingBox();
+        if (box === null) throw new Error("The preview has no box.");
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        await page.getByRole("button", { name: "Resume follow" }).waitFor();
+        expect((await statusOf()).follow).toBe("detached");
       },
     );
   }, 120000);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { runCommand, type CanvasControl } from "../src/canvas/commands";
+import { changesCanvas, runCommand, type CanvasControl } from "../src/canvas/commands";
+import { parseCommand } from "../src/command";
 import type { Card } from "../src/graph";
 import type { StudioStatus } from "../src/protocol";
 
@@ -168,5 +169,25 @@ describe("runCommand", () => {
     expect(await runCommand({ kind: "inspect", card: "zzz" }, fake().control)).toMatchObject({
       kind: "failed",
     });
+  });
+});
+
+describe("what a command may change", () => {
+  it("leaves the follow state alone for reads", () => {
+    expect(changesCanvas({ kind: "status" })).toBe(false);
+    expect(changesCanvas({ kind: "inspect", card: undefined })).toBe(false);
+    expect(changesCanvas({ kind: "seek", target: { kind: "ms", ms: 0 } })).toBe(true);
+    expect(changesCanvas({ kind: "select", card: "shot:a" })).toBe(true);
+  });
+
+  it("refuses a play that ends at or before its start", async () => {
+    const { control } = fake();
+    const reply = await runCommand({ kind: "play", from: 500, to: 500, speed: undefined }, control);
+    expect(reply.kind).toBe("failed");
+  });
+
+  it("refuses a check size past 8192 px", () => {
+    expect(parseCommand({ kind: "check", sizes: [{ width: 1e9, height: 900 }] })).toBeUndefined();
+    expect(parseCommand({ kind: "check", sizes: [{ width: 8192, height: 900 }] })).toBeDefined();
   });
 });
