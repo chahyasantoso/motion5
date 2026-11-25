@@ -247,6 +247,8 @@ export const MOUNTS = Symbol.for("@gerak/dom/mounts");
 export interface Mounted {
   readonly player: Player<StageValues>;
   readonly driver: Driver;
+  /** The scene's length in ms when the clock is timed; undefined on a live clock, which has no end. */
+  readonly durationMs: number | undefined;
   /** Measured rest boxes by element name. */
   readonly rest: Rest;
   /** Visual line indices per split text element, updated on resize without changing part count. */
@@ -1105,11 +1107,14 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const elapsed = (): number => Math.max(0, now() - start);
   // A timed mount runs on a seekable clock over the scene's length, each frame the whole scene.
   let timed: ClockDriver | undefined;
+  let durationMs: number | undefined;
   switch (options.clock) {
     case "live":
+      durationMs = undefined;
       break;
     case "timed":
       timed = clockDriver({ duration: stage.durationMs, frames });
+      durationMs = stage.durationMs;
       break;
     default:
       return unreachable(options.clock);
@@ -1706,6 +1711,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const mounted: Mounted = {
     player,
     driver,
+    durationMs,
     get rest() {
       return currentRest;
     },
