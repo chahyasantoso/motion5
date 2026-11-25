@@ -2,7 +2,7 @@
 
 Read this when a piece's look depends on layout, order, strokes or text in the page.
 
-- **Frame and surround.** The page's HTML and CSS own styling and size. With `frame: "fit"`, `mount` reads `root`'s CSS size as the frame, clips what leaves it, and scales it about its top-left corner to fit its parent or the viewport; `:host` or `body` in CSS styles the surround. With `frame: "page"` (default), nodes stay in the page's flow without clipping or frame scaling.
+- **Frame and surround.** The page's HTML and CSS own styling and size. With `frame: "fit"`, `mount` reads `root`'s CSS size as the frame, clips what leaves it, and scales it about its top-left corner to fit its parent (or the viewport when the parent is `<body>`, `<html>`, or unsized); `:host` or `body` in CSS styles the surround. With `frame: "page"` (default), nodes stay in the page's flow without clipping or frame scaling.
 - **Hierarchy and order.** Nesting in HTML (or `Object3D`) carries children with their parent's transforms, visibility and opacity. Elements follow DOM order unless `z-index` reorders them.
 - **Pose to CSS.** A pose writes `translate3d(x, y, z)`, turns, skews and scales about the element's CSS `transform-origin` (overridden by pose `anchor` while a motion sets one); `x` and `y` move it from where CSS rests it. `along(path)(share)` answers a point in the path's own coordinates, not an offset from rest.
 - **Text.** For `text(name, { split })` without pre-split child elements, word splits insert spaces between `<span>` elements (`white-space: pre` for letter splits keeps spaces intact). Pre-split child elements keep the markup's spacing.

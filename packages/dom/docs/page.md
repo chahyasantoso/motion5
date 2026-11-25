@@ -28,7 +28,7 @@ const card = box("card");
 - `clock: "live"` runs one continuous clock from mount, feeding scroll, pointer and watched element events into the scene and playing immediately on open. In a readout `text(name, (time) => string)` under `"live"`, read elapsed ms with `elapsedOf(time.clock)` rather than `time.progress` (which stays `0` on an unbounded live clock).
 - `clock: "timed"` runs a seekable `ClockDriver` over the scene's `durationMs`, evaluating the full scene each step for reels, `gerak live`, `gerak frames`, and scrubbing (`options.onDriver` receives the driver; call `driver.advance(dt)` in a `requestAnimationFrame` loop if an HTML page autoplays a timed piece on open).
 - `frame: "page"` (default) animates elements in place on the page.
-- `frame: "fit"` treats `root` (required to be an `HTMLElement` sized in CSS) as the fixed frame, clips overflow, and scales it about its top-left corner to fit its parent or the viewport; rest boxes are measured in unscaled frame px.
+- `frame: "fit"` treats `root` (required to be an `HTMLElement` sized in CSS) as the fixed frame, clips overflow, and scales it about its top-left corner to fit its parent (or the viewport when the parent is `<body>`, `<html>`, or unsized); rest boxes are measured in unscaled frame px.
 
 ## Live clock and inputs
 

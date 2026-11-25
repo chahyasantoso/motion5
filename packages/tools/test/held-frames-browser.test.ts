@@ -100,4 +100,58 @@ describe("held frames and fitted body scaling in browser", () => {
     expect(pageErrors).toEqual([]);
     expect(elapsedTimes).toEqual([...times]);
   }, 60000);
+
+  it("scales a fitted 1920x1080 root inside a grid-centered body to a 1280x720 viewport", async () => {
+    const dir = appRoot();
+    writeMountedPage(dir, {
+      bodyCss: "margin: 0; display: grid; place-items: center;",
+      frameCss: "position: relative; width: 1920px; height: 1080px;",
+    });
+
+    const { value: transform, pageErrors } = await withPage(
+      {
+        page: "page.html",
+        width: 1280,
+        height: 720,
+        source: { kind: "serve", root: dir },
+      },
+      async ({ page, advanceTo }) => {
+        await advanceTo(0);
+        return page.evaluate(() => {
+          const root = document.getElementById("frame");
+          return root === null ? null : root.style.transform;
+        });
+      },
+    );
+
+    expect(pageErrors).toEqual([]);
+    expect(transform).toMatch(/^scale\(0\.6666/);
+  }, 60000);
+
+  it("scales a fitted 1080x1920 root inside a grid-centered body to a 1280x720 viewport", async () => {
+    const dir = appRoot();
+    writeMountedPage(dir, {
+      bodyCss: "margin: 0; display: grid; place-items: center;",
+      frameCss: "position: relative; width: 1080px; height: 1920px;",
+    });
+
+    const { value: transform, pageErrors } = await withPage(
+      {
+        page: "page.html",
+        width: 1280,
+        height: 720,
+        source: { kind: "serve", root: dir },
+      },
+      async ({ page, advanceTo }) => {
+        await advanceTo(0);
+        return page.evaluate(() => {
+          const root = document.getElementById("frame");
+          return root === null ? null : root.style.transform;
+        });
+      },
+    );
+
+    expect(pageErrors).toEqual([]);
+    expect(transform).toBe("scale(0.375)");
+  }, 60000);
 });

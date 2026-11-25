@@ -156,8 +156,8 @@ export interface PageScrollTarget {
  * `"timed"` runs over the scene's length and seeks, for reels and capture. */
 export type MountClock = "live" | "timed";
 
-/** Where a mount draws: `"page"` in place, or `"fit"`, which takes `root`'s CSS size as the frame,
- * clips it and scales it about its top left to its parent's box, or else the viewport. */
+/** Where a mount draws: `"page"` in place, or `"fit"`, scaling `root` about its top left to fit
+ * its parent (or the viewport for `body`, `html`, or an unsized parent). */
 export type MountFrame = "page" | "fit";
 
 /** Settings of `mount`: its clock and frame, the root it binds in, and the hooks tests and tools use. */
@@ -879,8 +879,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     if (fitted === undefined) return;
     const frame = fittedSize(fitted);
     const parent = fitted.parentElement;
+    const owner = fitted.ownerDocument;
     const box =
-      parent !== null && parent.clientWidth > 0 && parent.clientHeight > 0
+      parent !== null &&
+      parent !== owner.body &&
+      parent !== owner.documentElement &&
+      parent.clientWidth > 0 &&
+      parent.clientHeight > 0
         ? { width: parent.clientWidth, height: parent.clientHeight }
         : readViewport();
     const scale = Math.min(box.width / frame.width, box.height / frame.height);
