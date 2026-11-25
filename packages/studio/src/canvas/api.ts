@@ -121,7 +121,7 @@ export async function fetchLayout(piece: string): Promise<CanvasLayout> {
   }
 }
 
-/** Saves `layout`; the server drops the places of cards the graph no longer lists. */
+/** Saves `layout`; the server keeps only the places of cards the graph lists. */
 export async function saveLayout(piece: string, layout: CanvasLayout): Promise<void> {
   try {
     await fetch(`/__gerak/layout${query(piece)}`, {

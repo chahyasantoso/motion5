@@ -540,6 +540,9 @@ select:disabled {
   display: grid;
   gap: 2px;
   height: auto;
+  max-height: calc(18px * 3 + 2px * 2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .lane-row {

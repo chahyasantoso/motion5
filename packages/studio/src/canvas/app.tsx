@@ -121,10 +121,17 @@ function Canvas(props: {
     if (data.layout.viewport !== undefined) setFramedNow(true);
     else
       setTimeout(() => {
-        void flow.fitView({ padding: 0.1, duration: 0 });
+        const root = data.graph.cards.find(
+          (card) => card.kind === "scene" && card.parent === undefined,
+        );
+        const shot = data.graph.cards.find((card) => card.kind === "shot");
+        const first = [root, shot, { id: "output:preview" }].flatMap((card) =>
+          card === undefined ? [] : [{ id: card.id }],
+        );
+        void flow.fitView({ nodes: first, padding: 0.15, maxZoom: 1, duration: 0 });
         setFramedNow(true);
       }, 100);
-  }, [initialised, nodes.length, flow, data.graph.cards.length, data.layout.viewport]);
+  }, [initialised, nodes.length, flow, data.graph.cards, data.layout.viewport]);
 
   const edges = useMemo(() => edgesOf(data.graph, selected), [data.graph, selected]);
   const onNodesChange = useCallback(
