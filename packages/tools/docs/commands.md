@@ -78,3 +78,4 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak points <points.json> --spacing px [--prefix p]`**: a list of `{ x, y }` resampled to an even spacing, for a rope.
 - **`gerak joints <model.glb|model.gltf> [--out file]`**: writes `<model>.joints.json` beside a skinned glTF: every bone's world rest
   point and parent, for `jointOf(table.joints, name)` in a scene module.
+- **`gerak beats <audio.wav|mp3|m4a> [--out file.cues.json] [--threshold n] [--levels name@ms]`**: decodes an audio file with `ffmpeg`, extracts `"beat"` onset cues (`--threshold`, default `1.5`) and optional sampled level cues (`--levels name@ms`), and writes a sorted JSON array of `{ name, at, value }` cues to `--out` or `<audio>.cues.json` beside the input so a scene can import it as its `cues`.

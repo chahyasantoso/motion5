@@ -59,6 +59,7 @@ export const OWNERS = {
   "packages/rapier/src": "Rapier",
   "packages/react/src": "React hooks",
   "packages/three/src": "Three.js adapter",
+  "packages/tools/src/audio": "audio levels, beat detection and decoding",
   "packages/tools/src/scene/templates": "gerak new templates",
   "packages/tools/src/scene/templates/pages": "the page files of a pieces folder",
   "packages/tools/src/page": "page tools",
