@@ -3,6 +3,7 @@ export * from "./sources";
 export * from "./piece";
 export * from "./print";
 export * from "./protocol";
+export * from "./pins";
 export * from "./cli";
 export * from "./layout";
 export * from "./server/plugin";
