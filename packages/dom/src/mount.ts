@@ -660,6 +660,8 @@ const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
 // The page tools set this while they hold the clock; every element stays in the engine, so what they read
 // is the pose `frame()` gives, with no browser frame to wait for.
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
+// Defers media currentTime seeks across clock bursts until `settled()` applies the final target once.
+const DEFER_MEDIA_SEEK = Symbol.for("@gerak/dom/defer-media-seek");
 const TRIGGER_SLACK_MS = 34;
 
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
@@ -721,6 +723,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       readonly node: HTMLMediaElement;
       previousTarget: number | undefined;
       previousNow: number | undefined;
+      pendingSeek: number | undefined;
     }
   >();
 
@@ -758,6 +761,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
               node: raw,
               previousTarget: undefined,
               previousNow: undefined,
+              pendingSeek: undefined,
             });
           }
           allNodes.push(node);
@@ -1390,18 +1394,25 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const realDt =
       state.previousNow === undefined ? 0 : Math.max(0, currentNow - state.previousNow);
     const held = Reflect.get(globalThis, HELD_CLOCK) === true;
+    const deferred = held && Reflect.get(globalThis, DEFER_MEDIA_SEEK) === true;
     const step = mediaStep({
       held,
       visible,
       target: targetSec,
       previousTarget: visible ? state.previousTarget : undefined,
       realDt,
-      currentTime: state.node.currentTime,
+      currentTime:
+        deferred && state.pendingSeek !== undefined ? state.pendingSeek : state.node.currentTime,
       paused: state.node.paused,
     });
     state.previousTarget = visible ? targetSec : undefined;
     state.previousNow = currentNow;
-    if (step.seek !== undefined) state.node.currentTime = step.seek;
+    if (deferred) {
+      if (!visible) state.pendingSeek = undefined;
+      else if (step.seek !== undefined) state.pendingSeek = step.seek;
+    } else if (step.seek !== undefined) {
+      state.node.currentTime = step.seek;
+    }
     switch (step.playback) {
       case "play":
         void state.node.play().catch(() => {
@@ -1834,6 +1845,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       for (const state of mediaStates.values()) {
         state.previousTarget = undefined;
         state.previousNow = undefined;
+        state.pendingSeek = undefined;
       }
       remeasure(true);
       for (const stop of stops) stop();
@@ -1852,6 +1864,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
         disposeListeners.add(listener);
         return () => disposeListeners.delete(listener);
       };
+      for (const state of mediaStates.values()) {
+        if (state.pendingSeek !== undefined) {
+          const seekTarget = state.pendingSeek;
+          state.pendingSeek = undefined;
+          state.node.currentTime = seekTarget;
+        }
+      }
       return Promise.all(
         [...mediaStates.values()].map(({ node }) => waitForMedia(node, registerDispose)),
       ).then(() => undefined);

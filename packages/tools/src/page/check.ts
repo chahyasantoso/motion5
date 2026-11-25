@@ -32,8 +32,8 @@ export interface Limits {
 /** The limits when no flag sets them: 12 overlapping frames, a 500 ms final hold, a 150 px jump. */
 export const DEFAULT_LIMITS: Limits = Object.freeze({ overlap: 12, hold: 500, jump: 150 });
 
-/** One thing `gerak check` found, by `kind`: overlap, jump, short-hold, still-moving, low-contrast
- * (under 3:1 large text, 4.5:1 other), cut-off or unsafe-zone (in a platform's margin). */
+/** One thing `gerak check` found: overlap, jump, short-hold, still-moving, low-contrast,
+ * cut-off, unsafe-zone, or media-short. */
 export type Finding =
   | {
       readonly kind: "overlap";
@@ -59,6 +59,12 @@ export type Finding =
       readonly zone: SafeZoneName;
       readonly edge: SafeEdge;
       readonly at: number;
+    }
+  | {
+      readonly kind: "media-short";
+      readonly element: string;
+      readonly clipMs: number;
+      readonly shownMs: number;
     };
 
 /** One sample at `at` ms: each watched element's name and box, and the watched elements it may touch. */
@@ -254,6 +260,8 @@ export function describeFinding(finding: Finding): string {
       return `${finding.element} shows only ${Math.round(finding.shown * 100)}% of its glyphs on the last frame`;
     case "unsafe-zone":
       return `${finding.element} enters the ${finding.zone} ${finding.edge} margin at ${finding.at} ms`;
+    case "media-short":
+      return `${finding.element} plays a ${finding.clipMs} ms clip in a ${finding.shownMs} ms window, so it holds its last frame for the rest`;
     default:
       return unreachable(finding);
   }
@@ -442,6 +450,7 @@ export async function sampleMotion(
     const frames: Frame[] = [];
     const zoneFrames: Frame[] = [];
     let texts: FinalText[] = [];
+    let mediaFindings: Finding[] = [];
     for (let at = 0; at <= request.to; at += STEP_MS) {
       await advanceTo(at);
       const final = at + STEP_MS > request.to;
@@ -550,6 +559,7 @@ export async function sampleMotion(
             box: { x: number; y: number; width: number; height: number };
           }[] = [];
           const seen = new Map<string, number>();
+          const media: { name: string; clipMs: number; from: number; to: number }[] = [];
           if (final || zone)
             for (const element of document.body.querySelectorAll("*")) {
               const glyphs = glyphsOf(element);
@@ -560,16 +570,54 @@ export async function sampleMotion(
               if (final) texts.push(text);
               if (zone) glyphBoxes.push({ name: text.name, box: text.box });
             }
-          return { found, texts, glyphBoxes };
+          if (final) {
+            const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+            if (Array.isArray(listed)) {
+              for (const mounted of listed) {
+                if (mounted === null || typeof mounted !== "object") continue;
+                const readMedia: unknown = Reflect.get(mounted, "media");
+                if (typeof readMedia !== "function") continue;
+                const entries: unknown = Reflect.apply(readMedia, mounted, []);
+                if (!Array.isArray(entries)) continue;
+                for (const entry of entries) {
+                  if (entry === null || typeof entry !== "object") continue;
+                  const name: unknown = Reflect.get(entry, "name");
+                  const clipMs: unknown = Reflect.get(entry, "clipMs");
+                  const from: unknown = Reflect.get(entry, "from");
+                  const to: unknown = Reflect.get(entry, "to");
+                  if (
+                    typeof name === "string" &&
+                    typeof clipMs === "number" &&
+                    Number.isFinite(clipMs) &&
+                    typeof from === "number" &&
+                    typeof to === "number"
+                  ) {
+                    media.push({ name, clipMs, from, to });
+                  }
+                }
+              }
+            }
+          }
+          return { found, texts, glyphBoxes, media };
         },
         { selectors: request.watch, final, zone: request.safeZone !== undefined },
       );
       frames.push({ at, elements: sampled.found });
       if (request.safeZone !== undefined)
         zoneFrames.push({ at, elements: [...sampled.found, ...sampled.glyphBoxes] });
-      if (final) texts = sampled.texts;
+      if (final) {
+        texts = sampled.texts;
+        mediaFindings = sampled.media
+          .filter(({ clipMs, from, to }) => clipMs < to - from)
+          .map(({ name, clipMs, from, to }) => ({
+            kind: "media-short" as const,
+            element: name,
+            clipMs: Math.round(clipMs),
+            shownMs: Math.round(to - from),
+          }));
+      }
     }
-    if (texts.length === 0) return { frames, zoneFrames, texts, behind: [] };
+    if (texts.length === 0) return { frames, zoneFrames, texts, behind: [], mediaFindings };
     const hidden = await page.addStyleTag({ content: HIDE_TEXT });
     const shot = (await page.screenshot()).toString("base64");
     await hidden.evaluate((node) => node.parentNode?.removeChild(node));
@@ -603,7 +651,7 @@ export async function sampleMotion(
       },
       { shot, boxes: texts.map(({ box }) => box) },
     );
-    return { frames, zoneFrames, texts, behind };
+    return { frames, zoneFrames, texts, behind, mediaFindings };
   });
   return {
     samples: value.frames,
@@ -616,6 +664,7 @@ export async function sampleMotion(
         ...(request.safeZone === undefined
           ? []
           : zoneFindings(value.zoneFrames, safeZone(request.safeZone), request)),
+        ...value.mediaFindings,
       ],
       pageErrors,
     },

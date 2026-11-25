@@ -12,6 +12,7 @@ import {
 import { mediaStep } from "../src/media";
 
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
+const DEFER_MEDIA_SEEK = Symbol.for("@gerak/dom/defer-media-seek");
 
 function isClock(driver: Driver): driver is ClockDriver {
   return "seek" in driver && typeof driver.seek === "function";
@@ -140,6 +141,7 @@ function fakeFrames(): FrameSource & { tick(ms: number): void } {
 afterEach(() => {
   vi.unstubAllGlobals();
   Reflect.deleteProperty(globalThis, HELD_CLOCK);
+  Reflect.deleteProperty(globalThis, DEFER_MEDIA_SEEK);
 });
 
 describe("mediaStep", () => {
@@ -434,5 +436,33 @@ describe("mount media bindings", () => {
     expect(video.currentTime).toBeCloseTo(0.016);
     mounted.dispose();
     expect(video.paused).toBe(true);
+  });
+
+  it("defers media seeks across held clock bursts until settled() applies the last target once", async () => {
+    vi.stubGlobal("HTMLMediaElement", FakeMediaElement);
+    Reflect.set(globalThis, HELD_CLOCK, true);
+    Reflect.set(globalThis, DEFER_MEDIA_SEEK, true);
+    const video = new FakeMediaElement("clip");
+    video.duration = 2;
+    let driver: Driver | undefined;
+    const mounted = mount(scene({ length: 2000 }, box("clip", { media: true })), {
+      root: new FakeRoot([video]),
+      clock: "timed",
+      frames: fakeFrames(),
+      onDriver: (d) => {
+        driver = d;
+      },
+    });
+    if (driver === undefined || !isClock(driver)) throw new Error("expected clock driver");
+
+    driver.seek(0.1);
+    driver.seek(0.2);
+    driver.seek(0.5);
+    expect(video.seekWrites).toEqual([]);
+
+    await mounted.settled();
+    expect(video.seekWrites).toEqual([1]);
+    expect(video.currentTime).toBe(1);
+    mounted.dispose();
   });
 });

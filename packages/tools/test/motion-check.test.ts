@@ -4,6 +4,7 @@ import {
   analyse,
   auditText,
   describeCheckLines,
+  describeFinding,
   parseCheckArgs,
   type Frame,
 } from "../src/page/check";
@@ -251,5 +252,20 @@ describe("gerak check on elements that leave", () => {
       ...(i < 59 ? { dot: { x: 100, y: 50 } } : {}),
     }));
     expect(analyse(run, STAGE, DEFAULT_LIMITS)).toEqual([{ kind: "still-moving", element: "dot" }]);
+  });
+});
+
+describe("describeFinding", () => {
+  it("describes a media-short finding", () => {
+    expect(
+      describeFinding({
+        kind: "media-short",
+        element: "clip",
+        clipMs: 2000,
+        shownMs: 3000,
+      }),
+    ).toBe(
+      "clip plays a 2000 ms clip in a 3000 ms window, so it holds its last frame for the rest",
+    );
   });
 });
