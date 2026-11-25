@@ -8,6 +8,17 @@ const SIZE = { width: 1440, height: 900 } as const;
 /** How long after the last action the page runs before its events are read, in ms. */
 const TAIL_MS = 200;
 
+/** Runs `job` again once when the page navigated under it, as a fresh dev server does after bundling new dependencies. */
+async function once<T>(job: () => Promise<T>): Promise<T> {
+  try {
+    return await job();
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes("Execution context was destroyed"))
+      throw error;
+    return job();
+  }
+}
+
 /** Runs the actions on the piece's page and answers the events its first mount logged, saving them when named. */
 export async function runAct(
   browser: SharedBrowser,
@@ -28,26 +39,29 @@ export async function runAct(
   if (name !== undefined && !PRESET_NAME.test(name))
     return { kind: "failed", message: `"${name}" is not a preset name.` };
   const last = actions.at(-1)?.at ?? 0;
-  const { value } = await withPage(
-    {
-      page,
-      ...SIZE,
-      source: { kind: "url", base: request.base },
-      actions,
-      clock: "paused",
-      browser: await browser.get(),
-    },
-    async ({ page: open, advanceTo }) => {
-      await advanceTo(last + TAIL_MS);
-      return open.evaluate((): unknown => {
-        const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-        const mount: unknown = Array.isArray(listed) ? listed[0] : undefined;
-        const read: unknown = Reflect.get(Object(mount), "events");
-        if (typeof read !== "function") return [];
-        const log: unknown = Reflect.apply(read, mount, []);
-        return Array.isArray(log) ? log : [];
-      });
-    },
+  const open = await browser.get();
+  const value = await once(() =>
+    withPage(
+      {
+        page,
+        ...SIZE,
+        source: { kind: "url", base: request.base },
+        actions,
+        clock: "paused",
+        browser: open,
+      },
+      async ({ page: shown, advanceTo }) => {
+        await advanceTo(last + TAIL_MS);
+        return shown.evaluate((): unknown => {
+          const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+          const mount: unknown = Array.isArray(listed) ? listed[0] : undefined;
+          const read: unknown = Reflect.get(Object(mount), "events");
+          if (typeof read !== "function") return [];
+          const log: unknown = Reflect.apply(read, mount, []);
+          return Array.isArray(log) ? log : [];
+        });
+      },
+    ).then((done) => done.value),
   );
   const events: Events = Array.isArray(value) ? value.filter(isMotionEvent) : [];
   const saved =
