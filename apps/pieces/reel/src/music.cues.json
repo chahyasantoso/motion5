@@ -7,116 +7,116 @@
   {
     "name": "beat",
     "at": 500,
-    "value": 0.482
+    "value": 0.241
   },
   {
     "name": "beat",
     "at": 1000,
-    "value": 0.481
+    "value": 0.241
   },
   {
     "name": "beat",
     "at": 1500,
-    "value": 0.48
+    "value": 0.24
   },
   {
     "name": "beat",
     "at": 2000,
-    "value": 0.473
+    "value": 0.237
   },
   {
     "name": "beat",
     "at": 2500,
-    "value": 0.483
+    "value": 0.242
   },
   {
     "name": "beat",
     "at": 3000,
-    "value": 0.477
+    "value": 0.239
   },
   {
     "name": "beat",
     "at": 3500,
-    "value": 0.483
+    "value": 0.242
   },
   {
     "name": "beat",
     "at": 4000,
-    "value": 0.473
+    "value": 0.237
   },
   {
     "name": "beat",
     "at": 4500,
-    "value": 0.477
+    "value": 0.239
   },
   {
     "name": "beat",
     "at": 5000,
-    "value": 0.478
+    "value": 0.239
   },
   {
     "name": "beat",
     "at": 5500,
-    "value": 0.47
+    "value": 0.235
   },
   {
     "name": "beat",
     "at": 6000,
-    "value": 0.489
+    "value": 0.245
   },
   {
     "name": "beat",
     "at": 6500,
-    "value": 0.474
+    "value": 0.237
   },
   {
     "name": "beat",
     "at": 7000,
-    "value": 0.481
+    "value": 0.241
   },
   {
     "name": "beat",
     "at": 7500,
-    "value": 0.48
+    "value": 0.24
   },
   {
     "name": "beat",
     "at": 8000,
-    "value": 0.471
+    "value": 0.236
   },
   {
     "name": "beat",
     "at": 8500,
-    "value": 0.484
+    "value": 0.242
   },
   {
     "name": "beat",
     "at": 9000,
-    "value": 0.471
+    "value": 0.236
   },
   {
     "name": "beat",
     "at": 9500,
-    "value": 0.483
+    "value": 0.242
   },
   {
     "name": "beat",
     "at": 10000,
-    "value": 0.479
+    "value": 0.24
   },
   {
     "name": "beat",
     "at": 10500,
-    "value": 0.476
+    "value": 0.238
   },
   {
     "name": "beat",
     "at": 11000,
-    "value": 0.482
+    "value": 0.241
   },
   {
     "name": "beat",
     "at": 11500,
-    "value": 0.47
+    "value": 0.235
   }
 ]
