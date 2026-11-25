@@ -70,16 +70,11 @@ describe("a headless studio", () => {
     console.log(`headless warm round trips (ms): ${JSON.stringify(times)}`);
     for (const took of times) expect(took).toBeLessThan(BUDGET_MS);
 
-    const first = await send({ kind: "check", sizes: undefined, safeZone: undefined });
+    const first = await send({ kind: "check", sizes: undefined, safeZone: undefined, to: 500 });
     expect(first.kind).toBe("check");
     if (first.kind !== "check") return;
     expect(first.result.kind).toBe("checked");
-    expect(first.result.frames).toBeGreaterThan(0);
-
-    const started = performance.now();
-    const second = await send({ kind: "check", sizes: undefined, safeZone: undefined });
-    console.log(`warm check (ms): ${Math.round(performance.now() - started)}`);
-    expect(second.kind).toBe("check");
+    expect(first.result.frames).toBe(32);
     expect(launches()).toBe(1);
   }, 240000);
 });

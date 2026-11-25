@@ -67,7 +67,7 @@ describe("runCommand", () => {
   it("leaves graph and check to the server", async () => {
     for (const command of [
       { kind: "graph" } as const,
-      { kind: "check", sizes: undefined, safeZone: undefined } as const,
+      { kind: "check", sizes: undefined, safeZone: undefined, to: undefined } as const,
     ]) {
       expect(await runCommand(command, fake().control)).toEqual({
         kind: "failed",

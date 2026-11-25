@@ -19,8 +19,10 @@ export function checkRequest(
   if (page === undefined)
     return { kind: "failed", message: `${graph.piece} has no page to check.` };
   const scene = graph.cards.find((card) => card.kind === "scene" && card.parent === undefined);
-  const to = scene?.span?.to ?? 0;
-  if (!(to > 0)) return { kind: "failed", message: `${graph.piece} has no scene length to check.` };
+  const length = scene?.span?.to ?? 0;
+  if (!(length > 0))
+    return { kind: "failed", message: `${graph.piece} has no scene length to check.` };
+  const to = Math.min(length, command.to ?? length);
   let zone: ReturnType<typeof parseSafeZone>;
   if (command.safeZone !== undefined) {
     zone = parseSafeZone(command.safeZone);

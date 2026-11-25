@@ -45,6 +45,8 @@ export type StudioCommand =
       readonly kind: "check";
       readonly sizes: readonly { readonly width: number; readonly height: number }[] | undefined;
       readonly safeZone: string | undefined;
+      /** The last ms to sample; the scene's length when undefined. */
+      readonly to: number | undefined;
     }
   | { readonly kind: "graph" };
 
