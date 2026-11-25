@@ -1626,4 +1626,19 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
       liveMounted.dispose();
     });
   });
+
+  it("reports durationMs on timed mounts and undefined on live mounts", () => {
+    const root = new FakeRoot([new FakeNode("box")]);
+    const frames = fakeFrames();
+
+    const piece = scene({ length: 1000 }, box("box").moves(motion((): Pose2d => ({ x: 10 }))));
+
+    const timed = mount(piece, { root, frames, clock: "timed" });
+    expect(timed.durationMs).toBe(1000);
+    timed.dispose();
+
+    const live = mount(piece, { root, frames, clock: "live" });
+    expect(live.durationMs).toBeUndefined();
+    live.dispose();
+  });
 });

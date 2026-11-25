@@ -1,7 +1,7 @@
 import { mount } from "@gerak/dom";
 import { loadPieceMarkup, pageOfPiece } from "./piece-markup";
 import { pieceLookup, type ModuleGlob } from "./stage-module";
-import { levelOf } from "./talk-level";
+import { levelOf, rms } from "../audio/levels";
 
 const MIN_STEP_MS = 1000 / 30;
 
@@ -73,9 +73,7 @@ export async function talkPage(pieces: ModuleGlob, components: ModuleGlob): Prom
         if (now - last >= MIN_STEP_MS) {
           last = now;
           analyser.getFloatTimeDomainData(samples);
-          let sum = 0;
-          for (const sample of samples) sum += sample * sample;
-          stage.send("mouthOpen", levelOf(Math.sqrt(sum / samples.length)));
+          stage.send("mouthOpen", levelOf(rms(samples)));
         }
         requestAnimationFrame(frame);
       };

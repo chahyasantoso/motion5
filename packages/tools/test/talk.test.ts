@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { isMotionEvent, type MotionEvent } from "@gerak/core";
-import { levelOf } from "../src/pages/talk-level";
+import { levelOf } from "../src/audio/levels";
 
 const SECONDS = 8;
 const FPS = 30;

@@ -1,7 +1,15 @@
 /** The commands this package runs itself: each name's script in this folder and a one-line summary. */
 export const COMMANDS = Object.freeze({
+  beats: {
+    file: "motion-beats.mjs",
+    summary: "extract beat and level cues from an audio file",
+  },
   check: { file: "motion-check.mjs", summary: "judge a page's motion against its limits" },
   compare: { file: "motion-compare.mjs", summary: "compare a page's frame with a reference SVG" },
+  cues: {
+    file: "motion-cues.mjs",
+    summary: "turn subtitles or a Whisper transcript into word cues",
+  },
   fps: { file: "motion-fps.mjs", summary: "measure a page's frame rate" },
   frames: { file: "motion-frames.mjs", summary: "capture a page's frames, crops and onion skins" },
   init: {

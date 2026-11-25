@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadence M1 — 9:16 Reel</title>
+    <style>
+      :root {
+        --paper: #f4efe7;
+        --ink: #161513;
+        --ink-soft: #4a453e;
+        --vermilion: #d84727;
+        --vermilion-deep: #a82f15;
+        --brass: #c99a49;
+        --amber-text: #f3b363;
+        --coral-text: #f08a65;
+        --stage-dark: #17161a;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #0c0b0e;
+        font-family:
+          "Inter",
+          "SF Pro Display",
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      #frame {
+        position: relative;
+        width: 1080px;
+        height: 1920px;
+        overflow: hidden;
+        background: var(--stage-dark);
+      }
+
+      #stage-canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 1080px;
+        height: 1920px;
+        z-index: 1;
+      }
+
+      .layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .bg-paper {
+        background: var(--paper);
+      }
+
+      .bg-ink {
+        background: var(--ink);
+      }
+
+      [data-cast="hookBg"] {
+        z-index: 10;
+      }
+
+      [data-cast="hookEyebrow"] {
+        position: absolute;
+        left: 88px;
+        top: 420px;
+        width: 820px;
+        z-index: 11;
+        color: var(--vermilion-deep);
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+      }
+
+      [data-cast="hookTitle"] {
+        position: absolute;
+        left: 88px;
+        top: 492px;
+        width: 820px;
+        margin: 0;
+        z-index: 11;
+        color: var(--ink);
+        font-size: 114px;
+        line-height: 1.02;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      [data-cast="hookRule"] {
+        position: absolute;
+        left: 88px;
+        top: 880px;
+        width: 820px;
+        height: 8px;
+        z-index: 11;
+        background: var(--vermilion);
+        transform-origin: left center;
+      }
+
+      [data-cast="hookRing"] {
+        position: absolute;
+        left: 440px;
+        top: 960px;
+        width: 120px;
+        height: 120px;
+        z-index: 11;
+        border-radius: 50%;
+        border: 12px solid var(--brass);
+        box-sizing: border-box;
+      }
+
+      [data-cast="specTag"] {
+        position: absolute;
+        left: 88px;
+        top: 280px;
+        width: 820px;
+        z-index: 15;
+        color: var(--amber-text);
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+      }
+
+      [data-cast="specSub"] {
+        position: absolute;
+        left: 88px;
+        top: 1365px;
+        width: 820px;
+        z-index: 15;
+        color: var(--paper);
+        font-size: 34px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+
+      [data-cast="proofBg"] {
+        z-index: 20;
+      }
+
+      [data-cast="proofLabel"] {
+        position: absolute;
+        left: 88px;
+        top: 320px;
+        width: 820px;
+        z-index: 21;
+        color: var(--coral-text);
+        font-size: 30px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+      }
+
+      [data-cast="caption"] {
+        position: absolute;
+        left: 88px;
+        top: 420px;
+        width: 820px;
+        z-index: 21;
+        color: var(--paper);
+        font-size: 82px;
+        line-height: 1.18;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+
+      .beat-bar {
+        position: absolute;
+        top: 1180px;
+        width: 34px;
+        height: 110px;
+        z-index: 21;
+        border-radius: 6px;
+        background: var(--vermilion);
+        transform-origin: bottom center;
+      }
+
+      .bar-0 {
+        left: 88px;
+      }
+      .bar-1 {
+        left: 144px;
+        background: var(--brass);
+      }
+      .bar-2 {
+        left: 200px;
+      }
+      .bar-3 {
+        left: 256px;
+        background: var(--brass);
+      }
+      .bar-4 {
+        left: 312px;
+      }
+
+      [data-cast="ctaBg"] {
+        z-index: 30;
+      }
+
+      [data-cast="ctaMark"] {
+        position: absolute;
+        left: 440px;
+        top: 380px;
+        width: 120px;
+        height: 120px;
+        z-index: 31;
+        border-radius: 50%;
+        border: 14px solid var(--ink);
+        background: var(--brass);
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+      }
+
+      .cta-mark-core {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--vermilion);
+      }
+
+      [data-cast="ctaTitle"] {
+        position: absolute;
+        left: 88px;
+        top: 556px;
+        width: 824px;
+        z-index: 31;
+        text-align: center;
+        color: var(--ink);
+        font-size: 98px;
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+
+      [data-cast="ctaSub"] {
+        position: absolute;
+        left: 88px;
+        top: 700px;
+        width: 824px;
+        z-index: 31;
+        text-align: center;
+        color: var(--ink-soft);
+        font-size: 40px;
+        font-weight: 600;
+      }
+
+      [data-cast="ctaButton"] {
+        position: absolute;
+        left: 190px;
+        top: 848px;
+        width: 620px;
+        height: 124px;
+        z-index: 31;
+        display: grid;
+        place-items: center;
+        border-radius: 62px;
+        background: var(--ink);
+        color: var(--paper);
+        font-size: 38px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+
+      [data-cast="hookTitle"] span,
+      [data-cast="caption"] span,
+      [data-cast="ctaTitle"] span {
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="frame">
+      <canvas id="stage-canvas" width="1080" height="1920" data-motion-touch=""></canvas>
+
+      <div data-cast="hookBg" class="layer bg-paper"></div>
+      <div data-cast="hookEyebrow">CADENCE M1 · INSTRUMENT 01</div>
+      <h1 data-cast="hookTitle">TURN FOCUS INTO RITUAL</h1>
+      <div data-cast="hookRule"></div>
+      <div data-cast="hookRing"></div>
+
+      <div data-cast="specTag">CADENCE M1 · BRASS &amp; OBSIDIAN</div>
+      <div data-cast="specSub">24 MAGNETIC DETENTS · ZERO GLARE</div>
+
+      <div data-cast="proofBg" class="layer bg-ink"></div>
+      <div data-cast="proofLabel">BUILT FOR DEEP WORK</div>
+      <div data-cast="caption">
+        Machined solid brass. Twenty-four crisp detents. Zero screen glare. Pure tactile focus.
+      </div>
+      <div data-cast="beatBar" class="beat-bar bar-0"></div>
+      <div data-cast="beatBar" class="beat-bar bar-1"></div>
+      <div data-cast="beatBar" class="beat-bar bar-2"></div>
+      <div data-cast="beatBar" class="beat-bar bar-3"></div>
+      <div data-cast="beatBar" class="beat-bar bar-4"></div>
+
+      <div data-cast="ctaBg" class="layer bg-paper"></div>
+      <div data-cast="ctaMark"><span class="cta-mark-core"></span></div>
+      <div data-cast="ctaTitle">CADENCE M1</div>
+      <div data-cast="ctaSub">First Batch · Shipping December</div>
+      <div data-cast="ctaButton">RESERVE YOUR DIAL</div>
+    </div>
+    <script type="module" src="/reel/src/reel-main.ts"></script>
+  </body>
+</html>
