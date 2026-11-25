@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { pageServerConfig } from "@gerak/tools/page";
+import { removeDiscovery, writeDiscovery } from "./discovery";
 import { STUDIO_PATH, studioPlugin } from "./plugin";
 
 const STUDIO_FOLDER = fileURLToPath(new URL("../../", import.meta.url));
@@ -14,13 +15,20 @@ export async function startStudio(options: {
   readonly root: string;
   readonly piece: string;
   readonly port: number;
+  readonly busTimeoutMs?: number;
 }): Promise<{ readonly url: string; close(): Promise<void> }> {
   const { createServer } = await import("vite");
   const added = pageServerConfig(options.root);
   const server = await createServer({
     root: options.root,
     logLevel: "error",
-    plugins: [...added.plugins, studioPlugin({ root: options.root })],
+    plugins: [
+      ...added.plugins,
+      studioPlugin({
+        root: options.root,
+        ...(options.busTimeoutMs === undefined ? {} : { busTimeoutMs: options.busTimeoutMs }),
+      }),
+    ],
     optimizeDeps: {
       entries: ["*/*.html"],
       exclude: [...added.optimizeDeps.exclude, "@gerak/studio"],
@@ -34,5 +42,12 @@ export async function startStudio(options: {
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0] ?? `http://localhost:${options.port}/`;
-  return { url: studioUrl(base, options.piece), close: () => server.close() };
+  writeDiscovery(options.root, { url: base, piece: options.piece });
+  return {
+    url: studioUrl(base, options.piece),
+    close: () => {
+      removeDiscovery(options.root);
+      return server.close();
+    },
+  };
 }
