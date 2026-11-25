@@ -288,7 +288,7 @@ describe.skipIf(!hasBrowser)("gerak compare in the browser", () => {
 
   it("answers usage for a page with no stage frame", async () => {
     const result = await comparePage({
-      page: "missing.html",
+      page: "bare.html",
       width: 640,
       height: 360,
       source,

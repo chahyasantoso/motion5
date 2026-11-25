@@ -32,9 +32,9 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 ### 2. Platform safe-zone checks and reel aspect presets (`@gerak/tools`)
 
 - Add named aspect/safe-zone profiles in `packages/tools/src/page/` read with an exhaustive `switch`:
-  - `"tiktok"` (`1080x1920`: top `140 px`, bottom `320 px`, right `132 px`, left `36 px` reserved for status bar, caption/music tray, and action rail).
-  - `"reels"` (`1080x1920`: top `140 px`, bottom `300 px`, right `120 px`, left `36 px`).
-  - `"shorts"` (`1080x1920`: top `140 px`, bottom `340 px`, right `128 px`, left `36 px`).
+  - `"tiktok"` (`1080x1920`: top `220 px`, bottom `480 px`, right `140 px`, left `60 px` reserved for status bar, caption/music tray, and action rail).
+  - `"reels"` (`1080x1920`: top `269 px`, bottom `672 px`, right `65 px`, left `65 px`).
+  - `"shorts"` (`1080x1920`: top `288 px`, bottom `672 px`, right `192 px`, left `48 px`).
   - `"youtube"` (`1920x1080`: 5% title-safe inset `96 px` horizontal, `54 px` vertical).
 - Extend `gerak check <page>` and `gerak review <page>` with `[--safe-zone tiktok|reels|shorts|youtube]`:
   - Defaults viewport `--size` to the profile's native dimensions (`1080x1920` or `1920x1080`) when neither `--size` nor `--sizes` is passed.
@@ -73,7 +73,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 
 - PR 1: two shots with local `[0, 600]` and `[0, 800]` beats compile to `[0, 600]` and `[600, 1400]` (or `[450, 1250]` with `overlap: 150`); lengthening Shot 1 shifts Shot 2 automatically; Shot 1's elements report `visible === false` at `700 ms` unless given an explicit wider `.shows()`; two shots claiming ownership of the same element name are refused unless handed off via `carry` / distinct shot casts; `gerak review` validates per-shot jumps and final hold.
 - PR 1 also: a shot with `until: 1500` after a 600 ms shot lasts 900 ms; `until` with `length`, or at or before the shot's start, is refused.
-- PR 2: a `1080x1920` page placing caption text at `y = 1780` or `x = 1010` triggers an `unsafe-zone` finding under `--safe-zone tiktok` and passes when centered inside `[36..948, 140..1600]`.
+- PR 2: a `1080x1920` page placing caption text at `y = 1780` or `x = 1010` triggers an `unsafe-zone` finding under `--safe-zone tiktok` and passes when centered inside `[x 60..940, y 220..1440]`.
 - PR 3: `gerak beats` on a synthetic click-track WAV outputs exact beat timestamps within `10 ms`, and `--levels` matches the RMS `talk-page.ts` computes for the same samples; `gerak cues` turns a three-line `.srt` and a Whisper word JSON into the expected events; `gerak render --fps 60 --audio vo.wav --audio music.wav:0.3` produces an `ffprobe`-verified `60 fps` `1080x1920` MP4 with one AAC stream matching `--to`.
 - PR 4: a page with a generated test-pattern clip renders, at each sampled frame, the clip frame the scene ms names; a clip in a `.shows` window starts at 0 when the window opens.
 

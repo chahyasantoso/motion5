@@ -1,6 +1,6 @@
 # gerak commands
 
-Run from your project's folder. A page is a path inside the site with no leading `/`; the site is the pieces folder,
+Run from your project's folder. A page is a path inside the site with no leading `/`, and a page the server does not have is an error; the site is the pieces folder,
 `--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one, unless
 `--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
 and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
@@ -21,8 +21,8 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   entry, a component binding the piece's objects with `threeBinder`, and `<brief>/src/<name>-scene.ts`, a
   `scene` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
   is static and the piece imports no move.
-- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
-  prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
+- **`gerak review <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--at ms,ms] [--out dir] [--full]`**: `check` and `frames` at once:
+  takes `check`'s `--safe-zone` and reports its findings; prints the findings and the `sheet` path; `--full` adds `read`'s first 40 moves; frames, up to 10, picked where the motion is fast or turns (labelled with the time and why) unless `--at` names them; exits `1` on a finding.
   With `--sizes`, runs each viewport in turn, prefixes findings, frames and errors with `[WIDTHxHEIGHT]`, and writes labelled `sheet-<WIDTHxHEIGHT>.png` files.
   On a Three.js page watch `canvas`: the sheet shows its pixels, and the scene-file form below checks its values.
 - **`gerak review <scene.ts> [--to ms] [--events list] [--hold ms] [--jump units] [--turn degrees] [--ratio n] [--budget ms] [--measure]`**: no page: samples
@@ -37,11 +37,12 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   reported drivers before being flagged as never moved. A step while an element, its parent or its parts are hidden by `.shows` is not a jump. An
   element's `.limits({ jump?, turn?, ratio? })` judges it by its own limits instead of the flags; a `custom` value is
   judged as a ratio.
-- **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
+- **`gerak check <page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--overlap frames] [--hold ms] [--jump px]`**: every 16 ms: watched elements overlapping over `--overlap`
   frames (12), a centre jumping over `--jump` px a frame (150), a final hold under `--hold` ms (500), anything still
   moving at the end; on the last frame, text under WCAG contrast (3:1 large, 4.5:1 other) and text off the page's
   edge. With `--sizes`, checks every viewport and prefixes finding lines with `[WIDTHxHEIGHT]`. Overlaps compare what a viewer sees: hidden, transparent or clipped-out boxes are left out. An element with
   `data-motion-touch="<selector>"` may touch what the selector matches; empty, anything.
+  `--safe-zone` reports each text glyph box and watched element whose box enters that platform's reserved margin, once per element and edge at the first 16 ms sample of a stay in the margin for longer than 12 sampled frames (192 ms) in a row, or at the end; without `--size` or `--sizes` it opens the platform's native size (1080x1920, YouTube 1920x1080), and at another size the margins scale with the stage; a box that enters all four margins is a full-frame layer and is not reported; text with the same name in one frame is named `... #2`, `... #3`.
 - **`gerak read <page> --select sel,sel --to ms`**: each element's own moves, one line each: channel (`x`, `y`,
   `rotation`, `scaleX`, `scaleY`, `opacity`), from and to, start and end, and the ease by name, or the nearest name
   and a fitted `cubic-bezier`. A move splits where it turns back.

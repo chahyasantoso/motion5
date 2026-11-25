@@ -220,7 +220,21 @@ export async function withPage<T>(
       // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
       await page.clock.pauseAt(1000);
     }
-    await page.goto(new URL(target.page, base).href, { waitUntil: "load" });
+    const url = new URL(target.page, base).href;
+    // Chromium rejects `goto` on an error status with an empty body, so the status is read as it arrives.
+    let answered: number | undefined;
+    page.on("response", (reply) => {
+      if (reply.url() === url && reply.request().isNavigationRequest()) answered = reply.status();
+    });
+    const response = await page.goto(url, { waitUntil: "load" }).catch((error: unknown) => {
+      if (answered === undefined || answered < 400) throw error;
+      return null;
+    });
+    const status = response === null ? answered : response.status();
+    if (status === undefined || status >= 400)
+      throw new Error(
+        `Page ${target.page} answered ${status === undefined ? "no response" : status} from ${url}.`,
+      );
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
     const readyError = await page.evaluate(async () => {
@@ -302,6 +316,7 @@ async function openSite(
       const server = await createServer({
         root: source.root,
         logLevel: "silent",
+        appType: "mpa",
         plugins: added.plugins,
         optimizeDeps: added.optimizeDeps,
         server: { ...added.server, port: 5280 },

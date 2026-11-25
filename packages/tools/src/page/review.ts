@@ -2,6 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseNumbers } from "./args";
+import { SAFE_ZONE_USAGE, parseSafeZone, safeZone, type SafeZoneName } from "./safe-zone";
 import { DEFAULT_LIMITS, describeFinding, sampleMotion } from "./check";
 import { captureFrames } from "./frames";
 import { pickFrames, type PickReason } from "./pick";
@@ -26,6 +27,8 @@ export interface ReviewRequest extends PageTarget {
   /** Also read every move back with its ease. */
   readonly full: boolean;
   readonly sizes?: readonly ViewportSize[];
+  /** Also reports text and watched boxes inside this platform's reserved margins. */
+  readonly safeZone?: SafeZoneName;
 }
 
 /** Parsed `gerak review` arguments, or the usage text. */
@@ -69,9 +72,10 @@ export type ReviewResult =
 /** A review lists at most this many moves; the rest are counted in one closing line. */
 const MOTION_LINES = 40;
 const USAGE =
-  "usage: gerak review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH | --sizes WxH,WxH] [--root dir | --url address]";
+  "usage: gerak review <page> --watch selector,selector --to ms [--at ms,ms] [--out dir] [--full] [--action ...] [--size WxH | --sizes WxH,WxH] [--safe-zone tiktok|reels|shorts|youtube] [--root dir | --url address]";
 
-/** Reads `<page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full]`, or answers the usage text. */
+/** Reads `<page> --watch sel,sel --to ms [--at ms,ms] [--out dir] [--full] [--safe-zone name]`, or answers the usage text.
+ * `--safe-zone` without a size takes the platform's native size. */
 export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   const usage = (message: string): ReviewArgs => ({
     kind: "usage",
@@ -79,14 +83,20 @@ export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
   });
   const read = readPageArgs(
     argv.filter((arg) => arg !== "--full"),
-    ["--watch", "--to", "--at", "--out", "--sizes"],
+    ["--watch", "--to", "--at", "--out", "--sizes", "--safe-zone"],
   );
   if (read.kind === "usage") return usage(read.message);
   if (read.flags.has("--sizes") && read.flags.has("--size"))
     return usage("Pass --size or --sizes, not both.");
   const sizes = read.flags.has("--sizes") ? parseSizes(read.flags.get("--sizes")) : undefined;
   if (typeof sizes === "string") return usage(sizes);
-  const firstSize = sizes?.[0];
+  const zoneName = read.flags.has("--safe-zone")
+    ? parseSafeZone(read.flags.get("--safe-zone"))
+    : undefined;
+  if (read.flags.has("--safe-zone") && zoneName === undefined) return usage(SAFE_ZONE_USAGE);
+  const firstSize =
+    sizes?.[0] ??
+    (zoneName === undefined || read.flags.has("--size") ? undefined : safeZone(zoneName));
   const watch = (read.flags.get("--watch") ?? "")
     .split(",")
     .map((part) => part.trim())
@@ -104,6 +114,7 @@ export function parseReviewArgs(argv: readonly string[]): ReviewArgs {
     ...read.target,
     ...(firstSize === undefined ? {} : { width: firstSize.width, height: firstSize.height }),
     ...(sizes === undefined ? {} : { sizes }),
+    ...(zoneName === undefined ? {} : { safeZone: zoneName }),
     watch,
     to: end,
     ...(given === undefined ? {} : { at: given }),
@@ -116,8 +127,14 @@ async function reviewSingleViewport(
   request: Omit<ReviewRequest, "sizes">,
   sheetOptions?: { readonly sheetPath: string; readonly sheetLabel: string },
 ): Promise<ReviewResult> {
-  const { watch, to, at, out, full, ...target } = request;
-  const sampled = sampleMotion({ ...target, watch, to, limits: DEFAULT_LIMITS });
+  const { watch, to, at, out, full, safeZone: zone, ...target } = request;
+  const sampled = sampleMotion({
+    ...target,
+    watch,
+    to,
+    limits: DEFAULT_LIMITS,
+    ...(zone === undefined ? {} : { safeZone: zone }),
+  });
   const photographed = sampled.then(async ({ samples }) => {
     const picks: readonly { readonly at: number; readonly reason?: PickReason }[] =
       at === undefined ? pickFrames(samples) : at.map((time) => ({ at: time }));
