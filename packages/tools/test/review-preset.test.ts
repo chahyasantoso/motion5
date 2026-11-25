@@ -43,6 +43,13 @@ describe("gerak review --events @preset", () => {
     expect("message" in parsed && parsed.message).toContain("missing.json");
   });
 
+  it("refuses a scene file whose name is not a piece name", () => {
+    const { scene } = layout("Demo.ts");
+    const parsed = parseSceneReviewArgs([scene, "--events", "@take"]);
+    expect(parsed.kind).toBe("usage");
+    expect("message" in parsed && parsed.message).toContain("names no piece");
+  });
+
   it("keeps a plain list working", () => {
     expect(parseSceneReviewArgs(["s.ts", "--events", "go@200"])).toMatchObject({ kind: "ok" });
   });

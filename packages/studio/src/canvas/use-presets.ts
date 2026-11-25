@@ -74,14 +74,18 @@ export function usePresets(piece: string, playhead: Playhead): PresetState {
     setRecording(false);
     const taken = recordingOf(log, start);
     if (taken.length === 0) return;
-    const name = nextTakeName(names);
-    void putPreset(piece, name, taken).then(async (saved) => {
-      if (!saved) return;
-      setNames(await fetchPresetNames(piece));
-      select(name);
-      setVersion((before) => before + 1);
-    });
-  }, [piece, playhead, recording, start, names]);
+    const save = async (): Promise<void> => {
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        const name = nextTakeName(await fetchPresetNames(piece));
+        if (!(await putPreset(piece, name, taken))) continue;
+        setNames(await fetchPresetNames(piece));
+        select(name);
+        setVersion((before) => before + 1);
+        return;
+      }
+    };
+    void save();
+  }, [piece, playhead, recording, start]);
 
   return { names, selected, events, recording, select, toggleRecord };
 }

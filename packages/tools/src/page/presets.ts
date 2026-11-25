@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { dirname, join } from "node:path";
 import { isMotionEvent, type Events } from "@gerak/core";
 
-/** The names a recorded preset may have. */
-export const PRESET_NAME = /^[a-z0-9][a-z0-9-]*$/;
+/** The names a recorded preset may have; Windows device names are refused. */
+export const PRESET_NAME = /^(?!(?:con|prn|aux|nul|com\d|lpt\d)$)[a-z0-9][a-z0-9-]*$/;
 
 /** Where a piece's recorded preset lives: one `Events` JSON file under the pieces folder. */
 export function presetPath(root: string, piece: string, name: string): string {

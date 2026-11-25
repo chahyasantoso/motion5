@@ -248,9 +248,8 @@ export function studioPlugin(options: {
             }
             case "POST /__gerak/pins/resolve": {
               const text = url.searchParams.get("id") ?? "";
-              const pin = /^\d+$/.test(text) ? resolvePin(root, Number(text)) : undefined;
-              if (pin === undefined || pin.piece !== piece)
-                json(404, { error: `No pin ${text} on ${piece}.` });
+              const pin = /^\d+$/.test(text) ? resolvePin(root, Number(text), piece) : undefined;
+              if (pin === undefined) json(404, { error: `No pin ${text} on ${piece}.` });
               else json(200, { pin });
               return;
             }
@@ -280,6 +279,10 @@ export function studioPlugin(options: {
               }
               if (!Array.isArray(body) || !body.every(isMotionEvent)) {
                 json(400, { error: "The body is not a list of events." });
+                return;
+              }
+              if (listPresets(root, piece).includes(name)) {
+                json(409, { error: `${name} is already a preset of ${piece}.` });
                 return;
               }
               json(200, { saved: writePreset(root, piece, name, body) });

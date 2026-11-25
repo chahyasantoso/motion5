@@ -90,6 +90,8 @@ function presetEvents(file: string, name: string): Events | { readonly reason: s
   const piece = basename(path)
     .replace(/\.tsx?$/, "")
     .replace(/-scene$/, "");
+  if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(piece))
+    return { reason: `${basename(path)} names no piece, so it has no presets.` };
   return readPreset(found.root, piece, name);
 }
 

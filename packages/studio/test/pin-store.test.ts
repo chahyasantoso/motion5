@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -45,6 +45,21 @@ describe("the pin store", () => {
     expect(resolvePin(root, pin.id)?.status).toBe("resolved");
     expect(readPins(root)[0]?.status).toBe("resolved");
     expect(resolvePin(root, 99)).toBeUndefined();
+  });
+
+  it("resolves only a pin of the piece named", () => {
+    const pin = addPin(root, fresh());
+    expect(resolvePin(root, pin.id, "elsewhere")).toBeUndefined();
+    expect(readPins(root)[0]?.status).toBe("open");
+    expect(resolvePin(root, pin.id, pin.piece)?.status).toBe("resolved");
+  });
+
+  it("refuses to change a pins file that is not JSON, and leaves it as it was", () => {
+    addPin(root, fresh());
+    writeFileSync(pinsPath(root), "{ broken");
+    expect(() => addPin(root, fresh())).toThrow(/not JSON/);
+    expect(readFileSync(pinsPath(root), "utf8")).toBe("{ broken");
+    expect(readPins(root)).toEqual([]);
   });
 
   it("drops malformed entries", () => {

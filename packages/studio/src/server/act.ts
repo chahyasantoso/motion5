@@ -56,14 +56,16 @@ export async function runAct(
           const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
           const mount: unknown = Array.isArray(listed) ? listed[0] : undefined;
           const read: unknown = Reflect.get(Object(mount), "events");
-          if (typeof read !== "function") return [];
+          if (typeof read !== "function") return undefined;
           const log: unknown = Reflect.apply(read, mount, []);
           return Array.isArray(log) ? log : [];
         });
       },
     ).then((done) => done.value),
   );
-  const events: Events = Array.isArray(value) ? value.filter(isMotionEvent) : [];
+  if (!Array.isArray(value))
+    return { kind: "failed", message: `${page} mounted no gerak scene, so it logged no events.` };
+  const events: Events = value.filter(isMotionEvent);
   const saved =
     name === undefined ? undefined : writePreset(request.root, request.piece, name, events);
   return { kind: "act", events, saved };

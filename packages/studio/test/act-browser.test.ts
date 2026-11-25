@@ -56,7 +56,8 @@ describe("act on the studio server", () => {
     if (parsed.kind === "ok") expect(parsed.events?.length).toBe(reply.events.length);
 
     const listed = await fetch(`${base}/__gerak/presets?piece=cookie`);
-    expect(((await listed.json()) as { names: string[] }).names).toContain("test-burst");
+    const listedBody: unknown = await listed.json();
+    expect(Reflect.get(Object(listedBody), "names")).toContain("test-burst");
     const one = await fetch(`${base}/__gerak/presets?piece=cookie&name=test-burst`);
     expect(one.status).toBe(200);
     const missing = await fetch(`${base}/__gerak/presets?piece=cookie&name=nope`);
@@ -66,6 +67,11 @@ describe("act on the studio server", () => {
       body: "[]",
     });
     expect(bad.status).toBe(400);
+    const taken = await fetch(`${base}/__gerak/presets?piece=cookie&name=test-burst`, {
+      method: "PUT",
+      body: "[]",
+    });
+    expect(taken.status).toBe(409);
   }, 180000);
 
   it("refuses a bad action list and a bad preset name", async () => {

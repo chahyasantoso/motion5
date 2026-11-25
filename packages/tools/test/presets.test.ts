@@ -34,6 +34,9 @@ describe("recorded presets", () => {
     const root = temp();
     expect(() => writePreset(root, "cookie", "Bad Name", [])).toThrow(/Bad Name/);
     expect(() => writePreset(root, "cookie", "../x", [])).toThrow();
+    expect(() => writePreset(root, "cookie", "nul", [])).toThrow();
+    expect(() => writePreset(root, "cookie", "com1", [])).toThrow();
+    expect(() => writePreset(root, "cookie", "nullish", [])).not.toThrow();
   });
 
   it("gives a reason naming the path for a missing file, bad JSON or a non-event entry", () => {
