@@ -33,7 +33,7 @@ export interface FrameSource {
 }
 
 export function pageFrames(): FrameSource {
-  if (Reflect.get(globalThis, HELD_CLOCK) === true) {
+  if (Reflect.get(globalThis, HELD_CLOCK) === "lab-off") {
     if (typeof Reflect.get(globalThis, HELD_STEP) !== "function") {
       Reflect.set(globalThis, HELD_STEP, stepHeldFrames);
     }
