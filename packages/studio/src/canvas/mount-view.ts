@@ -74,6 +74,14 @@ export function mountOf(win: Window | null | undefined): MountView | undefined {
   };
 }
 
+/** Everything the page's first mount has logged so far; empty before the page mounts. */
+export function mountLog(win: Window | null | undefined): readonly unknown[] {
+  const mounted = firstMount(win);
+  if (mounted === undefined) return [];
+  const log = method(mounted, "events")?.();
+  return Array.isArray(log) ? log : [];
+}
+
 /** What a failed update says: the file and line Vite reports, or the thrown message. */
 export function problemOfError(value: unknown): Problem {
   const loc: unknown = Reflect.get(Object(value), "loc");

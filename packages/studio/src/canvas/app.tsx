@@ -26,6 +26,7 @@ import { buildPin, restorePin } from "./pin-actions";
 import type { PinRequest } from "./pin-view";
 import { Playhead } from "./playhead";
 import { usePins } from "./use-pins";
+import { usePresets } from "./use-presets";
 import { DEFAULT_PRESET } from "./presets";
 import { Timeline } from "./timeline";
 import { Toolbar } from "./toolbar";
@@ -87,6 +88,7 @@ function Canvas(props: {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [pinMode, setPinMode] = useState(false);
   const pinStore = usePins(piece);
+  const presets = usePresets(piece, playhead);
   const area = useRef<HTMLDivElement | null>(null);
   const length = sceneLength(data.graph);
 
@@ -206,7 +208,16 @@ function Canvas(props: {
 
   const placePin = (request: PinRequest): void => {
     setPinMode(false);
-    void pinStore.add(buildPin(request, { piece, graph: data.graph, focus, preview, playhead }));
+    void pinStore.add(
+      buildPin(request, {
+        piece,
+        graph: data.graph,
+        focus,
+        preview,
+        playhead,
+        preset: presets.selected,
+      }),
+    );
   };
   const placeRef = useRef(placePin);
   placeRef.current = placePin;
@@ -233,7 +244,12 @@ function Canvas(props: {
     pinMode,
     setPinMode,
     placePin,
-    restorePin: (pin) => void restorePin(pin, control),
+    presets,
+    restorePin: (pin) => {
+      if (pin.preset !== undefined && presets.names.includes(pin.preset))
+        presets.select(pin.preset);
+      void restorePin(pin, control);
+    },
     piece,
     graph: data.graph,
     page: data.page,

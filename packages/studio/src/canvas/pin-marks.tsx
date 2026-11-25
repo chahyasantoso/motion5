@@ -3,6 +3,7 @@ import { useRef } from "react";
 import type { Pin } from "../pins";
 import { useStudio } from "./context";
 import { centreOf, isCast, rulerPercent, showsOnStage, unscalePoint } from "./pin-view";
+import { eventLabel } from "./record";
 import { usePlayhead } from "./use-playhead";
 
 function Mark(props: {
@@ -107,6 +108,24 @@ export function StageCapture(props: { readonly pageWidth: number }): React.JSX.E
         studio.placePin({ kind: "stage", ...point });
       }}
     />
+  );
+}
+
+/** One tick per event of the chosen preset on the ruler, at the time it happened. */
+export function EventTicks(props: { readonly length: number }): React.JSX.Element {
+  const { presets } = useStudio();
+  return (
+    <>
+      {presets.events.map((event, index) => (
+        <span
+          key={index}
+          className="event-tick"
+          data-event-tick=""
+          title={eventLabel(event)}
+          style={{ left: `${rulerPercent(event.at, props.length)}%` }}
+        />
+      ))}
+    </>
   );
 }
 

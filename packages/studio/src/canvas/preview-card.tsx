@@ -81,6 +81,29 @@ function Toolbar(): React.JSX.Element {
       </select>
       <button
         type="button"
+        className="record-button"
+        aria-label="Record events"
+        aria-pressed={studio.presets.recording}
+        onClick={() => studio.presets.toggleRecord()}
+      >
+        {studio.presets.recording ? "■ Stop" : "● Record"}
+      </button>
+      <select
+        aria-label="Events preset"
+        value={studio.presets.selected ?? ""}
+        onChange={(event) =>
+          studio.presets.select(event.target.value === "" ? undefined : event.target.value)
+        }
+      >
+        <option value="">None</option>
+        {studio.presets.names.map((name) => (
+          <option key={name} value={name}>
+            {name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
         className="icon-button spacer"
         aria-label={studio.maximised ? "Restore preview" : "Maximise preview"}
         title={studio.maximised ? "Restore" : "Maximise"}

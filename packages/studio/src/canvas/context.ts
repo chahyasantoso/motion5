@@ -3,6 +3,7 @@ import type { Problem, ZoneMargins } from "./api";
 import type { StudioGraph } from "../graph";
 import type { Pin } from "../pins";
 import type { PinRequest } from "./pin-view";
+import type { PresetState } from "./use-presets";
 import type { Playhead } from "./playhead";
 
 /** What the preview remembers: its size preset and its safe-zone profile when the overlay is on. */
@@ -29,6 +30,8 @@ export interface StudioValue {
   readonly problem: Problem | undefined;
   /** The pins of the piece as the pins file lists them. */
   readonly pins: readonly Pin[];
+  /** Recorded event presets, the chosen one and recording. */
+  readonly presets: PresetState;
   readonly pinMode: boolean;
   setPinMode(on: boolean): void;
   /** Stores a pin for a click made in pin mode, then leaves pin mode. */

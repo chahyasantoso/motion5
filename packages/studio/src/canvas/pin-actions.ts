@@ -14,6 +14,8 @@ export interface PinContext {
   readonly focus: FocusTarget;
   readonly preview: { readonly preset: string; readonly safeZone?: string | undefined };
   readonly playhead: Playhead;
+  /** The chosen recorded preset, when one is. */
+  readonly preset: string | undefined;
 }
 
 function castCardAt(
@@ -64,7 +66,7 @@ export function buildPin(request: PinRequest, now: PinContext): NewPin {
     viewport: { preset: now.preview.preset, safeZone: now.preview.safeZone },
     atMs,
     scrollY: win?.scrollY ?? 0,
-    preset: undefined,
+    preset: now.preset,
     pose: seen?.pose,
     restBox: seen?.rest,
     note: "",

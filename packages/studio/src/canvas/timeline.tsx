@@ -3,7 +3,7 @@ import { useRef } from "react";
 import type { Card } from "../graph";
 import { useStudio } from "./context";
 import { Glyph } from "./icons";
-import { RulerTicks } from "./pin-marks";
+import { EventTicks, RulerTicks } from "./pin-marks";
 import { rulerMs } from "./pin-view";
 import type { Playhead, PlayheadState } from "./playhead";
 import { usePlayhead } from "./use-playhead";
@@ -124,6 +124,7 @@ function Ruler(props: {
           <span className="mono">{at % 1000 === 0 ? `${at / 1000}s` : `${at / 1000}`}</span>
         </span>
       ))}
+      <EventTicks length={length} />
       <RulerTicks length={length} />
     </div>
   );

@@ -677,3 +677,18 @@ button.bar {
   z-index: 1;
   transform: translateX(-50%);
 }
+
+.record-button[aria-pressed="true"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.event-tick {
+  position: absolute;
+  bottom: 0;
+  width: var(--border-width);
+  height: 10px;
+  background: var(--port-events);
+  pointer-events: auto;
+}
