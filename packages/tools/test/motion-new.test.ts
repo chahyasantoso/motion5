@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,6 +20,8 @@ import { callerPiecesRoot } from "../src/page/root";
 import { guard } from "../src/pages/live/guard";
 
 const PIECES_ROOT = callerPiecesRoot();
+const HAS_FFMPEG =
+  spawnSync("ffmpeg", ["-version"]).status === 0 && spawnSync("ffprobe", ["-version"]).status === 0;
 
 const roots: string[] = [];
 function root(): string {
@@ -303,28 +306,32 @@ describe("gerak new", () => {
     });
   });
 
-  it("renders a newly scaffolded --three page without --to or --size, using its scene length and frame", async () => {
-    const dir = appRoot();
-    writeFileSync(join(dir, "vite.config.ts"), 'export { default } from "../../vite.config";\n');
-    const result = scaffold("render-three", dir, { three: true });
-    if (result.kind !== "written") throw new Error(JSON.stringify(result));
-    const out = join(dir, "out.mp4");
-    const parsed = parseRenderArgs([
-      "render-three/render-three.html",
-      "--root",
-      dir,
-      "--fps",
-      "25",
-      "--out",
-      out,
-    ]);
-    if (parsed.kind !== "ok") throw new Error(parsed.message);
-    const rendered = await renderPage(parsed);
-    expect(rendered.kind).toBe("rendered");
-    if (rendered.kind !== "rendered") return;
-    expect(rendered.to).toBe(800);
-    expect(rendered.width).toBe(1280);
-    expect(rendered.height).toBe(720);
-    expect(rendered.pageErrors).toEqual([]);
-  }, 60000);
+  it.skipIf(!HAS_FFMPEG)(
+    "renders a newly scaffolded --three page without --to or --size, using its scene length and frame",
+    async () => {
+      const dir = appRoot();
+      writeFileSync(join(dir, "vite.config.ts"), 'export { default } from "../../vite.config";\n');
+      const result = scaffold("render-three", dir, { three: true });
+      if (result.kind !== "written") throw new Error(JSON.stringify(result));
+      const out = join(dir, "out.mp4");
+      const parsed = parseRenderArgs([
+        "render-three/render-three.html",
+        "--root",
+        dir,
+        "--fps",
+        "25",
+        "--out",
+        out,
+      ]);
+      if (parsed.kind !== "ok") throw new Error(parsed.message);
+      const rendered = await renderPage(parsed);
+      expect(rendered.kind).toBe("rendered");
+      if (rendered.kind !== "rendered") return;
+      expect(rendered.to).toBe(800);
+      expect(rendered.width).toBe(1280);
+      expect(rendered.height).toBe(720);
+      expect(rendered.pageErrors).toEqual([]);
+    },
+    60000,
+  );
 });
