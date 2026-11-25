@@ -1,6 +1,7 @@
 import { callerDir, piecesRoot, SAFE_ZONE_NAMES } from "@gerak/tools/page";
 import { unreachable } from "@gerak/core";
-import { addPin, clearPins, parseNewPin, readPins, resolvePin } from "./pin-store";
+import { addPin, clearPins, readPins, resolvePin } from "./pin-store";
+import { parseNewPin } from "./pins";
 import type { Pin, PinPlace } from "./pins";
 import { BUS_PATH, type StudioCommand } from "./protocol";
 import { readDiscovery, type Discovery } from "./server/discovery";

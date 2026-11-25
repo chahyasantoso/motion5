@@ -1,4 +1,5 @@
-import { relative, resolve, sep } from "node:path";
+import { mkdirSync } from "node:fs";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SAFE_ZONE_NAMES, safeZone } from "@gerak/tools/page";
 import type { Plugin, ViteDevServer } from "vite";
@@ -7,7 +8,8 @@ import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
 import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
 import { parseCommand } from "../command";
-import { addPin, parseNewPin, pinsPath, readPins, resolvePin } from "../pin-store";
+import { addPin, pinsPath, readPins, resolvePin } from "../pin-store";
+import { parseNewPin } from "../pins";
 import { PINS_EVENT } from "../pins";
 import { createRelay } from "./bus";
 import type { SharedBrowser } from "./browser";
@@ -139,6 +141,7 @@ export function studioPlugin(options: {
         if (resolve(file) !== resolve(pinsFile)) return;
         server.ws.send({ type: "custom", event: PINS_EVENT, data: { piece: "*" } });
       };
+      mkdirSync(dirname(pinsFile), { recursive: true });
       server.watcher.add(pinsFile);
       server.watcher.on("change", pinsChanged);
       server.watcher.on("add", pinsChanged);

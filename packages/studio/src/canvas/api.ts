@@ -1,6 +1,6 @@
 import type { StudioGraph } from "../graph";
 import type { CanvasLayout } from "../layout";
-import type { NewPin, Pin, PinPlace } from "../pins";
+import { parsePins, type NewPin, type Pin } from "../pins";
 import type { Rect } from "../protocol";
 
 /** A platform's reserved margins, as `GET /__gerak/safe-zones` answers them. */
@@ -135,91 +135,12 @@ export async function saveLayout(piece: string, layout: CanvasLayout): Promise<v
   }
 }
 
-const text = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
-const count = (value: unknown): number | undefined =>
-  typeof value === "number" && Number.isFinite(value) ? value : undefined;
-
-function placeOf(value: unknown): PinPlace | undefined {
-  const given = record(value);
-  const x = count(given?.["x"]);
-  const y = count(given?.["y"]);
-  switch (given?.["kind"]) {
-    case "card":
-      return { kind: "card" };
-    case "moment":
-      return { kind: "moment" };
-    case "stage":
-      return x === undefined || y === undefined ? undefined : { kind: "stage", x, y };
-    default:
-      return undefined;
-  }
-}
-
-function boxOf(value: unknown): Rect | undefined {
-  const given = record(value);
-  const x = count(given?.["x"]);
-  const y = count(given?.["y"]);
-  const width = count(given?.["width"]);
-  const height = count(given?.["height"]);
-  return x === undefined || y === undefined || width === undefined || height === undefined
-    ? undefined
-    : { x, y, width, height };
-}
-
-/** One pin as the server's own store wrote it, or undefined when a field the canvas reads is off. */
-function pinOf(value: unknown): Pin | undefined {
-  const given = record(value);
-  const place = placeOf(given?.["place"]);
-  const view = record(given?.["viewport"]);
-  const id = count(given?.["id"]);
-  const atMs = count(given?.["atMs"]);
-  const scrollY = count(given?.["scrollY"]);
-  const piece = text(given?.["piece"]);
-  const preset = text(view?.["preset"]);
-  const note = text(given?.["note"]);
-  const createdAt = text(given?.["createdAt"]);
-  const status = given?.["status"];
-  if (
-    given === undefined ||
-    place === undefined ||
-    id === undefined ||
-    atMs === undefined ||
-    scrollY === undefined ||
-    piece === undefined ||
-    preset === undefined ||
-    note === undefined ||
-    createdAt === undefined ||
-    (status !== "open" && status !== "resolved")
-  )
-    return undefined;
-  return {
-    id,
-    piece,
-    place,
-    card: text(given["card"]),
-    scene: text(given["scene"]),
-    shot: text(given["shot"]),
-    file: text(given["file"]),
-    part: count(given["part"]),
-    viewport: { preset, safeZone: text(view?.["safeZone"]) },
-    atMs,
-    scrollY,
-    preset: text(given["preset"]),
-    pose: record(given["pose"]),
-    restBox: boxOf(given["restBox"]),
-    note,
-    status,
-    createdAt,
-  };
-}
-
 /** The pins of `piece` the file lists; empty when the server cannot answer. */
 export async function fetchPins(piece: string): Promise<readonly Pin[]> {
   try {
     const response = await fetch(`/__gerak/pins${query(piece)}`);
     const list = record(await jsonOf(response))?.["pins"];
-    return Array.isArray(list) ? list.flatMap((raw) => pinOf(raw) ?? []) : [];
+    return parsePins(list);
   } catch {
     return [];
   }
