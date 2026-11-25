@@ -7,6 +7,8 @@ import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
 import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
 import { parseCommand } from "../command";
+import { addPin, parseNewPin, pinsPath, readPins, resolvePin } from "../pin-store";
+import { PINS_EVENT } from "../pins";
 import { createRelay } from "./bus";
 import type { SharedBrowser } from "./browser";
 import { checkQueue } from "./check";
@@ -132,6 +134,15 @@ export function studioPlugin(options: {
       server.watcher.on("change", changed);
       server.watcher.on("add", changed);
       server.watcher.on("unlink", changed);
+      const pinsFile = pinsPath(root);
+      const pinsChanged = (file: string): void => {
+        if (resolve(file) !== resolve(pinsFile)) return;
+        server.ws.send({ type: "custom", event: PINS_EVENT, data: { piece: "*" } });
+      };
+      server.watcher.add(pinsFile);
+      server.watcher.on("change", pinsChanged);
+      server.watcher.on("add", pinsChanged);
+      server.watcher.on("unlink", pinsChanged);
       server.ws.on(REPLY_EVENT, (data: unknown) => {
         relay.receive(data);
       });
@@ -184,6 +195,33 @@ export function studioPlugin(options: {
               if (result.kind === "graph")
                 json(200, writeLayout(layoutPath(root, piece), given, result.graph));
               else json(422, { error: result.message });
+              return;
+            }
+            case "GET /__gerak/pins":
+              json(200, { pins: readPins(root).filter((pin) => pin.piece === piece) });
+              return;
+            case "POST /__gerak/pins": {
+              let body: unknown;
+              try {
+                body = JSON.parse(await bodyOf(req));
+              } catch {
+                json(400, { error: "The body is not JSON." });
+                return;
+              }
+              const given = parseNewPin(body);
+              if (given === undefined || given.piece !== piece) {
+                json(400, { error: "The body is not a pin of this piece." });
+                return;
+              }
+              json(200, { pin: addPin(root, given) });
+              return;
+            }
+            case "POST /__gerak/pins/resolve": {
+              const text = url.searchParams.get("id") ?? "";
+              const pin = /^\d+$/.test(text) ? resolvePin(root, Number(text)) : undefined;
+              if (pin === undefined || pin.piece !== piece)
+                json(404, { error: `No pin ${text} on ${piece}.` });
+              else json(200, { pin });
               return;
             }
             case `POST ${BUS_PATH}`: {
