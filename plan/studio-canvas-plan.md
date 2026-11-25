@@ -49,9 +49,9 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   | --- | --- | --- |
   | Source | `audio`, `captions`, `clip`, `image`, `model`, `input` | waveform, transcript lines, poster frame, thumbnail |
   | Tool (a job) | `beats`, `cues` | cue ticks; state chip and Run |
-  | Timing | `beat`, `shot`, `scene` | a bar in the piece's ms, overlap badge |
+  | Timing | `beat`, `shot`, `scene` | a bar in the piece's ms, overlap badge; a scene lists its shots and its cast as rows (Decision 9) |
   | Look | `look` | colour swatches, type, space (Decision 10) |
-  | Cast | `box`, `text`, `shape`, `object`, `list` | mini frame with box and trail, tag and text (Decision 9) |
+  | Cast (pulled out) | `box`, `text`, `shape`, `object`, `list` | mini frame with box and trail, tag and text (Decision 9) |
   | Move | `motion`, `code` | sparkline of each field; knobs |
   | Output | `preview`, `check`, `render` | the real page; findings; render progress |
 
@@ -98,12 +98,14 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - The canvas engine is React Flow (`@xyflow/react`, MIT), added as a dependency of `@gerak/tools`; gerak owns the cards, wires and theme drawn inside it.
 - This design system is the Studio's own; it never styles a piece. A piece's look stays its own (Decision 10).
 
-### 9. Cast cards join the page and the scene (`@gerak/tools`)
+### 9. Casts are rows in their scene card, and can be pulled out (`@gerak/tools`)
 
-- A cast card stands for one name on both sides: the `data-cast` element in `<name>.html` (from `scanHtmlCasts`) and the scene member of that name. The card links to both: open the element in the page, open the member in the scene file.
-- Its body is a mini frame in the stage's aspect: the element's box at the playhead, its trail across the scene (from `sampleScene`), and its rest box from the measure cache; below it the tag, first class, text (truncated) and the member's `steps`. A selected card also shows a live crop of the preview at that box.
+- A cast stands for one name on both sides: the `data-cast` element in `<name>.html` (from `scanHtmlCasts`) and the scene member of that name. It links to both: open the element in the page, open the member in the scene file.
+- By default a cast is a row in its scene card, grouped under the shot that owns it in collapsible sections; members that span the whole reel sit under "Reel", and a scroll page's sub-scenes group the same way. A row shows the name, its kind, its mismatch badge, and its own ports: `time` and `pose` in from moves, `media` in for a media box, `pose` out for a `carry`, `stage` out. Pieces with dozens of casts stay readable.
+- Dragging a row out of its scene card, or double-clicking it, pulls it out into a full cast card; its wires move with it, and pushing it back returns it to a row. Which casts are pulled out is kept in the sidecar. A wire always ends on one cast, row or card.
+- A full cast card's body is a mini frame in the stage's aspect: the element's box at the playhead, its trail across the scene (from `sampleScene`), and its rest box from the measure cache; below it the tag, first class, text (truncated) and the member's `steps`. A selected card also shows a live crop of the preview at that box.
 - A list or split text shows its part count and draws each part's box in the mini frame.
-- Mismatches are shown, never hidden: an element with no member gets an "unused cast" chip; a member with no element is a red card carrying the mount error; a stale measure cache shows "re-measure", which runs `gerak measure` as a job.
+- Mismatches are shown, never hidden, on the row and on the card: an element with no member gets an "unused cast" badge (listed under "Page only" in the scene card); a member with no element is red and carries the mount error; a stale measure cache shows "re-measure", which runs `gerak measure` as a job.
 
 ### 10. The look is a card too (`@gerak/tools`)
 
@@ -120,7 +122,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 | PR 2: Canvas shell, design system, preview card and timeline | 1, 7, 8 | `gerak live reel` opens a themed canvas laid out from the graph, the real page in the preview card with reel presets and safe zones, one timeline driving it, and layout kept in the sidecar |
 | PR 3: Live previews, knobs and picking | 5 (numbers), 6 (live), 7 | cast mini frames and move sparklines follow the playhead; knob, beat and shot-edge drags patch code and refuse stale writes; picking selects cards both ways |
 | PR 4: Sources, jobs and structural patches | 3, 5, 6 | captions dropped on the canvas run `gerak cues`, wire into the scene by a code patch, and a render card exports the reel with its audio, all without opening the file |
-| PR 5: Cast and look | 5 (CSS, text), 9, 10 | every cast card shows its element's box, trail and mismatches; the look card edits the reel's palette and type through custom properties, text cast cards edit their words, and contrast chips update at the playhead |
+| PR 5: Cast and look | 5 (CSS, text), 9, 10 | casts list as rows under their shots with their own ports, pull out into cards and back with their wires, and show their element's box, trail and mismatches; the look card edits the reel's palette and type through custom properties, text cast cards edit their words, and contrast chips update at the playhead |
 
 ## Tests first, per slice
 
@@ -128,7 +130,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - PR 2: the canvas renders every card the graph lists and no others; a moved card's position survives a reload and a stale id is pruned; the preview card runs `cookie.html` with its 3D binder at `1440x900` and `390x844`, and a reel at `1080x1920` with the `tiktok` overlay; a throwing edit keeps the last good frame; no literal colour appears outside `theme.css` (a repo test).
 - PR 3: scrubbing to `t` gives every cast card `frame(stage, t)`'s pose; dragging a beat edge rewrites its literal and a concurrent file change refuses the write; picking a 3D object selects its card.
 - PR 4: each patch in the closed set applies to its fixture and refuses a reshaped one without writing; a cues job turns `stale` when its `.srt` changes; the render card's settings reach `gerak render` as flags.
-- PR 5: a page with an extra `data-cast` element and a scene with a member missing from the page give one "unused cast" chip and one red card; a cast card's mini-frame box at `t` equals the element's measured box at `t`; editing a swatch rewrites only that custom property and refuses an inline colour; a text edit rewrites plain text and refuses an element with child markup; a dark-on-dark palette edit turns the affected text card's contrast chip amber.
+- PR 5: the reel's scene card lists each cast under the shot that owns it, and reel-level members under "Reel"; pulling a row out keeps its wires and its pulled-out state survives a reload; a page with an extra `data-cast` element and a scene with a member missing from the page give one "unused cast" badge and one red cast; a cast card's mini-frame box at `t` equals the element's measured box at `t`; editing a swatch rewrites only that custom property and refuses an inline colour; a text edit rewrites plain text and refuses an element with child markup; a dark-on-dark palette edit turns the affected text card's contrast chip amber.
 
 ## Proof and measure
 
