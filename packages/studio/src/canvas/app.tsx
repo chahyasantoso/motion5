@@ -22,7 +22,10 @@ import { FollowPill } from "./follow-pill";
 import { useFollow } from "./use-follow";
 import { StudioContext, type PreviewChoice, type StudioValue } from "./context";
 import { NODE_TYPES, nodeTypeOf, type CardNode } from "./nodes";
+import { buildPin, restorePin } from "./pin-actions";
+import type { PinRequest } from "./pin-view";
 import { Playhead } from "./playhead";
+import { usePins } from "./use-pins";
 import { DEFAULT_PRESET } from "./presets";
 import { Timeline } from "./timeline";
 import { Toolbar } from "./toolbar";
@@ -82,6 +85,8 @@ function Canvas(props: {
   const [focus, setFocus] = useState<FocusTarget>({ kind: "all" });
   const [maximised, setMaximised] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
+  const [pinMode, setPinMode] = useState(false);
+  const pinStore = usePins(piece);
   const area = useRef<HTMLDivElement | null>(null);
   const length = sceneLength(data.graph);
 
@@ -160,6 +165,8 @@ function Canvas(props: {
         void flow.fitView({ padding: 0.1, duration: 0 });
         remember();
       }
+      if (event.key === "p" || event.key === "P") setPinMode((on) => !on);
+      if (event.key === "Escape") setPinMode(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -171,7 +178,7 @@ function Canvas(props: {
     saver.save();
   };
   const followState = useFollow(follow, playhead);
-  const { resume } = useBus({
+  const { resume, control } = useBus({
     piece,
     page: data.page,
     length,
@@ -197,7 +204,36 @@ function Canvas(props: {
       ),
   });
 
+  const placePin = (request: PinRequest): void => {
+    setPinMode(false);
+    void pinStore.add(buildPin(request, { piece, graph: data.graph, focus, preview, playhead }));
+  };
+  const placeRef = useRef(placePin);
+  placeRef.current = placePin;
+  useEffect(() => {
+    const element = area.current;
+    if (!pinMode || element === null) return undefined;
+    const onClick = (event: MouseEvent): void => {
+      const target = event.target instanceof Element ? event.target : null;
+      const card = target?.closest("[data-card-id]") ?? null;
+      if (card === null || target?.closest("[data-pin-id], [data-pin-capture]") !== null) return;
+      const id = card.getAttribute("data-card-id");
+      const found = data.graph.cards.find((each) => each.id === id);
+      if (found === undefined || found.kind === "preview") return;
+      event.stopPropagation();
+      event.preventDefault();
+      placeRef.current({ kind: "card", card: found });
+    };
+    element.addEventListener("click", onClick, true);
+    return () => element.removeEventListener("click", onClick, true);
+  }, [pinMode, data.graph.cards]);
+
   const value: StudioValue = {
+    pins: pinStore.pins,
+    pinMode,
+    setPinMode,
+    placePin,
+    restorePin: (pin) => void restorePin(pin, control),
     piece,
     graph: data.graph,
     page: data.page,
@@ -214,7 +250,7 @@ function Canvas(props: {
   return (
     <StudioContext.Provider value={value}>
       <div className="studio">
-        <div className="canvas-area" ref={area} data-framed={framedNow}>
+        <div className="canvas-area" ref={area} data-framed={framedNow} data-pin-mode={pinMode}>
           <ReactFlow<CardNode>
             nodes={nodes}
             edges={edges}
@@ -248,7 +284,12 @@ function Canvas(props: {
             <MiniMap pannable zoomable ariaLabel="Minimap" />
             <Controls showInteractive={false} />
           </ReactFlow>
-          <Toolbar piece={piece} onFrame={() => void flow.fitView({ padding: 0.1, duration: 0 })} />
+          <Toolbar
+            piece={piece}
+            onFrame={() => void flow.fitView({ padding: 0.1, duration: 0 })}
+            pinMode={pinMode}
+            onPinMode={setPinMode}
+          />
           <div className="maximised-host" ref={setHost} />
           <Banner problem={value.problem} />
           <FollowPill state={followState} onResume={resume} />

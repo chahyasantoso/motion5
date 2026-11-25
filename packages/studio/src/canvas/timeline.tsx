@@ -3,6 +3,8 @@ import { useRef } from "react";
 import type { Card } from "../graph";
 import { useStudio } from "./context";
 import { Glyph } from "./icons";
+import { RulerTicks } from "./pin-marks";
+import { rulerMs } from "./pin-view";
 import type { Playhead, PlayheadState } from "./playhead";
 import { usePlayhead } from "./use-playhead";
 
@@ -73,13 +75,12 @@ function Ruler(props: {
   readonly ms: number;
 }): React.JSX.Element {
   const ref = useRef<HTMLDivElement | null>(null);
+  const studio = useStudio();
   const { playhead, length } = props;
-  const msAt = (event: React.PointerEvent): number => {
+  const msAt = (event: React.PointerEvent, snapped = true): number => {
     const box = ref.current?.getBoundingClientRect();
-    if (box === undefined || box.width === 0) return 0;
-    const raw = ((event.clientX - box.left) / box.width) * length;
-    const snapped = event.altKey ? raw : Math.round(raw / SNAP_MS) * SNAP_MS;
-    return Math.min(length, Math.max(0, snapped));
+    if (box === undefined) return 0;
+    return rulerMs(event.clientX, box, length, snapped && !event.altKey ? SNAP_MS : undefined);
   };
   const step = tickStep(length);
   const ticks: number[] = [];
@@ -96,6 +97,10 @@ function Ruler(props: {
       aria-valuemax={length}
       aria-valuenow={props.ms}
       onPointerDown={(event) => {
+        if (studio.pinMode) {
+          studio.placePin({ kind: "moment", atMs: msAt(event, false) });
+          return;
+        }
         event.currentTarget.setPointerCapture(event.pointerId);
         playhead.beginScrub();
         playhead.seek(msAt(event));
@@ -119,6 +124,7 @@ function Ruler(props: {
           <span className="mono">{at % 1000 === 0 ? `${at / 1000}s` : `${at / 1000}`}</span>
         </span>
       ))}
+      <RulerTicks length={length} />
     </div>
   );
 }

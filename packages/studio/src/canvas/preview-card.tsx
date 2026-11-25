@@ -5,6 +5,7 @@ import { Frame } from "./card-frame";
 import { useStudio } from "./context";
 import { Glyph } from "./icons";
 import { pageSrc } from "./page-src";
+import { StageCapture, StageMarks } from "./pin-marks";
 import { fitFrame, presetOf, PRESETS } from "./presets";
 import { SafeOverlay } from "./safe-overlay";
 
@@ -130,6 +131,8 @@ function Surface(): React.JSX.Element {
               }}
             />
             {zone === undefined ? null : <SafeOverlay zone={zone} />}
+            <StageMarks scale={fit.scale} />
+            <StageCapture pageWidth={size.width} />
           </div>
         )}
       </div>
