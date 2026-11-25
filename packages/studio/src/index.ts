@@ -9,4 +9,5 @@ export * from "./server/plugin";
 export * from "./server/start";
 export * from "./bus-cli";
 export * from "./server/bus";
+export * from "./command";
 export * from "./server/discovery";

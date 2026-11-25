@@ -2,7 +2,7 @@ import { unreachable } from "@gerak/core";
 import { useEffect, useRef } from "react";
 import type { StudioGraph } from "../graph";
 import { COMMAND_EVENT, REPLY_EVENT, type FocusTarget, type StudioReply } from "../protocol";
-import { parseCommand } from "../server/bus";
+import { parseCommand } from "../command";
 import type { Problem, ZoneMargins } from "./api";
 import { runCommand, type CanvasControl } from "./commands";
 import type { PreviewChoice } from "./context";

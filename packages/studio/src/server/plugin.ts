@@ -6,7 +6,8 @@ import { unreachable } from "@gerak/core";
 import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
 import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
-import { createRelay, parseCommand } from "./bus";
+import { parseCommand } from "../command";
+import { createRelay } from "./bus";
 
 /** The path the canvas page is served at. */
 export const STUDIO_PATH = "/__gerak/studio";
