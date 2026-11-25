@@ -2,8 +2,14 @@ import { relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SAFE_ZONE_NAMES, safeZone } from "@gerak/tools/page";
 import type { Plugin, ViteDevServer } from "vite";
+import { unreachable } from "@gerak/core";
 import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
+import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
+import { parseCommand } from "../command";
+import { createRelay } from "./bus";
+import type { SharedBrowser } from "./browser";
+import { checkQueue } from "./check";
 
 /** The path the canvas page is served at. */
 export const STUDIO_PATH = "/__gerak/studio";
@@ -101,9 +107,18 @@ function bodyOf(req: NodeJS.ReadableStream): Promise<string> {
   });
 }
 
-/** The Studio's dev-server routes: the canvas page, a piece's graph and its layout sidecar. */
-export function studioPlugin(options: { readonly root: string }): Plugin {
+/** The Studio's dev-server routes: the canvas page, a piece's graph, its layout sidecar and the command bus. */
+export function studioPlugin(options: {
+  readonly root: string;
+  readonly busTimeoutMs?: number;
+  /** The session's one browser, which checks run in; its only caller is `startStudio`, which always makes one. */
+  readonly browser: SharedBrowser;
+}): Plugin {
   const root = resolve(options.root);
+  const busTimeoutMs = options.busTimeoutMs ?? 10000;
+  const relay = createRelay();
+  const checks = checkQueue(options.browser);
+  let nextId = 0;
   return {
     name: "gerak-studio",
     apply: "serve",
@@ -117,6 +132,9 @@ export function studioPlugin(options: { readonly root: string }): Plugin {
       server.watcher.on("change", changed);
       server.watcher.on("add", changed);
       server.watcher.on("unlink", changed);
+      server.ws.on(REPLY_EVENT, (data: unknown) => {
+        relay.receive(data);
+      });
       const load = (file: string): Promise<unknown> => server.ssrLoadModule(file);
       server.middlewares.use((req, res, next) => {
         const url = new URL(req.url ?? "", "http://localhost");
@@ -166,6 +184,70 @@ export function studioPlugin(options: { readonly root: string }): Plugin {
               if (result.kind === "graph")
                 json(200, writeLayout(layoutPath(root, piece), given, result.graph));
               else json(422, { error: result.message });
+              return;
+            }
+            case `POST ${BUS_PATH}`: {
+              let body: unknown;
+              try {
+                body = JSON.parse(await bodyOf(req));
+              } catch {
+                json(400, { kind: "failed", message: "The body is not JSON." });
+                return;
+              }
+              const command = parseCommand(body);
+              if (command === undefined) {
+                json(400, { kind: "failed", message: "The body is not a studio command." });
+                return;
+              }
+              switch (command.kind) {
+                case "graph": {
+                  const result = await pieceGraph(root, piece, load);
+                  json(
+                    200,
+                    result.kind === "graph"
+                      ? { kind: "graph", graph: result.graph }
+                      : { kind: "failed", message: result.message },
+                  );
+                  return;
+                }
+                case "check": {
+                  const result = await pieceGraph(root, piece, load);
+                  if (result.kind !== "graph") {
+                    json(200, { kind: "failed", message: result.message });
+                    return;
+                  }
+                  const base = server.resolvedUrls?.local[0];
+                  if (base === undefined) {
+                    json(200, { kind: "failed", message: "The server has no address yet." });
+                    return;
+                  }
+                  json(200, await checks.run(result.graph, result.page, command, base));
+                  return;
+                }
+                case "status":
+                case "focus":
+                case "viewport":
+                case "seek":
+                case "play":
+                case "select":
+                case "inspect": {
+                  nextId += 1;
+                  const id = `${Date.now().toString(36)}-${nextId}`;
+                  const answer = relay.wait(id, busTimeoutMs);
+                  const envelope: CommandEnvelope = { id, piece, command };
+                  server.ws.send({ type: "custom", event: COMMAND_EVENT, data: envelope });
+                  const reply = await answer;
+                  if (reply === undefined)
+                    json(504, {
+                      kind: "failed",
+                      message: `No canvas answered for ${piece}. Run npx gerak studio open ${piece}, or open its canvas in a browser.`,
+                    });
+                  else json(200, reply);
+                  return;
+                }
+                default:
+                  unreachable(command);
+              }
               return;
             }
             default:

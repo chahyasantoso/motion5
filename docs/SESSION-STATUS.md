@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `main` after PR 640.
+- **Read against:** `main` after PR 643.
 
 ## Now
 
@@ -16,12 +16,12 @@ byte ceiling.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics` with O(1) idle pre-spawn `simulate()` fast-forward and 3D `cylinder` shapes/colliders, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves`) adds plain moves, `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
   `@gerak/tools` runs `npx gerak <command>` cleanly with core alone (`gerak measure` caches DOM, `objects` bounds and 3D list `counts` into `<name>.measure.json` and writes `<name>.cast.ts` with `cast` handles, `DomCast`, `ObjectCast`, and `CastName` even on failed mounts via static HTML scanning + `Binder.casts()`, while `motionLivePlugin()` keeps HTML entries synced on save in Vite; `gerak check`/`review` accept multi-viewport `--sizes` and `scroll:<selector>[±px]@ms` page actions, headless `gerak review`/`sample` accept `--measure` to refresh stale caches or missing cast modules and probe sticky/scroll/trigger/watched drivers with `--events` beside `cues` while expanding 3D list parts, and `gerak fps --action` runs repeatable actions on a real clock); `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages.
-  `@gerak/studio` (a `modules` package, forwarded as `gerak studio`) replaces the live editor: `gerak studio open <piece>` serves a themed node canvas over the piece's graph (`@gerak/stage/provenance` plus a static read of its files) with the real page in a preview card, size presets, safe zones and one timeline, and `gerak studio graph` prints that graph.
-  Decisions are ADR-170 to ADR-205; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
+  `@gerak/studio` (a `modules` package, forwarded as `gerak studio`) replaces the live editor: `gerak studio open <piece>` serves a themed node canvas over the piece's graph (`@gerak/stage/provenance` plus a static read of its files) with the real page in a preview card, size presets, safe zones and one timeline, and `gerak studio graph` prints that graph; `gerak studio status|focus|viewport|seek|play|select|inspect|check|graph` drives the open canvas through one command bus, a hidden worker frame takes over once the person uses the canvas, and `--headless` keeps a canvas and the warm `check` in one browser.
+  Decisions are ADR-170 to ADR-206; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **The Studio agent bus and pins (`plan/studio-agent-plan.md` PR 1): the agent drives the open canvas warm.** Then, in order: agent plan PRs 2–3, canvas PRs 3–4 (`plan/studio-canvas-plan.md`), marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
+- **Studio pins and recorded presets (`plan/studio-agent-plan.md` PR 2): the person marks cards, stage and moments, and the agent resolves them without screenshots.** Then, in order: agent plan PR 3, canvas PRs 3–4 (`plan/studio-canvas-plan.md`), marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
 
 ## Open, and not scheduled
 

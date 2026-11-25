@@ -51,12 +51,18 @@ function clockOf(driver: unknown): TimedClock | undefined {
   };
 }
 
-/** The first mount a page window registered, or `undefined` before the page mounts. */
-export function mountOf(win: Window | null | undefined): MountView | undefined {
+/** The first mount object a page window registered, unread, or `undefined` before the page mounts. */
+export function firstMount(win: Window | null | undefined): object | undefined {
   if (win === null || win === undefined) return undefined;
   const listed: unknown = Reflect.get(win, MOUNTS);
   const mounted: unknown = Array.isArray(listed) ? listed[0] : undefined;
-  if (typeof mounted !== "object" || mounted === null) return undefined;
+  return typeof mounted === "object" && mounted !== null ? mounted : undefined;
+}
+
+/** The first mount a page window registered, or `undefined` before the page mounts. */
+export function mountOf(win: Window | null | undefined): MountView | undefined {
+  const mounted = firstMount(win);
+  if (mounted === undefined) return undefined;
   const replace = method(mounted, "replace");
   if (replace === undefined) return undefined;
   const duration: unknown = Reflect.get(mounted, "durationMs");

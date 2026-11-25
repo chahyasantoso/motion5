@@ -41,21 +41,27 @@ export async function runGraph(
   }
 }
 
-const OPEN_USAGE = "usage: gerak studio open <piece> [--root dir] [--port number]";
+const OPEN_USAGE = "usage: gerak studio open <piece> [--root dir] [--port number] [--headless]";
 
 /** Parses `gerak studio open`: the piece, the pieces folder and the port, or why not. */
-export function parseOpenArgs(
-  argv: readonly string[],
-):
-  | { readonly kind: "open"; readonly piece: string; readonly root: string; readonly port: number }
+export function parseOpenArgs(argv: readonly string[]):
+  | {
+      readonly kind: "open";
+      readonly piece: string;
+      readonly root: string;
+      readonly port: number;
+      readonly headless: boolean;
+    }
   | { readonly kind: "usage"; readonly message: string } {
   const positional: string[] = [];
   let rootFlag: string | undefined;
   let port = 5173;
+  let headless = false;
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     const value = argv[index + 1];
-    if (arg === "--root" || arg === "--port") {
+    if (arg === "--headless") headless = true;
+    else if (arg === "--root" || arg === "--port") {
       if (value === undefined) return { kind: "usage", message: `${arg} needs a value.` };
       index += 1;
       if (arg === "--root") rootFlag = value;
@@ -72,5 +78,5 @@ export function parseOpenArgs(
   if (piece === undefined || positional.length !== 1) return { kind: "usage", message: OPEN_USAGE };
   const found = piecesRoot(callerDir(), rootFlag);
   if (found.kind === "missing") return { kind: "usage", message: found.message };
-  return { kind: "open", piece, root: found.root, port };
+  return { kind: "open", piece, root: found.root, port, headless };
 }

@@ -4,6 +4,7 @@ import type { Card, PortType } from "../graph";
 import { Frame } from "./card-frame";
 import { useStudio } from "./context";
 import { Glyph } from "./icons";
+import { pageSrc } from "./page-src";
 import { fitFrame, presetOf, PRESETS } from "./presets";
 import { SafeOverlay } from "./safe-overlay";
 
@@ -121,7 +122,7 @@ function Surface(): React.JSX.Element {
               ref={frame}
               title="Preview"
               data-preview=""
-              src={`/${studio.page}?gerakStudio=1`}
+              src={pageSrc(studio.page)}
               style={{
                 width: size.width,
                 height: size.height,
