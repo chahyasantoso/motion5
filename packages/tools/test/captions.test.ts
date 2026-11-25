@@ -190,4 +190,20 @@ describe("sorting and captionCues", () => {
       words: ["Hello", "world", "now"],
     });
   });
+
+  it("counts cumulative words across multi-word lines and skips whitespace-only items", () => {
+    const items = [
+      { at: 100, end: 500, text: "Ship faster" },
+      { at: 600, end: 700, text: "   \t " },
+      { at: 800, end: 1200, text: "with  one scene" },
+    ];
+
+    expect(captionCues(items, "word")).toEqual({
+      cues: [
+        { name: "word", at: 100, value: 2 },
+        { name: "word", at: 800, value: 5 },
+      ],
+      words: ["Ship", "faster", "with", "one", "scene"],
+    });
+  });
 });

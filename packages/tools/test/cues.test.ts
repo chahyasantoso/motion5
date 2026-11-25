@@ -51,11 +51,11 @@ describe("runCues end-to-end", () => {
         [
           "1",
           "00:00:00,200 --> 00:00:01,000",
-          "First line",
+          "Ship faster",
           "",
           "2",
           "00:00:01,200 --> 00:00:02,000",
-          "Second line",
+          "with one scene",
         ].join("\n"),
       );
 
@@ -74,10 +74,16 @@ describe("runCues end-to-end", () => {
       if (result.kind !== "cues") return;
 
       expect(JSON.parse(readFileSync(result.path, "utf8"))).toEqual([
-        { name: "word", at: 200, value: 1 },
-        { name: "word", at: 1200, value: 2 },
+        { name: "word", at: 200, value: 2 },
+        { name: "word", at: 1200, value: 5 },
       ]);
-      expect(JSON.parse(readFileSync(result.words, "utf8"))).toEqual(["First line", "Second line"]);
+      expect(JSON.parse(readFileSync(result.words, "utf8"))).toEqual([
+        "Ship",
+        "faster",
+        "with",
+        "one",
+        "scene",
+      ]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

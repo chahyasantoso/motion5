@@ -307,18 +307,18 @@ export function parseCaptions(format: CaptionFormat, text: string): Parsed {
   }
 }
 
-/** Converts timed caption items into sequential word-reveal cues and a sibling word list. */
+/** Converts timed caption items into cumulative word-count cues and a sibling word list. */
 export function captionCues(
   items: readonly Timed[],
   name: string,
 ): { readonly cues: readonly Cue[]; readonly words: readonly string[] } {
   const cues: Cue[] = [];
   const words: string[] = [];
-  for (let i = 0; i < items.length; i += 1) {
-    const item = items[i];
-    if (item === undefined) continue;
-    cues.push({ name, at: item.at, value: i + 1 });
-    words.push(item.text);
+  for (const item of items) {
+    const itemWords = item.text.split(/\s+/).filter((word) => word.length > 0);
+    if (itemWords.length === 0) continue;
+    words.push(...itemWords);
+    cues.push({ name, at: item.at, value: words.length });
   }
   return { cues, words };
 }
