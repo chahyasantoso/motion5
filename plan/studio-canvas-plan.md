@@ -93,7 +93,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 - Cards: 12 px radius, hairline border, 8 px spacing grid, a soft shadow only on hover and selection; header with icon, name and kind chip; body preview; ports on the edges.
 - Type: the system UI font at 13 px base with one scale, monospaced numbers for ms, px and knob values.
 - Wires: smooth curves, dimmed when unrelated to the selection, a moving dash while a job they feed runs.
-- Canvas: dot grid, snap to grid, minimap, zoom controls; space-drag pans, `F` frames all, `/` opens a quick card palette for the canvas (find and focus, not create).
+- Canvas: dot grid, minimap and zoom controls. Dragging empty canvas, space-drag or a two-finger scroll pans; the wheel or a pinch zooms about the pointer; `F` frames all; Shift-drag box-selects. A card drags by its header, snaps to the grid and keeps its place in the sidecar; dragging from a port to a matching port proposes a wire, which applies as a patch (Decision 5) or shows "edit in code". `/` opens a quick card palette (find and focus, not create).
 - Interface motion of 200 ms or less, none under `prefers-reduced-motion`; visible focus rings; text contrast at least 4.5:1.
 - The canvas engine is React Flow (`@xyflow/react`, MIT), added as a dependency of `@gerak/tools`; gerak owns the cards, wires and theme drawn inside it.
 - This design system is the Studio's own; it never styles a piece. A piece's look stays its own (Decision 10).
