@@ -4,7 +4,7 @@
 
 An agent making a piece tags the elements its motions only read (a slot an object sits in, the 3D canvas, a sticky section) as marks, and stops listing them in `scene(...)` just to get them measured; a person reading the scene, or the Studio canvas, then sees only what moves as cast. The code adds a `data-mark` attribute, a `mark` element with read-only geometry in `@gerak/stage`, measuring of every mark on a page mount and in `gerak measure`, and a `marks` export in the generated cast file.
 
-Status: planned 2026-11-25. Two pull requests in order. It runs after the Studio agent plan's PR 1 and before canvas PR 5, whose `reads:` chips and "Marks" section use it.
+Status: planned 2026-11-25. Two pull requests in order. It runs after canvas PR 4 and before canvas PR 5, whose `reads:` chips and "Marks" section use it.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
