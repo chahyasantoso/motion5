@@ -100,6 +100,9 @@ describe("gerak new", () => {
     expect(main).toContain('import { createStage3d } from "@gerak/three";');
     expect(main).toContain('import piece, { lens, size } from "./rope-word-scene";');
     expect(main).not.toMatch(/react/i);
+    const sceneSource = readFileSync(join(dir, "rope-word/src/rope-word-scene.ts"), "utf8");
+    expect(sceneSource).not.toContain("clockDriver");
+    expect(sceneSource).not.toContain("export const clock");
   });
 
   it("writes files that are already formatted", async () => {

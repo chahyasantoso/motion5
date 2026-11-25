@@ -1,4 +1,3 @@
-import { clockDriver } from "@gerak/dom";
 import { aim, motion, project3d, type Lens3d, type Pose3d, type Time } from "@gerak/core";
 import { beat, box, object, scene } from "@gerak/stage";
 
@@ -35,6 +34,3 @@ export default scene(
   object("box").moves(motion(boxAt).in(whole)),
   box("label").moves(motion(pinned).in(whole)),
 );
-
-/** The scene's clock on the page's frames. */
-export const clock = () => clockDriver({ duration: LENGTH });
