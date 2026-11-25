@@ -2,8 +2,17 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Writable } from "node:stream";
+import type { Page } from "playwright-core";
 import { parseNumbers } from "./args";
-import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
+import {
+  captureFrame,
+  fromCaller,
+  readPageArgs,
+  withPages,
+  type PageSession,
+  type PageTarget,
+} from "./page";
 import { unreachable } from "./unreachable";
 
 /** `mp4` at 60, 30, or 25 frames a second, or a 640 px `gif` at 25. */
@@ -19,11 +28,12 @@ export interface AudioTrack {
   readonly gain: number;
 }
 
-/** What `gerak render` runs: the page, size mode, optional end `to` in ms, `fps`, `audio` tracks, `format`, and `out`. */
+/** What `gerak render` runs: the page, size mode, optional end `to` in ms, `fps`, `workers`, `audio` tracks, `format`, and `out`. */
 export interface RenderRequest extends PageTarget {
   readonly size: "given" | "page";
   readonly to?: number;
   readonly fps: RenderFps;
+  readonly workers: number;
   readonly audio: readonly AudioTrack[];
   readonly format: RenderFormat;
   readonly out?: string;
@@ -43,6 +53,7 @@ export type RenderResult =
       readonly height: number;
       readonly frames: number;
       readonly fps: RenderFps;
+      readonly workers: number;
       readonly to: number;
       readonly seconds: number;
       readonly speed: { readonly framesPerSecond: number; readonly wallMs: number };
@@ -50,8 +61,14 @@ export type RenderResult =
     }
   | { readonly kind: "no-ffmpeg"; readonly message: string };
 
+const MAX_WORKERS = 16;
 const USAGE =
-  "usage: gerak render <page> [--to ms] [--fps 60|30|25] [--audio file[@ms][:gain]]... [--format mp4|gif] [--out file] [--size WxH] [--root dir | --url address]";
+  "usage: gerak render <page> [--to ms] [--fps 60|30|25] [--workers n] [--audio file[@ms][:gain]]... [--format mp4|gif] [--out file] [--size WxH] [--root dir | --url address]";
+
+/** Default worker count for `gerak render` (1 keeps Chromium rasterization deterministic across runs). */
+export function defaultRenderWorkers(): number {
+  return 1;
+}
 
 /** Computes rounded frame timestamps in ms from 0 while `i * 1000 / fps <= to`. */
 export function frameTimes(to: number, fps: RenderFps): readonly number[] {
@@ -121,7 +138,7 @@ export function parseRenderArgs(argv: readonly string[]): RenderArgs {
     rest.push(arg);
   }
 
-  const read = readPageArgs(rest, ["--to", "--fps", "--format", "--out"]);
+  const read = readPageArgs(rest, ["--to", "--fps", "--workers", "--format", "--out"]);
   if (read.kind === "usage") return usage(read.message);
 
   let to: number | undefined;
@@ -129,6 +146,16 @@ export function parseRenderArgs(argv: readonly string[]): RenderArgs {
     const parsed = parseNumbers(read.flags.get("--to"));
     if (parsed?.length !== 1 || parsed[0] === undefined) return usage("--to needs one time in ms.");
     to = parsed[0];
+  }
+
+  let workers = defaultRenderWorkers();
+  if (read.flags.has("--workers")) {
+    const raw = read.flags.get("--workers");
+    const parsed = raw === undefined || raw.trim() === "" ? NaN : Number(raw);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_WORKERS) {
+      return usage(`--workers must be an integer from 1 to ${MAX_WORKERS}.`);
+    }
+    workers = parsed;
   }
 
   const format = read.flags.get("--format") ?? "mp4";
@@ -152,6 +179,7 @@ export function parseRenderArgs(argv: readonly string[]): RenderArgs {
     size: read.flags.has("--size") ? "given" : "page",
     ...(to === undefined ? {} : { to }),
     fps,
+    workers,
     audio,
     format,
     ...(out === undefined ? {} : { out: fromCaller(out) }),
@@ -244,6 +272,144 @@ export function encoderArgs(
   }
 }
 
+async function readPageFrameSize(
+  page: Page,
+): Promise<{ readonly width: number; readonly height: number } | undefined> {
+  return page.evaluate(() => {
+    const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+    if (!Array.isArray(listed) || listed.length === 0) return undefined;
+    const readFrame = (
+      mounted: unknown,
+    ): { readonly width: number; readonly height: number } | undefined => {
+      const measure: unknown = Reflect.get(Object(mounted), "measure");
+      if (typeof measure !== "function") return undefined;
+      const measurement: unknown = Reflect.apply(measure, mounted, []);
+      const f: unknown = Reflect.get(Object(measurement), "frame");
+      if (f === null || typeof f !== "object") return undefined;
+      const w: unknown = Reflect.get(f, "width");
+      const h: unknown = Reflect.get(f, "height");
+      if (typeof w === "number" && w > 0 && typeof h === "number" && h > 0) {
+        return { width: Math.round(w), height: Math.round(h) };
+      }
+      return undefined;
+    };
+    for (const mounted of listed) {
+      const d: unknown = Reflect.get(Object(mounted), "durationMs");
+      if (typeof d === "number" && Number.isFinite(d)) {
+        const found = readFrame(mounted);
+        if (found !== undefined) return found;
+      }
+    }
+    return readFrame(listed[0]);
+  });
+}
+
+async function readMaxDuration(page: Page): Promise<number | undefined> {
+  return page.evaluate(() => {
+    const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+    if (!Array.isArray(listed)) return undefined;
+    let max: number | undefined;
+    for (const mounted of listed) {
+      const d: unknown = Reflect.get(Object(mounted), "durationMs");
+      if (typeof d === "number" && Number.isFinite(d)) {
+        max = max === undefined ? d : Math.max(max, d);
+      }
+    }
+    return max;
+  });
+}
+
+async function writeFrame(stdin: Writable, shot: Buffer): Promise<void> {
+  if (!stdin.write(shot)) {
+    await new Promise<void>((resolve) => stdin.once("drain", () => resolve()));
+  }
+}
+
+async function renderParallel(
+  sessions: readonly PageSession[],
+  times: readonly number[],
+  stdin: Writable,
+): Promise<void> {
+  const n = sessions.length;
+  let written = 0;
+  let failed: unknown;
+  let stdinClosed = false;
+  const ready = new Map<number, Buffer>();
+  let notifyWriter: (() => void) | undefined;
+  const workerWaiters = new Set<() => void>();
+
+  const wakeAll = (): void => {
+    notifyWriter?.();
+    notifyWriter = undefined;
+    for (const wake of workerWaiters) wake();
+    workerWaiters.clear();
+  };
+
+  const onStdinError = (): void => {
+    stdinClosed = true;
+    wakeAll();
+  };
+  stdin.on("error", onStdinError);
+
+  const recordFailure = (error: unknown): never => {
+    if (failed === undefined) failed = error;
+    wakeAll();
+    throw error;
+  };
+
+  const waitForWriterSlot = async (j: number): Promise<void> => {
+    // Bound in-flight frames to 2n ahead of the writer so memory stays capped.
+    while (failed === undefined && !stdinClosed && j >= written + 2 * n) {
+      await new Promise<void>((resolve) => {
+        workerWaiters.add(resolve);
+      });
+    }
+  };
+
+  const writeInOrder = async (): Promise<void> => {
+    while (written < times.length && failed === undefined && !stdinClosed) {
+      const shot = ready.get(written);
+      if (shot === undefined) {
+        await new Promise<void>((resolve) => {
+          notifyWriter = resolve;
+        });
+        continue;
+      }
+      ready.delete(written);
+      await writeFrame(stdin, shot);
+      written += 1;
+      for (const wake of workerWaiters) wake();
+      workerWaiters.clear();
+    }
+  };
+
+  const runWorker = async (k: number, session: PageSession): Promise<void> => {
+    for (let j = k; j < times.length; j += n) {
+      await waitForWriterSlot(j);
+      if (failed !== undefined || stdinClosed) return;
+      const at = times[j];
+      if (at === undefined) continue;
+      await session.advanceTo(at);
+      const shot = await captureFrame(session.page);
+      if (failed !== undefined || stdinClosed) return;
+      ready.set(j, shot);
+      if (j === written) {
+        notifyWriter?.();
+        notifyWriter = undefined;
+      }
+    }
+  };
+
+  try {
+    await Promise.all([
+      writeInOrder().catch(recordFailure),
+      ...sessions.map((session, k) => runWorker(k, session).catch(recordFailure)),
+    ]);
+  } finally {
+    stdin.off("error", onStdinError);
+  }
+}
+
 /** Plays the page on the paused clock, one screenshot per frame, and encodes them with optional mixed audio. */
 export async function renderPage(request: RenderRequest): Promise<RenderResult> {
   if (spawnSync("ffmpeg", ["-version"]).status !== 0) {
@@ -252,6 +418,10 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
       message: "gerak render needs ffmpeg on the PATH: https://ffmpeg.org/download.html",
     };
   }
+  const workers = typeof request.workers === "number" ? request.workers : defaultRenderWorkers();
+  if (!Number.isInteger(workers) || workers < 1 || workers > MAX_WORKERS) {
+    throw new Error(`--workers must be an integer from 1 to ${MAX_WORKERS}, not ${workers}.`);
+  }
   for (const track of request.audio) {
     if (!existsSync(track.path)) {
       throw new Error(`Audio file ${track.path} not found.`);
@@ -259,7 +429,10 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
   }
   const path =
     request.out ?? join(mkdtempSync(join(tmpdir(), "motion-render-")), `render.${request.format}`);
-  const { value, pageErrors } = await withPage(request, async ({ page, advanceTo }) => {
+  const { value, pageErrors } = await withPages(request, workers, async (sessions) => {
+    const primary = sessions[0];
+    if (primary === undefined) throw new Error("Expected at least one page session.");
+
     let width = request.width;
     let height = request.height;
     let advanced = false;
@@ -267,38 +440,12 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
       case "given":
         break;
       case "page": {
-        await advanceTo(0);
+        await primary.advanceTo(0);
         advanced = true;
-        const frame = await page.evaluate(() => {
-          const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-          if (!Array.isArray(listed) || listed.length === 0) return undefined;
-          const readFrame = (
-            mounted: unknown,
-          ): { readonly width: number; readonly height: number } | undefined => {
-            const measure: unknown = Reflect.get(Object(mounted), "measure");
-            if (typeof measure !== "function") return undefined;
-            const measurement: unknown = Reflect.apply(measure, mounted, []);
-            const f: unknown = Reflect.get(Object(measurement), "frame");
-            if (f === null || typeof f !== "object") return undefined;
-            const w: unknown = Reflect.get(f, "width");
-            const h: unknown = Reflect.get(f, "height");
-            if (typeof w === "number" && w > 0 && typeof h === "number" && h > 0) {
-              return { width: Math.round(w), height: Math.round(h) };
-            }
-            return undefined;
-          };
-          for (const mounted of listed) {
-            const d: unknown = Reflect.get(Object(mounted), "durationMs");
-            if (typeof d === "number" && Number.isFinite(d)) {
-              const found = readFrame(mounted);
-              if (found !== undefined) return found;
-            }
-          }
-          return readFrame(listed[0]);
-        });
+        const frame = await readPageFrameSize(primary.page);
         if (frame !== undefined && (frame.width !== width || frame.height !== height)) {
-          await page.setViewportSize(frame);
-          await advanceTo(0);
+          await primary.page.setViewportSize(frame);
+          await primary.advanceTo(0);
           width = frame.width;
           height = frame.height;
         }
@@ -310,23 +457,22 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
 
     let to = request.to;
     if (to === undefined) {
-      if (!advanced) await advanceTo(0);
-      const maxDuration = await page.evaluate(() => {
-        const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-        if (!Array.isArray(listed)) return undefined;
-        let max: number | undefined;
-        for (const mounted of listed) {
-          const d: unknown = Reflect.get(Object(mounted), "durationMs");
-          if (typeof d === "number" && Number.isFinite(d)) {
-            max = max === undefined ? d : Math.max(max, d);
-          }
-        }
-        return max;
-      });
+      if (!advanced) await primary.advanceTo(0);
+      const maxDuration = await readMaxDuration(primary.page);
       if (maxDuration === undefined) {
         throw new Error("--to is needed: the page has no timed mount.");
       }
       to = maxDuration;
+    }
+
+    if (sessions.length > 1) {
+      const sizeChanged = width !== request.width || height !== request.height;
+      await Promise.all(
+        sessions.slice(1).map(async (session) => {
+          if (sizeChanged) await session.page.setViewportSize({ width, height });
+          await session.advanceTo(0);
+        }),
+      );
     }
 
     const times = frameTimes(to, request.fps);
@@ -342,12 +488,13 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
 
     const startedAt = performance.now();
     try {
-      for (const at of times) {
-        await advanceTo(at);
-        const shot = await page.screenshot();
-        if (!encoder.stdin.write(shot)) {
-          await new Promise<void>((resolve) => encoder.stdin.once("drain", () => resolve()));
+      if (sessions.length === 1) {
+        for (const at of times) {
+          await primary.advanceTo(at);
+          await writeFrame(encoder.stdin, await captureFrame(primary.page));
         }
+      } else {
+        await renderParallel(sessions, times, encoder.stdin);
       }
     } finally {
       encoder.stdin.end();
@@ -366,6 +513,7 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
     height: value.height,
     frames: value.frames,
     fps: request.fps,
+    workers,
     to: value.to,
     seconds: value.seconds,
     speed: { framesPerSecond, wallMs: value.wallMs },

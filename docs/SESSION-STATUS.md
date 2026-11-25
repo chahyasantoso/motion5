@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `feat/reels-pr4`, branched from `main` after PR 626.
+- **Read against:** `t3/lossless-parallel-render`, built on `feat/render-speed`.
 
 ## Now
 
@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **Reels (`plan/reels-plan.md`) PR 4 is built on `feat/reels-pr4`; next is a render-speed PR (faster lossless capture, parallel capture across pages, frames on exact ms instead of the held clock's 16 ms grid where a 60 fps frame at 17 ms shows 16 ms, and the `test:frames` capture that differs between runs on `main`), then Visual Studio (`plan/studio-plan.md`).**
+- **The render-speed PR is built on `feat/render-speed` (exact held-clock frame timestamps, fitted body scaling, lossless fast PNG capture, and parallel render workers defaulting to 1); Visual Studio (`plan/studio-plan.md`) comes next.**
 
 ## Open, and not scheduled
 

@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -64,6 +64,7 @@ describe("gerak render arguments", () => {
       size: "page",
       format: "mp4",
       fps: 60,
+      workers: 1,
       audio: [],
     });
     if (mp4Default.kind === "ok") expect(mp4Default.to).toBeUndefined();
@@ -122,6 +123,17 @@ describe("gerak render arguments", () => {
     if (winPath.kind === "ok") {
       expect(winPath.audio).toEqual([{ path: fromCaller("C:\\a\\vo.wav"), at: 500, gain: 0.3 }]);
     }
+  });
+
+  it("accepts valid --workers counts and refuses out-of-range or fractional values", () => {
+    const accepted = parseRenderArgs(["timing.html", "--workers", "3"]);
+    expect(accepted.kind).toBe("ok");
+    if (accepted.kind === "ok") expect(accepted.workers).toBe(3);
+
+    expect(parseRenderArgs(["timing.html", "--workers", "0"]).kind).toBe("usage");
+    expect(parseRenderArgs(["timing.html", "--workers", "17"]).kind).toBe("usage");
+    expect(parseRenderArgs(["timing.html", "--workers", "2.5"]).kind).toBe("usage");
+    expect(parseRenderArgs(["timing.html", "--workers"]).kind).toBe("usage");
   });
 
   it("builds deterministic encoderArgs for zero, one, and two audio tracks", () => {
@@ -353,5 +365,74 @@ describe.skipIf(!HAS_FFMPEG)("gerak render with ffmpeg and browser", () => {
       const video = probeStreams(outGiven).filter((s) => s.codec_type === "video");
       expect(video[0]).toMatchObject({ width: 96, height: 96 });
     }
+  }, 60_000);
+
+  it("renders byte-identical mp4 files with workers 1 and 3", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gerak-render-workers-"));
+    dirs.push(dir);
+    writeFileSync(
+      join(dir, "motion.html"),
+      `<!doctype html>
+<html>
+  <body style="margin:0;background:#112233">
+    <div id="box" style="position:absolute;left:0;top:20px;width:24px;height:24px;background:#ff6633"></div>
+    <script>
+      const box = document.getElementById("box");
+      let start;
+      globalThis[Symbol.for("@gerak/dom/held-step")] = () => {
+        start ??= performance.now();
+        box.style.transform = "translateX(" + ((performance.now() - start) * 0.1).toFixed(2) + "px)";
+      };
+    </script>
+  </body>
+</html>`,
+    );
+
+    const out1 = join(dir, "w1.mp4");
+    const out3 = join(dir, "w3.mp4");
+    const args1 = parseRenderArgs([
+      "motion.html",
+      "--root",
+      dir,
+      "--size",
+      "108x192",
+      "--fps",
+      "30",
+      "--to",
+      "400",
+      "--workers",
+      "1",
+      "--out",
+      out1,
+    ]);
+    const args3 = parseRenderArgs([
+      "motion.html",
+      "--root",
+      dir,
+      "--size",
+      "108x192",
+      "--fps",
+      "30",
+      "--to",
+      "400",
+      "--workers",
+      "3",
+      "--out",
+      out3,
+    ]);
+    expect(args1.kind).toBe("ok");
+    expect(args3.kind).toBe("ok");
+    if (args1.kind !== "ok" || args3.kind !== "ok") return;
+
+    const r1 = await renderPage(args1);
+    const r3 = await renderPage(args3);
+    expect(r1.kind).toBe("rendered");
+    expect(r3.kind).toBe("rendered");
+    if (r1.kind !== "rendered" || r3.kind !== "rendered") return;
+    expect(r1.workers).toBe(1);
+    expect(r3.workers).toBe(3);
+    expect(r1.frames).toBe(frameTimes(400, 30).length);
+    expect(r3.frames).toBe(frameTimes(400, 30).length);
+    expect(readFileSync(out1).equals(readFileSync(out3))).toBe(true);
   }, 60_000);
 });

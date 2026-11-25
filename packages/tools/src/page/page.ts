@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import type { Browser, Page } from "playwright-core";
+import type { Browser, CDPSession, Page } from "playwright-core";
 import { parseActions, perform, type PageAction } from "./actions";
 import { callerDir, piecesRoot } from "./root";
 import { pageServerConfig } from "./server";
@@ -179,11 +179,176 @@ function stepAndHoldAnimations(ms: number): void {
   }
 }
 
-/** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
-export async function withPage<T>(
+const cdpSessions = new WeakMap<Page, Promise<CDPSession>>();
+
+/** Captures the viewport as a lossless PNG using Chromium's fast-encode path. */
+export async function captureFrame(page: Page): Promise<Buffer> {
+  let pending = cdpSessions.get(page);
+  if (pending === undefined) {
+    pending = page
+      .context()
+      .newCDPSession(page)
+      .catch((error: unknown) => {
+        cdpSessions.delete(page);
+        throw error;
+      });
+    cdpSessions.set(page, pending);
+  }
+  const session = await pending;
+  const { data } = await session.send("Page.captureScreenshot", {
+    format: "png",
+    optimizeForSpeed: true,
+  });
+  return Buffer.from(data, "base64");
+}
+
+/** Opens one page in its own browser context, configures the clock, and runs frame 0. */
+async function openPageSession(
+  browser: Browser,
+  base: string,
   target: PageTarget,
-  visit: (session: PageSession) => Promise<T>,
-): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
+): Promise<{ readonly session: PageSession; readonly pageErrors: readonly string[] }> {
+  const context = await browser.newContext({
+    viewport: { width: target.width, height: target.height },
+  });
+  const page = await context.newPage();
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+  await page.addInitScript(seedRandom);
+  const real = target.clock === "real";
+  if (target.prepare !== undefined) await target.prepare(page);
+  if (!real) {
+    // Tells a page mount the clock is held, so it draws every element itself.
+    await page.addInitScript(() => {
+      Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
+    });
+    await page.clock.install({ time: 0 });
+    // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
+    await page.clock.pauseAt(1000);
+  }
+  const url = new URL(target.page, base).href;
+  // Chromium rejects `goto` on an error status with an empty body, so the status is read as it arrives.
+  let answered: number | undefined;
+  page.on("response", (reply) => {
+    if (reply.url() === url && reply.request().isNavigationRequest()) answered = reply.status();
+  });
+  const response = await page.goto(url, { waitUntil: "load" }).catch((error: unknown) => {
+    if (answered === undefined || answered < 400) throw error;
+    return null;
+  });
+  const status = response === null ? answered : response.status();
+  if (status === undefined || status >= 400)
+    throw new Error(
+      `Page ${target.page} answered ${status === undefined ? "no response" : status} from ${url}.`,
+    );
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
+  const readyError = await page.evaluate(async () => {
+    try {
+      await Promise.resolve(Reflect.get(window, "__motionReady"));
+      return undefined;
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+  });
+  if (readyError !== undefined && !pageErrors.includes(readyError)) pageErrors.push(readyError);
+  let reportedMediaTimeout = false;
+  const settleMedia = async (atMs: number): Promise<void> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timedOut = false;
+    const settled = page.evaluate(async () => {
+      const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+      if (!Array.isArray(listed) || listed.length === 0) return;
+      const pending: Promise<unknown>[] = [];
+      for (const mounted of listed) {
+        if (mounted === null || typeof mounted !== "object") continue;
+        const fn: unknown = Reflect.get(mounted, "settled");
+        if (typeof fn === "function") {
+          pending.push(Promise.resolve(Reflect.apply(fn, mounted, [])));
+        }
+      }
+      if (pending.length > 0) await Promise.all(pending);
+    });
+    // Ignore rejections caused by closing the page after a settle timeout.
+    const raced = settled.then(
+      () => "settled" as const,
+      (error: unknown) => {
+        if (timedOut) return "settled" as const;
+        throw error;
+      },
+    );
+    try {
+      const outcome = await Promise.race([
+        raced,
+        new Promise<"timeout">((resolve) => {
+          timer = setTimeout(() => {
+            timedOut = true;
+            resolve("timeout");
+          }, MEDIA_SETTLE_TIMEOUT_MS);
+        }),
+      ]);
+      if (outcome === "timeout" && !reportedMediaTimeout) {
+        reportedMediaTimeout = true;
+        pageErrors.push(`Media did not finish seeking at ${atMs} ms.`);
+      }
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  };
+  const runHeldTo = async (delta: number, atMs: number): Promise<void> => {
+    await page.clock.runFor(delta);
+    await page.evaluate(stepAndHoldAnimations, atMs);
+  };
+  // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
+  if (!real) {
+    await runHeldTo(FIRST_FRAME_MS, 0);
+    await settleMedia(0);
+  }
+  const began = Date.now();
+  let now = 0;
+  const pending = [...(target.actions ?? [])];
+  const session: PageSession = {
+    page,
+    browser,
+    async advanceTo(ms) {
+      if (ms < now) throw new Error(`Time ${ms} is before ${now}; times must ascend.`);
+      if (real) {
+        for (
+          let action = pending[0];
+          action !== undefined && action.at <= ms;
+          action = pending[0]
+        ) {
+          pending.shift();
+          await waitUntil(began + action.at);
+          await perform(page, action);
+        }
+        await waitUntil(began + ms);
+        now = ms;
+        return;
+      }
+      for (let action = pending[0]; action !== undefined && action.at <= ms; action = pending[0]) {
+        pending.shift();
+        await runHeldTo(action.at - now, action.at);
+        await perform(page, action);
+        now = action.at;
+      }
+      await runHeldTo(ms - now, ms);
+      now = ms;
+      await settleMedia(ms);
+    },
+  };
+  return { session, pageErrors };
+}
+
+/** Serves or reaches the page's site, opens `count` pages under a paused fake clock, and hands them to `visit`. */
+export async function withPages<T>(
+  target: PageTarget,
+  count: number,
+  visit: (sessions: readonly PageSession[]) => Promise<T>,
+): Promise<{ value: T; pageErrors: readonly string[] }> {
+  if (!Number.isInteger(count) || count < 1) {
+    throw new Error(`Expected at least one page, not ${count}.`);
+  }
   const { chromium } = await import("playwright-core");
   const site = await openSite(target.source);
   const base = site.base;
@@ -206,144 +371,26 @@ export async function withPage<T>(
     );
   }
   try {
-    const page = await browser.newPage({
-      viewport: { width: target.width, height: target.height },
-    });
-    const pageErrors: string[] = [];
-    page.on("pageerror", (error) => pageErrors.push(error.message));
-    await page.addInitScript(seedRandom);
-    const real = target.clock === "real";
-    if (target.prepare !== undefined) await target.prepare(page);
-    if (!real) {
-      // Tells a page mount the clock is held, so it draws every element itself.
-      await page.addInitScript(() => {
-        Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
-      });
-      await page.clock.install({ time: 0 });
-      // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
-      await page.clock.pauseAt(1000);
-    }
-    const url = new URL(target.page, base).href;
-    // Chromium rejects `goto` on an error status with an empty body, so the status is read as it arrives.
-    let answered: number | undefined;
-    page.on("response", (reply) => {
-      if (reply.url() === url && reply.request().isNavigationRequest()) answered = reply.status();
-    });
-    const response = await page.goto(url, { waitUntil: "load" }).catch((error: unknown) => {
-      if (answered === undefined || answered < 400) throw error;
-      return null;
-    });
-    const status = response === null ? answered : response.status();
-    if (status === undefined || status >= 400)
-      throw new Error(
-        `Page ${target.page} answered ${status === undefined ? "no response" : status} from ${url}.`,
-      );
-    await page.evaluate(() => document.fonts.ready.then(() => undefined));
-    // A page that loads its piece after the load event sets `window.__motionReady` to a promise.
-    const readyError = await page.evaluate(async () => {
-      try {
-        await Promise.resolve(Reflect.get(window, "__motionReady"));
-        return undefined;
-      } catch (error) {
-        return error instanceof Error ? error.message : String(error);
-      }
-    });
-    if (readyError !== undefined && !pageErrors.includes(readyError)) pageErrors.push(readyError);
-    let reportedMediaTimeout = false;
-    const settleMedia = async (atMs: number): Promise<void> => {
-      let timer: ReturnType<typeof setTimeout> | undefined;
-      let timedOut = false;
-      const settled = page.evaluate(async () => {
-        const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-        if (!Array.isArray(listed) || listed.length === 0) return;
-        const pending: Promise<unknown>[] = [];
-        for (const mounted of listed) {
-          if (mounted === null || typeof mounted !== "object") continue;
-          const fn: unknown = Reflect.get(mounted, "settled");
-          if (typeof fn === "function") {
-            pending.push(Promise.resolve(Reflect.apply(fn, mounted, [])));
-          }
-        }
-        if (pending.length > 0) await Promise.all(pending);
-      });
-      // Ignore rejections caused by closing the page after a settle timeout.
-      const raced = settled.then(
-        () => "settled" as const,
-        (error: unknown) => {
-          if (timedOut) return "settled" as const;
-          throw error;
-        },
-      );
-      try {
-        const outcome = await Promise.race([
-          raced,
-          new Promise<"timeout">((resolve) => {
-            timer = setTimeout(() => {
-              timedOut = true;
-              resolve("timeout");
-            }, MEDIA_SETTLE_TIMEOUT_MS);
-          }),
-        ]);
-        if (outcome === "timeout" && !reportedMediaTimeout) {
-          reportedMediaTimeout = true;
-          pageErrors.push(`Media did not finish seeking at ${atMs} ms.`);
-        }
-      } finally {
-        if (timer !== undefined) clearTimeout(timer);
-      }
-    };
-    const runHeldTo = async (delta: number, atMs: number): Promise<void> => {
-      await page.clock.runFor(delta);
-      await page.evaluate(stepAndHoldAnimations, atMs);
-    };
-    // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
-    if (!real) {
-      await runHeldTo(FIRST_FRAME_MS, 0);
-      await settleMedia(0);
-    }
-    const began = Date.now();
-    let now = 0;
-    const pending = [...(target.actions ?? [])];
-    const session: PageSession = {
-      page,
-      browser,
-      async advanceTo(ms) {
-        if (ms < now) throw new Error(`Time ${ms} is before ${now}; times must ascend.`);
-        if (real) {
-          for (
-            let action = pending[0];
-            action !== undefined && action.at <= ms;
-            action = pending[0]
-          ) {
-            pending.shift();
-            await waitUntil(began + action.at);
-            await perform(page, action);
-          }
-          await waitUntil(began + ms);
-          now = ms;
-          return;
-        }
-        for (
-          let action = pending[0];
-          action !== undefined && action.at <= ms;
-          action = pending[0]
-        ) {
-          pending.shift();
-          await runHeldTo(action.at - now, action.at);
-          await perform(page, action);
-          now = action.at;
-        }
-        await runHeldTo(ms - now, ms);
-        now = ms;
-        await settleMedia(ms);
-      },
-    };
-    const value = await visit(session);
-    return { value, pageErrors };
+    const opened = await Promise.all(
+      Array.from({ length: count }, () => openPageSession(browser, base, target)),
+    );
+    const value = await visit(opened.map((entry) => entry.session));
+    return { value, pageErrors: opened.flatMap((entry) => entry.pageErrors) };
   } finally {
     await browser.close();
     await site.close();
   }
+}
+
+/** Serves or reaches the page's site, opens the page under a paused fake clock, and hands it to `visit`. */
+export async function withPage<T>(
+  target: PageTarget,
+  visit: (session: PageSession) => Promise<T>,
+): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
+  return withPages(target, 1, ([session]) => {
+    if (session === undefined) throw new Error("Expected one page session.");
+    return visit(session);
+  });
 }
 
 /** Waits in real time until the machine's clock reads `at` ms. */
