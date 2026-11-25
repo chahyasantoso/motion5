@@ -18,6 +18,5 @@ Who is on stage, when each member shows, and how scenes compile and evaluate cle
 | A supplied drawing or SVG to animate, or a character to draw and rig | [artwork](../../tools/docs/agent-artwork.md) |
 | Animating an existing site's DOM on scroll and pointer with its own CSS | [page mount](../../dom/docs/page.md) |
 | Numbers arriving while it plays: a microphone, a slider, a recorded session | [live inputs](./agent-inputs.md) |
-| A person watching edits land as you save | [live editing](../../tools/docs/live.md) |
 | A page outside this repository, or a real site's own elements | [outside the stage](../../dom/docs/agent-outside.md) |
 | A reel: several shots, a hook, a story and a call to action | [reels](../../moves/docs/agent-reel.md) |

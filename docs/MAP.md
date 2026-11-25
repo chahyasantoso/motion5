@@ -112,10 +112,9 @@ Public: `./page`, `./pages`, `./scene`, `./vite`
 
 - `src/audio/`: audio levels, beat detection and decoding
 - `src/page/`: page tools
-- `src/pages/`: the stage, live and talk pages
-- `src/pages/live/`: live editor
+- `src/pages/`: the stage and talk pages
 - `src/scene/`: scene sample, timeline
 - `src/scene/templates/`: gerak new templates
 - `src/scene/templates/pages/`: the page files of a pieces folder
 - `src/timeline/`: timeline bars
-- `src/vite/`: live editor Vite plugin
+- `src/vite/`: the live source and edit endpoints, Vite plugin

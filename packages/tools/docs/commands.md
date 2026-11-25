@@ -12,10 +12,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
   page files into `folder` (default `pieces`, from where you run), `"gerak": { "pieces": "<folder>" }` into the
   `package.json`, the make-motion skill into `.claude/skills/make-motion/`, `AGENTS.md` and `tsconfig.json`. It refuses, naming
   each file, and writes nothing when any of them exists or the `package.json` already names `gerak.pieces`.
-  `--refresh` rewrites only the four page files of the pieces folder, and nothing else.
-- **`gerak live <name> [--root dir] [--port number]`**: starts the dev server (or reuses one) and prints the
-  address of `live.html?scene=<name>`. Every scaffolded scene plays in it with no change to its files. It keeps
-  running until stopped, so start it in the background; page tools start their own server and need no `live`.
+  `--refresh` rewrites only the page files of the pieces folder, and nothing else.
 - **`gerak new <name> [--in <brief>] [--three] [--root dir]`**: writes `<brief>/<name>.html` (the look and the cast, tagged `data-cast`), `<brief>/src/<name>.ts`, one `scene` piece, and `<brief>/src/<name>-main.ts`, which mounts it (the brief
   is the name unless `--in` names another; open as `<brief>/<name>.html`); `--three` writes `<brief>/<name>.html`, `<brief>/src/<name>-main.ts`, which builds the world with `createStage3d` and mounts the piece with `mount`, and `<brief>/src/<name>-scene.ts`, a
   `scene` piece with one `object` and a label, instead. Refuses a name any brief already holds; its one element
@@ -66,7 +63,7 @@ and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors.
 - **`gerak render <page> [--to ms] [--fps 60|30|25] [--audio file[@ms][:gain]]... [--format mp4|gif] [--out file]`**: renders one lossless PNG frame per `1000 / fps` ms (waiting for media clips to finish seeking before each frame) to a deterministic `mp4` (default `--fps` `60`; also accepts `30` or `25`) or a 640 px `gif` (default and only `--fps` `25`, because GIF frame delays are whole centiseconds); needs `ffmpeg`. When `--size` is omitted, sizes the viewport from the first timed mount's `measure().frame` (or the first mount's). When `--to` is omitted, reads the longest `durationMs` from the page's timed mounts. Repeated `--audio` tracks are delayed by `@ms` (default `0`), scaled by `:gain` (default `1`), mixed, and encoded as AAC trimmed to the video length. Returns `{ kind: "rendered", path, width, height, frames, fps, to, seconds, speed: { framesPerSecond, wallMs }, pageErrors }`.
 - **`gerak measure <brief>/<name>.html [--size WxH]`**: opens the page once and writes `<name>.measure.json` and `<name>.cast.ts` (`cast` handles, `DomCast`, `ObjectCast`, `CastName`) beside it:
   the frame, each cast element's rest box and placement, each split's lines, each element's cast parent, and optional
-  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them (`<name>.cast.ts` is also synced from static HTML + `Binder.casts()` even when a stale scene throws during `mount`, and on HTML edits in `gerak live`). `sample`, `timeline` and `review` of a
+  3D `objects` bounds (`{ width, height, depth }`) and 3D list `counts`, as its mounts measured them (`<name>.cast.ts` is also synced from static HTML + `Binder.casts()` even when a stale scene throws during `mount`). `sample`, `timeline` and `review` of a
   builder scene `<brief>/src/<name>.ts` read `.measure.json` with no
   browser, and refuse the scene while its page has no cache or has changed since, stylesheets beside it included (pass `--measure` to `review` or `sample` to refresh a missing or stale cache or missing `.cast.ts` on demand).
 - **`gerak sample <scene.ts> (--at ms,ms | --progress p,p | --watch path [--from ms] [--to ms] [--every ms]) [--nodes id,id] [--fields a,b] [--events list] [--measure]`**: exact

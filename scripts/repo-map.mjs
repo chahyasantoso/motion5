@@ -65,11 +65,10 @@ export const OWNERS = {
   "packages/tools/src/scene/templates": "gerak new templates",
   "packages/tools/src/scene/templates/pages": "the page files of a pieces folder",
   "packages/tools/src/page": "page tools",
-  "packages/tools/src/pages": "the stage, live and talk pages",
-  "packages/tools/src/pages/live": "live editor",
+  "packages/tools/src/pages": "the stage and talk pages",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",
-  "packages/tools/src/vite": "live editor Vite plugin",
+  "packages/tools/src/vite": "the live source and edit endpoints, Vite plugin",
 };
 
 function publicEntries(workspace, scanRoot = root) {

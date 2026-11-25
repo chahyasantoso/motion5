@@ -5,7 +5,6 @@ export * from "./check";
 export * from "./compare";
 export * from "./fps";
 export * from "./frames";
-export * from "./live";
 export * from "./page";
 export * from "./points";
 export * from "./measure";

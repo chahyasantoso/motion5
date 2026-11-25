@@ -9,8 +9,7 @@ A piece starts from its brief, not from a piece that already exists.
 
 1. Read [`core.md`](../../../packages/core/docs/core.md) and [`stage.md`](../../../packages/stage/docs/stage.md) whole, and follow
    the loop in `stage.md`. `npx gerak new <name>` writes `<pieces>/<name>/<name>.html`, `<pieces>/<name>/src/<name>.ts`
-   and `<pieces>/<name>/src/<name>-main.ts`; `npx gerak measure <name>/<name>.html` measures the cast, and `<name>/<name>.html`
-   or `live.html?scene=<name>` shows it.
+   and `<pieces>/<name>/src/<name>-main.ts`; `npx gerak measure <name>/<name>.html` measures the cast, and open `<name>/<name>.html` to see it.
 2. Before any code, name the obvious answer to the brief, write three ideas that differ from it in what moves and
    how, and pick one that is not the obvious one. Then write that idea and its character in three lines. Choose the
    look for this brief yourself.

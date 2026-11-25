@@ -9,7 +9,7 @@ not listed there, treat it as internal even when a workspace checkout lets you i
 ## Read in this order
 
 1. [Getting started](./getting-started.md): a scene, a player, a driver and a renderer, on a plain page and in React.
-2. [Live editing](../../packages/tools/docs/live.md): `gerak live`, hot-swapping scenes in place, the timeline, and dragging numbers in code.
+2. [The Studio](../../packages/studio/docs/studio.md): a piece as connected cards.
 3. [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): the two pages to read whole before making motion; the second holds the loop.
 4. The docs of the package a brief needs:
    [core](../../packages/core/docs/README.md), [stage](../../packages/stage/docs/README.md),

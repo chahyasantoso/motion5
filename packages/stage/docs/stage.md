@@ -29,7 +29,7 @@ export default scene(
 );
 ```
 
-`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.ts` (`export const cast`, `DomCast`, `ObjectCast`, `CastName`, also synced on HTML save in `gerak live`); `live.html?scene=<name>` plays it in the live editor.
+`gerak new <name> [--in <brief>]` writes all three files; `gerak measure <brief>/<name>.html` writes `<name>.measure.json` and `<name>.cast.ts` (`export const cast`, `DomCast`, `ObjectCast`, `CastName`); open `<brief>/<name>.html` to play it.
 
 ## Elements
 

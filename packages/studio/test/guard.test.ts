@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { elapsedOf, NO_EVENTS, type Time } from "@gerak/core";
 import { manualDriver, play } from "@gerak/player";
-import { guard } from "../src/pages/live/guard";
+import { guard } from "../src/guard";
 
 function timed(elapsed: number, length: number): Time {
   return {
