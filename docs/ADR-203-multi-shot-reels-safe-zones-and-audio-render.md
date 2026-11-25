@@ -61,9 +61,10 @@ one another.
      (`beatCues`) maths, shared by `packages/tools/src/pages/talk-page.ts` (`rms`, `levelOf`) and `gerak beats`
      (`beatCues`, `levelCues`).
    - `gerak beats` (`packages/tools/src/audio/beats.ts`, `decode.ts`) decodes audio via `ffmpeg` to mono 48 kHz float32
-     (`-ac 1 -ar 48000 -f f32le`). `beatCues` evaluates RMS over 5 ms energy hops (`BEAT_HOP_MS = 5`) against
-     `threshold` (default `1.5`) times a 40-window history mean (`HISTORY_WINDOWS = 40`, 200 ms) above
-     `MIN_BEAT_RMS = 0.02` with a 100 ms refractory period (`REFRACTORY_WINDOWS = 20`). `--levels name@ms` samples
+     (`-ac 1 -ar 48000 -f f32le`). `beatCues` evaluates RMS over 20 ms windows (`BEAT_WINDOW_MS = 20`) stepped by
+     5 ms hops (`BEAT_HOP_MS = 5`) against `threshold` (default `1.5`) times a 40-window history mean
+     (`HISTORY_WINDOWS = 40`, 200 ms) with a minimum rise above that mean (`MIN_BEAT_RISE = 0.02`) and a 100 ms
+     refractory period (`REFRACTORY_WINDOWS = 20`). `--levels name@ms` samples
      `levelCues` every `ms` (`levelOf(rmsValue)` with floor `0.02`, gain `6`, capped at `1`), sorted with beats first
      on timestamp ties.
    - `gerak cues` (`packages/tools/src/audio/captions.ts`, `cues.ts`) parses SubRip (`.srt`, line-timed), WebVTT (`.vtt`,

@@ -86,4 +86,38 @@ describe("beatCues", () => {
     expect(cues).toHaveLength(1);
     expect(Math.abs((cues[0]?.at ?? -999) - 250)).toBeLessThanOrEqual(10);
   });
+
+  it("ignores a steady low chord pad and detects only the 8 kicks", () => {
+    const durationMs = 4000;
+    const totalSamples = Math.round((durationMs * SAMPLE_RATE) / 1000);
+    const samples = new Float32Array(totalSamples);
+    const padFreqs = [146.83, 220, 293.66];
+    for (let s = 0; s < totalSamples; s += 1) {
+      const t = s / SAMPLE_RATE;
+      let pad = 0;
+      for (const freq of padFreqs) {
+        pad += 0.08 * Math.sin(2 * Math.PI * freq * t);
+      }
+      samples[s] = pad;
+    }
+
+    const kicks = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
+    const kickSamples = Math.round((200 * SAMPLE_RATE) / 1000);
+    for (const startMs of kicks) {
+      const startSample = Math.round((startMs * SAMPLE_RATE) / 1000);
+      for (let i = 0; i < kickSamples && startSample + i < totalSamples; i += 1) {
+        const t = i / SAMPLE_RATE;
+        samples[startSample + i] =
+          (samples[startSample + i] ?? 0) +
+          0.8 * Math.exp(-30 * t) * Math.sin(2 * Math.PI * 60 * t);
+      }
+    }
+
+    const cues = beatCues(samples, SAMPLE_RATE);
+    expect(cues).toHaveLength(8);
+    for (let i = 0; i < kicks.length; i += 1) {
+      expect(cues[i]?.name).toBe("beat");
+      expect(Math.abs((cues[i]?.at ?? -999) - kicks[i]!)).toBeLessThanOrEqual(10);
+    }
+  });
 });

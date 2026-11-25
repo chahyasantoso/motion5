@@ -1,5 +1,6 @@
-const MIN_BEAT_RMS = 0.02;
+const MIN_BEAT_RISE = 0.02;
 const BEAT_HOP_MS = 5;
+const BEAT_WINDOW_MS = 20;
 const HISTORY_WINDOWS = 40;
 const REFRACTORY_WINDOWS = 20;
 
@@ -55,7 +56,7 @@ export function levelCues(
   return cues;
 }
 
-/** Detects energy onsets over 5 ms hops and emits `"beat"` cues with a 100 ms refractory period. */
+/** Detects energy onsets over 20 ms windows stepped by 5 ms hops with a 100 ms refractory period. */
 export function beatCues(
   samples: ArrayLike<number>,
   sampleRate: number,
@@ -65,9 +66,11 @@ export function beatCues(
   const cues: Cue[] = [];
   let lastOnset = Number.NEGATIVE_INFINITY;
   for (let i = 0; ; i += 1) {
-    const from = Math.round((i * BEAT_HOP_MS * sampleRate) / 1000);
-    if (from >= samples.length) break;
-    const to = Math.min(samples.length, Math.round(((i + 1) * BEAT_HOP_MS * sampleRate) / 1000));
+    const hopFrom = Math.round((i * BEAT_HOP_MS * sampleRate) / 1000);
+    if (hopFrom >= samples.length) break;
+    const endMs = (i + 1) * BEAT_HOP_MS;
+    const from = Math.round((Math.max(0, endMs - BEAT_WINDOW_MS) * sampleRate) / 1000);
+    const to = Math.min(samples.length, Math.round((endMs * sampleRate) / 1000));
     const energy = rms(samples, from, to);
     energies.push(energy);
 
@@ -79,7 +82,11 @@ export function beatCues(
     }
     const mean = historyCount > 0 ? historySum / historyCount : 0;
 
-    if (energy > MIN_BEAT_RMS && energy > threshold * mean && i - lastOnset >= REFRACTORY_WINDOWS) {
+    if (
+      energy - mean > MIN_BEAT_RISE &&
+      energy > threshold * mean &&
+      i - lastOnset >= REFRACTORY_WINDOWS
+    ) {
       cues.push({
         name: "beat",
         at: i * BEAT_HOP_MS,
