@@ -4,7 +4,7 @@
 
 A coding agent and a person work in the same open Studio canvas: the agent drives it from the terminal (focus a shot, seek, select a card, read exact poses and checks) in milliseconds instead of cold-booting a browser, and the person leaves numbered pins on cards and on stage that the agent resolves without screenshots. The code adds one Studio command bus with a `gerak studio` CLI and a headless mode, `.gerak/pins.json` pins with `gerak studio pins`, recorded interaction presets for `gerak review --events`, and narrow seams for a later in-canvas prompt.
 
-Status: planned 2026-11-25 on top of `plan/studio-canvas-plan.md`, amended the same day: it runs after that plan's PR 2 and before its PR 3, and all of it lives in `@gerak/studio`. Three pull requests in order.
+Status: built 2026-11-25 in `@gerak/studio`, after `plan/studio-canvas-plan.md` PR 2 and before its PR 3. The three slices below shipped as one pull request; `render` and `frame` wait for canvas PR 7.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
@@ -53,8 +53,8 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 | Slice | Decisions | Done when |
 | --- | --- | --- |
 | PR 1: `gerak studio` bus, follow mode and headless | 1 | landed: `status`, `focus`, `viewport`, `seek`, `play`, `select`, `inspect`, `graph` round-trip in under 200 ms warm; `check` runs warm (about 4.5 s on `reel`, sampling dominates); `render` and `frame` wait for canvas PR 7 |
-| PR 2: Pins and recorded presets | 2, 3 | pins persist, draw on cards, stage and ruler, and restore their moment; `gerak studio pins resolve` updates the canvas live; a recorded cookie burst replays in `gerak review --events @preset` |
-| PR 3: Prompt seams | 4 | `StudioPromptContext` and `pinOnlyAgentPort` ship with a mock `live` port, and the slots render with nothing mounted in them |
+| PR 2: Pins and recorded presets | 2, 3 | landed: pins persist, draw on cards, stage and ruler, and restore their moment; `gerak studio pins resolve` updates the canvas live; a recorded cookie burst replays in `gerak review --events @preset` |
+| PR 3: Prompt seams | 4 | landed: `StudioPromptContext` and `pinOnlyAgentPort` ship with a mock `live` port, and the slots render with nothing mounted in them |
 
 ## Tests first, per slice
 
