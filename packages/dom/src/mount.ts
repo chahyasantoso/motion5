@@ -657,11 +657,9 @@ function boxForNode(
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 // Tests set this to keep every element in the engine, to compare with what the browser plays.
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
-// The page tools set this while they hold the clock; every element stays in the engine, so what they read
-// is the pose `frame()` gives, with no browser frame to wait for.
+// Page tools set this while holding the clock: every element stays in the engine,
+// so they read `frame()` directly, and media seeks wait for `settled()`.
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
-// Defers media currentTime seeks across clock bursts until `settled()` applies the final target once.
-const DEFER_MEDIA_SEEK = Symbol.for("@gerak/dom/defer-media-seek");
 const TRIGGER_SLACK_MS = 34;
 
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */
@@ -1394,7 +1392,6 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     const realDt =
       state.previousNow === undefined ? 0 : Math.max(0, currentNow - state.previousNow);
     const held = Reflect.get(globalThis, HELD_CLOCK) === true;
-    const deferred = held && Reflect.get(globalThis, DEFER_MEDIA_SEEK) === true;
     const step = mediaStep({
       held,
       visible,
@@ -1402,12 +1399,12 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       previousTarget: visible ? state.previousTarget : undefined,
       realDt,
       currentTime:
-        deferred && state.pendingSeek !== undefined ? state.pendingSeek : state.node.currentTime,
+        held && state.pendingSeek !== undefined ? state.pendingSeek : state.node.currentTime,
       paused: state.node.paused,
     });
     state.previousTarget = visible ? targetSec : undefined;
     state.previousNow = currentNow;
-    if (deferred) {
+    if (held) {
       if (!visible) state.pendingSeek = undefined;
       else if (step.seek !== undefined) state.pendingSeek = step.seek;
     } else if (step.seek !== undefined) {

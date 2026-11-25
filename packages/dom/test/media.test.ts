@@ -12,7 +12,6 @@ import {
 import { mediaStep } from "../src/media";
 
 const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
-const DEFER_MEDIA_SEEK = Symbol.for("@gerak/dom/defer-media-seek");
 
 function isClock(driver: Driver): driver is ClockDriver {
   return "seek" in driver && typeof driver.seek === "function";
@@ -141,7 +140,6 @@ function fakeFrames(): FrameSource & { tick(ms: number): void } {
 afterEach(() => {
   vi.unstubAllGlobals();
   Reflect.deleteProperty(globalThis, HELD_CLOCK);
-  Reflect.deleteProperty(globalThis, DEFER_MEDIA_SEEK);
 });
 
 describe("mediaStep", () => {
@@ -249,7 +247,7 @@ describe("mount media bindings", () => {
     );
   });
 
-  it("pauses on bind, seeks precisely on a held clock, and pauses while hidden", () => {
+  it("pauses on bind, seeks precisely on a held clock, and pauses while hidden", async () => {
     vi.stubGlobal("HTMLMediaElement", FakeMediaElement);
     Reflect.set(globalThis, HELD_CLOCK, true);
     const video = new FakeMediaElement("clip");
@@ -272,18 +270,22 @@ describe("mount media bindings", () => {
     if (driver === undefined || !isClock(driver)) return;
 
     driver.seek(0.1);
+    await mounted.settled();
     expect(video.paused).toBe(true);
     expect(video.style.visibility).toBe("hidden");
 
     driver.seek(0.5);
+    await mounted.settled();
     expect(video.style.visibility).toBe("");
     expect(video.currentTime).toBeCloseTo(0.5);
     expect(video.paused).toBe(true);
 
     driver.seek(0.7);
+    await mounted.settled();
     expect(video.currentTime).toBeCloseTo(0.8);
 
     driver.seek(0.8);
+    await mounted.settled();
     expect(video.style.visibility).toBe("hidden");
     expect(video.paused).toBe(true);
 
@@ -441,7 +443,6 @@ describe("mount media bindings", () => {
   it("defers media seeks across held clock bursts until settled() applies the last target once", async () => {
     vi.stubGlobal("HTMLMediaElement", FakeMediaElement);
     Reflect.set(globalThis, HELD_CLOCK, true);
-    Reflect.set(globalThis, DEFER_MEDIA_SEEK, true);
     const video = new FakeMediaElement("clip");
     video.duration = 2;
     let driver: Driver | undefined;

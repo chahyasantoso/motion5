@@ -216,7 +216,6 @@ export async function withPage<T>(
       // Tells a page mount the clock is held, so it draws every element itself.
       await page.addInitScript(() => {
         Reflect.set(globalThis, Symbol.for("@gerak/dom/held-clock"), true);
-        Reflect.set(globalThis, Symbol.for("@gerak/dom/defer-media-seek"), true);
       });
       await page.clock.install({ time: 0 });
       // A pause a second ahead outruns a busy machine; story time counts from the first frame, not from here.
