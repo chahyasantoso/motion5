@@ -3,7 +3,7 @@
 Run from your project's folder. A page is a path inside the site with no leading `/`, and a page the server does not have is an error; the site is the pieces folder,
 `--root <dir>` or else the `gerak.pieces` folder of the nearest `package.json` naming one, unless
 `--url <address>` names a running server; `--root` and `--out` are read from the folder you run in. Page tools open the page in Chrome or Edge under a paused clock that also holds CSS
-and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. Each takes `--size WxH` (default
+and Web Animations, seed `Math.random`, print JSON, and exit `1` on page errors. A held clock draws one frame at each requested ms. Each takes `--size WxH` (default
 `1280x720`, landscape; a portrait piece wants a portrait size such as `540x960`) and
 `--action`: `hover:sel@ms`, `leave:sel@ms`, `click:sel@ms`, `press:sel@ms`, `release:sel@ms`, `scroll:px|sel[±px]@ms` (resolving `sel`'s document top `+ ±px` in the active viewport; negative offsets follow `]`, `)`, or space), with
 `(x,y)` after the ms for a point on the element; repeatable `--action` flags join in order, and a selector the page lacks fails at once.

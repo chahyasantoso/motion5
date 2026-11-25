@@ -54,7 +54,7 @@ import {
 } from "./compositor";
 import { clockDriver, type ClockDriver } from "./drivers";
 import { eventRecorder, type EventSource } from "./events";
-import { pageFrames, type FrameSource } from "./frames";
+import { HELD_CLOCK, pageFrames, type FrameSource } from "./frames";
 import { mediaBounds, mediaStep, SEEK_EPSILON_S, waitForMedia } from "./media";
 import { applyPath, applyValue, pathData, type RenderStyle } from "./render";
 import type { PointerLike } from "./events";
@@ -657,9 +657,6 @@ function boxForNode(
 const CLOCK_FRAMES_OFF = Symbol.for("@gerak/dom/clock-frames-off");
 // Tests set this to keep every element in the engine, to compare with what the browser plays.
 const COMPOSITOR_OFF = Symbol.for("@gerak/dom/compositor-off");
-// Page tools set this while holding the clock: every element stays in the engine,
-// so they read `frame()` directly, and media seeks wait for `settled()`.
-const HELD_CLOCK = Symbol.for("@gerak/dom/held-clock");
 const TRIGGER_SLACK_MS = 34;
 
 /** Plays a scene over the cast its markup tags `data-cast`, on a live or timed clock, in place or fitted to its frame. */

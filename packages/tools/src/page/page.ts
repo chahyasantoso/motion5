@@ -161,8 +161,10 @@ function seedRandom(): void {
   };
 }
 
-/** Sets every CSS and Web Animations animation on the document timeline, which the fake clock skips, to the clock's time from when first seen. */
-function holdAnimations(ms: number): void {
+/** Steps any held frame source and sets CSS and Web Animations on the document timeline to `ms`. */
+function stepAndHoldAnimations(ms: number): void {
+  const step: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/held-step"));
+  if (typeof step === "function") Reflect.apply(step, undefined, []);
   const seen: unknown = Reflect.get(window, "__motionBorn");
   const born = seen instanceof WeakMap ? seen : new WeakMap<Animation, number>();
   Reflect.set(window, "__motionBorn", born);
@@ -290,10 +292,13 @@ export async function withPage<T>(
         if (timer !== undefined) clearTimeout(timer);
       }
     };
+    const runHeldTo = async (delta: number, atMs: number): Promise<void> => {
+      await page.clock.runFor(delta);
+      await page.evaluate(stepAndHoldAnimations, atMs);
+    };
     // Runs the first frame, whose elapsed time is zero, so times count from the first published pose.
     if (!real) {
-      await page.clock.runFor(FIRST_FRAME_MS);
-      await page.evaluate(holdAnimations, 0);
+      await runHeldTo(FIRST_FRAME_MS, 0);
       await settleMedia(0);
     }
     const began = Date.now();
@@ -324,13 +329,11 @@ export async function withPage<T>(
           action = pending[0]
         ) {
           pending.shift();
-          await page.clock.runFor(action.at - now);
-          await page.evaluate(holdAnimations, action.at);
+          await runHeldTo(action.at - now, action.at);
           await perform(page, action);
           now = action.at;
         }
-        await page.clock.runFor(ms - now);
-        await page.evaluate(holdAnimations, ms);
+        await runHeldTo(ms - now, ms);
         now = ms;
         await settleMedia(ms);
       },
