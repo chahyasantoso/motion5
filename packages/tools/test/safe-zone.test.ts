@@ -93,6 +93,47 @@ describe("zoneFindings", () => {
     ]);
   });
 
+  /** A caption in the bottom band on each frame whose `inBand` entry is true, else mid-stage; `null` drops it. */
+  function runs(inBand: readonly (boolean | null)[]): Frame[] {
+    return inBand.map((state, index) => ({
+      at: index * 16,
+      elements:
+        state === null
+          ? []
+          : [{ name: "caption", box: { x: 100, y: state ? 1700 : 500, width: 200, height: 60 } }],
+    }));
+  }
+  const frames = (...parts: readonly (readonly [boolean | null, number])[]) =>
+    runs(parts.flatMap(([state, count]) => Array.from({ length: count }, () => state)));
+
+  it("ignores a box that passes through a band for 12 frames", () => {
+    expect(zoneFindings(frames([false, 3], [true, 12], [false, 3]), tiktok, TALL)).toEqual([]);
+  });
+
+  it("reports a run of 13 frames at its first frame", () => {
+    expect(zoneFindings(frames([false, 3], [true, 13], [false, 3]), tiktok, TALL)).toEqual([
+      { kind: "unsafe-zone", element: "caption", zone: "tiktok", edge: "bottom", at: 48 },
+    ]);
+  });
+
+  it("reports a short run that reaches the last frame", () => {
+    expect(zoneFindings(frames([false, 5], [true, 3]), tiktok, TALL)).toEqual([
+      { kind: "unsafe-zone", element: "caption", zone: "tiktok", edge: "bottom", at: 80 },
+    ]);
+  });
+
+  it("judges a run broken by one frame outside as two runs", () => {
+    expect(
+      zoneFindings(frames([true, 7], [false, 1], [true, 7], [false, 1]), tiktok, TALL),
+    ).toEqual([]);
+  });
+
+  it("breaks a run where the element is missing", () => {
+    expect(zoneFindings(frames([true, 7], [null, 1], [true, 7], [false, 1]), tiktok, TALL)).toEqual(
+      [],
+    );
+  });
+
   it("describes the finding", () => {
     expect(
       describeFinding({

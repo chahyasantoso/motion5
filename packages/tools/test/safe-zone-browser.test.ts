@@ -82,13 +82,22 @@ describe("gerak check --safe-zone in browser", () => {
       "left: 200px; top: 1000px; margin: 0; animation: slide 1000ms linear forwards;",
       "@keyframes slide { from { top: 1000px } to { top: 1800px } }",
     );
-    const found = await zoneFindingsOf(root, "900");
+    const found = await zoneFindingsOf(root, "1100");
     const bottom = found.find(
       (finding) => finding.kind === "unsafe-zone" && finding.edge === "bottom",
     );
     if (bottom?.kind !== "unsafe-zone") throw new Error("no bottom finding");
     // The 48 px line box crosses y 1600 when top passes 1552, 690 ms into the slide.
-    expect(Math.abs(bottom.at - 690)).toBeLessThanOrEqual(32);
+    expect(Math.abs(bottom.at - 690)).toBeLessThanOrEqual(16);
+  });
+
+  it("ignores a caption that slides in from below and rests at the centre", async () => {
+    const root = site(
+      "Passing",
+      "left: 200px; top: 2000px; margin: 0; animation: rise 150ms linear forwards;",
+      "@keyframes rise { from { top: 2000px } to { top: 900px } }",
+    );
+    expect(await zoneFindingsOf(root, "600")).toEqual([]);
   });
 
   it("lists the finding in a review", async () => {

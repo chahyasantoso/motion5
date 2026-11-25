@@ -267,23 +267,48 @@ export function describeCheckLines(result: CheckResult): readonly string[] {
   );
 }
 
-/** One finding per element and edge, at the first frame where its box enters the platform's margin. */
+/** Consecutive sampled frames a box must stay in a margin band, beyond, before it counts as resting there. */
+const ZONE_FRAMES = 12;
+
+/** One finding per element and edge: its first run in the platform's margin over 12 frames, or lasting to the last frame. */
 export function zoneFindings(
   frames: readonly Frame[],
   zone: SafeZone,
   stage: { readonly width: number; readonly height: number },
 ): readonly Finding[] {
-  const seen = new Set<string>();
-  const findings: Finding[] = [];
-  for (const frame of frames)
+  const done = new Set<string>();
+  const open = new Map<string, { name: string; edge: SafeEdge; at: number; length: number }>();
+  const found: { readonly at: number; readonly finding: Finding }[] = [];
+  const close = (key: string, atEnd: boolean) => {
+    const run = open.get(key);
+    open.delete(key);
+    if (run === undefined || done.has(key) || !(atEnd || run.length > ZONE_FRAMES)) return;
+    done.add(key);
+    found.push({
+      at: run.at,
+      finding: {
+        kind: "unsafe-zone",
+        element: run.name,
+        zone: zone.name,
+        edge: run.edge,
+        at: run.at,
+      },
+    });
+  };
+  for (const frame of frames) {
+    const active = new Map<string, { name: string; edge: SafeEdge }>();
     for (const { name, box } of frame.elements)
-      for (const edge of unsafeEdges(box, zone, stage)) {
-        const key = `${edge} ${name}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        findings.push({ kind: "unsafe-zone", element: name, zone: zone.name, edge, at: frame.at });
-      }
-  return findings;
+      for (const edge of unsafeEdges(box, zone, stage))
+        active.set(`${edge} ${name}`, { name, edge });
+    for (const key of [...open.keys()]) if (!active.has(key)) close(key, false);
+    for (const [key, entry] of active) {
+      const run = open.get(key);
+      if (run === undefined) open.set(key, { ...entry, at: frame.at, length: 1 });
+      else run.length += 1;
+    }
+  }
+  for (const key of [...open.keys()]) close(key, true);
+  return found.sort((a, b) => a.at - b.at).map(({ finding }) => finding);
 }
 
 /** Reads `<page> --watch sel,sel --to ms [--size WxH | --sizes WxH,WxH] [--safe-zone name] [--overlap n]

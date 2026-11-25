@@ -50,7 +50,9 @@ one another.
      `--sizes`, the viewport is the platform's native size; with either, the margins scale.
    - Under the flag, every sampled 16 ms frame also measures each visible element's own text glyph box, named as the
      final-frame text findings name it, and the watched elements. A `Finding` of kind `unsafe-zone` names the element,
-     platform and edge, once per element and edge at the first sampled ms. Without the flag, sampling is unchanged.
+     platform and edge, once per element and edge, at the first sampled ms of the first run in the band that lasts
+     for longer than 12 sampled frames (192 ms) in a row, or that lasts to the last frame; an element only passing
+     through a band, or missing from a frame, does not count. Without the flag, sampling is unchanged.
    - `zoneFindings` in `check.ts` is the one place frames become `unsafe-zone` findings; `review` passes the flag to
      the same sampling and prints the same lines.
 
