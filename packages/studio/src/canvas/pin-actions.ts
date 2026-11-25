@@ -1,22 +1,11 @@
 import { unreachable } from "@gerak/core";
-import type { Card, StudioGraph } from "../graph";
+import type { Card } from "../graph";
 import type { NewPin, Pin } from "../pins";
 import type { FocusTarget } from "../protocol";
 import type { CanvasControl } from "./commands";
-import { inspectCard } from "./inspect";
-import { castCardNamed, focusNames, type PinRequest } from "./pin-view";
-import type { Playhead } from "./playhead";
-
-/** What a new pin records of the canvas besides where it was dropped. */
-export interface PinContext {
-  readonly piece: string;
-  readonly graph: StudioGraph;
-  readonly focus: FocusTarget;
-  readonly preview: { readonly preset: string; readonly safeZone?: string | undefined };
-  readonly playhead: Playhead;
-  /** The chosen recorded preset, when one is. */
-  readonly preset: string | undefined;
-}
+import { pinOf } from "../agent-port-pin";
+import { castCardNamed, type PinRequest } from "./pin-view";
+import { contextOf, type ContextView } from "./prompt-context";
 
 function castCardAt(
   win: Window | undefined,
@@ -29,48 +18,21 @@ function castCardAt(
   return name === null || name === undefined ? undefined : castCardNamed(cards, name);
 }
 
-/** The pin a click asks for, with the moment, view and card values the canvas holds now. */
-export function buildPin(request: PinRequest, now: PinContext): NewPin {
-  const { graph, playhead } = now;
-  const win = playhead.window();
-  const state = playhead.snapshot();
-  let card: Card | undefined;
-  let atMs = state.ms;
-  let place: NewPin["place"];
+/** The pin a click asks for: the context of the place it lands on, saved. */
+export function buildPin(request: PinRequest, view: ContextView): NewPin {
+  const win = view.playhead.window();
   switch (request.kind) {
     case "card":
-      card = request.card;
-      place = { kind: "card" };
-      break;
-    case "stage":
-      card = castCardAt(win, request.x, request.y, graph.cards);
-      place = { kind: "stage", x: request.x, y: request.y };
-      break;
+      return pinOf(contextOf(view, { card: request.card }), { kind: "card" });
+    case "stage": {
+      const card = castCardAt(win, request.x, request.y, view.graph.cards);
+      return pinOf(contextOf(view, { card }), { kind: "stage", x: request.x, y: request.y });
+    }
     case "moment":
-      atMs = request.atMs;
-      place = { kind: "moment" };
-      break;
+      return pinOf(contextOf(view, { card: undefined, atMs: request.atMs }), { kind: "moment" });
     default:
       return unreachable(request);
   }
-  const seen = card === undefined ? undefined : inspectCard(card, graph, win, atMs);
-  const names = focusNames(now.focus, graph.cards);
-  return {
-    piece: now.piece,
-    place,
-    card: card?.id,
-    scene: names.scene,
-    shot: names.shot,
-    file: card?.site?.file,
-    part: undefined,
-    viewport: { preset: now.preview.preset, safeZone: now.preview.safeZone },
-    atMs,
-    scrollY: win?.scrollY ?? 0,
-    preset: now.preset,
-    pose: seen?.pose,
-    restBox: seen?.rest,
-    note: "",
-  };
 }
 
 function focusOf(pin: Pin, cards: readonly Card[]): [FocusTarget, Card | undefined] {

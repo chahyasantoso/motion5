@@ -28,6 +28,7 @@ import { PINS_EVENT } from "../pins";
 import { createRelay } from "./bus";
 import type { SharedBrowser } from "./browser";
 import { checkQueue } from "./check";
+import { registeredStudioAgentTransport } from "./transport";
 
 /** The path the canvas page is served at. */
 export const STUDIO_PATH = "/__gerak/studio";
@@ -375,6 +376,7 @@ export function studioPlugin(options: {
           json(500, failure(error, root));
         });
       });
+      registeredStudioAgentTransport()?.configureServer(server);
     },
   };
 }

@@ -16,6 +16,8 @@ import { groupOf, type PortType, type StudioGraph } from "../graph";
 import type { FocusTarget } from "../protocol";
 import type { Problem } from "./api";
 import { autoLayout, PREVIEW_SIZE } from "./auto-layout";
+import { describeCapability, pinOnlyAgentPort } from "../agent-port-pin";
+import type { StudioAgentEvent } from "../agent-port";
 import { Banner } from "./banner";
 import { Follow } from "./follow";
 import { FollowPill } from "./follow-pill";
@@ -23,6 +25,8 @@ import { useFollow } from "./use-follow";
 import { StudioContext, type PreviewChoice, type StudioValue } from "./context";
 import { NODE_TYPES, nodeTypeOf, type CardNode } from "./nodes";
 import { buildPin, restorePin } from "./pin-actions";
+import { contextOf, type ContextView } from "./prompt-context";
+import { SelectionToolbar } from "./selection-toolbar";
 import type { PinRequest } from "./pin-view";
 import { Playhead } from "./playhead";
 import { usePins } from "./use-pins";
@@ -63,6 +67,10 @@ function edgesOf(graph: StudioGraph, selected: readonly string[]): Edge[] {
 function sceneLength(graph: StudioGraph): number {
   const root = graph.cards.find((card) => card.kind === "scene" && card.parent === undefined);
   return root?.span?.to ?? 0;
+}
+
+async function settle(events: AsyncIterable<StudioAgentEvent>): Promise<void> {
+  for await (const event of events) if (event.kind === "failed") return;
 }
 
 function Canvas(props: {
@@ -179,6 +187,7 @@ function Canvas(props: {
     saver.setPreview(next);
     saver.save();
   };
+  const problem = props.pageProblem ?? data.problem;
   const followState = useFollow(follow, playhead);
   const { resume, control } = useBus({
     piece,
@@ -189,7 +198,7 @@ function Canvas(props: {
     zones: data.zones,
     playhead,
     preview,
-    problem: props.pageProblem ?? data.problem,
+    problem,
     selected,
     focus,
     setFocus,
@@ -206,17 +215,37 @@ function Canvas(props: {
       ),
   });
 
+  const view: ContextView = {
+    piece,
+    graph: data.graph,
+    focus,
+    preview,
+    playhead,
+    preset: presets.selected,
+    problem,
+  };
   const placePin = (request: PinRequest): void => {
     setPinMode(false);
-    void pinStore.add(
-      buildPin(request, {
-        piece,
-        graph: data.graph,
-        focus,
-        preview,
-        playhead,
-        preset: presets.selected,
+    void pinStore.add(buildPin(request, view));
+  };
+  const addPin = pinStore.add;
+  const port = useMemo(
+    () =>
+      pinOnlyAgentPort(addPin, async (text) => {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          return undefined;
+        }
       }),
+    [addPin],
+  );
+  const selectedCard =
+    selected.length === 1 ? data.graph.cards.find((card) => card.id === selected[0]) : undefined;
+  const queueFix = (): void => {
+    if (problem === undefined) return;
+    void settle(
+      port.submit(contextOf(view, { card: selectedCard, prompt: `Fix: ${problem.message}` })),
     );
   };
   const placeRef = useRef(placePin);
@@ -261,7 +290,7 @@ function Canvas(props: {
     maximised,
     setMaximised,
     host,
-    problem: props.pageProblem ?? data.problem,
+    problem,
   };
   return (
     <StudioContext.Provider value={value}>
@@ -307,7 +336,13 @@ function Canvas(props: {
             onPinMode={setPinMode}
           />
           <div className="maximised-host" ref={setHost} />
-          <Banner problem={value.problem} />
+          {selectedCard === undefined ? null : (
+            <SelectionToolbar
+              label={describeCapability(port.capability)}
+              context={() => contextOf(view, { card: selectedCard })}
+            />
+          )}
+          <Banner problem={value.problem} onQueueFix={queueFix} />
           <FollowPill state={followState} onResume={resume} />
         </div>
         <Timeline />

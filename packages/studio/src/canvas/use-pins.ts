@@ -7,7 +7,7 @@ const REFETCH_MS = 150;
 /** The piece's pins as the file lists them now, and a way to add one; the file is the only store. */
 export function usePins(piece: string): {
   readonly pins: readonly Pin[];
-  readonly add: (pin: NewPin) => Promise<void>;
+  readonly add: (pin: NewPin) => Promise<boolean>;
 } {
   const [pins, setPins] = useState<readonly Pin[]>([]);
   useEffect(() => {
@@ -31,8 +31,10 @@ export function usePins(piece: string): {
     };
   }, [piece]);
   const add = useCallback(
-    async (pin: NewPin): Promise<void> => {
-      if (await postPin(piece, pin)) setPins(await fetchPins(piece));
+    async (pin: NewPin): Promise<boolean> => {
+      const saved = await postPin(piece, pin);
+      if (saved) setPins(await fetchPins(piece));
+      return saved;
     },
     [piece],
   );
