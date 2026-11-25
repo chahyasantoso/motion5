@@ -1550,14 +1550,16 @@ function shotTime(time: Time, clock: ShotClock | undefined, total: number | unde
   return local;
 }
 
-/** `events` with each `at` moved back by the shot's start, made once per list and shot start. */
+/** `events` from the shot's start on, each `at` moved back by the start, made once per list and shot start. */
 function shotEvents(events: Events, clock: ShotClock | undefined): Events {
   if (clock === undefined || clock.from === 0) return events;
   const byStart = SHOT_EVENTS.get(events) ?? new Map<number, MovedEvents>();
   const version = versionOf(events);
   const known = byStart.get(clock.from);
   if (known !== undefined && known.version === version) return known.events;
-  const moved = events.map((event) => ({ ...event, at: event.at - clock.from }));
+  const moved = events
+    .filter((event) => event.at >= clock.from)
+    .map((event) => ({ ...event, at: event.at - clock.from }));
   byStart.set(clock.from, { version, events: moved });
   SHOT_EVENTS.set(events, byStart);
   SCENE_EVENTS.set(moved, events);

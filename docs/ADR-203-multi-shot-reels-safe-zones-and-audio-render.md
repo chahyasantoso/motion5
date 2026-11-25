@@ -20,7 +20,8 @@ one another.
      scroll or trigger beat or a scroll `.shows` window, since a shot plays on the clock. A scene holding shots may
      join another scene only while that one has no shots, and later shots follow its last.
    - Inside a shot, motions get the shot's time: ms since the shot started (never below 0), progress across its
-     length, and events with each `at` moved back by its start, moved again whenever a growing log grows.
+     length, and the events from its start on, each `at` moved back by its start (moved again whenever a growing log
+     grows); earlier events are not seen.
      `context.read` of a member in another shot, or of a member of the reel, converts back to the scene's time, so a
      shot never needs another shot's ms.
    - The shot's clock beats become `<shot>.<beat>` on the scene's clock, and a beat named after the shot spans it, so
@@ -84,6 +85,7 @@ one another.
 
 - A reel is written shot by shot from 0; lengthening one shot moves every later one.
 - A member seen across shots belongs to the reel and is written on its clock.
+- A shot does not inherit state from events before it; a member that must count across shots belongs to the reel.
 - A shot's events are a moved copy of the scene's list, so a `state` read inside a shot folds from the start each
   frame; reels hold few events, and a long live event log in a shot would cost more per frame.
 - A safe-zone run samples every visible text element on every frame, not only the last, so a long page costs more
