@@ -20,7 +20,7 @@ byte ceiling.
 
 ## Next in line
 
-- **The Studio canvas (`plan/studio-canvas-plan.md`): a piece as connected cards over its scene file, starting with PR 1 (graph model, provenance and `gerak graph`); `plan/studio-agent-plan.md` (agent bus and pins) follows its PR 2.**
+- **The Studio canvas (`plan/studio-canvas-plan.md`): a separate `@gerak/studio` package showing a piece as connected cards over its files and replacing `gerak live`, starting with PR 1 (package, provenance subpath and `gerak studio graph`); `plan/studio-agent-plan.md` (agent bus and pins) runs between its PR 2 and PR 3.**
 
 ## Open, and not scheduled
 

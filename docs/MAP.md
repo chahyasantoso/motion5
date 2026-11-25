@@ -85,13 +85,20 @@ Public: `.`
 
 ## packages/stage
 
-Public: `.`, `./render`, `./dom`
+Public: `.`, `./render`, `./dom`, `./provenance`
 
 - `src/`: stage entrypoint
 - `src/author/`: scene, elements and their bindings, beats, and the compile input
 - `src/dom/`: DOM tokens
+- `src/provenance/`: where members and beats come from, for the Studio
 - `src/render/`: strokes and morphs for renderers
 - `src/run/`: compile, frame, check, visibility, carry
+
+## packages/studio
+
+Public: `.`
+
+- `src/`: Studio graph, sources reader and gerak studio
 
 ## packages/three
 

@@ -16,6 +16,7 @@ export const INSTALLABLE_PACKAGES = [
   "rig-three",
   "rapier",
   "tools",
+  "studio",
 ];
 
 /** The parsed package.json of a package directory under packages/. */

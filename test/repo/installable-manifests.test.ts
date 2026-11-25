@@ -11,18 +11,19 @@ const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
 const SHIPPED: Readonly<Record<string, readonly string[]>> = {
   tools: ["dist", "bin", "skill", "docs", "LICENSE"],
+  studio: ["dist", "bin", "docs", "LICENSE"],
 };
 
 /** Packages whose generated reference ships in `docs`. */
 const WITH_DOCS = new Set(PACKAGES.map(({ dir }) => dir));
 
 describe("installable manifests", () => {
-  it("names every public package under packages/ once, the tools last", () => {
+  it("names every public package under packages/ once, the tools then the studio last", () => {
     const publics = readdirSync(packagesRoot)
       .filter((directory) => readManifest(directory).private !== true)
       .sort();
     expect([...INSTALLABLE_PACKAGES].sort()).toEqual(publics);
-    expect(INSTALLABLE_PACKAGES.at(-1)).toBe("tools");
+    expect(INSTALLABLE_PACKAGES.slice(-2)).toEqual(["tools", "studio"]);
   });
 
   describe.each(INSTALLABLE_PACKAGES)("%s", (directory) => {

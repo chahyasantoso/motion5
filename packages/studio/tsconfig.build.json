@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "composite": false,
+    "baseUrl": ".",
+    "paths": {
+      "@gerak/core": ["../core/dist/index.d.ts"],
+      "@gerak/stage": ["../stage/dist/index.d.ts"],
+      "@gerak/stage/provenance": ["../stage/dist/provenance/index.d.ts"],
+      "@gerak/tools/page": ["../tools/dist/page/index.d.ts"],
+      "@gerak/tools/scene": ["../tools/dist/scene/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@gerak/studio",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "gerak": {
+    "group": "modules"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "docs",
+    "LICENSE"
+  ],
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@gerak/core": "0.1.0",
+    "@gerak/stage": "0.1.0",
+    "@gerak/tools": "0.1.0"
+  },
+  "peerDependencies": {
+    "typescript": "*"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  }
+}
