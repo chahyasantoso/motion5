@@ -6,7 +6,7 @@ const studio = (module) =>
 
 const usage = [
   "usage: gerak studio <subcommand> [args]",
-  "  open <piece> [--root dir] [--port number]  serve the piece's canvas and print its address",
+  "  open <piece> [--root dir] [--port number] [--headless]  serve the piece's canvas and print its address; --headless opens it in a hidden browser",
   "  graph <piece> [--json] [--root dir]  print a piece's cards and wires",
   "  graph [--root dir] [--piece name]  the open canvas's piece graph, as JSON",
   "  status  what the open canvas shows",
@@ -29,7 +29,14 @@ if (subcommand === "open") {
     process.exitCode = 1;
   } else {
     const started = await startStudio(parsed);
-    console.log(JSON.stringify({ kind: "studio", piece: parsed.piece, url: started.url }));
+    console.log(
+      JSON.stringify({
+        kind: "studio",
+        piece: parsed.piece,
+        url: started.url,
+        ...(parsed.headless ? { headless: true } : {}),
+      }),
+    );
   }
 } else if (
   ["status", "focus", "viewport", "seek", "play", "select", "inspect", "check"].includes(

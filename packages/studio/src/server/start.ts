@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { pageServerConfig } from "@gerak/tools/page";
 import { removeDiscovery, writeDiscovery } from "./discovery";
+import { sharedBrowser } from "./browser";
 import { STUDIO_PATH, studioPlugin } from "./plugin";
 
 const STUDIO_FOLDER = fileURLToPath(new URL("../../", import.meta.url));
@@ -16,9 +17,17 @@ export async function startStudio(options: {
   readonly piece: string;
   readonly port: number;
   readonly busTimeoutMs?: number;
-}): Promise<{ readonly url: string; close(): Promise<void> }> {
+  /** Opens the canvas in the session's own headless browser and keeps it open until `close`. */
+  readonly headless?: boolean;
+}): Promise<{
+  readonly url: string;
+  /** How many browsers this session has launched: none until a check or a headless canvas needs one. */
+  launches(): number;
+  close(): Promise<void>;
+}> {
   const { createServer } = await import("vite");
   const added = pageServerConfig(options.root);
+  const browser = sharedBrowser();
   const server = await createServer({
     root: options.root,
     logLevel: "error",
@@ -26,6 +35,7 @@ export async function startStudio(options: {
       ...added.plugins,
       studioPlugin({
         root: options.root,
+        browser,
         ...(options.busTimeoutMs === undefined ? {} : { busTimeoutMs: options.busTimeoutMs }),
       }),
     ],
@@ -42,12 +52,25 @@ export async function startStudio(options: {
   });
   await server.listen();
   const base = server.resolvedUrls?.local[0] ?? `http://localhost:${options.port}/`;
+  const url = studioUrl(base, options.piece);
+  if (options.headless === true) {
+    try {
+      const page = await (await browser.get()).newPage({ viewport: { width: 1440, height: 900 } });
+      await page.goto(url, { waitUntil: "load" });
+    } catch (error) {
+      await browser.close();
+      await server.close();
+      throw error;
+    }
+  }
   writeDiscovery(options.root, { url: base, piece: options.piece });
   return {
-    url: studioUrl(base, options.piece),
-    close: () => {
+    url,
+    launches: () => browser.launches,
+    close: async () => {
       removeDiscovery(options.root);
-      return server.close();
+      await browser.close();
+      await server.close();
     },
   };
 }

@@ -80,6 +80,14 @@ describe("the agent follows the canvas until the person takes it", () => {
         await page.getByRole("button", { name: "Resume follow" }).waitFor();
         expect((await statusOf()).follow).toBe("detached");
 
+        const checked = await fetch(`${base}__gerak/bus?piece=reel`, {
+          method: "POST",
+          body: JSON.stringify({ kind: "check", sizes: undefined, safeZone: undefined }),
+        });
+        const checkReply: StudioReply = await checked.json();
+        expect(checkReply.kind).toBe("check");
+        expect((await statusOf()).follow).toBe("detached");
+
         const seeked = await statusOf({ kind: "seek", target: { kind: "ms", ms: 2000 } });
         expect(Math.abs(seeked.atMs - 2000)).toBeLessThanOrEqual(1);
         expect(Math.abs((await statusOf()).atMs - 2000)).toBeLessThanOrEqual(1);

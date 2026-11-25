@@ -56,6 +56,8 @@ export interface PageTarget {
   readonly show?: boolean;
   /** Runs on the new page before it loads, for init scripts. */
   readonly prepare?: (page: Page) => Promise<void>;
+  /** An open browser to use; the tool closes only its own pages, never this browser. */
+  readonly browser?: Browser;
 }
 
 /** A path as the caller typed it, read from the folder they ran the command in, not the repo root. */
@@ -243,10 +245,12 @@ async function openPageSession(
   browser: Browser,
   base: string,
   target: PageTarget,
+  opened: (page: Page) => void,
 ): Promise<{ readonly session: PageSession; readonly pageErrors: readonly string[] }> {
   const page = await browser.newPage({
     viewport: { width: target.width, height: target.height },
   });
+  opened(page);
   const pageErrors: string[] = [];
   page.on("pageerror", (error) => pageErrors.push(error.message));
   await page.addInitScript(seedRandom);
@@ -398,35 +402,50 @@ export async function withPage<T>(
   target: PageTarget,
   visit: (session: PageSession) => Promise<T>,
 ): Promise<{ readonly value: T; readonly pageErrors: readonly string[] }> {
-  const { chromium } = await import("playwright-core");
   const site = await openSite(target.source);
   const base = site.base;
+  let browser: Browser;
+  try {
+    browser = target.browser ?? (await launchBrowser({ headless: target.show !== true }));
+  } catch (error) {
+    await site.close();
+    throw error;
+  }
+  let opened: Page | undefined;
+  try {
+    const { session, pageErrors } = await openPageSession(browser, base, target, (page) => {
+      opened = page;
+    });
+    const value = await visit(session);
+    return { value, pageErrors };
+  } finally {
+    if (target.browser === undefined) await browser.close();
+    else await closeQuietly(opened);
+    await site.close();
+  }
+}
 
+/** Closes `page` if there is one, ignoring a page that is already gone. */
+async function closeQuietly(page: Page | undefined): Promise<void> {
+  if (page === undefined) return;
+  await page.close().catch(() => undefined);
+}
+
+/** Launches Chromium through Chrome, Edge, then Playwright's own build, and throws when none starts. */
+export async function launchBrowser(options: { readonly headless: boolean }): Promise<Browser> {
+  const { chromium } = await import("playwright-core");
+  const { headless } = options;
   const failures: string[] = [];
-  let browser: Browser | undefined;
   for (const channel of CHANNELS) {
     try {
-      const headless = target.show !== true;
-      browser = await chromium.launch(channel === undefined ? { headless } : { channel, headless });
-      break;
+      return await chromium.launch(channel === undefined ? { headless } : { channel, headless });
     } catch (error) {
       failures.push(`${channel ?? "playwright"}: ${String(error).split("\n")[0]}`);
     }
   }
-  if (browser === undefined) {
-    await site.close();
-    throw new Error(
-      `No browser found. Install Chrome or Edge, or run npx playwright-core install chromium. ${failures.join(" ")}`,
-    );
-  }
-  try {
-    const { session, pageErrors } = await openPageSession(browser, base, target);
-    const value = await visit(session);
-    return { value, pageErrors };
-  } finally {
-    await browser.close();
-    await site.close();
-  }
+  throw new Error(
+    `No browser found. Install Chrome or Edge, or run npx playwright-core install chromium. ${failures.join(" ")}`,
+  );
 }
 
 /** Waits in real time until the machine's clock reads `at` ms. */

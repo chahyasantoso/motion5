@@ -8,6 +8,8 @@ import { pieceGraph } from "../piece";
 import { BUS_PATH, COMMAND_EVENT, REPLY_EVENT, type CommandEnvelope } from "../protocol";
 import { parseCommand } from "../command";
 import { createRelay } from "./bus";
+import type { SharedBrowser } from "./browser";
+import { checkQueue } from "./check";
 
 /** The path the canvas page is served at. */
 export const STUDIO_PATH = "/__gerak/studio";
@@ -109,10 +111,13 @@ function bodyOf(req: NodeJS.ReadableStream): Promise<string> {
 export function studioPlugin(options: {
   readonly root: string;
   readonly busTimeoutMs?: number;
+  /** The session's one browser, which checks run in; its only caller is `startStudio`, which always makes one. */
+  readonly browser: SharedBrowser;
 }): Plugin {
   const root = resolve(options.root);
   const busTimeoutMs = options.busTimeoutMs ?? 5000;
   const relay = createRelay();
+  const checks = checkQueue(options.browser);
   let nextId = 0;
   return {
     name: "gerak-studio",
@@ -205,9 +210,20 @@ export function studioPlugin(options: {
                   );
                   return;
                 }
-                case "check":
-                  json(200, { kind: "failed", message: "check is not built yet." });
+                case "check": {
+                  const result = await pieceGraph(root, piece, load);
+                  if (result.kind !== "graph") {
+                    json(200, { kind: "failed", message: result.message });
+                    return;
+                  }
+                  const base = server.resolvedUrls?.local[0];
+                  if (base === undefined) {
+                    json(200, { kind: "failed", message: "The server has no address yet." });
+                    return;
+                  }
+                  json(200, await checks.run(result.graph, result.page, command, base));
                   return;
+                }
                 case "status":
                 case "focus":
                 case "viewport":
