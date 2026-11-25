@@ -1,17 +1,22 @@
 import { unreachable } from "@gerak/core";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { StudioGraph } from "../graph";
 import { COMMAND_EVENT, REPLY_EVENT, type FocusTarget, type StudioReply } from "../protocol";
 import { parseCommand } from "../command";
 import type { Problem, ZoneMargins } from "./api";
 import { runCommand, type CanvasControl } from "./commands";
 import type { PreviewChoice } from "./context";
+import type { Follow } from "./follow";
 import { inspectCard } from "./inspect";
 import type { Playhead } from "./playhead";
+import { WorkerFrame, type Surface } from "./worker-frame";
 
 /** What the bus reads and changes of the canvas: the same state the person's clicks reach. */
 export interface BusInputs {
   readonly piece: string;
+  readonly page: string | null;
+  readonly length: number;
+  readonly follow: Follow;
   readonly graph: StudioGraph;
   readonly zones: readonly ZoneMargins[];
   readonly playhead: Playhead;
@@ -38,39 +43,50 @@ function nextFrame(): Promise<void> {
   });
 }
 
-function controlOf(latest: { readonly current: BusInputs }): CanvasControl {
-  const status: CanvasControl["status"] = () => {
-    const now = latest.current;
-    const state = now.playhead.snapshot();
-    return {
-      piece: now.piece,
-      follow: "idle",
-      focus: now.focus,
-      preset: now.preview.preset,
-      safeZone: now.preview.safeZone,
-      atMs: state.ms,
-      scrollY: now.playhead.window()?.scrollY ?? 0,
-      playing: state.playing,
-      selected: now.selected,
-      problem: now.problem?.message,
-    };
-  };
+function visibleSurface(now: BusInputs): Surface {
   return {
-    cards: () => latest.current.graph.cards,
-    zones: () => latest.current.zones.map((zone) => zone.name),
-    status,
-    focus(next, card) {
-      const now = latest.current;
+    playhead: now.playhead,
+    preview: now.preview,
+    focus: now.focus,
+    selected: now.selected,
+    focusOn(next, card) {
       now.setFocus(next);
       if (card?.kind === "shot" && card.span !== undefined)
         now.playhead.soloOn(card.id, card.span.from, card.span.to);
       else now.playhead.clearSolo();
       now.frame(card === undefined ? undefined : [card.id]);
     },
+    previewOn: now.setPreview,
+    select: now.select,
+  };
+}
+
+function controlOf(latest: { readonly current: BusInputs }, surface: () => Surface): CanvasControl {
+  return {
+    cards: () => latest.current.graph.cards,
+    zones: () => latest.current.zones.map((zone) => zone.name),
+    status() {
+      const now = latest.current;
+      const on = surface();
+      const state = on.playhead.snapshot();
+      return {
+        piece: now.piece,
+        follow: now.follow.snapshot(),
+        focus: on.focus,
+        preset: on.preview.preset,
+        safeZone: on.preview.safeZone,
+        atMs: state.ms,
+        scrollY: on.playhead.window()?.scrollY ?? 0,
+        playing: state.playing,
+        selected: on.selected,
+        problem: now.problem?.message,
+      };
+    },
+    focus: (next, card) => surface().focusOn(next, card),
     viewport: (preset, safeZone) =>
-      latest.current.setPreview({ preset, ...(safeZone === undefined ? {} : { safeZone }) }),
+      surface().previewOn({ preset, ...(safeZone === undefined ? {} : { safeZone }) }),
     seek(target) {
-      const { playhead } = latest.current;
+      const { playhead } = surface();
       switch (target.kind) {
         case "ms":
           playhead.seek(target.ms);
@@ -83,11 +99,11 @@ function controlOf(latest: { readonly current: BusInputs }): CanvasControl {
           return unreachable(target);
       }
     },
-    play: (from, to, speed) => latest.current.playhead.playRange(from, to, speed),
-    select: (id) => latest.current.select(id),
+    play: (from, to, speed) => surface().playhead.playRange(from, to, speed),
+    select: (id) => surface().select(id),
     inspect(card) {
-      const now = latest.current;
-      return inspectCard(card, now.graph, now.playhead.window(), now.playhead.snapshot().ms);
+      const { playhead } = surface();
+      return inspectCard(card, latest.current.graph, playhead.window(), playhead.snapshot().ms);
     },
     settled: nextFrame,
   };
@@ -97,27 +113,63 @@ function failure(error: unknown): StudioReply {
   return { kind: "failed", message: error instanceof Error ? error.message : String(error) };
 }
 
-/** Answers every bus command addressed to this canvas's piece, once, through the canvas's own state. */
-export function useBus(inputs: BusInputs): void {
+function same(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Answers every bus command addressed to this canvas's piece, once; returns how the person takes the canvas back. */
+export function useBus(inputs: BusInputs): { readonly resume: () => void } {
   const latest = useRef(inputs);
   latest.current = inputs;
+  const worker = useRef<WorkerFrame | undefined>(undefined);
   const { piece } = inputs;
+
+  const resume = useCallback((): void => {
+    const now = latest.current;
+    if (!now.follow.resume()) return;
+    const held = worker.current;
+    worker.current = undefined;
+    if (held === undefined) return;
+    const visible = visibleSurface(now);
+    if (!same(held.focus, now.focus)) visible.focusOn(held.focus, held.card);
+    if (!same(held.preview, now.preview)) visible.previewOn(held.preview);
+    const picked = held.selected[held.selected.length - 1];
+    if (picked !== undefined && !same(held.selected, now.selected)) visible.select(picked);
+    now.playhead.seek(held.playhead.snapshot().ms);
+    held.close();
+  }, []);
+
   useEffect(() => {
     const hot = import.meta.hot;
     if (hot === undefined) return undefined;
-    const control = controlOf(latest);
+    const visible = controlOf(latest, () => visibleSurface(latest.current));
+    const hidden = controlOf(latest, () => worker.current ?? visibleSurface(latest.current));
     const received = (data: unknown): void => {
       const id: unknown = Reflect.get(Object(data), "id");
       const addressed: unknown = Reflect.get(Object(data), "piece");
       if (typeof id !== "string" || addressed !== piece) return;
       const command = parseCommand(Reflect.get(Object(data), "command"));
-      const answer =
-        command === undefined
-          ? Promise.resolve<StudioReply>({ kind: "failed", message: "The command is not valid." })
-          : runCommand(command, control).catch(failure);
-      void answer.then((reply) => hot.send(REPLY_EVENT, { id, reply }));
+      const answer = async (): Promise<StudioReply> => {
+        if (command === undefined) return { kind: "failed", message: "The command is not valid." };
+        const now = latest.current;
+        now.follow.command();
+        if (now.follow.snapshot() !== "detached" || now.page === null)
+          return runCommand(command, visible);
+        worker.current ??= new WorkerFrame(now.page, visibleSurface(now), now.length);
+        await worker.current.ready();
+        return runCommand(command, hidden);
+      };
+      void answer()
+        .catch(failure)
+        .then((reply) => hot.send(REPLY_EVENT, { id, reply }));
     };
     hot.on(COMMAND_EVENT, received);
-    return () => hot.off?.(COMMAND_EVENT, received);
+    return () => {
+      hot.off?.(COMMAND_EVENT, received);
+      worker.current?.close();
+      worker.current = undefined;
+    };
   }, [piece]);
+
+  return { resume };
 }

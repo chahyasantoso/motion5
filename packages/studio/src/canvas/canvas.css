@@ -442,6 +442,32 @@ select:disabled {
   box-shadow: var(--shadow-selected);
 }
 
+.follow-pill {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-small);
+  color: var(--text);
+  background: var(--accent-soft);
+  border: var(--border-width) solid var(--accent);
+  border-radius: var(--radius-card);
+}
+
+.follow-pill button {
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  color: var(--on-accent);
+  cursor: pointer;
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-small);
+}
+
 .banner-message {
   flex-basis: 100%;
   font-family: var(--font-mono);
