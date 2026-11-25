@@ -21,7 +21,7 @@ byte ceiling.
 
 ## Next in line
 
-- **The Studio agent bus and pins (`plan/studio-agent-plan.md` PR 1): the agent drives the open canvas warm; canvas PR 3 (live previews, knobs, picking) of `plan/studio-canvas-plan.md` follows.**
+- **The Studio agent bus and pins (`plan/studio-agent-plan.md` PR 1): the agent drives the open canvas warm.** Then, in order: agent plan PRs 2–3, canvas PRs 3–4 (`plan/studio-canvas-plan.md`), marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
 
 ## Open, and not scheduled
 
