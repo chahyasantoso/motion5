@@ -43,6 +43,7 @@ export class Playhead {
   private pending: Remembered | undefined;
   private soloSpan: { readonly from: number; readonly to: number } | undefined;
   private resume = false;
+  private stopAt: number | undefined;
   private sceneLength = FALLBACK_LENGTH;
   private readonly unhook: (() => void)[] = [];
 
@@ -190,6 +191,12 @@ export class Playhead {
       const ms = Math.min(length, Math.max(0, clock.elapsed() ?? 0));
       const playing = clock.playing();
       this.remembered = { ms, scroll: this.remembered?.scroll ?? 0, playing };
+      if (playing && this.stopAt !== undefined && ms >= this.stopAt) {
+        this.stopAt = undefined;
+        clock.pause();
+        this.set({ ms: Math.round(ms), playing: false, length, mode: "timed" });
+        return;
+      }
       this.set({ ms: Math.round(ms), playing, length, mode: "timed" });
       return;
     }
@@ -206,6 +213,7 @@ export class Playhead {
 
   /** Moves the page to `ms`: the mount clock, or the page scroll position. */
   seek(ms: number): void {
+    this.stopAt = undefined;
     const mount = this.mount();
     if (mount === undefined) return;
     const clock = mount.clock;
@@ -231,6 +239,7 @@ export class Playhead {
   }
 
   toggle(): void {
+    this.stopAt = undefined;
     const clock = this.mount()?.clock;
     if (clock === undefined) return;
     if (clock.playing()) clock.pause();
@@ -250,18 +259,66 @@ export class Playhead {
 
   /** Solos and loops the shot `id`, or clears the solo when it already is the one. */
   solo(id: string, from: number, to: number): void {
+    if (this.state.solo === id) this.clearSolo();
+    else this.soloOn(id, from, to);
+  }
+
+  /** Solos and loops the shot `id`, and keeps it when it already is the one. */
+  soloOn(id: string, from: number, to: number): void {
     const mount = this.mount();
-    if (this.state.solo === id) {
-      this.soloSpan = undefined;
-      this.set({ solo: undefined });
-      if (mount !== undefined) this.applyRange(mount);
-      return;
-    }
     this.soloSpan = { from, to };
     this.set({ solo: id });
     if (mount === undefined) return;
     this.applyRange(mount);
     this.seek(from);
     mount.clock?.play();
+  }
+
+  clearSolo(): void {
+    if (this.soloSpan === undefined && this.state.solo === undefined) return;
+    this.soloSpan = undefined;
+    this.set({ solo: undefined });
+    const mount = this.mount();
+    if (mount !== undefined) this.applyRange(mount);
+  }
+
+  /** Plays the clock, optionally from `from` and pausing at `to`; `false` when the page has no timed clock. */
+  playRange(from: number | undefined, to: number | undefined, speed: number | undefined): boolean {
+    const clock = this.mount()?.clock;
+    if (clock === undefined) return false;
+    if (from !== undefined) this.seek(from);
+    if (speed !== undefined) this.setRate(speed);
+    this.stopAt = to;
+    clock.play();
+    return true;
+  }
+
+  /** Scrolls the page window to `px`; `false` when no page is loaded. */
+  scrollTo(px: number): boolean {
+    if (this.win === undefined) return false;
+    this.stopAt = undefined;
+    this.win.scrollTo(0, px);
+    return true;
+  }
+
+  /** Scrolls the page to the top of the first match of `selector`; `false` when nothing matches. */
+  scrollToSelector(selector: string): boolean {
+    const win = this.win;
+    if (win === undefined) return false;
+    let found: Element | null;
+    try {
+      found = win.document.querySelector(selector);
+    } catch {
+      return false;
+    }
+    if (found === null) return false;
+    this.stopAt = undefined;
+    win.scrollTo(0, found.getBoundingClientRect().top + win.scrollY);
+    return true;
+  }
+
+  /** The page window, or `undefined` before one loads. */
+  window(): Window | undefined {
+    return this.win;
   }
 }

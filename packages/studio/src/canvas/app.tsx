@@ -13,6 +13,7 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { groupOf, type PortType, type StudioGraph } from "../graph";
+import type { FocusTarget } from "../protocol";
 import type { Problem } from "./api";
 import { autoLayout, PREVIEW_SIZE } from "./auto-layout";
 import { Banner } from "./banner";
@@ -22,6 +23,7 @@ import { Playhead } from "./playhead";
 import { DEFAULT_PRESET } from "./presets";
 import { Timeline } from "./timeline";
 import { Toolbar } from "./toolbar";
+import { useBus } from "./use-bus";
 import { useLayoutSaver } from "./use-layout-saver";
 import { useStudioData, type StudioData } from "./use-studio-data";
 import { useWheelNavigation } from "./use-wheel-navigation";
@@ -73,6 +75,7 @@ function Canvas(props: {
   const [preview, setPreviewState] = useState<PreviewChoice>(
     data.layout.preview ?? { preset: DEFAULT_PRESET },
   );
+  const [focus, setFocus] = useState<FocusTarget>({ kind: "all" });
   const [maximised, setMaximised] = useState(false);
   const [host, setHost] = useState<HTMLElement | null>(null);
   const area = useRef<HTMLDivElement | null>(null);
@@ -158,6 +161,34 @@ function Canvas(props: {
     return () => window.removeEventListener("keydown", onKey);
   }, [flow, remember]);
 
+  const setPreview = (next: PreviewChoice): void => {
+    setPreviewState(next);
+    saver.setPreview(next);
+    saver.save();
+  };
+  useBus({
+    piece,
+    graph: data.graph,
+    zones: data.zones,
+    playhead,
+    preview,
+    problem: props.pageProblem ?? data.problem,
+    selected,
+    focus,
+    setFocus,
+    setPreview,
+    select: (id) => {
+      setNodes((before) => before.map((node) => ({ ...node, selected: node.id === id })));
+      setSelected([id]);
+    },
+    frame: (ids) =>
+      void flow.fitView(
+        ids === undefined
+          ? { padding: 0.1, duration: 0 }
+          : { nodes: ids.map((id) => ({ id })), padding: 0.2, duration: 0 },
+      ),
+  });
+
   const value: StudioValue = {
     piece,
     graph: data.graph,
@@ -166,11 +197,7 @@ function Canvas(props: {
     playhead,
     zones: data.zones,
     preview,
-    setPreview: (next) => {
-      setPreviewState(next);
-      saver.setPreview(next);
-      saver.save();
-    },
+    setPreview,
     maximised,
     setMaximised,
     host,
