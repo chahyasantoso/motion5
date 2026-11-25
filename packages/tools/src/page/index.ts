@@ -14,5 +14,6 @@ export * from "./read";
 export * from "./render";
 export * from "./review";
 export * from "./root";
+export * from "./safe-zone";
 export * from "./server";
 export * from "./curves";

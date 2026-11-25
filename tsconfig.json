@@ -40,5 +40,11 @@
     },
     "jsx": "react-jsx"
   },
-  "include": ["packages/**/*.ts", "test/repo/**/*.ts", "demo/**/*", "apps/**/*"]
+  "include": [
+    "packages/**/*.ts",
+    "packages/studio/src/canvas/**/*.tsx",
+    "test/repo/**/*.ts",
+    "demo/**/*",
+    "apps/**/*"
+  ]
 }

@@ -98,7 +98,9 @@ Public: `.`, `./render`, `./dom`, `./provenance`
 
 Public: `.`
 
-- `src/`: Studio graph, sources reader and gerak studio
+- `src/`: Studio graph, sources and gerak studio
+- `src/canvas/`: the canvas page
+- `src/server/`: the Studio dev server
 
 ## packages/three
 

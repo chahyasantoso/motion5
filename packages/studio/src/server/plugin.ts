@@ -1,5 +1,6 @@
 import { relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { SAFE_ZONE_NAMES, safeZone } from "@gerak/tools/page";
 import type { Plugin, ViteDevServer } from "vite";
 import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
@@ -50,6 +51,41 @@ function ownRequest(headers: Headers): boolean {
   if (origin === undefined) return true;
   const host = first(headers["host"]);
   return host !== undefined && URL.canParse(origin) && new URL(origin).host === host;
+}
+
+/** A thrown value as a response body: its message, and the file and line when it carries them. */
+function failure(
+  error: unknown,
+  root: string,
+): {
+  readonly error: string;
+  readonly file?: string;
+  readonly line?: number;
+} {
+  if (!(error instanceof Error)) return { error: String(error) };
+  const loc: unknown = Reflect.get(error, "loc");
+  const file: unknown = Reflect.get(Object(loc), "file") ?? Reflect.get(error, "id");
+  const line: unknown = Reflect.get(Object(loc), "line");
+  const site =
+    typeof file === "string" && typeof line === "number"
+      ? { file, line }
+      : siteInStack(error.stack ?? "", root);
+  return {
+    error: error.message,
+    ...(site === undefined
+      ? {}
+      : { file: relative(root, site.file).replaceAll("\\", "/"), line: site.line }),
+  };
+}
+
+/** The first file under `root` a stack trace names, with its line. */
+function siteInStack(stack: string, root: string): { file: string; line: number } | undefined {
+  for (const match of stack.matchAll(/((?:[A-Za-z]:)?[^\s():]+):(\d+):\d+/g)) {
+    const path = resolve((match[1] ?? "").replace(/^file:\/+/, ""));
+    if (path.startsWith(`${root}${sep}`) && !path.includes(`${sep}node_modules${sep}`))
+      return { file: path, line: Number(match[2]) };
+  }
+  return undefined;
 }
 
 const PIECE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -118,6 +154,9 @@ export function studioPlugin(options: { readonly root: string }): Plugin {
               else json(422, { error: result.message });
               return;
             }
+            case "GET /__gerak/safe-zones":
+              json(200, { zones: SAFE_ZONE_NAMES.map((name) => safeZone(name)) });
+              return;
             case "GET /__gerak/layout":
               json(200, readLayout(layoutPath(root, piece)));
               return;
@@ -134,7 +173,7 @@ export function studioPlugin(options: { readonly root: string }): Plugin {
           }
         };
         run().catch((error: unknown) => {
-          json(500, { error: error instanceof Error ? error.message : String(error) });
+          json(500, failure(error, root));
         });
       });
     },

@@ -26,7 +26,7 @@ export function layoutPath(root: string, piece: string): string {
   return join(root, ".gerak", "canvas", `${piece}.json`);
 }
 
-function finite(value: unknown): value is number {
+function isCoordinate(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
@@ -45,7 +45,7 @@ export function parseLayout(value: unknown): CanvasLayout {
     const place = record(raw);
     const x = place?.["x"];
     const y = place?.["y"];
-    if (!finite(x) || !finite(y)) continue;
+    if (!isCoordinate(x) || !isCoordinate(y)) continue;
     cards[id] = { x, y, ...(place?.["collapsed"] === true ? { collapsed: true } : {}) };
   }
   const view = record(given["viewport"]);
@@ -53,7 +53,9 @@ export function parseLayout(value: unknown): CanvasLayout {
   const vy = view?.["y"];
   const zoom = view?.["zoom"];
   const viewport =
-    finite(vx) && finite(vy) && finite(zoom) && zoom > 0 ? { x: vx, y: vy, zoom } : undefined;
+    isCoordinate(vx) && isCoordinate(vy) && isCoordinate(zoom) && zoom > 0
+      ? { x: vx, y: vy, zoom }
+      : undefined;
   const shown = record(given["preview"]);
   const preset = shown?.["preset"];
   const safeZone = shown?.["safeZone"];
@@ -68,7 +70,7 @@ export function parseLayout(value: unknown): CanvasLayout {
   };
 }
 
-/** `layout` with the places of cards no longer in `graph` dropped. */
+/** `layout` without the places of cards that `graph` does not list. */
 export function prunedLayout(layout: CanvasLayout, graph: StudioGraph): CanvasLayout {
   const ids = new Set(graph.cards.map((card) => card.id));
   return {
