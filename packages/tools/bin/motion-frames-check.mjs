@@ -12,7 +12,7 @@ const { captureFrames, captureOnion } = await import(tool("page/frames"));
 const { probeElements } = await import(tool("page/probe"));
 const { DEFAULT_LIMITS, checkMotion } = await import(tool("page/check"));
 const { readMotion } = await import(tool("page/read"));
-const { renderPage } = await import(tool("page/render"));
+const { frameTimes, renderPage } = await import(tool("page/render"));
 const { reviewPage } = await import(tool("page/review"));
 const { perform } = await import(tool("page/actions"));
 const { withPage } = await import(tool("page/page"));
@@ -61,20 +61,23 @@ assert.deepEqual(await pixel(atStart.path, ...stem), ORANGE, "the letter waits a
 assert.deepEqual(await pixel(atMiddle.path, ...stem), DARK, "the letter has landed by 500 ms");
 assert.deepEqual(await pixel(atEnd.path, 40, 40), CREAM, "the wipe has covered the stage");
 
-// A render is the same bytes every run, one frame per 16 ms, and its frames show the page at their times.
+// A render is the same bytes every run, at 60 fps, and its frames show the page at their times.
 const renders = mkdtempSync(join(tmpdir(), "motion-render-check-"));
 try {
   const render = (name) =>
     renderPage({
       page: "timing/timing.html",
       ...stage,
+      size: "given",
       to: 1000,
+      fps: 60,
+      audio: [],
       format: "mp4",
       out: join(renders, name),
     });
   const [one, two] = [await render("one.mp4"), await render("two.mp4")];
   assert.equal(one.kind, "rendered");
-  assert.equal(one.frames, 63);
+  assert.equal(one.frames, frameTimes(1000, 60).length);
   assert.ok(readFileSync(join(renders, "one.mp4")).equals(readFileSync(join(renders, "two.mp4"))));
   const still = (index, name) => {
     const path = join(renders, name);
