@@ -54,6 +54,8 @@ export const OWNERS = {
   "packages/stage/src/author": "scene, elements and their bindings, beats, and the compile input",
   "packages/stage/src/dom": "DOM tokens",
   "packages/stage/src/render": "strokes and morphs for renderers",
+  "packages/stage/src/provenance": "where members and beats come from, for the Studio",
+  "packages/studio/src": "Studio graph, sources reader and gerak studio",
   "packages/stage/src/run": "compile, frame, check, visibility, carry",
   "packages/physics/src": "physics",
   "packages/rapier/src": "Rapier",

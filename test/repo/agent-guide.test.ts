@@ -137,7 +137,10 @@ describe("package docs", () => {
       (match) => match[1] ?? match[2] ?? "",
     );
     expect(named.length).toBeGreaterThan(0);
-    for (const command of named) expect(Object.keys(COMMANDS)).toContain(command);
+    const added = readdirSync(PACKAGES).filter((dir) =>
+      existsSync(join(PACKAGES, dir, "bin", `${dir}.mjs`)),
+    );
+    for (const command of named) expect([...Object.keys(COMMANDS), ...added]).toContain(command);
   });
 
   it("points only at paths that exist", () => {

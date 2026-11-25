@@ -35,6 +35,7 @@ describe("provenanceOf", () => {
       window: { kind: "beat", beat: "end.enter" },
     });
     expect(plan.beats).toMatchObject({ "intro.enter": "intro", intro: "intro", end: "end" });
+    expect(plan.name).toBe("reel");
   });
 
   it("keeps the innermost named scene across merged sub-scenes and leaves unnamed ones out", () => {

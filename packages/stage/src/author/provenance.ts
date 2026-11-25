@@ -42,6 +42,8 @@ export interface Provenance {
 
 /** Where a scene's members and beats come from, read from the scene as written; data for tools only. */
 export interface ScenePlan {
+  /** The scene's own `name`, when it has one. */
+  readonly name?: string | undefined;
   readonly members: Readonly<Record<string, Provenance>>;
   /** The shot or named scene each beat was first used in, by compiled name. */
   readonly beats: Readonly<Record<string, string>>;

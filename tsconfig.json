@@ -30,6 +30,7 @@
       "@gerak/rig": ["packages/rig/src/index.ts"],
       "@gerak/stage": ["packages/stage/src/index.ts"],
       "@gerak/stage/dom": ["packages/stage/src/dom/index.ts"],
+      "@gerak/studio": ["packages/studio/src/index.ts"],
       "@gerak/stage/provenance": ["packages/stage/src/provenance/index.ts"],
       "@gerak/stage/render": ["packages/stage/src/render/index.ts"],
       "@gerak/react": ["packages/react/src/index.ts"],

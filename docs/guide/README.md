@@ -17,7 +17,8 @@ not listed there, treat it as internal even when a workspace checkout lets you i
    [react](../../packages/react/docs/README.md), [three](../../packages/three/docs/README.md),
    [rig](../../packages/rig/docs/README.md), [rig-three](../../packages/rig-three/docs/README.md),
    [physics](../../packages/physics/docs/README.md), [rapier](../../packages/rapier/docs/README.md),
-   [moves](../../packages/moves/docs/README.md) and [tools](../../packages/tools/docs/README.md).
+   [moves](../../packages/moves/docs/README.md), [tools](../../packages/tools/docs/README.md) and
+   [studio](../../packages/studio/docs/README.md).
 
 ## Status of this guide
 

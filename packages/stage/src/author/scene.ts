@@ -88,13 +88,7 @@ import type {
   StageDefinition,
 } from "./stage";
 import { compileStage, type CompileResult, type Stage } from "../run/compile";
-import type {
-  Provenance,
-  ScenePlan,
-  ShowSummary,
-  StepSummary,
-  StepWindow,
-} from "./provenance";
+import type { Provenance, ScenePlan, ShowSummary, StepSummary, StepWindow } from "./provenance";
 
 /** Options of `scene`: what is true of the whole piece. */
 export interface SceneOptions {
@@ -1914,7 +1908,12 @@ function stepSummary(step: Step, shot: string | undefined): StepSummary {
       const travel = step.travels ? travelOf(step.run) : undefined;
       if (travel !== undefined) {
         const { to, fit = "contain" } = travel;
-        return { kind: "travel", target: to.name, fit, ...(window === undefined ? {} : { window }) };
+        return {
+          kind: "travel",
+          target: to.name,
+          fit,
+          ...(window === undefined ? {} : { window }),
+        };
       }
       const label = labelOf(step.run);
       return {
@@ -1989,7 +1988,9 @@ export function provenanceOf(scene: Scene): ScenePlan {
       steps: Object.freeze(steps),
     });
   }
+  const label = state.options.name;
   return Object.freeze({
+    ...(label === undefined || label.trim() === "" ? {} : { name: label }),
     members: Object.freeze(members),
     beats: Object.freeze(Object.fromEntries(state.beatScenes)),
   });

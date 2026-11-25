@@ -209,3 +209,4 @@ argument, and a decision the index shows as superseded is still the record to re
 - ADR-202 — Subject-first scenes — Accepted, 2026-11-24
 - ADR-203 — Multi-shot reels, safe zones and audio render — Accepted, 2026-11-24
 - ADR-204 — Exact held frames and fast capture — Accepted, 2026-11-25
+- ADR-205 — The Studio canvas as its own package — Accepted, 2026-11-25
