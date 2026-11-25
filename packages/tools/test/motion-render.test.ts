@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { fromCaller } from "../src/page/page";
 import { encoderArgs, frameTimes, parseRenderArgs, renderPage } from "../src/page/render";
 
 const HAS_FFMPEG =
@@ -119,7 +120,7 @@ describe("gerak render arguments", () => {
     const winPath = parseRenderArgs(["timing.html", "--audio", "C:\\a\\vo.wav@500:0.3"]);
     expect(winPath.kind).toBe("ok");
     if (winPath.kind === "ok") {
-      expect(winPath.audio).toEqual([{ path: "C:\\a\\vo.wav", at: 500, gain: 0.3 }]);
+      expect(winPath.audio).toEqual([{ path: fromCaller("C:\\a\\vo.wav"), at: 500, gain: 0.3 }]);
     }
   });
 
