@@ -14,6 +14,7 @@ import {
 } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import { parseLiveArgs, startLiveServer } from "../src/page/live";
+import { withPage } from "../src/page/page";
 import { callerPiecesRoot } from "../src/page/root";
 import { guard } from "../src/pages/live/guard";
 
@@ -44,8 +45,7 @@ const STAGE_FILES = [
 ];
 const FILES = [
   "rope-word/rope-word.html",
-  "rope-word/src/rope-word-main.tsx",
-  "rope-word/src/rope-word.tsx",
+  "rope-word/src/rope-word-main.ts",
   "rope-word/src/rope-word-scene.ts",
 ];
 
@@ -89,18 +89,20 @@ describe("gerak new", () => {
       expect(readFileSync(join(dir, file), "utf8")).not.toMatch(/drop|lift2d/);
   });
 
-  it("with --three names the component after the page and points each file at the next", () => {
+  it("with --three mounts with @gerak/dom and @gerak/three and points each file at the next", () => {
     const dir = root();
     scaffold("rope-word", dir, { three: true });
-    expect(readFileSync(join(dir, "rope-word/rope-word.html"), "utf8")).toContain(
-      "/src/rope-word-main.tsx",
-    );
-    expect(readFileSync(join(dir, "rope-word/src/rope-word-main.tsx"), "utf8")).toContain(
-      'import { RopeWord } from "./rope-word";',
-    );
-    expect(readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8")).toContain(
-      'import piece, { clock, lens, size } from "./rope-word-scene";',
-    );
+    const html = readFileSync(join(dir, "rope-word/rope-word.html"), "utf8");
+    expect(html).toContain("/rope-word/src/rope-word-main.ts");
+    expect(html).toContain('data-cast="label"');
+    const main = readFileSync(join(dir, "rope-word/src/rope-word-main.ts"), "utf8");
+    expect(main).toContain('import { mount } from "@gerak/dom";');
+    expect(main).toContain('import { createStage3d } from "@gerak/three";');
+    expect(main).toContain('import piece, { lens, size } from "./rope-word-scene";');
+    expect(main).not.toMatch(/react/i);
+    const sceneSource = readFileSync(join(dir, "rope-word/src/rope-word-scene.ts"), "utf8");
+    expect(sceneSource).not.toContain("clockDriver");
+    expect(sceneSource).not.toContain("export const clock");
   });
 
   it("writes files that are already formatted", async () => {
@@ -145,12 +147,11 @@ describe("gerak new", () => {
     if (three.kind !== "written") throw new Error(three.message);
     expect(three.files).toEqual([
       join(dir, "ropes/rope-box.html"),
-      join(dir, "ropes/src/rope-box-main.tsx"),
-      join(dir, "ropes/src/rope-box.tsx"),
+      join(dir, "ropes/src/rope-box-main.ts"),
       join(dir, "ropes/src/rope-box-scene.ts"),
     ]);
     expect(readFileSync(join(dir, "ropes/rope-box.html"), "utf8")).toContain(
-      "/ropes/src/rope-box-main.tsx",
+      "/ropes/src/rope-box-main.ts",
     );
     expect(scaffold("rope-x", dir, { brief: "src" }).kind).toBe("refused");
   });
@@ -180,9 +181,11 @@ describe("gerak new", () => {
     const result = scaffold("rope-word", dir, { three: true });
     if (result.kind !== "written") throw new Error(JSON.stringify(result));
     expect(result.files).toEqual(FILES.map((file) => join(dir, file)));
-    const component = readFileSync(join(dir, "rope-word/src/rope-word.tsx"), "utf8");
-    expect(component).toContain("threeBinder(world, { draw }).start(player, stage)");
-    expect(component).toContain("preserveDrawingBuffer: true");
+    const main = readFileSync(join(dir, "rope-word/src/rope-word-main.ts"), "utf8");
+    expect(main).toContain("createStage3d(canvas, lens, { fallbackSize: size })");
+    expect(main).toContain('clock: "timed"');
+    expect(main).toContain('frame: "fit"');
+    expect(main).toContain("binders: [stage3d.binder]");
     const loaded: unknown = await import(
       pathToFileURL(join(dir, "rope-word/src/rope-word-scene.ts")).href
     );
@@ -299,4 +302,39 @@ describe("gerak new", () => {
       port: 5173,
     });
   });
+
+  it("registers a timed mount on a newly scaffolded --three page with its scene length and frame", async () => {
+    const dir = appRoot();
+    writeFileSync(join(dir, "vite.config.ts"), 'export { default } from "../../vite.config";\n');
+    const result = scaffold("render-three", dir, { three: true });
+    if (result.kind !== "written") throw new Error(JSON.stringify(result));
+    const { value, pageErrors } = await withPage(
+      {
+        source: { kind: "serve", root: dir },
+        page: "render-three/render-three.html",
+        width: 1280,
+        height: 720,
+      },
+      async ({ page, advanceTo }) => {
+        await advanceTo(0);
+        return page.evaluate(() => {
+          const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+          return Array.isArray(listed)
+            ? listed.map((mounted: unknown) => {
+                const durationMs: unknown = Reflect.get(Object(mounted), "durationMs");
+                const measure: unknown = Reflect.get(Object(mounted), "measure");
+                const measured: unknown =
+                  typeof measure === "function" ? Reflect.apply(measure, mounted, []) : undefined;
+                const frame: unknown = measured
+                  ? Reflect.get(Object(measured), "frame")
+                  : undefined;
+                return { durationMs, frame };
+              })
+            : [];
+        });
+      },
+    );
+    expect(value).toEqual([{ durationMs: 800, frame: { width: 1280, height: 720 } }]);
+    expect(pageErrors).toEqual([]);
+  }, 60000);
 });

@@ -1641,4 +1641,44 @@ describe("compositor remeasure stability and ResizeObserver coalescing", () => {
     expect(live.durationMs).toBeUndefined();
     live.dispose();
   });
+
+  it("hides a split-text host outside its .shows window and leaves a page-hidden host hidden", () => {
+    const headline = new FakeNode("headline");
+    headline.textContent = "One two";
+    const prehidden = new FakeNode("prehidden");
+    prehidden.textContent = "Three four";
+    prehidden.style.visibility = "hidden";
+    const root = new FakeRoot([headline, prehidden]);
+    const frames = fakeFrames();
+
+    const lead = beat("lead", 200);
+    const showWindow = beat("showWindow", 400, { after: lead });
+    const piece = scene(
+      { length: 1000 },
+      text("headline", { split: "words" })
+        .moves((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 }))
+        .shows(showWindow),
+      text("prehidden", { split: "words" })
+        .moves((_t, ctx) => ({ x: (ctx.index ?? 0) * 10 }))
+        .shows(showWindow),
+    );
+
+    const mounted = mount(piece, { root, frames, clock: "timed" });
+    expect(headline.style.visibility).toBe("hidden");
+    expect(headline.children[0]?.style.visibility).toBe("hidden");
+    expect(prehidden.style.visibility).toBe("hidden");
+
+    if (isClock(mounted.driver)) mounted.driver.seek(0.4);
+    expect(headline.style.visibility).toBe("");
+    expect(headline.children[0]?.style.visibility).toBe("");
+    expect(prehidden.style.visibility).toBe("hidden");
+
+    if (isClock(mounted.driver)) mounted.driver.seek(0.8);
+    expect(headline.style.visibility).toBe("hidden");
+    expect(headline.children[0]?.style.visibility).toBe("hidden");
+    expect(prehidden.style.visibility).toBe("hidden");
+
+    mounted.dispose();
+    expect(prehidden.style.visibility).toBe("hidden");
+  });
 });

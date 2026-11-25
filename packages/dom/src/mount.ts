@@ -285,6 +285,7 @@ type DrawnMember = Exclude<Member, { readonly kind: "object" }>;
 interface BoundTarget {
   member: DrawnMember;
   readonly node: PageElement;
+  readonly host?: PageElement | undefined;
   readonly items: readonly PageElement[];
   readonly restore?: (() => void) | undefined;
 }
@@ -477,11 +478,11 @@ function bindList(
     throw new Error(`mount: "${member.name}" (${selector}) matched no node on the page.`);
   if (!explicitArray && member.split !== undefined && matches.length === 1) {
     const kids = childElementsOf(first);
-    if (kids.length > 0) return { member, node: first, items: kids };
+    if (kids.length > 0) return { member, node: first, host: first, items: kids };
     const doc = documentOf(first, root);
     if (doc !== undefined) {
       const wrapped = wrapSplitText(first, member.name, member.split, doc);
-      return { member, node: first, items: wrapped.items, restore: wrapped.restore };
+      return { member, node: first, host: first, items: wrapped.items, restore: wrapped.restore };
     }
   }
   return { member, node: first, items: matches };
@@ -1323,8 +1324,10 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
 
   const applyVisibility = (node: PageElement, visible: boolean): void => {
     if (!visible) {
-      node.style.visibility = "hidden";
-      hiddenByUs.add(node);
+      if (node.style.visibility !== "hidden" && !hiddenByUs.has(node)) {
+        node.style.visibility = "hidden";
+        hiddenByUs.add(node);
+      }
     } else if (hiddenByUs.has(node)) {
       node.style.visibility = "";
       hiddenByUs.delete(node);
@@ -1342,13 +1345,23 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
     if (ran !== undefined && !ran.has(member.name)) {
       // Presence follows the clock, so it is applied on every frame, run or not.
       const shown = lastFrame?.visible[member.name] ?? true;
-      if (member.kind === "list") for (const item of target.items) applyVisibility(item, shown);
-      else applyVisibility(target.node, shown);
+      switch (member.kind) {
+        case "list":
+          if (target.host !== undefined) applyVisibility(target.host, shown);
+          for (const item of target.items) applyVisibility(item, shown);
+          break;
+        case "actor":
+          applyVisibility(target.node, shown);
+          break;
+        default:
+          return unreachable(member);
+      }
       return;
     }
     const visible = lastFrame?.visible[member.name] ?? true;
     switch (member.kind) {
       case "list": {
+        if (target.host !== undefined) applyVisibility(target.host, visible);
         const count = target.items.length;
         target.items.forEach((item, index) => {
           applyVisibility(item, visible);
@@ -1771,7 +1784,13 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
           hiddenByUs.delete(node);
         }
       }
-      for (const target of targets) target.restore?.();
+      for (const target of targets) {
+        if (target.host !== undefined && hiddenByUs.has(target.host)) {
+          target.host.style.visibility = "";
+          hiddenByUs.delete(target.host);
+        }
+        target.restore?.();
+      }
       fitted?.removeAttribute("data-gerak-frame");
       const at = mounts.indexOf(mounted);
       if (at >= 0) mounts.splice(at, 1);

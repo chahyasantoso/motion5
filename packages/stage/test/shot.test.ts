@@ -191,6 +191,143 @@ describe("shot", () => {
     expect(() => scene(shot(scrolled, { length: 500 }))).toThrow(/scroll and trigger/);
   });
 
+  it("sees only events at or after the shot's start", () => {
+    const beats = state(0, (count, event) => (event.name === "beat" ? count + 1 : count));
+    const seen: number[] = [];
+    const makeCounting = () =>
+      scene(
+        { name: "count" },
+        box("counter").moves(
+          motion((_t: Time, context?: MotionContext): Pose2d => {
+            if (context === undefined) return {};
+            seen.length = 0;
+            for (const event of context.events) if (event.name === "beat") seen.push(event.at);
+            return { x: beats(context.time, context.events) };
+          }),
+        ),
+      );
+    const withBeats = compiled(
+      scene(
+        {
+          cues: [
+            { name: "beat", at: 500 },
+            { name: "beat", at: 700 },
+          ],
+        },
+        shot(sliding("hook", 600)),
+        shot(makeCounting(), { length: 400 }),
+      ),
+    );
+    const noBeats = compiled(
+      scene(shot(sliding("hook", 600)), shot(makeCounting(), { length: 400 })),
+    );
+    const read = (stage: Stage, ms: number) =>
+      poseOf(frame(stage, { time: at(ms, 1000), events: stage.cues }).targets["counter"])?.x;
+    expect(read(withBeats, 650)).toBe(read(noBeats, 650));
+    expect(read(withBeats, 700)).toBe(1);
+    expect(seen).toEqual([100]);
+  });
+
+  it("with overlap, ignores events before the overlapped shot start", () => {
+    const beats = state(0, (count, event) => (event.name === "beat" ? count + 1 : count));
+    const seen: number[] = [];
+    const makeCounting = () =>
+      scene(
+        { name: "count" },
+        box("counter").moves(
+          motion((_t: Time, context?: MotionContext): Pose2d => {
+            if (context === undefined) return {};
+            seen.length = 0;
+            for (const event of context.events) if (event.name === "beat") seen.push(event.at);
+            return { x: beats(context.time, context.events) };
+          }),
+        ),
+      );
+    const withBeats = compiled(
+      scene(
+        {
+          cues: [
+            { name: "beat", at: 440 },
+            { name: "beat", at: 600 },
+          ],
+        },
+        shot(sliding("hook", 600)),
+        shot(makeCounting(), { length: 400, overlap: 150 }),
+      ),
+    );
+    const noBeats = compiled(
+      scene(shot(sliding("hook", 600)), shot(makeCounting(), { length: 400, overlap: 150 })),
+    );
+    const read = (stage: Stage, ms: number) =>
+      poseOf(frame(stage, { time: at(ms, 850), events: stage.cues }).targets["counter"])?.x;
+    expect(read(withBeats, 500)).toBe(read(noBeats, 500));
+    expect(read(withBeats, 600)).toBe(1);
+    expect(seen).toEqual([150]);
+  });
+
+  it("sees a beat at the exact start of the shot at local 0", () => {
+    const beats = state(0, (count, event) => (event.name === "beat" ? count + 1 : count));
+    const seen: number[] = [];
+    const counting = scene(
+      { name: "count" },
+      box("counter").moves(
+        motion((_t: Time, context?: MotionContext): Pose2d => {
+          if (context === undefined) return {};
+          seen.length = 0;
+          for (const event of context.events) if (event.name === "beat") seen.push(event.at);
+          return { x: beats(context.time, context.events) };
+        }),
+      ),
+    );
+    const stage = compiled(
+      scene(
+        { cues: [{ name: "beat", at: 600 }] },
+        shot(sliding("hook", 600)),
+        shot(counting, { length: 400 }),
+      ),
+    );
+    const x = poseOf(
+      frame(stage, { time: at(600, 1000), events: stage.cues }).targets["counter"],
+    )?.x;
+    expect(x).toBe(1);
+    expect(seen).toEqual([0]);
+  });
+
+  it("keeps another shot's own events when read through context.read", () => {
+    const beats = state(0, (count, event) => (event.name === "beat" ? count + 1 : count));
+    const leader = box("leader");
+    const lead = scene(
+      { name: "lead" },
+      leader.moves(
+        motion(
+          (_t: Time, context?: MotionContext): Pose2d =>
+            context === undefined ? {} : { x: beats(context.time, context.events) },
+        ),
+      ),
+    );
+    const follow = scene(
+      { name: "follow" },
+      box("follower").moves(
+        motion(
+          (_t: Time, context?: MotionContext): Pose2d => ({
+            x: context?.read(leader).x ?? 0,
+          }),
+        ),
+      ),
+    );
+    const stage = compiled(
+      scene(
+        { cues: [{ name: "beat", at: 200 }] },
+        shot(lead, { length: 600 }),
+        shot(follow, { length: 400 }),
+      ),
+    );
+    const x = poseOf(
+      frame(stage, { time: at(700, 1000), events: stage.cues }).targets["follower"],
+    )?.x;
+    expect(x).toBe(1);
+  });
+
   it("refuses a shot inside a shot", () => {
     const inner = scene(shot(sliding("inner", 300)));
     expect(() => scene(shot(inner, { length: 300 }))).toThrow(/shot/);

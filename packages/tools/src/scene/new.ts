@@ -66,17 +66,9 @@ function plan(
     ];
   return [
     { template: "page.three.html.template", path: `${brief}/${name}.html` },
-    { template: "main.three.tsx.template", path: `${brief}/src/${name}-main.tsx` },
-    { template: "component.three.tsx.template", path: `${brief}/src/${name}.tsx` },
+    { template: "main.three.ts.template", path: `${brief}/src/${name}-main.ts` },
     { template: "scene.three.ts.template", path: `${brief}/src/${name}-scene.ts` },
   ];
-}
-
-function componentName(name: string): string {
-  return name
-    .split("-")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join("");
 }
 
 /** Why `brief` cannot name a brief folder, or none when it can. */
@@ -87,7 +79,7 @@ export function briefProblem(brief: string): string | undefined {
 }
 
 /** Writes a page, scene module and main script for `name` into `<root>/<brief>` (the brief is `name` unless given);
- * with `three`, a Three.js page, entry, component and scene. Or nothing at all. */
+ * with `three`, a Three.js page, entry and scene. Or nothing at all. */
 export function scaffold(
   name: string,
   root: string,
@@ -113,7 +105,6 @@ export function scaffold(
     return { kind: "refused", message: `Already exists, nothing written: ${taken.join(", ")}` };
   for (const { template, path } of files) {
     const source = readFileSync(join(TEMPLATES, template), "utf8")
-      .replaceAll("__COMPONENT__", componentName(name))
       .replaceAll("__BRIEF__", brief)
       .replaceAll("__NAME__", name);
     mkdirSync(dirname(path), { recursive: true });
