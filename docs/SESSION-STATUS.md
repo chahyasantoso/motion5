@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `t3/lossless-parallel-render`, built on `feat/render-speed`.
+- **Read against:** `main` after PR 637.
 
 ## Now
 
@@ -16,11 +16,11 @@ byte ceiling.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics` with O(1) idle pre-spawn `simulate()` fast-forward and 3D `cylinder` shapes/colliders, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves`) adds plain moves, `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
   `@gerak/tools` runs `npx gerak <command>` cleanly with core alone (`gerak measure` caches DOM, `objects` bounds and 3D list `counts` into `<name>.measure.json` and writes `<name>.cast.ts` with `cast` handles, `DomCast`, `ObjectCast`, and `CastName` even on failed mounts via static HTML scanning + `Binder.casts()`, while `motionLivePlugin()` keeps HTML entries synced on save in Vite; `gerak check`/`review` accept multi-viewport `--sizes` and `scroll:<selector>[±px]@ms` page actions, headless `gerak review`/`sample` accept `--measure` to refresh stale caches or missing cast modules and probe sticky/scroll/trigger/watched drivers with `--events` beside `cues` while expanding 3D list parts, and `gerak fps --action` runs repeatable actions on a real clock); `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages.
-  Decisions are ADR-170 to ADR-203; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
+  Decisions are ADR-170 to ADR-204; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **The render-speed PR is built on `feat/render-speed` (exact held-clock frame timestamps, fitted body scaling, and lossless fast PNG capture); Visual Studio (`plan/studio-plan.md`) comes next.**
+- **The Studio canvas (`plan/studio-canvas-plan.md`): a piece as connected cards over its scene file, starting with PR 1 (graph model, provenance and `gerak graph`); `plan/studio-agent-plan.md` (agent bus and pins) follows its PR 2.**
 
 ## Open, and not scheduled
 
