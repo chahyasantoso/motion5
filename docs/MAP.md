@@ -103,6 +103,7 @@ Public: `.`, `./react`
 
 Public: `./page`, `./pages`, `./scene`, `./vite`
 
+- `src/audio/`: audio levels, beat detection and decoding
 - `src/page/`: page tools
 - `src/pages/`: the stage, live and talk pages
 - `src/pages/live/`: live editor
