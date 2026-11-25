@@ -56,6 +56,28 @@ one another.
    - `zoneFindings` in `check.ts` is the one place frames become `unsafe-zone` findings; `review` passes the flag to
      the same sampling and prints the same lines.
 
+3. **Audio cues and exact-fps mixed-audio render (`@gerak/tools`).**
+   - `packages/tools/src/audio/levels.ts` is the one owner of RMS (`rms`), level (`levelOf`, `levelCues`) and onset
+     (`beatCues`) maths, shared by `packages/tools/src/pages/talk-page.ts` (`rms`, `levelOf`) and `gerak beats`
+     (`beatCues`, `levelCues`).
+   - `gerak beats` (`packages/tools/src/audio/beats.ts`, `decode.ts`) decodes audio via `ffmpeg` to mono 48 kHz float32
+     (`-ac 1 -ar 48000 -f f32le`). `beatCues` evaluates RMS over 5 ms energy hops (`BEAT_HOP_MS = 5`) against
+     `threshold` (default `1.5`) times a 40-window history mean (`HISTORY_WINDOWS = 40`, 200 ms) above
+     `MIN_BEAT_RMS = 0.02` with a 100 ms refractory period (`REFRACTORY_WINDOWS = 20`). `--levels name@ms` samples
+     `levelCues` every `ms` (`levelOf(rmsValue)` with floor `0.02`, gain `6`, capped at `1`), sorted with beats first
+     on timestamp ties.
+   - `gerak cues` (`packages/tools/src/audio/captions.ts`, `cues.ts`) parses SubRip (`.srt`, line-timed), WebVTT (`.vtt`,
+     line-timed) and Whisper JSON (`.json`, word-timed when `words` or `segments[].words` are present, else
+     line-timed). `captionCues` emits `{ name, at, value }` cues (`--name`, default `word`) where `value` is the
+     cumulative count of words shown, plus a sibling `.words.json` array of single words (`<stem>.words.json`).
+   - `gerak render` (`packages/tools/src/page/render.ts`) steps the paused clock at exact frame timestamps
+     `Math.round((i * 1000) / fps)` while `(i * 1000) / fps <= to` for `--fps 60|30|25` (`mp4` default `60`; `gif` at
+     `640 px`, `25` only). Repeated `--audio file[@ms][:gain]` tracks are delayed (`adelay=<at>:all=1`), scaled
+     (`volume=<gain>`), mixed (`amix=inputs=N:normalize=0:duration=longest` when > 1), padded (`apad`) and encoded as
+     one AAC stream (`-c:a aac -b:a 192k`) trimmed with `-t` to `times.length / fps`. Omitting `--to` reads the
+     maximum finite `durationMs` from `Symbol.for("@gerak/dom/mounts")` on a timed mount. The result reports
+     `speed: { framesPerSecond, wallMs }`.
+
 ## Consequences
 
 - A reel is written shot by shot from 0; lengthening one shot moves every later one.
@@ -64,3 +86,8 @@ one another.
   frame; reels hold few events, and a long live event log in a shot would cost more per frame.
 - A safe-zone run samples every visible text element on every frame, not only the last, so a long page costs more
   under `--safe-zone`; the profiles are estimates and a platform may change its interface without notice.
+- `gerak beats` depends on `ffmpeg` on `PATH`; sustained beds with weak transients may need a custom `--threshold`,
+  and line-timed captions (`.srt`, `.vtt`) increment `value` per line rather than per word.
+- Measured 60 fps `1080x1920` render throughput on 2026-11-25: `22.9` frames/s on the 2D piece (`launch-day`, 325 frames,
+  14,202 ms) and `19.9` frames/s on the 3D piece (`reel`, 721 frames, 36,142 ms), bounded by headless screenshot
+  round-trips and software piping.

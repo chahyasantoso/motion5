@@ -1,0 +1,122 @@
+[
+  {
+    "name": "beat",
+    "at": 0,
+    "value": 0.473
+  },
+  {
+    "name": "beat",
+    "at": 500,
+    "value": 0.482
+  },
+  {
+    "name": "beat",
+    "at": 1000,
+    "value": 0.481
+  },
+  {
+    "name": "beat",
+    "at": 1500,
+    "value": 0.48
+  },
+  {
+    "name": "beat",
+    "at": 2000,
+    "value": 0.473
+  },
+  {
+    "name": "beat",
+    "at": 2500,
+    "value": 0.483
+  },
+  {
+    "name": "beat",
+    "at": 3000,
+    "value": 0.477
+  },
+  {
+    "name": "beat",
+    "at": 3500,
+    "value": 0.483
+  },
+  {
+    "name": "beat",
+    "at": 4000,
+    "value": 0.473
+  },
+  {
+    "name": "beat",
+    "at": 4500,
+    "value": 0.477
+  },
+  {
+    "name": "beat",
+    "at": 5000,
+    "value": 0.478
+  },
+  {
+    "name": "beat",
+    "at": 5500,
+    "value": 0.47
+  },
+  {
+    "name": "beat",
+    "at": 6000,
+    "value": 0.489
+  },
+  {
+    "name": "beat",
+    "at": 6500,
+    "value": 0.474
+  },
+  {
+    "name": "beat",
+    "at": 7000,
+    "value": 0.481
+  },
+  {
+    "name": "beat",
+    "at": 7500,
+    "value": 0.48
+  },
+  {
+    "name": "beat",
+    "at": 8000,
+    "value": 0.471
+  },
+  {
+    "name": "beat",
+    "at": 8500,
+    "value": 0.484
+  },
+  {
+    "name": "beat",
+    "at": 9000,
+    "value": 0.471
+  },
+  {
+    "name": "beat",
+    "at": 9500,
+    "value": 0.483
+  },
+  {
+    "name": "beat",
+    "at": 10000,
+    "value": 0.479
+  },
+  {
+    "name": "beat",
+    "at": 10500,
+    "value": 0.476
+  },
+  {
+    "name": "beat",
+    "at": 11000,
+    "value": 0.482
+  },
+  {
+    "name": "beat",
+    "at": 11500,
+    "value": 0.47
+  }
+]
