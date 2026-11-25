@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Page } from "playwright-core";
-import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
+import { captureFrame, fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { parseNumbers } from "./args";
 import { decodePng } from "./png";
 
@@ -280,7 +280,7 @@ export async function captureFrames(request: FramesRequest): Promise<FramesResul
     for (const at of request.at) {
       await advanceTo(at);
       const path = join(out, `frame-${String(at).padStart(6, "0")}.png`);
-      if (request.crop === undefined) await page.screenshot({ path });
+      if (request.crop === undefined) writeFileSync(path, await captureFrame(page));
       else {
         const clip = await page.screenshot({ clip: request.crop });
         writeFileSync(path, scaler === undefined ? clip : await enlarge(scaler, clip, zoom));
@@ -394,7 +394,7 @@ export async function captureOnion(request: OnionRequest): Promise<OnionResult> 
       }
       steps.push({ at, boxes, clips });
     }
-    const base = await page.screenshot();
+    const base = await captureFrame(page);
     const canvasPage = await browser.newPage({
       viewport: { width: request.width, height: request.height },
     });

@@ -2,8 +2,10 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Writable } from "node:stream";
+import type { Page } from "playwright-core";
 import { parseNumbers } from "./args";
-import { fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
+import { captureFrame, fromCaller, readPageArgs, withPage, type PageTarget } from "./page";
 import { unreachable } from "./unreachable";
 
 /** `mp4` at 60, 30, or 25 frames a second, or a 640 px `gif` at 25. */
@@ -244,6 +246,59 @@ export function encoderArgs(
   }
 }
 
+async function readPageFrameSize(
+  page: Page,
+): Promise<{ readonly width: number; readonly height: number } | undefined> {
+  return page.evaluate(() => {
+    const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+    if (!Array.isArray(listed) || listed.length === 0) return undefined;
+    const readFrame = (
+      mounted: unknown,
+    ): { readonly width: number; readonly height: number } | undefined => {
+      const measure: unknown = Reflect.get(Object(mounted), "measure");
+      if (typeof measure !== "function") return undefined;
+      const measurement: unknown = Reflect.apply(measure, mounted, []);
+      const f: unknown = Reflect.get(Object(measurement), "frame");
+      if (f === null || typeof f !== "object") return undefined;
+      const w: unknown = Reflect.get(f, "width");
+      const h: unknown = Reflect.get(f, "height");
+      if (typeof w === "number" && w > 0 && typeof h === "number" && h > 0) {
+        return { width: Math.round(w), height: Math.round(h) };
+      }
+      return undefined;
+    };
+    for (const mounted of listed) {
+      const d: unknown = Reflect.get(Object(mounted), "durationMs");
+      if (typeof d === "number" && Number.isFinite(d)) {
+        const found = readFrame(mounted);
+        if (found !== undefined) return found;
+      }
+    }
+    return readFrame(listed[0]);
+  });
+}
+
+async function readMaxDuration(page: Page): Promise<number | undefined> {
+  return page.evaluate(() => {
+    const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
+    if (!Array.isArray(listed)) return undefined;
+    let max: number | undefined;
+    for (const mounted of listed) {
+      const d: unknown = Reflect.get(Object(mounted), "durationMs");
+      if (typeof d === "number" && Number.isFinite(d)) {
+        max = max === undefined ? d : Math.max(max, d);
+      }
+    }
+    return max;
+  });
+}
+
+async function writeFrame(stdin: Writable, shot: Buffer): Promise<void> {
+  if (!stdin.write(shot)) {
+    await new Promise<void>((resolve) => stdin.once("drain", () => resolve()));
+  }
+}
+
 /** Plays the page on the paused clock, one screenshot per frame, and encodes them with optional mixed audio. */
 export async function renderPage(request: RenderRequest): Promise<RenderResult> {
   if (spawnSync("ffmpeg", ["-version"]).status !== 0) {
@@ -269,33 +324,7 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
       case "page": {
         await advanceTo(0);
         advanced = true;
-        const frame = await page.evaluate(() => {
-          const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-          if (!Array.isArray(listed) || listed.length === 0) return undefined;
-          const readFrame = (
-            mounted: unknown,
-          ): { readonly width: number; readonly height: number } | undefined => {
-            const measure: unknown = Reflect.get(Object(mounted), "measure");
-            if (typeof measure !== "function") return undefined;
-            const measurement: unknown = Reflect.apply(measure, mounted, []);
-            const f: unknown = Reflect.get(Object(measurement), "frame");
-            if (f === null || typeof f !== "object") return undefined;
-            const w: unknown = Reflect.get(f, "width");
-            const h: unknown = Reflect.get(f, "height");
-            if (typeof w === "number" && w > 0 && typeof h === "number" && h > 0) {
-              return { width: Math.round(w), height: Math.round(h) };
-            }
-            return undefined;
-          };
-          for (const mounted of listed) {
-            const d: unknown = Reflect.get(Object(mounted), "durationMs");
-            if (typeof d === "number" && Number.isFinite(d)) {
-              const found = readFrame(mounted);
-              if (found !== undefined) return found;
-            }
-          }
-          return readFrame(listed[0]);
-        });
+        const frame = await readPageFrameSize(page);
         if (frame !== undefined && (frame.width !== width || frame.height !== height)) {
           await page.setViewportSize(frame);
           await advanceTo(0);
@@ -311,18 +340,7 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
     let to = request.to;
     if (to === undefined) {
       if (!advanced) await advanceTo(0);
-      const maxDuration = await page.evaluate(() => {
-        const listed: unknown = Reflect.get(globalThis, Symbol.for("@gerak/dom/mounts"));
-        if (!Array.isArray(listed)) return undefined;
-        let max: number | undefined;
-        for (const mounted of listed) {
-          const d: unknown = Reflect.get(Object(mounted), "durationMs");
-          if (typeof d === "number" && Number.isFinite(d)) {
-            max = max === undefined ? d : Math.max(max, d);
-          }
-        }
-        return max;
-      });
+      const maxDuration = await readMaxDuration(page);
       if (maxDuration === undefined) {
         throw new Error("--to is needed: the page has no timed mount.");
       }
@@ -344,10 +362,7 @@ export async function renderPage(request: RenderRequest): Promise<RenderResult> 
     try {
       for (const at of times) {
         await advanceTo(at);
-        const shot = await page.screenshot();
-        if (!encoder.stdin.write(shot)) {
-          await new Promise<void>((resolve) => encoder.stdin.once("drain", () => resolve()));
-        }
+        await writeFrame(encoder.stdin, await captureFrame(page));
       }
     } finally {
       encoder.stdin.end();
