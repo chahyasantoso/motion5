@@ -2,6 +2,7 @@ export * from "./graph";
 export * from "./sources";
 export * from "./piece";
 export * from "./print";
+export * from "./protocol";
 export * from "./cli";
 export * from "./layout";
 export * from "./server/plugin";
