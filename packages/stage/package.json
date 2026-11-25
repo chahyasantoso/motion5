@@ -26,6 +26,10 @@
     "./dom": {
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
+    },
+    "./provenance": {
+      "types": "./dist/provenance/index.d.ts",
+      "default": "./dist/provenance/index.js"
     }
   },
   "dependencies": {

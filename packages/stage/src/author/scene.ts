@@ -88,6 +88,13 @@ import type {
   StageDefinition,
 } from "./stage";
 import { compileStage, type CompileResult, type Stage } from "../run/compile";
+import type {
+  Provenance,
+  ScenePlan,
+  ShowSummary,
+  StepSummary,
+  StepWindow,
+} from "./provenance";
 
 /** Options of `scene`: what is true of the whole piece. */
 export interface SceneOptions {
@@ -200,6 +207,12 @@ interface State {
   readonly shots: readonly ShotSummary[];
   /** Where the next shot starts, in ms. */
   readonly cursor: number;
+  /** The shot or named scene that binds each owned element, innermost first. */
+  readonly sceneOf: ReadonlyMap<string, string>;
+  /** The shot each shot-owned element plays in. */
+  readonly shotOf: ReadonlyMap<string, string>;
+  /** The shot or named scene each beat was first used in, by compiled name. */
+  readonly beatScenes: ReadonlyMap<string, string>;
 }
 
 const NO_ENTRY: Entry = Object.freeze({ steps: [], show: [], scrollShow: [], limits: {} });
@@ -952,6 +965,9 @@ function includedState(state: State, other: State): State {
     inputBeats,
     current: undefined,
     shotClocks: new Map([...state.shotClocks, ...other.shotClocks]),
+    sceneOf: new Map([...state.sceneOf, ...other.sceneOf]),
+    shotOf: new Map([...state.shotOf, ...other.shotOf]),
+    beatScenes: new Map([...other.beatScenes, ...state.beatScenes]),
     cursor: Math.max(state.cursor, other.cursor),
     shots: [
       ...state.shots,
@@ -1023,6 +1039,9 @@ function shotted(state: State, taken: Shot): State {
   beats.set(name, beat(name, span, { at: from }));
   const clock: ShotClock = { from, length: span };
   const shotClocks = new Map(other.shotClocks);
+  const sceneOf = new Map(other.sceneOf);
+  const shotOf = new Map(other.shotOf);
+  const beatScenes = new Map([...beats.keys()].map((each) => [each, name]));
   const entries = new Map<string, Entry>();
   for (const [member, entry] of other.entries) {
     if (!other.owned.has(member)) {
@@ -1030,6 +1049,8 @@ function shotted(state: State, taken: Shot): State {
       continue;
     }
     shotClocks.set(member, clock);
+    sceneOf.set(member, name);
+    shotOf.set(member, name);
     const shown = entry.show.map((stretch) => renamedStretch(stretch, rename));
     entries.set(member, {
       ...entry,
@@ -1045,6 +1066,9 @@ function shotted(state: State, taken: Shot): State {
     beats,
     entries,
     shotClocks,
+    sceneOf,
+    shotOf,
+    beatScenes,
   };
   const next = includedState(state, moved);
   return {
@@ -1852,6 +1876,125 @@ function limitsOf(state: State): Record<string, Limits> {
   return limits;
 }
 
+/** Where a motion's window comes from, with a shot's beats under their compiled names. */
+function stepWindow(
+  span: Span | undefined,
+  window: InWindow | undefined,
+  shot: string | undefined,
+): StepWindow | undefined {
+  const fromBeat = beatOf(span);
+  if (fromBeat !== undefined)
+    return { kind: "beat", beat: shot === undefined ? fromBeat.name : `${shot}.${fromBeat.name}` };
+  if (isInputBeat(window)) return { kind: "beat", beat: window.name };
+  if (span !== undefined) return { kind: "ms", from: span.from, to: span.to };
+  return window === undefined ? undefined : { kind: "window" };
+}
+
+/** The name of a motion's own function, when it has one. */
+function labelOf(run: SceneMotion | SceneMotion3d): string | undefined {
+  const body: unknown = Reflect.get(run, MOTION_BODY);
+  const name = isMotionBody(body) ? body.fn.name : run.name;
+  return name === "" ? undefined : name;
+}
+
+/** The options a 2D travel was made with, read from its motion. */
+function travelOf(run: SceneMotion): TravelOptions | undefined {
+  const options: unknown = Reflect.get(run, "travel");
+  if (typeof options !== "object" || options === null) return undefined;
+  const to: unknown = Reflect.get(options, "to");
+  const fit: unknown = Reflect.get(options, "fit");
+  if (!isElement(to)) return undefined;
+  return fit === "contain" || fit === "fill" || fit === "none" ? { to, fit } : { to };
+}
+
+function stepSummary(step: Step, shot: string | undefined): StepSummary {
+  switch (step.kind) {
+    case "motion": {
+      const window = stepWindow(step.span, step.window, shot);
+      const travel = step.travels ? travelOf(step.run) : undefined;
+      if (travel !== undefined) {
+        const { to, fit = "contain" } = travel;
+        return { kind: "travel", target: to.name, fit, ...(window === undefined ? {} : { window }) };
+      }
+      const label = labelOf(step.run);
+      return {
+        kind: "motion",
+        ...(label === undefined ? {} : { label }),
+        ...(window === undefined ? {} : { window }),
+        joins: step.joins,
+        loops: step.loops,
+        reads: step.reads,
+      };
+    }
+    case "motion3d": {
+      const window = stepWindow(step.span, step.window, shot);
+      const label = labelOf(step.run);
+      return {
+        kind: "motion",
+        ...(label === undefined ? {} : { label }),
+        ...(window === undefined ? {} : { window }),
+        joins: step.joins,
+        loops: step.loops,
+        reads: [],
+      };
+    }
+    case "travel3d": {
+      const window = stepWindow(step.span, step.window, shot);
+      return {
+        kind: "travel",
+        target: step.run.travel.to.name,
+        fit: step.fit,
+        ...(window === undefined ? {} : { window }),
+      };
+    }
+    case "modify":
+    case "modify3d":
+      return { kind: "modifies" };
+    default:
+      return unreachable(step);
+  }
+}
+
+function showSummary(stretch: Stretch): ShowSummary {
+  switch (stretch.kind) {
+    case "beats":
+      return { kind: "beats", from: stretch.from, to: stretch.to };
+    case "from":
+      return { kind: "from", from: stretch.from };
+    case "until":
+      return { kind: "until", until: stretch.until };
+    default:
+      return unreachable(stretch);
+  }
+}
+
+/** Where a scene's members and beats come from: each element's shot or named scene and binding calls. */
+export function provenanceOf(scene: Scene): ScenePlan {
+  const state = stateOf(scene);
+  if (state === undefined) throw new TypeError("provenanceOf: expected what `scene` returns.");
+  const members: Record<string, Provenance> = {};
+  for (const name of state.order) {
+    const entry = state.entries.get(name) ?? NO_ENTRY;
+    const shot = state.shotOf.get(name);
+    const steps: StepSummary[] = entry.steps.map((step) => stepSummary(step, shot));
+    const windows: ShowSummary[] = [
+      ...entry.show.map(showSummary),
+      ...entry.scrollShow.map((): ShowSummary => ({ kind: "scroll" })),
+    ];
+    if (windows.length > 0) steps.push({ kind: "shows", windows });
+    if (Object.keys(entry.limits).length > 0) steps.push({ kind: "limits", limits: entry.limits });
+    const scene = state.sceneOf.get(name);
+    members[name] = Object.freeze({
+      ...(scene === undefined ? {} : { scene }),
+      steps: Object.freeze(steps),
+    });
+  }
+  return Object.freeze({
+    members: Object.freeze(members),
+    beats: Object.freeze(Object.fromEntries(state.beatScenes)),
+  });
+}
+
 function definitionOf(state: State): StageDefinition {
   const ends = [...state.beats.values()].map((beat) => beat.to);
   const durationMs = state.options.length ?? (ends.length > 0 ? Math.max(...ends) : undefined);
@@ -2234,6 +2377,9 @@ function startState(options: SceneOptions): State {
     shotClocks: new Map(),
     shots: [],
     cursor: 0,
+    sceneOf: new Map(),
+    shotOf: new Map(),
+    beatScenes: new Map(),
   };
 }
 
@@ -2336,7 +2482,19 @@ export function scene(...args: readonly (SceneOptions | SceneItem)[]): Scene {
         return unreachable(item);
     }
   }
-  return kept({ kind: "scene" }, { ...state, current: undefined });
+  return kept({ kind: "scene" }, { ...named(state), current: undefined });
+}
+
+/** The state with its own name on each owned element and beat that no inner scene named. */
+function named(state: State): State {
+  const label = state.options.name;
+  if (label === undefined || label.trim() === "") return state;
+  const sceneOf = new Map(state.sceneOf);
+  for (const name of state.owned) if (!sceneOf.has(name)) sceneOf.set(name, label);
+  const beatScenes = new Map(state.beatScenes);
+  for (const name of [...state.beats.keys(), ...state.inputBeats.keys()])
+    if (!beatScenes.has(name)) beatScenes.set(name, label);
+  return { ...state, sceneOf, beatScenes };
 }
 
 /** Whether `value` is a piece made by `scene`. */
