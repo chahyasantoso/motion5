@@ -122,6 +122,7 @@ export function useBus(inputs: BusInputs): { readonly resume: () => void } {
   const latest = useRef(inputs);
   latest.current = inputs;
   const worker = useRef<WorkerFrame | undefined>(undefined);
+  const starting = useRef<Promise<void>>(Promise.resolve());
   const { piece } = inputs;
 
   const resume = useCallback((): void => {
@@ -155,8 +156,13 @@ export function useBus(inputs: BusInputs): { readonly resume: () => void } {
         now.follow.command();
         if (now.follow.snapshot() !== "detached" || now.page === null)
           return runCommand(command, visible);
-        worker.current ??= new WorkerFrame(now.page, visibleSurface(now), now.length);
-        await worker.current.ready();
+        if (worker.current === undefined) {
+          const started = new WorkerFrame(now.page, visibleSurface(now), now.length);
+          const at = now.playhead.snapshot().ms;
+          worker.current = started;
+          starting.current = started.ready().then(() => started.playhead.seek(at));
+        }
+        await starting.current;
         return runCommand(command, hidden);
       };
       void answer()
