@@ -165,7 +165,7 @@ describe("boundary scan: page tools", () => {
           'import { hop } from "@gerak/moves";\nexport const e = hop;',
         "packages/tools/src/page/reach.ts":
           'import { s } from "../scene/scene";\nexport const r = s;',
-        "packages/tools/src/page/live.ts":
+        "packages/tools/src/page/briefs.ts":
           'import { pieceFiles } from "../scene/briefs";\nexport const l = pieceFiles;',
       },
       (tree) => scan(tree),

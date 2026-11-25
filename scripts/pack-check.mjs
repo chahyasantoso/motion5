@@ -23,7 +23,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 export const CORE_INSTALL_SET = ["core", "player", "stage", "dom", "react", "tools"];
 const CORE_PEERS = ["react", "react-dom", "vite", "playwright-core", "typescript"];
 /** Commands an earlier package ran; `gerak` must list none and refuse each. */
-const REMOVED_COMMANDS = ["moves", "new-move", "promote", "style"];
+const REMOVED_COMMANDS = ["live", "moves", "new-move", "promote", "style"];
 
 /** Every import specifier the installable packages declare, in build order. */
 export function allSpecifiers(directories = INSTALLABLE_PACKAGES, read = readManifest) {
@@ -143,7 +143,7 @@ const go = beat("go", 2000);
 export default scene(box("box").moves(slide({ distance: 300, from: "left" }).in(go)));
 `;
 
-/** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the live and talk pages. */
+/** A script, run in the installed project, that serves `pieces/` with the installed tools and fetches the talk page. */
 const SERVE_PAGES = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createServer } from "vite";
@@ -166,7 +166,7 @@ try {
   await server.listen();
   const base = server.resolvedUrls.local[0];
   const problems = [];
-  for (const path of ["live.html", "live.ts", "talk.html", "talk.ts"]) {
+  for (const path of ["talk.html", "talk.ts"]) {
     const response = await fetch(new URL(path, base));
     const body = await response.text();
     if (response.status !== 200) problems.push(path + " answered " + response.status);
@@ -197,94 +197,6 @@ function pageServerError(project) {
   } catch {
     return "prints no result";
   }
-}
-
-const LIVE_COMPONENT_SCENE = `import type { Time } from "@gerak/core";
-import { clockDriver } from "@gerak/dom";
-import { drop } from "@gerak/moves";
-
-export const durationMs = 2000;
-export const clock = () => clockDriver({ duration: durationMs });
-export const scene = (time: Time) => ({
-  box: drop({ distance: 200, squash: 0.2 })(time),
-});
-`;
-
-const LIVE_COMPONENT_TSX = `import { usePlayer, useTarget } from "@gerak/react";
-import { clock, scene } from "./livecheck-scene";
-
-export function Livecheck() {
-  const playing = usePlayer(scene, clock);
-  const box = useTarget(playing?.player, "box");
-  return (
-    <div style={{ position: "relative", width: 640, height: 360 }}>
-      <div ref={box} data-cast="box" style={{ width: 40, height: 40, background: "#36c" }} />
-    </div>
-  );
-}
-`;
-
-const CHECK_LIVE_DRAG = `import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { withPage } from "@gerak/tools/page";
-
-const root = resolve("pieces");
-const brief = join(root, "livecheck", "src");
-mkdirSync(brief, { recursive: true });
-writeFileSync(join(brief, "livecheck-scene.ts"), ${JSON.stringify(LIVE_COMPONENT_SCENE)});
-writeFileSync(join(brief, "livecheck.tsx"), ${JSON.stringify(LIVE_COMPONENT_TSX)});
-const errors = [];
-try {
-  await withPage(
-    { page: "live.html?scene=livecheck", width: 1280, height: 720, source: { kind: "serve", root }, clock: "real" },
-    async ({ page }) => {
-      page.setDefaultTimeout(10000);
-      page.on("pageerror", (error) => errors.push("pageerror: " + error.message));
-      page.on("response", async (res) => {
-        if (res.status() >= 400) {
-          const text = await res.text().catch(() => "");
-          errors.push("http " + res.status() + " " + res.url() + ": " + text);
-        }
-      });
-      page.on("console", (msg) => {
-        if (msg.type() === "error") errors.push("console: " + msg.text());
-      });
-      await page.locator('[data-cast="box"]').waitFor();
-      const literal = page.locator('[data-live-number="0.2"]');
-      await literal.waitFor();
-      const index = await literal.getAttribute("data-live-index");
-      const box = await literal.boundingBox();
-      if (box === null) throw new Error("live number has no bounding box");
-      await page.waitForTimeout(200);
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(box.x + box.width / 2 - 50, box.y + box.height / 2);
-      await page.mouse.up();
-      const dragged = await page.locator(\`[data-live-index="\${index}"]\`).textContent();
-      if (dragged !== "-0.3") throw new Error("expected the drag to give -0.3, got " + dragged);
-    },
-  );
-  if (errors.length > 0) throw new Error(errors.join("; "));
-  console.log("ok");
-} catch (error) {
-  const msg = (error instanceof Error ? error.message : String(error)).replace(/\\r?\\n+/g, " | ");
-  console.error("LIVECHECK Error:", msg + (errors.length > 0 ? " [" + errors.join("; ") + "]" : ""));
-  process.exitCode = 1;
-} finally {
-  rmSync(join(root, "livecheck"), { recursive: true, force: true });
-}
-`;
-
-/** Verifies live.html in an installed project drags a number literal in Chromium. */
-function liveDragError(project) {
-  writeFileSync(join(project, "check-live-drag.mjs"), CHECK_LIVE_DRAG);
-  const run = spawnSync(process.execPath, ["check-live-drag.mjs"], {
-    cwd: project,
-    encoding: "utf8",
-  });
-  return run.status === 0 && run.stdout.trim() === "ok"
-    ? undefined
-    : firstErrorLine(run.stderr || run.stdout);
 }
 
 /** The link targets of a markdown text that name a file, without their anchors. */
@@ -319,7 +231,7 @@ function initError(project, exists = existsSync) {
   if (run.code !== 0) return firstErrorLine(run.out || run.err);
   const skill = ".claude/skills/make-motion/SKILL.md";
   const expected = [
-    ...["live.html", "live.ts", "talk.html", "talk.ts"].map((name) => `pieces/${name}`),
+    ...["talk.html", "talk.ts"].map((name) => `pieces/${name}`),
     skill,
     "AGENTS.md",
     "tsconfig.json",
@@ -673,6 +585,13 @@ export function packCheck({ keep = false, log = console.log } = {}) {
       removed.length > 0 ? `help lists removed commands: ${removed.join(", ")}` : undefined;
     if (removedError !== undefined) failed += 1;
     log(formatResult("gerak --help lists no removed command", removedError));
+    const live = sh("npx --no-install gerak live", project);
+    check(
+      "gerak live refused",
+      live.code !== 0 && /Unknown command live./.test(live.out)
+        ? undefined
+        : `expected unknown command, got ${live.code}: ${firstErrorLine(live.out || live.err)}`,
+    );
     const threeError = threeTscError(work, project);
     if (threeError !== undefined) failed += 1;
     log(formatResult("tsc after new --three", threeError));
@@ -697,7 +616,6 @@ export function packCheck({ keep = false, log = console.log } = {}) {
     log(formatResult("pages served from pieces/", pagesError));
     check("gerak studio graph", studioGraphError(project));
     coreOnlyChecks(join(work, "core-only"), files, lock, check);
-    check("live.html drags a number", liveDragError(project));
     return failed === 0 ? 0 : 1;
   } finally {
     if (keep) log(`kept ${work}`);

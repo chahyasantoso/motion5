@@ -16,10 +16,14 @@
   "dependencies": {
     "@gerak/core": "0.1.0",
     "@gerak/stage": "0.1.0",
-    "@gerak/tools": "0.1.0"
+    "@gerak/tools": "0.1.0",
+    "@xyflow/react": "12.12.1"
   },
   "peerDependencies": {
-    "typescript": "*"
+    "react": "*",
+    "react-dom": "*",
+    "typescript": "*",
+    "vite": "*"
   },
   "exports": {
     ".": {

@@ -86,5 +86,5 @@ of the shot boundary. A pan in the shot before can carry it out of the frame; ch
 - `npx gerak review <brief>/src/<name>.ts` as for any piece; read its findings per shot.
 - `npx gerak frames "<brief>/<name>.html" --at <ms,ms,...>` at each shot's middle and 100 ms either side of each
   shot change; the carried member must be visible in both frames of each change.
-- Watch it once at full speed in `<brief>/<name>.html` or `live.html?scene=<name>`: the hook must land inside 3 s, each shot's idea must be
+- Watch it once at full speed in `<brief>/<name>.html`: the hook must land inside 3 s, each shot's idea must be
   readable, and the call to action must hold still.

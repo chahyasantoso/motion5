@@ -1,0 +1,71 @@
+/* Every colour, radius, space, shadow and duration of the Studio. No other file holds a colour literal. */
+:root {
+  color-scheme: dark;
+
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  --text-base: 13px;
+  --text-small: 11px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --radius-card: 12px;
+  --radius-small: 6px;
+  --border-width: 1px;
+  --ring-width: 2px;
+
+  --duration-fast: 120ms;
+  --duration: 200ms;
+
+  --canvas: light-dark(#f2f3f5, #0d0e11);
+  --canvas-dot: light-dark(#c7cad2, #2a2c33);
+  --surface: light-dark(#ffffff, #17181c);
+  --surface-raised: light-dark(#f6f7f9, #1e2025);
+  --surface-sunken: light-dark(#eceef1, #121316);
+  --border: light-dark(#d6d9e0, #2c2e35);
+  --border-strong: light-dark(#b9bdc7, #44474f);
+  --text: light-dark(#1a1b1f, #e8e9ed);
+  --text-dim: light-dark(#585b66, #9a9ca6);
+  --accent: light-dark(#2b59d3, #7aa2f7);
+  --accent-soft: light-dark(#e3eafc, #1f2a44);
+  --on-accent: light-dark(#ffffff, #0d0e11);
+  --danger: light-dark(#b3261e, #f7768e);
+  --danger-soft: light-dark(#fbe4e2, #3a1d24);
+  --scrim: light-dark(#1a1b1f1a, #00000099);
+  --unsafe: light-dark(#d9302599, #ff4d4d55);
+  --unsafe-line: light-dark(#d93025, #ff7a7a);
+  --letterbox: light-dark(#dfe2e8, #08090b);
+
+  --port-time: light-dark(#a15c00, #e0af68);
+  --port-events: light-dark(#7a3fc4, #bb9af7);
+  --port-pose: light-dark(#0b7a6a, #4fd1b8);
+  --port-media: light-dark(#b8326e, #f08fb8);
+  --port-stage: light-dark(#4a5568, #8a94a8);
+
+  --shadow-hover: 0 4px 16px light-dark(#1a1b1f1f, #00000080);
+  --shadow-selected: 0 8px 28px light-dark(#1a1b1f2e, #000000b3);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration: 0ms;
+  }
+}

@@ -55,7 +55,9 @@ export const OWNERS = {
   "packages/stage/src/dom": "DOM tokens",
   "packages/stage/src/render": "strokes and morphs for renderers",
   "packages/stage/src/provenance": "where members and beats come from, for the Studio",
-  "packages/studio/src": "Studio graph, sources reader and gerak studio",
+  "packages/studio/src": "Studio graph, sources and gerak studio",
+  "packages/studio/src/canvas": "the canvas page",
+  "packages/studio/src/server": "the Studio dev server",
   "packages/stage/src/run": "compile, frame, check, visibility, carry",
   "packages/physics/src": "physics",
   "packages/rapier/src": "Rapier",
@@ -65,11 +67,10 @@ export const OWNERS = {
   "packages/tools/src/scene/templates": "gerak new templates",
   "packages/tools/src/scene/templates/pages": "the page files of a pieces folder",
   "packages/tools/src/page": "page tools",
-  "packages/tools/src/pages": "the stage, live and talk pages",
-  "packages/tools/src/pages/live": "live editor",
+  "packages/tools/src/pages": "the stage and talk pages",
   "packages/tools/src/scene": "scene sample, timeline",
   "packages/tools/src/timeline": "timeline bars",
-  "packages/tools/src/vite": "live editor Vite plugin",
+  "packages/tools/src/vite": "the live source and edit endpoints, Vite plugin",
 };
 
 function publicEntries(workspace, scanRoot = root) {

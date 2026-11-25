@@ -17,7 +17,6 @@ export const COMMANDS = Object.freeze({
     summary: "set up a project: pieces folder, pages, skill and AGENTS.md",
   },
   joints: { file: "motion-joints.mjs", summary: "list the joints of a glTF model" },
-  live: { file: "motion-live.mjs", summary: "serve a scene in the live editor" },
   measure: {
     file: "motion-measure.mjs",
     summary: "measure a page's cast into the cache the scene tools read",

@@ -64,4 +64,4 @@ with no browser.
 - [Core](../../packages/core/docs/core.md) and [stage](../../packages/stage/docs/stage.md): read whole before making motion; the loop is in the second.
 - [3D scenes](../../packages/three/docs/agent-3d.md), [rigs](../../packages/rig/docs/agent-rigs.md), [events](../../packages/stage/docs/agent-events.md), [physics](../../packages/physics/docs/agent-physics.md)
   and [motion principles](../../packages/moves/docs/agent-principles.md) when a brief needs them.
-- [Live editing](../../packages/tools/docs/live.md) and [every command](../../packages/tools/docs/commands.md).
+- [The Studio](../../packages/studio/docs/studio.md) and [every command](../../packages/tools/docs/commands.md).

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { BROWSER_TESTS } from "../browser-tests.mjs";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const PAGE_SERVER = /\b(withPage|captureFrames|measureFps|startLiveServer|createServer)\(/;
+const PAGE_SERVER = /\b(withPage|captureFrames|measureFps|startStudio|createServer)\(/;
 
 /** Whether `file` matches one of the browser project's patterns. */
 function inBrowserProject(file: string): boolean {

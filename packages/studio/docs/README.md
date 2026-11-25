@@ -2,4 +2,4 @@
 
 The Studio shows a piece as connected cards over its scene file and page. Making a piece never needs it.
 
-- [Studio](./studio.md): how the graph is built from a piece's files, and `gerak studio`.
+- [Studio](./studio.md): how the graph is built from a piece's files, the canvas, and `gerak studio`.

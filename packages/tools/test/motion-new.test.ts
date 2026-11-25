@@ -13,12 +13,7 @@ import {
   scaffold,
 } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
-import { parseLiveArgs, startLiveServer } from "../src/page/live";
 import { withPage } from "../src/page/page";
-import { callerPiecesRoot } from "../src/page/root";
-import { guard } from "../src/pages/live/guard";
-
-const PIECES_ROOT = callerPiecesRoot();
 
 const roots: string[] = [];
 function root(): string {
@@ -219,88 +214,16 @@ describe("gerak new", () => {
     }
   });
 
-  it("parses live args and validates scene existence", () => {
-    expect(parseLiveArgs(["saved"])).toEqual({
-      kind: "ok",
-      scene: "saved",
-      root: PIECES_ROOT,
-      port: 5173,
-    });
-
-    const dir = root();
-    mkdirSync(join(dir, "custom/src"), { recursive: true });
-    writeFileSync(join(dir, "custom/src/custom-scene.ts"), "export const scene = () => ({});");
-    expect(parseLiveArgs(["custom", "--root", dir, "--port", "4321"])).toEqual({
-      kind: "ok",
-      scene: "custom",
-      root: dir,
-      port: 4321,
-    });
-
-    expect(parseLiveArgs(["timing", "--bogus"]).kind).toBe("usage");
-    expect(parseLiveArgs(["Timing"]).kind).toBe("usage");
-    expect(parseLiveArgs(["missing-scene"]).kind).toBe("usage");
-
-    for (const brief of ["one", "two"]) {
-      mkdirSync(join(dir, `${brief}/src`), { recursive: true });
-      writeFileSync(join(dir, `${brief}/src/twice.ts`), "export const scene = () => ({});");
-    }
-    const twice = parseLiveArgs(["twice", "--root", dir]);
-    expect(twice.kind).toBe("usage");
-    expect(twice.kind === "usage" ? twice.message : "").toContain("one and two");
-  });
-
-  it("starts a live server and reuses an already running server", async () => {
-    const first = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port: 0 });
-    try {
-      expect(first.reused).toBe(false);
-      expect(first.url).toContain("live.html?scene=timing");
-      const port = Number(new URL(first.url).port);
-      expect(port).toBeGreaterThan(0);
-
-      const second = await startLiveServer({ scene: "timing", root: PIECES_ROOT, port });
-      expect(second.reused).toBe(true);
-      expect(second.url).toBe(first.url);
-    } finally {
-      await first.close();
-    }
-  });
-
-  it("samples the first frame of every worked example under guard", async () => {
+  it("samples the first frame of every worked example", async () => {
     const examples = ["timing", "card", "pile", "character3d", "overlay3d"] as const;
     for (const name of examples) {
       const scenePath = join(process.cwd(), "apps/pieces", name, "src", `${name}-scene.ts`);
       const imported = await import(pathToFileURL(scenePath).href);
       const module = readSceneModule(imported);
       if ("reason" in module) throw new Error(`${name}: ${module.reason}`);
-      const errors: string[] = [];
-      const guarded = guard(module.scene, (err) => errors.push(err));
-      const [first] = sampleScene({ ...module, scene: guarded }, { kind: "time", ms: [0] });
+      const [first] = sampleScene(module, { kind: "time", ms: [0] });
       expect(first).toBeDefined();
-      expect(errors).toEqual([]);
     }
-  });
-
-  it("resolves newly scaffolded DOM and Three.js scenes via parseLiveArgs", () => {
-    const domDir = root();
-    const domResult = scaffold("scaffold-dom", domDir);
-    if (domResult.kind !== "written") throw new Error(JSON.stringify(domResult));
-    expect(parseLiveArgs(["scaffold-dom", "--root", domDir])).toEqual({
-      kind: "ok",
-      scene: "scaffold-dom",
-      root: domDir,
-      port: 5173,
-    });
-
-    const threeDir = appRoot();
-    const threeResult = scaffold("scaffold-three", threeDir, { three: true });
-    if (threeResult.kind !== "written") throw new Error(JSON.stringify(threeResult));
-    expect(parseLiveArgs(["scaffold-three", "--root", threeDir])).toEqual({
-      kind: "ok",
-      scene: "scaffold-three",
-      root: threeDir,
-      port: 5173,
-    });
   });
 
   it("registers a timed mount on a newly scaffolded --three page with its scene length and frame", async () => {

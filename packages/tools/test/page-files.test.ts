@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { pageFiles } from "@gerak/tools/scene";
 
 const PIECES = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
-const KEYS = ["live.html", "live.ts", "talk.html", "talk.ts"];
+const KEYS = ["talk.html", "talk.ts"];
 
 describe("the page files", () => {
-  it("are the four a pieces folder holds", () => {
+  it("are the two a pieces folder holds", () => {
     expect(Object.keys(pageFiles()).sort()).toEqual(KEYS);
   });
 
@@ -20,8 +20,7 @@ describe("the page files", () => {
   });
 
   it("each page loads the entry of its own name", () => {
-    for (const name of ["live", "talk"])
-      expect(pageFiles()[`${name}.html`]).toContain(`src="/${name}.ts"`);
+    for (const name of ["talk"]) expect(pageFiles()[`${name}.html`]).toContain(`src="/${name}.ts"`);
   });
 
   it("are what this repository's pieces folder holds, byte for byte", () => {
