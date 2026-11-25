@@ -353,7 +353,7 @@ assert.ok(readFileSync(review.sheet).length > 1000, "review sheet written");
 const { value: missing } = await withPage(
   { page: "timing/timing.html", ...stage },
   async ({ page }) =>
-    perform(page, { kind: "click", selector: ".nothing-here", at: 0 }).then(
+    perform(page, { kind: "click", selector: ".nothing-here", at: 0 }, "held").then(
       () => "clicked",
       (error) => error.message,
     ),

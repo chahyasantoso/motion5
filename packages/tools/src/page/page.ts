@@ -319,7 +319,7 @@ async function openPageSession(
         ) {
           pending.shift();
           await waitUntil(began + action.at);
-          await perform(page, action);
+          await perform(page, action, "real");
         }
         await waitUntil(began + ms);
         now = ms;
@@ -328,7 +328,7 @@ async function openPageSession(
       for (let action = pending[0]; action !== undefined && action.at <= ms; action = pending[0]) {
         pending.shift();
         await runHeldTo(action.at - now, action.at);
-        await perform(page, action);
+        await perform(page, action, "held");
         now = action.at;
       }
       await runHeldTo(ms - now, ms);

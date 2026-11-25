@@ -106,8 +106,30 @@ async function place(
     : { box, x: box.x + point.x, y: box.y + point.y };
 }
 
+/** Clock mode for performing an action: `"real"` waits for a drawn frame first; `"held"` does not. */
+export type ActionClock = "real" | "held";
+
+/** Waits for a drawn frame so scroll-driven transforms update before reading a box. */
+async function waitForDrawnFrame(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
 /** Does `action` to the page with the real mouse, so the page sees the same pointer events a person makes. */
-export async function perform(page: Page, action: PageAction): Promise<void> {
+export async function perform(page: Page, action: PageAction, clock: ActionClock): Promise<void> {
+  switch (clock) {
+    case "real":
+      await waitForDrawnFrame(page);
+      break;
+    case "held":
+      break;
+    default:
+      return unreachable(clock);
+  }
   switch (action.kind) {
     case "scroll":
       switch (action.target.kind) {
