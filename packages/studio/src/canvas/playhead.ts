@@ -1,14 +1,18 @@
+import type { Events } from "@gerak/core";
 import type { Problem } from "./api";
+import { registerOwner } from "./driver-hook";
 import { mountOf, problemOfError, problemOfEvent, sceneOf, type MountView } from "./mount-view";
 
 /** What the timeline shows of the page clock. */
 export interface PlayheadState {
   readonly ms: number;
   readonly playing: boolean;
-  /** The clock length in ms; the scene length when the page scrolls. */
+  /** The clock length in ms. */
   readonly length: number;
-  /** `timed` drives the mount clock, `scroll` drives the page scroll position, `waiting` has no mount yet. */
-  readonly mode: "timed" | "scroll" | "waiting";
+  /** `timed` drives the page clock, `waiting` has no clock yet. */
+  readonly mode: "timed" | "waiting";
+  /** Whether the Studio handed the page its clock, so the page can replay from a fresh load. */
+  readonly driven: boolean;
   readonly rate: number;
   readonly loop: boolean;
   /** The id of the shot soloed, if any. */
@@ -17,7 +21,6 @@ export interface PlayheadState {
 
 interface Remembered {
   readonly ms: number;
-  readonly scroll: number;
   readonly playing: boolean;
 }
 
@@ -33,6 +36,7 @@ export class Playhead {
     playing: false,
     length: FALLBACK_LENGTH,
     mode: "waiting",
+    driven: false,
     rate: 1,
     loop: false,
     solo: undefined,
@@ -45,10 +49,13 @@ export class Playhead {
   private handle: number | undefined;
   private remembered: Remembered | undefined;
   private pending: Remembered | undefined;
+  private restart: Remembered | undefined;
   private soloSpan: { readonly from: number; readonly to: number } | undefined;
   private resume = false;
   private stopAt: number | undefined;
   private sceneLength = FALLBACK_LENGTH;
+  private events: Events = [];
+  private unregister: (() => void) | undefined;
   private readonly unhook: (() => void)[] = [];
 
   constructor(private readonly onProblem: (problem: Problem | undefined) => void) {}
@@ -77,6 +84,7 @@ export class Playhead {
       merged.playing === this.state.playing &&
       merged.length === this.state.length &&
       merged.mode === this.state.mode &&
+      merged.driven === this.state.driven &&
       merged.rate === this.state.rate &&
       merged.loop === this.state.loop &&
       merged.solo === this.state.solo;
@@ -85,15 +93,45 @@ export class Playhead {
     for (const listener of [...this.listeners]) listener();
   }
 
-  /** The scene length in ms, used when the page has no timed clock. */
+  /** The scene length in ms, used while the page has no clock yet. */
   setSceneLength(ms: number): void {
     this.sceneLength = ms > 0 ? ms : FALLBACK_LENGTH;
+  }
+
+  /** The events a driven page replays under its own input. */
+  take(): Events {
+    return this.events;
+  }
+
+  /** Sets the take; a driven page reloads on a changed one and returns to the same ms. */
+  setTake(next: Events): void {
+    if (JSON.stringify(next) === JSON.stringify(this.events)) return;
+    this.events = next;
+    if (this.state.driven) this.reload();
+  }
+
+  /** Reloads a driven page from the top, with a fresh driver and an empty log, and plays it. */
+  replay(): void {
+    if (!this.state.driven) return;
+    this.restart = { ms: 0, playing: true };
+    this.reload();
+  }
+
+  private reload(): void {
+    const win = this.win;
+    if (win === undefined) return;
+    win.history.scrollRestoration = "manual";
+    win.location.reload();
   }
 
   /** Starts following `frame`, and keeps following it across reloads. */
   attach(frame: HTMLIFrameElement): void {
     this.detach();
     this.frame = frame;
+    this.unregister = registerOwner({
+      owns: (win) => frame.contentWindow === win,
+      take: () => this.events,
+    });
     const loaded = (): void => this.hook();
     frame.addEventListener("load", loaded);
     this.unhook.push(() => frame.removeEventListener("load", loaded));
@@ -109,6 +147,8 @@ export class Playhead {
     if (this.handle !== undefined) cancelAnimationFrame(this.handle);
     this.handle = undefined;
     for (const stop of this.unhook.splice(0)) stop();
+    this.unregister?.();
+    this.unregister = undefined;
     this.frame = undefined;
     this.win = undefined;
     this.doc = undefined;
@@ -121,7 +161,8 @@ export class Playhead {
     for (const stop of this.unhook.splice(1)) stop();
     this.win = win;
     this.doc = win.document;
-    this.pending = this.remembered;
+    this.pending = this.restart ?? this.remembered;
+    this.restart = undefined;
     this.onProblem(undefined);
     const hot = (event: Event): void => {
       const mount = mountOf(win);
@@ -166,11 +207,6 @@ export class Playhead {
     return mountOf(this.win);
   }
 
-  private scrollSpan(): number {
-    const root = this.win?.document.documentElement;
-    return root === undefined ? 0 : Math.max(0, root.scrollHeight - (this.win?.innerHeight ?? 0));
-  }
-
   private applyRange(mount: MountView): void {
     const span = this.soloSpan;
     if (span !== undefined) mount.clock?.setRange(span.from, span.to);
@@ -180,10 +216,7 @@ export class Playhead {
 
   private restore(mount: MountView, before: Remembered): void {
     const clock = mount.clock;
-    if (clock === undefined) {
-      this.win?.scrollTo(0, before.scroll);
-      return;
-    }
+    if (clock === undefined) return;
     const length = mount.durationMs ?? this.state.length;
     clock.setRate(this.state.rate);
     this.applyRange(mount);
@@ -193,8 +226,8 @@ export class Playhead {
 
   private read(): void {
     const mount = this.mount();
-    if (mount === undefined) {
-      this.set({ mode: "waiting", playing: false });
+    if (mount?.clock === undefined) {
+      this.set({ mode: "waiting", driven: false, playing: false });
       return;
     }
     if (this.pending !== undefined) {
@@ -203,47 +236,30 @@ export class Playhead {
       this.restore(mount, before);
     }
     const clock = mount.clock;
-    if (clock !== undefined) {
-      const length = mount.durationMs ?? this.sceneLength;
-      const ms = Math.min(length, Math.max(0, clock.elapsed() ?? 0));
-      const playing = clock.playing();
-      this.remembered = { ms, scroll: this.remembered?.scroll ?? 0, playing };
-      if (playing && this.stopAt !== undefined && ms >= this.stopAt) {
-        this.stopAt = undefined;
-        clock.pause();
-        this.set({ ms: Math.round(ms), playing: false, length, mode: "timed" });
-        return;
-      }
-      this.set({ ms: Math.round(ms), playing, length, mode: "timed" });
+    const length = mount.durationMs ?? this.sceneLength;
+    const ms = Math.min(length, Math.max(0, clock.elapsed() ?? 0));
+    const playing = clock.playing();
+    const driven = mount.driven;
+    this.remembered = { ms, playing };
+    if (playing && this.stopAt !== undefined && ms >= this.stopAt) {
+      this.stopAt = undefined;
+      clock.pause();
+      this.set({ ms: Math.round(ms), playing: false, length, mode: "timed", driven });
       return;
     }
-    const span = this.scrollSpan();
-    const scroll = this.win?.scrollY ?? 0;
-    this.remembered = { ms: 0, scroll, playing: false };
-    this.set({
-      ms: span > 0 ? Math.round((scroll / span) * this.sceneLength) : 0,
-      playing: false,
-      length: this.sceneLength,
-      mode: "scroll",
-    });
+    this.set({ ms: Math.round(ms), playing, length, mode: "timed", driven });
   }
 
-  /** Moves the page to `ms`: the mount clock, or the page scroll position. */
+  /** Moves the page clock to `ms`. */
   seek(ms: number): void {
     this.stopAt = undefined;
     const mount = this.mount();
-    if (mount === undefined) return;
-    const clock = mount.clock;
+    const clock = mount?.clock;
+    if (mount === undefined || clock === undefined) return;
     const length = mount.durationMs ?? this.state.length;
     const at = Math.min(length, Math.max(0, ms));
-    if (clock !== undefined) {
-      clock.seek(length > 0 ? at / length : 0);
-      this.set({ ms: Math.round(at), playing: false });
-      return;
-    }
-    const span = this.scrollSpan();
-    this.win?.scrollTo(0, this.state.length > 0 ? (at / this.state.length) * span : 0);
-    this.set({ ms: Math.round(at) });
+    clock.seek(length > 0 ? at / length : 0);
+    this.set({ ms: Math.round(at), playing: false });
   }
 
   beginScrub(): void {

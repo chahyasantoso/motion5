@@ -198,7 +198,7 @@ describe("the canvas", () => {
       await frame.waitForFunction("window.innerWidth === 390");
       expect(await read()).toMatchObject({ w: 390, h: 844 });
       expect((await read()).canvas).toBeGreaterThan(0);
-      expect(await page.locator("[data-timeline]").innerText()).toContain("scrolls the page");
+      await page.getByLabel("Replay").waitFor();
     });
   }, 120000);
 

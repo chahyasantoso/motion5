@@ -1,3 +1,4 @@
+import type { Events } from "@gerak/core";
 import type { Card } from "../graph";
 import type { FocusTarget } from "../protocol";
 import type { PreviewChoice } from "./context";
@@ -42,11 +43,17 @@ export class WorkerFrame implements Surface {
   selected: readonly string[];
   private readonly frame: HTMLIFrameElement;
 
-  constructor(page: string, from: Pick<Surface, "preview" | "focus" | "selected">, length: number) {
+  constructor(
+    page: string,
+    from: Pick<Surface, "preview" | "focus" | "selected">,
+    length: number,
+    take: Events,
+  ) {
     this.focus = from.focus;
     this.preview = from.preview;
     this.selected = from.selected;
     this.playhead.setSceneLength(length);
+    this.playhead.setTake(take);
     this.frame = document.createElement("iframe");
     this.frame.title = "Agent worker";
     this.frame.setAttribute("aria-hidden", "true");
@@ -72,7 +79,7 @@ export class WorkerFrame implements Surface {
     this.frame.style.height = `${size.height}px`;
   }
 
-  /** Resolves once the worker page has a clock or scroll to drive, or after a short wait. */
+  /** Resolves once the worker page has a clock to drive, or after a short wait. */
   ready(): Promise<void> {
     return new Promise((done) => {
       const finish = (): void => {

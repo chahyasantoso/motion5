@@ -105,6 +105,10 @@ function Canvas(props: {
   }, [playhead, length]);
 
   useEffect(() => {
+    playhead.setTake(presets.events);
+  }, [playhead, presets.events]);
+
+  useEffect(() => {
     const auto = autoLayout(data.graph);
     const ports = portsOf(data.graph);
     setNodes((before) => {
