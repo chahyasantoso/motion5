@@ -23,6 +23,7 @@ import { Follow } from "./follow";
 import { FollowPill } from "./follow-pill";
 import { useFollow } from "./use-follow";
 import { StudioContext, type PreviewChoice, type StudioValue } from "./context";
+import { EDGE_TYPES } from "./floating-edge";
 import { NODE_TYPES, nodeTypeOf, type CardNode } from "./nodes";
 import { buildPin, restorePin } from "./pin-actions";
 import { contextOf, type ContextView } from "./prompt-context";
@@ -57,6 +58,7 @@ function edgesOf(graph: StudioGraph, selected: readonly string[]): Edge[] {
       id: wire.id,
       source: wire.from,
       target: wire.to,
+      type: "floating",
       className: `wire wire-${wire.type}${related ? "" : " wire-dim"}`,
       selectable: false,
       focusable: false,
@@ -304,6 +306,7 @@ function Canvas(props: {
             nodes={nodes}
             edges={edges}
             nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
             onNodesChange={onNodesChange}
             onSelectionChange={onSelectionChange}
             onNodeDragStop={(_event, _node, dragged) => {

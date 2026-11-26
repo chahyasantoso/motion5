@@ -5,6 +5,7 @@ import { withPage } from "@gerak/tools/page";
 import type { Frame, Page } from "playwright-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startStudio } from "../src";
+import { groupOf, type Card } from "../src/graph";
 
 const pieces = fileURLToPath(new URL("../../../apps/pieces/", import.meta.url));
 const gerak = join(pieces, ".gerak");
@@ -158,6 +159,60 @@ describe("the canvas", () => {
       await page.reload();
       await ready(page);
       expect(await transformOf(page, "shot:hook")).toBe(moved);
+    });
+  }, 60000);
+
+  it("floats a wire to the facing sides when a card is dragged past its neighbour", async () => {
+    rmSync(layoutFile("saved"), { force: true });
+    const answer: unknown = await (await fetch(`${base}__gerak/graph?piece=saved`)).json();
+    const graph = Object(Reflect.get(Object(answer), "graph"));
+    const cards: readonly Card[] = Reflect.get(graph, "cards");
+    const wires: readonly { from: string; to: string; id: string }[] = Reflect.get(graph, "wires");
+    const group = (id: string) => {
+      const card = cards.find((c) => c.id === id);
+      return card === undefined ? undefined : groupOf(card.kind);
+    };
+    const wire = wires.find(
+      (w) =>
+        (group(w.from) === "cast" && group(w.to) === "move") ||
+        (group(w.from) === "move" && group(w.to) === "cast"),
+    );
+    if (wire === undefined) throw new Error("saved has no cast and move wire.");
+    const move = group(wire.from) === "move" ? wire.from : wire.to;
+    const cast = move === wire.from ? wire.to : wire.from;
+    await open("saved", { width: 1440, height: 900 }, async (page) => {
+      await ready(page);
+      await page.waitForTimeout(500);
+      const edge = page.locator(
+        `.react-flow__edge[data-id="${wire.id}"] path.react-flow__edge-path`,
+      );
+      const startX = async (): Promise<number> =>
+        Number(((await edge.getAttribute("d")) ?? "").match(/^M\s*(-?[\d.]+)/)?.[1]);
+      const rect = async (id: string) => {
+        const box = await page.locator(`[data-card-id="${id}"]`).boundingBox();
+        if (box === null) throw new Error(`${id} has no box.`);
+        return box;
+      };
+      const before = await rect(move);
+      const castBox = await rect(cast);
+      await dragHeader(page, cast, { x: before.x - castBox.x - 700, y: 0 });
+      await page.waitForTimeout(200);
+      const moved = await rect(move);
+      const after = await rect(cast);
+      expect(after.x + after.width).toBeLessThan(moved.x);
+      const fromMove = move === wire.from;
+      const x = await startX();
+      const first = (await edge.getAttribute("d")) ?? "";
+      const pts = first.match(/-?[\d.]+/g)?.map(Number) ?? [];
+      const endX = pts[pts.length - 2] ?? Number.NaN;
+      const wireX = fromMove ? x : endX;
+      const flow = await page.locator(".react-flow__viewport").boundingBox();
+      if (flow === null) throw new Error("no viewport");
+      const zoom = await page
+        .locator(".react-flow__viewport")
+        .evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
+      const moveLeft = (moved.x - flow.x) / zoom;
+      expect(wireX).toBeLessThanOrEqual(moveLeft + 2);
     });
   }, 60000);
 
