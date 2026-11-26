@@ -110,7 +110,8 @@ A preset is a list of page events (pointer, scroll, sent samples) kept at
   `take-<n>`. The **Events preset** menu picks a preset. Its events draw as ticks on the ruler, and pins made while
   it is picked name it.
 - `npx gerak studio act '<action-list>' [--save-preset name]` runs a `gerak review --action` list on the piece's page
-  in the session's browser, and answers the events the page logged.
+  in the session's browser, and answers the events the page logged. It loads the page once on the real clock first,
+  and answers `failed` after 60 s.
 - `npx gerak studio presets [--piece p]` lists the names.
 - `npx gerak review <scene.ts> --events @<name>` replays a preset in a review.
 

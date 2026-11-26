@@ -74,14 +74,22 @@ describe("act on the studio server", () => {
     expect(taken.status).toBe(409);
   }, 180000);
 
-  it("refuses a bad action list and a bad preset name", async () => {
+  it("refuses a bad action list and a bad preset name without waiting behind a running act", async () => {
+    let running = true;
+    const slow = send({ kind: "act", actions: "scroll:10@0", savePreset: undefined }).finally(
+      () => {
+        running = false;
+      },
+    );
     expect((await send({ kind: "act", actions: "nonsense", savePreset: undefined })).kind).toBe(
       "failed",
     );
     expect((await send({ kind: "act", actions: "scroll:10@0", savePreset: "Bad Name" })).kind).toBe(
       "failed",
     );
-  }, 60000);
+    expect(running).toBe(true);
+    expect((await slow).kind).toBe("act");
+  }, 90000);
 
   it("names the presets event", () => {
     expect(PRESETS_EVENT).toBe("gerak:presets");

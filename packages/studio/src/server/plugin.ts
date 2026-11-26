@@ -20,7 +20,7 @@ import {
   REPLY_EVENT,
   type CommandEnvelope,
 } from "../protocol";
-import { runAct } from "./act";
+import { actJob, runAct } from "./act";
 import { parseCommand } from "../command";
 import { addPin, pinsPath, readPins, resolvePin } from "../pin-store";
 import { parseNewPin } from "../pins";
@@ -337,12 +337,12 @@ export function studioPlugin(options: {
                     json(200, { kind: "failed", message: "The server has no address yet." });
                     return;
                   }
-                  json(
-                    200,
-                    await checks.exclusive(() =>
-                      runAct(options.browser, { root, piece, page: result.page, base, command }),
-                    ),
-                  );
+                  const made = actJob({ root, piece, page: result.page, base, command });
+                  if (made.kind === "failed") {
+                    json(200, made);
+                    return;
+                  }
+                  json(200, await checks.exclusive(() => runAct(options.browser, made.job)));
                   return;
                 }
                 case "status":
