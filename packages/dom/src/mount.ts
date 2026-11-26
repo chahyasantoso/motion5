@@ -1321,8 +1321,11 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
   const pointerTarget = eventTargetOf(root, doc);
   if (timed === undefined) pointerTarget.add(onPointerMove);
 
-  const sceneEvents = (): Events =>
-    given === undefined ? recorder.log : mergeEvents(recorder.log, given.events?.() ?? []);
+  // The scene sees the page's recorded input and the handed driver's events; the log alone keeps its version.
+  const sceneEvents = (): Events => {
+    const handed = given?.events?.() ?? [];
+    return handed.length === 0 ? recorder.log : mergeEvents(recorder.log, handed);
+  };
   const driver: Driver =
     timed ??
     (given === undefined
@@ -1897,7 +1900,7 @@ export function mount(input: StageInput, options: MountOptions): Mounted {
       if (timed === undefined) recorder.sample(name, value, target);
       else timed.send(name, value, target);
     },
-    events: () => (timed === undefined ? sceneEvents() : timed.events()),
+    events: () => (timed === undefined ? recorder.log : timed.events()),
     settled() {
       if (mediaStates.size === 0) return Promise.resolve();
       const registerDispose = (listener: () => void): (() => void) => {
