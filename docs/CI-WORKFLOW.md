@@ -5,11 +5,11 @@ CI validates every pull request and the push branches named in [ci.yml](../.gith
 ## Jobs
 
 - `quality (node 24.21.0)` runs the raw-template, comment and cycle scans, typecheck, read-only formatting, then the `unit` Vitest project. Each step runs after a successful install even when an earlier one fails, and none is continue-on-error.
-- `browser (node 24.21.0)` runs the `browser` Vitest project, one file at a time, alongside the other jobs.
+- `browser (node 24.21.0) 1/3` to `3/3` run the `browser` Vitest project split into three shards on three runners, each shard one file at a time, alongside the other jobs.
 - `boundaries (node 24.21.0)` runs `node scripts/boundary-scan.mjs` against the actual repository. The scanner's own tests run in the full suite, not twice.
 - `performance (node 24.21.0)` runs `npm run benchmark` and uploads its report. The benchmark exits nonzero when its structural budgets fail.
 
-On demand, outside `npm run check`: `npm run build` emits the thirteen installable packages to `dist/`, and `npm run pack:check` packs them, installs the tarballs into an empty project and imports every export under Node. Neither publishes anything.
+On demand, outside `npm run check`: `npm run test:browser` runs the browser suite locally, which CI runs on every pull request; `npm run build` emits the thirteen installable packages to `dist/`, and `npm run pack:check` packs them, installs the tarballs into an empty project and imports every export under Node. Neither publishes anything.
 
 ## Formatting and contributions
 

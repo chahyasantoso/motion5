@@ -1,13 +1,14 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { checkMotion, parseCheckArgs } from "../src/page/check";
+import { removeTemp } from "../../../test/support/temp";
 
 describe("a page path the server does not have", () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) removeTemp(dir);
   });
 
   it("rejects with the status instead of checking index.html", async () => {

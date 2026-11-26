@@ -15,6 +15,7 @@ import { layoutPath, parseLayout, readLayout, writeLayout } from "../layout";
 import { pieceGraph } from "../piece";
 import {
   BUS_PATH,
+  CANVAS_EVENT,
   COMMAND_EVENT,
   PRESETS_EVENT,
   REPLY_EVENT,
@@ -116,6 +117,10 @@ function siteInStack(stack: string, root: string): { file: string; line: number 
   return undefined;
 }
 
+function noCanvas(piece: string): string {
+  return `No canvas answered for ${piece}. Run npx gerak studio open ${piece}, or open its canvas in a browser.`;
+}
+
 const PIECE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 function bodyOf(req: NodeJS.ReadableStream): Promise<string> {
@@ -141,6 +146,7 @@ export function studioPlugin(options: {
   const relay = createRelay();
   const checks = checkQueue(options.browser);
   let nextId = 0;
+  const announced = new WeakMap<object, string>();
   return {
     name: "gerak-studio",
     apply: "serve",
@@ -180,6 +186,14 @@ export function studioPlugin(options: {
       server.watcher.on("change", presetsChanged);
       server.watcher.on("add", presetsChanged);
       server.watcher.on("unlink", presetsChanged);
+      server.ws.on(CANVAS_EVENT, (data: unknown, client: object) => {
+        const named: unknown = Reflect.get(Object(data), "piece");
+        if (typeof named === "string") announced.set(client, named);
+      });
+      const listening = (name: string): boolean => {
+        for (const client of server.ws.clients) if (announced.get(client) === name) return true;
+        return false;
+      };
       server.ws.on(REPLY_EVENT, (data: unknown) => {
         relay.receive(data);
       });
@@ -359,6 +373,10 @@ export function studioPlugin(options: {
                 case "play":
                 case "select":
                 case "inspect": {
+                  if (!listening(piece)) {
+                    json(504, { kind: "failed", message: noCanvas(piece) });
+                    return;
+                  }
                   nextId += 1;
                   const id = `${Date.now().toString(36)}-${nextId}`;
                   const answer = relay.wait(id, busTimeoutMs);
@@ -368,7 +386,7 @@ export function studioPlugin(options: {
                   if (reply === undefined)
                     json(504, {
                       kind: "failed",
-                      message: `No canvas answered for ${piece}. Run npx gerak studio open ${piece}, or open its canvas in a browser.`,
+                      message: noCanvas(piece),
                     });
                   else json(200, reply);
                   return;

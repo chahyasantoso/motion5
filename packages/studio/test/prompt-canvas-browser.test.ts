@@ -74,7 +74,9 @@ describe("prompt seams on the canvas", () => {
       },
       async ({ page }) => {
         await mounted(page);
-        await page.waitForTimeout(500);
+        await expect
+          .poll(async () => (await send("reel", { kind: "status" })).kind, { timeout: 20000 })
+          .toBe("status");
         expect(await page.locator("[data-selection-toolbar]").count()).toBe(0);
         const graph = await send("reel", { kind: "graph" });
         if (graph.kind !== "graph") throw new Error("No graph.");
@@ -126,12 +128,8 @@ describe("prompt seams on the canvas", () => {
         await page.locator("[data-banner]").waitFor({ timeout: 20000 });
         expect(await page.locator('[data-agent-slot="banner"]').count()).toBe(1);
         await page.getByRole("button", { name: "Queue fix pin" }).click();
-        const deadline = Date.now() + 8000;
-        let pins: readonly Pin[] = [];
-        while (Date.now() < deadline && pins.length === 0) {
-          pins = await pinsOf(SCRATCH);
-          if (pins.length === 0) await new Promise((done) => setTimeout(done, 100));
-        }
+        await expect.poll(async () => (await pinsOf(SCRATCH)).length, { timeout: 8000 }).toBe(1);
+        const pins = await pinsOf(SCRATCH);
         expect(pins).toHaveLength(1);
         expect(pins[0]?.status).toBe("open");
         expect(pins[0]?.note.startsWith("Fix: ")).toBe(true);

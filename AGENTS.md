@@ -25,8 +25,9 @@ is one line, and a rule this file does not carry is not a rule.
 
 ## Commands
 
-- `npm run check` — every gate in order, one `PASS` or `FAIL` line each, and the full log only for
-  the step that fails. Green before any pull request.
+- `npm run check` — the fast gates and the unit tests in order, one `PASS` or `FAIL` line each, and the
+  full log only for the step that fails. Green before any pull request; CI also runs the browser suite.
+- `npm run test:browser` — the browser suite, for a change to what only a real browser shows.
 - `npm run typecheck` — `tsc --noEmit` over packages and apps.
 - `npm test` — the full suite on the quiet reporter: a green run states its counts, a red one prints
   every assertion diff.

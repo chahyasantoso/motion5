@@ -1,12 +1,13 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { RESERVED_FOLDERS, briefFolders, pieceFiles } from "@gerak/tools/scene";
+import { removeTemp } from "../../../test/support/temp";
 
 const roots: string[] = [];
 afterEach(() => {
-  for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of roots.splice(0)) removeTemp(dir);
 });
 
 function scratch(files: readonly string[]): string {

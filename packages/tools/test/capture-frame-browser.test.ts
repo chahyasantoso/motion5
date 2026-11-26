@@ -1,9 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
 import { captureFrame, withPage } from "../src/page/page";
+import { removeTemp } from "../../../test/support/temp";
 
 const DIRS: string[] = [];
 
@@ -78,7 +79,7 @@ function decodeRgbaPng(bytes: Uint8Array): {
 
 afterEach(() => {
   for (const dir of DIRS.splice(0)) {
-    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+    removeTemp(dir);
   }
 });
 

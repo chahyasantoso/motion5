@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +6,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { PACKAGES } from "../../scripts/reference.mjs";
 import { withExtensions } from "../../scripts/build.mjs";
 import { INSTALLABLE_PACKAGES, readManifest } from "../../scripts/installable-packages.mjs";
+import { removeTemp } from "../support/temp";
 
 const packagesRoot = fileURLToPath(new URL("../../packages/", import.meta.url));
 
@@ -73,7 +74,7 @@ describe("withExtensions", () => {
   writeFileSync(join(folder, "ease.js"), "");
   writeFileSync(join(folder, "index.js"), "");
   writeFileSync(join(inner, "index.js"), "");
-  afterAll(() => rmSync(folder, { recursive: true, force: true }));
+  afterAll(() => removeTemp(folder));
 
   it("names the emitted file or the folder index of every real module specifier", () => {
     const text = [

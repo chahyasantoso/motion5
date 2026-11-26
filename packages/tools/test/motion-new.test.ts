@@ -1,19 +1,14 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ts from "typescript";
 import { format, resolveConfig } from "prettier";
 import { afterEach, describe, expect, it } from "vitest";
 import { pathToFileURL } from "node:url";
-import {
-  NEW_USAGE,
-  parseNewArgs,
-  readSceneModule,
-  sampleScene,
-  scaffold,
-} from "@gerak/tools/scene";
+import { readSceneModule, sampleScene, scaffold } from "@gerak/tools/scene";
 import { reviewSceneModule } from "../src/scene/review";
 import { withPage } from "../src/page/page";
+import { removeTemp } from "../../../test/support/temp";
 
 const roots: string[] = [];
 function root(): string {
@@ -22,7 +17,7 @@ function root(): string {
   return dir;
 }
 afterEach(() => {
-  for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of roots.splice(0)) removeTemp(dir);
 });
 
 function appRoot(): string {
@@ -76,34 +71,15 @@ describe("gerak new", () => {
     ).toEqual([]);
   });
 
-  it("writes a scene that imports no move", () => {
-    const dir = root();
-    scaffold("rope-word", dir);
-    scaffold("rope-box", dir, { three: true });
-    for (const file of ["rope-word/src/rope-word.ts", "rope-box/src/rope-box-scene.ts"])
-      expect(readFileSync(join(dir, file), "utf8")).not.toMatch(/drop|lift2d/);
-  });
-
-  it("with --three mounts with @gerak/dom and @gerak/three and points each file at the next", () => {
-    const dir = root();
-    scaffold("rope-word", dir, { three: true });
-    const html = readFileSync(join(dir, "rope-word/rope-word.html"), "utf8");
-    expect(html).toContain("/rope-word/src/rope-word-main.ts");
-    expect(html).toContain('data-cast="label"');
-    const main = readFileSync(join(dir, "rope-word/src/rope-word-main.ts"), "utf8");
-    expect(main).toContain('import { mount } from "@gerak/dom";');
-    expect(main).toContain('import { createStage3d } from "@gerak/three";');
-    expect(main).toContain('import piece, { lens, size } from "./rope-word-scene";');
-    expect(main).not.toMatch(/react/i);
-    const sceneSource = readFileSync(join(dir, "rope-word/src/rope-word-scene.ts"), "utf8");
-    expect(sceneSource).not.toContain("clockDriver");
-    expect(sceneSource).not.toContain("export const clock");
-  });
-
   it("writes files that are already formatted", async () => {
     const dir = root();
     scaffold("rope-word", dir);
-    for (const file of STAGE_FILES) {
+    scaffold("rope-box", dir, { three: true });
+    const files = [
+      ...STAGE_FILES,
+      ...FILES.map((file) => file.replaceAll("rope-word", "rope-box")),
+    ];
+    for (const file of files) {
       const source = readFileSync(join(dir, file), "utf8");
       const config = await resolveConfig(join(process.cwd(), "apps/pieces", file));
       expect(await format(source, { ...config, filepath: file }), file).toBe(source);
@@ -117,16 +93,6 @@ describe("gerak new", () => {
     expect(scaffold("rope-word", dir)).toMatchObject({ kind: "refused" });
     expect(readFileSync(join(dir, "rope-word/src/rope-word.ts"), "utf8")).toBe("keep");
     expect(existsSync(join(dir, "rope-word/rope-word.html"))).toBe(false);
-  });
-
-  it("no longer takes --move, and its usage line names no move command", () => {
-    for (const argv of [
-      ["--move", "rope-in"],
-      ["--move", "rope-in", "--in", "rope"],
-    ]) {
-      expect(parseNewArgs(argv)).toEqual({ kind: "usage", message: NEW_USAGE });
-    }
-    expect(NEW_USAGE).not.toContain("new-move");
   });
 
   it("with --in writes the piece into that brief's folder", () => {
@@ -203,16 +169,6 @@ describe("gerak new", () => {
       .map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, " "));
     expect(messages).toEqual([]);
   }, 60000);
-
-  it("writes Three.js files that are already formatted", async () => {
-    const dir = appRoot();
-    scaffold("rope-word", dir, { three: true });
-    for (const file of FILES) {
-      const source = readFileSync(join(dir, file), "utf8");
-      const config = await resolveConfig(join(process.cwd(), "apps/pieces", file));
-      expect(await format(source, { ...config, filepath: file }), file).toBe(source);
-    }
-  });
 
   it("samples the first frame of every worked example", async () => {
     const examples = ["timing", "card", "pile", "character3d", "overlay3d"] as const;

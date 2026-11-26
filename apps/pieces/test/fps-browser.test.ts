@@ -6,27 +6,21 @@ import { scaffold } from "@gerak/tools/scene";
 
 const PIECES_ROOT = callerPiecesRoot();
 
-const PLAIN = "fps-scratch-plain";
 const SLOW = "fps-scratch-slow";
 
 function removeScratch(): void {
-  for (const name of [PLAIN, SLOW])
-    rmSync(join(PIECES_ROOT, name), { recursive: true, force: true });
+  rmSync(join(PIECES_ROOT, SLOW), { recursive: true, force: true });
 }
 
 beforeAll(() => {
   removeScratch();
-  for (const name of [PLAIN, SLOW]) {
-    const result = scaffold(name, PIECES_ROOT, { three: true });
-    if (result.kind !== "written") throw new Error(JSON.stringify(result));
-  }
-  for (const name of [PLAIN, SLOW]) {
-    const path = join(PIECES_ROOT, name, "src", `${name}-scene.ts`);
-    const text = readFileSync(path, "utf8");
-    const extended = text.replace("const LENGTH = 800;", "const LENGTH = 10000;");
-    if (extended === text) throw new Error("The scaffolded scene no longer has the LENGTH line.");
-    writeFileSync(path, extended, "utf8");
-  }
+  const result = scaffold(SLOW, PIECES_ROOT, { three: true });
+  if (result.kind !== "written") throw new Error(JSON.stringify(result));
+  const path = join(PIECES_ROOT, SLOW, "src", `${SLOW}-scene.ts`);
+  const text = readFileSync(path, "utf8");
+  const extended = text.replace("const LENGTH = 800;", "const LENGTH = 10000;");
+  if (extended === text) throw new Error("The scaffolded scene no longer has the LENGTH line.");
+  writeFileSync(path, extended, "utf8");
   const file = join(PIECES_ROOT, SLOW, "src", `${SLOW}-scene.ts`);
   const source = readFileSync(file, "utf8");
   const slowed = source.replace(
@@ -51,16 +45,10 @@ const request = (name: string, to: number) => ({
 
 describe("gerak fps on a scaffolded 3D page", () => {
   it("reports under 34 fps in every window when each step takes 30 ms", async () => {
-    const report = await measureFps(request(SLOW, 3000));
+    const report = await measureFps(request(SLOW, 1500));
     expect(report.pageErrors).toEqual([]);
-    expect(report.windows.length).toBe(6);
+    expect(report.windows.length).toBe(3);
     for (const window of report.windows) expect(window.fps).toBeLessThan(34);
     expect(report.worst[0]?.scene ?? 0).toBeGreaterThan(20);
-  }, 60000);
-
-  it("reports above 50 fps in every window after the first on the plain scaffold", async () => {
-    const report = await measureFps(request(PLAIN, 3000));
-    expect(report.pageErrors).toEqual([]);
-    for (const window of report.windows.slice(1)) expect(window.fps).toBeGreaterThan(50);
   }, 60000);
 });

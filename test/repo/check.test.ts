@@ -55,6 +55,6 @@ describe("check gate runner (S2)", () => {
 
   it("carries the failing step's own exit code out of the run", () => {
     const { log } = collect();
-    expect(run(steps({ test: 2 }), STEPS, log)).toBe(2);
+    expect(run(steps({ "test:unit": 2 }), STEPS, log)).toBe(2);
   });
 });

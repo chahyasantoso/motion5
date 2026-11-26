@@ -1,15 +1,16 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { removeTemp } from "../../../test/support/temp";
 
 const HOOK = new URL("../bin/ts-resolve.mjs", import.meta.url).href;
 let folder = "";
 
 afterEach(() => {
-  rmSync(folder, { recursive: true, force: true });
+  removeTemp(folder);
 });
 
 function importWith(hook: boolean): number | null {

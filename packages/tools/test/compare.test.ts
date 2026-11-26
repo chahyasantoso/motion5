@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +17,7 @@ import {
   withMargin,
 } from "../src/page/compare";
 import { decodePng, encodePng, type Picture } from "../src/page/png";
+import { removeTemp } from "../../../test/support/temp";
 
 function solid(width: number, height: number, rgb: readonly [number, number, number]): Picture {
   const data = new Uint8Array(width * height * 3);
@@ -187,7 +188,7 @@ async function browserAvailable(): Promise<boolean> {
 const hasBrowser = await browserAvailable();
 
 afterAll(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs) removeTemp(dir);
 });
 
 describe.skipIf(!hasBrowser)("gerak compare in the browser", () => {

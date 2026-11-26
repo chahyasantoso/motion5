@@ -12,10 +12,11 @@ import {
 import { cachePathOf, pageDigest, readMeasureCache } from "../src/page/measure-cache";
 import { lookupCache, pageOfSceneFile, restOfCache } from "../src/scene/measure-cache";
 import { loadSceneFile } from "../src/scene/scene";
+import { removeTemp } from "../../../test/support/temp";
 
 const made: string[] = [];
 afterEach(() => {
-  for (const folder of made.splice(0)) rmSync(folder, { recursive: true, force: true });
+  for (const folder of made.splice(0)) removeTemp(folder);
 });
 
 /** A brief folder with a page and its scene file; returns their paths. */

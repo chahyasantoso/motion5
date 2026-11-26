@@ -1,7 +1,7 @@
 import { unreachable } from "@gerak/core";
 import type { Member, Stage } from "@gerak/stage";
 import type { ScenePlan, StepSummary } from "@gerak/stage/provenance";
-import type { CodeSite, PieceSources, SourceKind } from "./sources";
+import type { CodeSite, Knob, PieceSources, SourceKind, Wrapper } from "./sources";
 
 /** What a card stands for. */
 export type CardKind =
@@ -56,6 +56,12 @@ export interface Card {
   readonly cast?: CastSides | undefined;
   /** For a move: its member and the index of its step. */
   readonly step?: { readonly member: string; readonly index: number } | undefined;
+  /** For a move: the first paragraph of the doc comment of the code it points at. */
+  readonly doc?: string | undefined;
+  /** For a package move: its literal options. */
+  readonly knobs?: readonly Knob[] | undefined;
+  /** For a package move: the local functions wrapped around it. */
+  readonly wrappers?: readonly Wrapper[] | undefined;
   /** Why a card cannot be placed or wired. */
   readonly note?: string | undefined;
 }
@@ -178,12 +184,19 @@ export function graphOf(piece: PieceInput, sources: PieceSources): StudioGraph {
     add({ id, kind: "scene", name: scene, parent: root });
     return id;
   };
-  for (const member of stage.members) placeOf(plan.members[member.name]?.scene);
+  const subSceneOf = (key: "members" | "beats", name: string): string | undefined =>
+    Object.entries(sources.scenes).find(([, held]) => held[key].includes(name))?.[0];
+  const memberPlace = (name: string): string => {
+    const scene = plan.members[name]?.scene;
+    return placeOf(scene === undefined || scene === rootName ? subSceneOf("members", name) : scene);
+  };
+  for (const member of stage.members) memberPlace(member.name);
 
   const beatParent = (name: string): string => {
     const dot = name.indexOf(".");
     if (dot > 0 && shots.has(name.slice(0, dot))) return `shot:${name.slice(0, dot)}`;
-    return placeOf(plan.beats[name]);
+    const scene = plan.beats[name];
+    return placeOf(scene === undefined || scene === rootName ? subSceneOf("beats", name) : scene);
   };
   for (const [name, span] of Object.entries(stage.beats)) {
     if (shots.has(name)) continue;
@@ -240,7 +253,7 @@ export function graphOf(piece: PieceInput, sources: PieceSources): StudioGraph {
       id: `member:${member.name}`,
       kind: castKind(member),
       name: member.name,
-      parent: placeOf(plan.members[member.name]?.scene),
+      parent: memberPlace(member.name),
       cast: {
         page: member.kind === "object" || pageCasts === undefined || member.name in pageCasts,
         member: true,
@@ -277,6 +290,9 @@ export function graphOf(piece: PieceInput, sources: PieceSources): StudioGraph {
             : (label ?? (site === undefined ? "motion" : "inline")),
         step: { member: member.name, index },
         ...(site === undefined ? {} : { site: site.site }),
+        ...(site?.doc === undefined ? {} : { doc: site.doc }),
+        ...(site?.knobs === undefined ? {} : { knobs: site.knobs }),
+        ...(site?.wrappers === undefined ? {} : { wrappers: site.wrappers }),
         ...(site === undefined && step.kind === "motion" ? { note: "set in code" } : {}),
       });
       if (step.window?.kind === "beat") wire(windowCard(step.window.beat), id, "time");

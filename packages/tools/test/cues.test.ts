@@ -1,8 +1,9 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseCuesArgs, runCues } from "../src/audio/cues";
+import { removeTemp } from "../../../test/support/temp";
 
 describe("parseCuesArgs", () => {
   it("parses valid extensions, defaults and flags", () => {
@@ -85,7 +86,7 @@ describe("runCues end-to-end", () => {
         "scene",
       ]);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     }
   });
 
@@ -124,7 +125,7 @@ describe("runCues end-to-end", () => {
       ]);
       expect(JSON.parse(readFileSync(result.words, "utf8"))).toEqual(["Go", "fast"]);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     }
   });
 
@@ -143,7 +144,7 @@ describe("runCues end-to-end", () => {
       expect(existsSync(join(dir, "bad.cues.json"))).toBe(false);
       expect(existsSync(join(dir, "bad.words.json"))).toBe(false);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     }
   });
 });

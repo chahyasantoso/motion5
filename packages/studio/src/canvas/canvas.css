@@ -139,6 +139,13 @@ select:disabled {
   min-width: 0;
   min-height: 0;
   border-width: var(--border-width);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.studio .react-flow__handle.connectable {
+  opacity: 1;
+  pointer-events: all;
 }
 
 .studio .react-flow__edge-path {
@@ -166,6 +173,11 @@ select:disabled {
   stroke: var(--port-stage);
 }
 
+.wire-source .react-flow__edge-path {
+  stroke: var(--port-stage);
+  stroke-dasharray: 6 4;
+}
+
 .wire-dim .react-flow__edge-path {
   opacity: 0.12;
 }
@@ -188,10 +200,6 @@ select:disabled {
 .card.is-selected {
   border-color: var(--accent);
   box-shadow: var(--shadow-selected);
-}
-
-.card.is-active {
-  border-color: var(--accent);
 }
 
 .card[data-kind="preview"] {
@@ -707,4 +715,54 @@ button.bar {
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-card);
   transform: translateX(-50%);
+}
+
+.code-button {
+  width: 22px;
+  height: 22px;
+  color: var(--text-dim);
+  background: transparent;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-small);
+}
+
+.wrappers {
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.knobs {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.knobs dd {
+  margin: 0;
+  margin-left: auto;
+}
+
+.scene-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 0 var(--space-3);
+  border-top: var(--border-width) solid var(--border);
+  cursor: pointer;
+}
+
+.scene-row:hover {
+  background: var(--surface-raised);
+}
+
+.scene-row.is-selected {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.scene-row.is-active {
+  box-shadow: inset 2px 0 0 var(--accent);
 }

@@ -1,11 +1,12 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { installedPackages } from "../src/scene/installed";
+import { removeTemp } from "../../../test/support/temp";
 
 const temp = mkdtempSync(join(tmpdir(), "gerak-installed-"));
-afterAll(() => rmSync(temp, { recursive: true, force: true }));
+afterAll(() => removeTemp(temp));
 
 function install(base: string, name: string): void {
   const folder = join(base, "node_modules", "@gerak", name);

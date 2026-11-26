@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { isMotionEvent, type MotionEvent } from "@gerak/core";
 import { levelOf } from "../src/audio/levels";
+import { removeTemp } from "../../../test/support/temp";
 
 const SECONDS = 8;
 const FPS = 30;
@@ -71,7 +72,7 @@ describe("the made recording of talking", () => {
       execFileSync(process.execPath, [SCRIPT, out]);
       expect(readFileSync(out, "utf8")).toBe(readFileSync(TALK, "utf8"));
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      removeTemp(dir);
     }
   });
 });

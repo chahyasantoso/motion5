@@ -1,9 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Browser } from "playwright-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { launchBrowser, withPage } from "../src/page/page";
+import { removeTemp } from "../../../test/support/temp";
 
 const dir = mkdtempSync(join(tmpdir(), "gerak-with-page-browser-"));
 let browser: Browser;
@@ -15,7 +16,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await browser.close();
-  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  removeTemp(dir);
 });
 
 describe("withPage with a given browser", () => {

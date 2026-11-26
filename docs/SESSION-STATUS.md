@@ -6,7 +6,7 @@ states a phase; `test/repo/session-status-shape.test.ts` enforces the shape and
 byte ceiling.
 
 - **Captured:** 2026-11-25, Asia/Jakarta.
-- **Read against:** `main` after PR 645, with the mount driver branch.
+- **Read against:** `main` after PR 646, with the canvas PR 3 branch.
 
 ## Now
 
@@ -16,12 +16,12 @@ byte ceiling.
   Opt-in modules (`@gerak/rig`, `@gerak/rig-three`, `@gerak/physics` with O(1) idle pre-spawn `simulate()` fast-forward and 3D `cylinder` shapes/colliders, `@gerak/rapier`) depend only on core (and paired core renderers);
   the library (`@gerak/moves`) adds plain moves, `squashed` couplings and `follow`, `react` and `noise1d` signals when installed.
   `@gerak/tools` runs `npx gerak <command>` cleanly with core alone (`gerak measure` caches DOM, `objects` bounds and 3D list `counts` into `<name>.measure.json` and writes `<name>.cast.ts` with `cast` handles, `DomCast`, `ObjectCast`, and `CastName` even on failed mounts via static HTML scanning + `Binder.casts()`, while `motionLivePlugin()` keeps HTML entries synced on save in Vite; `gerak check`/`review` accept multi-viewport `--sizes` and `scroll:<selector>[±px]@ms` page actions, headless `gerak review`/`sample` accept `--measure` to refresh stale caches or missing cast modules and probe sticky/scroll/trigger/watched drivers with `--events` beside `cues` while expanding 3D list parts, and `gerak fps --action` runs repeatable actions on a real clock); `npx gerak init` writes page files, `tsconfig.json`, skill and `AGENTS.md` naming read-whole `core.md` and `stage.md`, which explain how each package works and link its reference pages.
-  `@gerak/studio` (a `modules` package, forwarded as `gerak studio`) replaces the live editor: `gerak studio open <piece>` serves a themed node canvas over the piece's graph (`@gerak/stage/provenance` plus a static read of its files) with the real page in a preview card, size presets, safe zones and one timeline that plays, seeks and replays live pages too on a driver the canvas hands them, and `gerak studio graph` prints that graph; `gerak studio status|focus|viewport|seek|play|select|inspect|check|graph` drives the open canvas through one command bus, a hidden worker frame takes over once the person uses the canvas, and `--headless` keeps a canvas and the warm `check` in one browser; `gerak studio pins` and the canvas's pin mode keep numbered pins in `.gerak/pins.json`, recorded event presets feed `gerak review --events @name`, and a pin-only agent port leaves the seam for a live agent.
+  `@gerak/studio` (a `modules` package, forwarded as `gerak studio`) replaces the live editor: `gerak studio open <piece>` serves a themed node canvas over the piece's graph (`@gerak/stage/provenance` plus a static read of its files) with sub-scene and shot rows, floating wires, preview cards each wired to the piece or one row and looping its span, size presets, safe zones and one timeline that plays, seeks and replays live pages too on a driver the canvas hands them, and `gerak studio graph` prints that graph; `gerak studio status|focus|viewport|seek|play|select|inspect|check|graph` drives the open canvas through one command bus, a hidden worker frame takes over once the person uses the canvas, and `--headless` keeps a canvas and the warm `check` in one browser; `gerak studio pins` and the canvas's pin mode keep numbered pins in `.gerak/pins.json`, recorded event presets feed `gerak review --events @name`, and a pin-only agent port leaves the seam for a live agent.
   Decisions are ADR-170 to ADR-207; each package ships its docs and generated `packages/<package>/docs/reference` pages, installed from tarballs (nothing is on npm).
 
 ## Next in line
 
-- **Studio canvas PR 3 (`plan/studio-canvas-plan.md`): the player card, scene rows, take cards and a readable graph.** Then, in order: canvas PR 4, marks PRs 1–2 (`plan/marks-plan.md`), canvas PRs 5–8.
+- **Studio build (`plan/studio-build-plan.md`): saved as page, beat, move and preview cards that a person or an agent edits, adds, removes and wires, each action written as code; prototyped first.** The canvas plan is paused inside its PR 3 (take cards and preview resize limits left), then canvas PRs 4–8 and marks PRs 1–2.
 
 ## Open, and not scheduled
 

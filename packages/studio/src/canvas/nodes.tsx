@@ -2,8 +2,11 @@ import { unreachable } from "@gerak/core";
 import type { Node, NodeProps } from "@xyflow/react";
 import type { Card, CardGroup, PortType } from "../graph";
 import { useStudio } from "./context";
+import { Handle, Position } from "@xyflow/react";
 import { Chip, Frame, Mono } from "./card-frame";
+import { memberCount, rowPort } from "./rows";
 import { useSoloId } from "./use-playhead";
+import { Glyph } from "./icons";
 import { PreviewCard } from "./preview-card";
 
 /** What a card node carries. */
@@ -11,6 +14,8 @@ export interface CardData extends Record<string, unknown> {
   readonly card: Card;
   /** The wire types that end on this card. */
   readonly ports: readonly PortType[];
+  /** The sub-scenes and shots drawn as rows inside this card. */
+  readonly rows?: readonly Card[];
 }
 
 export type CardNode = Node<CardData>;
@@ -44,6 +49,46 @@ function sitePath(card: Card): string | undefined {
   return card.site === undefined ? undefined : `${card.site.file}:${card.site.line}`;
 }
 
+function MoveBody(props: { readonly card: Card }): React.JSX.Element {
+  const { card } = props;
+  const site = sitePath(card);
+  const description = card.doc ?? card.note;
+  return (
+    <>
+      <div className="row">
+        {description === undefined ? null : <p className="dim">{description}</p>}
+        <span className="spacer" />
+        {site === undefined ? null : (
+          <button type="button" className="icon-button code-button" title={site} aria-label={site}>
+            <Glyph name="code" />
+          </button>
+        )}
+      </div>
+      {card.wrappers === undefined ? null : (
+        <div className="row wrappers">
+          {card.wrappers.map((wrapper) => (
+            <span key={wrapper.name} title={wrapper.doc ?? wrapper.name}>
+              <Chip text={wrapper.name} />
+            </span>
+          ))}
+        </div>
+      )}
+      {card.knobs === undefined ? null : (
+        <dl className="knobs">
+          {card.knobs.map((knob) => (
+            <div key={knob.name} className="row">
+              <dt className="dim">{knob.name}</dt>
+              <dd>
+                <Mono>{String(knob.value)}</Mono>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </>
+  );
+}
+
 function CardBody(props: { readonly card: Card; readonly group: CardGroup }): React.JSX.Element {
   const { card } = props;
   const studio = useStudio();
@@ -58,12 +103,7 @@ function CardBody(props: { readonly card: Card; readonly group: CardGroup }): Re
         <Chip text={card.note} tone="alert" />
       );
     case "move":
-      return (
-        <>
-          <p className="dim">{card.note ?? card.name}</p>
-          <Mono>{sitePath(card) ?? "no file"}</Mono>
-        </>
-      );
+      return <MoveBody card={card} />;
     case "source":
     case "tool":
       return (
@@ -81,24 +121,50 @@ function CardBody(props: { readonly card: Card; readonly group: CardGroup }): Re
   }
 }
 
-function GroupNode(props: NodeProps<CardNode> & { readonly group: CardGroup }): React.JSX.Element {
-  const { card, ports } = props.data;
+function SceneRow(props: { readonly row: Card }): React.JSX.Element {
+  const { row } = props;
   const studio = useStudio();
   const soloed = useSoloId(studio.playhead);
-  const shot = card.kind === "shot" && card.span !== undefined ? card.span : undefined;
+  const span = row.kind === "shot" ? row.span : undefined;
+  const members = memberCount(studio.graph, row);
+  const classes = ["scene-row", "nodrag", "nopan"];
+  if (studio.selected.includes(row.id)) classes.push("is-selected");
+  if (soloed === row.id) classes.push("is-active");
+  return (
+    <div
+      className={classes.join(" ")}
+      data-card-id={row.id}
+      data-kind={row.kind}
+      onClick={(event) => {
+        event.stopPropagation();
+        studio.select(row.id);
+        if (span !== undefined) studio.playhead.solo(row.id, span.from, span.to);
+      }}
+    >
+      <span className="card-name" title={row.name}>
+        {row.name}
+      </span>
+      {span === undefined ? null : (
+        <Mono>
+          {span.from}–{span.to} ms
+        </Mono>
+      )}
+      <Chip text={`${members} ${members === 1 ? "member" : "members"}`} />
+      <Handle type="source" position={Position.Right} id={rowPort(row)} />
+    </div>
+  );
+}
+
+function GroupNode(props: NodeProps<CardNode> & { readonly group: CardGroup }): React.JSX.Element {
+  const { card, ports, rows = [] } = props.data;
   if (card.kind === "preview")
     return <PreviewCard card={card} ports={ports} selected={props.selected} />;
   return (
-    <Frame
-      card={card}
-      ports={ports}
-      selected={props.selected}
-      active={soloed === card.id}
-      onActivate={
-        shot === undefined ? undefined : () => studio.playhead.solo(card.id, shot.from, shot.to)
-      }
-    >
+    <Frame card={card} ports={ports} selected={props.selected}>
       <CardBody card={card} group={props.group} />
+      {rows.map((row) => (
+        <SceneRow key={row.id} row={row} />
+      ))}
     </Frame>
   );
 }

@@ -1,8 +1,9 @@
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { listPresets, presetPath, readPreset, writePreset } from "../src/page/presets";
+import { removeTemp } from "../../../test/support/temp";
 
 const made: string[] = [];
 function temp(): string {
@@ -12,7 +13,7 @@ function temp(): string {
 }
 
 afterEach(() => {
-  for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of made.splice(0)) removeTemp(dir);
 });
 
 describe("recorded presets", () => {

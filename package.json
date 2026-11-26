@@ -29,6 +29,8 @@
     "format:check": "prettier . --check --log-level warn",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:browser": "vitest run --project browser",
     "test:verbose": "vitest run --reporter=default",
     "test:related": "vitest related --run",
     "metrics": "node scripts/repo-metrics.mjs",

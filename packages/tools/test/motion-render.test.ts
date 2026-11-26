@@ -1,10 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { fromCaller } from "../src/page/page";
 import { encoderArgs, frameTimes, parseRenderArgs, renderPage } from "../src/page/render";
+import { removeTemp } from "../../../test/support/temp";
 
 const HAS_FFMPEG =
   spawnSync("ffmpeg", ["-version"]).status === 0 && spawnSync("ffprobe", ["-version"]).status === 0;
@@ -165,7 +166,7 @@ describe.skipIf(!HAS_FFMPEG)("gerak render with ffmpeg and browser", () => {
   const dirs: string[] = [];
   afterEach(() => {
     for (const dir of dirs.splice(0)) {
-      rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+      removeTemp(dir);
     }
   });
 

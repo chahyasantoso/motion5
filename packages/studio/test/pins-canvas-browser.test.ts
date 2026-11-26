@@ -97,7 +97,10 @@ describe("pins on the canvas", () => {
       },
       async ({ page }) => {
         await mounted(page);
-        await page.waitForTimeout(500);
+        await until(
+          async () => (await send("reel", { kind: "status" })).kind === "status",
+          "the canvas to answer",
+        );
         const graph = await send("reel", { kind: "graph" });
         if (graph.kind !== "graph") throw new Error("No graph.");
         const shots = graph.graph.cards.filter((card) => card.kind === "shot");
@@ -178,7 +181,10 @@ describe("pins on the canvas", () => {
       },
       async ({ page }) => {
         await mounted(page);
-        await page.waitForTimeout(500);
+        await until(
+          async () => (await send("cookie", { kind: "status" })).kind === "status",
+          "the canvas to answer",
+        );
         await drive("cookie", { kind: "viewport", preset: "mobile", safeZone: undefined });
         await drive("cookie", { kind: "seek", target: { kind: "scroll", px: 8450 } });
         const recorded = (await drive("cookie", { kind: "status" })).scrollY;

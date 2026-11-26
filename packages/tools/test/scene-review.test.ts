@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -32,6 +32,7 @@ import * as growing from "./fixtures/review-growing-scene";
 import * as constant from "./fixtures/review-constant-scene";
 import * as stageClean from "./fixtures/stage-clean";
 import * as stageShots from "./fixtures/stage-shots";
+import { removeTemp } from "../../../test/support/temp";
 
 const limits = { hold: 500, jump: 150, turn: 150, ratio: 1.5 };
 
@@ -43,6 +44,13 @@ function review(
   const read = readModule(module, measured);
   if ("reason" in read) throw new Error(read.reason);
   return reviewSceneModule(read, { ...limits, ...options });
+}
+
+/** The findings about the motion, without the cost ones, which follow the machine's load. */
+function motionFindings(found: SceneReviewResult): readonly string[] {
+  return found.findings.filter(
+    (line) => !line.startsWith("cost grows with time") && !line.startsWith("a step costs over"),
+  );
 }
 
 describe("gerak review on a scene file", () => {
@@ -98,7 +106,7 @@ describe("gerak review on a scene file", () => {
   });
 
   it("finds nothing in a clean scene", () => {
-    expect(review(clean).findings).toEqual([]);
+    expect(motionFindings(review(clean))).toEqual([]);
   });
 
   it("reports a planted jump, in a target and in a list of poses, and a short final hold", () => {
@@ -205,7 +213,7 @@ describe("gerak review on a value's shape", () => {
 
   it("finds nothing when the member has shapes", () => {
     const target = line.map((c) => ({ ...c, y0: c.y0 + 4, y3: c.y3 + 4 }));
-    expect(review(stage((m) => ({ mouth: m.morph(line, [target]) }))).findings).toEqual([]);
+    expect(motionFindings(review(stage((m) => ({ mouth: m.morph(line, [target]) }))))).toEqual([]);
   });
 });
 
@@ -327,14 +335,14 @@ describe("gerak review of shots", () => {
     const read = readModule(stageShots);
     if ("reason" in read) throw new Error(read.reason);
     expect(read.stage?.shots?.map(({ name }) => name)).toEqual(["hook", "story", "call"]);
-    expect(review(stageShots).findings).toEqual([]);
+    expect(motionFindings(review(stageShots))).toEqual([]);
   });
 });
 
 describe("gerak review expectations and shape mismatches", () => {
   const dirs: string[] = [];
   afterEach(() => {
-    for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+    for (const dir of dirs.splice(0)) removeTemp(dir);
   });
 
   it("enforces ambient limits and the measured frame's bounds while skipping settle rest check", () => {
@@ -349,7 +357,9 @@ describe("gerak review expectations and shape mismatches", () => {
         orb: { x: 200 + 50 * Math.sin(time.progress * Math.PI * 2), y: 150 },
       }),
     });
-    expect(review(cleanAmbient, {}, measured({ width: 400, height: 300 })).findings).toEqual([]);
+    expect(motionFindings(review(cleanAmbient, {}, measured({ width: 400, height: 300 })))).toEqual(
+      [],
+    );
 
     const outOfBounds = defineStage({
       beats: { loop: [0, 1000] },
@@ -463,7 +473,7 @@ describe("gerak review expectations and shape mismatches", () => {
       box("smoothed").moves(slide.in(smoothBeat)),
     );
 
-    expect(review(piece, {}, measured).findings).toEqual([]);
+    expect(motionFindings(review(piece, {}, measured))).toEqual([]);
   });
 
   it("still flags genuinely static settle members even inside scroll or trigger beats", () => {
@@ -509,7 +519,7 @@ describe("gerak review expectations and shape mismatches", () => {
         ).in(enter),
       ),
     );
-    expect(review(clean3d, {}, cache).findings).toEqual([]);
+    expect(motionFindings(review(clean3d, {}, cache))).toEqual([]);
 
     const jumping3d = scene(
       { length: 1000 },
@@ -551,7 +561,7 @@ describe("driver probing and --events in gerak review", () => {
         return { opacity: p >= 0.48 && p < 0.74 ? 1 : 0 };
       }),
     );
-    expect(review(piece, {}, cache).findings).toEqual([]);
+    expect(motionFindings(review(piece, {}, cache))).toEqual([]);
   });
 
   it("probes watched target interaction events on unmoved settle members", () => {
@@ -565,7 +575,7 @@ describe("driver probing and --events in gerak review", () => {
       box("btn", { watch: true }),
       box("lid").moves((_t, ctx) => ({ y: hovered(ctx.time, ctx.events) ? -12 : 0 })),
     );
-    expect(review(piece).findings).toEqual([]);
+    expect(motionFindings(review(piece))).toEqual([]);
   });
 
   it("passes --events to reviewSceneModule and parses --events in CLI args", () => {

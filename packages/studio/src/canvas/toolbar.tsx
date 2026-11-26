@@ -7,6 +7,7 @@ import { effectiveTheme } from "./theme";
 export function Toolbar(props: {
   readonly piece: string;
   readonly onFrame: () => void;
+  readonly onAddPreview: () => void;
   readonly pinMode: boolean;
   readonly onPinMode: (on: boolean) => void;
 }): React.JSX.Element {
@@ -16,6 +17,9 @@ export function Toolbar(props: {
       <strong className="piece-name">{props.piece}</strong>
       <button type="button" onClick={props.onFrame} title="Frame all (F)">
         Frame all
+      </button>
+      <button type="button" onClick={props.onAddPreview}>
+        Add preview
       </button>
       <button
         type="button"

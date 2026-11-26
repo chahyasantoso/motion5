@@ -85,7 +85,6 @@ describe("recording on the canvas", () => {
       },
       async ({ page }) => {
         await mounted(page);
-        await page.waitForTimeout(500);
         await page.getByLabel("Record events").click();
         await page.locator('[aria-label="Record events"][aria-pressed="true"]').waitFor();
 
@@ -93,10 +92,9 @@ describe("recording on the canvas", () => {
         if (frame === null) throw new Error("The preview has no frame.");
         const cta = frame.locator('[data-cast="heroCta"]');
         await cta.click();
-        await page.waitForTimeout(150);
         await cta.click();
         await frame.evaluate(() => window.scrollBy(0, 120));
-        await page.waitForTimeout(300);
+        await frame.waitForFunction(() => window.scrollY > 0);
 
         await page.getByLabel("Record events").click();
         await until(async () => (await names()).length === 1, "the saved take");

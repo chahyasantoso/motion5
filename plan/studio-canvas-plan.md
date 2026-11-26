@@ -4,7 +4,7 @@
 
 A person directing agent-written motion opens `gerak studio open <piece>` and sees the piece as a canvas of connected cards: its look, its cast, its sources, inputs and state, timing, moves and outputs. They wire the whole piece or one of its scenes into a player card and play it there and watch the cards and wires that are active light up, tune knobs, edit hand-written motion code in a side panel, colours, type and text, wire in audio, captions and clips, and run render and check from the canvas, without opening the scene file or the page. The agent keeps writing those files, and the canvas redraws from them. The code adds a separate `@gerak/studio` package holding a graph model built from the compiled scene, its source and the page, a node canvas with a clean modern design system, a real-page player card driving one playhead, and a small set of code patches for the edits a canvas may make; one data subpath of `@gerak/stage` and a render settings file read by `gerak render` are its only changes outside that package.
 
-Status: planned 2026-11-25. PR 1 and PR 2 have landed, then `plan/studio-agent-plan.md` and `plan/mount-driver-plan.md`; PR 3 is next. Eight pull requests.
+Status: paused 2026-11-26 inside PR 3, for `plan/studio-build-plan.md`. PR 1 and PR 2 have landed, then `plan/studio-agent-plan.md` and `plan/mount-driver-plan.md`. PR 3 has landed in part: sub-scenes named from their `const`, wrapper tags, knobs and doc comments on move cards, floating wires, scene and shot rows with stage ports, several preview cards wired from the sidecar with one live, and a wired row's span looped. To resume, PR 3 still needs take cards (Decision 5's `take` card, its wiring into previews, recording into a wired take, and removing the Events preset menu) and the preview card's resize limits (Decision 9); then PRs 4–8. Eight pull requests.
 
 Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; it needs no harness-specific skill.
 
@@ -91,7 +91,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
   - set the text of a cast element whose content is plain text (Decision 10);
   - set a field of `<name>.render.json` (Decision 7).
 - A patch writes the code an agent would write; the canvas has no format of its own. A refused patch shows "edit in code" with the file and line; it never writes a partial change. A patch whose file changed since the graph was built is refused (stale write).
-- Adding cast, moves or scenes from the canvas is not in this plan (see Not in this plan).
+- Adding or removing cast, moves or scenes from the canvas is not in this plan (see Not in this plan). Nothing on the canvas deletes: the Delete key does nothing, on cards from code and on the canvas's own cards and wires alike.
 
 ### 7. Render settings are a piece file (`@gerak/tools`)
 
@@ -109,7 +109,7 @@ Read `AGENTS.md` first. Every rule there applies. Any agent can run this plan; i
 ### 9. The preview card is the player
 
 - The preview card hosts the real `<name>.html` in an `<iframe>` (with `?gerakStudio=1`), so `<name>-main.ts`, 3D binders, sticky sections and media queries run. It reads the mount from `window[Symbol.for("@gerak/dom/mounts")]`.
-- A preview card plays what is wired into it (Decision 10): the scene card's own `stage` port gives the whole piece; a scene or shot row's port gives that part in context. In context means the same page and the same whole scene, with the player confined to the part's span: its ms range on a timed piece, the scroll range its beats cover on a scroll page. Play loops that span.
+- A preview card plays what is wired into it (Decision 10): the scene card's own `stage` port gives the whole piece; a scene or shot row's port gives that part in context. In context means the same page and the same whole scene, with the player confined to the part's span: its ms range on a timed piece, the scroll range over which its cast is in view on a scroll page. Play loops that span.
 - Several preview cards may be open, each wired to its own part. One plays live at a time, the one last used; the others hold their last frame until clicked. The bottom timeline follows the live one.
 - Size presets: Desktop `1440x900`, Mobile `390x844`, Fill, custom, and the reel frames `1080x1920`, `1920x1080`, `1080x1080` letterboxed, with a `Safe zones` overlay from the one profile table in `packages/tools/src/page/safe-zone.ts`.
 - The card resizes by its corner within limits: at least 320 px wide, at most the visible canvas, keeping the preset's aspect ratio. Fill follows the card's size.
@@ -209,7 +209,7 @@ The agent plan (`plan/studio-agent-plan.md`) runs after PR 2 and before PR 3.
 
 ## Not in this plan
 
-- Building pieces on the canvas: adding cast, moves or scenes from cards. It is the Studio's later goal, for the owner first and people without an agent after; each action will be one more patch in Decision 6's closed set that writes the code an agent would write, added in a later plan after PR 8.
+- Building pieces on the canvas: adding and removing cast, moves or scenes from cards. It is the Studio's later goal, for the owner first and people without an agent after; each action will be one more patch in Decision 6's closed set that writes the code an agent would write, added in a later plan after PR 8. Removing checks first: it takes a sub-scene out of its `scene(...)` call, asks before deleting its `const` or file, and refuses while other code still uses what it would remove (a `travel` to its slot, a `stayWith` or `context.read` of its members, a state it defines).
 - Move curves: a sparkline per pose field over a move's window.
 - Constants as knobs: a `const` a code motion uses, edited from its card.
 - Setting a state's value from its card to try an input without doing it.

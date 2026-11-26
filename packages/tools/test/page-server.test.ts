@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { searchForWorkspaceRoot } from "vite";
 import { describe, expect, it } from "vitest";
 import { pageServerConfig } from "../src/page/server";
+import { removeTemp } from "../../../test/support/temp";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -28,7 +29,7 @@ describe("pageServerConfig", async () => {
     try {
       expect((await pageServerConfig(root)).optimizeDeps.include).not.toContain("three");
     } finally {
-      rmSync(root, { recursive: true, force: true });
+      removeTemp(root);
     }
   });
 
