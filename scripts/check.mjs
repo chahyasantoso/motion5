@@ -19,7 +19,7 @@ export const STEPS = [
   "scan:duplicates",
   "format:check",
   "typecheck",
-  "test",
+  "test:unit",
 ];
 
 function execute(step, cwd) {

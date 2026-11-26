@@ -49,9 +49,13 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
 
   browser:
-    name: browser (node 24.21.0)
+    name: browser (node 24.21.0) ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +66,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm test -- --project browser --reporter=default
+      - run: npm test -- --project browser --reporter=default --shard=${{ matrix.shard }}/3
 
   boundaries:
     name: boundaries (node 24.21.0)
