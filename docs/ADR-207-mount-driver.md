@@ -41,8 +41,8 @@ page calls `mount` itself, so a host could not reach in without editing the piec
 
 - A live page in the Studio plays, seeks, loops and replays like a reel, and `gerak studio play` and `seek` work on it.
 - The Studio's scroll-scrub mode is gone; a page with no mount yet reads as waiting.
-- The sweep spans the whole timeline and reads the page's height as it plays; the timeline's length is set when the
-  driver is built, from the page's height then.
+- The sweep spans the whole timeline and reads the page's height as it plays; the timeline's length follows the
+  page's height: the canvas refits it when the page resizes or loads, and the elapsed ms stays.
 - A handed `clockDriver` tells the mount through `forgets` when a loop wraps or it replays, so the mount forgets its
   recorded input then, as a timed clock forgets its own; a seek keeps it.
 - Every mount in one framed document shares that document's driver; a reload builds a new one.

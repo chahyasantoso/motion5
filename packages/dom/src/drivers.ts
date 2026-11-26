@@ -44,6 +44,8 @@ export interface ClockDriver extends Driver {
   dispose(): void;
   setRate(rate: number): void;
   setRange(fromMs?: number, toMs?: number): void;
+  /** Changes the clock's length in ms, keeping its elapsed ms (clamped to the new length) and its state. */
+  setDuration(ms: number): void;
   /** Whether frames are advancing it now; subscribers hear each change. */
   playing(): boolean;
   /** Logs the pointer events of `element` for `target` at the clock's ms, and keeps the clock running past its
@@ -65,9 +67,10 @@ export const SAMPLE_SETTLE_MS = 2000;
 export function clockDriver(options: ClockOptions): ClockDriver {
   const frames = options.frames ?? pageFrames();
   const listeners = new Set<() => void>();
+  let duration = options.duration;
   const fresh = (delay: number | undefined): LoopCycle =>
     createLoopCycle({
-      duration: options.duration,
+      duration,
       ...(delay === undefined ? {} : { delay }),
       ...(options.repeat === undefined ? {} : { repeat: options.repeat }),
       ...(options.yoyo === undefined ? {} : { yoyo: options.yoyo }),
@@ -87,7 +90,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   let settleUntil = -Infinity;
   // Whether the clock stopped by itself at its end, so a sample may start it again.
   let ended = false;
-  const elapsedNow = (): number => progress * options.duration + overtime;
+  const elapsedNow = (): number => progress * duration + overtime;
   const runsOver = (): boolean => watching > 0 || elapsedNow() < settleUntil;
   const notify = (): void => {
     for (const listener of [...listeners]) listener();
@@ -109,13 +112,13 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     const delta = (previous === undefined ? 0 : Math.max(0, at - previous)) * rate;
     previous = at;
     if (range !== undefined) {
-      let elapsed = progress * options.duration + delta;
+      let elapsed = progress * duration + delta;
       const span = range.to - range.from;
       if (span > 0 && elapsed >= range.to) {
         const wraps = Math.floor((elapsed - range.from) / span);
         if (wraps > 0) elapsed -= wraps * span;
       }
-      progress = options.duration > 0 ? elapsed / options.duration : 0;
+      progress = duration > 0 ? elapsed / duration : 0;
       cycle = fresh(undefined);
       cycle.advance(elapsed);
     } else if (cycle.state.kind === "finished" && runsOver()) {
@@ -153,8 +156,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       overtime = 0;
       forget();
       cycle = fresh(undefined);
-      progress =
-        range !== undefined ? (options.duration > 0 ? range.from / options.duration : 0) : 0;
+      progress = range !== undefined ? (duration > 0 ? range.from / duration : 0) : 0;
       if (range !== undefined && range.from > 0) cycle.advance(range.from);
     }
     running = true;
@@ -163,7 +165,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
   const driver: ClockDriver = {
     now: () => ({
       progress,
-      clock: { kind: "timed", elapsed: elapsedNow(), length: options.duration },
+      clock: { kind: "timed", elapsed: elapsedNow(), length: duration },
     }),
     options,
     subscribe(listener) {
@@ -215,7 +217,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       overtime = 0;
       progress = Math.max(0, Math.min(1, next));
       cycle = fresh(undefined);
-      cycle.advance(progress * options.duration);
+      cycle.advance(progress * duration);
       notify();
     },
     replay() {
@@ -236,16 +238,31 @@ export function clockDriver(options: ClockOptions): ClockDriver {
     setRate(next) {
       rate = Math.max(0, next);
     },
+    setDuration(next) {
+      const length = Math.max(0, next);
+      const elapsed = Math.min(length, elapsedNow());
+      duration = length;
+      overtime = 0;
+      if (range !== undefined) {
+        const from = Math.min(range.from, length);
+        const to = Math.min(range.to, length);
+        range = to > from ? { from, to } : undefined;
+      }
+      progress = length > 0 ? elapsed / length : 0;
+      cycle = fresh(undefined);
+      cycle.advance(elapsed);
+      notify();
+    },
     setRange(fromMs?: number, toMs?: number) {
       if (fromMs !== undefined && toMs !== undefined) {
-        const from = Math.max(0, Math.min(options.duration, fromMs));
-        const to = Math.max(from, Math.min(options.duration, toMs));
+        const from = Math.max(0, Math.min(duration, fromMs));
+        const to = Math.max(from, Math.min(duration, toMs));
         if (to > from) {
           range = { from, to };
           overtime = 0;
-          const elapsed = progress * options.duration;
+          const elapsed = progress * duration;
           if (elapsed < from || elapsed > to) {
-            progress = options.duration > 0 ? from / options.duration : 0;
+            progress = duration > 0 ? from / duration : 0;
             cycle = fresh(undefined);
             cycle.advance(from);
             notify();
@@ -256,7 +273,7 @@ export function clockDriver(options: ClockOptions): ClockDriver {
       if (range === undefined) return;
       range = undefined;
       cycle = fresh(undefined);
-      cycle.advance(progress * options.duration);
+      cycle.advance(progress * duration);
     },
   };
   if (options.autoplay !== false && !still) start();

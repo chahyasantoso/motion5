@@ -162,6 +162,23 @@ describe("a live page driven by the canvas", () => {
     });
   }, 180000);
 
+  it("follows the page's height: the ruler grows with the page and the playhead stays", async () => {
+    await open("cookie", async (page) => {
+      const frame = await mounted(page);
+      const ruler = page.locator("[data-ruler]");
+      const before = Number(await ruler.getAttribute("aria-valuemax"));
+      const at = await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`);
+      await frame.evaluate(
+        "(() => { const tall = document.createElement('div'); tall.style.height = '4000px'; document.body.appendChild(tall); })()",
+      );
+      await until(
+        async () => Number(await ruler.getAttribute("aria-valuemax")) > before,
+        "the ruler to grow",
+      );
+      expect(await frame.evaluate(`window[${MOUNTS}][0].driver.now().clock.elapsed`)).toBe(at);
+    });
+  }, 90000);
+
   it("leaves a reel on its own timed clock, with no replay", async () => {
     await open("reel", async (page) => {
       const frame = await mounted(page);

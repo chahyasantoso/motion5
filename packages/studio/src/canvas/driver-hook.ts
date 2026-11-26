@@ -11,7 +11,7 @@ export const DRIVER_FOR = Symbol.for("@gerak/studio/driver-for");
 const owners = new Set<DriverOwner>();
 // Keyed by document: a frame's window outlives a reload, and every mount in one document shares its driver.
 const handed = new WeakMap<Document, HandedDriver>();
-const lastOf = new WeakMap<Window, HandedDriver>();
+const lastOf = new WeakMap<Window, { readonly built: HandedDriver; readonly stop: () => void }>();
 
 /** Lets `owner` be asked for the driver of a page window it owns, until the returned function runs. */
 export function registerOwner(owner: DriverOwner): () => void {
@@ -33,16 +33,49 @@ function hostOf(win: Window): ScrollHost {
   };
 }
 
+interface Observer {
+  observe(target: Element): void;
+  disconnect(): void;
+}
+
+function observerOf(win: Window, onResize: () => void): Observer | undefined {
+  const make: unknown = Reflect.get(win, "ResizeObserver");
+  if (typeof make !== "function") return undefined;
+  const made: unknown = Reflect.construct(make, [onResize]);
+  if (typeof made !== "object" || made === null) return undefined;
+  const observe: unknown = Reflect.get(made, "observe");
+  const disconnect: unknown = Reflect.get(made, "disconnect");
+  if (typeof observe !== "function" || typeof disconnect !== "function") return undefined;
+  return {
+    observe: (target) => void Reflect.apply(observe, made, [target]),
+    disconnect: () => void Reflect.apply(disconnect, made, []),
+  };
+}
+
+/** Refits `built` whenever the page in `win` changes height or finishes loading; returns the stop function. */
+function followHeight(win: Window, built: HandedDriver): () => void {
+  const refit = (): void => built.refit();
+  const observer = observerOf(win, refit);
+  observer?.observe(win.document.documentElement);
+  win.addEventListener("load", refit);
+  return () => {
+    observer?.disconnect();
+    win.removeEventListener("load", refit);
+  };
+}
+
 function driverFor(win: Window, info: unknown): HandedDriver["driver"] | undefined {
   const owner = [...owners].find((each) => each.owns(win));
   const length: unknown = Reflect.get(Object(info), "length");
   if (owner === undefined || typeof length !== "number") return undefined;
   const shared = handed.get(win.document);
   if (shared !== undefined) return shared.driver;
-  lastOf.get(win)?.driver.dispose();
+  const before = lastOf.get(win);
+  before?.stop();
+  before?.built.driver.dispose();
   const built = studioDriver({ host: hostOf(win), length, take: owner.take() });
   handed.set(win.document, built);
-  lastOf.set(win, built);
+  lastOf.set(win, { built, stop: followHeight(win, built) });
   return built.driver;
 }
 

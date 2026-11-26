@@ -109,4 +109,16 @@ describe("the studio driver", () => {
     frames.step(250);
     expect(built.driver.now().clock).toMatchObject({ kind: "timed", elapsed: 250, length: 1000 });
   });
+
+  it("refits its length to the page's height, keeping its ms", () => {
+    let max = 0;
+    const growing = { scrollTo: () => undefined, maxScroll: () => max };
+    const built = studioDriver({ host: growing, length: 1000, take: [], frames: manualFrames() });
+    built.driver.seek(0.4);
+    expect(built.length).toBe(1000);
+    max = 3000;
+    built.refit();
+    expect(built.length).toBe(3000);
+    expect(built.driver.now().clock).toEqual({ kind: "timed", elapsed: 400, length: 3000 });
+  });
 });

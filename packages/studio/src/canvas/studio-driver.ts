@@ -22,7 +22,10 @@ export interface DriverOwner {
 /** The driver a page was handed, and the timeline length it runs over. */
 export interface HandedDriver {
   readonly driver: ClockDriver;
+  /** The timeline length in ms now; it follows the page's scroll height after each `refit`. */
   readonly length: number;
+  /** Recomputes the length from the page's current scroll height and resizes the driver when it changed. */
+  refit(): void;
 }
 
 const isScroll = (event: Events[number]): boolean => event.name === INPUT_EVENTS.scroll;
@@ -52,9 +55,9 @@ export function studioDriver(options: {
   readonly frames?: FrameSource;
 }): HandedDriver {
   const { host, take } = options;
-  const maxScroll = host.maxScroll();
-  const sweepMs = maxScroll / SWEEP_PX_PER_MS;
-  const length = timelineLength(options.length, take, sweepMs);
+  const lengthNow = (): number =>
+    timelineLength(options.length, take, host.maxScroll() / SWEEP_PX_PER_MS);
+  let length = lengthNow();
   const clock = clockDriver({
     duration: length,
     autoplay: false,
@@ -70,5 +73,17 @@ export function studioDriver(options: {
     last = ms;
     host.scrollTo(0, scrollAt(ms, take, length, host.maxScroll()));
   });
-  return { driver: { ...clock, events: () => inputs }, length };
+  return {
+    driver: { ...clock, events: () => inputs },
+    get length() {
+      return length;
+    },
+    refit() {
+      const next = lengthNow();
+      if (next === length) return;
+      length = next;
+      last = undefined;
+      clock.setDuration(next);
+    },
+  };
 }

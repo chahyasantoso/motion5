@@ -202,6 +202,33 @@ describe("clockDriver", () => {
     });
   });
 
+  it("keeps its elapsed ms when its length changes, clamped to the new length", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, autoplay: false, frames: source });
+    driver.seek(0.4);
+    driver.setDuration(2000);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 400, length: 2000 });
+    expect(driver.now().progress).toBe(0.2);
+    driver.setDuration(300);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 300, length: 300 });
+  });
+
+  it("keeps playing and its range inside the new length when its length changes", () => {
+    const source = frames();
+    const driver = clockDriver({ duration: 1000, frames: source });
+    source.run(0);
+    source.run(400);
+    driver.setDuration(2000);
+    expect(driver.playing()).toBe(true);
+    source.run(500);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 500, length: 2000 });
+    driver.setRange(600, 1800);
+    driver.setDuration(1000);
+    expect(driver.now().clock).toMatchObject({ length: 1000 });
+    source.run(1500);
+    expect(driver.now().clock).toEqual({ kind: "timed", elapsed: 800, length: 1000 });
+  });
+
   it("loops within a range and wraps back to fromMs exactly", () => {
     const source = frames();
     const driver = clockDriver({ duration: 2000, frames: source });
